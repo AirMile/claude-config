@@ -1,0 +1,313 @@
+# API Documentation
+
+Last updated: 2025-10-31
+
+## Authentication
+
+All API endpoints require authentication via Laravel Sanctum unless marked as public.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Accept: application/json
+```
+
+---
+
+## User Endpoints
+
+### POST /api/register
+**Public endpoint**
+
+Register a new user account.
+
+**Request Body:**
+```json
+{
+  "name": "string (required, max: 255)",
+  "email": "string (required, email, unique)",
+  "password": "string (required, min: 8, confirmed)"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "created_at": "2025-10-31T10:00:00Z"
+  },
+  "token": "1|abc123..."
+}
+```
+
+---
+
+### POST /api/login
+**Public endpoint**
+
+Authenticate user and receive access token.
+
+**Request Body:**
+```json
+{
+  "email": "string (required, email)",
+  "password": "string (required)"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com"
+  },
+  "token": "2|xyz789..."
+}
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "message": "Invalid credentials"
+}
+```
+
+---
+
+### GET /api/user
+**Requires:** auth:sanctum
+
+Get authenticated user's profile.
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "email_verified_at": "2025-10-31T10:00:00Z",
+    "created_at": "2025-10-30T10:00:00Z"
+  }
+}
+```
+
+---
+
+### PUT /api/user/profile
+**Requires:** auth:sanctum
+
+Update user profile.
+
+**Request Body:**
+```json
+{
+  "name": "string (optional, max: 255)",
+  "email": "string (optional, email, unique)",
+  "bio": "string (optional, max: 1000)"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "bio": "Software developer",
+    "updated_at": "2025-10-31T11:00:00Z"
+  },
+  "message": "Profile updated successfully"
+}
+```
+
+---
+
+## Post Endpoints
+
+### GET /api/posts
+**Requires:** auth:sanctum
+
+Get paginated list of posts.
+
+**Query Parameters:**
+- `page` (integer, default: 1)
+- `per_page` (integer, default: 15, max: 100)
+- `status` (string, optional: draft|published)
+- `search` (string, optional)
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "My First Post",
+      "slug": "my-first-post",
+      "excerpt": "This is a great post...",
+      "status": "published",
+      "author": {
+        "id": 1,
+        "name": "John Doe"
+      },
+      "published_at": "2025-10-31T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "total": 42,
+    "per_page": 15,
+    "last_page": 3
+  }
+}
+```
+
+---
+
+### POST /api/posts
+**Requires:** auth:sanctum
+
+Create a new post.
+
+**Request Body:**
+```json
+{
+  "title": "string (required, max: 255)",
+  "content": "string (required)",
+  "status": "string (required, in: draft,published)",
+  "tags": "array (optional)",
+  "featured_image": "string (optional, url)"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "data": {
+    "id": 2,
+    "title": "My Second Post",
+    "slug": "my-second-post",
+    "content": "Full content here...",
+    "status": "draft",
+    "author": {
+      "id": 1,
+      "name": "John Doe"
+    },
+    "created_at": "2025-10-31T12:00:00Z"
+  },
+  "message": "Post created successfully"
+}
+```
+
+---
+
+### GET /api/posts/{id}
+**Requires:** auth:sanctum
+
+Get a single post by ID.
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "id": 1,
+    "title": "My First Post",
+    "slug": "my-first-post",
+    "content": "Full content of the post...",
+    "status": "published",
+    "author": {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com"
+    },
+    "tags": ["laravel", "php"],
+    "comments_count": 5,
+    "published_at": "2025-10-31T10:00:00Z"
+  }
+}
+```
+
+---
+
+### PUT /api/posts/{id}
+**Requires:** auth:sanctum, owner
+
+Update an existing post.
+
+**Request Body:**
+```json
+{
+  "title": "string (optional, max: 255)",
+  "content": "string (optional)",
+  "status": "string (optional, in: draft,published)",
+  "tags": "array (optional)"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "id": 1,
+    "title": "Updated Title",
+    "content": "Updated content...",
+    "updated_at": "2025-10-31T13:00:00Z"
+  },
+  "message": "Post updated successfully"
+}
+```
+
+---
+
+### DELETE /api/posts/{id}
+**Requires:** auth:sanctum, owner
+
+Delete a post.
+
+**Response (204 No Content)**
+
+---
+
+## Error Responses
+
+### Validation Error (422 Unprocessable Entity)
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "email": ["The email has already been taken."],
+    "password": ["The password must be at least 8 characters."]
+  }
+}
+```
+
+### Unauthorized (401)
+```json
+{
+  "message": "Unauthenticated."
+}
+```
+
+### Forbidden (403)
+```json
+{
+  "message": "This action is unauthorized."
+}
+```
+
+### Not Found (404)
+```json
+{
+  "message": "Resource not found."
+}
+```
+
+---
+
+*Auto-generated by /2-code skill*

@@ -1,0 +1,20 @@
+## Project Overview
+
+**Name**: {{PROJECT_NAME}}
+**Description**: {{PROJECT_DESCRIPTION}}
+**Type**: {{PROJECT_TYPE}}
+**Status**: Development
+**Created**: {{CREATED_DATE}}
+**Repository**: {{REPOSITORY_URL}}
+
+### Purpose
+{{PROJECT_PURPOSE}}
+
+### Target Audience
+{{TARGET_AUDIENCE}}
+
+### Key Features
+{{KEY_FEATURES}}
+
+### Project Goals
+{{PROJECT_GOALS}}

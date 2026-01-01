@@ -1,0 +1,35 @@
+## Tech Stack
+
+### Core Technologies
+- **Primary Language**: {{PRIMARY_LANGUAGE}}
+- **Framework**: {{FRAMEWORK}}
+- **Runtime/Engine**: {{RUNTIME}}
+
+### Frontend (if applicable)
+- **UI Framework**: {{UI_FRAMEWORK}}
+- **Styling**: {{STYLING_SOLUTION}}
+- **State Management**: {{STATE_MANAGEMENT}}
+- **Build Tool**: {{BUILD_TOOL}}
+
+### Backend (if applicable)
+- **API Type**: {{API_TYPE}}
+- **Database**: {{DATABASE}}
+- **ORM/ODM**: {{ORM}}
+- **Authentication**: {{AUTH_METHOD}}
+- **Cache**: {{CACHE_SOLUTION}}
+
+### Development Tools
+- **Package Manager**: {{PACKAGE_MANAGER}}
+- **Version Control**: Git {{GIT_EXTRAS}}
+- **Testing**: {{TESTING_FRAMEWORK}}
+- **Linting**: {{LINTING_TOOLS}}
+- **Formatting**: {{FORMATTING_TOOLS}}
+
+### DevOps (if applicable)
+- **Container**: {{CONTAINER_SOLUTION}}
+- **CI/CD**: {{CI_CD_PLATFORM}}
+- **Deployment**: {{DEPLOYMENT_PLATFORM}}
+- **Monitoring**: {{MONITORING_TOOLS}}
+
+### Key Dependencies
+{{KEY_DEPENDENCIES}}

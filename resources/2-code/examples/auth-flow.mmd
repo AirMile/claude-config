@@ -1,0 +1,153 @@
+```mermaid
+graph TD
+    %% Registration Flow
+    subgraph Registration
+        RegForm[Registration Form]
+        RegValidate{Validate Input}
+        RegCreate[Create User]
+        RegSendEmail[Send Verification Email]
+        RegLogin[Auto-login User]
+        RegRedirect[Redirect to Dashboard]
+
+        RegForm --> RegValidate
+        RegValidate -->|Valid| RegCreate
+        RegValidate -->|Invalid| RegForm
+        RegCreate --> RegSendEmail
+        RegSendEmail --> RegLogin
+        RegLogin --> RegRedirect
+    end
+
+    %% Login Flow
+    subgraph Login
+        LoginForm[Login Form]
+        LoginCheck{Check Credentials}
+        LoginVerified{Email Verified?}
+        LoginToken[Generate Token]
+        LoginSession[Create Session]
+        LoginDashboard[Redirect to Dashboard]
+        LoginVerifyPage[Redirect to Verify Email]
+
+        LoginForm --> LoginCheck
+        LoginCheck -->|Valid| LoginVerified
+        LoginCheck -->|Invalid| LoginForm
+        LoginVerified -->|Yes| LoginToken
+        LoginVerified -->|No| LoginVerifyPage
+        LoginToken --> LoginSession
+        LoginSession --> LoginDashboard
+    end
+
+    %% Email Verification Flow
+    subgraph EmailVerification
+        VerifyEmail[Click Email Link]
+        VerifyToken{Valid Token?}
+        VerifyMark[Mark Email as Verified]
+        VerifySuccess[Redirect to Dashboard]
+        VerifyExpired[Token Expired - Resend]
+
+        VerifyEmail --> VerifyToken
+        VerifyToken -->|Valid| VerifyMark
+        VerifyToken -->|Invalid/Expired| VerifyExpired
+        VerifyMark --> VerifySuccess
+        VerifyExpired --> VerifyEmail
+    end
+
+    %% Password Reset Flow
+    subgraph PasswordReset
+        ForgotForm[Forgot Password Form]
+        SendResetEmail[Send Reset Email]
+        ResetLink[Click Reset Link]
+        ResetTokenCheck{Valid Token?}
+        ResetForm[New Password Form]
+        ResetUpdate[Update Password]
+        ResetLogin[Redirect to Login]
+        ResetExpired[Token Expired - Request Again]
+
+        ForgotForm --> SendResetEmail
+        SendResetEmail --> ResetLink
+        ResetLink --> ResetTokenCheck
+        ResetTokenCheck -->|Valid| ResetForm
+        ResetTokenCheck -->|Expired| ResetExpired
+        ResetExpired --> ForgotForm
+        ResetForm --> ResetUpdate
+        ResetUpdate --> ResetLogin
+    end
+
+    %% Logout Flow
+    subgraph Logout
+        LogoutButton[Logout Button]
+        LogoutRevoke[Revoke Token/Session]
+        LogoutClear[Clear Local Storage]
+        LogoutRedirect[Redirect to Login]
+
+        LogoutButton --> LogoutRevoke
+        LogoutRevoke --> LogoutClear
+        LogoutClear --> LogoutRedirect
+    end
+
+    %% Two-Factor Authentication Flow
+    subgraph TwoFactor
+        TFALogin[Login Success]
+        TFAEnabled{2FA Enabled?}
+        TFASendCode[Send 2FA Code]
+        TFAEnterCode[Enter Code Form]
+        TFAVerifyCode{Code Valid?}
+        TFAComplete[Complete Login]
+        TFAFailed[Invalid Code - Retry]
+
+        TFALogin --> TFAEnabled
+        TFAEnabled -->|Yes| TFASendCode
+        TFAEnabled -->|No| TFAComplete
+        TFASendCode --> TFAEnterCode
+        TFAEnterCode --> TFAVerifyCode
+        TFAVerifyCode -->|Valid| TFAComplete
+        TFAVerifyCode -->|Invalid| TFAFailed
+        TFAFailed --> TFAEnterCode
+    end
+
+    %% OAuth Flow (Google/GitHub)
+    subgraph OAuth
+        OAuthButton[OAuth Login Button]
+        OAuthRedirect[Redirect to Provider]
+        OAuthAuthorize[User Authorizes]
+        OAuthCallback[Callback with Code]
+        OAuthExchange[Exchange Code for Token]
+        OAuthGetUser[Get User Info]
+        OAuthFindOrCreate{User Exists?}
+        OAuthCreate[Create New User]
+        OAuthLink[Link to Existing]
+        OAuthLoginUser[Login User]
+
+        OAuthButton --> OAuthRedirect
+        OAuthRedirect --> OAuthAuthorize
+        OAuthAuthorize --> OAuthCallback
+        OAuthCallback --> OAuthExchange
+        OAuthExchange --> OAuthGetUser
+        OAuthGetUser --> OAuthFindOrCreate
+        OAuthFindOrCreate -->|No| OAuthCreate
+        OAuthFindOrCreate -->|Yes| OAuthLink
+        OAuthCreate --> OAuthLoginUser
+        OAuthLink --> OAuthLoginUser
+    end
+
+    %% Styling
+    classDef form fill:#3B82F6,stroke:#1E40AF,color:#fff
+    classDef decision fill:#F59E0B,stroke:#D97706,color:#fff
+    classDef action fill:#10B981,stroke:#059669,color:#fff
+    classDef redirect fill:#8B5CF6,stroke:#6D28D9,color:#fff
+    classDef error fill:#EF4444,stroke:#DC2626,color:#fff
+
+    class RegForm,LoginForm,ForgotForm,ResetForm,TFAEnterCode,OAuthButton form
+    class RegValidate,LoginCheck,LoginVerified,VerifyToken,ResetTokenCheck,TFAEnabled,TFAVerifyCode,OAuthFindOrCreate decision
+    class RegCreate,RegSendEmail,RegLogin,LoginToken,LoginSession,VerifyMark,SendResetEmail,ResetUpdate,LogoutRevoke,LogoutClear,TFASendCode,OAuthExchange,OAuthGetUser,OAuthCreate,OAuthLink,OAuthLoginUser action
+    class RegRedirect,LoginDashboard,LoginVerifyPage,VerifySuccess,ResetLogin,LogoutRedirect,TFAComplete,OAuthRedirect,OAuthAuthorize,OAuthCallback redirect
+    class VerifyExpired,ResetExpired,TFAFailed error
+
+%% Legend:
+%% Blue = Forms/User Input
+%% Orange = Decision Points
+%% Green = Actions/Processing
+%% Purple = Redirects
+%% Red = Error/Retry States
+
+%% Generated: 2025-10-31
+%% Auto-updated by /2-code skill

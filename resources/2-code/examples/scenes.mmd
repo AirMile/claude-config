@@ -1,0 +1,166 @@
+---
+title: Game Scene Hierarchy
+---
+graph TD
+    %% Main Scene
+    GameScene[Game Scene - MainLevel]
+
+    %% Root GameObjects
+    Player[Player GameObject]
+    Environment[Environment GameObject]
+    UI[UI Canvas]
+    GameManager[Game Manager]
+    AudioManager[Audio Manager]
+
+    %% Player Hierarchy
+    PlayerModel[Player Model - Mesh]
+    PlayerCamera[Main Camera]
+    PlayerController[Player Controller Script]
+    PlayerInventory[Inventory System]
+    PlayerWeapons[Weapons Container]
+
+    %% Weapons
+    Weapon1[Weapon - Sword]
+    Weapon2[Weapon - Bow]
+
+    %% Environment Hierarchy
+    Terrain[Terrain]
+    Buildings[Buildings Container]
+    Props[Props Container]
+    Lighting[Lighting Container]
+
+    %% Buildings
+    House1[House Prefab #1]
+    House2[House Prefab #2]
+    Castle[Castle Prefab]
+
+    %% Props
+    Trees[Trees Container]
+    Rocks[Rocks Container]
+    Collectibles[Collectibles Container]
+
+    %% Tree instances
+    Tree1[Tree Instance #1]
+    Tree2[Tree Instance #2]
+    Tree3[Tree Instance #3]
+
+    %% Collectibles
+    Coin1[Coin Prefab #1]
+    Coin2[Coin Prefab #2]
+    HealthPack[Health Pack Prefab]
+
+    %% Lighting
+    DirectionalLight[Directional Light - Sun]
+    PointLights[Point Lights Container]
+    PointLight1[Point Light #1]
+    PointLight2[Point Light #2]
+
+    %% UI Hierarchy
+    HUD[HUD Panel]
+    PauseMenu[Pause Menu Panel]
+    InventoryUI[Inventory Panel]
+
+    %% HUD Elements
+    HealthBar[Health Bar]
+    ScoreText[Score Text]
+    MiniMap[Mini Map]
+
+    %% Scene Graph Connections
+    GameScene --> Player
+    GameScene --> Environment
+    GameScene --> UI
+    GameScene --> GameManager
+    GameScene --> AudioManager
+
+    %% Player Children
+    Player --> PlayerModel
+    Player --> PlayerCamera
+    Player --> PlayerController
+    Player --> PlayerInventory
+    Player --> PlayerWeapons
+
+    PlayerWeapons --> Weapon1
+    PlayerWeapons --> Weapon2
+
+    %% Environment Children
+    Environment --> Terrain
+    Environment --> Buildings
+    Environment --> Props
+    Environment --> Lighting
+
+    Buildings --> House1
+    Buildings --> House2
+    Buildings --> Castle
+
+    Props --> Trees
+    Props --> Rocks
+    Props --> Collectibles
+
+    Trees --> Tree1
+    Trees --> Tree2
+    Trees --> Tree3
+
+    Collectibles --> Coin1
+    Collectibles --> Coin2
+    Collectibles --> HealthPack
+
+    Lighting --> DirectionalLight
+    Lighting --> PointLights
+
+    PointLights --> PointLight1
+    PointLights --> PointLight2
+
+    %% UI Children
+    UI --> HUD
+    UI --> PauseMenu
+    UI --> InventoryUI
+
+    HUD --> HealthBar
+    HUD --> ScoreText
+    HUD --> MiniMap
+
+    %% Styling
+    classDef scene fill:#8B5CF6,stroke:#6D28D9,color:#fff
+    classDef player fill:#3B82F6,stroke:#1E40AF,color:#fff
+    classDef environment fill:#10B981,stroke:#059669,color:#fff
+    classDef ui fill:#F59E0B,stroke:#D97706,color:#fff
+    classDef manager fill:#EF4444,stroke:#DC2626,color:#fff
+    classDef prefab fill:#EC4899,stroke:#DB2777,color:#fff
+    classDef instance fill:#14B8A6,stroke:#0D9488,color:#fff
+
+    class GameScene scene
+    class Player,PlayerModel,PlayerCamera,PlayerController,PlayerInventory,PlayerWeapons,Weapon1,Weapon2 player
+    class Environment,Terrain,Buildings,Props,Lighting,DirectionalLight,PointLights environment
+    class UI,HUD,PauseMenu,InventoryUI,HealthBar,ScoreText,MiniMap ui
+    class GameManager,AudioManager manager
+    class House1,House2,Castle,Coin1,Coin2,HealthPack prefab
+    class Tree1,Tree2,Tree3,PointLight1,PointLight2 instance
+
+%% Component Details:
+%%
+%% Player (Transform, Rigidbody, CapsuleCollider):
+%%   - PlayerController: Movement, Input handling
+%%   - PlayerInventory: Item management
+%%   - Health: 100, Speed: 5.0, JumpForce: 10.0
+%%
+%% GameManager (Singleton):
+%%   - Score tracking
+%%   - Game state (Playing, Paused, GameOver)
+%%   - Level progression
+%%
+%% Prefab References:
+%%   - House Prefab: Assets/Prefabs/Buildings/House.prefab
+%%   - Tree Prefab: Assets/Prefabs/Nature/Tree_Oak.prefab
+%%   - Coin Prefab: Assets/Prefabs/Collectibles/Coin.prefab
+
+%% Legend:
+%% Purple = Scene Root
+%% Blue = Player Related
+%% Green = Environment
+%% Orange = UI
+%% Red = Managers/Systems
+%% Pink = Prefabs
+%% Teal = Instances
+
+%% Generated: 2025-10-31
+%% Auto-updated by /2-code skill

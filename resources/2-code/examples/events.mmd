@@ -1,0 +1,89 @@
+---
+title: Events & Listeners Flow
+---
+graph LR
+    %% User Events
+    UserRegistered[UserRegistered Event]
+    UserLoggedIn[UserLoggedIn Event]
+    UserUpdated[UserUpdated Event]
+    UserDeleted[UserDeleted Event]
+
+    %% Post Events
+    PostCreated[PostCreated Event]
+    PostPublished[PostPublished Event]
+    PostDeleted[PostDeleted Event]
+
+    %% Comment Events
+    CommentPosted[CommentPosted Event]
+
+    %% Order Events
+    OrderPlaced[OrderPlaced Event]
+    PaymentProcessed[PaymentProcessed Event]
+
+    %% User Listeners
+    SendWelcomeEmail[SendWelcomeEmail Listener]
+    CreateUserProfile[CreateUserProfile Listener]
+    LogUserLogin[LogUserLogin Listener]
+    NotifyAdminNewUser[NotifyAdminNewUser Listener]
+    InvalidateUserCache[InvalidateUserCache Listener]
+
+    %% Post Listeners
+    NotifySubscribers[NotifySubscribers Listener]
+    UpdateSearchIndex[UpdateSearchIndex Listener]
+    GenerateSitemap[GenerateSitemap Listener]
+
+    %% Comment Listeners
+    NotifyPostAuthor[NotifyPostAuthor Listener]
+    CheckSpamComment[CheckSpamComment Job]
+
+    %% Order Listeners
+    SendOrderConfirmation[SendOrderConfirmation Listener]
+    UpdateInventory[UpdateInventory Job]
+    ProcessRefund[ProcessRefund Job]
+    SendInvoice[SendInvoice Listener]
+
+    %% Event → Listener connections
+    UserRegistered --> SendWelcomeEmail
+    UserRegistered --> CreateUserProfile
+    UserRegistered --> NotifyAdminNewUser
+
+    UserLoggedIn --> LogUserLogin
+
+    UserUpdated --> InvalidateUserCache
+
+    UserDeleted --> InvalidateUserCache
+
+    PostCreated --> UpdateSearchIndex
+
+    PostPublished --> NotifySubscribers
+    PostPublished --> UpdateSearchIndex
+    PostPublished --> GenerateSitemap
+
+    PostDeleted --> UpdateSearchIndex
+    PostDeleted --> GenerateSitemap
+
+    CommentPosted --> NotifyPostAuthor
+    CommentPosted --> CheckSpamComment
+
+    OrderPlaced --> SendOrderConfirmation
+    OrderPlaced --> UpdateInventory
+
+    PaymentProcessed --> SendInvoice
+    PaymentProcessed --> ProcessRefund
+
+    %% Styling
+    classDef event fill:#3B82F6,stroke:#1E40AF,color:#fff
+    classDef listener fill:#10B981,stroke:#059669,color:#fff
+    classDef job fill:#F59E0B,stroke:#D97706,color:#fff
+
+    class UserRegistered,UserLoggedIn,UserUpdated,UserDeleted,PostCreated,PostPublished,PostDeleted,CommentPosted,OrderPlaced,PaymentProcessed event
+    class SendWelcomeEmail,CreateUserProfile,LogUserLogin,NotifyAdminNewUser,InvalidateUserCache,NotifySubscribers,UpdateSearchIndex,GenerateSitemap,NotifyPostAuthor,SendOrderConfirmation,SendInvoice listener
+    class CheckSpamComment,UpdateInventory,ProcessRefund job
+
+%% Legend:
+%% Blue = Events
+%% Green = Synchronous Listeners
+%% Orange = Queued Jobs
+
+%% Generated: 2025-10-31
+%% Auto-updated by /2-code skill

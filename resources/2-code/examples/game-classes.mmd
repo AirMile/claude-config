@@ -1,0 +1,355 @@
+---
+title: Game Class Diagram
+---
+classDiagram
+    %% Base Classes
+    class GameObject {
+        +string name
+        +Transform transform
+        +bool active
+        +List~Component~ components
+        +Awake()
+        +Start()
+        +Update()
+        +Destroy()
+        +GetComponent~T~()
+        +AddComponent~T~()
+    }
+
+    class Component {
+        +GameObject gameObject
+        +Transform transform
+        +bool enabled
+        +Awake()
+        +OnEnable()
+        +OnDisable()
+    }
+
+    class MonoBehaviour {
+        <<abstract>>
+        +Start()
+        +Update()
+        +FixedUpdate()
+        +LateUpdate()
+    }
+
+    %% Player Classes
+    class Player {
+        +int health
+        +float speed
+        +float jumpForce
+        +Inventory inventory
+        +Weapon currentWeapon
+        +TakeDamage(int amount)
+        +Heal(int amount)
+        +Move(Vector3 direction)
+        +Jump()
+        +Attack()
+        +Die()
+    }
+
+    class PlayerController {
+        +float moveSpeed
+        +float rotationSpeed
+        +CharacterController controller
+        +HandleInput()
+        +Move(Vector3 direction)
+        +Rotate(float angle)
+    }
+
+    class PlayerHealth {
+        +int maxHealth
+        +int currentHealth
+        +bool isInvulnerable
+        +TakeDamage(int amount)
+        +Heal(int amount)
+        +Die()
+        +Respawn()
+    }
+
+    class PlayerInventory {
+        +int maxSlots
+        +List~Item~ items
+        +int gold
+        +AddItem(Item item)
+        +RemoveItem(Item item)
+        +UseItem(Item item)
+        +HasItem(string itemId)
+    }
+
+    %% Weapon System
+    class Weapon {
+        <<abstract>>
+        +string weaponName
+        +int damage
+        +float attackSpeed
+        +float range
+        +Attack()
+        +Reload()
+    }
+
+    class MeleeWeapon {
+        +float swingRadius
+        +Swing()
+        +ComboAttack()
+    }
+
+    class RangedWeapon {
+        +int ammo
+        +int maxAmmo
+        +Projectile projectilePrefab
+        +Shoot()
+        +Reload()
+    }
+
+    class Projectile {
+        +float speed
+        +int damage
+        +float lifetime
+        +Launch(Vector3 direction)
+        +OnHit(Collider target)
+    }
+
+    %% Enemy System
+    class Enemy {
+        <<abstract>>
+        +int health
+        +float speed
+        +int damage
+        +float detectionRange
+        +Transform target
+        +EnemyState currentState
+        +Patrol()
+        +Chase()
+        +Attack()
+        +TakeDamage(int amount)
+        +Die()
+    }
+
+    class MeleeEnemy {
+        +float attackRange
+        +MeleeAttack()
+    }
+
+    class RangedEnemy {
+        +float shootingRange
+        +RangedAttack()
+    }
+
+    class BossEnemy {
+        +List~BossPhase~ phases
+        +int currentPhaseIndex
+        +SpecialAbility specialAbility
+        +NextPhase()
+        +UseSpecialAbility()
+    }
+
+    %% AI System
+    class StateMachine {
+        +State currentState
+        +List~State~ states
+        +ChangeState(State newState)
+        +Update()
+    }
+
+    class State {
+        <<abstract>>
+        +Enter()
+        +Execute()
+        +Exit()
+    }
+
+    class IdleState {
+        +Enter()
+        +Execute()
+        +Exit()
+    }
+
+    class PatrolState {
+        +List~Vector3~ waypoints
+        +int currentWaypointIndex
+        +Enter()
+        +Execute()
+        +Exit()
+    }
+
+    class ChaseState {
+        +Transform target
+        +Enter()
+        +Execute()
+        +Exit()
+    }
+
+    class AttackState {
+        +float attackCooldown
+        +Enter()
+        +Execute()
+        +Exit()
+    }
+
+    %% Item System
+    class Item {
+        <<abstract>>
+        +string itemId
+        +string itemName
+        +Sprite icon
+        +int value
+        +bool stackable
+        +Use()
+    }
+
+    class Consumable {
+        +int healthRestore
+        +int manaRestore
+        +float duration
+        +Use()
+    }
+
+    class Equipment {
+        +EquipmentSlot slot
+        +int defense
+        +int attackBonus
+        +Equip()
+        +Unequip()
+    }
+
+    class QuestItem {
+        +string questId
+        +Use()
+    }
+
+    %% Game Management
+    class GameManager {
+        <<singleton>>
+        -GameManager instance
+        +GameState currentState
+        +int score
+        +int level
+        +Player player
+        +StartGame()
+        +PauseGame()
+        +ResumeGame()
+        +GameOver()
+        +LoadLevel(int levelIndex)
+    }
+
+    class LevelManager {
+        +int currentLevel
+        +List~Level~ levels
+        +LoadLevel(int index)
+        +UnloadLevel()
+        +NextLevel()
+    }
+
+    class SaveManager {
+        +SaveData currentSave
+        +SaveGame()
+        +LoadGame()
+        +DeleteSave()
+        +HasSaveData()
+    }
+
+    class AudioManager {
+        <<singleton>>
+        +AudioSource musicSource
+        +AudioSource sfxSource
+        +PlayMusic(AudioClip clip)
+        +PlaySFX(AudioClip clip)
+        +SetMusicVolume(float volume)
+        +SetSFXVolume(float volume)
+    }
+
+    %% UI System
+    class UIManager {
+        +Canvas mainCanvas
+        +HealthBar healthBar
+        +ScoreText scoreText
+        +PauseMenu pauseMenu
+        +UpdateHealth(int current, int max)
+        +UpdateScore(int score)
+        +ShowPauseMenu()
+        +HidePauseMenu()
+    }
+
+    %% Inheritance Relationships
+    Component <|-- MonoBehaviour
+    MonoBehaviour <|-- Player
+    MonoBehaviour <|-- PlayerController
+    MonoBehaviour <|-- PlayerHealth
+    MonoBehaviour <|-- Enemy
+    MonoBehaviour <|-- Weapon
+    MonoBehaviour <|-- GameManager
+
+    Enemy <|-- MeleeEnemy
+    Enemy <|-- RangedEnemy
+    Enemy <|-- BossEnemy
+
+    Weapon <|-- MeleeWeapon
+    Weapon <|-- RangedWeapon
+
+    Item <|-- Consumable
+    Item <|-- Equipment
+    Item <|-- QuestItem
+
+    State <|-- IdleState
+    State <|-- PatrolState
+    State <|-- ChaseState
+    State <|-- AttackState
+
+    %% Composition Relationships
+    GameObject *-- Component : contains
+    Player *-- PlayerInventory : has
+    Player *-- Weapon : equipped
+    PlayerInventory *-- Item : contains
+    Enemy *-- StateMachine : uses
+    StateMachine *-- State : manages
+    RangedWeapon *-- Projectile : spawns
+
+    %% Association Relationships
+    Player --> PlayerController : controls
+    Player --> PlayerHealth : monitors
+    Enemy --> Player : targets
+    GameManager --> Player : manages
+    GameManager --> LevelManager : uses
+    GameManager --> SaveManager : uses
+    GameManager --> AudioManager : uses
+    UIManager --> Player : observes
+
+    %% Dependency Relationships
+    PlayerController ..> GameObject : updates
+    Enemy ..> Player : detects
+    Weapon ..> Enemy : damages
+
+%% Class Responsibilities:
+%%
+%% Core System:
+%% - GameObject: Base entity in game world
+%% - Component: Modular behavior attachment
+%% - MonoBehaviour: Unity lifecycle integration
+%%
+%% Player System:
+%% - Player: Main player entity
+%% - PlayerController: Movement and input
+%% - PlayerHealth: HP and damage management
+%% - PlayerInventory: Item storage
+%%
+%% Combat System:
+%% - Weapon: Base weapon behavior
+%% - MeleeWeapon: Close-range combat
+%% - RangedWeapon: Projectile-based combat
+%% - Projectile: Bullet/arrow entity
+%%
+%% Enemy AI:
+%% - Enemy: Base enemy behavior
+%% - StateMachine: AI state management
+%% - State: Individual AI behaviors
+%%
+%% Management:
+%% - GameManager: Game flow control
+%% - LevelManager: Level loading
+%% - SaveManager: Persistence
+%% - AudioManager: Sound system
+%% - UIManager: User interface
+
+%% Generated: 2025-10-31
+%% Auto-updated by /2-code skill

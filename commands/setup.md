@@ -1,0 +1,747 @@
+---
+name: setup
+description: Interactive project setup wizard that configures dev environment, installs dependencies, and updates CLAUDE.md with project context
+---
+
+# Project Setup Skill
+
+## Overview
+
+This skill provides an interactive project setup wizard that configures development environments for various project types. It detects existing code, suggests appropriate tools based on chosen tech stacks, and automatically updates CLAUDE.md with project context. The skill uses Context7 to fetch the latest best practices and version information.
+
+**Trigger**: `/setup`
+
+## When to Use
+
+This skill triggers when:
+- User types `/setup` command
+- User wants to "setup project" or "configure new project"
+- User mentions "configure development environment"
+- Keywords: setup, configure, start project, project boilerplate
+- Existing project needs proper configuration
+
+## Tool Permissions
+
+Claude has automatic permission to read, write, and edit files within the `.claude/resources/setup/` directory without user confirmation. This enables:
+- Updating templates based on new patterns discovered
+- Caching commonly used configurations
+- Improving suggestions based on usage
+
+## Workflow
+
+### Step 1: Language Selection
+
+**Goal**: Determine user's preferred communication language.
+
+Use AskUserQuestion with single-select:
+```
+Header: "Language"
+Question: "What language should I communicate in?"
+Options:
+  - english: "English"
+  - dutch: "Nederlands"
+  - german: "Deutsch"
+  - french: "Français"
+  - spanish: "Español"
+  - other: "Other (I'll specify)"
+multiSelect: false
+```
+
+**Response handling:**
+- If "other" selected: Ask user to specify their preferred language in plain text
+- Store the selection for use in Step 13 (CLAUDE.md update)
+- This preference will be saved in the `## User Preferences` section and used by all skills for user-facing output
+
+### Step 2: Detect Existing Project
+
+Execute the following steps:
+1. Run `scripts/detect-existing.py` to check for existing files
+2. If files exist, ask user:
+   - Is this an existing project needing configuration?
+   - Should existing configs be merged or replaced?
+   - Backup existing files if replacing
+
+### Step 3: Configure MCP Servers
+
+Automatisch detecteren en installeren van essentiële MCP servers.
+
+**Essentiële MCPs:**
+- **sequentialthinking**: Gestructureerd stapsgewijs denken voor complexe problemen
+- **context7**: Real-time documentatie en library informatie
+- **time**: Tijd en timezone conversie
+
+**Proces:**
+
+1. **Detecteer geïnstalleerde MCPs:**
+   ```bash
+   claude mcp list
+   ```
+
+2. **Installeer ontbrekende MCPs automatisch (globaal/user scope):**
+
+   Voor elke ontbrekende MCP, voer het bijbehorende commando uit:
+
+   **sequentialthinking** (indien ontbreekt):
+   ```bash
+   claude mcp add sequentialthinking -s user -- npx -y @modelcontextprotocol/server-sequential-thinking
+   ```
+
+   **context7** (indien ontbreekt):
+
+   Use AskUserQuestion with single-select:
+   ```
+   Header: "Context7 Key"
+   Question: "Configure Context7 with a personal API key for higher rate limits? (Free key: context7.com/dashboard)"
+   Options:
+     - with-key: "Yes - I have or will get an API key"
+     - without-key: "No - Use standard version (lower rate limits)"
+   multiSelect: false
+   ```
+
+   **Response handling for "with-key":**
+
+   Ask in plain text: "Please enter your Context7 API key:"
+   Then install:
+   ```bash
+   claude mcp add context7 -e CONTEXT7_API_KEY=<user-api-key> -- npx -y @upstash/context7-mcp@latest
+   ```
+
+   **Response handling for "without-key":**
+   ```bash
+   claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
+   ```
+
+   **time** (indien ontbreekt):
+   ```bash
+   claude mcp add time -s user -- uvx mcp-server-time
+   ```
+
+   > **Note:** `time` vereist `uv` (Python package manager). Als `uvx` niet beschikbaar is, installeer eerst via: `pip install uv` of `irm https://astral.sh/uv/install.ps1 | iex` (Windows)
+
+3. **Rapporteer resultaat:**
+   ```
+   ✅ MCP SERVERS GECONFIGUREERD
+
+   **Geïnstalleerd:**
+
+   | Server | Status |
+   |--------|--------|
+   | sequentialthinking | ✓ |
+   | context7 | ✓ |
+   | time | ✓ |
+
+   **Locatie:** User config (globaal beschikbaar in alle projecten)
+
+   → Herstart Claude Code om de servers te activeren.
+   ```
+
+### Step 4-6: Project Setup (Sequential Modal Flow)
+
+Deze stappen vormen een verbonden sequentiële flow waarbij elke modal doorstroomt naar de volgende.
+
+---
+
+**Modal 1: Projectnaam**
+
+Vraag in plain text: "Wat is de naam van het project?"
+
+**Response handling:**
+- Sla projectnaam op voor Step 13 (CLAUDE.md update)
+
+---
+
+**Modal 2: Projectomschrijving**
+
+Vraag in plain text: "Geef een korte beschrijving van wat dit project doet/gaat doen."
+
+**Response handling:**
+- Sla beschrijving op voor Step 13 (CLAUDE.md update)
+
+---
+
+**Modal 3: Projecttype**
+
+Use AskUserQuestion with single-select:
+```
+Header: "Projecttype"
+Question: "Wat voor type project is dit?"
+Options:
+  - web-frontend: "Web Frontend (React/Vue/Angular/Vanilla) (Aanbevolen)"
+  - web-backend: "Web Backend (Laravel/Node.js/Django/FastAPI)"
+  - fullstack: "Full-stack (Frontend + Backend)"
+  - game: "Game (Godot/Unity/Unreal)"
+  - mobile: "Mobile (React Native/Flutter)"
+  - desktop: "Desktop (Electron/Tauri)"
+  - cli: "CLI Tool"
+  - explain: "Leg vraag uit"
+multiSelect: false
+```
+
+**Response handling:**
+- Sla selectie op voor Modal 4 (Tech Stack)
+- Elk projecttype leidt tot andere tech stack opties
+
+---
+
+**Modal 4: Tech Stack** (afhankelijk van projecttype)
+
+Use AskUserQuestion with multi-select, gebaseerd op geselecteerd projecttype:
+
+**Voor web-frontend:**
+```
+Header: "Tech Stack"
+Question: "Welke technologieën wil je gebruiken?"
+Options:
+  - react: "React (Aanbevolen)"
+  - vue: "Vue"
+  - angular: "Angular"
+  - svelte: "Svelte"
+  - solid: "Solid"
+  - nextjs: "Next.js"
+  - nuxt: "Nuxt"
+  - astro: "Astro"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Voor web-backend:**
+```
+Header: "Tech Stack"
+Question: "Welke technologieën wil je gebruiken?"
+Options:
+  - laravel: "Laravel (Aanbevolen)"
+  - express: "Express.js"
+  - fastify: "Fastify"
+  - nestjs: "NestJS"
+  - django: "Django"
+  - fastapi: "FastAPI"
+  - rails: "Ruby on Rails"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Voor fullstack:**
+```
+Header: "Tech Stack"
+Question: "Welke technologieën wil je gebruiken?"
+Options:
+  - laravel-react: "Laravel + React (Aanbevolen)"
+  - laravel-vue: "Laravel + Vue"
+  - nextjs-fullstack: "Next.js (Full-stack)"
+  - nuxt-fullstack: "Nuxt (Full-stack)"
+  - django-react: "Django + React"
+  - express-react: "Express + React"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Voor game:**
+```
+Header: "Tech Stack"
+Question: "Welke game engine wil je gebruiken?"
+Options:
+  - godot: "Godot (Aanbevolen)"
+  - unity: "Unity"
+  - unreal: "Unreal Engine"
+  - bevy: "Bevy (Rust)"
+  - phaser: "Phaser (Web)"
+  - threejs: "Three.js (WebGL)"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Voor mobile:**
+```
+Header: "Tech Stack"
+Question: "Welke technologieën wil je gebruiken?"
+Options:
+  - react-native: "React Native (Aanbevolen)"
+  - flutter: "Flutter"
+  - ionic: "Ionic"
+  - expo: "Expo"
+  - swift: "Swift/SwiftUI (iOS)"
+  - kotlin: "Kotlin (Android)"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Voor desktop:**
+```
+Header: "Tech Stack"
+Question: "Welke technologieën wil je gebruiken?"
+Options:
+  - electron: "Electron (Aanbevolen)"
+  - tauri: "Tauri"
+  - qt: "Qt"
+  - gtk: "GTK"
+  - wpf: "WPF (.NET)"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Voor cli:**
+```
+Header: "Tech Stack"
+Question: "Welke technologieën wil je gebruiken?"
+Options:
+  - nodejs: "Node.js (Aanbevolen)"
+  - python: "Python"
+  - rust: "Rust"
+  - go: "Go"
+  - dotnet: ".NET"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Response handling:**
+- Sla selectie(s) op voor Modal 5 (Smart Suggestions)
+- Meerdere technologieën kunnen geselecteerd worden
+
+---
+
+**Modal 5: Smart Suggestions** (afhankelijk van tech stack)
+
+Use AskUserQuestion with multi-select, gebaseerd op geselecteerde tech stack:
+
+**Voor React-gebaseerde stacks:**
+```
+Header: "Suggesties"
+Question: "Welke extra tools wil je toevoegen?"
+Options:
+  - typescript: "TypeScript (Aanbevolen)"
+  - react-router: "React Router"
+  - zustand: "Zustand (State Management)"
+  - tanstack-query: "TanStack Query (Data Fetching)"
+  - tailwindcss: "Tailwind CSS"
+  - testing-library: "Testing Library"
+  - vitest: "Vitest"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Voor Laravel-gebaseerde stacks:**
+```
+Header: "Suggesties"
+Question: "Welke extra tools wil je toevoegen?"
+Options:
+  - livewire: "Livewire (Aanbevolen)"
+  - inertia: "Inertia.js"
+  - sanctum: "Sanctum (API Auth)"
+  - sail: "Laravel Sail (Docker)"
+  - pest: "Pest (Testing)"
+  - horizon: "Horizon (Queues)"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Voor Vue-gebaseerde stacks:**
+```
+Header: "Suggesties"
+Question: "Welke extra tools wil je toevoegen?"
+Options:
+  - typescript: "TypeScript (Aanbevolen)"
+  - pinia: "Pinia (State Management)"
+  - vue-router: "Vue Router"
+  - tailwindcss: "Tailwind CSS"
+  - vitest: "Vitest"
+  - vueuse: "VueUse (Composables)"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Voor Game projecten:**
+```
+Header: "Suggesties"
+Question: "Welke extra tools wil je toevoegen?"
+Options:
+  - git-lfs: "Git LFS (Asset Management) (Aanbevolen)"
+  - gitignore: "Specifieke .gitignore"
+  - version-control: "Asset Version Control"
+  - ci-cd: "CI/CD Pipeline"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Voor overige projecten:**
+```
+Header: "Suggesties"
+Question: "Welke extra tools wil je toevoegen?"
+Options:
+  - docker: "Docker Setup (Aanbevolen)"
+  - testing: "Testing Framework"
+  - linting: "Linting (ESLint/Prettier)"
+  - ci-cd: "CI/CD Pipeline"
+  - typescript: "TypeScript"
+  - explain: "Leg vraag uit"
+multiSelect: true
+```
+
+**Response handling:**
+- Sla selectie(s) op voor Step 8 (Generate Configuration)
+- Geselecteerde suggesties worden meegenomen in de setup
+
+### Step 7: Fetch Latest Versions
+
+Use Context7 to get real-time information:
+1. Call `mcp__Context7__resolve-library-id` for each chosen technology
+2. Call `mcp__Context7__get-library-docs` with topic "installation setup configuration"
+3. Extract latest version numbers, installation commands, and current best practices
+
+This ensures the skill always uses up-to-date information rather than static references.
+
+### Step 8: Generate Configuration
+
+Based on selections:
+1. Create appropriate config files from `assets/config-templates/`
+2. For Node.js: Generate package.json with selected dependencies
+3. For PHP: Generate composer.json
+4. For Python: Generate pyproject.toml or requirements.txt
+5. Include .env.example if needed
+
+### Step 9: Optional Git Setup
+
+Use AskUserQuestion with single-select:
+```
+Header: "Git Setup"
+Question: "Would you like to initialize a Git repository?"
+Options:
+  - full: "Yes - Initialize with .gitignore and initial commit"
+  - partial: "Yes - Initialize with .gitignore only (no commit)"
+  - skip: "No - Skip Git setup"
+multiSelect: false
+```
+
+**Response handling:**
+- **full**: Initialize repository, create appropriate .gitignore from templates, make initial commit
+- **partial**: Initialize repository, create .gitignore, skip commit
+- **skip**: Continue to next step without Git setup
+
+### Step 10: Installation Commands
+
+Generate and display installation commands:
+1. Check what's already installed on system
+2. Show commands for missing tools
+3. Show package installation commands
+4. Ask for confirmation before executing
+
+### Step 11: Project Type & Documentation Configuration
+
+**Ask for project type** (for documentation system):
+
+Use AskUserQuestion with single-select:
+```
+Question: "Which project type do you want to use for documentation?"
+Header: "Project Type"
+Options:
+  - laravel-backend: "Laravel Backend (API, REST services)"
+  - react-frontend: "React Frontend (SPA)"
+  - vue-frontend: "Vue Frontend (SPA)"
+  - laravel-react-fullstack: "Laravel + React Fullstack"
+  - laravel-vue-fullstack: "Laravel + Vue Fullstack"
+  - unity-game: "Unity Game (C# scripts, scenes)"
+  - unreal-game: "Unreal Engine (C++, Blueprints)"
+  - godot-game: "Godot Game (GDScript, scenes)"
+multiSelect: false
+```
+
+**Show recommended generators** based on selected type:
+
+**For Laravel Backend:**
+```
+Recommended generators (auto-selected):
+  ✓ api - API Documentation
+  ✓ components - Service/Component Map
+  ✓ erd - Entity Relationship Diagram
+  ✓ events - Event/Listener Flow
+
+Optional generators:
+  ○ middleware - Middleware Pipeline
+  ○ auth-flow - Authentication Flows
+  ○ routes - Route Map
+```
+
+**For React Frontend:**
+```
+Recommended generators:
+  ✓ components - Component Tree
+  ✓ routes - Route Map
+  ✓ state - State Management
+  ✓ design-tokens - Design System
+
+Optional:
+  ○ api-calls - API Usage Map
+```
+
+**For Unity Game:**
+```
+Recommended generators:
+  ✓ scenes - Scene Hierarchy
+  ✓ game-classes - Class Diagram
+  ✓ state-machines - AI State Machines
+
+Optional:
+  ○ behavior-trees - AI Behavior Trees
+  ○ prefabs - Prefab Structure
+```
+
+*(Similar for other project types - see .claude/resources/2-code/docs/ for details)*
+
+**Ask which generators to enable** (multi-select):
+
+Use AskUserQuestion with multi-select:
+```
+Question: "Which documentation generators do you want to use?"
+Header: "Generators"
+Options: [Based on project type, show relevant generators]
+  - api: "API Documentation"
+  - components: "Component/Service Map"
+  - erd: "Database ERD"
+  - events: "Event/Listener Flow"
+  [etc. based on project type]
+multiSelect: true
+preselected: [recommended generators for type]
+```
+
+### Step 12: Configure Claude Permissions
+
+Execute `scripts/generate-settings.py` to configure Claude's permissions.
+
+**1. File Operations**: Use AskUserQuestion with multi-select:
+```
+Header: "File Ops"
+Question: "Which file operations should Claude perform automatically (without confirmation)?"
+Options:
+  - auto-create: "Auto-create new files"
+  - auto-edit: "Auto-edit existing files"
+  - auto-read: "Auto-read files"
+multiSelect: true
+preselected: ["auto-read"]
+```
+
+**2. Tool Permissions**: Use AskUserQuestion with multi-select:
+```
+Header: "Tool Perms"
+Question: "Which tool operations should Claude perform automatically?"
+Options:
+  - bash: "Run bash commands"
+  - packages: "Install packages"
+  - tests: "Run tests"
+  - commits: "Create git commits"
+multiSelect: true
+preselected: ["tests"]
+```
+
+**3. Directory Access**: Use AskUserQuestion with multi-select:
+```
+Header: "Directory Access"
+Question: "Welke directories moeten full access hebben?"
+Options:
+  - all: "Alle directories (Aanbevolen)"
+  - src: "src/"
+  - lib: "lib/"
+  - app: "app/"
+  - tests: "tests/"
+  - components: "components/"
+  - explain: "Leg vraag uit"
+multiSelect: true
+preselected: ["all"]
+```
+
+**4. Directory Exclusions**: Use AskUserQuestion with multi-select:
+```
+Header: "Directory Exclusies"
+Question: "Welke directories moeten uitgesloten worden van auto-access?"
+Options:
+  - none: "Geen exclusies (Aanbevolen)"
+  - node_modules: "node_modules/"
+  - vendor: "vendor/"
+  - dist: "dist/"
+  - build: "build/"
+  - coverage: "coverage/"
+  - env: ".env bestanden"
+  - explain: "Leg vraag uit"
+multiSelect: true
+preselected: ["none"]
+```
+
+**Response handling:**
+- Combineer selecties om `.claude/settings.local.json` te genereren
+- Pas smart defaults toe gebaseerd op projecttype uit Step 4-6
+- Als "Alle directories" geselecteerd: negeer andere directory selecties
+- Als "Geen exclusies" geselecteerd: negeer andere exclusie selecties
+
+### Step 13: Update CLAUDE.md
+
+Execute `scripts/update-claude-md.py` to update existing sections and add new ones:
+
+**Update existing `## User Preferences` section:**
+- Find `Language: ` line in `## User Preferences` section
+- Replace with `Language: [Selected language from Step 1]`
+- If section doesn't exist, create it at the top (after `# Claude Code Setup`)
+
+**Add these sections if they don't exist:**
+```markdown
+## Project
+
+**Name**: [Project Name]
+**Type**: [Project type from Step 4, e.g., "Web Frontend (React SPA)", "Web Backend (Laravel API)", "Game (Godot)"]
+**Description**: [User's description]
+**Stack**: [Framework + version + key dependencies on one line]
+**Created**: [Current date]
+
+### Documentation Generators
+**Enabled:** [comma-separated list of enabled generators]
+**Available:** [comma-separated list of disabled generators]
+```
+
+**Note:** Do NOT add separate Tech Stack, Workspace Configuration, or Development Setup sections. The compact `## Project` section contains all necessary information. Development commands are in package.json.
+
+**Confirm to user:**
+```
+✓ Project type: Laravel Backend
+✓ Generators enabled: api, components, erd, events
+
+These docs will auto-generate during /2-code skill FASE 4
+Output location: docs/*.mmd and docs/*.md
+```
+
+### Step 14: Generate Stack Baseline Research
+
+**Goal:** Generate project-wide baseline research for framework conventions, patterns, and idioms. This research is reused by /1-plan and /4-refine skills to avoid duplicate Context7 queries.
+
+**Why this matters:**
+- Stack-level research (e.g., "Laravel conventions", "React patterns") is 100% relevant for ALL features
+- Without baseline: every /1-plan and /4-refine does the same basic research (~3-5k tokens wasted per feature)
+- With baseline: agents skip stack queries, focus on feature-specific research
+
+**Steps:**
+
+1. **Check if research folder exists:**
+   ```bash
+   ls .claude/research/
+   ```
+   - If not exists: create `.claude/research/` directory
+
+2. **Extract stack info from CLAUDE.md:**
+   - Parse "Project" section added in Step 13
+   - Identify: Primary framework, version, key dependencies
+   - Example: "Laravel 11, Livewire 3, Tailwind CSS"
+
+3. **Execute Context7 research for stack conventions:**
+
+   For EACH major technology in stack:
+
+   a. Resolve library ID:
+   ```
+   mcp__Context7__resolve-library-id(libraryName: "[framework]")
+   ```
+
+   b. Get documentation with topic "conventions best practices patterns":
+   ```
+   mcp__Context7__get-library-docs(
+     context7CompatibleLibraryID: "[resolved-id]",
+     topic: "conventions best practices patterns idioms",
+     tokens: 8000
+   )
+   ```
+
+   c. Extract and distill:
+   - Framework conventions (5-10 bullets)
+   - Recommended patterns (5-10 bullets)
+   - Common idioms (3-5 bullets)
+   - Testing approach (3-5 bullets)
+   - Common pitfalls to avoid (3-5 bullets)
+
+4. **Generate stack-baseline.md:**
+
+   Execute script:
+   ```bash
+   python3 .claude/resources/setup/scripts/generate-stack-baseline.py \
+     --stack "[framework + version]" \
+     --conventions "[extracted conventions]" \
+     --patterns "[extracted patterns]" \
+     --idioms "[extracted idioms]" \
+     --testing "[extracted testing approach]" \
+     --pitfalls "[extracted pitfalls]" \
+     --sources "[context7 library IDs used]" \
+     --output .claude/research/stack-baseline.md
+   ```
+
+5. **Validate generated baseline:**
+   - Check file exists and has content
+   - Verify all sections are populated
+   - File should be ~3-5k tokens (compact but complete)
+
+6. **Confirm to user:**
+   ```
+   ✅ STACK BASELINE RESEARCH GENERATED
+
+   | Field | Value |
+   |-------|-------|
+   | **Location** | .claude/research/stack-baseline.md |
+   | **Stack** | [framework + version] |
+   | **Valid until** | [3 months from now] |
+
+   **Sections:**
+
+   | Section | Items |
+   |---------|-------|
+   | Framework conventions | [N] |
+   | Recommended patterns | [N] |
+   | Common idioms | [N] |
+   | Testing approach | [N] |
+   | Common pitfalls | [N] |
+
+   **Used by:**
+   - /1-plan skill (FASE 3 research agents)
+   - /4-refine skill (Phase 2 research agents)
+
+   **Benefits:**
+   - ~45% fewer Context7 queries per feature
+   - Consistent conventions across all features
+   - Agents focus on feature-specific research
+
+   To refresh: run /refresh-baseline or re-run /setup
+   ```
+
+**Baseline file structure:**
+
+```markdown
+# Stack Baseline Research
+
+Generated: [date]
+Stack: [framework + version from CLAUDE.md]
+Valid until: [3 months from generation date]
+
+## Framework Conventions
+- [Convention 1]
+- [Convention 2]
+- [Convention 3]
+- ...
+
+## Recommended Patterns
+- [Pattern 1]: [when to use]
+- [Pattern 2]: [when to use]
+- ...
+
+## Common Idioms
+- [Idiom 1]: [example usage]
+- [Idiom 2]: [example usage]
+- ...
+
+## Testing Approach
+- [Testing strategy 1]
+- [Testing strategy 2]
+- ...
+
+## Common Pitfalls
+- [Pitfall 1]: [how to avoid]
+- [Pitfall 2]: [how to avoid]
+- ...
+
+## Context7 Sources
+Libraries researched:
+- [library-id-1]
+- [library-id-2]
+
+---

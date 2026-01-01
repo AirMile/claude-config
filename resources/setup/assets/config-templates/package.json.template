@@ -1,0 +1,22 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "version": "0.1.0",
+  "description": "{{PROJECT_DESCRIPTION}}",
+  "main": "index.js",
+  "scripts": {
+    "dev": "{{DEV_COMMAND}}",
+    "build": "{{BUILD_COMMAND}}",
+    "test": "{{TEST_COMMAND}}",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "format": "prettier --write ."
+  },
+  "keywords": [],
+  "author": "{{AUTHOR}}",
+  "license": "{{LICENSE}}",
+  "dependencies": {
+    {{DEPENDENCIES}}
+  },
+  "devDependencies": {
+    {{DEV_DEPENDENCIES}}
+  }
+}

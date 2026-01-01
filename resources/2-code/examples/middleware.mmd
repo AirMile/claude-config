@@ -1,0 +1,95 @@
+---
+title: Middleware Pipeline
+---
+graph TD
+    %% Request Entry
+    Request[Incoming HTTP Request]
+
+    %% Global Middleware (runs on every request)
+    TrustProxies[TrustProxies]
+    HandleCors[HandleCors]
+    PreventRequestsDuringMaintenance[PreventRequestsDuringMaintenance]
+    ValidatePostSize[ValidatePostSize]
+    TrimStrings[TrimStrings]
+    ConvertEmptyStringsToNull[ConvertEmptyStringsToNull]
+
+    %% Route-specific Middleware
+    SubstituteBindings[SubstituteBindings]
+    VerifyCsrfToken[VerifyCsrfToken]
+    Authenticate[Authenticate - auth]
+    AuthorizeRole[AuthorizeRole - role:admin]
+    ThrottleRequests[ThrottleRequests - throttle:60,1]
+    EnsureEmailIsVerified[EnsureEmailIsVerified - verified]
+
+    %% Controller
+    Controller[Controller Action]
+
+    %% Response Middleware (reversed order)
+    ResponseHandling[Response Handling]
+
+    %% Response Exit
+    Response[HTTP Response]
+
+    %% Request Flow
+    Request --> TrustProxies
+    TrustProxies --> HandleCors
+    HandleCors --> PreventRequestsDuringMaintenance
+    PreventRequestsDuringMaintenance --> ValidatePostSize
+    ValidatePostSize --> TrimStrings
+    TrimStrings --> ConvertEmptyStringsToNull
+    ConvertEmptyStringsToNull --> SubstituteBindings
+
+    %% Route Middleware (conditional)
+    SubstituteBindings --> VerifyCsrfToken
+    VerifyCsrfToken --> Authenticate
+    Authenticate --> EnsureEmailIsVerified
+    EnsureEmailIsVerified --> AuthorizeRole
+    AuthorizeRole --> ThrottleRequests
+    ThrottleRequests --> Controller
+
+    %% Response Flow
+    Controller --> ResponseHandling
+    ResponseHandling --> Response
+
+    %% Failure paths
+    Authenticate -.authentication failed.-> Redirect401[401 Unauthorized]
+    AuthorizeRole -.authorization failed.-> Redirect403[403 Forbidden]
+    ThrottleRequests -.rate limit exceeded.-> Redirect429[429 Too Many Requests]
+    EnsureEmailIsVerified -.email not verified.-> RedirectVerify[Redirect to Verify Email]
+    VerifyCsrfToken -.token mismatch.-> Redirect419[419 Token Mismatch]
+
+    %% Styling
+    classDef global fill:#3B82F6,stroke:#1E40AF,color:#fff
+    classDef route fill:#10B981,stroke:#059669,color:#fff
+    classDef controller fill:#F59E0B,stroke:#D97706,color:#fff
+    classDef error fill:#EF4444,stroke:#DC2626,color:#fff
+    classDef requestResponse fill:#8B5CF6,stroke:#6D28D9,color:#fff
+
+    class TrustProxies,HandleCors,PreventRequestsDuringMaintenance,ValidatePostSize,TrimStrings,ConvertEmptyStringsToNull global
+    class SubstituteBindings,VerifyCsrfToken,Authenticate,AuthorizeRole,ThrottleRequests,EnsureEmailIsVerified route
+    class Controller controller
+    class Redirect401,Redirect403,Redirect429,RedirectVerify,Redirect419 error
+    class Request,Response,ResponseHandling requestResponse
+
+%% Middleware Groups:
+%%
+%% web: TrustProxies, HandleCors, PreventRequestsDuringMaintenance,
+%%      ValidatePostSize, TrimStrings, ConvertEmptyStringsToNull,
+%%      SubstituteBindings, VerifyCsrfToken
+%%
+%% api: TrustProxies, HandleCors, PreventRequestsDuringMaintenance,
+%%      ValidatePostSize, SubstituteBindings, ThrottleRequests
+%%
+%% Custom: auth, role:admin, verified, throttle:60,1
+
+%% Legend:
+%% Blue = Global Middleware (all requests)
+%% Green = Route Middleware (conditional)
+%% Orange = Controller
+%% Red = Error Responses
+%% Purple = Request/Response
+%% Solid lines = Success path
+%% Dotted lines = Failure path
+
+%% Generated: 2025-10-31
+%% Auto-updated by /2-code skill
