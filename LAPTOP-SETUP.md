@@ -19,7 +19,7 @@ cd C:\Projects
 git clone https://github.com/AirMile/claude-config.git
 
 # Clone school-website project
-git clone https://github.com/AirMile/claude-code-setup.git school-website
+git clone https://github.com/AirMile/signatuur-portfolio.git school-website
 
 # === STAP 2: Verwijder lege Git-gemaakte folders ===
 cd C:\Projects\school-website\.claude
