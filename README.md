@@ -1,6 +1,104 @@
 # Claude Code Command System
 
-> Tutorial and documentation for using Claude Code commands in this project.
+> Shared commands, agents and resources for Claude Code projects.
+
+---
+
+## Repository Structure
+
+This setup uses **two repositories** with **NTFS junctions** to share config across projects:
+
+```
+C:\Projects\
+│
+├── 📁 claude-config\              ← THIS REPO (shared config)
+│   ├── agents\                    67 agent definitions
+│   ├── commands\                  25+ command workflows
+│   ├── resources\                 Templates & references
+│   ├── scripts\                   Utility scripts
+│   ├── CLAUDE.base.md             Template for new projects
+│   └── LAPTOP-SETUP.md            Multi-device setup guide
+│
+└── 📁 your-project\               ← YOUR PROJECT (separate repo)
+    ├── .claude\
+    │   ├── agents\      ──────→   Junction to claude-config
+    │   ├── commands\    ──────→   Junction to claude-config
+    │   ├── resources\   ──────→   Junction to claude-config
+    │   ├── scripts\     ──────→   Junction to claude-config
+    │   ├── CLAUDE.md              Project-specific settings
+    │   └── docs\                  Project documentation
+    ├── .workspace\                Runtime data (sessions, plans)
+    └── src\                       Your project code
+```
+
+### How Junctions Work
+
+```
+your-project/.claude/commands/commit.md
+              │
+              │ (NTFS junction - transparent link)
+              ↓
+claude-config/commands/commit.md  ← ACTUAL FILE
+```
+
+- **Edit anywhere:** Changes in `your-project/.claude/commands/` actually modify files in `claude-config/`
+- **Instant sync:** All projects with junctions see changes immediately
+- **One source of truth:** Commands/agents are versioned in `claude-config` repo only
+
+### Two Git Repositories
+
+| Repository | Contains | When to commit here |
+|------------|----------|---------------------|
+| `claude-config` | Shared commands, agents, resources | When you modify commands or agents |
+| `your-project` | Project code, CLAUDE.md, docs | When you modify project code |
+
+### Committing Changes
+
+**Project code changes:**
+```bash
+cd your-project
+git add -A && git commit -m "your message" && git push
+```
+
+**Command/agent changes (use the command!):**
+```bash
+# From any project with junctions:
+/config-sync
+
+# Or manually:
+cd C:\Projects\claude-config
+git add -A && git commit -m "your message" && git push
+```
+
+### Setting Up a New Device
+
+See [LAPTOP-SETUP.md](LAPTOP-SETUP.md) for copy-paste instructions.
+
+**Quick version:**
+```powershell
+# 1. Clone both repos
+git clone https://github.com/YOUR-USER/claude-config.git
+git clone https://github.com/YOUR-USER/your-project.git
+
+# 2. Create junctions in project
+cd your-project\.claude
+cmd /c "mklink /J agents C:\Projects\claude-config\agents"
+cmd /c "mklink /J commands C:\Projects\claude-config\commands"
+cmd /c "mklink /J resources C:\Projects\claude-config\resources"
+cmd /c "mklink /J scripts C:\Projects\claude-config\scripts"
+```
+
+### Creating a New Project
+
+Use the `/project-new` command:
+```
+/project-new my-new-project
+```
+
+This automatically:
+1. Creates project folder
+2. Sets up junctions
+3. Runs `/setup` to configure CLAUDE.md
 
 ---
 
@@ -84,11 +182,15 @@ The numbered commands form a complete pipeline:
 | `/style` | Lightweight workflow for styling, layout and UX flows |
 | `/wireframe` | Generates low-fidelity HTML wireframes with design agents |
 
-### Git
+### Git & Project Management
 
 | Command | Description |
 |---------|-------------|
-| `/commit` | Commit changes with auto-generated conventional commit message |
+| `/commit` | Commit project changes with auto-generated message |
+| `/config-sync` | Sync .claude changes to claude-config repo |
+| `/project-new` | Create new project with junctions to shared config |
+| `/project-list` | Show all projects with junction status |
+| `/project-remove` | Safely remove project (junctions first, then folder) |
 
 ### Meta/Setup
 
@@ -299,25 +401,53 @@ For questions, you get concrete options with a recommendation, so you can decide
 
 ## File Structure
 
+### claude-config (this repo)
+
 ```
-.claude/
-├── CLAUDE.md                    # Project instructions & settings
-├── README.md                    # This tutorial
-├── commands/                    # Command definitions
+claude-config/
+├── agents/                      # Agent definitions (67 files)
+│   ├── plan-synthesizer.md
+│   ├── code-explorer.md
+│   └── ...
+├── commands/                    # Command workflows (25+ files)
 │   ├── 1-plan.md
 │   ├── 2-code.md
-│   ├── ...
-│   └── save.md
-├── sessions/                    # Session tracking
-│   ├── chat/                    # Chat sessions
-│   │   ├── current-{id}.md      # Active chats
-│   │   └── {name}.md            # Saved chats
-│   ├── 1-plan/
-│   │   └── current.md           # Active command session
-│   └── .../
-├── plans/                       # Generated plans
-├── docs/                        # Documentation
-└── resources/                   # Command resources
+│   ├── config-sync.md
+│   ├── project-new.md
+│   └── ...
+├── resources/                   # Templates & references per command
+│   ├── setup/
+│   ├── 2-code/
+│   └── ...
+├── scripts/                     # Utility scripts
+│   └── notify.ps1
+├── CLAUDE.base.md               # Template for new projects
+├── LAPTOP-SETUP.md              # Multi-device setup guide
+├── README.md                    # This file
+└── settings.json                # Shared settings template
+```
+
+### Your project (with junctions)
+
+```
+your-project/
+├── .claude/
+│   ├── agents/        → junction to claude-config/agents
+│   ├── commands/      → junction to claude-config/commands
+│   ├── resources/     → junction to claude-config/resources
+│   ├── scripts/       → junction to claude-config/scripts
+│   ├── CLAUDE.md                # PROJECT-SPECIFIC settings
+│   ├── docs/                    # Project documentation
+│   ├── research/                # Project research
+│   └── settings.local.json      # Local settings override
+├── .workspace/
+│   ├── sessions/                # Session tracking
+│   │   ├── chats/               # Chat sessions
+│   │   └── commands/            # Command sessions
+│   ├── plans/                   # Generated plans
+│   └── features/                # Feature context
+├── src/                         # Your project code
+└── .gitignore                   # Excludes junction folders
 ```
 
 ---
