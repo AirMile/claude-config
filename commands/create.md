@@ -135,6 +135,11 @@ Proceed to Step 3.
 
 ### Step 3: Write Content
 
+**IMPORTANT: All command files must be written in English.**
+- Command content, instructions, examples: English
+- AskUserQuestion labels/descriptions: Follow user's language preference from CLAUDE.md
+- This ensures commands are reusable across projects
+
 **For Command file**:
 
 Draft the command file content:

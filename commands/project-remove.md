@@ -15,7 +15,7 @@ Verwijdert een project met veilige junction removal (target blijft intact).
 ### FASE 1: Project Selectie
 
 **Als geen naam gegeven:**
-1. Scan C:\Projects\ voor projecten met .claude\ junctions
+1. Scan `{projects_root}` voor projecten met .claude\ junctions
 2. Toon lijst via AskUserQuestion
 
 ```yaml
@@ -23,9 +23,9 @@ question: "Welk project wil je verwijderen?"
 header: "Project"
 options:
   - label: "[project-naam-1]"
-    description: "C:\Projects\[project-naam-1]"
+    description: "{projects_root}\[project-naam-1]"
   - label: "[project-naam-2]"
-    description: "C:\Projects\[project-naam-2]"
+    description: "{projects_root}\[project-naam-2]"
   # ... dynamisch gegenereerd
 multiSelect: false
 ```
@@ -35,10 +35,10 @@ multiSelect: false
 **Check dat project bestaat:**
 ```bash
 # Verifieer pad
-test -d "C:\Projects\[naam]"
+test -d "{projects_root}\[naam]"
 
 # Check voor junctions
-test -L "C:\Projects\[naam]\.claude\agents"
+test -L "{projects_root}\[naam]\.claude\agents"
 ```
 
 **Safety checks:**
@@ -47,7 +47,7 @@ test -L "C:\Projects\[naam]\.claude\agents"
 - Waarschuw als uncommitted changes
 
 ```bash
-cd C:\Projects\[naam]
+cd {projects_root}\[naam]
 git status --porcelain
 ```
 
@@ -70,16 +70,16 @@ multiSelect: false
 
 ```bash
 # Verwijder junctions EERST (veilig - target blijft intact)
-cmd /c "rmdir C:\Projects\[naam]\.claude\agents"
-cmd /c "rmdir C:\Projects\[naam]\.claude\commands"
-cmd /c "rmdir C:\Projects\[naam]\.claude\resources"
-cmd /c "rmdir C:\Projects\[naam]\.claude\scripts"
+cmd /c "rmdir {projects_root}\[naam]\.claude\agents"
+cmd /c "rmdir {projects_root}\[naam]\.claude\commands"
+cmd /c "rmdir {projects_root}\[naam]\.claude\resources"
+cmd /c "rmdir {projects_root}\[naam]\.claude\scripts"
 ```
 
 **Verificatie:**
 ```bash
 # Check dat junctions weg zijn
-test ! -L "C:\Projects\[naam]\.claude\agents"
+test ! -L "{projects_root}\[naam]\.claude\agents"
 ```
 
 ### FASE 5: Project Folder Removal
@@ -90,7 +90,7 @@ question: "Junctions verwijderd. Wil je ook de project folder verwijderen?"
 header: "Folder"
 options:
   - label: "Ja, verwijder alles (Recommended)"
-    description: "Verwijdert C:\Projects\[naam]\ volledig"
+    description: "Verwijdert {projects_root}\[naam] volledig"
   - label: "Nee, behoud folder"
     description: "Alleen junctions verwijderd, rest blijft"
 multiSelect: false
@@ -98,7 +98,7 @@ multiSelect: false
 
 **Als ja:**
 ```bash
-rm -rf "C:\Projects\[naam]"
+rm -rf "{projects_root}\[naam]"
 ```
 
 ### FASE 6: Afronden
@@ -111,6 +111,19 @@ rm -rf "C:\Projects\[naam]"
 - Project folder: [verwijderd/behouden]
 - Master config: intact ✓
 ```
+
+## Configuration
+
+Paths zijn configureerbaar per apparaat:
+
+| Placeholder | Default | Environment Variable |
+|-------------|---------|---------------------|
+| `{projects_root}` | `C:\Projects` | `CLAUDE_PROJECTS_ROOT` |
+
+**Resolution order (eerste match wint):**
+1. Environment variable
+2. `.claude/paths.local.yaml` (lokaal per project, niet in git)
+3. `resources/paths.yaml` (gedeelde defaults)
 
 ## Restrictions
 

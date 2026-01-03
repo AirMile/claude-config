@@ -416,13 +416,46 @@ multiSelect: false
 - **partial**: Initialize repository, create .gitignore, skip commit
 - **skip**: Continue to next step without Git setup
 
-### Step 10: Installation Commands
+### Step 10: Install Dependencies
 
-Generate and display installation commands:
-1. Check what's already installed on system
-2. Show commands for missing tools
-3. Show package installation commands
-4. Ask for confirmation before executing
+**Goal:** Automatically install project dependencies to ensure all tools work correctly.
+
+**Steps:**
+
+1. **Detect package manager:**
+   - Check for `package.json` → use `npm install`
+   - Check for `composer.json` → use `composer install`
+   - Check for `requirements.txt` → use `pip install -r requirements.txt`
+   - Check for `pyproject.toml` → use `pip install -e .` or `poetry install`
+   - Check for `Cargo.toml` → use `cargo build`
+   - Check for `go.mod` → use `go mod download`
+
+2. **Run installation automatically:**
+   ```bash
+   # For Node.js projects
+   npm install
+
+   # For PHP projects
+   composer install
+
+   # For Python projects
+   pip install -r requirements.txt
+   ```
+
+3. **Report result:**
+   ```
+   ✅ DEPENDENCIES INSTALLED
+
+   | Package Manager | Status |
+   |-----------------|--------|
+   | npm | ✓ 249 packages installed |
+
+   **Note:** Dependencies must be installed for formatter hooks and other tools to work.
+   ```
+
+4. **Handle errors:**
+   - If installation fails, show error and ask user to fix manually
+   - Continue with setup even if installation fails (non-blocking)
 
 ### Step 11: Project Type & Documentation Configuration
 
@@ -743,5 +776,134 @@ Valid until: [3 months from generation date]
 Libraries researched:
 - [library-id-1]
 - [library-id-2]
+
+---
+```
+
+### Step 15: Configure Code Formatter (PostToolUse Hook)
+
+**Goal:** Automatically format code after every Write/Edit operation using the best formatter for the project's tech stack.
+
+**Why this matters:**
+- Consistent code style without manual intervention
+- Catches formatting issues before commit
+- Claude knows about the hook and adjusts accordingly
+
+**Steps:**
+
+1. **Determine formatter based on project type:**
+
+   Use the tech stack selection from Step 4-6:
+
+   | Tech Stack | Formatter | Command | Install |
+   |------------|-----------|---------|---------|
+   | React, Vue, Angular, Svelte, Next.js, Nuxt, Astro | Prettier | `npx prettier --write` | `npm install -D prettier` |
+   | Express, Fastify, NestJS, Node.js | Prettier | `npx prettier --write` | `npm install -D prettier` |
+   | Laravel, PHP | Pint | `./vendor/bin/pint` | `composer require laravel/pint --dev` |
+   | Django, FastAPI, Python | Black | `black` | `pip install black` |
+   | Rust, Bevy | rustfmt | `rustfmt` | Included |
+   | Go | gofmt | `gofmt -w` | Included |
+   | Unity, .NET, WPF | dotnet format | `dotnet format --include` | Included |
+   | Godot | gdformat | `gdformat` | `pip install gdtoolkit` |
+   | Unreal, C/C++ | clang-format | `clang-format -i` | System package |
+   | Flutter, Dart | dart format | `dart format` | Included |
+
+2. **Create hooks directory:**
+
+   ```bash
+   mkdir -p .claude/hooks
+   ```
+
+3. **Generate the hook script:**
+
+   Write `.claude/hooks/format-on-save.cjs` with a minimal script for the project's formatter.
+
+   **Template structure:**
+   ```javascript
+   #!/usr/bin/env node
+   // Format-on-save hook for [Project Type] ([Formatter])
+
+   const { execSync } = require('child_process');
+   const path = require('path');
+
+   const EXTENSIONS = [/* extensions for this formatter */];
+
+   let input = '';
+   process.stdin.setEncoding('utf8');
+
+   process.stdin.on('data', (chunk) => {
+     input += chunk;
+   });
+
+   process.stdin.on('end', () => {
+     try {
+       const data = JSON.parse(input);
+       const filePath = data.tool_input?.file_path || data.tool_response?.filePath;
+
+       if (!filePath) process.exit(0);
+
+       const ext = path.extname(filePath).toLowerCase();
+       if (!EXTENSIONS.includes(ext)) process.exit(0);
+
+       const cwd = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+       execSync(`[FORMATTER_COMMAND] "${filePath}"`, { stdio: 'ignore', cwd });
+     } catch {
+       process.exit(0);
+     }
+   });
+   ```
+
+   **Per formatter:**
+   - **Prettier**: `EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx', '.css', '.scss', '.json', '.md', '.html', '.vue', '.svelte']`, command: `npx prettier --write`
+   - **Pint**: `EXTENSIONS = ['.php']` (exclude `.blade.`), command: `./vendor/bin/pint`
+   - **Black**: `EXTENSIONS = ['.py']`, command: `black`
+   - **rustfmt**: `EXTENSIONS = ['.rs']`, command: `rustfmt`
+   - **gofmt**: `EXTENSIONS = ['.go']`, command: `gofmt -w`
+   - **dotnet**: `EXTENSIONS = ['.cs']`, command: `dotnet format --include`
+   - **gdformat**: `EXTENSIONS = ['.gd']`, command: `gdformat`
+   - **clang-format**: `EXTENSIONS = ['.c', '.cpp', '.h', '.hpp', '.cc', '.cxx']`, command: `clang-format -i`
+   - **dart**: `EXTENSIONS = ['.dart']`, command: `dart format`
+
+   **Note:** Always use `.cjs` extension to avoid ES Module issues with `"type": "module"` projects.
+
+4. **Install formatter (if needed):**
+
+   Run the install command from the table above.
+
+5. **Configure hook in settings.local.json:**
+
+   Add to `.claude/settings.local.json`:
+   ```json
+   {
+     "hooks": {
+       "PostToolUse": [
+         {
+           "matcher": "Write|Edit",
+           "hooks": [
+             {
+               "type": "command",
+               "command": "node .claude/hooks/format-on-save.cjs"
+             }
+           ]
+         }
+       ]
+     }
+   }
+   ```
+
+6. **Confirm to user:**
+   ```
+   ✅ CODE FORMATTER CONFIGURED
+
+   | Field | Value |
+   |-------|-------|
+   | **Formatter** | [formatter name] |
+   | **Extensions** | [supported extensions] |
+   | **Install** | [install command or "included"] |
+
+   **PostToolUse Hook:** Every Write/Edit auto-formats the file.
+
+   To disable: remove PostToolUse section from settings.local.json
+   ```
 
 ---

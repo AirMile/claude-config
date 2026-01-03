@@ -25,19 +25,26 @@ This command edits existing commands. It detects if resources exist, loads the c
 3. If command doesn't exist → show error with available options
 
 **If no name** (`/edit`):
-1. Discover all commands using `Glob` on `.claude/commands/*.md`
-2. Use **AskUserQuestion** to select command:
+1. Discover all commands using PowerShell (symlink-compatible):
+   ```bash
+   powershell -Command "Get-ChildItem -Path '.claude/commands' -Filter '*.md' | Select-Object -ExpandProperty Name"
+   ```
+   Note: `Glob` does not follow Windows junctions/symlinks correctly.
 
-**AskUserQuestion Configuration:**
-- header: "Command Selectie"
-- question: "Welk command wil je bewerken?"
-- options: [dynamically list all discovered commands with their descriptions]
-  - Example: label: "commit", description: "Create commits interactively"
-  - Example: label: "debug", description: "Systematic debugging with parallel agents"
-  - Last option: label: "Vraag uitleggen", description: "Leg uit wat deze vraag betekent"
-- multiSelect: false
+2. Display numbered table with command names only (DO NOT read files for descriptions):
+   ```
+   | #  | Command        |
+   |----|----------------|
+   | 1  | 1-plan         |
+   | 2  | 2-code         |
+   | 3  | commit         |
+   | ...| ...            |
+   ```
 
-3. Load selected command
+3. Ask user to type a number (plain text, no modal):
+   "Typ het nummer van het command dat je wilt bewerken:"
+
+4. Load selected command based on number input
 
 **After loading, show preview**:
 ```
@@ -193,6 +200,11 @@ Then use **AskUserQuestion** for confirmation:
 
 ### Step 3: Show Preview
 
+**IMPORTANT: All command files must be written in English.**
+- Command content, instructions, examples: English
+- AskUserQuestion labels/descriptions: Follow user's language preference from CLAUDE.md
+- This ensures commands are reusable across projects
+
 Generate and show the changes:
 
 ```
@@ -288,18 +300,25 @@ Use the `mcp__sequential-thinking__sequentialthinking` tool to systematically ve
 
 #### 5.2 Search for Orphaned References
 
-After sequential thinking analysis, use `Grep` to find old references:
+**Only for rename/delete operations.** Skip this step for content-only edits.
 
+After sequential thinking analysis, search for orphaned references to the old/deleted command name:
+
+**Search patterns** (replace `old-name` with actual command name):
+```bash
+# Primary search - catches most references
+Grep pattern="old-name" path=".claude/"
+
+# Additional patterns to verify:
+# - /old-name (slash command invocations)
+# - old-name.md (file references)
+# - /resources/old-name/ (resource folder paths)
 ```
-Grep pattern="[old-name]" path=".claude/"
-```
 
-Search locations:
-
-- `.claude/commands/` - command files
-- `.claude/resources/` - skill files
-- `.claude/CLAUDE.md` - main instructions
-- `.claude/settings.local.json` - settings
+The search covers `.claude/` recursively, including:
+- commands, agents, resources, skills
+- CLAUDE.md and settings files
+- Any other configuration files
 
 #### 5.3 Report and Resolve
 

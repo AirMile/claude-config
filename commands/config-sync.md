@@ -16,7 +16,7 @@ Detecteert wijzigingen in junction folders en commit ze naar de juiste repo (cla
 
 ```bash
 # Check claude-config voor uncommitted changes
-cd C:\Projects\claude-config
+cd {config_repo}
 git status --porcelain
 ```
 
@@ -62,7 +62,41 @@ options:
 multiSelect: false
 ```
 
-### FASE 3: Commit Message
+### FASE 3: Branch Selectie
+
+```yaml
+question: "Naar welke branch committen?"
+header: "Branch"
+options:
+  - label: "main (Recommended)"
+    description: "Direct naar main branch pushen"
+  - label: "Nieuwe feature branch"
+    description: "Maak nieuwe branch voor deze wijzigingen"
+  - label: "Bestaande branch"
+    description: "Kies uit bestaande remote branches"
+multiSelect: false
+```
+
+**Als nieuwe feature branch:**
+```bash
+cd {config_repo}
+# Genereer branch naam op basis van wijzigingen
+# Commands → feat/update-commands-YYYY-MM-DD
+# Agents → feat/update-agents-YYYY-MM-DD
+# Mixed → feat/config-update-YYYY-MM-DD
+git checkout -b [generated-branch-name]
+```
+
+**Als bestaande branch:**
+```bash
+cd {config_repo}
+git fetch origin
+git branch -r  # Toon remote branches als opties
+git checkout [selected-branch]
+git pull origin [selected-branch]
+```
+
+### FASE 4: Commit Message
 
 **Als geen message meegegeven:**
 ```yaml
@@ -82,30 +116,40 @@ multiSelect: false
 - Als alleen resources: `feat(resources): update [resource-names]`
 - Als mixed: `feat: update config ([count] files)`
 
-### FASE 4: Commit & Push
+### FASE 5: Commit & Push
 
 ```bash
-cd C:\Projects\claude-config
+cd {config_repo}
 git add -A
 git commit -m "[generated or provided message]
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
-git push origin main
+
+# Push naar geselecteerde branch
+git push origin [branch-name]
+
+# Bij nieuwe branch, set upstream
+git push -u origin [branch-name]
 ```
 
-### FASE 5: Bevestiging
+### FASE 6: Bevestiging
 
 **Output:**
 ```
 ✅ claude-config gesynchroniseerd
 
 Commit: abc1234
-Branch: main
+Branch: [branch-name]
 Pushed: ✓
 
 Wijzigingen zijn nu beschikbaar in alle projecten met junctions.
+```
+
+**Bij feature branch, toon ook:**
+```
+💡 Tip: Maak een PR aan via: gh pr create --base main
 ```
 
 **Return naar originele directory:**
@@ -135,10 +179,22 @@ school-website> /config-sync fix typo in commit command
 # Skip message prompt, gebruikt gegeven message
 ```
 
+## Configuration
+
+Paths zijn configureerbaar per apparaat:
+
+| Placeholder | Default | Environment Variable |
+|-------------|---------|---------------------|
+| `{config_repo}` | `C:\Projects\claude-config` | `CLAUDE_CONFIG_REPO` |
+
+**Resolution order (eerste match wint):**
+1. Environment variable
+2. `.claude/paths.local.yaml` (lokaal per project, niet in git)
+3. `resources/paths.yaml` (gedeelde defaults)
+
 ## Restrictions
 
-- Werkt alleen als `C:\Projects\claude-config` bestaat
-- Pusht altijd naar `origin main`
+- Werkt alleen als `{config_repo}` bestaat
 - Commit ALLE uncommitted changes in claude-config (niet selectief per default)
 
 ## Gerelateerde Commands

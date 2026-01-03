@@ -48,20 +48,82 @@ options:
 multiSelect: false
 ```
 
-### 4. Create File
+### 4. Select Type & Length
+
+#### 4.1 Determine Relevant Types
+
+Based on session context, select top 3 relevant summary types:
+
+| Context | Type 1 (Recommended) | Type 2 | Type 3 |
+|---------|---------------------|--------|--------|
+| /1-plan | Decisions | Action Items | Context Dump |
+| /2-code | Technical Log | Action Items | Summary |
+| /3-verify | Technical Log | Action Items | Lessons Learned |
+| /4-refine | Technical Log | Decisions | Summary |
+| /5-refactor | Technical Log | Decisions | Lessons Learned |
+| /debug | Technical Log | Decisions | Lessons Learned |
+| /brainstorm | Summary | Decisions | Lessons Learned |
+| /analyze | Decisions | Summary | Lessons Learned |
+| Chat (research) | Lessons Learned | Summary | Action Items |
+| Chat (general) | Summary | Decisions | Action Items |
+
+**Research detection:** Chat contains keywords like "research", "onderzoek", "how does", "what is", "explore", "learn"
+
+#### 4.2 Ask Type
+
+Use AskUserQuestion:
+
+```
+header: "Summary Type"
+question: "Welk type samenvatting?"
+options: [3 context-relevant types from table above]
+multiSelect: false
+```
+
+#### 4.3 Ask Length
+
+Use AskUserQuestion:
+
+```
+header: "Lengte"
+question: "Hoe uitgebreid?"
+options:
+  1. label: "Normaal (Recommended)", description: "Gebalanceerd detail"
+  2. label: "Beknopt", description: "3-5 bullet points"
+  3. label: "Uitgebreid", description: "Volledige context"
+multiSelect: false
+```
+
+### 5. Create File
 
 Get timestamp via Time MCP: `mcp__time__get_current_time` with timezone "Europe/Amsterdam"
 
 **Filename format:**
-- Command: `.workspace/sessions/commands/{date}-{command}-{title}.md`
+- Command: `.workspace/sessions/commands/{command}/{date}-{title}.md`
 - Chat: `.workspace/sessions/chats/{date}-{title}.md`
 
+**Folder structure:**
+```
+.workspace/sessions/
+├── commands/
+│   ├── 1-plan/
+│   │   └── {date}-{title}.md
+│   ├── debug/
+│   │   └── {date}-{title}.md
+│   └── {command}/
+│       └── ...
+└── chats/
+    └── {date}-{title}.md
+```
+
 **Examples:**
-- `.workspace/sessions/commands/2025-12-31-1-plan-portfolio-layout.md`
-- `.workspace/sessions/commands/2025-12-31-debug-jwt-expiry.md`
+- `.workspace/sessions/commands/1-plan/2025-12-31-portfolio-layout.md`
+- `.workspace/sessions/commands/debug/2025-12-31-jwt-expiry.md`
 - `.workspace/sessions/chats/2025-12-31-tailwind-research.md`
 
-### 5. Write Content
+**Note:** Create the command subfolder if it doesn't exist.
+
+### 6. Write Content
 
 #### Command Session Format
 
@@ -122,7 +184,41 @@ Get timestamp via Time MCP: `mcp__time__get_current_time` with timezone "Europe/
 {Any additional relevant context or links}
 ```
 
-### 6. Confirmation
+#### Summary Type Formats
+
+**Decisions:**
+- Focus on choices made and rationale
+- Structure: Decision → Options considered → Choice → Why
+
+**Action Items:**
+- Focus on next steps and todos
+- Structure: Task → Priority → Context
+
+**Technical Log:**
+- Focus on files, code, specific changes
+- Structure: What changed → Where → How
+
+**Lessons Learned:**
+- Focus on insights and gotchas
+- Structure: Topic → What learned → Implications
+
+**Context Dump:**
+- Everything needed to resume
+- Structure: State → Open questions → Dependencies
+
+**Summary:**
+- General overview
+- Structure: What happened → Outcome → Notes
+
+#### Length Guidelines
+
+| Length | Bullets per section | Detail level |
+|--------|---------------------|--------------|
+| Beknopt | 3-5 total | Headlines only |
+| Normaal | 5-10 total | Key details |
+| Uitgebreid | 10+ total | Full context |
+
+### 7. Confirmation
 
 ```
 ✅ Session saved: {filename}
@@ -151,9 +247,9 @@ Save this session?
 **User**: Selects first option
 
 ```
-✅ Session saved: 2025-12-31-1-plan-portfolio-grid-design.md
+✅ Session saved: 2025-12-31-portfolio-grid-design.md
 
-Location: .workspace/sessions/commands/2025-12-31-1-plan-portfolio-grid-design.md
+Location: .workspace/sessions/commands/1-plan/2025-12-31-portfolio-grid-design.md
 ```
 
 ### Example 2: Save chat with custom title

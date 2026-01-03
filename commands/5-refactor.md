@@ -463,8 +463,8 @@ Before proceeding, understand these two metrics used throughout this phase:
        description: "OWASP patterns, input validation, injection prevention"
      - label: "Performance"
        description: "N+1 queries, caching, resource efficiency"
-     - label: "Quality"
-       description: "Design patterns, SOLID principles, maintainability"
+     - label: "Quality + Simplification"
+       description: "Design patterns, SOLID, **code simplification** (removes over-engineering)"
      - label: "Error Handling"
        description: "Resilience patterns, retry logic, graceful degradation"
      - label: "Uitleg vraag"
@@ -481,8 +481,9 @@ Before proceeding, understand these two metrics used throughout this phase:
    **Performance**: Zoekt naar optimalisatiepatronen zoals N+1 query
    preventie, caching strategieën, lazy loading, resource efficiency.
 
-   **Quality**: Zoekt naar code kwaliteitspatronen zoals SOLID principles,
-   design patterns, maintainability, testbaarheid.
+   **Quality + Simplification**: Zoekt naar code kwaliteitspatronen zoals SOLID principles,
+   design patterns, maintainability, testbaarheid. **Detecteert ook over-engineering:**
+   onnodige abstracties, helpers voor 1x gebruik, te veel layers, premature optimization.
 
    **Error Handling**: Zoekt naar foutafhandelingspatronen zoals retry
    logic, circuit breakers, graceful degradation, resilience patterns.
@@ -502,9 +503,10 @@ Before proceeding, understand these two metrics used throughout this phase:
    - Autonomous: Plans own Context7 queries, evaluates coverage
 
    **If "Quality" selected → spawn Agent: quality-researcher**
-   - Researches: Design patterns, SOLID, code organization
+   - Researches: Design patterns, SOLID, code organization, **code simplification**
    - Priority: Third (20% weight)
    - Autonomous: Plans own Context7 queries, evaluates coverage
+   - **Simplification focus:** Detects over-engineering, unnecessary abstractions, premature optimization
 
    **If "Error Handling" selected → spawn Agent: error-handling-researcher**
    - Researches: Retry logic, circuit breakers, resilience patterns
@@ -764,7 +766,26 @@ Initial Score: [X]% (unclear range - spawning evaluation agents)
      - Similarity percentage
      - Suggested extraction (function/class/service name)
 
-3. **Prepare agent context:**
+3. **Scan for over-engineering (code-simplifier patterns):**
+   - Scan loaded code files for:
+     - **Unnecessary abstractions**: Helper functions used only once
+     - **Too many layers**: >3 levels of indirection for simple operations
+     - **Premature optimization**: Complex caching/memoization for non-hot paths
+     - **Over-defensive code**: Try/catch around code that can't fail
+     - **Feature flag complexity**: Flags that could be direct code changes
+     - **God objects**: Classes with >10 public methods or >500 lines
+     - **Over-generic code**: Generic types/interfaces used in only 1 place
+   - For each finding, assess:
+     - Simplification opportunity (what can be removed/inlined)
+     - Risk level (LOW = safe to inline, MED = needs testing, HIGH = core logic)
+     - Lines that can be removed
+   - Log findings with:
+     - Location (file:line-line)
+     - Pattern type (abstraction, layer, optimization, defensive, flag, god-object, generic)
+     - Suggested simplification
+     - Estimated lines removed
+
+4. **Prepare agent context:**
 
    Compile the following for all planning agents:
    ```
@@ -785,12 +806,13 @@ Initial Score: [X]% (unclear range - spawning evaluation agents)
    Pattern scan results:
    - Security patterns found: [list with file:line]
    - DRY violations found: [list with locations]
+   - Over-engineering found: [list with file:line and pattern type]
 
    Security patterns reference: [from .claude/resources/5-refactor/references/security-patterns.md]
    Refactoring patterns reference: [from .claude/resources/5-refactor/references/refactoring-patterns.md]
    ```
 
-4. **Launch 3 planning agents in parallel (single message with 3 Task tool calls):**
+5. **Launch 3 planning agents in parallel (single message with 3 Task tool calls):**
 
    ```
    - Task(subagent_type="plan-conservative", prompt="[context above]
@@ -803,13 +825,13 @@ Initial Score: [X]% (unclear range - spawning evaluation agents)
      Your mission: Create an IMPACT-FOCUSED refactor plan (8-12 changes, best value/effort).")
    ```
 
-5. **Wait for all 3 agents to complete:**
+6. **Wait for all 3 agents to complete:**
    - Each agent returns a structured plan with improvements
    - **Report progress as agents complete:**
      - Format: `Planning agents: {completed}/3 complete`
      - Show which agent just finished: `✓ plan-conservative complete (5 improvements)`
 
-6. **Receive 3 plans with different scope/risk profiles:**
+7. **Receive 3 plans with different scope/risk profiles:**
 
    | Plan | Philosophy | Typical Output |
    |------|------------|----------------|
@@ -827,6 +849,7 @@ Initial Score: [X]% (unclear range - spawning evaluation agents)
 |---------|-------|
 | Known vulnerabilities | [X matches] |
 | DRY violations | [Y matches] |
+| Over-engineering | [Z matches] |
 | Files affected | [list] |
 
 **Planning agents completed:**
@@ -879,6 +902,7 @@ Initial Score: [X]% (unclear range - spawning evaluation agents)
    | Security        | [N]          | [N]      | [N]            |
    | Performance     | [N]          | [N]      | [N]            |
    | DRY/Refactoring | [N]          | [N]      | [N]            |
+   | Simplification  | [N]          | [N]      | [N]            |
    | Quality         | [N]          | [N]      | [N]            |
    | Error Handling  | [N]          | [N]      | [N]            |
    | **TOTAL**       | [N]          | [N]      | [N]            |
@@ -1203,8 +1227,9 @@ Initial Score: [X]% (unclear range - spawning evaluation agents)
 1. **Security improvements** (apply first)
 2. **Performance optimizations** (apply second)
 3. **DRY/Refactoring improvements** (apply third)
-4. **Code quality improvements** (apply fourth)
-5. **Error handling improvements** (apply last)
+4. **Simplification improvements** (apply fourth - removes over-engineering)
+5. **Code quality improvements** (apply fifth)
+6. **Error handling improvements** (apply last)
 
 **Steps:**
 
@@ -1217,6 +1242,7 @@ Initial Score: [X]% (unclear range - spawning evaluation agents)
        "security": [],
        "performance": [],
        "dry": [],
+       "simplification": [],
        "quality": [],
        "error_handling": []
      }
@@ -1227,14 +1253,14 @@ Initial Score: [X]% (unclear range - spawning evaluation agents)
 
 1. **For each planned improvement:**
    - Use Edit tool to modify code files
-   - Apply all changes in priority order (Security → Performance → DRY → Quality → Error Handling)
+   - Apply all changes in priority order (Security → Performance → DRY → Simplification → Quality → Error Handling)
    - Keep changes non-breaking
    - Add comments where complexity increases
    - **After each edit, update tracking:**
      - Append file path to `modified_files` (if not already present)
      - Append change details to appropriate category in `changes_by_category`
    - **Report progress after each category:**
-     - Format: `✓ Applied {count} {category} improvements ({current_category}/5 categories)`
+     - Format: `✓ Applied {count} {category} improvements ({current_category}/6 categories)`
 
 2. **Track all changes:**
    - List of modified files (from `tracking.modified_files`)
@@ -1261,6 +1287,7 @@ Initial Score: [X]% (unclear range - spawning evaluation agents)
 | Security fixes | [count] |
 | Performance optimizations | [count] |
 | DRY/Refactoring | [count] |
+| Simplification | [count] |
 | Quality | [count] |
 | Error handling | [count] |
 
@@ -1436,6 +1463,9 @@ Initial Score: [X]% (unclear range - spawning evaluation agents)
 
    ### DRY/Refactoring Improvements
    - [file:line] ↔ [file:line] - [extraction] → [result] - Effort: [S/M/L] Risk: [L/M/H] [PIPELINE/EXTERNAL]
+
+   ### Simplification Improvements
+   - [file:line] - [over-engineering removed] → [simplified to] → [lines removed] - Effort: [S/M/L] Risk: [L/M/H] [PIPELINE/EXTERNAL]
 
    ### Code Quality Improvements
    - [file:line] - [issue] → [fix] → [result] - Effort: [S/M/L] Risk: [L/M/H] [PIPELINE/EXTERNAL]

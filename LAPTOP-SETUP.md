@@ -18,29 +18,28 @@ cd C:\Projects
 # Clone claude-config (shared commands/agents)
 git clone https://github.com/AirMile/claude-config.git
 
-# Clone school-website project
-git clone https://github.com/AirMile/signatuur-portfolio.git school-website
+# Clone signatuur-portfolio project
+git clone https://github.com/AirMile/signatuur-portfolio.git
 
 # === STAP 2: Verwijder lege Git-gemaakte folders ===
-cd C:\Projects\school-website\.claude
+cd C:\Projects\signatuur-portfolio\.claude
 Remove-Item -Path agents, commands, resources, scripts -Recurse -Force -ErrorAction SilentlyContinue
 
 # === STAP 3: Maak junctions naar shared config ===
-cmd /c "mklink /J agents C:\Projects\claude-config\agents"
-cmd /c "mklink /J commands C:\Projects\claude-config\commands"
-cmd /c "mklink /J resources C:\Projects\claude-config\resources"
-cmd /c "mklink /J scripts C:\Projects\claude-config\scripts"
+New-Item -ItemType Junction -Path agents -Target C:\Projects\claude-config\agents
+New-Item -ItemType Junction -Path commands -Target C:\Projects\claude-config\commands
+New-Item -ItemType Junction -Path resources -Target C:\Projects\claude-config\resources
+New-Item -ItemType Junction -Path scripts -Target C:\Projects\claude-config\scripts
 
 # === STAP 4: Verifieer ===
 Write-Host "`n=== Setup Compleet ===" -ForegroundColor Green
 Write-Host "Junctions aangemaakt:"
 Get-ChildItem -Filter "agents","commands","resources","scripts" | ForEach-Object {
-    $target = (Get-Item $_).Target
-    Write-Host "  $($_.Name) -> $target"
+    Write-Host "  $($_.Name) -> $($_.Target)"
 }
 
 # === STAP 5: Open in VS Code ===
-code C:\Projects\school-website
+code C:\Projects\signatuur-portfolio
 ```
 
 ## Handmatige Stappen (als bovenstaande niet werkt)
@@ -50,31 +49,28 @@ code C:\Projects\school-website
 ```powershell
 cd C:\Projects
 git clone https://github.com/AirMile/claude-config.git
-git clone https://github.com/AirMile/claude-code-setup.git school-website
+git clone https://github.com/AirMile/signatuur-portfolio.git
 ```
 
 ### 2. Maak junctions
 
 ```powershell
-cd C:\Projects\school-website\.claude
+cd C:\Projects\signatuur-portfolio\.claude
 
 # Verwijder lege folders eerst
-rmdir agents
-rmdir commands
-rmdir resources
-rmdir scripts
+Remove-Item -Path agents, commands, resources, scripts -Recurse -Force -ErrorAction SilentlyContinue
 
 # Maak junctions
-cmd /c "mklink /J agents C:\Projects\claude-config\agents"
-cmd /c "mklink /J commands C:\Projects\claude-config\commands"
-cmd /c "mklink /J resources C:\Projects\claude-config\resources"
-cmd /c "mklink /J scripts C:\Projects\claude-config\scripts"
+New-Item -ItemType Junction -Path agents -Target C:\Projects\claude-config\agents
+New-Item -ItemType Junction -Path commands -Target C:\Projects\claude-config\commands
+New-Item -ItemType Junction -Path resources -Target C:\Projects\claude-config\resources
+New-Item -ItemType Junction -Path scripts -Target C:\Projects\claude-config\scripts
 ```
 
 ### 3. Verifieer
 
 ```powershell
-dir C:\Projects\school-website\.claude
+dir C:\Projects\signatuur-portfolio\.claude
 # Je zou moeten zien: agents, commands, resources, scripts met <JUNCTION> tag
 ```
 
@@ -83,8 +79,8 @@ dir C:\Projects\school-website\.claude
 ### Voor je begint te werken (pull latest)
 
 ```powershell
-# In school-website
-cd C:\Projects\school-website
+# In signatuur-portfolio
+cd C:\Projects\signatuur-portfolio
 git pull
 
 # In claude-config (als je commands/agents hebt aangepast)
@@ -95,8 +91,8 @@ git pull
 ### Na het werken (push changes)
 
 ```powershell
-# In school-website
-cd C:\Projects\school-website
+# In signatuur-portfolio
+cd C:\Projects\signatuur-portfolio
 git add -A && git commit -m "jouw message" && git push
 
 # In claude-config (alleen als je commands/agents hebt aangepast)
@@ -109,14 +105,14 @@ git add -A && git commit -m "jouw message" && git push
 ### "Junction already exists"
 ```powershell
 # Verwijder bestaande junction eerst
-cmd /c "rmdir C:\Projects\school-website\.claude\agents"
+Remove-Item -Path C:\Projects\signatuur-portfolio\.claude\agents -Force
 # Dan opnieuw aanmaken
-cmd /c "mklink /J agents C:\Projects\claude-config\agents"
+New-Item -ItemType Junction -Path agents -Target C:\Projects\claude-config\agents
 ```
 
 ### "Administrator privilege required"
 Je school-account blokkeert symlinks. Junctions werken WEL zonder admin.
-Als het niet werkt, check of je `mklink /J` gebruikt (niet `mklink` zonder /J).
+Gebruik `New-Item -ItemType Junction` (niet `mklink` zonder /J).
 
 ### Commands werken niet
 1. Check of junctions correct zijn: `dir .claude` moet `<JUNCTION>` tonen
@@ -133,7 +129,7 @@ C:\Projects\
 │   ├── resources\
 │   └── scripts\
 │
-└── school-website\          ← Project (eigen Git repo)
+└── signatuur-portfolio\          ← Project (eigen Git repo)
     ├── .claude\
     │   ├── agents\     → junction naar claude-config
     │   ├── commands\   → junction naar claude-config
