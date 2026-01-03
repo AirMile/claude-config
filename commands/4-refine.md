@@ -90,14 +90,21 @@ The skill operates through six phases. Execute each phase sequentially with user
      → EXIT skill gracefully
    - **If features found:** Show numbered list with feature status
 
+   - For each feature, check if `.worktree` file exists and read worktree path
+   - Show numbered list with feature status AND worktree info
+
    ```
    📋 AVAILABLE FEATURES FOR REFINEMENT:
 
-   | # | Feature | Status | Parts/Extends/Changes |
-   |---|---------|--------|----------------------|
-   | 1 | checkout | ✓ Implemented | 2 (guest-checkout, paypal) |
-   | 2 | user-profile | ✓ Implemented | - |
-   | 3 | notifications | ✗ Not implemented | Run /2-code first |
+   | # | Feature | Worktree | Status | Parts/Extends/Changes |
+   |---|---------|----------|--------|----------------------|
+   | 1 | checkout | ../project--checkout | ✓ Implemented | 2 (guest-checkout, paypal) |
+   | 2 | user-profile | ../project--user-profile | ✓ Implemented | - |
+   | 3 | notifications | (no worktree) | ✗ Not implemented | Run /2-code first |
+
+   **Worktree column logic:**
+   - If `.workspace/features/{name}/.worktree` exists → show worktree path
+   - If no `.worktree` file → show "(no worktree)"
 
    Which feature do you want to refine?
 
@@ -191,7 +198,87 @@ The skill operates through six phases. Execute each phase sequentially with user
      **If "Eerst implementeren":** EXIT skill with message to run /2-code first
      **If "Afsluiten":** EXIT skill gracefully
 
-6. **Ask for modification:**
+6. **Verify correct worktree (if .worktree file exists):**
+
+   **Skip if:** task_type is EXTEND or CHANGE (these use parent feature's worktree)
+
+   **Steps:**
+
+   a. **Check for .worktree file:**
+      ```bash
+      cat .workspace/features/{feature-name}/.worktree
+      ```
+      - If file exists → read worktree path
+      - If file doesn't exist → continue without worktree (legacy mode)
+
+   b. **Compare current directory with worktree path:**
+      ```bash
+      # Get current directory (absolute path)
+      pwd
+      ```
+      - If current directory matches worktree path → continue to step 7
+      - If current directory does NOT match → prompt user to switch
+
+   c. **If NOT in correct worktree:**
+      ```
+      ⚠️ WRONG WORKTREE
+
+      Feature "{feature-name}" has a dedicated worktree:
+      {worktree-path}
+
+      You are currently in:
+      {current-directory}
+      ```
+
+      Use AskUserQuestion tool:
+      - header: "Worktree"
+      - question: "Je zit niet in de juiste worktree. Wat wil je doen?"
+      - options:
+        - label: "Open worktree (Recommended)"
+          description: "Open {worktree-path} in nieuw VSCode venster"
+        - label: "Toch hier doorgaan"
+          description: "Werk in huidige directory (niet aanbevolen)"
+        - label: "Annuleren"
+          description: "Stop en switch handmatig"
+        - label: "Uitleg"
+          description: "Leg uit wat worktrees zijn"
+      - multiSelect: false
+
+      **If "Open worktree":**
+      ```bash
+      code "{worktree-path}"
+      ```
+      Report:
+      ```
+      📂 WORKTREE OPENED
+
+      VSCode venster geopend voor: {worktree-path}
+
+      Switch naar dat venster en run /4-refine {feature-name} opnieuw.
+      ```
+      → EXIT skill (user continues in other window)
+
+      **If "Toch hier doorgaan":**
+      Report:
+      ```
+      ⚠️ Continuing in current directory (worktree ignored)
+      ```
+      → Continue to step 7 (with warning logged)
+
+      **If "Annuleren":**
+      → EXIT skill gracefully
+
+   d. **If IN correct worktree (or no worktree defined):**
+      ```
+      ✅ WORKTREE VERIFIED
+
+      Working in: {current-directory}
+      Feature: {feature-name}
+
+      → Ready for refinement...
+      ```
+
+7. **Ask for modification:**
    ```
    What do you want to change?
 
@@ -199,7 +286,7 @@ The skill operates through six phases. Execute each phase sequentially with user
    Example: "Change image upload to support all file types"
    ```
 
-7. **Confirm understanding:**
+8. **Confirm understanding:**
    ```
    📋 REFINE REQUEST:
 
@@ -225,7 +312,7 @@ The skill operates through six phases. Execute each phase sequentially with user
    ```
 
    **If "Ja, dit klopt":** Proceed to FASE 1
-   **If "Nee, opnieuw beschrijven":** Return to step 6 (Ask for modification)
+   **If "Nee, opnieuw beschrijven":** Return to step 7 (Ask for modification)
    **If "Afsluiten":** EXIT skill gracefully
 
 **Output:**
@@ -234,6 +321,7 @@ The skill operates through six phases. Execute each phase sequentially with user
 
 Feature: {name}
 Modification: {description}
+Worktree: {worktree-path} (verified)
 
 → Loading context and analyzing scope...
 ```

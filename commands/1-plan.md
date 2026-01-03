@@ -2167,6 +2167,101 @@ rm /tmp/1-plan_output_summary.json
 
 ---
 
+#### Step 5: Create Feature Branch & Worktree (NEW mode only)
+
+**Skip if:** Mode is UPDATE_AFTER_DEBUG, UPDATE_PLAN, or task_type is EXTEND/CHANGE
+
+**Goal:** Create a feature branch AND worktree for this feature. This enables parallel work on multiple features - each in its own isolated directory.
+
+**Steps:**
+
+1. **Detect base branch (main vs develop):**
+   ```bash
+   # Check if develop branch exists
+   git branch --list "develop"
+   ```
+   - If develop exists → `base_branch = "develop"`
+   - If develop doesn't exist → `base_branch = "main"` (fallback to "master" if no main)
+
+   ```bash
+   # Verify base branch exists
+   git branch --list "{base_branch}"
+   ```
+
+2. **Generate names:**
+   ```
+   branch_name = "feature/{feature-name}"
+   worktree_path = "../{project-name}--{feature-name}"
+   ```
+
+   **Note:** `{project-name}` is the current directory name (basename of pwd).
+
+3. **Check if branch/worktree already exists:**
+   ```bash
+   git branch --list "feature/{feature-name}"
+   git worktree list | grep "{feature-name}"
+   ```
+
+4. **If branch/worktree does NOT exist:**
+   ```bash
+   # Create branch AND worktree in one command
+   git worktree add "{worktree_path}" -b feature/{feature-name} {base_branch}
+   ```
+
+   **If worktree add fails:** Report error and suggest manual resolution.
+
+5. **Copy .claude folder to worktree (if symlinks don't work):**
+   ```bash
+   # Check if .claude exists in worktree
+   if [ ! -d "{worktree_path}/.claude" ]; then
+     # Copy or create symlink
+     cp -r .claude "{worktree_path}/.claude"
+   fi
+   ```
+
+   **Note:** On Windows with junctions, the .claude folder should already be available via the junction in the main repo.
+
+6. **Save worktree info in feature folder:**
+   ```bash
+   # Save worktree path (absolute path)
+   echo "{absolute_worktree_path}" > .workspace/features/{feature-name}/.worktree
+
+   # Save base branch for reference
+   echo "{base_branch}" > .workspace/features/{feature-name}/.base-branch
+   ```
+
+   **Note:** The `.branch` file is replaced by `.worktree` file.
+
+7. **Report worktree creation:**
+   ```
+   🌿 FEATURE WORKTREE CREATED
+
+   Worktree: {absolute_worktree_path}
+   Branch: feature/{feature-name}
+   Base: {base_branch}
+   Status: Ready for parallel work
+
+   📂 To work on this feature, open in a new VSCode window:
+      code "{worktree_path}"
+
+   Or use: /worktree {feature-name}
+   ```
+
+**If worktree ALREADY exists:**
+```
+ℹ️ FEATURE WORKTREE EXISTS
+
+Worktree: {worktree_path}
+Branch: feature/{feature-name}
+Status: Already exists
+
+Saving reference to .workspace/features/{feature-name}/.worktree
+```
+
+Still save the `.worktree` and `.base-branch` files to ensure the link is documented.
+
+---
+
 **CHECKPOINT 3** - Final output delivered
 
 **Send notification:**

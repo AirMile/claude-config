@@ -67,12 +67,17 @@ The skill operates through eight phases. Execute each phase sequentially.
 
 3. **List available features (only if no feature name provided):**
    - Scan `.workspace/features/` for all folders with `02-implementation.md`
-   - Show numbered list with feature status
+   - For each feature, check if `.worktree` file exists and read worktree path
+   - Show numbered list with feature status AND worktree info
+
+   **Worktree column logic:**
+   - If `.workspace/features/{name}/.worktree` exists → show worktree path
+   - If no `.worktree` file → show "(no worktree)"
 
    **Build options from available features:**
    - Scan `.workspace/features/` for all folders
    - For each folder, check if `02-implementation.md` exists
-   - Build dynamic option list
+   - Build dynamic option list with worktree info
 
    **Use AskUserQuestion tool:**
    - header: "Feature Selectie"
@@ -160,8 +165,88 @@ The skill operates through eight phases. Execute each phase sequentially.
    ```
    ✅ SELECTED: {feature-name} {extend/change if applicable}
 
-   Proceeding to refactor...
+   Checking worktree...
    ```
+
+7. **Verify correct worktree (if .worktree file exists):**
+
+   **Skip if:** task_type is EXTEND or CHANGE (these use parent feature's worktree)
+
+   **Steps:**
+
+   a. **Check for .worktree file:**
+      ```bash
+      cat .workspace/features/{feature-name}/.worktree
+      ```
+      - If file exists → read worktree path
+      - If file doesn't exist → continue without worktree (legacy mode)
+
+   b. **Compare current directory with worktree path:**
+      ```bash
+      # Get current directory (absolute path)
+      pwd
+      ```
+      - If current directory matches worktree path → continue to Phase 1
+      - If current directory does NOT match → prompt user to switch
+
+   c. **If NOT in correct worktree:**
+      ```
+      ⚠️ WRONG WORKTREE
+
+      Feature "{feature-name}" has a dedicated worktree:
+      {worktree-path}
+
+      You are currently in:
+      {current-directory}
+      ```
+
+      Use AskUserQuestion tool:
+      - header: "Worktree"
+      - question: "Je zit niet in de juiste worktree. Wat wil je doen?"
+      - options:
+        - label: "Open worktree (Recommended)"
+          description: "Open {worktree-path} in nieuw VSCode venster"
+        - label: "Toch hier doorgaan"
+          description: "Werk in huidige directory (niet aanbevolen)"
+        - label: "Annuleren"
+          description: "Stop en switch handmatig"
+        - label: "Uitleg"
+          description: "Leg uit wat worktrees zijn"
+      - multiSelect: false
+
+      **If "Open worktree":**
+      ```bash
+      code "{worktree-path}"
+      ```
+      Report:
+      ```
+      📂 WORKTREE OPENED
+
+      VSCode venster geopend voor: {worktree-path}
+
+      Switch naar dat venster en run /5-refactor {feature-name} opnieuw.
+      ```
+      → EXIT skill (user continues in other window)
+
+      **If "Toch hier doorgaan":**
+      Report:
+      ```
+      ⚠️ Continuing in current directory (worktree ignored)
+      ```
+      → Continue to Phase 1 (with warning logged)
+
+      **If "Annuleren":**
+      → EXIT skill gracefully
+
+   d. **If IN correct worktree (or no worktree defined):**
+      ```
+      ✅ WORKTREE VERIFIED
+
+      Working in: {current-directory}
+      Feature: {feature-name}
+
+      → Loading context...
+      ```
 
 **Output:**
 
@@ -171,6 +256,7 @@ The skill operates through eight phases. Execute each phase sequentially.
 Feature: {name}
 [If extend:] Extend: {extend-name}
 [If change:] Change: {change-name}
+Worktree: {worktree-path} (verified)
 
 → Loading context...
 ```

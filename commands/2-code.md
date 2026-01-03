@@ -50,18 +50,23 @@ The skill operates through five automatic phases. Execute each phase sequentiall
 
 2. **List available features (only if no feature name provided):**
    - Scan `.workspace/features/` for all folders with `01-intent.md`
-   - Show numbered list with feature status
+   - For each feature, check if `.worktree` file exists and read worktree path
+   - Show numbered list with feature status AND worktree info
 
    ```
    📋 AVAILABLE FEATURES:
 
-   | # | Feature | Status | Parts/Extends/Changes |
-   |---|---------|--------|----------------------|
-   | 1 | checkout | Ready | 3 parts (01-cart, 02-payment, 03-ui) |
-   | 2 | user-profile | Ready | - |
-   | 3 | notifications | Ready | 1 extend (email-templates) |
+   | # | Feature | Worktree | Status | Parts/Extends/Changes |
+   |---|---------|----------|--------|----------------------|
+   | 1 | checkout | ../project--checkout | Ready | 3 parts (01-cart, 02-payment, 03-ui) |
+   | 2 | user-profile | ../project--user-profile | Ready | - |
+   | 3 | notifications | (no worktree) | Ready | 1 extend (email-templates) |
 
    ```
+
+   **Worktree column logic:**
+   - If `.workspace/features/{name}/.worktree` exists → show worktree path
+   - If no `.worktree` file → show "(no worktree)"
 
    Use AskUserQuestion tool:
    - header: "Feature Selectie"
@@ -124,8 +129,88 @@ The skill operates through five automatic phases. Execute each phase sequentiall
    ```
    ✅ SELECTED: {feature-name} {part/extend/change if applicable}
 
-   Proceeding to implementation...
+   Checking worktree...
    ```
+
+6. **Verify correct worktree (if .worktree file exists):**
+
+   **Skip if:** task_type is EXTEND or CHANGE (these use parent feature's worktree)
+
+   **Steps:**
+
+   a. **Check for .worktree file:**
+      ```bash
+      cat .workspace/features/{feature-name}/.worktree
+      ```
+      - If file exists → read worktree path
+      - If file doesn't exist → continue without worktree (legacy mode)
+
+   b. **Compare current directory with worktree path:**
+      ```bash
+      # Get current directory (absolute path)
+      pwd
+      ```
+      - If current directory matches worktree path → continue to FASE 1
+      - If current directory does NOT match → prompt user to switch
+
+   c. **If NOT in correct worktree:**
+      ```
+      ⚠️ WRONG WORKTREE
+
+      Feature "{feature-name}" has a dedicated worktree:
+      {worktree-path}
+
+      You are currently in:
+      {current-directory}
+      ```
+
+      Use AskUserQuestion tool:
+      - header: "Worktree"
+      - question: "Je zit niet in de juiste worktree. Wat wil je doen?"
+      - options:
+        - label: "Open worktree (Recommended)"
+          description: "Open {worktree-path} in nieuw VSCode venster"
+        - label: "Toch hier doorgaan"
+          description: "Werk in huidige directory (niet aanbevolen)"
+        - label: "Annuleren"
+          description: "Stop en switch handmatig"
+        - label: "Uitleg"
+          description: "Leg uit wat worktrees zijn"
+      - multiSelect: false
+
+      **If "Open worktree":**
+      ```bash
+      code "{worktree-path}"
+      ```
+      Report:
+      ```
+      📂 WORKTREE OPENED
+
+      VSCode venster geopend voor: {worktree-path}
+
+      Switch naar dat venster en run /2-code {feature-name} opnieuw.
+      ```
+      → EXIT skill (user continues in other window)
+
+      **If "Toch hier doorgaan":**
+      Report:
+      ```
+      ⚠️ Continuing in current directory (worktree ignored)
+      ```
+      → Continue to FASE 1 (with warning logged)
+
+      **If "Annuleren":**
+      → EXIT skill gracefully
+
+   d. **If IN correct worktree (or no worktree defined):**
+      ```
+      ✅ WORKTREE VERIFIED
+
+      Working in: {current-directory}
+      Feature: {feature-name}
+
+      → Loading context...
+      ```
 
 **Output:**
 
@@ -136,6 +221,7 @@ Feature: {name}
 [If part:] Part: {part-name}
 [If extend:] Extend: {extend-name}
 [If change:] Change: {change-name}
+Worktree: {worktree-path} (verified)
 
 → Loading context...
 ```
