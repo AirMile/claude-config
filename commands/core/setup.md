@@ -139,6 +139,15 @@ Automatisch detecteren en installeren van essentiële MCP servers.
 
 Deze stappen vormen een verbonden sequentiële flow waarbij elke modal doorstroomt naar de volgende.
 
+**CRITICAL: One Question Per Response**
+
+Each question (plain text OR modal) MUST be in a SEPARATE response. Claude MUST:
+1. Ask ONE question
+2. WAIT for user response
+3. Only THEN proceed to next question
+
+NEVER combine multiple questions or a plain text question + AskUserQuestion modal in the same response.
+
 ---
 
 **Modal 1: Projectnaam**
@@ -147,6 +156,7 @@ Vraag in plain text: "Wat is de naam van het project?"
 
 **Response handling:**
 - Sla projectnaam op voor Step 13 (CLAUDE.md update)
+- **WAIT for user response before proceeding to Modal 2**
 
 ---
 
@@ -156,6 +166,7 @@ Vraag in plain text: "Geef een korte beschrijving van wat dit project doet/gaat 
 
 **Response handling:**
 - Sla beschrijving op voor Step 13 (CLAUDE.md update)
+- **WAIT for user response before proceeding to Modal 3**
 
 ---
 
