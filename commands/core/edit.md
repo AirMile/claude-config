@@ -25,20 +25,20 @@ This command edits existing commands. It detects if resources exist, loads the c
 3. If command doesn't exist → show error with available options
 
 **If no name** (`/edit`):
-1. Discover all commands using PowerShell (symlink-compatible):
+1. Discover all commands using PowerShell (symlink-compatible, recursive):
    ```bash
-   powershell -Command "Get-ChildItem -Path '.claude/commands' -Filter '*.md' | Select-Object -ExpandProperty Name"
+   powershell -Command "Get-ChildItem -Path '.claude/commands' -Recurse -Filter '*.md' | ForEach-Object { $_.FullName -replace '.*\\.claude\\commands\\', '' -replace '\\', '/' -replace '\.md$', '' }"
    ```
    Note: `Glob` does not follow Windows junctions/symlinks correctly.
 
 2. Display numbered table with command names only (DO NOT read files for descriptions):
    ```
-   | #  | Command        |
-   |----|----------------|
-   | 1  | 1-plan         |
-   | 2  | 2-code         |
-   | 3  | commit         |
-   | ...| ...            |
+   | #  | Command              |
+   |----|----------------------|
+   | 1  | core/edit            |
+   | 2  | core/create          |
+   | 3  | dev/1-plan           |
+   | ...| ...                  |
    ```
 
 3. Ask user to type a number (plain text, no modal):

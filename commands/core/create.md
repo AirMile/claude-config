@@ -332,13 +332,57 @@ Iterate until approved (max 3 rounds).
 
 ### Step 4: Create Files
 
+#### Step 4.0: Select Target Folder
+
+Before creating files, determine the appropriate folder location:
+
+1. **Scan existing subfolders:**
+   ```bash
+   powershell -Command "Get-ChildItem -Path '.claude\commands' -Directory | Select-Object -ExpandProperty Name"
+   ```
+
+2. **Analyze command fit:**
+   - Compare command purpose to existing folder themes:
+     - `core/` - Core Claude Code functionality (create, edit, save, resume)
+     - `dev/` - Development workflow (plan, code, verify, debug)
+     - `frontend/` - UI/UX related (theme, wireframe)
+     - `story/` - Creative writing commands
+     - `team/` - Collaboration commands
+     - `thinking/` - Analysis and ideation (brainstorm, critique, analyze)
+   - Determine best match or if new folder is needed
+
+3. **Present folder options:**
+
+   Use **AskUserQuestion** tool:
+   - header: "Target Folder"
+   - question: "In welke map moet dit command komen?"
+   - options:
+     - label: "[best-match]/ (Recommended)", description: "Past bij: [reason]"
+     - label: "[second-match]/", description: "Alternatief: [reason]"
+     - label: "[third-match]/", description: "Ook mogelijk: [reason]"
+     - label: "Nieuwe map maken", description: "Maak een nieuwe submap aan"
+   - multiSelect: false
+
+   **Note:** First 3 options are dynamically selected from existing folders based on best fit analysis.
+
+   **Response handling:**
+   - Existing folder selected → use that path
+   - "Nieuwe map maken" → ask for folder name, create folder
+
+4. **Set target path:**
+   ```
+   📁 TARGET: .claude/commands/[folder]/[name].md
+   ```
+
+#### Step 4.1: Write Files
+
 **For Command file**:
-1. Write `.claude/commands/[name].md`
+1. Write `.claude/commands/[folder]/[name].md`
 2. Confirm creation
 
 **For Command with resources**:
-1. Write `.claude/commands/[name].md` with full instructions
-2. Create `.claude/resources/[name]/` folder
+1. Write `.claude/commands/[folder]/[name].md` with full instructions
+2. Create `.claude/resources/[folder]/[name]/` folder
 3. Create and populate scripts/, references/, assets/ as needed
 
 **Output**:
@@ -346,14 +390,14 @@ Iterate until approved (max 3 rounds).
 ✅ CREATED!
 
 [For command only:]
-- .claude/commands/[name].md
+- .claude/commands/[folder]/[name].md
 
 [For command with resources:]
-- .claude/commands/[name].md
-- .claude/resources/[name]/scripts/[files]
-- .claude/resources/[name]/references/[files]
+- .claude/commands/[folder]/[name].md
+- .claude/resources/[folder]/[name]/scripts/[files]
+- .claude/resources/[folder]/[name]/references/[files]
 
-Test with: /[name]
+Test with: /[folder]:[name]
 ```
 
 ### Step 5: Verification
@@ -441,11 +485,20 @@ Which option do you prefer?
 
 [AskUserQuestion: "Is de draft goed?" → "Ja, maak aan"]
 
+📁 FOLDER SELECTION:
+
+Existing folders: core/, dev/, frontend/, story/, team/, thinking/
+
+[AskUserQuestion: "In welke map moet dit command komen?"
+→ "thinking/ (Recommended)" - Past bij: analysis and ideation commands]
+
+📁 TARGET: .claude/commands/thinking/suggest.md
+
 ✅ CREATED!
 
-- .claude/commands/suggest.md
+- .claude/commands/thinking/suggest.md
 
-Test with: /suggest
+Test with: /thinking:suggest
 ```
 
 ### Example 2: Command with Resources
@@ -494,3 +547,22 @@ When user wants to rotate a PDF file.
 - `.claude/resources/pdf-rotate/scripts/rotate_pdf.py` - Python script using PyPDF2
 
 ---
+
+[AskUserQuestion: "Is de draft goed?" → "Ja, maak aan"]
+
+📁 FOLDER SELECTION:
+
+Existing folders: core/, dev/, frontend/, story/, team/, thinking/
+
+[AskUserQuestion: "In welke map moet dit command komen?"
+→ "dev/ (Recommended)" - Past bij: development utilities]
+
+📁 TARGET: .claude/commands/dev/pdf-rotate.md
+
+✅ CREATED!
+
+- .claude/commands/dev/pdf-rotate.md
+- .claude/resources/dev/pdf-rotate/scripts/rotate_pdf.py
+
+Test with: /dev:pdf-rotate
+```
