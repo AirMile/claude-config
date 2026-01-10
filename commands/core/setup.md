@@ -791,6 +791,119 @@ Libraries researched:
 ---
 ```
 
+### Step 14.5: Generate Architecture Baseline Research (Game Projects Only)
+
+**Goal:** Generate project-wide baseline research for Godot/Unity/Unreal architecture patterns. This research is reused by /game:define to avoid duplicate Context7 queries.
+
+**Skip condition:** If project type is NOT game (Godot/Unity/Unreal), skip this step entirely.
+
+**Why this matters:**
+- Architecture research (scene trees, node types, signal patterns) is reusable across ALL features
+- Without baseline: every /game:define does the same architecture research
+- With baseline: /game:define checks baseline first, only researches if pattern not found
+
+**Steps:**
+
+1. **Execute Context7 research for architecture patterns:**
+
+   For Godot projects, use godot-scene-researcher agent OR direct Context7:
+   ```
+   mcp__Context7__resolve-library-id(libraryName: "godot")
+   ```
+
+   ```
+   mcp__Context7__get-library-docs(
+     context7CompatibleLibraryID: "[resolved-id]",
+     topic: "scene tree node types signals resources state machine",
+     tokens: 10000
+   )
+   ```
+
+   Extract and distill:
+   - Node type decision guide (table format)
+   - Scene composition patterns (3 patterns: instancing, composition, sub-scenes)
+   - Signal patterns (ability, player state, arena signals)
+   - Resource patterns (abilities, elements, stats)
+   - State machine patterns (enum-based, class-based)
+   - Feature pattern index (table: feature → node type → pattern)
+
+2. **Generate architecture-baseline.md:**
+
+   Write to `.claude/research/architecture-baseline.md`:
+
+   ```markdown
+   # Architecture Baseline Research
+
+   Generated: [date]
+   Stack: [Godot 4.x + GDScript / Unity / Unreal]
+   Valid until: [3 months from generation date]
+
+   ## Node Type Decision Guide
+   | Node Type | Use Case | Key Features |
+   |-----------|----------|--------------|
+   | ... | ... | ... |
+
+   ## Scene Composition Patterns
+   ### Pattern A: Scene Instancing
+   [code example]
+
+   ### Pattern B: Node Composition
+   [code example]
+
+   ### Pattern C: Sub-Scenes
+   [code example]
+
+   ## Signal Patterns
+   [organized by category: ability, player, arena]
+
+   ## Resource Patterns
+   [Ability, Element, Stats resources with code]
+
+   ## State Machine Patterns
+   [enum-based and class-based examples]
+
+   ## Feature Pattern Index
+   | Feature Type | Node Type | Pattern | State Machine |
+   |--------------|-----------|---------|---------------|
+   | Player | CharacterBody2D | Composition | Enum-based |
+   | Projectile | Area2D | Instancing | None |
+   | ... | ... | ... | ... |
+
+   ## Context7 Sources
+   Libraries researched:
+   - [library-id]
+   ```
+
+3. **Confirm to user:**
+   ```
+   ✅ ARCHITECTURE BASELINE RESEARCH GENERATED
+
+   | Field | Value |
+   |-------|-------|
+   | **Location** | .claude/research/architecture-baseline.md |
+   | **Engine** | [Godot 4.x / Unity / Unreal] |
+   | **Valid until** | [3 months from now] |
+
+   **Sections:**
+
+   | Section | Content |
+   |---------|---------|
+   | Node Type Guide | Decision table |
+   | Scene Patterns | 3 patterns |
+   | Signal Patterns | By category |
+   | Resource Patterns | Data classes |
+   | State Machines | 2 approaches |
+   | Feature Index | Quick lookup |
+
+   **Used by:**
+   - /game:define skill (FASE 2 architecture check)
+
+   **Benefits:**
+   - Automatic architecture decisions based on feature type
+   - No duplicate Context7 queries per feature
+   - Consistent patterns across all features
+   ```
+
 ### Step 15: Configure Code Formatter (PostToolUse Hook)
 
 **Goal:** Automatically format code after every Write/Edit operation using the best formatter for the project's tech stack.

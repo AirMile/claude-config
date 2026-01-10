@@ -30,6 +30,36 @@ Example triggers:
 **Goal:** Understand what we're analyzing and extract the core idea.
 
 **Process:**
+
+**Auto-detect concept file:**
+1. Check if `.workspace/` folder exists
+   - If folder does NOT exist → skip to "If no concept file" section below
+2. Check if `.workspace/concept.md` exists
+3. If exists AND no inline input provided:
+   - Read the concept file
+   - Show confirmation:
+     ```
+     CONCEPT DETECTED
+
+     File: .workspace/concept.md
+     Title: {extracted title}
+
+     Dit concept wordt gebruikt voor analyse.
+     ```
+   - Use AskUserQuestion:
+     ```yaml
+     header: "Concept Laden"
+     question: "Wil je dit concept analyseren?"
+     options:
+       - label: "Ja, analyseer dit (Recommended)", description: "Gebruik .workspace/concept.md"
+       - label: "Ander concept", description: "Ik wil een ander concept plakken"
+       - label: "Explain question", description: "Leg uit wat dit betekent"
+     multiSelect: false
+     ```
+   - If "Ja": proceed with loaded concept
+   - If "Ander concept": ask user to paste input
+
+**If no concept file OR user wants different input:**
 1. Examine the input provided by user
 2. Determine input type:
    - Output from `/idea` (structured markdown) → extract directly
@@ -338,8 +368,7 @@ Example triggers:
 4. Output format:
    - Pure markdown, no framing text
    - No "Here's your refined idea:" or similar
-   - Wrap output in a code block with `markdown` language tag for copy button
-   - Clean, consistent formatting
+   - Proper markdown formatting (# for title, ## for sections)
 
 **Example output structure:**
 ```yaml
@@ -348,3 +377,40 @@ applied_techniques:
   - Devil's Advocate Analysis
   - Assumption Testing
 ---
+```
+
+### Step 8: Output Destination
+
+After generating the refined content, present options for what to do with it.
+
+Use AskUserQuestion:
+```yaml
+header: "Output"
+question: "Wat wil je met het verfijnde concept doen?"
+options:
+  - label: "Opslaan naar concept (Recommended)", description: "Update .workspace/concept.md met verfijnde versie"
+  - label: "Alleen tonen", description: "Toon als markdown code block (niet opslaan)"
+  - label: "Explain question", description: "Leg uit wat deze opties betekenen"
+multiSelect: false
+```
+
+**Response handling:**
+
+**If "Opslaan naar concept":**
+1. Update `.workspace/concept.md` with refined content
+2. Confirm:
+   ```
+   CONCEPT UPDATED
+
+   File: .workspace/concept.md
+   Applied techniques: {list of techniques used}
+
+   Next steps:
+   - /thinking:brainstorm - Creatief uitbreiden en variaties
+   - /thinking:critique - Nog een analyseronde
+   - /game:backlog - Omzetten naar feature backlog (voor games)
+   ```
+
+**If "Alleen tonen":**
+1. Wrap output in a code block with `markdown` language tag for copy button
+2. Display the content

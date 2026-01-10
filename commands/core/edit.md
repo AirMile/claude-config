@@ -25,11 +25,11 @@ This command edits existing commands. It detects if resources exist, loads the c
 3. If command doesn't exist → show error with available options
 
 **If no name** (`/edit`):
-1. Discover all commands using PowerShell (symlink-compatible, recursive):
+1. Discover all commands using bash find with symlink support:
    ```bash
-   powershell -Command "Get-ChildItem -Path '.claude/commands' -Recurse -Filter '*.md' | ForEach-Object { $_.FullName -replace '.*\\.claude\\commands\\', '' -replace '\\', '/' -replace '\.md$', '' }"
+   find -L .claude/commands -name "*.md" -type f 2>/dev/null | sed 's|^\.claude/commands/||' | sed 's|\.md$||' | sort
    ```
-   Note: `Glob` does not follow Windows junctions/symlinks correctly.
+   Note: The `-L` flag makes find follow symbolic links/junctions. `Glob` does not follow Windows junctions/symlinks correctly.
 
 2. Display numbered table with command names only (DO NOT read files for descriptions):
    ```
@@ -511,3 +511,21 @@ Modified:
 [description]
 
 ---
+What do you want to change?
+```
+
+**User**: Selects "Delete"
+
+```
+⚠️ VERWIJDER BEVESTIGING
+
+Dit wordt permanent verwijderd:
+- .claude/commands/old-command.md
+
+Wil je 'old-command' permanent verwijderen? [Confirm delete]
+
+✅ DELETED
+
+Removed:
+- .claude/commands/old-command.md
+```

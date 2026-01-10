@@ -18,6 +18,41 @@ The output is a structured markdown document that can be used as input for `/bra
 
 ### Step 1: Initial Intake
 
+**Auto-detect existing concept:**
+1. Check if `.workspace/` folder exists
+   - If folder does NOT exist → skip to "If no concept file" section below
+2. Check if `.workspace/concept.md` exists
+3. If exists AND no inline description provided:
+   - Read the concept file
+   - Show confirmation:
+     ```
+     EXISTING CONCEPT DETECTED
+
+     File: .workspace/concept.md
+     Title: {extracted title}
+
+     Er bestaat al een concept.
+     ```
+   - Use AskUserQuestion:
+     ```yaml
+     header: "Bestaand Concept"
+     question: "Wat wil je doen?"
+     options:
+       - label: "Bewerken (Recommended)", description: "Pas het bestaande concept aan"
+       - label: "Nieuw concept", description: "Begin opnieuw met een nieuw idee"
+       - label: "Explain question", description: "Leg uit wat dit betekent"
+     multiSelect: false
+     ```
+   - **If "Bewerken":**
+     - Load existing concept
+     - Ask: "Wat wil je aanpassen aan dit concept?"
+     - Proceed to Step 2 with existing content as context
+   - **If "Nieuw concept":**
+     - Ignore existing file (will be overwritten on save)
+     - Proceed with normal flow below
+
+**If no concept file OR user wants new concept:**
+
 **If no description provided:**
 Ask (in user's preferred language): "What is your idea? Describe it in 1-2 sentences."
 
@@ -90,8 +125,43 @@ For product ideas (apps, services, businesses):
 **Output format:**
 - Pure markdown without introductory text or preambles
 - No "Here's your document:" framing
-- Wrap output in a code block with `markdown` language tag for copy button
 - Proper markdown formatting (# for title, ## for sections)
+
+### Step 5: Output Destination
+
+After generating the markdown content, present options for what to do with it.
+
+Use AskUserQuestion:
+```yaml
+header: "Output"
+question: "Wat wil je met het concept doen?"
+options:
+  - label: "Opslaan naar concept (Recommended)", description: "Opslaan naar .workspace/concept.md voor verder gebruik"
+  - label: "Alleen tonen", description: "Toon als markdown code block (niet opslaan)"
+  - label: "Explain question", description: "Leg uit wat deze opties betekenen"
+multiSelect: false
+```
+
+**Response handling:**
+
+**If "Opslaan naar concept":**
+1. Create `.workspace/` folder if it doesn't exist
+2. Write content to `.workspace/concept.md`
+3. Confirm:
+   ```
+   CONCEPT SAVED
+
+   File: .workspace/concept.md
+
+   Next steps:
+   - /thinking:critique - Kritisch analyseren en versterken
+   - /thinking:brainstorm - Creatief uitbreiden en variaties
+   - /game:backlog - Omzetten naar feature backlog (voor games)
+   ```
+
+**If "Alleen tonen":**
+1. Wrap output in a code block with `markdown` language tag for copy button
+2. Display the content
 
 ---
 
