@@ -391,6 +391,64 @@ multiSelect: true
 - Sla selectie(s) op voor Step 8 (Generate Configuration)
 - Geselecteerde suggesties worden meegenomen in de setup
 
+### Step 6: Project Standards (alleen voor web projecten)
+
+**Skip condition:** Als project type game, CLI of desktop is, skip deze step.
+
+**Goal:** Project-brede standaarden vastleggen die gelden voor alle features.
+
+---
+
+**Modal 6a: Data Fetching Strategy** (alleen als React/Vue in stack)
+
+Use AskUserQuestion with single-select:
+```
+Header: "Data Fetching"
+Question: "Welke data fetching strategie voor het hele project?"
+Options:
+  - plain-fetch: "Plain fetch (Aanbevolen) - Simpel, geen library"
+  - swr: "SWR - Lightweight caching voor read-heavy apps"
+  - tanstack: "TanStack Query - Complex caching, mutations, CRUD"
+  - explain: "Leg vraag uit"
+multiSelect: false
+```
+
+---
+
+**Modal 6b: Accessibility Standaard**
+
+Use AskUserQuestion with single-select:
+```
+Header: "Accessibility"
+Question: "Welk accessibility niveau voor het hele project?"
+Options:
+  - wcag-aa: "WCAG 2.1 AA (Aanbevolen) - Keyboard, focus, contrast"
+  - wcag-a: "WCAG 2.1 A - Minimum basis niveau"
+  - minimal: "Minimal - Geen specifieke standaard"
+  - explain: "Leg vraag uit"
+multiSelect: false
+```
+
+---
+
+**Modal 6c: Responsive Design Aanpak**
+
+Use AskUserQuestion with single-select:
+```
+Header: "Responsive"
+Question: "Welke responsive design aanpak voor het hele project?"
+Options:
+  - mobile-first: "Mobile-first (Aanbevolen) - Start klein, scale up"
+  - desktop-first: "Desktop-first - Start groot, scale down"
+  - fixed: "Fixed width - Geen responsive design"
+  - explain: "Leg vraag uit"
+multiSelect: false
+```
+
+**Response handling:**
+- Sla selecties op voor Step 13 (CLAUDE.md update)
+- Wordt opgeslagen in `## Project` sectie onder `### Standards`
+
 ### Step 7: Fetch Latest Versions
 
 Use Context7 to get real-time information:
@@ -623,22 +681,95 @@ Execute `scripts/update-claude-md.py` to update existing sections and add new on
 - Replace with `Language: [Selected language from Step 1]`
 - If section doesn't exist, create it at the top (after `# Claude Code Setup`)
 
-**Add these sections if they don't exist:**
+**Add `## Project` section with STRUCTURED format:**
+
 ```markdown
 ## Project
 
 **Name**: [Project Name]
 **Type**: [Project type from Step 4, e.g., "Web Frontend (React SPA)", "Web Backend (Laravel API)", "Game (Godot)"]
 **Description**: [User's description]
-**Stack**: [Framework + version + key dependencies on one line]
 **Created**: [Current date]
+
+### Stack
+**Frontend**: [Framework version, Bundler version, Language] (alleen als frontend)
+**Backend**: [Framework version, Language version] (alleen als backend)
+**Styling**: [CSS framework] (alleen als van toepassing)
+**Routing**: [Router library] (alleen als van toepassing)
+**Libraries**: [Key libraries, comma-separated]
+
+### Testing
+**Frontend**: [Test framework, Testing library] (alleen als frontend)
+**Backend**: [Test framework] (alleen als backend)
+**E2E**: [E2E framework] (optional)
 
 ### Documentation Generators
 **Enabled:** [comma-separated list of enabled generators]
 **Available:** [comma-separated list of disabled generators]
+
+### Standards (alleen voor web projecten)
+**Accessibility:** [wcag-aa | wcag-a | minimal]
+**Responsive:** [mobile-first | desktop-first | fixed]
+**Data Fetching:** [plain-fetch | swr | tanstack] (alleen als React/Vue in stack)
+```
+
+**Stack sectie format rules:**
+- Elke categorie (Frontend/Backend/Styling/etc.) op eigen regel
+- Alleen categorieën toevoegen die van toepassing zijn op het project type
+- Format: `**Category**: Value1, Value2, Value3`
+
+**Voorbeelden per project type:**
+
+**Web Frontend (React):**
+```markdown
+### Stack
+**Frontend**: React 19, Vite 7, TypeScript
+**Styling**: Tailwind CSS v4
+**Routing**: React Router DOM v7
+**Libraries**: Motion, Lucide React
+
+### Testing
+**Frontend**: Vitest, React Testing Library
+**E2E**: Playwright (optional)
+```
+
+**Web Backend (Laravel):**
+```markdown
+### Stack
+**Backend**: Laravel 11, PHP 8.3
+**Libraries**: Sanctum, Horizon
+
+### Testing
+**Backend**: PHPUnit, Pest
+```
+
+**Fullstack (Laravel + React):**
+```markdown
+### Stack
+**Frontend**: React 19, Vite 7, TypeScript
+**Backend**: Laravel 11, PHP 8.3
+**Styling**: Tailwind CSS v4
+**Libraries**: Inertia.js, Sanctum
+
+### Testing
+**Frontend**: Vitest, React Testing Library
+**Backend**: PHPUnit
+**E2E**: Playwright
+```
+
+**Game (Godot):**
+```markdown
+### Stack
+**Engine**: Godot 4.3, GDScript
+**Libraries**: GUT (testing)
+
+### Testing
+**Unit**: GUT (Godot Unit Test)
 ```
 
 **Note:** Do NOT add separate Tech Stack, Workspace Configuration, or Development Setup sections. The compact `## Project` section contains all necessary information. Development commands are in package.json.
+
+**Note:** Standards subsection is only added for web projects (web-frontend, web-backend, fullstack). Skip for game, CLI, desktop, and mobile projects.
 
 **Confirm to user:**
 ```
@@ -648,6 +779,103 @@ Execute `scripts/update-claude-md.py` to update existing sections and add new on
 These docs will auto-generate during /2-code skill FASE 4
 Output location: docs/*.mmd and docs/*.md
 ```
+
+### Step 13.5: Create Resources Folder Structure
+
+**Goal:** Create the `.claude/resources/` folder with testing and stack resources based on the selected tech stack.
+
+**Why this matters:**
+- Resources provide stack-specific context to all commands (build, test, verify)
+- One source of truth for test frameworks, patterns, and conventions
+- Commands load only relevant resources based on `### Stack` section in CLAUDE.md
+
+**Steps:**
+
+1. **Create folder structure:**
+   ```bash
+   mkdir -p .claude/resources/testing
+   mkdir -p .claude/resources/stacks
+   mkdir -p .claude/resources/patterns
+   ```
+
+2. **Copy stack-detection.md (always):**
+
+   Create `.claude/resources/stack-detection.md` with parsing rules for CLAUDE.md.
+
+   This resource defines how commands should:
+   - Parse `### Stack` section from CLAUDE.md
+   - Determine stack type (frontend/backend/fullstack)
+   - Load appropriate testing resource
+
+3. **Create testing resources based on stack:**
+
+   **For Frontend stacks (React, Vue, Svelte, etc.):**
+
+   Create `.claude/resources/testing/vitest-rtl.md` with:
+   - Vitest configuration
+   - React Testing Library patterns
+   - Query priority guide
+   - MSW API mocking setup
+   - Output parsing rules
+
+   **For Backend stacks (Laravel):**
+
+   Create `.claude/resources/testing/phpunit.md` with:
+   - PHPUnit configuration
+   - Laravel test traits (RefreshDatabase, etc.)
+   - Factory patterns
+   - Laravel Fakes (Mail, Queue, Event)
+   - Output parsing rules
+
+   **For Backend stacks (Node/Express/NestJS):**
+
+   Create `.claude/resources/testing/jest-node.md` with:
+   - Jest configuration
+   - Supertest for HTTP testing
+   - Mocking patterns
+   - Output parsing rules
+
+   **For E2E (always create if web project):**
+
+   Create `.claude/resources/testing/playwright.md` with:
+   - Playwright configuration
+   - Page object patterns
+   - Test fixtures
+   - Visual testing
+
+4. **Create shared patterns (always):**
+
+   Create `.claude/resources/patterns/tdd-cycle.md` with:
+   - RED-GREEN-REFACTOR flow
+   - When to write tests first
+   - Test naming conventions
+
+   Create `.claude/resources/patterns/output-parsing.md` with:
+   - Universal test output format
+   - PASS/FAIL/PENDING templates
+   - Context reduction rules (90% reduction target)
+
+5. **Confirm to user:**
+   ```
+   ✅ RESOURCES FOLDER CREATED
+
+   **Structure:**
+   .claude/resources/
+   ├── stack-detection.md
+   ├── testing/
+   │   ├── vitest-rtl.md      (if frontend)
+   │   ├── phpunit.md         (if laravel)
+   │   ├── jest-node.md       (if node backend)
+   │   └── playwright.md      (if web project)
+   └── patterns/
+       ├── tdd-cycle.md
+       └── output-parsing.md
+
+   **Usage:**
+   Commands automatically load relevant resources based on ### Stack in CLAUDE.md.
+
+   Example: /dev:build detects React → loads vitest-rtl.md
+   ```
 
 ### Step 14: Generate Stack Baseline Research
 

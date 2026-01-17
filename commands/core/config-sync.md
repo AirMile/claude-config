@@ -121,11 +121,7 @@ multiSelect: false
 ```bash
 cd {config_repo}
 git add -A
-git commit -m "[generated or provided message]
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+git commit -m "[generated or provided message]"
 
 # Push naar geselecteerde branch
 git push origin [branch-name]
