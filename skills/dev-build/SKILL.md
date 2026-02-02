@@ -1,5 +1,5 @@
 ---
-description: TDD implementation with automatic stack detection and resource loading
+description: Build features with automatic stack detection and technique selection
 disable-model-invocation: true
 ---
 
@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 This is **FASE 2** of the dev workflow: define -> **build** -> test
 
-Universal command that auto-detects stack from CLAUDE.md and loads appropriate testing resources.
+Auto-detects stack from CLAUDE.md, lets user choose implementation technique, then follows the technique workflow.
 
 **Trigger**: `/dev:build` or `/dev:build [feature-name]`
 
@@ -18,7 +18,7 @@ Universal command that auto-detects stack from CLAUDE.md and loads appropriate t
 Reads from `.workspace/features/{feature-name}/01-define.md`:
 - Requirements with IDs (REQ-XXX)
 - Architecture design
-- Component/hook structure
+- Implementation order
 
 ## Output Structure
 
@@ -26,85 +26,25 @@ Reads from `.workspace/features/{feature-name}/01-define.md`:
 .workspace/features/{feature-name}/
 ├── 01-define.md
 ├── 02-build-log.md
-├── 03-test-checklist.md
-└── test-scenarios.md
-
-src/
-├── components/     # React components
-├── hooks/          # Custom hooks
-├── pages/          # Page components
-├── services/       # API services
-└── types/          # TypeScript types
-
-tests/
-├── unit/           # Vitest unit tests
-├── integration/    # Integration tests
-└── e2e/            # Playwright E2E (optional)
+└── 03-test-checklist.md
 ```
 
 ## Process
 
-### FASE 0: Stack Detection & Resource Loading
+### FASE 0: Stack Detection & Context Loading
 
 **Step 1: Detect Stack**
 
 1. Read `.claude/CLAUDE.md`
 2. Find `### Stack` section under `## Project`
-3. Parse stack type:
+3. Parse stack type and testing framework
 
-   ```
-   IF **Frontend**: exists → has_frontend = true
-   IF **Backend**: exists → has_backend = true
-   IF **Engine**: exists → is_game = true
+**Step 2: Load Context**
 
-   stack_type =
-     is_game ? "game" :
-     has_frontend && has_backend ? "fullstack" :
-     has_frontend ? "frontend" :
-     has_backend ? "backend" : "unknown"
-   ```
+Optionally load stack-baseline for project-specific patterns:
+- `.claude/research/stack-baseline.md` (if exists)
 
-4. Parse testing framework from `### Testing` section:
-   ```
-   **Frontend**: Vitest, RTL → testing_frontend = "vitest-rtl"
-   **Backend**: PHPUnit → testing_backend = "phpunit"
-   **Backend**: Jest → testing_backend = "jest-node"
-   **Unit**: GUT → testing_game = "gut"
-   ```
-
-**Step 2: Load Resources**
-
-Based on detected stack, read the appropriate resources:
-
-| Stack Type | Resources to Load |
-|------------|-------------------|
-| frontend | `.claude/skills/dev-build/testing/vitest-rtl.md` |
-| backend (Laravel) | `.claude/skills/dev-build/testing/phpunit.md` |
-| backend (Node) | `.claude/skills/dev-build/testing/jest-node.md` |
-| fullstack | Both frontend + backend resources |
-| game | `.claude/skills/dev-build/testing/gut.md` |
-
-Also always load:
-- `.claude/skills/dev-build/patterns/tdd-cycle.md`
-- `.claude/skills/dev-build/patterns/output-parsing.md`
-
-**Step 3: Display Context**
-
-```
-STACK DETECTED
-==============
-
-Type: {stack_type}
-Frontend: {frontend_framework} (if applicable)
-Backend: {backend_framework} (if applicable)
-
-Testing:
-- {testing_framework}: {resource_loaded}
-
-Resources loaded: {count}
-```
-
-**Step 4: Load Feature Context**
+**Step 3: Load Feature Context**
 
 1. If no feature name provided:
    - List available features in `.workspace/features/`
@@ -123,179 +63,48 @@ Resources loaded: {count}
    - REQ-001: [description]
    - REQ-002: [description]
 
-   ARCHITECTURE:
-   (from 01-define.md)
-
    IMPLEMENTATION ORDER:
    (from 01-define.md)
    ```
 
-### FASE 1: Generate All Tests First
+### FASE 1: Technique Selection (Automatic)
 
-**Use patterns from loaded testing resource.**
-
-The testing resource defines:
-- Test file structure
-- Import statements
-- Query patterns (for frontend)
-- Assertion methods
-- Mocking approach
-
-#### Step 0: Testing Research (Just-in-Time)
-
-Before generating tests, check if research is needed:
+Analyze requirements from 01-define.md and select technique:
 
 ```
-IF patterns exist in loaded resource → skip research
-ELSE → research via Context7
+IF requirements contain:
+  - validation rules, business logic, calculations, complex conditions
+  → TDD
+
+IF requirements contain:
+  - CRUD, middleware, config, straightforward wiring
+  → Implementation First
+
+DEFAULT → Implementation First
 ```
 
-#### Step 1: Generate Test Stubs
-
-For EACH requirement, generate a corresponding test stub using the template from the loaded testing resource.
-
-**Frontend example (from vitest-rtl.md):**
-```typescript
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-
-describe('FeatureName', () => {
-  beforeEach(() => {
-    // Setup
-  })
-
-  // REQ-001: {requirement description}
-  it.todo('should {description}')
-
-  // REQ-002: {requirement description}
-  it.todo('should {description}')
-})
+Load technique resource:
+```
+Read(".claude/skills/dev-build/techniques/{selected-technique}.md")
 ```
 
-**Backend example (from phpunit.md):**
-```php
-<?php
-
-namespace Tests\Feature;
-
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-class FeatureNameTest extends TestCase
-{
-    use RefreshDatabase;
-
-    // REQ-001: {requirement description}
-    public function test_should_description(): void
-    {
-        $this->markTestIncomplete('TODO');
-    }
-}
+Display:
+```
+TECHNIQUE: {name}
+Reason: {why this technique fits these requirements}
 ```
 
-#### Step 2: Verify Test Structure
+### FASE 2: Execute Technique
 
-1. Create test file based on resource template
-2. Run test command from resource:
-   - Frontend: `npm run test -- tests/unit/{feature}.test.ts`
-   - Backend: `php artisan test --filter={Feature}`
-3. All tests should be SKIPPED (todo)
+Follow the workflow defined in the loaded technique resource.
+The technique defines its own steps, Ralph Loop config, and output formats.
 
-**Output:**
-```
-FASE 1 COMPLETE
+**Shared rules across all techniques:**
+- Requirements implemented SEQUENTIALLY (dependency order from 01-define.md)
+- Context7 research if unfamiliar pattern needed
+- All requirements must have tests before completion
 
-Tests generated: {count}
-Status: All TODO/SKIPPED
-Framework: {from loaded resource}
-
-Ready for TDD cycle.
-```
-
-### FASE 2: TDD Cycle (Sequential)
-
-**Use TDD patterns from `.claude/skills/dev-build/patterns/tdd-cycle.md`**
-
-**IMPORTANT: Sequential Execution with Context Passing**
-
-Requirements must be implemented SEQUENTIALLY because later requirements may depend on earlier ones.
-
-#### Step 0: Initialize Ralph Loop
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/ralph/setup-ralph-loop.ps1 `
-  -Prompt @"
-Feature: {feature-name}
-Requirements:
-{list from 01-define.md}
-
-Implementation order (from FASE 0):
-{dependency order}
-
-Build this feature using TDD.
-Output <promise>TDD_COMPLETE</promise> when ALL tests pass.
-"@ `
-  -MaxIterations 30 `
-  -CompletionPromise "TDD_COMPLETE"
-```
-
-#### Step 1: Sequential TDD Loop
-
-For each requirement in IMPLEMENTATION ORDER:
-
-**RED Phase:**
-1. Implement test assertion (replace `.todo()` with actual test)
-2. Run test - expect FAIL
-3. Log: `RED: REQ-XXX - FAIL (expected)`
-
-**GREEN Phase:**
-
-Research decision (from resource):
-- If pattern is in testing resource → no research needed
-- If new pattern required → Context7 research
-
-Implement minimal code to make test pass.
-
-**REFACTOR Phase:**
-1. Clean up while keeping tests green
-2. Apply conventions from loaded stack resource
-3. Re-run tests to verify
-
-**Output per iteration (use output-parsing.md format):**
-```
-[ITERATION {n}]
-Test: should {description}
-RED:      FAIL (component not found)
-GREEN:    PASS (implemented)
-REFACTOR: PASS
-Progress: {passed}/{total}
-```
-
-**Loop completion:**
-```
-RALPH LOOP COMPLETE
-
-All {count} tests PASS
-
-Files created:
-- src/components/{Component}.tsx
-- src/hooks/{useHook}.ts
-...
-```
-
-### FASE 3 & 4: Integration Tests + Checklist (PARALLEL)
-
-Run in parallel - no dependencies.
-
-#### FASE 3: Integration Tests
-
-Use MSW/Fakes patterns from testing resource.
-
-**Frontend:** Create `tests/integration/{feature}.integration.test.tsx`
-**Backend:** Create `tests/Feature/{Feature}IntegrationTest.php`
-
-#### FASE 4: Generate Test Checklist
+### FASE 3: Generate Test Checklist
 
 Create `03-test-checklist.md`:
 
@@ -306,35 +115,26 @@ Create `03-test-checklist.md`:
 
 **Feature:** {feature-name}
 **Build Date:** {date}
+**Technique:** {selected technique}
 **Tests:** {passed}/{total} passing
 
 ## Automated Tests Status
 
 | REQ | Test | Status |
 |-----|------|--------|
-| REQ-001 | should validate email format | PASS |
-| REQ-002 | should submit form data | PASS |
+| REQ-001 | {test description} | PASS |
 
 ## Files Created
 
-### Components
-- `src/components/{Component}.tsx`
+{list of created/modified files}
 
-### Hooks
-- `src/hooks/{useHook}.ts`
-
-## Manual Browser Testing Required
-
-### Setup
-1. Run dev server: `npm run dev`
-2. Navigate to: `http://localhost:5173/{route}`
+## Manual Testing Required
 
 ### Checklist
 
 | # | Test | Pass | Notes |
 |---|------|------|-------|
-| 1 | {Visual test 1} | [ ] | |
-| 2 | {Interaction test 2} | [ ] | |
+| 1 | {test description} | [ ] | |
 
 ## Feedback Format
 
@@ -345,20 +145,11 @@ Use `/dev:test {feature}` with results:
 ```
 ```
 
-### FASE 5: Completion
-
-**Step 0: Ralph Completion Check**
-
-```
-IF all tests PASS:
-    Output: <promise>TDD_COMPLETE</promise>
-ELSE:
-    Output: "{failed_count} tests failed"
-```
+### FASE 4: Completion
 
 **Step 1: Update build log**
 
-Create/update `02-build-log.md` with full TDD history.
+Create/update `02-build-log.md` with implementation history.
 
 **Step 2: Output summary**
 
@@ -366,14 +157,9 @@ Create/update `02-build-log.md` with full TDD history.
 BUILD COMPLETE: {feature}
 ========================
 
-Stack: {detected stack}
+Technique: {selected technique}
 Tests: {passed}/{total} PASS
 Files created: {count}
-
-Created files:
-- tests/unit/{feature}.test.tsx
-- src/components/...
-- src/hooks/...
 
 Documentation:
 - .workspace/features/{feature}/02-build-log.md
@@ -396,9 +182,7 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 
 ## Test Output Parsing (CRITICAL)
 
-**ALL test runs use format from `.claude/skills/dev-build/patterns/output-parsing.md`**
-
-This ensures consistent, compact output regardless of stack:
+Condense all test output to this format. Omit stack traces, framework banners, and verbose output.
 
 **PASS:** `TESTS: {n}/{n} PASS ({time})`
 
@@ -406,36 +190,22 @@ This ensures consistent, compact output regardless of stack:
 ```
 TESTS: {passed}/{total} PASS ({time})
 FAILED:
-- {file}: {reason}
+- {file}:{line} - {reason <50 chars}
 ```
-
-**This reduces context by ~90% per test run.**
 
 ## Stack-Specific Behavior
 
-The loaded resource determines:
-
-| Aspect | Frontend (Vitest) | Backend (PHPUnit) | Backend (Jest) |
-|--------|-------------------|-------------------|----------------|
-| Test command | `npm run test` | `php artisan test` | `npm run test` |
-| Test file ext | `.test.tsx` | `Test.php` | `.test.ts` |
-| Mocking | MSW, vi.mock | Laravel Fakes | Jest mocks |
-| Async | await, findBy | assertDatabaseHas | await, expect |
-
-## Resource Fallback
-
-If resources don't exist:
-
-1. Check `.claude/research/stack-baseline.md` for patterns
-2. If still missing: Use Context7 to research stack
-3. Warn user: "Resources not found. Run /core-setup to generate."
+Determine test commands, file extensions, mocking approach, and async patterns from:
+1. `### Testing` section in CLAUDE.md
+2. Stack-baseline patterns (`.claude/research/stack-baseline.md`)
+3. Claude's own knowledge of the detected framework
 
 ## Error Handling
 
-### Test Failures During Ralph Loop
+### Test Failures
 
-If a test fails unexpectedly during GREEN phase:
-1. Log the failure with full error message
+If a test fails unexpectedly:
+1. Log the failure
 2. Analyze the error
 3. Fix the implementation
 4. Re-run test
@@ -445,53 +215,6 @@ If a test fails unexpectedly during GREEN phase:
 
 If implementation is blocked:
 1. Log the blocker in 02-build-log.md
-2. Mark affected tests as BLOCKED
-3. Continue with other tests
+2. Mark affected requirements as BLOCKED
+3. Continue with other requirements
 4. Report blockers at completion
-
-## Examples
-
-### Frontend (React) Build
-
-```
-STACK DETECTED: frontend
-Framework: React 19, Vite 7
-Testing: Vitest, RTL
-
-Resource loaded: .claude/skills/dev-build/testing/vitest-rtl.md
-
-[Using RTL query patterns from resource]
-[Using MSW mocking from resource]
-[Using Vitest assertions from resource]
-```
-
-### Backend (Laravel) Build
-
-```
-STACK DETECTED: backend
-Framework: Laravel 11, PHP 8.3
-Testing: PHPUnit
-
-Resource loaded: .claude/skills/dev-build/testing/phpunit.md
-
-[Using RefreshDatabase trait from resource]
-[Using Factory patterns from resource]
-[Using Laravel Fakes from resource]
-```
-
-### Fullstack Build
-
-```
-STACK DETECTED: fullstack
-Frontend: React 19
-Backend: Laravel 11
-Testing: Vitest + PHPUnit
-
-Resources loaded:
-- .claude/skills/dev-build/testing/vitest-rtl.md
-- .claude/skills/dev-build/testing/phpunit.md
-
-[Running frontend tests first]
-[Then backend tests]
-[Then integration tests spanning both]
-```

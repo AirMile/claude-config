@@ -76,14 +76,49 @@ mkdir {projects_root}\[naam]\.workspace\plans
 mkdir {projects_root}\[naam]\.workspace\features
 ```
 
+### FASE 2.5: Profiel Selectie
+
+Read profiles from `{config_repo}/skills/core-profile/profiles.yaml`.
+
+Show a **numbered list** of all profiles (except "core" and "all") with their unique skills (skills not in "core"). Format:
+
+```
+**Beschikbare profielen:**
+
+1. **dev** — dev-backlog, dev-build, dev-define, dev-test, dev-repos, dev-worktree
+2. **dev-legacy** — dev-legacy-1-plan, dev-legacy-2-code, dev-legacy-debug, ...
+3. **frontend** — frontend-theme, frontend-wireframe
+4. **game** — game-backlog, game-build, game-define, game-test
+...
+A. **all** — Alle skills
+
+Welk profiel wil je activeren? (nummer, naam, of komma-gescheiden)
+```
+
+Do NOT use AskUserQuestion — present the list in plain text so all options are visible. Let user type their choice (number(s), name(s), or comma-separated combinations).
+
+**Default suggestion:** "dev" (mention as recommended).
+
+Store the selected profile name(s) for FASE 3.
+
 ### FASE 3: Junctions Maken
 
 ```bash
-# Maak junctions naar master config (absolute paths!)
+# Whole-directory junctions (agents, hooks, scripts)
 cmd /c "mklink /J {projects_root}\[naam]\.claude\agents {config_repo}\agents"
-cmd /c "mklink /J {projects_root}\[naam]\.claude\skills {config_repo}\skills"
+cmd /c "mklink /J {projects_root}\[naam]\.claude\hooks {config_repo}\hooks"
 cmd /c "mklink /J {projects_root}\[naam]\.claude\scripts {config_repo}\scripts"
+
+# Per-skill junctions via profile selection
+mkdir {projects_root}\[naam]\.claude\skills
+
+python3 {config_repo}\skills\core-profile\switch-profile.py \
+  --profiles <selected_profiles_from_fase_2.5> \
+  --skills-dir {projects_root}\[naam]\.claude\skills \
+  --source-dir {config_repo}\skills
 ```
+
+**Note:** Skills uses per-skill junctions (not a single directory junction) so profiles can be switched later with `/core-profile`.
 
 ### FASE 4: Basis Bestanden
 
@@ -127,6 +162,7 @@ Thumbs.db
 
 # Junctions (tracked via master repo, not this one)
 .claude/agents/
+.claude/hooks/
 .claude/skills/
 .claude/scripts/
 ```
@@ -224,15 +260,17 @@ code {projects_root}\[naam]
 Structuur:
 {projects_root}\[naam]\
 ├── .claude\
-│   ├── agents\     → junction
-│   ├── skills\    → junction
-│   ├── scripts\    → junction
+│   ├── agents\     → junction (hele map)
+│   ├── hooks\      → junction (hele map)
+│   ├── scripts\    → junction (hele map)
+│   ├── skills\     → per-skill junctions (profiel: [naam])
 │   ├── docs\
 │   ├── research\
 │   └── CLAUDE.md (of nog te configureren)
 ├── .workspace\
 └── .gitignore
 
+Actief profiel: [profiel naam(en)]
 GitHub: https://github.com/[user]/[naam] (indien gepubliceerd)
 ```
 

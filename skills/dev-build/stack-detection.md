@@ -22,29 +22,29 @@ Look for the `## Project` section and parse these fields:
 
 Based on parsed fields, classify the project:
 
-| Condition | Stack Type | Test Resource |
-|-----------|------------|---------------|
-| Frontend only | `frontend` | testing/vitest-rtl.md |
-| Backend only | `backend` | testing/phpunit.md |
-| Both present | `fullstack` | Both resources |
+| Condition | Stack Type |
+|-----------|------------|
+| Frontend only | `frontend` |
+| Backend only | `backend` |
+| Both present | `fullstack` |
 
 ### 3. Framework Detection
 
 **Frontend frameworks:**
 
-| Contains | Framework | Resource |
-|----------|-----------|----------|
-| React, Vite | react-vite | stacks/react-vite.md |
-| React, Next | react-next | stacks/react-next.md |
-| Vue, Vite | vue-vite | stacks/vue-vite.md |
+| Contains | Framework |
+|----------|-----------|
+| React, Vite | react-vite |
+| React, Next | react-next |
+| Vue, Vite | vue-vite |
 
 **Backend frameworks:**
 
-| Contains | Framework | Resource |
-|----------|-----------|----------|
-| Laravel | laravel | stacks/laravel.md |
-| Express, Node | node-express | stacks/node-express.md |
-| NestJS | nestjs | stacks/nestjs.md |
+| Contains | Framework |
+|----------|-----------|
+| Laravel | laravel |
+| Express, Node | node-express |
+| NestJS | nestjs |
 
 ### 4. Fallback Detection
 
@@ -65,10 +65,7 @@ If `### Stack` section not found, fallback to file detection:
 1. Read `.claude/CLAUDE.md`
 2. Parse `## Project` → `### Stack` section
 3. Determine stack type (frontend/backend/fullstack)
-4. Load appropriate resources:
-   - Stack resource: `.claude/resources/stacks/{framework}.md`
-   - Testing resource: `.claude/resources/testing/{test-framework}.md`
-5. Continue with stack-specific context loaded
+4. Continue with stack-specific context loaded
 ```
 
 ## Example Parsing
@@ -96,10 +93,4 @@ Frontend Framework: react-vite
 Backend Framework: laravel
 Frontend Testing: vitest-rtl
 Backend Testing: phpunit
-
-Resources to load:
-- .claude/resources/stacks/react-vite.md
-- .claude/resources/stacks/laravel.md
-- .claude/resources/testing/vitest-rtl.md
-- .claude/resources/testing/phpunit.md
 ```
