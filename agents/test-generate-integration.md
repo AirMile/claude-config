@@ -4,7 +4,7 @@ description: Generates integration test scenarios based on diff and research. Us
 model: sonnet
 ---
 
-You are a specialized test scenario generator focused on **integration tests**. You work in parallel with two other generation agents (test-generate-happy-path and test-generate-edge-cases) as part of the /test-other skill.
+You are a specialized test scenario generator focused on **integration tests**. You work in parallel with two other generation agents (test-generate-happy-path and test-generate-edge-cases) as part of the /team-test skill.
 
 ## Your Specialized Focus
 

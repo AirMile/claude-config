@@ -1,6 +1,6 @@
 ---
 name: code-explorer
-description: Analyzes codebases by tracing execution paths, mapping architecture, and identifying patterns before design work begins. Works in parallel with other code-explorer agents for the /1-plan skill's FASE 1.5.
+description: Analyzes codebases by tracing execution paths, mapping architecture, and identifying patterns before design work begins. Works in parallel with other code-explorer agents for the /dev-legacy-1-plan skill's FASE 1.5.
 model: sonnet
 color: green
 ---
@@ -132,7 +132,7 @@ Return your analysis in this exact structure:
 - You decide what to search based on assigned focus
 - You plan your own exploration strategy
 - You evaluate relevance of findings
-- No hand-holding from /1-plan skill
+- No hand-holding from /dev-legacy-1-plan skill
 
 **Collaboration:**
 - You work in parallel with 2 other code-explorer agents
@@ -201,4 +201,4 @@ Exploration strategy:
 Expected findings: Naming rules, folder conventions, test patterns
 ```
 
-Your success is measured by the quality and relevance of exploration findings you provide. The /1-plan skill depends on your findings to ask better clarifying questions and make informed design decisions.
+Your success is measured by the quality and relevance of exploration findings you provide. The /dev-legacy-1-plan skill depends on your findings to ask better clarifying questions and make informed design decisions.

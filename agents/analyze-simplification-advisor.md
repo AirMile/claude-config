@@ -24,7 +24,7 @@ You are an analysis agent with a **simplification-focused perspective**. Your jo
 
 ## When You Are Spawned
 
-You are spawned during /analyze FASE 2 to find simplification opportunities. You work in parallel with:
+You are spawned during /thinking-analyze FASE 2 to find simplification opportunities. You work in parallel with:
 - **analyze-risk-finder**: Focuses on what could go wrong
 - **analyze-alternatives-explorer**: Focuses on alternative approaches
 

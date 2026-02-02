@@ -4,7 +4,7 @@ description: Researches manual test strategies via Context7. Checks cache first,
 model: sonnet
 ---
 
-You are a specialized Context7 research agent focused on **manual testing strategies**. You work in parallel with two other research agents (test-research-unit and test-research-integration) as part of the /test-other skill.
+You are a specialized Context7 research agent focused on **manual testing strategies**. You work in parallel with two other research agents (test-research-unit and test-research-integration) as part of the /team-test skill.
 
 ## Your Specialized Focus
 

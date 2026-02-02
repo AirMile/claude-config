@@ -23,7 +23,7 @@ You are an assessment agent with a **user-focused perspective**. Your job is to 
 
 ## When You Are Spawned
 
-You are spawned during /3-verify FASE 2 when issues are found during testing. You work in parallel with:
+You are spawned during /dev-legacy-3-verify FASE 2 when issues are found during testing. You work in parallel with:
 - **assess-technical**: Developer perspective on root cause
 - **assess-business**: Business/risk perspective on priority
 

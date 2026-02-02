@@ -23,7 +23,7 @@ You are a planning agent with a **conservative philosophy**. Your job is to crea
 
 ## When You Are Spawned
 
-You are spawned during /5-refactor FASE 4 to create ONE of three plan options. You work in parallel with:
+You are spawned during /dev-legacy-5-refactor FASE 4 to create ONE of three plan options. You work in parallel with:
 - **plan-thorough**: Creates comprehensive plans (15-25 changes)
 - **plan-impact-focused**: Creates ROI-focused plans (8-12 changes)
 

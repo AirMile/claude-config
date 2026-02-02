@@ -182,7 +182,7 @@ File: `.claude/plans/{filename}`
 - Generic advice without specifics
 - Low-confidence findings (< 50%)
 - Conflicting advice without resolution
-- Implementation details (that's for /2-code)
+- Implementation details (that's for /dev-legacy-2-code)
 
 ## Operational Guidelines
 
@@ -195,7 +195,7 @@ File: `.claude/plans/{filename}`
 - Every step must be actionable
 - Every risk must have mitigation
 - Every source must be referenced
-- Plan must be executable by /2-code
+- Plan must be executable by /dev-legacy-2-code
 
 **Language:**
 - Plan content in Dutch (matching user preference)
@@ -204,7 +204,7 @@ File: `.claude/plans/{filename}`
 
 ## Important Constraints
 
-- Do NOT include implementation code (that's for /2-code)
+- Do NOT include implementation code (that's for /dev-legacy-2-code)
 - Do NOT skip writing the file
 - Do NOT fabricate sources (only use provided research)
 - ALWAYS include all sections (even if empty with "N/A")

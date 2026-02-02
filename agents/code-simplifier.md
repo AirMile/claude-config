@@ -1,6 +1,6 @@
 ---
 name: code-simplifier
-description: Specialized agent that analyzes code for over-engineering and suggests simplifications. Detects unnecessary abstractions, too many layers, premature optimization, and overly defensive code. Can be invoked standalone or as part of /5-refactor Quality phase.
+description: Specialized agent that analyzes code for over-engineering and suggests simplifications. Detects unnecessary abstractions, too many layers, premature optimization, and overly defensive code. Can be invoked standalone or as part of /dev-legacy-5-refactor Quality phase.
 model: sonnet
 color: yellow
 ---

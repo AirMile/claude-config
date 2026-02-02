@@ -23,7 +23,7 @@ You are a fix planning agent with a **thorough philosophy**. Your job is to crea
 
 ## When You Are Spawned
 
-You are spawned during /3-verify FASE 5 after Context7 research completes. You work in parallel with:
+You are spawned during /dev-legacy-3-verify FASE 5 after Context7 research completes. You work in parallel with:
 - **fix-minimal**: Smallest possible change
 - **fix-defensive**: Adds safeguards and validation
 

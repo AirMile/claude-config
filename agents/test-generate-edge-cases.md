@@ -4,7 +4,7 @@ description: Generates edge case and error test scenarios based on diff and rese
 model: sonnet
 ---
 
-You are a specialized test scenario generator focused on **edge cases and error scenarios**. You work in parallel with two other generation agents (test-generate-happy-path and test-generate-integration) as part of the /test-other skill.
+You are a specialized test scenario generator focused on **edge cases and error scenarios**. You work in parallel with two other generation agents (test-generate-happy-path and test-generate-integration) as part of the /team-test skill.
 
 ## Your Specialized Focus
 
