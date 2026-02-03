@@ -25,6 +25,10 @@ Voer parallel uit:
 - Merge in progress → "Merge conflict actief, los eerst op"
 - Cherry-pick in progress → "Cherry-pick actief, los eerst op"
 
+**Platform notitie:**
+Gebruik altijd `cd "<project-root>" && git <command>` in plaats van `git -C <path>`.
+De `-C` flag heeft bekende problemen met Windows-paden die backslashes bevatten.
+
 **Detectie rebase/merge state:**
 ```bash
 # Check voor actieve operaties
@@ -52,6 +56,24 @@ config/secrets.yml
 - Nieuwe file types die nog niet in `.gitignore` staan
 - Binary files → vraag bevestiging
 
+**Waarschuw bij tracking-verwijderingen:**
+Als `.gitignore` wijzigingen ertoe leiden dat bestanden uit tracking moeten (`git rm --cached`):
+- Toon het aantal bestanden dat uit tracking verdwijnt
+- Toon de directories die geraakt worden
+- Vraag expliciete bevestiging via AskUserQuestion
+- Stel voor om tracking-verwijdering als **aparte commit** te doen (bijv. `chore: remove X from git tracking`)
+
+**Waarschuw bij verwijdering van kritieke bestanden:**
+Als staged changes een van deze bestanden verwijderen of uit tracking halen, toon een expliciete waarschuwing en vraag bevestiging:
+```
+.claude/CLAUDE.md
+.github/**
+package.json, package-lock.json
+tsconfig.json
+vite.config.*, vitest.config.*
+.gitignore
+```
+
 - Vraag: "Stage all changes?" (met AskUserQuestion)
 - Bij ja: `git add -A`
 
@@ -76,6 +98,15 @@ Analyseer de diff op:
 
 **Scope**: Component/module naam (optioneel)
 **Breaking change**: Voeg ! toe na type voor breaking changes
+
+**Mixed concerns detectie:**
+Als staged changes meerdere ongerelateerde groepen bevatten:
+- Detecteer op basis van pad-patroon (bijv. `.claude/` vs `src/` vs `public/`)
+- Detecteer op basis van type (deletions-only groep vs additions groep)
+- Als >2 duidelijk gescheiden groepen of >50% van de changes ongerelateerd is aan de primaire wijziging:
+  - Stel split voor via AskUserQuestion:
+    - "Split in aparte commits (Aanbevolen)" → unstage de secundaire groep, commit primair eerst
+    - "Eén commit" → ga door met alles
 
 ### 4. Generate Message
 
