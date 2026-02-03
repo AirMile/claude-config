@@ -21,18 +21,23 @@ This skill edits existing skills. It detects if resources exist, loads the conte
 ### Step 1: Load Target
 
 **If name provided** (`/core-edit core-commit`):
+
 1. Check if `.claude/skills/[name]/SKILL.md` exists → load skill
 2. Check if `.claude/skills/[name]/` contains supporting files → note has resources
 3. If skill doesn't exist → show error with available options
 
 **If no name** (`/core-edit`):
+
 1. Discover all skills using bash find with symlink support:
+
    ```bash
    find -L .claude/skills -name "SKILL.md" -type f 2>/dev/null | sed 's|^\.claude/skills/||' | sed 's|/SKILL\.md$||' | sort
    ```
+
    Note: The `-L` flag makes find follow symbolic links/junctions. `Glob` does not follow Windows junctions/symlinks correctly.
 
 2. Display numbered table with skill names only (DO NOT read files for descriptions):
+
    ```
    | #  | Skill                |
    |----|----------------------|
@@ -48,6 +53,7 @@ This skill edits existing skills. It detects if resources exist, loads the conte
 4. Load selected skill based on number input
 
 **After loading, show preview**:
+
 ```
 LOADED: [name] ([skill / skill + resources])
 
@@ -63,6 +69,7 @@ Proceed immediately to Step 2.
 Ask targeted questions using **AskUserQuestion** tool:
 
 **AskUserQuestion Configuration:**
+
 - header: "Edit Type"
 - question: "Wat wil je aanpassen?"
 - options:
@@ -70,12 +77,12 @@ Ask targeted questions using **AskUserQuestion** tool:
   2. label: "Rename", description: "Skill naam wijzigen"
   3. label: "Resources", description: "Scripts, references, templates"
   4. label: "Delete", description: "Skill verwijderen"
-  5. label: "Vraag uitleggen", description: "Leg uit wat deze opties betekenen"
 - multiSelect: true
 
 **Important**: If user selects "Delete", treat it as exclusive (ignore other selections). Delete requires separate confirmation flow.
 
 **Response Handling:**
+
 - Single selection → proceed to type-specific follow-ups
 - Multiple selections → proceed to Sequential Modal Flow (Step 2b)
 - Delete (alone or with others) → proceed to delete confirmation only
@@ -83,16 +90,19 @@ Ask targeted questions using **AskUserQuestion** tool:
 **Based on answer, ask follow-ups** (2-3 at a time):
 
 For content changes:
+
 - "Welke sectie moet aangepast worden?"
 - "Wat is er mis met de huidige versie?"
 - "Hoe moet het eruitzien na de wijziging?"
 
 For rename:
+
 - "Wat moet de nieuwe naam zijn?"
 
 For resources, use **AskUserQuestion** for type and action:
 
 **AskUserQuestion Configuration (Resource Type):**
+
 - header: "Resource Type"
 - question: "Welk type resource?"
 - options:
@@ -103,6 +113,7 @@ For resources, use **AskUserQuestion** for type and action:
 - multiSelect: false
 
 **AskUserQuestion Configuration (Action):**
+
 - header: "Actie"
 - question: "Wat wil je doen?"
 - options:
@@ -119,6 +130,7 @@ When user selects multiple edit types (e.g., Content + Rename + Resources), gath
 
 **Modal 2a: Content Details** (if Content selected)
 Use **AskUserQuestion**:
+
 - header: "Content Wijzigingen"
 - question: "Welke content wil je aanpassen?"
 - options:
@@ -126,11 +138,11 @@ Use **AskUserQuestion**:
   2. label: "Instructies", description: "Tekst en uitleg in de skill"
   3. label: "Output format", description: "Hoe de output eruitziet"
   4. label: "Frontmatter", description: "Skill configuratie (description, allowed-tools, context, etc.)"
-  5. label: "Vraag uitleggen", description: "Leg uit wat deze opties betekenen"
 - multiSelect: true
 
 **Modal 2b: Rename Details** (if Rename selected)
 Use **AskUserQuestion**:
+
 - header: "Nieuwe Naam"
 - question: "Wat moet de nieuwe naam zijn?"
 - options: [suggest 2-3 name variations based on current name]
@@ -160,6 +172,7 @@ Resources:
 ```
 
 Use **AskUserQuestion** for final confirmation:
+
 - header: "Bevestiging"
 - question: "Alle wijzigingen correct?"
 - options:
@@ -170,6 +183,7 @@ Use **AskUserQuestion** for final confirmation:
 - multiSelect: false
 
 **Response Handling:**
+
 - Toepassen → proceed to Step 3 (Preview with diffs)
 - Aanpassen → ask which part needs adjustment, return to relevant modal
 - Annuleren → exit edit flow
@@ -177,6 +191,7 @@ Use **AskUserQuestion** for final confirmation:
 ---
 
 **Summarize understanding** (for single selection flow):
+
 ```
 SUMMARY:
 
@@ -188,6 +203,7 @@ I understand you want to:
 Then use **AskUserQuestion** for confirmation:
 
 **AskUserQuestion Configuration:**
+
 - header: "Bevestiging"
 - question: "Klopt deze samenvatting?"
 - options:
@@ -197,12 +213,14 @@ Then use **AskUserQuestion** for confirmation:
 - multiSelect: false
 
 **Response Handling:**
+
 - Ja → proceed to Step 3 (Preview)
 - Nee → ask user what needs clarification
 
 ### Step 3: Show Preview
 
 **IMPORTANT: All skill files must be written in English.**
+
 - Skill content, instructions, examples: English
 - AskUserQuestion labels/descriptions: Follow user's language preference from CLAUDE.md
 - This ensures skills are reusable across projects
@@ -224,6 +242,7 @@ File: [filename]
 Use **AskUserQuestion** for apply confirmation:
 
 **AskUserQuestion Configuration:**
+
 - header: "Wijzigingen Toepassen"
 - question: "Wil je deze wijzigingen toepassen?"
 - options:
@@ -234,6 +253,7 @@ Use **AskUserQuestion** for apply confirmation:
 - multiSelect: false
 
 **Response Handling:**
+
 - Toepassen → proceed to Step 4 (Apply Changes)
 - Aanpassen → show adjustment modal (see below)
 - Annuleren → exit edit flow
@@ -241,6 +261,7 @@ Use **AskUserQuestion** for apply confirmation:
 **If "Aanpassen" selected**:
 
 Use AskUserQuestion tool:
+
 - header: "Aanpassing"
 - question: "Wat moet aangepast worden?"
 - options:
@@ -252,11 +273,10 @@ Use AskUserQuestion tool:
     description: "Sommige wijzigingen moeten uitgesloten worden"
   - label: "Opnieuw beginnen"
     description: "Terug naar requirements verzamelen"
-  - label: "Vraag uitleggen"
-    description: "Leg uit wat deze opties betekenen"
 - multiSelect: false
 
 Response handling:
+
 - If "Content onjuist": vraag wat specifiek fout is
 - If "Onderdelen missen": vraag wat er mist
 - If "Onderdelen verwijderen": vraag wat verwijderd moet worden
@@ -266,18 +286,75 @@ Iterate until approved (max 3 rounds).
 
 ### Step 4: Apply Changes
 
+#### Step 4.0: Detect Junction Structure
+
+Before modifying files, detect if skills use per-skill junctions to a shared library.
+
+```bash
+powershell -File - <<'PS1'
+$item = Get-ChildItem '.claude/skills' -Directory | Select-Object -First 1
+if ($item -and $item.LinkType -eq 'Junction') {
+  $target = $item.Target -replace '[\\/][^\\/]+$', ''
+  Write-Output "JUNCTIONS:$target"
+} else {
+  Write-Output "DIRECT"
+}
+PS1
+```
+
+- `JUNCTIONS:{path}` → per-skill junctions, shared library at `{path}`
+- `DIRECT` → no junctions, files live directly in `.claude/skills/`
+
+**If per-skill junctions active:**
+
+- Content edits: edit files via the junction (transparent, no extra steps)
+- Rename: must remove old junction, rename in shared library, create new junction
+- Delete: must remove junction AND delete from shared library
+
+#### Step 4.1: Apply Content Changes
+
 **For skill only**:
+
 1. Edit `.claude/skills/[name]/SKILL.md`
-2. If renamed: rename skill directory, update any internal path references
 
 **For skill with resources**:
+
 1. Edit `.claude/skills/[name]/SKILL.md`
 2. Update/create/delete supporting files as needed in `.claude/skills/[name]/`
-3. If renamed:
-   - Rename skill directory
-   - Update paths in SKILL.md file
+
+#### Step 4.2: Apply Rename (if applicable)
+
+**If direct (no junctions):**
+
+1. Rename skill directory
+2. Update paths in SKILL.md file
+
+**If per-skill junctions:**
+
+1. Remove old junction:
+   ```bash
+   powershell -File - <<'PS1'
+   Remove-Item '.claude/skills/[old-name]' -Force
+   PS1
+   ```
+2. Rename directory in shared library:
+   ```bash
+   mv '{shared_library_path}/[old-name]' '{shared_library_path}/[new-name]'
+   ```
+3. Create new junction:
+   ```bash
+   powershell -File - <<'PS1'
+   New-Item -ItemType Junction -Path '.claude/skills/[new-name]' -Target '{shared_library_path}/[new-name]'
+   PS1
+   ```
+4. Update paths in SKILL.md file
+5. Verify new junction works:
+   ```bash
+   test -f ".claude/skills/[new-name]/SKILL.md" && echo "Junction OK" || echo "Junction FAILED"
+   ```
 
 **Output**:
+
 ```
 CHANGES APPLIED!
 
@@ -285,6 +362,7 @@ Modified:
 - [list of changed files]
 
 [If renamed: old name → new name]
+[If junction: Junction updated: .claude/skills/[new-name] → {shared_library_path}/[new-name]]
 ```
 
 ### Step 5: Verification
@@ -306,6 +384,7 @@ Use the `mcp__sequential-thinking__sequentialthinking` tool to systematically ve
 After sequential thinking analysis, search for orphaned references to the old/deleted skill name:
 
 **Search patterns** (replace `old-name` with actual skill name):
+
 ```bash
 # Primary search - catches most references
 Grep pattern="old-name" path=".claude/"
@@ -317,6 +396,7 @@ Grep pattern="old-name" path=".claude/"
 ```
 
 The search covers `.claude/` recursively, including:
+
 - skills, agents
 - CLAUDE.md and settings files
 - Any other configuration files
@@ -330,6 +410,7 @@ If issues found:
 - Ask user (needs approval): content changes, deletions, structural changes
 
 **Final output**:
+
 ```
 VERIFICATION COMPLETE
 
@@ -341,6 +422,7 @@ Issues resolved: [count]
 ```
 
 Send notification:
+
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Skill edited: [name]"
 ```
@@ -350,7 +432,8 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 ### Rename
 
 When renaming, update ALL of:
-1. Skill directory name
+
+1. Skill directory name (and junction if per-skill junctions active — see Step 4.2)
 2. Paths inside SKILL.md (if references supporting files)
 3. Any internal references
 4. profiles.yaml if skill is listed there
@@ -369,6 +452,7 @@ Dit wordt permanent verwijderd:
 ```
 
 **AskUserQuestion Configuration:**
+
 - header: "Verwijder Bevestiging"
 - question: "Wil je '[name]' en alle bijbehorende bestanden permanent verwijderen?"
 - options:
@@ -378,17 +462,36 @@ Dit wordt permanent verwijderd:
 - multiSelect: false
 
 **Response Handling:**
+
 - Verwijderen → proceed with deletion
 - Annuleren → return to Step 2 (edit type selection)
 - Vraag uitleggen → clarify that deletion is permanent and cannot be undone
 
 After deletion:
+
+**If direct (no junctions):**
+
 - Delete skill directory (SKILL.md + all supporting files)
 - Confirm deletion complete
+
+**If per-skill junctions:**
+
+1. Remove junction first:
+   ```bash
+   powershell -File - <<'PS1'
+   Remove-Item '.claude/skills/[name]' -Force
+   PS1
+   ```
+2. Delete skill directory from shared library:
+   ```bash
+   rm -rf '{shared_library_path}/[name]'
+   ```
+3. Confirm both junction and directory deleted
 
 ### Add Resources to Skill
 
 If user wants to add supporting files to a skill:
+
 1. Explain this will create files in the skill directory
 2. Get confirmation
 3. Create requested files (scripts/, references .md, templates/) in `.claude/skills/[name]/`
@@ -397,6 +500,7 @@ If user wants to add supporting files to a skill:
 ### Remove Resources from Skill
 
 If user wants to remove all supporting files:
+
 1. Explain this will delete the supporting files
 2. Get confirmation
 3. Delete supporting files from `.claude/skills/[name]/`

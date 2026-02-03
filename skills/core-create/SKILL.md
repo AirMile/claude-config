@@ -14,12 +14,14 @@ This skill creates new skills through a streamlined process. It determines if bu
 ## Type Detection
 
 **Skill file only** (default):
+
 - No bundled resources needed
 - Everything from simple one-liners to complex multi-step workflows
 - Can use agents, tools, sequential thinking - anything
 - Result: `.claude/skills/[name]/SKILL.md`
 
 **Skill with resources** (only when bundled files needed):
+
 - Needs supporting files (scripts, references, templates, examples)
 - Result: `.claude/skills/[name]/SKILL.md` + supporting files in `.claude/skills/[name]/`
 
@@ -31,20 +33,21 @@ All fields are optional. Only `description` is recommended.
 
 ```yaml
 ---
-name: my-skill                    # Display name (default: directory name)
-description: What this skill does  # Recommended - Claude uses this to decide when to apply
-argument-hint: [issue-number]      # Hint shown during autocomplete
-disable-model-invocation: true     # Only user can invoke (default: false)
-user-invocable: false              # Only Claude can invoke (default: true)
-allowed-tools: Read, Grep, Glob   # Restrict tools when skill is active
-context: fork                      # Run in isolated subagent context
-agent: Explore                     # Which agent to use with context: fork
+name: my-skill # Display name (default: directory name)
+description: What this skill does # Recommended - Claude uses this to decide when to apply
+argument-hint: [issue-number] # Hint shown during autocomplete
+disable-model-invocation: true # Only user can invoke (default: false)
+user-invocable: false # Only Claude can invoke (default: true)
+allowed-tools: Read, Grep, Glob # Restrict tools when skill is active
+context: fork # Run in isolated subagent context
+agent: Explore # Which agent to use with context: fork
 ---
 ```
 
 ### String Substitutions
 
 Available in skill content:
+
 - `$ARGUMENTS` - All arguments passed when invoking
 - `$ARGUMENTS[N]` or `$N` - Specific argument by index (0-based)
 - `${CLAUDE_SESSION_ID}` - Current session ID
@@ -52,6 +55,7 @@ Available in skill content:
 ### Dynamic Context Injection
 
 Use `` !`command` `` to run shell commands before content is sent to Claude:
+
 ```markdown
 Current branch: !`git branch --show-current`
 ```
@@ -59,6 +63,7 @@ Current branch: !`git branch --show-current`
 ### Supporting Files
 
 Skills can include multiple files alongside SKILL.md:
+
 ```
 my-skill/
 ├── SKILL.md           # Main instructions (required)
@@ -76,18 +81,22 @@ Reference supporting files from SKILL.md so Claude knows when to load them.
 ### Step 1: Gather Requirements
 
 **If name provided** (`/core-create commit`):
+
 1. Acknowledge the name
 2. Ask: "Describe what `/[name]` should do. Give a concrete example."
 
 **If no name** (`/core-create`):
+
 1. Ask: "What should the skill do? Give a concrete example and suggest a name."
 
 **Follow-up questions** (ask 2-3 at a time):
+
 - "What should trigger this? Give example phrases."
 - "What's the expected output or behavior?"
 - "Are there variations or options needed?"
 
 **Output after gathering**:
+
 ```
 UNDERSTOOD:
 
@@ -98,6 +107,7 @@ Example: "[example user input]" → [expected behavior]
 ```
 
 Use **AskUserQuestion** tool:
+
 - header: "Confirm"
 - question: "Klopt deze samenvatting?"
 - options:
@@ -107,6 +117,7 @@ Use **AskUserQuestion** tool:
 - multiSelect: false
 
 **Response handling:**
+
 - "Ja, ga door" → proceed to Step 2
 - "Nee, aanpassen" → ask what needs to change
 - "Uitleg" → explain the next steps, then re-ask
@@ -116,11 +127,13 @@ Use **AskUserQuestion** tool:
 Analyze the requirements:
 
 **Check for resource needs**:
+
 - Does it need executable scripts that should be reused exactly? → scripts/
 - Does it need documentation/schemas to reference? → separate .md files
 - Does it need template files or assets for output? → templates, assets
 
 **Decision**:
+
 ```
 TYPE DETECTION:
 
@@ -132,6 +145,7 @@ Result: [Skill only / Skill + resources]
 ```
 
 Use **AskUserQuestion** tool:
+
 - header: "Type"
 - question: "Akkoord met het gedetecteerde type?"
 - options:
@@ -141,6 +155,7 @@ Use **AskUserQuestion** tool:
 - multiSelect: false
 
 **Response handling:**
+
 - "Ja, doorgaan" → if resources needed, proceed to Step 2.5; otherwise proceed to Step 3
 - "Nee, aanpassen" → ask what should change about the type/resources
 - "Uitleg" → explain skill vs skill+resources, then re-ask
@@ -152,6 +167,7 @@ Use **AskUserQuestion** tool:
 **Apply when:** Skill needs supporting files.
 
 Use **AskUserQuestion** tool:
+
 - header: "Resources"
 - question: "Welke resource types zijn nodig?"
 - options:
@@ -162,6 +178,7 @@ Use **AskUserQuestion** tool:
 - multiSelect: true
 
 **Response handling:**
+
 - Selected types → create corresponding structure in `.claude/skills/[name]/`
 - "Uitleg" → explain each resource type:
   - **Scripts**: Executable files the skill can invoke (e.g., Python scripts, shell scripts)
@@ -169,6 +186,7 @@ Use **AskUserQuestion** tool:
   - **Templates/Assets**: Static files for output (e.g., templates, images, fonts)
 
 **Output after selection**:
+
 ```
 RESOURCE STRUCTURE:
 
@@ -184,6 +202,7 @@ Proceed to Step 3.
 ### Step 3: Write Content
 
 **IMPORTANT: All skill files must be written in English.**
+
 - Skill content, instructions, examples: English
 - AskUserQuestion labels/descriptions: Follow user's language preference from CLAUDE.md
 - This ensures skills are reusable across projects
@@ -202,12 +221,15 @@ description: [clear description for skill list]
 [Instructions in imperative form]
 
 ## When to Use
+
 [Trigger scenarios]
 
 ## Process
+
 [Step-by-step workflow]
 
 ## Examples
+
 [Concrete examples if helpful]
 ```
 
@@ -225,20 +247,25 @@ description: [clear description for skill list]
 [Instructions in imperative form]
 
 ## When to Use
+
 [Trigger scenarios]
 
 ## Process
+
 [Step-by-step workflow referencing supporting files]
 
 ## Additional Resources
+
 - For [purpose], see [filename.md](filename.md)
 - For [purpose], run `python .claude/skills/[name]/scripts/[file]`
 
 ## Examples
+
 [Concrete examples if helpful]
 ```
 
 **Show draft**:
+
 ```
 DRAFT:
 
@@ -246,6 +273,7 @@ DRAFT:
 ```
 
 Use **AskUserQuestion** tool:
+
 - header: "Draft"
 - question: "Wijzigingen nodig?"
 - options:
@@ -256,6 +284,7 @@ Use **AskUserQuestion** tool:
 - multiSelect: false
 
 **Response handling:**
+
 - "Goedkeuren" → proceed to Step 3.5
 - "Aanpassen" → ask what needs to change, update draft
 - "Opnieuw genereren" → ask for new direction, regenerate from scratch
@@ -268,6 +297,7 @@ Iterate until approved (max 3 rounds).
 **Always ask** — determine which frontmatter options to enable beyond `description`.
 
 Use **AskUserQuestion** tool:
+
 - header: "Frontmatter"
 - question: "Welke skill-opties wil je configureren?"
 - options:
@@ -278,6 +308,7 @@ Use **AskUserQuestion** tool:
 - multiSelect: true
 
 **Response handling:**
+
 - "Geen extra opties" → keep only `description` in frontmatter
 - "Handmatig invoken" → add `disable-model-invocation: true`
 - "Subagent uitvoering" → add `context: fork`, ask which agent type (Explore, Plan, general-purpose)
@@ -290,6 +321,7 @@ Use **AskUserQuestion** tool:
   - `argument-hint` — Autocomplete hint for arguments
 
 Then ask if `$ARGUMENTS` substitution is needed:
+
 - If skill accepts arguments → add `$ARGUMENTS` or `$0`, `$1` etc. to content
 
 ### Step 3.6: Design Patterns (Conditional)
@@ -329,7 +361,6 @@ Then ask if `$ARGUMENTS` substitution is needed:
    **For Notifications:**
 
    **Rule:** Notify when Claude waits for user input AFTER a long-running phase.
-
    - Notify BEFORE user prompts that follow long phases (agents, research, generation)
    - Notify at workflow completion
    - DON'T notify during interactive Q&A or after short operations
@@ -348,7 +379,6 @@ Then ask if `$ARGUMENTS` substitution is needed:
    **For Parallel Agents:**
 
    **Rule:** Use 3 parallel agents with different perspectives for better decisions.
-
    - Each agent analyzes from a unique angle (e.g., speed/quality/balanced, or optimist/skeptic/pragmatist)
    - Synthesize results with weighted scoring if needed
    - Benefits: ~40-70% context token reduction, multi-perspective synthesis
@@ -368,7 +398,6 @@ Then ask if `$ARGUMENTS` substitution is needed:
    **For AskUserQuestion:**
 
    **Rule:** Use AskUserQuestion for structured choices instead of open-ended questions.
-
    - When workflow needs user decisions (yes/no, select option, choose approach)
    - When gathering preferences with predefined options
    - When confirming before destructive or irreversible actions
@@ -394,9 +423,11 @@ Then ask if `$ARGUMENTS` substitution is needed:
 Skills use a flat naming convention with category prefixes: `[category]-[name]`.
 
 1. **Detect existing categories:**
+
    ```bash
    find -L .claude/skills -name "SKILL.md" -type f 2>/dev/null | sed 's|^\.claude/skills/||' | sed 's|/SKILL\.md$||' | sed 's|-.*||' | sort -u
    ```
+
    This extracts unique prefixes like: `core`, `dev`, `frontend`, `thinking`, etc.
 
 2. **Present category options:**
@@ -418,34 +449,106 @@ Skills use a flat naming convention with category prefixes: `[category]-[name]`.
    - "Nieuw prefix" → ask for prefix name
 
 3. **Set target path:**
+
    ```
    TARGET: .claude/skills/[prefix]-[name]/SKILL.md
    ```
 
    Final skill name: `[prefix]-[name]`, invoked as `/[prefix]-[name]`
 
-#### Step 4.1: Write Files
+#### Step 4.1: Resolve Write Target (Junction Detection)
+
+Skills may live in a separate shared library linked via per-skill junctions. Detect this before writing.
+
+**Steps:**
+
+1. **Check if `.claude/skills/` uses per-skill junctions:**
+
+   ```bash
+   powershell -File - <<'PS1'
+   $first = Get-ChildItem '.claude/skills' -Directory | Select-Object -First 1
+   if ($first -and $first.LinkType -eq 'Junction') {
+     $target = $first.Target -replace '[\\/][^\\/]+$', ''
+     Write-Output "JUNCTIONS:$target"
+   } else {
+     Write-Output "DIRECT"
+   }
+   PS1
+   ```
+
+   - If output starts with `JUNCTIONS:` → per-skill junctions active, extract shared library path (e.g., `C:\Projects\claude-config\skills`)
+   - If output is `DIRECT` → no junctions, write directly to `.claude/skills/`
+
+2. **Set write paths based on detection:**
+
+   **If per-skill junctions (shared library):**
+
+   ```
+   write_target = {shared_library_path}/[prefix]-[name]/
+   junction_source = .claude/skills/[prefix]-[name]
+   junction_target = {shared_library_path}/[prefix]-[name]
+   ```
+
+   Write files to `write_target`, then create junction.
+
+   **If direct (no junctions):**
+
+   ```
+   write_target = .claude/skills/[prefix]-[name]/
+   ```
+
+   Write files directly, no junction needed.
+
+#### Step 4.2: Write Files
 
 **For Skill file only**:
-1. Write `.claude/skills/[prefix]-[name]/SKILL.md`
-2. Confirm creation
+
+1. Write `{write_target}/SKILL.md`
+2. If per-skill junctions: create junction (see Step 4.3)
+3. Confirm creation
 
 **For Skill with resources**:
-1. Write `.claude/skills/[prefix]-[name]/SKILL.md` with full instructions
-2. Create supporting files in `.claude/skills/[prefix]-[name]/`
+
+1. Write `{write_target}/SKILL.md` with full instructions
+2. Create supporting files in `{write_target}/`
 3. Create and populate scripts/, references, templates as needed
+4. If per-skill junctions: create junction (see Step 4.3)
+
+#### Step 4.3: Create Junction (Conditional)
+
+**Skip if:** No per-skill junctions detected in Step 4.1.
+
+**Apply when:** Per-skill junctions active (shared library).
+
+```bash
+powershell -File - <<'PS1'
+New-Item -ItemType Junction -Path '{junction_source}' -Target '{junction_target}'
+PS1
+```
+
+**Verify junction works:**
+
+```bash
+test -f ".claude/skills/[prefix]-[name]/SKILL.md" && echo "Junction OK" || echo "Junction FAILED"
+```
+
+If junction fails → report error, skill still exists in shared library but won't be accessible via `.claude/skills/`.
 
 **Output**:
+
 ```
 CREATED!
 
 [For skill file only:]
-- .claude/skills/[prefix]-[name]/SKILL.md
+- {write_target}/SKILL.md
 
 [For skill with resources:]
-- .claude/skills/[prefix]-[name]/SKILL.md
-- .claude/skills/[prefix]-[name]/scripts/[files]
-- .claude/skills/[prefix]-[name]/[reference].md
+- {write_target}/SKILL.md
+- {write_target}/scripts/[files]
+- {write_target}/[reference].md
+
+[If junction created:]
+Junction: .claude/skills/[prefix]-[name] → {junction_target}
 
 Test with: /[prefix]-[name]
 ```
@@ -455,23 +558,28 @@ Test with: /[prefix]-[name]
 Use sequential thinking to verify:
 
 **Checklist**:
+
 - [ ] File(s) created in correct location
 - [ ] Frontmatter valid (description required)
 - [ ] Instructions clear and in imperative form
 - [ ] All referenced supporting files exist (if resources created)
 - [ ] Skill name follows `[prefix]-[name]` convention
+- [ ] Junction created and accessible (if per-skill junctions active)
 
 **Auto-fix** (no approval needed):
+
 - Formatting issues
 - Whitespace/indentation
 - Path separators
 
 **Ask user** (needs approval):
+
 - Content changes
 - Missing files
 - Structure changes
 
 **Final output**:
+
 ```
 VERIFICATION COMPLETE
 
@@ -479,6 +587,7 @@ VERIFICATION COMPLETE
 ```
 
 Send notification:
+
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Skill created: [name]"
 ```
