@@ -1,20 +1,21 @@
 ---
-description: Transform idea/brainstorm output into prioritized web feature backlog
+description: Transform idea/brainstorm output into prioritized web feature plan
 disable-model-invocation: true
 ---
 
-# Backlog
+# Plan
 
 ## Overview
 
 This is the **bridge** between `/thinking:*` commands and the dev pipeline.
 Transforms structured idea markdown into a prioritized feature backlog ready for `/dev:define`.
 
-**Trigger**: `/dev:backlog` or `/dev:backlog [paste markdown]`
+**Trigger**: `/dev:plan` or `/dev:plan [paste markdown]`
 
 ## Input
 
 Accepts markdown from:
+
 - `/thinking:idea` output
 - `/thinking:brainstorm` output
 - Any structured web concept markdown
@@ -22,6 +23,7 @@ Accepts markdown from:
 ## Output
 
 `.workspace/backlog.md` with:
+
 - Decomposed features
 - Dependencies
 - MVP vs Phase 2/3 priority
@@ -47,6 +49,7 @@ Accepts markdown from:
    - Read both files
    - Analyze differences between concept and existing backlog
    - Show comparison:
+
      ```
      EXISTING BACKLOG DETECTED
 
@@ -58,6 +61,7 @@ Accepts markdown from:
      - REMOVED: {list of features in backlog but not in concept}
      - UNCHANGED: {count} features
      ```
+
    - Use AskUserQuestion:
      ```yaml
      header: "Backlog Update"
@@ -83,6 +87,7 @@ Accepts markdown from:
 4. **Scenario B: Only concept exists (no backlog)**
    - Read concept file
    - Show confirmation:
+
      ```
      CONCEPT DETECTED
 
@@ -91,6 +96,7 @@ Accepts markdown from:
 
      Dit concept wordt gebruikt voor de backlog.
      ```
+
    - Use AskUserQuestion:
      ```yaml
      header: "Concept Laden"
@@ -106,6 +112,7 @@ Accepts markdown from:
 
 5. **Scenario C: Only backlog exists (no concept)**
    - Show warning:
+
      ```
      WARNING: Backlog exists but no concept found
 
@@ -114,6 +121,7 @@ Accepts markdown from:
 
      Een concept is nodig om de backlog te updaten.
      ```
+
    - Use AskUserQuestion:
      ```yaml
      header: "Geen Concept"
@@ -146,6 +154,7 @@ Accepts markdown from:
    - If unclear, ask clarifying questions
 
 **Output:**
+
 ```
 INPUT LOADED
 
@@ -182,6 +191,7 @@ Sections: {count}
    | REFACTOR | Code quality, performance, architecture improvements |
 
 **Output:**
+
 ```
 FEATURES EXTRACTED
 
@@ -225,6 +235,7 @@ Found {count} features:
    - Can this be built standalone?
 
 2. **Build dependency graph:**
+
    ```
    routing (base)
    └── auth-pages
@@ -239,6 +250,7 @@ Found {count} features:
    - Ask user for resolution if unclear
 
 **Output:**
+
 ```
 DEPENDENCIES MAPPED
 
@@ -299,6 +311,7 @@ routing (base)
    Show proposed prioritization, allow adjustments.
 
 **Output:**
+
 ```
 PRIORITY ASSIGNED
 
@@ -337,9 +350,11 @@ Phase 3 (Nice to Have):
 ## MVP Features ({done}/{total} done)
 
 ### DONE
+
 - **{feature-name}** ({TYPE}) - {short description}
 
 ### TODO
+
 - **{feature-name}** ({TYPE}) → {dependency}
   {description}
 
@@ -350,6 +365,7 @@ Phase 3 (Nice to Have):
 ## Phase 2 Features ({done}/{total} done)
 
 ### TODO
+
 - **{feature-name}** ({TYPE}) → {dependency}
   {description}
 
@@ -358,6 +374,7 @@ Phase 3 (Nice to Have):
 ## Phase 3 Features ({done}/{total} done)
 
 ### TODO
+
 - **{feature-name}** ({TYPE}) → {dependency}
   {description}
 
@@ -368,15 +385,17 @@ Phase 3 (Nice to Have):
 Features added outside the original backlog.
 
 ### DONE
+
 - **{feature-name}** ({TYPE}) - {date}
   {description}
 
 ---
 
 ## Feature Map
-
 ```
+
 {dependency tree visualization}
+
 ```
 
 ---
@@ -391,6 +410,7 @@ Features added outside the original backlog.
    - Write `.workspace/backlog.md`
 
 **Output:**
+
 ```
 BACKLOG CREATED
 
@@ -408,6 +428,7 @@ Start development:
 ```
 
 **Send notification:**
+
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Backlog ready: {count} features"
 ```
@@ -415,16 +436,19 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 ## Best Practices
 
 ### Feature Granularity
+
 - Too big: Hard to estimate, long feedback loops
 - Too small: Overhead, dependency hell
 - Right size: 1-3 days of work, testable independently
 
 ### Dependencies
+
 - Minimize cross-dependencies
 - Prefer vertical slices over horizontal layers
 - Base systems first, content last
 
 ### MVP Scope
+
 - Functional > Feature-complete
 - Core user flow first
 - Polish is Phase 3
@@ -434,6 +458,7 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 **Input:** E-commerce dashboard idea markdown
 
 **Output:**
+
 ```
 BACKLOG CREATED
 

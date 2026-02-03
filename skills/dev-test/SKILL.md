@@ -39,11 +39,11 @@ Everything works except validation is missing and no welcome mail
 
 ## Feedback Categorization
 
-| Type | Example | Action |
-|------|---------|--------|
-| **TESTABLE** | "returns 500 instead of 422" | TDD fix loop (test FIRST) |
-| **MEASURABLE** | "response too slow", "font too small" | Direct fix |
-| **SUBJECTIVE** | "doesn't feel right" | Ask for specifics, then re-categorize |
+| Type           | Example                               | Action                                |
+| -------------- | ------------------------------------- | ------------------------------------- |
+| **TESTABLE**   | "returns 500 instead of 422"          | TDD fix loop (test FIRST)             |
+| **MEASURABLE** | "response too slow", "font too small" | Direct fix                            |
+| **SUBJECTIVE** | "doesn't feel right"                  | Ask for specifics, then re-categorize |
 
 ## Workflow
 
@@ -55,56 +55,106 @@ Everything works except validation is missing and no welcome mail
    - "recent" → find most recently modified 03-test-checklist.md
 
 2. **Locate and validate test checklist:**
+
    ```
    .workspace/features/{feature-name}/03-test-checklist.md
    ```
+
    If not found → exit with message to run `/dev:build {feature-name}` first.
 
 3. **Read checklist** and parse test items with expected behavior.
 
-4. **Display test instructions** appropriate for the stack (from CLAUDE.md):
+4. **Generate Test Data**
+
+   Before starting the walkthrough, analyze the feature to prepare concrete test data:
+   - Read `01-define.md` for requirements and acceptance criteria
+   - Read relevant source files for form fields, API endpoints, validation rules
+   - Generate realistic test values per item (names, emails, passwords, URLs, etc.)
+   - Include both valid and invalid data depending on the test scenario
+
+   This data is used in step 5 to pre-fill the instructions so the user can copy-paste.
+
+5. **Guided Walkthrough (1-by-1)**
+
+   Show setup instructions once (stack-appropriate from CLAUDE.md), then loop through each test item individually:
 
    ```
-   TEST CHECKLIST: {feature-name}
-
-   {stack-appropriate setup instructions}
-
-   Voer deze tests uit:
-   1. {test description}
-   2. {test description}
-
-   VERWACHT GEDRAG:
-   - {expected result 1}
-   - {expected result 2}
-
-   Test de feature en rapporteer de resultaten.
+   TEST SETUP: {feature-name}
+   {stack-appropriate setup, e.g. "Open http://localhost:3000"}
    ```
 
-5. **Ask for results:**
+   **For each item (1 to N):**
 
-   Use AskUserQuestion tool:
-   - header: "Test Resultaat"
-   - question: "Hoe ging de test?"
+   ```
+   ──────────────────────────────────────
+   TEST {n}/{total}: {item title}
+   ──────────────────────────────────────
+
+   STAPPEN:
+   1. {concrete action, e.g. "Ga naar /register"}
+   2. {concrete action with data, e.g. "Vul in: Email → test@voorbeeld.nl"}
+   3. {concrete action, e.g. "Klik op 'Registreren'"}
+
+   TESTDATA:
+   ┌─────────────┬──────────────────────┐
+   │ Veld        │ Waarde               │
+   ├─────────────┼──────────────────────┤
+   │ Naam        │ Test User            │
+   │ Email       │ test@voorbeeld.nl    │
+   │ Wachtwoord  │ Test1234!            │
+   └─────────────┴──────────────────────┘
+
+   VERWACHT:
+   → {exact expected outcome, e.g. "Redirect naar /dashboard, welkomstmelding zichtbaar"}
+   ```
+
+   Use AskUserQuestion tool per item:
+   - header: "Test {n}/{total}"
+   - question: "Resultaat van '{item title}'?"
    - options:
-     - label: "Alles werkt (Aanbevolen)", description: "Alle tests werken zoals verwacht"
-     - label: "Er zijn problemen", description: "Sommige dingen werken niet goed"
-     - label: "App crashed/error", description: "De app geeft een error"
+     - label: "Pass (Recommended)", description: "Werkt zoals verwacht"
+     - label: "Fail", description: "Werkt niet — ik geef details"
+     - label: "Skip", description: "Kan niet testen, sla over"
    - multiSelect: false
 
-   **If "Alles werkt"** → skip to FASE 6, mark all PASS
-   **If "Er zijn problemen"** → proceed to FASE 1b
-   **If "App crashed/error"** → ask for error details, analyze and fix
+   **If Pass** → record PASS, continue to next item
+   **If Fail** → ask for brief details (what happened instead?), record FAIL + notes, continue to next item
+   **If Skip** → record SKIP with reason, continue to next item
+
+   After all items are walked through, show summary:
+
+   ```
+   TEST RESULTATEN: {feature-name}
+
+   | # | Test | Resultaat |
+   |---|------|-----------|
+   | 1 | {title} | ✓ PASS |
+   | 2 | {title} | ✗ FAIL: {notes} |
+   | 3 | {title} | ⊘ SKIP |
+
+   PASS: {n}  FAIL: {n}  SKIP: {n}
+   ```
+
+   **If all PASS** → skip to FASE 6
+   **If any FAIL** → proceed to FASE 2 (categorize issues)
 
 ---
 
 ### FASE 1: Parse Feedback
 
+**When:** User provided inline feedback via `/dev:test {name} {feedback}` (skipping the guided walkthrough).
+
 Parse user feedback into structured results (item number, PASS/FAIL, notes).
 Accept both numbered format (`1:PASS 2:FAIL note`) and free text.
+
+After parsing, show the same summary table as the guided walkthrough and proceed to FASE 2.
+
+**Note:** When the guided walkthrough (FASE 0 step 5) was used, skip FASE 1 entirely — results are already structured.
 
 **If feedback is ambiguous:**
 
 Use AskUserQuestion tool:
+
 - header: "Feedback Onduidelijk"
 - question: "Ik kon de feedback niet goed parsen. Kun je het in dit formaat geven?"
 - options:
@@ -145,6 +195,7 @@ For each FAIL item, categorize using the Feedback Categorization table above.
 **For SUBJECTIVE issues**, ask for clarification immediately:
 
 Use AskUserQuestion tool:
+
 - header: "Verduidelijking Item {N}"
 - question: "'{notes}' is niet specifiek genoeg. Wat is er precies mis?"
 - options: (context-dependent, e.g. "Te snel/langzaam", "Functionaliteit", "Anders")
@@ -161,6 +212,7 @@ After clarification, re-categorize as TESTABLE or MEASURABLE.
 Assess complexity first. For complex issues (race conditions, auth flows, caching):
 
 Use AskUserQuestion tool:
+
 - header: "Research"
 - question: "Dit is een complexe fix ({brief description}). Wil je patterns researchen?"
 - options:
@@ -169,6 +221,7 @@ Use AskUserQuestion tool:
 - multiSelect: false
 
 Then apply TDD:
+
 1. Write test that captures the reported issue
 2. Run test → expect FAIL
 3. Implement minimal fix
@@ -178,6 +231,7 @@ Then apply TDD:
 **If test unexpectedly PASSES:**
 
 Use AskUserQuestion tool:
+
 - header: "Test Passed"
 - question: "De test slaagt al. Wat wil je doen?"
 - options:
@@ -192,6 +246,7 @@ Locate code, apply fix directly (config, styling, timing), document the change.
 Cannot be auto-verified — needs manual re-test.
 
 **After all fixes:**
+
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Fixes ready for re-test"
 ```
@@ -200,8 +255,31 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 
 ### FASE 4: Re-test Checklist
 
-Generate minimal re-test checklist containing ONLY fixed items.
-Show what was changed per item. Wait for re-test feedback.
+Re-test ONLY fixed items using the same guided walkthrough pattern from FASE 0 step 5.
+
+**For each fixed item:**
+
+```
+──────────────────────────────────────
+RE-TEST {n}/{total}: {item title}
+──────────────────────────────────────
+
+WIJZIGING:
+→ {what was changed and why, e.g. "Validation rule toegevoegd voor email veld"}
+
+STAPPEN:
+1. {same concrete steps as original test}
+2. {with same or updated test data}
+
+TESTDATA:
+{same table format as FASE 0}
+
+VERWACHT:
+→ {expected outcome after fix}
+```
+
+Use same AskUserQuestion per item (Pass/Fail/Skip).
+After all re-test items, show summary table.
 
 ---
 
@@ -212,6 +290,7 @@ Parse re-test feedback (same as FASE 1). If all pass → FASE 6.
 **If items still failing:**
 
 Use AskUserQuestion tool:
+
 - header: "Item {N} Faalt Nog"
 - question: "Item {N} werkt nog niet na fix. Wat wil je doen?"
 - options:
@@ -230,29 +309,34 @@ Loop back to FASE 2 until all pass or user exits.
 1. **Update 01-define.md:** Set `Status: VERIFIED` with date.
 
 2. **Create 03-test-results.md:**
+
    ```markdown
    # Test Results: {feature-name}
 
    ## Summary
-   | Metric | Value |
-   |--------|-------|
-   | Status | VERIFIED |
-   | Items | {N} |
-   | Passed | {N} |
-   | Date | {timestamp} |
+
+   | Metric | Value       |
+   | ------ | ----------- |
+   | Status | VERIFIED    |
+   | Items  | {N}         |
+   | Passed | {N}         |
+   | Date   | {timestamp} |
 
    ## Test History
 
    ### Session 1: {date}
-   | # | Initial | Final | Fixes Applied |
-   |---|---------|-------|---------------|
-   | 1 | PASS | PASS | - |
-   | 2 | FAIL | PASS | {fix description} |
+
+   | #   | Initial | Final | Fixes Applied     |
+   | --- | ------- | ----- | ----------------- |
+   | 1   | PASS    | PASS  | -                 |
+   | 2   | FAIL    | PASS  | {fix description} |
 
    ## Tests Added
+
    - {test files added}
 
    ## Files Modified
+
    - {file:line} ({change description})
    ```
 
@@ -265,6 +349,7 @@ Loop back to FASE 2 until all pass or user exits.
    - Update "Next" suggestion
 
 4. **Auto-commit:**
+
    ```bash
    git add .
    git commit -m "$(cat <<'EOF'
@@ -276,6 +361,7 @@ Loop back to FASE 2 until all pass or user exits.
    EOF
    )"
    ```
+
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
 5. **Notify:**
@@ -300,60 +386,85 @@ Loop back to FASE 2 until all pass or user exits.
 ```
 User: /dev:test user-registration
 
-Claude: TEST CHECKLIST: user-registration
+Claude: TEST SETUP: user-registration
+        Open http://localhost:3000
 
-        Voer deze tests uit:
-        1. Registreer met geldige gegevens
-        2. Registreer zonder email
-        3. Registreer met bestaand email
-        4. Check of welkomstmail verstuurd wordt
+        ──────────────────────────────────────
+        TEST 1/4: Register with valid data
+        ──────────────────────────────────────
 
-        VERWACHT GEDRAG:
-        - 1: Account aangemaakt, redirect naar dashboard
-        - 2: Validation error "Email is required"
-        - 3: Validation error "Email already taken"
-        - 4: Welkomstmail in mailbox/log
+        STAPPEN:
+        1. Ga naar /register
+        2. Vul de testdata in
+        3. Klik op 'Registreren'
 
-        Test de feature en rapporteer de resultaten.
+        TESTDATA:
+        ┌─────────────┬──────────────────────┐
+        │ Naam        │ Test User            │
+        │ Email       │ test@voorbeeld.nl    │
+        │ Wachtwoord  │ Test1234!            │
+        └─────────────┴──────────────────────┘
 
-User: 1:PASS
-      2:FAIL no error shown
-      3:PASS
-      4:FAIL no mail sent
+        VERWACHT:
+        → Redirect naar /dashboard, welkomstmelding zichtbaar
 
-Claude: FEEDBACK ANALYSIS
+        Resultaat van 'Register with valid data'? → PASS
 
-        PASSED: 2 items (1, 3)
-        FAILED: 2 items (2, 4)
+        ──────────────────────────────────────
+        TEST 2/4: Register without email
+        ──────────────────────────────────────
 
-        | # | Issue | Type | Action |
-        |---|-------|------|--------|
-        | 2 | no validation error | TESTABLE | TDD fix loop |
-        | 4 | no mail sent | TESTABLE | TDD fix loop |
+        STAPPEN:
+        1. Ga naar /register
+        2. Vul de testdata in (let op: email is LEEG)
+        3. Klik op 'Registreren'
 
-        -> Starting fix loop...
+        TESTDATA:
+        ┌─────────────┬──────────────────────┐
+        │ Naam        │ Test User            │
+        │ Email       │ (leeg laten)         │
+        │ Wachtwoord  │ Test1234!            │
+        └─────────────┴──────────────────────┘
 
-        [Writes test for item 2 -> FAILS as expected]
-        [Fix: adds required validation rule]
-        [Runs test -> PASSES]
+        VERWACHT:
+        → Rode foutmelding: "Email is verplicht"
 
-        [Writes test for item 4 -> FAILS]
-        [Fix: dispatches welcome mail in registration service]
-        [Runs test -> PASSES]
+        Resultaat van 'Register without email'? → FAIL
+        Wat ging er mis? → "Geen error, form submit gewoon"
 
-        FIX LOOP COMPLETE
+        [continues 3/4, 4/4...]
 
-        RE-TEST REQUIRED
+Claude: TEST RESULTATEN: user-registration
 
-        | # | Test | Change Made |
-        |---|------|-------------|
-        | 2 | Email validation | Added required rule |
-        | 4 | Welcome mail | Added mail dispatch |
+        | # | Test                  | Resultaat              |
+        |---|-----------------------|------------------------|
+        | 1 | Valid registration     | ✓ PASS                |
+        | 2 | Without email          | ✗ FAIL: geen error    |
+        | 3 | Duplicate email        | ✓ PASS                |
+        | 4 | Welcome mail           | ✗ FAIL: geen mail     |
 
-        Test opnieuw.
+        PASS: 2  FAIL: 2  SKIP: 0
 
-User: 2:PASS
-      4:PASS
+        [TDD fix loop for items 2 and 4...]
+
+        ──────────────────────────────────────
+        RE-TEST 1/2: Register without email
+        ──────────────────────────────────────
+
+        WIJZIGING:
+        → Validation rule 'required' toegevoegd aan email veld
+
+        STAPPEN:
+        1. Ga naar /register
+        2. Laat email leeg, vul rest in
+        3. Klik op 'Registreren'
+
+        VERWACHT:
+        → Rode foutmelding: "Email is verplicht"
+
+        Resultaat? → PASS
+
+        [RE-TEST 2/2: Welcome mail → PASS]
 
 Claude: USER-REGISTRATION COMPLETE!
 
@@ -364,6 +475,7 @@ Claude: USER-REGISTRATION COMPLETE!
 ## Restrictions
 
 This skill must NEVER:
+
 - Skip TDD for testable issues (concrete behavior described)
 - Guess what subjective feedback means
 - Apply fixes without documenting changes
@@ -371,12 +483,16 @@ This skill must NEVER:
 - Re-test items that already passed
 
 This skill must ALWAYS:
-- Show test checklist before asking for feedback
-- Parse all feedback formats (numbered, free text)
+
+- Walk through tests one-by-one with concrete steps and pre-generated test data
+- Generate realistic, copy-pasteable test data per item before starting
+- Show setup instructions once, then each item individually
+- Collect PASS/FAIL/SKIP per item via AskUserQuestion
+- Parse all feedback formats (numbered, free text) when inline feedback is provided
 - Categorize each failure (TESTABLE/MEASURABLE/SUBJECTIVE)
 - Use TDD loop for testable issues
 - Ask clarifying questions for subjective issues
-- Generate re-test checklist with only fixed items
+- Re-test only fixed items using same 1-by-1 walkthrough pattern
 - Loop until all items pass
 - Update documentation on completion
 - Send notifications at key points

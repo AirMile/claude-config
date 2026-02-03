@@ -9,13 +9,14 @@ disable-model-invocation: true
 
 This is **FASE 2** of the dev workflow: define -> **build** -> test
 
-Auto-detects stack from CLAUDE.md, lets user choose implementation technique, then follows the technique workflow.
+Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD or Implementation First), then builds sequentially.
 
 **Trigger**: `/dev:build` or `/dev:build [feature-name]`
 
 ## Input
 
 Reads from `.workspace/features/{feature-name}/01-define.md`:
+
 - Requirements with IDs (REQ-XXX)
 - Architecture design
 - Implementation order
@@ -42,6 +43,7 @@ Reads from `.workspace/features/{feature-name}/01-define.md`:
 **Step 2: Load Context**
 
 Optionally load stack-baseline for project-specific patterns:
+
 - `.claude/research/stack-baseline.md` (if exists)
 
 **Step 3: Load Feature Context**
@@ -56,6 +58,7 @@ Optionally load stack-baseline for project-specific patterns:
    - Extract implementation order
 
 3. Display:
+
    ```
    FEATURE: {feature-name}
 
@@ -67,42 +70,87 @@ Optionally load stack-baseline for project-specific patterns:
    (from 01-define.md)
    ```
 
-### FASE 1: Technique Selection (Automatic)
+### FASE 1: Technique Mapping (Per Requirement)
 
-Analyze requirements from 01-define.md and select technique:
+Analyze EACH requirement individually and assign a technique:
 
 ```
-IF requirements contain:
-  - validation rules, business logic, calculations, complex conditions
-  → TDD
+For each REQ-XXX:
+  IF requirement involves:
+    - validation rules, business logic, calculations, complex conditions
+    → TDD
 
-IF requirements contain:
-  - CRUD, middleware, config, straightforward wiring
-  → Implementation First
+  IF requirement involves:
+    - CRUD, middleware, config, straightforward wiring
+    → Implementation First
 
-DEFAULT → Implementation First
+  DEFAULT → Implementation First
 ```
 
-Load technique resource:
+Display technique map:
+
 ```
-Read(".claude/skills/dev-build/techniques/{selected-technique}.md")
+TECHNIQUE MAP:
+
+| REQ     | Technique            | Reason               |
+|---------|----------------------|----------------------|
+| REQ-001 | TDD                  | validation logic     |
+| REQ-002 | Implementation First | CRUD endpoint        |
+| REQ-003 | TDD                  | business rules       |
 ```
 
-Display:
+### FASE 2: Execute Build (Per Requirement)
+
+Initialize Ralph Loop for entire build:
+
+```bash
+powershell -ExecutionPolicy Bypass -File .claude/scripts/ralph/setup-ralph-loop.ps1 `
+  -Prompt @"
+Feature: {feature-name}
+Requirements:
+{list from 01-define.md with technique per requirement}
+
+Implementation order:
+{dependency order}
+
+Build this feature. Per requirement, use the assigned technique (TDD or Implementation First).
+Output <promise>BUILD_COMPLETE</promise> when ALL requirements are implemented and tested.
+"@ `
+  -MaxIterations 30 `
+  -CompletionPromise "BUILD_COMPLETE"
 ```
-TECHNIQUE: {name}
-Reason: {why this technique fits these requirements}
-```
 
-### FASE 2: Execute Technique
+For each requirement in IMPLEMENTATION ORDER:
 
-Follow the workflow defined in the loaded technique resource.
-The technique defines its own steps, Ralph Loop config, and output formats.
+1. Load technique resource:
+   ```
+   Read(".claude/skills/dev-build/techniques/{assigned-technique}.md")
+   ```
+2. Execute the technique workflow for THIS requirement
+3. Output per requirement:
+   ```
+   [REQ-XXX] {description}
+   Technique: {TDD | Implementation First}
+   {technique-specific output}
+   Progress: {done}/{total}
+   ```
 
-**Shared rules across all techniques:**
+After all requirements complete: run integration tests across requirements.
+
+**Shared rules:**
+
 - Requirements implemented SEQUENTIALLY (dependency order from 01-define.md)
 - Context7 research if unfamiliar pattern needed
 - All requirements must have tests before completion
+
+**Loop completion:**
+
+```
+<promise>BUILD_COMPLETE</promise>
+
+All {count} requirements implemented and tested.
+Techniques used: TDD ({n}), Implementation First ({n})
+```
 
 ### FASE 3: Generate Test Checklist
 
@@ -115,14 +163,14 @@ Create `03-test-checklist.md`:
 
 **Feature:** {feature-name}
 **Build Date:** {date}
-**Technique:** {selected technique}
+**Techniques:** TDD ({n}), Implementation First ({n})
 **Tests:** {passed}/{total} passing
 
 ## Automated Tests Status
 
-| REQ | Test | Status |
-|-----|------|--------|
-| REQ-001 | {test description} | PASS |
+| REQ     | Technique | Test               | Status |
+| ------- | --------- | ------------------ | ------ |
+| REQ-001 | TDD       | {test description} | PASS   |
 
 ## Files Created
 
@@ -132,17 +180,20 @@ Create `03-test-checklist.md`:
 
 ### Checklist
 
-| # | Test | Pass | Notes |
-|---|------|------|-------|
-| 1 | {test description} | [ ] | |
+| #   | Test               | Pass | Notes |
+| --- | ------------------ | ---- | ----- |
+| 1   | {test description} | [ ]  |       |
 
 ## Feedback Format
 
 Use `/dev:test {feature}` with results:
 ```
+
 1:PASS
 2:FAIL {reason}
+
 ```
+
 ```
 
 ### FASE 4: Completion
@@ -157,7 +208,7 @@ Create/update `02-build-log.md` with implementation history.
 BUILD COMPLETE: {feature}
 ========================
 
-Technique: {selected technique}
+Techniques: TDD ({n}), Implementation First ({n})
 Tests: {passed}/{total} PASS
 Files created: {count}
 
@@ -187,6 +238,7 @@ Condense all test output to this format. Omit stack traces, framework banners, a
 **PASS:** `TESTS: {n}/{n} PASS ({time})`
 
 **FAIL:**
+
 ```
 TESTS: {passed}/{total} PASS ({time})
 FAILED:
@@ -196,6 +248,7 @@ FAILED:
 ## Stack-Specific Behavior
 
 Determine test commands, file extensions, mocking approach, and async patterns from:
+
 1. `### Testing` section in CLAUDE.md
 2. Stack-baseline patterns (`.claude/research/stack-baseline.md`)
 3. Claude's own knowledge of the detected framework
@@ -205,6 +258,7 @@ Determine test commands, file extensions, mocking approach, and async patterns f
 ### Test Failures
 
 If a test fails unexpectedly:
+
 1. Log the failure
 2. Analyze the error
 3. Fix the implementation
@@ -214,6 +268,7 @@ If a test fails unexpectedly:
 ### Build Blockers
 
 If implementation is blocked:
+
 1. Log the blocker in 02-build-log.md
 2. Mark affected requirements as BLOCKED
 3. Continue with other requirements

@@ -6,66 +6,23 @@
 - Clear requirements where architecture is obvious
 - Features where the shape is well-understood upfront
 
-## Workflow
+## Single Requirement Workflow
 
-### Step 1: Implement (Sequential)
+### Step 1: Implement
 
-Initialize Ralph Loop:
+Implement THIS requirement fully. Context7 research if needed.
+Verify it works (manual check or quick run).
 
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/ralph/setup-ralph-loop.ps1 `
-  -Prompt @"
-Feature: {feature-name}
-Requirements:
-{list from 01-define.md}
+### Step 2: Write Test
 
-Implementation order:
-{dependency order}
+Generate test for the implemented requirement.
+Run test — fix implementation if FAIL.
 
-Build this feature implementation-first.
-Output <promise>BUILD_COMPLETE</promise> when all requirements are implemented.
-"@ `
-  -MaxIterations 30 `
-  -CompletionPromise "BUILD_COMPLETE"
+### Output
+
 ```
-
-For each requirement in IMPLEMENTATION ORDER:
-
-1. Implement the requirement fully
-2. Verify it works (manual check or quick run)
-3. Move to next requirement
-
-**Output per iteration:**
-```
-[ITERATION {n}]
 REQ-XXX: {description}
 IMPLEMENTED: {what was built}
+TESTED: PASS
 Files: {files created/modified}
-Progress: {done}/{total}
 ```
-
-**Loop completion:**
-```
-<promise>BUILD_COMPLETE</promise>
-
-All {count} requirements implemented.
-```
-
-### Step 2: Write Tests
-
-Generate tests for ALL implemented requirements.
-Run tests — fix any failures before continuing.
-
-```
-TESTS: {passed}/{total} PASS ({time})
-```
-
-If tests fail, fix implementation until all pass.
-
-### Step 3: Integration Tests
-
-Create integration tests for cross-requirement behavior.
-
-### Step 4: Verify All
-
-Run full test suite. All tests must PASS before completion.
