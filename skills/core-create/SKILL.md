@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 ## Overview
 
-This skill creates new skills through a streamlined process. It determines if bundled resources are needed, then guides through creation with concrete examples.
+This skill creates new skills through a streamlined process. It determines if bundled resources are needed, then guides through creation.
 
 **Trigger**: `/core-create` or `/core-create [name]`
 
@@ -177,26 +177,6 @@ Use **AskUserQuestion** tool:
   - label: "Uitleg", description: "Leg elk resource type uit"
 - multiSelect: true
 
-**Response handling:**
-
-- Selected types → create corresponding structure in `.claude/skills/[name]/`
-- "Uitleg" → explain each resource type:
-  - **Scripts**: Executable files the skill can invoke (e.g., Python scripts, shell scripts)
-  - **References**: Documentation loaded into context (e.g., API specs, style guides, patterns)
-  - **Templates/Assets**: Static files for output (e.g., templates, images, fonts)
-
-**Output after selection**:
-
-```
-RESOURCE STRUCTURE:
-
-.claude/skills/[name]/
-├── SKILL.md
-├── scripts/    [if selected]
-├── [ref].md    [if selected - as separate files alongside SKILL.md]
-└── templates/  [if selected]
-```
-
 Proceed to Step 3.
 
 ### Step 3: Write Content
@@ -207,62 +187,14 @@ Proceed to Step 3.
 - AskUserQuestion labels/descriptions: Follow user's language preference from CLAUDE.md
 - This ensures skills are reusable across projects
 
-**For Skill file only**:
+**Guiding principles for skill content:**
 
-Draft the skill file content:
-
-```markdown
----
-description: [clear description for skill list]
----
-
-# [Name]
-
-[Instructions in imperative form]
-
-## When to Use
-
-[Trigger scenarios]
-
-## Process
-
-[Step-by-step workflow]
-
-## Examples
-
-[Concrete examples if helpful]
-```
-
-**For Skill with resources**:
-
-Draft skill file + list supporting files to create:
-
-```markdown
----
-description: [clear description for skill list]
----
-
-# [Name]
-
-[Instructions in imperative form]
-
-## When to Use
-
-[Trigger scenarios]
-
-## Process
-
-[Step-by-step workflow referencing supporting files]
-
-## Additional Resources
-
-- For [purpose], see [filename.md](filename.md)
-- For [purpose], run `python .claude/skills/[name]/scripts/[file]`
-
-## Examples
-
-[Concrete examples if helpful]
-```
+- Write instructions in imperative form ("Scan the project", "Generate a report")
+- Focus on defining the PROCESS (steps, order, checks) — not prescribing specific output
+- Let Claude use its knowledge and Context7 for domain-specific details
+- Keep the skill lean: define what to do, not how to think
+- Include AskUserQuestion integration points where user decisions are needed
+- Reference supporting files if applicable
 
 **Show draft**:
 
@@ -277,18 +209,11 @@ Use **AskUserQuestion** tool:
 - header: "Draft"
 - question: "Wijzigingen nodig?"
 - options:
-  - label: "Goedkeuren (Recommended)", description: "Draft is goed, ga verder naar patterns"
+  - label: "Goedkeuren (Recommended)", description: "Draft is goed, ga verder naar frontmatter"
   - label: "Aanpassen", description: "Ik wil specifieke onderdelen wijzigen"
   - label: "Opnieuw genereren", description: "Begin opnieuw met andere aanpak"
   - label: "Uitleg", description: "Leg de structuur van de draft uit"
 - multiSelect: false
-
-**Response handling:**
-
-- "Goedkeuren" → proceed to Step 3.5
-- "Aanpassen" → ask what needs to change, update draft
-- "Opnieuw genereren" → ask for new direction, regenerate from scratch
-- "Uitleg" → explain the draft structure, then re-ask
 
 Iterate until approved (max 3 rounds).
 
@@ -307,19 +232,6 @@ Use **AskUserQuestion** tool:
   - label: "Uitleg", description: "Leg alle frontmatter opties uit"
 - multiSelect: true
 
-**Response handling:**
-
-- "Geen extra opties" → keep only `description` in frontmatter
-- "Handmatig invoken" → add `disable-model-invocation: true`
-- "Subagent uitvoering" → add `context: fork`, ask which agent type (Explore, Plan, general-purpose)
-- "Uitleg" → explain all frontmatter options:
-  - `disable-model-invocation: true` — Claude can't trigger this automatically, user must type /name
-  - `user-invocable: false` — Hidden from / menu, only Claude can load it
-  - `allowed-tools` — Restrict which tools Claude can use
-  - `context: fork` — Runs in isolated subagent, no access to conversation history
-  - `agent` — Which agent type for subagent execution
-  - `argument-hint` — Autocomplete hint for arguments
-
 Then ask if `$ARGUMENTS` substitution is needed:
 
 - If skill accepts arguments → add `$ARGUMENTS` or `$0`, `$1` etc. to content
@@ -330,91 +242,25 @@ Then ask if `$ARGUMENTS` substitution is needed:
 
 **Apply when:** Skill has workflow with multiple phases or long-running operations.
 
-**Process:**
+Analyze the workflow and determine which patterns apply:
 
-1. **Analyze workflow for applicable patterns:**
-   - Does it have long-running phases (agents, research, generation >30s)? → Notifications
-   - Does it have analysis/evaluation/planning phases? → Parallel Agents
-   - Does it need user decisions or choices? → AskUserQuestion
-   - Does it have multi-step configuration or input gathering? → Sequential Modals
+- **Notifications**: Long-running phases that need status updates
+- **Parallel Agents**: Analysis/evaluation phases that benefit from multiple perspectives
+- **AskUserQuestion**: Decision points where user input is needed
+- **Sequential Modals**: Multi-step input gathering
 
-2. **Let user select patterns:**
+Use **AskUserQuestion** tool:
 
-   Use **AskUserQuestion** tool:
-   - header: "Design Patterns"
-   - question: "Welke patterns wil je toepassen?"
-   - options:
-     - label: "Notifications", description: "Status updates en feedback aan user"
-     - label: "Parallel Agents", description: "Multi-agent orchestratie met 3 perspectieven"
-     - label: "AskUserQuestion", description: "Interactieve user input met keuzes"
-     - label: "Geen patterns", description: "Simpele skill zonder patterns"
-     - label: "Uitleg", description: "Leg elk pattern uit"
-   - multiSelect: true
+- header: "Design Patterns"
+- question: "Welke patterns wil je toepassen?"
+- options:
+  - label: "Notifications", description: "Status updates en feedback aan user"
+  - label: "Parallel Agents", description: "Multi-agent orchestratie met meerdere perspectieven"
+  - label: "AskUserQuestion", description: "Interactieve user input met keuzes"
+  - label: "Geen patterns", description: "Simpele skill zonder patterns"
+- multiSelect: true
 
-   **Response handling:**
-   - Selected patterns → configure each selected pattern (see below)
-   - "Geen patterns" → skip to Step 4
-   - "Uitleg" → explain each pattern briefly, then re-ask
-
-3. **Configure selected patterns:**
-
-   **For Notifications:**
-
-   **Rule:** Notify when Claude waits for user input AFTER a long-running phase.
-   - Notify BEFORE user prompts that follow long phases (agents, research, generation)
-   - Notify at workflow completion
-   - DON'T notify during interactive Q&A or after short operations
-
-   Messages: Short (3-5 words), action-oriented. Examples: "Ready for input", "Options ready", "[name] complete"
-
-   ```
-   NOTIFICATION TIMING:
-
-   Suggested notifications for your workflow:
-   - After [long phase X]: "[suggested message]"
-   - After [long phase Y]: "[suggested message]"
-   - At completion: "[name] complete"
-   ```
-
-   **For Parallel Agents:**
-
-   **Rule:** Use 3 parallel agents with different perspectives for better decisions.
-   - Each agent analyzes from a unique angle (e.g., speed/quality/balanced, or optimist/skeptic/pragmatist)
-   - Synthesize results with weighted scoring if needed
-   - Benefits: ~40-70% context token reduction, multi-perspective synthesis
-
-   ```
-   AGENT CONFIGURATION:
-
-   [Phase name] with 3-angle approach:
-
-   | Agent | Perspective | Focus |
-   |-------|-------------|-------|
-   | [name]-option1 | "[angle 1]" | [focus] |
-   | [name]-option2 | "[angle 2]" | [focus] |
-   | [name]-option3 | "[angle 3]" | [focus] |
-   ```
-
-   **For AskUserQuestion:**
-
-   **Rule:** Use AskUserQuestion for structured choices instead of open-ended questions.
-   - When workflow needs user decisions (yes/no, select option, choose approach)
-   - When gathering preferences with predefined options
-   - When confirming before destructive or irreversible actions
-   - Benefits: Clearer UX, faster responses, prevents misunderstandings
-
-   ```
-   ASKUSERQUESTION POINTS:
-
-   Suggested decision points:
-
-   | Decision Point | Question Type | Options |
-   |----------------|---------------|---------|
-   | [point 1] | [single/multi] | [options] |
-   | [point 2] | [single/multi] | [options] |
-   ```
-
-4. **Update draft with selected patterns** before proceeding to Step 4.
+Configure selected patterns and update the draft accordingly.
 
 ### Step 4: Create Files
 
@@ -428,25 +274,7 @@ Skills use a flat naming convention with category prefixes: `[category]-[name]`.
    find -L .claude/skills -name "SKILL.md" -type f 2>/dev/null | sed 's|^\.claude/skills/||' | sed 's|/SKILL\.md$||' | sed 's|-.*||' | sort -u
    ```
 
-   This extracts unique prefixes like: `core`, `dev`, `frontend`, `thinking`, etc.
-
-2. **Present category options:**
-
-   Use **AskUserQuestion** tool:
-   - header: "Category"
-   - question: "Welk category prefix moet de skill krijgen?"
-   - options:
-     - label: "[best-match]- (Recommended)", description: "Past bij: [reason]"
-     - label: "[second-match]-", description: "Alternatief: [reason]"
-     - label: "[third-match]-", description: "Ook mogelijk: [reason]"
-     - label: "Nieuw prefix", description: "Maak een nieuwe categorie aan"
-   - multiSelect: false
-
-   **Note:** First 3 options are dynamically selected from existing prefixes based on best fit analysis.
-
-   **Response handling:**
-   - Existing prefix selected → use that prefix
-   - "Nieuw prefix" → ask for prefix name
+2. **Present category options** using AskUserQuestion — suggest best-matching existing prefixes, with option for new prefix.
 
 3. **Set target path:**
 
@@ -454,101 +282,54 @@ Skills use a flat naming convention with category prefixes: `[category]-[name]`.
    TARGET: .claude/skills/[prefix]-[name]/SKILL.md
    ```
 
-   Final skill name: `[prefix]-[name]`, invoked as `/[prefix]-[name]`
-
 #### Step 4.1: Resolve Write Target (Junction Detection)
 
 Skills may live in a separate shared library linked via per-skill junctions. Detect this before writing.
 
-**Steps:**
+**Step 1 — Check if junctions are active:**
 
-1. **Check if `.claude/skills/` uses per-skill junctions:**
+```bash
+powershell -Command "(Get-ChildItem '.claude/skills' -Directory | Select-Object -First 1).LinkType"
+```
 
-   ```bash
-   powershell -File - <<'PS1'
-   $first = Get-ChildItem '.claude/skills' -Directory | Select-Object -First 1
-   if ($first -and $first.LinkType -eq 'Junction') {
-     $target = $first.Target -replace '[\\/][^\\/]+$', ''
-     Write-Output "JUNCTIONS:$target"
-   } else {
-     Write-Output "DIRECT"
-   }
-   PS1
-   ```
+- Output `Junction` → per-skill junctions active, proceed to step 2
+- Empty output → no junctions, write directly to `.claude/skills/`
 
-   - If output starts with `JUNCTIONS:` → per-skill junctions active, extract shared library path (e.g., `C:\Projects\claude-config\skills`)
-   - If output is `DIRECT` → no junctions, write directly to `.claude/skills/`
+**Step 2 — Get shared library path (only if Junction):**
 
-2. **Set write paths based on detection:**
+```bash
+powershell -Command "Split-Path (Get-ChildItem '.claude/skills' -Directory | Select-Object -First 1).Target"
+```
 
-   **If per-skill junctions (shared library):**
-
-   ```
-   write_target = {shared_library_path}/[prefix]-[name]/
-   junction_source = .claude/skills/[prefix]-[name]
-   junction_target = {shared_library_path}/[prefix]-[name]
-   ```
-
-   Write files to `write_target`, then create junction.
-
-   **If direct (no junctions):**
-
-   ```
-   write_target = .claude/skills/[prefix]-[name]/
-   ```
-
-   Write files directly, no junction needed.
+- Output is the shared library path (e.g., `C:\Projects\claude-config\skills`)
+- Write files there, then create junction back to `.claude/skills/`
 
 #### Step 4.2: Write Files
 
-**For Skill file only**:
+1. Create skill directory in write target
+2. Write SKILL.md with finalized content
+3. Create supporting files if applicable
+4. If per-skill junctions: create junction and verify
 
-1. Write `{write_target}/SKILL.md`
-2. If per-skill junctions: create junction (see Step 4.3)
-3. Confirm creation
-
-**For Skill with resources**:
-
-1. Write `{write_target}/SKILL.md` with full instructions
-2. Create supporting files in `{write_target}/`
-3. Create and populate scripts/, references, templates as needed
-4. If per-skill junctions: create junction (see Step 4.3)
-
-#### Step 4.3: Create Junction (Conditional)
-
-**Skip if:** No per-skill junctions detected in Step 4.1.
-
-**Apply when:** Per-skill junctions active (shared library).
+**Junction creation:**
 
 ```bash
-powershell -File - <<'PS1'
-New-Item -ItemType Junction -Path '{junction_source}' -Target '{junction_target}'
-PS1
+powershell -Command "New-Item -ItemType Junction -Path '{junction_source}' -Target '{junction_target}'"
 ```
 
-**Verify junction works:**
+**Verify:**
 
 ```bash
 test -f ".claude/skills/[prefix]-[name]/SKILL.md" && echo "Junction OK" || echo "Junction FAILED"
 ```
-
-If junction fails → report error, skill still exists in shared library but won't be accessible via `.claude/skills/`.
 
 **Output**:
 
 ```
 CREATED!
 
-[For skill file only:]
-- {write_target}/SKILL.md
-
-[For skill with resources:]
-- {write_target}/SKILL.md
-- {write_target}/scripts/[files]
-- {write_target}/[reference].md
-
-[If junction created:]
-Junction: .claude/skills/[prefix]-[name] → {junction_target}
+- [list of created files]
+[If junction: Junction: source → target]
 
 Test with: /[prefix]-[name]
 ```
@@ -557,8 +338,6 @@ Test with: /[prefix]-[name]
 
 Use sequential thinking to verify:
 
-**Checklist**:
-
 - [ ] File(s) created in correct location
 - [ ] Frontmatter valid (description required)
 - [ ] Instructions clear and in imperative form
@@ -566,215 +345,11 @@ Use sequential thinking to verify:
 - [ ] Skill name follows `[prefix]-[name]` convention
 - [ ] Junction created and accessible (if per-skill junctions active)
 
-**Auto-fix** (no approval needed):
-
-- Formatting issues
-- Whitespace/indentation
-- Path separators
-
-**Ask user** (needs approval):
-
-- Content changes
-- Missing files
-- Structure changes
-
-**Final output**:
-
-```
-VERIFICATION COMPLETE
-
-[name] is ready to use!
-```
+**Auto-fix** (no approval needed): formatting, whitespace, path separators
+**Ask user** (needs approval): content changes, missing files, structure changes
 
 Send notification:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Skill created: [name]"
-```
-
-## Examples
-
-### Example 1: Simple Skill
-
-**User**: `/core-create suggest`
-**Claude**: "Describe what `/suggest` should do."
-**User**: "Generate 3 options using sequential thinking"
-
-```
-UNDERSTOOD:
-
-Name: /suggest
-Purpose: Generate 3 alternative options using sequential thinking
-Example: "suggest how to refactor this function" → 3 analyzed options
-
-Correct? Yes
-
-TYPE DETECTION:
-
-Supporting files needed: NO
-Result: Skill file
-
-DRAFT:
-
----
-description: Generate 3 options using sequential thinking
----
-
-# Suggest
-
-Generate 3 alternative approaches for the given problem using sequential thinking analysis.
-
-## Process
-
-1. Analyze the problem or request
-2. Use sequential thinking to explore options
-3. Present exactly 3 alternatives with pros/cons
-4. Ask which option to pursue
-
-## Output Format
-
-**Option 1: [Name]**
-- Approach: [description]
-- Pros: [benefits]
-- Cons: [drawbacks]
-
-[Repeat for options 2 and 3]
-
-Which option do you prefer?
-
-[AskUserQuestion: "Is de draft goed?" → "Ja"]
-
-[AskUserQuestion Frontmatter: "Geen extra opties"]
-
-CATEGORY SELECTION:
-
-Existing prefixes: core, dev, frontend, thinking
-
-[AskUserQuestion: "Welk category prefix?"
-→ "thinking- (Recommended)" - Past bij: analysis and ideation skills]
-
-TARGET: .claude/skills/thinking-suggest/SKILL.md
-
-CREATED!
-
-- .claude/skills/thinking-suggest/SKILL.md
-
-Test with: /thinking-suggest
-```
-
-### Example 2: Skill with Resources
-
-**User**: `/core-create pdf-rotate`
-**Claude**: "Describe what `/pdf-rotate` should do."
-**User**: "Rotate PDF files by 90, 180, or 270 degrees"
-
-```
-UNDERSTOOD:
-
-Name: /pdf-rotate
-Purpose: Rotate PDF files by specified degrees
-Example: "rotate invoice.pdf 90 degrees" → rotated PDF
-
-Correct? Yes
-
-TYPE DETECTION:
-
-Supporting files needed: YES
-- scripts/rotate_pdf.py - Python script for reliable PDF rotation
-
-Result: Skill + resources
-
-DRAFT:
-
----
-description: Rotate PDF files by 90, 180, or 270 degrees
----
-
-# PDF Rotate
-
-Rotates PDF files by specified degrees using a bundled Python script.
-
-## When to Use
-When user wants to rotate a PDF file.
-
-## Process
-
-1. Receive PDF file and rotation angle from user
-2. Validate angle is 90, 180, or 270
-3. Execute: `python .claude/skills/dev-pdf-rotate/scripts/rotate_pdf.py --input [file] --degrees [angle]`
-4. Return rotated PDF to user
-
-## Additional Resources
-- [`scripts/rotate_pdf.py`](scripts/rotate_pdf.py) - Python script using PyPDF2
-
----
-
-[AskUserQuestion: "Is de draft goed?" → "Ja"]
-
-[AskUserQuestion Frontmatter: "Handmatig invoken" → adds disable-model-invocation: true]
-
-CATEGORY SELECTION:
-
-Existing prefixes: core, dev, frontend, thinking
-
-[AskUserQuestion: "Welk category prefix?"
-→ "dev- (Recommended)" - Past bij: development utilities]
-
-TARGET: .claude/skills/dev-pdf-rotate/SKILL.md
-
-CREATED!
-
-- .claude/skills/dev-pdf-rotate/SKILL.md
-- .claude/skills/dev-pdf-rotate/scripts/rotate_pdf.py
-
-Test with: /dev-pdf-rotate
-```
-
-### Example 3: Subagent Skill
-
-**User**: `/core-create deep-research`
-**Claude**: "Describe what `/deep-research` should do."
-**User**: "Research a topic thoroughly using codebase exploration"
-
-```
-UNDERSTOOD:
-
-Name: /deep-research
-Purpose: Research a topic thoroughly using codebase exploration
-Example: "deep-research authentication flow" → comprehensive analysis
-
-Correct? Yes
-
-TYPE DETECTION:
-
-Supporting files needed: NO
-Result: Skill file
-
-DRAFT:
-
----
-description: Research a topic thoroughly using codebase exploration
-context: fork
-agent: Explore
----
-
-# Deep Research
-
-Research $ARGUMENTS thoroughly:
-
-1. Find relevant files using Glob and Grep
-2. Read and analyze the code
-3. Summarize findings with specific file references
-
----
-
-[AskUserQuestion Frontmatter: "Subagent uitvoering" → context: fork, agent: Explore]
-
-TARGET: .claude/skills/core-deep-research/SKILL.md
-
-CREATED!
-
-- .claude/skills/core-deep-research/SKILL.md
-
-Test with: /core-deep-research [topic]
 ```

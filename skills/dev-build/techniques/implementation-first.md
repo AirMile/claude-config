@@ -25,4 +25,5 @@ REQ-XXX: {description}
 IMPLEMENTED: {what was built}
 TESTED: PASS
 Files: {files created/modified}
+SYNC:  {pattern/concept} in {main file(s)} — {what it does and why this approach. What depends on it.}
 ```

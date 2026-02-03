@@ -132,6 +132,7 @@ For each requirement in IMPLEMENTATION ORDER:
    [REQ-XXX] {description}
    Technique: {TDD | Implementation First}
    {technique-specific output}
+   SYNC: {pattern/concept} in {file(s)} — {1-2 sentences: what, why, what depends on it}
    Progress: {done}/{total}
    ```
 
@@ -202,6 +203,48 @@ Use `/dev:test {feature}` with results:
 
 Create/update `02-build-log.md` with implementation history.
 
+**Step 1b: Codebase Sync**
+
+Generate an architectural overview that connects all built requirements. Display in conversation AND write to `02-build-log.md` under a `## Codebase Sync` heading.
+
+Purpose: Keep the user in sync with the codebase — explain how everything fits together, which patterns were used and why, and how data flows through the system.
+
+Format:
+
+```
+## Codebase Sync
+
+### Architecture
+
+{dependency flow diagram showing how layers connect}
+Example: Types → Schemas → API Routes → Hooks → Components → Pages
+
+### Key Patterns
+
+| Pattern | Where | Why |
+|---------|-------|-----|
+| {pattern name} | {file(s)} | {why this pattern was chosen over alternatives} |
+
+### Data Flow
+
+{Numbered flows for main user journeys through the system}
+
+1. **{Journey name}**: {Step → Step → Step}
+2. **{Journey name}**: {Step → Step → Step}
+
+### Key Decisions
+
+{Decisions that deviate from obvious/default approaches — only non-obvious choices with reasoning}
+
+- **{Decision}** — {reasoning}
+```
+
+Guidelines:
+
+- Key Patterns: only include patterns that aren't obvious from the stack (e.g., don't list "React components" — do list "discriminated unions for exhaustive type checking")
+- Data Flow: trace the 2-3 most important user journeys end-to-end
+- Key Decisions: only decisions where an alternative was considered and rejected — explain the trade-off
+
 **Step 2: Output summary**
 
 ```
@@ -215,6 +258,8 @@ Files created: {count}
 Documentation:
 - .workspace/features/{feature}/02-build-log.md
 - .workspace/features/{feature}/03-test-checklist.md
+
+Codebase Sync: See architectural overview above or in 02-build-log.md
 ```
 
 **Next Step**

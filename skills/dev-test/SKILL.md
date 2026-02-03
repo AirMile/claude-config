@@ -39,11 +39,11 @@ Everything works except validation is missing and no welcome mail
 
 ## Feedback Categorization
 
-| Type           | Example                               | Action                                |
-| -------------- | ------------------------------------- | ------------------------------------- |
-| **TESTABLE**   | "returns 500 instead of 422"          | TDD fix loop (test FIRST)             |
-| **MEASURABLE** | "response too slow", "font too small" | Direct fix                            |
-| **SUBJECTIVE** | "doesn't feel right"                  | Ask for specifics, then re-categorize |
+| Type           | Example                               | Action                                  |
+| -------------- | ------------------------------------- | --------------------------------------- |
+| **TESTABLE**   | "returns 500 instead of 422"          | Technique selection (TDD or Impl First) |
+| **MEASURABLE** | "response too slow", "font too small" | Direct fix                              |
+| **SUBJECTIVE** | "doesn't feel right"                  | Ask for specifics, then re-categorize   |
 
 ## Workflow
 
@@ -203,11 +203,41 @@ Use AskUserQuestion tool:
 
 After clarification, re-categorize as TESTABLE or MEASURABLE.
 
+**Technique mapping for TESTABLE issues:**
+
+Analyze each TESTABLE issue individually and assign a technique:
+
+```
+For each TESTABLE issue:
+  IF issue involves:
+    - validation rules, business logic, calculations, edge cases, race conditions
+    → TDD
+
+  IF issue involves:
+    - CRUD wiring, config, missing imports, straightforward plumbing, routing
+    → Implementation First
+
+  DEFAULT → TDD
+```
+
+Display technique map:
+
+```
+TECHNIQUE MAP (fixes):
+
+| Item | Issue                | Technique            | Reason              |
+|------|----------------------|----------------------|---------------------|
+| {N}  | {issue description}  | TDD                  | {reason}            |
+| {N}  | {issue description}  | Implementation First | {reason}            |
+```
+
 ---
 
 ### FASE 3: Fix Loop
 
-#### TESTABLE Issues: TDD Fix
+For each TESTABLE issue, execute the assigned technique. For MEASURABLE issues, apply Direct Fix.
+
+#### TDD Fix
 
 Assess complexity first. For complex issues (race conditions, auth flows, caching):
 
@@ -228,6 +258,18 @@ Then apply TDD:
 4. Run test → expect PASS
 5. Max 3 attempts before asking user
 
+After each successful fix, output:
+
+```
+[FIX] Item {N}: {title}
+Technique: TDD
+RED:   FAIL ({what the test captured})
+GREEN: PASS
+SYNC:  Root cause: {what was actually wrong, file:line}.
+       Fix: {what pattern/approach was used and why}.
+       Impact: {what this affects — isolated to this file, or touches other parts}.
+```
+
 **If test unexpectedly PASSES:**
 
 Use AskUserQuestion tool:
@@ -240,10 +282,42 @@ Use AskUserQuestion tool:
   - label: "Handmatig checken", description: "Stop en check dit handmatig"
 - multiSelect: false
 
+#### Implementation First Fix
+
+For TESTABLE issues assigned Implementation First technique:
+
+1. Analyze the reported issue and locate root cause
+2. Implement the fix directly
+3. Write test that verifies the fix works
+4. Run test → expect PASS
+5. If FAIL → adjust implementation, max 3 attempts before asking user
+
+After each successful fix, output:
+
+```
+[FIX] Item {N}: {title}
+Technique: Implementation First
+IMPLEMENTED: {what was fixed}
+TESTED: PASS
+SYNC:  Root cause: {what was actually wrong, file:line}.
+       Fix: {what was changed and why this approach}.
+       Impact: {what this affects in the codebase}.
+```
+
 #### MEASURABLE Issues: Direct Fix
 
 Locate code, apply fix directly (config, styling, timing), document the change.
 Cannot be auto-verified — needs manual re-test.
+
+After each fix, output:
+
+```
+[FIX] Item {N}: {title}
+Technique: Direct Fix
+SYNC:  Root cause: {what was actually wrong, file:line}.
+       Fix: {what was changed and why this approach}.
+       Impact: {what this affects in the codebase}.
+```
 
 **After all fixes:**
 
@@ -265,7 +339,8 @@ RE-TEST {n}/{total}: {item title}
 ──────────────────────────────────────
 
 WIJZIGING:
-→ {what was changed and why, e.g. "Validation rule toegevoegd voor email veld"}
+→ {summary of change + root cause, e.g. "Client-side required validation + inline error
+   toegevoegd — form miste frontend validatie terwijl backend (Zod) al correct was"}
 
 STAPPEN:
 1. {same concrete steps as original test}

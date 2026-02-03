@@ -30,4 +30,5 @@ REQ-XXX: {description}
 RED:      FAIL ({reason})
 GREEN:    PASS
 REFACTOR: PASS
+SYNC:    {pattern/concept} in {main file(s)} — {what it does and why this approach. What depends on it.}
 ```
