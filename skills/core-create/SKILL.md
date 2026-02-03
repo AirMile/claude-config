@@ -323,6 +323,34 @@ powershell -Command "New-Item -ItemType Junction -Path '{junction_source}' -Targ
 test -f ".claude/skills/[prefix]-[name]/SKILL.md" && echo "Junction OK" || echo "Junction FAILED"
 ```
 
+#### Step 4.3: Register in Profile
+
+New skills must be added to `profiles.yaml` so they survive profile switches.
+
+1. **Locate profiles.yaml:**
+   - If per-skill junctions: `{shared_library}/core-profile/profiles.yaml`
+   - If no junctions: `.claude/skills/core-profile/profiles.yaml`
+
+2. **Detect matching profile** from skill name prefix:
+   - Skill name `dev-lint` → prefix `dev` → profile key `dev`
+   - Skill name `frontend-seo` → prefix `frontend` → profile key `frontend`
+
+3. **Ask user** using AskUserQuestion:
+   - header: "Profile"
+   - question: "Aan welk profiel moet de skill worden toegevoegd?"
+   - options: matching profile as recommended + 2-3 other likely profiles from profiles.yaml
+   - multiSelect: false
+
+4. **Add skill name** to the chosen profile in profiles.yaml:
+   - Insert in alphabetical order within the profile's skill list
+   - Use the Edit tool to add the entry
+
+5. **Validate** by running:
+
+   ```bash
+   python3 .claude/skills/core-profile/switch-profile.py --validate
+   ```
+
 **Output**:
 
 ```
@@ -330,6 +358,7 @@ CREATED!
 
 - [list of created files]
 [If junction: Junction: source → target]
+Profile: added to [profile-name] in profiles.yaml
 
 Test with: /[prefix]-[name]
 ```

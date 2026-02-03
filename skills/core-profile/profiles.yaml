@@ -1,8 +1,6 @@
+# Order determines numbering for --list. Do not reorder without reason.
 core:
-  - core-profile
   - core-commit
-  - core-config-revert
-  - core-config-sync
   - core-create
   - core-edit
   - core-explore
@@ -11,34 +9,14 @@ core:
   - core-setup
 
 dev:
-  - core-profile
-  - core-commit
-  - core-config-revert
-  - core-config-sync
-  - core-create
-  - core-edit
-  - core-explore
-  - core-resume
-  - core-save
-  - core-setup
   - dev-backlog
   - dev-build
   - dev-define
+  - dev-refactor
   - dev-test
-  - dev-repos
   - dev-worktree
 
 dev-legacy:
-  - core-profile
-  - core-commit
-  - core-config-revert
-  - core-config-sync
-  - core-create
-  - core-edit
-  - core-explore
-  - core-resume
-  - core-save
-  - core-setup
   - dev-legacy-1-plan
   - dev-legacy-2-code
   - dev-legacy-3-verify
@@ -49,61 +27,22 @@ dev-legacy:
   - dev-legacy-verify
 
 frontend:
-  - core-profile
-  - core-commit
-  - core-config-revert
-  - core-config-sync
-  - core-create
-  - core-edit
-  - core-explore
-  - core-resume
-  - core-save
-  - core-setup
+  - frontend-seo
   - frontend-theme
   - frontend-wireframe
 
 game:
-  - core-profile
-  - core-commit
-  - core-config-revert
-  - core-config-sync
-  - core-create
-  - core-edit
-  - core-explore
-  - core-resume
-  - core-save
-  - core-setup
   - game-backlog
   - game-build
   - game-define
   - game-test
 
 project:
-  - core-profile
-  - core-commit
-  - core-config-revert
-  - core-config-sync
-  - core-create
-  - core-edit
-  - core-explore
-  - core-resume
-  - core-save
-  - core-setup
   - project-list
   - project-new
   - project-remove
 
 story:
-  - core-profile
-  - core-commit
-  - core-config-revert
-  - core-config-sync
-  - core-create
-  - core-edit
-  - core-explore
-  - core-resume
-  - core-save
-  - core-setup
   - story-character
   - story-new
   - story-next
@@ -111,35 +50,12 @@ story:
   - story-world
 
 team:
-  - core-profile
-  - core-commit
-  - core-config-revert
-  - core-config-sync
-  - core-create
-  - core-edit
-  - core-explore
-  - core-resume
-  - core-save
-  - core-setup
   - team-review
   - team-test
 
 thinking:
-  - core-profile
-  - core-commit
-  - core-config-revert
-  - core-config-sync
-  - core-create
-  - core-edit
-  - core-explore
-  - core-resume
-  - core-save
-  - core-setup
   - thinking-analyze
   - thinking-brainstorm
   - thinking-critique
   - thinking-idea
   - thinking-plan
-
-all:
-  - "*"
