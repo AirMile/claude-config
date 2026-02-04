@@ -1,5 +1,5 @@
 ---
-description: Manual testing verification with structured feedback and fix loop
+description: Hybrid testing verification with automated browser and CLI tests plus manual walkthrough, structured feedback, and fix loop
 disable-model-invocation: true
 ---
 
@@ -9,7 +9,9 @@ disable-model-invocation: true
 
 This is the test phase of the dev workflow: define -> build -> **test**
 
-Handles human verification of implemented features through structured feedback, issue categorization, and iterative fix loops until all items pass.
+Handles hybrid verification of implemented features through automated testing and manual walkthrough, issue categorization, and iterative fix loops until all items pass.
+
+**Execution model:** Automated tests run in a **separate Task agent** (isolated context window) to prevent snapshot/screenshot data from flooding the main conversation. The agent uses MCP browser tools for DOM verification and bash commands for running existing test suites. Only structured results (pass/fail + evidence summary) are returned to the main conversation.
 
 **Trigger**: `/dev:test` or `/dev:test {feature-name}` or `/dev:test {feature-name} {feedback}`
 
@@ -22,17 +24,17 @@ Handles human verification of implemented features through structured feedback, 
 ## Input Formats
 
 ```
-# Format 1: Inline feedback (recommended)
+# Format 1: Inline feedback (recommended — skips automation entirely)
 /dev:test user-registration
 1:PASS
 2:FAIL no validation error
 3:PASS
 4:FAIL no mail sent
 
-# Format 2: Feature name only (shows checklist first)
+# Format 2: Feature name only (hybrid: auto + manual walkthrough)
 /dev:test user-registration
 
-# Format 3: Free text
+# Format 3: Free text (skips automation entirely)
 /dev:test user-registration
 Everything works except validation is missing and no welcome mail
 ```
@@ -45,13 +47,96 @@ Everything works except validation is missing and no welcome mail
 | **MEASURABLE** | "response too slow", "font too small" | Direct fix                              |
 | **SUBJECTIVE** | "doesn't feel right"                  | Ask for specifics, then re-categorize   |
 
+## Test Classification
+
+Each test item is classified as **AUTO** or **MANUAL** before testing begins.
+
+AUTO items have two sub-methods — the Task agent picks the best one per item:
+
+### AUTO/BROWSER (MCP browser tools)
+
+Assign AUTO/BROWSER when ALL of the following are true:
+
+- **DOM-verifiable**: pass/fail can be determined by inspecting elements, text content, attributes, or URL state
+- **Simple interactions**: test steps are limited to: navigate, click, type, fill_form, select_option, press_key, resize, wait_for
+- **Observable outcome**: result is visible in a snapshot, screenshot, or URL
+
+### AUTO/CLI (bash commands)
+
+Assign AUTO/CLI when ALL of the following are true:
+
+- **Command-verifiable**: pass/fail can be determined by running a command and checking stdout/stderr/exit code
+- **Deterministic output**: the command produces a concrete, parseable result (JSON response, HTTP status code, file contents, test runner output)
+- **No human judgment needed**: result is objectively pass or fail
+
+Common AUTO/CLI scenarios:
+
+- API endpoint testing (curl + check HTTP status/response body)
+- Database state verification (query + check result)
+- File system checks (file exists, contents match)
+- Running existing test suites (npm test, npx vitest, npx playwright test)
+- Build verification (npm run build + check exit code)
+- Linting/type checking (npx tsc --noEmit, npx eslint)
+
+### MANUAL (human walkthrough)
+
+Assign MANUAL **only** when human perception or judgment is truly required — if it can be objectively checked, it's AUTO.
+
+MANUAL when ANY of the following are true:
+
+- **Subjective visual quality**: animation smoothness, design "feel", whitespace balance, color harmony
+- **Perception-based**: "feels fast enough", "feels intuitive", "looks professional"
+- **Assistive technology**: screen reader flow, VoiceOver, keyboard-only UX feel
+- **Audio/sound**: sounds play correctly, volume appropriate, timing right
+- **Physical multi-device**: "log out on phone, log in on desktop" (requires actual second device)
+
+NOT MANUAL (these are AUTO):
+
+- Data correctness in charts/tables/lists → AUTO/BROWSER (snapshot + check values)
+- Element exists on page → AUTO/BROWSER (snapshot)
+- Correct text/numbers displayed → AUTO/BROWSER (snapshot)
+- API returns expected data → AUTO/CLI (curl + check response)
+- Component renders with props → AUTO/BROWSER (navigate + snapshot)
+- Redirect happens after action → AUTO/BROWSER (navigate + check URL)
+- Error messages appear → AUTO/BROWSER (trigger error + snapshot)
+- Multi-step flows with deterministic outcomes → AUTO/BROWSER (sequence of actions + snapshots)
+
+### Auto Test Patterns Reference
+
+**BROWSER patterns** (MCP browser tools):
+
+| Pattern             | Steps                                                                |
+| ------------------- | -------------------------------------------------------------------- |
+| Form submit         | navigate, fill_form, click submit, snapshot (check success state)    |
+| Route protection    | navigate to protected URL, snapshot (check redirect to login)        |
+| Element presence    | navigate, snapshot, find element text/role in snapshot               |
+| URL state           | interact, evaluate(() => location.href)                              |
+| Keyboard navigation | press_key (Tab/Enter/Esc), snapshot (check focus state)              |
+| Responsive layout   | resize(width, height), take_screenshot (check layout)                |
+| Error validation    | fill invalid input, submit, snapshot (check error messages)          |
+| Toast/notification  | trigger action, wait_for(text), snapshot (check notification)        |
+
+**CLI patterns** (bash commands):
+
+| Pattern             | Steps                                                                |
+| ------------------- | -------------------------------------------------------------------- |
+| API auth check      | curl endpoint without/with token → check HTTP status (401/403/200)   |
+| API response body   | curl endpoint → parse JSON, check expected fields/values             |
+| API validation      | curl POST with invalid data → check 400 + error message             |
+| Existing test suite | npm test / npx vitest / npx playwright test → check exit code        |
+| Type checking       | npx tsc --noEmit → check exit code + error count                    |
+| Build verification  | npm run build → check exit code                                     |
+| File state          | cat/read file → check contents match expected                       |
+| DB state            | query command → check result matches expected                       |
+
 ## Workflow
 
-### FASE 0: Load Context
+### FASE 0: Load Context and Classify
 
 1. **Parse user input:**
-   - Feature name only → show checklist, wait for feedback
-   - Feature name + feedback → parse feedback immediately
+   - Feature name only → proceed to classification and hybrid testing
+   - Feature name + inline feedback → skip to FASE 1b (backward compatible, no automation)
+   - Feature name + free text → skip to FASE 1b (backward compatible, no automation)
    - "recent" → find most recently modified 03-test-checklist.md
 
 2. **Locate and validate test checklist:**
@@ -64,92 +149,181 @@ Everything works except validation is missing and no welcome mail
 
 3. **Read checklist** and parse test items with expected behavior.
 
-4. **Generate Test Data**
+4. **Generate Test Data** (via Explore agent — zero source file reads in main context)
 
-   Before starting the walkthrough, analyze the feature to prepare concrete test data:
-   - Read `01-define.md` for requirements and acceptance criteria
-   - Read relevant source files for form fields, API endpoints, validation rules
-   - Generate realistic test values per item (names, emails, passwords, URLs, etc.)
-   - Include both valid and invalid data depending on the test scenario
+   **Always** use a Task agent (Explore) to gather test data. Never read source files directly in the main conversation.
 
-   This data is used in step 5 to pre-fill the instructions so the user can copy-paste.
-
-5. **Guided Walkthrough (1-by-1)**
-
-   Show setup instructions once (stack-appropriate from CLAUDE.md), then loop through each test item individually:
-
+   Launch Explore agent with prompt:
    ```
-   TEST SETUP: {feature-name}
-   {stack-appropriate setup, e.g. "Open http://localhost:3000"}
-   ```
+   Feature: {feature-name}
+   Checklist: .workspace/features/{feature-name}/03-test-checklist.md
+   Define: .workspace/features/{feature-name}/01-define.md
 
-   **For each item (1 to N):**
+   Lees de checklist en define doc. Zoek vervolgens in de source code naar:
+   - Form fields, validatie regels, API endpoints relevant voor de test items
+   - Bestaande test files die hergebruikt kunnen worden
+   - De dev server URL (uit CLAUDE.md, package.json scripts, of .env)
 
-   ```
-   ──────────────────────────────────────
-   TEST {n}/{total}: {item title}
-   ──────────────────────────────────────
-
-   STAPPEN:
-   1. {concrete action, e.g. "Ga naar /register"}
-   2. {concrete action with data, e.g. "Vul in: Email → test@voorbeeld.nl"}
-   3. {concrete action, e.g. "Klik op 'Registreren'"}
-
-   TESTDATA:
-   ┌─────────────┬──────────────────────┐
-   │ Veld        │ Waarde               │
-   ├─────────────┼──────────────────────┤
-   │ Naam        │ Test User            │
-   │ Email       │ test@voorbeeld.nl    │
-   │ Wachtwoord  │ Test1234!            │
-   └─────────────┴──────────────────────┘
-
-   VERWACHT:
-   → {exact expected outcome, e.g. "Redirect naar /dashboard, welkomstmelding zichtbaar"}
+   Geef terug als gestructureerd overzicht:
+   FEATURE_CONTEXT_START
+   Dev server URL: {url}
+   Bestaande tests: {pad naar test files, of "geen"}
+   Per test item:
+   - Item {N}: {title}
+     Testdata: {concrete waarden}
+     Verwacht: {expected outcome}
+     Aanbevolen methode: BROWSER | CLI
+     Reden: {waarom deze methode}
+   FEATURE_CONTEXT_END
    ```
 
-   Use AskUserQuestion tool per item:
-   - header: "Test {n}/{total}"
-   - question: "Resultaat van '{item title}'?"
+   Parse the agent's structured output. This gives you test data, classification hints, and dev server URL without consuming any main context on source file reads.
+
+5. **Classify each test item**
+
+   For each checklist item, apply the classification criteria above and assign **AUTO** or **MANUAL**.
+
+   Display the classification:
+
+   ```
+   TEST CLASSIFICATIE: {feature-name}
+
+   | # | Test                    | Type       | Reden                                    |
+   |---|-------------------------|------------|------------------------------------------|
+   | 1 | Register with valid data| AUTO | DOM: redirect + welkomstmelding zichtbaar |
+   | 2 | Without email           | AUTO | DOM: foutmelding zichtbaar               |
+   | 3 | Welcome mail sent       | MANUAL     | Email verificatie niet via DOM            |
+   | 4 | Layout on mobile        | AUTO | Responsive: resize + screenshot          |
+   | 5 | Feels intuitive         | MANUAL     | Subjectief UX oordeel                    |
+
+   AUTO: {n}  MANUAL: {n}
+   ```
+
+6. **User override**
+
+   Use AskUserQuestion tool:
+   - header: "Test Classificatie"
+   - question: "Wil je de classificatie aanpassen? Je kunt AUTO items naar MANUAL verplaatsen."
    - options:
-     - label: "Pass (Recommended)", description: "Werkt zoals verwacht"
-     - label: "Fail", description: "Werkt niet — ik geef details"
-     - label: "Skip", description: "Kan niet testen, sla over"
+     - label: "Classificatie akkoord (Aanbevolen)", description: "Start hybrid testing met deze indeling"
+     - label: "Items aanpassen", description: "Ik wil items van AUTO naar MANUAL verplaatsen"
+     - label: "Alles handmatig", description: "Sla automatische tests over, test alles handmatig"
    - multiSelect: false
 
-   **If Pass** → record PASS, continue to next item
-   **If Fail** → ask for brief details (what happened instead?), record FAIL + notes, continue to next item
-   **If Skip** → record SKIP with reason, continue to next item
+   **If "Items aanpassen"** → ask which items to move to MANUAL, update classification.
+   **If "Alles handmatig"** → set all items to MANUAL, skip FASE 1 entirely.
 
-   After all items are walked through, show summary:
+7. **Dev server check** (lightweight — no snapshots in main context)
 
-   ```
-   TEST RESULTATEN: {feature-name}
+   If any items are classified as AUTO:
 
-   | # | Test | Resultaat |
-   |---|------|-----------|
-   | 1 | {title} | ✓ PASS |
-   | 2 | {title} | ✗ FAIL: {notes} |
-   | 3 | {title} | ⊘ SKIP |
+   Run a quick bash check (NOT browser_snapshot — that wastes context):
 
-   PASS: {n}  FAIL: {n}  SKIP: {n}
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}" {url}
    ```
 
-   **If all PASS** → skip to FASE 6
-   **If any FAIL** → proceed to FASE 2 (categorize issues)
+   **If HTTP 200** → dev server running, proceed to FASE 1.
+   **If non-200 or connection refused:**
+
+   ```
+   ⚠ Dev server niet bereikbaar op {url} (HTTP {code}).
+   Alle items worden MANUAL — start handmatige walkthrough.
+   ```
+
+   Graceful fallback: reclassify ALL items as MANUAL, skip FASE 1, proceed to FASE 2.
 
 ---
 
-### FASE 1: Parse Feedback
+### FASE 1: Automated Testing (Task Agent)
 
-**When:** User provided inline feedback via `/dev:test {name} {feedback}` (skipping the guided walkthrough).
+**When:** There are AUTO items after classification and dev server is confirmed running.
+
+**Launch a Task agent** to execute all AUTO items in a separate context window. This prevents snapshot/screenshot data from consuming the main conversation context.
+
+**Task agent prompt template:**
+
+```
+Test de volgende items automatisch via browser tools en bash commands.
+Dev server: {url}
+Feature: {feature-name}
+
+ITEMS:
+{for each AUTO item:}
+- Item {N}: {title}
+  Stappen: {test steps}
+  Testdata: {test data}
+  Verwacht: {expected outcome}
+  Methode: {BROWSER of CLI}
+  Patroon: {matching test pattern from reference table}
+
+INSTRUCTIES:
+1. Navigeer naar de dev server URL en verifieer dat deze draait
+2. Voor elk item:
+   a. Voer de stappen uit met browser tools (browser_navigate, browser_snapshot,
+      browser_click, browser_fill_form, browser_type, browser_press_key,
+      browser_resize, browser_take_screenshot, browser_wait_for, browser_evaluate)
+   b. OF run bestaande tests via bash als die er zijn (npm test, npx vitest, npx playwright test)
+   c. Analyseer het resultaat (snapshot/screenshot/test output)
+   d. Bepaal PASS of FAIL met bewijs en redenering
+3. Als een browser tool faalt voor een item, markeer als TOOL_ERROR
+4. Geef gestructureerde resultaten terug
+
+RESULTAAT FORMAT (strict):
+AUTOMATED_RESULTS_START
+| # | Test | Resultaat | Bewijs | Redenering |
+|---|------|-----------|--------|------------|
+| {N} | {title} | PASS/FAIL/TOOL_ERROR | {wat gezien} | {waarom pass/fail} |
+AUTOMATED_RESULTS_END
+
+FALLBACK_ITEMS: {items met TOOL_ERROR, komma-gescheiden nummers, of "geen"}
+```
+
+**Parse agent results:**
+
+The Task agent's output will likely be **truncated** because its full conversation log (snapshots, screenshots, tool calls) is very large. This is expected. To extract the structured results:
+
+1. If TaskOutput contains `AUTOMATED_RESULTS_START` → parse directly from the output
+2. If TaskOutput is truncated (no `AUTOMATED_RESULTS_START` visible):
+   - The output includes a file path (e.g. `C:\...\tasks\{id}.output`)
+   - Use **Grep** to find the line containing `AUTOMATED_RESULTS_START` in that file
+   - Use **Read** with the line offset to read from `AUTOMATED_RESULTS_START` to `AUTOMATED_RESULTS_END`
+3. Extract ONLY the structured block between the markers — ignore the rest of the agent log
+4. Any items with `TOOL_ERROR` → reclassify as MANUAL for FASE 2
+5. Display automated results in main conversation:
+
+```
+AUTO TEST RESULTATEN: {feature-name}
+
+| # | Test              | Resultaat | Bewijs (kort)              |
+|---|-------------------|-----------|----------------------------|
+| 1 | Valid registration| ✓ PASS    | /dashboard + welkomstmelding |
+| 2 | Without email     | ✗ FAIL    | Geen foutmelding zichtbaar |
+| 4 | Mobile layout     | ✓ PASS    | Layout correct bij 375px   |
+
+AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}
+```
+
+**If agent fails entirely (timeout, crash, MCP unavailable):**
+
+```
+⚠ Automatische tests niet gelukt — alle items worden MANUAL.
+```
+
+Graceful fallback: reclassify all AUTO items as MANUAL, proceed to FASE 2.
+
+---
+
+### FASE 1b: Parse Inline Feedback
+
+**When:** User provided inline feedback via `/dev:test {name} {feedback}` or free text (skipping FASE 1 AND FASE 2 entirely — backward compatible).
 
 Parse user feedback into structured results (item number, PASS/FAIL, notes).
 Accept both numbered format (`1:PASS 2:FAIL note`) and free text.
 
-After parsing, show the same summary table as the guided walkthrough and proceed to FASE 2.
+After parsing, show summary table and proceed directly to FASE 3 (categorize issues).
 
-**Note:** When the guided walkthrough (FASE 0 step 5) was used, skip FASE 1 entirely — results are already structured.
+**Note:** When inline feedback is provided, automation is skipped entirely. All items are treated as MANUAL with user-provided results.
 
 **If feedback is ambiguous:**
 
@@ -165,32 +339,99 @@ Use AskUserQuestion tool:
 
 ---
 
-### FASE 1b: Debug Analysis
+### FASE 2: Manual Walkthrough
 
-**When:** User selected "Er zijn problemen" without specific feedback.
+**When:** There are MANUAL items to test (either originally classified or reclassified from fallback).
 
-1. **Request debug info** appropriate for the stack:
-   - Frontend: browser console, network tab
-   - Backend: server logs, API responses, database state
-   - Fullstack: both
+Show setup instructions once (stack-appropriate from CLAUDE.md), then loop through each MANUAL item individually:
 
-2. **Ask which items failed:**
+```
+TEST SETUP: {feature-name}
+{stack-appropriate setup, e.g. "Open http://localhost:3000"}
+```
 
-   Use AskUserQuestion tool:
-   - header: "Probleem Details"
-   - question: "Welke items werkten niet? (selecteer alles dat van toepassing is)"
-   - options: (dynamically generated from checklist items)
-   - multiSelect: true
+**For each MANUAL item (1 to N):**
 
-3. For each failed item, ask for specifics. Correlate with any debug output provided.
+```
+──────────────────────────────────────
+HANDMATIG TEST {n}/{total_manual}: {item title}
+──────────────────────────────────────
 
-4. Generate structured feedback for FASE 2 with debug context.
+STAPPEN:
+1. {concrete action, e.g. "Ga naar /register"}
+2. {concrete action with data, e.g. "Vul in: Email → test@voorbeeld.nl"}
+3. {concrete action, e.g. "Klik op 'Registreren'"}
+
+TESTDATA:
+┌─────────────┬──────────────────────┐
+│ Veld        │ Waarde               │
+├─────────────┼──────────────────────┤
+│ Naam        │ Test User            │
+│ Email       │ test@voorbeeld.nl    │
+│ Wachtwoord  │ Test1234!            │
+└─────────────┴──────────────────────┘
+
+VERWACHT:
+→ {exact expected outcome, e.g. "Redirect naar /dashboard, welkomstmelding zichtbaar"}
+```
+
+Use AskUserQuestion tool per item:
+- header: "Test {n}/{total_manual}"
+- question: "Resultaat van '{item title}'?"
+- options:
+  - label: "Pass (Recommended)", description: "Werkt zoals verwacht"
+  - label: "Fail", description: "Werkt niet — ik geef details"
+  - label: "Skip", description: "Kan niet testen, sla over"
+- multiSelect: false
+
+**If Pass** → record PASS, continue to next item
+**If Fail** → ask for brief details (what happened instead?), record FAIL + notes, continue to next item
+**If Skip** → record SKIP with reason, continue to next item
 
 ---
 
-### FASE 2: Categorize Issues
+### FASE 2b: Combined Results
 
-For each FAIL item, categorize using the Feedback Categorization table above.
+Merge automated results (from FASE 1) and manual results (from FASE 2) into one combined summary:
+
+```
+GECOMBINEERDE RESULTATEN: {feature-name}
+
+| # | Test                  | Type   | Resultaat              |
+|---|-----------------------|--------|------------------------|
+| 1 | Valid registration    | AUTO   | ✓ PASS                |
+| 2 | Without email         | AUTO   | ✗ FAIL: geen error    |
+| 3 | Welcome mail          | MANUAL | ✗ FAIL: geen mail     |
+| 4 | Mobile layout         | AUTO   | ✓ PASS                |
+| 5 | Feels intuitive       | MANUAL | ✓ PASS                |
+
+AUTO PASS: {n}  AUTO FAIL: {n}
+MANUAL PASS: {n}  MANUAL FAIL: {n}  SKIP: {n}
+TOTAAL PASS: {n}  TOTAAL FAIL: {n}
+```
+
+**User verification of auto-failed items:**
+
+If any AUTO items failed automatically, offer the user the option to manually verify:
+
+Use AskUserQuestion tool:
+- header: "Auto-gefaalde Items"
+- question: "Er zijn {n} automatisch gefaalde items. Wil je deze handmatig controleren?"
+- options:
+  - label: "Vertrouw auto resultaten (Aanbevolen)", description: "Ga door met fixen van gefaalde items"
+  - label: "Handmatig controleren", description: "Ik wil de auto-gefaalde items zelf checken"
+- multiSelect: false
+
+**If "Handmatig controleren"** → run manual walkthrough for those items, update results accordingly.
+
+**If all PASS** → skip to FASE 6
+**If any FAIL** → proceed to FASE 3 (categorize issues)
+
+---
+
+### FASE 3: Categorize Issues
+
+For each FAIL item, categorize using the Feedback Categorization table above. Include the test_type tag (AUTO/MANUAL) per issue.
 
 **For SUBJECTIVE issues**, ask for clarification immediately:
 
@@ -225,15 +466,15 @@ Display technique map:
 ```
 TECHNIQUE MAP (fixes):
 
-| Item | Issue                | Technique            | Reason              |
-|------|----------------------|----------------------|---------------------|
-| {N}  | {issue description}  | TDD                  | {reason}            |
-| {N}  | {issue description}  | Implementation First | {reason}            |
+| Item | Issue                | Type   | Technique            | Reason              |
+|------|----------------------|--------|----------------------|---------------------|
+| {N}  | {issue description}  | AUTO   | TDD                  | {reason}            |
+| {N}  | {issue description}  | MANUAL | Implementation First | {reason}            |
 ```
 
 ---
 
-### FASE 3: Fix Loop
+### FASE 4: Fix Loop
 
 For each TESTABLE issue, execute the assigned technique. For MEASURABLE issues, apply Direct Fix.
 
@@ -263,6 +504,7 @@ After each successful fix, output:
 ```
 [FIX] Item {N}: {title}
 Technique: TDD
+Type: {AUTO|MANUAL}
 RED:   FAIL ({what the test captured})
 GREEN: PASS
 SYNC:  Root cause: {what was actually wrong, file:line}.
@@ -297,6 +539,7 @@ After each successful fix, output:
 ```
 [FIX] Item {N}: {title}
 Technique: Implementation First
+Type: {AUTO|MANUAL}
 IMPLEMENTED: {what was fixed}
 TESTED: PASS
 SYNC:  Root cause: {what was actually wrong, file:line}.
@@ -314,6 +557,7 @@ After each fix, output:
 ```
 [FIX] Item {N}: {title}
 Technique: Direct Fix
+Type: {AUTO|MANUAL}
 SYNC:  Root cause: {what was actually wrong, file:line}.
        Fix: {what was changed and why this approach}.
        Impact: {what this affects in the codebase}.
@@ -327,15 +571,51 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 
 ---
 
-### FASE 4: Re-test Checklist
+### FASE 5: Re-test (Hybrid)
 
-Re-test ONLY fixed items using the same guided walkthrough pattern from FASE 0 step 5.
+Re-test ONLY fixed items, using the appropriate method per test_type.
 
-**For each fixed item:**
+#### Phase A: Auto Re-test (Task Agent)
+
+Re-run all fixed AUTO items via a **Task agent** (same approach as FASE 1).
+
+**Task agent prompt template:**
+
+```
+Re-test de volgende gefixte items automatisch via browser tools en bash commands.
+Dev server: {url}
+Feature: {feature-name}
+
+GEFIXTE ITEMS:
+{for each fixed AUTO item:}
+- Item {N}: {title}
+  Wijziging: {summary of fix + root cause}
+  Stappen: {test steps}
+  Testdata: {test data}
+  Verwacht: {expected outcome after fix}
+
+INSTRUCTIES:
+Zelfde als FASE 1 — voer stappen uit, analyseer resultaat, geef gestructureerd terug.
+
+RESULTAAT FORMAT (strict):
+RETEST_RESULTS_START
+| # | Test | Resultaat | Bewijs | Redenering |
+|---|------|-----------|--------|------------|
+| {N} | {title} | PASS/FAIL/TOOL_ERROR | {wat gezien} | {waarom pass/fail} |
+RETEST_RESULTS_END
+```
+
+Parse and display results same as FASE 1 (including truncation handling — grep for `RETEST_RESULTS_START` in output file if truncated). TOOL_ERROR items move to Phase B (manual re-test).
+
+#### Phase B: Manual Re-test
+
+Re-test MANUAL items that failed, using the same guided walkthrough pattern:
+
+**For each fixed MANUAL item:**
 
 ```
 ──────────────────────────────────────
-RE-TEST {n}/{total}: {item title}
+HANDMATIG RE-TEST {n}/{total_manual_retest}: {item title}
 ──────────────────────────────────────
 
 WIJZIGING:
@@ -347,27 +627,39 @@ STAPPEN:
 2. {with same or updated test data}
 
 TESTDATA:
-{same table format as FASE 0}
+{same table format as FASE 2}
 
 VERWACHT:
 → {expected outcome after fix}
 ```
 
 Use same AskUserQuestion per item (Pass/Fail/Skip).
-After all re-test items, show summary table.
+
+**After all re-tests, show combined re-test results:**
+
+```
+RE-TEST RESULTATEN: {feature-name}
+
+| # | Test              | Type   | Resultaat              |
+|---|-------------------|--------|------------------------|
+| 2 | Without email     | AUTO   | ✓ PASS                |
+| 3 | Welcome mail      | MANUAL | ✓ PASS                |
+
+RE-TEST PASS: {n}  RE-TEST FAIL: {n}
+```
 
 ---
 
-### FASE 5: Re-test Loop
+### FASE 5b: Re-test Loop
 
-Parse re-test feedback (same as FASE 1). If all pass → FASE 6.
+Parse re-test results. If all pass → FASE 6.
 
 **If items still failing:**
 
 Use AskUserQuestion tool:
 
 - header: "Item {N} Faalt Nog"
-- question: "Item {N} werkt nog niet na fix. Wat wil je doen?"
+- question: "Item {N} ({AUTO|MANUAL}) werkt nog niet na fix. Wat wil je doen?"
 - options:
   - label: "Meer details geven (Aanbevolen)", description: "Ik geef specifiekere feedback"
   - label: "Andere aanpak", description: "Probeer een andere fix strategie"
@@ -375,7 +667,9 @@ Use AskUserQuestion tool:
   - label: "Handmatig fixen", description: "Stop en fix het zelf"
 - multiSelect: false
 
-Loop back to FASE 2 until all pass or user exits.
+Loop back to FASE 3 until all pass or user exits. On loop-back:
+- AUTO items that still fail → re-run automatically in FASE 5 Phase A
+- MANUAL items that still fail → re-test manually in FASE 5 Phase B
 
 ---
 
@@ -390,21 +684,31 @@ Loop back to FASE 2 until all pass or user exits.
 
    ## Summary
 
-   | Metric | Value       |
-   | ------ | ----------- |
-   | Status | VERIFIED    |
-   | Items  | {N}         |
-   | Passed | {N}         |
-   | Date   | {timestamp} |
+   | Metric         | Value       |
+   | -------------- | ----------- |
+   | Status         | VERIFIED    |
+   | Items          | {N}         |
+   | Passed         | {N}         |
+   | Auto           | {N}         |
+   | Manual         | {N}         |
+   | Date           | {timestamp} |
 
    ## Test History
 
    ### Session 1: {date}
 
-   | #   | Initial | Final | Fixes Applied     |
-   | --- | ------- | ----- | ----------------- |
-   | 1   | PASS    | PASS  | -                 |
-   | 2   | FAIL    | PASS  | {fix description} |
+   | #   | Test                  | Type   | Initial | Final | Fixes Applied     |
+   | --- | --------------------- | ------ | ------- | ----- | ----------------- |
+   | 1   | Valid registration    | AUTO   | PASS    | PASS  | -                 |
+   | 2   | Without email         | AUTO   | FAIL    | PASS  | {fix description} |
+   | 3   | Welcome mail          | MANUAL | FAIL    | PASS  | {fix description} |
+
+   ## Automated Test Evidence
+
+   | #   | Test              | Bewijs                                    |
+   | --- | ----------------- | ----------------------------------------- |
+   | 1   | Valid registration| Snapshot: /dashboard + h1 'Welkom'        |
+   | 2   | Without email     | Snapshot: foutmelding 'Email is verplicht' |
 
    ## Tests Added
 
@@ -428,9 +732,11 @@ Loop back to FASE 2 until all pass or user exits.
    ```bash
    git add .
    git commit -m "$(cat <<'EOF'
-   test({feature}): verified - all {N} items pass
+   test({feature}): verified - {N} items pass ({auto} auto, {manual} manual)
 
-   Manual test verification complete.
+   Hybrid test verification complete.
+   - Automated (browser + CLI): {auto_count} items
+   - Manual walkthrough: {manual_count} items
    - Fixed: {list of fixes}
    - Tests added: {count}
    EOF
@@ -441,7 +747,7 @@ Loop back to FASE 2 until all pass or user exits.
 
 5. **Notify:**
    ```bash
-   powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "{feature} verified"
+   powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "{feature} verified (hybrid)"
    ```
 
 ---
@@ -453,104 +759,35 @@ Loop back to FASE 2 until all pass or user exits.
 ├── 01-define.md          # Updated: Status: VERIFIED
 ├── 02-build-log.md       # From build phase
 ├── 03-test-checklist.md  # From build phase
-└── 03-test-results.md    # NEW: Test history and results
+└── 03-test-results.md    # NEW: Hybrid test history and results (auto + manual)
 ```
 
-## Example Session
+## Example Flow (compact)
 
 ```
-User: /dev:test user-registration
-
-Claude: TEST SETUP: user-registration
-        Open http://localhost:3000
-
-        ──────────────────────────────────────
-        TEST 1/4: Register with valid data
-        ──────────────────────────────────────
-
-        STAPPEN:
-        1. Ga naar /register
-        2. Vul de testdata in
-        3. Klik op 'Registreren'
-
-        TESTDATA:
-        ┌─────────────┬──────────────────────┐
-        │ Naam        │ Test User            │
-        │ Email       │ test@voorbeeld.nl    │
-        │ Wachtwoord  │ Test1234!            │
-        └─────────────┴──────────────────────┘
-
-        VERWACHT:
-        → Redirect naar /dashboard, welkomstmelding zichtbaar
-
-        Resultaat van 'Register with valid data'? → PASS
-
-        ──────────────────────────────────────
-        TEST 2/4: Register without email
-        ──────────────────────────────────────
-
-        STAPPEN:
-        1. Ga naar /register
-        2. Vul de testdata in (let op: email is LEEG)
-        3. Klik op 'Registreren'
-
-        TESTDATA:
-        ┌─────────────┬──────────────────────┐
-        │ Naam        │ Test User            │
-        │ Email       │ (leeg laten)         │
-        │ Wachtwoord  │ Test1234!            │
-        └─────────────┴──────────────────────┘
-
-        VERWACHT:
-        → Rode foutmelding: "Email is verplicht"
-
-        Resultaat van 'Register without email'? → FAIL
-        Wat ging er mis? → "Geen error, form submit gewoon"
-
-        [continues 3/4, 4/4...]
-
-Claude: TEST RESULTATEN: user-registration
-
-        | # | Test                  | Resultaat              |
-        |---|-----------------------|------------------------|
-        | 1 | Valid registration     | ✓ PASS                |
-        | 2 | Without email          | ✗ FAIL: geen error    |
-        | 3 | Duplicate email        | ✓ PASS                |
-        | 4 | Welcome mail           | ✗ FAIL: geen mail     |
-
-        PASS: 2  FAIL: 2  SKIP: 0
-
-        [TDD fix loop for items 2 and 4...]
-
-        ──────────────────────────────────────
-        RE-TEST 1/2: Register without email
-        ──────────────────────────────────────
-
-        WIJZIGING:
-        → Validation rule 'required' toegevoegd aan email veld
-
-        STAPPEN:
-        1. Ga naar /register
-        2. Laat email leeg, vul rest in
-        3. Klik op 'Registreren'
-
-        VERWACHT:
-        → Rode foutmelding: "Email is verplicht"
-
-        Resultaat? → PASS
-
-        [RE-TEST 2/2: Welcome mail → PASS]
-
-Claude: USER-REGISTRATION COMPLETE!
-
-        All 4 test items passed.
-        Committed: test(user-registration): verified
+/dev:test user-registration
+→ FASE 0: Classify → 3 AUTO (2 browser, 1 CLI) + 1 MANUAL
+→ FASE 0: User override → akkoord
+→ FASE 0: Dev server check → curl localhost:3000 → 200 OK
+→ FASE 1: Task agent runs 3 AUTO items → 2 PASS, 1 FAIL (no error msg)
+→ FASE 2: Manual walkthrough 1 item (welcome mail) → FAIL (no mail)
+→ FASE 2b: Combined → 2 PASS, 2 FAIL
+→ FASE 3: Categorize → item 2: TDD, item 4: Impl First
+→ FASE 4: Fix loop → both fixed
+→ FASE 5: Re-test → Task agent re-tests item 2 (PASS), manual re-test item 4 (PASS)
+→ FASE 6: All 4 pass → commit test(user-registration): verified
 ```
 
 ## Restrictions
 
 This skill must NEVER:
 
+- Install Auto npm packages solely for this skill (use MCP browser tools + existing project test suites)
+- Run automated tests in the main conversation context (always use a Task agent)
+- Read source files directly in the main conversation for test data (always use Explore agent)
+- Skip classification (every item must be classified before testing)
+- Run auto tests without dev server check
+- Silently override user classification choices
 - Skip TDD for testable issues (concrete behavior described)
 - Guess what subjective feedback means
 - Apply fixes without documenting changes
@@ -559,15 +796,22 @@ This skill must NEVER:
 
 This skill must ALWAYS:
 
-- Walk through tests one-by-one with concrete steps and pre-generated test data
+- Classify each test item as AUTO or MANUAL before testing begins
+- Allow user override of classification before starting tests
+- Run automated tests in a separate Task agent (isolated context window)
+- Capture evidence per automated test (what Claude saw in snapshot/screenshot)
+- Mention pass/fail reasoning per automated test
+- Use bash commands for existing test suites when available (npm test, npx vitest, npx playwright test)
+- Graceful fallback to all-manual on any tool/agent failure (dev server down, MCP connection lost, agent timeout)
+- Re-test AUTO items automatically via Task agent after fixes (FASE 5 Phase A)
+- Merge automated and manual results in one combined summary (FASE 2b)
 - Generate realistic, copy-pasteable test data per item before starting
-- Show setup instructions once, then each item individually
-- Collect PASS/FAIL/SKIP per item via AskUserQuestion
+- Show setup instructions once for manual items, then each item individually
+- Collect PASS/FAIL/SKIP per manual item via AskUserQuestion
 - Parse all feedback formats (numbered, free text) when inline feedback is provided
-- Categorize each failure (TESTABLE/MEASURABLE/SUBJECTIVE)
+- Categorize each failure (TESTABLE/MEASURABLE/SUBJECTIVE) with test_type tag
 - Use TDD loop for testable issues
 - Ask clarifying questions for subjective issues
-- Re-test only fixed items using same 1-by-1 walkthrough pattern
 - Loop until all items pass
-- Update documentation on completion
+- Update documentation on completion with hybrid results format
 - Send notifications at key points

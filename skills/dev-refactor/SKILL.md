@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 This is **FASE 4** of the dev workflow: define -> build -> test -> **refactor**
 
-Analyzes code quality autonomously, uses Context7 research only when needed, creates improvement plans with 3 strategies, and applies non-breaking changes with automatic rollback on test failure.
+Analyzes code quality via Explore agent (zero source reads in main context), uses Context7 research only when needed, creates improvement plans with ranked strategies, and applies non-breaking changes with smart test failure analysis before rollback.
 
 **Trigger**: `/dev:refactor` or `/dev:refactor {feature-name}`
 
@@ -80,11 +80,78 @@ Reads from `.workspace/features/{feature-name}/`:
    - Store as `pipeline_files` — these are the ONLY files this skill may touch
    - Log the list explicitly for transparency
 
-5. **Read all pipeline code files:**
-   - Read each file in `pipeline_files` to understand current implementation
-   - If > 5 files: show progress every 5 files (`Reading code files... ({current}/{total})`)
-   - Note architectural patterns and improvement areas
-   - Do NOT read files outside `pipeline_files`
+5. **Analyze pipeline code** (via Explore agent — zero source file reads in main context)
+
+   **Always** use a Task agent (Explore) to read and analyze pipeline files. Never read source files directly in the main conversation.
+
+   Launch Explore agent with prompt:
+   ```
+   Feature: {feature-name}
+   Pipeline files:
+   {list of all pipeline_files paths}
+
+   Lees ALLE bovenstaande pipeline files. Scan voor:
+
+   1. SECURITY patterns:
+      - Injection: exec(, eval(, new Function, os.system
+      - XSS: .innerHTML =, dangerouslySetInnerHTML, document.write
+      - Deserialization: pickle
+      - GitHub Actions: ${{ github.event. in run: commands
+
+   2. DRY violations (ALLEEN binnen pipeline files):
+      - Duplicate code blocks (>5 lines identiek)
+      - Vergelijkbare logica patronen (>70% gelijkheid)
+      - Herhaalde conditionals, copy-paste
+      - Extract opportunities (zelfde code in 3+ locaties)
+
+   3. OVER-ENGINEERING:
+      - Helpers die maar 1x gebruikt worden
+      - >3 indirectie-niveaus voor simpele operaties
+      - Premature optimization (complexe caching voor non-hot paths)
+      - Over-defensive code (try/catch rond code die niet kan falen)
+      - Over-generic types die maar op 1 plek gebruikt worden
+
+   4. ARCHITECTUUR overzicht:
+      - Welke libraries/frameworks worden gebruikt
+      - Belangrijkste patterns (hooks, API routes, components, etc.)
+      - Stack info relevant voor Context7 research beslissing
+
+   Geef terug als gestructureerd overzicht:
+   ANALYSIS_START
+
+   ARCHITECTURE:
+   Libraries: {lijst van libraries/frameworks}
+   Patterns: {lijst van architectuurpatronen}
+   Stack baseline needed: {ja/nee + welke libraries niet in baseline}
+
+   SECURITY_FINDINGS:
+   - {file:line} {pattern} — {beschrijving} — Before: {code snippet}
+   (of "Geen security issues gevonden")
+
+   DRY_FINDINGS:
+   - {file:line} ↔ {file:line} {type} — {beschrijving} — Code: {snippet}
+   (of "Geen DRY violations gevonden")
+
+   OVERENGINEERING_FINDINGS:
+   - {file:line} {type} — {beschrijving} — Code: {snippet}
+   (of "Geen over-engineering gevonden")
+
+   POSITIVE_OBSERVATIONS:
+   - {wat al goed is in de codebase}
+
+   ANALYSIS_END
+   ```
+
+   **Parsing the agent result:**
+
+   The Explore agent's TaskOutput will likely be **truncated** because its full conversation log (all file reads) is very large. This is expected. To extract the structured analysis:
+
+   1. If TaskOutput contains `ANALYSIS_START` → parse directly from the output
+   2. If TaskOutput is truncated (no `ANALYSIS_START` visible):
+      - The output includes a file path (e.g. `C:\...\tasks\{id}.output`)
+      - Use **Grep** to find the line containing `ANALYSIS_START` in that file
+      - Use **Read** with the line offset to read from `ANALYSIS_START` to `ANALYSIS_END`
+   3. Extract ONLY the structured block between the markers — ignore the rest of the agent log
 
 **Output:**
 
@@ -96,20 +163,23 @@ CONTEXT LOADED: {feature-name}
 | Requirements | {N} (from 01-define.md) |
 | Pipeline files | {N} files |
 | Test status | VERIFIED ({date}) |
+| Analysis | Via Explore agent |
 
 Scope: Only these files will be analyzed and refactored:
 - {file1}
 - {file2}
 - ...
 
-→ Ready for analysis.
+→ Ready for research decision.
 ```
 
 ---
 
-### FASE 1: Analyze
+### FASE 1: Research Decision
 
-**Goal:** Analyze pipeline code quality and determine if Context7 research adds value.
+**Goal:** Determine if Context7 research adds value based on the Explore agent's analysis from FASE 0.
+
+Pattern scanning is already done by the Explore agent. FASE 1 only handles the research decision.
 
 **Steps:**
 
@@ -118,46 +188,19 @@ Scope: Only these files will be analyzed and refactored:
    - Note which technologies and patterns are already documented
    - If expired → treat as partial knowledge (still usable, may need supplementing)
 
-2. **Scan pipeline files for patterns:**
+2. **Decide: is Context7 research needed?**
 
-   Scan **only pipeline files** for known patterns:
-
-   **Security patterns:**
-   - Injection: `exec(`, `eval(`, `new Function`, `os.system`
-   - XSS: `.innerHTML =`, `dangerouslySetInnerHTML`, `document.write`
-   - Deserialization: `pickle`
-   - GitHub Actions: `${{ github.event.` in `run:` commands
-
-   **DRY violations:**
-   - Duplicate code blocks (>5 lines identical) within pipeline files
-   - Similar logic patterns (>70% similarity) within pipeline files
-   - Repeated conditionals, copy-paste across pipeline files
-   - Extract opportunities (same code in 3+ locations within pipeline files)
-
-   **Over-engineering:**
-   - Unnecessary abstractions (helpers used only once)
-   - Too many layers (>3 indirection levels for simple operations)
-   - Premature optimization (complex caching for non-hot paths)
-   - Over-defensive code (try/catch around code that can't fail)
-   - Over-generic types used in only 1 place
-
-   **Important:** If a pattern finding references a file outside `pipeline_files` → discard it.
-
-   Log all findings with file:line references.
-
-3. **Decide: is Context7 research needed?**
-
-   Assess autonomously based on:
+   Use the Explore agent's ARCHITECTURE section to assess:
 
    | Signal                                                            | Research needed?                        |
    | ----------------------------------------------------------------- | --------------------------------------- |
    | Stack baseline covers all libraries used in pipeline files        | NO                                      |
-   | Pattern scan found concrete, well-understood issues               | NO — these are directly actionable      |
+   | Explore agent findings are concrete, well-understood issues       | NO — these are directly actionable      |
    | Code uses libraries/patterns NOT in baseline                      | YES — research those specific libraries |
    | Complex security concerns (auth flows, crypto, injection vectors) | YES — research security best practices  |
    | No stack baseline exists at all                                   | YES — research the core stack patterns  |
 
-   **If research NOT needed** → proceed directly to FASE 2 with pattern scan findings.
+   **If research NOT needed** → proceed directly to FASE 2 with Explore agent findings.
 
    **If research needed** → spawn only the relevant research agents:
 
@@ -170,19 +213,19 @@ Scope: Only these files will be analyzed and refactored:
 
    Agent context includes:
    - Feature name and tech stack (from CLAUDE.md)
-   - **Only pipeline files** and their contents
+   - **Structured analysis from Explore agent** (NOT full file contents — pass the ANALYSIS_START..ANALYSIS_END block)
    - Stack baseline (if available)
    - Specific questions to answer (not open-ended research)
 
-4. **Report findings:**
+3. **Report findings:**
 
 **Output (without research):**
 
 ```
 ANALYSIS COMPLETE
 
-| Pattern Scan | Count |
-|-------------|-------|
+| Explore Agent Findings | Count |
+|------------------------|-------|
 | Security patterns | [X] matches |
 | DRY violations | [Y] matches |
 | Over-engineering | [Z] matches |
@@ -197,8 +240,8 @@ Research: Skipped (stack baseline sufficient)
 ```
 ANALYSIS COMPLETE
 
-| Pattern Scan | Count |
-|-------------|-------|
+| Explore Agent Findings | Count |
+|------------------------|-------|
 | Security patterns | [X] matches |
 | DRY violations | [Y] matches |
 | Over-engineering | [Z] matches |
@@ -219,7 +262,7 @@ Reason: {why research was needed}
 
 1. **Create ranked improvements list:**
 
-   Based on FASE 1 findings, compile all improvements ranked by impact:
+   Based on Explore agent analysis (FASE 0) and optional research findings (FASE 1), compile all improvements ranked by impact:
    - **Only pipeline files** may be included
    - Each improvement gets an impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW
    - Sort: HIGH first (security vulnerabilities), then MED, then LOW
@@ -291,6 +334,8 @@ Reason: {why research was needed}
 
 2. **Apply each improvement using Edit tool:**
    - Follow priority order strictly
+   - **Re-read each file immediately before editing** (prevents "File has not been read yet" errors)
+   - Group edits by file: read file → apply ALL edits for that file → move to next file
    - **Only modify files in pipeline_files list** — assert before each edit
    - Keep changes non-breaking
    - Track modified files and changes per category
@@ -332,7 +377,24 @@ Modified files: [list]
 
 2. **All pass** → proceed to FASE 5
 
-3. **Any fail → immediate rollback:**
+3. **Any fail → analyze before rollback:**
+
+   Before rolling back, analyze each failing test to determine the correct action:
+
+   | Test failure type | Action |
+   |---|---|
+   | Test expects old (insecure/incorrect) behavior that was intentionally improved | Update the test, re-run |
+   | Test catches genuine regression (refactoring broke unrelated functionality) | Rollback all changes |
+   | Test is flaky or environment-dependent | Re-run once, then decide |
+
+   **If test update needed (improvement is correct, test is stale):**
+   - Update ONLY the specific assertion(s) that test the improved behavior
+   - Do NOT change the test's overall structure or coverage
+   - Re-run the FULL test suite after updating
+   - If still failing after update → rollback all changes
+   - Max 1 test update attempt per failing test — bij twijfel rollback
+
+   **If genuine regression or unclear:**
 
    Primary:
 
@@ -350,6 +412,7 @@ Modified files: [list]
 
    Report:
    - Which tests failed and why
+   - Whether any tests were updated (and why the old assertion was incorrect)
    - Suggest smaller scope refactor (Conservative plan)
    - **STOP** — do not proceed to FASE 5
 
@@ -361,11 +424,12 @@ TESTS PASSED
 | Metric | Value |
 |--------|-------|
 | Tests | [X/X] passing |
+| Tests updated | [N] (stale assertions corrected) |
 
 → Documenting results...
 ```
 
-**Output (fail):**
+**Output (fail — rolled back):**
 
 ```
 TESTS FAILED — ROLLED BACK
@@ -373,6 +437,7 @@ TESTS FAILED — ROLLED BACK
 | Field | Value |
 |-------|-------|
 | Failed tests | [list] |
+| Failure type | [regression / stale test / unclear] |
 | Rollback | ✓ Changes reverted |
 
 Options:
@@ -521,7 +586,7 @@ Options:
 
 ### Test Failures
 
-**Tests fail after refactoring** → immediate rollback, report failures, suggest Conservative plan
+**Tests fail after refactoring** → analyze failure type first (stale test vs regression), then rollback or update test
 **Test framework not detected** → ask user which command to run
 **Tests hang** → kill process, rollback
 
@@ -534,25 +599,30 @@ Options:
 
 This skill must NEVER:
 
+- Read pipeline source files directly in the main conversation (always use Explore agent)
+- Pass full file contents to research agents (pass structured analysis from Explore agent)
 - Analyze, plan, or modify files outside pipeline_files (extracted from 02-build-log.md)
 - Include external file findings in any plan
 - Proceed without existing 03-test-results.md
 - Make breaking changes (API, schema, parameter changes)
 - Skip user approval at FASE 2
 - Skip test verification in FASE 4
-- Proceed if tests fail (must rollback)
+- Proceed if tests fail without analyzing failure type first (stale test vs regression)
 - Apply improvements without user scope selection
 - Add Co-Authored-By or Generated with Claude Code footer to commits
 
 This skill must ALWAYS:
 
 - Enforce the pipeline_files scope boundary at every phase
-- Load all feature documentation before analysis
+- Use Explore agent to read and analyze pipeline files (zero source reads in main context)
+- Re-read each file immediately before editing (prevents "File has not been read yet" errors)
+- Group edits by file: read file → apply ALL edits for that file → next file
+- Load feature documentation (01-define, 02-build-log, 03-test-*) before analysis
 - Autonomously decide whether Context7 research adds value before spawning agents
 - Use stack baseline as primary knowledge source when valid
 - Present ranked improvements with before/after code snippets
 - Wait for user scope selection before applying changes
 - Run full test suite after applying changes
-- Rollback immediately on any test failure
+- Analyze test failures before rollback (distinguish stale tests from regressions)
 - Create 04-refactor.md with structured results
 - Send notifications at key points (plan ready, complete)

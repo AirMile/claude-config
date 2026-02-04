@@ -212,11 +212,7 @@ multiSelect: false
 ```bash
 cd {projects_root}\[naam]
 git add -A
-git commit -m "feat: initial commit - [naam]
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+git commit -m "feat: initial commit - [naam]"
 ```
 
 2. Maak GitHub repo en push:

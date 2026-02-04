@@ -240,3 +240,5 @@ Generate `.claude/research/stack-baseline.md` — reusable framework conventions
 AskUserQuestion (single-select): Commit setup files now, or skip.
 
 If committing: stage relevant files, create commit with conventional commit format (e.g., `build: scaffold [stack] project`).
+
+**IMPORTANT:** Do NOT add Co-Authored-By, Generated with Claude Code footer, or any other AI attribution to commits.
