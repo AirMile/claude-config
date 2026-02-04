@@ -7,315 +7,236 @@ disable-model-invocation: true
 
 **Trigger**: `/core-setup`
 
-Activates when user wants to set up or configure a project. Uses Context7 for real-time version information.
+Interactive wizard that sets up a new or existing project. Collects user decisions, generates project files, configures Claude Code.
 
-**CRITICAL: One Question Per Response** — each question (plain text OR modal) MUST be in a SEPARATE response. Never combine multiple questions in one response.
+**CRITICAL: One question per response.** Never combine multiple questions in one message.
 
-## Workflow
+---
 
-### Step 1: Language Selection
+## Phase 1: Detect & Configure
 
-AskUserQuestion (single-select):
-- Header: "Language"
-- Question: "What language should I communicate in?"
-- Options: English, Nederlands, Deutsch, Français, Español
-- If "other": ask user to specify in plain text
+1. **Language selection** — AskUserQuestion (single-select):
+   - Options: English, Nederlands, Deutsch, Français, Español
+   - Store for Phase 6 (CLAUDE.md `## User Preferences`)
 
-Store selection for Step 13 (CLAUDE.md `## User Preferences` section).
+2. **Detect existing project** — Run detection script:
+   ```bash
+   python .claude/skills/core-setup/scripts/detect-existing.py --path .
+   ```
+   If files found: ask whether to merge or replace existing configs.
 
-### Step 2: Detect Existing Project
-
-Run `scripts/detect-existing.py` to check for existing files. If files found, ask user:
-- Is this an existing project needing configuration?
-- Should existing configs be merged or replaced?
-- Backup existing files if replacing
-
-### Step 3: Configure MCP Servers
-
-Detect and install essential MCP servers.
-
-**Essentiële MCPs:** sequentialthinking, context7, time
-
-1. **Detect installed MCPs:**
+3. **MCP servers** — Check and install essentials:
    ```bash
    claude mcp list
    ```
 
-2. **Install missing MCPs (user scope):**
-
-   **sequentialthinking:**
+   Install missing (user scope):
    ```bash
+   # sequentialthinking
    claude mcp add sequentialthinking -s user -- npx -y @modelcontextprotocol/server-sequential-thinking
-   ```
 
-   **context7:** Ask user via AskUserQuestion (single-select) if they want to configure with API key (free at context7.com/dashboard) for higher rate limits.
-   ```bash
-   # With key:
-   claude mcp add context7 -e CONTEXT7_API_KEY=<key> -- npx -y @upstash/context7-mcp@latest
-   # Without key:
+   # context7 (ask if user has API key for higher rate limits)
    claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
-   ```
+   # or with key:
+   claude mcp add context7 -e CONTEXT7_API_KEY=<key> -- npx -y @upstash/context7-mcp@latest
 
-   **time** (requires `uv`):
-   ```bash
+   # time (requires uv)
    claude mcp add time -s user -- uvx mcp-server-time
    ```
 
-3. **Report:** Show table of installed servers, note restart needed.
+---
 
-### Step 4-6: Project Setup (Sequential Modal Flow)
+## Phase 2: Collect Project Info
 
-Each modal flows into the next. Wait for user response before proceeding.
+Ask sequentially, one question per response:
+
+1. **Project description** — plain text question
+2. **Project name** — AskUserQuestion (single-select):
+   - "Generate name (Recommended)" — Claude suggests 2-3 short, kebab-case names based on the description
+   - "I'll type my own" — follow up with plain text question
+3. **Project type** — AskUserQuestion (single-select):
+   - Web Frontend, Web Backend, Fullstack, Game, Mobile, Desktop, CLI
+4. **Tech stack** — AskUserQuestion (multi-select):
+   - Offer relevant frameworks/tools based on project type
+   - Claude determines the best options per type
+5. **Suggestions** — AskUserQuestion (multi-select):
+   - Offer complementary libraries based on chosen stack (TypeScript, testing, state management, styling, etc.)
+6. **Web standards** (skip for game/CLI/desktop) — Three single-select questions:
+   - Data fetching strategy (if React/Vue): plain fetch, SWR, TanStack Query
+   - Accessibility: WCAG 2.1 AA, WCAG 2.1 A, Minimal
+   - Responsive: Mobile-first, Desktop-first, Fixed width
 
 ---
 
-**Modal 1: Projectnaam** — Vraag in plain text: "Wat is de naam van het project?"
+## Phase 3: Generate Project
 
-**Modal 2: Projectomschrijving** — Vraag in plain text: "Geef een korte beschrijving van wat dit project doet/gaat doen."
+1. **Fetch latest versions** via Context7:
+   - `resolve-library-id` + `query-docs` for each major technology
+   - Extract current version numbers and install commands
 
-**Modal 3: Projecttype** — AskUserQuestion (single-select):
-- Header: "Projecttype"
-- Options: Web Frontend (Aanbevolen), Web Backend, Fullstack, Game, Mobile, Desktop, CLI
+2. **Generate project files** — Claude decides which files based on the stack. Common examples:
+   - Package manifest (package.json, composer.json, pyproject.toml, Cargo.toml, etc.)
+   - Language/framework config (tsconfig.json, next.config.ts, vite.config.ts, etc.)
+   - Linting/formatting config (.prettierrc, .eslintrc, biome.json, etc.)
+   - CSS config if applicable (postcss.config.mjs, tailwind.config.ts, etc.)
+   - `.env.example` with ONLY variables relevant to the chosen stack
+   - `.gitignore` appropriate for the stack
 
----
-
-**Modal 4: Tech Stack** — AskUserQuestion (multi-select), Header: "Tech Stack", altijd "Leg vraag uit" als laatste optie.
-
-| Projecttype | Opties |
-|-------------|--------|
-| web-frontend | React (Aanbevolen), Vue, Angular, Svelte, Solid, Next.js, Nuxt, Astro |
-| web-backend | Laravel (Aanbevolen), Express.js, Fastify, NestJS, Django, FastAPI, Rails |
-| fullstack | Laravel+React (Aanbevolen), Laravel+Vue, Next.js, Nuxt, Django+React, Express+React |
-| game | Godot (Aanbevolen), Unity, Unreal, Bevy, Phaser, Three.js |
-| mobile | React Native (Aanbevolen), Flutter, Ionic, Expo, Swift/SwiftUI, Kotlin |
-| desktop | Electron (Aanbevolen), Tauri, Qt, GTK, WPF |
-| cli | Node.js (Aanbevolen), Python, Rust, Go, .NET |
+3. **Optional: Git init** — AskUserQuestion (single-select):
+   - Full (init + .gitignore + commit), Only .gitignore, Skip
 
 ---
 
-**Modal 5: Smart Suggestions** — AskUserQuestion (multi-select), Header: "Suggesties", gebaseerd op geselecteerde tech stack.
+## Phase 4: Install & Verify
 
-| Stack | Opties |
-|-------|--------|
-| React | TypeScript (Aanbevolen), React Router, Zustand, TanStack Query, Tailwind CSS, Testing Library, Vitest |
-| Laravel | Livewire (Aanbevolen), Inertia.js, Sanctum, Sail, Pest, Horizon |
-| Vue | TypeScript (Aanbevolen), Pinia, Vue Router, Tailwind CSS, Vitest, VueUse |
-| Angular | TypeScript (Aanbevolen), NgRx, Angular Material, Jasmine/Karma |
-| Django | Django REST Framework (Aanbevolen), Celery, pytest-django, Docker |
-| FastAPI | Pydantic (Aanbevolen), SQLAlchemy, Alembic, pytest |
-| Game | Git LFS (Aanbevolen), Specifieke .gitignore, Asset Version Control, CI/CD |
-| Overig | Docker (Aanbevolen), Testing Framework, Linting, CI/CD, TypeScript |
+1. **Auto-detect package manager** from lockfile or manifest
+2. **Install dependencies** — Run the appropriate install command
+3. **Run build** to verify setup compiles cleanly
+4. Continue setup even if install/build fails (non-blocking)
 
-### Step 6: Project Standards (web projects only)
+---
 
-**Skip** als projecttype game, CLI, of desktop is.
+## Phase 5: Configure Claude
 
-**Modal 6a: Data Fetching Strategy** (alleen als React/Vue in stack) — AskUserQuestion (single-select):
-- Plain fetch (Aanbevolen), SWR, TanStack Query
+### Documentation Generators
 
-**Modal 6b: Accessibility Standaard** — AskUserQuestion (single-select):
-- WCAG 2.1 AA (Aanbevolen), WCAG 2.1 A, Minimal
+AskUserQuestion (multi-select) — show generators relevant to project type:
+- **Web**: components, routes, state, design-tokens, api-calls
+- **Backend**: api, components, erd, events, middleware, auth-flow, routes
+- **Game**: scenes, game-classes, state-machines, behavior-trees, prefabs
 
-**Modal 6c: Responsive Design** — AskUserQuestion (single-select):
-- Mobile-first (Aanbevolen), Desktop-first, Fixed width
+### Permissions
 
-Store selections for Step 13 (`### Standards` subsection).
+4 sequential AskUserQuestion modals:
 
-### Step 7: Fetch Latest Versions
+1. **File Operations** (multi-select): auto-read, auto-edit, auto-create
+2. **Tool Permissions** (multi-select): tests, packages, bash, commits
+3. **Directory Access** (single-select): all directories, or select specific
+4. **Directory Exclusions** (multi-select): none, node_modules, vendor, dist, build, .env
 
-Use Context7 for each chosen technology:
-1. `resolve-library-id` for each technology
-2. `query-docs` with topic "installation setup configuration"
-3. Extract latest version numbers and installation commands
+Write `.claude/settings.local.json` with the `permissions.allow` array format:
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read *",
+      "Edit *",
+      "Write *",
+      "Bash(npm *)",
+      "Bash(npx *)"
+    ]
+  }
+}
+```
 
-### Step 8: Generate Configuration
+### Code Formatter (PostToolUse Hook)
 
-Based on selections, create config files from `assets/config-templates/`:
-- Node.js → package.json | PHP → composer.json | Python → pyproject.toml
-- Include .env.example if needed
+Auto-format after every Write/Edit. Create `.claude/hooks/format-on-save.cjs`:
+- Node.js script that reads stdin JSON, extracts file path, checks extension, runs formatter
+- Use `.cjs` to avoid ES Module issues
 
-### Step 9: Optional Git Setup
+Formatter selection per stack:
 
-AskUserQuestion (single-select):
-- Full (init + .gitignore + commit), Partial (init + .gitignore), Skip
+| Stack | Formatter | Command |
+|-------|-----------|---------|
+| JS/TS (React, Vue, Next.js, Node, etc.) | Prettier | `npx prettier --write` |
+| PHP/Laravel | Pint | `./vendor/bin/pint` |
+| Python | Black | `black` |
+| Rust | rustfmt | `rustfmt` |
+| Go | gofmt | `gofmt -w` |
+| C#/.NET | dotnet format | `dotnet format --include` |
+| Godot/GDScript | gdformat | `gdformat` |
+| C/C++ | clang-format | `clang-format -i` |
+| Dart/Flutter | dart format | `dart format` |
 
-### Step 10: Install Dependencies
+Add hook to `settings.local.json`:
+```json
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Write|Edit",
+      "hooks": [{ "type": "command", "command": "node .claude/hooks/format-on-save.cjs" }]
+    }]
+  }
+}
+```
 
-Auto-detect package manager and install:
-- `package.json` → `npm install`
-- `composer.json` → `composer install`
-- `requirements.txt` → `pip install -r requirements.txt`
-- `pyproject.toml` → `pip install -e .` or `poetry install`
-- `Cargo.toml` → `cargo build`
-- `go.mod` → `go mod download`
+---
 
-Report result. Continue setup even if installation fails (non-blocking).
+## Phase 6: Update CLAUDE.md
 
-### Step 11: Documentation Configuration
+Update `## User Preferences` with language from Phase 1.
 
-AskUserQuestion (single-select) for project type (documentation system):
-- Laravel Backend, React Frontend, Vue Frontend, Laravel+React Fullstack, Laravel+Vue Fullstack, Unity Game, Unreal Game, Godot Game
-
-Show recommended generators based on type, then AskUserQuestion (multi-select) to enable/disable generators.
-
-**Generator categories per type:**
-- **Laravel**: api, components, erd, events (recommended) + middleware, auth-flow, routes
-- **React**: components, routes, state, design-tokens (recommended) + api-calls
-- **Game**: scenes, game-classes, state-machines (recommended) + behavior-trees, prefabs
-
-### Step 12: Configure Claude Permissions
-
-Execute `scripts/generate-settings.py` to configure `.claude/settings.local.json`.
-
-4 modals (all AskUserQuestion multi-select):
-1. **File Ops**: auto-create, auto-edit, auto-read (preselected: auto-read)
-2. **Tool Perms**: bash, packages, tests, commits (preselected: tests)
-3. **Directory Access**: all (Aanbevolen), src, lib, app, tests, components
-4. **Directory Exclusies**: none (Aanbevolen), node_modules, vendor, dist, build, coverage, .env
-
-Combine selections to generate settings. Apply smart defaults based on project type.
-
-### Step 13: Update CLAUDE.md
-
-**Update `## User Preferences`:** Replace `Language:` line with selection from Step 1.
-
-**Add `## Project` section with structured format:**
+Add `## Project` section using this format:
 
 ```markdown
 ## Project
 
+<!-- GENERATED BY /setup - DO NOT EDIT MANUALLY -->
+
 **Name**: [Project Name]
-**Type**: [e.g., "Web Frontend (React SPA)", "Game (Godot)"]
-**Description**: [User's description]
-**Created**: [Current date]
+**Type**: [Type (Framework)]
+**Description**: [Description]
+**Created**: [Date]
 
 ### Stack
-**Frontend**: [Framework version, Bundler, Language] (if applicable)
-**Backend**: [Framework version, Language version] (if applicable)
+**Frontend**: [Framework, bundler, language] (if applicable)
+**Backend**: [Framework, language] (if applicable)
 **Styling**: [CSS framework] (if applicable)
-**Routing**: [Router library] (if applicable)
-**Libraries**: [Key libraries, comma-separated]
+**CMS**: [CMS name] (if applicable)
+**Animations**: [Libraries] (if applicable)
+**Forms**: [Libraries] (if applicable)
+**Email**: [Service] (if applicable)
+**Icons**: [Library] (if applicable)
+**Fonts**: [Strategy] (if applicable)
+**Analytics**: [Services] (if applicable)
+**Images**: [Strategy] (if applicable)
+**Hosting**: [Platform] (if applicable)
 
 ### Testing
-**Frontend**: [Test framework, Testing library] (if applicable)
-**Backend**: [Test framework] (if applicable)
-**E2E**: [E2E framework] (optional)
+**Unit/Component**: [Framework, library]
+**E2E**: [Framework]
 
 ### Documentation Generators
-**Enabled:** [comma-separated list of enabled generators]
-**Available:** [comma-separated list of disabled generators]
+**Enabled:** [comma-separated]
+**Available:** [comma-separated]
 
-### Standards (web projects only)
+### Standards
 **Accessibility:** [wcag-aa | wcag-a | minimal]
 **Responsive:** [mobile-first | desktop-first | fixed]
-**Data Fetching:** [plain-fetch | swr | tanstack] (if React/Vue)
+**Data Fetching:** [plain-fetch | swr | tanstack]
 ```
 
-**Format rules:**
-- Only add categories applicable to the project type
-- Format: `**Category**: Value1, Value2, Value3`
-- Standards subsection only for web projects
-- Do NOT add separate Tech Stack, Workspace Configuration, or Development Setup sections
+**Rules:**
+- Only include categories that apply to the project
+- `### Standards` only for web projects
+- `### Stack` subcategories are flexible — add what's relevant, omit what's not
 
-**Example (Fullstack Laravel + React):**
-```markdown
-### Stack
-**Frontend**: React 19, Vite 7, TypeScript
-**Backend**: Laravel 11, PHP 8.3
-**Styling**: Tailwind CSS v4
-**Libraries**: Inertia.js, Sanctum
+---
 
-### Testing
-**Frontend**: Vitest, React Testing Library
-**Backend**: PHPUnit
-**E2E**: Playwright
-```
+## Phase 7: Stack Research (optional)
 
-### Step 13.5: Create Resources Folder
+Generate `.claude/research/stack-baseline.md` — reusable framework conventions that avoid duplicate Context7 queries in other skills.
 
-Create `.claude/resources/` with stack-specific testing and pattern resources:
-
-```bash
-mkdir -p .claude/resources/testing
-mkdir -p .claude/resources/stacks
-mkdir -p .claude/resources/patterns
-```
-
-**Create based on stack:**
-- `stack-detection.md` — parsing rules for `### Stack` section (always)
-- `testing/vitest-rtl.md` — Vitest + RTL patterns (if frontend React/Vue/Svelte)
-- `testing/phpunit.md` — PHPUnit + Laravel test patterns (if Laravel)
-- `testing/jest-node.md` — Jest + Supertest patterns (if Node backend)
-- `testing/playwright.md` — Playwright patterns (if web project)
-- `patterns/tdd-cycle.md` — RED-GREEN-REFACTOR flow (always)
-- `patterns/output-parsing.md` — universal test output format (always)
-
-Commands automatically load relevant resources based on `### Stack` in CLAUDE.md.
-
-### Step 14: Generate Stack Baseline Research
-
-Generate `.claude/research/stack-baseline.md` — reusable research for framework conventions, avoiding duplicate Context7 queries in /dev skills.
-
-**Steps:**
-1. Create `.claude/research/` directory
-2. Parse stack info from `## Project` section (Step 13)
-3. For each major technology, execute Context7 research:
-   - `resolve-library-id` for framework
-   - `query-docs` with topic "conventions best practices patterns idioms"
-4. Extract and distill: conventions (5-10), patterns (5-10), idioms (3-5), testing (3-5), pitfalls (3-5)
-5. Generate via script:
+1. For each major technology in the stack, query Context7:
+   - `resolve-library-id` → `query-docs` with "conventions best practices patterns idioms"
+2. Distill: conventions (5-10), patterns (5-10), idioms (3-5), testing (3-5), pitfalls (3-5)
+3. Generate via script:
    ```bash
-   python3 .claude/skills/core-setup/scripts/generate-stack-baseline.py \
+   python .claude/skills/core-setup/scripts/generate-stack-baseline.py \
      --stack "[framework + version]" \
      --conventions "[extracted]" --patterns "[extracted]" \
      --idioms "[extracted]" --testing "[extracted]" \
      --pitfalls "[extracted]" --sources "[library IDs]" \
      --output .claude/research/stack-baseline.md
    ```
-6. Validate: file exists, all sections populated, ~3-5k tokens
 
-### Step 14.5: Architecture Baseline (Game Projects Only)
+**Game projects:** Also generate `.claude/research/architecture-baseline.md` with scene tree patterns, node types, signals, state machines.
 
-**Skip** if project type is NOT game.
+---
 
-Generate `.claude/research/architecture-baseline.md` for Godot/Unity/Unreal architecture patterns.
+## Phase 8: Commit (optional)
 
-**Steps:**
-1. Context7 research: `resolve-library-id` → `query-docs` with topic "scene tree node types signals resources state machine"
-2. Extract: node type decision guide, scene composition patterns, signal patterns, resource patterns, state machine patterns, feature pattern index
-3. Write to `.claude/research/architecture-baseline.md`
+AskUserQuestion (single-select): Commit setup files now, or skip.
 
-Used by /game:define skill to avoid duplicate research.
-
-### Step 15: Configure Code Formatter (PostToolUse Hook)
-
-Auto-format code after every Write/Edit using the best formatter for the stack.
-
-**Formatter per stack:**
-
-| Tech Stack | Formatter | Command | Install |
-|------------|-----------|---------|---------|
-| React, Vue, Angular, Svelte, Next.js, Nuxt, Astro, Node.js | Prettier | `npx prettier --write` | `npm install -D prettier` |
-| Laravel, PHP | Pint | `./vendor/bin/pint` | `composer require laravel/pint --dev` |
-| Django, FastAPI, Python | Black | `black` | `pip install black` |
-| Rust, Bevy | rustfmt | `rustfmt` | Included |
-| Go | gofmt | `gofmt -w` | Included |
-| Unity, .NET, WPF | dotnet format | `dotnet format --include` | Included |
-| Godot | gdformat | `gdformat` | `pip install gdtoolkit` |
-| Unreal, C/C++ | clang-format | `clang-format -i` | System package |
-| Flutter, Dart | dart format | `dart format` | Included |
-
-**Steps:**
-1. Create `.claude/hooks/format-on-save.cjs` — Node.js script that reads stdin JSON, extracts file path, checks extension, runs formatter. Use `.cjs` to avoid ES Module issues.
-2. Install formatter if needed
-3. Add PostToolUse hook to `.claude/settings.local.json`:
-   ```json
-   {
-     "hooks": {
-       "PostToolUse": [{
-         "matcher": "Write|Edit",
-         "hooks": [{ "type": "command", "command": "node .claude/hooks/format-on-save.cjs" }]
-       }]
-     }
-   }
-   ```
+If committing: stage relevant files, create commit with conventional commit format (e.g., `build: scaffold [stack] project`).

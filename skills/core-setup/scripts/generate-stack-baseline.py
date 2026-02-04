@@ -6,7 +6,7 @@ This script creates .claude/research/stack-baseline.md with framework convention
 patterns, and idioms that are reusable across all features in the project.
 
 Usage:
-    python3 generate-stack-baseline.py \
+    python generate-stack-baseline.py \
         --stack "Laravel 11 + Livewire 3" \
         --conventions "Convention 1|Convention 2|Convention 3" \
         --patterns "Pattern 1: desc|Pattern 2: desc" \
@@ -18,19 +18,20 @@ Usage:
 """
 
 import argparse
-import os
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import List
 
 
-def parse_list(value: str) -> list[str]:
+def parse_list(value: str) -> List[str]:
     """Parse pipe-separated string into list."""
     if not value or value.strip() == "":
         return []
     return [item.strip() for item in value.split("|") if item.strip()]
 
 
-def format_list_items(items: list[str], prefix: str = "-") -> str:
+def format_list_items(items: List[str], prefix: str = "-") -> str:
     """Format list items with prefix."""
     if not items:
         return f"{prefix} (No items provided)"
@@ -39,12 +40,12 @@ def format_list_items(items: list[str], prefix: str = "-") -> str:
 
 def generate_baseline_content(
     stack: str,
-    conventions: list[str],
-    patterns: list[str],
-    idioms: list[str],
-    testing: list[str],
-    pitfalls: list[str],
-    sources: list[str],
+    conventions: List[str],
+    patterns: List[str],
+    idioms: List[str],
+    testing: List[str],
+    pitfalls: List[str],
+    sources: List[str],
 ) -> str:
     """Generate the markdown content for stack-baseline.md."""
 
