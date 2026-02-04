@@ -85,7 +85,7 @@ Show a **numbered list** of all profiles (except "core" and "all") with their un
 ```
 **Beschikbare profielen:**
 
-1. **dev** — dev-backlog, dev-build, dev-define, dev-test, dev-repos, dev-worktree
+1. **dev** — dev-plan, dev-build, dev-define, dev-test, dev-repos, dev-worktree
 2. **dev-legacy** — dev-legacy-1-plan, dev-legacy-2-code, dev-legacy-debug, ...
 3. **frontend** — frontend-theme, frontend-wireframe
 4. **game** — game-backlog, game-build, game-define, game-test

@@ -9,7 +9,7 @@ core:
   - core-setup
 
 dev:
-  - dev-backlog
+  - dev-plan
   - dev-build
   - dev-define
   - dev-refactor

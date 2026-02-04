@@ -3,7 +3,7 @@ description: Transform idea/brainstorm output into prioritized web feature plan
 disable-model-invocation: true
 ---
 
-# Plan
+# Dev Plan
 
 ## Overview
 
@@ -176,6 +176,8 @@ Sections: {count}
    - What API endpoints are required?
    - What can be split into independent features?
 
+   **Granularity decision:** When a feature could be defined as one large item OR multiple smaller items, apply the right-size rule: each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — they're easier to combine than to split later.
+
 2. **Extract features:**
    - Each feature = one `/dev:define` unit
    - Feature should be implementable independently (with dependencies)
@@ -211,18 +213,15 @@ Found {count} features:
    - question: "Kloppen deze features? Je kunt toevoegen, verwijderen of aanpassen."
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Features zijn correct, ga door naar dependencies"
-     - label: "Feature toevoegen", description: "Ik mis een feature"
-     - label: "Feature verwijderen", description: "Een feature hoort hier niet"
-     - label: "Feature aanpassen", description: "Naam, type of beschrijving wijzigen"
-     - label: "Meerdere wijzigingen", description: "Ik wil meerdere dingen aanpassen"
+     - label: "Features aanpassen", description: "Toevoegen, verwijderen, of naam/type/beschrijving wijzigen"
+     - label: "Explain question", description: "Leg de opties uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 2
-   - "Feature toevoegen" → ask for details, add to list, show updated table, re-ask
-   - "Feature verwijderen" → ask which one (by number), remove, show updated table, re-ask
-   - "Feature aanpassen" → ask which one and what to change, update, show updated table, re-ask
-   - "Meerdere wijzigingen" → let user describe all changes, apply, show updated table, re-ask
+   - "Features aanpassen" → ask what to change (add/remove/edit), apply changes, show updated table, re-ask
+   - "Explain question" → explain feature extraction process and options, re-ask
+   - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms features are correct.**
 
@@ -277,16 +276,15 @@ routing (base)
    - question: "Klopt deze volgorde? Je kunt dependencies aanpassen."
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Dependencies zijn correct, ga door naar prioriteit"
-     - label: "Dependency toevoegen", description: "Feature X moet na Y komen"
-     - label: "Dependency verwijderen", description: "Feature X hoeft niet op Y te wachten"
-     - label: "Volgorde aanpassen", description: "Andere implementatievolgorde gewenst"
+     - label: "Dependencies aanpassen", description: "Toevoegen, verwijderen of volgorde wijzigen"
+     - label: "Explain question", description: "Leg de dependency-analyse uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 3
-   - "Dependency toevoegen" → ask which feature depends on which, update graph, show updated table, re-ask
-   - "Dependency verwijderen" → ask which dependency to remove, update graph, show updated table, re-ask
-   - "Volgorde aanpassen" → let user describe desired order, recalculate dependencies, show updated table, re-ask
+   - "Dependencies aanpassen" → ask what to change (add/remove/reorder), update graph, show updated table, re-ask
+   - "Explain question" → explain dependency analysis and implications, re-ask
+   - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms dependencies are correct.**
 
@@ -303,12 +301,29 @@ routing (base)
      - ... (all features)
    - multiSelect: true
 
-2. **Auto-assign remaining features:**
-   - Phase 2: Direct dependencies of MVP features
-   - Phase 3: Nice-to-have, polish, extra content
+2. **Auto-assign remaining features using heuristics:**
+   - Phase 2: Features that directly extend MVP functionality OR are prerequisites for important Phase 3 features
+   - Phase 3: Nice-to-have, polish, extra content, integrations without core impact
+   - When unclear: prefer Phase 2 (easier to demote than to promote later)
 
-3. **Validate with user:**
-   Show proposed prioritization, allow adjustments.
+3. **Review with user:**
+
+   Show proposed prioritization table, then use AskUserQuestion:
+   - header: "Priority Review"
+   - question: "Klopt deze fase-indeling? Je kunt features verplaatsen tussen fases."
+   - options:
+     - label: "Ja, dit klopt (Recommended)", description: "Fase-indeling is correct, genereer backlog"
+     - label: "Features verplaatsen", description: "Een of meer features naar een andere fase"
+     - label: "Explain question", description: "Leg de fase-indeling uit"
+   - multiSelect: false
+
+   **Response handling:**
+   - "Ja, dit klopt" → proceed to FASE 4
+   - "Features verplaatsen" → ask which features and target phase, update table, re-ask
+   - "Explain question" → explain MVP/Phase 2/Phase 3 criteria, re-ask
+   - "Other" → parse user's freeform input, apply changes, re-ask
+
+   **Loop until user confirms prioritization is correct.**
 
 **Output:**
 
@@ -427,10 +442,10 @@ Start development:
 /dev:define {first-mvp-feature}
 ```
 
-**Send notification:**
+**Send notification (if script exists):**
 
 ```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Backlog ready: {count} features"
+if (Test-Path .claude/scripts/notify.ps1) { powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Backlog ready: {count} features" }
 ```
 
 ## Best Practices
