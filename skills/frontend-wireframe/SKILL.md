@@ -1,11 +1,12 @@
 ---
 description: Generate low-fidelity HTML wireframes using parallel design agents with visual reflection
-disable-model-invocation: true
 ---
 
 # Wireframe
 
 Generate multiple low-fidelity wireframe sketches using 3 parallel design agents, each with a unique philosophy. Agents visually review their own work via screenshots and iterate to create improved versions.
+
+**Keywords**: wireframe, mockup, prototype, layout, UI design, UX, mobile, desktop, game UI, atomic design, storybook, low-fidelity, parallel agents, design variants
 
 ## When to Use
 
@@ -242,6 +243,61 @@ Use AskUserQuestion tool:
   4. label: "Vraag uitleggen", description: "Leg component hergebruik uit"
 - multiSelect: false
 ```
+
+### Step 1.5: Theme Integration Check
+
+**Check of er een THEME.md bestaat:**
+
+```bash
+# Check .workspace/config/THEME.md
+```
+
+**Als THEME.md BESTAAT:**
+
+Toon samenvatting:
+```
+📋 THEME GEVONDEN
+
+| Categorie | Waarden |
+|-----------|---------|
+| Main Colors | dark: {dark}, light: {light} |
+| Accents | primary: {accent-primary}, secondary: {accent-secondary} |
+| Typography | {heading-font}, {body-font} |
+```
+
+**AskUserQuestion:**
+```yaml
+header: "Theme"
+question: "Theme tokens gevonden. Gebruiken voor wireframes?"
+options:
+  - label: "Ja, gebruik theme (Recommended)", description: "Wireframes gebruiken theme kleuren en fonts"
+  - label: "Nee, standaard grayscale", description: "Low-fidelity grayscale wireframes"
+  - label: "Brand preset kiezen", description: "Kies een preset uit skills/shared/brand-presets.md"
+  - label: "Explain question", description: "Verschil tussen opties"
+multiSelect: false
+```
+
+**Als "Ja, gebruik theme":**
+- Laad theme tokens uit `.workspace/config/THEME.md`
+- Pas toe in HTML template CSS variables
+- Agents gebruiken theme kleuren in plaats van grayscale
+
+**Als "Brand preset kiezen":**
+- Laad presets uit `skills/shared/brand-presets.md`
+- Toon preset opties (Anthropic Style, Minimal Mono, etc.)
+- Pas geselecteerde preset toe op wireframes
+
+**Als THEME.md NIET bestaat:**
+```
+ℹ️ GEEN THEME GEVONDEN
+
+Geen THEME.md gevonden in .workspace/config/.
+Wireframes gebruiken standaard low-fidelity grayscale.
+
+Tip: Gebruik /theme om eerst een design systeem aan te maken.
+```
+
+→ Ga door met standaard grayscale kleuren
 
 ## FASE 2: Round 1 - First Designs
 

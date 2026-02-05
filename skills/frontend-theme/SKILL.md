@@ -1,11 +1,12 @@
 ---
 description: Design systeem beheer - tokens CRUD, auto-extractie, en theme modes
-disable-model-invocation: true
 ---
 
 # Theme
 
 Beheert het project design systeem: design tokens aanmaken, bekijken, updaten, en dark/light mode configuratie.
+
+**Keywords**: design tokens, theme, colors, typography, spacing, breakpoints, dark mode, light mode, tailwind, css variables, design system, brand colors, font families
 
 ## Overview
 
@@ -63,6 +64,29 @@ multiSelect: false
 ### FASE 2: Actie Uitvoering
 
 #### Route: Aanmaken (Nieuwe Theme)
+
+**Stap 0: Brand Preset (Snelle Start)**
+
+**AskUserQuestion:**
+```yaml
+header: "Brand Preset"
+question: "Wil je een brand preset gebruiken voor snelle start?"
+options:
+  - label: "Custom (Recommended)", description: "Eigen kleuren en fonts definiëren"
+  - label: "Anthropic Style", description: "Dark/Light + Orange/Blue/Green accents, Poppins/Lora"
+  - label: "Minimal Mono", description: "Zwart/Wit met één accent kleur, system fonts"
+  - label: "Warm Earth", description: "Aardtinten met serif fonts"
+  - label: "Cool Tech", description: "Blauw/Cyan met Inter font"
+  - label: "Explain question", description: "Wat zijn brand presets?"
+multiSelect: false
+```
+
+**Als een preset geselecteerd:**
+1. Laad preset waarden uit `skills/shared/brand-presets.md`
+2. Toon preview van preset kleuren en fonts
+3. Vraag bevestiging → Spring naar Stap 5 (Bevestiging)
+
+**Als "Custom":** → Ga naar Stap 1
 
 **Stap 1: Kleuren**
 
@@ -378,7 +402,8 @@ Locatie: .workspace/config/THEME.md
 
 ## Resources
 
-- `.claude/skills/frontend-theme/references/THEME_TEMPLATE.md` - Template voor nieuwe theme
+- `skills/frontend-theme/references/THEME_TEMPLATE.md` - Template voor nieuwe theme
+- `skills/shared/brand-presets.md` - Voorgedefinieerde brand presets
 
 ---
 

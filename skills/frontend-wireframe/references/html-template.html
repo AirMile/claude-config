@@ -55,12 +55,45 @@
     }
 
     /* ========================================
+       THEME INTEGRATION - CSS VARIABLES
+       Default: Low-fidelity grayscale
+       Override: Values from THEME.md or brand preset
+       ======================================== */
+    :root {
+      /* Main Colors - Default Grayscale */
+      --wf-dark: #333;
+      --wf-light: #f5f5f5;
+      --wf-mid-gray: #888;
+      --wf-light-gray: #e0e0e0;
+
+      /* Accent Colors - Default Grayscale */
+      --wf-accent-primary: #666;
+      --wf-accent-secondary: #777;
+      --wf-accent-tertiary: #999;
+
+      /* Typography - Default System Fonts */
+      --wf-font-heading: Arial, sans-serif;
+      --wf-font-body: Arial, sans-serif;
+      --wf-font-mono: Consolas, monospace;
+
+      /* Semantic Colors */
+      --wf-success: #6a6;
+      --wf-warning: #a86;
+      --wf-error: #a66;
+      --wf-info: #68a;
+
+      /* Theme Override Section - Replace when theme available */
+      {{THEME_VARIABLES}}
+    }
+
+    /* ========================================
        BASE STYLES
        ======================================== */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      font-family: var(--wf-font-body);
+      background: var(--wf-light);
+      color: var(--wf-dark);
       padding-top: 50px;
       min-height: 100vh;
       display: flex;
@@ -77,7 +110,7 @@
       width: 375px;
       min-height: 700px;
       background: #fff;
-      border: 3px solid #333;
+      border: 3px solid var(--wf-dark);
       border-radius: 32px;
       overflow: hidden;
       display: flex;
@@ -86,26 +119,86 @@
 
     .status-bar {
       height: 44px;
-      background: #e0e0e0;
+      background: var(--wf-light-gray);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 12px;
-      color: #666;
-      border-bottom: 1px solid #ccc;
+      color: var(--wf-mid-gray);
+      border-bottom: 1px solid var(--wf-mid-gray);
     }
 
     /* ========================================
-       LOW-FIDELITY WIREFRAME COLORS
-       Use ONLY these colors for wireframe elements
+       DESKTOP FRAME (for desktop wireframes)
+       Use class="desktop-frame" instead of phone-frame
        ======================================== */
-    /*
-    Backgrounds: #f5f5f5, #fafafa, #e0e0e0, #ddd, #ccc
-    Borders: #999, #aaa, #bbb, #ccc
-    Text: #333, #666, #888
-    Selected/Active: background #888 or #999, text #fff
-    Placeholder images: solid #ddd or diagonal pattern
-    */
+    .desktop-frame {
+      width: 100%;
+      max-width: 1200px;
+      min-height: 700px;
+      background: #fff;
+      border: 2px solid var(--wf-mid-gray);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ========================================
+       LOW-FIDELITY WIREFRAME COLOR CLASSES
+       Use these classes for consistent wireframe styling
+       ======================================== */
+
+    /* Backgrounds */
+    .wf-bg-dark { background-color: var(--wf-dark); }
+    .wf-bg-light { background-color: var(--wf-light); }
+    .wf-bg-mid { background-color: var(--wf-mid-gray); }
+    .wf-bg-subtle { background-color: var(--wf-light-gray); }
+    .wf-bg-accent { background-color: var(--wf-accent-primary); }
+
+    /* Text */
+    .wf-text-dark { color: var(--wf-dark); }
+    .wf-text-light { color: var(--wf-light); }
+    .wf-text-mid { color: var(--wf-mid-gray); }
+    .wf-text-accent { color: var(--wf-accent-primary); }
+
+    /* Borders */
+    .wf-border { border: 1px solid var(--wf-mid-gray); }
+    .wf-border-dark { border: 1px solid var(--wf-dark); }
+    .wf-border-subtle { border: 1px solid var(--wf-light-gray); }
+
+    /* Typography */
+    .wf-heading {
+      font-family: var(--wf-font-heading);
+      font-weight: bold;
+    }
+    .wf-body {
+      font-family: var(--wf-font-body);
+    }
+    .wf-mono {
+      font-family: var(--wf-font-mono);
+    }
+
+    /* Accent cycling for shapes/elements */
+    .wf-accent-1 { background-color: var(--wf-accent-primary); }
+    .wf-accent-2 { background-color: var(--wf-accent-secondary); }
+    .wf-accent-3 { background-color: var(--wf-accent-tertiary); }
+
+    /* Placeholder elements */
+    .wf-placeholder {
+      background-color: var(--wf-light-gray);
+      border: 2px dashed var(--wf-mid-gray);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--wf-mid-gray);
+      font-size: 12px;
+    }
+
+    .wf-image-placeholder {
+      background: linear-gradient(135deg, var(--wf-light-gray) 25%, var(--wf-mid-gray) 25%, var(--wf-mid-gray) 50%, var(--wf-light-gray) 50%, var(--wf-light-gray) 75%, var(--wf-mid-gray) 75%);
+      background-size: 20px 20px;
+    }
 
     /* ========================================
        WIREFRAME CONTENT STYLES
@@ -133,6 +226,7 @@
   </div>
 
   <!-- Phone frame wrapper for mobile wireframes -->
+  <!-- Use class="desktop-frame" for desktop wireframes -->
   <div class="phone-frame">
     <div class="status-bar">9:41</div>
 

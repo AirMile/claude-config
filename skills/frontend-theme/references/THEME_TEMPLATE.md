@@ -6,59 +6,46 @@ Project design systeem met colors, typography, spacing, en breakpoints.
 
 ## Colors
 
-### Primary
+### Main Colors
+
+Basis kleuren voor achtergronden en tekst.
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `primary-50` | {primary-50} | Subtle backgrounds |
-| `primary-100` | {primary-100} | Hover backgrounds |
-| `primary-200` | {primary-200} | Active backgrounds |
-| `primary-300` | {primary-300} | Borders |
-| `primary-400` | {primary-400} | Icons |
-| `primary-500` | {primary-500} | **Main brand color** |
-| `primary-600` | {primary-600} | Hover states |
-| `primary-700` | {primary-700} | Active states |
-| `primary-800` | {primary-800} | Dark accents |
-| `primary-900` | {primary-900} | Text on light |
+| `dark` | {dark} | Primary text, dark backgrounds |
+| `light` | {light} | Light backgrounds, text on dark |
+| `mid-gray` | {mid-gray} | Secondary elements, borders |
+| `light-gray` | {light-gray} | Subtle backgrounds, dividers |
 
-### Secondary
+### Accent Colors
+
+Kleuren voor interactieve elementen en visuele accenten.
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `secondary-50` | {secondary-50} | Subtle backgrounds |
-| `secondary-100` | {secondary-100} | Hover backgrounds |
-| `secondary-200` | {secondary-200} | Active backgrounds |
-| `secondary-300` | {secondary-300} | Borders |
-| `secondary-400` | {secondary-400} | Icons |
-| `secondary-500` | {secondary-500} | **Secondary brand color** |
-| `secondary-600` | {secondary-600} | Hover states |
-| `secondary-700` | {secondary-700} | Active states |
-| `secondary-800` | {secondary-800} | Dark accents |
-| `secondary-900` | {secondary-900} | Text on light |
-
-### Neutral (Gray Scale)
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `neutral-50` | {neutral-50} | Page backgrounds |
-| `neutral-100` | {neutral-100} | Card backgrounds |
-| `neutral-200` | {neutral-200} | Dividers |
-| `neutral-300` | {neutral-300} | Borders |
-| `neutral-400` | {neutral-400} | Placeholder text |
-| `neutral-500` | {neutral-500} | Secondary text |
-| `neutral-600` | {neutral-600} | Body text |
-| `neutral-700` | {neutral-700} | Headings |
-| `neutral-800` | {neutral-800} | Dark text |
-| `neutral-900` | {neutral-900} | Darkest text |
+| `accent-primary` | {accent-primary} | Primary accent (CTAs, links, focus) |
+| `accent-secondary` | {accent-secondary} | Secondary accent (hover states, badges) |
+| `accent-tertiary` | {accent-tertiary} | Tertiary accent (highlights, decorations) |
 
 ### Semantic Colors
 
+Betekenisvolle kleuren voor feedback en status.
+
 | Token | Value | Usage |
 |-------|-------|-------|
-| `success` | {success} | Positive feedback |
-| `warning` | {warning} | Caution messages |
-| `error` | {error} | Error states |
-| `info` | {info} | Informational |
+| `success` | {success} | Positive feedback, confirmations |
+| `warning` | {warning} | Caution messages, alerts |
+| `error` | {error} | Error states, destructive actions |
+| `info` | {info} | Informational messages |
+
+### Extended Palette (Optional)
+
+Volledige kleurschalen voor gedetailleerd design werk.
+
+| Scale | 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 |
+|-------|----|----|----|----|----|----|----|----|----|----|
+| Primary | {p-50} | {p-100} | {p-200} | {p-300} | {p-400} | {p-500} | {p-600} | {p-700} | {p-800} | {p-900} |
+| Neutral | {n-50} | {n-100} | {n-200} | {n-300} | {n-400} | {n-500} | {n-600} | {n-700} | {n-800} | {n-900} |
 
 ---
 
@@ -66,35 +53,42 @@ Project design systeem met colors, typography, spacing, en breakpoints.
 
 ### Font Families
 
-| Token | Value |
-|-------|-------|
-| `font-heading` | {font-heading} |
-| `font-body` | {font-body} |
-| `font-mono` | {font-mono} |
+| Token | Primary | Fallback | Usage |
+|-------|---------|----------|-------|
+| `font-heading` | {heading-font} | {heading-fallback} | Headings (H1-H3, 24pt+) |
+| `font-body` | {body-font} | {body-fallback} | Body text, paragraphs |
+| `font-mono` | {mono-font} | {mono-fallback} | Code blocks, technical text |
+
+### Smart Application Rules
+
+- **Headings** (24pt and larger): Use `font-heading`
+- **Body text**: Use `font-body`
+- **Code, pre, kbd elements**: Use `font-mono`
+- **Buttons, labels**: Use `font-body` with medium weight
 
 ### Font Sizes
 
-| Token | Value | Line Height |
-|-------|-------|-------------|
-| `text-xs` | 0.75rem (12px) | 1rem |
-| `text-sm` | 0.875rem (14px) | 1.25rem |
-| `text-base` | 1rem (16px) | 1.5rem |
-| `text-lg` | 1.125rem (18px) | 1.75rem |
-| `text-xl` | 1.25rem (20px) | 1.75rem |
-| `text-2xl` | 1.5rem (24px) | 2rem |
-| `text-3xl` | 1.875rem (30px) | 2.25rem |
-| `text-4xl` | 2.25rem (36px) | 2.5rem |
-| `text-5xl` | 3rem (48px) | 1 |
+| Token | Size | Line Height | Usage |
+|-------|------|-------------|-------|
+| `text-xs` | 0.75rem (12px) | 1rem | Captions, labels |
+| `text-sm` | 0.875rem (14px) | 1.25rem | Small text, metadata |
+| `text-base` | 1rem (16px) | 1.5rem | Body text |
+| `text-lg` | 1.125rem (18px) | 1.75rem | Lead paragraphs |
+| `text-xl` | 1.25rem (20px) | 1.75rem | H4, subheadings |
+| `text-2xl` | 1.5rem (24px) | 2rem | H3 |
+| `text-3xl` | 1.875rem (30px) | 2.25rem | H2 |
+| `text-4xl` | 2.25rem (36px) | 2.5rem | H1 |
+| `text-5xl` | 3rem (48px) | 1 | Display headings |
 
 ### Font Weights
 
-| Token | Value |
-|-------|-------|
-| `font-light` | 300 |
-| `font-normal` | 400 |
-| `font-medium` | 500 |
-| `font-semibold` | 600 |
-| `font-bold` | 700 |
+| Token | Value | Usage |
+|-------|-------|-------|
+| `font-light` | 300 | De-emphasized text |
+| `font-normal` | 400 | Body text |
+| `font-medium` | 500 | Labels, buttons |
+| `font-semibold` | 600 | Subheadings |
+| `font-bold` | 700 | Headings, emphasis |
 
 ---
 
@@ -102,19 +96,17 @@ Project design systeem met colors, typography, spacing, en breakpoints.
 
 Base unit: {spacing-base}
 
-| Token | Value |
-|-------|-------|
-| `spacing-0` | 0 |
-| `spacing-1` | {spacing-1} |
-| `spacing-2` | {spacing-2} |
-| `spacing-3` | {spacing-3} |
-| `spacing-4` | {spacing-4} |
-| `spacing-5` | {spacing-5} |
-| `spacing-6` | {spacing-6} |
-| `spacing-8` | {spacing-8} |
-| `spacing-10` | {spacing-10} |
-| `spacing-12` | {spacing-12} |
-| `spacing-16` | {spacing-16} |
+| Token | Value | Usage |
+|-------|-------|-------|
+| `spacing-0` | 0 | No spacing |
+| `spacing-1` | {spacing-1} | Tight spacing (icons, inline) |
+| `spacing-2` | {spacing-2} | Compact spacing |
+| `spacing-3` | {spacing-3} | Default element spacing |
+| `spacing-4` | {spacing-4} | Component padding |
+| `spacing-6` | {spacing-6} | Section spacing |
+| `spacing-8` | {spacing-8} | Large gaps |
+| `spacing-12` | {spacing-12} | Section margins |
+| `spacing-16` | {spacing-16} | Page sections |
 
 ---
 
@@ -122,38 +114,38 @@ Base unit: {spacing-base}
 
 | Token | Value | Target |
 |-------|-------|--------|
-| `screen-sm` | {screen-sm} | Small devices |
-| `screen-md` | {screen-md} | Tablets |
-| `screen-lg` | {screen-lg} | Desktops |
-| `screen-xl` | {screen-xl} | Large screens |
-| `screen-2xl` | {screen-2xl} | Extra large |
+| `screen-sm` | {screen-sm} | Small devices (phones) |
+| `screen-md` | {screen-md} | Medium devices (tablets) |
+| `screen-lg` | {screen-lg} | Large devices (desktops) |
+| `screen-xl` | {screen-xl} | Extra large screens |
+| `screen-2xl` | {screen-2xl} | Wide screens |
 
 ---
 
 ## Border Radius
 
-| Token | Value |
-|-------|-------|
-| `rounded-none` | 0 |
-| `rounded-sm` | 0.125rem |
-| `rounded` | 0.25rem |
-| `rounded-md` | 0.375rem |
-| `rounded-lg` | 0.5rem |
-| `rounded-xl` | 0.75rem |
-| `rounded-2xl` | 1rem |
-| `rounded-full` | 9999px |
+| Token | Value | Usage |
+|-------|-------|-------|
+| `rounded-none` | 0 | Sharp corners |
+| `rounded-sm` | 0.125rem | Subtle rounding |
+| `rounded` | 0.25rem | Default rounding |
+| `rounded-md` | 0.375rem | Buttons, inputs |
+| `rounded-lg` | 0.5rem | Cards, modals |
+| `rounded-xl` | 0.75rem | Large cards |
+| `rounded-2xl` | 1rem | Hero sections |
+| `rounded-full` | 9999px | Pills, avatars |
 
 ---
 
 ## Shadows
 
-| Token | Value |
-|-------|-------|
-| `shadow-sm` | 0 1px 2px 0 rgb(0 0 0 / 0.05) |
-| `shadow` | 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) |
-| `shadow-md` | 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) |
-| `shadow-lg` | 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) |
-| `shadow-xl` | 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) |
+| Token | Value | Usage |
+|-------|-------|-------|
+| `shadow-sm` | 0 1px 2px 0 rgb(0 0 0 / 0.05) | Subtle depth |
+| `shadow` | 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) | Default elevation |
+| `shadow-md` | 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) | Cards |
+| `shadow-lg` | 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) | Dropdowns, modals |
+| `shadow-xl` | 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) | Dialogs |
 
 ---
 
@@ -163,13 +155,15 @@ Base unit: {spacing-base}
 
 ```css
 :root {
-  --background: {light-background};
-  --foreground: {light-foreground};
-  --card: {light-card};
-  --card-foreground: {light-card-foreground};
-  --border: {light-border};
-  --input: {light-input};
-  --ring: {light-ring};
+  --background: {light};
+  --foreground: {dark};
+  --card: {light-gray};
+  --card-foreground: {dark};
+  --border: {mid-gray};
+  --input: {light-gray};
+  --ring: {accent-primary};
+  --accent: {accent-primary};
+  --accent-foreground: {light};
 }
 ```
 
@@ -177,13 +171,48 @@ Base unit: {spacing-base}
 
 ```css
 .dark {
-  --background: {dark-background};
-  --foreground: {dark-foreground};
-  --card: {dark-card};
-  --card-foreground: {dark-card-foreground};
-  --border: {dark-border};
-  --input: {dark-input};
-  --ring: {dark-ring};
+  --background: {dark};
+  --foreground: {light};
+  --card: {mid-gray};
+  --card-foreground: {light};
+  --border: {mid-gray};
+  --input: {dark};
+  --ring: {accent-primary};
+  --accent: {accent-primary};
+  --accent-foreground: {dark};
+}
+```
+
+---
+
+## CSS Variables Export
+
+```css
+:root {
+  /* Main Colors */
+  --color-dark: {dark};
+  --color-light: {light};
+  --color-mid-gray: {mid-gray};
+  --color-light-gray: {light-gray};
+
+  /* Accent Colors */
+  --color-accent-primary: {accent-primary};
+  --color-accent-secondary: {accent-secondary};
+  --color-accent-tertiary: {accent-tertiary};
+
+  /* Semantic Colors */
+  --color-success: {success};
+  --color-warning: {warning};
+  --color-error: {error};
+  --color-info: {info};
+
+  /* Typography */
+  --font-heading: {heading-font}, {heading-fallback};
+  --font-body: {body-font}, {body-fallback};
+  --font-mono: {mono-font}, {mono-fallback};
+
+  /* Spacing */
+  --spacing-base: {spacing-base};
 }
 ```
 
@@ -195,17 +224,23 @@ Base unit: {spacing-base}
 
 ```css
 .button {
-  background: var(--primary-500);
+  background: var(--color-accent-primary);
+  color: var(--color-light);
   padding: var(--spacing-3) var(--spacing-4);
   font-family: var(--font-body);
   border-radius: var(--rounded-md);
+}
+
+.heading {
+  font-family: var(--font-heading);
+  color: var(--color-dark);
 }
 ```
 
 ### Tailwind Classes
 
 ```html
-<button class="bg-primary-500 px-4 py-3 font-body rounded-md">
+<button class="bg-accent-primary text-light px-4 py-3 font-body rounded-md">
   Click me
 </button>
 ```
