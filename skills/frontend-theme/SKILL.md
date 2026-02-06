@@ -196,7 +196,9 @@ multiSelect: false
 **Als een preset geselecteerd:**
 1. Laad preset waarden uit `skills/shared/brand-presets.md`
 2. Toon preview van preset kleuren en fonts
-3. Vraag bevestiging → Spring naar Stap 5 (Bevestiging)
+3. **Als preset dark mode kleuren heeft:** Toon dark mode preview, vraag bevestiging
+4. **Als preset geen dark mode heeft:** → Ga naar Stap 5 (Dark Mode)
+5. Vraag bevestiging → Spring naar Stap 6 (Bevestiging)
 
 **Als "Custom":** → Ga naar Stap 1
 
@@ -292,7 +294,50 @@ options:
 multiSelect: false
 ```
 
-**Stap 5: Bevestiging**
+**Stap 5: Dark Mode**
+
+**AskUserQuestion:**
+```yaml
+header: "Dark Mode"
+question: "Wil je dark mode toevoegen aan je theme?"
+options:
+  - label: "Ja, auto-generate (Recommended)", description: "Genereer dark kleuren automatisch op basis van je light palette"
+  - label: "Ja, handmatig", description: "Zelf dark mode kleuren opgeven"
+  - label: "Nee, alleen light mode", description: "Sla dark mode over (later toe te voegen via Modes)"
+  - label: "Explain question", description: "Waarom dark mode belangrijk is"
+multiSelect: false
+```
+
+**Als "Ja, auto-generate":**
+- Inverteer background/foreground: `dark` ↔ `light`
+- Pas `mid-gray` en `light-gray` aan voor dark context
+- Behoud accent kleuren maar verhoog lightness (~10-15%) voor leesbaarheid op donkere achtergrond
+- Genereer `.dark` CSS block naast `:root`
+- Toon preview (zelfde als Mode Comparison)
+
+**Als "Ja, handmatig":**
+```
+Geef je dark mode kleuren (hex values):
+
+1. Background (donkere achtergrond)
+   → Voorbeeld: #1a1a2e
+
+2. Foreground (lichte tekst op donker)
+   → Voorbeeld: #f5f5f5
+
+3. Card background (iets lichter dan background)
+   → Voorbeeld: #2d2d44
+
+4. Border kleur
+   → Voorbeeld: #3d3d5c
+```
+
+**Als "Nee":**
+- Sla dark mode over
+- Theme Modes sectie bevat alleen Light Mode
+- → Ga naar Stap 6
+
+**Stap 6: Bevestiging**
 
 ```
 📋 THEME SAMENVATTING
@@ -306,6 +351,7 @@ multiSelect: false
 | **Body** | {font} |
 | **Spacing** | {scale} |
 | **Breakpoints** | {list} |
+| **Dark Mode** | {Ja (auto) / Ja (custom) / Nee} |
 ```
 
 **AskUserQuestion:**
@@ -322,8 +368,10 @@ multiSelect: false
 **Als "Ja":**
 1. Lees `THEME_TEMPLATE.md` uit resources
 2. Vul template in met user values
-3. Schrijf naar `.workspace/config/THEME.md`
-4. → Ga naar FASE X: Post-flight Validation
+3. **Als dark mode gekozen:** Vul ook `.dark` CSS block in Theme Modes sectie
+4. **Als geen dark mode:** Verwijder Dark Mode blok uit Template, behoud alleen Light Mode
+5. Schrijf naar `.workspace/config/THEME.md`
+6. → Ga naar FASE X: Post-flight Validation
 
 ---
 
@@ -583,6 +631,7 @@ Sections:
   [✓|✗] Typography - [present|missing]
   [✓|✗] Spacing - [present|missing]
   [✓|✗] Breakpoints - [present|missing]
+  [✓|✗] Theme Modes - [light only|light+dark|missing]
 ```
 
 **3. Value Validation**
@@ -594,14 +643,21 @@ Typography:
   [✓|✗] Font families have fallbacks
 Spacing:
   [✓|✗] All values numeric with unit
+Theme Modes:
+  [✓|✗] Light mode :root CSS present and valid
+  [✓|✗] Dark mode .dark CSS present (if configured)
+  [✓|✗] Dark mode contrast ratios acceptable (AA minimum)
+  [✓|✗] No unfilled placeholders in mode CSS blocks
 ```
 
 **4. Export Validation**
 ```
 CSS Export:
   [✓|✗] CSS Variables section present
-  [✓|✗] Syntax valid
+  [✓|✗] :root block syntax valid
+  [✓|✗] .dark block syntax valid (if dark mode configured)
   [✓|✗] Matches token table
+  [✓|✗] All theme mode variables populated (no {placeholders})
 ```
 
 **Post-flight Samenvatting:**
@@ -612,6 +668,7 @@ POST-FLIGHT RESULT
 File:      [✓ PASS | ✗ FAIL]
 Content:   [✓ PASS | ✗ FAIL] - {N}/{M} sections
 Values:    [✓ PASS | ⚠ WARNINGS | ✗ FAIL]
+Modes:     [✓ PASS | ⚠ Light only | ✗ FAIL] - {light|light+dark}
 Export:    [✓ PASS | ✗ FAIL]
 
 Status: [→ Complete | ⚠ Warnings: {list} | ✗ Recovery needed]

@@ -1,10 +1,18 @@
 ---
-description: Generate React components with Tailwind styling from wireframe + theme — extracts components, extends Tailwind config, creates TypeScript components with stories and tests
+description: Style wireframe components one-by-one — generate high-fidelity HTML previews with visual approval, then produce React+Tailwind components and assemble a working page
 ---
 
 # Style
 
-Generate production-ready React components with Tailwind CSS by combining wireframe structure with theme tokens. Extracts components from wireframe, extends Tailwind config, and outputs complete component files with Storybook stories and tests.
+Transform low-fidelity wireframe components into high-fidelity styled components, one at a time. Each component gets a visual HTML preview for approval before generating production-ready React+Tailwind code. The wireframe page progressively transforms from grayscale to fully styled.
+
+**Keywords**: style, component, high-fidelity, React, Tailwind, preview, progressive, atomic design, visual approval, page assembly
+
+## When to Use
+
+- After `/wireframe` has produced a final wireframe with `data-component` attributes
+- When you want visual control over each component's styling
+- Before deploying production React components
 
 ---
 
@@ -14,29 +22,48 @@ Generate production-ready React components with Tailwind CSS by combining wirefr
 stateDiagram-v2
     [*] --> PREFLIGHT: /style [page]
 
-    PREFLIGHT --> EXTRACT: pre-flight pass
+    PREFLIGHT --> DISCOVER: pre-flight pass
     PREFLIGHT --> ERROR: pre-flight fail
 
-    EXTRACT --> CONFIG_SELECT: components extracted
-    EXTRACT --> ERROR: extraction fail
+    DISCOVER --> SETUP: components extracted
+    DISCOVER --> ERROR: no components found
 
-    CONFIG_SELECT --> TAILWIND_EXTEND: config gathered
-    TAILWIND_EXTEND --> GENERATE: tailwind extended
+    SETUP --> SELECT_COMPONENT: tailwind + preview ready
+    SETUP --> ERROR: setup fail
 
-    GENERATE --> STORIES: components generated
-    STORIES --> TESTS: stories generated
-    TESTS --> POSTFLIGHT: tests generated
+    SELECT_COMPONENT --> PREVIEW_HIFI: user kiest component
+    SELECT_COMPONENT --> POSTFLIGHT: user klaar / alle done
+
+    PREVIEW_HIFI --> REVIEW: high-fi preview gegenereerd
+    PREVIEW_HIFI --> ERROR: preview generation fail
+
+    REVIEW --> PREVIEW_HIFI: user wil tweaken
+    REVIEW --> GENERATE_REACT: user keurt goed
+    REVIEW --> SELECT_COMPONENT: user skipt component
+
+    GENERATE_REACT --> SELECT_COMPONENT: component complete
+    GENERATE_REACT --> ERROR: generation fail
 
     POSTFLIGHT --> COMPLETE: validation pass
     POSTFLIGHT --> RECOVER: validation fail
 
     ERROR --> RECOVER: error handler
     RECOVER --> PREFLIGHT: retry
-    RECOVER --> EXTRACT: retry extraction
     RECOVER --> COMPLETE: abort (partial output)
 
     COMPLETE --> [*]
 ```
+
+**State Descriptions:**
+- **PREFLIGHT**: Validate theme, wireframe, project structure
+- **DISCOVER**: Parse wireframe HTML for data-component attributes, build tree
+- **SETUP**: Extend Tailwind config, create high-fi preview copy of wireframe
+- **SELECT_COMPONENT**: User picks next component from list (or follows suggested order)
+- **PREVIEW_HIFI**: Generate styled HTML, replace low-fi in preview page
+- **REVIEW**: User reviews preview — approve, tweak, or skip
+- **GENERATE_REACT**: Convert approved high-fi HTML to React+Tailwind component, place in page
+- **POSTFLIGHT**: Final validation (TypeScript, page, structure)
+- **COMPLETE**: Summary report, handoff data
 
 ---
 
@@ -46,6 +73,7 @@ stateDiagram-v2
 - `../shared/RULES.md` — React/TypeScript rules (R001-R108, T001-T103)
 - `../shared/PATTERNS.md` — Component patterns (compound, render props, etc.)
 - `../shared/DEVINFO.md` — Session tracking, handoff contracts
+- `../shared/brand-presets.md` — Brand color presets
 
 ---
 
@@ -53,45 +81,65 @@ stateDiagram-v2
 
 ### Input (from wireframe)
 
+Reads from `handoff` key in devinfo.json (see DEVINFO.md):
+
 ```json
 {
-  "from": "frontend-wireframe",
-  "to": "frontend-style",
-  "data": {
-    "selectedWireframe": ".workspace/wireframes/[page]/[agent]/v2.html",
-    "selection": {
-      "agent": "ux | minimal | rich",
-      "version": "v2"
-    },
-    "atomicLevel": "atom | molecule | organism | template | page",
-    "platform": "mobile | desktop | both",
-    "components": [
-      { "name": "Header", "atomic": "organism", "variants": 2 },
-      { "name": "MetricCard", "atomic": "molecule", "variants": 3 }
-    ],
-    "themeApplied": true,
-    "themeFile": ".workspace/config/THEME.md"
+  "handoff": {
+    "from": "frontend-wireframe",
+    "to": "frontend-style",
+    "data": {
+      "selectedWireframe": ".workspace/wireframes/[page]/final.html",
+      "finalScreenshot": ".workspace/wireframes/[page]/final-screenshot.png",
+      "refinement": {
+        "iterations": 3,
+        "basis": "agent-a/v2",
+        "combinedElements": { "header": "agent-b/v2" }
+      },
+      "atomicLevel": "atom | molecule | organism | template | page",
+      "platform": "mobile | desktop | both",
+      "components": [
+        { "name": "Header", "atomic": "organism" },
+        { "name": "MetricCard", "atomic": "molecule" }
+      ],
+      "themeApplied": true,
+      "themeFile": ".workspace/config/THEME.md",
+      "projectContext": {
+        "framework": "Next.js 14",
+        "uiLibrary": "Tailwind CSS",
+        "existingComponents": ["Button", "Card"]
+      }
+    }
   }
 }
 ```
 
-### Output (final pipeline step)
+> **Note:** The wireframe skill does NOT provide `variants` counts in the component list.
+> Variants, states, and sizes are discovered by parsing the wireframe HTML directly
+> (see FASE 1: Component Discovery). The `data-variant` attribute is generated by the
+> wireframe skill. `data-state` and `data-size` are optional — if absent, infer from
+> component context and type.
+
+### Output (final)
 
 ```json
 {
   "from": "frontend-style",
   "to": null,
   "data": {
+    "hifiPreview": ".workspace/wireframes/[page]/hifi/preview.html",
     "componentsDirectory": "src/components/[page]/",
     "tailwindConfig": "tailwind.config.js",
-    "components": [
+    "componentsCompleted": [
       {
         "name": "Header",
-        "files": ["Header.tsx", "Header.types.ts", "Header.stories.tsx", "Header.test.tsx"]
+        "atomic": "organism",
+        "files": ["Header.tsx", "Header.types.ts"],
+        "approved": true
       }
     ],
-    "storybookReady": true,
-    "testCoverage": "stubs"
+    "componentsSkipped": [],
+    "pageFile": "src/pages/[page].tsx"
   }
 }
 ```
@@ -108,23 +156,25 @@ stateDiagram-v2
 PRE-FLIGHT: Theme
 ─────────────────
 [ ] THEME.md exists at .workspace/config/THEME.md
-[ ] Contains Colors section (for Tailwind extend)
-[ ] Contains Typography section
+[ ] Contains Colors section (main + accent + semantic)
+[ ] Contains Typography section (families + scale)
 [ ] Contains Spacing section
+[ ] CSS export section valid
 ```
 
-**Failure action:**
+**On failure:**
 
 ```yaml
-header: "Theme Required"
-question: "THEME.md niet gevonden. Hoe doorgaan?"
+header: "Theme Nodig"
+question: "THEME.md niet gevonden of onvolledig. Hoe doorgaan?"
 options:
-  - label: "Run /theme first (Recommended)"
+  - label: "Run /theme eerst (Recommended)"
     description: "Maak eerst een theme aan"
-  - label: "Use Tailwind defaults"
+  - label: "Tailwind defaults"
     description: "Ga door met standaard Tailwind config"
-  - label: "Specify path"
+  - label: "Pad opgeven"
     description: "Geef alternatief theme bestand op"
+multiSelect: false
 ```
 
 ### 0.2 Wireframe Dependency Check
@@ -133,22 +183,24 @@ options:
 PRE-FLIGHT: Wireframe
 ─────────────────────
 [ ] Wireframe directory exists for [page]
-[ ] At least one HTML file present
+[ ] final.html exists (of refined/refined.html)
 [ ] HTML contains data-component attributes
+[ ] Minimum 1 data-component gevonden
 ```
 
-**Failure action:**
+**On failure:**
 
 ```yaml
-header: "Wireframe Required"
+header: "Wireframe Nodig"
 question: "Geen wireframe gevonden voor [page]. Hoe doorgaan?"
 options:
-  - label: "Run /wireframe first (Recommended)"
+  - label: "Run /wireframe eerst (Recommended)"
     description: "Genereer eerst wireframes"
-  - label: "List components manually"
-    description: "Ik geef een component lijst op"
-  - label: "Select different page"
+  - label: "Selecteer HTML bestand"
+    description: "Ik geef het pad naar een wireframe op"
+  - label: "Andere pagina"
     description: "Kies een andere pagina"
+multiSelect: false
 ```
 
 ### 0.3 Project Structure Check
@@ -157,23 +209,24 @@ options:
 PRE-FLIGHT: Project
 ───────────────────
 [ ] package.json exists
-[ ] tailwindcss in dependencies
+[ ] tailwindcss in dependencies (of devDependencies)
 [ ] TypeScript configured (tsconfig.json)
 [ ] src/components/ exists or can be created
 ```
 
-**Failure action (no Tailwind):**
+**On Tailwind missing:**
 
 ```yaml
-header: "Tailwind Required"
+header: "Tailwind Nodig"
 question: "Tailwind niet gevonden in project. Hoe doorgaan?"
 options:
-  - label: "Install Tailwind (Recommended)"
+  - label: "Installeer Tailwind (Recommended)"
     description: "Run: npm install -D tailwindcss"
-  - label: "Continue anyway"
+  - label: "Ga door zonder"
     description: "Genereer components, fix Tailwind later"
-  - label: "Abort"
+  - label: "Annuleren"
     description: "Stop en installeer eerst Tailwind"
+multiSelect: false
 ```
 
 ### 0.4 Conflict Check
@@ -181,52 +234,54 @@ options:
 ```
 PRE-FLIGHT: Conflicts
 ─────────────────────
-[ ] Target directory check
-[ ] Existing components detection
+[ ] Target directory src/components/[page]/ check
+[ ] Bestaande components detectie
+[ ] hifi/ directory check
 ```
 
 **On conflict:**
 
 ```yaml
-header: "Existing Components"
+header: "Bestaande Components"
 question: "Er bestaan al components voor [page]. Hoe doorgaan?"
 options:
-  - label: "Overwrite (Recommended)"
+  - label: "Overschrijven (Recommended)"
     description: "Vervang bestaande components"
-  - label: "Merge"
+  - label: "Samenvoegen"
     description: "Update alleen nieuwe/gewijzigde"
-  - label: "New directory"
+  - label: "Nieuwe directory"
     description: "Maak [page]-v2 directory"
+multiSelect: false
 ```
 
-**Output:**
+### Pre-flight Samenvatting
 
 ```
 PRE-FLIGHT COMPLETE
-───────────────────
-Theme: .workspace/config/THEME.md (12 colors, 3 fonts)
-Wireframe: .workspace/wireframes/dashboard/ux/v2.html
-Project: Next.js + Tailwind 3.4 + TypeScript 5.3
-Target: src/components/dashboard/
-Status: Ready to extract components
+═══════════════════════════════════════════════════════════
+Theme:     .workspace/config/THEME.md (12 colors, 3 fonts)
+Wireframe: .workspace/wireframes/[page]/final.html
+Project:   Next.js + Tailwind 3.4 + TypeScript 5.3
+Target:    src/components/[page]/
+Status:    Ready to discover components
+═══════════════════════════════════════════════════════════
 ```
 
 ---
 
-## FASE 1: Component Extraction
+## FASE 1: Component Discovery
 
-Parse het geselecteerde wireframe HTML en extraheer component data.
+> **Doel:** Parse het wireframe en bouw een overzicht van alle components met hun atomic levels en relaties.
 
 ### 1.1 Data Attribute Parsing
 
-Zoek naar data-* attributes in wireframe:
+Zoek naar `data-*` attributen in wireframe HTML:
 
 ```html
 <!-- Voorbeeld wireframe structuur -->
 <header data-component="Header" data-atomic="organism" data-variant="default,sticky">
   <nav data-component="Navigation" data-atomic="molecule">
     <a data-component="NavLink" data-atomic="atom" data-state="default,active,hover">Home</a>
-    <a data-component="NavLink" data-atomic="atom">About</a>
   </nav>
   <div data-component="UserMenu" data-atomic="molecule">
     <img data-component="Avatar" data-atomic="atom" data-size="sm,md,lg" />
@@ -234,11 +289,19 @@ Zoek naar data-* attributes in wireframe:
 </header>
 ```
 
-### 1.2 Extraction Output
+Extraheer per component:
+- `data-component` → Component naam (altijd aanwezig)
+- `data-atomic` → Atomic level (altijd aanwezig: atom, molecule, organism)
+- `data-variant` → Visuele varianten (aanwezig indien wireframe ze definieert)
+- `data-state` → Interactie states (optioneel — indien afwezig, infereer uit component type: buttons krijgen hover/active/disabled, links krijgen default/active/hover)
+- `data-size` → Size varianten (optioneel — indien afwezig, infereer standaard sm/md/lg voor atoms)
+- Parent-child relaties (nesting in HTML)
+
+### 1.2 Component Tree
 
 ```
-COMPONENTS EXTRACTED
-────────────────────
+COMPONENT TREE
+═══════════════════════════════════════════════════════════
 
 Organisms (2):
 ├── Header
@@ -251,133 +314,157 @@ Organisms (2):
 
 Molecules (4):
 ├── Navigation
+│   └── children: [NavLink ×N]
 ├── UserMenu
+│   └── children: [Avatar, Badge]
 ├── NavGroup
+│   └── children: [NavItem ×N]
 └── MetricCard
     └── variants: [small, medium, large]
 
-Atoms (6):
-├── NavLink
-│   └── states: [default, active, hover]
-├── Avatar
-│   └── sizes: [sm, md, lg]
+Atoms (5):
+├── NavLink — states: [default, active, hover]
+├── Avatar — sizes: [sm, md, lg]
 ├── Badge
-├── Button
-│   └── variants: [primary, secondary, ghost]
+├── Button — variants: [primary, secondary, ghost]
 └── Icon
 
-Total: 12 components
+Total: 11 components
+
+═══════════════════════════════════════════════════════════
 ```
 
-### 1.3 Component Tree
+### 1.3 Gesuggereerde Volgorde
+
+Stel een bottom-up volgorde voor (atoms → molecules → organisms), zodat child-components al gestyled zijn als parents aan de beurt komen:
 
 ```
-COMPONENT TREE
-──────────────
-Header (organism)
-├── Navigation (molecule)
-│   └── NavLink (atom) ×N
-└── UserMenu (molecule)
-    ├── Avatar (atom)
-    └── Badge (atom)
+GESUGGEREERDE VOLGORDE
+═══════════════════════════════════════════════════════════
 
-Sidebar (organism)
-├── NavGroup (molecule) ×N
-│   └── NavItem (atom) ×N
-└── Button (atom)
+ #  Component       Level      Dependencies
+─── ─────────────── ────────── ──────────────────
+ 1  Button          atom       —
+ 2  Badge           atom       —
+ 3  Icon            atom       —
+ 4  Avatar          atom       —
+ 5  NavLink         atom       —
+ 6  Navigation      molecule   NavLink
+ 7  UserMenu        molecule   Avatar, Badge
+ 8  NavGroup        molecule   NavItem
+ 9  MetricCard      molecule   —
+10  Header          organism   Navigation, UserMenu
+11  Sidebar         organism   NavGroup, Button
+
+═══════════════════════════════════════════════════════════
+```
+
+### 1.4 Gebruiker Bevestiging
+
+```yaml
+header: "Component Plan"
+question: "Dit zijn de [N] gevonden components. Hoe wil je doorgaan?"
+options:
+  - label: "Gesuggereerde volgorde (Recommended)"
+    description: "Atoms → Molecules → Organisms (bottom-up)"
+  - label: "Ik kies zelf per stap"
+    description: "Ik selecteer steeds de volgende component"
+  - label: "Alleen specifieke"
+    description: "Ik wil niet alle components stylen"
+multiSelect: false
+```
+
+**Als "Alleen specifieke":**
+
+```yaml
+header: "Selectie"
+question: "Welke components wil je stylen? (kies meerdere)"
+options:
+  - label: "[Component 1]"
+    description: "[atomic level] — [N variants]"
+  - label: "[Component 2]"
+    description: "[atomic level] — [N variants]"
+  - label: "[Component 3]"
+    description: "[atomic level] — [N variants]"
+multiSelect: true
+```
+
+### 1.5 Opslaan Component Data
+
+Sla discovery resultaat op:
+
+```json
+// .workspace/wireframes/[page]/hifi/components.json
+{
+  "page": "dashboard",
+  "wireframe": ".workspace/wireframes/dashboard/final.html",
+  "discoveredAt": "ISO timestamp",
+  "components": [
+    {
+      "name": "Button",
+      "atomic": "atom",
+      "variants": ["primary", "secondary", "ghost"],
+      "states": ["hover", "active", "disabled"],
+      "sizes": ["sm", "md", "lg"],
+      "parent": null,
+      "children": [],
+      "status": "pending",
+      "htmlSelector": "[data-component=\"Button\"]",
+      "order": 1
+    },
+    {
+      "name": "MetricCard",
+      "atomic": "molecule",
+      "variants": ["small", "medium", "large"],
+      "states": [],
+      "sizes": [],
+      "parent": null,
+      "children": [],
+      "status": "pending",
+      "htmlSelector": "[data-component=\"MetricCard\"]",
+      "order": 9
+    }
+  ],
+  "totalComponents": 11,
+  "selectedComponents": 11,
+  "completedComponents": 0
+}
 ```
 
 ---
 
-## FASE 2: Configuration
+## FASE 2: Setup (Eenmalig)
 
-### 2.1 Page Selection (als geen argument)
+> **Doel:** Bereid de technische basis voor — Tailwind config, utilities, en de high-fi preview pagina.
 
-```yaml
-header: "Page"
-question: "Voor welke pagina wil je components genereren?"
-options:
-  - label: "[Detected pages from wireframes]"
-    description: "dashboard, settings, profile..."
-```
-
-### 2.2 Wireframe Selection (als meerdere beschikbaar)
-
-```yaml
-header: "Wireframe"
-question: "Welke wireframe versie gebruiken?"
-options:
-  - label: "UX Agent v2 (Recommended)"
-    description: "Focus op gebruikerservaring"
-  - label: "Minimal Agent v2"
-    description: "Clean, essentieel design"
-  - label: "Rich Agent v2"
-    description: "Feature-rijke interface"
-```
-
-### 2.3 Output Options
-
-```yaml
-header: "Output"
-question: "Welke bestanden genereren per component?"
-options:
-  - label: "Full stack (Recommended)"
-    description: "Component + types + story + test"
-  - label: "Component only"
-    description: "Alleen .tsx bestand"
-  - label: "Component + story"
-    description: "Component met Storybook"
-```
-
-### 2.4 Pattern Selection (voor complexe components)
-
-```yaml
-header: "Pattern: Sidebar"
-question: "Welk pattern voor Sidebar?"
-options:
-  - label: "Compound (Recommended)"
-    description: "Sidebar + Sidebar.Item + Sidebar.Group"
-  - label: "Simple"
-    description: "Props-based configuratie"
-  - label: "Render Props"
-    description: "Custom rendering via children"
-```
-
----
-
-## FASE 3: Tailwind Configuration
-
-### 3.1 Parse Theme Tokens
+### 2.1 Parse Theme Tokens
 
 Lees THEME.md en extraheer tokens:
 
 ```
 THEME TOKENS
-────────────
+═══════════════════════════════════════════════════════════
 
 Colors:
-├── primary: #6366f1
-├── primary-hover: #4f46e5
-├── background: #ffffff
-├── foreground: #1a1a2e
-├── muted: #f4f4f5
-├── border: #e4e4e7
-└── ... 6 more
+├── Main: dark=#1a1a2e, light=#f5f5f5, mid=#888, light-gray=#e0e0e0
+├── Accent: primary=#6366f1, secondary=#8b5cf6, tertiary=#06b6d4
+└── Semantic: success=#22c55e, warning=#f59e0b, error=#ef4444, info=#3b82f6
 
 Typography:
-├── font-sans: "Inter", system-ui, sans-serif
-├── font-heading: "Poppins", sans-serif
-└── font-mono: "Fira Code", monospace
+├── heading: "Poppins", sans-serif
+├── body: "Inter", system-ui, sans-serif
+└── mono: "Fira Code", monospace
 
-Spacing: (uses Tailwind defaults)
+Spacing: 4px base (scale: 0-16)
 
-Border Radius:
-├── sm: 0.25rem
-├── md: 0.375rem
-└── lg: 0.5rem
+Border Radius: sm=0.25rem, md=0.375rem, lg=0.5rem
+
+Shadows: sm, md, lg scale
+
+═══════════════════════════════════════════════════════════
 ```
 
-### 3.2 Extend Tailwind Config
+### 2.2 Extend Tailwind Config
 
 Genereer of update `tailwind.config.js`:
 
@@ -403,6 +490,11 @@ module.exports = {
           foreground: '#71717a',
         },
         border: '#e4e4e7',
+        // Semantic
+        success: '#22c55e',
+        warning: '#f59e0b',
+        error: '#ef4444',
+        info: '#3b82f6',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -420,12 +512,11 @@ module.exports = {
 };
 ```
 
-### 3.3 Create cn() Utility
+### 2.3 Create cn() Utility
 
 Als nog niet aanwezig, maak `src/lib/utils.ts`:
 
 ```typescript
-// src/lib/utils.ts
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -434,72 +525,558 @@ export function cn(...inputs: ClassValue[]) {
 }
 ```
 
-**Output:**
+### 2.4 Create High-Fi Preview Page
 
+Kopieer `final.html` naar `.workspace/wireframes/[page]/hifi/preview.html` en voeg een high-fi CSS class systeem toe.
+
+**Het `.hf-*` class systeem** wordt toegevoegd als extra `<style>` blok in de `<head>`. Dit werkt naast de bestaande `.wf-*` wireframe classes. Wanneer een component wordt ge-upgrade, worden de `.wf-*` classes in die component vervangen door `.hf-*` classes.
+
+```css
+/* ═══ HIGH-FIDELITY CLASS SYSTEM ═══
+   Uses same THEME.md CSS variables as wireframe,
+   but adds real styling: radius, shadows, transitions, hover states.
+   Added during /style workflow — do not remove.
+*/
+
+/* ─── Layout ─── */
+.hf-flex { display: flex; }
+.hf-flex-col { flex-direction: column; }
+.hf-items-center { align-items: center; }
+.hf-justify-between { justify-content: space-between; }
+.hf-gap-1 { gap: 4px; }
+.hf-gap-2 { gap: 8px; }
+.hf-gap-3 { gap: 12px; }
+.hf-gap-4 { gap: 16px; }
+.hf-gap-6 { gap: 24px; }
+.hf-grid { display: grid; }
+.hf-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.hf-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.hf-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* ─── Spacing ─── */
+.hf-p-2 { padding: 8px; }
+.hf-p-3 { padding: 12px; }
+.hf-p-4 { padding: 16px; }
+.hf-p-6 { padding: 24px; }
+.hf-px-3 { padding-left: 12px; padding-right: 12px; }
+.hf-px-4 { padding-left: 16px; padding-right: 16px; }
+.hf-px-6 { padding-left: 24px; padding-right: 24px; }
+.hf-py-2 { padding-top: 8px; padding-bottom: 8px; }
+.hf-py-3 { padding-top: 12px; padding-bottom: 12px; }
+.hf-m-0 { margin: 0; }
+.hf-mb-2 { margin-bottom: 8px; }
+.hf-mb-4 { margin-bottom: 16px; }
+.hf-mb-6 { margin-bottom: 24px; }
+
+/* ─── Colors (from THEME.md CSS variables) ─── */
+.hf-bg-background { background-color: var(--wf-light); }
+.hf-bg-foreground { background-color: var(--wf-dark); }
+.hf-bg-primary { background-color: var(--wf-accent-primary); }
+.hf-bg-muted { background-color: var(--wf-light-gray); }
+.hf-bg-card { background-color: #fff; }
+.hf-bg-success { background-color: var(--wf-success); }
+.hf-bg-warning { background-color: var(--wf-warning); }
+.hf-bg-error { background-color: var(--wf-error); }
+
+.hf-text-foreground { color: var(--wf-dark); }
+.hf-text-muted { color: var(--wf-mid-gray); }
+.hf-text-primary { color: var(--wf-accent-primary); }
+.hf-text-light { color: var(--wf-light); }
+.hf-text-success { color: var(--wf-success); }
+.hf-text-warning { color: var(--wf-warning); }
+.hf-text-error { color: var(--wf-error); }
+
+/* ─── Typography (from THEME.md fonts) ─── */
+.hf-font-heading { font-family: var(--wf-font-heading); }
+.hf-font-body { font-family: var(--wf-font-body); }
+.hf-font-mono { font-family: var(--wf-font-mono); }
+
+.hf-text-xs { font-size: 12px; line-height: 1.25; }
+.hf-text-sm { font-size: 14px; line-height: 1.25; }
+.hf-text-base { font-size: 16px; line-height: 1.5; }
+.hf-text-lg { font-size: 18px; line-height: 1.75; }
+.hf-text-xl { font-size: 20px; line-height: 1.75; }
+.hf-text-2xl { font-size: 24px; line-height: 1.33; }
+.hf-text-3xl { font-size: 30px; line-height: 1.2; }
+
+.hf-font-normal { font-weight: 400; }
+.hf-font-medium { font-weight: 500; }
+.hf-font-semibold { font-weight: 600; }
+.hf-font-bold { font-weight: 700; }
+
+/* ─── Borders ─── */
+.hf-border { border: 1px solid var(--wf-light-gray); }
+.hf-border-b { border-bottom: 1px solid var(--wf-light-gray); }
+.hf-rounded-sm { border-radius: 4px; }
+.hf-rounded { border-radius: 6px; }
+.hf-rounded-md { border-radius: 8px; }
+.hf-rounded-lg { border-radius: 12px; }
+.hf-rounded-full { border-radius: 9999px; }
+
+/* ─── Shadows ─── */
+.hf-shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.hf-shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06); }
+.hf-shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06); }
+.hf-shadow-lg { box-shadow: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05); }
+
+/* ─── Effects & Transitions ─── */
+.hf-transition { transition: all 0.2s ease; }
+.hf-hover-lift:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.hf-hover-brightness:hover { filter: brightness(1.05); }
+.hf-hover-bg-muted:hover { background-color: var(--wf-light-gray); }
+.hf-opacity-0 { opacity: 0; }
+.hf-opacity-50 { opacity: 0.5; }
+.hf-overflow-hidden { overflow: hidden; }
+
+/* ─── Interactive ─── */
+.hf-cursor-pointer { cursor: pointer; }
+.hf-focus-ring:focus { outline: 2px solid var(--wf-accent-primary); outline-offset: 2px; }
+.hf-disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+/* ─── Buttons ─── */
+.hf-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px 16px; border-radius: 6px;
+  font-family: var(--wf-font-body); font-size: 14px; font-weight: 500;
+  cursor: pointer; border: none;
+  transition: all 0.2s ease;
+}
+.hf-btn-primary {
+  background-color: var(--wf-accent-primary); color: var(--wf-light);
+}
+.hf-btn-primary:hover { filter: brightness(1.1); }
+.hf-btn-secondary {
+  background-color: transparent; color: var(--wf-accent-primary);
+  border: 1px solid var(--wf-accent-primary);
+}
+.hf-btn-secondary:hover { background-color: var(--wf-accent-primary); color: var(--wf-light); }
+.hf-btn-ghost {
+  background-color: transparent; color: var(--wf-mid-gray);
+}
+.hf-btn-ghost:hover { background-color: var(--wf-light-gray); color: var(--wf-dark); }
+
+.hf-btn-sm { padding: 4px 10px; font-size: 12px; }
+.hf-btn-lg { padding: 12px 24px; font-size: 16px; }
+
+/* ─── Inputs ─── */
+.hf-input {
+  padding: 8px 12px; border: 1px solid var(--wf-light-gray); border-radius: 6px;
+  font-family: var(--wf-font-body); font-size: 14px;
+  background: #fff; color: var(--wf-dark);
+  transition: border-color 0.2s ease;
+}
+.hf-input:focus { border-color: var(--wf-accent-primary); outline: none; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+.hf-input::placeholder { color: var(--wf-mid-gray); }
+
+/* ─── Cards ─── */
+.hf-card {
+  background: #fff; border: 1px solid var(--wf-light-gray);
+  border-radius: 8px; padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ─── Badges ─── */
+.hf-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 9999px;
+  font-size: 12px; font-weight: 500;
+}
+.hf-badge-primary { background-color: var(--wf-accent-primary); color: var(--wf-light); }
+.hf-badge-success { background-color: var(--wf-success); color: #fff; }
+.hf-badge-warning { background-color: var(--wf-warning); color: #fff; }
+.hf-badge-error { background-color: var(--wf-error); color: #fff; }
+.hf-badge-muted { background-color: var(--wf-light-gray); color: var(--wf-mid-gray); }
+
+/* ─── Avatars ─── */
+.hf-avatar {
+  border-radius: 9999px; object-fit: cover;
+  background: var(--wf-light-gray);
+}
+.hf-avatar-sm { width: 32px; height: 32px; }
+.hf-avatar-md { width: 40px; height: 40px; }
+.hf-avatar-lg { width: 48px; height: 48px; }
+
+/* ─── Marker: highlight component being styled ─── */
+[data-component][data-hifi="active"] {
+  outline: 2px dashed var(--wf-accent-primary);
+  outline-offset: 4px;
+}
+[data-component][data-hifi="done"] {
+  /* No outline — blends naturally */
+}
 ```
-TAILWIND CONFIGURED
-───────────────────
-✓ tailwind.config.js extended with theme tokens
-✓ src/lib/utils.ts created (cn helper)
-✓ 12 colors mapped
-✓ 3 font families mapped
+
+**Preview Navigation Extra:**
+
+Voeg een extra indicator toe aan de wireframe nav balk die toont hoeveel components gestyled zijn:
+
+```html
+<span class="hifi-progress">
+  Styled: <strong>0/11</strong>
+</span>
 ```
 
----
+### 2.5 Create Page Skeleton
 
-## FASE 4: Component Generation
-
-### 4.1 Component Template
-
-Voor elk component, genereer met Tailwind classes:
+Analyseer de wireframe layout structuur en maak een React pagina skeleton:
 
 ```typescript
-// Header.tsx
-import { cn } from '@/lib/utils';
-import type { HeaderProps } from './Header.types';
+// src/pages/[page].tsx (of app/[page]/page.tsx voor Next.js App Router)
 
-export function Header({
-  variant = 'default',
-  className,
-  children,
-}: HeaderProps) {
+export default function [Page]Page() {
   return (
-    <header
-      className={cn(
-        // Base styles
-        'flex items-center justify-between',
-        'px-4 py-3',
-        'bg-background border-b border-border',
-        // Variant styles
-        variant === 'sticky' && 'sticky top-0 z-50 shadow-sm',
-        variant === 'compact' && 'py-2',
-        // Allow overrides
-        className
-      )}
-    >
-      {children}
-    </header>
+    <div className="min-h-screen bg-background">
+      {/* Header placeholder */}
+      <div className="flex">
+        {/* Sidebar placeholder */}
+        <main className="flex-1 p-6">
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            {/* MetricCard placeholder */}
+            {/* MetricCard placeholder */}
+            {/* MetricCard placeholder */}
+            {/* MetricCard placeholder */}
+          </div>
+          {/* Content placeholder */}
+        </main>
+      </div>
+    </div>
   );
 }
 ```
 
-### 4.2 Types Template
+**Layout analyse:**
+1. Lees de wireframe HTML structuur (header, sidebar, main content, footer)
+2. Identificeer layout regio's en hun nesting
+3. Maak placeholder comments op de plekken waar components komen
+4. De layout classes komen uit de wireframe analyse + THEME.md tokens
+
+> **Note:** De skeleton is een 1-op-1 vertaling van de wireframe layout naar React JSX.
+> Elke `data-component` in de wireframe krijgt een `{/* [Component] placeholder */}` comment.
+> Bij FASE 3d worden placeholders vervangen door echte component imports.
+
+### 2.6 Setup Samenvatting
+
+```
+SETUP COMPLETE
+═══════════════════════════════════════════════════════════
+✓ tailwind.config.js extended with theme tokens
+✓ src/lib/utils.ts ready (cn helper)
+✓ High-fi preview created at hifi/preview.html
+✓ .hf-* class system injected (layout, colors, typography, components)
+✓ Page skeleton created at src/pages/[page].tsx
+✓ Component tracker initialized (0/11 complete)
+
+Preview: .workspace/wireframes/[page]/hifi/preview.html
+Page: src/pages/[page].tsx
+Target: src/components/[page]/
+═══════════════════════════════════════════════════════════
+```
+
+---
+
+## FASE 3: Component Loop
+
+> **Kern van de skill.** Herhaal dit voor elke component:
+> Select → Preview → Review → Generate React + Place in Page → Mark Complete
+
+---
+
+### 3a. Select Component
+
+Toon de huidige status en laat de gebruiker kiezen:
+
+```
+COMPONENT STATUS
+═══════════════════════════════════════════════════════════
+
+ #  Component       Level      Status
+─── ─────────────── ────────── ──────────────
+ 1  Button          atom       ✓ Complete
+ 2  Badge           atom       ✓ Complete
+ 3  Icon            atom       ✓ Complete
+ 4  Avatar          atom       → In preview
+ 5  NavLink         atom       · Pending
+ 6  Navigation      molecule   · Pending
+ 7  UserMenu        molecule   · Pending
+ 8  NavGroup        molecule   · Pending
+ 9  MetricCard      molecule   · Pending
+10  Header          organism   · Pending
+11  Sidebar         organism   · Pending
+
+Progress: 3/11 complete
+
+═══════════════════════════════════════════════════════════
+```
+
+```yaml
+header: "Volgende Component"
+question: "Welke component wil je nu stylen?"
+options:
+  - label: "[Volgende in volgorde] (Recommended)"
+    description: "[Component naam] — [atomic level], [N variants]"
+  - label: "Ik kies zelf"
+    description: "Selecteer een specifieke component"
+  - label: "Klaar — afronden"
+    description: "Stop met stylen, ga naar post-flight"
+multiSelect: false
+```
+
+**Als "Ik kies zelf":**
+
+```yaml
+header: "Kies Component"
+question: "Welke component?"
+options:
+  - label: "[Pending component 1]"
+    description: "[level] — dependencies: [lijst]"
+  - label: "[Pending component 2]"
+    description: "[level] — dependencies: [lijst]"
+  - label: "[Pending component 3]"
+    description: "[level] — dependencies: [lijst]"
+multiSelect: false
+```
+
+---
+
+### 3b. High-Fi HTML Preview
+
+> **Doel:** Genereer een visueel accurate gestylede versie van de component en toon deze in de context van de volledige wireframe pagina.
+
+#### Stap 1: Analyseer Low-Fi Component
+
+Lees de huidige low-fi HTML van de component uit `preview.html`:
+
+```
+ANALYSING: [Component Name]
+═══════════════════════════════════════════════════════════
+
+Element: <[tag] data-component="[name]" data-atomic="[level]">
+Variants: [list]
+States: [list]
+Children: [child components or HTML elements]
+Current classes: wf-bg-dark, wf-text-light, ...
+
+Context: [waar zit dit component in de pagina — header, sidebar, main, etc.]
+
+═══════════════════════════════════════════════════════════
+```
+
+#### Stap 2: Genereer High-Fi HTML
+
+Vervang de low-fi HTML met gestylede versie. Gebruik `.hf-*` classes en THEME.md tokens.
+
+**Voorbeeld transformatie — Button:**
+
+Low-fi:
+```html
+<button data-component="Button" data-atomic="atom" data-variant="primary,secondary,ghost"
+        class="wf-bg-accent wf-text-light" style="padding:8px 16px;">
+  Click me
+</button>
+```
+
+High-fi:
+```html
+<button data-component="Button" data-atomic="atom" data-variant="primary,secondary,ghost"
+        data-hifi="active"
+        class="hf-btn hf-btn-primary hf-transition hf-focus-ring">
+  Click me
+</button>
+```
+
+**Voorbeeld transformatie — MetricCard:**
+
+Low-fi:
+```html
+<div data-component="MetricCard" data-atomic="molecule"
+     class="wf-bg-light wf-border" style="padding:16px;">
+  <span class="wf-text-mid" style="font-size:12px;">Total Revenue</span>
+  <span class="wf-text-dark" style="font-size:24px;">$45,231</span>
+  <span class="wf-text-mid" style="font-size:12px;">+12.5% vs last month</span>
+</div>
+```
+
+High-fi:
+```html
+<div data-component="MetricCard" data-atomic="molecule"
+     data-hifi="active"
+     class="hf-card hf-transition hf-hover-lift">
+  <span class="hf-text-sm hf-text-muted hf-font-medium">Total Revenue</span>
+  <span class="hf-text-2xl hf-font-bold hf-text-foreground hf-font-heading">$45,231</span>
+  <span class="hf-text-xs hf-text-success hf-font-medium">+12.5% vs last month</span>
+</div>
+```
+
+#### Stap 3: Update Preview
+
+1. Vervang de component HTML in `preview.html`
+2. Zet `data-hifi="active"` op de component (visuele outline indicator)
+3. Update de progress counter in de nav balk
+
+#### Stap 4: Open Preview
+
+```bash
+start .workspace/wireframes/[page-name]/hifi/preview.html
+```
+
+```
+HIGH-FI PREVIEW GEGENEREERD
+═══════════════════════════════════════════════════════════
+
+Component: [Name] ([atomic level])
+Status: data-hifi="active" (paarse outline)
+
+De component is nu gestyled in de context van de volledige pagina.
+Andere components zijn nog low-fidelity (grayscale).
+
+Bekijk het resultaat in je browser.
+
+═══════════════════════════════════════════════════════════
+```
+
+---
+
+### 3c. Review & Tweak
+
+```yaml
+header: "Review"
+question: "Hoe ziet de [Component] eruit?"
+options:
+  - label: "Goedkeuren (Recommended)"
+    description: "Ga door met React component generatie"
+  - label: "Tweaken"
+    description: "Ik beschrijf wat er anders moet"
+  - label: "Opnieuw genereren"
+    description: "Probeer een andere styling aanpak"
+  - label: "Overslaan"
+    description: "Skip deze component, ga naar de volgende"
+multiSelect: false
+```
+
+**Als "Tweaken":**
+
+```yaml
+header: "Aanpassingen"
+question: "Wat wil je aanpassen aan [Component]?"
+options:
+  - label: "Ik beschrijf het"
+    description: "Tekst input met gewenste wijzigingen"
+multiSelect: false
+# User kiest "Other" voor tekst input
+```
+
+**Voorbeelden van tweak instructies:**
+- "Meer padding, het voelt te krap"
+- "Maak de shadow subtieler"
+- "Gebruik een outline style ipv filled"
+- "De hover state is te agressief"
+- "Font size van de titel groter"
+- "Border radius moet scherper, minder rounded"
+
+**Verwerk tweaks:**
+
+```
+PROCESSING TWEAK
+═══════════════════════════════════════════════════════════
+Instructie: "[user input]"
+
+Analyse:
+• Property: [wat wordt aangepast — padding, shadow, etc.]
+• Wijziging: [specifieke CSS aanpassing]
+
+Toepassen...
+═══════════════════════════════════════════════════════════
+```
+
+Pas de HTML aan in `preview.html` en loop terug naar Review.
+
+**Als "Opnieuw genereren":**
+
+Genereer een compleet nieuwe high-fi versie met een andere visuele aanpak. Behoud dezelfde component structuur maar verander de styling keuzes (bijv. filled → outline, card → flat, rounded → sharp).
+
+**Als "Overslaan":**
+
+Markeer de component als "skipped" in `components.json` en ga terug naar Select Component.
+
+---
+
+### 3d. Generate React Component + Place in Page
+
+> **Doel:** Converteer de goedgekeurde high-fi HTML naar productie-klare React+Tailwind code
+> en voeg het component toe aan de werkende pagina.
+
+#### Stap 1: Map `.hf-*` naar Tailwind
+
+Map de high-fi preview classes naar equivalente Tailwind classes:
+
+| `.hf-*` class | Tailwind equivalent |
+|---|---|
+| `hf-flex` | `flex` |
+| `hf-items-center` | `items-center` |
+| `hf-p-4` | `p-4` |
+| `hf-bg-primary` | `bg-primary` |
+| `hf-text-foreground` | `text-foreground` |
+| `hf-rounded-md` | `rounded-md` |
+| `hf-shadow` | `shadow` |
+| `hf-transition` | `transition-all duration-200` |
+| `hf-card` | Custom styles via `cn()` |
+
+#### Stap 2: Genereer React Component
+
+**Voorbeeld — MetricCard.tsx:**
 
 ```typescript
-// Header.types.ts
-import type { ComponentPropsWithoutRef } from 'react';
+import { cn } from '@/lib/utils';
+import type { MetricCardProps } from './MetricCard.types';
 
-export type HeaderVariant = 'default' | 'sticky' | 'compact';
-
-export interface HeaderProps extends ComponentPropsWithoutRef<'header'> {
-  /** Visual variant of the header */
-  variant?: HeaderVariant;
+export function MetricCard({
+  label,
+  value,
+  trend,
+  trendDirection = 'up',
+  variant = 'default',
+  className,
+}: MetricCardProps) {
+  return (
+    <div className={cn(
+      'bg-card border border-border rounded-lg p-4',
+      'shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md',
+      className
+    )}>
+      <span className="text-sm text-muted-foreground font-medium">{label}</span>
+      <span className="text-2xl font-bold text-foreground font-heading block mt-1">{value}</span>
+      {trend && (
+        <span className={cn(
+          'text-xs font-medium mt-1 block',
+          trendDirection === 'up' ? 'text-success' : 'text-error'
+        )}>
+          {trendDirection === 'up' ? '↑' : '↓'} {trend}
+        </span>
+      )}
+    </div>
+  );
 }
 ```
 
-### 4.3 Compound Component Template
+**Types:**
 
-Voor components zoals Sidebar:
+```typescript
+// MetricCard.types.ts
+export interface MetricCardProps {
+  label: string;
+  value: string | number;
+  trend?: string;
+  trendDirection?: 'up' | 'down';
+  variant?: 'default' | 'highlighted';
+  className?: string;
+}
+```
+
+---
+
+#### Compound Components (organisms)
+
+Voor complexe layout components (organisms met children), gebruik compound component pattern uit `PATTERNS.md`:
 
 ```typescript
 // Sidebar.tsx
@@ -511,57 +1088,36 @@ import type { SidebarProps, SidebarContextValue } from './Sidebar.types';
 
 const SidebarContext = createContext<SidebarContextValue | null>(null);
 
-export function useSidebar() {
+function useSidebar() {
   const context = useContext(SidebarContext);
-  if (!context) {
-    throw new Error('Sidebar components must be used within <Sidebar>');
-  }
+  if (!context) throw new Error('Sidebar.* must be used within <Sidebar>');
   return context;
 }
 
-export function Sidebar({
-  defaultCollapsed = false,
-  className,
-  children,
-}: SidebarProps) {
+export function Sidebar({ defaultCollapsed = false, className, children }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
-
   return (
     <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
-      <aside
-        className={cn(
-          'flex flex-col',
-          'bg-muted border-r border-border',
-          'transition-all duration-200',
-          collapsed ? 'w-16' : 'w-64',
-          className
-        )}
-      >
+      <aside className={cn(
+        'flex flex-col bg-muted border-r border-border transition-all duration-200',
+        collapsed ? 'w-16' : 'w-64',
+        className
+      )}>
         {children}
       </aside>
     </SidebarContext.Provider>
   );
 }
 
-Sidebar.Item = function SidebarItem({
-  icon,
-  children,
-  active,
-  className,
-}: SidebarItemProps) {
+Sidebar.Item = function SidebarItem({ icon, children, active, className }: SidebarItemProps) {
   const { collapsed } = useSidebar();
-
   return (
-    <button
-      className={cn(
-        'flex items-center gap-3 px-3 py-2 rounded-md',
-        'text-muted-foreground hover:text-foreground',
-        'hover:bg-background',
-        'transition-colors',
-        active && 'bg-background text-foreground',
-        className
-      )}
-    >
+    <button className={cn(
+      'flex items-center gap-3 px-3 py-2 rounded-md',
+      'text-muted-foreground hover:text-foreground hover:bg-background transition-colors',
+      active && 'bg-background text-foreground',
+      className
+    )}>
       {icon}
       {!collapsed && <span>{children}</span>}
     </button>
@@ -570,7 +1126,6 @@ Sidebar.Item = function SidebarItem({
 
 Sidebar.Toggle = function SidebarToggle() {
   const { collapsed, setCollapsed } = useSidebar();
-
   return (
     <button
       onClick={() => setCollapsed(!collapsed)}
@@ -583,244 +1138,262 @@ Sidebar.Toggle = function SidebarToggle() {
 };
 ```
 
-### 4.4 Generation Progress
+---
+
+#### Stap 3: Plaats in Pagina
+
+Na het genereren van het React component, voeg het toe aan de pagina file:
+
+1. Voeg import statement toe bovenaan de pagina file
+2. Vervang het placeholder comment door de echte component JSX
+3. Wire props aan (hardcoded data als placeholder, later te vervangen door echte data)
+
+```typescript
+// Voorbeeld: MetricCard wordt toegevoegd aan de pagina
+import { MetricCard } from '@/components/[page]/molecules/MetricCard/MetricCard';
+
+// In de JSX:
+<div className="grid grid-cols-4 gap-4">
+  <MetricCard label="Total Revenue" value="$45,231" trend="+12.5%" trendDirection="up" />
+  <MetricCard label="Users" value="2,350" trend="+5.2%" trendDirection="up" />
+  {/* MetricCard placeholder */}
+  {/* MetricCard placeholder */}
+</div>
+```
+
+> **Note:** Data is hardcoded als placeholder. De pagina is visueel correct maar nog niet connected aan echte data. Data-integratie is een aparte stap buiten deze skill.
+
+---
+
+#### Pattern Selection (voor complexe components)
+
+Als een native component compound of complex is:
+
+```yaml
+header: "Pattern: [Component]"
+question: "Welk pattern voor [Component]?"
+options:
+  - label: "Compound (Recommended)"
+    description: "[Component] + [Component].Item + [Component].Group"
+  - label: "Simple props"
+    description: "Props-based configuratie"
+  - label: "Slot pattern"
+    description: "Named regions via header/footer/etc. props"
+multiSelect: false
+```
+
+#### Generation Output
 
 ```
-GENERATING COMPONENTS
-─────────────────────
+REACT COMPONENT GEGENEREERD
+═══════════════════════════════════════════════════════════
 
-[1/12] Header (organism)
-       └── Header.tsx ✓
-       └── Header.types.ts ✓
+Component: Button (atom)
 
-[2/12] Sidebar (organism, compound)
-       └── Sidebar.tsx ✓ (includes Sidebar.Item, Sidebar.Toggle)
-       └── Sidebar.types.ts ✓
+Files:
+  ✓ src/components/[page]/atoms/Button/Button.tsx
+  ✓ src/components/[page]/atoms/Button/Button.types.ts
 
-[3/12] Navigation (molecule)
-       └── Navigation.tsx ✓
-       └── Navigation.types.ts ✓
+Pagina: src/pages/[page].tsx
+  ✓ Button geïmporteerd en geplaatst
 
-...
+Variants: primary, secondary, ghost
+Sizes: sm, md, lg
 
-[12/12] Icon (atom)
-        └── Icon.tsx ✓
-        └── Icon.types.ts ✓
+═══════════════════════════════════════════════════════════
+```
+
+```
+REACT COMPONENT GEGENEREERD
+═══════════════════════════════════════════════════════════
+
+Component: MetricCard (molecule) — native
+
+Files:
+  ✓ src/components/[page]/molecules/MetricCard/MetricCard.tsx
+  ✓ src/components/[page]/molecules/MetricCard/MetricCard.types.ts
+
+Pagina: src/pages/[page].tsx
+  ✓ MetricCard geïmporteerd en geplaatst
+
+Variants: default, highlighted
+Props: label, value, trend, trendDirection
+
+═══════════════════════════════════════════════════════════
 ```
 
 ---
 
-## FASE 5: Stories & Tests
+### 3e. Mark Complete
 
-### 5.1 Storybook Story Template
-
-```typescript
-// Header.stories.tsx
-import type { Meta, StoryObj } from '@storybook/react';
-import { Header } from './Header';
-
-const meta: Meta<typeof Header> = {
-  title: 'Organisms/Header',
-  component: Header,
-  tags: ['autodocs'],
-  parameters: {
-    layout: 'fullscreen',
-  },
-  argTypes: {
-    variant: {
-      control: 'select',
-      options: ['default', 'sticky', 'compact'],
-    },
-  },
-};
-
-export default meta;
-type Story = StoryObj<typeof Header>;
-
-export const Default: Story = {
-  args: {
-    children: (
-      <>
-        <span className="font-heading text-xl">Logo</span>
-        <nav className="flex gap-4">
-          <a href="#">Home</a>
-          <a href="#">About</a>
-        </nav>
-      </>
-    ),
-  },
-};
-
-export const Sticky: Story = {
-  args: {
-    ...Default.args,
-    variant: 'sticky',
-  },
-  decorators: [
-    (Story) => (
-      <div className="h-[200vh]">
-        <Story />
-        <p className="p-4">Scroll down to see sticky behavior</p>
-      </div>
-    ),
-  ],
-};
-
-export const Compact: Story = {
-  args: {
-    ...Default.args,
-    variant: 'compact',
-  },
-};
-```
-
-### 5.2 Test Template
-
-```typescript
-// Header.test.tsx
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import { Header } from './Header';
-
-describe('Header', () => {
-  it('renders children', () => {
-    render(<Header>Test Content</Header>);
-    expect(screen.getByText('Test Content')).toBeInTheDocument();
-  });
-
-  it('applies default variant classes', () => {
-    const { container } = render(<Header>Test</Header>);
-    const header = container.querySelector('header');
-    expect(header).toHaveClass('flex', 'items-center', 'justify-between');
-  });
-
-  it('applies sticky variant classes', () => {
-    const { container } = render(<Header variant="sticky">Test</Header>);
-    const header = container.querySelector('header');
-    expect(header).toHaveClass('sticky', 'top-0');
-  });
-
-  it('applies compact variant classes', () => {
-    const { container } = render(<Header variant="compact">Test</Header>);
-    const header = container.querySelector('header');
-    expect(header).toHaveClass('py-2');
-  });
-
-  it('accepts custom className', () => {
-    const { container } = render(<Header className="custom-class">Test</Header>);
-    const header = container.querySelector('header');
-    expect(header).toHaveClass('custom-class');
-  });
-});
-```
-
-### 5.3 Stories & Tests Progress
+1. Update `data-hifi="done"` op de component in `preview.html` (verwijdert outline)
+2. Update `components.json` status naar `"completed"`
+3. Update progress counter in nav balk
+4. Toon updated status lijst
 
 ```
-GENERATING STORIES & TESTS
-──────────────────────────
+COMPONENT COMPLETE: Button ✓
+═══════════════════════════════════════════════════════════
 
-[1/12] Header
-       └── Header.stories.tsx ✓ (3 stories)
-       └── Header.test.tsx ✓ (5 tests)
+Progress: 4/11 components gestyled
 
-[2/12] Sidebar
-       └── Sidebar.stories.tsx ✓ (4 stories)
-       └── Sidebar.test.tsx ✓ (6 tests)
+Volgende suggestie: NavLink (atom)
+  → Wordt gebruikt door: Navigation
 
-...
+═══════════════════════════════════════════════════════════
 ```
+
+Loop terug naar **3a. Select Component**.
 
 ---
 
-## FASE 6: Post-flight Validation
+## FASE 4: Final Assembly
 
-### 6.1 TypeScript Check
+> **Na de component loop:** assembleer alles en valideer.
+
+### 4.1 Index File
+
+Genereer barrel exports voor alle gegenereerde components:
+
+```typescript
+// src/components/[page]/index.ts
+
+// ─── Organisms ───
+export { Header } from './organisms/Header/Header';
+export type { HeaderProps } from './organisms/Header/Header.types';
+
+export { Sidebar } from './organisms/Sidebar/Sidebar';
+export type { SidebarProps } from './organisms/Sidebar/Sidebar.types';
+
+// ─── Molecules ───
+export { Navigation } from './molecules/Navigation/Navigation';
+export { MetricCard } from './molecules/MetricCard/MetricCard';
+export type { MetricCardProps } from './molecules/MetricCard/MetricCard.types';
+export { UserMenu } from './molecules/UserMenu/UserMenu';
+
+// ─── Atoms ───
+export { Button } from './atoms/Button/Button';
+export type { ButtonProps } from './atoms/Button/Button.types';
+export { NavLink } from './atoms/NavLink/NavLink';
+```
+
+### 4.2 Post-flight Validation
+
+```
+POST-FLIGHT VALIDATION
+═══════════════════════════════════════════════════════════
+```
+
+#### TypeScript Check
 
 ```bash
 npx tsc --noEmit src/components/[page]/**/*.tsx
 ```
 
 ```
-POST-FLIGHT: TypeScript
-───────────────────────
-[ ] All components compile
-[ ] No type errors
-[ ] Props interfaces complete
+TypeScript:
+  [ ] All components compile
+  [ ] No type errors
+  [ ] Props interfaces complete
 ```
 
-### 6.2 Tailwind Check
+#### Tailwind Check
 
 ```
-POST-FLIGHT: Tailwind
-─────────────────────
-[ ] All utility classes valid
-[ ] No typos in class names
-[ ] Theme tokens resolve
+Tailwind:
+  [ ] All utility classes valid
+  [ ] Theme tokens resolve in config
+  [ ] No typos in class names
 ```
 
-### 6.3 Storybook Check
-
-```bash
-npx storybook build --test
-```
+#### Structure Check
 
 ```
-POST-FLIGHT: Storybook
-──────────────────────
-[ ] Stories compile
-[ ] No missing imports
-[ ] All variants covered
-```
-
-### 6.4 Test Check
-
-```bash
-npx vitest run src/components/[page] --passWithNoTests
-```
-
-```
-POST-FLIGHT: Tests
-──────────────────
-[ ] Tests compile
-[ ] Basic tests pass
+Structure:
+  [ ] index.ts barrel exports match generated components
+  [ ] All .types.ts files present
+  [ ] Page file imports all completed components
+  [ ] Page file renders without errors
 ```
 
 **On validation failure:**
 
 ```yaml
-header: "Validation"
-question: "[N] validation issues gevonden. Hoe doorgaan?"
+header: "Validatie"
+question: "[N] issues gevonden. Hoe doorgaan?"
 options:
   - label: "Auto-fix (Recommended)"
     description: "Fix type errors, missing imports"
-  - label: "Review issues"
-    description: "Bekijk details per issue"
-  - label: "Accept as-is"
+  - label: "Bekijk details"
+    description: "Toon alle issues"
+  - label: "Accepteer"
     description: "Negeer warnings"
+multiSelect: false
+```
+
+### 4.3 Completion Report
+
+```
+STYLE COMPLETE
+═══════════════════════════════════════════════════════════
+
+Page: [page name]
+Components styled: [N]/[total]
+Components skipped: [N]
+
+Files created:
+├── .tsx (components): [N]
+├── .types.ts: [N]
+├── index.ts: 1
+├── page file: 1
+└── utils.ts: 1 (als nieuw)
+
+Tailwind: Extended with [N] colors, [N] fonts
+
+High-fi preview: .workspace/wireframes/[page]/hifi/preview.html
+Page: src/pages/[page].tsx
+Components: src/components/[page]/
+
+Validation:
+├── TypeScript: [PASS ✓ | FAIL ✗]
+├── Structure: [PASS ✓ | FAIL ✗]
+└── Tailwind: [PASS ✓ | FAIL ✗]
+
+Next steps:
+1. Run: npm run dev
+2. Open: http://localhost:3000/[page]
+3. Components zijn beschikbaar via:
+   import { Header, Sidebar } from '@/components/[page]';
+
+═══════════════════════════════════════════════════════════
+```
+
+Send notification:
+
+```bash
+powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Style complete: [N] components for [page]"
 ```
 
 ---
 
-## FASE 7: Output
-
-### 7.1 Directory Structure
+## Output Structure
 
 ```
-src/components/dashboard/
-├── index.ts                    # Barrel exports
+.workspace/wireframes/[page]/hifi/
+├── preview.html              # Progressieve high-fi preview (alle components)
+├── components.json           # Component lijst met status tracking
+
+src/pages/[page].tsx            # DE werkende pagina (of app/[page]/page.tsx)
+
+src/components/[page]/
+├── index.ts                  # Barrel exports
 │
 ├── organisms/
 │   ├── Header/
 │   │   ├── Header.tsx
-│   │   ├── Header.types.ts
-│   │   ├── Header.stories.tsx
-│   │   └── Header.test.tsx
+│   │   └── Header.types.ts
 │   └── Sidebar/
-│       ├── Sidebar.tsx         # Includes compound children
-│       ├── Sidebar.types.ts
-│       ├── Sidebar.stories.tsx
-│       └── Sidebar.test.tsx
+│       └── ...
 │
 ├── molecules/
 │   ├── Navigation/
@@ -830,76 +1403,12 @@ src/components/dashboard/
 └── atoms/
     ├── Button/
     ├── Badge/
-    ├── Avatar/
     └── NavLink/
 
 src/lib/
-└── utils.ts                    # cn() helper
+└── utils.ts                  # cn() helper
 
-tailwind.config.js              # Extended with theme
-```
-
-### 7.2 Index File
-
-```typescript
-// src/components/dashboard/index.ts
-
-// Organisms
-export { Header } from './organisms/Header/Header';
-export type { HeaderProps, HeaderVariant } from './organisms/Header/Header.types';
-
-export { Sidebar } from './organisms/Sidebar/Sidebar';
-export type { SidebarProps } from './organisms/Sidebar/Sidebar.types';
-
-// Molecules
-export { Navigation } from './molecules/Navigation/Navigation';
-export { MetricCard } from './molecules/MetricCard/MetricCard';
-export { UserMenu } from './molecules/UserMenu/UserMenu';
-
-// Atoms
-export { Button } from './atoms/Button/Button';
-export { Badge } from './atoms/Badge/Badge';
-export { Avatar } from './atoms/Avatar/Avatar';
-export { NavLink } from './atoms/NavLink/NavLink';
-```
-
-### 7.3 Completion Report
-
-```
-STYLE COMPLETE
-──────────────
-
-Page: dashboard
-Components: 12
-
-Files created: 50
-├── .tsx (components): 12
-├── .types.ts: 12
-├── .stories.tsx: 12
-├── .test.tsx: 12
-├── index.ts: 1
-└── utils.ts: 1
-
-Tailwind: Extended with 12 colors, 3 fonts
-
-Validation:
-├── TypeScript: PASS ✓
-├── Storybook: PASS ✓
-└── Tests: PASS ✓
-
-Output: src/components/dashboard/
-
-Next steps:
-1. Run: npm run storybook
-2. Run: npm run test
-3. Import components in your pages:
-   import { Header, Sidebar } from '@/components/dashboard';
-```
-
-Send notification:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Components ready for dashboard"
+tailwind.config.js            # Extended with theme
 ```
 
 ---
@@ -911,9 +1420,9 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 ```
 RECOVERY: Theme Parse
 ─────────────────────
-1. Show parse error location
-2. Offer to fix THEME.md syntax
-3. Fallback: use Tailwind defaults
+1. Show parse error location in THEME.md
+2. Offer to fix syntax
+3. Fallback: use Tailwind defaults for .hf-* classes
 ```
 
 ### Wireframe Parse Failure
@@ -922,8 +1431,18 @@ RECOVERY: Theme Parse
 RECOVERY: Wireframe Parse
 ─────────────────────────
 1. Show invalid HTML location
-2. Try alternate wireframe version
+2. Try alternate wireframe (refined.html, agent-a/v2.html)
 3. Fallback: manual component list input
+```
+
+### High-Fi Preview Failure
+
+```
+RECOVERY: Preview
+─────────────────
+1. Check .hf-* class system intact
+2. Verify CSS variables present
+3. Regenerate preview.html from final.html
 ```
 
 ### TypeScript Errors
@@ -939,15 +1458,14 @@ RECOVERY: Type Errors
 3. Flag complex errors for manual fix
 ```
 
-### Tailwind Errors
+### Component Generation Failure
 
 ```
-RECOVERY: Tailwind Errors
-─────────────────────────
-1. Check tailwind.config.js syntax
-2. Validate theme token names
-3. Check for typos in class names
-4. Suggest closest valid class
+RECOVERY: Generation
+────────────────────
+1. Keep high-fi preview (visual approval staat)
+2. Retry React generation
+3. Fallback: output alleen .tsx (skip page placement, handmatig importeren)
 ```
 
 ---
@@ -956,22 +1474,24 @@ RECOVERY: Tailwind Errors
 
 ### Session Update
 
+Update devinfo at each phase transition:
+
 ```json
 {
   "currentSkill": {
     "name": "frontend-style",
-    "phase": "GENERATE",
-    "startedAt": "2024-01-15T12:00:00Z"
+    "phase": "COMPONENT_LOOP",
+    "startedAt": "ISO timestamp"
   },
   "progress": {
-    "completedTasks": 6,
-    "totalTasks": 12,
-    "currentTask": "Generating MetricCard component"
+    "completedTasks": 4,
+    "totalTasks": 11,
+    "currentTask": "Styling Avatar component"
   },
   "files": {
     "created": [
-      { "path": "src/components/dashboard/organisms/Header/Header.tsx", "skill": "frontend-style" },
-      { "path": "tailwind.config.js", "skill": "frontend-style" }
+      { "path": "src/components/dashboard/atoms/Button/Button.tsx", "skill": "frontend-style" },
+      { "path": ".workspace/wireframes/dashboard/hifi/preview.html", "skill": "frontend-style" }
     ]
   }
 }
@@ -979,23 +1499,22 @@ RECOVERY: Tailwind Errors
 
 ### Workflow Completion
 
-Als laatste skill in pipeline:
-
 ```json
 {
   "workflow": {
     "name": "frontend-pipeline",
     "status": "completed",
-    "completedAt": "2024-01-15T12:30:00Z"
+    "completedAt": "ISO timestamp"
   },
   "handoff": {
     "from": "frontend-style",
     "to": null,
     "data": {
-      "summary": "12 components generated for dashboard",
+      "summary": "8 components styled for dashboard (3 skipped)",
+      "hifiPreview": ".workspace/wireframes/dashboard/hifi/preview.html",
+      "pageFile": "src/pages/dashboard.tsx",
       "outputDirectory": "src/components/dashboard/",
-      "tailwindExtended": true,
-      "storybookReady": true
+      "tailwindExtended": true
     }
   }
 }
@@ -1007,9 +1526,9 @@ Als laatste skill in pipeline:
 
 ### Next.js App Router
 
-- Add `'use client'` directive for interactive components
-- Server components don't need the directive
-- Compound components always need `'use client'`
+- Add `'use client'` directive for interactive components (state, event handlers)
+- Server components: no directive needed
+- Compound components: always need `'use client'`
 
 ### Next.js Pages Router
 
@@ -1031,3 +1550,26 @@ Als laatste skill in pipeline:
 - Compound components keep related UI together
 - All components accept `className` prop for overrides
 - Generated code is a starting point — expect refinement
+- De `.hf-*` classes in de HTML preview zijn een benadering van Tailwind — de React output gebruikt echte Tailwind classes
+- De preview pagina behoudt edit mode uit de wireframe template — components zijn draggable/editable
+
+---
+
+## Restrictions
+
+Dit command moet **NOOIT**:
+- Alle components tegelijk genereren zonder visuele goedkeuring
+- De preview.html volledig vervangen (altijd progressief updaten)
+- React code genereren voor een component die niet visueel is goedgekeurd
+- Edit mode code (interact.js, CSS, JS) uit de preview verwijderen
+- Post-flight validation overslaan
+
+Dit command moet **ALTIJD**:
+- Component-voor-component werken met visuele feedback
+- De gebruiker laten kiezen welke component volgende is
+- Een high-fi HTML preview tonen voordat React code wordt gegenereerd
+- De wireframe pagina progressief transformeren (low-fi → high-fi)
+- Progress bijhouden in components.json
+- Patterns uit PATTERNS.md volgen voor complexe components
+- Rules uit RULES.md volgen voor React/TypeScript code
+- DevInfo updaten bij elke fase transitie
