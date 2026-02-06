@@ -1,8 +1,8 @@
 ---
-description: Generate low-fidelity HTML wireframes using parallel design agents with iterative refinement
+description: Compose low-fidelity HTML wireframes using parallel design agents with iterative refinement
 ---
 
-# Wireframe
+# Compose
 
 Generate multiple low-fidelity wireframe sketches using 2 parallel design agents. Each agent explores a different layout approach. After two rounds of iteration with visual reflection, the best elements are automatically combined into a refined version.
 
@@ -12,7 +12,7 @@ Generate multiple low-fidelity wireframe sketches using 2 parallel design agents
 
 - Planning page layouts before coding
 - Exploring different layout options
-- Before starting `/style` workflow
+- Before starting `/build` workflow
 - Need diverse design perspectives
 
 ---
@@ -21,7 +21,7 @@ Generate multiple low-fidelity wireframe sketches using 2 parallel design agents
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PREFLIGHT: /wireframe invoked
+    [*] --> PREFLIGHT: /compose invoked
 
     PREFLIGHT --> FASE1_REQUIREMENTS: validation pass
     PREFLIGHT --> ERROR: validation fail
@@ -72,7 +72,7 @@ stateDiagram-v2
 - **FASE5_REFINE**: User selects basis + elements to combine into refined.html
 - **VALIDATE_REFINED**: Verify refined.html exists and valid
 - **FASE6_REVIEW**: User reviews refined version, iterative tweaks
-- **COMPLETE**: Create final.html and prepare handoff to /style
+- **COMPLETE**: Create final.html and prepare handoff to /build
 - **FALLBACK**: Degraded sequential mode
 
 ---
@@ -661,13 +661,13 @@ Loading reference patterns...
 
 **Based on platform:**
 ```
-Read: skills/frontend-wireframe/references/mobile-patterns.md (if mobile)
-Read: skills/frontend-wireframe/references/desktop-patterns.md (if desktop)
+Read: skills/frontend-compose/references/mobile-patterns.md (if mobile)
+Read: skills/frontend-compose/references/desktop-patterns.md (if desktop)
 ```
 
 **Based on page type:**
 ```
-Read: skills/frontend-wireframe/references/page-types.md
+Read: skills/frontend-compose/references/page-types.md
 ```
 
 ---
@@ -1369,7 +1369,7 @@ Status: [→ Complete | ⚠ Warnings noted]
         │   ├── iteration-1.png          # After first tweak (if any)
         │   ├── iteration-2.png          # After second tweak (if any)
         │   └── ...                      # Additional iterations
-        ├── final.html                   # Final wireframe (handoff to /style)
+        ├── final.html                   # Final wireframe (handoff to /build)
         ├── final-screenshot.png         # Final wireframe screenshot
         └── storybook/                   # Optional
             └── components.md
@@ -1435,8 +1435,8 @@ Update devinfo at each phase:
 ```json
 {
   "handoff": {
-    "from": "frontend-wireframe",
-    "to": "frontend-style",
+    "from": "frontend-compose",
+    "to": "frontend-build",
     "data": {
       "selectedWireframe": ".workspace/wireframes/[page]/final.html",
       "finalScreenshot": ".workspace/wireframes/[page]/final-screenshot.png",
@@ -1498,7 +1498,7 @@ Refined: User-selected elements from 4 variants
 Components: [N] identified
 Atomic level: [level]
 
-Next suggested: /style [page]
+Next suggested: /build [page]
 ```
 
 ---
@@ -1518,11 +1518,11 @@ Gebruik ALLEEN low-fidelity grayscale (of theme tokens als geselecteerd):
 
 ## Resources
 
-- `skills/frontend-wireframe/references/html-template.html` - Single-view template
-- `skills/frontend-wireframe/references/html-template-responsive.html` - **Dual-view responsive template (recommended)**
-- `skills/frontend-wireframe/references/mobile-patterns.md` - Mobile patterns
-- `skills/frontend-wireframe/references/desktop-patterns.md` - Desktop patterns
-- `skills/frontend-wireframe/references/page-types.md` - Page type patterns
+- `skills/frontend-compose/references/html-template.html` - Single-view template
+- `skills/frontend-compose/references/html-template-responsive.html` - **Dual-view responsive template (recommended)**
+- `skills/frontend-compose/references/mobile-patterns.md` - Mobile patterns
+- `skills/frontend-compose/references/desktop-patterns.md` - Desktop patterns
+- `skills/frontend-compose/references/page-types.md` - Page type patterns
 - `skills/shared/brand-presets.md` - Brand color presets
 - `skills/shared/VALIDATION.md` - Validation templates
 - `skills/shared/DEVINFO.md` - Session tracking

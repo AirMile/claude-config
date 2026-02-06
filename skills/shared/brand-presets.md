@@ -274,4 +274,4 @@ Elk preset genereert de volgende CSS met light en dark mode:
 
 ---
 
-*Shared resource voor frontend-theme en frontend-wireframe skills*
+*Shared resource voor frontend-theme en frontend-compose skills*

@@ -706,7 +706,7 @@ Locatie: .workspace/config/THEME.md
 | Breakpoints | {N} |
 | Modes | {light/dark/both} |
 
-Next suggested: /wireframe
+Next suggested: /compose
 ```
 
 ---
@@ -777,7 +777,7 @@ Bij succesvolle completion:
 {
   "handoff": {
     "from": "frontend-theme",
-    "to": "frontend-wireframe",
+    "to": "frontend-compose",
     "data": {
       "themeFile": ".workspace/config/THEME.md",
       "preset": "Anthropic Style | Custom",
@@ -809,7 +809,7 @@ Deze skill garandeert bij completion:
 
 Na succesvolle theme creatie/update:
 ```
-Next suggested: /wireframe
+Next suggested: /compose
 Theme tokens ready for wireframe integration.
 ```
 

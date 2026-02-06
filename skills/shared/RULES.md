@@ -277,25 +277,3 @@ Status: [PASS ≥90% | REVIEW 70-89% | FAIL <70%]
 | R102 | Explain separation pattern |
 | H004 | Calculate required contrast, suggest colors |
 
----
-
-## Integration met /validate Skill
-
-De `/validate` skill gebruikt dit document als rule source:
-
-```
-/validate [scope]
-
-Scopes:
-- file:[path] - Specifiek bestand
-- feature:[name] - Feature files uit backlog
-- changed - Git diff files
-- all - Hele frontend codebase
-
-Output:
-1. Load rules from RULES.md
-2. Parse files in scope
-3. Check against rules
-4. Generate report met severity
-5. Offer auto-fix voor safe fixes
-```

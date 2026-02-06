@@ -27,11 +27,12 @@ dev-legacy:
   - dev-legacy-verify
 
 frontend:
+  - frontend-compose
+  - frontend-convert
+  - frontend-build
   - frontend-seo
-  - frontend-style
   - frontend-theme
-  - frontend-validate
-  - frontend-wireframe
+
 
 game:
   - game-backlog

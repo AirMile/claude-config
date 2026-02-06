@@ -28,11 +28,11 @@ Track progress across skill invocations binnen een sessie:
 
   "workflow": {
     "name": "frontend-pipeline",
-    "description": "Theme → Wireframe → Style"
+    "description": "Theme → Compose → Build"
   },
 
   "currentSkill": {
-    "name": "frontend-wireframe",
+    "name": "frontend-compose",
     "phase": "FASE_2",
     "startedAt": "2024-01-15T10:45:00Z"
   },
@@ -49,7 +49,7 @@ Track progress across skill invocations binnen een sessie:
       }
     },
     {
-      "skill": "frontend-wireframe",
+      "skill": "frontend-compose",
       "status": "in_progress",
       "startedAt": "2024-01-15T10:45:00Z",
       "completedAt": null,
@@ -60,7 +60,7 @@ Track progress across skill invocations binnen een sessie:
       }
     },
     {
-      "skill": "frontend-style",
+      "skill": "frontend-build",
       "status": "pending",
       "startedAt": null,
       "completedAt": null
@@ -88,7 +88,7 @@ Track progress across skill invocations binnen een sessie:
       },
       {
         "path": ".workspace/wireframes/dashboard/ux/v1.html",
-        "skill": "frontend-wireframe",
+        "skill": "frontend-compose",
         "timestamp": "2024-01-15T11:30:00Z"
       }
     ],
@@ -113,7 +113,7 @@ Track progress across skill invocations binnen een sessie:
 
   "handoff": {
     "from": "frontend-theme",
-    "to": "frontend-wireframe",
+    "to": "frontend-compose",
     "data": {
       "themeFile": ".workspace/config/THEME.md",
       "preset": "Anthropic Style",
@@ -220,7 +220,7 @@ Roep aan bij elke file create/modify/delete.
 recordFile({
   operation: "created",
   path: ".workspace/wireframes/dashboard/ux/v1.html",
-  skill: "frontend-wireframe"
+  skill: "frontend-compose"
 })
 ```
 ```
@@ -243,7 +243,7 @@ Roep aan bij failure.
 ```json
 {
   "timestamp": "ISO timestamp",
-  "skill": "frontend-wireframe",
+  "skill": "frontend-compose",
   "phase": "FASE_2",
   "severity": "CRITICAL | HIGH | MEDIUM | LOW",
   "message": "Agent task timeout after 60s",
@@ -275,8 +275,8 @@ Roep aan bij skill completion.
 **Handoff Preparation:**
 ```json
 {
-  "from": "frontend-wireframe",
-  "to": "frontend-style",
+  "from": "frontend-compose",
+  "to": "frontend-build",
   "data": {
     "selectedWireframe": ".workspace/wireframes/dashboard/ux/v2.html",
     "atomicLevel": "organism",
@@ -311,12 +311,12 @@ Roep aan als volledige workflow klaar is.
 
 ### Handoff Data Contracts
 
-#### theme → wireframe
+#### theme → compose
 
 ```json
 {
   "from": "frontend-theme",
-  "to": "frontend-wireframe",
+  "to": "frontend-compose",
   "data": {
     "themeFile": ".workspace/config/THEME.md",
     "preset": "Anthropic Style | Custom",
@@ -330,12 +330,12 @@ Roep aan als volledige workflow klaar is.
 }
 ```
 
-#### wireframe → style (final step)
+#### compose → create
 
 ```json
 {
-  "from": "frontend-wireframe",
-  "to": "frontend-style",
+  "from": "frontend-compose",
+  "to": "frontend-build",
   "data": {
     "selectedWireframe": ".workspace/wireframes/[page]/[agent]/v2.html",
     "selection": {
@@ -354,25 +354,51 @@ Roep aan als volledige workflow klaar is.
 }
 ```
 
-#### style → (completion)
+#### create → (completion)
 
-`/style` is de laatste stap in de pipeline. Output:
+`/build` is de laatste stap in de interne pipeline (Pad A). Output:
 
 ```json
 {
-  "from": "frontend-style",
+  "from": "frontend-build",
   "to": null,
   "data": {
+    "pageFile": "src/pages/[page].tsx",
     "componentsDirectory": "src/components/[page]/",
     "tailwindConfig": "tailwind.config.js",
-    "components": [
+    "componentsCompleted": [
       {
         "name": "Header",
-        "files": ["Header.tsx", "Header.types.ts", "Header.stories.tsx", "Header.test.tsx"]
+        "atomic": "organism",
+        "files": ["Header.tsx", "Header.types.ts"]
       }
     ],
-    "storybookReady": true,
-    "testCoverage": "stubs"
+    "componentsSkipped": []
+  }
+}
+```
+
+#### convert → (completion)
+
+`/convert` is het eindpunt van het externe pad (Pad B: designer levert design). Output:
+
+```json
+{
+  "from": "frontend-convert",
+  "to": null,
+  "data": {
+    "inputType": "screenshot | html | url",
+    "pageFile": "src/pages/[page].tsx",
+    "componentsDirectory": "src/components/[page]/",
+    "tailwindConfig": "tailwind.config.js",
+    "componentsCompleted": [
+      {
+        "name": "Header",
+        "atomic": "organism",
+        "files": ["Header.tsx", "Header.types.ts"]
+      }
+    ],
+    "componentsSkipped": []
   }
 }
 ```
@@ -417,7 +443,7 @@ options:
 │       └── 2024-01-15-*.json
 ├── config/
 │   └── THEME.md                  # Theme output (van /theme)
-└── wireframes/                   # Wireframe output (van /wireframe)
+└── wireframes/                   # Wireframe output (van /compose)
     └── [page]/
         ├── ux/
         │   ├── v1.html
@@ -425,15 +451,13 @@ options:
         ├── minimal/
         └── rich/
 
-src/components/                    # Final output (van /style)
+src/components/                    # Final output (van /build of /convert)
 └── [page]/
     ├── index.ts
     ├── organisms/
     │   └── Header/
     │       ├── Header.tsx
-    │       ├── Header.types.ts
-    │       ├── Header.stories.tsx
-    │       └── Header.test.tsx
+    │       └── Header.types.ts
     ├── molecules/
     └── atoms/
 
@@ -521,10 +545,10 @@ Dit helpt met debugging en recovery.
 ```
 SKILL COMPLETE
 ──────────────
-Skill: frontend-wireframe
+Skill: frontend-compose
 Duration: 15 minutes
 Files created: 6
-Next suggested: /style dashboard
+Next suggested: /build dashboard
 ```
 ```
 

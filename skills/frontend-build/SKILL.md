@@ -1,17 +1,17 @@
 ---
-description: Style wireframe components one-by-one — generate high-fidelity HTML previews with visual approval, then produce React+Tailwind components and assemble a working page
+description: Build production-ready React components from wireframe — design each component visually, approve, then generate React+Tailwind code and assemble a working page
 ---
 
-# Style
+# Build
 
-Transform low-fidelity wireframe components into high-fidelity styled components, one at a time. Each component gets a visual HTML preview for approval before generating production-ready React+Tailwind code. The wireframe page progressively transforms from grayscale to fully styled.
+Design and build wireframe components into production-ready React code, one at a time. Each component gets a visual high-fidelity HTML preview for approval before generating React+Tailwind code. The wireframe page progressively transforms from grayscale to fully styled.
 
-**Keywords**: style, component, high-fidelity, React, Tailwind, preview, progressive, atomic design, visual approval, page assembly
+**Keywords**: build, component, high-fidelity, React, Tailwind, preview, progressive, atomic design, visual approval, page assembly
 
 ## When to Use
 
-- After `/wireframe` has produced a final wireframe with `data-component` attributes
-- When you want visual control over each component's styling
+- After `/compose` has produced a final wireframe with `data-component` attributes
+- When you want visual control over each component's design
 - Before deploying production React components
 
 ---
@@ -20,7 +20,7 @@ Transform low-fidelity wireframe components into high-fidelity styled components
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PREFLIGHT: /style [page]
+    [*] --> PREFLIGHT: /build [page]
 
     PREFLIGHT --> DISCOVER: pre-flight pass
     PREFLIGHT --> ERROR: pre-flight fail
@@ -86,8 +86,8 @@ Reads from `handoff` key in devinfo.json (see DEVINFO.md):
 ```json
 {
   "handoff": {
-    "from": "frontend-wireframe",
-    "to": "frontend-style",
+    "from": "frontend-compose",
+    "to": "frontend-build",
     "data": {
       "selectedWireframe": ".workspace/wireframes/[page]/final.html",
       "finalScreenshot": ".workspace/wireframes/[page]/final-screenshot.png",
@@ -124,7 +124,7 @@ Reads from `handoff` key in devinfo.json (see DEVINFO.md):
 
 ```json
 {
-  "from": "frontend-style",
+  "from": "frontend-build",
   "to": null,
   "data": {
     "hifiPreview": ".workspace/wireframes/[page]/hifi/preview.html",
@@ -370,7 +370,7 @@ options:
   - label: "Ik kies zelf per stap"
     description: "Ik selecteer steeds de volgende component"
   - label: "Alleen specifieke"
-    description: "Ik wil niet alle components stylen"
+    description: "Ik wil niet alle components maken"
 multiSelect: false
 ```
 
@@ -378,7 +378,7 @@ multiSelect: false
 
 ```yaml
 header: "Selectie"
-question: "Welke components wil je stylen? (kies meerdere)"
+question: "Welke components wil je maken? (kies meerdere)"
 options:
   - label: "[Component 1]"
     description: "[atomic level] — [N variants]"
@@ -535,7 +535,7 @@ Kopieer `final.html` naar `.workspace/wireframes/[page]/hifi/preview.html` en vo
 /* ═══ HIGH-FIDELITY CLASS SYSTEM ═══
    Uses same THEME.md CSS variables as wireframe,
    but adds real styling: radius, shadows, transitions, hover states.
-   Added during /style workflow — do not remove.
+   Added during /build workflow — do not remove.
 */
 
 /* ─── Layout ─── */
@@ -810,14 +810,14 @@ Progress: 3/11 complete
 
 ```yaml
 header: "Volgende Component"
-question: "Welke component wil je nu stylen?"
+question: "Welke component wil je nu maken?"
 options:
   - label: "[Volgende in volgorde] (Recommended)"
     description: "[Component naam] — [atomic level], [N variants]"
   - label: "Ik kies zelf"
     description: "Selecteer een specifieke component"
   - label: "Klaar — afronden"
-    description: "Stop met stylen, ga naar post-flight"
+    description: "Stop, ga naar post-flight"
 multiSelect: false
 ```
 
@@ -1235,7 +1235,7 @@ Props: label, value, trend, trendDirection
 COMPONENT COMPLETE: Button ✓
 ═══════════════════════════════════════════════════════════
 
-Progress: 4/11 components gestyled
+Progress: 4/11 components complete
 
 Volgende suggestie: NavLink (atom)
   → Wordt gebruikt door: Navigation
@@ -1334,11 +1334,11 @@ multiSelect: false
 ### 4.3 Completion Report
 
 ```
-STYLE COMPLETE
+BUILD COMPLETE
 ═══════════════════════════════════════════════════════════
 
 Page: [page name]
-Components styled: [N]/[total]
+Components created: [N]/[total]
 Components skipped: [N]
 
 Files created:
@@ -1479,19 +1479,19 @@ Update devinfo at each phase transition:
 ```json
 {
   "currentSkill": {
-    "name": "frontend-style",
+    "name": "frontend-build",
     "phase": "COMPONENT_LOOP",
     "startedAt": "ISO timestamp"
   },
   "progress": {
     "completedTasks": 4,
     "totalTasks": 11,
-    "currentTask": "Styling Avatar component"
+    "currentTask": "Creating Avatar component"
   },
   "files": {
     "created": [
-      { "path": "src/components/dashboard/atoms/Button/Button.tsx", "skill": "frontend-style" },
-      { "path": ".workspace/wireframes/dashboard/hifi/preview.html", "skill": "frontend-style" }
+      { "path": "src/components/dashboard/atoms/Button/Button.tsx", "skill": "frontend-build" },
+      { "path": ".workspace/wireframes/dashboard/hifi/preview.html", "skill": "frontend-build" }
     ]
   }
 }
@@ -1507,10 +1507,10 @@ Update devinfo at each phase transition:
     "completedAt": "ISO timestamp"
   },
   "handoff": {
-    "from": "frontend-style",
+    "from": "frontend-build",
     "to": null,
     "data": {
-      "summary": "8 components styled for dashboard (3 skipped)",
+      "summary": "8 components created for dashboard (3 skipped)",
       "hifiPreview": ".workspace/wireframes/dashboard/hifi/preview.html",
       "pageFile": "src/pages/dashboard.tsx",
       "outputDirectory": "src/components/dashboard/",
