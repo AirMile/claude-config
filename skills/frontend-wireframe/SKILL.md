@@ -1,10 +1,10 @@
 ---
-description: Generate low-fidelity HTML wireframes using parallel design agents with visual reflection
+description: Generate low-fidelity HTML wireframes using parallel design agents with iterative refinement
 ---
 
 # Wireframe
 
-Generate multiple low-fidelity wireframe sketches using 3 parallel design agents, each with a unique philosophy. Agents visually review their own work via screenshots and iterate to create improved versions.
+Generate multiple low-fidelity wireframe sketches using 2 parallel design agents. Each agent explores a different layout approach. After two rounds of iteration with visual reflection, the best elements are automatically combined into a refined version.
 
 **Keywords**: wireframe, mockup, prototype, layout, UI design, UX, mobile, desktop, atomic design, storybook, low-fidelity, parallel agents, design variants
 
@@ -30,27 +30,25 @@ stateDiagram-v2
     VALIDATE_REQUIREMENTS --> FASE2_ROUND1: pass
     VALIDATE_REQUIREMENTS --> FASE1_REQUIREMENTS: need more input
 
-    FASE2_ROUND1 --> VALIDATE_ROUND1: 3 agents complete
-    VALIDATE_ROUND1 --> FASE3_REFLECTION: all 3 pass
-    VALIDATE_ROUND1 --> RETRY_ROUND1: partial fail (1-2 agents)
-    VALIDATE_ROUND1 --> ERROR: all 3 fail
+    FASE2_ROUND1 --> VALIDATE_ROUND1: 2 agents complete
+    VALIDATE_ROUND1 --> FASE3_REFLECTION: all 2 pass
+    VALIDATE_ROUND1 --> RETRY_ROUND1: partial fail (1 agent)
+    VALIDATE_ROUND1 --> ERROR: all 2 fail
     RETRY_ROUND1 --> VALIDATE_ROUND1
 
     FASE3_REFLECTION --> FASE4_ROUND2: reflection complete
 
-    FASE4_ROUND2 --> VALIDATE_ROUND2: 3 agents complete
-    VALIDATE_ROUND2 --> POSTFLIGHT: all 3 pass
+    FASE4_ROUND2 --> VALIDATE_ROUND2: 2 agents complete
+    VALIDATE_ROUND2 --> FASE5_REFINE: all 2 pass
     VALIDATE_ROUND2 --> RETRY_ROUND2: partial fail
     RETRY_ROUND2 --> VALIDATE_ROUND2
 
-    POSTFLIGHT --> FASE5_SELECT: validation pass
-    POSTFLIGHT --> RECOVER: validation fail
+    FASE5_REFINE --> VALIDATE_REFINED: refined.html created
+    VALIDATE_REFINED --> FASE6_REVIEW: pass
+    VALIDATE_REFINED --> RETRY_REFINE: fail
 
-    FASE5_SELECT --> FASE6_REFINE: user wants refinement
-    FASE5_SELECT --> COMPLETE: skip refinement
-
-    FASE6_REFINE --> FASE6_REFINE: more changes
-    FASE6_REFINE --> COMPLETE: user done
+    FASE6_REVIEW --> FASE6_REVIEW: more changes
+    FASE6_REVIEW --> COMPLETE: user done
 
     COMPLETE --> [*]
 
@@ -63,17 +61,17 @@ stateDiagram-v2
 
 **State Descriptions:**
 - **PREFLIGHT**: Validate theme, directories, template, agent capability
-- **FASE1_REQUIREMENTS**: Gather user requirements via modals
+- **FASE1_REQUIREMENTS**: Gather user requirements via modals, with full project context
 - **VALIDATE_REQUIREMENTS**: Check requirements completeness
-- **FASE2_ROUND1**: Spawn 3 parallel agents for v1 wireframes
-- **VALIDATE_ROUND1**: Verify all 3 v1 files exist and valid
-- **RETRY_ROUND1**: Retry failed agents only
-- **FASE3_REFLECTION**: Sequential thinking analysis of v1
-- **FASE4_ROUND2**: Spawn 3 parallel agents for v2 wireframes
-- **VALIDATE_ROUND2**: Verify all 3 v2 files exist and valid
-- **POSTFLIGHT**: Final validation of all 6 wireframes
-- **FASE5_SELECT**: User selects preferred wireframe
-- **FASE6_REFINE**: Iterative refinement loop (text-based tweaks)
+- **FASE2_ROUND1**: Spawn 2 parallel agents for v1 wireframes
+- **VALIDATE_ROUND1**: Verify all 2 v1 files exist and valid
+- **RETRY_ROUND1**: Retry failed agent only
+- **FASE3_REFLECTION**: Sequential thinking analysis of v1 wireframes
+- **FASE4_ROUND2**: Spawn 2 parallel agents for v2 wireframes
+- **VALIDATE_ROUND2**: Verify all 2 v2 files exist and valid
+- **FASE5_REFINE**: User selects basis + elements to combine into refined.html
+- **VALIDATE_REFINED**: Verify refined.html exists and valid
+- **FASE6_REVIEW**: User reviews refined version, iterative tweaks
 - **COMPLETE**: Create final.html and prepare handoff to /style
 - **FALLBACK**: Degraded sequential mode
 
@@ -84,21 +82,23 @@ stateDiagram-v2
 ```
 FASE 0.5: Pre-flight Validation
     ↓
-FASE 1: Requirements & Research
+FASE 1: Requirements & Project Context
     ↓
-FASE 2: Round 1 - 3 agents create v1 wireframes (parallel)
+FASE 2: Round 1 - 2 agents create v1 wireframes (parallel)
     ↓
     [Validate Round 1]
     ↓
 FASE 3: Visual Reflection (sequential thinking)
     ↓
-FASE 4: Round 2 - 3 agents create v2 wireframes (parallel)
+FASE 4: Round 2 - 2 agents create v2 wireframes (parallel)
     ↓
     [Validate Round 2]
     ↓
-FASE 5: Open first wireframe + Ask for selection
+FASE 5: Refine - User selects best elements for refined version
     ↓
-FASE 5.5: Final Post-flight Validation
+FASE 6: Review & Tweak refined version
+    ↓
+FASE 7: Final Post-flight Validation
 ```
 
 ## Resources
@@ -223,8 +223,8 @@ multiSelect: false
 header: "Agent Mode"
 question: "Task tool beperkt beschikbaar. Hoe doorgaan?"
 options:
-  - label: "Sequential mode (Recommended)", description: "3 agents achter elkaar i.p.v. parallel"
-  - label: "Single agent", description: "Eén agent maakt 3 stijlen"
+  - label: "Sequential mode (Recommended)", description: "2 agents achter elkaar i.p.v. parallel"
+  - label: "Single agent", description: "Eén agent maakt 2 varianten"
   - label: "Annuleren", description: "Stop workflow"
 multiSelect: false
 ```
@@ -233,14 +233,107 @@ multiSelect: false
 
 ## FASE 1: Requirements Gathering
 
-> **Doel:** Inventariseer WAT er op de pagina moet voordat agents starten.
+> **Doel:** Inventariseer WAT er op de pagina moet EN begrijp het project voordat agents starten.
 > De output is een requirements document dat agents gebruiken.
 
 ---
 
-### Step 1.1: Open Beschrijving
+### Step 1.1: Project Context Scan (Automatisch)
 
-Start met een open vraag om de echte intentie te vangen:
+> **CRITICAL:** Scan the project FIRST so all subsequent questions are informed by real project data. This context must be included in agent briefings.
+
+**Run these scans automatically before asking the user anything:**
+
+**1. Session & Handoff Data:**
+```bash
+# Read devinfo for cross-skill handoff
+cat .workspace/session/devinfo.json 2>/dev/null
+```
+
+**2. Project Identity:**
+```bash
+# Detect project type and framework
+cat package.json 2>/dev/null        # Node/JS projects
+cat composer.json 2>/dev/null       # PHP projects
+cat project.godot 2>/dev/null       # Godot projects
+cat README.md 2>/dev/null           # Project description
+```
+
+Read whichever config file exists. Extract:
+- Project name and description
+- Framework/library (Next.js, Remix, Nuxt, Astro, etc.)
+- Key dependencies (UI libraries, state management, etc.)
+
+**3. Existing Pages & Routes:**
+```
+Glob: src/pages/**/*.{tsx,jsx,vue,svelte,astro}
+Glob: app/**/page.{tsx,jsx}
+Glob: src/routes/**/*.{tsx,jsx,svelte}
+Glob: pages/**/*.{tsx,jsx,vue}
+```
+
+**4. Existing Components:**
+```
+Glob: src/components/**/*.{tsx,jsx,vue,svelte}
+Glob: components/**/*.{tsx,jsx,vue,svelte}
+```
+
+**5. API Routes & Data Models:**
+```
+Glob: src/api/**/*.{ts,js}
+Glob: app/api/**/*.{ts,js}
+Glob: src/types/**/*.{ts,d.ts}
+Glob: types/**/*.{ts,d.ts}
+Glob: src/models/**/*.{ts,js}
+```
+
+**6. Design System / Existing Styles:**
+```
+Glob: src/styles/**/*.{css,scss}
+Glob: tailwind.config.*
+Glob: src/design-system/**/*
+```
+
+**7. Theme (from pre-flight):**
+```bash
+# Already checked in pre-flight, use cached result
+# If THEME.md exists, extract design tokens for agent briefing
+```
+
+**Show context summary to user:**
+
+```
+PROJECT CONTEXT
+════════════════════════════════════════════════════════════════
+
+Project: [name from package.json / README]
+Type: [E-commerce | SaaS | Blog | Portfolio | Admin | Game | Unknown]
+Framework: [Next.js App Router | Next.js Pages | Remix | Astro | etc.]
+UI Library: [Tailwind | MUI | Chakra | None detected]
+
+Existing pages ({N}):
+  /products, /cart, /checkout, /account, ...
+
+Reusable components ({N}):
+  Button, Card, Header, Footer, Modal, ...
+
+API endpoints ({N}):
+  GET /api/products, POST /api/cart, ...
+
+Data models:
+  User, Product, Order, ...
+
+Theme: [Available (THEME.md) | Not available]
+Previous skill: [theme → wireframe handoff | None]
+
+════════════════════════════════════════════════════════════════
+```
+
+---
+
+### Step 1.2: Open Beschrijving
+
+Now ask the user, WITH context already displayed:
 
 ```yaml
 header: "Beschrijving"
@@ -253,38 +346,6 @@ options: []
 - "Een dashboard voor marketing managers om campagne ROI te monitoren"
 - "Checkout flow voor een e-commerce site met payment options"
 - "Settings pagina waar users hun profiel en notificaties kunnen aanpassen"
-
----
-
-### Step 1.2: Context Scan (Automatisch)
-
-Scan de codebase voor hints (als in een project):
-
-```
-CONTEXT SCAN
-────────────
-```
-
-**Checks:**
-```bash
-# Check package.json voor app type
-# Check src/pages of app/ voor bestaande routes
-# Check API routes voor beschikbare data endpoints
-# Check types/ voor data models
-# Check components/ voor herbruikbare UI
-```
-
-**Output:**
-
-```
-App type: [E-commerce | SaaS | Blog | Portfolio | Admin | Unknown]
-Framework: [Next.js App Router | Next.js Pages | Remix | etc.]
-Existing pages: [lijst van routes]
-API endpoints: [relevante endpoints]
-Reusable components: [bestaande UI components]
-
-Suggestion: Based on context, this looks like a [type] page.
-```
 
 ---
 
@@ -438,7 +499,7 @@ multiSelect: false
 
 ### Step 1.6: Requirements Samenvatting
 
-Toon verzamelde requirements aan gebruiker:
+Toon verzamelde requirements aan gebruiker, INCLUDING project context:
 
 ```
 REQUIREMENTS SAMENVATTING
@@ -454,9 +515,12 @@ MUST HAVE:
 3. [Component/Feature]: [wat het moet doen]
 ...
 
-CONTEXT (from codebase):
-- Reusable: [bestaande components die relevant zijn]
-- API: [beschikbare endpoints]
+PROJECT CONTEXT (from codebase):
+- Framework: [detected framework]
+- Reusable components: [bestaande components die relevant zijn]
+- API endpoints: [beschikbare endpoints]
+- Data models: [relevante types/interfaces]
+- Existing pages: [navigatie context]
 
 ═════════════════════════════════════════════════════════════════
 ```
@@ -542,6 +606,14 @@ multiSelect: false
 - **Platform:** [Desktop + Mobile | etc.]
 - **Type:** [Dashboard | Landing | Form | etc.]
 
+## Project Context
+- **Framework:** [Next.js App Router | etc.]
+- **UI Library:** [Tailwind | MUI | etc.]
+- **Existing Components:** [Button, Card, Header, etc.]
+- **API Endpoints:** [relevant endpoints]
+- **Data Models:** [relevant types]
+- **Related Pages:** [existing pages in same flow]
+
 ## Must Have
 1. **[Component]:** [Wat het moet tonen/doen]
 2. **[Component]:** [Wat het moet tonen/doen]
@@ -558,7 +630,8 @@ multiSelect: false
 ## Hints voor Agents
 - [Pattern suggestie gebaseerd op page type]
 - [Best practice hint]
-- [Codebase context hint]
+- [Codebase context hint: "Project uses Tailwind, keep class naming consistent"]
+- [Existing component hint: "Header component exists at src/components/Header.tsx"]
 
 ---
 ✓ Requirements complete — ready for agents
@@ -570,7 +643,7 @@ multiSelect: false
 header: "Start Agents"
 question: "Requirements document is klaar. Starten met wireframe generatie?"
 options:
-  - label: "Ja, start agents (Recommended)", description: "3 parallel agents maken v1 wireframes"
+  - label: "Ja, start agents (Recommended)", description: "2 parallel agents maken v1 wireframes"
   - label: "Nee, requirements aanpassen", description: "Terug naar requirements"
   - label: "Annuleren", description: "Stop workflow"
 multiSelect: false
@@ -611,6 +684,14 @@ Page: Marketing Dashboard
 Platform: Desktop + Mobile
 Level: Page
 
+PROJECT CONTEXT:
+- Framework: Next.js 14 App Router
+- UI Library: Tailwind CSS
+- Existing components: Button, Card, Header, Sidebar, Modal
+- API: GET /api/analytics, GET /api/campaigns, POST /api/reports
+- Data models: Campaign { id, name, spend, conversions, ctr }
+- Related pages: /campaigns, /reports, /settings
+
 REQUIREMENTS:
 1. Header: Logo, main nav, user menu with notifications
 2. KPI Cards (4x): Total spend, Conversions, ROI %, Avg CTR
@@ -631,58 +712,64 @@ REFERENCE PATTERNS:
 - Desktop patterns (primary)
 - Mobile patterns (responsive)
 
-YOUR PHILOSOPHY: [UX | Minimal | Rich]
-OUTPUT: .workspace/wireframes/dashboard/[agent]/v1.html
+YOUR TASK: Create a unique wireframe layout. Focus on a different structural
+approach than the other agent. Explore alternative arrangements of the
+required elements while keeping all requirements intact.
+
+OUTPUT: .workspace/wireframes/dashboard/[agent-a|agent-b]/v1.html
 ```
 
 ---
 
 ## FASE 2: Round 1 - First Designs
 
-**CRITICAL:** Spawn 3 agents IN PARALLEL using the Task tool. Send a single message with 3 Task tool calls.
+**CRITICAL:** Spawn 2 agents IN PARALLEL using the Task tool. Send a single message with 2 Task tool calls.
 
 ```
-3 design agents parallel gestart...
+2 design agents parallel gestart...
 
-- UX Agent: User-first design maken
-- Minimal Agent: Minimalistisch design maken
-- Rich Agent: Feature-rich design maken
+- Agent A: Eerste layout variant maken
+- Agent B: Alternatieve layout variant maken
 ```
 
 ### Agent Prompts
 
-**IMPORTANT:** Each agent MUST read `references/html-template.html` and use it EXACTLY.
+**IMPORTANT:** Each agent MUST read `references/html-template.html` (or responsive variant) and use it EXACTLY.
 
-**Task 1 - UX Agent:**
+**Task 1 - Agent A:**
 ```
 Task(
   subagent_type="general-purpose",
-  description="Create UX wireframe v1",
-  prompt="[UX agent prompt with requirements, template instructions, output path]"
+  description="Create wireframe variant A v1",
+  prompt="[Agent A prompt with requirements, project context, template instructions, output path]
+
+  You are Agent A. Create a wireframe layout for the given requirements.
+  Focus on YOUR unique structural approach. The other agent will create
+  a different layout - make yours distinct.
+
+  Output to: .workspace/wireframes/[page]/agent-a/v1.html"
 )
 ```
 
-**Task 2 - Minimal Agent:**
+**Task 2 - Agent B:**
 ```
 Task(
   subagent_type="general-purpose",
-  description="Create Minimal wireframe v1",
-  prompt="[Minimal agent prompt with requirements, template instructions, output path]"
-)
-```
+  description="Create wireframe variant B v1",
+  prompt="[Agent B prompt with requirements, project context, template instructions, output path]
 
-**Task 3 - Rich Agent:**
-```
-Task(
-  subagent_type="general-purpose",
-  description="Create Rich wireframe v1",
-  prompt="[Rich agent prompt with requirements, template instructions, output path]"
+  You are Agent B. Create a wireframe layout for the given requirements.
+  Focus on YOUR unique structural approach. The other agent will create
+  a different layout - make yours distinct. Try a fundamentally different
+  arrangement of elements.
+
+  Output to: .workspace/wireframes/[page]/agent-b/v1.html"
 )
 ```
 
 ### Post-FASE 2 Validation
 
-**Run IMMEDIATELY after all 3 agents complete:**
+**Run IMMEDIATELY after both agents complete:**
 
 ```
 ROUND 1 VALIDATION
@@ -692,24 +779,22 @@ ROUND 1 VALIDATION
 **1. File Existence**
 ```
 Files:
-  [✓|✗] ux/v1.html - [exists|missing] ({N} bytes)
-  [✓|✗] minimal/v1.html - [exists|missing] ({N} bytes)
-  [✓|✗] rich/v1.html - [exists|missing] ({N} bytes)
+  [✓|✗] agent-a/v1.html - [exists|missing] ({N} bytes)
+  [✓|✗] agent-b/v1.html - [exists|missing] ({N} bytes)
 ```
 
 **2. HTML Validity**
 ```
 Parse status:
-  [✓|✗] ux/v1.html - [valid HTML|parse error]
-  [✓|✗] minimal/v1.html - [valid HTML|parse error]
-  [✓|✗] rich/v1.html - [valid HTML|parse error]
+  [✓|✗] agent-a/v1.html - [valid HTML|parse error]
+  [✓|✗] agent-b/v1.html - [valid HTML|parse error]
 ```
 
 **3. Navigation Intact**
 ```
 Navigation:
   [✓|✗] wireframe-nav class present
-  [✓|✗] All 6 links present (ux/min/rich × v1/v2)
+  [✓|✗] All 5 links present (A v1, B v1, A v2, B v2, Refined)
 ```
 
 **4. Theme Applied (if selected)**
@@ -725,14 +810,12 @@ Capture screenshots en accessibility snapshots voor analyse:
 
 ```
 Screenshot capture:
-  [✓|✗] ux/v1-screenshot.png - captured
-  [✓|✗] minimal/v1-screenshot.png - captured
-  [✓|✗] rich/v1-screenshot.png - captured
+  [✓|✗] agent-a/v1-screenshot.png - captured
+  [✓|✗] agent-b/v1-screenshot.png - captured
 
 Accessibility snapshots:
-  [✓|✗] ux/v1-snapshot.md - {N} interactive elements
-  [✓|✗] minimal/v1-snapshot.md - {N} interactive elements
-  [✓|✗] rich/v1-snapshot.md - {N} interactive elements
+  [✓|✗] agent-a/v1-snapshot.md - {N} interactive elements
+  [✓|✗] agent-b/v1-snapshot.md - {N} interactive elements
 ```
 
 **Playwright sequence per wireframe:**
@@ -746,18 +829,18 @@ Accessibility snapshots:
 **Round 1 Result:**
 ```
 ════════════════════════════════════════════════════════════════
-ROUND 1 RESULT: [3/3 PASS | {N}/3 PASS - retry needed | 0/3 FAIL]
+ROUND 1 RESULT: [2/2 PASS | 1/2 PASS - retry needed | 0/2 FAIL]
 ════════════════════════════════════════════════════════════════
 ```
 
-### On Partial Failure (1-2 agents failed)
+### On Partial Failure (1 agent failed)
 
 ```yaml
 header: "Partial Failure"
-question: "{N}/3 agents gefaald. Hoe doorgaan?"
+question: "1/2 agents gefaald. Hoe doorgaan?"
 options:
-  - label: "Retry gefaalde (Recommended)", description: "Alleen [agent(s)] opnieuw"
-  - label: "Doorgaan met successen", description: "Ga verder met {N} wireframes"
+  - label: "Retry gefaalde (Recommended)", description: "Alleen [agent] opnieuw"
+  - label: "Doorgaan met succes", description: "Ga verder met 1 wireframe"
   - label: "Alles opnieuw", description: "Start FASE 2 opnieuw"
   - label: "Sequential mode", description: "Schakel over naar sequential"
 multiSelect: false
@@ -773,20 +856,17 @@ Gebruik de screenshots en accessibility snapshots uit Post-FASE 2 validation:
 
 ```
 Beschikbare assets voor analyse:
-├── ux/
+├── agent-a/
 │   ├── v1-screenshot.png    ← Visuele layout
 │   └── v1-snapshot.md       ← Accessibility tree (interactieve elementen)
-├── minimal/
-│   ├── v1-screenshot.png
-│   └── v1-snapshot.md
-└── rich/
+└── agent-b/
     ├── v1-screenshot.png
     └── v1-snapshot.md
 ```
 
 **Optioneel: Open in browser voor handmatige review**
 ```bash
-start .workspace/wireframes/[page-name]/ux/v1.html
+start .workspace/wireframes/[page-name]/agent-a/v1.html
 ```
 
 ### Step 3.2: Sequential Thinking Analysis
@@ -807,152 +887,256 @@ Analyseren van [agent] v1 wireframe...
 Conclusie: Specifieke verbeteringen voor v2...
 ```
 
+**Cross-comparison:**
+```
+VERGELIJKING A vs B
+════════════════════════════════════════════════════════════════
+
+Agent A sterke punten:
+- [wat A beter doet]
+
+Agent B sterke punten:
+- [wat B beter doet]
+
+Gedeelde verbeterpunten:
+- [wat beide moeten verbeteren in v2]
+
+Inzichten voor v2:
+- Agent A zou moeten: [specifieke feedback]
+- Agent B zou moeten: [specifieke feedback]
+- Beide: [gedeelde feedback]
+
+════════════════════════════════════════════════════════════════
+```
+
 ---
 
 ## FASE 4: Round 2 - Improved Designs
 
-**CRITICAL:** Spawn 3 agents IN PARALLEL opnieuw, nu met reflection inzichten.
+**CRITICAL:** Spawn 2 agents IN PARALLEL opnieuw, nu met reflection inzichten.
 
 ```
 Ronde 2 gestart met visuele feedback...
 ```
 
+Each agent receives:
+- Original requirements + project context
+- Their own v1 screenshot analysis
+- Cross-comparison insights
+- Specific improvement instructions from reflection
+
 ### Post-FASE 4 Validation
 
-**Run IMMEDIATELY after all 3 v2 agents complete:**
+**Run IMMEDIATELY after both v2 agents complete:**
 
 ```
 ROUND 2 VALIDATION
 ════════════════════════════════════════════════════════════════
 Files:
-  [✓|✗] ux/v2.html - [exists|missing] ({N} bytes)
-  [✓|✗] minimal/v2.html - [exists|missing] ({N} bytes)
-  [✓|✗] rich/v2.html - [exists|missing] ({N} bytes)
+  [✓|✗] agent-a/v2.html - [exists|missing] ({N} bytes)
+  [✓|✗] agent-b/v2.html - [exists|missing] ({N} bytes)
 
 Parse status: [all valid | {N} errors]
 Navigation: [intact | broken]
 Theme: [applied | missing]
 
 Screenshots (Playwright):
-  [✓|✗] ux/v2-screenshot.png - captured
-  [✓|✗] minimal/v2-screenshot.png - captured
-  [✓|✗] rich/v2-screenshot.png - captured
+  [✓|✗] agent-a/v2-screenshot.png - captured
+  [✓|✗] agent-b/v2-screenshot.png - captured
 
 Accessibility snapshots:
-  [✓|✗] ux/v2-snapshot.md - {N} interactive elements
-  [✓|✗] minimal/v2-snapshot.md - {N} interactive elements
-  [✓|✗] rich/v2-snapshot.md - {N} interactive elements
+  [✓|✗] agent-a/v2-snapshot.md - {N} interactive elements
+  [✓|✗] agent-b/v2-snapshot.md - {N} interactive elements
 
-ROUND 2 RESULT: [3/3 PASS | {N}/3 PASS | FAIL]
+ROUND 2 RESULT: [2/2 PASS | 1/2 PASS | FAIL]
 ════════════════════════════════════════════════════════════════
 ```
 
 ---
 
-## FASE 5: Open & Select
+## FASE 5: Refine (User-Driven)
 
-### Step 5.1: Open First Wireframe
+> **Doel:** De gebruiker bepaalt welke elementen uit welke wireframe de refined versie vormen.
+> Claude opent de wireframes, presenteert de keuzes, en de gebruiker beslist.
+
+### Step 5.1: Open Wireframes voor Vergelijking
+
+Open de eerste wireframe in de browser zodat de gebruiker kan navigeren via de nav balk:
 
 ```bash
-start .workspace/wireframes/[page-name]/ux/v1.html
+start .workspace/wireframes/[page-name]/agent-a/v1.html
 ```
 
-### Step 5.2: Show Summary
-
 ```
-6 WIREFRAME DESIGNS GEMAAKT
+4 WIREFRAMES KLAAR
+════════════════════════════════════════════════════════════════
 
-| Stijl | Filosofie | Versies |
-|-------|-----------|---------|
-| **UX Focus** | user flow, toegankelijkheid | v1, v2 |
-| **Minimal** | whitespace, essentials only | v1, v2 |
-| **Feature Rich** | power users, informatiedichtheid | v1, v2 |
+| Variant | Beschrijving |
+|---------|-------------|
+| A v1 | [korte beschrijving van de layout aanpak] |
+| B v1 | [korte beschrijving van de layout aanpak] |
+| A v2 | [verbeteringen t.o.v. A v1] |
+| B v2 | [verbeteringen t.o.v. B v1] |
 
-Atomic Design Niveau: [niveau]
-Component Type: Presentational
+Bekijk alle versies via de nav balk in je browser.
+
+════════════════════════════════════════════════════════════════
 ```
 
-### Step 5.3: Ask for Selection
+### Step 5.2: Gebruiker Kiest Basis
 
 ```yaml
-header: "Richting Kiezen"
-question: "Welke richting werkt het beste voor jou?"
+header: "Basis Kiezen"
+question: "Welke wireframe wil je als basis voor de refined versie?"
 options:
-  - label: "Selecteer en verfijn (Recommended)", description: "Kies wireframe, dan iteratief tweaken tot perfect"
-  - label: "Selecteer en ga naar /style", description: "Direct doorgaan zonder refinement"
-  - label: "Elementen combineren", description: "Mix de beste delen van meerdere wireframes"
-  - label: "Vraag uitleggen", description: "Leg opties uit"
+  - label: "Agent A v2 (Recommended)", description: "Verbeterde variant A als startpunt"
+  - label: "Agent B v2", description: "Verbeterde variant B als startpunt"
+  - label: "Agent A v1", description: "Originele variant A als startpunt"
+  - label: "Agent B v1", description: "Originele variant B als startpunt"
 multiSelect: false
 ```
 
-### Step 5.4: Wireframe Selection (if refinement or direct)
+### Step 5.3: Gebruiker Kiest Elementen om Over te Nemen
+
+Na de basis-keuze, vraag welke elementen uit de ANDERE wireframes overgenomen moeten worden:
+
+```yaml
+header: "Elementen Combineren"
+question: "Welke elementen wil je overnemen uit de andere wireframes? (bekijk ze in de nav balk)"
+options:
+  - label: "Geen - basis is goed", description: "Gebruik alleen de gekozen basis"
+multiSelect: false
+# User kiest "Other" om te beschrijven welke elementen uit welke wireframe
+# Bijv: "Header van B v2, cards layout van A v1, mobile nav van B v2"
+```
+
+**Als user elementen wil combineren, vraag door:**
+
+```yaml
+header: "Specifieke Elementen"
+question: "Beschrijf per onderdeel welke versie je wilt gebruiken:"
+options:
+  - label: "Ik heb het al beschreven", description: "Ga verder met mijn vorige antwoord"
+multiSelect: false
+# User beschrijft via "Other" bijv:
+# "Header: van B v2 (breder, met search bar)"
+# "Content grid: van A v2 (3 kolommen)"
+# "Footer: van B v1 (compacter)"
+```
+
+### Step 5.4: Samenvatting & Bevestiging
+
+```
+REFINED VERSION PLAN
+════════════════════════════════════════════════════════════════
+
+Basis: [agent-X/vN]
+
+Overgenomen elementen:
+- [Element 1]: van [agent-X/vN] — [reden/beschrijving]
+- [Element 2]: van [agent-X/vN] — [reden/beschrijving]
+- [Element 3]: ongewijzigd uit basis
+
+════════════════════════════════════════════════════════════════
+```
+
+```yaml
+header: "Bevestiging"
+question: "Klopt dit plan voor de refined versie?"
+options:
+  - label: "Ja, maak refined (Recommended)", description: "Combineer zoals beschreven"
+  - label: "Aanpassen", description: "Ik wil de elementen-keuze wijzigen"
+multiSelect: false
+```
+
+### Step 5.5: Generate Refined Wireframe
+
+Create `refined/refined.html` by combining the user-selected elements:
+
+- Use the same HTML template as all other wireframes
+- Start from the user-chosen basis wireframe
+- Replace specified elements with those from the user-indicated sources
+- Set `{{ACTIVE_REFINED}}` to `class="active"` in the nav bar
+- Ensure all requirements from FASE 1 are met
+
+**Output to:** `.workspace/wireframes/[page]/refined/refined.html`
+
+### Step 5.6: Validate Refined Version
+
+```
+REFINED VALIDATION
+════════════════════════════════════════════════════════════════
+File: [✓|✗] refined/refined.html - [exists|missing] ({N} bytes)
+Parse: [✓|✗] valid HTML
+Navigation: [✓|✗] 5 links present, Refined marked active
+Theme: [✓|✗] applied correctly
+Requirements: [✓|✗] all {N} requirements present
+
+Screenshot (Playwright):
+  [✓|✗] refined/refined-screenshot.png - captured
+
+Accessibility snapshot:
+  [✓|✗] refined/refined-snapshot.md - {N} interactive elements
+
+REFINED RESULT: [PASS | FAIL]
+════════════════════════════════════════════════════════════════
+```
+
+### Step 5.7: Open Refined Version
+
+```bash
+start .workspace/wireframes/[page-name]/refined/refined.html
+```
+
+```
+REFINED WIREFRAME KLAAR
+════════════════════════════════════════════════════════════════
+
+Basis: [agent-X/vN]
+Gecombineerd met: [lijst van overgenomen elementen]
+
+Alle {N} requirements aanwezig.
+
+Je kunt alle versies vergelijken via de nav balk:
+  A v1 | B v1 | A v2 | B v2 | Refined ← (je bent hier)
+
+════════════════════════════════════════════════════════════════
+```
+
+---
+
+## FASE 6: Review & Tweak (Optional)
+
+> **Doel:** Iteratief de refined wireframe tweaken tot user satisfied is.
+
+### Step 6.1: Ask for Review
+
+```yaml
+header: "Review"
+question: "Hoe wil je verder met de refined wireframe?"
+options:
+  - label: "Tweaken (Recommended)", description: "Ik wil nog aanpassingen doen"
+  - label: "Klaar - maak final", description: "Direct doorgaan naar final.html"
+  - label: "Kies andere basis", description: "Ik wil liever een van de 4 originelen gebruiken"
+multiSelect: false
+```
+
+**If user selects "Kies andere basis":**
 
 ```yaml
 header: "Selecteer Wireframe"
-question: "Welke wireframe wil je gebruiken als basis?"
+question: "Welke wireframe wil je als basis gebruiken?"
 options:
-  - label: "UX v2 (Recommended)", description: "User-focused design, refined"
-  - label: "UX v1", description: "User-focused design, initial"
-  - label: "Minimal v2", description: "Clean minimal design, refined"
-  - label: "Minimal v1", description: "Clean minimal design, initial"
-  - label: "Rich v2", description: "Feature-rich design, refined"
-  - label: "Rich v1", description: "Feature-rich design, initial"
+  - label: "Agent A v2", description: "Layout variant A, verbeterde versie"
+  - label: "Agent A v1", description: "Layout variant A, initieel"
+  - label: "Agent B v2", description: "Layout variant B, verbeterde versie"
+  - label: "Agent B v1", description: "Layout variant B, initieel"
 multiSelect: false
 ```
 
----
+Then copy selected wireframe to `refined/refined.html` and continue to tweaking.
 
-## FASE 6: Refinement Loop (Optional)
-
-> **Doel:** Iteratief de geselecteerde wireframe verfijnen tot user satisfied is.
-> **Skip:** Als user "Selecteer en ga naar /style" kiest, ga direct naar FASE 7.
-
-### Refinement State Machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> INIT_REFINE: wireframe selected
-    INIT_REFINE --> SHOW_CURRENT: copy to refine/current.html
-    SHOW_CURRENT --> ASK_CHANGES: screenshot captured (iteration-0)
-    ASK_CHANGES --> APPLY_CHANGES: user describes changes
-    ASK_CHANGES --> FINALIZE: user selects "Done"
-    APPLY_CHANGES --> VALIDATE_CHANGES: HTML edited
-    VALIDATE_CHANGES --> SHOW_COMPARISON: validation pass
-    VALIDATE_CHANGES --> RETRY: validation fail
-    RETRY --> APPLY_CHANGES
-    SHOW_COMPARISON --> ASK_CHANGES: user wants more changes
-    SHOW_COMPARISON --> FINALIZE: user satisfied
-    FINALIZE --> [*]: final.html created
-```
-
-### Step 6.1: Initialize Refinement
-
-Kopieer geselecteerde wireframe naar refinement workspace:
-
-```bash
-# Maak refine directory
-mkdir -p .workspace/wireframes/[page]/refine
-
-# Kopie maken (origineel behouden)
-cp .workspace/wireframes/[page]/[agent]/v2.html .workspace/wireframes/[page]/refine/current.html
-```
-
-Screenshot huidige staat met Playwright:
-```
-1. browser_navigate → file:///[absolute-path]/refine/current.html
-2. browser_take_screenshot → refine/iteration-0.png
-```
-
-```
-REFINEMENT INITIALIZED
-════════════════════════════════════════════════════════════════
-Base wireframe: [agent]/v2.html
-Working copy: refine/current.html
-Initial screenshot: refine/iteration-0.png
-════════════════════════════════════════════════════════════════
-```
-
-### Step 6.2: Verzamel Wijzigingen
+### Step 6.2: Refinement Loop
 
 ```yaml
 header: "Refinement"
@@ -991,9 +1175,9 @@ Toepassen...
 
 **Na wijziging - Playwright validation:**
 ```
-1. browser_navigate → file:///[path]/refine/current.html
+1. browser_navigate → file:///[path]/refined/refined.html
 2. browser_snapshot → check HTML structure (accessibility tree)
-3. browser_take_screenshot → refine/iteration-{N}.png
+3. browser_take_screenshot → refined/iteration-{N}.png
 ```
 
 ### Step 6.4: Before/After Comparison
@@ -1002,21 +1186,14 @@ Toepassen...
 REFINEMENT ITERATION {N}
 ════════════════════════════════════════════════════════════════
 
-Before: refine/iteration-{N-1}.png
-After:  refine/iteration-{N}.png
+Before: refined/iteration-{N-1}.png (or refined-screenshot.png for first)
+After:  refined/iteration-{N}.png
 
 Wijzigingen toegepast:
 • [Beschrijving wijziging 1]
 • [Beschrijving wijziging 2]
 
-Open screenshots voor visuele vergelijking:
 ════════════════════════════════════════════════════════════════
-```
-
-```bash
-# Open beide screenshots voor vergelijking
-start .workspace/wireframes/[page]/refine/iteration-{N-1}.png
-start .workspace/wireframes/[page]/refine/iteration-{N}.png
 ```
 
 ### Step 6.5: Continue of Finalize
@@ -1027,11 +1204,11 @@ Als user "Done" kiest → ga naar Step 6.6.
 
 ### Step 6.6: Finalize Wireframe
 
-Maak final.html van de verfijnde wireframe:
+Maak final.html van de refined wireframe:
 
 ```bash
 # Kopieer naar final locatie
-cp .workspace/wireframes/[page]/refine/current.html .workspace/wireframes/[page]/final.html
+cp .workspace/wireframes/[page]/refined/refined.html .workspace/wireframes/[page]/final.html
 
 # Final screenshot
 # Playwright: browser_take_screenshot → final-screenshot.png
@@ -1046,13 +1223,7 @@ Final screenshot: .workspace/wireframes/[page]/final-screenshot.png
 
 Total iterations: {N}
 
-Iteration history:
-  refine/iteration-0.png (original selection)
-  refine/iteration-1.png
-  refine/iteration-2.png
-  ...
-
-Base: [agent]/v2.html → final.html
+Base: refined/refined.html → final.html
 
 ════════════════════════════════════════════════════════════════
 ```
@@ -1071,13 +1242,12 @@ FINAL POST-FLIGHT CHECK
 ### 1. Completeness
 
 ```
-Files: [6/6 wireframes created]
-  ux/v1.html: [✓] {size} bytes
-  ux/v2.html: [✓] {size} bytes
-  minimal/v1.html: [✓] {size} bytes
-  minimal/v2.html: [✓] {size} bytes
-  rich/v1.html: [✓] {size} bytes
-  rich/v2.html: [✓] {size} bytes
+Files: [5/5 wireframes created]
+  agent-a/v1.html: [✓] {size} bytes
+  agent-a/v2.html: [✓] {size} bytes
+  agent-b/v1.html: [✓] {size} bytes
+  agent-b/v2.html: [✓] {size} bytes
+  refined/refined.html: [✓] {size} bytes
 ```
 
 ### 2. Navigation Check
@@ -1086,6 +1256,7 @@ Files: [6/6 wireframes created]
 Navigation links:
   [✓|✗] All relative paths valid
   [✓|✗] Active states correctly set per file
+  [✓|✗] Refined link present and styled
 ```
 
 ### 3. Accessibility Baseline
@@ -1112,7 +1283,7 @@ data-* attributes:
 ════════════════════════════════════════════════════════════════
 FINAL POST-FLIGHT RESULT
 ════════════════════════════════════════════════════════════════
-Completeness:   [✓ 6/6]
+Completeness:   [✓ 5/5]
 Navigation:     [✓ PASS | ✗ FAIL]
 Accessibility:  [✓ PASS | ⚠ {N} warnings]
 Storybook:      [✓ {N} components ready]
@@ -1129,35 +1300,29 @@ Status: [→ Complete | ⚠ Warnings noted]
 .workspace/
 └── wireframes/
     └── [page-name]/
-        ├── requirements.md              # Verzamelde requirements
-        ├── ux/
+        ├── requirements.md              # Verzamelde requirements + project context
+        ├── agent-a/
         │   ├── v1.html
         │   ├── v1-screenshot.png        # Playwright screenshot
         │   ├── v1-snapshot.md           # Accessibility tree
         │   ├── v2.html
         │   ├── v2-screenshot.png
         │   └── v2-snapshot.md
-        ├── minimal/
+        ├── agent-b/
         │   ├── v1.html
         │   ├── v1-screenshot.png
         │   ├── v1-snapshot.md
         │   ├── v2.html
         │   ├── v2-screenshot.png
         │   └── v2-snapshot.md
-        ├── rich/
-        │   ├── v1.html
-        │   ├── v1-screenshot.png
-        │   ├── v1-snapshot.md
-        │   ├── v2.html
-        │   ├── v2-screenshot.png
-        │   └── v2-snapshot.md
-        ├── refine/                      # FASE 6: Refinement workspace
-        │   ├── current.html             # Working copy during refinement
-        │   ├── iteration-0.png          # Original selection screenshot
-        │   ├── iteration-1.png          # After first tweak
-        │   ├── iteration-2.png          # After second tweak
+        ├── refined/
+        │   ├── refined.html             # Auto-combined best elements
+        │   ├── refined-screenshot.png   # Initial refined screenshot
+        │   ├── refined-snapshot.md      # Accessibility tree
+        │   ├── iteration-1.png          # After first tweak (if any)
+        │   ├── iteration-2.png          # After second tweak (if any)
         │   └── ...                      # Additional iterations
-        ├── final.html                   # Final refined wireframe (handoff to /style)
+        ├── final.html                   # Final wireframe (handoff to /style)
         ├── final-screenshot.png         # Final wireframe screenshot
         └── storybook/                   # Optional
             └── components.md
@@ -1174,9 +1339,8 @@ Status: [→ Complete | ⚠ Warnings noted]
 | Failure | Recovery |
 |---------|----------|
 | 1 agent timeout | Retry that agent only |
-| 2 agents timeout | Sequential mode for remaining |
-| All 3 timeout | Fall back to single sequential agent |
-| Task tool unavailable | Single agent makes 3 styles |
+| Both agents timeout | Fall back to single sequential agent |
+| Task tool unavailable | Single agent makes 2 variants sequentially |
 
 ### Output Failures
 
@@ -1190,10 +1354,10 @@ Status: [→ Complete | ⚠ Warnings noted]
 ### Graceful Degradation Sequence
 
 ```
-Level 1: 3 parallel agents, 2 rounds → 6 wireframes (default)
-Level 2: 2 parallel agents, 2 rounds → 4 wireframes
-Level 3: 3 sequential agents, 1 round → 3 wireframes
-Level 4: 1 agent, 3 styles sequential → 3 wireframes
+Level 1: 2 parallel agents, 2 rounds + refine → 5 wireframes (default)
+Level 2: 2 sequential agents, 2 rounds + refine → 5 wireframes
+Level 3: 1 agent, 2 variants, 1 round + refine → 3 wireframes
+Level 4: 1 agent, 2 variants sequential → 2 wireframes
 Level 5: Template only, user fills in → 1 template
 ```
 
@@ -1211,11 +1375,12 @@ Level 5: Template only, user fills in → 1 template
 
 Update devinfo at each phase:
 - `PREFLIGHT` → session started
-- `FASE1` → requirements captured
+- `FASE1` → requirements captured (including project context)
 - `FASE2` → files created (v1)
 - `FASE3` → reflection complete
 - `FASE4` → files created (v2)
-- `FASE5` → user selection
+- `FASE5` → refined version created
+- `FASE6` → user review complete
 - `COMPLETE` → handoff ready
 
 ### Completion Handoff
@@ -1230,10 +1395,11 @@ Update devinfo at each phase:
       "finalScreenshot": ".workspace/wireframes/[page]/final-screenshot.png",
       "refinement": {
         "iterations": 3,
-        "originalSelection": {
-          "agent": "ux | minimal | rich",
-          "version": "v2",
-          "path": ".workspace/wireframes/[page]/[agent]/v2.html"
+        "basis": "agent-a/v2",
+        "combinedElements": {
+          "header": "agent-b/v2",
+          "contentGrid": "agent-a/v2",
+          "footer": "agent-b/v1"
         }
       },
       "atomicLevel": "organism",
@@ -1243,7 +1409,12 @@ Update devinfo at each phase:
         { "name": "MetricCard", "atomic": "molecule" }
       ],
       "themeApplied": true,
-      "themeFile": ".workspace/config/THEME.md"
+      "themeFile": ".workspace/config/THEME.md",
+      "projectContext": {
+        "framework": "Next.js 14",
+        "uiLibrary": "Tailwind CSS",
+        "existingComponents": ["Button", "Card", "Header"]
+      }
     }
   }
 }
@@ -1265,17 +1436,18 @@ Expects from /theme (if theme integration selected):
 Guarantees at completion:
 - `.workspace/wireframes/[page]/final.html` exists (refined wireframe)
 - `.workspace/wireframes/[page]/final-screenshot.png` exists
-- All 6 wireframe variants preserved in agent folders (ux/, minimal/, rich/)
+- All 4 wireframe variants preserved in agent folders (agent-a/, agent-b/)
+- Refined version at `refined/refined.html`
 - Contains data-component, data-variant, data-atomic attributes
-- Navigation links functional
-- Handoff data in devinfo with refinement history
+- Navigation links functional (including Refined link)
+- Handoff data in devinfo with refinement history and project context
 
 ### Suggested Next
 
 ```
 ✅ WIREFRAMES COMPLETE
 
-Selected: [agent] v2
+Refined: User-selected elements from 4 variants
 Components: [N] identified
 Atomic level: [level]
 
@@ -1320,8 +1492,12 @@ Dit command moet **NOOIT**:
 - Gedeeltelijke outputs als "complete" markeren
 
 Dit command moet **ALTIJD**:
+- Project context scannen VOOR requirements gathering
+- Project context meesturen in agent briefings
 - Pre-flight validation uitvoeren VOOR agents
 - Na elke agent ronde valideren
+- Gebruiker laten kiezen welke elementen in de refined versie komen
+- Refined versie opnemen in nav balk
 - Retry aanbieden bij partial failures
 - Graceful degradation bij persistent failures
 - DevInfo updaten bij elke fase transitie

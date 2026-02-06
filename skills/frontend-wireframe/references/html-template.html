@@ -53,6 +53,18 @@
       color: #4a4a6a;
       margin: 0 5px;
     }
+    .wireframe-nav-links a.refined-link {
+      background: #3a5a3a;
+      color: #8c8;
+    }
+    .wireframe-nav-links a.refined-link:hover {
+      background: #4a6a4a;
+      color: #fff;
+    }
+    .wireframe-nav-links a.refined-link.active {
+      background: #4a8a4a;
+      color: #fff;
+    }
 
     /* ========================================
        THEME INTEGRATION - CSS VARIABLES
@@ -214,14 +226,13 @@
   <div class="wireframe-nav">
     <span class="wireframe-title">{{PAGE_NAME}} Wireframes</span>
     <div class="wireframe-nav-links">
-      <a href="../ux/v1.html" {{ACTIVE_UX_V1}}>UX v1</a>
-      <a href="../ux/v2.html" {{ACTIVE_UX_V2}}>UX v2</a>
+      <a href="../agent-a/v1.html" {{ACTIVE_A_V1}}>A v1</a>
+      <a href="../agent-b/v1.html" {{ACTIVE_B_V1}}>B v1</a>
       <span class="sep">|</span>
-      <a href="../minimal/v1.html" {{ACTIVE_MIN_V1}}>Min v1</a>
-      <a href="../minimal/v2.html" {{ACTIVE_MIN_V2}}>Min v2</a>
+      <a href="../agent-a/v2.html" {{ACTIVE_A_V2}}>A v2</a>
+      <a href="../agent-b/v2.html" {{ACTIVE_B_V2}}>B v2</a>
       <span class="sep">|</span>
-      <a href="../rich/v1.html" {{ACTIVE_RICH_V1}}>Rich v1</a>
-      <a href="../rich/v2.html" {{ACTIVE_RICH_V2}}>Rich v2</a>
+      <a href="../refined/refined.html" {{ACTIVE_REFINED}} class="refined-link">Refined</a>
     </div>
   </div>
 
