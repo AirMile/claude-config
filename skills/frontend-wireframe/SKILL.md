@@ -712,6 +712,10 @@ REFERENCE PATTERNS:
 - Desktop patterns (primary)
 - Mobile patterns (responsive)
 
+CRITICAL: Het template bevat Edit Mode code (CSS, JS, interact.js CDN).
+Verwijder deze NIET en wijzig ze NIET. Edit Mode wordt door gebruikers
+gebruikt na generatie voor drag/resize/text editing.
+
 YOUR TASK: Create a unique wireframe layout. Focus on a different structural
 approach than the other agent. Explore alternative arrangements of the
 required elements while keeping all requirements intact.
@@ -979,6 +983,8 @@ start .workspace/wireframes/[page-name]/agent-a/v1.html
 | B v2 | [verbeteringen t.o.v. B v1] |
 
 Bekijk alle versies via de nav balk in je browser.
+Gebruik de "Edit Mode" knop om elementen te verslepen,
+te resizen, of tekst direct te bewerken.
 
 ════════════════════════════════════════════════════════════════
 ```
@@ -1108,6 +1114,32 @@ Je kunt alle versies vergelijken via de nav balk:
 ## FASE 6: Review & Tweak (Optional)
 
 > **Doel:** Iteratief de refined wireframe tweaken tot user satisfied is.
+> **Tip:** De gebruiker kan ook direct in de browser editen via de "Edit Mode" toggle
+> in de nav balk. Drag componenten, resize elementen, en bewerk tekst direct.
+> Daarna kan de gebruiker de aangepaste wireframe downloaden via "Download HTML".
+
+### Edit Mode Features
+
+Alle wireframes bevatten een ingebouwde Edit Mode met de volgende features:
+
+**Sub-modes:**
+- **Layout mode** (blauw): Drag componenten om te verplaatsen, resize vanuit randen (interact.js edge detection, margin 20px)
+- **Text mode** (oranje): Klik op tekst elementen om direct te bewerken (contenteditable)
+
+**Toolbar knoppen:**
+- **+ Add**: Voeg een nieuw component toe via click-to-place (crosshair cursor, Esc om te annuleren)
+- **Undo**: Herstel laatste actie (ook via Ctrl+Z / Cmd+Z). Snapshot-based, max 20 stappen
+- **Redo**: Herstel ongedaan gemaakte actie (Ctrl+Shift+Z / Ctrl+Y / Cmd+Shift+Z). Nieuwe acties wissen redo history
+- **Download HTML**: Exporteert schone HTML (stript transform, data-x/y, inline resize styles)
+- **Reset**: Herlaad de originele wireframe
+
+**Delete component:** Elk component heeft een × knop op de edit handle (alleen zichtbaar in Layout mode). Vraagt om bevestiging.
+
+**Beperkingen:**
+- Undo/Redo werkt alleen voor Layout-acties (drag, resize, add, delete) — niet voor tekst edits
+- Maximaal 20 undo stappen
+- Nieuwe acties wissen de redo stack (branch invalidation)
+- Bij "Reset" gaat alle undo/redo history verloren
 
 ### Step 6.1: Ask for Review
 
@@ -1143,9 +1175,13 @@ header: "Refinement"
 question: "Wat wil je aanpassen aan deze wireframe?"
 options:
   - label: "Done - wireframe is klaar", description: "Afronden en final.html maken"
+  - label: "Ik heb in de browser geëdit", description: "Ik upload mijn gedownloade wireframe-edited.html"
 multiSelect: false
 # User kan "Other" kiezen voor tekst input met beschrijving van wijzigingen
 ```
+
+**Als user "Ik heb in de browser geëdit" kiest:**
+De gebruiker heeft via Edit Mode in de browser aanpassingen gedaan en een `wireframe-edited.html` gedownload. Vraag om het pad naar dit bestand, lees het in, en gebruik het als de nieuwe basis voor `refined/refined.html`.
 
 **Voorbeelden van instructies (via "Other" tekst input):**
 - "Maak de header kleiner, 60px hoogte"
@@ -1268,7 +1304,17 @@ Accessibility (RULES.md H002, H006):
   [⚠] Color contrast: [N/A for grayscale | verified for theme]
 ```
 
-### 4. Storybook Readiness
+### 4. Edit Mode Intact
+
+```
+Edit mode present (for user post-generation editing):
+  [✓|✗] interact.js CDN script tag present
+  [✓|✗] Edit toggle button in nav bar
+  [✓|✗] Edit toolbar with Layout/Text/Add/Undo/Redo/Download/Reset
+  [✓|✗] Edit mode CSS classes (edit-handle, edit-toolbar, etc.)
+```
+
+### 5. Storybook Readiness
 
 ```
 data-* attributes:
@@ -1286,6 +1332,7 @@ FINAL POST-FLIGHT RESULT
 Completeness:   [✓ 5/5]
 Navigation:     [✓ PASS | ✗ FAIL]
 Accessibility:  [✓ PASS | ⚠ {N} warnings]
+Edit mode:      [✓ Edit mode intact for user editing]
 Storybook:      [✓ {N} components ready]
 
 Status: [→ Complete | ⚠ Warnings noted]
@@ -1490,6 +1537,7 @@ Dit command moet **NOOIT**:
 - Doorgaan als template corrupt is
 - Post-flight validation overslaan
 - Gedeeltelijke outputs als "complete" markeren
+- Edit mode code (interact.js, CSS, JS) verwijderen uit templates — dit is essentieel voor gebruikers
 
 Dit command moet **ALTIJD**:
 - Project context scannen VOOR requirements gathering

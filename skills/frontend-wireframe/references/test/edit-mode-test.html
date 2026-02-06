@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{PAGE_NAME}} - {{AGENT_NAME}} {{VERSION}}</title>
+  <title>Dashboard - Edit Mode Test</title>
   <style>
     /* ========================================
        WIREFRAME NAVIGATION - DO NOT MODIFY
-       This ensures consistent navigation across all wireframes
        ======================================== */
     .wireframe-nav {
       position: fixed;
@@ -66,41 +65,16 @@
       color: #fff;
     }
 
-    /* ========================================
-       THEME INTEGRATION - CSS VARIABLES
-       Default: Low-fidelity grayscale
-       Override: Values from THEME.md or brand preset
-       ======================================== */
     :root {
-      /* Main Colors - Default Grayscale */
       --wf-dark: #333;
       --wf-light: #f5f5f5;
       --wf-mid-gray: #888;
       --wf-light-gray: #e0e0e0;
-
-      /* Accent Colors - Default Grayscale */
       --wf-accent-primary: #666;
-      --wf-accent-secondary: #777;
-      --wf-accent-tertiary: #999;
-
-      /* Typography - Default System Fonts */
       --wf-font-heading: Arial, sans-serif;
       --wf-font-body: Arial, sans-serif;
-      --wf-font-mono: Consolas, monospace;
-
-      /* Semantic Colors */
-      --wf-success: #6a6;
-      --wf-warning: #a86;
-      --wf-error: #a66;
-      --wf-info: #68a;
-
-      /* Theme Override Section - Replace when theme available */
-      {{THEME_VARIABLES}}
     }
 
-    /* ========================================
-       BASE STYLES
-       ======================================== */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: var(--wf-font-body);
@@ -110,40 +84,9 @@
       min-height: 100vh;
       display: flex;
       justify-content: center;
-      padding-left: 20px;
-      padding-right: 20px;
-      padding-bottom: 20px;
+      padding: 70px 20px 60px;
     }
 
-    /* ========================================
-       PHONE FRAME (for mobile wireframes)
-       ======================================== */
-    .phone-frame {
-      width: 375px;
-      min-height: 700px;
-      background: #fff;
-      border: 3px solid var(--wf-dark);
-      border-radius: 32px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .status-bar {
-      height: 44px;
-      background: var(--wf-light-gray);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      color: var(--wf-mid-gray);
-      border-bottom: 1px solid var(--wf-mid-gray);
-    }
-
-    /* ========================================
-       DESKTOP FRAME (for desktop wireframes)
-       Use class="desktop-frame" instead of phone-frame
-       ======================================== */
     .desktop-frame {
       width: 100%;
       max-width: 1200px;
@@ -157,67 +100,98 @@
     }
 
     /* ========================================
-       LOW-FIDELITY WIREFRAME COLOR CLASSES
-       Use these classes for consistent wireframe styling
+       TEST WIREFRAME CONTENT STYLES
        ======================================== */
-
-    /* Backgrounds */
-    .wf-bg-dark { background-color: var(--wf-dark); }
-    .wf-bg-light { background-color: var(--wf-light); }
-    .wf-bg-mid { background-color: var(--wf-mid-gray); }
-    .wf-bg-subtle { background-color: var(--wf-light-gray); }
-    .wf-bg-accent { background-color: var(--wf-accent-primary); }
-
-    /* Text */
-    .wf-text-dark { color: var(--wf-dark); }
-    .wf-text-light { color: var(--wf-light); }
-    .wf-text-mid { color: var(--wf-mid-gray); }
-    .wf-text-accent { color: var(--wf-accent-primary); }
-
-    /* Borders */
-    .wf-border { border: 1px solid var(--wf-mid-gray); }
-    .wf-border-dark { border: 1px solid var(--wf-dark); }
-    .wf-border-subtle { border: 1px solid var(--wf-light-gray); }
-
-    /* Typography */
-    .wf-heading {
-      font-family: var(--wf-font-heading);
-      font-weight: bold;
+    .wf-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: var(--wf-dark);
+      color: #fff;
     }
-    .wf-body {
-      font-family: var(--wf-font-body);
-    }
-    .wf-mono {
-      font-family: var(--wf-font-mono);
+    .wf-header-logo { font-weight: bold; font-size: 18px; }
+    .wf-header-nav { display: flex; gap: 16px; }
+    .wf-header-nav a { color: #ccc; text-decoration: none; font-size: 14px; }
+    .wf-header-user {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--wf-mid-gray);
     }
 
-    /* Accent cycling for shapes/elements */
-    .wf-accent-1 { background-color: var(--wf-accent-primary); }
-    .wf-accent-2 { background-color: var(--wf-accent-secondary); }
-    .wf-accent-3 { background-color: var(--wf-accent-tertiary); }
+    .wf-content { padding: 24px; flex: 1; }
 
-    /* Placeholder elements */
-    .wf-placeholder {
-      background-color: var(--wf-light-gray);
-      border: 2px dashed var(--wf-mid-gray);
+    .wf-page-title { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+
+    .wf-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .wf-kpi-card {
+      background: var(--wf-light);
+      border: 1px solid var(--wf-light-gray);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .wf-kpi-label { font-size: 12px; color: var(--wf-mid-gray); margin-bottom: 4px; }
+    .wf-kpi-value { font-size: 28px; font-weight: bold; }
+    .wf-kpi-change { font-size: 11px; color: #6a6; margin-top: 4px; }
+
+    .wf-chart-area {
+      background: var(--wf-light);
+      border: 1px solid var(--wf-light-gray);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+      min-height: 200px;
+    }
+    .wf-chart-title { font-size: 16px; font-weight: bold; margin-bottom: 16px; }
+    .wf-chart-placeholder {
+      height: 150px;
+      background: linear-gradient(135deg, var(--wf-light-gray) 25%, var(--wf-mid-gray) 25%, var(--wf-mid-gray) 50%, var(--wf-light-gray) 50%, var(--wf-light-gray) 75%, var(--wf-mid-gray) 75%);
+      background-size: 20px 20px;
+      border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: var(--wf-mid-gray);
+      font-size: 14px;
+    }
+
+    .wf-table-container {
+      background: var(--wf-light);
+      border: 1px solid var(--wf-light-gray);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .wf-table-title { font-size: 16px; font-weight: bold; margin-bottom: 16px; }
+    .wf-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .wf-table th, .wf-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--wf-light-gray);
+      font-size: 13px;
+    }
+    .wf-table th {
+      font-weight: bold;
+      color: var(--wf-mid-gray);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .wf-footer {
+      padding: 16px 24px;
+      background: var(--wf-light);
+      border-top: 1px solid var(--wf-light-gray);
+      text-align: center;
       font-size: 12px;
+      color: var(--wf-mid-gray);
     }
-
-    .wf-image-placeholder {
-      background: linear-gradient(135deg, var(--wf-light-gray) 25%, var(--wf-mid-gray) 25%, var(--wf-mid-gray) 50%, var(--wf-light-gray) 50%, var(--wf-light-gray) 75%, var(--wf-mid-gray) 75%);
-      background-size: 20px 20px;
-    }
-
-    /* ========================================
-       WIREFRAME CONTENT STYLES
-       Agent adds component-specific styles below
-       ======================================== */
-
-    {{COMPONENT_STYLES}}
 
     /* ========================================
        EDIT MODE - Interactive wireframe editing
@@ -365,7 +339,6 @@
     .edit-btn-download { background: #4a8a4a; color: #fff; }
     .edit-btn-download:hover { background: #5a9a5a; }
     .edit-btn-reset { background: #8a4a4a; color: #fff; }
-    .edit-btn-reset:hover { background: #9a5a5a; }
     .edit-btn-add { background: #4a90d9; color: #fff; font-weight: bold; }
     .edit-btn-add:hover { background: #5aa0e9; }
     .edit-btn-undo { background: #6a6a9a; color: #fff; }
@@ -389,36 +362,130 @@
       justify-content: center;
     }
     .edit-handle-delete:hover { background: #c44; }
+    .edit-btn-reset:hover { background: #9a5a5a; }
 
   </style>
 </head>
 <body>
-  <!-- Navigation - COPY EXACTLY, only change class="active" placement -->
+  <!-- Navigation -->
   <div class="wireframe-nav">
-    <span class="wireframe-title">{{PAGE_NAME}} Wireframes</span>
+    <span class="wireframe-title">Dashboard Wireframes</span>
     <div class="wireframe-nav-links">
-      <a href="../agent-a/v1.html" {{ACTIVE_A_V1}}>A v1</a>
-      <a href="../agent-b/v1.html" {{ACTIVE_B_V1}}>B v1</a>
+      <a href="#">A v1</a>
+      <a href="#">B v1</a>
       <span class="sep">|</span>
-      <a href="../agent-a/v2.html" {{ACTIVE_A_V2}}>A v2</a>
-      <a href="../agent-b/v2.html" {{ACTIVE_B_V2}}>B v2</a>
+      <a href="#">A v2</a>
+      <a href="#">B v2</a>
       <span class="sep">|</span>
-      <a href="../refined/refined.html" {{ACTIVE_REFINED}} class="refined-link">Refined</a>
+      <a href="#" class="refined-link active">Refined</a>
     </div>
     <button id="edit-toggle" class="edit-toggle">Edit Mode</button>
   </div>
 
-  <!-- Phone frame wrapper for mobile wireframes -->
-  <!-- Use class="desktop-frame" for desktop wireframes -->
-  <div class="phone-frame">
-    <div class="status-bar">9:41</div>
+  <!-- Desktop wireframe -->
+  <div class="desktop-frame">
 
-    <!-- ========================================
-         WIREFRAME CONTENT
-         Agent builds the wireframe layout here
-         ======================================== -->
+    <!-- Header -->
+    <div data-component="Header" data-atomic="organism" class="wf-header">
+      <span class="wf-header-logo">AppName</span>
+      <div class="wf-header-nav">
+        <a href="#">Dashboard</a>
+        <a href="#">Campaigns</a>
+        <a href="#">Reports</a>
+        <a href="#">Settings</a>
+      </div>
+      <div class="wf-header-user"></div>
+    </div>
 
-    {{WIREFRAME_CONTENT}}
+    <div class="wf-content">
+
+      <!-- Page Title -->
+      <div data-component="PageTitle" data-atomic="atom">
+        <h1 class="wf-page-title">Marketing Dashboard</h1>
+      </div>
+
+      <!-- KPI Cards -->
+      <div data-component="KPIGrid" data-atomic="organism" class="wf-kpi-grid">
+        <div class="wf-kpi-card">
+          <p class="wf-kpi-label">Total Spend</p>
+          <p class="wf-kpi-value">$12,450</p>
+          <p class="wf-kpi-change">+8.2% vs last month</p>
+        </div>
+        <div class="wf-kpi-card">
+          <p class="wf-kpi-label">Conversions</p>
+          <p class="wf-kpi-value">1,247</p>
+          <p class="wf-kpi-change">+12.5% vs last month</p>
+        </div>
+        <div class="wf-kpi-card">
+          <p class="wf-kpi-label">ROI</p>
+          <p class="wf-kpi-value">342%</p>
+          <p class="wf-kpi-change">+2.1% vs last month</p>
+        </div>
+        <div class="wf-kpi-card">
+          <p class="wf-kpi-label">Avg CTR</p>
+          <p class="wf-kpi-value">3.8%</p>
+          <p class="wf-kpi-change">-0.3% vs last month</p>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div data-component="TrendChart" data-atomic="molecule" class="wf-chart-area">
+        <h2 class="wf-chart-title">Conversions Over Time</h2>
+        <div class="wf-chart-placeholder">[Line Chart - Last 30 Days]</div>
+      </div>
+
+      <!-- Table -->
+      <div data-component="CampaignTable" data-atomic="organism" class="wf-table-container">
+        <h2 class="wf-table-title">Top Campaigns</h2>
+        <table class="wf-table">
+          <thead>
+            <tr>
+              <th>Campaign</th>
+              <th>Spend</th>
+              <th>Clicks</th>
+              <th>Conversions</th>
+              <th>ROI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Summer Sale 2024</td>
+              <td>$3,200</td>
+              <td>8,450</td>
+              <td>342</td>
+              <td>425%</td>
+            </tr>
+            <tr>
+              <td>Brand Awareness Q1</td>
+              <td>$2,800</td>
+              <td>12,300</td>
+              <td>289</td>
+              <td>310%</td>
+            </tr>
+            <tr>
+              <td>Product Launch</td>
+              <td>$4,100</td>
+              <td>6,780</td>
+              <td>456</td>
+              <td>380%</td>
+            </tr>
+            <tr>
+              <td>Retargeting</td>
+              <td>$1,500</td>
+              <td>3,200</td>
+              <td>178</td>
+              <td>520%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div data-component="Footer" data-atomic="organism" class="wf-footer">
+      <p>AppName Dashboard v1.0 - Low-fidelity wireframe</p>
+    </div>
 
   </div>
 
