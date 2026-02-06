@@ -28,7 +28,9 @@ dev-legacy:
 
 frontend:
   - frontend-seo
+  - frontend-style
   - frontend-theme
+  - frontend-validate
   - frontend-wireframe
 
 game:

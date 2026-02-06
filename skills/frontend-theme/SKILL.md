@@ -21,7 +21,119 @@ Dit command beheert de `THEME.md` file die design tokens bevat (colors, typograp
 - Tokens extraheren uit Tailwind/CSS config
 - Dark/light mode toevoegen of aanpassen
 
+---
+
+## State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> PREFLIGHT: /theme invoked
+
+    PREFLIGHT --> ACTION_SELECT: validation pass
+    PREFLIGHT --> ERROR: validation fail
+
+    ACTION_SELECT --> CREATE: "Aanmaken"
+    ACTION_SELECT --> VIEW: "Bekijken"
+    ACTION_SELECT --> UPDATE: "Updaten"
+    ACTION_SELECT --> EXTRACT: "Extraheren"
+    ACTION_SELECT --> MODES: "Modes"
+    ACTION_SELECT --> DELETE: "Verwijderen"
+
+    CREATE --> CONFIRM: all steps complete
+    VIEW --> [*]: display only (no state change)
+    UPDATE --> CONFIRM: changes ready
+    EXTRACT --> CONFIRM: tokens parsed
+    MODES --> CONFIRM: mode configured
+    DELETE --> CONFIRM: user confirmed
+
+    CONFIRM --> POSTFLIGHT: user confirms "Ja"
+    CONFIRM --> ACTION_SELECT: user selects "Aanpassen"
+    CONFIRM --> [*]: user selects "Annuleren"
+
+    POSTFLIGHT --> COMPLETE: validation pass
+    POSTFLIGHT --> RECOVER: validation fail
+
+    COMPLETE --> [*]
+
+    ERROR --> RECOVER
+    RECOVER --> PREFLIGHT: retry
+    RECOVER --> [*]: abort
+```
+
+**State Descriptions:**
+- **PREFLIGHT**: Validate resources and dependencies
+- **ACTION_SELECT**: User chooses CRUD operation
+- **CREATE/UPDATE/EXTRACT/MODES/DELETE**: Execute selected operation
+- **VIEW**: Read-only display (no state mutation)
+- **CONFIRM**: User reviews and confirms changes
+- **POSTFLIGHT**: Validate output
+- **COMPLETE**: Success, prepare handoff
+- **ERROR/RECOVER**: Handle failures
+
+---
+
 ## Workflow
+
+### FASE 0: Pre-flight Validation
+
+**Voer deze checks uit VOORDAT de workflow begint.**
+
+```
+PRE-FLIGHT CHECK
+════════════════════════════════════════════════
+```
+
+**1. Directory Check**
+```bash
+# Verify .workspace/config/ exists or can be created
+```
+
+```
+Directory: [✓|✗] .workspace/config/ - [exists|created|error]
+```
+
+**2. Session Check**
+```bash
+# Check .workspace/session/devinfo.json
+```
+
+```
+Session: [✓|✗] [New session | Continuing from {skill}]
+Handoff: [✓|✗] [data available | not applicable]
+```
+
+**3. Conflict Check (voor Create/Update)**
+```
+Conflicts: [✓|✗] THEME.md - [not exists | exists (will warn) | locked]
+```
+
+**Pre-flight Samenvatting:**
+```
+════════════════════════════════════════════════
+PRE-FLIGHT RESULT
+════════════════════════════════════════════════
+Directory:  [✓ PASS | ✗ FAIL]
+Session:    [✓ PASS | ✗ FAIL]
+Conflicts:  [✓ PASS | ⚠ WARNING | ✗ FAIL]
+
+Status: [→ Ready to proceed | ⚠ Warning: {issue} | ✗ Cannot proceed]
+════════════════════════════════════════════════
+```
+
+**On Failure:**
+
+**AskUserQuestion:**
+```yaml
+header: "Pre-flight Failed"
+question: "Pre-flight check mislukt: {reason}. Hoe wil je doorgaan?"
+options:
+  - label: "Fix en retry (Recommended)", description: "Los probleem op en probeer opnieuw"
+  - label: "Doorgaan anyway", description: "Negeer warning en ga door"
+  - label: "Annuleren", description: "Stop workflow"
+multiSelect: false
+```
+
+---
 
 ### FASE 1: Actie Selectie
 
@@ -211,7 +323,7 @@ multiSelect: false
 1. Lees `THEME_TEMPLATE.md` uit resources
 2. Vul template in met user values
 3. Schrijf naar `.workspace/config/THEME.md`
-4. Toon bevestiging
+4. → Ga naar FASE X: Post-flight Validation
 
 ---
 
@@ -259,7 +371,26 @@ options:
   - label: "Klaar", description: "Terug naar conversation"
   - label: "Updaten", description: "Wijzigingen maken"
   - label: "Exporteren", description: "Toon als CSS variables"
+  - label: "Visual Preview", description: "Open theme preview in browser"
 multiSelect: false
+```
+
+**If "Visual Preview":**
+
+```
+THEME PREVIEW
+═════════════
+
+Generating preview page...
+
+1. Create temporary preview HTML:
+   - Inject CSS variables from THEME.md
+   - Include color swatches, typography samples, spacing demo
+
+2. Open in default browser:
+   start [temp-path]/theme-preview.html
+
+(If dark mode configured: include toggle button in preview)
 ```
 
 ---
@@ -285,6 +416,7 @@ multiSelect: true
 - Vraag nieuwe waarden (zelfde flow als Aanmaken)
 - Toon diff preview
 - Bevestig wijziging
+- → Ga naar FASE X: Post-flight Validation
 
 ---
 
@@ -328,6 +460,7 @@ multiSelect: false
 2. Map naar THEME.md structuur
 3. Toon preview van geëxtraheerde tokens
 4. Vraag bevestiging (zelfde als Aanmaken Stap 5)
+5. → Ga naar FASE X: Post-flight Validation
 
 ---
 
@@ -364,6 +497,52 @@ multiSelect: false
 - Genereer dark variants van huidige kleuren
 - Toon preview
 - Vraag bevestiging
+- → Ga naar FASE X: Post-flight Validation
+
+#### Mode Comparison
+
+After mode configuration, show side-by-side comparison:
+
+```
+MODE COMPARISON
+═══════════════
+
+1. Generate comparison HTML:
+   - Left panel: Light mode
+   - Right panel: Dark mode
+   - Same content in both
+
+2. Open in default browser:
+   start [temp-path]/mode-comparison.html
+
+Layout: [Light Mode] | [Dark Mode] side-by-side
+```
+
+**Output:**
+```
+MODE COMPARISON READY
+─────────────────────
+Colors compared:
+  Background: #ffffff ↔ #1a1a2e
+  Foreground: #1a1a2e ↔ #f5f5f5
+  Primary:    #3B82F6 ↔ #60A5FA
+  ...
+
+Contrast check:
+  Primary on background: 4.8:1 ✓ (AA pass)
+  Text on background: 7.2:1 ✓ (AAA pass)
+
+Opening comparison in browser...
+```
+
+**AskUserQuestion (after preview opens):**
+```yaml
+header: "Mode Preview"
+question: "Bekijk de light/dark vergelijking in browser. Tevreden?"
+options:
+  - label: "Ja, opslaan (Recommended)", description: "Bevestig mode configuratie"
+  - label: "Aanpassen", description: "Wijzig kleuren"
+```
 
 ---
 
@@ -381,9 +560,82 @@ multiSelect: false
 
 ---
 
+### FASE X: Post-flight Validation
+
+**Voer deze checks uit NA elke write operatie (Create/Update/Extract/Modes).**
+
+```
+POST-FLIGHT CHECK
+════════════════════════════════════════════════
+```
+
+**1. File Validation**
+```
+File: [✓|✗] .workspace/config/THEME.md - [exists|missing|empty]
+Size: [✓|✗] {N} bytes - [valid|suspicious]
+Format: [✓|✗] Markdown - [valid|corrupt]
+```
+
+**2. Content Validation**
+```
+Sections:
+  [✓|✗] Colors - [present|missing]
+  [✓|✗] Typography - [present|missing]
+  [✓|✗] Spacing - [present|missing]
+  [✓|✗] Breakpoints - [present|missing]
+```
+
+**3. Value Validation**
+```
+Colors:
+  [✓|✗] All hex codes valid (#RRGGBB format)
+  [✓|✗] No empty values
+Typography:
+  [✓|✗] Font families have fallbacks
+Spacing:
+  [✓|✗] All values numeric with unit
+```
+
+**4. Export Validation**
+```
+CSS Export:
+  [✓|✗] CSS Variables section present
+  [✓|✗] Syntax valid
+  [✓|✗] Matches token table
+```
+
+**Post-flight Samenvatting:**
+```
+════════════════════════════════════════════════
+POST-FLIGHT RESULT
+════════════════════════════════════════════════
+File:      [✓ PASS | ✗ FAIL]
+Content:   [✓ PASS | ✗ FAIL] - {N}/{M} sections
+Values:    [✓ PASS | ⚠ WARNINGS | ✗ FAIL]
+Export:    [✓ PASS | ✗ FAIL]
+
+Status: [→ Complete | ⚠ Warnings: {list} | ✗ Recovery needed]
+════════════════════════════════════════════════
+```
+
+**On Failure:**
+
+**AskUserQuestion:**
+```yaml
+header: "Post-flight Failed"
+question: "Validatie vond problemen: {issues}. Wat nu?"
+options:
+  - label: "Auto-fix (Recommended)", description: "Probeer automatisch te repareren"
+  - label: "Handmatig fixen", description: "Bekijk en fix problemen"
+  - label: "Negeren", description: "Accepteer output ondanks problemen"
+multiSelect: false
+```
+
+---
+
 ## Output Formaat
 
-**Na elke actie:**
+**Na succesvolle actie:**
 ```
 ✅ THEME [AANGEMAAKT/BIJGEWERKT/VERWIJDERD]
 
@@ -396,6 +648,112 @@ Locatie: .workspace/config/THEME.md
 | Spacing | {N} |
 | Breakpoints | {N} |
 | Modes | {light/dark/both} |
+
+Next suggested: /wireframe
+```
+
+---
+
+## Error Recovery
+
+> Zie ook: `skills/shared/VALIDATION.md` voor algemene recovery patterns.
+
+### Extraction Failures
+
+| Error | Recovery |
+|-------|----------|
+| Config file niet gevonden | Offer manual path input |
+| Parse error in config | Toon raw content, vraag format hint |
+| Geen tokens gevonden | Offer defaults + manual input |
+| Tailwind v3 vs v4 verschil | Detecteer versie, pas parser aan |
+
+### Write Failures
+
+| Error | Recovery |
+|-------|----------|
+| Permission denied | Suggest alternative path |
+| Disk full | Warn, suggest cleanup |
+| Directory niet creëerbaar | Offer manual creation instructions |
+
+### Validation Failures
+
+| Error | Auto-fix | Manual |
+|-------|----------|--------|
+| Invalid hex code | Suggest closest valid | Show invalid, ask correction |
+| Missing section | Add with defaults | Ask for values |
+| Empty value | Use default | Ask for value |
+| CSS syntax error | Re-generate export | Show error location |
+
+> **Note:** Rollback wordt afgehandeld door Claude Code's ingebouwde "Rewind" functie.
+
+---
+
+## DevInfo Integration
+
+> Zie ook: `skills/shared/DEVINFO.md` voor volledige specificatie.
+
+### Session Initialization
+
+Bij skill start:
+```json
+{
+  "currentSkill": {
+    "name": "frontend-theme",
+    "phase": "PREFLIGHT",
+    "startedAt": "ISO timestamp"
+  }
+}
+```
+
+### Progress Updates
+
+Update devinfo bij elke fase transitie:
+- `PREFLIGHT` → `ACTION_SELECT`
+- `ACTION_SELECT` → `CREATE|UPDATE|EXTRACT|MODES|DELETE`
+- `CONFIRM` → `POSTFLIGHT`
+- `POSTFLIGHT` → `COMPLETE`
+
+### Completion Handoff
+
+Bij succesvolle completion:
+```json
+{
+  "handoff": {
+    "from": "frontend-theme",
+    "to": "frontend-wireframe",
+    "data": {
+      "themeFile": ".workspace/config/THEME.md",
+      "preset": "Anthropic Style | Custom",
+      "tokens": {
+        "colors": 12,
+        "typography": 3,
+        "spacing": 9
+      },
+      "modes": ["light", "dark"],
+      "cssExportValid": true
+    }
+  }
+}
+```
+
+---
+
+## Cross-Skill Integration
+
+### Output Contract (theme → wireframe)
+
+Deze skill garandeert bij completion:
+- `.workspace/config/THEME.md` bestaat
+- Bevat valid sections: Colors, Typography, Spacing, Breakpoints
+- CSS export section is syntactically valid
+- Handoff data beschikbaar in devinfo
+
+### Suggested Next
+
+Na succesvolle theme creatie/update:
+```
+Next suggested: /wireframe
+Theme tokens ready for wireframe integration.
 ```
 
 ---
@@ -404,58 +762,24 @@ Locatie: .workspace/config/THEME.md
 
 - `skills/frontend-theme/references/THEME_TEMPLATE.md` - Template voor nieuwe theme
 - `skills/shared/brand-presets.md` - Voorgedefinieerde brand presets
-
----
-
-## Error Handling
-
-**Config file niet gevonden bij extractie:**
-```
-⚠️ GEEN CONFIG GEVONDEN
-
-Geen Tailwind of CSS variable config gedetecteerd.
-```
-
-**AskUserQuestion:**
-```yaml
-header: "Not Found"
-question: "Geen config gevonden. Wat wil je doen?"
-options:
-  - label: "Handmatig aanmaken (Recommended)", description: "Maak theme met guided setup"
-  - label: "Pad opgeven", description: "Geef locatie van config file"
-  - label: "Annuleren", description: "Stop workflow"
-multiSelect: false
-```
-
-**THEME.md corrupt of onleesbaar:**
-```
-⚠️ THEME ONLEESBAAR
-
-.workspace/config/THEME.md kon niet geparsed worden.
-```
-
-**AskUserQuestion:**
-```yaml
-header: "Corrupt"
-question: "Theme file is corrupt. Wat wil je doen?"
-options:
-  - label: "Opnieuw aanmaken (Recommended)", description: "Vervang met nieuwe theme"
-  - label: "Backup bekijken", description: "Toon ruwe content"
-  - label: "Annuleren", description: "Stop workflow"
-multiSelect: false
-```
+- `skills/shared/VALIDATION.md` - Pre/post-flight validation templates
+- `skills/shared/DEVINFO.md` - Session state tracking
 
 ---
 
 ## Restrictions
 
-Dit command moet NOOIT:
+Dit command moet **NOOIT**:
 - Theme aanmaken zonder bevestiging
 - Bestaande theme overschrijven zonder waarschuwing
 - Tokens raden zonder bron (config of user input)
+- Post-flight validation overslaan
 
-Dit command moet ALTIJD:
+Dit command moet **ALTIJD**:
+- Pre-flight validation uitvoeren
 - AskUserQuestion gebruiken voor alle keuzes
 - Huidige waarden tonen bij updates
 - Diff preview tonen voor wijzigingen
 - Bevestiging vragen voor destructieve acties
+- Post-flight validation uitvoeren
+- DevInfo updaten bij fase transities
