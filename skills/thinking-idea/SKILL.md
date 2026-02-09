@@ -20,12 +20,14 @@ The output is a structured markdown document that can be used as input for `/thi
 ### Step 1: Initial Intake
 
 **Auto-detect existing concept:**
+
 1. Check if `.workspace/` folder exists
-   - If folder does NOT exist → skip to "If no concept file" section below
+   - If folder does NOT exist → check Obsidian (step 1b below)
 2. Check if `.workspace/concept.md` exists
 3. If exists AND no inline description provided:
    - Read the concept file
    - Show confirmation:
+
      ```
      EXISTING CONCEPT DETECTED
 
@@ -34,6 +36,7 @@ The output is a structured markdown document that can be used as input for `/thi
 
      Er bestaat al een concept.
      ```
+
    - Use AskUserQuestion:
      ```yaml
      header: "Bestaand Concept"
@@ -51,6 +54,25 @@ The output is a structured markdown document that can be used as input for `/thi
    - **If "Nieuw concept":**
      - Ignore existing file (will be overwritten on save)
      - Proceed with normal flow below
+
+**Step 1b: Check Obsidian vault (if no .workspace/concept.md found)**
+
+If the user provided an inline description/argument:
+
+1. Search Obsidian: `mcp__obsidian__search_notes(query={argument}, limit=3)`
+2. If relevant match found in `Ideas/`:
+   - Show: "Er is een bestaand idee in Obsidian: **{title}** (`{path}`)"
+   - Use AskUserQuestion:
+     ```yaml
+     header: "Obsidian Match"
+     question: "Wil je dit bestaande idee als startpunt gebruiken?"
+     options:
+       - label: "Ja, gebruik als basis (Recommended)", description: "Laad het Obsidian idee en werk er verder aan"
+       - label: "Nee, nieuw concept", description: "Begin opnieuw met een nieuw idee"
+     multiSelect: false
+     ```
+   - **If "Ja":** Read the note with `mcp__obsidian__read_note()`, load as starting context, track `obsidian_source_path` for later save-back
+3. If no match found → proceed normally
 
 **If no concept file OR user wants new concept:**
 
@@ -77,6 +99,7 @@ Acknowledge briefly and proceed to Step 2.
 6. Continue until the core idea is sufficiently developed
 
 **Focus areas:**
+
 - Core concept and unique elements
 - Target audience or intended experience
 - Key features, mechanics, or narrative elements
@@ -85,6 +108,7 @@ Acknowledge briefly and proceed to Step 2.
 - Context and constraints
 
 **Question guidelines:**
+
 - Ask for concrete details, not abstract concepts
 - Adapt style to idea type (game vs product vs story)
 - Help articulate what's in the user's head
@@ -111,6 +135,7 @@ Acknowledge briefly and proceed to Step 2.
 Create a structured markdown document adapted to the idea type.
 
 **Required sections:**
+
 - **Title** (H1 format)
 - **Short description** (1-2 sentences)
 - **Core concept** (detailed explanation)
@@ -118,12 +143,15 @@ Create a structured markdown document adapted to the idea type.
 **Additional sections by type:**
 
 For creative concepts (games, stories, art):
+
 - Characters, Mechanics/Gameplay, Narrative/Plot, Aesthetic/Style, Tone and Atmosphere, Unique Elements
 
 For product ideas (apps, services, businesses):
+
 - Target Audience, Key Features, User Journey/Experience, Value Proposition, Differentiation
 
 **Output format:**
+
 - Pure markdown without introductory text or preambles
 - No "Here's your document:" framing
 - Proper markdown formatting (# for title, ## for sections)
@@ -133,22 +161,25 @@ For product ideas (apps, services, businesses):
 After generating the markdown content, present options for what to do with it.
 
 Use AskUserQuestion:
+
 ```yaml
 header: "Output"
 question: "Wat wil je met het concept doen?"
 options:
   - label: "Opslaan naar concept (Recommended)", description: "Opslaan naar .workspace/concept.md voor verder gebruik"
+  - label: "Opslaan naar Obsidian", description: "Opslaan als permanente Idea note in je Obsidian vault"
   - label: "Alleen tonen", description: "Toon als markdown code block (niet opslaan)"
-  - label: "Explain question", description: "Leg uit wat deze opties betekenen"
 multiSelect: false
 ```
 
 **Response handling:**
 
 **If "Opslaan naar concept":**
+
 1. Create `.workspace/` folder if it doesn't exist
 2. Write content to `.workspace/concept.md`
 3. Confirm:
+
    ```
    CONCEPT SAVED
 
@@ -160,7 +191,57 @@ multiSelect: false
    - /game:backlog - Omzetten naar feature backlog (voor games)
    ```
 
+**If "Opslaan naar Obsidian":**
+
+1. Also save to `.workspace/concept.md` (so brainstorm/critique can pick it up)
+2. Detect category from content using sequential thinking:
+   - Game-related → `game`
+   - App/service/tool → `app`
+   - Story/narrative/writing → `story`
+   - Website/platform → `website`
+   - Otherwise → `other`
+3. Map category to Obsidian path:
+   - `game` → `Ideas/Games/`
+   - `app` → `Ideas/Apps/`
+   - `story` → `Ideas/Stories/`
+   - `website` → `Ideas/Websites/`
+   - otherwise → `Ideas/Other/`
+4. If the concept was loaded from Obsidian (tracked via `obsidian_source_path` from Step 1b):
+   - Overwrite the original note: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
+   - Update frontmatter status to `developing`
+5. If new concept:
+   - Derive filename from the H1 title (spaces allowed, no special chars)
+   - Add frontmatter:
+     ```yaml
+     ---
+     type: idea
+     category: { detected_category }
+     status: seed
+     created: { YYYY-MM-DD }
+     ---
+     ```
+   - Write: `mcp__obsidian__write_note(path="Ideas/{subfolder}/{title}.md", content=frontmatter + body)`
+6. Search for related notes: `mcp__obsidian__search_notes(query={title}, limit=3)`
+   - If matches found, suggest adding `[[links]]` and mention them to the user
+7. Update Home.md Recent Ideas: `mcp__obsidian__patch_note(path="Home.md", oldString="## Recent Ideas\n", newString="## Recent Ideas\n- [[{title}]]\n")`
+   - If patch fails (string not found), skip silently
+8. Confirm:
+
+   ```
+   CONCEPT SAVED TO OBSIDIAN
+
+   File: Ideas/{subfolder}/{title}.md
+   Category: {category}
+   Status: seed
+
+   Next steps:
+   - /thinking:critique - Kritisch analyseren en versterken
+   - /thinking:brainstorm - Creatief uitbreiden en variaties
+   - /game:backlog - Omzetten naar feature backlog (voor games)
+   ```
+
 **If "Alleen tonen":**
+
 1. Wrap output in a code block with `markdown` language tag for copy button
 2. Display the content
 
@@ -175,4 +256,5 @@ multiSelect: false
 **Output:** Structure clearly, make scannable, adapt sections to idea type, output ONLY the markdown document.
 
 ### Language
+
 Follow the Language Policy in CLAUDE.md.

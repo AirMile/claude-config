@@ -87,6 +87,23 @@ Display classification:
 TYPE: {type} — {one-line reasoning}
 ```
 
+### Step 3b: Obsidian Context Check (CREATIVE tasks only)
+
+If the task type is `CREATIVE`:
+
+1. Search Obsidian: `mcp__obsidian__search_notes(query={task name}, limit=3)`
+2. If relevant match found in `Ideas/`:
+   - Show: "Er is een bestaande Obsidian note over dit onderwerp: **{title}** (`{path}`)"
+   - Use **AskUserQuestion**:
+     - header: "Obsidian Context"
+     - question: "Wil je de bestaande note bekijken voordat je verder gaat?"
+     - options:
+       - label: "Ja, toon note (Recommended)", description: "Bekijk de Obsidian note als context"
+       - label: "Nee, ga door", description: "Ga verder zonder Obsidian context"
+     - multiSelect: false
+   - If "Ja": read note with `mcp__obsidian__read_note()` and display content. Track `obsidian_source_path` for later save-back in FASE 3.
+3. If no match found → proceed normally
+
 ### Step 4: Context Gap Check
 
 If the task has no description AND no comments AND name is fewer than 8 words:
@@ -201,10 +218,36 @@ Use **AskUserQuestion**:
 
 **Response handling:**
 
-- **Afsluiten** → `close_tasks(task_id=...)`, display confirmation
-- **Afsluiten met notitie** → ask for note content or auto-generate summary, then `create_comments(task_id=..., content=...)` + `close_tasks(task_id=...)`
+- **Afsluiten** → `close_tasks(task_id=...)`, then check Obsidian save (see below), display confirmation
+- **Afsluiten met notitie** → ask for note content or auto-generate summary, then `create_comments(task_id=..., content=...)` + `close_tasks(task_id=...)`, then check Obsidian save (see below)
 - **Open laten** → display confirmation, no Todoist changes
 - **Volgende taak** → go back to FASE 0 (project selection)
+
+### Obsidian Save Check (after Afsluiten)
+
+After closing the task, if the task type was `CREATIVE` or `RESEARCH` and produced meaningful output:
+
+Use **AskUserQuestion**:
+
+- header: "Obsidian"
+- question: "Wil je het resultaat opslaan in Obsidian?"
+- options:
+  - label: "Ja, opslaan (Recommended)", description: "Sla op als Idea note in Obsidian"
+  - label: "Nee", description: "Niet opslaan naar Obsidian"
+- multiSelect: false
+
+**If "Ja":**
+
+1. If `obsidian_source_path` was tracked (from Step 3b):
+   - Overwrite: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
+   - Update frontmatter status to `developing` via `mcp__obsidian__update_frontmatter()`
+2. If new content (no Obsidian source):
+   - Detect category from content (game/app/story/website/other)
+   - Map to path: `Ideas/Games/`, `Ideas/Apps/`, `Ideas/Stories/`, `Ideas/Websites/`, `Ideas/Other/`
+   - Add frontmatter: `type: idea, category: {cat}, status: seed, created: {date}`
+   - Write: `mcp__obsidian__write_note(path="Ideas/{subfolder}/{title}.md")`
+3. Update Home.md: `mcp__obsidian__patch_note(path="Home.md", oldString="## Recent Ideas\n", newString="## Recent Ideas\n- [[{title}]]\n")`
+   - If patch fails (string not found), skip silently
 
 ### Confirmation
 

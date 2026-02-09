@@ -12,12 +12,14 @@ The process is interactive: apply one technique at a time through Q&A, then choo
 ## When to Use
 
 Trigger this skill when:
+
 - User wants to explore variations and alternatives of an idea
 - User wants to push boundaries and discover new possibilities
 - User has an idea and wants creative expansion
 - User starts with `/thinking-brainstorm` command
 
 Example triggers:
+
 - "/brainstorm" (followed by pasting idea)
 - "/thinking-brainstorm [paste /thinking-idea output]"
 - "Let's brainstorm alternatives for this concept"
@@ -32,12 +34,14 @@ Example triggers:
 **Process:**
 
 **Auto-detect concept file:**
+
 1. Check if `.workspace/` folder exists
-   - If folder does NOT exist → skip to "If no concept file" section below
+   - If folder does NOT exist → check Obsidian (step 1b below)
 2. Check if `.workspace/concept.md` exists
 3. If exists AND no inline input provided:
    - Read the concept file
    - Show confirmation:
+
      ```
      CONCEPT DETECTED
 
@@ -46,6 +50,7 @@ Example triggers:
 
      Dit concept wordt gebruikt voor brainstorming.
      ```
+
    - Use AskUserQuestion:
      ```yaml
      header: "Concept Laden"
@@ -59,7 +64,27 @@ Example triggers:
    - If "Ja": proceed with loaded concept
    - If "Ander concept": ask user to paste input
 
+**Step 1b: Check Obsidian vault (if no .workspace/concept.md found)**
+
+If the user provided an inline description/argument:
+
+1. Search Obsidian: `mcp__obsidian__search_notes(query={argument}, limit=3)`
+2. If relevant match found in `Ideas/`:
+   - Show: "Er is een bestaand idee in Obsidian: **{title}** (`{path}`)"
+   - Use AskUserQuestion:
+     ```yaml
+     header: "Obsidian Match"
+     question: "Wil je dit bestaande idee als startpunt gebruiken?"
+     options:
+       - label: "Ja, gebruik als basis (Recommended)", description: "Laad het Obsidian idee en brainstorm hierop"
+       - label: "Nee, ander concept", description: "Ik wil een ander concept gebruiken"
+     multiSelect: false
+     ```
+   - **If "Ja":** Read the note with `mcp__obsidian__read_note()`, load as starting concept, track `obsidian_source_path` for later save-back
+3. If no match found → proceed normally
+
 **If no concept file OR user wants different input:**
+
 1. Examine the input provided by user
 2. Determine input type:
    - Output from `/thinking-idea` (structured markdown) → extract directly
@@ -79,6 +104,7 @@ Example triggers:
    - Synthesize into clear idea description
 
 5. Confirm understanding with user via AskUserQuestion:
+
    ```yaml
    options:
      - label: "Ja, dit klopt (Recommended)", description: "Start met brainstormen over dit idee"
@@ -88,6 +114,7 @@ Example triggers:
    ```
 
    Present:
+
    ```
    [Confirmation message that we'll brainstorm about:]
 
@@ -101,6 +128,7 @@ Example triggers:
 **Goal:** Identify and rank the most relevant brainstorm techniques for this specific idea and current exploration state.
 
 **Process:**
+
 1. Use sequential thinking to analyze:
    - What has been explored so far? (track applied techniques)
    - What aspects of the idea need creative expansion?
@@ -116,6 +144,7 @@ Example triggers:
    - Least relevant = highest number (3-5)
 
 4. Present ranked techniques (in user's preferred language):
+
    ```
    💡 [RELEVANT TECHNIQUES header]
 
@@ -129,6 +158,7 @@ Example triggers:
    ```
 
 5. Use AskUserQuestion with technique options:
+
    ```yaml
    header: "Technieken"
    question: "Welke technieken wil je toepassen? (max 3)"
@@ -141,6 +171,7 @@ Example triggers:
      - label: "Uitleg", description: "Leg de technieken uit"
    multiSelect: true
    ```
+
    - If user selects multiple techniques: apply them in sequence (Steps 3-4 for each)
    - After all selected techniques are applied: proceed to Step 5
 
@@ -149,6 +180,7 @@ Example triggers:
 **Goal:** Use the selected technique through interactive Q&A to generate creative variations and insights.
 
 **Process:**
+
 1. Read the full details of the selected technique from `resources/brainstorm-techniques.md`
 
 2. Use sequential thinking to:
@@ -157,6 +189,7 @@ Example triggers:
    - Develop concrete suggestions tailored to this idea
 
 3. Present technique application (in user's preferred language):
+
    ```
    🎨 [TECHNIQUE NAME]
 
@@ -189,6 +222,7 @@ Example triggers:
 6. Continue until this technique is sufficiently explored
 
 **Guidelines for technique application:**
+
 - Make questions specific to THIS idea, not generic
 - Generate concrete suggestions, not vague "what ifs"
 - Follow the technique's framework from the reference file
@@ -201,6 +235,7 @@ Example triggers:
 **Goal:** Capture key insights and variations discovered through the technique.
 
 **Process:**
+
 1. Review the user's responses and dialogue from Step 3
 
 2. Synthesize:
@@ -210,6 +245,7 @@ Example triggers:
    - Insights about the idea
 
 3. Present synthesis (in user's preferred language):
+
    ```
    📋 [SUMMARY header] - [Technique Name]
 
@@ -244,6 +280,7 @@ Example triggers:
 **Goal:** Decide whether to explore another technique or generate the final refined idea.
 
 **Process:**
+
 1. Use sequential thinking to determine:
    - Which techniques have been applied already
    - Which unexplored techniques are most valuable now
@@ -256,6 +293,7 @@ Example triggers:
    - Diminishing returns consideration
 
 3. Present options with final output at the top (in user's preferred language):
+
    ```
    💡 [NEXT STEP header]:
 
@@ -272,6 +310,7 @@ Example triggers:
    - Announce (in user's preferred language): "[All relevant techniques applied. Generating refined version now.]"
 
 5. Use AskUserQuestion with next action options:
+
    ```yaml
    header: "Volgende Stap"
    question: "Hoe wil je verder?"
@@ -283,6 +322,7 @@ Example triggers:
      - label: "Uitleg", description: "Leg de opties uit"
    multiSelect: true
    ```
+
    - If only "Genereer verfijnde versie" selected: proceed to Step 6 (Generate Final Output)
    - If technique(s) selected: apply them in sequence (Steps 3-4), then return to Step 5
 
@@ -291,6 +331,7 @@ Example triggers:
 **Goal:** Create the refined idea as a clean, structured markdown document.
 
 **Process:**
+
 1. Review all insights and variations from all applied techniques
 
 2. Use sequential thinking to:
@@ -313,6 +354,7 @@ Example triggers:
    - Clean, consistent formatting
 
 **Example output structure:**
+
 ```
 # [Title - possibly evolved]
 
@@ -336,21 +378,24 @@ Example triggers:
 After generating the refined content, present options for what to do with it.
 
 Use AskUserQuestion:
+
 ```yaml
 header: "Output"
 question: "Wat wil je met het uitgebreide concept doen?"
 options:
   - label: "Opslaan naar concept (Recommended)", description: "Update .workspace/concept.md met uitgebreide versie"
+  - label: "Opslaan naar Obsidian", description: "Opslaan als permanente Idea note in je Obsidian vault"
   - label: "Alleen tonen", description: "Toon als markdown code block (niet opslaan)"
-  - label: "Explain question", description: "Leg uit wat deze opties betekenen"
 multiSelect: false
 ```
 
 **Response handling:**
 
 **If "Opslaan naar concept":**
+
 1. Update `.workspace/concept.md` with refined content
 2. Confirm:
+
    ```
    CONCEPT UPDATED
 
@@ -362,29 +407,51 @@ multiSelect: false
    - /thinking:brainstorm - Nog een brainstormronde
    - /game:backlog - Omzetten naar feature backlog (voor games)
    ```
-3. Send notification:
-   ```bash
-   powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Concept updated"
+
+**If "Opslaan naar Obsidian":**
+
+1. Also update `.workspace/concept.md` (so other skills can pick it up)
+2. If concept was loaded from Obsidian (tracked via `obsidian_source_path`):
+   - Overwrite: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
+   - Update frontmatter status to `developing` via `mcp__obsidian__update_frontmatter()`
+3. If new concept (no Obsidian source):
+   - Detect category from content (game/app/story/website/other)
+   - Map to path: `Ideas/Games/`, `Ideas/Apps/`, `Ideas/Stories/`, `Ideas/Websites/`, `Ideas/Other/`
+   - Add frontmatter: `type: idea, category: {cat}, status: developing, created: {date}`
+   - Write: `mcp__obsidian__write_note(path="Ideas/{subfolder}/{title}.md")`
+4. Update Home.md: `mcp__obsidian__patch_note(path="Home.md", oldString="## Recent Ideas\n", newString="## Recent Ideas\n- [[{title}]]\n")`
+5. Confirm:
+
+   ```
+   CONCEPT SAVED TO OBSIDIAN
+
+   File: Ideas/{subfolder}/{title}.md
+   Status: developing
+   Applied techniques: {list}
+
+   Next steps:
+   - /thinking:critique - Kritisch analyseren en versterken
+   - /thinking:brainstorm - Nog een brainstormronde
+   - /game:backlog - Omzetten naar feature backlog (voor games)
    ```
 
 **If "Alleen tonen":**
+
 1. Wrap output in a code block with `markdown` language tag for copy button
 2. Display the content
-3. Send notification:
-   ```bash
-   powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Brainstorm complete"
-   ```
 
 ---
 
 ## Best Practices
 
 **Input Parsing:**
+
 - Be flexible - accept various input formats
 - Quick for `/thinking-idea` output, thorough for unclear input
 - Don't make assumptions - ask when unclear
 
 **Technique Selection:**
+
 - Always use sequential thinking to choose most relevant techniques
 - Show 3-5 most relevant techniques (between 3-5 based on how many are truly relevant)
 - Rank techniques with numbers: 1 = most relevant (at the top), higher numbers = less relevant
@@ -393,6 +460,7 @@ multiSelect: false
 - Make the number 1 suggestion compelling with clear rationale
 
 **Technique Application:**
+
 - Make questions specific, not generic
 - Generate concrete suggestions tailored to this idea
 - Follow the technique's framework from reference file
@@ -401,11 +469,13 @@ multiSelect: false
 - Make variations actionable, not vague
 
 **Synthesis:**
+
 - Capture the essence of what was discovered
 - Be specific about variations and insights
 - Don't lose valuable ideas in the synthesis
 
 **Final Output:**
+
 - Output ONLY the refined idea document
 - NO original idea comparison
 - NO technique information
@@ -414,6 +484,7 @@ multiSelect: false
 - Integrate improvements naturally
 
 **Conversational Approach:**
+
 - Be exploratory and curious
 - Encourage wild ideas and boundary pushing
 - Build on user's creative energy
@@ -425,20 +496,24 @@ multiSelect: false
 ## Technical Notes
 
 **Reference file usage:**
+
 - Read `resources/brainstorm-techniques.md` when suggesting techniques
 - Read specific technique details when applying that technique
 - Use technique frameworks as guidance, not rigid templates
 
 **State tracking:**
+
 - Track which techniques have been applied
 - Remember key insights from each technique
 - Build cumulative understanding through the session
 
 **Sequential thinking usage:**
+
 - Use for input analysis (Step 1)
 - Use for technique selection (Step 2)
 - Use for technique application (Step 3)
 - Use for final output generation (Step 6)
 
 ### Language
+
 Follow the Language Policy in CLAUDE.md.

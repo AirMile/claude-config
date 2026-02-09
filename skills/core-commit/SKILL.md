@@ -16,10 +16,12 @@ Analyseer staged changes en genereer een duidelijke commit message.
 ### 1. Pre-flight Checks
 
 Voer parallel uit:
+
 - `git status` - bekijk staged/unstaged changes
 - `git diff --cached` - bekijk staged changes (of `git diff` als niets staged)
 
 **Stop condities** (meld en exit):
+
 - Geen changes → "Geen wijzigingen om te committen"
 - Rebase in progress → "Rebase actief, los eerst op met `git rebase --continue` of `--abort`"
 - Merge in progress → "Merge conflict actief, los eerst op"
@@ -30,6 +32,7 @@ Gebruik altijd `cd "<project-root>" && git <command>` in plaats van `git -C <pat
 De `-C` flag heeft bekende problemen met Windows-paden die backslashes bevatten.
 
 **Detectie rebase/merge state:**
+
 ```bash
 # Check voor actieve operaties
 ls .git/rebase-merge .git/rebase-apply .git/MERGE_HEAD .git/CHERRY_PICK_HEAD 2>/dev/null
@@ -38,9 +41,11 @@ ls .git/rebase-merge .git/rebase-apply .git/MERGE_HEAD .git/CHERRY_PICK_HEAD 2>/
 ### 2. Stage Changes (indien nodig)
 
 Als er unstaged changes zijn maar niets staged:
+
 - Toon overzicht van unstaged files
 
 **Blokkeer automatisch stagen van:**
+
 ```
 # Secrets & credentials (NOOIT stagen)
 .env, .env.*, *.env
@@ -52,12 +57,14 @@ config/secrets.yml
 ```
 
 **Waarschuw bij:**
+
 - Grote files (>1MB) → toon bestandsgrootte
 - Nieuwe file types die nog niet in `.gitignore` staan
 - Binary files → vraag bevestiging
 
 **Waarschuw bij tracking-verwijderingen:**
 Als `.gitignore` wijzigingen ertoe leiden dat bestanden uit tracking moeten (`git rm --cached`):
+
 - Toon het aantal bestanden dat uit tracking verdwijnt
 - Toon de directories die geraakt worden
 - Vraag expliciete bevestiging via AskUserQuestion
@@ -65,6 +72,7 @@ Als `.gitignore` wijzigingen ertoe leiden dat bestanden uit tracking moeten (`gi
 
 **Waarschuw bij verwijdering van kritieke bestanden:**
 Als staged changes een van deze bestanden verwijderen of uit tracking halen, toon een expliciete waarschuwing en vraag bevestiging:
+
 ```
 .claude/CLAUDE.md
 .github/**
@@ -101,6 +109,7 @@ Analyseer de diff op:
 
 **Mixed concerns detectie:**
 Als staged changes meerdere ongerelateerde groepen bevatten:
+
 - Detecteer op basis van pad-patroon (bijv. `.claude/` vs `src/` vs `public/`)
 - Detecteer op basis van type (deletions-only groep vs additions groep)
 - Als >2 duidelijk gescheiden groepen of >50% van de changes ongerelateerd is aan de primaire wijziging:
@@ -111,6 +120,7 @@ Als staged changes meerdere ongerelateerde groepen bevatten:
 ### 4. Generate Message
 
 **Formaat (Conventional Commits 1.0.0):**
+
 ```
 <type>[optional scope][!]: <description>
 
@@ -120,6 +130,7 @@ Als staged changes meerdere ongerelateerde groepen bevatten:
 ```
 
 **Validatieregels:**
+
 - Header max **72 karakters** (Git conventie)
 - Type: lowercase, uit toegestane lijst
 - Subject: lowercase start, geen punt aan einde, imperatief ("add" niet "added")
@@ -127,6 +138,7 @@ Als staged changes meerdere ongerelateerde groepen bevatten:
 - Breaking change: gebruik ! of BREAKING CHANGE: footer
 
 **Voorbeelden:**
+
 ```
 feat(auth): add OAuth2 login support
 
@@ -136,6 +148,7 @@ docs: update API documentation for v2 endpoints
 ```
 
 **Niet toestaan:**
+
 - "Co-Authored-By" of "Generated with Claude" footer
 - Emoji's in commit messages
 - Subject langer dan 72 karakters
@@ -143,11 +156,13 @@ docs: update API documentation for v2 endpoints
 ### 5. Confirm & Commit
 
 Toon gegenereerde message en vraag bevestiging:
+
 - "Commit" → voer commit uit
 - "Edit" → laat user aanpassen
 - "Cancel" → annuleer
 
 **Commit uitvoeren met HEREDOC** (veilig voor quotes en multiline):
+
 ```bash
 git commit -m "$(cat <<'EOF'
 <message>
@@ -158,6 +173,7 @@ EOF
 ### 6. Error Handling
 
 **Pre-commit hook failure:**
+
 1. Toon volledige error output
 2. Vraag gebruiker (AskUserQuestion):
    - "Fix issues" → los probleem op, **maak NIEUWE commit** (nooit amend op failure)
@@ -165,22 +181,48 @@ EOF
    - "Cancel" → annuleer
 
 **Hook bypass waarschuwing:**
+
 ```
 ⚠️ Hooks worden overgeslagen. Dit kan CI failures veroorzaken.
 ```
 
 **Andere failures:**
+
 - Empty commit → "Geen staged changes. Gebruik `git add` eerst."
 - Lock file exists → "Git is bezig (.git/index.lock). Wacht of verwijder lock."
 
 **Bij succes:**
+
 ```bash
 git log -1 --oneline
 ```
 
-### 7. Amend Safety (ALLEEN indien user vraagt)
+### 7. Push Option
+
+After a successful commit, ask with AskUserQuestion:
+
+- header: "Push"
+- question: "Wil je de changes ook meteen pushen?"
+- options:
+  - "Push (Recommended)" → execute `git push`
+  - "Skip" → done, show success output
+
+**Push error handling:**
+
+- No remote configured → show message, skip push
+- Push rejected (behind remote) → suggest `git pull --rebase` first
+- Auth failure → show error, suggest checking credentials
+
+**Push success output:**
+
+```
+✅ Pushed to [remote]/[branch]
+```
+
+### 8. Amend Safety (ALLEEN indien user vraagt)
 
 **Amend ALLEEN toestaan wanneer ALLE voorwaarden waar zijn:**
+
 1. User vraagt expliciet om amend
 2. Vorige commit is door jou gemaakt (check: `git log -1 --format='%an'`)
 3. Commit is NIET gepusht naar remote (check: `git status` toont "ahead")
@@ -191,6 +233,7 @@ git log -1 --oneline
 ## Output
 
 **Succes:**
+
 ```
 ✅ Committed: <type>(<scope>): <title>
 
@@ -199,6 +242,7 @@ git log -1 --oneline
 ```
 
 **Error:**
+
 ```
 ❌ Commit failed: <reden>
 
@@ -206,6 +250,7 @@ git log -1 --oneline
 ```
 
 **Hook skipped:**
+
 ```
 ⚠️ Committed (hooks skipped): <type>(<scope>): <title>
 

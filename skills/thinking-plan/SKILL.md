@@ -23,7 +23,7 @@ Bevestig begrip met korte samenvatting.
 
 ### FASE 2: Informatie Analyse
 
-Gebruik sequential thinking (mcp__sequential-thinking__sequentialthinking) om te bepalen welke informatie nodig is:
+Gebruik sequential thinking (mcp**sequential-thinking**sequentialthinking) om te bepalen welke informatie nodig is:
 
 ```
 Analyse checklist:
@@ -40,6 +40,7 @@ Analyse checklist:
 **3a. User Clarification (indien nodig)**
 
 Gebruik AskUserQuestion voor onduidelijkheden:
+
 - Verzamel requirements
 - Clarify scope
 - Bepaal preferences
@@ -49,6 +50,7 @@ Gebruik AskUserQuestion voor onduidelijkheden:
 Spawn agents gebaseerd op FASE 2 analyse:
 
 **Codebase research (indien nodig):**
+
 ```
 Task tool met subagent_type: code-explorer
 ├─ Focus: similar-features
@@ -57,6 +59,7 @@ Task tool met subagent_type: code-explorer
 ```
 
 **Context7 research (indien nodig):**
+
 ```
 Task tool met subagent_type:
 ├─ architecture-researcher
@@ -65,6 +68,7 @@ Task tool met subagent_type:
 ```
 
 **Web research (indien nodig):**
+
 ```
 Task tool met subagent_type:
 ├─ plan-web-patterns (best practices, modern approaches)
@@ -75,6 +79,7 @@ Task tool met subagent_type:
 ```
 
 **Na research:** Stuur notificatie:
+
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Research compleet"
 ```
@@ -107,11 +112,13 @@ Genereer een compact, scanbaar overzicht:
 ```
 
 **Draft kenmerken:**
+
 - Past op één scherm
 - Inline risico/effort indicators
 - Alleen essentials, geen lange teksten
 
 **Na draft:** Stuur notificatie:
+
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Draft ready"
 ```
@@ -136,6 +143,7 @@ multiSelect: false
 ```
 
 **Response handling:**
+
 - "Goedkeuren" → FASE 5
 - "Analyseren" → FASE 4.5 (Plan Analyse)
 - "Aanpassen" → vraag wat moet wijzigen, update draft, herhaal FASE 4
@@ -153,11 +161,13 @@ Task tool met subagent_type:
 ```
 
 **Input voor agents:**
+
 - Draft plan
 - Research resultaten
 - Task context
 
 **Output format:**
+
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ 🔍 PLAN ANALYSE                                            │
@@ -177,6 +187,7 @@ Task tool met subagent_type:
 ```
 
 **Na analyse:** Stuur notificatie:
+
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Analyse compleet"
 ```
@@ -197,6 +208,7 @@ multiSelect: false
 ```
 
 **Response handling:**
+
 - "Plan aanpassen" → verwerk feedback, update draft, terug naar FASE 4
 - "Doorgaan zonder wijzigingen" → FASE 5
 - "Opnieuw analyseren" → vraag specifieke focus, herhaal FASE 4.5
@@ -204,11 +216,13 @@ multiSelect: false
 ### FASE 5: Plan Generatie
 
 Spawn plan-synthesizer agent met:
+
 - Alle research resultaten
 - Goedgekeurde draft
 - Output path: `.workspace/plans/YYYY-MM-DD-{slug}.md`
 
 **Plan structuur:**
+
 ```markdown
 # Plan: {Titel}
 
@@ -230,19 +244,19 @@ Spawn plan-synthesizer agent met:
   - Effort: {S/M/L}
 
 - [ ] **Stap 2:** {beschrijving}
-  ...
+      ...
 
 ## Afhankelijkheden
 
-| Package/Tool | Versie | Doel |
-|--------------|--------|------|
-| {naam} | {versie} | {waarvoor} |
+| Package/Tool | Versie   | Doel       |
+| ------------ | -------- | ---------- |
+| {naam}       | {versie} | {waarvoor} |
 
 ## Risico's & Mitigatie
 
-| Risico | Impact | Mitigatie |
-|--------|--------|-----------|
-| {risico} | {H/M/L} | {aanpak} |
+| Risico   | Impact  | Mitigatie |
+| -------- | ------- | --------- |
+| {risico} | {H/M/L} | {aanpak}  |
 
 ## Bronnen
 
@@ -264,16 +278,40 @@ question: "Wat wil je met dit plan doen?"
 options:
   - label: "Uitvoeren (Recommended)"
     description: "Start implementatie met /2-code"
+  - label: "Opslaan naar Obsidian Project"
+    description: "Sla plan op in Obsidian Projects/ folder"
   - label: "Alleen opslaan"
-    description: "Plan is opgeslagen, geen verdere actie"
+    description: "Plan is opgeslagen in .workspace/plans/, geen verdere actie"
 multiSelect: false
 ```
 
 **Response handling:**
+
 - "Uitvoeren" → Roep /dev-legacy-2-code aan met plan als input
+- "Opslaan naar Obsidian Project" → see below
 - "Alleen opslaan" → Bevestig locatie en stop
 
+**If "Opslaan naar Obsidian Project":**
+
+1. List available projects: `mcp__obsidian__list_directory(path="Projects/")`
+2. Use **AskUserQuestion** to let user pick a project folder (or create new)
+3. Write plan to `Projects/{project}/plans/{slug}.md` via `mcp__obsidian__write_note()`
+4. Add frontmatter: `type: plan, status: draft, created: {date}`
+5. Confirm:
+
+   ```
+   PLAN SAVED TO OBSIDIAN
+
+   File: Projects/{project}/plans/{slug}.md
+   Status: draft
+
+   Next steps:
+   - /thinking:plan - Nog een planronde
+   - /dev:build - Start implementatie
+   ```
+
 **Na completion:** Stuur notificatie:
+
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Plan complete"
 ```
@@ -282,30 +320,31 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 
 ### Bestaande (hergebruikt)
 
-| Agent | Doel |
-|-------|------|
-| code-explorer | Codebase verkenning (3 focuses) |
-| architecture-researcher | Context7: architecture patterns |
-| best-practices-researcher | Context7: framework conventions |
-| testing-researcher | Context7: test strategies |
-| analyze-risk-finder | Plan analyse: wat kan fout gaan |
-| analyze-alternatives-explorer | Plan analyse: welke alternatieven |
-| analyze-simplification-advisor | Plan analyse: wat kan weg/later |
+| Agent                          | Doel                              |
+| ------------------------------ | --------------------------------- |
+| code-explorer                  | Codebase verkenning (3 focuses)   |
+| architecture-researcher        | Context7: architecture patterns   |
+| best-practices-researcher      | Context7: framework conventions   |
+| testing-researcher             | Context7: test strategies         |
+| analyze-risk-finder            | Plan analyse: wat kan fout gaan   |
+| analyze-alternatives-explorer  | Plan analyse: welke alternatieven |
+| analyze-simplification-advisor | Plan analyse: wat kan weg/later   |
 
 ### Nieuw
 
-| Agent | Doel |
-|-------|------|
-| plan-web-patterns | Web: best practices, modern approaches |
-| plan-web-pitfalls | Web: issues, anti-patterns, gotchas |
-| plan-web-examples | Web: real-world implementations |
-| plan-web-ecosystem | Web: libraries, tools, packages |
-| plan-web-architecture | Web: system design, scalability |
-| plan-synthesizer | Combineert research → plan.md |
+| Agent                 | Doel                                   |
+| --------------------- | -------------------------------------- |
+| plan-web-patterns     | Web: best practices, modern approaches |
+| plan-web-pitfalls     | Web: issues, anti-patterns, gotchas    |
+| plan-web-examples     | Web: real-world implementations        |
+| plan-web-ecosystem    | Web: libraries, tools, packages        |
+| plan-web-architecture | Web: system design, scalability        |
+| plan-synthesizer      | Combineert research → plan.md          |
 
 ## Examples
 
 **Voorbeeld 1: Simpele feature**
+
 ```
 User: /thinking-plan dark mode toggle
 
@@ -318,6 +357,7 @@ User: /thinking-plan dark mode toggle
 ```
 
 **Voorbeeld 2: Complexe integratie met analyse**
+
 ```
 User: /thinking-plan Stripe payment integratie
 

@@ -12,12 +12,14 @@ The process is interactive: apply one technique at a time through Q&A, then choo
 ## When to Use
 
 Trigger this skill when:
+
 - User wants to identify weaknesses or problems in an idea
 - User wants to test assumptions and find failure modes
 - User has an idea and wants critical analysis
 - User starts with `/thinking-critique` command
 
 Example triggers:
+
 - "/critique" (followed by pasting idea)
 - "/thinking-critique [paste /thinking-idea output]"
 - "Let's critically analyze this concept"
@@ -33,12 +35,14 @@ Example triggers:
 **Process:**
 
 **Auto-detect concept file:**
+
 1. Check if `.workspace/` folder exists
-   - If folder does NOT exist → skip to "If no concept file" section below
+   - If folder does NOT exist → check Obsidian (step 1b below)
 2. Check if `.workspace/concept.md` exists
 3. If exists AND no inline input provided:
    - Read the concept file
    - Show confirmation:
+
      ```
      CONCEPT DETECTED
 
@@ -47,6 +51,7 @@ Example triggers:
 
      Dit concept wordt gebruikt voor analyse.
      ```
+
    - Use AskUserQuestion:
      ```yaml
      header: "Concept Laden"
@@ -60,7 +65,27 @@ Example triggers:
    - If "Ja": proceed with loaded concept
    - If "Ander concept": ask user to paste input
 
+**Step 1b: Check Obsidian vault (if no .workspace/concept.md found)**
+
+If the user provided an inline description/argument:
+
+1. Search Obsidian: `mcp__obsidian__search_notes(query={argument}, limit=3)`
+2. If relevant match found in `Ideas/`:
+   - Show: "Er is een bestaand idee in Obsidian: **{title}** (`{path}`)"
+   - Use AskUserQuestion:
+     ```yaml
+     header: "Obsidian Match"
+     question: "Wil je dit bestaande idee als startpunt gebruiken?"
+     options:
+       - label: "Ja, gebruik als basis (Recommended)", description: "Laad het Obsidian idee en analyseer het"
+       - label: "Nee, ander concept", description: "Ik wil een ander concept gebruiken"
+     multiSelect: false
+     ```
+   - **If "Ja":** Read the note with `mcp__obsidian__read_note()`, load as starting concept, track `obsidian_source_path` for later save-back
+3. If no match found → proceed normally
+
 **If no concept file OR user wants different input:**
+
 1. Examine the input provided by user
 2. Determine input type:
    - Output from `/thinking-idea` (structured markdown) → extract directly
@@ -101,6 +126,7 @@ Example triggers:
    - Synthesize responses into clear idea description
 
 6. Confirm understanding with user using AskUserQuestion (in user's preferred language):
+
    ```
    [Confirmation message that we'll analyze:]
 
@@ -108,6 +134,7 @@ Example triggers:
 
    Type: [creative concept / product / service / etc]
    ```
+
    ```yaml
    options:
      - label: "Correct, start analysis (Recommended)", description: "Begin with technique selection"
@@ -126,6 +153,7 @@ Example triggers:
 **Goal:** Analyze the idea type and identify which technique categories are relevant.
 
 **Process:**
+
 1. Use sequential thinking to determine:
    - Is this a creative concept? (game, story, art, music, interactive experience)
    - Is this a product idea? (app, service, business, SaaS, platform)
@@ -151,6 +179,7 @@ Example triggers:
 **Goal:** Present only relevant techniques in ranked order and suggest the best one.
 
 **Process:**
+
 1. Use sequential thinking to rank ONLY relevant techniques (filtered in Step 2):
    - Which technique will reveal the most critical weaknesses?
    - What aspects are most important to examine for THIS specific idea?
@@ -159,11 +188,13 @@ Example triggers:
    - If more than 5 relevant techniques available, select only the top 5
 
 2. Present technique selection using AskUserQuestion (in user's preferred language):
+
    ```
    💡 Analyse Technieken
 
    Welke technieken wil je toepassen?
    ```
+
    ```yaml
    header: "Analyse Technieken"
    question: "Welke technieken wil je toepassen?"
@@ -183,6 +214,7 @@ Example triggers:
    - If "Leg uit" selected: explain the techniques and present selection again
 
 **Note:**
+
 - Only show techniques that are actually relevant to this specific idea
 - Maximum 5 techniques in the options (if more available, show only top 5)
 - If fewer than 3 relevant techniques available, show all available techniques
@@ -194,6 +226,7 @@ Example triggers:
 **Goal:** Use the selected technique through interactive Q&A to identify weaknesses, test assumptions, and find problems.
 
 **Process:**
+
 1. Read the full details of the selected technique from the appropriate reference file
 
 2. Use sequential thinking to:
@@ -202,6 +235,7 @@ Example triggers:
    - Develop concrete concerns or points to examine tailored to this idea
 
 3. Present technique application (in user's preferred language):
+
    ```
    🔍 [TECHNIQUE NAME]
 
@@ -219,7 +253,9 @@ Example triggers:
    3. [concrete point 3]
 
    ```
+
    Use AskUserQuestion to guide response:
+
    ```yaml
    options:
      - label: "Answer all questions (Recommended)", description: "Provide responses to the technique questions"
@@ -234,6 +270,7 @@ Example triggers:
 6. Continue until this technique is sufficiently explored
 
 **Guidelines for technique application:**
+
 - Make questions specific to THIS idea, not generic
 - Identify real problems, not just surface-level concerns
 - Follow the technique's framework from the reference file
@@ -247,6 +284,7 @@ Example triggers:
 **Goal:** Capture key weaknesses, assumptions, and insights discovered through the technique.
 
 **Process:**
+
 1. Review the user's responses and dialogue from Step 4
 
 2. Synthesize:
@@ -256,6 +294,7 @@ Example triggers:
    - Potential improvements or solutions discussed
 
 3. Present synthesis (in user's preferred language):
+
    ```
    📋 [SUMMARY header] - [Technique Name]
 
@@ -277,6 +316,7 @@ Example triggers:
    ```
 
 4. Ask for confirmation using AskUserQuestion (in user's preferred language):
+
    ```yaml
    header: "Samenvatting Bevestigen"
    question: "Klopt deze samenvatting?"
@@ -297,6 +337,7 @@ Example triggers:
 **Goal:** Present remaining relevant techniques and suggest the best next one.
 
 **Process:**
+
 1. Use sequential thinking to rank remaining relevant techniques:
    - Which techniques haven't been applied yet AND are relevant?
    - What weaknesses still need examination?
@@ -305,6 +346,7 @@ Example triggers:
    - If more than 4 relevant techniques available, select only the top 4
 
 2. Present next action selection using AskUserQuestion (in user's preferred language):
+
    ```
    💡 Volgende Stap
 
@@ -312,6 +354,7 @@ Example triggers:
 
    Wat wil je nu doen?
    ```
+
    ```yaml
    header: "Volgende Stap"
    question: "Wat wil je nu doen?"
@@ -337,6 +380,7 @@ Example triggers:
    - If "Leg uit" selected: explain options and present selection again
 
 **Note:**
+
 - Only show techniques that are relevant AND haven't been applied yet
 - Maximum 4 techniques in the options (+ "Eindresultaat genereren" + "Leg uit")
 - If fewer than 3 relevant techniques available, show all available techniques
@@ -347,6 +391,7 @@ Example triggers:
 **Goal:** Create the refined idea as a clean, structured markdown document.
 
 **Process:**
+
 1. Review all weaknesses, assumptions, and improvements from all applied techniques
 
 2. Use sequential thinking to:
@@ -372,6 +417,7 @@ Example triggers:
    - Proper markdown formatting (# for title, ## for sections)
 
 **Example output structure:**
+
 ```yaml
 ---
 applied_techniques:
@@ -385,21 +431,24 @@ applied_techniques:
 After generating the refined content, present options for what to do with it.
 
 Use AskUserQuestion:
+
 ```yaml
 header: "Output"
 question: "Wat wil je met het verfijnde concept doen?"
 options:
   - label: "Opslaan naar concept (Recommended)", description: "Update .workspace/concept.md met verfijnde versie"
+  - label: "Opslaan naar Obsidian", description: "Opslaan als permanente Idea note in je Obsidian vault"
   - label: "Alleen tonen", description: "Toon als markdown code block (niet opslaan)"
-  - label: "Explain question", description: "Leg uit wat deze opties betekenen"
 multiSelect: false
 ```
 
 **Response handling:**
 
 **If "Opslaan naar concept":**
+
 1. Update `.workspace/concept.md` with refined content
 2. Confirm:
+
    ```
    CONCEPT UPDATED
 
@@ -412,6 +461,34 @@ multiSelect: false
    - /game:backlog - Omzetten naar feature backlog (voor games)
    ```
 
+**If "Opslaan naar Obsidian":**
+
+1. Also update `.workspace/concept.md` (so other skills can pick it up)
+2. If concept was loaded from Obsidian (tracked via `obsidian_source_path`):
+   - Overwrite: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
+   - Update frontmatter status to `developing` via `mcp__obsidian__update_frontmatter()`
+3. If new concept (no Obsidian source):
+   - Detect category from content (game/app/story/website/other)
+   - Map to path: `Ideas/Games/`, `Ideas/Apps/`, `Ideas/Stories/`, `Ideas/Websites/`, `Ideas/Other/`
+   - Add frontmatter: `type: idea, category: {cat}, status: developing, created: {date}`
+   - Write: `mcp__obsidian__write_note(path="Ideas/{subfolder}/{title}.md")`
+4. Update Home.md: `mcp__obsidian__patch_note(path="Home.md", oldString="## Recent Ideas\n", newString="## Recent Ideas\n- [[{title}]]\n")`
+5. Confirm:
+
+   ```
+   CONCEPT SAVED TO OBSIDIAN
+
+   File: Ideas/{subfolder}/{title}.md
+   Status: developing
+   Applied techniques: {list}
+
+   Next steps:
+   - /thinking:brainstorm - Creatief uitbreiden en variaties
+   - /thinking:critique - Nog een analyseronde
+   - /game:backlog - Omzetten naar feature backlog (voor games)
+   ```
+
 **If "Alleen tonen":**
+
 1. Wrap output in a code block with `markdown` language tag for copy button
 2. Display the content
