@@ -72,15 +72,55 @@ If the user provided an inline description/argument:
      multiSelect: false
      ```
    - **If "Ja":** Read the note with `mcp__obsidian__read_note()`, load as starting context, track `obsidian_source_path` for later save-back
-3. If no match found → proceed normally
+3. If no match found → proceed to Step 1c
 
-**If no concept file OR user wants new concept:**
+**Step 1c: Source selection (if no concept found)**
 
 **If no description provided:**
-Ask (in user's preferred language): "What is your idea? Describe it in 1-2 sentences."
+
+Use AskUserQuestion:
+
+```yaml
+header: "Bron"
+question: "Waar wil je beginnen?"
+options:
+  - label: "Todoist Ideas laden (Recommended)", description: "Kies een idee uit je Todoist Ideas project"
+  - label: "Nieuw idee typen", description: "Beschrijf een nieuw idee"
+  - label: "Explain question", description: "Leg uit wat dit betekent"
+multiSelect: false
+```
+
+**If "Todoist Ideas laden":**
+
+1. Fetch tasks: `mcp__todoist__get_tasks_list(project_id="2362341183")`
+2. Present tasks using AskUserQuestion:
+
+   ```yaml
+   header: "Todoist Idee"
+   question: "Welk idee wil je uitwerken?"
+   options:
+     - label: "{task 1 name}", description: "{description preview or label}"
+     - label: "{task 2 name}", description: "{description preview or label}"
+     - label: "{task 3 name}", description: "{description preview or label}"
+     - label: "{task 4 name}", description: "{description preview or label}"
+   multiSelect: false
+   ```
+
+   - Show max 4 tasks at a time. If more exist, pick the 4 most recent tasks.
+   - If user selects "Other", show next batch or let them type a search term.
+
+3. Load selected task: use task name as idea title, task description as initial context
+4. Track `todoist_source_task_id` for later closing the task after completion
+5. Proceed to Step 2 with loaded context
+
+**If "Nieuw idee typen":**
+Ask: "Wat is je idee? Beschrijf het in 1-2 zinnen."
 
 **If description provided:**
-Acknowledge briefly and proceed to Step 2.
+Also search Todoist for matching tasks: `mcp__todoist__get_tasks_list(filter="search: {argument}", project_id="2362341183")`
+
+- If match found: show "Er staat een vergelijkbaar idee in Todoist: **{task name}**" and offer to load it (with description as extra context)
+- If no match: acknowledge briefly and proceed to Step 2.
 
 ### Step 2: Explore and Expand
 
@@ -244,6 +284,26 @@ multiSelect: false
 
 1. Wrap output in a code block with `markdown` language tag for copy button
 2. Display the content
+
+### Step 6: Todoist Close Loop
+
+**Only if `todoist_source_task_id` was tracked (idea loaded from Todoist in Step 1c):**
+
+After saving/showing the output, ask:
+
+Use AskUserQuestion:
+
+```yaml
+header: "Todoist"
+question: "Het idee is uitgewerkt. Wat wil je met de Todoist taak doen?"
+options:
+  - label: "Afsluiten (Recommended)", description: "Markeer de Todoist taak als voltooid"
+  - label: "Open laten", description: "Laat de taak open in Todoist"
+multiSelect: false
+```
+
+- **If "Afsluiten":** `mcp__todoist__close_tasks(task_id=todoist_source_task_id)`
+- **If "Open laten":** no action
 
 ---
 
