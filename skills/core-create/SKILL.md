@@ -1,6 +1,5 @@
 ---
-description: Create skills interactively
-disable-model-invocation: true
+description: Create skills interactively — trigger when user wants to make, create, or add a new skill
 ---
 
 # Create
@@ -196,26 +195,16 @@ Proceed to Step 3.
 - Include AskUserQuestion integration points where user decisions are needed
 - Reference supporting files if applicable
 
-**Show draft**:
+**Enter plan mode** before writing the draft:
 
-```
-DRAFT:
+1. Use the **EnterPlanMode** tool to switch to plan mode
+2. Write the full SKILL.md draft (frontmatter + content) to the plan file
+3. Include all supporting file contents if applicable
+4. Use **ExitPlanMode** to present the plan for user approval
 
-[content]
-```
+The plan file should contain the complete skill content exactly as it will be written. The user reviews and approves via the built-in plan approval flow.
 
-Use **AskUserQuestion** tool:
-
-- header: "Draft"
-- question: "Wijzigingen nodig?"
-- options:
-  - label: "Goedkeuren (Recommended)", description: "Draft is goed, ga verder naar frontmatter"
-  - label: "Aanpassen", description: "Ik wil specifieke onderdelen wijzigen"
-  - label: "Opnieuw genereren", description: "Begin opnieuw met andere aanpak"
-  - label: "Uitleg", description: "Leg de structuur van de draft uit"
-- multiSelect: false
-
-Iterate until approved (max 3 rounds).
+After approval, proceed to Step 3.5.
 
 ### Step 3.5: Configure Frontmatter (Conditional)
 

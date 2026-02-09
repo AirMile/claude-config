@@ -1,6 +1,5 @@
 ---
-description: Edit skills interactively
-disable-model-invocation: true
+description: Edit skills interactively — trigger when user wants to modify, update, or change an existing skill
 ---
 
 # Edit
@@ -85,31 +84,17 @@ Confirm with AskUserQuestion before proceeding.
 - Skill content, instructions, examples: English
 - AskUserQuestion labels/descriptions: Follow user's language preference from CLAUDE.md
 
-Generate and show the changes:
+**Enter plan mode** before showing the preview:
 
-```
-PREVIEW:
+1. Use the **EnterPlanMode** tool to switch to plan mode
+2. Write the modified SKILL.md content to the plan file showing the full updated file
+3. For small changes: also include a summary of what changed at the top of the plan
+4. For resource changes: include all affected file contents
+5. Use **ExitPlanMode** to present the plan for user approval
 
-File: [filename]
+The plan file should contain the complete updated skill content exactly as it will be written. The user reviews and approves via the built-in plan approval flow.
 
-[For small changes: show diff-style]
-- old line
-+ new line
-
-[For large changes: show new content]
-```
-
-Use **AskUserQuestion** for apply confirmation:
-
-- header: "Wijzigingen Toepassen"
-- question: "Wil je deze wijzigingen toepassen?"
-- options:
-  - label: "Toepassen (Recommended)", description: "Wijzigingen doorvoeren"
-  - label: "Aanpassen", description: "Ik wil eerst iets wijzigen"
-  - label: "Annuleren", description: "Niets wijzigen, stoppen"
-- multiSelect: false
-
-Iterate until approved (max 3 rounds).
+After approval, proceed to Step 4.
 
 ### Step 4: Apply Changes
 
