@@ -1,11 +1,11 @@
 ---
-description: Maak nieuw project met junction-based .claude/ config en optionele GitHub publish
+description: Maak nieuw project met symlinks/junctions naar gedeelde claude-config (Linux + Windows)
 disable-model-invocation: true
 ---
 
 # Project New
 
-Creëert een nieuw project met junctions naar de gedeelde claude-config.
+Creëert een nieuw project met symlinks (Linux) of junctions (Windows) naar de gedeelde claude-config.
 
 ## Trigger
 
@@ -15,16 +15,31 @@ Creëert een nieuw project met junctions naar de gedeelde claude-config.
 
 ### FASE 0: Pre-flight Checks
 
+**Detecteer platform:**
+
+```bash
+# Detect OS
+if [[ "$(uname -s)" == "Linux" ]]; then
+  PLATFORM="linux"
+else
+  PLATFORM="windows"
+fi
+```
+
+Use the detected platform to resolve `{projects_root}` and `{config_repo}` from `paths.yaml` (see Configuration section below).
+
 **Voordat iets aangemaakt wordt, valideer:**
+
 ```bash
 # Check claude-config bestaat en compleet is
 test -d "{config_repo}"
-test -d "{config_repo}\agents"
-test -d "{config_repo}\skills"
-test -d "{config_repo}\scripts"
+test -d "{config_repo}/agents"
+test -d "{config_repo}/skills"
+test -d "{config_repo}/scripts"
 ```
 
 **Als check faalt:**
+
 ```
 ❌ claude-config niet gevonden of incompleet
 
@@ -35,6 +50,7 @@ Oplossing:
 1. Clone claude-config repo naar {config_repo}
 2. Of pas pad aan via CLAUDE_CONFIG_REPO environment variable
 ```
+
 → Stop command, maak GEEN folders aan
 
 **Als check slaagt:**
@@ -43,6 +59,7 @@ Oplossing:
 ### FASE 1: Project Naam
 
 **Als geen naam gegeven:**
+
 ```yaml
 question: "Wat is de naam van het nieuwe project?"
 header: "Project"
@@ -53,6 +70,7 @@ multiSelect: false
 ```
 
 **Validatie:**
+
 - Lowercase letters, cijfers, hyphens
 - Geen spaties of speciale tekens
 - Niet bestaand in `{projects_root}`
@@ -60,20 +78,13 @@ multiSelect: false
 ### FASE 2: Project Aanmaken
 
 ```bash
-# Maak project folder
-mkdir {projects_root}\[naam]
-
-# Maak .claude subfolder
-mkdir {projects_root}\[naam]\.claude
-
-# Maak project-specifieke folders
-mkdir {projects_root}\[naam]\.claude\docs
-mkdir {projects_root}\[naam]\.claude\research
-mkdir {projects_root}\[naam]\.workspace
-mkdir {projects_root}\[naam]\.workspace\sessions\chats
-mkdir {projects_root}\[naam]\.workspace\sessions\commands
-mkdir {projects_root}\[naam]\.workspace\plans
-mkdir {projects_root}\[naam]\.workspace\features
+# Maak project folder en subfolders
+mkdir -p {projects_root}/[naam]/.claude/docs
+mkdir -p {projects_root}/[naam]/.claude/research
+mkdir -p {projects_root}/[naam]/.workspace/sessions/chats
+mkdir -p {projects_root}/[naam]/.workspace/sessions/commands
+mkdir -p {projects_root}/[naam]/.workspace/plans
+mkdir -p {projects_root}/[naam]/.workspace/features
 ```
 
 ### FASE 2.5: Profiel Selectie
@@ -101,36 +112,52 @@ Do NOT use AskUserQuestion — present the list in plain text so all options are
 
 Store the selected profile name(s) for FASE 3.
 
-### FASE 3: Junctions Maken
+### FASE 3: Symlinks/Junctions Maken
+
+**Whole-directory links (agents, hooks, scripts):**
+
+Linux:
 
 ```bash
-# Whole-directory junctions (agents, hooks, scripts)
+ln -sfn {config_repo}/agents {projects_root}/[naam]/.claude/agents
+ln -sfn {config_repo}/hooks {projects_root}/[naam]/.claude/hooks
+ln -sfn {config_repo}/scripts {projects_root}/[naam]/.claude/scripts
+```
+
+Windows:
+
+```bash
 cmd /c "mklink /J {projects_root}\[naam]\.claude\agents {config_repo}\agents"
 cmd /c "mklink /J {projects_root}\[naam]\.claude\hooks {config_repo}\hooks"
 cmd /c "mklink /J {projects_root}\[naam]\.claude\scripts {config_repo}\scripts"
-
-# Per-skill junctions via profile selection
-mkdir {projects_root}\[naam]\.claude\skills
-
-python3 {config_repo}\skills\core-profile\switch-profile.py \
-  --profiles <selected_profiles_from_fase_2.5> \
-  --skills-dir {projects_root}\[naam]\.claude\skills \
-  --source-dir {config_repo}\skills
 ```
 
-**Note:** Skills uses per-skill junctions (not a single directory junction) so profiles can be switched later with `/core-profile`.
+**Per-skill links via profile selection (cross-platform):**
+
+```bash
+mkdir -p {projects_root}/[naam]/.claude/skills
+
+python3 {config_repo}/skills/core-profile/switch-profile.py \
+  --profiles <selected_profiles_from_fase_2.5> \
+  --skills-dir {projects_root}/[naam]/.claude/skills \
+  --source-dir {config_repo}/skills
+```
+
+**Note:** Skills uses per-skill symlinks/junctions (not a single directory link) so profiles can be switched later with `/core-profile`.
 
 ### FASE 4: Basis Bestanden
 
 **Kopieer templates:**
+
 ```bash
 # settings.local.json met default permissions
-echo '{"permissions": {"allow": []}}' > {projects_root}\[naam]\.claude\settings.local.json
+echo '{"permissions": {"allow": []}}' > {projects_root}/[naam]/.claude/settings.local.json
 
 # .gitignore met standaard excludes
 ```
 
 **.gitignore inhoud:**
+
 ```
 # Dependencies
 node_modules/
@@ -160,7 +187,7 @@ Thumbs.db
 # Claude local config (per-device, not shared)
 .claude/paths.local.yaml
 
-# Junctions (tracked via master repo, not this one)
+# Symlinks/junctions (tracked via master repo, not this one)
 .claude/agents/
 .claude/hooks/
 .claude/skills/
@@ -170,7 +197,7 @@ Thumbs.db
 ### FASE 5: Git Initialisatie
 
 ```bash
-cd {projects_root}\[naam]
+cd {projects_root}/[naam]
 git init
 git add .gitignore
 ```
@@ -178,6 +205,7 @@ git add .gitignore
 ### FASE 6: Project Configuratie
 
 **Roep /core-setup aan:**
+
 ```
 Vraag gebruiker: "Wil je nu /core-setup uitvoeren om CLAUDE.md te configureren?"
 
@@ -187,13 +215,15 @@ Options:
 ```
 
 **Als /core-setup wordt uitgevoerd:**
+
 - Lees CLAUDE.base.md van `{config_repo}`
 - Volg normale /core-setup flow
-- Schrijf naar `{projects_root}\[naam]\.claude\CLAUDE.md`
+- Schrijf naar `{projects_root}/[naam]/.claude/CLAUDE.md`
 
 ### FASE 7: GitHub Publish (Optioneel)
 
 **Vraag:**
+
 ```yaml
 question: "Wil je de repo publiceren naar GitHub?"
 header: "Publish"
@@ -208,14 +238,17 @@ multiSelect: false
 ```
 
 **Als publish gewenst:**
+
 1. Stage alle bestanden en maak initial commit:
+
 ```bash
-cd {projects_root}\[naam]
+cd {projects_root}/[naam]
 git add -A
 git commit -m "feat: initial commit - [naam]"
 ```
 
 2. Maak GitHub repo en push:
+
 ```bash
 # Private repo
 gh repo create [naam] --private --source=. --push --description "[project description]"
@@ -227,12 +260,14 @@ gh repo create [naam] --public --source=. --push --description "[project descrip
 3. Toon repo URL na succesvolle publish
 
 **Vereisten voor publish:**
+
 - `gh` CLI geïnstalleerd en authenticated
 - Check met `gh auth status` voordat je begint
 
 ### FASE 8: Afronden
 
 **Vraag:**
+
 ```yaml
 question: "Project aangemaakt. Wat wil je doen?"
 header: "Open"
@@ -245,25 +280,27 @@ multiSelect: false
 ```
 
 **Als VS Code:**
+
 ```bash
-code {projects_root}\[naam]
+code {projects_root}/[naam]
 ```
 
 **Output:**
+
 ```
 ✅ Project [naam] aangemaakt
 
 Structuur:
-{projects_root}\[naam]\
-├── .claude\
-│   ├── agents\     → junction (hele map)
-│   ├── hooks\      → junction (hele map)
-│   ├── scripts\    → junction (hele map)
-│   ├── skills\     → per-skill junctions (profiel: [naam])
-│   ├── docs\
-│   ├── research\
+{projects_root}/[naam]/
+├── .claude/
+│   ├── agents/     → symlink/junction (hele map)
+│   ├── hooks/      → symlink/junction (hele map)
+│   ├── scripts/    → symlink/junction (hele map)
+│   ├── skills/     → per-skill symlinks/junctions (profiel: [naam])
+│   ├── docs/
+│   ├── research/
 │   └── CLAUDE.md (of nog te configureren)
-├── .workspace\
+├── .workspace/
 └── .gitignore
 
 Actief profiel: [profiel naam(en)]
@@ -272,21 +309,22 @@ GitHub: https://github.com/[user]/[naam] (indien gepubliceerd)
 
 ## Configuration
 
-Paths zijn configureerbaar per apparaat:
+Paths zijn configureerbaar per apparaat. Defaults zijn platform-afhankelijk:
 
-| Placeholder | Default | Environment Variable |
-|-------------|---------|---------------------|
-| `{projects_root}` | `C:\Projects` | `CLAUDE_PROJECTS_ROOT` |
-| `{config_repo}` | `C:\Projects\claude-config` | `CLAUDE_CONFIG_REPO` |
+| Placeholder       | Linux Default         | Windows Default             | Environment Variable   |
+| ----------------- | --------------------- | --------------------------- | ---------------------- |
+| `{projects_root}` | `$HOME/projects`      | `C:\Projects`               | `CLAUDE_PROJECTS_ROOT` |
+| `{config_repo}`   | `$HOME/claude-config` | `C:\Projects\claude-config` | `CLAUDE_CONFIG_REPO`   |
 
 **Resolution order (eerste match wint):**
+
 1. Environment variable
 2. `.claude/paths.local.yaml` (lokaal per project, niet in git)
-3. `resources/paths.yaml` (gedeelde defaults)
+3. `resources/paths.yaml` (gedeelde defaults, platform-sectie)
 
 ## Restrictions
 
-- Alleen voor Windows (junctions zijn Windows-specifiek)
+- Supported on Linux (symlinks) and Windows (junctions)
 - Project naam moet uniek zijn in `{projects_root}`
 - Master config moet bestaan in `{config_repo}`
 - GitHub publish vereist `gh` CLI authenticated
