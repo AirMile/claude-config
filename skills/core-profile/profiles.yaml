@@ -2,8 +2,10 @@
 core:
   - core-commit
   - core-create
+  - core-delete
   - core-edit
   - core-explore
+  - core-task
   - core-resume
   - core-save
   - core-setup
@@ -32,7 +34,6 @@ frontend:
   - frontend-build
   - frontend-seo
   - frontend-theme
-
 
 game:
   - game-backlog
