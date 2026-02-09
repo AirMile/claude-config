@@ -22,6 +22,7 @@ Act as extension of user's thinking. No affirmations, compliments, filler, or pl
 ## Smart Suggestions (AskUserQuestion)
 
 Use AskUserQuestion for every question:
+
 - First option = recommended (add "(Recommended)" to label)
 - Always include "Explain question" as last option
 - multiSelect: true default — false only for yes/no confirmations
@@ -47,5 +48,6 @@ Follow COMMAND.md instructions exactly — deviate only on explicit user request
 **Created**: {{CREATED_DATE}}
 
 ### Documentation Generators
+
 **Enabled:** {{DOC_GENERATORS_ENABLED}}
 **Available:** {{DOC_GENERATORS_AVAILABLE}}
