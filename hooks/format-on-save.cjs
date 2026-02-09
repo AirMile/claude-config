@@ -9,7 +9,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 
 // Supported extensions for Prettier
-const SUPPORTED_EXTENSIONS = new Set([
+const PRETTIER_EXTENSIONS = new Set([
   '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs',
   '.css', '.scss', '.less',
   '.json', '.jsonc',
@@ -17,6 +17,9 @@ const SUPPORTED_EXTENSIONS = new Set([
   '.html', '.yml', '.yaml',
   '.graphql', '.gql'
 ]);
+
+// GDScript extensions for gdformat
+const GDSCRIPT_EXTENSIONS = new Set(['.gd']);
 
 async function main() {
   let input = '';
@@ -42,20 +45,30 @@ async function main() {
 
   // Check if file extension is supported
   const ext = path.extname(filePath).toLowerCase();
-  if (!SUPPORTED_EXTENSIONS.has(ext)) {
-    process.exit(0);
-  }
+  const cwd = process.env.PROJECT_DIR || process.cwd();
 
-  // Run Prettier
-  try {
-    execSync(`npx prettier --write "${filePath}"`, {
-      stdio: 'pipe',
-      timeout: 10000,
-      cwd: process.env.PROJECT_DIR || process.cwd()
-    });
-  } catch {
-    // Formatter failure is non-blocking — skip silently
-    process.exit(0);
+  if (GDSCRIPT_EXTENSIONS.has(ext)) {
+    try {
+      execSync(`gdformat "${filePath}"`, {
+        stdio: 'pipe',
+        timeout: 10000,
+        cwd
+      });
+    } catch {
+      // gdformat not installed or failed — skip silently
+      process.exit(0);
+    }
+  } else if (PRETTIER_EXTENSIONS.has(ext)) {
+    try {
+      execSync(`npx prettier --write "${filePath}"`, {
+        stdio: 'pipe',
+        timeout: 10000,
+        cwd
+      });
+    } catch {
+      // Formatter failure is non-blocking — skip silently
+      process.exit(0);
+    }
   }
 }
 
