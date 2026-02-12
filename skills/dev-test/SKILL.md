@@ -105,29 +105,29 @@ NOT MANUAL (these are AUTO):
 
 **BROWSER patterns** (MCP browser tools):
 
-| Pattern             | Steps                                                                |
-| ------------------- | -------------------------------------------------------------------- |
-| Form submit         | navigate, fill_form, click submit, snapshot (check success state)    |
-| Route protection    | navigate to protected URL, snapshot (check redirect to login)        |
-| Element presence    | navigate, snapshot, find element text/role in snapshot               |
-| URL state           | interact, evaluate(() => location.href)                              |
-| Keyboard navigation | press_key (Tab/Enter/Esc), snapshot (check focus state)              |
-| Responsive layout   | resize(width, height), take_screenshot (check layout)                |
-| Error validation    | fill invalid input, submit, snapshot (check error messages)          |
-| Toast/notification  | trigger action, wait_for(text), snapshot (check notification)        |
+| Pattern             | Steps                                                             |
+| ------------------- | ----------------------------------------------------------------- |
+| Form submit         | navigate, fill_form, click submit, snapshot (check success state) |
+| Route protection    | navigate to protected URL, snapshot (check redirect to login)     |
+| Element presence    | navigate, snapshot, find element text/role in snapshot            |
+| URL state           | interact, evaluate(() => location.href)                           |
+| Keyboard navigation | press_key (Tab/Enter/Esc), snapshot (check focus state)           |
+| Responsive layout   | resize(width, height), take_screenshot (check layout)             |
+| Error validation    | fill invalid input, submit, snapshot (check error messages)       |
+| Toast/notification  | trigger action, wait_for(text), snapshot (check notification)     |
 
 **CLI patterns** (bash commands):
 
-| Pattern             | Steps                                                                |
-| ------------------- | -------------------------------------------------------------------- |
-| API auth check      | curl endpoint without/with token → check HTTP status (401/403/200)   |
-| API response body   | curl endpoint → parse JSON, check expected fields/values             |
-| API validation      | curl POST with invalid data → check 400 + error message             |
-| Existing test suite | npm test / npx vitest / npx playwright test → check exit code        |
-| Type checking       | npx tsc --noEmit → check exit code + error count                    |
-| Build verification  | npm run build → check exit code                                     |
-| File state          | cat/read file → check contents match expected                       |
-| DB state            | query command → check result matches expected                       |
+| Pattern             | Steps                                                              |
+| ------------------- | ------------------------------------------------------------------ |
+| API auth check      | curl endpoint without/with token → check HTTP status (401/403/200) |
+| API response body   | curl endpoint → parse JSON, check expected fields/values           |
+| API validation      | curl POST with invalid data → check 400 + error message            |
+| Existing test suite | npm test / npx vitest / npx playwright test → check exit code      |
+| Type checking       | npx tsc --noEmit → check exit code + error count                   |
+| Build verification  | npm run build → check exit code                                    |
+| File state          | cat/read file → check contents match expected                      |
+| DB state            | query command → check result matches expected                      |
 
 ## Workflow
 
@@ -154,6 +154,7 @@ NOT MANUAL (these are AUTO):
    **Always** use a Task agent (Explore) to gather test data. Never read source files directly in the main conversation.
 
    Launch Explore agent with prompt:
+
    ```
    Feature: {feature-name}
    Checklist: .workspace/features/{feature-name}/03-test-checklist.md
@@ -376,6 +377,7 @@ VERWACHT:
 ```
 
 Use AskUserQuestion tool per item:
+
 - header: "Test {n}/{total_manual}"
 - question: "Resultaat van '{item title}'?"
 - options:
@@ -415,6 +417,7 @@ TOTAAL PASS: {n}  TOTAAL FAIL: {n}
 If any AUTO items failed automatically, offer the user the option to manually verify:
 
 Use AskUserQuestion tool:
+
 - header: "Auto-gefaalde Items"
 - question: "Er zijn {n} automatisch gefaalde items. Wil je deze handmatig controleren?"
 - options:
@@ -563,12 +566,6 @@ SYNC:  Root cause: {what was actually wrong, file:line}.
        Impact: {what this affects in the codebase}.
 ```
 
-**After all fixes:**
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Fixes ready for re-test"
-```
-
 ---
 
 ### FASE 5: Re-test (Hybrid)
@@ -668,6 +665,7 @@ Use AskUserQuestion tool:
 - multiSelect: false
 
 Loop back to FASE 3 until all pass or user exits. On loop-back:
+
 - AUTO items that still fail → re-run automatically in FASE 5 Phase A
 - MANUAL items that still fail → re-test manually in FASE 5 Phase B
 
@@ -684,31 +682,31 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 
    ## Summary
 
-   | Metric         | Value       |
-   | -------------- | ----------- |
-   | Status         | VERIFIED    |
-   | Items          | {N}         |
-   | Passed         | {N}         |
-   | Auto           | {N}         |
-   | Manual         | {N}         |
-   | Date           | {timestamp} |
+   | Metric | Value       |
+   | ------ | ----------- |
+   | Status | VERIFIED    |
+   | Items  | {N}         |
+   | Passed | {N}         |
+   | Auto   | {N}         |
+   | Manual | {N}         |
+   | Date   | {timestamp} |
 
    ## Test History
 
    ### Session 1: {date}
 
-   | #   | Test                  | Type   | Initial | Final | Fixes Applied     |
-   | --- | --------------------- | ------ | ------- | ----- | ----------------- |
-   | 1   | Valid registration    | AUTO   | PASS    | PASS  | -                 |
-   | 2   | Without email         | AUTO   | FAIL    | PASS  | {fix description} |
-   | 3   | Welcome mail          | MANUAL | FAIL    | PASS  | {fix description} |
+   | #   | Test               | Type   | Initial | Final | Fixes Applied     |
+   | --- | ------------------ | ------ | ------- | ----- | ----------------- |
+   | 1   | Valid registration | AUTO   | PASS    | PASS  | -                 |
+   | 2   | Without email      | AUTO   | FAIL    | PASS  | {fix description} |
+   | 3   | Welcome mail       | MANUAL | FAIL    | PASS  | {fix description} |
 
    ## Automated Test Evidence
 
-   | #   | Test              | Bewijs                                    |
-   | --- | ----------------- | ----------------------------------------- |
-   | 1   | Valid registration| Snapshot: /dashboard + h1 'Welkom'        |
-   | 2   | Without email     | Snapshot: foutmelding 'Email is verplicht' |
+   | #   | Test               | Bewijs                                     |
+   | --- | ------------------ | ------------------------------------------ |
+   | 1   | Valid registration | Snapshot: /dashboard + h1 'Welkom'         |
+   | 2   | Without email      | Snapshot: foutmelding 'Email is verplicht' |
 
    ## Tests Added
 
@@ -744,11 +742,6 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
    ```
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
-
-5. **Notify:**
-   ```bash
-   powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "{feature} verified (hybrid)"
-   ```
 
 ---
 
@@ -814,4 +807,3 @@ This skill must ALWAYS:
 - Ask clarifying questions for subjective issues
 - Loop until all items pass
 - Update documentation on completion with hybrid results format
-- Send notifications at key points

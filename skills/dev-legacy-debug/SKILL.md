@@ -16,6 +16,7 @@ This skill guides through a structured debugging workflow: understanding the pro
 **Trigger:** `/dev-legacy-debug` command
 
 **Use this skill when:**
+
 - Runtime errors or exceptions occur
 - Build or compilation failures
 - Unexpected behavior (code runs but wrong output)
@@ -24,6 +25,7 @@ This skill guides through a structured debugging workflow: understanding the pro
 - Intermittent/flaky issues
 
 **User triggers examples:**
+
 - "De login werkt niet meer"
 - "Build faalt met error X"
 - "Deze functie returned verkeerde data"
@@ -41,6 +43,7 @@ This skill guides through a structured debugging workflow: understanding the pro
 #### Step 1: Problem Classification
 
 Use AskUserQuestion tool:
+
 - header: "Probleem Type"
 - question: "Wat voor type probleem is dit?"
 - options:
@@ -62,6 +65,7 @@ Store the answer as `problemType` for Step 2.
 
 **If Runtime Error:**
 Use AskUserQuestion tool:
+
 - header: "Error Details"
 - question: "Welke informatie heb je over de error?"
 - options:
@@ -81,6 +85,7 @@ Then ask user to share the error details.
 
 **If Logic Bug:**
 Use AskUserQuestion tool:
+
 - header: "Gedrag Details"
 - question: "Beschrijf het verschil tussen verwacht en werkelijk gedrag:"
 - options:
@@ -100,6 +105,7 @@ Then ask for specific expected vs actual behavior.
 
 **If Performance Issue:**
 Use AskUserQuestion tool:
+
 - header: "Performance Details"
 - question: "Wanneer treedt het performance probleem op?"
 - options:
@@ -119,6 +125,7 @@ Then ask about scale/context details.
 
 **If Integration Issue:**
 Use AskUserQuestion tool:
+
 - header: "Integratie Details"
 - question: "Welk extern systeem is betrokken?"
 - options:
@@ -139,6 +146,7 @@ Then ask for specific API/service details and error responses.
 #### Step 3: Summary & Confirmation
 
 Summarize understanding (in user's preferred language):
+
 ```
 📋 PROBLEEM SAMENVATTING:
 
@@ -149,6 +157,7 @@ Details: [specific info gathered in Step 2]
 ```
 
 Use AskUserQuestion tool for confirmation:
+
 - header: "Samenvatting Bevestiging"
 - question: "Klopt deze probleem samenvatting?"
 - options:
@@ -161,6 +170,7 @@ Use AskUserQuestion tool for confirmation:
 - multiSelect: false
 
 Response handling:
+
 - If "Ja, start onderzoek": continue to FASE 2
 - If "Nee, correctie nodig": ask for corrections and update summary
 
@@ -173,13 +183,14 @@ Response handling:
 **Process:**
 Launch 3 agents in parallel with Task tool:
 
-| Agent | Focus | Prompt includes |
-|-------|-------|-----------------|
-| debug-error-tracer | Error origin | Stack trace, error message, exception flow |
+| Agent                  | Focus          | Prompt includes                            |
+| ---------------------- | -------------- | ------------------------------------------ |
+| debug-error-tracer     | Error origin   | Stack trace, error message, exception flow |
 | debug-change-detective | Recent changes | Git history, recent commits affecting area |
-| debug-context-mapper | Code context | Related files, dependencies, data flow |
+| debug-context-mapper   | Code context   | Related files, dependencies, data flow     |
 
 Each agent receives:
+
 - Problem summary from FASE 1
 - Relevant file paths (if known)
 - Error messages/stack traces (if available)
@@ -203,6 +214,7 @@ Use `mcp__sequential-thinking__sequentialthinking` to:
 6. Identify knowledge gaps → what to research in FASE 4
 
 **Output (in user's preferred language):**
+
 ```
 🔍 [ROOT CAUSE ANALYSIS header]:
 
@@ -224,6 +236,7 @@ Use `mcp__sequential-thinking__sequentialthinking` to:
 **Goal:** Research solutions based on root cause analysis.
 
 **Process:**
+
 1. Use `mcp__Context7__resolve-library-id` to find relevant libraries
 2. Use `mcp__Context7__get-library-docs` with specific topics:
    - Known bugs or issues
@@ -231,16 +244,12 @@ Use `mcp__sequential-thinking__sequentialthinking` to:
    - Recommended patterns/solutions
 
 **Focus areas based on root cause:**
+
 - If dependency issue → library version docs, migration guides
 - If pattern misuse → correct usage examples, anti-patterns
 - If edge case → error handling patterns, validation approaches
 
 **Output:** Synthesize research findings relevant to the fix.
-
-**Send notification:**
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Research complete"
-```
 
 ---
 
@@ -251,18 +260,20 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 **Process:**
 Launch 3 agents in parallel with Task tool:
 
-| Agent | Philosophy | Focus |
-|-------|------------|-------|
-| fix-minimal | "Kleinste wijziging" | Hotfix, minimal risk, fewest changes |
-| fix-thorough | "Volledige fix" | Address root cause, add tests, clean up |
-| fix-defensive | "Preventief" | Add safeguards, validation, prevent recurrence |
+| Agent         | Philosophy           | Focus                                          |
+| ------------- | -------------------- | ---------------------------------------------- |
+| fix-minimal   | "Kleinste wijziging" | Hotfix, minimal risk, fewest changes           |
+| fix-thorough  | "Volledige fix"      | Address root cause, add tests, clean up        |
+| fix-defensive | "Preventief"         | Add safeguards, validation, prevent recurrence |
 
 Each agent receives:
+
 - Root cause analysis from FASE 3
 - Research findings from FASE 4
 - Affected code files
 
 Each agent returns:
+
 - Specific changes with file:line references
 - Risk assessment (low/medium/high)
 - Estimated scope (files affected)
@@ -274,12 +285,8 @@ Each agent returns:
 
 **Goal:** Present options and get user approval.
 
-**Send notification:**
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Fix options ready"
-```
-
 **Output (in user's preferred language):**
+
 ```
 🔧 [FIX OPTIONS header]:
 
@@ -316,6 +323,7 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 #### Step 1: Strategy Selection
 
 Use AskUserQuestion tool:
+
 - header: "Fix Strategie"
 - question: "Welke fix aanpak wil je gebruiken?"
 - options:
@@ -338,6 +346,7 @@ Based on `selectedStrategy`, present the specific fixes from that strategy.
 **Generate options dynamically from the chosen strategy's agent output:**
 
 Use AskUserQuestion tool:
+
 - header: "Fixes Selecteren"
 - question: "Welke fixes wil je toepassen uit de [selectedStrategy] strategie?"
 - options: (generated from agent output, examples below)
@@ -383,6 +392,7 @@ Use AskUserQuestion tool:
 Store selected fixes as `selectedFixes`.
 
 Response handling:
+
 - If user selects specific fixes: apply only those fixes in FASE 7
 - If user selects "Alle fixes toepassen": apply all fixes from the strategy
 - Pass `selectedFixes` to FASE 7 for implementation
@@ -394,10 +404,12 @@ Response handling:
 **Goal:** Execute the selected fixes from FASE 6.
 
 **Input:**
+
 - `selectedStrategy` from FASE 6 Step 1
 - `selectedFixes` from FASE 6 Step 2
 
 **Process:**
+
 1. Apply only the `selectedFixes` from the chosen strategy
 2. Use Edit tool for modifications
 3. Follow the exact steps from the chosen agent's plan for each selected fix

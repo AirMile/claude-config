@@ -401,11 +401,6 @@ Final Confidence = (Risk × 0.40) + (Alternatives × 0.30) + (Simplification × 
 
 ---
 
-**Send notification:**
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Plan analysis complete"
-```
-
 ---
 
 ### FASE 4: Report Generation

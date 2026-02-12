@@ -701,11 +701,6 @@ Files modified: 2
 -> Generating re-test checklist...
 ```
 
-**Send notification:**
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Fixes ready for re-test"
-```
-
 ---
 
 ### FASE 4: Generate Re-test Checklist
@@ -917,11 +912,6 @@ Next steps:
 - Or refine this feature: /dev-legacy-4-refine {feature-name}
 ```
 
-**Send notification:**
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "{feature} verified"
-```
-
 ---
 
 ## Output Structure
@@ -1031,12 +1021,6 @@ Follow the Language Policy in CLAUDE.md. AskUserQuestion labels in user's prefer
 - Never guess what user means
 - Ask specific options based on context
 - Convert to TESTABLE or MEASURABLE before fixing
-
-### Notifications
-- Notify when fixes are ready for re-test
-- Notify when verification is complete
-- User may be playing the game, not watching terminal
-
 ### Minimal Re-test
 - Only ask user to re-test fixed items
 - Don't re-test items that already passed
@@ -1061,4 +1045,3 @@ This skill must ALWAYS:
 - Generate re-test checklist with only fixed items
 - Loop until all items pass
 - Update documentation on completion
-- Send notifications at key points

@@ -16,6 +16,7 @@ Toont overzicht van alle projecten die junction-based .claude/ config gebruiken.
 ### FASE 1: Scan Projects
 
 **Scan C:\Projects\ voor projecten:**
+
 ```bash
 # Vind alle folders met .claude\agents junction
 for dir in /c/Projects/*/; do
@@ -28,12 +29,14 @@ done
 ### FASE 2: Verzamel Info
 
 **Per gevonden project:**
+
 1. Project naam (folder naam)
 2. Project type (uit CLAUDE.md indien aanwezig)
 3. Junction status (intact/broken)
 4. Git status (clean/dirty)
 
 **Junction status check:**
+
 ```bash
 # Check of junction target bereikbaar is
 test -d "C:\Projects\[naam]\.claude\agents\."
@@ -42,6 +45,7 @@ test -d "C:\Projects\[naam]\.claude\agents\."
 ### FASE 3: Output
 
 **Format:**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ 📁 PROJECTS MET JUNCTION-BASED CONFIG                       │
@@ -59,6 +63,7 @@ test -d "C:\Projects\[naam]\.claude\agents\."
 ```
 
 **Broken junction handling:**
+
 ```
 ⚠️ Project 'mobile-app' heeft broken junctions.
    Herstel met: cmd /c "mklink /J .claude\agents C:\Projects\claude-config\agents"
@@ -67,12 +72,13 @@ test -d "C:\Projects\[naam]\.claude\agents\."
 ### FASE 4: Quick Actions
 
 **Na output, bied opties:**
+
 ```yaml
 question: "Wat wil je doen?"
 header: "Actie"
 options:
   - label: "Nieuw project maken"
-    description: "Start /project-new"
+    description: "Start /project-add"
   - label: "Project verwijderen"
     description: "Start /project-remove"
   - label: "Herstel broken junctions"
@@ -85,11 +91,13 @@ multiSelect: false
 ## Output Details
 
 **Junction status indicators:**
+
 - `✓ OK` - Alle 4 junctions intact en bereikbaar
 - `⚠ broken` - Een of meer junctions wijzen naar non-existent target
 - `✗ missing` - .claude folder bestaat maar geen junctions
 
 **Git status indicators:**
+
 - `clean` - Geen uncommitted changes
 - `N changes` - Aantal uncommitted changes
 - `not a repo` - Geen git repository

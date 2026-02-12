@@ -9,21 +9,20 @@ core:
   - core-resume
   - core-save
   - core-setup
+  - project-list
+  - project-add
+  - project-remove
 
 dev:
-  - dev-plan
   - dev-build
   - dev-define
+  - dev-plan
   - dev-refactor
+  - dev-server
   - dev-test
   - dev-worktree
 
 dev-legacy:
-  - dev-legacy-1-plan
-  - dev-legacy-2-code
-  - dev-legacy-3-verify
-  - dev-legacy-4-refine
-  - dev-legacy-5-refactor
   - dev-legacy-debug
   - dev-legacy-owasp
   - dev-legacy-verify
@@ -43,7 +42,7 @@ game:
 
 project:
   - project-list
-  - project-new
+  - project-add
   - project-remove
 
 story:

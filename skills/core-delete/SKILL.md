@@ -268,12 +268,6 @@ Remaining references: [0 / N still present]
 [If remaining: list files that still reference the skill — user chose to skip these]
 ```
 
-Send notification:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Skill deleted: [name]" 2>/dev/null || true
-```
-
 ## Safety Rules
 
 - **NEVER** delete `core-profile` — it manages all other skills

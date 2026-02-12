@@ -365,9 +365,3 @@ Use sequential thinking to verify:
 
 **Auto-fix** (no approval needed): formatting, whitespace, path separators
 **Ask user** (needs approval): content changes, missing files, structure changes
-
-Send notification:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Skill created: [name]"
-```

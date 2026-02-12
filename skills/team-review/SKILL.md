@@ -45,11 +45,6 @@ Spawn 3 parallel agents via Task tool:
 
 Each agent uses Context7 to research best practices for detected languages/frameworks.
 
-**Send notification (after Step 3 parallel agents):**
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Research complete"
-```
-
 ### Step 4: Review Code
 
 Analyze the diff against:
@@ -88,26 +83,12 @@ Format output as constructive feedback for teammate:
 - [what's done well]
 ```
 
-**Send notification (workflow complete):**
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Code review complete"
-```
-
 ---
 
 ## Best Practices
 
 ### Language
 Follow the Language Policy in CLAUDE.md.
-
-### Notifications
-- **Notify when Claude waits for user input AFTER a long-running phase**
-- Notification moments:
-  - After Step 3 (parallel research agents): "Research complete"
-  - After Step 5 (workflow complete): "Code review complete"
-- Use the shared script: `.claude/scripts/notify.ps1` with `-Title` and `-Message` parameters
-- Never skip notifications - user may be away from screen during agent execution
-
 ### Do
 - Always check CLAUDE.md first for project-specific rules
 - Provide actionable feedback with specific file/line references

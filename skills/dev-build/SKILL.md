@@ -270,12 +270,6 @@ Codebase Sync: See architectural overview above or in 02-build-log.md
 
 Move feature from `### DEF` to `### BLT` in `.workspace/backlog.md`
 
-**Step 4: Send notification**
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Build complete: {feature}"
-```
-
 ## Test Output Parsing (CRITICAL)
 
 Condense all test output to this format. Omit stack traces, framework banners, and verbose output.

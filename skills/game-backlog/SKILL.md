@@ -406,11 +406,6 @@ Start development:
 /game:define {first-mvp-feature}
 ```
 
-**Send notification:**
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Backlog ready: {count} features"
-```
-
 ## Best Practices
 
 ### Feature Granularity

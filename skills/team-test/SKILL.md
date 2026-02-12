@@ -16,15 +16,18 @@ Testing skill for feature branches after code review. Analyzes all commits since
 Activate this skill after code review of teammate's code needs testing.
 
 **Primary trigger:**
+
 - `/team-test` command after `/team-review` completed
 - When feature branch code from teammate needs verification
 
 **Context indicators:**
+
 - On feature branch (not main/master/develop)
 - Code review completed
 - Changes ready for testing before merge
 
 **NOT for:**
+
 - Testing own code (use `/dev-legacy-verify`)
 - Main/develop branch
 - Code without prior review
@@ -41,6 +44,7 @@ Activate this skill after code review of teammate's code needs testing.
 6. Identify languages/frameworks in changed files
 
 **Output:**
+
 ```
 📋 BRANCH ANALYSIS
 
@@ -94,6 +98,7 @@ Return findings + what to cache.
 4. Append new findings to `references/research-cache.md`
 
 **Output:**
+
 ```
 🔍 RESEARCH COMPLETE
 
@@ -136,6 +141,7 @@ Research: [integration research]
 ```
 
 **Output:**
+
 ```
 🧪 SCENARIOS GENERATED
 
@@ -163,6 +169,7 @@ Use sequential thinking to categorize each scenario:
 ```
 
 **Criteria for automated:**
+
 - Unit logic (functions, methods)
 - API endpoints
 - Database operations
@@ -170,6 +177,7 @@ Use sequential thinking to categorize each scenario:
 - Existing test infrastructure supports it
 
 **Criteria for manual:**
+
 - UI/UX flows
 - Visual appearance
 - Browser-specific behavior
@@ -177,6 +185,7 @@ Use sequential thinking to categorize each scenario:
 - No existing test infrastructure
 
 **Output:**
+
 ```
 📋 TEST PLAN
 
@@ -200,11 +209,6 @@ options:
 multiSelect: false
 ```
 
-**Send notification (after FASE 1 + 2 parallel agents):**
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Test plan ready"
-```
-
 ---
 
 ### FASE 4: AUTOMATED TEST EXECUTION
@@ -212,6 +216,7 @@ powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Clau
 **Goal:** Run automated tests first.
 
 1. Execute test runner script:
+
 ```bash
 python scripts/run_automated_tests.py
 ```
@@ -219,6 +224,7 @@ python scripts/run_automated_tests.py
 2. Parse results
 
 **Output:**
+
 ```
 🤖 AUTOMATED TESTS
 
@@ -259,6 +265,7 @@ multiSelect: false
 ```
 
 **Handle responses:**
+
 - **1 (ok):** `✅ {Scenario} - PASSED` → next test
 - **2 (issues):** Ask for description → log issue → next test
 - **3 (skip):** `⊘ {Scenario} - SKIPPED` → next test
@@ -290,27 +297,15 @@ Pass rate: X%
 Recommendation: [ready for merge / needs fixes]
 ```
 
-**Send notification (workflow complete):**
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Testing complete"
-```
-
 ---
 
 ## Best Practices
 
 ### Language
+
 Follow the Language Policy in CLAUDE.md.
-
-### Notifications
-- **Notify when Claude waits for user input AFTER a long-running phase**
-- Notification moments:
-  - FASE 3 end (after FASE 1 + 2 parallel agents): "Test plan ready"
-  - After FASE 6 (workflow complete): "Testing complete"
-- Use the shared script: `.claude/scripts/notify.ps1` with `-Title` and `-Message` parameters
-- Never skip notifications - user may be away from screen during agent execution
-
 ### Do
+
 - Always check branch first (not main/master/develop)
 - Check research cache before Context7 queries
 - Use sequential thinking in all agents and test plan creation
@@ -320,6 +315,7 @@ Follow the Language Policy in CLAUDE.md.
 - Update cache with new research findings
 
 ### Don't
+
 - Skip branch validation
 - Duplicate research already in cache
 - Generate tests for unchanged code

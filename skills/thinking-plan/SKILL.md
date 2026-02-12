@@ -78,12 +78,6 @@ Task tool met subagent_type:
 └─ plan-web-architecture (system design, scalability)
 ```
 
-**Na research:** Stuur notificatie:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Research compleet"
-```
-
 ### FASE 3.5: Quick Draft
 
 Genereer een compact, scanbaar overzicht:
@@ -116,12 +110,6 @@ Genereer een compact, scanbaar overzicht:
 - Past op één scherm
 - Inline risico/effort indicators
 - Alleen essentials, geen lange teksten
-
-**Na draft:** Stuur notificatie:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Draft ready"
-```
 
 ### FASE 4: Draft Review
 
@@ -184,12 +172,6 @@ Task tool met subagent_type:
 │ • {wat kan weg}: {waarom}                                  │
 │ • {wat kan later}: {waarom}                                │
 └────────────────────────────────────────────────────────────┘
-```
-
-**Na analyse:** Stuur notificatie:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Analyse compleet"
 ```
 
 **Na analyse tonen:** Vraag opnieuw met AskUserQuestion:
@@ -309,12 +291,6 @@ multiSelect: false
    - /thinking:plan - Nog een planronde
    - /dev:build - Start implementatie
    ```
-
-**Na completion:** Stuur notificatie:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Plan complete"
-```
 
 ## Agents
 

@@ -197,12 +197,6 @@ Search for orphaned references to the old/deleted skill name in `.claude/` recur
 - Auto-fix (no approval): formatting, whitespace, path separators
 - Ask user (needs approval): content changes, deletions, structural changes
 
-Send notification:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Skill edited: [name]"
-```
-
 ## Special Cases
 
 ### Delete

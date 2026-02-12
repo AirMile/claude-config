@@ -442,12 +442,6 @@ Start development:
 /dev:define {first-mvp-feature}
 ```
 
-**Send notification (if script exists):**
-
-```bash
-if (Test-Path .claude/scripts/notify.ps1) { powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Backlog ready: {count} features" }
-```
-
 ## Best Practices
 
 ### Feature Granularity

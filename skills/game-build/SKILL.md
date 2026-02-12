@@ -165,19 +165,15 @@ extends GutTest
 
 var _sut: ClassName  # System Under Test
 
-
 func before_each() -> void:
     pass  # Setup
-
 
 func after_each() -> void:
     pass  # Cleanup
 
-
 # REQ-001: {requirement description}
 func test_req001_{snake_case_description}() -> void:
     pending("Not implemented")
-
 
 # REQ-002: {requirement description}
 func test_req002_{snake_case_description}() -> void:
@@ -465,11 +461,9 @@ extends Node2D
 var _results: Dictionary = {}
 var _all_passed: bool = false
 
-
 func _ready() -> void:
     await _run_all_tests()
     _report_and_quit()
-
 
 func _run_all_tests() -> void:
     print("INTEGRATION TEST START: {feature}")
@@ -480,7 +474,6 @@ func _run_all_tests() -> void:
 
     _all_passed = _results.values().all(func(r): return r)
 
-
 func _test_req001_damage() -> bool:
     # Test implementation
     var ability := WaterAbility.new()
@@ -488,11 +481,9 @@ func _test_req001_damage() -> bool:
     # ... test logic
     return true  # or false
 
-
 func _test_req002_spawn() -> bool:
     # Test implementation
     return true
-
 
 func _report_and_quit() -> void:
     print("")
@@ -629,11 +620,9 @@ extends Node
 
 var _debug_log: Array[Dictionary] = []
 
-
 func _ready() -> void:
     _connect_debug_signals(get_parent())
     print("[PLAYTEST] Debug listener active - tracking %d signals" % _debug_log.size())
-
 
 func _connect_debug_signals(node: Node) -> void:
     for signal_info in node.get_signal_list():
@@ -641,7 +630,6 @@ func _connect_debug_signals(node: Node) -> void:
             node.connect(signal_info.name, _on_debug_signal.bind(node.name, signal_info.name))
     for child in node.get_children():
         _connect_debug_signals(child)
-
 
 func _on_debug_signal(data: Variant, node_name: String, signal_name: String) -> void:
     var entry := {
@@ -653,10 +641,8 @@ func _on_debug_signal(data: Variant, node_name: String, signal_name: String) -> 
     _debug_log.append(entry)
     print("[PLAYTEST] %s.%s: %s" % [node_name, signal_name, str(data)])
 
-
 func get_log() -> Array[Dictionary]:
     return _debug_log
-
 
 func get_log_summary() -> String:
     var summary := "Debug Log (%d entries):\n" % _debug_log.size()
@@ -769,11 +755,6 @@ Ready for /game:test
    Status: DEF → BLT
    ```
 
-4. **Send notification:**
-   ```bash
-   powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Build complete: {feature}"
-   ```
-
 ## GUT Test Conventions
 
 ### Test File Structure
@@ -785,17 +766,14 @@ extends GutTest
 
 var _sut: ClassName  # System Under Test
 
-
 func before_each() -> void:
     _sut = ClassName.new()
     add_child(_sut) if _sut is Node else null
     await get_tree().process_frame
 
-
 func after_each() -> void:
     if _sut and is_instance_valid(_sut):
         _sut.queue_free() if _sut is Node else _sut.free()
-
 
 # REQ-001: {requirement}
 func test_req001_{description}() -> void:

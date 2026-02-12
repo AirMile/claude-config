@@ -317,12 +317,6 @@ PASSING ([count])
 ✓ sitemap.xml present
 ```
 
-Send notification:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "SEO audit ready"
-```
-
 Use **AskUserQuestion**:
 
 ```yaml
@@ -490,12 +484,6 @@ Files modified: [count]
 
 Remaining: [count] items not selected
 - [S201] Structured data (nice-to-have)
-```
-
-Send notification:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "SEO complete"
 ```
 
 ---

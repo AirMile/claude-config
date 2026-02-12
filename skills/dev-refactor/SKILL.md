@@ -85,6 +85,7 @@ Reads from `.workspace/features/{feature-name}/`:
    **Always** use a Task agent (Explore) to read and analyze pipeline files. Never read source files directly in the main conversation.
 
    Launch Explore agent with prompt:
+
    ```
    Feature: {feature-name}
    Pipeline files:
@@ -145,7 +146,6 @@ Reads from `.workspace/features/{feature-name}/`:
    **Parsing the agent result:**
 
    The Explore agent's TaskOutput will likely be **truncated** because its full conversation log (all file reads) is very large. This is expected. To extract the structured analysis:
-
    1. If TaskOutput contains `ANALYSIS_START` → parse directly from the output
    2. If TaskOutput is truncated (no `ANALYSIS_START` visible):
       - The output includes a file path (e.g. `C:\...\tasks\{id}.output`)
@@ -293,11 +293,7 @@ Reason: {why research was needed}
    Rollback available: YES (automatic on test failure)
    ```
 
-3. **Notify and ask for scope:**
-
-   ```bash
-   powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Refactor plan ready"
-   ```
+3. **Ask for scope:**
 
    Use **AskUserQuestion** tool:
    - header: "Scope"
@@ -381,11 +377,11 @@ Modified files: [list]
 
    Before rolling back, analyze each failing test to determine the correct action:
 
-   | Test failure type | Action |
-   |---|---|
-   | Test expects old (insecure/incorrect) behavior that was intentionally improved | Update the test, re-run |
-   | Test catches genuine regression (refactoring broke unrelated functionality) | Rollback all changes |
-   | Test is flaky or environment-dependent | Re-run once, then decide |
+   | Test failure type                                                              | Action                   |
+   | ------------------------------------------------------------------------------ | ------------------------ |
+   | Test expects old (insecure/incorrect) behavior that was intentionally improved | Update the test, re-run  |
+   | Test catches genuine regression (refactoring broke unrelated functionality)    | Rollback all changes     |
+   | Test is flaky or environment-dependent                                         | Re-run once, then decide |
 
    **If test update needed (improvement is correct, test is stale):**
    - Update ONLY the specific assertion(s) that test the improved behavior
@@ -540,13 +536,7 @@ Options:
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-6. **Notify:**
-
-   ```bash
-   powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "{feature} refactored"
-   ```
-
-7. **Show completion:**
+6. **Show completion:**
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -563,13 +553,6 @@ Options:
    ```
 
 ---
-
-## Notifications
-
-| Moment                    | Message                |
-| ------------------------- | ---------------------- |
-| After FASE 2 (plan ready) | "Refactor plan ready"  |
-| After FASE 5 (complete)   | "{feature} refactored" |
 
 ## Error Handling
 
@@ -617,7 +600,7 @@ This skill must ALWAYS:
 - Use Explore agent to read and analyze pipeline files (zero source reads in main context)
 - Re-read each file immediately before editing (prevents "File has not been read yet" errors)
 - Group edits by file: read file → apply ALL edits for that file → next file
-- Load feature documentation (01-define, 02-build-log, 03-test-*) before analysis
+- Load feature documentation (01-define, 02-build-log, 03-test-\*) before analysis
 - Autonomously decide whether Context7 research adds value before spawning agents
 - Use stack baseline as primary knowledge source when valid
 - Present ranked improvements with before/after code snippets
@@ -625,4 +608,3 @@ This skill must ALWAYS:
 - Run full test suite after applying changes
 - Analyze test failures before rollback (distinguish stale tests from regressions)
 - Create 04-refactor.md with structured results
-- Send notifications at key points (plan ready, complete)

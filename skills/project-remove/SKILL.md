@@ -16,6 +16,7 @@ Verwijdert een project met veilige junction removal (target blijft intact).
 ### FASE 1: Project Selectie
 
 **Als geen naam gegeven:**
+
 1. Scan `{projects_root}` voor projecten met .claude\ junctions
 2. Toon lijst via AskUserQuestion
 
@@ -34,6 +35,7 @@ multiSelect: false
 ### FASE 2: Validatie
 
 **Check dat project bestaat:**
+
 ```bash
 # Verifieer pad
 test -d "{projects_root}\[naam]"
@@ -43,6 +45,7 @@ test -L "{projects_root}\[naam]\.claude\agents"
 ```
 
 **Safety checks:**
+
 - NOOIT claude-config zelf verwijderen
 - NOOIT projecten zonder junctions (andere workflow)
 - Waarschuw als uncommitted changes
@@ -78,6 +81,7 @@ cmd /c "rmdir {projects_root}\[naam]\.claude\scripts"
 ```
 
 **Verificatie:**
+
 ```bash
 # Check dat junctions weg zijn
 test ! -L "{projects_root}\[naam]\.claude\agents"
@@ -86,6 +90,7 @@ test ! -L "{projects_root}\[naam]\.claude\agents"
 ### FASE 5: Project Folder Removal
 
 **Vraag:**
+
 ```yaml
 question: "Junctions verwijderd. Wil je ook de project folder verwijderen?"
 header: "Folder"
@@ -98,6 +103,7 @@ multiSelect: false
 ```
 
 **Als ja:**
+
 ```bash
 rm -rf "{projects_root}\[naam]"
 ```
@@ -105,6 +111,7 @@ rm -rf "{projects_root}\[naam]"
 ### FASE 6: Afronden
 
 **Output:**
+
 ```
 ✅ Project [naam] verwijderd
 
@@ -117,11 +124,12 @@ rm -rf "{projects_root}\[naam]"
 
 Paths zijn configureerbaar per apparaat:
 
-| Placeholder | Default | Environment Variable |
-|-------------|---------|---------------------|
+| Placeholder       | Default       | Environment Variable   |
+| ----------------- | ------------- | ---------------------- |
 | `{projects_root}` | `C:\Projects` | `CLAUDE_PROJECTS_ROOT` |
 
 **Resolution order (eerste match wint):**
+
 1. Environment variable
 2. `.claude/paths.local.yaml` (lokaal per project, niet in git)
 3. `resources/paths.yaml` (gedeelde defaults)
@@ -136,11 +144,13 @@ Paths zijn configureerbaar per apparaat:
 ## Safety Notes
 
 **WAAROM rmdir en niet rm -rf:**
+
 - `rmdir` verwijdert alleen de junction pointer
 - `rm -rf` of `del /s` volgt de junction en verwijdert TARGET bestanden
 - Dit zou de master config vernietigen!
 
 **Recovery:**
-- Als project per ongeluk verwijderd: `git clone` + `/project-new`
+
+- Als project per ongeluk verwijderd: `git clone` + `/project-add`
 - Als junctions per ongeluk verwijderd: maak opnieuw met `mklink /J`
 - Als master config beschadigd: restore van backup/git

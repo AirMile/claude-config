@@ -657,12 +657,6 @@ Status: TODO → DEF
 Location: {MVP Features | Phase 2 | Ad-hoc}
 ```
 
-**Completion notification:**
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Definition complete"
-```
-
 ## Best Practices
 
 - Use AskUserQuestion for all structured choices

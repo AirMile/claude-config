@@ -1387,12 +1387,6 @@ Next steps:
 ===============================================================
 ```
 
-Send notification:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Convert complete: [N] components for [page]"
-```
-
 ---
 
 ## Output Structure

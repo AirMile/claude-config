@@ -18,6 +18,7 @@ Spawn Explore agents to investigate the codebase for a user query. Synthesize th
 `/core-explore [question]`
 
 Examples:
+
 - `/core-explore how does authentication work here?`
 - `/core-explore where are API calls made?`
 - `/core-explore what is the project structure?`
@@ -42,20 +43,6 @@ Examples:
    - Provide a clear, summarizing answer
    - Reference specific files/functions where relevant
    - Use code references with line numbers
-
-## Notifications
-
-Send notifications at these points:
-
-- After exploration phase completes:
-  ```bash
-  powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Exploration complete"
-  ```
-
-- At workflow completion:
-  ```bash
-  powershell -ExecutionPolicy Bypass -File .claude/scripts/notify.ps1 -Title "Claude Code" -Message "Answer ready"
-  ```
 
 ## Output Format
 
