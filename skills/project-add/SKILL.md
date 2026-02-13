@@ -1,6 +1,11 @@
 ---
-description: Add project (new or clone existing) with symlinks/junctions to shared claude-config (Linux + Windows)
+name: project-add
+description: Add project (new or clone existing) with symlinks/junctions to shared claude-config. Use with /project-add to register a new project in the multi-project setup.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: project
 ---
 
 # Project Add

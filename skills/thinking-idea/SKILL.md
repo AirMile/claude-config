@@ -1,6 +1,11 @@
 ---
-description: Articulate and develop ideas through guided questions into structured markdown
+name: thinking-idea
+description: Articulate and develop ideas through guided questions into structured markdown. Use with /thinking-idea when starting with a vague concept that needs development.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: thinking
 ---
 
 # Idea

@@ -1,6 +1,11 @@
 ---
-description: Interactive project setup wizard — configures dev environment, installs dependencies, updates CLAUDE.md
+name: core-setup
+description: Interactive project setup wizard that configures dev environment, installs dependencies, and updates CLAUDE.md. Use with /core-setup for new project initialization.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: core
 ---
 
 # Project Setup Skill
@@ -242,3 +247,18 @@ AskUserQuestion (single-select): Commit setup files now, or skip.
 If committing: stage relevant files, create commit with conventional commit format (e.g., `build: scaffold [stack] project`).
 
 **IMPORTANT:** Do NOT add Co-Authored-By, Generated with Claude Code footer, or any other AI attribution to commits.
+
+## Troubleshooting
+
+### Error: Stack detection fails
+**Cause:** No recognizable framework files found (package.json, Cargo.toml, etc.).
+**Solution:** Make sure you're in the project root directory. If using a monorepo, navigate to the specific package. You can manually specify the stack during setup.
+
+### Error: Dependencies won't install
+**Cause:** Package manager not found or network issues.
+**Solution:** Check that npm/yarn/pnpm is installed (`which npm`). Check network connectivity. If behind a proxy, configure npm proxy settings.
+
+### Error: CLAUDE.md not generated correctly
+**Cause:** Template variables not resolved or stack not recognized.
+**Solution:** The setup wizard generates CLAUDE.md from templates. If the output looks wrong, edit it manually — CLAUDE.md is just a markdown file. Run `/core-setup` again to regenerate.
+

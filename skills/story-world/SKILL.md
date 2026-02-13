@@ -1,6 +1,11 @@
 ---
-description: Add or develop worldbuilding elements through interview-style dialogue
+name: story-world
+description: Add or develop worldbuilding elements through interview-style dialogue. Use with /story-world to create locations, cultures, magic systems, or lore.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: story
 ---
 
 # World

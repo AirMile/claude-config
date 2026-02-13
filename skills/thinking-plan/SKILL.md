@@ -1,6 +1,11 @@
 ---
-description: Intelligente planning met research en markdown output
+name: thinking-plan
+description: Intelligent planning with research and structured markdown output. Use with /thinking-plan to create implementation plans with phases, dependencies, and estimates.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: thinking
 ---
 
 # Plan

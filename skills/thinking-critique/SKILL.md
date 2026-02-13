@@ -1,6 +1,11 @@
 ---
-description: Critically analyze ideas through structured techniques
+name: thinking-critique
+description: Critically analyze ideas through structured techniques from multiple perspectives. Use with /thinking-critique to stress-test concepts before committing to implementation.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: thinking
 ---
 
 ## Overview

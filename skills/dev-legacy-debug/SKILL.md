@@ -1,6 +1,11 @@
 ---
-description: Systematic debugging with parallel agents and fix options
+name: dev-legacy-debug
+description: Systematic debugging with parallel agents, root cause analysis, and fix options. Use with /dev-legacy-debug for runtime errors, build failures, unexpected behavior, or test failures.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: dev
 ---
 
 # Debug Skill

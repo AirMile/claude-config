@@ -1,6 +1,11 @@
 ---
-description: Build features with automatic stack detection and technique selection
+name: dev-build
+description: Build features with automatic stack detection and TDD or implementation-first technique selection. Use with /dev-build after /dev-define. Reads requirements from workspace and builds sequentially.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: dev
 ---
 
 # Build
@@ -312,3 +317,22 @@ If implementation is blocked:
 2. Mark affected requirements as BLOCKED
 3. Continue with other requirements
 4. Report blockers at completion
+
+## Troubleshooting
+
+### Error: Stack not detected
+**Cause:** No `### Stack` section found in CLAUDE.md.
+**Solution:** Run `/core-setup` first, or manually add a `### Stack` section under `## Project` in CLAUDE.md.
+
+### Error: No define file found
+**Cause:** Missing `.workspace/features/{name}/01-define.md`.
+**Solution:** Run `/dev-define {name}` first to create the feature definition.
+
+### Error: Tests fail after implementation
+**Cause:** TDD cycle not completing — test expectations may not match implementation.
+**Solution:** Check the test output carefully. If the test itself is wrong, fix the test first, then re-run. The RED-GREEN-REFACTOR cycle should catch this.
+
+### Error: Technique detection picks wrong approach
+**Cause:** Requirement type misidentified (TDD vs Implementation First).
+**Solution:** You can override technique selection. If a requirement has clear testable behavior, use TDD. If it's UI/visual, use Implementation First.
+

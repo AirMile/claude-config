@@ -1,7 +1,12 @@
 ---
-description: Browse Todoist tasks and pick one up to work on with Claude
+name: core-task
+description: Browse Todoist tasks and pick one to work on with Claude. Use with /core-task to view, filter, and select tasks from Todoist.
 argument-hint: [project or search term]
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: core
 ---
 
 # Task

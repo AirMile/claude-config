@@ -1,6 +1,11 @@
 ---
-description: Define game feature requirements and architecture
+name: game-define
+description: Define game feature requirements and architecture with structured output. Use with /game-define to create detailed game feature specifications before building.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: game
 ---
 
 # Game Feature Definition

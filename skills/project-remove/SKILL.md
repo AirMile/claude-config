@@ -1,6 +1,11 @@
 ---
-description: Verwijder project met veilige junction cleanup
+name: project-remove
+description: Remove project with safe junction cleanup. Use with /project-remove to unregister a project and clean up symlinks/junctions.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: project
 ---
 
 # Project Remove

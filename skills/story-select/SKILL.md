@@ -1,6 +1,11 @@
 ---
-description: Select a story to work on and view its summary
+name: story-select
+description: Select an existing story to work on and view its summary and progress. Use with /story-select to switch between story projects.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: story
 ---
 
 # Story Select

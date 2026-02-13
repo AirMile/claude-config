@@ -1,6 +1,11 @@
 ---
-description: TDD implementation with Ralph loop for autonomous building
+name: game-build
+description: TDD implementation with autonomous looping for game building in Godot 4.x. Use with /game-build after /game-define. Implements features through RED-GREEN-REFACTOR cycles.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: game
 ---
 
 # Build
@@ -946,3 +951,22 @@ Files created: 5
 
 Next step: /game:test water-ability
 ```
+
+## Troubleshooting
+
+### Error: GUT tests not found or not running
+**Cause:** GUT (Godot Unit Test) framework not installed or configured.
+**Solution:** Verify `addons/gut/` exists in the project. Check `res://tests/` directory structure. Run tests manually with `godot --headless -s addons/gut/gut_cmdln.gd` to verify setup.
+
+### Error: Scene tree errors during test
+**Cause:** Node references breaking due to scene structure changes.
+**Solution:** Check that `@onready` references match current scene tree. Use `has_node()` before accessing nodes. Review the test scene (`playtest_scene.tscn`) for missing dependencies.
+
+### Error: Signal connections not working in tests
+**Cause:** Signals may not be connected in the test scene context.
+**Solution:** Ensure signals are connected in `_ready()` or via the editor. The debug_listener.gd captures signals — check its output for missed connections.
+
+### Error: Ralph loop not converging
+**Cause:** Tests keep failing after multiple iterations.
+**Solution:** Check if the test expectations are correct. If the test itself has a bug, the loop won't converge. Review the test, fix it, then re-run.
+

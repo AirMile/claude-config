@@ -1,6 +1,11 @@
 ---
-description: Discover next story beat based on current progress
+name: story-next
+description: Discover the next story beat based on current progress and narrative arc. Use with /story-next to advance the plot of the active story.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: story
 ---
 
 # /next - Discover Next Story Beat

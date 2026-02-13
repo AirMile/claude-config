@@ -1,6 +1,11 @@
 ---
-description: Code review for feature branches before PR
+name: team-review
+description: Code review for feature branches before PR. Analyzes all commits since branch creation, researches best practices via Context7, and generates constructive feedback. Use with /team-review.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: team
 ---
 
 # Code Review Skill

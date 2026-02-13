@@ -1,6 +1,11 @@
 ---
-description: Refactor code quality after testing with autonomous analysis and parallel planning agents. Feature files only
+name: dev-refactor
+description: Refactor code quality after testing with autonomous analysis and parallel planning agents. Use with /dev-refactor to improve code structure, naming, and patterns in feature files.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: dev
 ---
 
 # Refactor

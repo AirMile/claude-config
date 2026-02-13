@@ -1,6 +1,11 @@
 ---
-description: Toon alle projecten met junction-based .claude/ config
+name: project-list
+description: List all projects with junction-based .claude/ config and their status. Use with /project-list to see registered projects.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: project
 ---
 
 # Project List

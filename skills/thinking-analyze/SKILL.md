@@ -1,6 +1,11 @@
 ---
-description: Analyzes plans using 3 parallel agents for risk analysis, alternatives exploration, and simplification opportunities
+name: thinking-analyze
+description: Analyze plans using 3 parallel agents for risk analysis, alternatives exploration, and simplification opportunities. Use with /thinking-analyze before implementation to challenge your approach.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: thinking
 ---
 
 # Analyze Plan Skill

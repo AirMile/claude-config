@@ -1,6 +1,11 @@
 ---
-description: Safely delete skills with deep reference scanning and dependency updates
+name: core-delete
+description: Safely delete skills with deep reference scanning and dependency updates. Use with /core-delete to remove a skill and clean up all references.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: core
 ---
 
 # Delete

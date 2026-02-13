@@ -1,6 +1,11 @@
 ---
-description: Transform idea/brainstorm output into prioritized web feature plan
+name: dev-plan
+description: Transform idea or brainstorm output into a prioritized web feature plan. Use with /dev-plan after /thinking-idea or /thinking-brainstorm to create implementation roadmaps.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: dev
 ---
 
 # Dev Plan

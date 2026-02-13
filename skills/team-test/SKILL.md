@@ -1,6 +1,11 @@
 ---
-description: Test teammate's code on feature branch after review
+name: team-test
+description: Test teammate's code on a feature branch after review with automated tests and functionality validation. Use with /team-test after /team-review.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: team
 ---
 
 # Test Other Skill

@@ -1,6 +1,11 @@
 ---
-description: Transform idea/brainstorm output into prioritized game feature backlog
+name: game-backlog
+description: Transform idea or brainstorm output into a prioritized game feature backlog. Use with /game-backlog after /thinking-idea or /thinking-brainstorm for game project planning.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: game
 ---
 
 # Backlog

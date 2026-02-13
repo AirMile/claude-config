@@ -1,6 +1,11 @@
 ---
-description: Save current session (command workflow or chat)
+name: core-save
+description: Save current session state (command workflow or chat) with custom titles. Use with /core-save to persist workflow progress for later resumption.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: core
 ---
 
 # Save

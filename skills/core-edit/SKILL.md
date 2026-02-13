@@ -1,5 +1,10 @@
 ---
-description: Edit skills interactively — trigger when user wants to modify, update, or change an existing skill
+name: core-edit
+description: Edit existing skills with rename, delete, and resource management. Use when user wants to modify, update, change, or improve an existing skill.
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: core
 ---
 
 # Edit
@@ -184,7 +189,12 @@ Use sequential thinking to verify:
 1. List requested changes — what was supposed to change
 2. Verify each change — confirm each modification was applied
 3. Check file structure — ensure no broken paths or missing files
-4. Validate frontmatter — confirm YAML is valid (if applicable)
+4. Validate frontmatter against Anthropic skill spec:
+   - `name` field present (required, kebab-case, matches folder name)
+   - `description` field present (required, includes WHAT + WHEN pattern with trigger phrases, under 1024 chars)
+   - No XML angle brackets (< >) in frontmatter
+   - `metadata` block present (recommended: author, version, category)
+5. If frontmatter is missing required fields, offer to add them as part of the edit
 
 #### 5.2 Search for Orphaned References
 
@@ -196,6 +206,33 @@ Search for orphaned references to the old/deleted skill name in `.claude/` recur
 
 - Auto-fix (no approval): formatting, whitespace, path separators
 - Ask user (needs approval): content changes, deletions, structural changes
+
+## Frontmatter Reference
+
+When editing skill frontmatter, ensure it follows the Anthropic skill spec:
+
+```yaml
+---
+# REQUIRED
+name: skill-name                    # kebab-case, must match folder name
+description: >-                     # MUST include WHAT + WHEN
+  What it does. Use when user says "trigger phrase" or asks for "task".
+
+# RECOMMENDED
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: core                    # core|dev|frontend|game|project|story|team|thinking
+
+# OPTIONAL — Claude Code specific
+disable-model-invocation: true
+argument-hint: [hint]
+---
+```
+
+**Description pattern**: `[What it does] + [When to use it / trigger phrases]`
+
+If a skill being edited is missing `name` or has a weak `description`, suggest improvements as part of the edit.
 
 ## Special Cases
 

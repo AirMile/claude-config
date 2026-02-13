@@ -1,6 +1,11 @@
 ---
-description: Explore the codebase with agents for a specific question
+name: core-explore
+description: Explore the codebase using parallel agents to answer specific questions. Use with /core-explore to investigate code structure, find implementations, or understand architecture.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: core
 ---
 
 # Explore

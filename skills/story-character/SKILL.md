@@ -1,6 +1,11 @@
 ---
-description: Create or develop characters through interview-style dialogue
+name: story-character
+description: Create or develop characters through interview-style dialogue. Use with /story-character to add new characters or deepen existing ones in the active story.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: story
 ---
 
 # Character

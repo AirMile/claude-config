@@ -1,6 +1,11 @@
 ---
-description: Resume saved command or chat sessions
+name: core-resume
+description: Resume saved command or chat sessions from workspace. Use with /core-resume to continue a previously saved workflow or conversation.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: core
 ---
 
 # Resume

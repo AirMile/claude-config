@@ -1,6 +1,11 @@
 ---
-description: Define web feature requirements and architecture
+name: dev-define
+description: Define web feature requirements and architecture with structured output. Use with /dev-define to create detailed feature specifications before building.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: dev
 ---
 
 # Web Feature Definition

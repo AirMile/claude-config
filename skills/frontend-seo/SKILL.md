@@ -1,6 +1,11 @@
 ---
-description: Audit and implement SEO optimizations for web applications — detects framework (Next.js, Remix, Astro, React, etc.) and applies framework-specific best practices
+name: frontend-seo
+description: Audit and implement SEO optimizations for web applications. Detects framework (Next.js, Remix, Astro, React, etc.) and applies framework-specific best practices. Use with /frontend-seo.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: frontend
 ---
 
 # SEO

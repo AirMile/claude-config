@@ -1,5 +1,10 @@
 ---
-description: Create skills interactively — trigger when user wants to make, create, or add a new skill
+name: core-create
+description: Create new skills interactively with optional resource bundling. Use when user wants to make, create, build, or add a new skill. Handles SKILL.md generation, frontmatter, references, and scripts.
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: core
 ---
 
 # Create
@@ -26,22 +31,53 @@ This skill creates new skills through a streamlined process. It determines if bu
 
 ## Skill Structure Reference
 
-### Frontmatter Options
+### Frontmatter (YAML)
 
-All fields are optional. Only `description` is recommended.
+Two fields are **required** per the Anthropic skill spec. The rest is optional.
 
 ```yaml
 ---
-name: my-skill # Display name (default: directory name)
-description: What this skill does # Recommended - Claude uses this to decide when to apply
-argument-hint: [issue-number] # Hint shown during autocomplete
-disable-model-invocation: true # Only user can invoke (default: false)
-user-invocable: false # Only Claude can invoke (default: true)
-allowed-tools: Read, Grep, Glob # Restrict tools when skill is active
-context: fork # Run in isolated subagent context
-agent: Explore # Which agent to use with context: fork
+# REQUIRED fields
+name: my-skill                      # kebab-case, must match folder name
+description: >-                     # MUST include WHAT + WHEN (trigger phrases)
+  What it does in one sentence.
+  Use when user says "trigger phrase" or asks for "specific task".
+
+# RECOMMENDED
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: core                    # core|dev|frontend|game|project|story|team|thinking
+
+# OPTIONAL — Claude Code specific
+argument-hint: [issue-number]       # Hint shown during autocomplete
+disable-model-invocation: true      # Only user can invoke via /name (default: false)
+user-invocable: false               # Only Claude can invoke (default: true)
+allowed-tools: Read, Grep, Glob     # Restrict tools when skill is active
+context: fork                       # Run in isolated subagent context
+agent: Explore                      # Which agent to use with context: fork
 ---
 ```
+
+### Description Pattern
+
+The `description` field is the most critical — it determines when Claude loads the skill.
+
+**Pattern**: `[What it does] + [When to use it / trigger phrases]`
+
+Good examples:
+- `"Analyze staged git changes and generate conventional commit messages. Use with /core-commit. Detects rebase/merge state, validates changes."`
+- `"Compose low-fidelity HTML wireframes using parallel design agents. Use when user asks for wireframe, mockup, prototype, or layout exploration."`
+
+Bad examples:
+- `"Helps with projects."` — too vague, no triggers
+- `"Creates documentation systems."` — missing trigger phrases
+
+### Security Rules
+
+- No XML angle brackets (< >) in frontmatter
+- No "claude" or "anthropic" in skill name (reserved)
+- Description must be under 1024 characters
 
 ### String Substitutions
 
@@ -357,7 +393,12 @@ Test with: /[prefix]-[name]
 Use sequential thinking to verify:
 
 - [ ] File(s) created in correct location
-- [ ] Frontmatter valid (description required)
+- [ ] Frontmatter has required `name` field (kebab-case, matches folder name)
+- [ ] Frontmatter has required `description` with WHAT + WHEN pattern
+- [ ] Description includes trigger phrases users would say
+- [ ] Description is under 1024 characters
+- [ ] No XML angle brackets (< >) in frontmatter
+- [ ] `metadata` block present (author, version, category)
 - [ ] Instructions clear and in imperative form
 - [ ] All referenced supporting files exist (if resources created)
 - [ ] Skill name follows `[prefix]-[name]` convention

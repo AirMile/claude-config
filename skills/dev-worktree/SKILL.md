@@ -1,6 +1,11 @@
 ---
-description: Manage feature worktrees - list, switch, create, and remove
+name: dev-worktree
+description: Manage git worktrees for parallel feature development — list, switch, create, and remove. Use with /dev-worktree to work on multiple features simultaneously.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: dev
 ---
 
 # Worktree Management Skill

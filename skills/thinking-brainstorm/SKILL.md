@@ -1,6 +1,11 @@
 ---
-description: Creatively expand ideas through interactive technique application. Generates variations, explores alternatives, pushes boundaries. Outputs refined idea as structured markdown
+name: thinking-brainstorm
+description: Creatively expand ideas through interactive technique application. Generates variations, explores alternatives, pushes boundaries. Use with /thinking-brainstorm after /thinking-idea.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: thinking
 ---
 
 ## Overview

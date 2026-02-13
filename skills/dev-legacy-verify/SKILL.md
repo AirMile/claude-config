@@ -1,6 +1,11 @@
 ---
-description: Quick verification - typecheck + lint (optional tests)
+name: dev-legacy-verify
+description: Quick verification runner for typecheck and lint with optional tests. Use with /dev-legacy-verify for fast code quality checks.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: dev
 ---
 
 # Verify Skill

@@ -1,6 +1,11 @@
 ---
-description: Hybrid testing verification with automated browser and CLI tests plus manual walkthrough, structured feedback, and fix loop
+name: dev-test
+description: Hybrid testing verification combining automated browser and CLI tests with manual walkthrough, structured feedback, and fix loop. Use with /dev-test after /dev-build.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: dev
 ---
 
 # Test
@@ -47,87 +52,9 @@ Everything works except validation is missing and no welcome mail
 | **MEASURABLE** | "response too slow", "font too small" | Direct fix                              |
 | **SUBJECTIVE** | "doesn't feel right"                  | Ask for specifics, then re-categorize   |
 
-## Test Classification
 
-Each test item is classified as **AUTO** or **MANUAL** before testing begins.
-
-AUTO items have two sub-methods — the Task agent picks the best one per item:
-
-### AUTO/BROWSER (MCP browser tools)
-
-Assign AUTO/BROWSER when ALL of the following are true:
-
-- **DOM-verifiable**: pass/fail can be determined by inspecting elements, text content, attributes, or URL state
-- **Simple interactions**: test steps are limited to: navigate, click, type, fill_form, select_option, press_key, resize, wait_for
-- **Observable outcome**: result is visible in a snapshot, screenshot, or URL
-
-### AUTO/CLI (bash commands)
-
-Assign AUTO/CLI when ALL of the following are true:
-
-- **Command-verifiable**: pass/fail can be determined by running a command and checking stdout/stderr/exit code
-- **Deterministic output**: the command produces a concrete, parseable result (JSON response, HTTP status code, file contents, test runner output)
-- **No human judgment needed**: result is objectively pass or fail
-
-Common AUTO/CLI scenarios:
-
-- API endpoint testing (curl + check HTTP status/response body)
-- Database state verification (query + check result)
-- File system checks (file exists, contents match)
-- Running existing test suites (npm test, npx vitest, npx playwright test)
-- Build verification (npm run build + check exit code)
-- Linting/type checking (npx tsc --noEmit, npx eslint)
-
-### MANUAL (human walkthrough)
-
-Assign MANUAL **only** when human perception or judgment is truly required — if it can be objectively checked, it's AUTO.
-
-MANUAL when ANY of the following are true:
-
-- **Subjective visual quality**: animation smoothness, design "feel", whitespace balance, color harmony
-- **Perception-based**: "feels fast enough", "feels intuitive", "looks professional"
-- **Assistive technology**: screen reader flow, VoiceOver, keyboard-only UX feel
-- **Audio/sound**: sounds play correctly, volume appropriate, timing right
-- **Physical multi-device**: "log out on phone, log in on desktop" (requires actual second device)
-
-NOT MANUAL (these are AUTO):
-
-- Data correctness in charts/tables/lists → AUTO/BROWSER (snapshot + check values)
-- Element exists on page → AUTO/BROWSER (snapshot)
-- Correct text/numbers displayed → AUTO/BROWSER (snapshot)
-- API returns expected data → AUTO/CLI (curl + check response)
-- Component renders with props → AUTO/BROWSER (navigate + snapshot)
-- Redirect happens after action → AUTO/BROWSER (navigate + check URL)
-- Error messages appear → AUTO/BROWSER (trigger error + snapshot)
-- Multi-step flows with deterministic outcomes → AUTO/BROWSER (sequence of actions + snapshots)
-
-### Auto Test Patterns Reference
-
-**BROWSER patterns** (MCP browser tools):
-
-| Pattern             | Steps                                                             |
-| ------------------- | ----------------------------------------------------------------- |
-| Form submit         | navigate, fill_form, click submit, snapshot (check success state) |
-| Route protection    | navigate to protected URL, snapshot (check redirect to login)     |
-| Element presence    | navigate, snapshot, find element text/role in snapshot            |
-| URL state           | interact, evaluate(() => location.href)                           |
-| Keyboard navigation | press_key (Tab/Enter/Esc), snapshot (check focus state)           |
-| Responsive layout   | resize(width, height), take_screenshot (check layout)             |
-| Error validation    | fill invalid input, submit, snapshot (check error messages)       |
-| Toast/notification  | trigger action, wait_for(text), snapshot (check notification)     |
-
-**CLI patterns** (bash commands):
-
-| Pattern             | Steps                                                              |
-| ------------------- | ------------------------------------------------------------------ |
-| API auth check      | curl endpoint without/with token → check HTTP status (401/403/200) |
-| API response body   | curl endpoint → parse JSON, check expected fields/values           |
-| API validation      | curl POST with invalid data → check 400 + error message            |
-| Existing test suite | npm test / npx vitest / npx playwright test → check exit code      |
-| Type checking       | npx tsc --noEmit → check exit code + error count                   |
-| Build verification  | npm run build → check exit code                                    |
-| File state          | cat/read file → check contents match expected                      |
-| DB state            | query command → check result matches expected                      |
+> **Test classification criteria and automation patterns:**
+> See `references/test-classification.md` for AUTO/BROWSER, AUTO/CLI, and MANUAL criteria with pattern tables.
 
 ## Workflow
 
@@ -770,6 +697,21 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 → FASE 5: Re-test → Task agent re-tests item 2 (PASS), manual re-test item 4 (PASS)
 → FASE 6: All 4 pass → commit test(user-registration): verified
 ```
+
+
+## Troubleshooting
+
+### Error: Dev server not running
+**Cause:** AUTO/BROWSER tests require a running dev server.
+**Solution:** Start the dev server first (`npm run dev` or `/dev-server`). The skill checks `curl localhost:{port}` before running tests.
+
+### Error: Task agent timeout on browser tests
+**Cause:** Browser MCP tools may be slow or page not loading.
+**Solution:** Check that the dev server is responding. Try running the test manually. If persistent, the skill falls back to all-manual testing.
+
+### Error: Classification seems wrong
+**Cause:** Some items may be borderline between AUTO and MANUAL.
+**Solution:** The skill asks for user override after initial classification. Review the proposed split and adjust before testing starts.
 
 ## Restrictions
 

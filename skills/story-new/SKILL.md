@@ -1,6 +1,11 @@
 ---
-description: Start a new story with folder structure and metadata
+name: story-new
+description: Start a new story project with folder structure and metadata. Use with /story-new when beginning a new story, novel, or writing project.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: story
 ---
 
 # Story New

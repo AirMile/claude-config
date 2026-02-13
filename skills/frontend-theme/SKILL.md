@@ -1,5 +1,10 @@
 ---
-description: Design systeem beheer - tokens CRUD, auto-extractie, en theme modes
+name: frontend-theme
+description: Design system management — token CRUD, auto-extraction, and theme modes. Use with /frontend-theme to create, update, or manage design tokens and color themes.
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: frontend
 ---
 
 # Theme

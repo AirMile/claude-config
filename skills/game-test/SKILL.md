@@ -1,6 +1,11 @@
 ---
-description: Human playtest verification with structured feedback and fix loop
+name: game-test
+description: Human playtest verification with structured feedback and fix loop. Use with /game-test after /game-build for manual testing of game features.
 disable-model-invocation: true
+metadata:
+  author: mileszeilstra
+  version: 1.0.0
+  category: game
 ---
 
 # Test
