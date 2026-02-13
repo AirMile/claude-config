@@ -670,6 +670,14 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
+5. **Suggest next step:**
+
+   ```
+   Next steps:
+   - /dev:refactor {feature-name} - Optioneel: code quality verbeteren
+   - /frontend:seo - Optioneel: SEO audit voor publieke features
+   ```
+
 ---
 
 ## Output Structure

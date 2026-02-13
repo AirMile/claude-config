@@ -410,6 +410,7 @@ multiSelect: false
    Next steps:
    - /thinking:critique - Kritisch analyseren en versterken
    - /thinking:brainstorm - Nog een brainstormronde
+   - /dev:plan - Omzetten naar web feature backlog
    - /game:backlog - Omzetten naar feature backlog (voor games)
    ```
 
@@ -437,6 +438,7 @@ multiSelect: false
    Next steps:
    - /thinking:critique - Kritisch analyseren en versterken
    - /thinking:brainstorm - Nog een brainstormronde
+   - /dev:plan - Omzetten naar web feature backlog
    - /game:backlog - Omzetten naar feature backlog (voor games)
    ```
 

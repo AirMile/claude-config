@@ -38,9 +38,34 @@ The skill gathers requirements through targeted questions, optionally researches
 
 1. **If name provided** (`/dev:define auth`):
    - Use provided name as feature name
-   - Continue to FASE 1
+   - Continue to step 3
 
 2. **If no name** (`/dev:define`):
+
+   **a) Check backlog for next feature:**
+
+   ```
+   Read(".workspace/backlog.md")
+   ```
+
+   - If backlog exists: parse the `**Next:**` line (e.g. `**Next:** /dev:define page-layout`)
+   - Extract feature name from that line
+
+   **b) If backlog has a next feature:**
+
+   Use **AskUserQuestion** tool:
+   - header: "Feature Name"
+   - question: "Volgende feature uit backlog: **{feature-name}**. Hiermee doorgaan?"
+   - options:
+     - label: "{feature-name} (Recommended)", description: "{description from backlog TODO list}"
+     - label: "Andere feature", description: "Ik wil een andere feature definiëren"
+   - multiSelect: false
+
+   - If user picks the backlog feature → use that name, continue to step 3
+   - If user picks "Andere feature" → fall through to option (c)
+
+   **c) If no backlog found OR user wants a different feature:**
+
    Use **AskUserQuestion** tool:
    - header: "Feature Name"
    - question: "Welke web feature wil je definiëren?"
@@ -581,6 +606,10 @@ Write to `.workspace/features/{feature-name}/01-define.md`:
 ## Next Steps
 
 Run `/dev:build {feature-name}` to start implementation.
+
+UI-heavy feature? Overweeg eerst:
+- `/frontend:theme` - Design tokens en kleurenpalet opzetten
+- `/frontend:compose` - Wireframes genereren voor visueel ontwerp
 ```
 
 ### FASE 5: Sync Backlog

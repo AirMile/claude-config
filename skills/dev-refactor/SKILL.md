@@ -541,7 +541,7 @@ Options:
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-6. **Show completion:**
+6. **Show completion** (parse `{next-feature}` from the `**Next:**` line in `.workspace/backlog.md`):
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -554,6 +554,9 @@ Options:
    ✓ /dev:refactor - Refactoring
 
    Ready for production!
+
+   Next feature from backlog:
+   → /dev:define {next-feature}
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 

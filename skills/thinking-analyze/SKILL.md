@@ -28,7 +28,7 @@ The agents run in parallel for efficiency (~67% context savings, 3x faster), and
 This skill is useful:
 
 **Before implementation:**
-- After `/dev-legacy-1-plan` creates a plan (or during /dev-legacy-1-plan FASE 4)
+- After `/dev:define` creates a plan (or during /dev:define FASE 4)
 - Before decomposition to understand complexity
 - When uncertain about approach
 
@@ -450,7 +450,7 @@ Final Confidence = (Risk × 0.40) + (Alternatives × 0.30) + (Simplification × 
    **Handle response:**
    - "View Summary" → Display executive summary and key metrics only
    - "Improve Plan" → Proceed to FASE 5 (Interactive Plan Improvement)
-   - "Proceed" → Skip to final output, ready for /dev-legacy-2-code
+   - "Proceed" → Skip to final output, ready for /dev:build
 
 **Final output:**
 ```
@@ -590,7 +590,7 @@ Recommended next step: {suggestion based on analysis}
 | **Saved to** | {saved-location} |
 | **New confidence** | 8/10 (was 6/10) |
 
-→ Ready to proceed with /dev-legacy-2-code
+→ Ready to proceed with /dev:build
 ```
 
 ---
@@ -645,7 +645,7 @@ Full report structure:
 Based on this analysis:
 
 {If confidence >= 8}
-✅ Plan is solid. Proceed with implementation via `/dev-legacy-2-code`
+✅ Plan is solid. Proceed with implementation via `/dev:build`
 
 {If confidence 5-7}
 ⚠️ Plan needs refinement. Consider:
@@ -656,20 +656,20 @@ Based on this analysis:
 {If confidence < 5}
 🔴 Plan needs significant revision. Recommend:
 - Consider alternative approach
-- Run `/dev-legacy-1-plan` with new requirements
-- Or let /dev-legacy-1-plan FASE 5 decompose for better manageability
+- Run `/dev:define` with new requirements
+- Or let /dev:define FASE 5 decompose for better manageability
 ```
 
 ---
 
 ## Integration with Other Skills
 
-### With /dev-legacy-1-plan
-- Integrated in /dev-legacy-1-plan FASE 4 (optional quality check before decomposition)
+### With /dev:define
+- Integrated in /dev:define FASE 4 (optional quality check before decomposition)
 - Analyze output to validate approach
 - Feedback findings into improved plans before complexity analysis
 
-### With /dev-legacy-2-code
+### With /dev:build
 - Reference analysis during implementation
 - Watch for identified risks
 

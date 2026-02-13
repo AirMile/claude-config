@@ -274,7 +274,7 @@ multiSelect: false
 
 **Response handling:**
 
-- "Uitvoeren" → Roep /dev-legacy-2-code aan met plan als input
+- "Uitvoeren" → Roep /dev:build aan met plan als input
 - "Opslaan naar Obsidian Project" → see below
 - "Alleen opslaan" → Bevestig locatie en stop
 

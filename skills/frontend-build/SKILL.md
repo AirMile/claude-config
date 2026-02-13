@@ -1369,6 +1369,7 @@ Next steps:
 2. Open: http://localhost:3000/[page]
 3. Components zijn beschikbaar via:
    import { Header, Sidebar } from '@/components/[page]';
+4. Verify: /dev:test - Test gebouwde componenten
 
 ═══════════════════════════════════════════════════════════
 ```
