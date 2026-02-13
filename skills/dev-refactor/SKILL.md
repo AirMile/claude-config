@@ -61,12 +61,19 @@ Reads from `.workspace/features/{feature-name}/`:
 
 ### FASE 0: Context Loading
 
-1. **Parse user input:**
+1. **Read backlog for pipeline status:**
+
+   Read `.workspace/backlog.md` (if exists) to understand current state:
+   - Which features are in which phase (TODO, DEF, BLT, TST, DONE)
+   - Features with status TST (tested) are ready for refactoring
+   - If no feature name provided: suggest the next TST feature via **AskUserQuestion**
+
+2. **Parse user input:**
    - Feature name provided → validate it exists
    - No feature name → list available features, use AskUserQuestion to select
    - "recent" → find most recently modified 03-test-results.md
 
-2. **Validate test results exist:**
+3. **Validate test results exist:**
 
    ```
    .workspace/features/{feature-name}/03-test-results.md
@@ -74,18 +81,18 @@ Reads from `.workspace/features/{feature-name}/`:
 
    If not found → exit with message to run `/dev:test {feature-name}` first.
 
-3. **Load all feature documentation:**
+4. **Load all feature documentation:**
    - Read `01-define.md` for requirements (REQ-XXX) and architecture
    - Read `02-build-log.md` for implementation details and created files
    - Read `03-test-checklist.md` for test items
    - Read `03-test-results.md` for verification results
 
-4. **Build pipeline files list (scope boundary):**
+5. **Build pipeline files list (scope boundary):**
    - Extract all code file paths from `02-build-log.md`
    - Store as `pipeline_files` — these are the ONLY files this skill may touch
    - Log the list explicitly for transparency
 
-5. **Analyze pipeline code** (via Explore agent — zero source file reads in main context)
+6. **Analyze pipeline code** (via Explore agent — zero source file reads in main context)
 
    **Always** use a Task agent (Explore) to read and analyze pipeline files. Never read source files directly in the main conversation.
 

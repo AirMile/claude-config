@@ -54,7 +54,17 @@ Optionally load stack-baseline for project-specific patterns:
 **Step 3: Load Feature Context**
 
 1. If no feature name provided:
-   - List available features in `.workspace/features/`
+
+   **a) Check backlog for context:**
+
+   Read `.workspace/backlog.md` (if exists) to understand pipeline status:
+   - Which features are in which phase (TODO, DEF, BLT, TST, DONE)
+   - Parse the `**Next:**` line for the suggested next feature
+   - Use this to pre-select the most logical feature to build (status: DEF = defined, ready for build)
+
+   **b) Select feature:**
+   - If backlog suggests a DEF feature → propose it via **AskUserQuestion**
+   - Otherwise → list available features in `.workspace/features/`
    - Use **AskUserQuestion** to let user select
 
 2. Load `01-define.md`:
@@ -321,18 +331,21 @@ If implementation is blocked:
 ## Troubleshooting
 
 ### Error: Stack not detected
+
 **Cause:** No `### Stack` section found in CLAUDE.md.
 **Solution:** Run `/core-setup` first, or manually add a `### Stack` section under `## Project` in CLAUDE.md.
 
 ### Error: No define file found
+
 **Cause:** Missing `.workspace/features/{name}/01-define.md`.
 **Solution:** Run `/dev-define {name}` first to create the feature definition.
 
 ### Error: Tests fail after implementation
+
 **Cause:** TDD cycle not completing — test expectations may not match implementation.
 **Solution:** Check the test output carefully. If the test itself is wrong, fix the test first, then re-run. The RED-GREEN-REFACTOR cycle should catch this.
 
 ### Error: Technique detection picks wrong approach
+
 **Cause:** Requirement type misidentified (TDD vs Implementation First).
 **Solution:** You can override technique selection. If a requirement has clear testable behavior, use TDD. If it's UI/visual, use Implementation First.
-

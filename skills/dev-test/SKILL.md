@@ -52,7 +52,6 @@ Everything works except validation is missing and no welcome mail
 | **MEASURABLE** | "response too slow", "font too small" | Direct fix                              |
 | **SUBJECTIVE** | "doesn't feel right"                  | Ask for specifics, then re-categorize   |
 
-
 > **Test classification criteria and automation patterns:**
 > See `references/test-classification.md` for AUTO/BROWSER, AUTO/CLI, and MANUAL criteria with pattern tables.
 
@@ -60,13 +59,20 @@ Everything works except validation is missing and no welcome mail
 
 ### FASE 0: Load Context and Classify
 
-1. **Parse user input:**
+1. **Read backlog for pipeline status:**
+
+   Read `.workspace/backlog.md` (if exists) to understand current state:
+   - Which features are in which phase (TODO, DEF, BLT, TST, DONE)
+   - Features with status BLT (built) are ready for testing
+   - If no feature name provided: suggest the next BLT feature via **AskUserQuestion**
+
+2. **Parse user input:**
    - Feature name only → proceed to classification and hybrid testing
    - Feature name + inline feedback → skip to FASE 1b (backward compatible, no automation)
    - Feature name + free text → skip to FASE 1b (backward compatible, no automation)
    - "recent" → find most recently modified 03-test-checklist.md
 
-2. **Locate and validate test checklist:**
+3. **Locate and validate test checklist:**
 
    ```
    .workspace/features/{feature-name}/03-test-checklist.md
@@ -74,9 +80,9 @@ Everything works except validation is missing and no welcome mail
 
    If not found → exit with message to run `/dev:build {feature-name}` first.
 
-3. **Read checklist** and parse test items with expected behavior.
+4. **Read checklist** and parse test items with expected behavior.
 
-4. **Generate Test Data** (via Explore agent — zero source file reads in main context)
+5. **Generate Test Data** (via Explore agent — zero source file reads in main context)
 
    **Always** use a Task agent (Explore) to gather test data. Never read source files directly in the main conversation.
 
@@ -107,7 +113,7 @@ Everything works except validation is missing and no welcome mail
 
    Parse the agent's structured output. This gives you test data, classification hints, and dev server URL without consuming any main context on source file reads.
 
-5. **Classify each test item**
+6. **Classify each test item**
 
    For each checklist item, apply the classification criteria above and assign **AUTO** or **MANUAL**.
 
@@ -127,7 +133,7 @@ Everything works except validation is missing and no welcome mail
    AUTO: {n}  MANUAL: {n}
    ```
 
-6. **User override**
+7. **User override**
 
    Use AskUserQuestion tool:
    - header: "Test Classificatie"
@@ -141,7 +147,7 @@ Everything works except validation is missing and no welcome mail
    **If "Items aanpassen"** → ask which items to move to MANUAL, update classification.
    **If "Alles handmatig"** → set all items to MANUAL, skip FASE 1 entirely.
 
-7. **Dev server check** (lightweight — no snapshots in main context)
+8. **Dev server check** (lightweight — no snapshots in main context)
 
    If any items are classified as AUTO:
 
@@ -706,18 +712,20 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 → FASE 6: All 4 pass → commit test(user-registration): verified
 ```
 
-
 ## Troubleshooting
 
 ### Error: Dev server not running
+
 **Cause:** AUTO/BROWSER tests require a running dev server.
 **Solution:** Start the dev server first (`npm run dev` or `/dev-server`). The skill checks `curl localhost:{port}` before running tests.
 
 ### Error: Task agent timeout on browser tests
+
 **Cause:** Browser MCP tools may be slow or page not loading.
 **Solution:** Check that the dev server is responding. Try running the test manually. If persistent, the skill falls back to all-manual testing.
 
 ### Error: Classification seems wrong
+
 **Cause:** Some items may be borderline between AUTO and MANUAL.
 **Solution:** The skill asks for user override after initial classification. Review the proposed split and adjust before testing starts.
 
