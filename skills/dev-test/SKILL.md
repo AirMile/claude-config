@@ -652,7 +652,7 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 
 3. **Sync backlog:**
    - Read `.workspace/backlog.md`
-   - Move feature from `### BLT` to `### DONE` subsection
+   - Move feature from `### BLT` to `### TST` subsection
    - In DONE section: dependency arrow `->` changes to description `-`
    - Update section header counts: `({done}/{total} done)`
    - Update "Updated" timestamp

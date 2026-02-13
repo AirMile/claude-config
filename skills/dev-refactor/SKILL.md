@@ -65,15 +65,34 @@ Reads from `.workspace/features/{feature-name}/`:
 
    Read `.workspace/backlog.md` (if exists) to understand current state:
    - Which features are in which phase (TODO, DEF, BLT, TST, DONE)
-   - Features with status TST (tested) are ready for refactoring
-   - If no feature name provided: suggest the next TST feature via **AskUserQuestion**
+   - Collect ALL features in `### TST` section — these are tested but not yet refactored
 
-2. **Parse user input:**
-   - Feature name provided → validate it exists
-   - No feature name → list available features, use AskUserQuestion to select
-   - "recent" → find most recently modified 03-test-results.md
+2. **Determine feature queue:**
 
-3. **Validate test results exist:**
+   **a) Feature name provided** (`/dev:refactor auth`):
+   - Validate feature exists in `.workspace/features/`
+   - Feature queue = `[auth]`
+
+   **b) No feature name** (`/dev:refactor`):
+   - If TST features found in backlog: present them via **AskUserQuestion**:
+     - header: "Refactor"
+     - question: "Welke features wil je refactoren? ({N} features in TST status)"
+     - options:
+       - label: "Alle {N} features (Recommended)", description: "{feature1}, {feature2}, ..."
+       - label: "Eén feature kiezen", description: "Selecteer een specifieke feature"
+     - multiSelect: false
+   - If "Alle features" → feature queue = all TST features
+   - If "Eén feature kiezen" → show feature list via AskUserQuestion, queue = selected
+   - If no TST features in backlog → fall back to listing `.workspace/features/` directories that have `03-test-results.md`
+
+   **c) "recent"**: find most recently modified `03-test-results.md`, queue = `[that feature]`
+
+3. **Loop: Process each feature in queue**
+
+   For each feature in the queue, execute steps 4-8 (the rest of FASE 0) and then FASE 1-5.
+   Track overall progress: `Feature {current}/{total}: {name}`
+
+4. **Validate test results exist:**
 
    ```
    .workspace/features/{feature-name}/03-test-results.md
@@ -81,18 +100,18 @@ Reads from `.workspace/features/{feature-name}/`:
 
    If not found → exit with message to run `/dev:test {feature-name}` first.
 
-4. **Load all feature documentation:**
+5. **Load all feature documentation:**
    - Read `01-define.md` for requirements (REQ-XXX) and architecture
    - Read `02-build-log.md` for implementation details and created files
    - Read `03-test-checklist.md` for test items
    - Read `03-test-results.md` for verification results
 
-5. **Build pipeline files list (scope boundary):**
+6. **Build pipeline files list (scope boundary):**
    - Extract all code file paths from `02-build-log.md`
    - Store as `pipeline_files` — these are the ONLY files this skill may touch
    - Log the list explicitly for transparency
 
-6. **Analyze pipeline code** (via Explore agent — zero source file reads in main context)
+7. **Analyze pipeline code** (via Explore agent — zero source file reads in main context)
 
    **Always** use a Task agent (Explore) to read and analyze pipeline files. Never read source files directly in the main conversation.
 
@@ -528,7 +547,7 @@ Options:
 
 4. **Sync backlog:**
    - Read `.workspace/backlog.md`
-   - Move feature from `### BLT` to `### DONE`
+   - Move feature from `### TST` to `### DONE`
    - In DONE: dependency arrow `->` changes to description `-`
    - Update section header counts: `({done}/{total} done)`
    - Update "Updated" timestamp
@@ -550,11 +569,23 @@ Options:
 
 6. **Show completion** (parse `{next-feature}` from the `**Next:**` line in `.workspace/backlog.md`):
 
+   **Per feature:**
+
+   ```
+   ✓ {feature-name} refactored ({N} improvements)
+   ```
+
+   **Na laatste feature (of bij single feature):**
+
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    PIPELINE COMPLETE
 
-   Feature {feature-name} has completed all phases:
+   {N} feature(s) refactored:
+   {for each feature:}
+   ✓ {feature-name} - {improvement-count} improvements
+
+   All phases completed:
    ✓ /dev:define - Definition
    ✓ /dev:build - Implementation
    ✓ /dev:test - Verification
