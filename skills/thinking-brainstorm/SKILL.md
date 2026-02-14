@@ -140,13 +140,14 @@ If the user provided an inline description/argument:
    - Which unexplored directions could be valuable?
    - What type of variations would be most interesting?
 
-2. Read `resources/brainstorm-techniques.md` to review available techniques
+2. Read `references/brainstorm-techniques.md` to review available techniques
 
-3. Select 3-5 most relevant techniques and rank them:
-   - Choose between 3-5 techniques based on relevance
+3. Select 2-3 most relevant techniques and rank them:
+   - Choose between 2-3 techniques based on relevance
+   - Recommend 1-2 (after 2 techniques diminishing returns are likely)
    - Rank from most to least relevant
    - Most relevant = 1 (lowest number, at the top)
-   - Least relevant = highest number (3-5)
+   - Least relevant = highest number (2-3)
 
 4. Present ranked techniques (in user's preferred language):
 
@@ -156,10 +157,8 @@ If the user provided an inline description/argument:
    1. [Technique Name] ← [suggestion]: [1-2 sentences why most relevant]
    2. [Technique Name]
    3. [Technique Name]
-   4. [Technique Name]
-   5. [Technique Name]
 
-   [Select 1-3 techniques to apply in sequence]
+   [Recommendation: 1-2 technieken is optimaal]
    ```
 
 5. Use AskUserQuestion with technique options:
@@ -171,13 +170,12 @@ If the user provided an inline description/argument:
      - label: "1. [Top Technique] (Recommended)", description: "[rationale]"
      - label: "2. [Technique 2]", description: "[brief description]"
      - label: "3. [Technique 3]", description: "[brief description]"
-     - label: "4. [Technique 4]", description: "[brief description]"
-     - label: "5. [Technique 5]", description: "[brief description]"
      - label: "Uitleg", description: "Leg de technieken uit"
    multiSelect: true
    ```
 
    - If user selects multiple techniques: apply them in sequence (Steps 3-4 for each)
+   - Selected techniques are applied in sequence WITHOUT returning to Step 5 between them
    - After all selected techniques are applied: proceed to Step 5
 
 ### Step 3: Apply Technique
@@ -186,7 +184,7 @@ If the user provided an inline description/argument:
 
 **Process:**
 
-1. Read the full details of the selected technique from `resources/brainstorm-techniques.md`
+1. Read the full details of the selected technique from `references/brainstorm-techniques.md`
 
 2. Use sequential thinking to:
    - Understand the technique's framework
@@ -211,20 +209,11 @@ If the user provided an inline description/argument:
    - [concrete suggestion 2]
    - [concrete suggestion 3]
 
-   [Answer the questions and/or respond to suggestions]
+   Reageer per nummer of in je eigen woorden.
    ```
 
-4. Use AskUserQuestion to gather input:
-   ```yaml
-   options:
-     - label: "Beantwoord vragen (Recommended)", description: "Typ je antwoorden op de vragen"
-     - label: "Suggesties bespreken", description: "Reageer op de concrete suggesties"
-     - label: "Beide", description: "Beantwoord vragen en bespreek suggesties"
-     - label: "Uitleg", description: "Leg deze techniek verder uit"
-   multiSelect: false
-   ```
-5. Engage in natural dialogue if user has follow-up questions
-6. Continue until this technique is sufficiently explored
+4. Engage in natural dialogue if user has follow-up questions
+5. Continue until this technique is sufficiently explored
 
 **Guidelines for technique application:**
 
@@ -268,21 +257,17 @@ If the user provided an inline description/argument:
    - [insight 2]
    ```
 
-4. Use AskUserQuestion to confirm synthesis:
-   ```yaml
-   header: "Samenvatting"
-   question: "Klopt deze samenvatting?"
-   options:
-     - label: "Ja, klopt (Recommended)", description: "Ga door naar de volgende stap"
-     - label: "Aanpassen", description: "Ik wil iets toevoegen of wijzigen"
-     - label: "Uitleg", description: "Leg uit wat er samengevat is"
-   multiSelect: false
-   ```
-5. Adjust if needed based on user feedback
+4. Auto-proceed:
+   - If more selected techniques remain: proceed immediately to Step 3 for the next technique
+   - If all selected techniques are done: proceed to Step 5
+   - Note: user can always interrupt if synthesis needs adjustment
 
 ### Step 5: Next Action
 
-**Goal:** Decide whether to explore another technique or generate the final refined idea.
+**Goal:** Decide whether to explore another technique or generate the final refined idea. Only shown after all techniques selected in Step 2 are complete.
+
+**Important:** This step is only reached after ALL techniques selected in Step 2 have been applied.
+When the user selected multiple techniques, apply Steps 3-4 in sequence for each without showing Step 5 between them.
 
 **Process:**
 
@@ -291,7 +276,7 @@ If the user provided an inline description/argument:
    - Which unexplored techniques are most valuable now
    - How many more techniques would be beneficial
 
-2. Re-rank 3-5 most relevant techniques based on:
+2. Re-rank 2-3 most relevant techniques based on:
    - Current exploration state
    - Applied techniques (exclude these)
    - Gaps in exploration
@@ -323,7 +308,6 @@ If the user provided an inline description/argument:
      - label: "Genereer verfijnde versie (Recommended)", description: "Creëer het eindresultaat met alle inzichten"
      - label: "[Technique 1]", description: "[rationale - most relevant remaining technique]"
      - label: "[Technique 2]", description: "[brief description]"
-     - label: "[Technique 3]", description: "[brief description]"
      - label: "Uitleg", description: "Leg de opties uit"
    multiSelect: true
    ```
@@ -460,7 +444,8 @@ multiSelect: false
 **Technique Selection:**
 
 - Always use sequential thinking to choose most relevant techniques
-- Show 3-5 most relevant techniques (between 3-5 based on how many are truly relevant)
+- Show 2-3 most relevant techniques (between 2-3 based on how many are truly relevant)
+- Recommend 1-2; after 2 techniques diminishing returns are likely
 - Rank techniques with numbers: 1 = most relevant (at the top), higher numbers = less relevant
 - Consider what's been explored already (especially in Step 5)
 - Personalize suggestions to the specific idea
@@ -474,6 +459,13 @@ multiSelect: false
 - Use sequential thinking to explore deeply
 - Push for unexpected directions and variations
 - Make variations actionable, not vague
+
+**Flow Efficiency:**
+
+- No AskUserQuestion between technique presentation and user response - just prompt and wait
+- No confirmation gate after synthesis - auto-proceed to next technique
+- Apply selected techniques in sequence without returning to Step 5 between them
+- Only 2 interaction gates in the whole technique loop: initial selection (Step 2) and final decision (Step 5)
 
 **Synthesis:**
 
@@ -499,12 +491,13 @@ multiSelect: false
 - Track progress through techniques
 - Enable quick flow with numbered choices (user just types a number)
 - Respect user's choice even if different from suggestion
+- Minimize friction: present and let user respond, no response mode gates
 
 ## Technical Notes
 
 **Reference file usage:**
 
-- Read `resources/brainstorm-techniques.md` when suggesting techniques
+- Read `references/brainstorm-techniques.md` when suggesting techniques
 - Read specific technique details when applying that technique
 - Use technique frameworks as guidance, not rigid templates
 
@@ -513,6 +506,13 @@ multiSelect: false
 - Track which techniques have been applied
 - Remember key insights from each technique
 - Build cumulative understanding through the session
+
+**Flow control:**
+
+- Store list of selected techniques from Step 2
+- Loop Steps 3-4 for each technique in sequence
+- Only show Step 5 after all selected techniques are complete
+- Track: techniques_selected, techniques_applied, current_technique_index
 
 **Sequential thinking usage:**
 

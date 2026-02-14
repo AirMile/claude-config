@@ -4,7 +4,7 @@ description: Articulate and develop ideas through guided questions into structur
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 1.1.0
   category: thinking
 ---
 
@@ -27,7 +27,7 @@ The output is a structured markdown document that can be used as input for `/thi
 **Auto-detect existing concept:**
 
 1. Check if `.workspace/` folder exists
-   - If folder does NOT exist → check Obsidian (step 1b below)
+   - If folder does NOT exist → proceed to Step 1b (source selection)
 2. Check if `.workspace/concept.md` exists
 3. If exists AND no inline description provided:
    - Read the concept file
@@ -60,26 +60,7 @@ The output is a structured markdown document that can be used as input for `/thi
      - Ignore existing file (will be overwritten on save)
      - Proceed with normal flow below
 
-**Step 1b: Check Obsidian vault (if no .workspace/concept.md found)**
-
-If the user provided an inline description/argument:
-
-1. Search Obsidian: `mcp__obsidian__search_notes(query={argument}, limit=3)`
-2. If relevant match found in `Ideas/`:
-   - Show: "Er is een bestaand idee in Obsidian: **{title}** (`{path}`)"
-   - Use AskUserQuestion:
-     ```yaml
-     header: "Obsidian Match"
-     question: "Wil je dit bestaande idee als startpunt gebruiken?"
-     options:
-       - label: "Ja, gebruik als basis (Recommended)", description: "Laad het Obsidian idee en werk er verder aan"
-       - label: "Nee, nieuw concept", description: "Begin opnieuw met een nieuw idee"
-     multiSelect: false
-     ```
-   - **If "Ja":** Read the note with `mcp__obsidian__read_note()`, load as starting context, track `obsidian_source_path` for later save-back
-3. If no match found → proceed to Step 1c
-
-**Step 1c: Source selection (if no concept found)**
+**Step 1b: Source selection (if no concept found)**
 
 **If no description provided:**
 
@@ -91,6 +72,7 @@ question: "Waar wil je beginnen?"
 options:
   - label: "Todoist Ideas laden (Recommended)", description: "Kies een idee uit je Todoist Ideas project"
   - label: "Nieuw idee typen", description: "Beschrijf een nieuw idee"
+  - label: "Obsidian zoeken", description: "Zoek een bestaand idee in je Obsidian vault"
   - label: "Explain question", description: "Leg uit wat dit betekent"
 multiSelect: false
 ```
@@ -121,41 +103,134 @@ multiSelect: false
 **If "Nieuw idee typen":**
 Ask: "Wat is je idee? Beschrijf het in 1-2 zinnen."
 
-**If description provided:**
-Also search Todoist for matching tasks: `mcp__todoist__get_tasks_list(filter="search: {argument}", project_id="2362341183")`
+**If "Obsidian zoeken":**
 
-- If match found: show "Er staat een vergelijkbaar idee in Todoist: **{task name}**" and offer to load it (with description as extra context)
-- If no match: acknowledge briefly and proceed to Step 2.
+1. Ask: "Waar zoek je naar?" (or use inline argument if provided)
+2. Search Obsidian: `mcp__obsidian__search_notes(query={search term}, limit=3)`
+3. If relevant match found in `Ideas/`:
+   - Present matches using AskUserQuestion:
+     ```yaml
+     header: "Obsidian Idee"
+     question: "Welk idee wil je gebruiken?"
+     options:
+       - label: "{match 1 title}", description: "{path}"
+       - label: "{match 2 title}", description: "{path}"
+       - label: "{match 3 title}", description: "{path}"
+     multiSelect: false
+     ```
+   - Read selected note with `mcp__obsidian__read_note()`, load as starting context
+   - Track `obsidian_source_path` for later save-back
+4. If no match found: inform user and offer to type a new idea instead
+
+**If description provided (inline argument):**
+
+1. Search Obsidian: `mcp__obsidian__search_notes(query={argument}, limit=3)`
+2. If relevant match found in `Ideas/`:
+   - Show: "Er is een bestaand idee in Obsidian: **{title}** (`{path}`)"
+   - Use AskUserQuestion:
+     ```yaml
+     header: "Obsidian Match"
+     question: "Wil je dit bestaande idee als startpunt gebruiken?"
+     options:
+       - label: "Ja, gebruik als basis (Recommended)", description: "Laad het Obsidian idee en werk er verder aan"
+       - label: "Nee, nieuw concept", description: "Begin opnieuw met het getypte idee"
+     multiSelect: false
+     ```
+   - **If "Ja":** Read the note with `mcp__obsidian__read_note()`, load as starting context, track `obsidian_source_path` for later save-back
+3. Also search Todoist for matching tasks: `mcp__todoist__get_tasks_list(filter="search: {argument}", project_id="2362341183")`
+   - If match found: show "Er staat een vergelijkbaar idee in Todoist: **{task name}**" and offer to load it (with description as extra context)
+4. If no matches anywhere: acknowledge briefly and proceed to Step 2.
 
 ### Step 2: Explore and Expand
 
+Develop the idea through multiple rounds of concrete, clickable questions. Minimum 2 rounds before proceeding to Step 3.
+
+**Setup:**
+
 1. Determine idea type (creative concept, product, service, etc)
-2. Use sequential thinking to formulate 3-5 targeted questions
-3. Number each question (1., 2., 3., etc) for easy reference
-4. Present all questions at once using AskUserQuestion:
-   ```yaml
-   options:
-     - label: "Beantwoord vragen (Recommended)", description: "Typ je antwoorden in het tekstveld"
-     - label: "Minder vragen", description: "Stel minder vragen tegelijk"
-     - label: "Explain question", description: "Leg uit waarom deze vragen relevant zijn"
-   multiSelect: false
-   ```
-5. Based on answers, formulate follow-up questions if needed (restart numbering from 1 for each new batch)
-6. Continue until the core idea is sufficiently developed
+2. Use sequential thinking to plan questions for the first round
 
-**Focus areas:**
+**Ronde 1 - Fundament (3-4 vragen parallel):**
 
-- Core concept and unique elements
-- Target audience or intended experience
-- Key features, mechanics, or narrative elements
-- Tone, style, or atmosphere
-- What makes this idea distinctive
-- Context and constraints
+Use sequential thinking to formulate 3-4 fundamental questions about the idea. Present ALL questions in a single message, each as a separate AskUserQuestion:
 
-**Question guidelines:**
+```yaml
+# Question 1
+header: "Doelgroep"
+question: "Voor wie is dit bedoeld?"
+options:
+  - label: "{specific audience A} (Recommended)", description: "{why this fits}"
+  - label: "{specific audience B}", description: "{why this fits}"
+  - label: "{specific audience C}", description: "{why this fits}"
+multiSelect: false
 
+# Question 2
+header: "Scope"
+question: "Hoe groot zie je dit?"
+options:
+  - label: "{scope option A} (Recommended)", description: "{what this means}"
+  - label: "{scope option B}", description: "{what this means}"
+multiSelect: false
+
+# Question 3
+header: "Kernervaring"
+question: "Wat is het belangrijkste gevoel/resultaat?"
+options:
+  - label: "{experience A} (Recommended)", description: "{concrete example}"
+  - label: "{experience B}", description: "{concrete example}"
+  - label: "{experience C}", description: "{concrete example}"
+multiSelect: true
+
+# Question 4 (optional)
+header: "Sessiemodel"
+question: "Hoe ziet een typische sessie eruit?"
+options:
+  - label: "{session type A} (Recommended)", description: "{details}"
+  - label: "{session type B}", description: "{details}"
+multiSelect: false
+```
+
+**Note:** The examples above are templates. Every question and option MUST be specific to THIS idea. Use sequential thinking to derive concrete, relevant options from the idea context.
+
+**Ronde 2 - Diepte (3-4 vragen parallel):**
+
+Build on Round 1 answers. Use sequential thinking to formulate follow-up questions. Same format: each question = separate AskUserQuestion with concrete options.
+
+Focus areas for Round 2:
+
+- Features/mechanics specifics
+- Differentiatie (what makes it unique)
+- Style/atmosphere/tone
+- Motivation system or engagement model
+
+**Ronde 3+ - Optioneel:**
+
+After Round 2, use AskUserQuestion:
+
+```yaml
+header: "Verdieping"
+question: "Wil je nog meer aspecten uitwerken?"
+options:
+  - label: "Door naar samenvatting (Recommended)", description: "Er is genoeg context voor een goed concept"
+  - label: "Nog een ronde", description: "Ik wil nog meer aspecten uitdiepen"
+  - label: "Explain question", description: "Leg uit wat de volgende stap inhoudt"
+multiSelect: false
+```
+
+- **If "Nog een ronde":** formulate 2-3 targeted follow-up questions based on gaps from previous rounds
+- **If "Door naar samenvatting":** proceed to Step 3
+
+**Question rules:**
+
+- NEVER use meta-options ("Beantwoord vragen", "Minder vragen")
+- Each question = separate AskUserQuestion with concrete, clickable options
+- Options are specific to THIS idea, not generic
+- Recommended option = most likely answer based on context so far
+- "Other" is built-in — user can always type custom input
+- `multiSelect: true` where multiple answers make sense
+- Maximum 4 questions per round (parallel in one message)
 - Ask for concrete details, not abstract concepts
-- Adapt style to idea type (game vs product vs story)
+- Adapt question style to idea type (game vs product vs story)
 - Help articulate what's in the user's head
 - Save criticism or expansion for later--this phase is pure idea capture
 
@@ -174,6 +249,15 @@ Also search Todoist for matching tasks: `mcp__todoist__get_tasks_list(filter="se
    ```
 4. Incorporate feedback if needed
 5. Repeat until user confirms
+6. **Depth guard:** If the confirmed summary covers fewer than 3 distinct content aspects (e.g. only has title + vague description), suggest returning to Step 2 for an additional round:
+   ```yaml
+   header: "Verdieping nodig"
+   question: "De samenvatting is nog vrij dun. Wil je nog een ronde vragen doen voor meer diepgang?"
+   options:
+     - label: "Ja, extra ronde (Recommended)", description: "Terug naar Step 2 voor meer details"
+     - label: "Nee, ga door", description: "Genereer output met huidige inhoud"
+   multiSelect: false
+   ```
 
 ### Step 4: Generate Output
 
@@ -294,7 +378,7 @@ multiSelect: false
 
 ### Step 6: Todoist Close Loop
 
-**Only if `todoist_source_task_id` was tracked (idea loaded from Todoist in Step 1c):**
+**Only if `todoist_source_task_id` was tracked (idea loaded from Todoist in Step 1b):**
 
 After saving/showing the output, ask:
 
@@ -321,6 +405,15 @@ multiSelect: false
 **Synthesis:** Be accurate to what user said, don't add assumptions, confirm before proceeding.
 
 **Output:** Structure clearly, make scannable, adapt sections to idea type, output ONLY the markdown document.
+
+**AskUserQuestion:**
+
+- NEVER use meta-options ("Beantwoord vragen", "Minder vragen")
+- Each question = separate AskUserQuestion with concrete options
+- Options specific to the idea, not generic
+- `multiSelect: true` when multiple answers are valid
+- Up to 4 questions parallel per round
+- Recommended option = most contextually likely answer
 
 ### Language
 
