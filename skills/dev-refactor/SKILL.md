@@ -1,10 +1,10 @@
 ---
 name: dev-refactor
-description: Refactor code quality after testing with autonomous analysis and parallel planning agents. Use with /dev-refactor to improve code structure, naming, and patterns in feature files.
+description: Batch refactor code quality after testing with parallel analysis, dynamic stack-aware patterns, and early-exit for clean features. Use with /dev-refactor to improve code structure, naming, and patterns.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: dev
 ---
 
@@ -14,7 +14,7 @@ metadata:
 
 This is **FASE 4** of the dev workflow: define -> build -> test -> **refactor**
 
-Analyzes code quality via Explore agent (zero source reads in main context), uses Context7 research only when needed, creates improvement plans with ranked strategies, and applies non-breaking changes with smart test failure analysis before rollback.
+Batch-first architecture: analyzes ALL features in parallel via Explore agents, triages clean vs dirty, generates stack-aware refactor patterns via Context7, creates one combined plan with one approval, and applies changes with per-feature rollback.
 
 **Trigger**: `/dev:refactor` or `/dev:refactor {feature-name}`
 
@@ -27,7 +27,6 @@ Analyzes code quality via Explore agent (zero source reads in main context), use
 - **NEVER** touch, scan, plan, or modify files outside this list
 - If a pattern scan or research finding points to an external file → skip it, do not include in plan
 - If a DRY violation spans a pipeline file and an external file → only refactor the pipeline file side
-- Plan comparison tables do not need PIPELINE/EXTERNAL columns (everything is pipeline)
 
 This rule exists because refactoring external files risks breaking other features and creates unpredictable side effects.
 
@@ -50,16 +49,32 @@ Reads from `.workspace/features/{feature-name}/`:
 
 ```
 .workspace/features/{feature-name}/
-├── 01-define.md          # Updated: Status: REFACTORED
+├── 01-define.md          # Updated: Status: REFACTORED (or CLEAN)
 ├── 02-build-log.md       # From build phase
 ├── 03-test-checklist.md  # From build phase
 ├── 03-test-results.md    # From test phase
-└── 04-refactor.md        # NEW: Refactor log and results
+└── 04-refactor.md        # NEW: Refactor log (full or compact depending on findings)
 ```
+
+## Two Research Layers
+
+```
+.claude/research/
+├── stack-baseline.md          ← EXISTING: library conventions/patterns/pitfalls
+│                                 (React hooks, Tailwind v4, GSAP cleanup, etc.)
+│                                 Read in FASE 2 for research decision
+│
+└── refactor-patterns.md       ← NEW: stack-specific code smells & anti-patterns
+                                  Generated via Context7 on first refactor
+                                  Reused on subsequent refactors
+```
+
+**stack-baseline.md** = "how to use these libraries correctly" (conventions)
+**refactor-patterns.md** = "what mistakes to look for in code using these libraries" (anti-patterns)
 
 ## Workflow
 
-### FASE 0: Context Loading
+### FASE 0: Batch Context Loading + Refactor Patterns
 
 1. **Read backlog for pipeline status:**
 
@@ -87,74 +102,139 @@ Reads from `.workspace/features/{feature-name}/`:
 
    **c) "recent"**: find most recently modified `03-test-results.md`, queue = `[that feature]`
 
-3. **Loop: Process each feature in queue**
+3. **Load ALL feature docs for every feature in queue:**
 
-   For each feature in the queue, execute steps 4-8 (the rest of FASE 0) and then FASE 1-5.
-   Track overall progress: `Feature {current}/{total}: {name}`
+   For each feature, read (in parallel where possible):
+   - `01-define.md` for requirements and architecture
+   - `02-build-log.md` for implementation details and file list
+   - `03-test-checklist.md` for test items
+   - `03-test-results.md` for verification results
 
-4. **Validate test results exist:**
+   Validate `03-test-results.md` exists for each feature. If any missing → remove from queue and warn.
+
+4. **Build pipeline files list per feature:**
+
+   For each feature, extract all code file paths from `02-build-log.md`:
+   - Primary: parse from `## Files Modified` table (file path column)
+   - Fallback: grep for file paths matching `src/`, `app/`, `lib/`, `components/`, etc.
+   - Store as `pipeline_files[feature_name]`
+
+5. **Load or generate refactor-patterns.md:**
 
    ```
-   .workspace/features/{feature-name}/03-test-results.md
+   IF .claude/research/refactor-patterns.md exists:
+     → Load cached patterns, skip Context7
+     → Log: "Refactor patterns loaded (cached)"
+
+   IF NOT exists:
+     → Detect stack from CLAUDE.md ### Stack section
+     → For each library/framework in stack:
+        Context7 resolve-library-id → query-docs:
+        "Common code smells, anti-patterns, and refactoring opportunities
+         in {library} projects. Focus on: performance pitfalls, security
+         anti-patterns, common mistakes, and code organization issues."
+     → Compile results into .claude/research/refactor-patterns.md
+     → Log: "Refactor patterns generated via Context7 ({N} libraries)"
    ```
 
-   If not found → exit with message to run `/dev:test {feature-name}` first.
+   **Format for refactor-patterns.md:**
 
-5. **Load all feature documentation:**
-   - Read `01-define.md` for requirements (REQ-XXX) and architecture
-   - Read `02-build-log.md` for implementation details and created files
-   - Read `03-test-checklist.md` for test items
-   - Read `03-test-results.md` for verification results
+   ```markdown
+   # Refactor Patterns
 
-6. **Build pipeline files list (scope boundary):**
-   - Extract all code file paths from `02-build-log.md`
-   - Store as `pipeline_files` — these are the ONLY files this skill may touch
-   - Log the list explicitly for transparency
+   <!-- Generated via Context7 for: {stack list} -->
+   <!-- Regenerate: delete this file and run /dev:refactor -->
 
-7. **Analyze pipeline code** (via Explore agent — zero source file reads in main context)
+   ## {Library Name}
 
-   **Always** use a Task agent (Explore) to read and analyze pipeline files. Never read source files directly in the main conversation.
+   ### Performance Anti-patterns
 
-   Launch Explore agent with prompt:
+   - {pattern}: {description} — {what to look for in code}
+
+   ### Security Anti-patterns
+
+   - {pattern}: {description} — {what to look for in code}
+
+   ### Code Organization Anti-patterns
+
+   - {pattern}: {description} — {what to look for in code}
+   ```
+
+**Output:**
+
+```
+BATCH CONTEXT LOADED
+
+| Metric | Value |
+|--------|-------|
+| Features in queue | {N} |
+| Total pipeline files | {sum across all features} |
+| Refactor patterns | {cached / generated via Context7} |
+
+Features:
+{for each feature:}
+- {name}: {M} pipeline files
+
+→ Starting parallel analysis...
+```
+
+---
+
+### FASE 1: Parallel Batch Analysis + Triage
+
+**Goal:** Analyze ALL features in parallel, then triage into CLEAN vs HAS_FINDINGS.
+
+1. **Launch ALL Explore agents IN PARALLEL** (1 per feature, max 10 concurrent):
+
+   For each feature, launch a Task agent (Explore) with this prompt:
 
    ```
    Feature: {feature-name}
    Pipeline files:
-   {list of all pipeline_files paths}
+   {list of all pipeline_files paths for this feature}
 
    Lees ALLE bovenstaande pipeline files. Scan voor:
 
-   1. SECURITY patterns:
+   1. UNIVERSEEL (altijd scannen):
+
+      SECURITY:
       - Injection: exec(, eval(, new Function, os.system
       - XSS: .innerHTML =, dangerouslySetInnerHTML, document.write
       - Deserialization: pickle
       - GitHub Actions: ${{ github.event. in run: commands
 
-   2. DRY violations (ALLEEN binnen pipeline files):
+      DRY violations (ALLEEN binnen pipeline files):
       - Duplicate code blocks (>5 lines identiek)
       - Vergelijkbare logica patronen (>70% gelijkheid)
       - Herhaalde conditionals, copy-paste
       - Extract opportunities (zelfde code in 3+ locaties)
 
-   3. OVER-ENGINEERING:
+      OVER-ENGINEERING:
       - Helpers die maar 1x gebruikt worden
       - >3 indirectie-niveaus voor simpele operaties
       - Premature optimization (complexe caching voor non-hot paths)
       - Over-defensive code (try/catch rond code die niet kan falen)
       - Over-generic types die maar op 1 plek gebruikt worden
 
-   4. ARCHITECTUUR overzicht:
+   2. STACK-SPECIFIEK (uit refactor-patterns):
+
+      {injected patterns per library from refactor-patterns.md}
+
+   3. ARCHITECTUUR overzicht:
       - Welke libraries/frameworks worden gebruikt
       - Belangrijkste patterns (hooks, API routes, components, etc.)
-      - Stack info relevant voor Context7 research beslissing
+      - Libraries die NIET in refactor-patterns.md staan
 
    Geef terug als gestructureerd overzicht:
    ANALYSIS_START
 
+   FEATURE: {feature-name}
+   STATUS: CLEAN | HAS_FINDINGS
+
    ARCHITECTURE:
    Libraries: {lijst van libraries/frameworks}
    Patterns: {lijst van architectuurpatronen}
-   Stack baseline needed: {ja/nee + welke libraries niet in baseline}
+   Uncovered libraries: {libraries niet in refactor-patterns.md}
 
    SECURITY_FINDINGS:
    - {file:line} {pattern} — {beschrijving} — Before: {code snippet}
@@ -168,70 +248,83 @@ Reads from `.workspace/features/{feature-name}/`:
    - {file:line} {type} — {beschrijving} — Code: {snippet}
    (of "Geen over-engineering gevonden")
 
+   STACK_SPECIFIC_FINDINGS:
+   - {file:line} {library} {pattern} — {beschrijving} — Code: {snippet}
+   (of "Geen stack-specifieke issues gevonden")
+
    POSITIVE_OBSERVATIONS:
    - {wat al goed is in de codebase}
 
    ANALYSIS_END
    ```
 
-   **Parsing the agent result:**
+   **Parsing agent results:**
 
-   The Explore agent's TaskOutput will likely be **truncated** because its full conversation log (all file reads) is very large. This is expected. To extract the structured analysis:
-   1. If TaskOutput contains `ANALYSIS_START` → parse directly from the output
-   2. If TaskOutput is truncated (no `ANALYSIS_START` visible):
-      - The output includes a file path (e.g. `C:\...\tasks\{id}.output`)
-      - Use **Grep** to find the line containing `ANALYSIS_START` in that file
-      - Use **Read** with the line offset to read from `ANALYSIS_START` to `ANALYSIS_END`
-   3. Extract ONLY the structured block between the markers — ignore the rest of the agent log
+   For each completed Explore agent:
+   1. If TaskOutput contains `ANALYSIS_START` → parse directly
+   2. If truncated (no `ANALYSIS_START` visible):
+      - Use **Grep** to find `ANALYSIS_START` in the output file
+      - Use **Read** with line offset to extract the structured block
+   3. Extract STATUS field: `CLEAN` or `HAS_FINDINGS`
+
+2. **Triage results:**
+
+   Classify each feature:
+   - **CLEAN**: STATUS = CLEAN (0 findings across all categories)
+   - **HAS_FINDINGS**: STATUS = HAS_FINDINGS (1+ findings)
+
+   CLEAN features → **early-exit**, skip FASE 2-4 entirely.
+
+3. **If ALL features are CLEAN** → jump directly to FASE 5 (batch completion, no user approval needed).
 
 **Output:**
 
 ```
-CONTEXT LOADED: {feature-name}
+PARALLEL ANALYSIS COMPLETE
 
-| Metric | Value |
-|--------|-------|
-| Requirements | {N} (from 01-define.md) |
-| Pipeline files | {N} files |
-| Test status | VERIFIED ({date}) |
-| Analysis | Via Explore agent |
+| Feature | Pipeline Files | Status | Findings |
+|---------|---------------|--------|----------|
+| {name1} | {N} | CLEAN | 0 |
+| {name2} | {M} | HAS_FINDINGS | {X} |
+| ... | ... | ... | ... |
 
-Scope: Only these files will be analyzed and refactored:
-- {file1}
-- {file2}
-- ...
+Summary: {clean_count} clean, {findings_count} with findings
 
-→ Ready for research decision.
+{if all clean:}
+→ All features clean! Skipping to completion...
+
+{if has findings:}
+→ Proceeding with {findings_count} feature(s) to research decision...
 ```
 
 ---
 
-### FASE 1: Research Decision
+### FASE 2: Aggregated Research Decision
 
-**Goal:** Determine if Context7 research adds value based on the Explore agent's analysis from FASE 0.
-
-Pattern scanning is already done by the Explore agent. FASE 1 only handles the research decision.
+**Goal:** One research decision for all affected features combined (not per-feature).
 
 **Steps:**
 
-1. **Read stack baseline:**
+1. **Aggregate architecture info from all HAS_FINDINGS features:**
+   - Collect all libraries mentioned in ARCHITECTURE sections
+   - Collect all "Uncovered libraries" (not in refactor-patterns.md or stack-baseline.md)
+   - Compute: `uncovered = used_libraries - baseline_libraries - refactor_pattern_libraries`
+
+2. **Read stack baseline:**
    - Read `.claude/research/stack-baseline.md` (if exists)
-   - Note which technologies and patterns are already documented
-   - If expired → treat as partial knowledge (still usable, may need supplementing)
+   - Note which technologies are already documented
 
-2. **Decide: is Context7 research needed?**
+3. **Decide: is Context7 research needed?**
 
-   Use the Explore agent's ARCHITECTURE section to assess:
+   | Signal                                                 | Research needed?                        |
+   | ------------------------------------------------------ | --------------------------------------- |
+   | Stack baseline + refactor-patterns cover all libraries | NO                                      |
+   | Findings are concrete, directly actionable             | NO                                      |
+   | Uncovered libraries found in analysis                  | YES — research those specific libraries |
+   | Complex security concerns (auth, crypto, injection)    | YES — research security best practices  |
+   | No stack baseline exists at all                        | YES — research core stack patterns      |
 
-   | Signal                                                            | Research needed?                        |
-   | ----------------------------------------------------------------- | --------------------------------------- |
-   | Stack baseline covers all libraries used in pipeline files        | NO                                      |
-   | Explore agent findings are concrete, well-understood issues       | NO — these are directly actionable      |
-   | Code uses libraries/patterns NOT in baseline                      | YES — research those specific libraries |
-   | Complex security concerns (auth flows, crypto, injection vectors) | YES — research security best practices  |
-   | No stack baseline exists at all                                   | YES — research the core stack patterns  |
-
-   **If research NOT needed** → proceed directly to FASE 2 with Explore agent findings.
+   **If research NOT needed** → proceed directly to FASE 3.
 
    **If research needed** → spawn only the relevant research agents:
 
@@ -243,96 +336,96 @@ Pattern scanning is already done by the Explore agent. FASE 1 only handles the r
    | error-handling-researcher | Missing error handling in critical paths            |
 
    Agent context includes:
-   - Feature name and tech stack (from CLAUDE.md)
-   - **Structured analysis from Explore agent** (NOT full file contents — pass the ANALYSIS_START..ANALYSIS_END block)
+   - Tech stack (from CLAUDE.md)
+   - **Aggregated analysis** from ALL affected features (ANALYSIS_START..ANALYSIS_END blocks)
    - Stack baseline (if available)
-   - Specific questions to answer (not open-ended research)
+   - Specific questions to answer
 
-3. **Report findings:**
+   **If uncovered libraries found** → also update refactor-patterns.md:
+   - Context7 query for each uncovered library
+   - Append new sections to existing refactor-patterns.md
 
-**Output (without research):**
-
-```
-ANALYSIS COMPLETE
-
-| Explore Agent Findings | Count |
-|------------------------|-------|
-| Security patterns | [X] matches |
-| DRY violations | [Y] matches |
-| Over-engineering | [Z] matches |
-
-Research: Skipped (stack baseline sufficient)
-
-→ Ready for planning.
-```
-
-**Output (with research):**
+**Output:**
 
 ```
-ANALYSIS COMPLETE
+RESEARCH DECISION
 
-| Explore Agent Findings | Count |
-|------------------------|-------|
-| Security patterns | [X] matches |
-| DRY violations | [Y] matches |
-| Over-engineering | [Z] matches |
+| Source | Libraries Covered |
+|--------|------------------|
+| stack-baseline.md | {list} |
+| refactor-patterns.md | {list} |
+| Uncovered | {list or "none"} |
 
-Research: [N] agents spawned ({list})
+{if no research:}
+Research: Skipped (existing knowledge sufficient)
+
+{if research:}
+Research: {N} agents spawned ({list})
 Reason: {why research was needed}
+Refactor patterns updated: {yes/no}
 
-→ Ready for planning.
+→ Ready for combined plan.
 ```
 
 ---
 
-### FASE 2: Plan
+### FASE 3: Combined Plan + Single Approval
 
-**Goal:** Create a ranked improvement list and get user approval before modifying code.
+**Goal:** One plan combining ALL findings from ALL affected features, one user approval.
 
 **Steps:**
 
 1. **Create ranked improvements list:**
 
-   Based on Explore agent analysis (FASE 0) and optional research findings (FASE 1), compile all improvements ranked by impact:
+   Combine all findings from all HAS_FINDINGS features:
+   - **Cross-feature deduplication**: same pattern in multiple files → 1 plan item with multiple locations
+   - Each improvement gets impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW
+   - Sort: HIGH first (security), then MED (performance, DRY), then LOW (quality, simplification)
    - **Only pipeline files** may be included
-   - Each improvement gets an impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW
-   - Sort: HIGH first (security vulnerabilities), then MED, then LOW
+   - Group by feature for clarity
 
 2. **Present improvements with before/after code:**
 
    ```
-   REFACTOR PLAN
+   REFACTOR PLAN ({N} features, {M} improvements)
 
    🔴 HIGH: [X] improvements (security)
    🟡 MED: [Y] improvements (performance, DRY, error handling)
    🟢 LOW: [Z] improvements (code quality, simplification)
-   ```
 
-   For each improvement show:
-   - `{file}:{line}` — file from pipeline_files
-   - Issue → Fix
-   - **Before** code snippet (current code)
-   - **After** code snippet (proposed change)
+   ── {feature-1} ──
 
-   End with:
+   1. 🔴 {file}:{line} — {issue} → {fix}
+      Before: {code snippet}
+      After:  {proposed change}
 
-   ```
+   2. 🟡 {file}:{line} — {issue} → {fix}
+      Before: {code snippet}
+      After:  {proposed change}
+
+   ── {feature-2} ──
+
+   3. 🟡 {file}:{line} — {issue} → {fix}
+      ...
+
+   ──────────────────
+
    Files to be modified: [count]
-   - {file1} ([N] changes)
-   - {file2} ([M] changes)
+   - {file1} ([N] changes) — {feature}
+   - {file2} ([M] changes) — {feature}
 
-   Rollback available: YES (automatic on test failure)
+   Per-feature rollback: YES (feature A succeeds, B fails → only B rolled back)
    ```
 
-3. **Ask for scope:**
+3. **Ask for scope (1 AskUserQuestion for all features):**
 
    Use **AskUserQuestion** tool:
    - header: "Scope"
-   - question: "Welke verbeteringen wil je toepassen? ([N] totaal)"
+   - question: "Welke verbeteringen wil je toepassen? ({M} totaal across {N} features)"
    - options:
-     - label: "Alles toepassen (Recommended)", description: "Alle [N] verbeteringen"
-     - label: "Alleen HIGH + MED", description: "[X+Y] verbeteringen, skip LOW"
-     - label: "Alleen HIGH", description: "[X] verbeteringen, alleen security"
+     - label: "Alles toepassen (Recommended)", description: "Alle {M} verbeteringen in {N} features"
+     - label: "Alleen HIGH + MED", description: "{X+Y} verbeteringen, skip LOW"
+     - label: "Alleen HIGH", description: "{X} verbeteringen, alleen security"
      - label: "Annuleren", description: "Stop refactor proces"
    - multiSelect: false
 
@@ -340,9 +433,11 @@ Reason: {why research was needed}
 
 ---
 
-### FASE 3: Apply Improvements
+### FASE 4: Apply + Test Per Feature
 
-**Priority order (execute in this sequence):**
+**Goal:** Apply approved improvements and test, with per-feature rollback isolation.
+
+**Priority order for each feature (execute in this sequence):**
 
 1. Security improvements
 2. Performance optimizations
@@ -356,17 +451,64 @@ Reason: {why research was needed}
 1. **Initialize change tracking:**
 
    ```bash
-   git rev-parse HEAD  # Store as saved_hash for rollback
+   git rev-parse HEAD  # Store as saved_hash for global rollback
    ```
 
-2. **Apply each improvement using Edit tool:**
+2. **For each feature with approved improvements:**
+
+   a. **Create feature checkpoint:**
+
+   ```bash
+   git stash push -m "refactor-checkpoint-{feature-name}" --include-untracked
+   git stash pop  # Immediately pop — this just saves the stash ref for rollback
+   ```
+
+   Or simpler: track the list of files modified per feature for targeted rollback.
+
+   b. **Apply improvements using Edit tool:**
    - Follow priority order strictly
    - **Re-read each file immediately before editing** (prevents "File has not been read yet" errors)
    - Group edits by file: read file → apply ALL edits for that file → move to next file
    - **Only modify files in pipeline_files list** — assert before each edit
    - Keep changes non-breaking
-   - Track modified files and changes per category
-   - Report progress: `✓ Applied {count} {category} improvements ({current}/6 categories)`
+   - Track: `modified_files[feature_name] = [list of files changed]`
+
+   c. **Run test suite after this feature's changes:**
+   - Detect test command from CLAUDE.md `### Testing` section
+   - **All pass** → mark feature as APPLIED, continue to next feature
+   - **Any fail → analyze before rollback:**
+
+     | Test failure type                                         | Action                     |
+     | --------------------------------------------------------- | -------------------------- |
+     | Test expects old behavior that was intentionally improved | Update test, re-run        |
+     | Genuine regression (broke unrelated functionality)        | Rollback THIS feature only |
+     | Flaky or environment-dependent                            | Re-run once, then decide   |
+
+     **If test update needed:**
+     - Update ONLY the specific assertion(s)
+     - Re-run FULL test suite
+     - If still failing → rollback THIS feature only
+     - Max 1 test update attempt per failing test
+
+     **Per-feature rollback (only this feature, not others):**
+
+     ```bash
+     git checkout -- {modified_files[feature_name]}
+     ```
+
+     Mark feature as ROLLED_BACK with reason. Continue to next feature.
+
+   d. **Report per feature:**
+
+   ```
+   ✓ {feature-name}: {N} improvements applied
+   ```
+
+   or:
+
+   ```
+   ✗ {feature-name}: rolled back ({reason})
+   ```
 
 **Non-breaking rule:**
 
@@ -375,215 +517,195 @@ Reason: {why research was needed}
 - No breaking parameter changes
 - No removal of public methods/functions
 - Preserve all existing behavior
-- If breaking change needed → exit and suggest new /dev:define cycle
+- If breaking change needed → skip that improvement and note it
 
 **Output:**
 
 ```
 IMPROVEMENTS APPLIED
 
-| Category | Count |
-|----------|-------|
-| Security | [N] |
-| Performance | [N] |
-| DRY/Refactoring | [N] |
-| Simplification | [N] |
-| Quality | [N] |
-| Error Handling | [N] |
-
-Modified files: [list]
-
-→ Running tests...
-```
-
----
-
-### FASE 4: Test Verification
-
-1. **Run test suite** (detect command from CLAUDE.md `### Testing` section)
-
-2. **All pass** → proceed to FASE 5
-
-3. **Any fail → analyze before rollback:**
-
-   Before rolling back, analyze each failing test to determine the correct action:
-
-   | Test failure type                                                              | Action                   |
-   | ------------------------------------------------------------------------------ | ------------------------ |
-   | Test expects old (insecure/incorrect) behavior that was intentionally improved | Update the test, re-run  |
-   | Test catches genuine regression (refactoring broke unrelated functionality)    | Rollback all changes     |
-   | Test is flaky or environment-dependent                                         | Re-run once, then decide |
-
-   **If test update needed (improvement is correct, test is stale):**
-   - Update ONLY the specific assertion(s) that test the improved behavior
-   - Do NOT change the test's overall structure or coverage
-   - Re-run the FULL test suite after updating
-   - If still failing after update → rollback all changes
-   - Max 1 test update attempt per failing test — bij twijfel rollback
-
-   **If genuine regression or unclear:**
-
-   Primary:
-
-   ```bash
-   git checkout -- [modified files]
-   ```
-
-   Fallback (if checkout fails):
-
-   ```bash
-   git reset --hard {saved_hash}
-   ```
-
-   If both fail → report manual recovery steps and **STOP**.
-
-   Report:
-   - Which tests failed and why
-   - Whether any tests were updated (and why the old assertion was incorrect)
-   - Suggest smaller scope refactor (Conservative plan)
-   - **STOP** — do not proceed to FASE 5
-
-**Output (pass):**
-
-```
-TESTS PASSED
-
-| Metric | Value |
-|--------|-------|
-| Tests | [X/X] passing |
-| Tests updated | [N] (stale assertions corrected) |
+| Feature | Status | Improvements | Files Modified |
+|---------|--------|-------------|----------------|
+| {name1} | APPLIED | {N} | {M} |
+| {name2} | APPLIED | {N} | {M} |
+| {name3} | ROLLED_BACK | 0 | 0 ({reason}) |
 
 → Documenting results...
 ```
 
-**Output (fail — rolled back):**
-
-```
-TESTS FAILED — ROLLED BACK
-
-| Field | Value |
-|-------|-------|
-| Failed tests | [list] |
-| Failure type | [regression / stale test / unclear] |
-| Rollback | ✓ Changes reverted |
-
-Options:
-1. Try Conservative plan (fewer, safer changes)
-2. Accept current code quality
-3. Investigate failures manually
-```
-
 ---
 
-### FASE 5: Completion
+### FASE 5: Batch Completion
 
-1. **Get timestamp:**
+**Goal:** Proportional documentation, single backlog update, single commit.
 
-   ```
-   Use mcp__time__get_current_time with timezone "Europe/Amsterdam"
-   ```
+1. **Create `04-refactor.md` per feature (proportional to findings):**
 
-2. **Create `04-refactor.md`:**
+   **For CLEAN features (0 findings, early-exited at FASE 1):**
 
    ```markdown
    # Refactor Log: {feature-name}
 
-   Generated: [timestamp]
+   Generated: {timestamp}
+
+   ## Summary
+
+   | Metric   | Value                  |
+   | -------- | ---------------------- |
+   | Status   | CLEAN                  |
+   | Findings | 0                      |
+   | Analysis | Parallel Explore agent |
+
+   ## Positive Observations
+
+   - {observations from Explore agent's POSITIVE_OBSERVATIONS}
+
+   No refactoring needed — code quality is good.
+   ```
+
+   **For REFACTORED features (had findings, successfully applied):**
+
+   ```markdown
+   # Refactor Log: {feature-name}
+
+   Generated: {timestamp}
 
    ## Summary
 
    | Metric         | Value                        |
    | -------------- | ---------------------------- |
-   | Scope          | [ALL / HIGH+MED / HIGH only] |
-   | Improvements   | [count]                      |
-   | Files modified | [count]                      |
-   | Tests          | [X/X] passing                |
+   | Status         | REFACTORED                   |
+   | Scope          | {ALL / HIGH+MED / HIGH only} |
+   | Improvements   | {count}                      |
+   | Files modified | {count}                      |
+   | Tests          | {X/X} passing                |
 
    ## What Was Improved
 
-   - [High-level description of improvements]
+   - {high-level description}
 
    ## Key Decisions
 
-   - [Decision 1]: [rationale]
-   - [Decision 2]: [rationale]
+   - {decision}: {rationale}
 
    ## Improvements
 
    ### Security
 
-   - [file:line] - [issue] → [fix] → [result] (Risk: [L/M])
+   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
 
    ### Performance
 
-   - [file:line] - [issue] → [fix] → [result] (Risk: [L/M])
+   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
 
    ### DRY/Refactoring
 
-   - [file:line] ↔ [file:line] - [extraction] → [result] (Risk: [L/M])
+   - {file:line} ↔ {file:line} - {extraction} → {result} (Risk: {L/M})
 
    ### Simplification
 
-   - [file:line] - [removed] → [simplified] (Risk: [L/M])
+   - {file:line} - {removed} → {simplified} (Risk: {L/M})
 
    ### Quality
 
-   - [file:line] - [issue] → [fix] → [result] (Risk: [L/M])
+   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
 
    ### Error Handling
 
-   - [file:line] - [issue] → [fix] → [result] (Risk: [L/M])
+   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
 
    ## Positive Observations
 
-   - [What was already done well in the codebase]
+   - {what was already done well}
 
    ## Modified Files
 
-   - [file] - [description of changes]
+   - {file} - {description of changes}
    ```
 
-3. **Update `01-define.md`:** Set `Status: REFACTORED` with date.
+   **For ROLLED_BACK features (had findings, apply/test failed):**
 
-4. **Sync backlog:**
+   ```markdown
+   # Refactor Log: {feature-name}
+
+   Generated: {timestamp}
+
+   ## Summary
+
+   | Metric               | Value                      |
+   | -------------------- | -------------------------- |
+   | Status               | ROLLED_BACK                |
+   | Reason               | {test failure description} |
+   | Planned improvements | {count}                    |
+
+   ## What Was Attempted
+
+   - {description of planned improvements}
+
+   ## Failure Analysis
+
+   - {which tests failed and why}
+   - {whether it was a regression vs stale test}
+
+   ## Pending Improvements
+
+   - {improvements that could be retried with a more conservative approach}
+   ```
+
+2. **Update `01-define.md` for each feature:**
+   - CLEAN: Set `Status: CLEAN` with date
+   - REFACTORED: Set `Status: REFACTORED` with date
+   - ROLLED_BACK: Set `Status: TST` (keep in TST, don't advance)
+
+3. **Sync backlog (single edit for all features):**
    - Read `.workspace/backlog.md`
-   - Move feature from `### TST` to `### DONE`
+   - Move CLEAN and REFACTORED features from `### TST` to `### DONE`
+   - ROLLED_BACK features stay in `### TST`
    - In DONE: dependency arrow `->` changes to description `-`
    - Update section header counts: `({done}/{total} done)`
    - Update "Updated" timestamp
    - Update "Next" suggestion
 
-5. **Auto-commit:**
+4. **Single auto-commit for everything:**
 
    ```bash
    git add .
    git commit -m "$(cat <<'EOF'
-   refactor({feature}): {summary}
+   refactor(batch): {summary}
 
-   {description of improvements by category and counts}
+   {N} features analyzed, {clean} clean, {refactored} refactored, {rolled_back} rolled back
+
+   {for each REFACTORED feature:}
+   - {feature}: {improvement count} improvements ({categories})
+   {for each CLEAN feature:}
+   - {feature}: clean (no changes needed)
+   {for each ROLLED_BACK feature:}
+   - {feature}: rolled back ({reason})
    EOF
    )"
    ```
 
+   For single-feature commits, use the existing format:
+
+   ```
+   refactor({feature}): {summary}
+   ```
+
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-6. **Show completion** (parse `{next-feature}` from the `**Next:**` line in `.workspace/backlog.md`):
-
-   **Per feature:**
-
-   ```
-   ✓ {feature-name} refactored ({N} improvements)
-   ```
-
-   **Na laatste feature (of bij single feature):**
+5. **Show completion:**
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   PIPELINE COMPLETE
+   REFACTOR COMPLETE
 
-   {N} feature(s) refactored:
-   {for each feature:}
-   ✓ {feature-name} - {improvement-count} improvements
+   {N} feature(s) processed:
+   {for each CLEAN feature:}
+   ✓ {name} — clean (no changes needed)
+   {for each REFACTORED feature:}
+   ✓ {name} — {improvement-count} improvements applied
+   {for each ROLLED_BACK feature:}
+   ✗ {name} — rolled back ({reason})
 
    All phases completed:
    ✓ /dev:define - Definition
@@ -605,23 +727,31 @@ Options:
 ### Context Loading Failures
 
 **No features found** → exit: "Run /dev:define and /dev:build first"
-**No test results** → exit: "Run /dev:test {feature} first"
-**Build log empty** → exit: "No code files found in 02-build-log.md"
+**No test results for any feature** → exit: "Run /dev:test first"
+**Some features missing test results** → remove from queue, warn, continue with rest
+**Build log empty** → skip feature, warn: "No code files found in 02-build-log.md for {feature}"
+
+### Refactor Patterns Failures
+
+**Context7 unavailable** → skip refactor-patterns generation, proceed with universal patterns only
+**Partial Context7 results** → generate refactor-patterns.md with available data, note gaps
+**CLAUDE.md has no ### Stack section** → skip stack-specific patterns, use universal only
 
 ### Analysis Failures
 
-**Context7 unavailable** → skip research, proceed with stack baseline and direct analysis only
-**Stack baseline missing** → proceed with direct analysis and Context7 research
+**Explore agent fails for a feature** → skip that feature, warn, continue with rest
+**All Explore agents fail** → exit: "Analysis failed — try again or run on a single feature"
+**Agent output truncated** → use Grep/Read to find ANALYSIS_START..ANALYSIS_END block
 
 ### Test Failures
 
-**Tests fail after refactoring** → analyze failure type first (stale test vs regression), then rollback or update test
+**Tests fail after refactoring a feature** → per-feature rollback, continue with next feature
 **Test framework not detected** → ask user which command to run
-**Tests hang** → kill process, rollback
+**Tests hang** → kill process, rollback current feature
 
 ### Rollback Failures
 
-**git checkout fails** → try `git reset --hard {saved_hash}`
+**git checkout fails for feature files** → try `git reset --hard {saved_hash}` (affects all features)
 **Both fail** → report manual recovery steps with git hash and file list, STOP
 
 ## Restrictions
@@ -634,23 +764,28 @@ This skill must NEVER:
 - Include external file findings in any plan
 - Proceed without existing 03-test-results.md
 - Make breaking changes (API, schema, parameter changes)
-- Skip user approval at FASE 2
+- Skip user approval at FASE 3 (unless 0 findings across all features)
 - Skip test verification in FASE 4
 - Proceed if tests fail without analyzing failure type first (stale test vs regression)
 - Apply improvements without user scope selection
 - Add Co-Authored-By or Generated with Claude Code footer to commits
+- Run Explore agents sequentially when multiple features are in the queue (use parallel)
+- Create disproportionate documentation for clean features
 
 This skill must ALWAYS:
 
 - Enforce the pipeline_files scope boundary at every phase
-- Use Explore agent to read and analyze pipeline files (zero source reads in main context)
+- Launch Explore agents in parallel for batch analysis (max 10 concurrent)
+- Triage features into CLEAN vs HAS_FINDINGS after analysis
+- Early-exit CLEAN features (skip FASE 2-4)
+- Use refactor-patterns.md for stack-aware analysis (generate on first run, cache thereafter)
+- Aggregate research decisions across all features (1 decision, not N)
+- Present ONE combined plan with ONE user approval for all features
+- Deduplicate cross-feature findings (same pattern → 1 plan item)
+- Apply per-feature rollback (feature A succeeds, feature B fails → only B rolled back)
+- Write proportional documentation (compact for CLEAN, full for REFACTORED)
+- Make a single commit for all features
 - Re-read each file immediately before editing (prevents "File has not been read yet" errors)
 - Group edits by file: read file → apply ALL edits for that file → next file
-- Load feature documentation (01-define, 02-build-log, 03-test-\*) before analysis
-- Autonomously decide whether Context7 research adds value before spawning agents
-- Use stack baseline as primary knowledge source when valid
-- Present ranked improvements with before/after code snippets
-- Wait for user scope selection before applying changes
-- Run full test suite after applying changes
+- Run full test suite after applying changes per feature
 - Analyze test failures before rollback (distinguish stale tests from regressions)
-- Create 04-refactor.md with structured results

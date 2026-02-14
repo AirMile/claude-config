@@ -96,11 +96,9 @@ Everything works except validation is missing and no welcome mail
    Lees de checklist en define doc. Zoek vervolgens in de source code naar:
    - Form fields, validatie regels, API endpoints relevant voor de test items
    - Bestaande test files die hergebruikt kunnen worden
-   - De dev server URL (uit CLAUDE.md, package.json scripts, of .env)
 
    Geef terug als gestructureerd overzicht:
    FEATURE_CONTEXT_START
-   Dev server URL: {url}
    Bestaande tests: {pad naar test files, of "geen"}
    Per test item:
    - Item {N}: {title}
@@ -111,7 +109,7 @@ Everything works except validation is missing and no welcome mail
    FEATURE_CONTEXT_END
    ```
 
-   Parse the agent's structured output. This gives you test data, classification hints, and dev server URL without consuming any main context on source file reads.
+   Parse the agent's structured output. This gives you test data and classification hints without consuming any main context on source file reads.
 
 6. **Classify each test item**
 
@@ -147,22 +145,50 @@ Everything works except validation is missing and no welcome mail
    **If "Items aanpassen"** → ask which items to move to MANUAL, update classification.
    **If "Alles handmatig"** → set all items to MANUAL, skip FASE 1 entirely.
 
-8. **Dev server check** (lightweight — no snapshots in main context)
+8. **Dev server + Cloudflare Tunnel** (uses same setup as `/dev-server`)
 
    If any items are classified as AUTO:
 
-   Run a quick bash check (NOT browser_snapshot — that wastes context):
+   **a) Check for existing tunnel:**
 
    ```bash
-   curl -s -o /dev/null -w "%{http_code}" {url}
+   grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log 2>/dev/null | head -1
    ```
 
-   **If HTTP 200** → dev server running, proceed to FASE 1.
-   **If non-200 or connection refused:**
+   If a URL is found, verify it's live:
+
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}" {tunnel_url}
+   ```
+
+   **If HTTP 200** → tunnel running, use this URL, proceed to FASE 1.
+
+   **b) No tunnel running — start dev server + tunnel:**
+
+   Follow the same process as `/dev-server`:
+
+   ```bash
+   # Kill stale processes
+   fuser -k 3000/tcp 2>/dev/null; pkill -f cloudflared 2>/dev/null
+   sleep 1
+
+   # Detect framework from package.json and start
+   # Next.js: npx next dev --port 3000 &
+   # Vite: npx vite --port 3000 --host &
+
+   # Wait for server ready
+   for i in $(seq 1 15); do curl -s http://localhost:3000 > /dev/null 2>&1 && break || sleep 1; done
+
+   # Start Cloudflare Tunnel
+   cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflared.log 2>&1 &
+   sleep 8
+   grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | head -1
+   ```
+
+   **c) If server or tunnel fails to start:**
 
    ```
-   ⚠ Dev server niet bereikbaar op {url} (HTTP {code}).
-   Alle items worden MANUAL — start handmatige walkthrough.
+   ⚠ Dev server + tunnel niet gestart. Alle items worden MANUAL.
    ```
 
    Graceful fallback: reclassify ALL items as MANUAL, skip FASE 1, proceed to FASE 2.
@@ -281,7 +307,7 @@ Show setup instructions once (stack-appropriate from CLAUDE.md), then loop throu
 
 ```
 TEST SETUP: {feature-name}
-{stack-appropriate setup, e.g. "Open http://localhost:3000"}
+{e.g. "Open {tunnel_url}" — use the Cloudflare tunnel URL from step 8}
 ```
 
 **For each MANUAL item (1 to N):**
@@ -702,7 +728,7 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 /dev:test user-registration
 → FASE 0: Classify → 3 AUTO (2 browser, 1 CLI) + 1 MANUAL
 → FASE 0: User override → akkoord
-→ FASE 0: Dev server check → curl localhost:3000 → 200 OK
+→ FASE 0: Dev server check → tunnel running → https://xxx.trycloudflare.com → 200 OK
 → FASE 1: Task agent runs 3 AUTO items → 2 PASS, 1 FAIL (no error msg)
 → FASE 2: Manual walkthrough 1 item (welcome mail) → FAIL (no mail)
 → FASE 2b: Combined → 2 PASS, 2 FAIL
@@ -716,8 +742,8 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 
 ### Error: Dev server not running
 
-**Cause:** AUTO/BROWSER tests require a running dev server.
-**Solution:** Start the dev server first (`npm run dev` or `/dev-server`). The skill checks `curl localhost:{port}` before running tests.
+**Cause:** AUTO/BROWSER tests require a running dev server with Cloudflare Tunnel.
+**Solution:** The skill auto-starts the dev server + tunnel (same as `/dev-server`). If it fails, run `/dev-server` manually first. The skill checks for an existing tunnel in `/tmp/cloudflared.log` before starting a new one.
 
 ### Error: Task agent timeout on browser tests
 
