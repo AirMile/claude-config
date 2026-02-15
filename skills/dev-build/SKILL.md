@@ -218,49 +218,11 @@ Use `/dev:test {feature}` with results:
 
 Create/update `02-build-log.md` with implementation history.
 
-**Step 1b: Codebase Sync**
+**Step 2: Sync backlog**
 
-Generate an architectural overview that connects all built requirements. Display in conversation AND write to `02-build-log.md` under a `## Codebase Sync` heading.
+Move feature from `### DEF` to `### BLT` in `.workspace/backlog.md`
 
-Purpose: Keep the user in sync with the codebase — explain how everything fits together, which patterns were used and why, and how data flows through the system.
-
-Format:
-
-```
-## Codebase Sync
-
-### Architecture
-
-{dependency flow diagram showing how layers connect}
-Example: Types → Schemas → API Routes → Hooks → Components → Pages
-
-### Key Patterns
-
-| Pattern | Where | Why |
-|---------|-------|-----|
-| {pattern name} | {file(s)} | {why this pattern was chosen over alternatives} |
-
-### Data Flow
-
-{Numbered flows for main user journeys through the system}
-
-1. **{Journey name}**: {Step → Step → Step}
-2. **{Journey name}**: {Step → Step → Step}
-
-### Key Decisions
-
-{Decisions that deviate from obvious/default approaches — only non-obvious choices with reasoning}
-
-- **{Decision}** — {reasoning}
-```
-
-Guidelines:
-
-- Key Patterns: only include patterns that aren't obvious from the stack (e.g., don't list "React components" — do list "discriminated unions for exhaustive type checking")
-- Data Flow: trace the 2-3 most important user journeys end-to-end
-- Key Decisions: only decisions where an alternative was considered and rejected — explain the trade-off
-
-**Step 2: Output summary**
+**Step 3: Build summary**
 
 ```
 BUILD COMPLETE: {feature}
@@ -273,17 +235,39 @@ Files created: {count}
 Documentation:
 - .workspace/features/{feature}/02-build-log.md
 - .workspace/features/{feature}/03-test-checklist.md
-
-Codebase Sync: See architectural overview above or in 02-build-log.md
 ```
 
-**Next Step**
+**Step 4: Codebase Sync — interactief gesprek**
 
-`/dev:test {feature}`
+De Codebase Sync is het laatste en belangrijkste onderdeel van de build. Het doel: de gebruiker begrijpt hoe de gebouwde feature werkt, zodat hij goede beslissingen kan nemen in test- en refactor-fases.
 
-**Step 3: Sync backlog**
+**4a) Claude legt uit** — in gewone taal, geen template. Drie onderdelen:
 
-Move feature from `### DEF` to `### BLT` in `.workspace/backlog.md`
+- **Hoe het werkt**: architectuur en data flow in 2-3 zinnen
+- **Waarom zo**: alleen niet-voor-de-hand-liggende keuzes met redenering
+- **Waar het samenkomt**: hoe de requirements samen één werkend geheel vormen
+
+**4b) Begripscheck** — via **AskUserQuestion**:
+
+Vraag: "Snap je hoe de feature werkt?"
+
+Opties:
+
+- "Ja, helder"
+- "Leg X meer uit"
+- "Ik heb een vraag"
+
+**4c) Follow-up loop** — als de gebruiker iets niet snapt:
+
+1. Beantwoord de vraag of leg dieper uit
+2. Stel opnieuw de begripscheck (herhaal 4b)
+3. Herhaal tot de gebruiker "Ja, helder" bevestigt
+
+**4d) Na bevestiging**:
+
+1. Schrijf de sync naar `02-build-log.md` onder `## Codebase Sync` — schrijf de uitleg zoals gegeven in het gesprek (geen template, gewone taal)
+2. Toon: **Next step:** `/dev:test {feature}`
+3. Build is officieel compleet
 
 ## Test Output Parsing (CRITICAL)
 
