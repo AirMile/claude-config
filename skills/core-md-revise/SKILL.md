@@ -1,96 +1,198 @@
 ---
 name: core-md-revise
 description: >-
-  Capture session learnings and update CLAUDE.md files. Reviews the current session
-  for missing context, proposes concise additions, and applies after approval.
-  Use with /core-md-revise at end of session or when user says "update CLAUDE.md
-  with learnings", "revise project memory", or "capture session context".
+  Change-aware CLAUDE.md sync. Detects codebase changes via git and proposes
+  CLAUDE.md updates. Use with /core-md-revise or when user says "sync CLAUDE.md",
+  "update project memory", or "catch up with team changes".
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: core
 disable-model-invocation: true
-allowed-tools: Read, Edit, Glob
 ---
 
 # CLAUDE.md Revise
 
-Review de huidige sessie voor learnings en update CLAUDE.md met context die toekomstige Claude-sessies effectiever maakt.
+Change-aware sync between the codebase and CLAUDE.md. Detects what changed (your session, team commits, or a timeframe) and proposes targeted updates following the canonical CLAUDE.md structure and audit quality guidelines.
 
 ## Trigger
 
-`/core-md-revise` aan het einde van een sessie, of wanneer de gebruiker vraagt om learnings vast te leggen.
+`/core-md-revise`
 
 ## Process
 
-### 1. Reflect
+### 0. Scope Selection
 
-Welke context ontbrak die Claude effectiever had laten werken?
+Use **AskUserQuestion**:
+- header: "Sync scope"
+- question: "Wat wil je syncen naar CLAUDE.md?"
+- options:
+  - label: "Mijn wijzigingen (Recommended)", description: "Uncommitted changes + mijn commits sinds laatste CLAUDE.md update"
+  - label: "Team wijzigingen", description: "Commits van andere authors sinds laatste CLAUDE.md update"
+  - label: "Alles sinds...", description: "Alle commits in een tijdsperiode (vraagt om periode)"
+- multiSelect: false
 
-- Bash commands die gebruikt of ontdekt zijn
-- Code style patterns die gevolgd zijn
-- Testing aanpakken die werkten
-- Environment/configuratie-eigenaardigheden
-- Waarschuwingen of gotchas die tegengekomen zijn
+**If "Alles sinds..."** → follow up with plain text question: "Sinds wanneer? (bijv. '3 days', '1 week', '2025-02-01')"
 
-### 2. Find CLAUDE.md Files
+**Not needed after:** `/dev:build` (has auto-sync), `/dev:refactor` (has conditional sync), `/core-setup` (generates CLAUDE.md).
+
+## Process
+
+### 1. Detect Changes
+
+Based on scope selection from Step 0:
+
+**"Mijn wijzigingen":** Uncommitted changes + own commits since last CLAUDE.md modification.
 
 ```bash
-find . -name "CLAUDE.md" -o -name ".claude.local.md" 2>/dev/null | head -20
+git log -1 --format="%aI" -- CLAUDE.md
+git log --oneline --author="$(git config user.email)" --since="$(git log -1 --format='%aI' -- CLAUDE.md)" --name-only
+git diff --name-only
+git diff --name-only --staged
 ```
 
-Bepaal waar elke toevoeging hoort:
+**"Team wijzigingen":** Only commits by other authors since last CLAUDE.md modification.
 
-- `CLAUDE.md` — Team-gedeeld (ingecheckt in git)
-- `.claude.local.md` — Persoonlijk/lokaal (gitignored)
-
-### 3. Draft Additions
-
-**Houd het beknopt** — een regel per concept. CLAUDE.md is onderdeel van de prompt, dus beknoptheid is belangrijk.
-
-Formaat: `<command of pattern>` - `<korte beschrijving>`
-
-**Vermijd:**
-
-- Verbose uitleg
-- Voor de hand liggende informatie
-- Eenmalige fixes die waarschijnlijk niet terugkeren
-
-### 4. Show Proposed Changes
-
-Voor elke toevoeging:
-
-```markdown
-### Update: ./CLAUDE.md
-
-**Waarom:** [een-regel reden]
-
-\`\`\`diff
-
-- [de toevoeging - houd het kort]
-  \`\`\`
+```bash
+ME=$(git config user.email)
+git log --oneline --invert-grep --author="$ME" --since="$(git log -1 --format='%aI' -- CLAUDE.md)" --name-only
 ```
 
-### 5. Apply with Approval
+**"Alles sinds...":** All commits in the given timeframe.
 
-Vraag of de gebruiker de wijzigingen wil toepassen. Bewerk alleen bestanden die zij goedkeuren.
-
-## Output
-
-**Voorstel:**
-
-```
-## Sessie Learnings
-
-### Voorgestelde updates
-1. [bestand] — [wat + waarom]
-2. [bestand] — [wat + waarom]
-
-Wil je deze toepassen?
+```bash
+git log --oneline --since="{user-provided timeframe}" --name-only
 ```
 
-**Na toepassing:**
+**Output:**
 
 ```
-Toegepast: X updates op Y bestanden
+CHANGES DETECTED
+
+Source: {default | team | since "X"}
+Period: {last CLAUDE.md edit} → now
+Commits: {N}
+Files changed: {N}
+
+Changed areas:
+- src/components/ ({N} files)
+- src/hooks/ ({N} files)
+- src/pages/ ({N} files)
+- api/ ({N} files)
 ```
+
+**If no changes detected** → exit: "No changes found since last CLAUDE.md update."
+
+### 2. Load & Compare
+
+1. Read current `CLAUDE.md`
+2. Read changed files (or their directory structure if many)
+3. Compare against each canonical section:
+
+   | CLAUDE.md Section | What to check |
+   |---|---|
+   | `## Commands` | New scripts in package.json? Changed build commands? |
+   | `## Project` / `### Stack` | New dependencies added? Libraries changed? |
+   | `## Project structuur` | New directories/files? Moved/renamed files? Deleted directories? |
+   | `## Routing` | New routes? Changed route patterns? |
+   | `## Non-obvious patterns` | New patterns visible in changed code? Gotchas from session context? |
+
+4. Also check session context (conversation history) for:
+   - Gotchas or workarounds discovered during debugging
+   - Commands that were needed but not documented
+   - Configuration quirks encountered
+
+### 3. Propose Updates
+
+Show each proposed change with context:
+
+```
+PROPOSED UPDATES ({N})
+
+1. ## Project structuur — add new directories
+   Reason: src/utils/ and src/types/ were added by team
+
+   ```diff
+    src/
+      components/
+   +  utils/          # Shared utility functions
+   +  types/          # TypeScript type definitions
+      hooks/
+   ```
+
+2. ## Non-obvious patterns — add new gotcha
+   Reason: discovered during debugging session
+
+   ```diff
+   +- **API timeout**: Vercel serverless functions have 10s timeout on hobby plan. Long operations need background jobs
+   ```
+
+3. ## Commands — update build command
+   Reason: build script changed in package.json
+
+   ```diff
+   -npm run build    # tsc -b && vite build
+   +npm run build    # vite build (tsc check removed)
+   ```
+```
+
+**Quality rules** — follow core-md-audit guidelines:
+- Only project-specific, non-obvious information
+- One line per item, concise
+- No generic best practices or obvious info
+- No one-off fixes that won't recur
+- Each line must earn its place in the context window
+- Verify file paths are accurate before proposing
+
+### 4. Apply with Approval
+
+Use **AskUserQuestion**:
+- header: "CLAUDE.md Sync"
+- question: "{N} updates voorgesteld. Toepassen?"
+- options:
+  - label: "Alles toepassen (Recommended)", description: "Alle {N} updates"
+  - label: "Per stuk kiezen", description: "Goedkeuren per update"
+  - label: "Annuleren", description: "Geen wijzigingen"
+- multiSelect: false
+
+**If "Per stuk kiezen"** → show each update individually with accept/skip options.
+
+Apply approved changes with Edit tool. Target the correct canonical sections.
+
+### 5. Report
+
+```
+CLAUDE.md SYNCED
+
+Applied: {N} updates
+Sections touched: {list}
+Skipped: {N} (if any)
+
+Source: {default | team | since "X"}
+```
+
+## Canonical Sections Reference
+
+These are the standard CLAUDE.md section names. Always target the correct section when updating:
+
+1. `## Commands` — build/dev/lint/test commands
+2. `## Project` / `### Stack` — project metadata and tech stack
+3. `## Project structuur` — directory tree with comments
+4. `## Routing` — route patterns (web projects)
+5. `## Non-obvious patterns` — gotchas, quirks, non-obvious architecture decisions
+
+If a section doesn't exist yet but should (e.g., no `## Routing` but routes were added), propose creating it.
+
+## Edge Cases
+
+### No CLAUDE.md exists
+Suggest running `/core-setup` first. Do not generate a full CLAUDE.md — that's setup's job.
+
+### CLAUDE.md uses non-canonical structure
+If the existing CLAUDE.md doesn't follow canonical section names (e.g., `## Tech stack` instead of `## Project` / `### Stack`), work with the existing structure. Do not restructure — that's `/core-md-audit`'s job.
+
+### Large number of changes
+If >20 files changed, group by directory and focus on structural changes. Don't propose an update for every single file — focus on what impacts CLAUDE.md sections.
+
+### Merge conflicts in CLAUDE.md
+If CLAUDE.md has merge conflict markers, resolve them first before proposing updates. Flag this to the user.
