@@ -216,6 +216,22 @@ Features:
       - Over-defensive code (try/catch rond code die niet kan falen)
       - Over-generic types die maar op 1 plek gebruikt worden
 
+      CLARITY:
+      - Onnodige nesting (>3 niveaus diep)
+      - Nested ternary operators → prefer switch/if-else
+      - Dense one-liners die readability opofferen voor beknoptheid
+      - Slechte variabele/functienamen (single-letter, misleidend, te generiek)
+      - Overbodige comments die obvious code beschrijven
+      - "Clever" code die moeilijk te begrijpen is
+      - Inconsistentie met project conventions uit CLAUDE.md
+
+      BALANCE (NIET rapporteren als finding):
+      - Abstracties die meerdere keren hergebruikt worden
+      - Helper functies die code DRY houden
+      - Expliciete error handling in externe boundaries (API, user input)
+      - Benoemde constanten zelfs als ze maar 1x gebruikt worden (als ze readability verbeteren)
+      - Voorkeur voor explicit boven compact — meer regels is OK als het duidelijker is
+
    2. STACK-SPECIFIEK (uit refactor-patterns):
 
       {injected patterns per library from refactor-patterns.md}
@@ -251,6 +267,14 @@ Features:
    STACK_SPECIFIC_FINDINGS:
    - {file:line} {library} {pattern} — {beschrijving} — Code: {snippet}
    (of "Geen stack-specifieke issues gevonden")
+
+   CLARITY_FINDINGS:
+   - {file:line} {type} — {beschrijving} — Code: {snippet}
+   (of "Geen clarity issues gevonden")
+
+   BALANCE_SKIPPED:
+   - {file:line} {type} — {reden waarom dit NIET als finding is opgenomen}
+   (optioneel — alleen als er items bewust gefilterd zijn)
 
    POSITIVE_OBSERVATIONS:
    - {wat al goed is in de codebase}
@@ -380,7 +404,7 @@ Refactor patterns updated: {yes/no}
    Combine all findings from all HAS_FINDINGS features:
    - **Cross-feature deduplication**: same pattern in multiple files → 1 plan item with multiple locations
    - Each improvement gets impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW
-   - Sort: HIGH first (security), then MED (performance, DRY), then LOW (quality, simplification)
+   - Sort: HIGH first (security), then MED (performance, DRY), then LOW (clarity, quality, simplification)
    - **Only pipeline files** may be included
    - Group by feature for clarity
 
@@ -443,8 +467,9 @@ Refactor patterns updated: {yes/no}
 2. Performance optimizations
 3. DRY/Refactoring improvements
 4. Simplification (remove over-engineering)
-5. Code quality improvements
-6. Error handling improvements
+5. Clarity (readability improvements)
+6. Code quality improvements
+7. Error handling improvements
 
 **Steps:**
 
@@ -606,6 +631,10 @@ IMPROVEMENTS APPLIED
 
    - {file:line} - {removed} → {simplified} (Risk: {L/M})
 
+   ### Clarity
+
+   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
+
    ### Quality
 
    - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
@@ -764,6 +793,9 @@ This skill must NEVER:
 - Include external file findings in any plan
 - Proceed without existing 03-test-results.md
 - Make breaking changes (API, schema, parameter changes)
+- Over-simplify code by removing helpful abstractions or combining too many concerns
+- Prioritize fewer lines over readability (explicit > compact)
+- Create "clever" solutions that are hard to understand or debug
 - Skip user approval at FASE 3 (unless 0 findings across all features)
 - Skip test verification in FASE 4
 - Proceed if tests fail without analyzing failure type first (stale test vs regression)
@@ -789,3 +821,5 @@ This skill must ALWAYS:
 - Group edits by file: read file → apply ALL edits for that file → next file
 - Run full test suite after applying changes per feature
 - Analyze test failures before rollback (distinguish stale tests from regressions)
+- Apply balance filter: skip findings where the "fix" reduces readability
+- Check CLAUDE.md for project-specific coding conventions during analysis
