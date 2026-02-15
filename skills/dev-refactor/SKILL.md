@@ -701,7 +701,40 @@ IMPROVEMENTS APPLIED
    - Update "Updated" timestamp
    - Update "Next" suggestion
 
-4. **Single auto-commit for everything:**
+4. **CLAUDE.md Auto-Sync (conditional)** — only execute if REFACTORED features include structural changes:
+
+   **Trigger condition** — execute this step if ANY of these apply across REFACTORED features:
+   - Files were renamed or moved to different directories
+   - New files were created via extraction (e.g., shared utils extracted from components)
+   - Patterns fundamentally changed (e.g., state management approach, routing structure)
+
+   **Skip this step if:**
+   - All improvements were internal code quality only (naming, DRY, simplification, clarity)
+   - Only performance optimizations without structural impact
+   - No CLAUDE.md exists in the project root
+
+   **Process (when triggered):**
+
+   a. Read the current `CLAUDE.md`
+   b. Compare `modified_files` and `created_files` from FASE 4 against CLAUDE.md content
+   c. Update affected sections:
+      - File paths that changed → update in `## Project structuur`
+      - Extracted components/hooks → add to structure tree
+      - Changed patterns → update `## Non-obvious patterns`
+   d. **Apply directly** (no user confirmation)
+   e. Follow core-md-audit quality rules:
+      - Only project-specific, non-obvious information
+      - One line per item, concise
+      - Each line must earn its place in the context window
+   f. Log:
+
+      ```
+      CLAUDE.md: {N} updates ({sections touched})
+      ```
+
+      Or: `CLAUDE.md: no updates needed (internal changes only)`
+
+5. **Single auto-commit for everything:**
 
    ```bash
    git add .
@@ -728,7 +761,7 @@ IMPROVEMENTS APPLIED
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-5. **Show completion:**
+6. **Show completion:**
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

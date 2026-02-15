@@ -1,5 +1,17 @@
 # CLAUDE.md Section Templates
 
+## Canonical Section Order
+
+This is the standard CLAUDE.md structure. All pipeline skills expect these section names:
+
+1. `## Commands` — always
+2. `## Project` / `### Stack` — always (pipeline reads `### Stack` for stack detection)
+3. `## Project structuur` — always
+4. `## Routing` — web projects with routing only
+5. `## Non-obvious patterns` — always (populated by dev-build auto-sync)
+
+---
+
 ## User Preferences Template
 
 ```markdown
@@ -14,6 +26,26 @@ Language: English
 - Deutsch
 - Français
 - Español
+
+---
+
+## Commands Template
+
+```markdown
+## Commands
+
+```bash
+npm run dev      # Vite dev server
+npm run build    # tsc -b && vite build
+npm run lint     # ESLint
+npm run preview  # Preview production build
+```
+```
+
+**Rules:**
+- Auto-detect from package.json `scripts`, Makefile, or equivalent
+- One line per command with inline comment
+- If asset/image conversion scripts exist, add as separate block below
 
 ---
 
@@ -32,7 +64,7 @@ Language: English
 ### Stack
 **Frontend**: [Framework, bundler, language] (if applicable)
 **Backend**: [Framework, language] (if applicable)
-**Styling**: [CSS framework] (if applicable)
+**Styling**: [CSS framework, font] (if applicable)
 **CMS**: [CMS name] (if applicable)
 **Animations**: [Libraries] (if applicable)
 **Forms**: [Libraries] (if applicable)
@@ -69,8 +101,88 @@ Language: English
 - `Game (Godot)` | `Game (Unity)`
 - `Fullstack (Laravel + React)`
 
-**Real example (Fullstack Next.js):**
+---
+
+## Project Structuur Template
+
 ```markdown
+## Project structuur
+
+```
+src/
+  pages/          # Home, ProjectDetail (lazy-loaded)
+  components/
+    ui/           # Button, ProjectCard, ContactForm
+    sections/     # Hero, About, Projects, Skills, Contact
+    animation/    # FadeIn, StaggerContainer, PageTransition
+    providers/    # LenisProvider
+  hooks/          # useLocale, useSEO, useStructuredData
+  data/           # Project metadata
+  locales/        # en.json, nl.json
+  lib/            # constants, i18n config, animation presets
+api/              # Serverless functions
+scripts/          # Build/conversion scripts
+```
+```
+
+**Rules:**
+- Generate from actual file tree after project files are created
+- One-line comments per directory explaining purpose
+- Include directories outside `src/` if they exist (api/, scripts/, etc.)
+- List key files in each directory, not every file
+
+---
+
+## Routing Template
+
+```markdown
+## Routing
+
+`/` → redirect to default locale
+`/:locale` → Home (all sections)
+`/:locale/projects/:slug` → Project detail
+```
+
+**Rules:**
+- Only for web projects with routing
+- Show route patterns with arrow notation
+- Omit for CLI, game, backend-only projects
+
+---
+
+## Non-obvious Patterns Template
+
+```markdown
+## Non-obvious patterns
+
+- **Path alias**: `@/` → `src/` (vite.config.ts + tsconfig.json)
+- **Env setup**: copy `.env.example` → `.env`
+```
+
+**Rules:**
+- Always include this section, even if nearly empty at setup time
+- Add any patterns discovered during setup (path aliases, env config)
+- Gets populated by `/dev:build` auto-sync as features are built
+- Follow core-md-audit quality guidelines: concise, non-obvious, project-specific
+
+---
+
+## Real Example (Fullstack Next.js)
+
+```markdown
+# evers-vgo
+
+Corporate website voor Evers & Evers Vastgoedonderhoud.
+
+## Commands
+
+```bash
+npm run dev      # Next.js dev server
+npm run build    # Production build
+npm run lint     # ESLint
+npm run start    # Start production server
+```
+
 ## Project
 
 **Name**: evers-vgo
@@ -103,6 +215,33 @@ Language: English
 **Accessibility:** wcag-aa
 **Responsive:** mobile-first
 **Data Fetching:** plain-fetch
+
+## Project structuur
+
+```
+src/
+  app/            # Next.js app router pages
+  components/
+    ui/           # Shared UI components
+    sections/     # Page sections
+    layout/       # Header, Footer, Navigation
+  lib/            # Utilities, constants, Sanity client
+  styles/         # Global CSS, Tailwind config
 ```
 
-**Note:** Separate Tech Stack, Workspace Configuration, and Development Setup sections are deprecated. Use the structured format above.
+## Routing
+
+`/` → Home
+`/diensten` → Services overview
+`/diensten/:slug` → Service detail
+`/over-ons` → About
+`/contact` → Contact form
+
+## Non-obvious patterns
+
+- **Path alias**: `@/` → `src/`
+- **Env setup**: copy `.env.example` → `.env` (Sanity project ID + Resend API key)
+- **Sanity preview**: Draft mode via `/api/preview` route with secret token
+```
+
+**Note:** Separate Tech Stack, Workspace Configuration, and Development Setup sections are deprecated. Use the canonical structure above.
