@@ -114,26 +114,18 @@ TECHNIQUE MAP:
 | REQ-003 | TDD                  | business rules       |
 ```
 
+Use **AskUserQuestion** tool:
+
+- header: "Technique Map"
+- question: "Akkoord met deze technique-toewijzing?"
+- options:
+  - label: "Akkoord (Recommended)", description: "Start build met deze TDD/Implementation First verdeling"
+  - label: "Aanpassen", description: "Ik wil de technique-toewijzing wijzigen"
+- multiSelect: false
+
+**If "Aanpassen"** → ask which requirements should change technique, update map, re-display.
+
 ### FASE 2: Execute Build (Per Requirement)
-
-Initialize Ralph Loop for entire build:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/ralph/setup-ralph-loop.ps1 `
-  -Prompt @"
-Feature: {feature-name}
-Requirements:
-{list from 01-define.md with technique per requirement}
-
-Implementation order:
-{dependency order}
-
-Build this feature. Per requirement, use the assigned technique (TDD or Implementation First).
-Output <promise>BUILD_COMPLETE</promise> when ALL requirements are implemented and tested.
-"@ `
-  -MaxIterations 30 `
-  -CompletionPromise "BUILD_COMPLETE"
-```
 
 For each requirement in IMPLEMENTATION ORDER:
 
@@ -158,15 +150,6 @@ After all requirements complete: run integration tests across requirements.
 - Requirements implemented SEQUENTIALLY (dependency order from 01-define.md)
 - Context7 research if unfamiliar pattern needed
 - All requirements must have tests before completion
-
-**Loop completion:**
-
-```
-<promise>BUILD_COMPLETE</promise>
-
-All {count} requirements implemented and tested.
-Techniques used: TDD ({n}), Implementation First ({n})
-```
 
 ### FASE 3: Generate Test Checklist
 
@@ -216,13 +199,45 @@ Use `/dev:test {feature}` with results:
 
 **Step 1: Update build log**
 
-Create/update `02-build-log.md` with implementation history.
+Create/update `02-build-log.md` with this template:
 
-**Step 2: Sync backlog**
+```markdown
+# Build Log: {feature-name}
 
-Move feature from `### DEF` to `### BLT` in `.workspace/backlog.md`
+## Summary
 
-**Step 3: Build summary**
+| Metric     | Value                                 |
+| ---------- | ------------------------------------- |
+| Feature    | {feature-name}                        |
+| Build Date | {date}                                |
+| Techniques | TDD ({n}), Implementation First ({n}) |
+| Tests      | {passed}/{total} passing              |
+
+## Requirements Built
+
+{for each requirement in implementation order:}
+
+### REQ-XXX: {description}
+
+- **Technique:** {TDD | Implementation First}
+- **Files:** {files created/modified}
+- **Tests:** {test file(s)}
+- **SYNC:** {pattern/concept} in {file(s)} — {what, why, what depends on it}
+
+## Integration Tests
+
+{integration test results}
+
+## Blockers
+
+{blockers encountered, or "Geen"}
+
+## Codebase Sync
+
+{filled in after step 3}
+```
+
+**Step 2: Build summary**
 
 ```
 BUILD COMPLETE: {feature}
@@ -237,17 +252,17 @@ Documentation:
 - .workspace/features/{feature}/03-test-checklist.md
 ```
 
-**Step 4: Codebase Sync — interactief gesprek**
+**Step 3: Codebase Sync — interactief gesprek**
 
-De Codebase Sync is het laatste en belangrijkste onderdeel van de build. Het doel: de gebruiker begrijpt hoe de gebouwde feature werkt, zodat hij goede beslissingen kan nemen in test- en refactor-fases.
+De Codebase Sync is het belangrijkste onderdeel van de build. Het doel: de gebruiker begrijpt hoe de gebouwde feature werkt, zodat hij goede beslissingen kan nemen in test- en refactor-fases.
 
-**4a) Claude legt uit** — in gewone taal, geen template. Drie onderdelen:
+**3a) Claude legt uit** — in gewone taal, geen template. Drie onderdelen:
 
 - **Hoe het werkt**: architectuur en data flow in 2-3 zinnen
 - **Waarom zo**: alleen niet-voor-de-hand-liggende keuzes met redenering
 - **Waar het samenkomt**: hoe de requirements samen één werkend geheel vormen
 
-**4b) Begripscheck** — via **AskUserQuestion**:
+**3b) Begripscheck** — via **AskUserQuestion**:
 
 Vraag: "Snap je hoe de feature werkt?"
 
@@ -257,17 +272,30 @@ Opties:
 - "Leg X meer uit"
 - "Ik heb een vraag"
 
-**4c) Follow-up loop** — als de gebruiker iets niet snapt:
+**3c) Follow-up loop** — als de gebruiker iets niet snapt:
 
 1. Beantwoord de vraag of leg dieper uit
-2. Stel opnieuw de begripscheck (herhaal 4b)
+2. Stel opnieuw de begripscheck (herhaal 3b)
 3. Herhaal tot de gebruiker "Ja, helder" bevestigt
 
-**4d) Na bevestiging**:
+**Step 4: Na bevestiging**
 
 1. Schrijf de sync naar `02-build-log.md` onder `## Codebase Sync` — schrijf de uitleg zoals gegeven in het gesprek (geen template, gewone taal)
-2. Toon: **Next step:** `/dev:test {feature}`
-3. Build is officieel compleet
+2. Move feature from `### DEF` to `### BLT` in `.workspace/backlog.md`
+3. Auto-commit:
+
+   ```bash
+   git add .
+   git commit -m "$(cat <<'EOF'
+   build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)
+   EOF
+   )"
+   ```
+
+   **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
+
+4. Toon: **Next step:** `/dev:test {feature}`
+5. Build is officieel compleet
 
 ## Test Output Parsing (CRITICAL)
 

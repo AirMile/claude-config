@@ -386,6 +386,19 @@ Use AskUserQuestion tool:
 
 **If "Handmatig controleren"** → run manual walkthrough for those items, update results accordingly.
 
+**If 1+ SKIP items**, ask user to acknowledge:
+
+Use **AskUserQuestion** tool:
+
+- header: "Skipped Items"
+- question: "Er zijn {n} overgeslagen items. Accepteer je dit?"
+- options:
+  - label: "Accepteren (Recommended)", description: "Overgeslagen items worden niet getest in deze sessie"
+  - label: "Later testen", description: "Noteer als TODO voor een volgende test sessie"
+- multiSelect: false
+
+**If "Later testen"** → mark SKIP items with `TODO_RETEST` tag for FASE 6 summary.
+
 **If all PASS** → skip to FASE 6
 **If any FAIL** → proceed to FASE 3 (categorize issues)
 
@@ -641,14 +654,15 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 
    ## Summary
 
-   | Metric | Value       |
-   | ------ | ----------- |
-   | Status | VERIFIED    |
-   | Items  | {N}         |
-   | Passed | {N}         |
-   | Auto   | {N}         |
-   | Manual | {N}         |
-   | Date   | {timestamp} |
+   | Metric  | Value       |
+   | ------- | ----------- |
+   | Status  | VERIFIED    |
+   | Items   | {N}         |
+   | Passed  | {N}         |
+   | Auto    | {N}         |
+   | Manual  | {N}         |
+   | Skipped | {N}         |
+   | Date    | {timestamp} |
 
    ## Test History
 
@@ -765,7 +779,7 @@ This skill must NEVER:
 - Skip classification (every item must be classified before testing)
 - Run auto tests without dev server check
 - Silently override user classification choices
-- Skip TDD for testable issues (concrete behavior described)
+- Skip testing for fixable issues (validation, business logic, or edge cases need TDD or Implementation First)
 - Guess what subjective feedback means
 - Apply fixes without documenting changes
 - Mark complete if any items still failing

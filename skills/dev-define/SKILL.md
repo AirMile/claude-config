@@ -68,13 +68,14 @@ The skill gathers requirements through targeted questions, optionally researches
 
    Use **AskUserQuestion** tool:
    - header: "Feature Name"
-   - question: "Welke web feature wil je definiëren?"
+   - question: "Welke feature wil je definiëren? Kies een suggestie of typ je eigen feature-naam via 'Other'."
    - options:
-     - label: "Component System", description: "Herbruikbare UI componenten en design system"
-     - label: "Page/Route", description: "Pagina, navigatie, routing"
-     - label: "API Integration", description: "Data fetching, API calls, backend integratie"
-     - label: "State Management", description: "Global state, context, stores"
+     - label: "auth", description: "Authenticatie, login, registratie"
+     - label: "dashboard", description: "Dashboard pagina met overzicht"
+     - label: "form-validation", description: "Formulier met validatie logica"
    - multiSelect: false
+
+   The user can type any feature name via the built-in "Other" option. Use the selected/typed value as feature name.
 
 3. **Create workspace folder:**
 
@@ -148,11 +149,24 @@ After questions, extract testable requirements:
 - Determine test type for each
 - Define acceptance criteria per requirement (concrete, verifiable conditions informed by stack-baseline context when available)
 
-Show requirements table with acceptance criteria and confirm with user:
+Show requirements table with acceptance criteria:
 
 | ID      | Requirement   | Category   | Test Type | Acceptance Criteria    |
 | ------- | ------------- | ---------- | --------- | ---------------------- |
 | REQ-001 | {description} | {category} | {type}    | {verifiable condition} |
+
+**Confirm with user** via **AskUserQuestion**:
+
+- header: "Requirements"
+- question: "Akkoord met deze requirements?"
+- options:
+  - label: "Akkoord (Recommended)", description: "Requirements zijn compleet en correct"
+  - label: "Aanpassen", description: "Ik wil requirements wijzigen of toevoegen"
+  - label: "Opnieuw beginnen", description: "Verwerp alles en stel nieuwe vragen"
+- multiSelect: false
+
+**If "Aanpassen"** → ask what to change, update requirements table, re-confirm.
+**If "Opnieuw beginnen"** → restart FASE 1 from Question 1.
 
 ### FASE 1b: Scope Analysis & Feature Splitting
 
@@ -401,6 +415,12 @@ Show requirements table with acceptance criteria and confirm with user:
 
 **Goal:** Define visual layout and component placement before architecture design.
 
+**Condition:** Only execute this phase if the feature type involves UI, Page, Form, or visual components. If the feature is non-visual (hooks, API layers, state management, utilities), skip with:
+
+```
+FASE 2b: N/A — non-visual feature
+```
+
 **Steps:**
 
 1. **Describe layout in ASCII wireframe:**
@@ -608,6 +628,7 @@ Write to `.workspace/features/{feature-name}/01-define.md`:
 Run `/dev:build {feature-name}` to start implementation.
 
 UI-heavy feature? Overweeg eerst:
+
 - `/frontend:theme` - Design tokens en kleurenpalet opzetten
 - `/frontend:compose` - Wireframes genereren voor visueel ontwerp
 ```

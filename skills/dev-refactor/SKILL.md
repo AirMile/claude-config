@@ -25,6 +25,7 @@ Batch-first architecture: analyzes ALL features in parallel via Explore agents, 
 - Extract all code file paths from `02-build-log.md` → these are the **pipeline files**
 - ONLY these files may be analyzed, planned, and modified
 - **NEVER** touch, scan, plan, or modify files outside this list
+- **Exception:** New utility/helper files may be **created** if they exclusively extract code from pipeline files (e.g., extracting shared logic into a new `utils/` file). Existing external files may NEVER be modified.
 - If a pattern scan or research finding points to an external file → skip it, do not include in plan
 - If a DRY violation spans a pipeline file and an external file → only refactor the pipeline file side
 
@@ -450,10 +451,18 @@ Refactor patterns updated: {yes/no}
      - label: "Alles toepassen (Recommended)", description: "Alle {M} verbeteringen in {N} features"
      - label: "Alleen HIGH + MED", description: "{X+Y} verbeteringen, skip LOW"
      - label: "Alleen HIGH", description: "{X} verbeteringen, alleen security"
-     - label: "Annuleren", description: "Stop refactor proces"
+     - label: "Per feature kiezen", description: "Selecteer per feature welke verbeteringen je wilt"
    - multiSelect: false
 
-   **If "Annuleren"** → EXIT with "Refactor geannuleerd door gebruiker"
+   **If "Per feature kiezen"** → show per-feature AskUserQuestion with multiSelect:
+   - header: "Features"
+   - question: "Welke features wil je refactoren?"
+   - options: one per feature with finding count
+   - multiSelect: true
+
+   Only approved features proceed to FASE 4. Non-selected features get CLEAN status.
+
+   The user can also type "Annuleren" via the built-in "Other" option → EXIT with "Refactor geannuleerd door gebruiker"
 
 ---
 
@@ -481,14 +490,9 @@ Refactor patterns updated: {yes/no}
 
 2. **For each feature with approved improvements:**
 
-   a. **Create feature checkpoint:**
+   a. **Track files for targeted rollback** (no git stash needed — file-level tracking is sufficient):
 
-   ```bash
-   git stash push -m "refactor-checkpoint-{feature-name}" --include-untracked
-   git stash pop  # Immediately pop — this just saves the stash ref for rollback
-   ```
-
-   Or simpler: track the list of files modified per feature for targeted rollback.
+   Initialize empty lists: `modified_files[feature_name] = []`, `created_files[feature_name] = []`
 
    b. **Apply improvements using Edit tool:**
    - Follow priority order strictly
@@ -496,7 +500,8 @@ Refactor patterns updated: {yes/no}
    - Group edits by file: read file → apply ALL edits for that file → move to next file
    - **Only modify files in pipeline_files list** — assert before each edit
    - Keep changes non-breaking
-   - Track: `modified_files[feature_name] = [list of files changed]`
+   - Track: `modified_files[feature_name] = [list of existing files changed]`
+   - Track: `created_files[feature_name] = [list of new files created]`
 
    c. **Run test suite after this feature's changes:**
    - Detect test command from CLAUDE.md `### Testing` section
@@ -519,6 +524,7 @@ Refactor patterns updated: {yes/no}
 
      ```bash
      git checkout -- {modified_files[feature_name]}
+     rm -f {created_files[feature_name]}
      ```
 
      Mark feature as ROLLED_BACK with reason. Continue to next feature.
@@ -780,8 +786,12 @@ IMPROVEMENTS APPLIED
 
 ### Rollback Failures
 
-**git checkout fails for feature files** → try `git reset --hard {saved_hash}` (affects all features)
-**Both fail** → report manual recovery steps with git hash and file list, STOP
+**git checkout fails for feature files** → report manual recovery steps:
+
+1. Show the `saved_hash` from FASE 4 step 1
+2. List all `modified_files[feature_name]` and `created_files[feature_name]`
+3. Suggest: "Gebruik `/rewind` in Claude Code om terug te gaan naar een eerder punt"
+4. STOP — do not attempt destructive recovery commands
 
 ## Restrictions
 
