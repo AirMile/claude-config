@@ -5,9 +5,9 @@ core:
   - core-delete
   - core-edit
   - core-explore
+  - core-md-audit
+  - core-md-revise
   - core-task
-  - core-resume
-  - core-save
   - core-setup
   - project-list
   - project-add
