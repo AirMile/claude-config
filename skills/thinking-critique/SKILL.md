@@ -64,11 +64,13 @@ Example triggers:
      options:
        - label: "Ja, analyseer dit (Recommended)", description: "Gebruik .workspace/concept.md"
        - label: "Ander concept", description: "Ik wil een ander concept plakken"
+       - label: "Chat context", description: "Analyseer wat er in dit gesprek is besproken"
        - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
    - If "Ja": proceed with loaded concept
    - If "Ander concept": ask user to paste input
+   - If "Chat context": process using Chat Context flow (see below)
 
 **Step 1b: Check Obsidian vault (if no .workspace/concept.md found)**
 
@@ -84,10 +86,23 @@ If the user provided an inline description/argument:
      options:
        - label: "Ja, gebruik als basis (Recommended)", description: "Laad het Obsidian idee en analyseer het"
        - label: "Nee, ander concept", description: "Ik wil een ander concept gebruiken"
+       - label: "Chat context", description: "Gebruik het gesprek als startpunt"
      multiSelect: false
      ```
    - **If "Ja":** Read the note with `mcp__obsidian__read_note()`, load as starting concept, track `obsidian_source_path` for later save-back
-3. If no match found → proceed normally
+   - **If "Chat context":** Process using Chat Context flow (see below)
+3. If no match found:
+   - Use AskUserQuestion:
+     ```yaml
+     header: "Input"
+     question: "Wat wil je analyseren?"
+     options:
+       - label: "Chat context gebruiken (Recommended)", description: "Gebruik wat er in dit gesprek is besproken"
+       - label: "Concept plakken", description: "Plak of typ een idee/concept"
+     multiSelect: false
+     ```
+   - If "Chat context gebruiken": process using Chat Context flow (see below)
+   - If "Concept plakken": proceed to manual input below
 
 **If no concept file OR user wants different input:**
 
@@ -152,6 +167,34 @@ If the user provided an inline description/argument:
 7. Process user selection before proceeding
 
 **Note:** This step should be quick for `/thinking-idea` output, more thorough for other inputs.
+
+**Chat Context flow:**
+
+1. Use sequential thinking to analyze the conversation history:
+   - What idea, concept, or topic has been discussed?
+   - What are the key details, requirements, or characteristics mentioned?
+   - Is there enough substance to work with?
+2. Synthesize into a concise concept summary
+3. Present to user:
+
+   ```
+   CHAT CONTEXT
+
+   > [concise summary of what was discussed in the conversation]
+   ```
+
+4. Use AskUserQuestion to confirm:
+   ```yaml
+   header: "Context Check"
+   question: "Klopt deze samenvatting van het gesprek?"
+   options:
+     - label: "Ja, klopt (Recommended)", description: "Gebruik dit als input"
+     - label: "Aanpassen", description: "Ik wil de samenvatting bijwerken"
+   multiSelect: false
+   ```
+5. If confirmed: use as input concept and proceed to Step 2
+6. If "Aanpassen": ask what to change, update summary, confirm again
+7. If insufficient context in conversation: inform user and fall back to manual input
 
 ### Step 2: Determine Idea Type & Load Relevant Techniques
 

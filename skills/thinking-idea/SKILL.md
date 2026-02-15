@@ -49,6 +49,7 @@ The output is a structured markdown document that can be used as input for `/thi
      options:
        - label: "Bewerken (Recommended)", description: "Pas het bestaande concept aan"
        - label: "Nieuw concept", description: "Begin opnieuw met een nieuw idee"
+       - label: "Chat context", description: "Gebruik wat er in dit gesprek is besproken"
        - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
@@ -59,6 +60,8 @@ The output is a structured markdown document that can be used as input for `/thi
    - **If "Nieuw concept":**
      - Ignore existing file (will be overwritten on save)
      - Proceed with normal flow below
+   - **If "Chat context":**
+     - Process using Chat Context flow (see below)
 
 **Step 1b: Source selection (if no concept found)**
 
@@ -71,11 +74,15 @@ header: "Bron"
 question: "Waar wil je beginnen?"
 options:
   - label: "Todoist Ideas laden (Recommended)", description: "Kies een idee uit je Todoist Ideas project"
+  - label: "Chat context gebruiken", description: "Gebruik wat er in dit gesprek is besproken als startpunt"
   - label: "Nieuw idee typen", description: "Beschrijf een nieuw idee"
   - label: "Obsidian zoeken", description: "Zoek een bestaand idee in je Obsidian vault"
-  - label: "Explain question", description: "Leg uit wat dit betekent"
 multiSelect: false
 ```
+
+**If "Chat context gebruiken":**
+
+Process using Chat Context flow (see below).
 
 **If "Todoist Ideas laden":**
 
@@ -140,6 +147,34 @@ Ask: "Wat is je idee? Beschrijf het in 1-2 zinnen."
 3. Also search Todoist for matching tasks: `mcp__todoist__get_tasks_list(filter="search: {argument}", project_id="2362341183")`
    - If match found: show "Er staat een vergelijkbaar idee in Todoist: **{task name}**" and offer to load it (with description as extra context)
 4. If no matches anywhere: acknowledge briefly and proceed to Step 2.
+
+**Chat Context flow:**
+
+1. Use sequential thinking to analyze the conversation history:
+   - What idea, concept, or topic has been discussed?
+   - What are the key details, requirements, or characteristics mentioned?
+   - Is there enough substance to work with?
+2. Synthesize into a concise concept summary
+3. Present to user:
+
+   ```
+   CHAT CONTEXT
+
+   > [concise summary of what was discussed in the conversation]
+   ```
+
+4. Use AskUserQuestion to confirm:
+   ```yaml
+   header: "Context Check"
+   question: "Klopt deze samenvatting van het gesprek?"
+   options:
+     - label: "Ja, klopt (Recommended)", description: "Gebruik dit als input"
+     - label: "Aanpassen", description: "Ik wil de samenvatting bijwerken"
+   multiSelect: false
+   ```
+5. If confirmed: use as input concept and proceed to Step 2
+6. If "Aanpassen": ask what to change, update summary, confirm again
+7. If insufficient context in conversation: inform user and fall back to manual input
 
 ### Step 2: Explore and Expand
 
