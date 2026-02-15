@@ -53,22 +53,19 @@ Proceed immediately to Step 2.
 
 ### Step 2: Understand Edit Request
 
-Use **AskUserQuestion** tool:
+**Infer the edit type from context** — do NOT ask what the user wants to change via a modal. The user's message when invoking the skill (or the conversation context) tells you what they need.
 
-- header: "Edit Type"
-- question: "Wat wil je aanpassen?"
-- options:
-  - label: "Content (Recommended)", description: "Workflow, instructies, output format"
-  - label: "Rename", description: "Skill naam wijzigen"
-  - label: "Resources", description: "Scripts, references, templates"
-  - label: "Delete", description: "Skill verwijderen"
-- multiSelect: true
+**Detection rules:**
 
-**Important**: If user selects "Delete", treat it as exclusive. Delete requires separate confirmation flow.
+- User describes content changes (workflow, instructions, output) → **Content**
+- User says "rename", "hernoem", or provides a new name → **Rename**
+- User mentions scripts, files, resources, templates → **Resources**
+- User says "delete", "verwijder", "remove" → **Delete**
+- Ambiguous or no context provided → ask in plain text: "What do you want to change?"
 
-**Based on answer, ask follow-ups** (2-3 at a time) to understand the specific changes needed.
+**Important**: Delete requires separate confirmation flow (see Special Cases).
 
-**For multiple selections**: gather specifics for each type sequentially, then show combined preview before applying.
+**If more detail is needed**, ask follow-up questions in plain text (2-3 at a time) to understand the specific changes.
 
 **Summarize understanding**:
 
@@ -80,7 +77,7 @@ I understand you want to:
 - [specific change 2]
 ```
 
-Confirm with AskUserQuestion before proceeding.
+Confirm with a short "Klopt dit?" in plain text before proceeding. Only use AskUserQuestion if there's a genuine ambiguous choice between distinct options.
 
 ### Step 3: Show Preview
 
@@ -214,15 +211,15 @@ When editing skill frontmatter, ensure it follows the Anthropic skill spec:
 ```yaml
 ---
 # REQUIRED
-name: skill-name                    # kebab-case, must match folder name
-description: >-                     # MUST include WHAT + WHEN
+name: skill-name # kebab-case, must match folder name
+description: >- # MUST include WHAT + WHEN
   What it does. Use when user says "trigger phrase" or asks for "task".
 
 # RECOMMENDED
 metadata:
   author: mileszeilstra
   version: 1.0.0
-  category: core                    # core|dev|frontend|game|project|story|team|thinking
+  category: core # core|dev|frontend|game|project|story|team|thinking
 
 # OPTIONAL — Claude Code specific
 disable-model-invocation: true
