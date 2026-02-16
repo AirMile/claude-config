@@ -411,11 +411,11 @@ multiSelect: false
 1. Wrap output in a code block with `markdown` language tag for copy button
 2. Display the content
 
-### Step 6: Todoist Close Loop
+### Step 6: Todoist
 
-**Only if `todoist_source_task_id` was tracked (idea loaded from Todoist in Step 1b):**
+After saving/showing the output, handle Todoist integration based on the idea's origin.
 
-After saving/showing the output, ask:
+**If `todoist_source_task_id` IS set (idea loaded from Todoist):**
 
 Use AskUserQuestion:
 
@@ -430,6 +430,33 @@ multiSelect: false
 
 - **If "Afsluiten":** `mcp__todoist__close_tasks(task_id=todoist_source_task_id)`
 - **If "Open laten":** no action
+
+**If `todoist_source_task_id` is NOT set (idea did not come from Todoist):**
+
+Use AskUserQuestion:
+
+```yaml
+header: "Todoist"
+question: "Wil je een Todoist task aanmaken in het Ideas project?"
+options:
+  - label: "Ja, task aanmaken (Recommended)", description: "Maak een task aan in het Ideas project met de titel en beschrijving"
+  - label: "Nee, overslaan", description: "Geen Todoist task aanmaken"
+multiSelect: false
+```
+
+- **If "Ja, task aanmaken":**
+  1. Extract the H1 title and short description (1-2 sentences) from the generated concept
+  2. Create task: `mcp__todoist__create_tasks(items=[{content: "{title}", description: "{short description}", project_id: "2362341183"}])`
+  3. Confirm:
+
+     ```
+     TODOIST TASK CREATED
+
+     Task: {title}
+     Project: Ideas
+     ```
+
+- **If "Nee, overslaan":** no action
 
 ---
 
