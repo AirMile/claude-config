@@ -1,6 +1,9 @@
 ---
 name: core-edit
-description: Edit existing skills with rename, delete, and resource management. Use when user wants to modify, update, change, or improve an existing skill.
+description: >-
+  Edit existing Claude Code skills with rename, delete, and resource management.
+  Use with /core-edit to modify skill content, frontmatter, or resources.
+disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0

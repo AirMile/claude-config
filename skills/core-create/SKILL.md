@@ -1,9 +1,10 @@
 ---
 name: core-create
 description: >-
-  Create new skills interactively with optional resource bundling. Use when user
-  wants to make, create, build, or add a new skill. Handles SKILL.md generation,
-  frontmatter, references, and scripts.
+  Create new Claude Code skills interactively with optional resource bundling.
+  Use with /core-create. Handles SKILL.md generation, frontmatter, references,
+  and scripts.
+disable-model-invocation: true
 argument-hint: "[name]"
 metadata:
   author: mileszeilstra

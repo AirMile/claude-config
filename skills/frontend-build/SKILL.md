@@ -1,6 +1,10 @@
 ---
 name: frontend-build
-description: Build production-ready React components from wireframes — design each component visually, approve, then generate React+Tailwind code and assemble a working page. Use with /frontend-build after /frontend-compose.
+description: >-
+  Build production-ready React components from wireframes with visual
+  component-by-component approval. Use with /frontend-build after
+  /frontend-compose.
+disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -60,6 +64,7 @@ stateDiagram-v2
 ```
 
 **State Descriptions:**
+
 - **PREFLIGHT**: Validate theme, wireframe, project structure
 - **DISCOVER**: Parse wireframe HTML for data-component attributes, build tree
 - **SETUP**: Extend Tailwind config, create high-fi preview copy of wireframe
@@ -284,9 +289,18 @@ Zoek naar `data-*` attributen in wireframe HTML:
 
 ```html
 <!-- Voorbeeld wireframe structuur -->
-<header data-component="Header" data-atomic="organism" data-variant="default,sticky">
+<header
+  data-component="Header"
+  data-atomic="organism"
+  data-variant="default,sticky"
+>
   <nav data-component="Navigation" data-atomic="molecule">
-    <a data-component="NavLink" data-atomic="atom" data-state="default,active,hover">Home</a>
+    <a
+      data-component="NavLink"
+      data-atomic="atom"
+      data-state="default,active,hover"
+      >Home</a
+    >
   </nav>
   <div data-component="UserMenu" data-atomic="molecule">
     <img data-component="Avatar" data-atomic="atom" data-size="sm,md,lg" />
@@ -295,6 +309,7 @@ Zoek naar `data-*` attributen in wireframe HTML:
 ```
 
 Extraheer per component:
+
 - `data-component` → Component naam (altijd aanwezig)
 - `data-atomic` → Atomic level (altijd aanwezig: atom, molecule, organism)
 - `data-variant` → Visuele varianten (aanwezig indien wireframe ze definieert)
@@ -477,39 +492,37 @@ Genereer of update `tailwind.config.js`:
 // tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    './src/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
         // From THEME.md
         primary: {
-          DEFAULT: '#6366f1',
-          hover: '#4f46e5',
+          DEFAULT: "#6366f1",
+          hover: "#4f46e5",
         },
-        background: '#ffffff',
-        foreground: '#1a1a2e',
+        background: "#ffffff",
+        foreground: "#1a1a2e",
         muted: {
-          DEFAULT: '#f4f4f5',
-          foreground: '#71717a',
+          DEFAULT: "#f4f4f5",
+          foreground: "#71717a",
         },
-        border: '#e4e4e7',
+        border: "#e4e4e7",
         // Semantic
-        success: '#22c55e',
-        warning: '#f59e0b',
-        error: '#ef4444',
-        info: '#3b82f6',
+        success: "#22c55e",
+        warning: "#f59e0b",
+        error: "#ef4444",
+        info: "#3b82f6",
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        heading: ['Poppins', 'sans-serif'],
-        mono: ['Fira Code', 'monospace'],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        heading: ["Poppins", "sans-serif"],
+        mono: ["Fira Code", "monospace"],
       },
       borderRadius: {
-        sm: '0.25rem',
-        md: '0.375rem',
-        lg: '0.5rem',
+        sm: "0.25rem",
+        md: "0.375rem",
+        lg: "0.5rem",
       },
     },
   },
@@ -522,8 +535,8 @@ module.exports = {
 Als nog niet aanwezig, maak `src/lib/utils.ts`:
 
 ```typescript
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -544,162 +557,399 @@ Kopieer `final.html` naar `.workspace/wireframes/[page]/hifi/preview.html` en vo
 */
 
 /* ─── Layout ─── */
-.hf-flex { display: flex; }
-.hf-flex-col { flex-direction: column; }
-.hf-items-center { align-items: center; }
-.hf-justify-between { justify-content: space-between; }
-.hf-gap-1 { gap: 4px; }
-.hf-gap-2 { gap: 8px; }
-.hf-gap-3 { gap: 12px; }
-.hf-gap-4 { gap: 16px; }
-.hf-gap-6 { gap: 24px; }
-.hf-grid { display: grid; }
-.hf-grid-2 { grid-template-columns: repeat(2, 1fr); }
-.hf-grid-3 { grid-template-columns: repeat(3, 1fr); }
-.hf-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.hf-flex {
+  display: flex;
+}
+.hf-flex-col {
+  flex-direction: column;
+}
+.hf-items-center {
+  align-items: center;
+}
+.hf-justify-between {
+  justify-content: space-between;
+}
+.hf-gap-1 {
+  gap: 4px;
+}
+.hf-gap-2 {
+  gap: 8px;
+}
+.hf-gap-3 {
+  gap: 12px;
+}
+.hf-gap-4 {
+  gap: 16px;
+}
+.hf-gap-6 {
+  gap: 24px;
+}
+.hf-grid {
+  display: grid;
+}
+.hf-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.hf-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.hf-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
 
 /* ─── Spacing ─── */
-.hf-p-2 { padding: 8px; }
-.hf-p-3 { padding: 12px; }
-.hf-p-4 { padding: 16px; }
-.hf-p-6 { padding: 24px; }
-.hf-px-3 { padding-left: 12px; padding-right: 12px; }
-.hf-px-4 { padding-left: 16px; padding-right: 16px; }
-.hf-px-6 { padding-left: 24px; padding-right: 24px; }
-.hf-py-2 { padding-top: 8px; padding-bottom: 8px; }
-.hf-py-3 { padding-top: 12px; padding-bottom: 12px; }
-.hf-m-0 { margin: 0; }
-.hf-mb-2 { margin-bottom: 8px; }
-.hf-mb-4 { margin-bottom: 16px; }
-.hf-mb-6 { margin-bottom: 24px; }
+.hf-p-2 {
+  padding: 8px;
+}
+.hf-p-3 {
+  padding: 12px;
+}
+.hf-p-4 {
+  padding: 16px;
+}
+.hf-p-6 {
+  padding: 24px;
+}
+.hf-px-3 {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.hf-px-4 {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.hf-px-6 {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+.hf-py-2 {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.hf-py-3 {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.hf-m-0 {
+  margin: 0;
+}
+.hf-mb-2 {
+  margin-bottom: 8px;
+}
+.hf-mb-4 {
+  margin-bottom: 16px;
+}
+.hf-mb-6 {
+  margin-bottom: 24px;
+}
 
 /* ─── Colors (from THEME.md CSS variables) ─── */
-.hf-bg-background { background-color: var(--wf-light); }
-.hf-bg-foreground { background-color: var(--wf-dark); }
-.hf-bg-primary { background-color: var(--wf-accent-primary); }
-.hf-bg-muted { background-color: var(--wf-light-gray); }
-.hf-bg-card { background-color: #fff; }
-.hf-bg-success { background-color: var(--wf-success); }
-.hf-bg-warning { background-color: var(--wf-warning); }
-.hf-bg-error { background-color: var(--wf-error); }
+.hf-bg-background {
+  background-color: var(--wf-light);
+}
+.hf-bg-foreground {
+  background-color: var(--wf-dark);
+}
+.hf-bg-primary {
+  background-color: var(--wf-accent-primary);
+}
+.hf-bg-muted {
+  background-color: var(--wf-light-gray);
+}
+.hf-bg-card {
+  background-color: #fff;
+}
+.hf-bg-success {
+  background-color: var(--wf-success);
+}
+.hf-bg-warning {
+  background-color: var(--wf-warning);
+}
+.hf-bg-error {
+  background-color: var(--wf-error);
+}
 
-.hf-text-foreground { color: var(--wf-dark); }
-.hf-text-muted { color: var(--wf-mid-gray); }
-.hf-text-primary { color: var(--wf-accent-primary); }
-.hf-text-light { color: var(--wf-light); }
-.hf-text-success { color: var(--wf-success); }
-.hf-text-warning { color: var(--wf-warning); }
-.hf-text-error { color: var(--wf-error); }
+.hf-text-foreground {
+  color: var(--wf-dark);
+}
+.hf-text-muted {
+  color: var(--wf-mid-gray);
+}
+.hf-text-primary {
+  color: var(--wf-accent-primary);
+}
+.hf-text-light {
+  color: var(--wf-light);
+}
+.hf-text-success {
+  color: var(--wf-success);
+}
+.hf-text-warning {
+  color: var(--wf-warning);
+}
+.hf-text-error {
+  color: var(--wf-error);
+}
 
 /* ─── Typography (from THEME.md fonts) ─── */
-.hf-font-heading { font-family: var(--wf-font-heading); }
-.hf-font-body { font-family: var(--wf-font-body); }
-.hf-font-mono { font-family: var(--wf-font-mono); }
+.hf-font-heading {
+  font-family: var(--wf-font-heading);
+}
+.hf-font-body {
+  font-family: var(--wf-font-body);
+}
+.hf-font-mono {
+  font-family: var(--wf-font-mono);
+}
 
-.hf-text-xs { font-size: 12px; line-height: 1.25; }
-.hf-text-sm { font-size: 14px; line-height: 1.25; }
-.hf-text-base { font-size: 16px; line-height: 1.5; }
-.hf-text-lg { font-size: 18px; line-height: 1.75; }
-.hf-text-xl { font-size: 20px; line-height: 1.75; }
-.hf-text-2xl { font-size: 24px; line-height: 1.33; }
-.hf-text-3xl { font-size: 30px; line-height: 1.2; }
+.hf-text-xs {
+  font-size: 12px;
+  line-height: 1.25;
+}
+.hf-text-sm {
+  font-size: 14px;
+  line-height: 1.25;
+}
+.hf-text-base {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.hf-text-lg {
+  font-size: 18px;
+  line-height: 1.75;
+}
+.hf-text-xl {
+  font-size: 20px;
+  line-height: 1.75;
+}
+.hf-text-2xl {
+  font-size: 24px;
+  line-height: 1.33;
+}
+.hf-text-3xl {
+  font-size: 30px;
+  line-height: 1.2;
+}
 
-.hf-font-normal { font-weight: 400; }
-.hf-font-medium { font-weight: 500; }
-.hf-font-semibold { font-weight: 600; }
-.hf-font-bold { font-weight: 700; }
+.hf-font-normal {
+  font-weight: 400;
+}
+.hf-font-medium {
+  font-weight: 500;
+}
+.hf-font-semibold {
+  font-weight: 600;
+}
+.hf-font-bold {
+  font-weight: 700;
+}
 
 /* ─── Borders ─── */
-.hf-border { border: 1px solid var(--wf-light-gray); }
-.hf-border-b { border-bottom: 1px solid var(--wf-light-gray); }
-.hf-rounded-sm { border-radius: 4px; }
-.hf-rounded { border-radius: 6px; }
-.hf-rounded-md { border-radius: 8px; }
-.hf-rounded-lg { border-radius: 12px; }
-.hf-rounded-full { border-radius: 9999px; }
+.hf-border {
+  border: 1px solid var(--wf-light-gray);
+}
+.hf-border-b {
+  border-bottom: 1px solid var(--wf-light-gray);
+}
+.hf-rounded-sm {
+  border-radius: 4px;
+}
+.hf-rounded {
+  border-radius: 6px;
+}
+.hf-rounded-md {
+  border-radius: 8px;
+}
+.hf-rounded-lg {
+  border-radius: 12px;
+}
+.hf-rounded-full {
+  border-radius: 9999px;
+}
 
 /* ─── Shadows ─── */
-.hf-shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-.hf-shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06); }
-.hf-shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06); }
-.hf-shadow-lg { box-shadow: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05); }
+.hf-shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.hf-shadow {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.hf-shadow-md {
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.06);
+}
+.hf-shadow-lg {
+  box-shadow:
+    0 10px 15px rgba(0, 0, 0, 0.1),
+    0 4px 6px rgba(0, 0, 0, 0.05);
+}
 
 /* ─── Effects & Transitions ─── */
-.hf-transition { transition: all 0.2s ease; }
-.hf-hover-lift:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-.hf-hover-brightness:hover { filter: brightness(1.05); }
-.hf-hover-bg-muted:hover { background-color: var(--wf-light-gray); }
-.hf-opacity-0 { opacity: 0; }
-.hf-opacity-50 { opacity: 0.5; }
-.hf-overflow-hidden { overflow: hidden; }
+.hf-transition {
+  transition: all 0.2s ease;
+}
+.hf-hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.hf-hover-brightness:hover {
+  filter: brightness(1.05);
+}
+.hf-hover-bg-muted:hover {
+  background-color: var(--wf-light-gray);
+}
+.hf-opacity-0 {
+  opacity: 0;
+}
+.hf-opacity-50 {
+  opacity: 0.5;
+}
+.hf-overflow-hidden {
+  overflow: hidden;
+}
 
 /* ─── Interactive ─── */
-.hf-cursor-pointer { cursor: pointer; }
-.hf-focus-ring:focus { outline: 2px solid var(--wf-accent-primary); outline-offset: 2px; }
-.hf-disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+.hf-cursor-pointer {
+  cursor: pointer;
+}
+.hf-focus-ring:focus {
+  outline: 2px solid var(--wf-accent-primary);
+  outline-offset: 2px;
+}
+.hf-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 /* ─── Buttons ─── */
 .hf-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 8px 16px; border-radius: 6px;
-  font-family: var(--wf-font-body); font-size: 14px; font-weight: 500;
-  cursor: pointer; border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-family: var(--wf-font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
   transition: all 0.2s ease;
 }
 .hf-btn-primary {
-  background-color: var(--wf-accent-primary); color: var(--wf-light);
+  background-color: var(--wf-accent-primary);
+  color: var(--wf-light);
 }
-.hf-btn-primary:hover { filter: brightness(1.1); }
+.hf-btn-primary:hover {
+  filter: brightness(1.1);
+}
 .hf-btn-secondary {
-  background-color: transparent; color: var(--wf-accent-primary);
+  background-color: transparent;
+  color: var(--wf-accent-primary);
   border: 1px solid var(--wf-accent-primary);
 }
-.hf-btn-secondary:hover { background-color: var(--wf-accent-primary); color: var(--wf-light); }
-.hf-btn-ghost {
-  background-color: transparent; color: var(--wf-mid-gray);
+.hf-btn-secondary:hover {
+  background-color: var(--wf-accent-primary);
+  color: var(--wf-light);
 }
-.hf-btn-ghost:hover { background-color: var(--wf-light-gray); color: var(--wf-dark); }
+.hf-btn-ghost {
+  background-color: transparent;
+  color: var(--wf-mid-gray);
+}
+.hf-btn-ghost:hover {
+  background-color: var(--wf-light-gray);
+  color: var(--wf-dark);
+}
 
-.hf-btn-sm { padding: 4px 10px; font-size: 12px; }
-.hf-btn-lg { padding: 12px 24px; font-size: 16px; }
+.hf-btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.hf-btn-lg {
+  padding: 12px 24px;
+  font-size: 16px;
+}
 
 /* ─── Inputs ─── */
 .hf-input {
-  padding: 8px 12px; border: 1px solid var(--wf-light-gray); border-radius: 6px;
-  font-family: var(--wf-font-body); font-size: 14px;
-  background: #fff; color: var(--wf-dark);
+  padding: 8px 12px;
+  border: 1px solid var(--wf-light-gray);
+  border-radius: 6px;
+  font-family: var(--wf-font-body);
+  font-size: 14px;
+  background: #fff;
+  color: var(--wf-dark);
   transition: border-color 0.2s ease;
 }
-.hf-input:focus { border-color: var(--wf-accent-primary); outline: none; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
-.hf-input::placeholder { color: var(--wf-mid-gray); }
+.hf-input:focus {
+  border-color: var(--wf-accent-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+.hf-input::placeholder {
+  color: var(--wf-mid-gray);
+}
 
 /* ─── Cards ─── */
 .hf-card {
-  background: #fff; border: 1px solid var(--wf-light-gray);
-  border-radius: 8px; padding: 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  background: #fff;
+  border: 1px solid var(--wf-light-gray);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* ─── Badges ─── */
 .hf-badge {
-  display: inline-flex; align-items: center;
-  padding: 2px 8px; border-radius: 9999px;
-  font-size: 12px; font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
 }
-.hf-badge-primary { background-color: var(--wf-accent-primary); color: var(--wf-light); }
-.hf-badge-success { background-color: var(--wf-success); color: #fff; }
-.hf-badge-warning { background-color: var(--wf-warning); color: #fff; }
-.hf-badge-error { background-color: var(--wf-error); color: #fff; }
-.hf-badge-muted { background-color: var(--wf-light-gray); color: var(--wf-mid-gray); }
+.hf-badge-primary {
+  background-color: var(--wf-accent-primary);
+  color: var(--wf-light);
+}
+.hf-badge-success {
+  background-color: var(--wf-success);
+  color: #fff;
+}
+.hf-badge-warning {
+  background-color: var(--wf-warning);
+  color: #fff;
+}
+.hf-badge-error {
+  background-color: var(--wf-error);
+  color: #fff;
+}
+.hf-badge-muted {
+  background-color: var(--wf-light-gray);
+  color: var(--wf-mid-gray);
+}
 
 /* ─── Avatars ─── */
 .hf-avatar {
-  border-radius: 9999px; object-fit: cover;
+  border-radius: 9999px;
+  object-fit: cover;
   background: var(--wf-light-gray);
 }
-.hf-avatar-sm { width: 32px; height: 32px; }
-.hf-avatar-md { width: 40px; height: 40px; }
-.hf-avatar-lg { width: 48px; height: 48px; }
+.hf-avatar-sm {
+  width: 32px;
+  height: 32px;
+}
+.hf-avatar-md {
+  width: 40px;
+  height: 40px;
+}
+.hf-avatar-lg {
+  width: 48px;
+  height: 48px;
+}
 
 /* ─── Marker: highlight component being styled ─── */
 [data-component][data-hifi="active"] {
@@ -716,9 +966,7 @@ Kopieer `final.html` naar `.workspace/wireframes/[page]/hifi/preview.html` en vo
 Voeg een extra indicator toe aan de wireframe nav balk die toont hoeveel components gestyled zijn:
 
 ```html
-<span class="hifi-progress">
-  Styled: <strong>0/11</strong>
-</span>
+<span class="hifi-progress"> Styled: <strong>0/11</strong> </span>
 ```
 
 ### 2.5 Create Page Skeleton
@@ -750,6 +998,7 @@ export default function [Page]Page() {
 ```
 
 **Layout analyse:**
+
 1. Lees de wireframe HTML structuur (header, sidebar, main content, footer)
 2. Identificeer layout regio's en hun nesting
 3. Maak placeholder comments op de plekken waar components komen
@@ -873,18 +1122,29 @@ Vervang de low-fi HTML met gestylede versie. Gebruik `.hf-*` classes en THEME.md
 **Voorbeeld transformatie — Button:**
 
 Low-fi:
+
 ```html
-<button data-component="Button" data-atomic="atom" data-variant="primary,secondary,ghost"
-        class="wf-bg-accent wf-text-light" style="padding:8px 16px;">
+<button
+  data-component="Button"
+  data-atomic="atom"
+  data-variant="primary,secondary,ghost"
+  class="wf-bg-accent wf-text-light"
+  style="padding:8px 16px;"
+>
   Click me
 </button>
 ```
 
 High-fi:
+
 ```html
-<button data-component="Button" data-atomic="atom" data-variant="primary,secondary,ghost"
-        data-hifi="active"
-        class="hf-btn hf-btn-primary hf-transition hf-focus-ring">
+<button
+  data-component="Button"
+  data-atomic="atom"
+  data-variant="primary,secondary,ghost"
+  data-hifi="active"
+  class="hf-btn hf-btn-primary hf-transition hf-focus-ring"
+>
   Click me
 </button>
 ```
@@ -892,9 +1152,14 @@ High-fi:
 **Voorbeeld transformatie — MetricCard:**
 
 Low-fi:
+
 ```html
-<div data-component="MetricCard" data-atomic="molecule"
-     class="wf-bg-light wf-border" style="padding:16px;">
+<div
+  data-component="MetricCard"
+  data-atomic="molecule"
+  class="wf-bg-light wf-border"
+  style="padding:16px;"
+>
   <span class="wf-text-mid" style="font-size:12px;">Total Revenue</span>
   <span class="wf-text-dark" style="font-size:24px;">$45,231</span>
   <span class="wf-text-mid" style="font-size:12px;">+12.5% vs last month</span>
@@ -902,13 +1167,21 @@ Low-fi:
 ```
 
 High-fi:
+
 ```html
-<div data-component="MetricCard" data-atomic="molecule"
-     data-hifi="active"
-     class="hf-card hf-transition hf-hover-lift">
+<div
+  data-component="MetricCard"
+  data-atomic="molecule"
+  data-hifi="active"
+  class="hf-card hf-transition hf-hover-lift"
+>
   <span class="hf-text-sm hf-text-muted hf-font-medium">Total Revenue</span>
-  <span class="hf-text-2xl hf-font-bold hf-text-foreground hf-font-heading">$45,231</span>
-  <span class="hf-text-xs hf-text-success hf-font-medium">+12.5% vs last month</span>
+  <span class="hf-text-2xl hf-font-bold hf-text-foreground hf-font-heading"
+    >$45,231</span
+  >
+  <span class="hf-text-xs hf-text-success hf-font-medium"
+    >+12.5% vs last month</span
+  >
 </div>
 ```
 
@@ -971,6 +1244,7 @@ multiSelect: false
 ```
 
 **Voorbeelden van tweak instructies:**
+
 - "Meer padding, het voelt te krap"
 - "Maak de shadow subtieler"
 - "Gebruik een outline style ipv filled"
@@ -1014,17 +1288,17 @@ Markeer de component als "skipped" in `components.json` en ga terug naar Select 
 
 Map de high-fi preview classes naar equivalente Tailwind classes:
 
-| `.hf-*` class | Tailwind equivalent |
-|---|---|
-| `hf-flex` | `flex` |
-| `hf-items-center` | `items-center` |
-| `hf-p-4` | `p-4` |
-| `hf-bg-primary` | `bg-primary` |
-| `hf-text-foreground` | `text-foreground` |
-| `hf-rounded-md` | `rounded-md` |
-| `hf-shadow` | `shadow` |
-| `hf-transition` | `transition-all duration-200` |
-| `hf-card` | Custom styles via `cn()` |
+| `.hf-*` class        | Tailwind equivalent           |
+| -------------------- | ----------------------------- |
+| `hf-flex`            | `flex`                        |
+| `hf-items-center`    | `items-center`                |
+| `hf-p-4`             | `p-4`                         |
+| `hf-bg-primary`      | `bg-primary`                  |
+| `hf-text-foreground` | `text-foreground`             |
+| `hf-rounded-md`      | `rounded-md`                  |
+| `hf-shadow`          | `shadow`                      |
+| `hf-transition`      | `transition-all duration-200` |
+| `hf-card`            | Custom styles via `cn()`      |
 
 #### Stap 2: Genereer React Component
 
@@ -1071,8 +1345,8 @@ export interface MetricCardProps {
   label: string;
   value: string | number;
   trend?: string;
-  trendDirection?: 'up' | 'down';
-  variant?: 'default' | 'highlighted';
+  trendDirection?: "up" | "down";
+  variant?: "default" | "highlighted";
   className?: string;
 }
 ```
@@ -1264,22 +1538,22 @@ Genereer barrel exports voor alle gegenereerde components:
 // src/components/[page]/index.ts
 
 // ─── Organisms ───
-export { Header } from './organisms/Header/Header';
-export type { HeaderProps } from './organisms/Header/Header.types';
+export { Header } from "./organisms/Header/Header";
+export type { HeaderProps } from "./organisms/Header/Header.types";
 
-export { Sidebar } from './organisms/Sidebar/Sidebar';
-export type { SidebarProps } from './organisms/Sidebar/Sidebar.types';
+export { Sidebar } from "./organisms/Sidebar/Sidebar";
+export type { SidebarProps } from "./organisms/Sidebar/Sidebar.types";
 
 // ─── Molecules ───
-export { Navigation } from './molecules/Navigation/Navigation';
-export { MetricCard } from './molecules/MetricCard/MetricCard';
-export type { MetricCardProps } from './molecules/MetricCard/MetricCard.types';
-export { UserMenu } from './molecules/UserMenu/UserMenu';
+export { Navigation } from "./molecules/Navigation/Navigation";
+export { MetricCard } from "./molecules/MetricCard/MetricCard";
+export type { MetricCardProps } from "./molecules/MetricCard/MetricCard.types";
+export { UserMenu } from "./molecules/UserMenu/UserMenu";
 
 // ─── Atoms ───
-export { Button } from './atoms/Button/Button';
-export type { ButtonProps } from './atoms/Button/Button.types';
-export { NavLink } from './atoms/NavLink/NavLink';
+export { Button } from "./atoms/Button/Button";
+export type { ButtonProps } from "./atoms/Button/Button.types";
+export { NavLink } from "./atoms/NavLink/NavLink";
 ```
 
 ### 4.2 Post-flight Validation
@@ -1375,6 +1649,7 @@ Next steps:
 ```
 
 ---
+
 ---
 
 > **Reference material** (output structure, error recovery, DevInfo integration, framework notes):
@@ -1383,6 +1658,7 @@ Next steps:
 ## Restrictions
 
 Dit command moet **NOOIT**:
+
 - Alle components tegelijk genereren zonder visuele goedkeuring
 - De preview.html volledig vervangen (altijd progressief updaten)
 - React code genereren voor een component die niet visueel is goedgekeurd
@@ -1390,6 +1666,7 @@ Dit command moet **NOOIT**:
 - Post-flight validation overslaan
 
 Dit command moet **ALTIJD**:
+
 - Component-voor-component werken met visuele feedback
 - De gebruiker laten kiezen welke component volgende is
 - Een high-fi HTML preview tonen voordat React code wordt gegenereerd
