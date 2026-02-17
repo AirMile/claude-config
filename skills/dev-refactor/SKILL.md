@@ -225,6 +225,7 @@ Features:
       - Overbodige comments die obvious code beschrijven
       - "Clever" code die moeilijk te begrijpen is
       - Inconsistentie met project conventions uit CLAUDE.md
+      - Violations van `../shared/RULES.md` — Algemeen + TypeScript secties (R007-R008, T001-T203)
 
       BALANCE (NIET rapporteren als finding):
       - Abstracties die meerdere keren hergebruikt worden
@@ -718,21 +719,21 @@ IMPROVEMENTS APPLIED
    a. Read the current `CLAUDE.md`
    b. Compare `modified_files` and `created_files` from FASE 4 against CLAUDE.md content
    c. Update affected sections:
-      - File paths that changed → update in `## Project structuur`
-      - Extracted components/hooks → add to structure tree
-      - Changed patterns → update `## Non-obvious patterns`
-   d. **Apply directly** (no user confirmation)
-   e. Follow core-md-audit quality rules:
-      - Only project-specific, non-obvious information
-      - One line per item, concise
-      - Each line must earn its place in the context window
-   f. Log:
+   - File paths that changed → update in `## Project structuur`
+   - Extracted components/hooks → add to structure tree
+   - Changed patterns → update `## Non-obvious patterns`
+     d. **Apply directly** (no user confirmation)
+     e. Follow core-md-audit quality rules:
+   - Only project-specific, non-obvious information
+   - One line per item, concise
+   - Each line must earn its place in the context window
+     f. Log:
 
-      ```
-      CLAUDE.md: {N} updates ({sections touched})
-      ```
+   ```
+   CLAUDE.md: {N} updates ({sections touched})
+   ```
 
-      Or: `CLAUDE.md: no updates needed (internal changes only)`
+   Or: `CLAUDE.md: no updates needed (internal changes only)`
 
 5. **Single auto-commit for everything:**
 

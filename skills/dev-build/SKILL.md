@@ -147,6 +147,7 @@ After all requirements complete: run integration tests across requirements.
 
 **Shared rules:**
 
+- `../shared/RULES.md` — Algemeen (R007-R008) en TypeScript rules (T001-T103) voor code quality
 - Requirements implemented SEQUENTIALLY (dependency order from 01-define.md)
 - Context7 research if unfamiliar pattern needed
 - All requirements must have tests before completion
@@ -288,39 +289,39 @@ Opties:
 
    b. Compare the build output (`02-build-log.md` files list + Codebase Sync conversation) against CLAUDE.md content. Identify gaps:
 
-      | Change Type | CLAUDE.md Section to Update |
-      |---|---|
-      | New components/hooks/pages added | `## Project structuur` (add to tree) |
-      | New routes created | `## Routing` (add route) |
-      | New non-obvious patterns discovered during build | `## Non-obvious patterns` (add bullet) |
-      | New environment variables or config required | Relevant config section |
+   | Change Type                                      | CLAUDE.md Section to Update            |
+   | ------------------------------------------------ | -------------------------------------- |
+   | New components/hooks/pages added                 | `## Project structuur` (add to tree)   |
+   | New routes created                               | `## Routing` (add route)               |
+   | New non-obvious patterns discovered during build | `## Non-obvious patterns` (add bullet) |
+   | New environment variables or config required     | Relevant config section                |
 
    c. **Apply updates directly** (no user confirmation — this is part of the build flow).
 
    d. **Quality rules** — follow core-md-audit guidelines strictly:
-      - Only add project-specific, non-obvious information
-      - One line per item, concise
-      - No generic best practices or obvious info
-      - No additions if the change is already covered in CLAUDE.md
-      - No additions for purely internal implementation details (private helpers, local state)
-      - Each line must earn its place in the context window
+   - Only add project-specific, non-obvious information
+   - One line per item, concise
+   - No generic best practices or obvious info
+   - No additions if the change is already covered in CLAUDE.md
+   - No additions for purely internal implementation details (private helpers, local state)
+   - Each line must earn its place in the context window
 
    e. **Skip entirely if:**
-      - All changes are already reflected in CLAUDE.md
-      - The feature only adds internal logic without structural impact
-      - No CLAUDE.md exists in the project root
+   - All changes are already reflected in CLAUDE.md
+   - The feature only adds internal logic without structural impact
+   - No CLAUDE.md exists in the project root
 
    f. Log what was updated:
 
-      ```
-      CLAUDE.md: {N} updates ({list of sections touched})
-      ```
+   ```
+   CLAUDE.md: {N} updates ({list of sections touched})
+   ```
 
-      Or if nothing changed:
+   Or if nothing changed:
 
-      ```
-      CLAUDE.md: no updates needed
-      ```
+   ```
+   CLAUDE.md: no updates needed
+   ```
 
 3. Move feature from `### DEF` to `### BLT` in `.workspace/backlog.md`
 4. Auto-commit:

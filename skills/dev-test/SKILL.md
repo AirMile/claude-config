@@ -54,6 +54,8 @@ Everything works except validation is missing and no welcome mail
 
 > **Test classification criteria and automation patterns:**
 > See `references/test-classification.md` for AUTO/BROWSER, AUTO/CLI, and MANUAL criteria with pattern tables.
+>
+> **Code quality rules:** `../shared/RULES.md` — Algemeen (R007-R008) en TypeScript rules (T001-T103) bij fix loops.
 
 ## Workflow
 
