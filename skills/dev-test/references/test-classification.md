@@ -63,26 +63,28 @@ NOT MANUAL (these are AUTO):
 
 **BROWSER patterns** (MCP browser tools):
 
-| Pattern             | Steps                                                             |
-| ------------------- | ----------------------------------------------------------------- |
-| Form submit         | navigate, fill_form, click submit, snapshot (check success state) |
-| Route protection    | navigate to protected URL, snapshot (check redirect to login)     |
-| Element presence    | navigate, snapshot, find element text/role in snapshot            |
-| URL state           | interact, evaluate(() => location.href)                           |
-| Keyboard navigation | press_key (Tab/Enter/Esc), snapshot (check focus state)           |
-| Responsive layout   | resize(width, height), take_screenshot (check layout)             |
-| Error validation    | fill invalid input, submit, snapshot (check error messages)       |
-| Toast/notification  | trigger action, wait_for(text), snapshot (check notification)     |
+| Pattern               | Steps                                                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Form submit           | navigate, fill_form, click submit, snapshot (check success state)                                                  |
+| Route protection      | navigate to protected URL, snapshot (check redirect to login)                                                      |
+| Element presence      | navigate, snapshot, find element text/role in snapshot                                                             |
+| URL state             | interact, evaluate(() => location.href)                                                                            |
+| Keyboard navigation   | press_key (Tab/Enter/Esc), snapshot (check focus state)                                                            |
+| Responsive layout     | resize per breakpoint, take_screenshot (check layout). Presets: Desktop 1920×1080, Tablet 768×1024, Mobile 375×667 |
+| Error validation      | fill invalid input, submit, snapshot (check error messages)                                                        |
+| Toast/notification    | trigger action, wait_for(text), snapshot (check notification)                                                      |
+| Cookie/consent banner | wait_for(text: "Accept"/"OK"/"I agree", timeout: 3s), click dismiss, snapshot (verify banner gone)                 |
 
 **CLI patterns** (bash commands):
 
-| Pattern             | Steps                                                              |
-| ------------------- | ------------------------------------------------------------------ |
-| API auth check      | curl endpoint without/with token → check HTTP status (401/403/200) |
-| API response body   | curl endpoint → parse JSON, check expected fields/values           |
-| API validation      | curl POST with invalid data → check 400 + error message            |
-| Existing test suite | npm test / npx vitest / npx playwright test → check exit code      |
-| Type checking       | npx tsc --noEmit → check exit code + error count                   |
-| Build verification  | npm run build → check exit code                                    |
-| File state          | cat/read file → check contents match expected                      |
-| DB state            | query command → check result matches expected                      |
+| Pattern             | Steps                                                                             |
+| ------------------- | --------------------------------------------------------------------------------- |
+| API auth check      | curl endpoint without/with token → check HTTP status (401/403/200)                |
+| API response body   | curl endpoint → parse JSON, check expected fields/values                          |
+| API validation      | curl POST with invalid data → check 400 + error message                           |
+| Existing test suite | npm test / npx vitest / npx playwright test → check exit code                     |
+| Type checking       | npx tsc --noEmit → check exit code + error count                                  |
+| Build verification  | npm run build → check exit code                                                   |
+| File state          | cat/read file → check contents match expected                                     |
+| DB state            | query command → check result matches expected                                     |
+| Dev server detect   | curl HEAD on common ports (3000, 3001, 5173, 8080) → first 200 response is target |
