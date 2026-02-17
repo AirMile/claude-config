@@ -1,6 +1,10 @@
 ---
 name: frontend-theme
-description: Design system management — token CRUD, auto-extraction, and theme modes. Use with /frontend-theme to create, update, or manage design tokens and color themes.
+description: >-
+  Design system management — token CRUD, auto-extraction, and theme modes. Use
+  with /frontend-theme to create, update, or manage design tokens and color
+  themes.
+disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -66,6 +70,7 @@ stateDiagram-v2
 ```
 
 **State Descriptions:**
+
 - **PREFLIGHT**: Validate resources and dependencies
 - **ACTION_SELECT**: User chooses CRUD operation
 - **CREATE/UPDATE/EXTRACT/MODES/DELETE**: Execute selected operation
@@ -89,6 +94,7 @@ PRE-FLIGHT CHECK
 ```
 
 **1. Directory Check**
+
 ```bash
 # Verify .workspace/config/ exists or can be created
 ```
@@ -98,6 +104,7 @@ Directory: [✓|✗] .workspace/config/ - [exists|created|error]
 ```
 
 **2. Session Check**
+
 ```bash
 # Check .workspace/session/devinfo.json
 ```
@@ -108,11 +115,13 @@ Handoff: [✓|✗] [data available | not applicable]
 ```
 
 **3. Conflict Check (voor Create/Update)**
+
 ```
 Conflicts: [✓|✗] THEME.md - [not exists | exists (will warn) | locked]
 ```
 
 **Pre-flight Samenvatting:**
+
 ```
 ════════════════════════════════════════════════
 PRE-FLIGHT RESULT
@@ -128,6 +137,7 @@ Status: [→ Ready to proceed | ⚠ Warning: {issue} | ✗ Cannot proceed]
 **On Failure:**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Pre-flight Failed"
 question: "Pre-flight check mislukt: {reason}. Hoe wil je doorgaan?"
@@ -143,6 +153,7 @@ multiSelect: false
 ### FASE 1: Actie Selectie
 
 **Check eerst of THEME.md bestaat:**
+
 ```bash
 # Check .workspace/config/THEME.md
 ```
@@ -150,6 +161,7 @@ multiSelect: false
 **Als THEME.md BESTAAT:**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Theme"
 question: "Wat wil je doen?"
@@ -166,6 +178,7 @@ multiSelect: false
 **Als THEME.md NIET bestaat:**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Theme"
 question: "Geen theme gevonden. Wat wil je doen?"
@@ -185,6 +198,7 @@ multiSelect: false
 **Stap 0: Brand Preset (Snelle Start)**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Brand Preset"
 question: "Wil je een brand preset gebruiken voor snelle start?"
@@ -199,6 +213,7 @@ multiSelect: false
 ```
 
 **Als een preset geselecteerd:**
+
 1. Laad preset waarden uit `skills/shared/brand-presets.md`
 2. Toon preview van preset kleuren en fonts
 3. **Als preset dark mode kleuren heeft:** Toon dark mode preview, vraag bevestiging
@@ -210,6 +225,7 @@ multiSelect: false
 **Stap 1: Kleuren**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Colors"
 question: "Hoe wil je kleuren definiëren?"
@@ -222,6 +238,7 @@ multiSelect: false
 ```
 
 **Als "Handmatig invoeren":**
+
 ```
 Geef je primaire kleuren (hex values):
 
@@ -244,6 +261,7 @@ Type 's' voor populaire paletten, 'q' voor uitleg
 **Stap 2: Typography**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Typography"
 question: "Welke fonts gebruik je?"
@@ -256,6 +274,7 @@ multiSelect: false
 ```
 
 **Als "Custom fonts":**
+
 ```
 Geef je font families:
 
@@ -274,6 +293,7 @@ Type 's' voor populaire combinaties
 **Stap 3: Spacing**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Spacing"
 question: "Spacing scale voorkeur?"
@@ -288,6 +308,7 @@ multiSelect: false
 **Stap 4: Breakpoints**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Breakpoints"
 question: "Responsive breakpoints?"
@@ -302,6 +323,7 @@ multiSelect: false
 **Stap 5: Dark Mode**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Dark Mode"
 question: "Wil je dark mode toevoegen aan je theme?"
@@ -314,6 +336,7 @@ multiSelect: false
 ```
 
 **Als "Ja, auto-generate":**
+
 - Inverteer background/foreground: `dark` ↔ `light`
 - Pas `mid-gray` en `light-gray` aan voor dark context
 - Behoud accent kleuren maar verhoog lightness (~10-15%) voor leesbaarheid op donkere achtergrond
@@ -321,6 +344,7 @@ multiSelect: false
 - Toon preview (zelfde als Mode Comparison)
 
 **Als "Ja, handmatig":**
+
 ```
 Geef je dark mode kleuren (hex values):
 
@@ -338,6 +362,7 @@ Geef je dark mode kleuren (hex values):
 ```
 
 **Als "Nee":**
+
 - Sla dark mode over
 - Theme Modes sectie bevat alleen Light Mode
 - → Ga naar Stap 6
@@ -360,6 +385,7 @@ Geef je dark mode kleuren (hex values):
 ```
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Confirm"
 question: "Theme aanmaken met deze settings?"
@@ -371,6 +397,7 @@ multiSelect: false
 ```
 
 **Als "Ja":**
+
 1. Lees `THEME_TEMPLATE.md` uit resources
 2. Vul template in met user values
 3. **Als dark mode gekozen:** Vul ook `.dark` CSS block in Theme Modes sectie
@@ -417,6 +444,7 @@ multiSelect: false
 ```
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Action"
 question: "Wat wil je doen?"
@@ -451,6 +479,7 @@ Generating preview page...
 #### Route: Updaten
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Update"
 question: "Welke sectie wil je updaten?"
@@ -465,6 +494,7 @@ multiSelect: true
 ```
 
 **Per geselecteerde sectie:**
+
 - Toon huidige waarden
 - Vraag nieuwe waarden (zelfde flow als Aanmaken)
 - Toon diff preview
@@ -485,6 +515,7 @@ multiSelect: true
 ```
 
 **Output:**
+
 ```
 🔍 DETECTIE RESULTAAT
 
@@ -496,6 +527,7 @@ multiSelect: true
 ```
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Extract"
 question: "Uit welke bronnen extraheren?"
@@ -520,6 +552,7 @@ multiSelect: false
 #### Route: Modes (Dark/Light)
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Modes"
 question: "Theme mode actie?"
@@ -535,6 +568,7 @@ multiSelect: false
 **Als "Dark mode toevoegen":**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Dark Mode"
 question: "Hoe dark mode kleuren genereren?"
@@ -547,6 +581,7 @@ multiSelect: false
 ```
 
 **Als "Auto-generate":**
+
 - Genereer dark variants van huidige kleuren
 - Toon preview
 - Vraag bevestiging
@@ -572,6 +607,7 @@ Layout: [Light Mode] | [Dark Mode] side-by-side
 ```
 
 **Output:**
+
 ```
 MODE COMPARISON READY
 ─────────────────────
@@ -589,6 +625,7 @@ Opening comparison in browser...
 ```
 
 **AskUserQuestion (after preview opens):**
+
 ```yaml
 header: "Mode Preview"
 question: "Bekijk de light/dark vergelijking in browser. Tevreden?"
@@ -602,6 +639,7 @@ options:
 #### Route: Verwijderen
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Delete"
 question: "Weet je zeker dat je de theme wilt verwijderen?"
@@ -623,6 +661,7 @@ POST-FLIGHT CHECK
 ```
 
 **1. File Validation**
+
 ```
 File: [✓|✗] .workspace/config/THEME.md - [exists|missing|empty]
 Size: [✓|✗] {N} bytes - [valid|suspicious]
@@ -630,6 +669,7 @@ Format: [✓|✗] Markdown - [valid|corrupt]
 ```
 
 **2. Content Validation**
+
 ```
 Sections:
   [✓|✗] Colors - [present|missing]
@@ -640,6 +680,7 @@ Sections:
 ```
 
 **3. Value Validation**
+
 ```
 Colors:
   [✓|✗] All hex codes valid (#RRGGBB format)
@@ -656,6 +697,7 @@ Theme Modes:
 ```
 
 **4. Export Validation**
+
 ```
 CSS Export:
   [✓|✗] CSS Variables section present
@@ -666,6 +708,7 @@ CSS Export:
 ```
 
 **Post-flight Samenvatting:**
+
 ```
 ════════════════════════════════════════════════
 POST-FLIGHT RESULT
@@ -683,6 +726,7 @@ Status: [→ Complete | ⚠ Warnings: {list} | ✗ Recovery needed]
 **On Failure:**
 
 **AskUserQuestion:**
+
 ```yaml
 header: "Post-flight Failed"
 question: "Validatie vond problemen: {issues}. Wat nu?"
@@ -698,6 +742,7 @@ multiSelect: false
 ## Output Formaat
 
 **Na succesvolle actie:**
+
 ```
 ✅ THEME [AANGEMAAKT/BIJGEWERKT/VERWIJDERD]
 
@@ -722,29 +767,29 @@ Next suggested: /frontend:compose of /dev:define (met theme als context)
 
 ### Extraction Failures
 
-| Error | Recovery |
-|-------|----------|
-| Config file niet gevonden | Offer manual path input |
-| Parse error in config | Toon raw content, vraag format hint |
-| Geen tokens gevonden | Offer defaults + manual input |
-| Tailwind v3 vs v4 verschil | Detecteer versie, pas parser aan |
+| Error                      | Recovery                            |
+| -------------------------- | ----------------------------------- |
+| Config file niet gevonden  | Offer manual path input             |
+| Parse error in config      | Toon raw content, vraag format hint |
+| Geen tokens gevonden       | Offer defaults + manual input       |
+| Tailwind v3 vs v4 verschil | Detecteer versie, pas parser aan    |
 
 ### Write Failures
 
-| Error | Recovery |
-|-------|----------|
-| Permission denied | Suggest alternative path |
-| Disk full | Warn, suggest cleanup |
+| Error                     | Recovery                           |
+| ------------------------- | ---------------------------------- |
+| Permission denied         | Suggest alternative path           |
+| Disk full                 | Warn, suggest cleanup              |
 | Directory niet creëerbaar | Offer manual creation instructions |
 
 ### Validation Failures
 
-| Error | Auto-fix | Manual |
-|-------|----------|--------|
+| Error            | Auto-fix              | Manual                       |
+| ---------------- | --------------------- | ---------------------------- |
 | Invalid hex code | Suggest closest valid | Show invalid, ask correction |
-| Missing section | Add with defaults | Ask for values |
-| Empty value | Use default | Ask for value |
-| CSS syntax error | Re-generate export | Show error location |
+| Missing section  | Add with defaults     | Ask for values               |
+| Empty value      | Use default           | Ask for value                |
+| CSS syntax error | Re-generate export    | Show error location          |
 
 > **Note:** Rollback wordt afgehandeld door Claude Code's ingebouwde "Rewind" functie.
 
@@ -757,6 +802,7 @@ Next suggested: /frontend:compose of /dev:define (met theme als context)
 ### Session Initialization
 
 Bij skill start:
+
 ```json
 {
   "currentSkill": {
@@ -770,6 +816,7 @@ Bij skill start:
 ### Progress Updates
 
 Update devinfo bij elke fase transitie:
+
 - `PREFLIGHT` → `ACTION_SELECT`
 - `ACTION_SELECT` → `CREATE|UPDATE|EXTRACT|MODES|DELETE`
 - `CONFIRM` → `POSTFLIGHT`
@@ -778,6 +825,7 @@ Update devinfo bij elke fase transitie:
 ### Completion Handoff
 
 Bij succesvolle completion:
+
 ```json
 {
   "handoff": {
@@ -805,6 +853,7 @@ Bij succesvolle completion:
 ### Output Contract (theme → wireframe)
 
 Deze skill garandeert bij completion:
+
 - `.workspace/config/THEME.md` bestaat
 - Bevat valid sections: Colors, Typography, Spacing, Breakpoints
 - CSS export section is syntactically valid
@@ -813,6 +862,7 @@ Deze skill garandeert bij completion:
 ### Suggested Next
 
 Na succesvolle theme creatie/update:
+
 ```
 Next suggested: /frontend:compose of /dev:define (met theme als context)
 Theme tokens ready for wireframe integration.
@@ -832,12 +882,14 @@ Theme tokens ready for wireframe integration.
 ## Restrictions
 
 Dit command moet **NOOIT**:
+
 - Theme aanmaken zonder bevestiging
 - Bestaande theme overschrijven zonder waarschuwing
 - Tokens raden zonder bron (config of user input)
 - Post-flight validation overslaan
 
 Dit command moet **ALTIJD**:
+
 - Pre-flight validation uitvoeren
 - AskUserQuestion gebruiken voor alle keuzes
 - Huidige waarden tonen bij updates

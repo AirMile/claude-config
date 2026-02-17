@@ -1,6 +1,10 @@
 ---
 name: frontend-convert
-description: Convert any high-fidelity design (screenshot, HTML, URL) into React+Tailwind components with component-by-component review. Use with /frontend-convert for design-to-code conversion.
+description: >-
+  Convert any high-fidelity design (screenshot, HTML, URL) into React+Tailwind
+  components with component-by-component review. Use with /frontend-convert for
+  design-to-code conversion.
+disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -62,6 +66,7 @@ stateDiagram-v2
 ```
 
 **State Descriptions:**
+
 - **PREFLIGHT**: Detect input type, validate project structure, check theme
 - **DISCOVER**: Analyse design (vision/HTML parse), build component tree
 - **SETUP**: Extract design tokens, extend Tailwind, create page skeleton
@@ -91,11 +96,11 @@ stateDiagram-v2
 
 Dit skill accepteert input uit ELKE bron -- geen handoff van andere skills vereist:
 
-| Input Type | Detectie | Bron |
-|------------|----------|------|
-| Screenshot | `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp` extensie | Designer, Figma export, browser screenshot |
-| HTML file | `.html`, `.htm` extensie | Webflow export, saved webpage, Figma HTML export |
-| URL | `http://` of `https://` prefix | Live website, staging environment |
+| Input Type | Detectie                                                  | Bron                                             |
+| ---------- | --------------------------------------------------------- | ------------------------------------------------ |
+| Screenshot | `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp` extensie | Designer, Figma export, browser screenshot       |
+| HTML file  | `.html`, `.htm` extensie                                  | Webflow export, saved webpage, Figma HTML export |
+| URL        | `http://` of `https://` prefix                            | Live website, staging environment                |
 
 ```
 /convert screenshot.png
@@ -152,6 +157,7 @@ PRE-FLIGHT: Input Detectie
 ```
 
 **Detectie regels:**
+
 - Extensie `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp` -> **screenshot**
 - Extensie `.html`, `.htm` -> **html**
 - Begint met `http://` of `https://` -> **url**
@@ -160,6 +166,7 @@ PRE-FLIGHT: Input Detectie
 **Per type extra checks:**
 
 **Screenshot:**
+
 ```
 Input: [pad naar bestand]
   [ ] Bestand bestaat
@@ -169,6 +176,7 @@ Input: [pad naar bestand]
 ```
 
 **HTML:**
+
 ```
 Input: [pad naar bestand]
   [ ] Bestand bestaat
@@ -178,6 +186,7 @@ Input: [pad naar bestand]
 ```
 
 **URL:**
+
 ```
 Input: [URL]
   [ ] URL syntax geldig
@@ -228,6 +237,7 @@ PRE-FLIGHT: Theme
 ```
 
 **Als THEME.md bestaat:**
+
 - Gebruik bestaande design tokens als basis
 - Aanvullen met tokens uit het design waar nodig
 
@@ -343,6 +353,7 @@ Analysing screenshot via vision...
 ```
 
 **Vision prompt strategie:**
+
 - Beschrijf ELKE visuele sectie van de pagina
 - Identificeer component grenzen
 - Noteer exacte kleuren waar mogelijk
@@ -369,6 +380,7 @@ DESIGN ANALYSE: HTML
 ```
 
 **HTML parse strategie:**
+
 - Lees de volledige HTML source
 - Als external CSS linked: lees CSS bestanden
 - Map CSS selectors naar HTML elementen
@@ -686,40 +698,38 @@ Genereer of update `tailwind.config.js` met geextraheerde tokens:
 // tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    './src/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
         // Extracted from design
         primary: {
-          DEFAULT: '#6366f1',
-          hover: '#4f46e5',
+          DEFAULT: "#6366f1",
+          hover: "#4f46e5",
         },
-        background: '#ffffff',
-        foreground: '#1a1a2e',
+        background: "#ffffff",
+        foreground: "#1a1a2e",
         muted: {
-          DEFAULT: '#f4f4f5',
-          foreground: '#71717a',
+          DEFAULT: "#f4f4f5",
+          foreground: "#71717a",
         },
-        border: '#e4e4e7',
-        card: '#ffffff',
+        border: "#e4e4e7",
+        card: "#ffffff",
         // Semantic
-        success: '#22c55e',
-        warning: '#f59e0b',
-        error: '#ef4444',
-        info: '#3b82f6',
+        success: "#22c55e",
+        warning: "#f59e0b",
+        error: "#ef4444",
+        info: "#3b82f6",
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        heading: ['Poppins', 'sans-serif'],
-        mono: ['Fira Code', 'monospace'],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        heading: ["Poppins", "sans-serif"],
+        mono: ["Fira Code", "monospace"],
       },
       borderRadius: {
-        sm: '0.25rem',
-        md: '0.375rem',
-        lg: '0.5rem',
+        sm: "0.25rem",
+        md: "0.375rem",
+        lg: "0.5rem",
       },
     },
   },
@@ -735,8 +745,8 @@ module.exports = {
 Als nog niet aanwezig, maak `src/lib/utils.ts`:
 
 ```typescript
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -772,6 +782,7 @@ export default function [Page]Page() {
 ```
 
 **Layout analyse:**
+
 1. Analyseer de design voor layout regio's (header, sidebar, main content, footer)
 2. Identificeer layout nesting en structuur
 3. Maak placeholder comments op de plekken waar components komen
@@ -876,6 +887,7 @@ multiSelect: false
 Analyseer het specifieke deel van het design dat bij dit component hoort:
 
 **Voor screenshot input:**
+
 ```
 ANALYSING: [Component Name]
 ===============================================================
@@ -896,6 +908,7 @@ Vision analyse:
 ```
 
 **Voor HTML input:**
+
 ```
 ANALYSING: [Component Name]
 ===============================================================
@@ -921,22 +934,22 @@ Children: [child elements]
 
 Vertaal design CSS properties DIRECT naar Tailwind utility classes:
 
-| Design CSS | Tailwind Class |
-|---|---|
-| `display: flex` | `flex` |
-| `align-items: center` | `items-center` |
-| `padding: 16px` | `p-4` |
-| `padding: 8px 16px` | `px-4 py-2` |
-| `background: #ffffff` | `bg-card` (als in config) of `bg-white` |
-| `color: #1a1a2e` | `text-foreground` (als in config) |
-| `border: 1px solid #e4e4e7` | `border border-border` |
-| `border-radius: 8px` | `rounded-lg` |
-| `font-size: 14px` | `text-sm` |
-| `font-weight: 600` | `font-semibold` |
-| `font-family: Poppins` | `font-heading` (als in config) |
-| `box-shadow: 0 1px 3px...` | `shadow` |
-| `gap: 16px` | `gap-4` |
-| `transition: all 0.2s` | `transition-all duration-200` |
+| Design CSS                  | Tailwind Class                          |
+| --------------------------- | --------------------------------------- |
+| `display: flex`             | `flex`                                  |
+| `align-items: center`       | `items-center`                          |
+| `padding: 16px`             | `p-4`                                   |
+| `padding: 8px 16px`         | `px-4 py-2`                             |
+| `background: #ffffff`       | `bg-card` (als in config) of `bg-white` |
+| `color: #1a1a2e`            | `text-foreground` (als in config)       |
+| `border: 1px solid #e4e4e7` | `border border-border`                  |
+| `border-radius: 8px`        | `rounded-lg`                            |
+| `font-size: 14px`           | `text-sm`                               |
+| `font-weight: 600`          | `font-semibold`                         |
+| `font-family: Poppins`      | `font-heading` (als in config)          |
+| `box-shadow: 0 1px 3px...`  | `shadow`                                |
+| `gap: 16px`                 | `gap-4`                                 |
+| `transition: all 0.2s`      | `transition-all duration-200`           |
 
 > **CRITICAL:** Gebruik de design tokens uit de Tailwind config (FASE 2.2) waar mogelijk.
 > Bijv. `bg-primary` in plaats van `bg-[#6366f1]`. Arbitrary values `[...]` alleen als
@@ -986,7 +999,7 @@ export interface MetricCardProps {
   label: string;
   value: string | number;
   trend?: string;
-  trendDirection?: 'up' | 'down';
+  trendDirection?: "up" | "down";
   className?: string;
 }
 ```
@@ -1156,6 +1169,7 @@ multiSelect: false
 ```
 
 **Voorbeelden van tweak instructies:**
+
 - "De primary color moet #3B82F6 zijn, niet #6366f1"
 - "Font size van de titel is te groot, moet text-xl zijn"
 - "Meer padding, het design heeft meer whitespace"
@@ -1265,26 +1279,26 @@ Genereer barrel exports voor alle gegenereerde components:
 // src/components/[page]/index.ts
 
 // --- Organisms ---
-export { Header } from './organisms/Header/Header';
-export type { HeaderProps } from './organisms/Header/Header.types';
+export { Header } from "./organisms/Header/Header";
+export type { HeaderProps } from "./organisms/Header/Header.types";
 
-export { Sidebar } from './organisms/Sidebar/Sidebar';
-export type { SidebarProps } from './organisms/Sidebar/Sidebar.types';
+export { Sidebar } from "./organisms/Sidebar/Sidebar";
+export type { SidebarProps } from "./organisms/Sidebar/Sidebar.types";
 
 // --- Molecules ---
-export { Navigation } from './molecules/Navigation/Navigation';
-export { MetricCard } from './molecules/MetricCard/MetricCard';
-export type { MetricCardProps } from './molecules/MetricCard/MetricCard.types';
-export { UserMenu } from './molecules/UserMenu/UserMenu';
-export { DataTable } from './molecules/DataTable/DataTable';
+export { Navigation } from "./molecules/Navigation/Navigation";
+export { MetricCard } from "./molecules/MetricCard/MetricCard";
+export type { MetricCardProps } from "./molecules/MetricCard/MetricCard.types";
+export { UserMenu } from "./molecules/UserMenu/UserMenu";
+export { DataTable } from "./molecules/DataTable/DataTable";
 
 // --- Atoms ---
-export { Button } from './atoms/Button/Button';
-export type { ButtonProps } from './atoms/Button/Button.types';
-export { NavLink } from './atoms/NavLink/NavLink';
-export { Avatar } from './atoms/Avatar/Avatar';
-export { Badge } from './atoms/Badge/Badge';
-export { Logo } from './atoms/Logo/Logo';
+export { Button } from "./atoms/Button/Button";
+export type { ButtonProps } from "./atoms/Button/Button.types";
+export { NavLink } from "./atoms/NavLink/NavLink";
+export { Avatar } from "./atoms/Avatar/Avatar";
+export { Badge } from "./atoms/Badge/Badge";
+export { Logo } from "./atoms/Logo/Logo";
 ```
 
 ### 4.2 Post-flight Validation
@@ -1393,6 +1407,7 @@ Next steps:
 ```
 
 ---
+
 ---
 
 > **Reference material** (output structure, error recovery, DevInfo integration, framework notes, input guidelines):
@@ -1401,6 +1416,7 @@ Next steps:
 ## Restrictions
 
 Dit command moet **NOOIT**:
+
 - `.hf-*` CSS classes gebruiken (geen high-fidelity CSS class systeem)
 - `.wf-*` CSS classes gebruiken (geen wireframe classes)
 - `preview.html` aanmaken of wijzigen (geen HTML preview workflow)
@@ -1412,6 +1428,7 @@ Dit command moet **NOOIT**:
 - Post-flight validation overslaan
 
 Dit command moet **ALTIJD**:
+
 - Input type automatisch detecteren
 - Design tokens extraheren uit het design zelf (niet raden)
 - Component-voor-component werken met review stap

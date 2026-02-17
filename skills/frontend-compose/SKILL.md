@@ -1,6 +1,10 @@
 ---
 name: frontend-compose
-description: Compose low-fidelity HTML wireframes using parallel design agents with iterative refinement. Use when user asks for wireframe, mockup, prototype, layout exploration, or UI design sketches.
+description: >-
+  Compose low-fidelity HTML wireframes using parallel design agents with
+  iterative refinement. Use with /frontend-compose for wireframe, mockup,
+  prototype, layout exploration, or UI design sketches.
+disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -65,6 +69,7 @@ stateDiagram-v2
 ```
 
 **State Descriptions:**
+
 - **PREFLIGHT**: Validate theme, directories, template, agent capability
 - **FASE1_REQUIREMENTS**: Gather user requirements via modals, with full project context
 - **VALIDATE_REQUIREMENTS**: Check requirements completeness
@@ -110,13 +115,13 @@ FASE 7: Final Post-flight Validation
 
 This skill includes pre-researched reference files for fast execution:
 
-| File | Description |
-|------|-------------|
-| `references/html-template.html` | Single-view template (phone OR desktop) |
+| File                                       | Description                                                       |
+| ------------------------------------------ | ----------------------------------------------------------------- |
+| `references/html-template.html`            | Single-view template (phone OR desktop)                           |
 | `references/html-template-responsive.html` | **RECOMMENDED** Dual-view template (phone + desktop side-by-side) |
-| `references/mobile-patterns.md` | Touch targets, navigation, layouts, forms for mobile |
-| `references/desktop-patterns.md` | Navigation, grids, interactions, data display for desktop |
-| `references/page-types.md` | Structures for landing, dashboard, form, list, detail, settings |
+| `references/mobile-patterns.md`            | Touch targets, navigation, layouts, forms for mobile              |
+| `references/desktop-patterns.md`           | Navigation, grids, interactions, data display for desktop         |
+| `references/page-types.md`                 | Structures for landing, dashboard, form, list, detail, settings   |
 
 ---
 
@@ -250,12 +255,14 @@ multiSelect: false
 **Run these scans automatically before asking the user anything:**
 
 **1. Session & Handoff Data:**
+
 ```bash
 # Read devinfo for cross-skill handoff
 cat .workspace/session/devinfo.json 2>/dev/null
 ```
 
 **2. Project Identity:**
+
 ```bash
 # Detect project type and framework
 cat package.json 2>/dev/null        # Node/JS projects
@@ -265,11 +272,13 @@ cat README.md 2>/dev/null           # Project description
 ```
 
 Read whichever config file exists. Extract:
+
 - Project name and description
 - Framework/library (Next.js, Remix, Nuxt, Astro, etc.)
 - Key dependencies (UI libraries, state management, etc.)
 
 **3. Existing Pages & Routes:**
+
 ```
 Glob: src/pages/**/*.{tsx,jsx,vue,svelte,astro}
 Glob: app/**/page.{tsx,jsx}
@@ -278,12 +287,14 @@ Glob: pages/**/*.{tsx,jsx,vue}
 ```
 
 **4. Existing Components:**
+
 ```
 Glob: src/components/**/*.{tsx,jsx,vue,svelte}
 Glob: components/**/*.{tsx,jsx,vue,svelte}
 ```
 
 **5. API Routes & Data Models:**
+
 ```
 Glob: src/api/**/*.{ts,js}
 Glob: app/api/**/*.{ts,js}
@@ -293,6 +304,7 @@ Glob: src/models/**/*.{ts,js}
 ```
 
 **6. Design System / Existing Styles:**
+
 ```
 Glob: src/styles/**/*.{css,scss}
 Glob: tailwind.config.*
@@ -300,6 +312,7 @@ Glob: src/design-system/**/*
 ```
 
 **7. Theme (from pre-flight):**
+
 ```bash
 # Already checked in pre-flight, use cached result
 # If THEME.md exists, extract design tokens for agent briefing
@@ -348,6 +361,7 @@ options: []
 ```
 
 **Voorbeelden van goede input:**
+
 - "Een dashboard voor marketing managers om campagne ROI te monitoren"
 - "Checkout flow voor een e-commerce site met payment options"
 - "Settings pagina waar users hun profiel en notificaties kunnen aanpassen"
@@ -496,6 +510,7 @@ multiSelect: false
 ```
 
 **Template Selection Based on Platform:**
+
 - **Responsive dual-view** → Use `html-template-responsive.html`
 - **Mobile first / Mobile only** → Use `html-template.html` with `phone-frame`
 - **Desktop only** → Use `html-template.html` with `desktop-frame`
@@ -606,12 +621,14 @@ multiSelect: false
 # Wireframe Requirements: [Page Name]
 
 ## Context
+
 - **Doel:** [Samenvatting van wat gebruiker beschreef]
 - **Gebruiker:** [Wie gebruikt dit]
 - **Platform:** [Desktop + Mobile | etc.]
 - **Type:** [Dashboard | Landing | Form | etc.]
 
 ## Project Context
+
 - **Framework:** [Next.js App Router | etc.]
 - **UI Library:** [Tailwind | MUI | etc.]
 - **Existing Components:** [Button, Card, Header, etc.]
@@ -620,25 +637,30 @@ multiSelect: false
 - **Related Pages:** [existing pages in same flow]
 
 ## Must Have
+
 1. **[Component]:** [Wat het moet tonen/doen]
 2. **[Component]:** [Wat het moet tonen/doen]
 3. **[Component]:** [Wat het moet tonen/doen]
-...
+   ...
 
 ## Layout
+
 - **Voorkeur:** [Claude beslist | Sidebar | Full-width | Custom: ...]
 - **Niveau:** [Page | Template | Organism]
 
 ## Theme
+
 - **Styling:** [Theme tokens | Grayscale]
 
 ## Hints voor Agents
+
 - [Pattern suggestie gebaseerd op page type]
 - [Best practice hint]
 - [Codebase context hint: "Project uses Tailwind, keep class naming consistent"]
 - [Existing component hint: "Header component exists at src/components/Header.tsx"]
 
 ---
+
 ✓ Requirements complete — ready for agents
 ```
 
@@ -665,12 +687,14 @@ Loading reference patterns...
 ```
 
 **Based on platform:**
+
 ```
 Read: skills/frontend-compose/references/mobile-patterns.md (if mobile)
 Read: skills/frontend-compose/references/desktop-patterns.md (if desktop)
 ```
 
 **Based on page type:**
+
 ```
 Read: skills/frontend-compose/references/page-types.md
 ```
@@ -746,6 +770,7 @@ OUTPUT: .workspace/wireframes/dashboard/[agent-a|agent-b]/v1.html
 **IMPORTANT:** Each agent MUST read `references/html-template.html` (or responsive variant) and use it EXACTLY.
 
 **Task 1 - Agent A:**
+
 ```
 Task(
   subagent_type="general-purpose",
@@ -761,6 +786,7 @@ Task(
 ```
 
 **Task 2 - Agent B:**
+
 ```
 Task(
   subagent_type="general-purpose",
@@ -786,6 +812,7 @@ ROUND 1 VALIDATION
 ```
 
 **1. File Existence**
+
 ```
 Files:
   [✓|✗] agent-a/v1.html - [exists|missing] ({N} bytes)
@@ -793,6 +820,7 @@ Files:
 ```
 
 **2. HTML Validity**
+
 ```
 Parse status:
   [✓|✗] agent-a/v1.html - [valid HTML|parse error]
@@ -800,6 +828,7 @@ Parse status:
 ```
 
 **3. Navigation Intact**
+
 ```
 Navigation:
   [✓|✗] wireframe-nav class present
@@ -807,6 +836,7 @@ Navigation:
 ```
 
 **4. Theme Applied (if selected)**
+
 ```
 Theme:
   [✓|✗] CSS variables injected
@@ -828,6 +858,7 @@ Accessibility snapshots:
 ```
 
 **Playwright sequence per wireframe:**
+
 ```
 1. browser_navigate → file:///[absolute-path]/[agent]/v1.html
 2. browser_snapshot → save to [agent]/v1-snapshot.md
@@ -836,6 +867,7 @@ Accessibility snapshots:
 ```
 
 **Round 1 Result:**
+
 ```
 ════════════════════════════════════════════════════════════════
 ROUND 1 RESULT: [2/2 PASS | 1/2 PASS - retry needed | 0/2 FAIL]
@@ -874,6 +906,7 @@ Beschikbare assets voor analyse:
 ```
 
 **Optioneel: Open in browser voor handmatige review**
+
 ```bash
 start .workspace/wireframes/[page-name]/agent-a/v1.html
 ```
@@ -897,6 +930,7 @@ Conclusie: Specifieke verbeteringen voor v2...
 ```
 
 **Cross-comparison:**
+
 ```
 VERGELIJKING A vs B
 ════════════════════════════════════════════════════════════════
@@ -929,6 +963,7 @@ Ronde 2 gestart met visuele feedback...
 ```
 
 Each agent receives:
+
 - Original requirements + project context
 - Their own v1 screenshot analysis
 - Cross-comparison insights
@@ -1113,6 +1148,7 @@ multiSelect: false
 De gebruiker heeft via Edit Mode in de browser aanpassingen gedaan en een `wireframe-edited.html` gedownload. Vraag om het pad naar dit bestand, lees het in, en gebruik het als de nieuwe basis voor `refined/refined.html`.
 
 **Voorbeelden van instructies (via "Other" tekst input):**
+
 - "Maak de header kleiner, 60px hoogte"
 - "Voeg een search bar toe in de header"
 - "Verwijder de sidebar, maak content full-width"
@@ -1224,29 +1260,33 @@ Status: [→ Complete | ⚠ Warnings noted]
 ```
 
 ---
+
 ---
 
 > **Reference material** (output structure, error recovery, DevInfo integration, cross-skill contracts, styling guidelines, resources):
 > See `references/appendix.md`
 
-
 ## Troubleshooting
 
 ### Error: Agent timeout during wireframe generation
+
 **Cause:** Parallel Task agents may timeout on complex designs.
 **Solution:** The skill automatically degrades: 2 parallel → 2 sequential → 1 agent with 2 variants. Successfully generated wireframes are always preserved.
 
 ### Error: Empty or broken HTML output
+
 **Cause:** Agent produced invalid HTML wireframe.
 **Solution:** The skill retries the failing agent with a more verbose prompt. If persistent, falls back to template-only output.
 
 ### Error: Theme not applied to wireframes
+
 **Cause:** THEME.md not found or CSS export section invalid.
 **Solution:** Check `.workspace/config/THEME.md` exists with a valid CSS export. Run `/frontend-theme` first if needed.
 
 ## Restrictions
 
 Dit command moet **NOOIT**:
+
 - Parallel agents spawnen zonder pre-flight validation
 - Doorgaan als template corrupt is
 - Post-flight validation overslaan
@@ -1254,6 +1294,7 @@ Dit command moet **NOOIT**:
 - Edit mode code (interact.js, CSS, JS) verwijderen uit templates — dit is essentieel voor gebruikers
 
 Dit command moet **ALTIJD**:
+
 - Project context scannen VOOR requirements gathering
 - Project context meesturen in agent briefings
 - Pre-flight validation uitvoeren VOOR agents
