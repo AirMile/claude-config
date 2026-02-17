@@ -1,6 +1,6 @@
 ---
-name: game-backlog
-description: Transform idea or brainstorm output into a prioritized game feature backlog. Use with /game-backlog after /thinking-idea or /thinking-brainstorm for game project planning.
+name: game-plan
+description: Transform idea or brainstorm output into a prioritized game feature backlog. Use with /game-plan after /thinking-idea or /thinking-brainstorm for game project planning.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -8,18 +8,19 @@ metadata:
   category: game
 ---
 
-# Backlog
+# Plan
 
 ## Overview
 
 This is the **bridge** between `/thinking:*` commands and the game pipeline.
 Transforms structured idea markdown into a prioritized feature backlog ready for `/game:define`.
 
-**Trigger**: `/game:backlog` or `/game:backlog [paste markdown]`
+**Trigger**: `/game:plan` or `/game:plan [paste markdown]`
 
 ## Input
 
 Accepts markdown from:
+
 - `/thinking:idea` output
 - `/thinking:brainstorm` output
 - Any structured game concept markdown
@@ -27,6 +28,7 @@ Accepts markdown from:
 ## Output
 
 `.workspace/backlog.md` with:
+
 - Decomposed features
 - Dependencies
 - MVP vs Phase 2/3 priority
@@ -52,6 +54,7 @@ Accepts markdown from:
    - Read both files
    - Analyze differences between concept and existing backlog
    - Show comparison:
+
      ```
      EXISTING BACKLOG DETECTED
 
@@ -63,6 +66,7 @@ Accepts markdown from:
      - REMOVED: {list of features in backlog but not in concept}
      - UNCHANGED: {count} features
      ```
+
    - Use AskUserQuestion:
      ```yaml
      header: "Backlog Update"
@@ -88,6 +92,7 @@ Accepts markdown from:
 4. **Scenario B: Only concept exists (no backlog)**
    - Read concept file
    - Show confirmation:
+
      ```
      CONCEPT DETECTED
 
@@ -96,6 +101,7 @@ Accepts markdown from:
 
      Dit concept wordt gebruikt voor de backlog.
      ```
+
    - Use AskUserQuestion:
      ```yaml
      header: "Concept Laden"
@@ -111,6 +117,7 @@ Accepts markdown from:
 
 5. **Scenario C: Only backlog exists (no concept)**
    - Show warning:
+
      ```
      WARNING: Backlog exists but no concept found
 
@@ -119,6 +126,7 @@ Accepts markdown from:
 
      Een concept is nodig om de backlog te updaten.
      ```
+
    - Use AskUserQuestion:
      ```yaml
      header: "Geen Concept"
@@ -151,6 +159,7 @@ Accepts markdown from:
    - If unclear, ask clarifying questions
 
 **Output:**
+
 ```
 INPUT LOADED
 
@@ -186,6 +195,7 @@ Sections: {count}
    | UI | User interface elements |
 
 **Output:**
+
 ```
 FEATURES EXTRACTED
 
@@ -229,6 +239,7 @@ Found {count} features:
    - Can this be built standalone?
 
 2. **Build dependency graph:**
+
    ```
    player-movement (base)
    └── basic-combat
@@ -243,6 +254,7 @@ Found {count} features:
    - Ask user for resolution if unclear
 
 **Output:**
+
 ```
 DEPENDENCIES MAPPED
 
@@ -300,9 +312,26 @@ player-movement (base)
    - Phase 3: Nice-to-have, polish, extra content
 
 3. **Validate with user:**
-   Show proposed prioritization, allow adjustments.
+   Show proposed prioritization.
+
+   Use AskUserQuestion:
+   - header: "Priority Review"
+   - question: "Klopt deze prioritering?"
+   - options:
+     - label: "Ja, dit klopt (Recommended)", description: "Prioriteiten zijn correct"
+     - label: "Features verplaatsen", description: "Ik wil features tussen fases verplaatsen"
+     - label: "Aanpassen", description: "Andere wijzigingen aan prioriteiten"
+   - multiSelect: false
+
+   **Response handling:**
+   - "Ja, dit klopt" → proceed to FASE 4
+   - "Features verplaatsen" → ask which features to move between MVP/Phase 2/Phase 3, update, re-ask
+   - "Aanpassen" → let user describe changes, apply, show updated prioritization, re-ask
+
+   **Loop until user confirms priorities are correct.**
 
 **Output:**
+
 ```
 PRIORITY ASSIGNED
 
@@ -334,16 +363,18 @@ Phase 3 (Nice to Have):
 
 {Brief description from source}
 
-## Status: `TODO` → `DEF` → `BLT` → `DONE`
+## Status: `TODO` → `DEF` → `BLT` → `TST` → `DONE`
 
 ---
 
 ## MVP Features ({done}/{total} done)
 
 ### DONE
+
 - **{feature-name}** ({TYPE}) - {short description}
 
 ### TODO
+
 - **{feature-name}** ({TYPE}) → {dependency}
   {description}
 
@@ -354,6 +385,7 @@ Phase 3 (Nice to Have):
 ## Phase 2 Features ({done}/{total} done)
 
 ### TODO
+
 - **{feature-name}** ({TYPE}) → {dependency}
   {description}
 
@@ -362,6 +394,7 @@ Phase 3 (Nice to Have):
 ## Phase 3 Features ({done}/{total} done)
 
 ### TODO
+
 - **{feature-name}** ({TYPE}) → {dependency}
   {description}
 
@@ -372,15 +405,17 @@ Phase 3 (Nice to Have):
 Features added outside the original backlog.
 
 ### DONE
+
 - **{feature-name}** ({TYPE}) - {date}
   {description}
 
 ---
 
 ## Feature Map
-
 ```
+
 {dependency tree visualization}
+
 ```
 
 ---
@@ -395,6 +430,7 @@ Features added outside the original backlog.
    - Write `.workspace/backlog.md`
 
 **Output:**
+
 ```
 BACKLOG CREATED
 
@@ -414,16 +450,19 @@ Start development:
 ## Best Practices
 
 ### Feature Granularity
+
 - Too big: Hard to estimate, long feedback loops
 - Too small: Overhead, dependency hell
 - Right size: 1-3 days of work, testable independently
 
 ### Dependencies
+
 - Minimize cross-dependencies
 - Prefer vertical slices over horizontal layers
 - Base systems first, content last
 
 ### MVP Scope
+
 - Playable > Feature-complete
 - Core loop first
 - Polish is Phase 3
@@ -433,6 +472,7 @@ Start development:
 **Input:** Elemental Clash idea markdown
 
 **Output:**
+
 ```
 BACKLOG CREATED
 

@@ -1,10 +1,10 @@
 ---
 name: game-build
-description: TDD implementation with autonomous looping for game building in Godot 4.x. Use with /game-build after /game-define. Implements features through RED-GREEN-REFACTOR cycles.
+description: Build features with technique mapping (TDD vs Implementation First) for Godot 4.x. Use with /game-build after /game-define. TDD for logic/calculations, Implementation First for visual/scene setup.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: game
 ---
 
@@ -12,15 +12,16 @@ metadata:
 
 ## Overview
 
-This is **FASE 2** of the 3-step gamedev workflow: define -> **build** -> test
+FASE 2 of the gamedev workflow: plan -> define -> **build** -> test -> refactor
 
-The build phase uses Test-Driven Development with autonomous looping (Ralph Wiggum pattern) to implement features from requirements. It generates all tests first, then iterates through RED-GREEN-REFACTOR cycles until all tests pass.
+The build phase implements features from requirements using technique mapping: TDD for logic/calculations, Implementation First for visual/scene setup. It generates tests, iterates through RED-GREEN-REFACTOR cycles, and syncs codebase understanding.
 
 **Trigger**: `/game:build` or `/game:build [feature-name]`
 
 ## Input
 
 Reads from `.workspace/features/{feature-name}/01-define.md`:
+
 - Requirements with IDs (REQ-XXX)
 - Architecture design
 - Scene/script structure
@@ -30,7 +31,7 @@ Reads from `.workspace/features/{feature-name}/01-define.md`:
 ```
 .workspace/features/{feature-name}/
 ├── 01-define.md          # From define phase (input)
-├── 02-build-log.md       # TDD cycle log
+├── 02-build-log.md       # TDD cycle log + codebase sync
 ├── 03-playtest.md        # Checklist for test phase
 ├── playtest_scene.tscn   # Auto-generated test scene
 └── debug_listener.gd     # Debug signal capture script
@@ -55,11 +56,13 @@ Raw GUT output is ~500 lines per run. With 15 runs per build = 7500 lines of con
 After running any GUT test command, parse the output to this format:
 
 **PASS scenario (1 line):**
+
 ```
 TESTS: 141/141 PASS (10.2s)
 ```
 
 **FAIL scenario (max 10 lines):**
+
 ```
 TESTS: 139/141 PASS (10.2s)
 FAILED:
@@ -68,11 +71,13 @@ FAILED:
 ```
 
 **PENDING scenario (max 5 lines):**
+
 ```
 TESTS: 4/15 PASS, 11 PENDING (2.1s)
 ```
 
 **Parse logic:**
+
 1. Find "Tests X" and "Passing X" in output
 2. Find all "[Failed]:" lines with error details
 3. Find all "[Pending]:" lines
@@ -85,16 +90,32 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 ### FASE 0: Load Context
 
-1. **If no feature name provided:**
-   - List available features in `.workspace/features/`
-   - Use **AskUserQuestion** to let user select
+1. **If no feature name provided — check backlog:**
+   - Read `.workspace/backlog.md`
+   - Find features with status `DEF` (defined, ready to build)
+   - Parse `**Next:**` line for suggested feature
+   - Use **AskUserQuestion** with backlog-suggested feature:
+     ```
+     Backlog suggests: {feature-name}
+     DEF features available: {list}
+     Build {feature-name}? (or specify another)
+     ```
 
-2. **Load 01-define.md:**
+2. **Load architecture baseline:**
+   - `Read(".claude/research/architecture-baseline.md")`
+   - If not found: warn user but continue
+     ```
+     WARNING: No architecture-baseline.md found.
+     Run /game:plan or create .claude/research/architecture-baseline.md for better context.
+     Continuing without baseline...
+     ```
+
+3. **Load 01-define.md:**
    - Extract all requirements (REQ-XXX format)
    - Parse architecture design
    - Identify scene/script structure
 
-3. **Read implementation order:**
+4. **Read implementation order:**
 
    Extract the implementation order from the `## Implementation Order` section in 01-define.md.
    This was determined during the define phase.
@@ -106,7 +127,8 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    3. REQ-003 (after REQ-002)
    ```
 
-4. **Display context:**
+5. **Display context:**
+
    ```
    FEATURE: {feature-name}
 
@@ -122,11 +144,57 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
    IMPLEMENTATION ORDER:
    1. REQ-001 (base)
-   2. REQ-002 → REQ-001
+   2. REQ-002 -> REQ-001
    ...
    ```
 
-### FASE 1: Generate All Tests First
+### FASE 1: Technique Mapping
+
+Per requirement, assign a technique: **TDD** or **Implementation First**.
+
+#### Decision Logic
+
+**TDD** (test first, then implement):
+
+- Game logic and calculations
+- Physics calculations
+- Damage formulas and stat systems
+- State transitions and state machines
+- Signal flows and event handling
+- Data transformations
+
+**Implementation First** (implement, then write verification test):
+
+- Scene tree construction and node configuration
+- Resource creation (.tres files)
+- Visual configuration (sprites, animations, particles)
+- Audio setup (AudioStreamPlayer nodes)
+- UI layout and theme configuration
+
+See `techniques/implementation-first.md` for the full Implementation First process.
+
+#### Assignment
+
+```
+TECHNIQUE MAPPING:
+
+TDD:
+- REQ-001: Water ability deals 20 damage [logic]
+- REQ-003: Puddle slows enemies by 30% [calculation]
+
+IMPLEMENTATION FIRST:
+- REQ-002: Puddle spawns at impact location [scene setup]
+- REQ-004: Water splash particle effect [visual]
+```
+
+Use **AskUserQuestion** for confirmation:
+
+```
+Technique mapping ready. {n_tdd} TDD, {n_impl} Implementation First.
+Confirm or adjust? (show mapping above)
+```
+
+### FASE 2: Generate Tests (TDD Requirements)
 
 #### Step 0: GUT Research (Just-in-Time)
 
@@ -141,7 +209,7 @@ Task(subagent_type="godot-test-researcher", prompt="
 Feature: {feature-name}
 
 Requirements to test:
-{list from 01-define.md}
+{TDD requirements list from technique mapping}
 
 Classes being tested:
 {from architecture section}
@@ -161,7 +229,7 @@ Use research findings to inform test generation below.
 
 #### Step 1: Generate Test Stubs
 
-For EACH requirement, generate a corresponding test stub:
+For each **TDD** requirement, generate a corresponding test stub:
 
 ```gdscript
 extends GutTest
@@ -180,14 +248,15 @@ func after_each() -> void:
 func test_req001_{snake_case_description}() -> void:
     pending("Not implemented")
 
-# REQ-002: {requirement description}
-func test_req002_{snake_case_description}() -> void:
+# REQ-003: {requirement description}
+func test_req003_{snake_case_description}() -> void:
     pending("Not implemented")
 ```
 
 #### Step 2: Verify Test Structure
 
 **Actions:**
+
 1. Create `tests/test_{feature}.gd` with all test stubs
 2. Run GUT tests to verify structure:
    ```bash
@@ -196,44 +265,23 @@ func test_req002_{snake_case_description}() -> void:
 3. All tests should be PENDING (yellow)
 
 **Output:**
-```
-FASE 1 COMPLETE
 
-Tests generated: {count}
+```
+FASE 2 COMPLETE
+
+Tests generated: {count} (TDD requirements only)
 Status: All PENDING
 
 Ready for TDD cycle.
 ```
 
-### FASE 2: TDD Cycle (Sequential with Context)
+### FASE 3: Build Cycle
 
-**IMPORTANT: Sequential Execution with Context Passing**
+Two tracks run based on technique mapping from FASE 1.
 
-Requirements must be implemented SEQUENTIALLY (not parallel) because later requirements may depend on earlier ones.
+#### Track A: TDD Requirements
 
-#### Step 0: Initialize Ralph Loop
-
-Ralph loop starts HERE (after successful test generation in FASE 1), not in FASE 0.
-This ensures we only loop on actual implementation failures, not setup issues.
-
-```bash
-powershell -ExecutionPolicy Bypass -File .claude/scripts/ralph/setup-ralph-loop.ps1 `
-  -Prompt @"
-Feature: {feature-name}
-Requirements:
-{list from 01-define.md}
-
-Implementation order (from FASE 0):
-{dependency order}
-
-Build this feature using TDD.
-Output <promise>TDD_COMPLETE</promise> when ALL tests pass.
-"@ `
-  -MaxIterations 30 `
-  -CompletionPromise "TDD_COMPLETE"
-```
-
-#### Step 1: Sequential TDD Loop
+##### Sequential TDD Loop
 
 Use the IMPLEMENTATION ORDER determined in FASE 0 (no re-analysis needed).
 
@@ -241,26 +289,21 @@ Use the IMPLEMENTATION ORDER determined in FASE 0 (no re-analysis needed).
 implemented := []
 files_created := []
 
-FOR each REQ-XXX in DEPENDENCY ORDER:
-    │
-    ├── Gather current state:
-    │   files_list := list all .gd files in scripts/
-    │   classes := extract class names from files
-    │
-    ├── Build context string:
-    │   context := "ALREADY IMPLEMENTED:
-"
-    │   FOR each prev_req in implemented:
-    │       context += "- {prev_req}: {files created}
-"
-    │   context += "
-EXISTING CLASSES:
-"
-    │   FOR each class in classes:
-    │       context += "- {class} at {path}
-"
-    │
-    └── Task(subagent_type="godot-tdd-implementer", prompt="
+FOR each TDD REQ-XXX in DEPENDENCY ORDER:
+    |
+    +-- Gather current state:
+    |   files_list := list all .gd files in scripts/
+    |   classes := extract class names from files
+    |
+    +-- Build context string:
+    |   context := "ALREADY IMPLEMENTED:\n"
+    |   FOR each prev_req in implemented:
+    |       context += "- {prev_req}: {files created}\n"
+    |   context += "\nEXISTING CLASSES:\n"
+    |   FOR each class in classes:
+    |       context += "- {class} at {path}\n"
+    |
+    +-- Task(subagent_type="godot-tdd-implementer", prompt="
         Feature: {feature-name}
 
         {context}
@@ -278,34 +321,27 @@ EXISTING CLASSES:
 
         Implement this requirement using TDD.
         ")
-    │
-    ├── On SUCCESS:
-    │   implemented.append(REQ-XXX)
-    │   files_created.extend(result.files)
-    │   Log: "[REQ-XXX] PASS"
-    │
-    └── On FAIL:
+    |
+    +-- On SUCCESS:
+    |   implemented.append(REQ-XXX)
+    |   files_created.extend(result.files)
+    |   Log: "[REQ-XXX] PASS"
+    |
+    +-- On FAIL:
         Log: "[REQ-XXX] FAIL - {reason}"
-        (Continue to next, will retry in Ralph iteration)
+        Analyze error, fix implementation, re-run test
+        Only continue to next requirement when PASS
 ```
 
-**After all requirements processed:**
-- If all PASS: Output `<promise>TDD_COMPLETE</promise>`
-- If any FAIL: Output "{count} failed, continuing..."
+**After all TDD requirements processed:**
 
-```
-RALPH LOOP START
-================
+All TDD requirements should be PASS before proceeding to Track B.
+If any requirement cannot pass, log as BLOCKED in 02-build-log.md.
 
-Current test: test_req001_{description}
-Status: PENDING
+##### RED-GREEN-REFACTOR per test:
 
-[ITERATION 1]
-```
+**RED (Test Fails):**
 
-**For each pending test:**
-
-#### Step 1: RED (Test Fails)
 1. Implement the test assertion (replace `pending()` with actual test)
 2. Run test - expect FAIL (class/method doesn't exist yet)
 3. Log: `RED: test_req001 - FAIL (expected)`
@@ -326,9 +362,9 @@ func test_req001_water_deals_20_damage() -> void:
     assert_eq(target.damage_taken, 20, "Water should deal 20 damage")
 ```
 
-#### Step 2: GREEN (Minimal Implementation)
+**GREEN (Minimal Implementation):**
 
-**Before implementing, check if research is needed:**
+Before implementing, check if research is needed:
 
 ```
 Research Decision Logic:
@@ -343,14 +379,10 @@ IF implementation involves:
 ELSE:
   - Basic property changes  -> no research
   - Simple methods          -> no research
-  - Already researched pattern -> no research (use cache)
+  - Already researched      -> no research (use cache)
 ```
 
-**If research IS needed:**
-
-```
-Launching godot-code-researcher...
-```
+If research IS needed:
 
 ```
 Task(subagent_type="godot-code-researcher", prompt="
@@ -367,21 +399,21 @@ DO NOT return full documentation.
 ")
 ```
 
-**Expected output: ~30-50 lines of actionable code.**
+Then implement:
 
-**Then implement** (with or without research):
 1. Create the minimal code to make the test pass
 2. Create necessary classes, methods, scenes
 3. Run test - expect PASS
 4. Log: `GREEN: test_req001 - PASS`
 
-#### Step 3: REFACTOR (Clean Up)
+**REFACTOR (Clean Up):**
+
 1. Clean up code while keeping tests green
 2. Apply typed GDScript conventions
 3. Run all tests to verify nothing broke
 4. Log: `REFACTOR: complete, all tests still PASS`
 
-#### Step 3b: Add Debug Hooks
+**Add Debug Hooks:**
 
 After each requirement is implemented and refactored, add debug tracking for playtest:
 
@@ -401,25 +433,20 @@ func _on_ability_complete() -> void:
 ```
 
 **Debug hook rules:**
+
 - Add print statements for method entry/exit with key data
 - Use consistent format: `[DEBUG] ClassName.method() - key: value`
 - Emit `debug_*` signals for key events (captured by DebugListener in playtest)
 - Include relevant state in signal data dictionaries
 
 **When to add hooks:**
+
 - Method that implements a requirement
 - State changes (health, position, status)
 - Event triggers (ability used, collision, timer complete)
 
-#### Step 4: Next Test
-1. Move to next pending test
-2. Repeat RED-GREEN-REFACTOR
-
-**Loop until:**
-- All tests PASS
-- No PENDING tests remain
-
 **Output per iteration:**
+
 ```
 [ITERATION {n}]
 Test: test_req{xxx}_{description}
@@ -429,11 +456,42 @@ REFACTOR: PASS (added type hints)
 Progress: {passed}/{total} tests passing
 ```
 
-**Loop completion:**
-```
-RALPH LOOP COMPLETE
+#### Track B: Implementation First Requirements
 
-All {count} tests PASS
+For each Implementation First requirement (in dependency order):
+
+1. **Implement directly** based on requirements and architecture from 01-define.md
+2. **Add debug hooks** (same rules as TDD track)
+3. **Write verification test** afterwards to capture expected behavior:
+
+```gdscript
+# Written AFTER implementation to verify behavior
+func test_req{xxx}_{description}() -> void:
+    var scene := preload("res://scenes/{feature}.tscn").instantiate()
+    add_child(scene)
+    await get_tree().process_frame
+
+    # Assert scene structure
+    assert_not_null(scene.get_node("ExpectedChild"))
+
+    # Assert configuration
+    assert_eq(scene.some_property, expected_value)
+
+    scene.queue_free()
+```
+
+4. **Run verification test** to confirm it passes
+5. Log: `IMPL-FIRST: REQ-{xxx} implemented + verified`
+
+See `techniques/implementation-first.md` for detailed patterns.
+
+**Loop completion:**
+
+```
+BUILD CYCLE COMPLETE
+
+TDD: {tdd_passed}/{tdd_total} tests PASS
+Impl-First: {impl_passed}/{impl_total} verified
 
 Files created:
 - scripts/abilities/water_ability.gd
@@ -441,17 +499,11 @@ Files created:
 ...
 ```
 
-### FASE 3 & 4: Integration Tests + Playtest Checklist (PARALLEL)
+### FASE 3b: Integration Tests + Playtest (PARALLEL)
 
-These two tasks have NO dependencies on each other - run them in parallel for efficiency.
+These two tasks have NO dependencies on each other - run them in parallel.
 
-```
-Task(parallel=true):
-  ├── Agent 1: Create integration test scenes (FASE 3)
-  └── Agent 2: Generate playtest checklist (FASE 4)
-```
-
-#### FASE 3: Integration Test Scenes
+#### Integration Test Scenes
 
 Create runtime test scenes for MCP verification:
 
@@ -475,19 +527,13 @@ func _run_all_tests() -> void:
 
     _results["req001_damage"] = await _test_req001_damage()
     _results["req002_spawn"] = await _test_req002_spawn()
-    # Add more tests as needed
 
     _all_passed = _results.values().all(func(r): return r)
 
 func _test_req001_damage() -> bool:
-    # Test implementation
     var ability := WaterAbility.new()
     add_child(ability)
     # ... test logic
-    return true  # or false
-
-func _test_req002_spawn() -> bool:
-    # Test implementation
     return true
 
 func _report_and_quit() -> void:
@@ -505,31 +551,16 @@ func _report_and_quit() -> void:
 ```
 
 **Run via MCP:**
+
 ```python
-# Launch test scene
 run_project(projectPath=".", scene="res://tests/scenes/test_{feature}_runtime.tscn")
-
-# Wait for completion, then get output
 get_debug_output()
-
 # Parse output for FINAL:PASS or FINAL:FAIL
 ```
 
-**Output:**
-```
-FASE 3 COMPLETE
+#### Playtest Checklist + Scene
 
-Integration test scene created:
-- tests/scenes/test_{feature}_runtime.tscn
-- tests/scenes/test_{feature}_runtime.gd
-
-MCP verification command:
-run_project(scene="res://tests/scenes/test_{feature}_runtime.tscn")
-```
-
-#### FASE 4: Generate Playtest Checklist
-
-Create `03-playtest.md` for the test phase:
+Generate `03-playtest.md`:
 
 ```markdown
 # Playtest Checklist: {Feature}
@@ -538,85 +569,71 @@ Create `03-playtest.md` for the test phase:
 
 **Feature:** {feature-name}
 **Build Date:** {date}
-**Tests:** {passed}/{total} passing
+**Tests:** {passed}/{total} passing ({tdd} TDD, {impl} impl-first)
 
 ## Automated Tests Status
 
-| REQ | Test | Status |
-|-----|------|--------|
-| REQ-001 | test_req001_water_deals_20_damage | PASS |
-| REQ-002 | test_req002_puddle_spawns | PASS |
+| REQ     | Test                              | Technique  | Status |
+| ------- | --------------------------------- | ---------- | ------ |
+| REQ-001 | test_req001_water_deals_20_damage | TDD        | PASS   |
+| REQ-002 | test_req002_puddle_spawns         | Impl-First | PASS   |
 
 ## Files Created
 
 ### Scenes
+
 - `scenes/{feature}.tscn`
 
 ### Scripts
+
 - `scripts/{category}/{script}.gd`
 
 ### Resources
+
 - `resources/{category}/{resource}.tres`
 
 ## Manual Playtest Required
 
 ### Setup
+
 1. Run scene: `res://scenes/{test_scene}.tscn`
 2. Controls: {describe controls}
 
 ### Checklist
 
-| # | Test | Pass | Notes |
-|---|------|------|-------|
-| 1 | {Visual/audio test 1} | [ ] | |
-| 2 | {Visual/audio test 2} | [ ] | |
-| 3 | {Edge case test} | [ ] | |
+| #   | Test                  | Pass | Notes |
+| --- | --------------------- | ---- | ----- |
+| 1   | {Visual/audio test 1} | [ ]  |       |
+| 2   | {Visual/audio test 2} | [ ]  |       |
+| 3   | {Edge case test}      | [ ]  |       |
 
 ## Feedback Format
 
 Use `/game:test {feature}` with results:
 ```
+
 1:PASS
 2:FAIL {reason}
 3:PASS
-```
-```
 
-#### FASE 4b: Create Playtest Scene
-
-Create the test environment scene for `/game:test`:
-
-**Scene path:** `.workspace/features/{feature-name}/playtest_scene.tscn`
-
-```python
-# 1. Create base scene
-mcp__godot-mcp__create_scene(
-    projectPath=".",
-    scenePath=".workspace/features/{feature-name}/playtest_scene.tscn",
-    rootNodeType="Node2D"
-)
-
-# 2. Add standard playtest components
-mcp__godot-mcp__add_node(..., nodeType="Camera2D", nodeName="Camera2D", properties={"current": true})
-mcp__godot-mcp__add_node(..., nodeType="Marker2D", nodeName="PlayerSpawn")
-mcp__godot-mcp__add_node(..., nodeType="CharacterBody2D", nodeName="TestTarget")
-mcp__godot-mcp__add_node(..., nodeType="ColorRect", nodeName="ArenaBounds")
-mcp__godot-mcp__add_node(..., nodeType="Node", nodeName="DebugListener")
 ```
 
-**Scene structure:**
+```
+
+**Create playtest scene** at `.workspace/features/{feature-name}/playtest_scene.tscn`:
+
 ```
 PlaytestArena (Node2D)
-├── Camera2D (current=true)
-├── PlayerSpawn (Marker2D)
-├── Player (instanced from scenes/player/ if exists)
-├── TestTarget (CharacterBody2D for ability targets)
-├── ArenaBounds (ColorRect, visual boundary)
-├── FeatureUnderTest (instanced based on feature type)
-└── DebugListener (captures debug signals)
++-- Camera2D (current=true)
++-- PlayerSpawn (Marker2D)
++-- Player (instanced from scenes/player/ if exists)
++-- TestTarget (CharacterBody2D for ability targets)
++-- ArenaBounds (ColorRect, visual boundary)
++-- FeatureUnderTest (instanced based on feature type)
++-- DebugListener (captures debug signals)
 ```
 
-**DebugListener script** - create `.workspace/features/{feature-name}/debug_listener.gd`:
+**DebugListener script** at `.workspace/features/{feature-name}/debug_listener.gd`:
 
 ```gdscript
 extends Node
@@ -656,27 +673,86 @@ func get_log_summary() -> String:
     return summary
 ```
 
-**Determine feature components:**
-- Read `01-define.md` architecture section
-- If ability: add ability scene/script to player
-- If mechanic: add relevant nodes
-- If UI: add UI scene
+### FASE 4: Codebase Sync
+
+After build is complete, ensure the user understands what was built.
+
+#### Step 1: Architecture Explanation
+
+Claude explains the built architecture in plain language:
+
+```
+CODEBASE SYNC
+=============
+
+Here's what was built for {feature-name}:
+
+[Plain language explanation of:]
+- What files were created and why
+- How the classes relate to each other
+- Key signals and data flow
+- How this integrates with existing codebase
+```
+
+#### Step 2: Comprehension Check
+
+Use **AskUserQuestion**:
+
+```
+Does this make sense? Any questions about the architecture?
+(I want to make sure we're aligned before moving on)
+```
+
+**Follow-up loop:** If user has questions, answer them. Repeat AskUserQuestion until user confirms understanding.
+
+#### Step 3: Write Sync to Build Log
+
+Append the architecture explanation to `02-build-log.md`:
+
+```markdown
+## Codebase Sync
+
+**Explained to user:** {date}
+**User confirmed understanding:** yes
+
+### Architecture Summary
+
+{plain language explanation from Step 1}
+
+### Key Decisions
+
+- {decision 1}: {why}
+- {decision 2}: {why}
+```
+
+### FASE 4b: CLAUDE.md Auto-Sync
+
+Update the project's CLAUDE.md with new scenes, scripts, signals, and resources created during this build.
+
+**Process:**
+
+1. Read current project CLAUDE.md
+2. Identify new additions from this build:
+   - New scenes (.tscn files)
+   - New scripts (.gd files) with their class names
+   - New signals defined
+   - New resources (.tres files)
+3. Update relevant CLAUDE.md sections (project structure, conventions, signals)
+4. Follow `core-md-audit` quality rules — no stale info, no duplication, concise entries
 
 **Output:**
+
 ```
-FASE 4b COMPLETE
+CLAUDE.md SYNCED
 
-Playtest scene created:
-- .workspace/features/{feature-name}/playtest_scene.tscn
-- .workspace/features/{feature-name}/debug_listener.gd
-
-Components: Camera2D, PlayerSpawn, TestTarget, ArenaBounds, DebugListener
-Ready for /game:test
+Added:
+- scripts/abilities/water_ability.gd (WaterAbility class)
+- scenes/abilities/water_projectile.tscn
+- signal: debug_ability_used
 ```
 
 ### FASE 5: Completion
 
-**Step 0: Ralph Completion Check**If Ralph loop is active (`.claude/ralph-loop.local.md` exists):```IF all tests PASS:    Output: <promise>TDD_COMPLETE</promise>    → Ralph hook detects, allows exit, cleans up state fileELSE:    Output: "{failed_count} tests failed"    → Ralph hook blocks exit, re-feeds prompt for next iteration```
 1. **Update build log:**
    Create/update `02-build-log.md` with full TDD history:
 
@@ -684,33 +760,43 @@ Ready for /game:test
    # Build Log: {Feature}
 
    ## Summary
+
    - Start: {timestamp}
    - Complete: {timestamp}
-   - Tests: {count}
+   - Tests: {count} ({tdd_count} TDD, {impl_count} impl-first)
    - Iterations: {count}
 
    ## TDD Cycle Log
 
-   ### test_req001_water_deals_20_damage
+   ### test_req001_water_deals_20_damage [TDD]
+
    - RED: FAIL - WaterAbility class not found
    - GREEN: PASS - Created water_ability.gd
    - REFACTOR: Added type hints
 
-   ### test_req002_puddle_spawns
-   ...
+   ### test_req002_puddle_spawns [IMPL-FIRST]
+
+   - IMPLEMENTED: Created puddle scene and node config
+   - VERIFIED: Verification test passes
 
    ## Files Created
+
    - scripts/abilities/water_ability.gd
    - tests/test_water_ability.gd
-   ...
+     ...
+
+   ## Codebase Sync
+
+   (appended in FASE 4)
    ```
 
 2. **Output summary:**
+
    ```
    BUILD COMPLETE: {feature}
    ========================
 
-   Tests: {passed}/{total} PASS
+   Tests: {passed}/{total} PASS ({tdd} TDD, {impl} impl-first)
    Files created: {count}
 
    Created files:
@@ -725,6 +811,7 @@ Ready for /game:test
    ```
 
    Then show the next step as a separate copyable block:
+
    ```
    **Next Step**
 
@@ -734,31 +821,46 @@ Ready for /game:test
 3. **Sync backlog:**
 
    **Backlog uses list-based format (not tables).**
-
    - Read `.workspace/backlog.md`
    - Find feature in MVP/Phase 2/Phase 3/Ad-hoc sections
    - Move feature from `### DEF` to `### BLT` subsection
    - Update section header counts: `({done}/{total} done)`
    - Update "Updated" timestamp
+   - Add `**Next:** /game:test {feature}` at top of backlog
 
    **Example:**
+
    ```markdown
    ### DEF
-   - **element-water** (CONTENT) → ability-system
+
+   - **element-water** (CONTENT) -> ability-system
    ```
+
    Moves to:
+
    ```markdown
    ### BLT
-   - **element-water** (CONTENT) → ability-system
+
+   - **element-water** (CONTENT) -> ability-system
    ```
 
    **Output:**
+
    ```
    BACKLOG SYNCED
 
    Feature: {feature-name}
-   Status: DEF → BLT
+   Status: DEF -> BLT
+   Next: /game:test {feature}
    ```
+
+4. **Auto-commit:**
+
+   ```bash
+   git add -A && git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
+   ```
+
+   No Co-Authored-By line.
 
 ## GUT Test Conventions
 
@@ -836,9 +938,10 @@ assert_call_count(mock_target, "take_damage", 1)
 
 ## Error Handling
 
-### Test Failures During Ralph Loop
+### Test Failures During TDD
 
 If a test fails unexpectedly during GREEN phase:
+
 1. Log the failure with full error message
 2. Analyze the error
 3. Fix the implementation
@@ -848,125 +951,30 @@ If a test fails unexpectedly during GREEN phase:
 ### Build Blockers
 
 If implementation is blocked:
+
 1. Log the blocker in 02-build-log.md
 2. Mark affected tests as BLOCKED
 3. Continue with other tests
 4. Report blockers at completion
 
-### Recovery
-
-If Ralph loop needs to restart:
-1. Read 02-build-log.md for progress
-2. Skip completed tests
-3. Resume from last incomplete test
-
-## Examples
-
-### Example: Water Ability Build
-
-**Input:** `.workspace/features/water-ability/01-define.md`
-
-```
-FASE 0: Load Context
-====================
-
-FEATURE: water-ability
-
-REQUIREMENTS:
-- REQ-001: Water ability deals 20 damage
-- REQ-002: Puddle spawns at impact location
-- REQ-003: Puddle slows enemies by 30%
-
-ARCHITECTURE:
-- Scripts: scripts/abilities/water_ability.gd
-- Resources: resources/abilities/water.tres
-- Scenes: scenes/abilities/water_projectile.tscn
-
-FASE 1: Generate Tests
-======================
-
-[GUT Research]
-Launching godot-test-researcher...
-Research complete: Using assert_eq for damage, assert_not_null for spawning, mock targets
-
-Created: tests/test_water_ability.gd
-Tests: 3 (all PENDING)
-
-FASE 2: Sequential TDD
-======================
-
-[IMPLEMENTATION ORDER - from define phase]
-REQ-001: None (base)
-REQ-002: REQ-001 (needs WaterAbility)
-REQ-003: REQ-002 (needs Puddle)
-
-[ITERATION 1]
-Test: test_req001_water_deals_20_damage
-Context: (no previous implementations)
-RED:      FAIL (WaterAbility not found)
-[Research: Not needed - simple class creation]
-GREEN:    PASS (created water_ability.gd)
-REFACTOR: PASS (added type hints)
-Progress: 1/3 tests passing
-
-[ITERATION 2]
-Test: test_req002_puddle_spawns_at_impact
-Context: WaterAbility exists at scripts/abilities/water_ability.gd
-RED:      FAIL (spawn_puddle method missing)
-[Research: Needed - signal pattern for spawn events]
-Launching godot-code-researcher...
-GREEN:    PASS (implemented spawn_puddle with signal)
-REFACTOR: PASS (extracted constant)
-Progress: 2/3 tests passing
-
-[ITERATION 3]
-Test: test_req003_puddle_slows_enemies
-Context: WaterAbility, Puddle exist
-RED:      FAIL (slow_effect method missing)
-[Research: Needed - Area2D slow effect pattern]
-Launching godot-code-researcher...
-GREEN:    PASS (added slow_effect to puddle.gd)
-REFACTOR: PASS (used signal for decoupling)
-Progress: 3/3 tests passing
-
-RALPH LOOP COMPLETE - All 3 tests PASS
-
-FASE 3: Integration Tests
-=========================
-
-Created: tests/scenes/test_water_ability_runtime.tscn
-
-FASE 4: Playtest Checklist
-==========================
-
-Created: .workspace/features/water-ability/03-playtest.md
-
-FASE 5: Complete
-================
-
-BUILD COMPLETE: water-ability
-
-Tests: 3/3 PASS
-Files created: 5
-
-Next step: /game:test water-ability
-```
-
 ## Troubleshooting
 
 ### Error: GUT tests not found or not running
+
 **Cause:** GUT (Godot Unit Test) framework not installed or configured.
 **Solution:** Verify `addons/gut/` exists in the project. Check `res://tests/` directory structure. Run tests manually with `godot --headless -s addons/gut/gut_cmdln.gd` to verify setup.
 
 ### Error: Scene tree errors during test
+
 **Cause:** Node references breaking due to scene structure changes.
 **Solution:** Check that `@onready` references match current scene tree. Use `has_node()` before accessing nodes. Review the test scene (`playtest_scene.tscn`) for missing dependencies.
 
 ### Error: Signal connections not working in tests
+
 **Cause:** Signals may not be connected in the test scene context.
-**Solution:** Ensure signals are connected in `_ready()` or via the editor. The debug_listener.gd captures signals — check its output for missed connections.
+**Solution:** Ensure signals are connected in `_ready()` or via the editor. The debug_listener.gd captures signals -- check its output for missed connections.
 
-### Error: Ralph loop not converging
-**Cause:** Tests keep failing after multiple iterations.
-**Solution:** Check if the test expectations are correct. If the test itself has a bug, the loop won't converge. Review the test, fix it, then re-run.
+### Error: Implementation First verification test fails
 
+**Cause:** Scene structure doesn't match what the verification test expects.
+**Solution:** Check node names and paths in the verification test match the actual scene tree. Use `print_tree_pretty()` to debug scene structure.

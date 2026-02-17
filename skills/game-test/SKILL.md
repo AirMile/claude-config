@@ -4,7 +4,7 @@ description: Human playtest verification with structured feedback and fix loop. 
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: game
 ---
 
@@ -12,7 +12,7 @@ metadata:
 
 ## Overview
 
-This is FASE 3 of the 3-step gamedev workflow: define -> build -> test
+This is **FASE 3** of the gamedev workflow: plan -> define -> build -> **test** -> refactor
 
 The test phase handles human verification of implemented game features through structured playtest feedback, intelligent issue categorization, and iterative fix loops until all items pass.
 
@@ -23,16 +23,19 @@ The test phase handles human verification of implemented game features through s
 This skill activates in these scenarios:
 
 **Primary use:**
+
 - After `/game:build` completes implementation
 - When `.workspace/features/{name}/03-playtest.md` exists
 - When human verification is needed for game mechanics
 
 **Context indicators:**
+
 - Feature has been implemented with build phase
 - Playtest checklist exists in 03-playtest.md
 - User wants to verify gameplay feels correct
 
 **NOT for:**
+
 - Initial feature planning (use /game:define)
 - Implementation (use /game:build)
 - Automated unit testing (use /dev:verify)
@@ -40,6 +43,7 @@ This skill activates in these scenarios:
 ## Input Formats
 
 ### Format 1: Inline feedback (recommended)
+
 ```
 /game:test water-ability
 1:PASS
@@ -49,11 +53,13 @@ This skill activates in these scenarios:
 ```
 
 ### Format 2: Feature name only (shows checklist first)
+
 ```
 /game:test water-ability
 ```
 
 ### Format 3: Free text feedback
+
 ```
 /game:test water-ability
 Everything works except puddle is too small and there's no sound
@@ -61,13 +67,14 @@ Everything works except puddle is too small and there's no sound
 
 ## Feedback Categorization
 
-| Type | Example | Action |
-|------|---------|--------|
-| **TESTABLE** | "puddle radius=50, should be 100" | TDD fix loop |
-| **MEASURABLE** | "animation too slow" | Direct fix + re-test |
-| **SUBJECTIVE** | "doesn't feel right" | Ask for details |
+| Type           | Example                           | Action               |
+| -------------- | --------------------------------- | -------------------- |
+| **TESTABLE**   | "puddle radius=50, should be 100" | TDD fix loop         |
+| **MEASURABLE** | "animation too slow"              | Direct fix + re-test |
+| **SUBJECTIVE** | "doesn't feel right"              | Ask for details      |
 
 ### TESTABLE -> TDD Fix Loop
+
 ```
 Feedback: "puddle radius 50, should be 100"
      |
@@ -83,6 +90,7 @@ Run test -> PASS
 ```
 
 ### MEASURABLE -> Direct Fix
+
 ```
 Feedback: "animation too slow"
      |
@@ -93,6 +101,7 @@ Adjust animation_speed from 1.0 to 1.5
 ```
 
 ### SUBJECTIVE -> Ask Details
+
 ```
 Feedback: "doesn't feel right"
      |
@@ -115,19 +124,38 @@ Now TESTABLE -> TDD fix loop
 
 **Steps:**
 
-1. **Parse user input:**
+1. **Check backlog for BLT features (if no feature name provided):**
+
+   ```
+   Read(".workspace/backlog.md")
+   ```
+
+   - If backlog exists: find features in `### BLT` section
+   - Parse `**Next:**` for suggestion (e.g. `**Next:** /game:test {feature-name}`)
+
+   Use **AskUserQuestion** if BLT features found:
+   - header: "Feature"
+   - question: "Welke feature wil je testen? ({N} features in BLT status)"
+   - options:
+     - label: "{feature-name} (Recommended)", description: "Volgende uit backlog"
+     - label: "Andere feature", description: "Ik wil een andere feature testen"
+   - multiSelect: false
+
+2. **Parse user input:**
    - If feature name only -> show checklist, wait for feedback
    - If feature name + feedback -> parse feedback immediately
    - If "recent" -> find most recently modified 03-playtest.md
 
-2. **Locate playtest checklist:**
+3. **Locate playtest checklist:**
+
    ```
    .workspace/features/{feature-name}/03-playtest.md
    ```
 
-3. **Validate file exists:**
+4. **Validate file exists:**
 
    **If file not found:**
+
    ```
    NOT FOUND: 03-playtest.md
 
@@ -137,18 +165,20 @@ Now TESTABLE -> TDD fix loop
    This feature needs to be built first.
    Run /game:build {feature-name} to implement and generate playtest checklist.
    ```
+
    -> Exit skill
 
-4. **Read playtest checklist:**
+5. **Read playtest checklist:**
    - Parse test items with numbers
    - Note expected behavior for each item
    - Count total items
 
-5. **Verify playtest scene exists:**
+6. **Verify playtest scene exists:**
 
    Scene path: `.workspace/features/{feature-name}/playtest_scene.tscn`
 
    **If scene exists:**
+
    ```
    PLAYTEST SCENE FOUND
    Path: .workspace/features/{feature-name}/playtest_scene.tscn
@@ -156,6 +186,7 @@ Now TESTABLE -> TDD fix loop
    ```
 
    **If scene NOT found:**
+
    ```
    ERROR: Playtest scene not found
 
@@ -164,9 +195,10 @@ Now TESTABLE -> TDD fix loop
    The /game:build phase should have created this scene.
    Run /game:build {feature-name} first, or check if build completed successfully.
    ```
+
    -> Exit skill
 
-6. **Launch game with test scenario:**
+7. **Launch game with test scenario:**
 
    ```python
    mcp__godot-mcp__run_project(
@@ -176,6 +208,7 @@ Now TESTABLE -> TDD fix loop
    ```
 
    **Display test scenario from 03-playtest.md:**
+
    ```
    GAME LAUNCHED - {feature-name}
    ==============================
@@ -198,9 +231,9 @@ Now TESTABLE -> TDD fix loop
    Sluit de game als je klaar bent.
    ```
 
-   **Note:** Game runs in background. DebugListener captures all debug_* signals.
+   **Note:** Game runs in background. DebugListener captures all debug\_\* signals.
 
-7. **Wait for user completion:**
+8. **Wait for user completion:**
 
    When user closes game or indicates ready, use AskUserQuestion tool:
    - header: "Test Resultaat"
@@ -220,12 +253,15 @@ Now TESTABLE -> TDD fix loop
    -> Proceed to FASE 1b (Debug Analysis + User Details)
 
    **If "Game crashte":**
+
    ```python
    crash_output = mcp__godot-mcp__get_debug_output()
    ```
+
    -> Analyze crash, show error, offer to fix via TDD loop
 
-8. **Display checklist (if no feedback provided):**
+9. **Display checklist (if no feedback provided):**
+
    ```
    PLAYTEST CHECKLIST: {feature-name}
 
@@ -242,9 +278,11 @@ Now TESTABLE -> TDD fix loop
    - Quick: "1:PASS 2:PASS 3:FAIL too small 4:FAIL no sound"
    - Detailed: "Items 1-2 work, item 3 puddle too small, item 4 missing sound"
    ```
+
    -> Wait for user feedback
 
 **Output (if feedback provided):**
+
 ```
 PLAYTEST LOADED
 
@@ -268,6 +306,7 @@ Feedback: received
    - Free text: Parse natural language
 
 2. **Parse numbered format:**
+
    ```python
    # Pattern: {number}:{PASS|FAIL} [optional notes]
    for match in feedback:
@@ -306,6 +345,7 @@ Feedback: received
    ```
 
 **Output:**
+
 ```
 FEEDBACK PARSED
 
@@ -333,6 +373,7 @@ Failed: 2 items
 **Steps:**
 
 1. **Capture debug output:**
+
    ```python
    debug_output = mcp__godot-mcp__get_debug_output()
    ```
@@ -418,6 +459,7 @@ Failed: 2 items
    ```
 
 **Output:**
+
 ```
 DEBUG ANALYSIS COMPLETE
 
@@ -503,6 +545,7 @@ Root causes identified: {count}
    ```
 
 **Output:**
+
 ```
 FEEDBACK ANALYSIS
 
@@ -531,11 +574,11 @@ FAILED: 2 items (3, 4)
 
 Before fixing, determine if research is needed:
 
-| Complexity | Example | Research? |
-|------------|---------|-----------|
-| Simple | Change a number value | No |
-| Medium | Add new property/method | No |
-| Complex | Refactor signal flow, add state | Yes |
+| Complexity | Example                         | Research? |
+| ---------- | ------------------------------- | --------- |
+| Simple     | Change a number value           | No        |
+| Medium     | Add new property/method         | No        |
+| Complex    | Refactor signal flow, add state | Yes       |
 
 **Complexity indicators:**
 
@@ -557,6 +600,7 @@ COMPLEX (offer research):
 **If complex fix detected:**
 
 Use AskUserQuestion tool:
+
 - header: "Research"
 - question: "Dit is een complexe fix ({brief issue description}). Wil je Godot patterns researchen?"
 - options:
@@ -565,6 +609,7 @@ Use AskUserQuestion tool:
 - multiSelect: false
 
 **If research requested:**
+
 ```
 Task(subagent_type="godot-code-researcher", prompt="
 Feature: {feature-name}
@@ -585,6 +630,7 @@ Use research findings to inform the fix implementation below.
 **Step 1-5: TDD Fix** (potentially informed by research)
 
 1. **Generate test based on feedback:**
+
    ```
    GENERATING TEST for item {N}
 
@@ -593,6 +639,7 @@ Use research findings to inform the fix implementation below.
    ```
 
 2. **Write test file:**
+
    ```gdscript
    # tests/test_{feature}_{item}.gd
    extends GutTest
@@ -609,11 +656,13 @@ Use research findings to inform the fix implementation below.
    ```
 
 3. **Run test (expect FAIL):**
+
    ```bash
    "/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/test_{feature}_{item}.gd
    ```
 
    **If test PASSES (unexpected):**
+
    ```
    UNEXPECTED: Test already passes
 
@@ -634,6 +683,7 @@ Use research findings to inform the fix implementation below.
    - multiSelect: false
 
    **If test FAILS (expected):**
+
    ```
    TEST FAILS (expected)
 
@@ -650,6 +700,7 @@ Use research findings to inform the fix implementation below.
    - Document what was changed
 
 5. **Run test again (expect PASS):**
+
    ```
    TEST PASSES
 
@@ -666,6 +717,7 @@ Use research findings to inform the fix implementation below.
 #### For MEASURABLE Issues: Direct Fix
 
 1. **Identify code location:**
+
    ```
    DIRECT FIX for item {N}
 
@@ -680,6 +732,7 @@ Use research findings to inform the fix implementation below.
    - Document the change
 
 3. **Report fix:**
+
    ```
    FIXED (cannot auto-verify)
 
@@ -692,6 +745,7 @@ Use research findings to inform the fix implementation below.
    ```
 
 **After all issues processed:**
+
 ```
 FIX LOOP COMPLETE
 
@@ -719,6 +773,7 @@ Files modified: 2
    - Include only items that were fixed
 
 2. **Generate re-test checklist:**
+
    ```
    RE-TEST REQUIRED
 
@@ -743,6 +798,7 @@ Files modified: 2
 3. **Wait for re-test feedback**
 
 **Output:**
+
 ```
 AWAITING RE-TEST
 
@@ -768,6 +824,7 @@ Provide feedback when ready.
    -> Continue to FASE 6 (Completion)
 
    **If any re-tests FAIL:**
+
    ```
    RE-TEST RESULTS
 
@@ -806,6 +863,7 @@ Provide feedback when ready.
 **Steps:**
 
 1. **Confirm all items pass:**
+
    ```
    {FEATURE-NAME} COMPLETE!
 
@@ -826,31 +884,36 @@ Provide feedback when ready.
    - Record verification date
 
 3. **Create/Update 03-test-results.md:**
+
    ```markdown
    # Test Results: {feature-name}
 
    ## Summary
-   | Metric | Value |
-   |--------|-------|
-   | Status | VERIFIED |
-   | Items | {N} |
-   | Passed | {N} |
-   | Date | {timestamp} |
+
+   | Metric | Value       |
+   | ------ | ----------- |
+   | Status | VERIFIED    |
+   | Items  | {N}         |
+   | Passed | {N}         |
+   | Date   | {timestamp} |
 
    ## Playtest History
 
    ### Session 1: {date}
-   | # | Initial | Final | Fixes Applied |
-   |---|---------|-------|---------------|
-   | 1 | PASS | PASS | - |
-   | 2 | PASS | PASS | - |
-   | 3 | FAIL | PASS | Puddle radius 50->100 |
-   | 4 | FAIL | PASS | Added cast sound |
+
+   | #   | Initial | Final | Fixes Applied         |
+   | --- | ------- | ----- | --------------------- |
+   | 1   | PASS    | PASS  | -                     |
+   | 2   | PASS    | PASS  | -                     |
+   | 3   | FAIL    | PASS  | Puddle radius 50->100 |
+   | 4   | FAIL    | PASS  | Added cast sound      |
 
    ## Tests Added
+
    - `tests/test_{feature}_puddle_radius.gd`
 
    ## Files Modified
+
    - `scripts/abilities/water_ability.gd` (line 45: radius)
    - `scenes/abilities/water_ability.tscn` (added AudioStreamPlayer)
    ```
@@ -858,36 +921,41 @@ Provide feedback when ready.
 4. **Sync backlog:**
 
    **Backlog uses list-based format (not tables).**
-
    - Read `.workspace/backlog.md`
    - Find feature in MVP/Phase 2/Phase 3/Ad-hoc sections
-   - Move feature from `### BLT` to `### DONE` subsection
+   - Move feature from `### BLT` to `### TST` subsection
    - Update section header counts: `({done}/{total} done)`
    - Update "Updated" timestamp
-   - Update "Next" suggestion to next TODO or DEF feature
+   - Update "Next" suggestion: `**Next:** /game:refactor {feature-name}` or `/game:define {next-todo-feature}`
 
    **Example:**
+
    ```markdown
    ### BLT
+
    - **element-water** (CONTENT) → ability-system
    ```
+
    Moves to:
+
    ```markdown
-   ### DONE
-   - **element-water** (CONTENT) - Water abilities (projectile, shield)
+   ### TST
+
+   - **element-water** (CONTENT) → ability-system
    ```
-   Note: In DONE section, dependency arrow `→` changes to description `-`
 
    **Output:**
+
    ```
    BACKLOG SYNCED
 
    Feature: {feature-name}
-   Status: BLT → DONE
+   Status: BLT → TST
    Progress: MVP {done}/{total} done
    ```
 
 5. **Auto-commit changes:**
+
    ```bash
    git add .
    git commit -m "$(cat <<'EOF'
@@ -903,18 +971,19 @@ Provide feedback when ready.
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
 **Output:**
+
 ```
 VERIFICATION COMPLETE
 
 Feature: {feature-name}
-Status: DONE
+Status: TST
 Items: {N}/{N} passing
 
 Committed: test({feature}): verified
 
 Next steps:
-- Continue with next feature: /game:define {next-feature}
-- Or refine this feature: /dev-legacy-4-refine {feature-name}
+- Refactor code quality: /game:refactor {feature-name}
+- Or continue with next feature: /game:define {next-feature}
 ```
 
 ---
@@ -1009,24 +1078,30 @@ Claude: WATER-ABILITY COMPLETE!
 ## Best Practices
 
 ### Language
+
 Follow the Language Policy in CLAUDE.md. AskUserQuestion labels in user's preferred language.
 
 ### TDD for Testable Issues
+
 - Always write test FIRST
 - Run test to confirm it fails
 - Make minimal fix to pass test
 - Tests prevent regression
 
 ### Direct Fixes for Measurable Issues
+
 - Some things can't be unit tested (feel, timing, subjective)
 - Make the change, document it
 - Rely on human re-test
 
 ### Clarification for Subjective Issues
+
 - Never guess what user means
 - Ask specific options based on context
 - Convert to TESTABLE or MEASURABLE before fixing
+
 ### Minimal Re-test
+
 - Only ask user to re-test fixed items
 - Don't re-test items that already passed
 - Respect user's time
@@ -1034,6 +1109,7 @@ Follow the Language Policy in CLAUDE.md. AskUserQuestion labels in user's prefer
 ## Restrictions
 
 This skill must NEVER:
+
 - Skip TDD for testable issues (concrete values given)
 - Guess what subjective feedback means
 - Apply fixes without documenting changes
@@ -1042,6 +1118,7 @@ This skill must NEVER:
 - Skip clarification questions for vague feedback
 
 This skill must ALWAYS:
+
 - Show playtest checklist before asking for feedback
 - Parse all feedback formats (numbered, free text)
 - Categorize each failure (TESTABLE/MEASURABLE/SUBJECTIVE)

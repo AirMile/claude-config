@@ -34,9 +34,11 @@ frontend:
   - frontend-theme
 
 game:
-  - game-backlog
   - game-build
+  - game-debug
   - game-define
+  - game-plan
+  - game-refactor
   - game-test
 
 project:

@@ -4,7 +4,7 @@ description: Define game feature requirements and architecture with structured o
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: game
 ---
 
@@ -12,7 +12,7 @@ metadata:
 
 ## Overview
 
-This skill defines game feature requirements and architecture for Godot 4.x projects. It is FASE 1 of a 3-step gamedev workflow: define -> build -> test.
+This skill defines game feature requirements and architecture for Godot 4.x projects. It is FASE 1 of the gamedev workflow: plan -> **define** -> build -> test -> refactor.
 
 The skill gathers requirements through targeted questions, optionally researches Godot scene architecture, and designs the implementation. Output is a consolidated documentation file ready for the build phase.
 
@@ -21,26 +21,53 @@ The skill gathers requirements through targeted questions, optionally researches
 ## When to Use
 
 **Triggers:**
+
 - `/game:define` - Start with feature name prompt
 - `/game:define abilities` - Define ability system
 - `/game:define player-movement` - Define player movement
 
 **Works best with:**
+
 - Godot 4.x projects with GDScript
 - Games needing scene trees, signals, resources
 
 ## Workflow
 
-### FASE 0: Feature Name
+### FASE 0: Feature Name + Context
 
 1. **If name provided** (`/game:define abilities`):
    - Use provided name as feature name
-   - Continue to FASE 1
+   - Continue to step 3
 
 2. **If no name** (`/game:define`):
+
+   **a) Check backlog for next feature:**
+
+   ```
+   Read(".workspace/backlog.md")
+   ```
+
+   - If backlog exists: parse the `**Next:**` line (e.g. `**Next:** /game:define player-movement`)
+   - Extract feature name from that line
+
+   **b) If backlog has a next feature:**
+
    Use **AskUserQuestion** tool:
    - header: "Feature Name"
-   - question: "Welke game feature wil je definiëren?"
+   - question: "Volgende feature uit backlog: **{feature-name}**. Hiermee doorgaan?"
+   - options:
+     - label: "{feature-name} (Recommended)", description: "{description from backlog TODO list}"
+     - label: "Andere feature", description: "Ik wil een andere feature definiëren"
+   - multiSelect: false
+
+   - If user picks the backlog feature → use that name, continue to step 3
+   - If user picks "Andere feature" → fall through to option (c)
+
+   **c) If no backlog found OR user wants a different feature:**
+
+   Use **AskUserQuestion** tool:
+   - header: "Feature Name"
+   - question: "Welke game feature wil je definiëren? Kies een suggestie of typ je eigen feature-naam via 'Other'."
    - options:
      - label: "Ability System", description: "Speler abilities en element-based krachten"
      - label: "Player Movement", description: "Beweging, controls, physics"
@@ -48,9 +75,31 @@ The skill gathers requirements through targeted questions, optionally researches
      - label: "UI System", description: "HUD, menus, ability selection"
    - multiSelect: false
 
+   The user can type any feature name via the built-in "Other" option.
+
 3. **Create workspace folder:**
+
    ```bash
    mkdir -p .workspace/features/{feature-name}
+   ```
+
+4. **Load architecture-baseline as context:**
+
+   ```
+   Read(".claude/research/architecture-baseline.md")
+   ```
+
+   - If found: store as context for all subsequent phases (requirements, design, architecture)
+   - If not found: note absence, continue without (research may be triggered in FASE 2)
+
+   ```
+   ℹ Architecture baseline loaded — context available for all phases.
+   ```
+
+   Or if not found:
+
+   ```
+   ⚠ Architecture baseline not found — run /core-setup to generate.
    ```
 
 ### FASE 1: Requirements Gathering
@@ -58,25 +107,30 @@ The skill gathers requirements through targeted questions, optionally researches
 Ask 5 targeted questions using AskUserQuestion:
 
 **Question 1: Core Function**
+
 - header: "Core Function"
 - question: "Wat moet deze feature doen vanuit spelersperspectief?"
 
 **Question 2: Game Mechanics**
+
 - header: "Mechanics"
 - question: "Welke game mechanics zijn betrokken?"
 - options: Physics-based, Turn-based, Real-time, State-based
 
 **Question 3: Player Interactions**
+
 - header: "Interactions"
 - question: "Welke speler interacties moet deze feature ondersteunen?"
 - options: Input controls, Collision triggers, UI selection, Automatic
 
 **Question 4: Visual Feedback**
+
 - header: "Visuals"
 - question: "Welke visuele feedback is nodig?"
 - options: Sprite animations, Particles, UI updates, Screen effects
 
 **Question 5: Data Requirements**
+
 - header: "Data"
 - question: "Welke data moet worden opgeslagen/beheerd?"
 - options: Stats/values, Inventory/collections, State persistence, Configuration
@@ -84,11 +138,173 @@ Ask 5 targeted questions using AskUserQuestion:
 #### Requirement Extraction
 
 After questions, extract testable requirements:
+
 - Each requirement gets an ID (REQ-001, REQ-002, etc.)
 - Categorize by type (core, scene, script, signal)
 - Determine test type for each
+- Define acceptance criteria per requirement (concrete, verifiable conditions)
 
-Show requirements table and confirm with user.
+Show requirements table with acceptance criteria:
+
+| ID      | Requirement   | Category   | Test Type | Acceptance Criteria    |
+| ------- | ------------- | ---------- | --------- | ---------------------- |
+| REQ-001 | {description} | {category} | {type}    | {verifiable condition} |
+
+**Confirm with user** via **AskUserQuestion**:
+
+- header: "Requirements"
+- question: "Akkoord met deze requirements?"
+- options:
+  - label: "Akkoord (Recommended)", description: "Requirements zijn compleet en correct"
+  - label: "Aanpassen", description: "Ik wil requirements wijzigen of toevoegen"
+  - label: "Opnieuw beginnen", description: "Verwerp alles en stel nieuwe vragen"
+- multiSelect: false
+
+**If "Aanpassen"** → ask what to change, update requirements table, re-confirm.
+**If "Opnieuw beginnen"** → restart FASE 1 from Question 1.
+
+### FASE 1b: Scope Analysis & Feature Splitting
+
+**Goal:** Analyze gathered requirements and decide whether to keep as a single feature or split into multiple sub-features for optimal build execution.
+
+**Steps:**
+
+1. **Analyze requirement scope:**
+
+   Count requirements and map dependency graph from FASE 1 output.
+
+   ```
+   SCOPE ANALYSIS:
+
+   Total requirements: {count}
+   Categories: {list of unique categories}
+   Dependency depth: {max chain length}
+   ```
+
+2. **Identify dependency clusters:**
+
+   Group requirements that depend on each other into clusters:
+   - Requirements with direct dependencies → same cluster
+   - Requirements with no cross-dependencies → separate clusters
+   - Single isolated requirements → own cluster or attach to nearest related cluster
+
+3. **Apply decision logic:**
+
+   ```
+   IF requirements ≤ 6 AND single category/concern:
+     → SINGLE feature (continue normally)
+
+   IF requirements 7-10:
+     → EVALUATE: check if ≥2 natural clusters exist with ≤2 cross-dependencies
+     → If clusters found: RECOMMEND SPLIT
+     → If tightly coupled: SINGLE feature
+
+   IF requirements > 10:
+     → RECOMMEND SPLIT (unless linear dependency chain with single concern)
+   ```
+
+4. **If SINGLE feature:**
+
+   ```
+   ✓ Scope analysis: SINGLE FEATURE
+
+   Requirements: {count}
+   Reason: {e.g., "tightly coupled, single concern", "≤6 requirements"}
+
+   → Continuing to architecture design.
+   ```
+
+   Proceed to FASE 2.
+
+5. **If SPLIT recommended:**
+
+   Show proposed split:
+
+   ```
+   SPLIT RECOMMENDATION:
+
+   Requirements: {count} → {n} sub-features
+
+   1. {feature-name}-{sub1} (REQ-001, REQ-002, REQ-003)
+      Focus: {description of this group's concern}
+
+   2. {feature-name}-{sub2} (REQ-004, REQ-005)
+      Focus: {description of this group's concern}
+
+   Build order: {sub1} → {sub2}
+   Cross-dependencies: {list or "none"}
+   ```
+
+   Use **AskUserQuestion** for confirmation:
+   - header: "Feature Split"
+   - question: "Akkoord met deze opsplitsing?"
+   - options:
+     - label: "Akkoord (Recommended)", description: "Opsplitsen in {n} sub-features"
+     - label: "Aanpassen", description: "Ik wil de groepering wijzigen"
+     - label: "Eén feature houden", description: "Niet splitsen, alles in één feature"
+   - multiSelect: false
+
+   **Response Handling:**
+   - Akkoord → proceed with split
+   - Aanpassen → ask which requirements should move where, regenerate split
+   - Eén feature houden → proceed as SINGLE feature to FASE 2
+
+6. **Execute split (if approved):**
+
+   a. Create parent documentation:
+
+   Write `.workspace/features/{feature-name}/00-split.md`:
+
+   ````markdown
+   # Feature Split: {Feature Name}
+
+   **Created:** {date}
+   **Status:** split
+   **Original requirements:** {count}
+   **Sub-features:** {count}
+
+   ## Split Decision
+
+   Reason: {why split was recommended}
+
+   ## Sub-features
+
+   | #   | Sub-feature   | Requirements              | Focus   |
+   | --- | ------------- | ------------------------- | ------- |
+   | 1   | {name}-{sub1} | REQ-001, REQ-002, REQ-003 | {focus} |
+   | 2   | {name}-{sub2} | REQ-004, REQ-005          | {focus} |
+
+   ## Build Order
+
+   1. {name}-{sub1} (base, no dependencies)
+   2. {name}-{sub2} (after {sub1})
+
+   ## Commands
+
+   ```
+   /game:build {name}-{sub1}
+   /game:build {name}-{sub2}
+   ```
+   ````
+
+   b. Create sub-feature workspace folders:
+
+   ```bash
+   mkdir -p .workspace/features/{feature-name}-{sub1}
+   mkdir -p .workspace/features/{feature-name}-{sub2}
+   ```
+
+   c. Continue FASE 2-5 for EACH sub-feature sequentially:
+   - Re-number requirements per sub-feature (REQ-001, REQ-002, etc.)
+   - Each sub-feature gets its own architecture, scene layout, and 01-define.md
+   - Use build order: complete all FASEs for sub-feature 1 before starting sub-feature 2
+
+7. **Update backlog (split only):**
+
+   If `.workspace/backlog.md` exists:
+   - Replace original feature entry with sub-feature entries
+   - Each sub-feature gets its own line in the backlog
+   - Add `(split from {original-name})` annotation
 
 ### FASE 2: Architecture Check (Automatisch)
 
@@ -96,10 +312,9 @@ Show requirements table and confirm with user.
 
 **Steps:**
 
-1. **Read architecture-baseline.md:**
-   ```
-   Read(".claude/research/architecture-baseline.md")
-   ```
+1. **Use pre-loaded architecture-baseline:**
+   - Use the baseline context loaded in FASE 0
+   - If baseline was not found in FASE 0, skip to step 5 (baseline not found fallback)
 
 2. **Extract feature type from requirements:**
    Map the feature to a category:
@@ -113,6 +328,7 @@ Show requirements table and confirm with user.
 3. **Check Feature Pattern Index in baseline:**
 
    Look for matching row in `## Feature Pattern Index` table:
+
    ```
    | Feature Type | Node Type | Pattern | State Machine |
    |--------------|-----------|---------|---------------|
@@ -126,6 +342,7 @@ Show requirements table and confirm with user.
 4. **Decision:**
 
    **A) Pattern FOUND in baseline:**
+
    ```
    ✓ Architecture pattern gevonden in baseline
 
@@ -138,16 +355,20 @@ Show requirements table and confirm with user.
 
    → Baseline gebruiken, research overgeslagen.
    ```
+
    - Use patterns from baseline for FASE 3
    - Skip godot-scene-researcher agent
 
    **B) Pattern NOT FOUND in baseline:**
+
    ```
    ⚠ Geen architecture pattern gevonden voor "{feature-type}"
 
    → Research wordt uitgevoerd en baseline wordt bijgewerkt.
    ```
+
    - Launch godot-scene-researcher agent:
+
    ```
    Task(subagent_type="godot-scene-researcher", prompt="
    Feature: {feature-name}
@@ -163,6 +384,7 @@ Show requirements table and confirm with user.
    Return: Node type, scene pattern, signal patterns, state machine approach.
    ")
    ```
+
    - **Update architecture-baseline.md** with new pattern:
      - Add row to Feature Pattern Index table
      - Add relevant signal patterns if new
@@ -171,20 +393,74 @@ Show requirements table and confirm with user.
 5. **Baseline not found fallback:**
 
    If `.claude/research/architecture-baseline.md` does not exist:
+
    ```
    ⚠ Architecture baseline niet gevonden.
 
    → Volledige research wordt uitgevoerd.
    Tip: Run /core-setup om baseline te genereren.
    ```
+
    - Always launch godot-scene-researcher agent
    - Do NOT create baseline (that's /setup's job)
+
+### FASE 2b: Scene Layout & Gameplay Flow
+
+**Goal:** Define visual scene layout and gameplay state flow before architecture design.
+
+**Condition:** Only execute this phase if the feature involves visual elements (scenes, sprites, UI, particles). If the feature is non-visual (pure data, logic, resources), skip with:
+
+```
+FASE 2b: N/A — non-visual feature
+```
+
+**Steps:**
+
+1. **Describe layout in ASCII scene layout:**
+
+   ```
+   ┌─────────────────────────────┐
+   │ Camera2D (viewport)         │
+   │  ┌──────┐  ┌──────────┐   │
+   │  │Player│→ │ Projectile│   │
+   │  └──────┘  └──────────┘   │
+   │        ┌────────┐          │
+   │        │ Puddle │          │
+   │        └────────┘          │
+   └─────────────────────────────┘
+   ```
+
+2. **Define gameplay state diagram:**
+
+   ```
+   idle → casting → cooldown → idle
+          ↓
+        cancelled
+   ```
+
+   - Map key states and transitions
+   - Note triggers for each transition (input, timer, signal)
+
+3. **Map nodes to scene layout:**
+   - Label each element with the node type
+   - Note key interactive elements (collision areas, raycasts, timers)
+   - Identify state-dependent visual changes (animations, visibility, modulate)
+
+4. **Confirm with user:**
+   Use **AskUserQuestion**:
+   - header: "Scene Layout"
+   - question: "Klopt dit visuele ontwerp en de gameplay flow?"
+   - options:
+     - label: "Ja (Recommended)", description: "Layout en flow zijn correct, ga door"
+     - label: "Aanpassen", description: "Ik wil het ontwerp wijzigen"
+   - multiSelect: false
 
 ### FASE 3: Architecture Design
 
 Design based on requirements (and research if done):
 
 **Scene Tree:**
+
 ```
 {RootNodeType} ({feature-name})
 ├── {ChildNode} ({NodeType})
@@ -213,11 +489,13 @@ Design based on requirements (and research if done):
 Determine implementation order based on requirement dependencies:
 
 **Analysis process:**
+
 1. For each requirement, identify dependencies on other requirements
 2. Base requirements (no dependencies) come first
 3. Dependent requirements follow their dependencies
 
 **Output format:**
+
 ```
 DEPENDENCY ANALYSIS:
 
@@ -247,46 +525,69 @@ Write to `.workspace/features/{feature-name}/01-define.md`:
 **Status:** defined
 
 ## Summary
+
 {description}
 
 ## Requirements
 
-| ID | Requirement | Category | Test Type |
-|----|-------------|----------|-----------|
-| REQ-001 | {description} | {category} | {type} |
+| ID      | Requirement   | Category   | Test Type | Acceptance Criteria    |
+| ------- | ------------- | ---------- | --------- | ---------------------- |
+| REQ-001 | {description} | {category} | {type}    | {verifiable condition} |
 
 ## User Answers
+
 {answers from FASE 1}
 
 ## Godot Research
+
 {if research was done}
+
+## Scene Layout
+
+{if visual feature — ASCII scene layout from FASE 2b}
+
+## Gameplay Flow
+
+{if visual feature — state diagram from FASE 2b}
+
+## Split Decision
+
+{if split — reference to 00-split.md}
 
 ## Architecture
 
 ### Scene Tree
+
 {scene tree}
 
 ### Files to Create
+
 {scenes, scripts, resources}
 
 ### Signals
+
 {signal table}
 
 ## Implementation Order
 
 ### Dependency Analysis
+
 {dependency analysis from FASE 3}
 
 ### Build Sequence
+
 1. REQ-XXX - {description} (base)
 2. REQ-XXX - {description} (after REQ-XXX)
-...
+   ...
 
 ## Test Strategy
+
 {test table}
 
 ## Next Steps
+
 Run `/game:build {feature-name}` to start implementation.
+After testing: `/game:refactor {feature-name}` for code quality.
 ```
 
 ### FASE 5: Sync Backlog
@@ -298,9 +599,11 @@ Run `/game:build {feature-name}` to start implementation.
 **Steps:**
 
 1. **Check if backlog exists:**
+
    ```
    Read(".workspace/backlog.md")
    ```
+
    - If file not found: skip sync (no backlog to update)
 
 2. **Find feature in backlog:**
@@ -311,14 +614,19 @@ Run `/game:build {feature-name}` to start implementation.
 3. **Update feature status (if found in planned features):**
 
    Move the line from TODO section:
+
    ```markdown
    ### TODO
+
    - **element-water** (CONTENT) → ability-system
      Water abilities (projectile, shield, etc.)
    ```
+
    To DEF section:
+
    ```markdown
    ### DEF
+
    - **element-water** (CONTENT) → ability-system
      Water abilities (projectile, shield, etc.)
    ```
@@ -326,8 +634,10 @@ Run `/game:build {feature-name}` to start implementation.
 4. **Add to Ad-hoc Features (if NOT found in planned features):**
 
    Add to Ad-hoc section under `### DEF`:
+
    ```markdown
    ### DEF
+
    - **mouse-aim** (MECHANIC) - {date}
      {description from 01-define.md}
    ```
@@ -337,6 +647,7 @@ Run `/game:build {feature-name}` to start implementation.
    - Recalculate done count
 
 6. **Update "Updated" timestamp:**
+
    ```
    **Updated:** {current date}
    ```
@@ -346,6 +657,7 @@ Run `/game:build {feature-name}` to start implementation.
    - Update: `**Next:** /game:define {first-todo-feature}`
 
 **Output:**
+
 ```
 BACKLOG SYNCED
 
@@ -357,19 +669,21 @@ Location: {MVP Features | Phase 2 | Ad-hoc}
 ## Best Practices
 
 - Use AskUserQuestion for all structured choices
-- Extract testable requirements with REQ-IDs
+- Extract testable requirements with REQ-IDs and acceptance criteria
 - Scene research is optional but recommended for complex features
 - Keep architecture focused on what's needed
 
 ## Restrictions
 
 This skill must NEVER:
+
 - Write actual implementation code (that's /game:build's job)
 - Skip the requirements extraction step
 - Proceed without user confirmation at checkpoints
 
 This skill must ALWAYS:
+
 - Use business-like, direct tone
-- Extract testable requirements with REQ-IDs
+- Extract testable requirements with REQ-IDs and acceptance criteria
 - Include all sections in 01-define.md output
 - Show copyable next command at the end

@@ -10,3 +10,6 @@ Thumbs.db
 
 # Local settings (template only in repo)
 settings.local.json
+
+# Workspace (project-specific, not shared)
+.workspace/
