@@ -192,8 +192,8 @@ Show a **numbered list** of all profiles (except "core" and "all") with their un
 ```
 **Beschikbare profielen:**
 
-1. **dev** — dev-plan, dev-build, dev-define, dev-refactor, dev-test, dev-worktree
-2. **dev-legacy** — dev-legacy-1-plan, dev-legacy-2-code, dev-legacy-debug, ...
+1. **dev** — dev-build, dev-debug, dev-define, dev-plan, dev-refactor, dev-test, dev-worktree
+2. **dev-legacy** — dev-legacy-owasp, ...
 3. **frontend** — frontend-theme, frontend-compose, frontend-build, frontend-convert
 4. **game** — game-backlog, game-build, game-define, game-test
 ...

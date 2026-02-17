@@ -1,51 +1,54 @@
 ---
-name: core-task
-description: Browse Todoist tasks and pick one to work on with Claude. Use with /core-task to view, filter, and select tasks from Todoist.
-argument-hint: [project or search term]
+name: core-todo
+description: Browse Todoist tasks labeled "claude" and pick one to work on. Use with /core-todo to view, select, and execute tasks.
+argument-hint: [done]
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: core
 ---
 
 # Task
 
-Browse Todoist tasks, pick one up, classify it, and work on it with Claude.
+Browse Todoist tasks labeled "claude", pick one up, classify it, and work on it.
 
-**Trigger**: `/core-task`, `/core-task [project or search]`, `/core-task done`
+**Trigger**: `/core-todo`, `/core-todo done`
 
 ## FASE 0: Browse
 
 Parse `$ARGUMENTS`:
 
 - **`done`** → skip to FASE 3
-- **Empty** → project selection
-- **Text** → match against project names (case-insensitive partial match). If no project matches, search tasks via `get_tasks_list(filter="search: $ARGUMENTS")`
-
-### Project Selection
-
-1. Fetch all projects with `get_projects_list`
-2. For each project, fetch task count with `get_tasks_list(project_id=...)`
-3. Group projects into **Dev** and **Overig** based on project content
-4. Hide **Watch Later** and **Subscriptions** projects (skip them from display)
-5. Use **AskUserQuestion**:
-   - header: "Project"
-   - question: "Welk project?"
-   - options: top projects with task count, e.g. "ProjectName (12 taken)". Recommended = most active dev project
-   - multiSelect: false
+- **Empty** → fetch all tasks with label "claude"
 
 ### Task Selection
 
-1. Fetch tasks for selected project with `get_tasks_list(project_id=...)`
-2. Use **AskUserQuestion** to present tasks:
-   - header: "Taak"
-   - question: "Welke taak oppakken?"
-   - options: max 4 tasks, formatted as compact entries:
-     - `{name} [P{priority}] {icons}` where icons: `D` = has description, `S` = has subtasks, `C` = has comments
-   - Recommended = first task with description, or first P1 task, or first task
-   - multiSelect: false
-3. If >10 tasks exist, mention in the question: "({total} taken — typ een zoekterm voor meer)"
+1. Fetch tasks: `get_tasks_list(label="claude")`
+2. Group by project (use `project_id` to group, fetch project names via `get_projects`)
+3. Display numbered list grouped by project:
+
+   ```
+   ## Dev App (3 taken)
+   1. Fix login bug [P1] D S
+   2. Add dark mode [P2]
+   3. Refactor auth module [P3] C
+
+   ## Side Project (2 taken)
+   4. Write README [P4] D
+   5. Setup CI pipeline [P2]
+
+   Typ een nummer.
+   ```
+
+   Format per taak: `{number}. {name} [P{priority}] {icons}` where icons: `D` = has description, `S` = has subtasks, `C` = has comments
+
+4. User types number → load that task, proceed to FASE 1
+5. If 0 tasks found:
+
+   ```
+   Geen taken met label "claude" gevonden. Voeg het label toe aan taken in Todoist.
+   ```
 
 ## FASE 1: Enrich & Classify
 
@@ -208,7 +211,7 @@ Start working on the task freeform using all available tools. Refer back to the 
 
 ## FASE 3: Close Loop
 
-Trigger: after task completion OR via `/core-task done`
+Trigger: after task completion OR via `/core-todo done`
 
 Use **AskUserQuestion**:
 
@@ -226,7 +229,7 @@ Use **AskUserQuestion**:
 - **Afsluiten** → `close_tasks(task_id=...)`, then check Obsidian save (see below), display confirmation
 - **Afsluiten met notitie** → ask for note content or auto-generate summary, then `create_comments(task_id=..., content=...)` + `close_tasks(task_id=...)`, then check Obsidian save (see below)
 - **Open laten** → display confirmation, no Todoist changes
-- **Volgende taak** → go back to FASE 0 (project selection)
+- **Volgende taak** → go back to FASE 0
 
 ### Obsidian Save Check (after Afsluiten)
 
@@ -264,20 +267,8 @@ Status: {Afgesloten / Afgesloten met notitie / Open gelaten}
 
 ## Error Handling
 
-**No projects found:**
+**No tasks found:**
 
 ```
-Geen projecten gevonden in Todoist. Check je Todoist-verbinding.
-```
-
-**No tasks in project:**
-
-```
-Geen open taken in {project}. Kies een ander project of gebruik een zoekterm.
-```
-
-**Search returns no results:**
-
-```
-Geen taken gevonden voor "{search}". Probeer een andere zoekterm of gebruik /core-task zonder argument.
+Geen taken met label "claude" gevonden. Voeg het label toe aan taken in Todoist.
 ```

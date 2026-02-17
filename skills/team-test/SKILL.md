@@ -33,7 +33,7 @@ Activate this skill after code review of teammate's code needs testing.
 
 **NOT for:**
 
-- Testing own code (use `/dev-legacy-verify`)
+- Testing own code (use `/dev-test`)
 - Main/develop branch
 - Code without prior review
 
@@ -309,6 +309,7 @@ Recommendation: [ready for merge / needs fixes]
 ### Language
 
 Follow the Language Policy in CLAUDE.md.
+
 ### Do
 
 - Always check branch first (not main/master/develop)

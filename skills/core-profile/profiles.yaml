@@ -1,5 +1,6 @@
 # Order determines numbering for --list. Do not reorder without reason.
 core:
+  - core-capture
   - core-commit
   - core-create
   - core-delete
@@ -8,7 +9,7 @@ core:
   - core-md-audit
   - core-md-revise
   - core-refine
-  - core-task
+  - core-todo
   - core-setup
   - project-list
   - project-add
@@ -16,17 +17,14 @@ core:
 
 dev:
   - dev-build
+  - dev-debug
   - dev-define
+  - dev-owasp
   - dev-plan
   - dev-refactor
   - dev-server
   - dev-test
   - dev-worktree
-
-dev-legacy:
-  - dev-legacy-debug
-  - dev-legacy-owasp
-  - dev-legacy-verify
 
 frontend:
   - frontend-compose
