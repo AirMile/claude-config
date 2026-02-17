@@ -1,9 +1,13 @@
 ---
 name: thinking-decide
 description: >-
-  Structured decision-making through Sequential Thinking MCP. Use when user
-  needs to decide, choose, or pick between options — surfaces assumptions,
-  generates alternatives, steelmans counterarguments, and recommends.
+  Structured decision-making framework using Sequential Thinking MCP. Invoke
+  when user needs help weighing trade-offs between options, comparing pros and
+  cons, or making a strategic choice between approaches. Ideal for architecture
+  decisions, technology choices, and any significant afweging where multiple
+  valid options exist. Surfaces assumptions, generates alternatives, steelmans
+  the strongest counterargument, and delivers a confidence-rated recommendation.
+  Not for trivial choices like naming or formatting.
 metadata:
   author: mileszeilstra
   version: 1.0.0
