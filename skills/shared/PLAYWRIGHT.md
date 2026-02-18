@@ -6,13 +6,13 @@ Reusable Playwright MCP patterns for visual validation, accessibility checks, an
 
 ## Overview
 
-| Tool | Purpose | Returns |
-|------|---------|---------|
-| `browser_navigate` | Open URL in browser | Page loaded state |
-| `browser_wait_for` | Wait for content/time | Sync point |
-| `browser_snapshot` | Capture accessibility tree | **Tree structure (direct)** |
-| `browser_take_screenshot` | Capture visual state | **Image data (direct)** |
-| `browser_close` | Clean up browser session | - |
+| Tool                      | Purpose                    | Returns                     |
+| ------------------------- | -------------------------- | --------------------------- |
+| `browser_navigate`        | Open URL in browser        | Page loaded state           |
+| `browser_wait_for`        | Wait for content/time      | Sync point                  |
+| `browser_snapshot`        | Capture accessibility tree | **Tree structure (direct)** |
+| `browser_take_screenshot` | Capture visual state       | **Image data (direct)**     |
+| `browser_close`           | Clean up browser session   | -                           |
 
 > **Ephemeral Pattern**: All Playwright tools return data directly to the agent. Analyze in conversation - no file storage needed.
 
@@ -105,12 +105,12 @@ options:
 
 ### Navigation Failures
 
-| Error | Cause | Recovery |
-|-------|-------|----------|
-| URL not found | Invalid path | Use absolute path with `file:///` prefix |
-| Timeout | Page doesn't load | Increase wait time, retry once |
-| Protocol error | Wrong URL scheme | Ensure `file://` for local, `http://` for server |
-| Connection refused | Server not running | Start dev server, retry |
+| Error              | Cause              | Recovery                                         |
+| ------------------ | ------------------ | ------------------------------------------------ |
+| URL not found      | Invalid path       | Use absolute path with `file:///` prefix         |
+| Timeout            | Page doesn't load  | Increase wait time, retry once                   |
+| Protocol error     | Wrong URL scheme   | Ensure `file://` for local, `http://` for server |
+| Connection refused | Server not running | Start dev server, retry                          |
 
 ### Graceful Degradation
 
@@ -244,13 +244,13 @@ Example snapshot content:
 
 ### Wait Strategies
 
-| Content Type | Wait Strategy |
-|--------------|---------------|
-| Static HTML | No wait needed |
-| SSR/SSG | Short wait (500ms) |
-| Client-rendered | Wait for text/element |
-| Animations | Timed wait (1-2s) |
-| Heavy content | Wait for specific text |
+| Content Type    | Wait Strategy          |
+| --------------- | ---------------------- |
+| Static HTML     | No wait needed         |
+| SSR/SSG         | Short wait (500ms)     |
+| Client-rendered | Wait for text/element  |
+| Animations      | Timed wait (1-2s)      |
+| Heavy content   | Wait for specific text |
 
 ### Resource Cleanup
 
@@ -263,8 +263,8 @@ Example snapshot content:
 
 ## Cross-Skill References
 
-| Skill | Uses Playwright For | Primary Data |
-|-------|---------------------|--------------|
-| `frontend-compose` | Design analysis, reflection | Accessibility tree |
-| `frontend-seo` | Rendered content validation (S003) | Accessibility tree |
-
+| Skill              | Uses Playwright For                         | Primary Data       |
+| ------------------ | ------------------------------------------- | ------------------ |
+| `frontend-compose` | Design analysis, reflection                 | Accessibility tree |
+| `frontend-seo`     | Rendered content validation (S003)          | Accessibility tree |
+| `frontend-a11y`    | Accessibility tree analyse, focus validatie | Accessibility tree |

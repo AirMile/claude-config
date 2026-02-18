@@ -223,14 +223,16 @@ const city = user?.address?.city ?? "Unknown";
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                             | Check                     |
-| ---- | -------------------------------- | ------------------------- |
-| H001 | Valid HTML structure             | DOCTYPE, html, head, body |
-| H002 | Eén h1 per pagina                | SEO, accessibility        |
-| H003 | Heading hierarchy (h1→h2→h3)     | Geen h3 voor h2           |
-| H004 | Color contrast ≥4.5:1 voor tekst | WCAG AA                   |
-| H005 | Color contrast ≥3:1 voor UI      | Borders, icons            |
-| H006 | Touch targets ≥44x44px           | Mobile accessibility      |
+| ID   | Rule                                 | Check                                   |
+| ---- | ------------------------------------ | --------------------------------------- |
+| H001 | Valid HTML structure                 | DOCTYPE, html, head, body               |
+| H002 | Eén h1 per pagina                    | SEO, accessibility                      |
+| H003 | Heading hierarchy (h1→h2→h3)         | Geen h3 voor h2                         |
+| H004 | Color contrast ≥4.5:1 voor tekst     | WCAG AA                                 |
+| H005 | Color contrast ≥3:1 voor UI          | Borders, icons                          |
+| H006 | Touch targets ≥44x44px               | Mobile accessibility                    |
+| H007 | Geen interleaved layout reads/writes | Forced reflow prevention                |
+| H008 | Geen scrollTop-driven animation      | Scroll Timeline of IntersectionObserver |
 
 #### Voorbeelden
 
@@ -247,23 +249,196 @@ const city = user?.address?.city ?? "Unknown";
 <h3>Subsection</h3>
 ```
 
+**H007** Geen interleaved layout reads/writes
+
+```js
+// ✗ Incorrect - forces reflow per iteration
+elements.forEach((el) => {
+  const height = el.offsetHeight; // read
+  el.style.height = height * 2 + "px"; // write → reflow
+});
+
+// ✓ Correct - batch reads, then batch writes
+const heights = elements.map((el) => el.offsetHeight);
+elements.forEach((el, i) => {
+  el.style.height = heights[i] * 2 + "px";
+});
+```
+
+**H008** Geen scrollTop-driven animation
+
+```css
+/* ✗ Incorrect (JS) */
+/* window.addEventListener('scroll', () => {
+     el.style.transform = `translateY(${window.scrollY * 0.5}px)`;
+   }); */
+
+/* ✓ Correct - CSS Scroll Timeline */
+@keyframes parallax {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100px);
+  }
+}
+.parallax {
+  animation: parallax linear;
+  animation-timeline: scroll();
+}
+```
+
 ### SHOULD_DO (High)
 
-| ID   | Rule                              | Rationale            |
-| ---- | --------------------------------- | -------------------- |
-| H101 | Gebruik CSS custom properties     | Theming, consistency |
-| H102 | Logical properties (inline/block) | Internationalization |
-| H103 | Prefer flexbox/grid over floats   | Modern, maintainable |
-| H104 | Mobile-first breakpoints          | Performance          |
+| ID   | Rule                                                 | Rationale            |
+| ---- | ---------------------------------------------------- | -------------------- |
+| H101 | Gebruik CSS custom properties                        | Theming, consistency |
+| H102 | Logical properties (inline/block)                    | Internationalization |
+| H103 | Prefer flexbox/grid over floats                      | Modern, maintainable |
+| H104 | Mobile-first breakpoints                             | Performance          |
+| H105 | Animate alleen compositor props (transform, opacity) | Performance          |
+| H106 | Max 200ms voor interaction feedback animaties        | Responsiveness       |
+| H107 | Respecteer prefers-reduced-motion                    | Accessibility        |
+| H108 | text-balance voor headings, text-pretty voor body    | Typography           |
+| H109 | tabular-nums voor data tables                        | Alignment            |
+| H110 | h-dvh i.p.v. h-screen                                | Mobile viewport      |
+| H111 | Vast z-index scale (10/20/30/40/50)                  | Maintainability      |
+| H112 | size-\* voor vierkante elementen                     | Conciseness          |
 
 ### AVOID (Medium)
 
-| ID   | Pattern                     | Alternative            |
-| ---- | --------------------------- | ---------------------- |
-| H201 | `!important` in stylesheets | Specificity management |
-| H202 | Magic numbers               | Design tokens          |
-| H203 | ID selectors voor styling   | Class selectors        |
-| H204 | Deep selector nesting (>3)  | BEM of flat selectors  |
+| ID   | Pattern                                               | Alternative                            |
+| ---- | ----------------------------------------------------- | -------------------------------------- |
+| H201 | `!important` in stylesheets                           | Specificity management                 |
+| H202 | Magic numbers                                         | Design tokens                          |
+| H203 | ID selectors voor styling                             | Class selectors                        |
+| H204 | Deep selector nesting (>3)                            | BEM of flat selectors                  |
+| H205 | Grote `blur()`/`backdrop-filter` op zichtbare content | Kleine blur, kort, eenmalig            |
+| H206 | `will-change` buiten actieve animatie blokken         | Tijdelijk via JS toevoegen/verwijderen |
+| H207 | `letter-spacing` wijzigen zonder expliciete vraag     | Design discipline                      |
+| H208 | Layout properties animeren op grote surfaces          | `transform` gebruiken                  |
+| H209 | Gradients/glow zonder expliciete vraag                | Tailwind default shadows               |
+
+---
+
+## Accessibility Rules (frontend-specifiek)
+
+> **Note:** Complementeert bestaande a11y-gerelateerde rules: R001 (semantic HTML), R002 (alt text),
+> R004 (form labels), R005 (keyboard accessible), H004 (tekst contrast), H005 (UI contrast), H006 (touch targets).
+
+### MUST_DO (Critical)
+
+| ID   | Rule                                           | Check                                         |
+| ---- | ---------------------------------------------- | --------------------------------------------- |
+| A001 | Accessible name voor alle interactive controls | aria-label, aria-labelledby, of visible text  |
+| A002 | Geen div/span als button zonder full support   | role + tabIndex + onKeyDown vereist           |
+| A003 | Modals trappen focus                           | Focus mag niet buiten open dialog             |
+| A004 | Focus restore na dialog close                  | Focus terug naar trigger element              |
+| A005 | Zichtbare focus indicator                      | Geen outline: none zonder focus-visible       |
+| A006 | ARIA state synchronisatie                      | aria-expanded/selected matcht component state |
+
+#### Voorbeelden
+
+**A001** Accessible name
+
+```jsx
+// ✗ Incorrect
+<button><IconTrash /></button>
+
+// ✓ Correct
+<button aria-label="Verwijder item"><IconTrash /></button>
+```
+
+**A002** Geen div-as-button
+
+```jsx
+// ✗ Incorrect
+<div onClick={handleClick} className="card">Open</div>
+
+// ✓ Correct (native element preferred)
+<button onClick={handleClick} className="card">Open</button>
+
+// ✓ Acceptable (als native element niet mogelijk is)
+<div
+  role="button"
+  tabIndex={0}
+  onClick={handleClick}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') handleClick();
+  }}
+>
+  Open
+</div>
+```
+
+**A003** Focus trapping in modal
+
+```jsx
+// ✗ Incorrect - focus escapes dialog
+<div className="modal">{children}</div>
+
+// ✓ Correct - native dialog traps focus
+<dialog ref={dialogRef} onClose={onClose}>
+  {children}
+</dialog>
+```
+
+**A006** ARIA state synchronisatie
+
+```jsx
+// ✗ Incorrect - aria-expanded niet in sync
+<button onClick={() => setOpen(!open)}>Menu</button>
+<nav className={open ? 'visible' : 'hidden'}>...</nav>
+
+// ✓ Correct
+<button aria-expanded={open} onClick={() => setOpen(!open)}>Menu</button>
+<nav className={open ? 'visible' : 'hidden'}>...</nav>
+```
+
+### SHOULD_DO (High)
+
+| ID   | Rule                                       | Rationale                       |
+| ---- | ------------------------------------------ | ------------------------------- |
+| A101 | Error messages linked via aria-describedby | Screen readers announcen error  |
+| A102 | Required fields met aria-required          | Aangekondigd bij focus          |
+| A103 | aria-live voor dynamische error messages   | Wijzigingen worden voorgelezen  |
+| A104 | Loading states met aria-busy               | Voorkomt voortijdige interactie |
+
+#### Voorbeelden
+
+**A101** Error message linking
+
+```jsx
+// ✗ Incorrect
+<input id="email" />
+<span className="text-error">Ongeldig email</span>
+
+// ✓ Correct
+<input id="email" aria-describedby="email-error" aria-invalid={!!error} />
+<span id="email-error" className="text-error">Ongeldig email</span>
+```
+
+**A103** Live region voor errors
+
+```jsx
+// ✗ Incorrect - screen reader mist dynamische error
+{
+  error && <div className="error">{error}</div>;
+}
+
+// ✓ Correct
+<div aria-live="assertive" role="alert">
+  {error && <span>{error}</span>}
+</div>;
+```
+
+### AVOID (Medium)
+
+| ID   | Pattern                                     | Alternative                         |
+| ---- | ------------------------------------------- | ----------------------------------- |
+| A201 | tabindex > 0                                | Gebruik DOM volgorde voor tab order |
+| A202 | aria-label op niet-interactive elementen    | Visuele tekst of sr-only span       |
+| A203 | Focus outline verwijderen zonder vervanging | focus-visible met custom ring       |
 
 ---
 
@@ -355,6 +530,24 @@ COMPONENT POST-CHECK
 [ ] T002 - No implicit any
 ```
 
+### Accessibility Validation
+
+Check bij accessibility audits en na component generatie:
+
+```
+A11Y CHECK
+──────────
+[ ] A001 - Alle interactive controls hebben accessible name
+[ ] A002 - Geen div/span-as-button zonder full keyboard support
+[ ] A003 - Modals/dialogs trappen focus
+[ ] A005 - Focus indicators zichtbaar
+[ ] A006 - ARIA states gesynchroniseerd
+[ ] R001 - Semantic elements gebruikt
+[ ] R004 - Form labels aanwezig
+[ ] H004 - Tekst contrast voldoende
+[ ] H006 - Touch targets adequate
+```
+
 ---
 
 ## Severity Mapping
@@ -365,7 +558,7 @@ COMPONENT POST-CHECK
 CRITICAL (blocks merge):
 - Alle MUST_DO violations
 - Security issues (R008)
-- Accessibility blockers (R001, R002, R004, R005, H004, H006)
+- Accessibility blockers (R001, R002, R004, R005, H004, H006, A001-A006)
 
 HIGH (requires review):
 - Alle SHOULD_DO violations
@@ -402,21 +595,26 @@ Status: [PASS ≥90% | REVIEW 70-89% | FAIL <70%]
 
 ### Safe Auto-Fixes (kan automatisch)
 
-| Rule | Auto-Fix                                |
-| ---- | --------------------------------------- |
-| R002 | Add `alt=""` to decorative images       |
-| R105 | Convert default to named export         |
-| H202 | Replace magic number with closest token |
-| T203 | Convert enum to const object            |
+| Rule | Auto-Fix                                         |
+| ---- | ------------------------------------------------ |
+| R002 | Add `alt=""` to decorative images                |
+| R105 | Convert default to named export                  |
+| H202 | Replace magic number with closest token          |
+| T203 | Convert enum to const object                     |
+| A001 | Add `aria-label` to icon-only buttons            |
+| A201 | Replace `tabindex="N"` (N>0) with `tabindex="0"` |
 
 ### Guided Fixes (met user confirmation)
 
-| Rule | Guidance                                    |
-| ---- | ------------------------------------------- |
-| R001 | Suggest semantic element, show before/after |
-| R003 | Extract inline style to CSS variable        |
-| R004 | Generate label, ask for text                |
-| R101 | Show composition refactor pattern           |
+| Rule | Guidance                                                 |
+| ---- | -------------------------------------------------------- |
+| R001 | Suggest semantic element, show before/after              |
+| R003 | Extract inline style to CSS variable                     |
+| R004 | Generate label, ask for text                             |
+| R101 | Show composition refactor pattern                        |
+| A002 | Replace div-as-button with `<button>`, show before/after |
+| A003 | Wrap dialog content in focus trap, show pattern          |
+| A101 | Link error messages via aria-describedby                 |
 
 ### Manual Fixes (alleen instructions)
 
@@ -425,3 +623,5 @@ Status: [PASS ≥90% | REVIEW 70-89% | FAIL <70%]
 | R006 | Explain ErrorBoundary pattern               |
 | R102 | Explain separation pattern                  |
 | H004 | Calculate required contrast, suggest colors |
+| A004 | Explain focus restoration pattern           |
+| A006 | Explain ARIA state sync pattern             |
