@@ -27,11 +27,17 @@ dev:
   - dev-worktree
 
 frontend:
+  - frontend-a11y
   - frontend-build
   - frontend-compose
   - frontend-convert
+  - frontend-data
+  - frontend-iterate
+  - frontend-perf
+  - frontend-responsive
   - frontend-screenshots
   - frontend-seo
+  - frontend-test
   - frontend-theme
 
 game:

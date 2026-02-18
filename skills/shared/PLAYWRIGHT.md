@@ -263,8 +263,119 @@ Example snapshot content:
 
 ## Cross-Skill References
 
-| Skill              | Uses Playwright For                         | Primary Data       |
-| ------------------ | ------------------------------------------- | ------------------ |
-| `frontend-compose` | Design analysis, reflection                 | Accessibility tree |
-| `frontend-seo`     | Rendered content validation (S003)          | Accessibility tree |
-| `frontend-a11y`    | Accessibility tree analyse, focus validatie | Accessibility tree |
+| Skill                 | Uses Playwright For                         | Primary Data        |
+| --------------------- | ------------------------------------------- | ------------------- |
+| `frontend-compose`    | Design analysis, reflection                 | Accessibility tree  |
+| `frontend-seo`        | Rendered content validation (S003)          | Accessibility tree  |
+| `frontend-a11y`       | Accessibility tree analyse, focus validatie | Accessibility tree  |
+| `frontend-responsive` | Multi-viewport capture + overflow detectie  | Screenshots + tree  |
+| `frontend-perf`       | CWV measurement via PerformanceObserver     | Performance metrics |
+
+---
+
+## Use Cases: Responsive Validation
+
+### Multi-Viewport Capture Sequence
+
+Per route, capture op 6 viewports:
+
+```
+RESPONSIVE CAPTURE SEQUENCE
+────────────────────────────
+Viewports: 320, 375, 768, 1024, 1440, 1920
+
+Per viewport:
+1. browser_resize → { width: [vp], height: 900 }
+2. browser_wait_for → { time: 1 }
+3. browser_take_screenshot → (visual state at viewport)
+4. browser_snapshot → (accessibility tree — check verdwijnende elementen)
+5. browser_evaluate → overflow check (see below)
+
+After all viewports:
+6. browser_close
+```
+
+### Overflow Detection
+
+```javascript
+// browser_evaluate: check horizontal overflow
+() => ({
+  hasOverflow:
+    document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  scrollWidth: document.documentElement.scrollWidth,
+  clientWidth: document.documentElement.clientWidth,
+  overflowElements: Array.from(document.querySelectorAll("*"))
+    .filter((el) => {
+      const rect = el.getBoundingClientRect();
+      return rect.right > document.documentElement.clientWidth;
+    })
+    .map((el) => ({
+      tag: el.tagName,
+      class: el.className,
+      width: el.getBoundingClientRect().width,
+    }))
+    .slice(0, 10),
+});
+```
+
+### Viewport Configuration
+
+| Viewport | Width | Device Category | Breakpoint |
+| -------- | ----- | --------------- | ---------- |
+| XS       | 320   | Small phone     | < 375      |
+| SM       | 375   | Phone           | < 768      |
+| MD       | 768   | Tablet          | < 1024     |
+| LG       | 1024  | Small desktop   | < 1440     |
+| XL       | 1440  | Desktop         | < 1920     |
+| 2XL      | 1920  | Large desktop   | ≥ 1920     |
+
+---
+
+## Use Cases: Performance Measurement
+
+### Core Web Vitals via PerformanceObserver
+
+```javascript
+// browser_evaluate: measure CWV
+() =>
+  new Promise((resolve) => {
+    const metrics = {};
+
+    // LCP
+    new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      metrics.lcp = entries[entries.length - 1]?.startTime;
+    }).observe({ type: "largest-contentful-paint", buffered: true });
+
+    // CLS
+    let clsValue = 0;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (!entry.hadRecentInput) clsValue += entry.value;
+      }
+      metrics.cls = clsValue;
+    }).observe({ type: "layout-shift", buffered: true });
+
+    // FCP
+    new PerformanceObserver((list) => {
+      metrics.fcp = list.getEntries()[0]?.startTime;
+    }).observe({ type: "paint", buffered: true });
+
+    // Collect after 3 seconds
+    setTimeout(() => {
+      metrics.ttfb =
+        performance.getEntriesByType("navigation")[0]?.responseStart;
+      resolve(metrics);
+    }, 3000);
+  });
+```
+
+### Performance Thresholds
+
+| Metric | Good    | Needs Improvement | Poor    |
+| ------ | ------- | ----------------- | ------- |
+| LCP    | ≤ 2.5s  | ≤ 4.0s            | > 4.0s  |
+| CLS    | ≤ 0.1   | ≤ 0.25            | > 0.25  |
+| INP    | ≤ 200ms | ≤ 500ms           | > 500ms |
+| FCP    | ≤ 1.8s  | ≤ 3.0s            | > 3.0s  |
+| TTFB   | ≤ 800ms | ≤ 1.8s            | > 1.8s  |

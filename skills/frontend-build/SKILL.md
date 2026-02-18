@@ -134,7 +134,7 @@ Reads from `handoff` key in devinfo.json (see DEVINFO.md):
 ```json
 {
   "from": "frontend-build",
-  "to": null,
+  "to": "frontend-data",
   "data": {
     "hifiPreview": ".workspace/wireframes/[page]/hifi/preview.html",
     "componentsDirectory": "src/components/[page]/",
@@ -1642,7 +1642,8 @@ Next steps:
 2. Open: http://localhost:3000/[page]
 3. Components zijn beschikbaar via:
    import { Header, Sidebar } from '@/components/[page]';
-4. Verify: /dev:test - Test gebouwde componenten
+4. Gebruik /data om hardcoded data te vervangen door echte API connecties
+5. Gebruik /test om component unit tests te genereren
 
 ═══════════════════════════════════════════════════════════
 ```

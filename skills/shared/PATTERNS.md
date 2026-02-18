@@ -47,6 +47,7 @@ Card.Footer = function CardFooter({ children }: { children: ReactNode }) {
 ```
 
 **Voordelen:**
+
 - Flexibele compositie
 - Gedeelde context zonder prop drilling
 - Duidelijke hiërarchie
@@ -60,37 +61,39 @@ Card.Footer = function CardFooter({ children }: { children: ReactNode }) {
 ```tsx
 // Definitie
 interface ToggleRenderProps {
-  isOn: boolean
-  toggle: () => void
+  isOn: boolean;
+  toggle: () => void;
 }
 
-function Toggle({ children }: { children: (props: ToggleRenderProps) => ReactNode }) {
-  const [isOn, setIsOn] = useState(false)
-  return <>{children({ isOn, toggle: () => setIsOn(!isOn) })}</>
+function Toggle({
+  children,
+}: {
+  children: (props: ToggleRenderProps) => ReactNode;
+}) {
+  const [isOn, setIsOn] = useState(false);
+  return <>{children({ isOn, toggle: () => setIsOn(!isOn) })}</>;
 }
 
 // Gebruik
 <Toggle>
   {({ isOn, toggle }) => (
-    <button onClick={toggle}>
-      {isOn ? 'Aan' : 'Uit'}
-    </button>
+    <button onClick={toggle}>{isOn ? "Aan" : "Uit"}</button>
   )}
-</Toggle>
+</Toggle>;
 ```
 
 **Modern alternatief:** Custom hooks zijn vaak cleaner:
 
 ```tsx
 function useToggle(initial = false) {
-  const [isOn, setIsOn] = useState(initial)
-  return { isOn, toggle: () => setIsOn(!isOn), setIsOn }
+  const [isOn, setIsOn] = useState(initial);
+  return { isOn, toggle: () => setIsOn(!isOn), setIsOn };
 }
 
 // Gebruik
 function MyComponent() {
-  const { isOn, toggle } = useToggle()
-  return <button onClick={toggle}>{isOn ? 'Aan' : 'Uit'}</button>
+  const { isOn, toggle } = useToggle();
+  return <button onClick={toggle}>{isOn ? "Aan" : "Uit"}</button>;
 }
 ```
 
@@ -103,37 +106,43 @@ function MyComponent() {
 ```tsx
 // Uncontrolled (interne state)
 function UncontrolledInput() {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
-    console.log(inputRef.current?.value)
-  }
+    console.log(inputRef.current?.value);
+  };
 
-  return <input ref={inputRef} defaultValue="initial" />
+  return <input ref={inputRef} defaultValue="initial" />;
 }
 
 // Controlled (externe state)
 function ControlledInput({ value, onChange }: Props) {
-  return <input value={value} onChange={(e) => onChange(e.target.value)} />
+  return <input value={value} onChange={(e) => onChange(e.target.value)} />;
 }
 
 // Hybrid (beide ondersteunen)
 function FlexibleInput({ value, defaultValue, onChange }: Props) {
-  const [internalValue, setInternalValue] = useState(defaultValue ?? '')
-  const isControlled = value !== undefined
+  const [internalValue, setInternalValue] = useState(defaultValue ?? "");
+  const isControlled = value !== undefined;
 
-  const currentValue = isControlled ? value : internalValue
+  const currentValue = isControlled ? value : internalValue;
 
   const handleChange = (newValue: string) => {
-    if (!isControlled) setInternalValue(newValue)
-    onChange?.(newValue)
-  }
+    if (!isControlled) setInternalValue(newValue);
+    onChange?.(newValue);
+  };
 
-  return <input value={currentValue} onChange={(e) => handleChange(e.target.value)} />
+  return (
+    <input
+      value={currentValue}
+      onChange={(e) => handleChange(e.target.value)}
+    />
+  );
 }
 ```
 
 **Vuistregel:**
+
 - Uncontrolled: Eenvoudige forms, geen real-time validation
 - Controlled: Complex forms, validation, dependent fields
 
@@ -145,10 +154,10 @@ function FlexibleInput({ value, defaultValue, onChange }: Props) {
 
 ```tsx
 interface LayoutProps {
-  header?: ReactNode
-  sidebar?: ReactNode
-  main: ReactNode
-  footer?: ReactNode
+  header?: ReactNode;
+  sidebar?: ReactNode;
+  main: ReactNode;
+  footer?: ReactNode;
 }
 
 function PageLayout({ header, sidebar, main, footer }: LayoutProps) {
@@ -161,7 +170,7 @@ function PageLayout({ header, sidebar, main, footer }: LayoutProps) {
       </div>
       {footer && <footer className={styles.footer}>{footer}</footer>}
     </div>
-  )
+  );
 }
 
 // Gebruik
@@ -170,7 +179,7 @@ function PageLayout({ header, sidebar, main, footer }: LayoutProps) {
   sidebar={<FilterPanel />}
   main={<ProductList />}
   footer={<Pagination />}
-/>
+/>;
 ```
 
 ---
@@ -210,43 +219,46 @@ function Button<E extends ElementType = 'button'>({
 
 ```tsx
 // Next.js App Router
-'use client'
+"use client";
 
-import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 function useUrlState<T extends Record<string, string>>(defaults: T) {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const pathname = usePathname()
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const state = useMemo(() => {
-    const result = { ...defaults }
+    const result = { ...defaults };
     for (const key of Object.keys(defaults)) {
-      const value = searchParams.get(key)
-      if (value) result[key as keyof T] = value as T[keyof T]
+      const value = searchParams.get(key);
+      if (value) result[key as keyof T] = value as T[keyof T];
     }
-    return result
-  }, [searchParams, defaults])
+    return result;
+  }, [searchParams, defaults]);
 
-  const setState = useCallback((updates: Partial<T>) => {
-    const params = new URLSearchParams(searchParams)
-    for (const [key, value] of Object.entries(updates)) {
-      if (value) params.set(key, value)
-      else params.delete(key)
-    }
-    router.push(`${pathname}?${params.toString()}`)
-  }, [searchParams, router, pathname])
+  const setState = useCallback(
+    (updates: Partial<T>) => {
+      const params = new URLSearchParams(searchParams);
+      for (const [key, value] of Object.entries(updates)) {
+        if (value) params.set(key, value);
+        else params.delete(key);
+      }
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [searchParams, router, pathname],
+  );
 
-  return [state, setState] as const
+  return [state, setState] as const;
 }
 
 // Gebruik
 function ProductFilters() {
   const [filters, setFilters] = useUrlState({
-    category: '',
-    sort: 'newest',
-    page: '1'
-  })
+    category: "",
+    sort: "newest",
+    page: "1",
+  });
 
   return (
     <select
@@ -256,7 +268,7 @@ function ProductFilters() {
       <option value="newest">Nieuwste</option>
       <option value="price">Prijs</option>
     </select>
-  )
+  );
 }
 ```
 
@@ -269,58 +281,58 @@ function ProductFilters() {
 ```tsx
 // Types
 interface CartState {
-  items: CartItem[]
-  total: number
+  items: CartItem[];
+  total: number;
 }
 
 type CartAction =
-  | { type: 'ADD_ITEM'; payload: CartItem }
-  | { type: 'REMOVE_ITEM'; payload: string }
-  | { type: 'CLEAR' }
+  | { type: "ADD_ITEM"; payload: CartItem }
+  | { type: "REMOVE_ITEM"; payload: string }
+  | { type: "CLEAR" };
 
 // Reducer
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
-    case 'ADD_ITEM':
+    case "ADD_ITEM":
       return {
         ...state,
         items: [...state.items, action.payload],
-        total: state.total + action.payload.price
-      }
-    case 'REMOVE_ITEM':
-      const item = state.items.find(i => i.id === action.payload)
+        total: state.total + action.payload.price,
+      };
+    case "REMOVE_ITEM":
+      const item = state.items.find((i) => i.id === action.payload);
       return {
         ...state,
-        items: state.items.filter(i => i.id !== action.payload),
-        total: state.total - (item?.price ?? 0)
-      }
-    case 'CLEAR':
-      return { items: [], total: 0 }
+        items: state.items.filter((i) => i.id !== action.payload),
+        total: state.total - (item?.price ?? 0),
+      };
+    case "CLEAR":
+      return { items: [], total: 0 };
     default:
-      return state
+      return state;
   }
 }
 
 // Context
 const CartContext = createContext<{
-  state: CartState
-  dispatch: Dispatch<CartAction>
-} | null>(null)
+  state: CartState;
+  dispatch: Dispatch<CartAction>;
+} | null>(null);
 
 function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, { items: [], total: 0 })
+  const [state, dispatch] = useReducer(cartReducer, { items: [], total: 0 });
   return (
     <CartContext.Provider value={{ state, dispatch }}>
       {children}
     </CartContext.Provider>
-  )
+  );
 }
 
 // Hook
 function useCart() {
-  const context = useContext(CartContext)
-  if (!context) throw new Error('useCart must be used within CartProvider')
-  return context
+  const context = useContext(CartContext);
+  if (!context) throw new Error("useCart must be used within CartProvider");
+  return context;
 }
 ```
 
@@ -332,42 +344,42 @@ function useCart() {
 
 ```tsx
 // React Query pattern
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 function useProducts(filters: ProductFilters) {
   return useQuery({
-    queryKey: ['products', filters],
+    queryKey: ["products", filters],
     queryFn: () => fetchProducts(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
-  })
+  });
 }
 
 function useAddProduct() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: addProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-    }
-  })
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
 }
 
 // Gebruik
 function ProductList() {
-  const { data, isLoading, error } = useProducts({ category: 'electronics' })
-  const addProduct = useAddProduct()
+  const { data, isLoading, error } = useProducts({ category: "electronics" });
+  const addProduct = useAddProduct();
 
-  if (isLoading) return <Skeleton />
-  if (error) return <ErrorMessage error={error} />
+  if (isLoading) return <Skeleton />;
+  if (error) return <ErrorMessage error={error} />;
 
   return (
     <ul>
-      {data?.map(product => (
+      {data?.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
     </ul>
-  )
+  );
 }
 ```
 
@@ -503,13 +515,13 @@ function SplitView({ list, detail, showDetail }: SplitViewProps) {
 
 ### Level Definitions
 
-| Level | Beschrijving | Voorbeelden | Complexity |
-|-------|-------------|-------------|------------|
-| **Atom** | Kleinste UI element | Button, Input, Badge, Icon | Single element |
-| **Molecule** | Groep van 2-3 atoms | SearchBar, FormField, NavItem | 2-3 atoms |
-| **Organism** | Meerdere molecules | Header, Card, Sidebar, ProductTile | Multiple molecules |
-| **Template** | Pagina layout zonder content | PageLayout, DashboardTemplate | Regions only |
-| **Page** | Template + echte content | HomePage, ProductPage | Full implementation |
+| Level        | Beschrijving                 | Voorbeelden                        | Complexity          |
+| ------------ | ---------------------------- | ---------------------------------- | ------------------- |
+| **Atom**     | Kleinste UI element          | Button, Input, Badge, Icon         | Single element      |
+| **Molecule** | Groep van 2-3 atoms          | SearchBar, FormField, NavItem      | 2-3 atoms           |
+| **Organism** | Meerdere molecules           | Header, Card, Sidebar, ProductTile | Multiple molecules  |
+| **Template** | Pagina layout zonder content | PageLayout, DashboardTemplate      | Regions only        |
+| **Page**     | Template + echte content     | HomePage, ProductPage              | Full implementation |
 
 ### Component Mapping
 
@@ -581,55 +593,59 @@ stories/
 ### Error Boundary
 
 ```tsx
-'use client'
+"use client";
 
-import { Component, ErrorInfo, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
-  children: ReactNode
-  fallback?: ReactNode
-  onError?: (error: Error, errorInfo: ErrorInfo) => void
+  children: ReactNode;
+  fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
-  hasError: boolean
-  error: Error | null
+  hasError: boolean;
+  error: Error | null;
 }
 
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
-    super(props)
-    this.state = { hasError: false, error: null }
+    super(props);
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    this.props.onError?.(error, errorInfo)
+    this.props.onError?.(error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback ?? (
-        <div role="alert">
-          <h2>Er ging iets mis</h2>
-          <button onClick={() => this.setState({ hasError: false, error: null })}>
-            Probeer opnieuw
-          </button>
-        </div>
-      )
+      return (
+        this.props.fallback ?? (
+          <div role="alert">
+            <h2>Er ging iets mis</h2>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+            >
+              Probeer opnieuw
+            </button>
+          </div>
+        )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
 // Gebruik
 <ErrorBoundary fallback={<ProductErrorState />}>
   <ProductList />
-</ErrorBoundary>
+</ErrorBoundary>;
 ```
 
 ---
@@ -640,27 +656,27 @@ class ErrorBoundary extends Component<Props, State> {
 // Pattern: Result type
 type Result<T, E = Error> =
   | { success: true; data: T }
-  | { success: false; error: E }
+  | { success: false; error: E };
 
 async function fetchProduct(id: string): Promise<Result<Product>> {
   try {
-    const response = await fetch(`/api/products/${id}`)
+    const response = await fetch(`/api/products/${id}`);
     if (!response.ok) {
-      return { success: false, error: new Error(`HTTP ${response.status}`) }
+      return { success: false, error: new Error(`HTTP ${response.status}`) };
     }
-    const data = await response.json()
-    return { success: true, data }
+    const data = await response.json();
+    return { success: true, data };
   } catch (error) {
-    return { success: false, error: error as Error }
+    return { success: false, error: error as Error };
   }
 }
 
 // Gebruik
-const result = await fetchProduct('123')
+const result = await fetchProduct("123");
 if (result.success) {
-  console.log(result.data)
+  console.log(result.data);
 } else {
-  console.error(result.error)
+  console.error(result.error);
 }
 ```
 
@@ -674,27 +690,37 @@ if (result.success) {
 // useMemo voor expensive berekeningen
 function ProductList({ products, filters }: Props) {
   const filteredProducts = useMemo(
-    () => products.filter(p => matchesFilters(p, filters)),
-    [products, filters]
-  )
+    () => products.filter((p) => matchesFilters(p, filters)),
+    [products, filters],
+  );
 
-  return <ul>{filteredProducts.map(p => <ProductCard key={p.id} product={p} />)}</ul>
+  return (
+    <ul>
+      {filteredProducts.map((p) => (
+        <ProductCard key={p.id} product={p} />
+      ))}
+    </ul>
+  );
 }
 
 // React.memo voor component re-renders
-const ProductCard = memo(function ProductCard({ product }: { product: Product }) {
-  return <div>{product.name}</div>
-})
+const ProductCard = memo(function ProductCard({
+  product,
+}: {
+  product: Product;
+}) {
+  return <div>{product.name}</div>;
+});
 
 // useCallback voor stable function references
 function Parent() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   const handleClick = useCallback(() => {
-    setCount(c => c + 1)
-  }, [])
+    setCount((c) => c + 1);
+  }, []);
 
-  return <Child onClick={handleClick} />
+  return <Child onClick={handleClick} />;
 }
 ```
 
@@ -704,23 +730,207 @@ function Parent() {
 
 ```tsx
 // Dynamic import
-const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
+const HeavyComponent = dynamic(() => import("./HeavyComponent"), {
   loading: () => <Skeleton />,
-  ssr: false // Only load on client
-})
+  ssr: false, // Only load on client
+});
 
 // Route-based splitting (Next.js does this automatically)
 // pages/heavy-page.tsx wordt automatisch gesplit
 
 // Component-based splitting
-const LazyChart = lazy(() => import('./Chart'))
+const LazyChart = lazy(() => import("./Chart"));
 
 function Dashboard() {
   return (
     <Suspense fallback={<ChartSkeleton />}>
       <LazyChart data={data} />
     </Suspense>
-  )
+  );
+}
+```
+
+---
+
+## Data Fetching Patterns
+
+### Server Component Data Loading (Next.js App Router)
+
+**Wanneer:** Data ophalen in Server Components zonder client-side state.
+
+```tsx
+// app/dashboard/page.tsx (Server Component)
+import { getMetrics } from "@/services/metrics";
+
+export default async function DashboardPage() {
+  const metrics = await getMetrics();
+
+  return (
+    <div className="grid grid-cols-4 gap-4">
+      {metrics.map((metric) => (
+        <MetricCard key={metric.id} {...metric} />
+      ))}
+    </div>
+  );
+}
+```
+
+```tsx
+// src/services/metrics.ts
+import { z } from "zod";
+
+const MetricSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  value: z.number(),
+  trend: z.number().optional(),
+});
+
+type Metric = z.infer<typeof MetricSchema>;
+
+export async function getMetrics(): Promise<Metric[]> {
+  const res = await fetch(`${process.env.API_URL}/metrics`, {
+    next: { revalidate: 60 }, // ISR: revalidate elke 60s
+  });
+  if (!res.ok) throw new Error(`Failed to fetch metrics: ${res.status}`);
+  const data = await res.json();
+  return z.array(MetricSchema).parse(data);
+}
+```
+
+**Voordelen:**
+
+- Zero client-side JS voor data fetching
+- Automatische deduplicatie door React
+- Type-safe met Zod validatie
+
+---
+
+### API Service Layer Pattern
+
+**Wanneer:** Gedeelde data access functies voor meerdere components.
+
+```
+src/services/
+├── users.ts        # User CRUD operations
+├── products.ts     # Product queries + mutations
+└── api-client.ts   # Shared fetch wrapper
+```
+
+```tsx
+// src/services/api-client.ts
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+
+export async function apiClient<T>(
+  path: string,
+  options?: RequestInit,
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    ...options,
+  });
+  if (!res.ok) {
+    throw new Error(`API error ${res.status}: ${await res.text()}`);
+  }
+  return res.json();
+}
+```
+
+```tsx
+// src/services/users.ts
+import { apiClient } from "./api-client";
+import type { User, CreateUserInput } from "@/types/user";
+
+export const usersService = {
+  getAll: () => apiClient<User[]>("/users"),
+  getById: (id: string) => apiClient<User>(`/users/${id}`),
+  create: (data: CreateUserInput) =>
+    apiClient<User>("/users", { method: "POST", body: JSON.stringify(data) }),
+};
+```
+
+---
+
+### Loading State Patterns (Skeleton)
+
+**Wanneer:** Async data laden met visuele feedback.
+
+```tsx
+// Skeleton component
+function MetricCardSkeleton() {
+  return (
+    <div className="bg-card border border-border rounded-lg p-4 animate-pulse">
+      <div className="h-4 w-24 bg-muted rounded mb-2" />
+      <div className="h-8 w-32 bg-muted rounded mb-1" />
+      <div className="h-3 w-20 bg-muted rounded" />
+    </div>
+  );
+}
+
+// Met Suspense (Server Components)
+import { Suspense } from "react";
+
+function Dashboard() {
+  return (
+    <Suspense fallback={<MetricCardSkeleton />}>
+      <MetricCard />
+    </Suspense>
+  );
+}
+
+// Met React Query (Client Components)
+function MetricCard({ id }: { id: string }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["metric", id],
+    queryFn: () => metricsService.getById(id),
+  });
+
+  if (isLoading) return <MetricCardSkeleton />;
+  if (error) return <MetricCardError error={error} />;
+  return <MetricCardContent {...data} />;
+}
+```
+
+---
+
+### Error State Patterns
+
+**Wanneer:** API errors graceful afhandelen met gebruikersvriendelijke UI.
+
+```tsx
+// Inline error
+function MetricCardError({
+  error,
+  onRetry,
+}: {
+  error: Error;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="bg-card border border-error/20 rounded-lg p-4" role="alert">
+      <p className="text-sm text-error">Kon data niet laden</p>
+      {onRetry && (
+        <button onClick={onRetry} className="text-xs text-primary mt-2">
+          Opnieuw proberen
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ErrorBoundary (class component — catches render errors)
+// Zie Error Handling Patterns sectie
+
+// React Query error met retry
+function DataSection() {
+  const { data, error, refetch } = useQuery({
+    queryKey: ["data"],
+    queryFn: fetchData,
+    retry: 2,
+  });
+
+  if (error) return <ErrorMessage error={error} onRetry={refetch} />;
+  return <DataContent data={data} />;
 }
 ```
 

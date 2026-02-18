@@ -113,7 +113,7 @@ Dit skill accepteert input uit ELKE bron -- geen handoff van andere skills verei
 ```json
 {
   "from": "frontend-convert",
-  "to": null,
+  "to": "frontend-data",
   "data": {
     "inputType": "screenshot | html | url",
     "inputSource": "[path or URL]",
@@ -1402,6 +1402,8 @@ Next steps:
 3. Vergelijk met origineel design en tweak waar nodig
 4. Components zijn beschikbaar via:
    import { Header, Sidebar } from '@/components/[page]';
+5. Gebruik /data om hardcoded data te vervangen door echte API connecties
+6. Gebruik /test om component unit tests te genereren
 
 ===============================================================
 ```

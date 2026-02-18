@@ -446,6 +446,201 @@ elements.forEach((el, i) => {
 
 ---
 
+## Performance Rules (frontend-specifiek)
+
+### MUST_DO (Critical)
+
+| ID   | Rule                           | Check                                                          |
+| ---- | ------------------------------ | -------------------------------------------------------------- |
+| P001 | Lighthouse score >= 90 per cat | `npx lighthouse` output alle categorieën ≥ 90                  |
+| P002 | Geen render-blocking resources | Geen sync `<script>` of `<link>` in `<head>` die FCP blokkeren |
+| P003 | Images geoptimaliseerd         | WebP/AVIF, width/height attributen, lazy loading               |
+
+#### Voorbeelden
+
+**P002** Geen render-blocking resources
+
+```html
+<!-- ✗ Incorrect -->
+<head>
+  <script src="/analytics.js"></script>
+  <link rel="stylesheet" href="/heavy-lib.css" />
+</head>
+
+<!-- ✓ Correct -->
+<head>
+  <script src="/analytics.js" defer></script>
+  <link
+    rel="preload"
+    href="/heavy-lib.css"
+    as="style"
+    onload="this.rel='stylesheet'"
+  />
+</head>
+```
+
+**P003** Images geoptimaliseerd
+
+```jsx
+// ✗ Incorrect
+<img src="/hero.png" />
+
+// ✓ Correct
+<Image
+  src="/hero.webp"
+  width={1200}
+  height={630}
+  alt="Hero banner"
+  loading="lazy"
+  sizes="(max-width: 768px) 100vw, 1200px"
+/>
+```
+
+### SHOULD_DO (High)
+
+| ID   | Rule                                  | Rationale              |
+| ---- | ------------------------------------- | ---------------------- |
+| P101 | CLS < 0.1                             | Visual stability       |
+| P102 | LCP < 2.5s                            | Perceived load speed   |
+| P103 | INP < 200ms                           | Input responsiveness   |
+| P104 | Bundle < 200KB/route (gzipped)        | Load performance       |
+| P105 | Code splitting per route              | Alleen laden wat nodig |
+| P106 | Font loading strategy (swap/optional) | Geen FOIT              |
+| P107 | Third-party scripts async/defer       | Geen main thread block |
+
+### AVOID (Medium)
+
+| ID   | Pattern                          | Alternative                            |
+| ---- | -------------------------------- | -------------------------------------- |
+| P201 | Full library imports             | Tree-shaking, named imports            |
+| P202 | Synchrone data loading in render | Suspense, React Query, SWR             |
+| P203 | Ongecomprimeerde images          | WebP/AVIF met build-time optimalisatie |
+
+---
+
+## Responsive Rules (H-series uitbreiding)
+
+> **Note:** Uitbreiding op bestaande H-series in HTML/CSS Rules sectie.
+
+### SHOULD_DO (High)
+
+| ID   | Rule                                       | Rationale            |
+| ---- | ------------------------------------------ | -------------------- |
+| H117 | Geen horizontaal scroll bij 320px viewport | Minimale viewport    |
+| H118 | Touch targets in thumb-zone bereikbaar     | Mobile ergonomics    |
+| H119 | Viewport meta tag aanwezig                 | Responsive rendering |
+| H120 | Geen fixed-width containers die breken     | Fluid layout         |
+| H121 | Body font >= 16px op mobiel                | Leesbaar zonder zoom |
+
+#### Voorbeelden
+
+**H117** Geen horizontaal scroll bij 320px
+
+```css
+/* ✗ Incorrect */
+.container {
+  width: 1200px;
+}
+
+/* ✓ Correct */
+.container {
+  width: 100%;
+  max-width: 1200px;
+}
+```
+
+**H119** Viewport meta tag
+
+```html
+<!-- ✗ Incorrect — ontbreekt -->
+<head>
+  <title>App</title>
+</head>
+
+<!-- ✓ Correct -->
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>App</title>
+</head>
+```
+
+---
+
+## Data Integration Rules (R-series uitbreiding)
+
+> **Note:** Uitbreiding op bestaande R-series in React/Next.js Rules sectie.
+
+### MUST_DO (Critical)
+
+| ID   | Rule                          | Check                                        |
+| ---- | ----------------------------- | -------------------------------------------- |
+| R109 | Loading state voor async data | Skeleton/Spinner zichtbaar tijdens laden     |
+| R110 | Error state voor async data   | Error UI bij API failure, niet lege pagina   |
+| R111 | Type-safe API responses       | Zod schema of TypeScript interface validatie |
+
+#### Voorbeelden
+
+**R109** Loading state
+
+```jsx
+// ✗ Incorrect — geen loading feedback
+function UserList() {
+  const { data } = useQuery({ queryKey: ["users"], queryFn: fetchUsers });
+  return (
+    <ul>
+      {data?.map((u) => (
+        <li key={u.id}>{u.name}</li>
+      ))}
+    </ul>
+  );
+}
+
+// ✓ Correct
+function UserList() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["users"],
+    queryFn: fetchUsers,
+  });
+  if (isLoading) return <UserListSkeleton />;
+  if (error) return <ErrorMessage error={error} />;
+  return (
+    <ul>
+      {data.map((u) => (
+        <li key={u.id}>{u.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+**R111** Type-safe API responses
+
+```ts
+// ✗ Incorrect — unvalidated response
+const data = await res.json();
+
+// ✓ Correct — validated with schema
+import { z } from "zod";
+
+const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+});
+
+const data = UserSchema.parse(await res.json());
+```
+
+### SHOULD_DO (High)
+
+| ID   | Rule                           | Rationale               |
+| ---- | ------------------------------ | ----------------------- |
+| R112 | Geen hardcoded API URLs        | Env variables gebruiken |
+| R113 | Stale data strategy            | staleTime, revalidation |
+| R114 | Optimistic updates waar nuttig | Perceived performance   |
+
+---
+
 ## Validation Checkpoints
 
 ### Pre-Wireframe Validation
@@ -550,6 +745,52 @@ A11Y CHECK
 [ ] R004 - Form labels aanwezig
 [ ] H004 - Tekst contrast voldoende
 [ ] H006 - Touch targets adequate
+```
+
+### Responsive Validation
+
+Check bij responsive audits:
+
+```
+RESPONSIVE CHECK
+────────────────
+[ ] H117 - Geen horizontaal scroll bij 320px
+[ ] H118 - Touch targets in thumb-zone
+[ ] H119 - Viewport meta tag aanwezig
+[ ] H120 - Geen fixed-width die breekt
+[ ] H121 - Body font >= 16px mobiel
+[ ] H104 - Mobile-first breakpoints
+[ ] H006 - Touch targets ≥ 44x44px
+```
+
+### Performance Validation
+
+Check bij performance audits:
+
+```
+PERFORMANCE CHECK
+─────────────────
+[ ] P001 - Lighthouse >= 90 per categorie
+[ ] P002 - Geen render-blocking resources
+[ ] P003 - Images geoptimaliseerd
+[ ] P101 - CLS < 0.1
+[ ] P102 - LCP < 2.5s
+[ ] P103 - INP < 200ms
+[ ] P104 - Bundle < 200KB/route
+```
+
+### Data Integration Validation
+
+Check bij data hookup:
+
+```
+DATA CHECK
+──────────
+[ ] R109 - Loading states aanwezig
+[ ] R110 - Error states aanwezig
+[ ] R111 - Type-safe API responses
+[ ] R112 - Geen hardcoded API URLs
+[ ] R007 - Async error handling
 ```
 
 ---

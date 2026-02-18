@@ -7,6 +7,7 @@ Session state tracking specificatie voor cross-skill coördinatie. Gebaseerd op 
 ## Purpose
 
 Track progress across skill invocations binnen een sessie:
+
 - **Progress tracking**: Welke taken zijn klaar, welke lopen
 - **File tracking**: Welke bestanden zijn gemaakt/gewijzigd
 - **Cross-skill handoff**: Data doorgeven tussen skills
@@ -73,9 +74,21 @@ Track progress across skill invocations binnen een sessie:
     "currentTask": "Generate Rich wireframe v1",
     "taskHistory": [
       { "task": "Create THEME.md", "status": "completed", "duration": 120 },
-      { "task": "Gather wireframe requirements", "status": "completed", "duration": 180 },
-      { "task": "Generate UX wireframe v1", "status": "completed", "duration": 45 },
-      { "task": "Generate Minimal wireframe v1", "status": "completed", "duration": 42 }
+      {
+        "task": "Gather wireframe requirements",
+        "status": "completed",
+        "duration": 180
+      },
+      {
+        "task": "Generate UX wireframe v1",
+        "status": "completed",
+        "duration": 45
+      },
+      {
+        "task": "Generate Minimal wireframe v1",
+        "status": "completed",
+        "duration": 42
+      }
     ]
   },
 
@@ -135,16 +148,18 @@ Track progress across skill invocations binnen een sessie:
 
 Roep aan bij skill start als geen actieve sessie bestaat.
 
-```markdown
+````markdown
 **Trigger:** Skill start zonder bestaande devinfo.json
 
 **Actie:**
+
 1. Genereer nieuw sessionId (UUID v4)
 2. Zet startedAt op huidige timestamp
 3. Initialiseer executionPlan met huidige skill
 4. Schrijf naar `.workspace/session/devinfo.json`
 
 **Output:**
+
 ```json
 {
   "sessionId": "generated-uuid",
@@ -153,7 +168,9 @@ Roep aan bij skill start als geen actieve sessie bestaat.
   "executionPlan": [{ "skill": "skill-name", "status": "in_progress" }]
 }
 ```
-```
+````
+
+````
 
 ---
 
@@ -175,7 +192,7 @@ Roep aan bij skill start als sessie al bestaat.
 - Check of vorige skill "completed" status heeft
 - Check of handoff data beschikbaar is (indien vereist)
 - Warn als skill out-of-order wordt uitgevoerd
-```
+````
 
 ---
 
@@ -183,24 +200,28 @@ Roep aan bij skill start als sessie al bestaat.
 
 Roep aan na elke fase/task completion.
 
-```markdown
+````markdown
 **Trigger:** Fase of task voltooid
 
 **Actie:**
+
 1. Update currentSkill.phase
 2. Increment progress.completedTasks
 3. Add to progress.taskHistory
 4. Update lastUpdatedAt
 
 **Voorbeeld:**
+
 ```javascript
 updateProgress({
   phase: "FASE_3",
   task: "Visual reflection complete",
-  duration: 60 // seconds
-})
+  duration: 60, // seconds
+});
 ```
-```
+````
+
+````
 
 ---
 
@@ -222,8 +243,9 @@ recordFile({
   path: ".workspace/wireframes/dashboard/ux/v1.html",
   skill: "frontend-compose"
 })
-```
-```
+````
+
+````
 
 ---
 
@@ -253,8 +275,9 @@ Roep aan bij failure.
     "fallback": "sequential-mode"
   }
 }
-```
-```
+````
+
+````
 
 ---
 
@@ -284,8 +307,9 @@ Roep aan bij skill completion.
     "themeApplied": true
   }
 }
-```
-```
+````
+
+````
 
 ---
 
@@ -303,7 +327,7 @@ Roep aan als volledige workflow klaar is.
 
 **Archive Location:**
 `.workspace/session/history/2024-01-15-frontend-pipeline-uuid.json`
-```
+````
 
 ---
 
@@ -354,38 +378,18 @@ Roep aan als volledige workflow klaar is.
 }
 ```
 
-#### create → (completion)
+#### create → data
 
-`/build` is de laatste stap in de interne pipeline (Pad A). Output:
+`/build` levert gebouwde components af voor data hookup (Pad A). Zie `build → data` contract hieronder.
 
-```json
-{
-  "from": "frontend-build",
-  "to": null,
-  "data": {
-    "pageFile": "src/pages/[page].tsx",
-    "componentsDirectory": "src/components/[page]/",
-    "tailwindConfig": "tailwind.config.js",
-    "componentsCompleted": [
-      {
-        "name": "Header",
-        "atomic": "organism",
-        "files": ["Header.tsx", "Header.types.ts"]
-      }
-    ],
-    "componentsSkipped": []
-  }
-}
-```
+#### convert → data
 
-#### convert → (completion)
-
-`/convert` is het eindpunt van het externe pad (Pad B: designer levert design). Output:
+`/convert` levert gebouwde components af voor data hookup (Pad B: extern design).
 
 ```json
 {
   "from": "frontend-convert",
-  "to": null,
+  "to": "frontend-data",
   "data": {
     "inputType": "screenshot | html | url",
     "pageFile": "src/pages/[page].tsx",
@@ -403,20 +407,74 @@ Roep aan als volledige workflow klaar is.
 }
 ```
 
+#### build → data
+
+`/build` levert gebouwde components af voor data hookup (Pad A: intern ontwerp).
+
+```json
+{
+  "from": "frontend-build",
+  "to": "frontend-data",
+  "data": {
+    "hifiPreview": ".workspace/wireframes/[page]/hifi/preview.html",
+    "pageFile": "src/pages/[page].tsx",
+    "componentsDirectory": "src/components/[page]/",
+    "tailwindConfig": "tailwind.config.js",
+    "componentsCompleted": [
+      {
+        "name": "Header",
+        "atomic": "organism",
+        "files": ["Header.tsx", "Header.types.ts"],
+        "approved": true
+      }
+    ],
+    "componentsSkipped": []
+  }
+}
+```
+
+#### data → (completion)
+
+`/data` is het eindpunt voor data integratie. Output:
+
+```json
+{
+  "from": "frontend-data",
+  "to": null,
+  "data": {
+    "pageFile": "src/pages/[page].tsx",
+    "componentsDirectory": "src/components/[page]/",
+    "componentsHooked": [
+      {
+        "name": "Header",
+        "dataSource": "server-component",
+        "hasLoadingState": true,
+        "hasErrorState": true
+      }
+    ],
+    "componentsSkipped": [],
+    "servicesCreated": ["src/services/users.ts"],
+    "dataStrategy": "react-query | server-components | swr | plain-fetch"
+  }
+}
+```
+
 ---
 
 ### Handoff Validation
 
 Bij skill start, valideer handoff data:
 
-```markdown
+````markdown
 **Check:**
+
 1. Expected `from` skill matches previous completed skill
 2. Required data fields present
 3. Referenced files exist
 4. Data values valid
 
 **On Failure:**
+
 ```yaml
 header: "Handoff Mismatch"
 question: "Expected handoff from [expected], got [actual]. Hoe doorgaan?"
@@ -428,6 +486,8 @@ options:
   - label: "Start fresh"
     description: "Begin zonder handoff data"
 ```
+````
+
 ```
 
 ---
@@ -435,34 +495,36 @@ options:
 ## Directory Structure
 
 ```
-.workspace/                        # Intermediate artifacts
+
+.workspace/ # Intermediate artifacts
 ├── session/
-│   ├── devinfo.json              # Huidige sessie state
-│   └── history/                  # Gearchiveerde sessies
-│       ├── 2024-01-14-*.json
-│       └── 2024-01-15-*.json
+│ ├── devinfo.json # Huidige sessie state
+│ └── history/ # Gearchiveerde sessies
+│ ├── 2024-01-14-_.json
+│ └── 2024-01-15-_.json
 ├── config/
-│   └── THEME.md                  # Theme output (van /theme)
-└── wireframes/                   # Wireframe output (van /compose)
-    └── [page]/
-        ├── ux/
-        │   ├── v1.html
-        │   └── v2.html
-        ├── minimal/
-        └── rich/
-
-src/components/                    # Final output (van /build of /convert)
+│ └── THEME.md # Theme output (van /theme)
+└── wireframes/ # Wireframe output (van /compose)
 └── [page]/
-    ├── index.ts
-    ├── organisms/
-    │   └── Header/
-    │       ├── Header.tsx
-    │       └── Header.types.ts
-    ├── molecules/
-    └── atoms/
+├── ux/
+│ ├── v1.html
+│ └── v2.html
+├── minimal/
+└── rich/
 
-tailwind.config.js                 # Extended met theme tokens
-```
+src/components/ # Final output (van /build of /convert)
+└── [page]/
+├── index.ts
+├── organisms/
+│ └── Header/
+│ ├── Header.tsx
+│ └── Header.types.ts
+├── molecules/
+└── atoms/
+
+tailwind.config.js # Extended met theme tokens
+
+````
 
 ---
 
@@ -484,13 +546,16 @@ tailwind.config.js                 # Extended met theme tokens
    - Start fresh
 
 **Output:**
-```
+````
+
 SESSION CHECK
 ─────────────
 Status: [New session | Continuing session xyz]
 Previous skill: [name | none]
 Handoff data: [available | not available]
+
 ```
+
 ```
 
 ### Bij Fase Transitions
@@ -499,6 +564,7 @@ Handoff data: [available | not available]
 ### Progress Update
 
 Na elke fase completion:
+
 1. Update devinfo.currentSkill.phase
 2. Update devinfo.progress
 3. Write to file
@@ -512,6 +578,7 @@ Dit gebeurt automatisch bij elke FASE → FASE transitie.
 ### File Tracking
 
 Bij elke file write:
+
 1. Record in devinfo.files
 2. Include skill en timestamp
 
@@ -524,6 +591,7 @@ Dit helpt met debugging en audit trails.
 ### Error Recording
 
 Bij elke error:
+
 1. Record in devinfo.errors
 2. Include recovery attempt
 3. Update validation status
@@ -543,13 +611,16 @@ Dit helpt met debugging en recovery.
 
 **Output:**
 ```
+
 SKILL COMPLETE
 ──────────────
 Skill: frontend-compose
 Duration: 15 minutes
 Files created: 6
 Next suggested: /build dashboard
+
 ```
+
 ```
 
 ---
@@ -557,6 +628,7 @@ Next suggested: /build dashboard
 ## Backward Compatibility
 
 DevInfo tracking is **optioneel**:
+
 - Skills werken zonder devinfo.json
 - Handoff data is nice-to-have, niet required
 - Progress tracking degradeert gracefully
@@ -565,6 +637,7 @@ DevInfo tracking is **optioneel**:
 ### Fallback Behavior
 
 Als devinfo niet beschikbaar:
+
 - Skill vraagt handmatig om dependencies
 - Geen progress tracking
 - Skill werkt nog steeds, maar minder smooth
