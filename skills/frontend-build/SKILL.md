@@ -83,7 +83,6 @@ stateDiagram-v2
 - `../shared/RULES.md` — React/TypeScript rules (R001-R108, T001-T103)
 - `../shared/PATTERNS.md` — Component patterns (compound, render props, etc.)
 - `../shared/DEVINFO.md` — Session tracking, handoff contracts
-- `../shared/brand-presets.md` — Brand color presets
 
 ---
 

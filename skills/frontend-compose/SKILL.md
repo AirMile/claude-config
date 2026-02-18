@@ -209,7 +209,6 @@ question: "Geen THEME.md gevonden. Hoe wil je doorgaan?"
 options:
   - label: "Run /theme eerst (Recommended)", description: "Maak theme tokens aan"
   - label: "Grayscale wireframes", description: "Standaard low-fidelity zonder theme"
-  - label: "Brand preset kiezen", description: "Gebruik preset uit brand-presets.md"
   - label: "Annuleren", description: "Stop workflow"
 multiSelect: false
 ```

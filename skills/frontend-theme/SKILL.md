@@ -195,33 +195,6 @@ multiSelect: false
 
 #### Route: Aanmaken (Nieuwe Theme)
 
-**Stap 0: Brand Preset (Snelle Start)**
-
-**AskUserQuestion:**
-
-```yaml
-header: "Brand Preset"
-question: "Wil je een brand preset gebruiken voor snelle start?"
-options:
-  - label: "Custom (Recommended)", description: "Eigen kleuren en fonts definiëren"
-  - label: "Anthropic Style", description: "Dark/Light + Orange/Blue/Green accents, Poppins/Lora"
-  - label: "Minimal Mono", description: "Zwart/Wit met één accent kleur, system fonts"
-  - label: "Warm Earth", description: "Aardtinten met serif fonts"
-  - label: "Cool Tech", description: "Blauw/Cyan met Inter font"
-  - label: "Explain question", description: "Wat zijn brand presets?"
-multiSelect: false
-```
-
-**Als een preset geselecteerd:**
-
-1. Laad preset waarden uit `skills/shared/brand-presets.md`
-2. Toon preview van preset kleuren en fonts
-3. **Als preset dark mode kleuren heeft:** Toon dark mode preview, vraag bevestiging
-4. **Als preset geen dark mode heeft:** → Ga naar Stap 5 (Dark Mode)
-5. Vraag bevestiging → Spring naar Stap 6 (Bevestiging)
-
-**Als "Custom":** → Ga naar Stap 1
-
 **Stap 1: Kleuren**
 
 **AskUserQuestion:**
@@ -230,12 +203,30 @@ multiSelect: false
 header: "Colors"
 question: "Hoe wil je kleuren definiëren?"
 options:
-  - label: "Handmatig invoeren (Recommended)", description: "Ik geef hex values op"
+  - label: "Genereer voor mij (Recommended)", description: "Beschrijf wat je bouwt, Claude kiest passende kleuren"
+  - label: "Handmatig invoeren", description: "Ik geef hex values op"
   - label: "Extraheren uit config", description: "Haal uit Tailwind/CSS"
-  - label: "Defaults gebruiken", description: "Start met standaard palette"
   - label: "Explain question", description: "Wat zijn design tokens?"
 multiSelect: false
 ```
+
+**Als "Genereer voor mij":**
+
+```
+Beschrijf kort wat je bouwt:
+
+→ Voorbeeld: "Healthcare dashboard voor artsen"
+→ Voorbeeld: "E-commerce voor luxe horloges"
+→ Voorbeeld: "SaaS landing page voor projectmanagement"
+```
+
+Op basis van de beschrijving genereert Claude een contextbewust kleurenpalet:
+
+- Main colors (dark, light, mid-gray, light-gray)
+- Accent colors (primary, secondary, tertiary) passend bij de industrie/doelgroep
+- Semantic colors (success, warning, error, info)
+
+Toon het gegenereerde palet als tabel, vraag bevestiging. → Ga naar Stap 2
 
 **Als "Handmatig invoeren":**
 
@@ -250,13 +241,9 @@ Geef je primaire kleuren (hex values):
 
 3. Neutral (grijs voor tekst/borders)
    → Voorbeeld: #6B7280
-
-Type 's' voor populaire paletten, 'q' voor uitleg
 ```
 
 **Als "Extraheren":** → Spring naar Route: Extraheren
-
-**Als "Defaults":** Gebruik template defaults, ga naar Stap 2
 
 **Stap 2: Typography**
 
@@ -873,7 +860,6 @@ Theme tokens ready for wireframe integration.
 ## Resources
 
 - `skills/frontend-theme/references/THEME_TEMPLATE.md` - Template voor nieuwe theme
-- `skills/shared/brand-presets.md` - Voorgedefinieerde brand presets
 - `skills/shared/VALIDATION.md` - Pre/post-flight validation templates
 - `skills/shared/DEVINFO.md` - Session state tracking
 

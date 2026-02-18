@@ -47,20 +47,20 @@ Extracted from SKILL.md for progressive disclosure (Anthropic skill spec).
 
 ### Agent Failures
 
-| Failure | Recovery |
-|---------|----------|
-| 1 agent timeout | Retry that agent only |
-| Both agents timeout | Fall back to single sequential agent |
+| Failure               | Recovery                                   |
+| --------------------- | ------------------------------------------ |
+| 1 agent timeout       | Retry that agent only                      |
+| Both agents timeout   | Fall back to single sequential agent       |
 | Task tool unavailable | Single agent makes 2 variants sequentially |
 
 ### Output Failures
 
-| Failure | Recovery |
-|---------|----------|
-| Empty file | Retry agent with verbose prompt |
-| Invalid HTML | Parse error, fix common issues, retry |
-| Missing navigation | Re-apply template, keep content |
-| Theme not applied | Re-inject CSS variables |
+| Failure            | Recovery                              |
+| ------------------ | ------------------------------------- |
+| Empty file         | Retry agent with verbose prompt       |
+| Invalid HTML       | Parse error, fix common issues, retry |
+| Missing navigation | Re-apply template, keep content       |
+| Theme not applied  | Re-inject CSS variables               |
 
 ### Graceful Degradation Sequence
 
@@ -85,6 +85,7 @@ Level 5: Template only, user fills in → 1 template
 ### Session Updates
 
 Update devinfo at each phase:
+
 - `PREFLIGHT` → session started
 - `FASE1` → requirements captured (including project context)
 - `FASE2` → files created (v1)
@@ -138,6 +139,7 @@ Update devinfo at each phase:
 ### Input Contract (wireframe ← theme)
 
 Expects from /theme (if theme integration selected):
+
 - `.workspace/config/THEME.md` exists
 - CSS export section valid
 - Handoff data in devinfo
@@ -145,6 +147,7 @@ Expects from /theme (if theme integration selected):
 ### Output Contract (wireframe → style)
 
 Guarantees at completion:
+
 - `.workspace/wireframes/[page]/final.html` exists (refined wireframe)
 - `.workspace/wireframes/[page]/final-screenshot.png` exists
 - All 4 wireframe variants preserved in agent folders (agent-a/, agent-b/)
@@ -172,6 +175,7 @@ Next suggested: /build [page]
 Gebruik ALLEEN low-fidelity grayscale (of theme tokens als geselecteerd):
 
 **Grayscale defaults:**
+
 - Achtergronden: #f5f5f5, #fafafa, #e0e0e0
 - Borders: #999, #aaa, #bbb, #ccc
 - Tekst: #333, #666, #888
@@ -185,10 +189,12 @@ Gebruik ALLEEN low-fidelity grayscale (of theme tokens als geselecteerd):
 Alle wireframes bevatten een ingebouwde Edit Mode met de volgende features:
 
 **Sub-modes:**
+
 - **Layout mode** (blauw): Drag componenten om te verplaatsen, resize vanuit randen (interact.js edge detection, margin 20px)
 - **Text mode** (oranje): Klik op tekst elementen om direct te bewerken (contenteditable)
 
 **Toolbar knoppen:**
+
 - **+ Add**: Voeg een nieuw component toe via click-to-place (crosshair cursor, Esc om te annuleren)
 - **Undo**: Herstel laatste actie (ook via Ctrl+Z / Cmd+Z). Snapshot-based, max 20 stappen
 - **Redo**: Herstel ongedaan gemaakte actie (Ctrl+Shift+Z / Ctrl+Y / Cmd+Shift+Z). Nieuwe acties wissen redo history
@@ -198,6 +204,7 @@ Alle wireframes bevatten een ingebouwde Edit Mode met de volgende features:
 **Delete component:** Elk component heeft een × knop op de edit handle (alleen zichtbaar in Layout mode). Vraagt om bevestiging.
 
 **Beperkingen:**
+
 - Undo/Redo werkt alleen voor Layout-acties (drag, resize, add, delete) — niet voor tekst edits
 - Maximaal 20 undo stappen
 - Nieuwe acties wissen de redo stack (branch invalidation)
@@ -212,7 +219,6 @@ Alle wireframes bevatten een ingebouwde Edit Mode met de volgende features:
 - `skills/frontend-compose/references/mobile-patterns.md` - Mobile patterns
 - `skills/frontend-compose/references/desktop-patterns.md` - Desktop patterns
 - `skills/frontend-compose/references/page-types.md` - Page type patterns
-- `skills/shared/brand-presets.md` - Brand color presets
 - `skills/shared/VALIDATION.md` - Validation templates
 - `skills/shared/DEVINFO.md` - Session tracking
 - `skills/shared/RULES.md` - Coding standards (H002, H006)
