@@ -290,20 +290,24 @@ elements.forEach((el, i) => {
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                                                 | Rationale            |
-| ---- | ---------------------------------------------------- | -------------------- |
-| H101 | Gebruik CSS custom properties                        | Theming, consistency |
-| H102 | Logical properties (inline/block)                    | Internationalization |
-| H103 | Prefer flexbox/grid over floats                      | Modern, maintainable |
-| H104 | Mobile-first breakpoints                             | Performance          |
-| H105 | Animate alleen compositor props (transform, opacity) | Performance          |
-| H106 | Max 200ms voor interaction feedback animaties        | Responsiveness       |
-| H107 | Respecteer prefers-reduced-motion                    | Accessibility        |
-| H108 | text-balance voor headings, text-pretty voor body    | Typography           |
-| H109 | tabular-nums voor data tables                        | Alignment            |
-| H110 | h-dvh i.p.v. h-screen                                | Mobile viewport      |
-| H111 | Vast z-index scale (10/20/30/40/50)                  | Maintainability      |
-| H112 | size-\* voor vierkante elementen                     | Conciseness          |
+| ID   | Rule                                                 | Rationale               |
+| ---- | ---------------------------------------------------- | ----------------------- |
+| H101 | Gebruik CSS custom properties                        | Theming, consistency    |
+| H102 | Logical properties (inline/block)                    | Internationalization    |
+| H103 | Prefer flexbox/grid over floats                      | Modern, maintainable    |
+| H104 | Mobile-first breakpoints                             | Performance             |
+| H105 | Animate alleen compositor props (transform, opacity) | Performance             |
+| H106 | Max 200ms voor interaction feedback animaties        | Responsiveness          |
+| H107 | Respecteer prefers-reduced-motion                    | Accessibility           |
+| H108 | text-balance voor headings, text-pretty voor body    | Typography              |
+| H109 | tabular-nums voor data tables                        | Alignment               |
+| H110 | h-dvh i.p.v. h-screen                                | Mobile viewport         |
+| H111 | Vast z-index scale (10/20/30/40/50)                  | Maintainability         |
+| H112 | size-\* voor vierkante elementen                     | Conciseness             |
+| H113 | Loading buttons: disabled + spinner tijdens async    | Prevent double submit   |
+| H114 | Confirmation dialog voor destructieve acties         | Prevent accidental loss |
+| H115 | `overscroll-behavior: contain` op modals/drawers     | Scroll leak prevention  |
+| H116 | Stagger 50-100ms per item bij animated lists/grids   | Smooth visual rhythm    |
 
 ### AVOID (Medium)
 
