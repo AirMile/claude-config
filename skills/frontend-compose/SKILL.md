@@ -318,6 +318,15 @@ Glob: src/design-system/**/*
 # If THEME.md exists, extract design tokens for agent briefing
 ```
 
+**8. Design Memory (persistent design decisions):**
+
+```bash
+cat .workspace/config/DESIGN_MEMORY.md 2>/dev/null
+```
+
+Als Design Memory bestaat: laad beslissingen voor agent briefing en toon samenvatting.
+Als niet bestaat: skip (eerste run voor dit project).
+
 **Show context summary to user:**
 
 ```
@@ -342,6 +351,7 @@ Data models:
   User, Product, Order, ...
 
 Theme: [Available (THEME.md) | Not available]
+Design memory: [Available ({N} decisions) | Not available (first run)]
 Previous skill: [theme → wireframe handoff | None]
 
 ════════════════════════════════════════════════════════════════
@@ -735,6 +745,14 @@ LAYOUT:
 
 THEME:
 - Using: THEME.md tokens (see attached)
+
+DESIGN MEMORY (consistency — only if available):
+- [Layout: sidebar 280px, collapsible under md breakpoint]
+- [Cards: rounded-lg, shadow-sm, p-4, border border-gray-200]
+- [Navigation: bottom sheet op mobile, sidebar op desktop]
+- [Anti-patterns: geen hamburger, geen gradients op buttons]
+→ Respecteer deze beslissingen. Gebruik dezelfde patronen
+  tenzij de requirements expliciet iets anders vragen.
 
 REFERENCE PATTERNS:
 - Dashboard patterns from page-types.md
@@ -1183,6 +1201,64 @@ cp .workspace/wireframes/[page]/refined/refined.html .workspace/wireframes/[page
 ```
 
 Confirm completion: show final.html path, screenshot path, total iterations.
+
+### Step 6.7: Update Design Memory
+
+Analyseer de final wireframe en extraheer design decisions naar `.workspace/config/DESIGN_MEMORY.md`.
+
+**Bij eerste run (bestand bestaat niet) — create:**
+
+Genereer DESIGN_MEMORY.md met 5 secties geëxtraheerd uit de final wireframe:
+
+```markdown
+# Design Memory
+
+Persistent design decisions voor dit project. Automatisch bijgewerkt door /compose.
+
+## Layout
+
+- [Geëxtraheerde layout beslissingen: grid/flex structuur, sidebar breedte, header hoogte, breakpoints]
+
+## Components
+
+- [Card stijl, button variant, form layout, tabel approach]
+
+## Interaction
+
+- [Modal type, nav patroon, dropdown/popover keuze]
+
+## Typography
+
+- [Heading weight, body size, data display stijl]
+
+## Anti-patterns
+
+- [Wat bewust NIET is gekozen en waarom]
+
+---
+
+_Bijgewerkt door /compose voor: [page-name] op [datum]_
+```
+
+**Bij volgende runs (bestand bestaat) — merge:**
+
+1. Lees bestaande DESIGN_MEMORY.md
+2. Vergelijk met nieuwe wireframe beslissingen
+3. Nieuwe beslissingen die niet conflicteren: **toevoegen**
+4. Bestaande beslissingen: **behouden**
+5. Bij conflict (bijv. andere sidebar breedte):
+
+```yaml
+header: "Design Memory"
+question: "Nieuwe layout wijkt af van bestaande memory. Wat wil je?"
+options:
+  - label: "Update memory (Recommended)"
+    description: "Nieuwe beslissing vervangt de oude"
+  - label: "Behoud bestaande"
+    description: "Deze pagina is een uitzondering"
+  - label: "Review beide"
+    description: "Toon verschil en laat mij kiezen"
+```
 
 ---
 
