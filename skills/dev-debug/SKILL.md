@@ -118,8 +118,9 @@ Use `mcp__sequentialthinking__sequentialthinking` to:
 2. Identify patterns and correlations
 3. Form hypotheses about root cause
 4. Evaluate each hypothesis against evidence
-5. Determine most likely root cause
-6. Identify knowledge gaps for FASE 4
+5. Test one hypothesis at a time — never combine multiple fixes in a single verification step
+6. Determine most likely root cause
+7. Identify knowledge gaps for FASE 4
 
 Present findings + hypothesis + confidence (high/medium/low) + research topics needed.
 

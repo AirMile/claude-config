@@ -11,7 +11,7 @@
 ### Step 1: Write Test (RED)
 
 Generate test for THIS requirement. Follow project test conventions.
-Run test — expect FAIL.
+Run test — expect FAIL. If test passes immediately — you're testing existing behavior. Adjust the test.
 
 ### Step 2: Implement (GREEN)
 
