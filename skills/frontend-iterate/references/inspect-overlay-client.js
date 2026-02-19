@@ -148,20 +148,26 @@ function rgbToHex(rgb) {
 }
 
 function getCoreStyles(cs) {
-  return [
+  var styles = [
     { prop: "font-family", value: cs.getPropertyValue("font-family") },
     { prop: "font-size", value: cs.getPropertyValue("font-size") },
-    { prop: "font-weight", value: cs.getPropertyValue("font-weight") },
     { prop: "line-height", value: cs.getPropertyValue("line-height") },
     { prop: "color", value: cs.getPropertyValue("color") },
-    {
-      prop: "background-color",
-      value: cs.getPropertyValue("background-color"),
-    },
-    { prop: "padding", value: cs.getPropertyValue("padding") },
-    { prop: "margin", value: cs.getPropertyValue("margin") },
-    { prop: "border-radius", value: cs.getPropertyValue("border-radius") },
   ];
+  var fw = cs.getPropertyValue("font-weight");
+  if (fw !== "400") styles.push({ prop: "font-weight", value: fw });
+  var bg = cs.getPropertyValue("background-color");
+  if (bg !== "rgba(0, 0, 0, 0)")
+    styles.push({ prop: "background-color", value: bg });
+  var pad = cs.getPropertyValue("padding");
+  if (pad.replace(/0px/g, "").trim() !== "")
+    styles.push({ prop: "padding", value: pad });
+  var mar = cs.getPropertyValue("margin");
+  if (mar.replace(/0px/g, "").trim() !== "")
+    styles.push({ prop: "margin", value: mar });
+  var br = cs.getPropertyValue("border-radius");
+  if (br !== "0px") styles.push({ prop: "border-radius", value: br });
+  return styles;
 }
 
 function getConditionalStyles(cs) {
@@ -277,17 +283,51 @@ function formatStylesLabel(styles) {
   var layout = [];
   if (padding) layout.push("p:" + padding.replace(/px/g, ""));
   if (margin) layout.push("m:" + margin.replace(/px/g, ""));
-  if (borderRadius && borderRadius !== "0px")
-    layout.push("r:" + borderRadius.replace(/px/g, ""));
+  if (borderRadius) layout.push("r:" + borderRadius.replace(/px/g, ""));
   if (layout.length) parts.push(layout.join(" "));
   return parts.join(" . ");
 }
 
+// --- Clipboard helpers ---
+function buildClassName(el) {
+  var cn = el.className;
+  if (cn && typeof cn === "string" && cn.trim()) {
+    return "  class: " + cn.trim();
+  }
+  return null;
+}
+
+function buildSize(el) {
+  return (
+    "  size: " +
+    el.offsetWidth +
+    " x " +
+    el.offsetHeight +
+    " @" +
+    window.innerWidth +
+    "w"
+  );
+}
+
 // --- Clipboard builder ---
 function buildClipboardText(el) {
-  var ref = buildRef(el);
+  var lines = [buildRef(el)];
+  var cn = buildClassName(el);
+  if (cn) lines.push(cn);
+  lines.push(buildSize(el));
   var styles = extractStyles(el);
-  return ref + "\n" + formatStylesClipboard(styles);
+  var styleStr = formatStylesClipboard(styles);
+  if (styleStr) lines.push(styleStr);
+  return lines.join("\n");
+}
+
+function formatMultiClipboard(items) {
+  var total = items.length;
+  return items
+    .map(function (text, i) {
+      return "--- " + (i + 1) + "/" + total + " ---\n" + text;
+    })
+    .join("\n\n");
 }
 
 // --- Event handlers (named for dispose cleanup) ---
