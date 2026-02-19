@@ -1,0 +1,77 @@
+# claude-config
+
+Persoonlijke Claude Code configuratie: skills, agents, hooks en scripts. Gesymlinkt naar `~/.claude/` zodat alles globaal beschikbaar is.
+
+**Paden zijn identiek** — `~/.claude/skills/` en `/home/claude/projects/claude-config/skills/` wijzen naar dezelfde bestanden. Commits altijd in deze repo.
+
+## Platform
+
+Cross-platform: **Linux (VPS)** en **Windows (lokale dev)**.
+
+|               | Linux (VPS)                            | Windows                                  |
+| ------------- | -------------------------------------- | ---------------------------------------- |
+| Repo          | `/home/claude/projects/claude-config/` | `C:\Projects\claude-config`              |
+| Projects root | `$HOME/projects`                       | `C:\Projects`                            |
+| Symlinks      | `ln -sfn`                              | `mklink /J` (junction)                   |
+| Godot         | n.v.t.                                 | `/c/Godot/Godot_v4.4.1-stable_win64.exe` |
+| Shell         | bash                                   | PowerShell                               |
+
+**Regels:**
+
+- Gebruik `{projects_root}` in skills, niet hardcoded paden
+- `paths.yaml` bevat per-platform defaults (override via env vars of `paths.local.yaml`)
+- Git op Windows: vermijd `git -C <path>` met backslashes → `cd "<path>" && git <cmd>`
+- Platform-specifieke commands altijd voor beide OS'en documenteren
+
+## Structuur
+
+```
+skills/           55+ skills in 8 categorieën
+  shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
+  {cat}-{verb}/   Skill directories (elk met SKILL.md)
+agents/           50+ sub-agent definities (.md met YAML frontmatter)
+hooks/            format-on-save.cjs (Prettier/gdformat), stop.ps1 (Ralph loop)
+scripts/ralph/    Windows PowerShell agentic TDD loop
+CLAUDE.base.md    Template voor per-project CLAUDE.md generatie
+setup-project.sh  Linkt config naar een project's .claude/
+```
+
+## Skill Conventies
+
+- **Naamgeving**: `{category}-{verb}` — lowercase, hyphen. Categorieën: core, dev, frontend, game, project, story, team, thinking
+- **Directory**: elke skill = map met `SKILL.md`, optioneel `references/`, `scripts/`, `techniques/`
+- **Frontmatter**: altijd `disable-model-invocation: true`, metadata met author/version/category
+- **Taal**: instructies Nederlands, technische termen Engels
+- **Fases**: FASE 0 = pre-flight validatie → uitvoering → laatste fase = rapport (ASCII tabel)
+- **AskUserQuestion**: eerste optie = recommended, multiSelect default true
+- **Shared infra** (`skills/shared/*`): read-only single source of truth — refereer, niet dupliceren
+
+## Agent Conventies
+
+- Frontmatter: name, description, model (`sonnet` default), color
+- Draaien via `Task` tool in geïsoleerde context — output compact houden
+- Worden gespawned door skills voor parallelle taken (bijv. frontend-compose: 2 wireframe agents, dev-owasp: 10 scanner agents)
+
+## Pipelines
+
+**Frontend**: theme → compose → build → convert → data → test/a11y/perf/responsive/seo
+**Dev**: define → plan → build → test → debug → refactor
+**Game**: define → plan → build → test → debug → refactor (Godot 4.x, GDScript, GUT)
+
+State handoff tussen skills via `.workspace/session/devinfo.json` (schema: `shared/DEVINFO.md`).
+
+## Belangrijke Patronen
+
+- **`.workspace/`**: alle runtime artifacts (gitignored) — wireframes, config, session, screenshots
+- **Profiles**: `core-profile/profiles.yaml` + `switch-profile.py` togglet skill visibility per profiel
+- **Format-on-save**: hook runt Prettier (web) of gdformat (GDScript) na elke Write/Edit
+- **Ralph loop**: Windows-only PowerShell iteratie voor autonome TDD sessies
+- **Backlog**: `.workspace/backlog.md` met status TODO → DEF → BLT → TST → DONE
+- **Build skills**: auto-commit zonder `Co-Authored-By`, auto-sync CLAUDE.md na voltooiing
+
+## Regels bij Wijzigingen
+
+- Volg bestaande conventies — check een vergelijkbare skill voordat je een nieuwe maakt
+- Shared bestanden niet aanpassen zonder impact op alle skills te overwegen
+- Nieuwe skills: kopieer frontmatter structuur van bestaande skill in dezelfde categorie
+- Test door de skill daadwerkelijk te runnen
