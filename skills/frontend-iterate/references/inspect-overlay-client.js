@@ -31,8 +31,7 @@ var label = document.createElement("div");
 label.style.cssText =
   "position:fixed;pointer-events:none;z-index:99999;background:#4a90d9;color:#fff;" +
   "font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;padding:2px 8px;" +
-  "border-radius:3px;display:none;white-space:nowrap;max-width:90vw;overflow:hidden;" +
-  "text-overflow:ellipsis;";
+  "border-radius:3px;display:none;white-space:pre;max-width:90vw;overflow:hidden;";
 document.body.appendChild(label);
 
 // --- Toast ---
@@ -102,6 +101,161 @@ function buildRef(el) {
   return tag + cls + (text ? ' "' + text + '"' : "");
 }
 
+// --- Style extraction ---
+function rgbToHex(rgb) {
+  var m = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+  if (!m) return rgb;
+  if (m[4] !== undefined && parseFloat(m[4]) < 1) return rgb;
+  return (
+    "#" +
+    ((1 << 24) + (+m[1] << 16) + (+m[2] << 8) + +m[3]).toString(16).slice(1)
+  );
+}
+
+function getCoreStyles(cs) {
+  return [
+    { prop: "font-family", value: cs.getPropertyValue("font-family") },
+    { prop: "font-size", value: cs.getPropertyValue("font-size") },
+    { prop: "font-weight", value: cs.getPropertyValue("font-weight") },
+    { prop: "line-height", value: cs.getPropertyValue("line-height") },
+    { prop: "color", value: cs.getPropertyValue("color") },
+    {
+      prop: "background-color",
+      value: cs.getPropertyValue("background-color"),
+    },
+    { prop: "padding", value: cs.getPropertyValue("padding") },
+    { prop: "margin", value: cs.getPropertyValue("margin") },
+    { prop: "border-radius", value: cs.getPropertyValue("border-radius") },
+  ];
+}
+
+function getConditionalStyles(cs) {
+  var styles = [];
+  var display = cs.getPropertyValue("display");
+  if (/^(inline-)?(flex|grid)$/.test(display)) {
+    styles.push({ prop: "display", value: display });
+    var gap = cs.getPropertyValue("gap");
+    if (gap && gap !== "normal" && gap !== "0px")
+      styles.push({ prop: "gap", value: gap });
+    if (display.indexOf("flex") !== -1) {
+      styles.push({
+        prop: "flex-direction",
+        value: cs.getPropertyValue("flex-direction"),
+      });
+    }
+    if (display.indexOf("grid") !== -1) {
+      styles.push({
+        prop: "grid-template-columns",
+        value: cs.getPropertyValue("grid-template-columns"),
+      });
+    }
+  }
+  var bw = cs.getPropertyValue("border-top-width");
+  if (bw && bw !== "0px") {
+    styles.push({
+      prop: "border",
+      value:
+        bw +
+        " " +
+        cs.getPropertyValue("border-top-style") +
+        " " +
+        cs.getPropertyValue("border-top-color"),
+    });
+  }
+  var bs = cs.getPropertyValue("box-shadow");
+  if (bs && bs !== "none") styles.push({ prop: "box-shadow", value: bs });
+  var op = cs.getPropertyValue("opacity");
+  if (op !== "1") styles.push({ prop: "opacity", value: op });
+  return styles;
+}
+
+function extractStyles(el) {
+  var cs = window.getComputedStyle(el);
+  return getCoreStyles(cs).concat(getConditionalStyles(cs));
+}
+
+// --- Style formatting ---
+function formatValue(prop, value) {
+  if (
+    prop === "color" ||
+    prop === "background-color" ||
+    prop.indexOf("border") !== -1
+  ) {
+    return value.replace(
+      /rgba?\(\d+,\s*\d+,\s*\d+(?:,\s*[\d.]+)?\)/g,
+      rgbToHex,
+    );
+  }
+  if (prop === "font-family") {
+    return value.split(",")[0].trim().replace(/['"]/g, "");
+  }
+  return value;
+}
+
+function formatStylesClipboard(styles) {
+  var lines = [];
+  var fontSize, lineHeight, fontFamily;
+  var rest = [];
+  for (var i = 0; i < styles.length; i++) {
+    var s = styles[i];
+    if (s.prop === "font-size") fontSize = s.value;
+    else if (s.prop === "line-height") lineHeight = s.value;
+    else if (s.prop === "font-family")
+      fontFamily = formatValue(s.prop, s.value);
+    else rest.push(s);
+  }
+  if (fontSize) {
+    var lh =
+      lineHeight && fontSize
+        ? parseFloat(lineHeight) / parseFloat(fontSize)
+        : null;
+    var lhStr = lh ? String(Math.round(lh * 10) / 10) : "";
+    lines.push(
+      "  font: " +
+        fontSize +
+        (lhStr ? "/" + lhStr : "") +
+        (fontFamily ? " " + fontFamily : ""),
+    );
+  }
+  for (var j = 0; j < rest.length; j++) {
+    lines.push(
+      "  " + rest[j].prop + ": " + formatValue(rest[j].prop, rest[j].value),
+    );
+  }
+  return lines.join("\n");
+}
+
+function formatStylesLabel(styles) {
+  var parts = [];
+  var fontSize, fontFamily, color, padding, margin, borderRadius;
+  for (var i = 0; i < styles.length; i++) {
+    var s = styles[i];
+    if (s.prop === "font-size") fontSize = s.value;
+    else if (s.prop === "font-family")
+      fontFamily = s.value.split(",")[0].trim().replace(/['"]/g, "");
+    else if (s.prop === "color") color = rgbToHex(s.value);
+    else if (s.prop === "padding") padding = s.value;
+    else if (s.prop === "margin") margin = s.value;
+    else if (s.prop === "border-radius") borderRadius = s.value;
+  }
+  if (fontSize) parts.push(fontSize + (fontFamily ? " " + fontFamily : ""));
+  if (color) parts.push(color);
+  var layout = [];
+  if (padding) layout.push("p:" + padding.replace(/px/g, ""));
+  if (margin) layout.push("m:" + margin.replace(/px/g, ""));
+  if (borderRadius && borderRadius !== "0px")
+    layout.push("r:" + borderRadius.replace(/px/g, ""));
+  if (layout.length) parts.push(layout.join(" "));
+  return parts.join(" . ");
+}
+
+// --- Clipboard builder ---
+function buildClipboardText(el) {
+  var ref = buildRef(el);
+  var styles = extractStyles(el);
+  return ref + "\n" + formatStylesClipboard(styles);
+}
+
 // --- Event handlers (named for dispose cleanup) ---
 function onKeyDown(e) {
   if (e.altKey && (e.key === "i" || e.key === "I")) {
@@ -126,9 +280,12 @@ function onMouseMove(e) {
   highlight.style.height = rect.height + "px";
 
   var ref = buildRef(el);
-  label.textContent = ref;
+  var styles = extractStyles(el);
+  var styleSummary = formatStylesLabel(styles);
+  label.textContent = ref + "\n" + styleSummary;
   label.style.display = "block";
-  var labelTop = rect.top - 22;
+  var labelHeight = label.offsetHeight;
+  var labelTop = rect.top - labelHeight - 2;
   if (labelTop < 4) labelTop = rect.bottom + 4;
   label.style.top = labelTop + "px";
   label.style.left = rect.left + "px";
@@ -142,10 +299,11 @@ function onClick(e) {
   e.stopPropagation();
 
   var ref = buildRef(el);
+  var clipText = buildClipboardText(el);
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard
-      .writeText(ref)
+      .writeText(clipText)
       .then(function () {
         showToast("Copied: " + ref);
       })
@@ -164,10 +322,11 @@ function onTouchEnd(e) {
   e.preventDefault();
 
   var ref = buildRef(el);
+  var clipText = buildClipboardText(el);
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard
-      .writeText(ref)
+      .writeText(clipText)
       .then(function () {
         showToast("Copied: " + ref);
       })
