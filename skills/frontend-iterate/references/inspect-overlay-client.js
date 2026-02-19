@@ -265,27 +265,69 @@ function formatStylesClipboard(styles) {
   return lines.join("\n");
 }
 
-function formatStylesLabel(styles) {
+// --- HTML escaping for innerHTML ---
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// --- Label line builders ---
+function buildLabelLine2(styles) {
   var parts = [];
-  var fontSize, fontFamily, color, padding, margin, borderRadius;
+  var fontSize, fontFamily, fontWeight, color;
   for (var i = 0; i < styles.length; i++) {
     var s = styles[i];
     if (s.prop === "font-size") fontSize = s.value;
     else if (s.prop === "font-family")
       fontFamily = s.value.split(",")[0].trim().replace(/['"]/g, "");
+    else if (s.prop === "font-weight") fontWeight = s.value;
     else if (s.prop === "color") color = rgbToHex(s.value);
-    else if (s.prop === "padding") padding = s.value;
-    else if (s.prop === "margin") margin = s.value;
-    else if (s.prop === "border-radius") borderRadius = s.value;
   }
   if (fontSize) parts.push(fontSize + (fontFamily ? " " + fontFamily : ""));
+  if (fontWeight && fontWeight !== "400") parts.push(fontWeight);
   if (color) parts.push(color);
-  var layout = [];
-  if (padding) layout.push("p:" + padding.replace(/px/g, ""));
-  if (margin) layout.push("m:" + margin.replace(/px/g, ""));
-  if (borderRadius) layout.push("r:" + borderRadius.replace(/px/g, ""));
-  if (layout.length) parts.push(layout.join(" "));
-  return parts.join(" . ");
+  return parts.join(" \u00B7 ");
+}
+
+function buildLabelLine3(el, styles) {
+  var parts = [];
+  var w = el.offsetWidth;
+  var h = el.offsetHeight;
+  if (w && h) parts.push(w + "\u00D7" + h);
+  var padding, margin, borderRadius, display, flexDir;
+  for (var i = 0; i < styles.length; i++) {
+    var s = styles[i];
+    if (s.prop === "padding") padding = s.value;
+    else if (s.prop === "margin") margin = s.value;
+    else if (s.prop === "border-radius") borderRadius = s.value;
+    else if (s.prop === "display") display = s.value;
+    else if (s.prop === "flex-direction") flexDir = s.value;
+  }
+  var spacing = [];
+  if (padding) spacing.push("p:" + padding.replace(/px/g, ""));
+  if (margin) spacing.push("m:" + margin.replace(/px/g, ""));
+  if (spacing.length) parts.push(spacing.join(" "));
+  if (borderRadius) parts.push("r:" + borderRadius.replace(/px/g, ""));
+  if (display && /flex|grid/.test(display)) {
+    if (display.indexOf("flex") !== -1) {
+      parts.push("flex " + (flexDir || "row"));
+    } else {
+      parts.push("grid");
+    }
+  }
+  return parts.join(" \u00B7 ");
+}
+
+// --- Viewport clamping ---
+function clampPosition(rect, labelW, labelH) {
+  var vw = window.innerWidth;
+  var vh = window.innerHeight;
+  var top = rect.top - labelH - 2;
+  if (top < 4) top = rect.bottom + 4;
+  if (top + labelH > vh - 4) top = 4;
+  var left = rect.left;
+  if (left + labelW > vw - 4) left = vw - labelW - 4;
+  if (left < 4) left = 4;
+  return { top: top, left: left };
 }
 
 // --- Clipboard helpers ---
@@ -355,14 +397,20 @@ function onMouseMove(e) {
 
   var ref = buildRef(el);
   var styles = extractStyles(el);
-  var styleSummary = formatStylesLabel(styles);
-  label.textContent = ref + "\n" + styleSummary;
+  var line1 = escapeHtml(ref);
+  var line2 = escapeHtml(buildLabelLine2(styles));
+  var line3 = escapeHtml(buildLabelLine3(el, styles));
+
+  var lines = [];
+  if (line1) lines.push('<span style="opacity:0.7">' + line1 + "</span>");
+  if (line2) lines.push("<span>" + line2 + "</span>");
+  if (line3) lines.push('<span style="opacity:0.6">' + line3 + "</span>");
+
+  label.innerHTML = lines.join("\n");
   label.style.display = "block";
-  var labelHeight = label.offsetHeight;
-  var labelTop = rect.top - labelHeight - 2;
-  if (labelTop < 4) labelTop = rect.bottom + 4;
-  label.style.top = labelTop + "px";
-  label.style.left = rect.left + "px";
+  var pos = clampPosition(rect, label.offsetWidth, label.offsetHeight);
+  label.style.top = pos.top + "px";
+  label.style.left = pos.left + "px";
 }
 
 function onClick(e) {
