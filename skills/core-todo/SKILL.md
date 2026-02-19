@@ -159,7 +159,7 @@ Based on task type, propose a strategy:
 
 - Web research → use WebSearch, WebFetch, Context7
 - Codebase question → suggest `/core-explore`
-- Analysis → suggest `/thinking-analyze`
+- Analysis → suggest `/thinking-critique`
 
 **CREATIVE:**
 
@@ -169,8 +169,8 @@ Based on task type, propose a strategy:
 
 **PLAN:**
 
-- Strategic planning → suggest `/thinking-plan`
-- Analysis → suggest `/thinking-analyze`
+- Strategic planning → suggest `/dev-plan`
+- Analysis → suggest `/thinking-critique`
 
 **SIMPLE:**
 

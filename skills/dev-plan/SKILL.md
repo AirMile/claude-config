@@ -1,6 +1,6 @@
 ---
 name: dev-plan
-description: Transform idea or brainstorm output into a prioritized web feature plan. Use with /dev-plan after /thinking-idea or /thinking-brainstorm to create implementation roadmaps.
+description: Transform idea or brainstorm output into a prioritized web feature plan with optional codebase/Context7/web research. Use with /dev-plan after /thinking-idea or /thinking-brainstorm to create implementation roadmaps.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -167,9 +167,105 @@ Source: [.workspace/concept.md | inline | custom file]
 Mode: [CREATE | UPDATE]
 Title: {extracted title}
 Sections: {count}
-
-→ Analyzing for features...
 ```
+
+**Research offer:**
+
+Use AskUserQuestion:
+
+```yaml
+header: "Research"
+question: "Wil je eerst onderzoek doen voordat features worden geëxtraheerd?"
+options:
+  - label: "Nee, direct extraheren (Recommended)"
+    description: "Ga door naar feature extractie"
+  - label: "Ja, research doen"
+    description: "Codebase, Context7, en/of web research"
+  - label: "Explain question"
+    description: "Leg uit wat research toevoegt"
+multiSelect: false
+```
+
+**Response handling:**
+
+- "Nee" → skip to FASE 1
+- "Ja" → proceed to FASE 0.5
+- "Explain question" → explain that research can analyze existing codebase, check framework docs, and find web examples to inform better feature extraction. Re-ask.
+
+### FASE 0.5: Research (Optional)
+
+**Goal:** Gather codebase, documentation, and web research to inform feature extraction.
+
+**Triggered when:** User chooses "Ja, research doen" at end of FASE 0.
+
+**Step 1: Analyze Research Needs**
+
+Use sequential thinking (mcp\_\_sequentialthinking\_\_sequentialthinking) to determine what research is needed based on the loaded concept:
+
+```
+Research checklist:
+├─ User: Are there ambiguities that need clarification?
+├─ Codebase: Is there an existing codebase with relevant code to analyze?
+├─ Context7: Does the concept reference specific frameworks/libraries?
+└─ Web: Is external information needed (patterns, pitfalls, examples)?
+```
+
+**Output:** List of research categories to execute.
+
+**Step 2: User Clarification (if needed)**
+
+If sequential thinking identifies ambiguities, use AskUserQuestion to clarify before spawning research agents.
+
+**Step 3: Parallel Research Execution**
+
+Spawn agents based on Step 1 analysis. Only spawn agents for categories identified as needed.
+
+**Codebase research (if existing codebase detected):**
+
+```
+Task tool with subagent_type: code-explorer
+├─ Focus: similar-features
+├─ Focus: architecture
+└─ Focus: implementation
+```
+
+**Context7 research (if framework/library docs needed):**
+
+```
+Task tool with subagent_type:
+├─ architecture-researcher
+├─ best-practices-researcher
+└─ testing-researcher
+```
+
+**Web research (if external information needed):**
+
+```
+Task tool with subagent_type:
+├─ plan-web-patterns (best practices, modern approaches)
+├─ plan-web-pitfalls (issues, constraints, anti-patterns)
+├─ plan-web-examples (real-world implementations)
+├─ plan-web-ecosystem (libraries, tools, packages)
+└─ plan-web-architecture (system design, scalability)
+```
+
+**Step 4: Research Summary**
+
+After all agents return, display a compact summary:
+
+```
+RESEARCH COMPLETE
+
+| Category | Agents | Key Findings |
+|----------|--------|--------------|
+| Codebase | {N}/3  | {summary of existing patterns/features} |
+| Context7 | {N}/3  | {summary of framework guidance} |
+| Web      | {N}/5  | {summary of patterns/pitfalls} |
+
+→ Research results will inform feature extraction...
+```
+
+Research results remain in conversation context for FASE 1. No files are written.
 
 ### FASE 1: Feature Extraction
 
@@ -180,6 +276,11 @@ Sections: {count}
    - What components need to be built?
    - What API endpoints are required?
    - What can be split into independent features?
+
+   **If research was performed (FASE 0.5), also consider:**
+   - What already exists in the codebase that can be reused or extended?
+   - What framework patterns or conventions should guide the decomposition?
+   - What pitfalls or anti-patterns were identified to avoid?
 
    **Granularity decision:** When a feature could be defined as one large item OR multiple smaller items, apply the right-size rule: each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — they're easier to combine than to split later.
 

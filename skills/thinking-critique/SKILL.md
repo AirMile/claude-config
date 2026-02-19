@@ -196,9 +196,9 @@ If the user provided an inline description/argument:
 6. If "Aanpassen": ask what to change, update summary, confirm again
 7. If insufficient context in conversation: inform user and fall back to manual input
 
-### Step 2: Determine Idea Type & Load Relevant Techniques
+### Step 2: Determine Type & Select Techniques
 
-**Goal:** Analyze the idea type and identify which technique categories are relevant.
+**Goal:** Analyze the idea type, load relevant techniques, and let the user select which to apply.
 
 **Process:**
 
@@ -214,28 +214,15 @@ If the user provided an inline description/argument:
 
 3. Read the relevant reference files
 
-4. Use sequential thinking to filter techniques:
+4. Use sequential thinking to filter and rank techniques:
    - For each technique, determine if it's actually relevant to THIS specific idea
    - Remove techniques that don't apply (e.g., Narrative for non-narrative games)
-   - Only keep techniques that will provide meaningful analysis
-   - If more than 5 relevant techniques, select only the top 5 for Step 3
-
-5. Proceed directly to Step 3
-
-### Step 3: Suggest Technique
-
-**Goal:** Present only relevant techniques in ranked order and suggest the best one.
-
-**Process:**
-
-1. Use sequential thinking to rank ONLY relevant techniques (filtered in Step 2):
    - Which technique will reveal the most critical weaknesses?
-   - What aspects are most important to examine for THIS specific idea?
    - Which techniques have been applied already? (exclude those)
    - Rank from most relevant (1) to least relevant
-   - If more than 5 relevant techniques available, select only the top 5
+   - If more than 5 relevant techniques, select only the top 5
 
-2. Present technique selection using AskUserQuestion (in user's preferred language):
+5. Present technique selection using AskUserQuestion (in user's preferred language):
 
    ```
    💡 Analyse Technieken
@@ -251,25 +238,22 @@ If the user provided an inline description/argument:
      - label: "[Technique 2]", description: "[1 zin waarom relevant]"
      - label: "[Technique 3]", description: "[1 zin waarom relevant]"
      - label: "[Technique 4]", description: "[1 zin waarom relevant]"
-     - label: "[Technique 5]", description: "[1 zin waarom relevant]"
-     - label: "Leg uit", description: "Uitleg over de technieken"
    multiSelect: true
    ```
 
-3. Process user selection:
-   - If technique(s) selected: proceed to Step 4 with selected technique(s)
-   - If multiple selected: apply techniques sequentially (Step 4 → Step 5 → repeat)
-   - If "Leg uit" selected: explain the techniques and present selection again
+6. Process user selection:
+   - If technique(s) selected: proceed to Step 3 with selected technique(s)
+   - If multiple selected: apply techniques sequentially (Step 3 → Step 4 loop)
 
 **Note:**
 
 - Only show techniques that are actually relevant to this specific idea
-- Maximum 5 techniques in the options (if more available, show only top 5)
+- Maximum 4 techniques in the options
 - If fewer than 3 relevant techniques available, show all available techniques
 - "Reeds toegepast" techniques should NOT appear in the options
 - First option is always the recommended technique (add "(Aanbevolen)" to label)
 
-### Step 4: Apply Technique
+### Step 3: Apply Technique
 
 **Goal:** Use the selected technique through interactive Q&A to identify weaknesses, test assumptions, and find problems.
 
@@ -300,17 +284,7 @@ If the user provided an inline description/argument:
    2. [concrete point 2]
    3. [concrete point 3]
 
-   ```
-
-   Use AskUserQuestion to guide response:
-
-   ```yaml
-   options:
-     - label: "Answer all questions (Recommended)", description: "Provide responses to the technique questions"
-     - label: "Focus on specific question", description: "Address one question in depth"
-     - label: "Discuss points of attention", description: "Respond to the identified concerns"
-     - label: "Explain question", description: "Explain what this means"
-   multiSelect: false
+   Reageer per nummer of in je eigen woorden.
    ```
 
 4. Process user responses
@@ -327,13 +301,13 @@ If the user provided an inline description/argument:
 - Challenge assumptions rather than accepting them
 - Push for concrete solutions or decisions
 
-### Step 5: Synthesize User Input
+### Step 4: Synthesize & Auto-Proceed
 
-**Goal:** Capture key weaknesses, assumptions, and insights discovered through the technique.
+**Goal:** Capture key weaknesses, assumptions, and insights discovered through the technique, then continue.
 
 **Process:**
 
-1. Review the user's responses and dialogue from Step 4
+1. Review the user's responses and dialogue from Step 3
 
 2. Synthesize:
    - Key weaknesses or problems identified
@@ -363,26 +337,16 @@ If the user provided an inline description/argument:
    4.2 [insight 2]
    ```
 
-4. Ask for confirmation using AskUserQuestion (in user's preferred language):
+4. Auto-proceed:
+   - If more selected techniques remain: proceed immediately to Step 3 for the next technique
+   - If all selected techniques are done: proceed to Step 5
+   - Note: user can always interrupt if synthesis needs adjustment
 
-   ```yaml
-   header: "Samenvatting Bevestigen"
-   question: "Klopt deze samenvatting?"
-   options:
-     - label: "Ja, klopt (Aanbevolen)", description: "Ga door naar de volgende stap"
-     - label: "Aanpassing nodig", description: "Geef aan welk item moet worden aangepast (bijv. 1.2 of 2.1)"
-     - label: "Leg uit", description: "Uitleg over de samenvatting structuur"
-   multiSelect: false
-   ```
+### Step 5: Next Action
 
-5. If "Aanpassing nodig" selected:
-   - User can specify item number (e.g., "1.2 klopt niet" or "2.1 moet anders")
-   - Adjust specific items based on user feedback
-   - Present updated summary and confirm again
+**Goal:** Present remaining relevant techniques and suggest the best next one. Only shown after ALL techniques selected in Step 2 are complete.
 
-### Step 6: Next Action
-
-**Goal:** Present remaining relevant techniques and suggest the best next one.
+**Important:** This step is only reached after ALL techniques selected in Step 2 have been applied. When the user selected multiple techniques, apply Steps 3-4 in sequence for each without showing Step 5 between them.
 
 **Process:**
 
@@ -391,50 +355,42 @@ If the user provided an inline description/argument:
    - What weaknesses still need examination?
    - Which technique would add most value now?
    - Rank from most relevant (1) to least relevant
-   - If more than 4 relevant techniques available, select only the top 4
 
-2. Present next action selection using AskUserQuestion (in user's preferred language):
+2. If no relevant techniques remain (all applied or none relevant):
+   - Skip presenting options
+   - Proceed directly to Step 6 (Generate Final Output)
+   - Announce (in user's preferred language): "Alle relevante technieken zijn toegepast. Verfijnde versie wordt nu gegenereerd."
+
+3. Present next action selection using AskUserQuestion (in user's preferred language):
 
    ```
    💡 Volgende Stap
 
    Reeds toegepast: [list of techniques used]
-
-   Wat wil je nu doen?
    ```
 
    ```yaml
    header: "Volgende Stap"
-   question: "Wat wil je nu doen?"
+   question: "Hoe wil je verder?"
    options:
-     - label: "[Best Technique] (Aanbevolen)", description: "[1-2 zinnen waarom dit de beste volgende stap is]"
-     - label: "[Technique 2]", description: "[1 zin waarom relevant]"
-     - label: "[Technique 3]", description: "[1 zin waarom relevant]"
-     - label: "[Technique 4]", description: "[1 zin waarom relevant]"
-     - label: "Eindresultaat genereren", description: "Sluit analyse af en genereer de verfijnde versie"
-     - label: "Leg uit", description: "Uitleg over de beschikbare opties"
+     - label: "Genereer verfijnde versie (Recommended)", description: "Creëer het eindresultaat met alle inzichten"
+     - label: "[Technique 1]", description: "[rationale - most relevant remaining technique]"
+     - label: "[Technique 2]", description: "[brief description]"
+     - label: "Uitleg", description: "Leg de opties uit"
    multiSelect: true
    ```
 
-3. If no relevant techniques remain (all applied or none relevant):
-   - Skip presenting technique options
-   - Proceed directly to Step 7 (Generate Final Output)
-   - Announce (in user's preferred language): "Alle relevante technieken zijn toegepast. Verfijnde versie wordt nu gegenereerd."
-
 4. Process user selection:
-   - If technique(s) selected: return to Step 4 with selected technique(s)
-   - If multiple selected: apply techniques sequentially (Step 4 → Step 5 → repeat)
-   - If "Eindresultaat genereren" selected: proceed to Step 7
-   - If "Leg uit" selected: explain options and present selection again
+   - If only "Genereer verfijnde versie" selected: proceed to Step 6
+   - If technique(s) selected: apply them in sequence (Steps 3-4), then return to Step 5
 
 **Note:**
 
 - Only show techniques that are relevant AND haven't been applied yet
-- Maximum 4 techniques in the options (+ "Eindresultaat genereren" + "Leg uit")
-- If fewer than 3 relevant techniques available, show all available techniques
-- First technique option is always the recommended one (add "(Aanbevolen)" to label)
+- Maximum 2 techniques in the options (+ "Genereer verfijnde versie" + "Uitleg")
+- First option is always "Genereer verfijnde versie (Recommended)"
 
-### Step 7: Generate Final Output
+### Step 6: Generate Final Output
 
 **Goal:** Create the refined idea as a clean, structured markdown document.
 
@@ -474,7 +430,7 @@ applied_techniques:
 ---
 ```
 
-### Step 8: Output Destination
+### Step 7: Output Destination
 
 After generating the refined content, present options for what to do with it.
 
@@ -542,3 +498,45 @@ multiSelect: false
 
 1. Wrap output in a code block with `markdown` language tag for copy button
 2. Display the content
+
+---
+
+## Best Practices
+
+**Flow Efficiency:**
+
+- No AskUserQuestion between technique presentation and user response - just prompt and wait
+- No confirmation gate after synthesis - auto-proceed to next technique
+- Apply selected techniques in sequence without returning to Step 5 between them
+- Only 2 interaction gates in the whole technique loop: initial selection (Step 2) and final decision (Step 5)
+
+**Technique Application:**
+
+- Make questions specific to THIS idea, not generic
+- Identify real problems, not just surface-level concerns
+- Follow the technique's framework from the reference file
+- Use sequential thinking to deeply analyze from that perspective
+- Be rigorous - apply technical and practical scrutiny
+- Challenge assumptions rather than accepting them
+- Push for concrete solutions or decisions
+
+**Synthesis:**
+
+- Capture key weaknesses, assumptions, and insights
+- Be specific about problems and improvements
+- Don't lose valuable insights in the synthesis
+
+**Conversational Approach:**
+
+- Enable quick flow with numbered responses
+- Minimize friction: present and let user respond, no response mode gates
+- Keep dialogue natural - let user elaborate or redirect freely
+
+**Final Output:**
+
+- Output ONLY the refined idea document
+- NO original idea comparison
+- NO technique information
+- NO changelog or "what changed"
+- Make it look like a fresh, standalone idea document
+- Integrate improvements naturally

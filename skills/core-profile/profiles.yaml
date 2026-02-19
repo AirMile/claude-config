@@ -18,6 +18,7 @@ core:
 dev:
   - dev-build
   - dev-debug
+  - dev-doctor
   - dev-define
   - dev-owasp
   - dev-plan
@@ -53,21 +54,12 @@ project:
   - project-add
   - project-remove
 
-story:
-  - story-character
-  - story-new
-  - story-next
-  - story-select
-  - story-world
-
 team:
   - team-review
   - team-test
 
 thinking:
-  - thinking-analyze
   - thinking-brainstorm
   - thinking-critique
-  - thinking-idea
   - thinking-decide
-  - thinking-plan
+  - thinking-idea
