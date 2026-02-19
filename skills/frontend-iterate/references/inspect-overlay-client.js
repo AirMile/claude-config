@@ -79,15 +79,16 @@ function findInspectable(el) {
     hasDataAttrs = !!document.querySelector("[data-inspector-relative-path]");
   }
   if (hasDataAttrs) {
-    return el.closest("[data-inspector-relative-path]");
+    var inspectable = el.closest("[data-inspector-relative-path]");
+    if (inspectable) return inspectable;
   }
   return el.closest("[class]") || el;
 }
 
 // --- Build reference string ---
 function buildRef(el) {
-  if (hasDataAttrs) {
-    var path = el.getAttribute("data-inspector-relative-path");
+  var path = el.getAttribute("data-inspector-relative-path");
+  if (path) {
     var line = el.getAttribute("data-inspector-line");
     var col = el.getAttribute("data-inspector-column");
     return path + ":" + line + (col ? ":" + col : "");
@@ -102,14 +103,48 @@ function buildRef(el) {
 }
 
 // --- Style extraction ---
+function toHex(r, g, b) {
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
 function rgbToHex(rgb) {
+  if (rgb.startsWith("#")) return rgb;
   var m = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-  if (!m) return rgb;
-  if (m[4] !== undefined && parseFloat(m[4]) < 1) return rgb;
-  return (
-    "#" +
-    ((1 << 24) + (+m[1] << 16) + (+m[2] << 8) + +m[3]).toString(16).slice(1)
+  if (m) {
+    if (m[4] !== undefined && parseFloat(m[4]) < 1) return rgb;
+    return toHex(+m[1], +m[2], +m[3]);
+  }
+  // color-mix fallback for oklch, lab, lch, color() etc.
+  var span = document.createElement("span");
+  span.style.display = "none";
+  span.style.color = "color-mix(in srgb, " + rgb + " 100%, transparent 0%)";
+  document.body.appendChild(span);
+  var computed = window.getComputedStyle(span).color;
+  document.body.removeChild(span);
+  var cm = computed.match(
+    /color\(srgb\s+([\d.e+-]+)\s+([\d.e+-]+)\s+([\d.e+-]+)(?:\s*\/\s*([\d.e+-]+))?\)/,
   );
+  if (cm) {
+    if (cm[4] !== undefined && parseFloat(cm[4]) < 1) {
+      return (
+        "rgba(" +
+        Math.round(cm[1] * 255) +
+        ", " +
+        Math.round(cm[2] * 255) +
+        ", " +
+        Math.round(cm[3] * 255) +
+        ", " +
+        cm[4] +
+        ")"
+      );
+    }
+    return toHex(
+      Math.round(cm[1] * 255),
+      Math.round(cm[2] * 255),
+      Math.round(cm[3] * 255),
+    );
+  }
+  return rgb;
 }
 
 function getCoreStyles(cs) {
@@ -181,10 +216,9 @@ function formatValue(prop, value) {
     prop === "background-color" ||
     prop.indexOf("border") !== -1
   ) {
-    return value.replace(
-      /rgba?\(\d+,\s*\d+,\s*\d+(?:,\s*[\d.]+)?\)/g,
-      rgbToHex,
-    );
+    return value
+      .replace(/rgba?\(\d+,\s*\d+,\s*\d+(?:,\s*[\d.]+)?\)/g, rgbToHex)
+      .replace(/oklch\([^)]+\)|lab\([^)]+\)|lch\([^)]+\)/g, rgbToHex);
   }
   if (prop === "font-family") {
     return value.split(",")[0].trim().replace(/['"]/g, "");
