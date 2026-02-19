@@ -210,33 +210,41 @@ python3 .claude/skills/core-profile/switch-profile.py --validate
 
 ### Step 3: Delete Skill Files
 
-**Step 3a — Detect junction structure:**
+**Step 3a — Detect link structure:**
+
+Detect if skills directory uses symlinks (Linux) or junctions (Windows):
+
+**Linux:**
 
 ```bash
-powershell -Command "(Get-ChildItem '.claude/skills' -Directory | Select-Object -First 1).LinkType" 2>/dev/null || echo "no-powershell"
+test -L ".claude/skills/$(ls .claude/skills | head -1)" && echo "linked" || echo "direct"
 ```
 
-- Output `Junction` → per-skill junctions active
-- Otherwise → no junctions (direct files or Linux)
+**Windows:**
+
+```bash
+powershell -Command "(Get-ChildItem '.claude/skills' -Directory | Select-Object -First 1).LinkType"
+```
+
+- Output `Junction` → linked
+- Empty → direct files
 
 **Step 3b — Remove skill:**
 
-**If per-skill junctions:**
+**If linked (symlinks/junctions):**
 
 1. Get shared library path:
-   ```bash
-   powershell -Command "Split-Path (Get-ChildItem '.claude/skills' -Directory | Select-Object -First 1).Target"
-   ```
-2. Remove junction:
-   ```bash
-   cmd /c "rmdir .claude\skills\[name]"
-   ```
+   - Linux: `readlink -f .claude/skills/[any-skill] | xargs dirname`
+   - Windows: `powershell -Command "Split-Path (Get-Item '.claude/skills/[any-skill]').Target"`
+2. Remove link:
+   - Linux: `unlink .claude/skills/[name]`
+   - Windows: `cmd //c "rmdir .claude\skills\[name]"`
 3. Remove from shared library:
    ```bash
    rm -rf "{shared_library}/[name]"
    ```
 
-**If no junctions (Linux/direct):**
+**If direct (no links):**
 
 ```bash
 rm -rf ".claude/skills/[name]"

@@ -19,10 +19,11 @@ Select which story to work on. Shows all stories with their status and activates
 Scan the `stories/` folder for story directories:
 
 ```bash
-Get-ChildItem -Path "stories" -Directory | Select-Object -ExpandProperty Name
+ls -d stories/*/ 2>/dev/null | while read -r d; do basename "$d"; done
 ```
 
 For each story folder, read `stories/{name}/_meta.md` to extract:
+
 - Title
 - Status (concept/writing/editing/complete)
 - Genre
@@ -32,14 +33,15 @@ For each story folder, read `stories/{name}/_meta.md` to extract:
 
 Show stories with status indicators:
 
-| Status | Indicator |
-|--------|-----------|
-| concept | 💭 |
-| writing | ✍️ |
-| editing | 📝 |
-| complete | ✅ |
+| Status   | Indicator |
+| -------- | --------- |
+| concept  | 💭        |
+| writing  | ✍️        |
+| editing  | 📝        |
+| complete | ✅        |
 
 Use **AskUserQuestion**:
+
 - header: "Story"
 - question: "Welk verhaal wil je bewerken?"
 - options: [list of stories with status indicator and genre]
@@ -55,6 +57,7 @@ After selection, read and display:
 4. **Open questions**: Any `<!-- TODO: -->` or `<!-- QUESTION: -->` comments found
 
 Format:
+
 ```
 📖 {TITLE}
 
@@ -86,6 +89,7 @@ Write active story to `.workspace/active-story.json`:
 ```
 
 Confirm:
+
 ```
 ✅ "{title}" is nu actief. Andere story commands gebruiken dit verhaal.
 ```

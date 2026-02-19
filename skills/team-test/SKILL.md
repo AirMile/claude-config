@@ -73,7 +73,7 @@ multiSelect: false
 
 **Goal:** Research test strategies via Context7, check cache first.
 
-1. Read `references/research-cache.md` for existing research
+1. Check if project has existing test infrastructure and patterns.
 2. Spawn 3 parallel research agents:
 
 ```python
@@ -100,7 +100,6 @@ Return findings + what to cache.
 ```
 
 3. Collect results from all agents
-4. Append new findings to `references/research-cache.md`
 
 **Output:**
 
@@ -110,8 +109,6 @@ Return findings + what to cache.
 Unit strategies: [summary]
 Integration strategies: [summary]
 Manual strategies: [summary]
-
-Cache updated: [yes/no - X new entries]
 ```
 
 ---
@@ -220,11 +217,10 @@ multiSelect: false
 
 **Goal:** Run automated tests first.
 
-1. Execute test runner script:
-
-```bash
-python scripts/run_automated_tests.py
-```
+1. Detect and run the project's test command:
+   - Check CLAUDE.md for test instructions
+   - Check `package.json` scripts for "test" command
+   - Fallback: `npx vitest run` / `npx jest` / `python -m pytest`
 
 2. Parse results
 
@@ -303,28 +299,3 @@ Recommendation: [ready for merge / needs fixes]
 ```
 
 ---
-
-## Best Practices
-
-### Language
-
-Follow the Language Policy in CLAUDE.md.
-
-### Do
-
-- Always check branch first (not main/master/develop)
-- Check research cache before Context7 queries
-- Use sequential thinking in all agents and test plan creation
-- Run automated tests before manual tests
-- Log all issues with clear descriptions
-- Keep manual test steps concise (3-5 steps max)
-- Update cache with new research findings
-
-### Don't
-
-- Skip branch validation
-- Duplicate research already in cache
-- Generate tests for unchanged code
-- Overwhelm user with too many manual tests at once
-- Mix automated and manual test execution
-- Skip sequential thinking analysis

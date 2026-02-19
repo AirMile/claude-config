@@ -1,16 +1,16 @@
 ---
 name: project-list
-description: List all projects with junction-based .claude/ config and their status. Use with /project-list to see registered projects.
+description: List all projects with symlink/junction-based .claude/ config and their status. Use with /project-list to see registered projects.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 1.1.0
   category: project
 ---
 
 # Project List
 
-Toont overzicht van alle projecten die junction-based .claude/ config gebruiken.
+Toont overzicht van alle projecten die symlink/junction-based .claude/ config gebruiken.
 
 ## Trigger
 
@@ -20,12 +20,11 @@ Toont overzicht van alle projecten die junction-based .claude/ config gebruiken.
 
 ### FASE 1: Scan Projects
 
-**Scan C:\Projects\ voor projecten:**
+**Scan `{projects_root}` voor projecten:**
 
 ```bash
-# Vind alle folders met .claude\agents junction
-for dir in /c/Projects/*/; do
-  if [ -L "$dir.claude/agents" ]; then
+for dir in "{projects_root}/"*/; do
+  if [ -L "$dir.claude/agents" ] || [ -d "$dir.claude/agents" ]; then
     echo "$dir"
   fi
 done
@@ -37,14 +36,14 @@ done
 
 1. Project naam (folder naam)
 2. Project type (uit CLAUDE.md indien aanwezig)
-3. Junction status (intact/broken)
+3. Link status (intact/broken)
 4. Git status (clean/dirty)
 
-**Junction status check:**
+**Link status check:**
 
 ```bash
-# Check of junction target bereikbaar is
-test -d "C:\Projects\[naam]\.claude\agents\."
+# Check of link target bereikbaar is
+test -d "{projects_root}/[naam]/.claude/agents/."
 ```
 
 ### FASE 3: Output
@@ -53,25 +52,26 @@ test -d "C:\Projects\[naam]\.claude\agents\."
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ 📁 PROJECTS MET JUNCTION-BASED CONFIG                       │
+│ PROJECTS MET LINKED CONFIG                                    │
 ├─────────────────────────────────────────────────────────────┤
-│ NAME              │ TYPE         │ JUNCTIONS │ GIT          │
+│ NAME              │ TYPE         │ LINKS     │ GIT          │
 │ ─────────────────────────────────────────────────────────── │
-│ school-website    │ Web Frontend │ ✓ OK      │ clean        │
-│ api-backend       │ REST API     │ ✓ OK      │ 3 changes    │
-│ mobile-app        │ React Native │ ⚠ broken  │ clean        │
+│ school-website    │ Web Frontend │ OK        │ clean        │
+│ api-backend       │ REST API     │ OK        │ 3 changes    │
+│ mobile-app        │ React Native │ broken    │ clean        │
 ├─────────────────────────────────────────────────────────────┤
-│ MASTER CONFIG: C:\Projects\claude-config\                   │
-│ Status: ✓ Intact                                            │
-│ Agents: 67 │ Commands: 24 │ Resources: 11 dirs              │
+│ MASTER CONFIG: {projects_root}/claude-config/                 │
+│ Status: Intact                                                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Broken junction handling:**
+**Broken link handling:**
 
 ```
-⚠️ Project 'mobile-app' heeft broken junctions.
-   Herstel met: cmd /c "mklink /J .claude\agents C:\Projects\claude-config\agents"
+Project 'mobile-app' heeft broken links.
+Herstel met:
+  Linux:   ln -s {projects_root}/claude-config/skills .claude/agents
+  Windows: cmd /c "mklink /J .claude\agents {projects_root}\claude-config\agents"
 ```
 
 ### FASE 4: Quick Actions
@@ -86,8 +86,8 @@ options:
     description: "Start /project-add"
   - label: "Project verwijderen"
     description: "Start /project-remove"
-  - label: "Herstel broken junctions"
-    description: "Fix broken junctions voor [project-naam]"
+  - label: "Herstel broken links"
+    description: "Fix broken links voor [project-naam]"
   - label: "Klaar"
     description: "Geen verdere actie"
 multiSelect: false
@@ -95,11 +95,11 @@ multiSelect: false
 
 ## Output Details
 
-**Junction status indicators:**
+**Link status indicators:**
 
-- `✓ OK` - Alle 4 junctions intact en bereikbaar
-- `⚠ broken` - Een of meer junctions wijzen naar non-existent target
-- `✗ missing` - .claude folder bestaat maar geen junctions
+- `OK` - Alle links intact en bereikbaar
+- `broken` - Een of meer links wijzen naar non-existent target
+- `missing` - .claude folder bestaat maar geen links
 
 **Git status indicators:**
 
@@ -107,8 +107,20 @@ multiSelect: false
 - `N changes` - Aantal uncommitted changes
 - `not a repo` - Geen git repository
 
+## Configuration
+
+| Placeholder       | Linux default    | Windows default | Env var                |
+| ----------------- | ---------------- | --------------- | ---------------------- |
+| `{projects_root}` | `$HOME/projects` | `C:\Projects`   | `CLAUDE_PROJECTS_ROOT` |
+
+**Resolution order (eerste match wint):**
+
+1. Environment variable `CLAUDE_PROJECTS_ROOT`
+2. `.claude/paths.local.yaml` (lokaal per project, niet in git)
+3. `resources/paths.yaml` (gedeelde defaults)
+
 ## Restrictions
 
-- Toont alleen projecten in C:\Projects\
+- Toont alleen projecten in `{projects_root}`
 - Negeert claude-config zelf (dat is de master, geen project)
-- Negeert folders zonder .claude\ subfolder
+- Negeert folders zonder .claude/ subfolder

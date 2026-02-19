@@ -15,6 +15,7 @@ metadata:
 This skill analyzes feature plans using three parallel analysis agents to identify risks, explore alternatives, and find simplification opportunities. It helps improve plan quality before implementation by systematically challenging the approach from multiple perspectives.
 
 The skill uses:
+
 - **analyze-risk-finder**: Devil's Advocate + Critical Assumption Testing
 - **analyze-alternatives-explorer**: Alternative approaches and trade-offs
 - **analyze-simplification-advisor**: YAGNI analysis and phased delivery
@@ -28,15 +29,18 @@ The agents run in parallel for efficiency (~67% context savings, 3x faster), and
 This skill is useful:
 
 **Before implementation:**
+
 - After `/dev:define` creates a plan (or during /dev:define FASE 4)
 - Before decomposition to understand complexity
 - When uncertain about approach
 
 **After decomposition:**
+
 - Analyze individual sub-features
 - Validate decomposition strategy
 
 **When stuck:**
+
 - Implementation challenges
 - Unclear requirements
 - Multiple possible approaches
@@ -50,6 +54,7 @@ The skill operates through four phases using three core analysis techniques.
 **Goal:** Select which plan to analyze.
 
 1. **List available features:**
+
    ```bash
    # Check both locations
    ls .workspace/features/
@@ -59,6 +64,7 @@ The skill operates through four phases using three core analysis techniques.
 2. **Ask user for feature selection using AskUserQuestion:**
 
    First, build dynamic options from discovered features:
+
    ```
    # For each feature in .workspace/features/ and .claude/originals/:
    options = []
@@ -70,6 +76,7 @@ The skill operates through four phases using three core analysis techniques.
    ```
 
    Then use AskUserQuestion tool:
+
    ```json
    {
      "header": "Feature Selectie",
@@ -112,6 +119,7 @@ The skill operates through four phases using three core analysis techniques.
 3. **Detect mode and set file paths:**
 
    **Normal feature mode:**
+
    ```
    Intent: .workspace/features/{name}/01-intent.md
    Research: .workspace/features/{name}/01-research.md
@@ -119,6 +127,7 @@ The skill operates through four phases using three core analysis techniques.
    ```
 
    **Part mode (sections within parent files):**
+
    ```
    All files in feature folder (parts are sections, not folders):
    - Intent: .workspace/features/{feature}/01-intent.md (look for "## Part: {NN}-{name}" section)
@@ -127,7 +136,6 @@ The skill operates through four phases using three core analysis techniques.
    ```
 
 4. **Load context files:**
-
    - Read `01-intent.md` for requirements analysis
    - Read `01-research.md` for patterns analysis
 
@@ -136,6 +144,7 @@ The skill operates through four phases using three core analysis techniques.
    - From research: Architecture patterns, testing strategy
 
 **Output:**
+
 ```
 📋 PLAN LOADED: {feature-name}
 
@@ -158,6 +167,7 @@ The skill operates through four phases using three core analysis techniques.
 **Goal:** Apply three analysis perspectives systematically using parallel agents.
 
 **IMPORTANT:** This phase uses 3 specialized analysis agents that work in parallel for maximum efficiency and multiple perspectives:
+
 - `analyze-risk-finder` - Devil's Advocate + Critical Assumption Testing
 - `analyze-alternatives-explorer` - Alternative Approaches exploration
 - `analyze-simplification-advisor` - Simplification + YAGNI analysis
@@ -212,6 +222,7 @@ Return your structured analysis report following your output format.
 ```
 
 Launch all 3 agents:
+
 - Task(subagent_type="analyze-risk-finder", prompt="[context]")
 - Task(subagent_type="analyze-alternatives-explorer", prompt="[context]")
 - Task(subagent_type="analyze-simplification-advisor", prompt="[context]")
@@ -227,6 +238,7 @@ All 3 agents work in parallel. Wait until all return their outputs.
 **Step 4: Receive 3 Analysis Reports**
 
 **Agent 1: analyze-risk-finder returns:**
+
 ```
 ## RISK ANALYSIS
 ### Devil's Advocate Findings
@@ -245,6 +257,7 @@ All 3 agents work in parallel. Wait until all return their outputs.
 ```
 
 **Agent 2: analyze-alternatives-explorer returns:**
+
 ```
 ## ALTERNATIVES ANALYSIS
 ### Alternative Approaches
@@ -258,6 +271,7 @@ All 3 agents work in parallel. Wait until all return their outputs.
 ```
 
 **Agent 3: analyze-simplification-advisor returns:**
+
 ```
 ## SIMPLIFICATION ANALYSIS
 ### What to ELIMINATE
@@ -273,6 +287,7 @@ All 3 agents work in parallel. Wait until all return their outputs.
 ---
 
 **Output:**
+
 ```
 🔍 ANALYSIS COMPLETE
 
@@ -300,18 +315,21 @@ All 3 agents work in parallel. Wait until all return their outputs.
 **Step 1: Extract Key Findings from Each Agent**
 
 From **analyze-risk-finder**:
+
 - Count of critical/high/medium/low risks
 - Top 3 concerns with likelihood/impact
 - Unvalidated critical assumptions
 - Risk score
 
 From **analyze-alternatives-explorer**:
+
 - Number of alternatives identified
 - Best 80/20 option
 - Recommendation (keep original or switch)
 - Trade-off summary
 
 From **analyze-simplification-advisor**:
+
 - Items to eliminate/simplify/reuse/defer
 - Complexity reduction percentage
 - Time savings estimate
@@ -323,13 +341,13 @@ From **analyze-simplification-advisor**:
 
 Merge and prioritize all findings:
 
-| Priority | Source | Issue Type |
-|----------|--------|------------|
-| 🔴 Critical | Risk Finder | Critical risks + unvalidated critical assumptions |
-| 🔴 Critical | Alternatives | If alternative is significantly better (>30% improvement) |
-| 🟡 Important | Risk Finder | High risks + important assumptions |
-| 🟡 Important | Simplification | Major elimination/simplification opportunities |
-| 🟢 Minor | All | Nice-to-have improvements |
+| Priority     | Source         | Issue Type                                                |
+| ------------ | -------------- | --------------------------------------------------------- |
+| 🔴 Critical  | Risk Finder    | Critical risks + unvalidated critical assumptions         |
+| 🔴 Critical  | Alternatives   | If alternative is significantly better (>30% improvement) |
+| 🟡 Important | Risk Finder    | High risks + important assumptions                        |
+| 🟡 Important | Simplification | Major elimination/simplification opportunities            |
+| 🟢 Minor     | All            | Nice-to-have improvements                                 |
 
 ---
 
@@ -365,26 +383,31 @@ Final Confidence = (Risk × 0.40) + (Alternatives × 0.30) + (Simplification × 
 ## Synthesis
 
 ### Agent Summary
-| Agent | Key Finding | Impact |
-|-------|-------------|--------|
-| Risk Finder | [X] critical risks, [Y] unvalidated assumptions | [High/Med/Low] |
-| Alternatives Explorer | [Best option] recommended | [Keep/Switch] |
-| Simplification Advisor | [X]% complexity reduction possible | [X] days saved |
+
+| Agent                  | Key Finding                                     | Impact         |
+| ---------------------- | ----------------------------------------------- | -------------- |
+| Risk Finder            | [X] critical risks, [Y] unvalidated assumptions | [High/Med/Low] |
+| Alternatives Explorer  | [Best option] recommended                       | [Keep/Switch]  |
+| Simplification Advisor | [X]% complexity reduction possible              | [X] days saved |
 
 ### Priority Issues
 
 🔴 **Critical (Must Address):**
+
 1. [Issue from Risk Finder] - [Action required]
 2. [Issue from Alternatives if significant] - [Action required]
 
 🟡 **Important (Should Address):**
+
 1. [Risk/Assumption] - [Suggested improvement]
 2. [Simplification opportunity] - [Action]
 
 🟢 **Minor (Nice to Have):**
+
 1. [Minor improvement] - [Optional enhancement]
 
 ### Key Recommendations
+
 1. [Most important action - usually from Risk Finder]
 2. [Second priority - often from Simplification]
 3. [Third priority - from Alternatives if relevant]
@@ -393,11 +416,11 @@ Final Confidence = (Risk × 0.40) + (Alternatives × 0.30) + (Simplification × 
 
 **Plan Confidence: {X}/10**
 
-| Factor | Score | Reason |
-|--------|-------|--------|
+| Factor       | Score  | Reason    |
+| ------------ | ------ | --------- |
 | Risk Profile | {X}/10 | [summary] |
 | Approach Fit | {X}/10 | [summary] |
-| Simplicity | {X}/10 | [summary] |
+| Simplicity   | {X}/10 | [summary] |
 
 - **Strengths:** {What's solid across all analyses}
 - **Weaknesses:** {What needs work}
@@ -425,6 +448,7 @@ Final Confidence = (Risk × 0.40) + (Alternatives × 0.30) + (Simplification × 
 3. **Ask about improvements using AskUserQuestion:**
 
    Use the AskUserQuestion tool with:
+
    ```json
    {
      "header": "Next Step",
@@ -453,6 +477,7 @@ Final Confidence = (Risk × 0.40) + (Alternatives × 0.30) + (Simplification × 
    - "Proceed" → Skip to final output, ready for /dev:build
 
 **Final output:**
+
 ```
 ✅ ANALYSIS COMPLETE
 
@@ -484,6 +509,7 @@ Recommended next step: {suggestion based on analysis}
 2. **Question types by agent:**
 
    **From Risk Finder (risks + assumptions):**
+
    ```
    RISK: Authentication complexity identified
    How should we address this risk?
@@ -503,6 +529,7 @@ Recommended next step: {suggestion based on analysis}
    ```
 
    **From Alternatives Explorer:**
+
    ```
    ALTERNATIVE: Custom file handling vs library
    Which approach do you prefer?
@@ -513,6 +540,7 @@ Recommended next step: {suggestion based on analysis}
    ```
 
    **From Simplification Advisor:**
+
    ```
    DEFER: Real-time notifications
    When is this feature needed?
@@ -523,6 +551,7 @@ Recommended next step: {suggestion based on analysis}
    ```
 
 3. **Interactive question flow:**
+
    ```python
    # Use AskUserQuestion tool for each batch
    questions = [
@@ -544,6 +573,7 @@ Recommended next step: {suggestion based on analysis}
 5. **Save improved plan using AskUserQuestion:**
 
    Use the AskUserQuestion tool with:
+
    ```json
    {
      "header": "Save Option",
@@ -573,6 +603,7 @@ Recommended next step: {suggestion based on analysis}
    - Part - Option 2: Save as `.workspace/features/{feature}/01-intent-improved.md` with updated part section
 
 **Output:**
+
 ```
 ✅ PLAN IMPROVED
 
@@ -601,6 +632,7 @@ Full report structure:
 
 ```markdown
 # Analysis Report: {feature-name}
+
 **Date:** {current-date}
 **Analyzer:** Claude Code Analyze Skill v1.0
 
@@ -609,11 +641,13 @@ Full report structure:
 **Confidence Score:** {X}/10
 
 **Top 3 Concerns:**
+
 1. {Most critical issue}
 2. {Second issue}
 3. {Third issue}
 
 **Key Recommendations:**
+
 1. {Primary action}
 2. {Secondary action}
 3. {Tertiary action}
@@ -621,21 +655,25 @@ Full report structure:
 ---
 
 ## Risk Analysis (from analyze-risk-finder agent)
+
 {Full risk analysis output including Devil's Advocate + Assumption Testing}
 
 ---
 
 ## Alternatives Analysis (from analyze-alternatives-explorer agent)
+
 {Full alternatives output with comparison matrix}
 
 ---
 
 ## Simplification Analysis (from analyze-simplification-advisor agent)
+
 {Full simplification output with phased delivery}
 
 ---
 
 ## Synthesis
+
 {Combined findings from all 3 agents with weighted confidence score}
 
 ---
@@ -649,12 +687,14 @@ Based on this analysis:
 
 {If confidence 5-7}
 ⚠️ Plan needs refinement. Consider:
+
 - Address critical issues first
 - Validate key assumptions
 - Then proceed with caution
 
 {If confidence < 5}
 🔴 Plan needs significant revision. Recommend:
+
 - Consider alternative approach
 - Run `/dev:define` with new requirements
 - Or let /dev:define FASE 5 decompose for better manageability
@@ -662,97 +702,7 @@ Based on this analysis:
 
 ---
 
-## Integration with Other Skills
+## Integration
 
-### With /dev:define
-- Integrated in /dev:define FASE 4 (optional quality check before decomposition)
-- Analyze output to validate approach
-- Feedback findings into improved plans before complexity analysis
-
-### With /dev:build
-- Reference analysis during implementation
-- Watch for identified risks
-
----
-
-## Scripts
-
-### analyze_plan.py
-Main script that:
-- Loads context file
-- Runs three analysis techniques
-- Generates comprehensive report
-- Calculates confidence scores
-
----
-
-## Best Practices
-
-### Language
-Follow the Language Policy in CLAUDE.md.
-
-### General
-1. **Be thorough** - Don't skip uncomfortable questions
-2. **Be specific** - Vague concerns aren't actionable
-3. **Be constructive** - Offer solutions, not just problems
-4. **Be realistic** - Perfect is enemy of good
-5. **Be timely** - Analyze before significant investment
-
----
-
-## Examples
-
-### Example: Authentication Analysis
-
-**Devil's Advocate findings:**
-- Session management could be vulnerable
-- Password reset flow has security gaps
-
-**Assumption Testing findings:**
-- Assuming users have email (not validated)
-- Assuming 2FA adoption (likely low)
-
-**Alternative Approaches:**
-- OAuth-only (simpler, more secure)
-- Passwordless authentication
-
-**Result:** Confidence 6/10, recommend OAuth approach
-
-### Example: E-commerce Analysis
-
-**Devil's Advocate findings:**
-- Payment processing failure handling weak
-- Inventory sync could cause overselling
-
-**Assumption Testing findings:**
-- Assuming real-time inventory (actually 5min delay)
-- Assuming single currency (international needed)
-
-**Alternative Approaches:**
-- Use payment service (Stripe) instead of custom
-- Implement reservation system for inventory
-
-**Result:** Confidence 5/10, critical issues must be addressed
-
----
-
-## Version History
-
-- **v2.0** (2025-12-10): Parallel agent architecture
-  - FASE 2 now uses 3 parallel agents for analysis
-  - New agents: analyze-risk-finder, analyze-alternatives-explorer, analyze-simplification-advisor
-  - ~67% context token savings (analysis moved to agents)
-  - 3x faster FASE 2 execution (parallel instead of sequential)
-  - Weighted synthesis in FASE 3 combining 3 perspectives
-  - Added notification after analysis complete
-
-- **v1.1** (2024-10-24): Enhanced with interactive improvement
-  - Added fourth technique: Simplification Analysis
-  - Interactive question-based plan improvement
-  - User-guided refinement process
-  - Generate improved context based on user feedback
-
-- **v1.0** (2024-10-24): Initial implementation
-  - Three core techniques
-  - Confidence scoring
-  - Integration with pipeline
+- `/dev:define` FASE 4: optional quality check before decomposition
+- `/dev:build`: reference analysis during implementation

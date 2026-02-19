@@ -132,38 +132,13 @@ Breakpoints:
 Custom: [ja/nee]
 ```
 
-### Pre-flight Samenvatting
-
-```
-PRE-FLIGHT COMPLETE
-═══════════════════════════════════════════════════════════
-Target:      [URL/path]
-Routes:      [N routes detected]
-Breakpoints: [source] ([N] breakpoints)
-CSS:         [Tailwind | CSS Modules | ...]
-Status:      Ready for detection
-═══════════════════════════════════════════════════════════
-```
-
 ---
 
 ## FASE 1: Detection
 
 > **Doel:** Framework + CSS aanpak detecteren, bestaande responsive patronen inventariseren.
 
-### 1.1 Framework Detection
-
-```
-FRAMEWORK DETECTION
-═══════════════════════════════════════════════════════════
-Framework:    [Next.js | Vite | CRA | ...]
-CSS approach: [Tailwind | CSS Modules | styled-components]
-Responsive:   [mobile-first | desktop-first | mixed]
-Breakpoints:  [N] configured
-═══════════════════════════════════════════════════════════
-```
-
-### 1.2 Bestaande Responsive Patronen
+### 1.1 Bestaande Responsive Patronen
 
 Scan source code voor responsive patterns:
 
@@ -172,19 +147,9 @@ Scan source code voor responsive patterns:
 - Container queries (`@container`)
 - CSS Grid/Flexbox responsiveness (`auto-fit`, `auto-fill`, `flex-wrap`)
 
-### 1.3 Breakpoint Inventaris
+### 1.2 Breakpoint Inventaris
 
-```
-BREAKPOINT USAGE
-═══════════════════════════════════════════════════════════
-sm (640px):  [N] usages
-md (768px):  [N] usages
-lg (1024px): [N] usages
-xl (1280px): [N] usages
-2xl (1536px): [N] usages
-Custom:      [list]
-═══════════════════════════════════════════════════════════
-```
+Count usages per breakpoint (sm/md/lg/xl/2xl + custom). Note any gaps in coverage.
 
 ---
 
@@ -192,28 +157,9 @@ Custom:      [list]
 
 > **Doel:** Multi-viewport screenshots en accessibility snapshots op alle viewports.
 
-### 2.1 Viewport Matrix
+Per route, capture op 6 viewports (XS:320, SM:375, MD:768, LG:1024, XL:1440, 2XL:1920). Volg het patroon uit `PLAYWRIGHT.md`:
 
-Per route, capture op 6 viewports. Volg het patroon uit `PLAYWRIGHT.md`:
-
-```
-CAPTURE MATRIX
-═══════════════════════════════════════════════════════════
-Route: /[route]
-
- Viewport    Width   Status
-─────────── ─────── ──────────
- XS          320px   [ ] Pending
- SM          375px   [ ] Pending
- MD          768px   [ ] Pending
- LG          1024px  [ ] Pending
- XL          1440px  [ ] Pending
- 2XL         1920px  [ ] Pending
-
-═══════════════════════════════════════════════════════════
-```
-
-### 2.2 Capture Sequence (per viewport)
+### 2.1 Capture Sequence (per viewport)
 
 Zie `PLAYWRIGHT.md` → Multi-Viewport Capture Sequence:
 
@@ -346,22 +292,7 @@ multiSelect: false
 4. **Layout fixes** — breakpoints toevoegen/aanpassen
 5. **Polish** — fijne spacing, alignment tweaks
 
-### Per Fix
-
-```
-FIX: [Finding ID]
-═══════════════════════════════════════════════════════════
-Issue:  [beschrijving]
-File:   [pad naar bestand]
-Change: [wat wordt aangepast]
-
-Before:
-  [code snippet]
-
-After:
-  [code snippet]
-═══════════════════════════════════════════════════════════
-```
+Per fix: show finding ID, issue, file, and before/after code diff.
 
 ---
 
@@ -375,27 +306,7 @@ Herhaal FASE 2 capture sequence voor gefixte routes.
 
 ### 6.2 Before/After Vergelijking
 
-```
-BEFORE/AFTER VERGELIJKING
-═══════════════════════════════════════════════════════════
-
-Viewport: [width]px
-
-Before:
-  - [N] overflow elementen
-  - [N] touch target violations
-  - Horizontale scroll: [ja/nee]
-
-After:
-  - [N] overflow elementen
-  - [N] touch target violations
-  - Horizontale scroll: [ja/nee]
-
-Resolved: [N]/[total] findings
-Remaining: [N] (details)
-
-═══════════════════════════════════════════════════════════
-```
+Compare overflow count, touch target violations, and scroll status per viewport. Report resolved vs remaining findings.
 
 ---
 
@@ -459,9 +370,5 @@ Dit command moet **NOOIT**:
 Dit command moet **ALTIJD**:
 
 - Alle 6 viewports capturen voor audit
-- Before/after screenshots vergelijken
-- Overflow als eerste prioriteit fixen
 - Mobile-first aanpak volgen (fixes van klein → groot)
 - Rules uit RULES.md volgen (H-series)
-- DevInfo updaten bij elke fase transitie
-- Alle prompts in het Nederlands

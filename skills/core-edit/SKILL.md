@@ -107,40 +107,58 @@ After approval, proceed to Step 4.
 
 Before modifying files, detect if skills use per-skill junctions to a shared library.
 
-**Step 1 — Check if junctions are active:**
+**Step 1 — Check if symlinks/junctions are active:**
+
+**Linux:**
+
+```bash
+test -L ".claude/skills/$(ls .claude/skills | head -1)" && echo "linked" || echo "direct"
+```
+
+**Windows:**
 
 ```bash
 powershell -Command "(Get-ChildItem '.claude/skills' -Directory | Select-Object -First 1).LinkType"
 ```
 
-- Output `Junction` → per-skill junctions active, proceed to step 2
-- Empty output → no junctions, files live directly in `.claude/skills/`
+- Output `linked` or `Junction` → per-skill links active, proceed to step 2
+- Output `direct` or empty → no links, files live directly in `.claude/skills/`
 
-**Step 2 — Get shared library path (only if Junction):**
+**Step 2 — Get shared library path (only if linked):**
+
+**Linux:**
+
+```bash
+readlink -f .claude/skills/$(ls .claude/skills | head -1) | xargs dirname
+```
+
+**Windows:**
 
 ```bash
 powershell -Command "Split-Path (Get-ChildItem '.claude/skills' -Directory | Select-Object -First 1).Target"
 ```
 
-- Output is the shared library path (e.g., `C:\Projects\claude-config\skills`)
+**If per-skill links active:**
 
-**If per-skill junctions active:**
-
-- Content edits: edit files via the junction (transparent, no extra steps)
-- Rename: must remove old junction, rename in shared library, create new junction
-- Delete: must remove junction AND delete from shared library
+- Content edits: edit files via the link (transparent, no extra steps)
+- Rename: must remove old link, rename in shared library, create new link
+- Delete: must remove link AND delete from shared library
 
 #### Step 4.1: Apply Changes
 
 Apply content edits, resource changes, renames, or deletions as appropriate.
 
-**For rename with junctions:**
+**For rename with symlinks/junctions:**
 
-1. Remove old junction
+1. Remove old link:
+   - Linux: `unlink .claude/skills/[old-name]`
+   - Windows: `cmd //c "rmdir .claude\skills\[old-name]"`
 2. Rename directory in shared library
-3. Create new junction
+3. Create new link:
+   - Linux: `ln -s {shared_library}/[new-name] .claude/skills/[new-name]`
+   - Windows: `cmd //c "mklink /J .claude\skills\[new-name] {shared_library}\[new-name]"`
 4. Update paths in SKILL.md
-5. Verify new junction works
+5. Verify new link works
 
 #### Step 4.2: Update profiles.yaml (Rename/Delete only)
 
@@ -240,7 +258,7 @@ If a skill being edited is missing `name` or has a weak `description`, suggest i
 
 Use **AskUserQuestion** for confirmation with "Annuleren" as recommended option (destructive action).
 
-**If per-skill junctions:** remove junction first, then delete from shared library.
+**If per-skill links:** remove link first (`unlink` on Linux, `cmd //c "rmdir"` on Windows), then delete from shared library.
 
 **Always:** remove skill name from profiles.yaml (Step 4.2).
 

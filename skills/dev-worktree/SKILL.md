@@ -21,6 +21,7 @@ This skill manages git worktrees for parallel feature development. Each feature 
 This skill activates when:
 
 **Trigger:**
+
 - `/dev-worktree` - Show all worktrees and switch
 - `/dev-worktree {name}` - Open specific feature worktree
 - `/dev-worktree new {name}` - Create new worktree without full /dev-legacy-1-plan
@@ -39,6 +40,34 @@ Parse command arguments to determine mode:
 /dev-worktree {name}       → MODE: DIRECT_OPEN
 /dev-worktree new {name}   → MODE: CREATE_NEW
 /dev-worktree remove {name} → MODE: REMOVE
+```
+
+---
+
+### Shared: Feature Scan
+
+Used by all modes. Scan and build feature table:
+
+1. `ls .workspace/features/`
+2. Per feature: check `.worktree` file, detect pipeline fase
+3. Get current location: `pwd`
+
+Pipeline fase detection:
+
+- Has `05-refactor.md` → "Refactored"
+- Has `04-refine.md` → "/4-refine"
+- Has `03-verify.md` → "/3-verify"
+- Has `02-implementation.md` → "/dev-legacy-2-code done"
+- Has `01-intent.md` only → "/dev-legacy-1-plan done"
+
+Display as table:
+
+```
+| Feature | Worktree | Fase |
+|---------|----------|------|
+| checkout | ../project--checkout | /dev-legacy-3-verify |
+| darkmode | ../project--darkmode | /dev-legacy-2-code |
+| login-fix | (no worktree) | /dev-legacy-1-plan |
 ```
 
 ---
@@ -71,6 +100,7 @@ Parse command arguments to determine mode:
    **If "New":** → Go to ACTION: NEW
    **If "Remove":** → Go to ACTION: REMOVE
    **If "Uitleg":**
+
    ```
    📖 WORKTREES UITLEG
 
@@ -87,6 +117,7 @@ Parse command arguments to determine mode:
    Elke feature die je plant met /dev-legacy-1-plan krijgt automatisch een
    eigen worktree. Open die worktree om aan die feature te werken.
    ```
+
    → Return to action selection
 
 ---
@@ -97,52 +128,22 @@ Parse command arguments to determine mode:
 
 **Steps:**
 
-1. **Scan active features:**
-   ```bash
-   ls .workspace/features/
-   ```
+1. Run **Shared: Feature Scan** and display table.
 
-   For each feature folder:
-   - Check if `.worktree` file exists
-   - Read worktree path from file
-   - Detect current pipeline fase from existing files:
-     - Has `05-refactor.md` → "Refactored"
-     - Has `04-refine.md` → "/4-refine"
-     - Has `03-verify.md` → "/3-verify"
-     - Has `02-implementation.md` → "/dev-legacy-2-code done"
-     - Has `01-intent.md` only → "/dev-legacy-1-plan done"
-
-2. **Get current location:**
-   ```bash
-   pwd
-   ```
-
-3. **Display overview:**
-   ```
-   📂 BESCHIKBARE WORKTREES
-
-   Huidige locatie: {current-directory}
-
-   | Feature | Worktree | Fase |
-   |---------|----------|------|
-   | checkout | c:\Projects\project--checkout | /dev-legacy-3-verify |
-   | darkmode | c:\Projects\project--darkmode | /dev-legacy-2-code |
-   | login-fix | (no worktree) | /dev-legacy-1-plan |
-
-   ```
-
-4. **Check if any worktrees exist:**
+2. **Check if any worktrees exist:**
 
    **If NO worktrees found:**
+
    ```
    ℹ️ Geen worktrees gevonden
 
    Er zijn nog geen features met worktrees.
    Maak eerst een feature aan met /dev-legacy-1-plan of /dev-worktree new {name}.
    ```
+
    → EXIT
 
-5. **Build selection options:**
+3. **Build selection options:**
 
    Use AskUserQuestion tool:
    - header: "Switch"
@@ -156,14 +157,16 @@ Parse command arguments to determine mode:
          description: "Terug naar actie menu"
    - multiSelect: false
 
-6. **Handle selection:**
+4. **Handle selection:**
 
    **If feature selected:**
+
    ```bash
    code "{worktree-path}"
    ```
 
    Report:
+
    ```
    ✅ WORKTREE OPENED
 
@@ -183,24 +186,9 @@ Parse command arguments to determine mode:
 
 **Steps:**
 
-1. **Scan features (with and without worktrees):**
-   ```bash
-   ls .workspace/features/
-   ```
+1. Run **Shared: Feature Scan** and display table (include worktree status column).
 
-2. **Display current state:**
-   ```
-   📂 FEATURES OVERZICHT
-
-   | Feature | Worktree | Status |
-   |---------|----------|--------|
-   | checkout | c:\Projects\project--checkout | ✓ Has worktree |
-   | darkmode | (no worktree) | ○ No worktree |
-   | login-fix | (no worktree) | ○ No worktree |
-
-   ```
-
-3. **Build options:**
+2. **Build options:**
 
    Use AskUserQuestion tool:
    - header: "New Worktree"
@@ -216,17 +204,19 @@ Parse command arguments to determine mode:
          description: "Terug naar actie menu"
    - multiSelect: false
 
-4. **Handle selection:**
+3. **Handle selection:**
 
    **If existing feature selected:**
    → Execute CREATE_NEW with that feature name
 
    **If "Nieuwe feature":**
    Ask for name:
+
    ```
    Voer een naam in voor de nieuwe feature:
    (alleen letters, cijfers en streepjes)
    ```
+
    → Execute CREATE_NEW with entered name
 
    **If "Annuleren":** → Return to ACTION_MENU
@@ -239,33 +229,21 @@ Parse command arguments to determine mode:
 
 **Steps:**
 
-1. **Scan features with worktrees:**
-   ```bash
-   ls .workspace/features/
-   ```
+1. Run **Shared: Feature Scan** and display table (only features with worktrees).
 
-2. **Display worktrees:**
-   ```
-   📂 VERWIJDERBARE WORKTREES
-
-   | Feature | Worktree | Fase |
-   |---------|----------|------|
-   | checkout | c:\Projects\project--checkout | /dev-legacy-3-verify |
-   | darkmode | c:\Projects\project--darkmode | /dev-legacy-2-code |
-
-   ```
-
-3. **Check if any worktrees exist:**
+2. **Check if any worktrees exist:**
 
    **If NO worktrees found:**
+
    ```
    ℹ️ Geen worktrees om te verwijderen
 
    Er zijn geen features met worktrees.
    ```
+
    → Return to ACTION_MENU
 
-4. **Build options:**
+3. **Build options:**
 
    Use AskUserQuestion tool:
    - header: "Remove"
@@ -279,7 +257,7 @@ Parse command arguments to determine mode:
          description: "Terug naar actie menu"
    - multiSelect: false
 
-5. **Handle selection:**
+4. **Handle selection:**
 
    **If feature selected:**
    → Execute REMOVE mode for that feature
@@ -292,24 +270,9 @@ Parse command arguments to determine mode:
 
 **Goal:** Show overview without action menu.
 
-**Steps:**
+Run **Shared: Feature Scan**, display table, exit. No selection prompt.
 
-1. Scan features and worktrees (same as ACTION: SWITCH step 1)
-2. Display table
-3. Exit (no selection prompt)
-
-**Output:**
-```
-📂 ACTIVE FEATURES & WORKTREES
-
-| Feature | Worktree | Fase |
-|---------|----------|------|
-| checkout | c:\Projects\project--checkout | /dev-legacy-3-verify |
-| darkmode | c:\Projects\project--darkmode | /dev-legacy-2-code |
-| login-fix | (no worktree) | /dev-legacy-1-plan |
-
-Tip: /dev-worktree om te switchen, new, of remove
-```
+Add tip at bottom: `Tip: /dev-worktree om te switchen, new, of remove`
 
 ---
 
@@ -320,25 +283,30 @@ Tip: /dev-worktree om te switchen, new, of remove
 **Steps:**
 
 1. **Validate feature exists:**
+
    ```bash
    ls .workspace/features/{name}/
    ```
 
    **If not found:**
+
    ```
    ❌ Feature niet gevonden: {name}
 
    Beschikbare features:
    {list from .workspace/features/}
    ```
+
    → EXIT
 
 2. **Check worktree file exists:**
+
    ```bash
    cat .workspace/features/{name}/.worktree
    ```
 
    **If no .worktree file:**
+
    ```
    ⚠️ Feature "{name}" heeft geen worktree
 
@@ -363,11 +331,13 @@ Tip: /dev-worktree om te switchen, new, of remove
    **If "Nee":** EXIT
 
 3. **Open worktree:**
+
    ```bash
    code "{worktree-path}"
    ```
 
    Report:
+
    ```
    ✅ WORKTREE OPENED
 
@@ -390,29 +360,36 @@ Tip: /dev-worktree om te switchen, new, of remove
    - Not already exists in .workspace/features/
 
    **If invalid:**
+
    ```
    ❌ Ongeldige naam: {name}
 
    Gebruik alleen letters, cijfers en streepjes.
    ```
+
    → EXIT
 
    **If exists:**
+
    ```
    ❌ Feature bestaat al: {name}
 
    Gebruik /dev-worktree {name} om de bestaande te openen.
    ```
+
    → EXIT
 
 2. **Detect base branch:**
+
    ```bash
    git branch --list "develop"
    ```
+
    - If develop exists → `base_branch = "develop"`
    - Else → `base_branch = "main"` (fallback to "master")
 
 3. **Generate paths:**
+
    ```bash
    # Get project name
    project_name=$(basename $(pwd))
@@ -421,11 +398,13 @@ Tip: /dev-worktree om te switchen, new, of remove
    ```
 
 4. **Create worktree:**
+
    ```bash
    git worktree add "{worktree_path}" -b {branch_name} {base_branch}
    ```
 
    **If fails:**
+
    ```
    ❌ WORKTREE CREATION FAILED
 
@@ -436,9 +415,11 @@ Tip: /dev-worktree om te switchen, new, of remove
    - Pad bestaat al
    - Geen schrijfrechten
    ```
+
    → EXIT
 
 5. **Create feature folder and save metadata:**
+
    ```bash
    mkdir -p .workspace/features/{name}
 
@@ -450,6 +431,7 @@ Tip: /dev-worktree om te switchen, new, of remove
    ```
 
 6. **Copy .claude folder (if needed):**
+
    ```bash
    if [ ! -d "{worktree_path}/.claude" ]; then
      cp -r .claude "{worktree_path}/.claude"
@@ -457,11 +439,13 @@ Tip: /dev-worktree om te switchen, new, of remove
    ```
 
 7. **Open in VSCode:**
+
    ```bash
    code "{worktree_path}"
    ```
 
 8. **Report:**
+
    ```
    ✅ WORKTREE CREATED
 
@@ -485,22 +469,27 @@ Tip: /dev-worktree om te switchen, new, of remove
 **Steps:**
 
 1. **Validate feature exists:**
+
    ```bash
    cat .workspace/features/{name}/.worktree
    ```
 
    **If not found:**
+
    ```
    ❌ Feature niet gevonden of heeft geen worktree: {name}
    ```
+
    → EXIT
 
 2. **Check for uncommitted changes in worktree:**
+
    ```bash
    cd "{worktree_path}" && git status --porcelain
    ```
 
    **If changes exist:**
+
    ```
    ⚠️ UNCOMMITTED CHANGES
 
@@ -521,11 +510,13 @@ Tip: /dev-worktree om te switchen, new, of remove
    **If "Nee":** EXIT
 
 3. **Check for unpushed commits:**
+
    ```bash
    cd "{worktree_path}" && git log --oneline @{u}..HEAD 2>/dev/null
    ```
 
    **If unpushed commits:**
+
    ```
    ⚠️ UNPUSHED COMMITS
 
@@ -562,6 +553,7 @@ Tip: /dev-worktree om te switchen, new, of remove
 5. **Execute removal:**
 
    **If "Alles":**
+
    ```bash
    # Remove worktree
    git worktree remove "{worktree_path}" --force
@@ -574,6 +566,7 @@ Tip: /dev-worktree om te switchen, new, of remove
    ```
 
    **If "Alleen worktree":**
+
    ```bash
    # Remove only worktree
    git worktree remove "{worktree_path}" --force
@@ -585,6 +578,7 @@ Tip: /dev-worktree om te switchen, new, of remove
    **If "Annuleren":** EXIT
 
 6. **Report:**
+
    ```
    ✅ VERWIJDERD
 
@@ -599,66 +593,16 @@ Tip: /dev-worktree om te switchen, new, of remove
 
 ---
 
-## Best Practices
-
-### Language
-Follow the Language Policy in CLAUDE.md.
-
-### Workflow
-- Always validate before actions
-- Warn about uncommitted changes
-- Provide clear next steps
-- Use AskUserQuestion for all confirmations
-
-### Error Handling
-- Clear error messages with causes
-- Suggestions for resolution
-- Never leave in broken state
-
-## Error Handling
-
-### Worktree Already Exists
-```
-❌ Worktree bestaat al op dit pad
-
-Pad: {path}
-
-Opties:
-- Open bestaande: /dev-worktree {name}
-- Verwijder eerst: /dev-worktree remove {name}
-```
-
-### Branch Already Exists
-```
-❌ Branch bestaat al: {branch_name}
-
-Dit kan betekenen:
-- Feature is eerder aangemaakt zonder worktree
-- Branch is handmatig aangemaakt
-
-Opties:
-- Maak worktree voor bestaande branch
-- Kies andere naam
-```
-
-### Permission Denied
-```
-❌ Geen schrijfrechten voor: {path}
-
-Controleer:
-- Directory permissions
-- Disk space
-- Antivirus blocking
-```
-
 ## Restrictions
 
 This skill must NEVER:
+
 - Remove worktrees without confirmation
 - Delete branches with unpushed commits without warning
 - Leave metadata inconsistent with actual state
 
 This skill must ALWAYS:
+
 - Validate feature/worktree existence before actions
 - Warn about uncommitted changes
 - Provide clear status after each action
