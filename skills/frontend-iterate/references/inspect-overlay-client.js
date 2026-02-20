@@ -306,7 +306,16 @@ function buildLabelLine3(el, styles) {
   if (padding) spacing.push("p:" + padding.replace(/px/g, ""));
   if (margin) spacing.push("m:" + margin.replace(/px/g, ""));
   if (spacing.length) parts.push(spacing.join(" "));
-  if (borderRadius) parts.push("r:" + borderRadius.replace(/px/g, ""));
+  if (borderRadius) {
+    var brStr = borderRadius
+      .split(/\s+/)
+      .map(function (v) {
+        var n = Math.round(parseFloat(v));
+        return n > 9999 ? "full" : String(n);
+      })
+      .join(" ");
+    parts.push("r:" + brStr);
+  }
   if (display && /flex|grid/.test(display)) {
     if (display.indexOf("flex") !== -1) {
       parts.push("flex " + (flexDir || "row"));
