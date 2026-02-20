@@ -77,10 +77,17 @@ If declined: degraded mode — skip babel plugin, overlay works without file:lin
 
 1. Install `@react-dev-inspector/babel-plugin` (Babel mode only)
 2. Copy `references/inspect-overlay-plugin.ts` → project root as `inspect-overlay.vite.ts`
-3. Update `vite.config.ts`:
+3. Copy `references/inspect-overlay-client.js` → project root
+4. Add to `.gitignore` (if not already present):
+   ```
+   # Inspect overlay (synced from claude-config)
+   inspect-overlay-client.js
+   inspect-overlay.vite.ts
+   ```
+5. Update `vite.config.ts`:
    - Add `inspectOverlay()` to plugins array
    - Add babel plugin to `react()` config (Babel mode only)
-4. Restart dev server if running
+6. Restart dev server if running
 
 ## FASE 1B: Setup — Next.js
 
@@ -91,10 +98,11 @@ Next.js with Turbopack has no Babel plugin support → always degraded mode (no 
 ### Install
 
 1. Copy `references/inspect-overlay-component.tsx` → `src/components/dev/InspectOverlay.tsx`
-2. Add to root `layout.tsx`:
+2. Add `src/components/dev/InspectOverlay.tsx` to `.gitignore` (if not already present)
+3. Add to root `layout.tsx`:
    - Import `InspectOverlay` from `@/components/dev/InspectOverlay`
    - Render `{process.env.NODE_ENV === "development" && <InspectOverlay />}` in `<body>`
-3. HMR picks up the change automatically — no server restart needed
+4. HMR picks up the change automatically — no server restart needed
 
 ## FASE 2: Ready
 
