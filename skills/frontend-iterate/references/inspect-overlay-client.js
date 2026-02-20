@@ -648,11 +648,19 @@ function collectCandidates() {
     if (!hasVisibleChild) {
       var inspectable = findInspectable(el);
       if (inspectable && seen.indexOf(inspectable) === -1) {
+        if (
+          inspectable === document.body ||
+          inspectable === document.documentElement
+        )
+          continue;
+        var ir = inspectable.getBoundingClientRect();
+        if (
+          ir.width >= window.innerWidth &&
+          ir.height >= window.innerHeight * 0.9
+        )
+          continue;
         seen.push(inspectable);
-        regionCandidates.push({
-          el: inspectable,
-          rect: inspectable.getBoundingClientRect(),
-        });
+        regionCandidates.push({ el: inspectable, rect: ir });
       }
     }
   }
