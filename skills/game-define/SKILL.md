@@ -16,15 +16,15 @@ This skill defines game feature requirements and architecture for Godot 4.x proj
 
 The skill gathers requirements through targeted questions, optionally researches Godot scene architecture, and designs the implementation. Output is a consolidated documentation file ready for the build phase.
 
-**Trigger**: `/game:define` or `/game:define [feature-name]`
+**Trigger**: `/game-define` or `/game-define [feature-name]`
 
 ## When to Use
 
 **Triggers:**
 
-- `/game:define` - Start with feature name prompt
-- `/game:define abilities` - Define ability system
-- `/game:define player-movement` - Define player movement
+- `/game-define` - Start with feature name prompt
+- `/game-define abilities` - Define ability system
+- `/game-define player-movement` - Define player movement
 
 **Works best with:**
 
@@ -35,11 +35,11 @@ The skill gathers requirements through targeted questions, optionally researches
 
 ### FASE 0: Feature Name + Context
 
-1. **If name provided** (`/game:define abilities`):
+1. **If name provided** (`/game-define abilities`):
    - Use provided name as feature name
    - Continue to step 3
 
-2. **If no name** (`/game:define`):
+2. **If no name** (`/game-define`):
 
    **a) Check backlog for next feature:**
 
@@ -47,7 +47,7 @@ The skill gathers requirements through targeted questions, optionally researches
    Read(".workspace/backlog.md")
    ```
 
-   - If backlog exists: parse the `**Next:**` line (e.g. `**Next:** /game:define player-movement`)
+   - If backlog exists: parse the `**Next:**` line (e.g. `**Next:** /game-define player-movement`)
    - Extract feature name from that line
 
    **b) If backlog has a next feature:**
@@ -282,8 +282,8 @@ Show requirements table with acceptance criteria:
    ## Commands
 
    ```
-   /game:build {name}-{sub1}
-   /game:build {name}-{sub2}
+   /game-build {name}-{sub1}
+   /game-build {name}-{sub2}
    ```
    ````
 
@@ -586,8 +586,8 @@ Write to `.workspace/features/{feature-name}/01-define.md`:
 
 ## Next Steps
 
-Run `/game:build {feature-name}` to start implementation.
-After testing: `/game:refactor {feature-name}` for code quality.
+Run `/game-build {feature-name}` to start implementation.
+After testing: `/game-refactor {feature-name}` for code quality.
 ```
 
 ### FASE 5: Sync Backlog
@@ -654,7 +654,7 @@ After testing: `/game:refactor {feature-name}` for code quality.
 
 7. **Update "Next" suggestion:**
    - Find first feature in `### TODO` section
-   - Update: `**Next:** /game:define {first-todo-feature}`
+   - Update: `**Next:** /game-define {first-todo-feature}`
 
 **Output:**
 
@@ -677,7 +677,7 @@ Location: {MVP Features | Phase 2 | Ad-hoc}
 
 This skill must NEVER:
 
-- Write actual implementation code (that's /game:build's job)
+- Write actual implementation code (that's /game-build's job)
 - Skip the requirements extraction step
 - Proceed without user confirmation at checkpoints
 

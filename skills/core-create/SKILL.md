@@ -36,6 +36,15 @@ Good: `"Analyze staged git changes and generate conventional commit messages. Us
 
 Bad: `"Helps with projects."` — too vague, no triggers.
 
+### Cross-Skill References
+
+When referencing other skills, ALWAYS use hyphen notation matching the directory name:
+
+- Correct: `/dev-build`, `/game-test`, `/frontend-compose`
+- Wrong: `/dev:build`, `/game:test`, `/frontend:compose`
+
+The colon notation does NOT match skill directory names and breaks slash command resolution.
+
 ### Security Rules
 
 - No XML angle brackets (< >) in frontmatter

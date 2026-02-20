@@ -18,29 +18,29 @@ Handles hybrid verification of implemented features through automated testing an
 
 **Execution model:** Automated tests run in a **separate Task agent** (isolated context window) to prevent snapshot/screenshot data from flooding the main conversation. The agent uses MCP browser tools for DOM verification and bash commands for running existing test suites. Only structured results (pass/fail + evidence summary) are returned to the main conversation.
 
-**Trigger**: `/dev:test` or `/dev:test {feature-name}` or `/dev:test {feature-name} {feedback}`
+**Trigger**: `/dev-test` or `/dev-test {feature-name}` or `/dev-test {feature-name} {feedback}`
 
 ## When to Use
 
-- After `/dev:build` completes
+- After `/dev-build` completes
 - When `.workspace/features/{name}/03-test-checklist.md` exists
-- NOT for: planning (/dev:define), implementation (/dev:build)
+- NOT for: planning (/dev-define), implementation (/dev-build)
 
 ## Input Formats
 
 ```
 # Format 1: Inline feedback (recommended — skips automation entirely)
-/dev:test user-registration
+/dev-test user-registration
 1:PASS
 2:FAIL no validation error
 3:PASS
 4:FAIL no mail sent
 
 # Format 2: Feature name only (hybrid: auto + manual walkthrough)
-/dev:test user-registration
+/dev-test user-registration
 
 # Format 3: Free text (skips automation entirely)
-/dev:test user-registration
+/dev-test user-registration
 Everything works except validation is missing and no welcome mail
 ```
 
@@ -80,7 +80,7 @@ Everything works except validation is missing and no welcome mail
    .workspace/features/{feature-name}/03-test-checklist.md
    ```
 
-   If not found → exit with message to run `/dev:build {feature-name}` first.
+   If not found → exit with message to run `/dev-build {feature-name}` first.
 
 4. **Read checklist** and parse test items with expected behavior.
 
@@ -197,6 +197,13 @@ Everything works except validation is missing and no welcome mail
 
 ---
 
+**Capture git baseline** (for scoped commit at end of skill):
+
+```bash
+mkdir -p .workspace/session
+git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+```
+
 ### FASE 1: Automated Testing (Task Agent)
 
 **When:** There are AUTO items after classification and dev server is confirmed running.
@@ -278,7 +285,7 @@ Graceful fallback: reclassify all AUTO items as MANUAL, proceed to FASE 2.
 
 ### FASE 1b: Parse Inline Feedback
 
-**When:** User provided inline feedback via `/dev:test {name} {feedback}` or free text (skipping FASE 1 AND FASE 2 entirely — backward compatible).
+**When:** User provided inline feedback via `/dev-test {name} {feedback}` or free text (skipping FASE 1 AND FASE 2 entirely — backward compatible).
 
 Parse user feedback into structured results (item number, PASS/FAIL, notes).
 Accept both numbered format (`1:PASS 2:FAIL note`) and free text.
@@ -647,6 +654,84 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 
 ### FASE 6: Completion
 
+#### Step 0: Fix Sync (only when fixes were applied in FASE 4)
+
+**Skip this step if all items passed on first attempt (no fixes needed).**
+
+The Fix Sync ensures the user understands what changed in the codebase during the test-fix cycle. Simpler than the build's Codebase Sync — test fixes are typically smaller and more targeted.
+
+**0a) Claude summarizes** — per fix, in plain language:
+
+```
+FIX SYNC: {feature-name}
+=========================
+
+{For each fix applied:}
+
+Fix {N}: {item title}
+- Problem: {what was wrong, in plain language}
+- Change: {what was modified} ({file:line})
+- Approach: {why this fix, not an alternative — only if non-obvious}
+- Watch out: {anything the user should know — only if relevant}
+
+{Example:}
+
+Fix 1: Email validation missing
+- Problem: Form submitted without validating email format
+- Change: Added Zod email validation to registration schema (lib/validations/auth.ts:23)
+- Approach: Used Zod's built-in .email() instead of regex — already used elsewhere in the project
+
+Fix 2: Welcome mail not sent
+- Problem: sendWelcomeMail() was called before user was saved to DB
+- Change: Moved mail call to after successful DB insert (app/api/register/route.ts:45)
+- Watch out: Mail sending is async — if it fails, the user IS registered but won't get the mail
+```
+
+**0b) Comprehension check** via AskUserQuestion:
+
+- header: "Fix Sync"
+- question: "Snap je de fixes die zijn toegepast?"
+- options:
+  - label: "Ja, helder (Aanbevolen)", description: "Ik begrijp wat er is veranderd en waarom"
+  - label: "Leg meer uit", description: "Geef een uitgebreidere uitleg met voorbeelden"
+  - label: "Ik heb een vraag", description: "Ik wil iets specifieks vragen"
+- multiSelect: false
+
+**If "Leg meer uit"** → explain each fix in more detail with before/after examples, then re-ask.
+**If "Ik heb een vraag"** → answer the question, then re-ask.
+**Loop until "Ja, helder".**
+
+**0c) Save fix sync** — store the summary for inclusion in 03-test-results.md (Step 2).
+
+---
+
+#### Step 0b: Out-of-scope Observations (always — even without fixes)
+
+The user was actively testing the feature and may have noticed issues outside the current scope. Capture these before closing out.
+
+Use AskUserQuestion tool:
+
+- header: "Observaties"
+- question: "Is je tijdens het testen nog iets anders opgevallen buiten de scope van deze feature?"
+- options:
+  - label: "Nee, alles goed (Aanbevolen)", description: "Geen verdere opmerkingen"
+  - label: "Ja, ik heb iets opgemerkt", description: "Ik wil iets noteren voor later"
+- multiSelect: false
+
+**If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in 03-test-results.md. Do NOT attempt to fix these — they are out of scope.
+
+After documenting, suggest next steps:
+
+```
+OBSERVATIE GENOTEERD
+
+Opgenomen in test results. Volgende stappen voor deze items:
+- /dev-define {observation-topic} — als het een nieuwe feature is
+- Voeg toe aan .workspace/backlog.md — als het een bekende TODO is
+```
+
+---
+
 1. **Update 01-define.md:** Set `Status: VERIFIED` with date.
 
 2. **Create 03-test-results.md:**
@@ -683,6 +768,20 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
    | 1   | Valid registration | Snapshot: /dashboard + h1 'Welkom'         |
    | 2   | Without email      | Snapshot: foutmelding 'Email is verplicht' |
 
+   ## Fix Sync
+
+   {Only if fixes were applied. Written in plain language from the sync conversation.}
+
+   {Per fix:}
+
+   - **{item title}**: {problem} → {fix} ({file:line})
+
+   ## Observations
+
+   {Only if user reported out-of-scope observations during testing.}
+
+   - {observation description} → suggested: /dev-define {topic}
+
    ## Tests Added
 
    - {test files added}
@@ -700,10 +799,22 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
    - Update "Updated" timestamp
    - Update "Next" suggestion
 
-4. **Auto-commit:**
+4. **Scoped auto-commit** (only this skill's changes):
+
+   Compare current git status with baseline from FASE 0:
 
    ```bash
-   git add .
+   git status --porcelain | sort > /tmp/current-status.txt
+   ```
+
+   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   - **NEW** (only in current, not in baseline) → `git add` automatically
+   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
+   - **PRE-EXISTING** (only in baseline) → do NOT stage
+
+   If baseline file doesn't exist, fall back to `git add -A`.
+
+   ```bash
    git commit -m "$(cat <<'EOF'
    test({feature}): verified - {N} items pass ({auto} auto, {manual} manual)
 
@@ -716,14 +827,16 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
    )"
    ```
 
+   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
+
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
 5. **Suggest next step:**
 
    ```
    Next steps:
-   - /dev:refactor {feature-name} - Optioneel: code quality verbeteren
-   - /frontend:seo - Optioneel: SEO audit voor publieke features
+   - /dev-refactor {feature-name} - Optioneel: code quality verbeteren
+   - /frontend-seo - Optioneel: SEO audit voor publieke features
    ```
 
 ---
@@ -741,7 +854,7 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 ## Example Flow (compact)
 
 ```
-/dev:test user-registration
+/dev-test user-registration
 → FASE 0: Classify → 3 AUTO (2 browser, 1 CLI) + 1 MANUAL
 → FASE 0: User override → akkoord
 → FASE 0: Dev server check → tunnel running → https://xxx.trycloudflare.com → 200 OK

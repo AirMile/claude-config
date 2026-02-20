@@ -12,7 +12,7 @@ metadata:
 
 Layered codebase health diagnosis: drift for general health (Go, TypeScript, Python, Rust, Java, Ruby, PHP, C#) plus react-doctor for React-specific depth (hooks, state, effects, security). Show combined report, then optionally generate a stack-aware improvement plan.
 
-**Trigger**: `/dev:doctor`
+**Trigger**: `/dev-doctor`
 
 ## FASE 0: Detect & Scan
 

@@ -16,15 +16,15 @@ This skill defines web feature requirements and architecture for React/web proje
 
 The skill gathers requirements through targeted questions, optionally researches stack patterns, and designs the implementation. Output is a consolidated documentation file ready for the build phase.
 
-**Trigger**: `/dev:define` or `/dev:define [feature-name]`
+**Trigger**: `/dev-define` or `/dev-define [feature-name]`
 
 ## When to Use
 
 **Triggers:**
 
-- `/dev:define` - Start with feature name prompt
-- `/dev:define auth` - Define authentication system
-- `/dev:define product-list` - Define product list component
+- `/dev-define` - Start with feature name prompt
+- `/dev-define auth` - Define authentication system
+- `/dev-define product-list` - Define product list component
 
 **Works best with:**
 
@@ -36,11 +36,11 @@ The skill gathers requirements through targeted questions, optionally researches
 
 ### FASE 0: Feature Name
 
-1. **If name provided** (`/dev:define auth`):
+1. **If name provided** (`/dev-define auth`):
    - Use provided name as feature name
    - Continue to step 3
 
-2. **If no name** (`/dev:define`):
+2. **If no name** (`/dev-define`):
 
    **a) Check backlog for next feature:**
 
@@ -48,7 +48,7 @@ The skill gathers requirements through targeted questions, optionally researches
    Read(".workspace/backlog.md")
    ```
 
-   - If backlog exists: parse the `**Next:**` line (e.g. `**Next:** /dev:define page-layout`)
+   - If backlog exists: parse the `**Next:**` line (e.g. `**Next:** /dev-define page-layout`)
    - Extract feature name from that line
 
    **b) If backlog has a next feature:**
@@ -288,8 +288,8 @@ Show requirements table with acceptance criteria:
    ## Commands
 
    ```
-   /dev:build {name}-{sub1}
-   /dev:build {name}-{sub2}
+   /dev-build {name}-{sub1}
+   /dev-build {name}-{sub2}
    ```
    ````
 
@@ -625,12 +625,12 @@ Write to `.workspace/features/{feature-name}/01-define.md`:
 
 ## Next Steps
 
-Run `/dev:build {feature-name}` to start implementation.
+Run `/dev-build {feature-name}` to start implementation.
 
 UI-heavy feature? Overweeg eerst:
 
-- `/frontend:theme` - Design tokens en kleurenpalet opzetten
-- `/frontend:compose` - Wireframes genereren voor visueel ontwerp
+- `/frontend-theme` - Design tokens en kleurenpalet opzetten
+- `/frontend-compose` - Wireframes genereren voor visueel ontwerp
 ```
 
 ### FASE 5: Sync Backlog
@@ -700,7 +700,7 @@ UI-heavy feature? Overweeg eerst:
 
 7. **Update "Next" suggestion:**
    - Find first feature in `### TODO` section
-   - Update: `**Next:** /dev:define {first-todo-feature}`
+   - Update: `**Next:** /dev-define {first-todo-feature}`
 
 **Output:**
 
@@ -723,7 +723,7 @@ Location: {MVP Features | Phase 2 | Ad-hoc}
 
 This skill must NEVER:
 
-- Write actual implementation code (that's /dev:build's job)
+- Write actual implementation code (that's /dev-build's job)
 - Skip the requirements extraction step
 - Proceed without user confirmation at checkpoints
 

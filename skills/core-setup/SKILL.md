@@ -25,17 +25,21 @@ Interactive wizard that sets up a new or existing project. Collects user decisio
    - Store for Phase 6 (CLAUDE.md `## User Preferences`)
 
 2. **Detect existing project** — Run detection script:
+
    ```bash
    python .claude/skills/core-setup/scripts/detect-existing.py --path .
    ```
+
    If files found: ask whether to merge or replace existing configs.
 
 3. **MCP servers** — Check and install essentials:
+
    ```bash
    claude mcp list
    ```
 
    Install missing (user scope):
+
    ```bash
    # sequentialthinking
    claude mcp add sequentialthinking -s user -- npx -y @modelcontextprotocol/server-sequential-thinking
@@ -106,6 +110,7 @@ Ask sequentially, one question per response:
 ### Documentation Generators
 
 AskUserQuestion (multi-select) — show generators relevant to project type:
+
 - **Web**: components, routes, state, design-tokens, api-calls
 - **Backend**: api, components, erd, events, middleware, auth-flow, routes
 - **Game**: scenes, game-classes, state-machines, behavior-trees, prefabs
@@ -120,16 +125,11 @@ AskUserQuestion (multi-select) — show generators relevant to project type:
 4. **Directory Exclusions** (multi-select): none, node_modules, vendor, dist, build, .env
 
 Write `.claude/settings.local.json` with the `permissions.allow` array format:
+
 ```json
 {
   "permissions": {
-    "allow": [
-      "Read *",
-      "Edit *",
-      "Write *",
-      "Bash(npm *)",
-      "Bash(npx *)"
-    ]
+    "allow": ["Read *", "Edit *", "Write *", "Bash(npm *)", "Bash(npx *)"]
   }
 }
 ```
@@ -137,31 +137,40 @@ Write `.claude/settings.local.json` with the `permissions.allow` array format:
 ### Code Formatter (PostToolUse Hook)
 
 Auto-format after every Write/Edit. Create `.claude/hooks/format-on-save.cjs`:
+
 - Node.js script that reads stdin JSON, extracts file path, checks extension, runs formatter
 - Use `.cjs` to avoid ES Module issues
 
 Formatter selection per stack:
 
-| Stack | Formatter | Command |
-|-------|-----------|---------|
-| JS/TS (React, Vue, Next.js, Node, etc.) | Prettier | `npx prettier --write` |
-| PHP/Laravel | Pint | `./vendor/bin/pint` |
-| Python | Black | `black` |
-| Rust | rustfmt | `rustfmt` |
-| Go | gofmt | `gofmt -w` |
-| C#/.NET | dotnet format | `dotnet format --include` |
-| Godot/GDScript | gdformat | `gdformat` |
-| C/C++ | clang-format | `clang-format -i` |
-| Dart/Flutter | dart format | `dart format` |
+| Stack                                   | Formatter     | Command                   |
+| --------------------------------------- | ------------- | ------------------------- |
+| JS/TS (React, Vue, Next.js, Node, etc.) | Prettier      | `npx prettier --write`    |
+| PHP/Laravel                             | Pint          | `./vendor/bin/pint`       |
+| Python                                  | Black         | `black`                   |
+| Rust                                    | rustfmt       | `rustfmt`                 |
+| Go                                      | gofmt         | `gofmt -w`                |
+| C#/.NET                                 | dotnet format | `dotnet format --include` |
+| Godot/GDScript                          | gdformat      | `gdformat`                |
+| C/C++                                   | clang-format  | `clang-format -i`         |
+| Dart/Flutter                            | dart format   | `dart format`             |
 
 Add hook to `settings.local.json`:
+
 ```json
 {
   "hooks": {
-    "PostToolUse": [{
-      "matcher": "Write|Edit",
-      "hooks": [{ "type": "command", "command": "node .claude/hooks/format-on-save.cjs" }]
-    }]
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/format-on-save.cjs"
+          }
+        ]
+      }
+    ]
   }
 }
 ```
@@ -174,7 +183,7 @@ Update `## User Preferences` with language from Phase 1.
 
 Generate CLAUDE.md with the following structure. This is the **canonical structure** — all pipeline skills (dev-build auto-sync, core-md-audit) expect these section names.
 
-```markdown
+````markdown
 # {Project Name}
 
 {One-line description from Phase 2.}
@@ -184,8 +193,10 @@ Generate CLAUDE.md with the following structure. This is the **canonical structu
 ```bash
 {auto-detected from package.json scripts, Makefile, or equivalent}
 ```
+````
 
 {If image/asset conversion scripts exist, add as separate block:}
+
 ```bash
 {e.g. node scripts/convert-images.mjs}
 ```
@@ -200,6 +211,7 @@ Generate CLAUDE.md with the following structure. This is the **canonical structu
 **Created**: [Date]
 
 ### Stack
+
 **Frontend**: [Framework, bundler, language] (if applicable)
 **Backend**: [Framework, language] (if applicable)
 **Styling**: [CSS framework, font] (if applicable)
@@ -214,14 +226,17 @@ Generate CLAUDE.md with the following structure. This is the **canonical structu
 **Hosting**: [Platform] (if applicable)
 
 ### Testing
+
 **Unit/Component**: [Framework, library]
 **E2E**: [Framework]
 
 ### Documentation Generators
+
 **Enabled:** [comma-separated]
 **Available:** [comma-separated]
 
 ### Standards
+
 **Accessibility:** [wcag-aa | wcag-a | minimal]
 **Responsive:** [mobile-first | desktop-first | fixed]
 **Data Fetching:** [plain-fetch | swr | tanstack]
@@ -241,11 +256,13 @@ Generate CLAUDE.md with the following structure. This is the **canonical structu
 
 ## Non-obvious patterns
 
-{Start empty — this section gets populated by /dev:build auto-sync as features
- are built. Add any patterns discovered during setup if applicable, e.g.:}
+{Start empty — this section gets populated by /dev-build auto-sync as features
+are built. Add any patterns discovered during setup if applicable, e.g.:}
+
 - **Path alias**: `@/` → `src/` (if configured)
 - **Env setup**: {if .env.example exists, mention copy instruction}
-```
+
+````
 
 **Section rules:**
 - `## Commands`: Always include. Auto-detect from package manifest scripts
@@ -274,7 +291,7 @@ Generate `.claude/research/stack-baseline.md` — reusable framework conventions
      --idioms "[extracted]" --testing "[extracted]" \
      --pitfalls "[extracted]" --sources "[library IDs]" \
      --output .claude/research/stack-baseline.md
-   ```
+````
 
 **Game projects:** Also generate `.claude/research/architecture-baseline.md` with scene tree patterns, node types, signals, state machines.
 
@@ -291,14 +308,16 @@ If committing: stage relevant files, create commit with conventional commit form
 ## Troubleshooting
 
 ### Error: Stack detection fails
+
 **Cause:** No recognizable framework files found (package.json, Cargo.toml, etc.).
 **Solution:** Make sure you're in the project root directory. If using a monorepo, navigate to the specific package. You can manually specify the stack during setup.
 
 ### Error: Dependencies won't install
+
 **Cause:** Package manager not found or network issues.
 **Solution:** Check that npm/yarn/pnpm is installed (`which npm`). Check network connectivity. If behind a proxy, configure npm proxy settings.
 
 ### Error: CLAUDE.md not generated correctly
+
 **Cause:** Template variables not resolved or stack not recognized.
 **Solution:** The setup wizard generates CLAUDE.md from templates. If the output looks wrong, edit it manually — CLAUDE.md is just a markdown file. Run `/core-setup` again to regenerate.
-

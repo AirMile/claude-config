@@ -13,16 +13,16 @@ metadata:
 ## Overview
 
 This is the **bridge** between `/thinking:*` commands and the game pipeline.
-Transforms structured idea markdown into a prioritized feature backlog ready for `/game:define`.
+Transforms structured idea markdown into a prioritized feature backlog ready for `/game-define`.
 
-**Trigger**: `/game:plan` or `/game:plan [paste markdown]`
+**Trigger**: `/game-plan` or `/game-plan [paste markdown]`
 
 ## Input
 
 Accepts markdown from:
 
-- `/thinking:idea` output
-- `/thinking:brainstorm` output
+- `/thinking-idea` output
+- `/thinking-brainstorm` output
 - Any structured game concept markdown
 
 ## Output
@@ -32,7 +32,7 @@ Accepts markdown from:
 - Decomposed features
 - Dependencies
 - MVP vs Phase 2/3 priority
-- Direct links to `/game:define {feature}`
+- Direct links to `/game-define {feature}`
 
 ## Workflow
 
@@ -142,7 +142,7 @@ Accepts markdown from:
    - Ask user to paste concept:
      ```yaml
      header: "Input"
-     question: "Plak de output van /thinking:idea of /thinking:brainstorm"
+     question: "Plak de output van /thinking-idea of /thinking-brainstorm"
      options:
        - label: "Ik plak het hieronder", description: "Typ of plak je idea/brainstorm markdown"
        - label: "Uit bestand laden", description: "Laad van een bestaand .md bestand"
@@ -181,7 +181,7 @@ Sections: {count}
    - What can be split into independent features?
 
 2. **Extract features:**
-   - Each feature = one `/game:define` unit
+   - Each feature = one `/game-define` unit
    - Feature should be implementable independently (with dependencies)
    - Name in kebab-case for CLI use
 
@@ -357,7 +357,7 @@ Phase 3 (Nice to Have):
 
 **Generated:** {date}
 **Updated:** {date}
-**Source:** {/thinking:idea | /thinking:brainstorm}
+**Source:** {/thinking-idea | /thinking-brainstorm}
 
 ## Overview
 
@@ -378,7 +378,7 @@ Phase 3 (Nice to Have):
 - **{feature-name}** ({TYPE}) → {dependency}
   {description}
 
-**Next:** `/game:define {first-todo-feature}`
+**Next:** `/game-define {first-todo-feature}`
 
 ---
 
@@ -444,7 +444,7 @@ File: .workspace/backlog.md
 | Total | {count} |
 
 Start development:
-/game:define {first-mvp-feature}
+/game-define {first-mvp-feature}
 ```
 
 ## Best Practices
@@ -496,5 +496,5 @@ Phase 3:
 11. ui-hud (UI)
 12. screen-shake (POLISH)
 
-Start: /game:define player-movement
+Start: /game-define player-movement
 ```

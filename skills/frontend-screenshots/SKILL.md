@@ -16,7 +16,7 @@ metadata:
 
 Generate marketing-quality screenshots of a web app using MCP Playwright tools. Analyzes the codebase to discover routes and features, plans screenshots with the user, and captures them at HiDPI resolution.
 
-**Trigger**: `/frontend:screenshots` or `/frontend:screenshots [url]`
+**Trigger**: `/frontend-screenshots` or `/frontend-screenshots [url]`
 
 ## FASE 0: Determine App URL
 

@@ -24,6 +24,7 @@ Change-aware sync between the codebase and CLAUDE.md. Detects what changed (your
 ### 0. Scope Selection
 
 Use **AskUserQuestion**:
+
 - header: "Sync scope"
 - question: "Wat wil je syncen naar CLAUDE.md?"
 - options:
@@ -34,7 +35,7 @@ Use **AskUserQuestion**:
 
 **If "Alles sinds..."** → follow up with plain text question: "Sinds wanneer? (bijv. '3 days', '1 week', '2025-02-01')"
 
-**Not needed after:** `/dev:build` (has auto-sync), `/dev:refactor` (has conditional sync), `/core-setup` (generates CLAUDE.md).
+**Not needed after:** `/dev-build` (has auto-sync), `/dev-refactor` (has conditional sync), `/core-setup` (generates CLAUDE.md).
 
 ## Process
 
@@ -89,13 +90,13 @@ Changed areas:
 2. Read changed files (or their directory structure if many)
 3. Compare against each canonical section:
 
-   | CLAUDE.md Section | What to check |
-   |---|---|
-   | `## Commands` | New scripts in package.json? Changed build commands? |
-   | `## Project` / `### Stack` | New dependencies added? Libraries changed? |
-   | `## Project structuur` | New directories/files? Moved/renamed files? Deleted directories? |
-   | `## Routing` | New routes? Changed route patterns? |
-   | `## Non-obvious patterns` | New patterns visible in changed code? Gotchas from session context? |
+   | CLAUDE.md Section          | What to check                                                       |
+   | -------------------------- | ------------------------------------------------------------------- |
+   | `## Commands`              | New scripts in package.json? Changed build commands?                |
+   | `## Project` / `### Stack` | New dependencies added? Libraries changed?                          |
+   | `## Project structuur`     | New directories/files? Moved/renamed files? Deleted directories?    |
+   | `## Routing`               | New routes? Changed route patterns?                                 |
+   | `## Non-obvious patterns`  | New patterns visible in changed code? Gotchas from session context? |
 
 4. Also check session context (conversation history) for:
    - Gotchas or workarounds discovered during debugging
@@ -106,7 +107,7 @@ Changed areas:
 
 Show each proposed change with context:
 
-```
+````
 PROPOSED UPDATES ({N})
 
 1. ## Project structuur — add new directories
@@ -118,9 +119,10 @@ PROPOSED UPDATES ({N})
    +  utils/          # Shared utility functions
    +  types/          # TypeScript type definitions
       hooks/
-   ```
+````
 
 2. ## Non-obvious patterns — add new gotcha
+
    Reason: discovered during debugging session
 
    ```diff
@@ -128,12 +130,14 @@ PROPOSED UPDATES ({N})
    ```
 
 3. ## Commands — update build command
+
    Reason: build script changed in package.json
 
    ```diff
    -npm run build    # tsc -b && vite build
    +npm run build    # vite build (tsc check removed)
    ```
+
 ```
 
 **Quality rules** — follow core-md-audit guidelines:
@@ -162,6 +166,7 @@ Apply approved changes with Edit tool. Target the correct canonical sections.
 ### 5. Report
 
 ```
+
 CLAUDE.md SYNCED
 
 Applied: {N} updates
@@ -169,6 +174,7 @@ Sections touched: {list}
 Skipped: {N} (if any)
 
 Source: {default | team | since "X"}
+
 ```
 
 ## Canonical Sections Reference
@@ -196,3 +202,4 @@ If >20 files changed, group by directory and focus on structural changes. Don't 
 
 ### Merge conflicts in CLAUDE.md
 If CLAUDE.md has merge conflict markers, resolve them first before proposing updates. Flag this to the user.
+```

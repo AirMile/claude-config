@@ -18,7 +18,7 @@ This is **FASE 4** of the gamedev workflow: plan -> define -> build -> test -> *
 
 Batch-first architecture: analyzes ALL features in parallel via Explore agents, triages clean vs dirty, generates GDScript-aware refactor patterns via Context7, creates one combined plan with one approval, and applies changes with per-feature rollback.
 
-**Trigger**: `/game:refactor` or `/game:refactor {feature-name}`
+**Trigger**: `/game-refactor` or `/game-refactor {feature-name}`
 
 ## Scope Rule: Feature Files Only
 
@@ -36,9 +36,9 @@ This rule exists because refactoring external files risks breaking other feature
 
 ## When to Use
 
-- After `/game:test` completes with all playtest items passing
+- After `/game-test` completes with all playtest items passing
 - When `.workspace/features/{name}/03-test-results.md` exists
-- NOT for: fixing bugs (/game:test), adding features (/game:define), planning (/game:plan)
+- NOT for: fixing bugs (/game-test), adding features (/game-define), planning (/game-plan)
 
 ## Input
 
@@ -87,11 +87,11 @@ Reads from `.workspace/features/{feature-name}/`:
 
 2. **Determine feature queue:**
 
-   **a) Feature name provided** (`/game:refactor water-ability`):
+   **a) Feature name provided** (`/game-refactor water-ability`):
    - Validate feature exists in `.workspace/features/`
    - Feature queue = `[water-ability]`
 
-   **b) No feature name** (`/game:refactor`):
+   **b) No feature name** (`/game-refactor`):
    - If TST features found in backlog: present them via **AskUserQuestion**:
      - header: "Refactor"
      - question: "Welke features wil je refactoren? ({N} features in TST status)"
@@ -146,7 +146,7 @@ Reads from `.workspace/features/{feature-name}/`:
    # Refactor Patterns
 
    <!-- Generated via Context7 for: Godot 4.x / GDScript -->
-   <!-- Regenerate: delete this file and run /game:refactor -->
+   <!-- Regenerate: delete this file and run /game-refactor -->
 
    ## Performance Anti-patterns
 
@@ -188,6 +188,13 @@ Features:
 ```
 
 ---
+
+**Capture git baseline** (for scoped commit at end of skill):
+
+```bash
+mkdir -p .workspace/session
+git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+```
 
 ### FASE 1: Parallel Batch Analysis + Triage
 
@@ -779,10 +786,22 @@ IMPROVEMENTS APPLIED
 
    Or: `CLAUDE.md: no updates needed (internal changes only)`
 
-5. **Single auto-commit for everything:**
+5. **Scoped auto-commit** (only this skill's changes):
+
+   Compare current git status with baseline from FASE 0:
 
    ```bash
-   git add .
+   git status --porcelain | sort > /tmp/current-status.txt
+   ```
+
+   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   - **NEW** (only in current, not in baseline) → `git add` automatically
+   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
+   - **PRE-EXISTING** (only in baseline) → do NOT stage
+
+   If baseline file doesn't exist, fall back to `git add -A`.
+
+   ```bash
    git commit -m "$(cat <<'EOF'
    refactor(batch): {summary}
 
@@ -804,6 +823,8 @@ IMPROVEMENTS APPLIED
    refactor({feature}): {summary}
    ```
 
+   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
+
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
 6. **Show completion:**
@@ -821,16 +842,16 @@ IMPROVEMENTS APPLIED
    ✗ {name} — rolled back ({reason})
 
    All phases completed:
-   ✓ /game:plan - Planning
-   ✓ /game:define - Definition
-   ✓ /game:build - Implementation
-   ✓ /game:test - Verification
-   ✓ /game:refactor - Refactoring
+   ✓ /game-plan - Planning
+   ✓ /game-define - Definition
+   ✓ /game-build - Implementation
+   ✓ /game-test - Verification
+   ✓ /game-refactor - Refactoring
 
    Ready for next feature!
 
    Next feature from backlog:
-   → /game:define {next-feature}
+   → /game-define {next-feature}
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
@@ -840,8 +861,8 @@ IMPROVEMENTS APPLIED
 
 ### Context Loading Failures
 
-**No features found** — exit: "Run /game:define and /game:build first"
-**No test results for any feature** — exit: "Run /game:test first"
+**No features found** — exit: "Run /game-define and /game-build first"
+**No test results for any feature** — exit: "Run /game-test first"
 **Some features missing test results** — remove from queue, warn, continue with rest
 **Build log empty** — skip feature, warn: "No code files found in 02-build-log.md for {feature}"
 

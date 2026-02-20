@@ -207,19 +207,16 @@ If the user provided an inline description/argument:
 5. Use AskUserQuestion with technique options:
 
    ```yaml
-   header: "Technieken"
-   question: "Welke technieken wil je toepassen? (max 3)"
+   header: "Techniek"
+   question: "Welke techniek wil je toepassen?"
    options:
      - label: "1. [Top Technique] (Recommended)", description: "[rationale]"
      - label: "2. [Technique 2]", description: "[brief description]"
      - label: "3. [Technique 3]", description: "[brief description]"
-     - label: "Uitleg", description: "Leg de technieken uit"
-   multiSelect: true
+   multiSelect: false
    ```
 
-   - If user selects multiple techniques: apply them in sequence (Steps 3-4 for each)
-   - Selected techniques are applied in sequence WITHOUT returning to Step 5 between them
-   - After all selected techniques are applied: proceed to Step 5
+   - Proceed to Step 3 with the selected technique
 
 ### Step 3: Apply Technique
 
@@ -255,7 +252,13 @@ If the user provided an inline description/argument:
    Reageer per nummer of in je eigen woorden.
    ```
 
-4. Engage in natural dialogue if user has follow-up questions
+4. Engage in natural dialogue — the user may:
+   - Answer questions directly
+   - Ask their own questions back
+   - Want to go deeper on a specific point
+   - Redirect the conversation to a related topic
+   - Skip questions they find irrelevant
+     All of this is fine. Follow the conversation naturally.
 5. Continue until this technique is sufficiently explored
 
 **Guidelines for technique application:**
@@ -300,17 +303,11 @@ If the user provided an inline description/argument:
    - [insight 2]
    ```
 
-4. Auto-proceed:
-   - If more selected techniques remain: proceed immediately to Step 3 for the next technique
-   - If all selected techniques are done: proceed to Step 5
-   - Note: user can always interrupt if synthesis needs adjustment
+4. After presenting synthesis, proceed to Step 5
 
 ### Step 5: Next Action
 
-**Goal:** Decide whether to explore another technique or generate the final refined idea. Only shown after all techniques selected in Step 2 are complete.
-
-**Important:** This step is only reached after ALL techniques selected in Step 2 have been applied.
-When the user selected multiple techniques, apply Steps 3-4 in sequence for each without showing Step 5 between them.
+**Goal:** After each technique, let the user decide: apply another technique or generate the refined output.
 
 **Process:**
 
@@ -351,12 +348,11 @@ When the user selected multiple techniques, apply Steps 3-4 in sequence for each
      - label: "Genereer verfijnde versie (Recommended)", description: "Creëer het eindresultaat met alle inzichten"
      - label: "[Technique 1]", description: "[rationale - most relevant remaining technique]"
      - label: "[Technique 2]", description: "[brief description]"
-     - label: "Uitleg", description: "Leg de opties uit"
-   multiSelect: true
+   multiSelect: false
    ```
 
-   - If only "Genereer verfijnde versie" selected: proceed to Step 6 (Generate Final Output)
-   - If technique(s) selected: apply them in sequence (Steps 3-4), then return to Step 5
+   - If "Genereer verfijnde versie": proceed to Step 6
+   - If a technique selected: go to Step 3 for that technique, then back to Step 5 after
 
 ### Step 6: Generate Final Output
 
@@ -435,10 +431,10 @@ multiSelect: false
    Applied techniques: {list of techniques used}
 
    Next steps:
-   - /thinking:critique - Kritisch analyseren en versterken
-   - /thinking:brainstorm - Nog een brainstormronde
-   - /dev:plan - Omzetten naar web feature backlog
-   - /game:backlog - Omzetten naar feature backlog (voor games)
+   - /thinking-critique - Kritisch analyseren en versterken
+   - /thinking-brainstorm - Nog een brainstormronde
+   - /dev-plan - Omzetten naar web feature backlog
+   - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
 **If "Opslaan naar Obsidian":**
@@ -463,10 +459,10 @@ multiSelect: false
    Applied techniques: {list}
 
    Next steps:
-   - /thinking:critique - Kritisch analyseren en versterken
-   - /thinking:brainstorm - Nog een brainstormronde
-   - /dev:plan - Omzetten naar web feature backlog
-   - /game:backlog - Omzetten naar feature backlog (voor games)
+   - /thinking-critique - Kritisch analyseren en versterken
+   - /thinking-brainstorm - Nog een brainstormronde
+   - /dev-plan - Omzetten naar web feature backlog
+   - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
 **If "Alleen tonen":**
@@ -505,10 +501,15 @@ multiSelect: false
 
 **Flow Efficiency:**
 
-- No AskUserQuestion between technique presentation and user response - just prompt and wait
-- No confirmation gate after synthesis - auto-proceed to next technique
-- Apply selected techniques in sequence without returning to Step 5 between them
-- Only 2 interaction gates in the whole technique loop: initial selection (Step 2) and final decision (Step 5)
+- No AskUserQuestion between technique presentation and user response — just prompt and wait
+- After each technique's synthesis, always go to Step 5 for the user to decide next action
+- One technique at a time: select → apply → synthesize → decide to continue or not
+
+**Conversational Flexibility:**
+
+- The user can ask questions, go deeper, or redirect at any point during technique application
+- Don't force rigid question-answer structure — follow the natural conversation
+- Let the user skip questions they don't find relevant
 
 **Synthesis:**
 
@@ -530,11 +531,11 @@ multiSelect: false
 - Be exploratory and curious
 - Encourage wild ideas and boundary pushing
 - Build on user's creative energy
-- Keep dialogue natural and flowing
+- Keep dialogue natural and flowing — let user elaborate, redirect, or ask questions freely
 - Track progress through techniques
 - Enable quick flow with numbered choices (user just types a number)
 - Respect user's choice even if different from suggestion
-- Minimize friction: present and let user respond, no response mode gates
+- The technique provides structure, not a straitjacket
 
 ## Technical Notes
 
@@ -552,10 +553,8 @@ multiSelect: false
 
 **Flow control:**
 
-- Store list of selected techniques from Step 2
-- Loop Steps 3-4 for each technique in sequence
-- Only show Step 5 after all selected techniques are complete
-- Track: techniques_selected, techniques_applied, current_technique_index
+- One technique at a time: Step 2 → Step 3 → Step 4 → Step 5 → repeat or finish
+- Track: techniques_applied (list of completed techniques)
 
 **Sequential thinking usage:**
 

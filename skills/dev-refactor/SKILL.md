@@ -16,7 +16,7 @@ This is **FASE 4** of the dev workflow: define -> build -> test -> **refactor**
 
 Batch-first architecture: analyzes ALL features in parallel via Explore agents, triages clean vs dirty, generates stack-aware refactor patterns via Context7, creates one combined plan with one approval, and applies changes with per-feature rollback.
 
-**Trigger**: `/dev:refactor` or `/dev:refactor {feature-name}`
+**Trigger**: `/dev-refactor` or `/dev-refactor {feature-name}`
 
 ## Scope Rule: Feature Files Only
 
@@ -33,9 +33,9 @@ This rule exists because refactoring external files risks breaking other feature
 
 ## When to Use
 
-- After `/dev:test` completes with all tests passing
+- After `/dev-test` completes with all tests passing
 - When `.workspace/features/{name}/03-test-results.md` exists
-- NOT for: fixing bugs (/dev:test), adding features (/dev:define), planning (/dev:define)
+- NOT for: fixing bugs (/dev-test), adding features (/dev-define), planning (/dev-define)
 
 ## Input
 
@@ -85,11 +85,11 @@ Reads from `.workspace/features/{feature-name}/`:
 
 2. **Determine feature queue:**
 
-   **a) Feature name provided** (`/dev:refactor auth`):
+   **a) Feature name provided** (`/dev-refactor auth`):
    - Validate feature exists in `.workspace/features/`
    - Feature queue = `[auth]`
 
-   **b) No feature name** (`/dev:refactor`):
+   **b) No feature name** (`/dev-refactor`):
    - If TST features found in backlog: present them via **AskUserQuestion**:
      - header: "Refactor"
      - question: "Welke features wil je refactoren? ({N} features in TST status)"
@@ -144,7 +144,7 @@ Reads from `.workspace/features/{feature-name}/`:
    # Refactor Patterns
 
    <!-- Generated via Context7 for: {stack list} -->
-   <!-- Regenerate: delete this file and run /dev:refactor -->
+   <!-- Regenerate: delete this file and run /dev-refactor -->
 
    ## {Library Name}
 
@@ -180,6 +180,13 @@ Features:
 ```
 
 ---
+
+**Capture git baseline** (for scoped commit at end of skill):
+
+```bash
+mkdir -p .workspace/session
+git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+```
 
 ### FASE 1: Parallel Batch Analysis + Triage
 
@@ -735,10 +742,22 @@ IMPROVEMENTS APPLIED
 
    Or: `CLAUDE.md: no updates needed (internal changes only)`
 
-5. **Single auto-commit for everything:**
+5. **Scoped auto-commit** (only this skill's changes):
+
+   Compare current git status with baseline from FASE 0:
 
    ```bash
-   git add .
+   git status --porcelain | sort > /tmp/current-status.txt
+   ```
+
+   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   - **NEW** (only in current, not in baseline) → `git add` automatically
+   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
+   - **PRE-EXISTING** (only in baseline) → do NOT stage
+
+   If baseline file doesn't exist, fall back to `git add -A`.
+
+   ```bash
    git commit -m "$(cat <<'EOF'
    refactor(batch): {summary}
 
@@ -760,6 +779,8 @@ IMPROVEMENTS APPLIED
    refactor({feature}): {summary}
    ```
 
+   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
+
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
 6. **Show completion:**
@@ -777,15 +798,15 @@ IMPROVEMENTS APPLIED
    ✗ {name} — rolled back ({reason})
 
    All phases completed:
-   ✓ /dev:define - Definition
-   ✓ /dev:build - Implementation
-   ✓ /dev:test - Verification
-   ✓ /dev:refactor - Refactoring
+   ✓ /dev-define - Definition
+   ✓ /dev-build - Implementation
+   ✓ /dev-test - Verification
+   ✓ /dev-refactor - Refactoring
 
    Ready for production!
 
    Next feature from backlog:
-   → /dev:define {next-feature}
+   → /dev-define {next-feature}
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
@@ -795,8 +816,8 @@ IMPROVEMENTS APPLIED
 
 ### Context Loading Failures
 
-**No features found** → exit: "Run /dev:define and /dev:build first"
-**No test results for any feature** → exit: "Run /dev:test first"
+**No features found** → exit: "Run /dev-define and /dev-build first"
+**No test results for any feature** → exit: "Run /dev-test first"
 **Some features missing test results** → remove from queue, warn, continue with rest
 **Build log empty** → skip feature, warn: "No code files found in 02-build-log.md for {feature}"
 

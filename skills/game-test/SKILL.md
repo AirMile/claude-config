@@ -16,7 +16,7 @@ This is **FASE 3** of the gamedev workflow: plan -> define -> build -> **test** 
 
 The test phase handles human verification of implemented game features through structured playtest feedback, intelligent issue categorization, and iterative fix loops until all items pass.
 
-**Trigger**: `/game:test` or `/game:test {feature-name}` or `/game:test {feature-name} {feedback}`
+**Trigger**: `/game-test` or `/game-test {feature-name}` or `/game-test {feature-name} {feedback}`
 
 ## When to Use
 
@@ -24,7 +24,7 @@ This skill activates in these scenarios:
 
 **Primary use:**
 
-- After `/game:build` completes implementation
+- After `/game-build` completes implementation
 - When `.workspace/features/{name}/03-playtest.md` exists
 - When human verification is needed for game mechanics
 
@@ -36,16 +36,16 @@ This skill activates in these scenarios:
 
 **NOT for:**
 
-- Initial feature planning (use /game:define)
-- Implementation (use /game:build)
-- Automated unit testing (use /dev:verify)
+- Initial feature planning (use /game-define)
+- Implementation (use /game-build)
+- Automated unit testing (use /dev-verify)
 
 ## Input Formats
 
 ### Format 1: Inline feedback (recommended)
 
 ```
-/game:test water-ability
+/game-test water-ability
 1:PASS
 2:PASS
 3:FAIL puddle too small
@@ -55,13 +55,13 @@ This skill activates in these scenarios:
 ### Format 2: Feature name only (shows checklist first)
 
 ```
-/game:test water-ability
+/game-test water-ability
 ```
 
 ### Format 3: Free text feedback
 
 ```
-/game:test water-ability
+/game-test water-ability
 Everything works except puddle is too small and there's no sound
 ```
 
@@ -131,7 +131,7 @@ Now TESTABLE -> TDD fix loop
    ```
 
    - If backlog exists: find features in `### BLT` section
-   - Parse `**Next:**` for suggestion (e.g. `**Next:** /game:test {feature-name}`)
+   - Parse `**Next:**` for suggestion (e.g. `**Next:** /game-test {feature-name}`)
 
    Use **AskUserQuestion** if BLT features found:
    - header: "Feature"
@@ -163,7 +163,7 @@ Now TESTABLE -> TDD fix loop
    Searched: .workspace/features/{feature-name}/
 
    This feature needs to be built first.
-   Run /game:build {feature-name} to implement and generate playtest checklist.
+   Run /game-build {feature-name} to implement and generate playtest checklist.
    ```
 
    -> Exit skill
@@ -192,8 +192,8 @@ Now TESTABLE -> TDD fix loop
 
    Expected: .workspace/features/{feature-name}/playtest_scene.tscn
 
-   The /game:build phase should have created this scene.
-   Run /game:build {feature-name} first, or check if build completed successfully.
+   The /game-build phase should have created this scene.
+   Run /game-build {feature-name} first, or check if build completed successfully.
    ```
 
    -> Exit skill
@@ -294,6 +294,13 @@ Feedback: received
 ```
 
 ---
+
+**Capture git baseline** (for scoped commit at end of skill):
+
+```bash
+mkdir -p .workspace/session
+git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+```
 
 ### FASE 1: Parse Feedback
 
@@ -858,7 +865,84 @@ Provide feedback when ready.
 
 ### FASE 6: Completion
 
-**Goal:** Mark feature as verified and update documentation.
+**Goal:** Sync user on fixes, capture observations, mark feature as verified and update documentation.
+
+#### Step 0: Fix Sync (only when fixes were applied in FASE 3)
+
+**Skip this step if all items passed on first attempt (no fixes needed).**
+
+The Fix Sync ensures the user understands what changed in the codebase during the test-fix cycle.
+
+**0a) Claude summarizes** — per fix, in plain language:
+
+```
+FIX SYNC: {feature-name}
+=========================
+
+{For each fix applied:}
+
+Fix {N}: {item title}
+- Problem: {what was wrong, in plain language}
+- Change: {what was modified} ({file:line})
+- Approach: {why this fix, not an alternative — only if non-obvious}
+- Watch out: {anything the user should know — only if relevant}
+
+{Example:}
+
+Fix 1: Puddle too small
+- Problem: Puddle radius was 50px, user expected 100px
+- Change: Doubled PUDDLE_RADIUS constant (scripts/abilities/water_ability.gd:12)
+
+Fix 2: No sound on cast
+- Problem: AudioStreamPlayer was missing from the ability scene
+- Change: Added AudioStreamPlayer2D with cast_sound.ogg (scenes/abilities/water_ability.tscn)
+- Watch out: Sound uses AudioBus "SFX" — make sure this bus exists in project audio settings
+```
+
+**0b) Comprehension check** via AskUserQuestion:
+
+- header: "Fix Sync"
+- question: "Snap je de fixes die zijn toegepast?"
+- options:
+  - label: "Ja, helder (Aanbevolen)", description: "Ik begrijp wat er is veranderd en waarom"
+  - label: "Leg meer uit", description: "Geef een uitgebreidere uitleg met voorbeelden"
+  - label: "Ik heb een vraag", description: "Ik wil iets specifieks vragen"
+- multiSelect: false
+
+**If "Leg meer uit"** → explain each fix in more detail with before/after examples, then re-ask.
+**If "Ik heb een vraag"** → answer the question, then re-ask.
+**Loop until "Ja, helder".**
+
+**0c) Save fix sync** — store the summary for inclusion in 03-test-results.md (Step 3).
+
+---
+
+#### Step 0b: Out-of-scope Observations (always — even without fixes)
+
+The user was actively playtesting and may have noticed issues outside the current feature scope. Capture these before closing out.
+
+Use AskUserQuestion tool:
+
+- header: "Observaties"
+- question: "Is je tijdens het playtesten nog iets anders opgevallen buiten de scope van deze feature?"
+- options:
+  - label: "Nee, alles goed (Aanbevolen)", description: "Geen verdere opmerkingen"
+  - label: "Ja, ik heb iets opgemerkt", description: "Ik wil iets noteren voor later"
+- multiSelect: false
+
+**If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in 03-test-results.md. Do NOT attempt to fix these — they are out of scope.
+
+After documenting, suggest next steps:
+
+```
+OBSERVATIE GENOTEERD
+
+Opgenomen in test results. Volgende stappen voor deze items:
+- /game-define {observation-topic} — als het een nieuwe feature is
+- Voeg toe aan .workspace/backlog.md — als het een bekende TODO is
+```
+
+---
 
 **Steps:**
 
@@ -908,6 +992,20 @@ Provide feedback when ready.
    | 3   | FAIL    | PASS  | Puddle radius 50->100 |
    | 4   | FAIL    | PASS  | Added cast sound      |
 
+   ## Fix Sync
+
+   {Only if fixes were applied. Written in plain language from the sync conversation.}
+
+   {Per fix:}
+
+   - **{item title}**: {problem} → {fix} ({file:line})
+
+   ## Observations
+
+   {Only if user reported out-of-scope observations during playtesting.}
+
+   - {observation description} → suggested: /game-define {topic}
+
    ## Tests Added
 
    - `tests/test_{feature}_puddle_radius.gd`
@@ -926,7 +1024,7 @@ Provide feedback when ready.
    - Move feature from `### BLT` to `### TST` subsection
    - Update section header counts: `({done}/{total} done)`
    - Update "Updated" timestamp
-   - Update "Next" suggestion: `**Next:** /game:refactor {feature-name}` or `/game:define {next-todo-feature}`
+   - Update "Next" suggestion: `**Next:** /game-refactor {feature-name}` or `/game-define {next-todo-feature}`
 
    **Example:**
 
@@ -954,10 +1052,22 @@ Provide feedback when ready.
    Progress: MVP {done}/{total} done
    ```
 
-5. **Auto-commit changes:**
+5. **Scoped auto-commit** (only this skill's changes):
+
+   Compare current git status with baseline from FASE 0:
 
    ```bash
-   git add .
+   git status --porcelain | sort > /tmp/current-status.txt
+   ```
+
+   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   - **NEW** (only in current, not in baseline) → `git add` automatically
+   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
+   - **PRE-EXISTING** (only in baseline) → do NOT stage
+
+   If baseline file doesn't exist, fall back to `git add -A`.
+
+   ```bash
    git commit -m "$(cat <<'EOF'
    test({feature}): verified - all {N} items pass
 
@@ -967,6 +1077,8 @@ Provide feedback when ready.
    EOF
    )"
    ```
+
+   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
@@ -982,8 +1094,8 @@ Items: {N}/{N} passing
 Committed: test({feature}): verified
 
 Next steps:
-- Refactor code quality: /game:refactor {feature-name}
-- Or continue with next feature: /game:define {next-feature}
+- Refactor code quality: /game-refactor {feature-name}
+- Or continue with next feature: /game-define {next-feature}
 ```
 
 ---
@@ -1001,7 +1113,7 @@ Next steps:
 ## Example Session
 
 ```
-User: /game:test water-ability
+User: /game-test water-ability
 
 Claude: PLAYTEST CHECKLIST: water-ability
 

@@ -13,16 +13,16 @@ metadata:
 ## Overview
 
 This is the **bridge** between `/thinking:*` commands and the dev pipeline.
-Transforms structured idea markdown into a prioritized feature backlog ready for `/dev:define`.
+Transforms structured idea markdown into a prioritized feature backlog ready for `/dev-define`.
 
-**Trigger**: `/dev:plan` or `/dev:plan [paste markdown]`
+**Trigger**: `/dev-plan` or `/dev-plan [paste markdown]`
 
 ## Input
 
 Accepts markdown from:
 
-- `/thinking:idea` output
-- `/thinking:brainstorm` output
+- `/thinking-idea` output
+- `/thinking-brainstorm` output
 - Any structured web concept markdown
 
 ## Output
@@ -32,7 +32,7 @@ Accepts markdown from:
 - Decomposed features
 - Dependencies
 - MVP vs Phase 2/3 priority
-- Direct links to `/dev:define {feature}`
+- Direct links to `/dev-define {feature}`
 
 ## Workflow
 
@@ -142,7 +142,7 @@ Accepts markdown from:
    - Ask user to paste concept:
      ```yaml
      header: "Input"
-     question: "Plak de output van /thinking:idea of /thinking:brainstorm"
+     question: "Plak de output van /thinking-idea of /thinking-brainstorm"
      options:
        - label: "Ik plak het hieronder", description: "Typ of plak je idea/brainstorm markdown"
        - label: "Uit bestand laden", description: "Laad van een bestaand .md bestand"
@@ -285,7 +285,7 @@ Research results remain in conversation context for FASE 1. No files are written
    **Granularity decision:** When a feature could be defined as one large item OR multiple smaller items, apply the right-size rule: each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — they're easier to combine than to split later.
 
 2. **Extract features:**
-   - Each feature = one `/dev:define` unit
+   - Each feature = one `/dev-define` unit
    - Feature should be implementable independently (with dependencies)
    - Name in kebab-case for CLI use
 
@@ -458,7 +458,7 @@ Phase 3 (Nice to Have):
 
 **Generated:** {date}
 **Updated:** {date}
-**Source:** {/thinking:idea | /thinking:brainstorm}
+**Source:** {/thinking-idea | /thinking-brainstorm}
 
 ## Overview
 
@@ -479,7 +479,7 @@ Phase 3 (Nice to Have):
 - **{feature-name}** ({TYPE}) → {dependency}
   {description}
 
-**Next:** `/dev:define {first-todo-feature}`
+**Next:** `/dev-define {first-todo-feature}`
 
 ---
 
@@ -545,7 +545,7 @@ File: .workspace/backlog.md
 | Total | {count} |
 
 Start development:
-/dev:define {first-mvp-feature}
+/dev-define {first-mvp-feature}
 ```
 
 ## Best Practices
@@ -597,5 +597,5 @@ Phase 3:
 11. dark-mode (UI)
 12. performance-optimization (REFACTOR)
 
-Start: /dev:define routing
+Start: /dev-define routing
 ```

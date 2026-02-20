@@ -16,7 +16,7 @@ This is **FASE 2** of the dev workflow: define -> **build** -> test
 
 Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD or Implementation First), then builds sequentially.
 
-**Trigger**: `/dev:build` or `/dev:build [feature-name]`
+**Trigger**: `/dev-build` or `/dev-build [feature-name]`
 
 ## Input
 
@@ -84,6 +84,13 @@ Optionally load stack-baseline for project-specific patterns:
    IMPLEMENTATION ORDER:
    (from 01-define.md)
    ```
+
+**Capture git baseline** (for scoped commit at end of skill):
+
+```bash
+mkdir -p .workspace/session
+git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+```
 
 ### FASE 1: Technique Mapping (Per Requirement)
 
@@ -186,7 +193,7 @@ Create `03-test-checklist.md`:
 
 ## Feedback Format
 
-Use `/dev:test {feature}` with results:
+Use `/dev-test {feature}` with results:
 ```
 
 1:PASS
@@ -257,11 +264,26 @@ Documentation:
 
 De Codebase Sync is het belangrijkste onderdeel van de build. Het doel: de gebruiker begrijpt hoe de gebouwde feature werkt, zodat hij goede beslissingen kan nemen in test- en refactor-fases.
 
-**3a) Claude legt uit** — in gewone taal, geen template. Drie onderdelen:
+**3a) Claude legt uit** — alsof je het aan een student uitlegt. Geen jargon, geen aannames over voorkennis. Drie onderdelen:
 
-- **Hoe het werkt**: architectuur en data flow in 2-3 zinnen
-- **Waarom zo**: alleen niet-voor-de-hand-liggende keuzes met redenering
-- **Waar het samenkomt**: hoe de requirements samen één werkend geheel vormen
+- **Wat doet het?**: wat de feature doet in 1-2 simpele zinnen, alsof je het aan iemand uitlegt die de code niet kent
+- **Hoe ziet het eruit?**: 1-2 ASCII diagrammen die de architectuur visueel maken. Kies het meest relevante type:
+  - **Data flow**: request → handler → service → database (voor API/backend features)
+  - **Component diagram**: welke modules/files met elkaar praten (voor multi-file features)
+  - **State diagram**: state transitions (voor features met state management)
+  - Hou diagrammen compact (max 15 regels per diagram). Gebruik box-drawing characters (┌─┐│└─┘) en pijlen (→ ← ↓ ↑).
+
+  ```
+  Example:
+  ┌──────────┐    ┌───────────┐    ┌──────────┐
+  │  Route   │───→│  Service  │───→│ Database │
+  │ POST /api│    │ validate  │    │  users   │
+  └──────────┘    │ transform │    └──────────┘
+                  └───────────┘
+  ```
+
+- **Hoe werkt het onder de motorkap?**: de data flow stap voor stap, met concrete voorbeelden ("als een gebruiker X doet, dan gebeurt Y")
+- **Waar moet je op letten?**: alleen niet-voor-de-hand-liggende keuzes — leg uit _waarom_, niet alleen _wat_
 
 **3b) Begripscheck** — via **AskUserQuestion**:
 
@@ -270,7 +292,7 @@ Vraag: "Snap je hoe de feature werkt?"
 Opties:
 
 - "Ja, helder"
-- "Leg X meer uit"
+- "Leg het uitgebreider uit" — "Geef een stap-voor-stap uitleg met voorbeelden, alsof ik nieuw ben in programmeren"
 - "Ik heb een vraag"
 
 **3c) Follow-up loop** — als de gebruiker iets niet snapt:
@@ -324,19 +346,33 @@ Opties:
    ```
 
 3. Move feature from `### DEF` to `### BLT` in `.workspace/backlog.md`
-4. Auto-commit:
+4. **Scoped auto-commit** (only this skill's changes):
+
+   Compare current git status with baseline from FASE 0:
 
    ```bash
-   git add .
+   git status --porcelain | sort > /tmp/current-status.txt
+   ```
+
+   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   - **NEW** (only in current, not in baseline) → `git add` automatically
+   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
+   - **PRE-EXISTING** (only in baseline) → do NOT stage
+
+   If baseline file doesn't exist, fall back to `git add -A`.
+
+   ```bash
    git commit -m "$(cat <<'EOF'
    build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)
    EOF
    )"
    ```
 
+   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
+
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-5. Toon: **Next step:** `/dev:test {feature}`
+5. Toon: **Next step:** `/dev-test {feature}`
 6. Build is officieel compleet
 
 ## Test Output Parsing (CRITICAL)

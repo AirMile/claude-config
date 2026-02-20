@@ -16,7 +16,7 @@ FASE 2 of the gamedev workflow: plan -> define -> **build** -> test -> refactor
 
 The build phase implements features from requirements using technique mapping: TDD for logic/calculations, Implementation First for visual/scene setup. It generates tests, iterates through RED-GREEN-REFACTOR cycles, and syncs codebase understanding.
 
-**Trigger**: `/game:build` or `/game:build [feature-name]`
+**Trigger**: `/game-build` or `/game-build [feature-name]`
 
 ## Input
 
@@ -106,7 +106,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    - If not found: warn user but continue
      ```
      WARNING: No architecture-baseline.md found.
-     Run /game:plan or create .claude/research/architecture-baseline.md for better context.
+     Run /game-plan or create .claude/research/architecture-baseline.md for better context.
      Continuing without baseline...
      ```
 
@@ -147,6 +147,13 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    2. REQ-002 -> REQ-001
    ...
    ```
+
+**Capture git baseline** (for scoped commit at end of skill):
+
+```bash
+mkdir -p .workspace/session
+git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+```
 
 ### FASE 1: Technique Mapping
 
@@ -609,7 +616,7 @@ Generate `03-playtest.md`:
 
 ## Feedback Format
 
-Use `/game:test {feature}` with results:
+Use `/game-test {feature}` with results:
 ```
 
 1:PASS
@@ -679,31 +686,41 @@ After build is complete, ensure the user understands what was built.
 
 #### Step 1: Architecture Explanation
 
-Claude explains the built architecture in plain language:
+Claude explains the built architecture in plain, beginner-friendly language. No jargon — explain like talking to a student who is new to game development:
 
-```
-CODEBASE SYNC
-=============
+- **Wat doet het?**: wat de feature doet in het spel, in 1-2 simpele zinnen
+- **Hoe ziet het eruit?**: 1-2 ASCII diagrammen die de architectuur visueel maken. Kies het meest relevante type:
+  - **Scene tree**: node hierarchy met types (voor scene-based features)
+  - **Signal flow**: welke nodes signalen uitzenden/ontvangen (voor event-driven features)
+  - **State diagram**: state transitions (voor state machines)
+  - Hou diagrammen compact (max 15 regels per diagram). Gebruik box-drawing characters (┌─┐│└─┘) en pijlen (→ ← ↓ ↑).
 
-Here's what was built for {feature-name}:
+  ```
+  Example:
+  Player (CharacterBody2D)
+  ├── Sprite2D
+  ├── CollisionShape2D
+  ├── AbilitySystem (Node)
+  │   └── WaterAbility ──signal──→ HUD.update_cooldown()
+  └── HealthComponent ──signal──→ HUD.update_health()
+  ```
 
-[Plain language explanation of:]
-- What files were created and why
-- How the classes relate to each other
-- Key signals and data flow
-- How this integrates with existing codebase
-```
+- **Hoe werkt het onder de motorkap?**: welke scripts/scenes samenwerken, stap voor stap met concrete voorbeelden ("als de speler X doet, dan roept script A functie B aan, wat Y veroorzaakt")
+- **Waar moet je op letten?**: niet-voor-de-hand-liggende keuzes met uitleg _waarom_
 
 #### Step 2: Comprehension Check
 
 Use **AskUserQuestion**:
 
-```
-Does this make sense? Any questions about the architecture?
-(I want to make sure we're aligned before moving on)
-```
+Vraag: "Snap je hoe de feature werkt?"
 
-**Follow-up loop:** If user has questions, answer them. Repeat AskUserQuestion until user confirms understanding.
+Opties:
+
+- "Ja, helder"
+- "Leg het uitgebreider uit" — "Geef een stap-voor-stap uitleg met voorbeelden, alsof ik nieuw ben in gamedev"
+- "Ik heb een vraag"
+
+**Follow-up loop:** If user has questions or picks "Leg het uitgebreider uit", answer with more detail and examples. Repeat AskUserQuestion until user confirms understanding.
 
 #### Step 3: Write Sync to Build Log
 
@@ -815,7 +832,7 @@ Added:
    ```
    **Next Step**
 
-   `/game:test {feature}`
+   `/game-test {feature}`
    ```
 
 3. **Sync backlog:**
@@ -826,7 +843,7 @@ Added:
    - Move feature from `### DEF` to `### BLT` subsection
    - Update section header counts: `({done}/{total} done)`
    - Update "Updated" timestamp
-   - Add `**Next:** /game:test {feature}` at top of backlog
+   - Add `**Next:** /game-test {feature}` at top of backlog
 
    **Example:**
 
@@ -851,14 +868,29 @@ Added:
 
    Feature: {feature-name}
    Status: DEF -> BLT
-   Next: /game:test {feature}
+   Next: /game-test {feature}
    ```
 
-4. **Auto-commit:**
+4. **Scoped auto-commit** (only this skill's changes):
+
+   Compare current git status with baseline from FASE 0:
 
    ```bash
-   git add -A && git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
+   git status --porcelain | sort > /tmp/current-status.txt
    ```
+
+   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   - **NEW** (only in current, not in baseline) → `git add` automatically
+   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
+   - **PRE-EXISTING** (only in baseline) → do NOT stage
+
+   If baseline file doesn't exist, fall back to `git add -A`.
+
+   ```bash
+   git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
+   ```
+
+   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
 
    No Co-Authored-By line.
 

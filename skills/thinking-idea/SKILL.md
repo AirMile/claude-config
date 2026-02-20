@@ -178,7 +178,7 @@ Ask: "Wat is je idee? Beschrijf het in 1-2 zinnen."
 
 ### Step 2: Explore and Expand
 
-Develop the idea through multiple rounds of concrete, clickable questions. Minimum 2 rounds before proceeding to Step 3.
+Develop the idea through rounds of concrete, clickable questions. Rounds are suggestions — the user decides when there's enough context.
 
 **Setup:**
 
@@ -227,33 +227,35 @@ multiSelect: false
 
 **Note:** The examples above are templates. Every question and option MUST be specific to THIS idea. Use sequential thinking to derive concrete, relevant options from the idea context.
 
-**Ronde 2 - Diepte (3-4 vragen parallel):**
-
-Build on Round 1 answers. Use sequential thinking to formulate follow-up questions. Same format: each question = separate AskUserQuestion with concrete options.
-
-Focus areas for Round 2:
-
-- Features/mechanics specifics
-- Differentiatie (what makes it unique)
-- Style/atmosphere/tone
-- Motivation system or engagement model
-
-**Ronde 3+ - Optioneel:**
-
-After Round 2, use AskUserQuestion:
+**After each round**, use AskUserQuestion:
 
 ```yaml
 header: "Verdieping"
 question: "Wil je nog meer aspecten uitwerken?"
 options:
-  - label: "Door naar samenvatting (Recommended)", description: "Er is genoeg context voor een goed concept"
-  - label: "Nog een ronde", description: "Ik wil nog meer aspecten uitdiepen"
-  - label: "Explain question", description: "Leg uit wat de volgende stap inhoudt"
+  - label: "Nog een ronde (Recommended)", description: "Verdiep nog meer aspecten van het idee"
+  - label: "Door naar samenvatting", description: "Er is genoeg context voor een goed concept"
 multiSelect: false
 ```
 
-- **If "Nog een ronde":** formulate 2-3 targeted follow-up questions based on gaps from previous rounds
+- **If "Nog een ronde":** formulate 2-4 targeted follow-up questions based on gaps from previous rounds
 - **If "Door naar samenvatting":** proceed to Step 3
+
+**Follow-up round focus areas:**
+
+- Features/mechanics specifics
+- Differentiatie (what makes it unique)
+- Style/atmosphere/tone
+- Motivation system or engagement model
+- Any direction the user showed interest in
+
+**Conversational flexibility:**
+
+The user may respond to questions in unexpected ways — asking their own questions, going deeper on one specific topic, or skipping questions entirely. Follow the conversation naturally. The rounds provide structure, not a rigid script.
+
+**Further rounds:**
+
+Same pattern: present the "Verdieping" AskUserQuestion after each round. As rounds progress, switch the recommended option to "Door naar samenvatting" when enough context has been gathered (typically after 2-3 rounds).
 
 **Question rules:**
 
@@ -350,10 +352,10 @@ multiSelect: false
    File: .workspace/concept.md
 
    Next steps:
-   - /thinking:critique - Kritisch analyseren en versterken
-   - /thinking:brainstorm - Creatief uitbreiden en variaties
-   - /dev:plan - Omzetten naar web feature backlog
-   - /game:backlog - Omzetten naar feature backlog (voor games)
+   - /thinking-critique - Kritisch analyseren en versterken
+   - /thinking-brainstorm - Creatief uitbreiden en variaties
+   - /dev-plan - Omzetten naar web feature backlog
+   - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
 **If "Opslaan naar Obsidian":**
@@ -400,10 +402,10 @@ multiSelect: false
    Status: seed
 
    Next steps:
-   - /thinking:critique - Kritisch analyseren en versterken
-   - /thinking:brainstorm - Creatief uitbreiden en variaties
-   - /dev:plan - Omzetten naar web feature backlog
-   - /game:backlog - Omzetten naar feature backlog (voor games)
+   - /thinking-critique - Kritisch analyseren en versterken
+   - /thinking-brainstorm - Creatief uitbreiden en variaties
+   - /dev-plan - Omzetten naar web feature backlog
+   - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
 **If "Alleen tonen":**

@@ -743,7 +743,7 @@ Locatie: .workspace/config/THEME.md
 | Breakpoints | {N} |
 | Modes | {light/dark/both} |
 
-Next suggested: /frontend:compose of /dev:define (met theme als context)
+Next suggested: /frontend-compose of /dev-define (met theme als context)
 ```
 
 ---
@@ -851,7 +851,7 @@ Deze skill garandeert bij completion:
 Na succesvolle theme creatie/update:
 
 ```
-Next suggested: /frontend:compose of /dev:define (met theme als context)
+Next suggested: /frontend-compose of /dev-define (met theme als context)
 Theme tokens ready for wireframe integration.
 ```
 

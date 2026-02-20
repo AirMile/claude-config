@@ -21,6 +21,7 @@ Language: English
 ```
 
 **Note**: This section should be at the top of CLAUDE.md. All skills read this section to determine user's preferred language for output. Supported languages:
+
 - English (default)
 - Nederlands
 - Deutsch
@@ -31,7 +32,7 @@ Language: English
 
 ## Commands Template
 
-```markdown
+````markdown
 ## Commands
 
 ```bash
@@ -40,7 +41,9 @@ npm run build    # tsc -b && vite build
 npm run lint     # ESLint
 npm run preview  # Preview production build
 ```
-```
+````
+
+````
 
 **Rules:**
 - Auto-detect from package.json `scripts`, Makefile, or equivalent
@@ -87,15 +90,17 @@ npm run preview  # Preview production build
 **Accessibility:** [wcag-aa | wcag-a | minimal]
 **Responsive:** [mobile-first | desktop-first | fixed]
 **Data Fetching:** [plain-fetch | swr | tanstack]
-```
+````
 
 **Rules:**
+
 - Only include `### Stack` subcategories that apply to the project
 - `### Standards` only for web projects
 - `### Testing` only if testing frameworks are configured
 - Subcategories are flexible — add what's relevant, omit what's not
 
 **Type examples:**
+
 - `Fullstack (Next.js)` | `Web Frontend (React SPA)` | `Web Frontend (Next.js SSR)`
 - `Web Backend (Laravel API)` | `Web Backend (Express REST)`
 - `Game (Godot)` | `Game (Unity)`
@@ -107,25 +112,28 @@ npm run preview  # Preview production build
 
 ```markdown
 ## Project structuur
+```
+
+src/
+pages/ # Home, ProjectDetail (lazy-loaded)
+components/
+ui/ # Button, ProjectCard, ContactForm
+sections/ # Hero, About, Projects, Skills, Contact
+animation/ # FadeIn, StaggerContainer, PageTransition
+providers/ # LenisProvider
+hooks/ # useLocale, useSEO, useStructuredData
+data/ # Project metadata
+locales/ # en.json, nl.json
+lib/ # constants, i18n config, animation presets
+api/ # Serverless functions
+scripts/ # Build/conversion scripts
 
 ```
-src/
-  pages/          # Home, ProjectDetail (lazy-loaded)
-  components/
-    ui/           # Button, ProjectCard, ContactForm
-    sections/     # Hero, About, Projects, Skills, Contact
-    animation/    # FadeIn, StaggerContainer, PageTransition
-    providers/    # LenisProvider
-  hooks/          # useLocale, useSEO, useStructuredData
-  data/           # Project metadata
-  locales/        # en.json, nl.json
-  lib/            # constants, i18n config, animation presets
-api/              # Serverless functions
-scripts/          # Build/conversion scripts
-```
+
 ```
 
 **Rules:**
+
 - Generate from actual file tree after project files are created
 - One-line comments per directory explaining purpose
 - Include directories outside `src/` if they exist (api/, scripts/, etc.)
@@ -144,6 +152,7 @@ scripts/          # Build/conversion scripts
 ```
 
 **Rules:**
+
 - Only for web projects with routing
 - Show route patterns with arrow notation
 - Omit for CLI, game, backend-only projects
@@ -160,16 +169,17 @@ scripts/          # Build/conversion scripts
 ```
 
 **Rules:**
+
 - Always include this section, even if nearly empty at setup time
 - Add any patterns discovered during setup (path aliases, env config)
-- Gets populated by `/dev:build` auto-sync as features are built
+- Gets populated by `/dev-build` auto-sync as features are built
 - Follow core-md-audit quality guidelines: concise, non-obvious, project-specific
 
 ---
 
 ## Real Example (Fullstack Next.js)
 
-```markdown
+````markdown
 # evers-vgo
 
 Corporate website voor Evers & Evers Vastgoedonderhoud.
@@ -182,6 +192,7 @@ npm run build    # Production build
 npm run lint     # ESLint
 npm run start    # Start production server
 ```
+````
 
 ## Project
 
@@ -191,6 +202,7 @@ npm run start    # Start production server
 **Created**: 2026-02-03
 
 ### Stack
+
 **Frontend**: Next.js 16, React 19, TypeScript
 **Styling**: Tailwind CSS v4
 **CMS**: Sanity (headless)
@@ -204,14 +216,17 @@ npm run start    # Start production server
 **Hosting**: Vercel
 
 ### Testing
+
 **Unit/Component**: Vitest, React Testing Library
 **E2E**: Playwright
 
 ### Documentation Generators
+
 **Enabled:** components, routes, state, design-tokens
 **Available:** api-calls
 
 ### Standards
+
 **Accessibility:** wcag-aa
 **Responsive:** mobile-first
 **Data Fetching:** plain-fetch
@@ -242,6 +257,8 @@ src/
 - **Path alias**: `@/` → `src/`
 - **Env setup**: copy `.env.example` → `.env` (Sanity project ID + Resend API key)
 - **Sanity preview**: Draft mode via `/api/preview` route with secret token
+
 ```
 
 **Note:** Separate Tech Stack, Workspace Configuration, and Development Setup sections are deprecated. Use the canonical structure above.
+```

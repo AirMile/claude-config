@@ -224,26 +224,18 @@ If the user provided an inline description/argument:
 
 5. Present technique selection using AskUserQuestion (in user's preferred language):
 
-   ```
-   💡 Analyse Technieken
-
-   Welke technieken wil je toepassen?
-   ```
-
    ```yaml
-   header: "Analyse Technieken"
-   question: "Welke technieken wil je toepassen?"
+   header: "Analyse Techniek"
+   question: "Welke techniek wil je toepassen?"
    options:
      - label: "[Best Technique] (Aanbevolen)", description: "[1-2 zinnen waarom dit de beste keuze is]"
      - label: "[Technique 2]", description: "[1 zin waarom relevant]"
      - label: "[Technique 3]", description: "[1 zin waarom relevant]"
      - label: "[Technique 4]", description: "[1 zin waarom relevant]"
-   multiSelect: true
+   multiSelect: false
    ```
 
-6. Process user selection:
-   - If technique(s) selected: proceed to Step 3 with selected technique(s)
-   - If multiple selected: apply techniques sequentially (Step 3 → Step 4 loop)
+6. Process user selection: proceed to Step 3 with the selected technique
 
 **Note:**
 
@@ -252,6 +244,7 @@ If the user provided an inline description/argument:
 - If fewer than 3 relevant techniques available, show all available techniques
 - "Reeds toegepast" techniques should NOT appear in the options
 - First option is always the recommended technique (add "(Aanbevolen)" to label)
+- Single select: user picks 1 technique, applies it, then decides whether to continue (Step 5)
 
 ### Step 3: Apply Technique
 
@@ -261,17 +254,27 @@ If the user provided an inline description/argument:
 
 1. Read the full details of the selected technique from the appropriate reference file
 
-2. Use sequential thinking to:
+2. **Context7 Research (when technical questions arise):**
+   - If the technique raises technical questions (feasibility, implementation, constraints, performance), research first before asking the user
+   - Use `mcp__context7__resolve-library-id` to find relevant libraries/frameworks mentioned in the idea
+   - Use `mcp__context7__query-docs` to look up specific technical details, constraints, or best practices
+   - Use the research findings to make your questions more concrete, informed, and targeted
+   - Example: instead of "Is this technically feasible?", ask "Library X supports Y but has limitation Z — how do you want to handle that?"
+
+3. Use sequential thinking to:
    - Understand the technique's framework
+   - Incorporate Context7 research findings into your analysis
    - Formulate 4-6 specific questions based on the technique
    - Develop concrete concerns or points to examine tailored to this idea
 
-3. Present technique application (in user's preferred language):
+4. Present technique application (in user's preferred language):
 
    ```
    🔍 [TECHNIQUE NAME]
 
    [1-2 sentence explanation of the technique]
+
+   [If Context7 research was done: brief summary of key findings]
 
    [Questions header]:
    1. [specific question based on technique approach]
@@ -287,9 +290,16 @@ If the user provided an inline description/argument:
    Reageer per nummer of in je eigen woorden.
    ```
 
-4. Process user responses
-5. Engage in natural dialogue if user has follow-up questions
-6. Continue until this technique is sufficiently explored
+5. Process user responses
+6. Engage in natural dialogue — the user may:
+   - Answer questions directly
+   - Ask their own questions back
+   - Want to go deeper on a specific point
+   - Redirect the conversation to a related topic
+   - Skip questions they find irrelevant
+     All of this is fine. Follow the conversation naturally.
+7. If the user asks a technical question during dialogue, use Context7 to research it before responding
+8. Continue until this technique is sufficiently explored
 
 **Guidelines for technique application:**
 
@@ -300,10 +310,11 @@ If the user provided an inline description/argument:
 - Be rigorous - apply technical and practical scrutiny
 - Challenge assumptions rather than accepting them
 - Push for concrete solutions or decisions
+- If the user asks a technical question you can't answer well, use Context7 to research it before responding
 
-### Step 4: Synthesize & Auto-Proceed
+### Step 4: Synthesize
 
-**Goal:** Capture key weaknesses, assumptions, and insights discovered through the technique, then continue.
+**Goal:** Capture key weaknesses, assumptions, and insights discovered through the technique.
 
 **Process:**
 
@@ -337,16 +348,11 @@ If the user provided an inline description/argument:
    4.2 [insight 2]
    ```
 
-4. Auto-proceed:
-   - If more selected techniques remain: proceed immediately to Step 3 for the next technique
-   - If all selected techniques are done: proceed to Step 5
-   - Note: user can always interrupt if synthesis needs adjustment
+4. After presenting synthesis, proceed to Step 5
 
 ### Step 5: Next Action
 
-**Goal:** Present remaining relevant techniques and suggest the best next one. Only shown after ALL techniques selected in Step 2 are complete.
-
-**Important:** This step is only reached after ALL techniques selected in Step 2 have been applied. When the user selected multiple techniques, apply Steps 3-4 in sequence for each without showing Step 5 between them.
+**Goal:** After each technique, let the user decide: apply another technique or generate the refined output.
 
 **Process:**
 
@@ -376,18 +382,17 @@ If the user provided an inline description/argument:
      - label: "Genereer verfijnde versie (Recommended)", description: "Creëer het eindresultaat met alle inzichten"
      - label: "[Technique 1]", description: "[rationale - most relevant remaining technique]"
      - label: "[Technique 2]", description: "[brief description]"
-     - label: "Uitleg", description: "Leg de opties uit"
-   multiSelect: true
+   multiSelect: false
    ```
 
 4. Process user selection:
-   - If only "Genereer verfijnde versie" selected: proceed to Step 6
-   - If technique(s) selected: apply them in sequence (Steps 3-4), then return to Step 5
+   - If "Genereer verfijnde versie": proceed to Step 6
+   - If a technique selected: go to Step 3 for that technique, then back to Step 5 after
 
 **Note:**
 
 - Only show techniques that are relevant AND haven't been applied yet
-- Maximum 2 techniques in the options (+ "Genereer verfijnde versie" + "Uitleg")
+- Maximum 2 techniques in the options (+ "Genereer verfijnde versie")
 - First option is always "Genereer verfijnde versie (Recommended)"
 
 ### Step 6: Generate Final Output
@@ -460,10 +465,10 @@ multiSelect: false
    Applied techniques: {list of techniques used}
 
    Next steps:
-   - /thinking:brainstorm - Creatief uitbreiden en variaties
-   - /thinking:critique - Nog een analyseronde
-   - /dev:plan - Omzetten naar web feature backlog
-   - /game:backlog - Omzetten naar feature backlog (voor games)
+   - /thinking-brainstorm - Creatief uitbreiden en variaties
+   - /thinking-critique - Nog een analyseronde
+   - /dev-plan - Omzetten naar web feature backlog
+   - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
 **If "Opslaan naar Obsidian":**
@@ -488,10 +493,10 @@ multiSelect: false
    Applied techniques: {list}
 
    Next steps:
-   - /thinking:brainstorm - Creatief uitbreiden en variaties
-   - /thinking:critique - Nog een analyseronde
-   - /dev:plan - Omzetten naar web feature backlog
-   - /game:backlog - Omzetten naar feature backlog (voor games)
+   - /thinking-brainstorm - Creatief uitbreiden en variaties
+   - /thinking-critique - Nog een analyseronde
+   - /dev-plan - Omzetten naar web feature backlog
+   - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
 **If "Alleen tonen":**
@@ -505,10 +510,16 @@ multiSelect: false
 
 **Flow Efficiency:**
 
-- No AskUserQuestion between technique presentation and user response - just prompt and wait
-- No confirmation gate after synthesis - auto-proceed to next technique
-- Apply selected techniques in sequence without returning to Step 5 between them
-- Only 2 interaction gates in the whole technique loop: initial selection (Step 2) and final decision (Step 5)
+- No AskUserQuestion between technique presentation and user response — just prompt and wait
+- After each technique's synthesis, always go to Step 5 for the user to decide next action
+- One technique at a time: select → apply → synthesize → decide to continue or not
+
+**Conversational Flexibility:**
+
+- The user can ask questions, go deeper, or redirect at any point during technique application
+- Don't force rigid question-answer structure — follow the natural conversation
+- If the user asks a technical question, research it via Context7 before answering
+- Let the user skip questions they don't find relevant
 
 **Technique Application:**
 
@@ -529,8 +540,9 @@ multiSelect: false
 **Conversational Approach:**
 
 - Enable quick flow with numbered responses
-- Minimize friction: present and let user respond, no response mode gates
-- Keep dialogue natural - let user elaborate or redirect freely
+- Minimize friction: present and let user respond naturally
+- Keep dialogue natural — let user elaborate, redirect, or ask questions freely
+- The technique provides structure, not a straitjacket
 
 **Final Output:**
 

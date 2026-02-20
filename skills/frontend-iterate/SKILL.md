@@ -1,6 +1,6 @@
 ---
 name: frontend-iterate
-description: Iterative browser-based development with inspect overlay. Injects element inspector into dev server (Vite or Next.js) for visual element-picking. Paste reference in chat for targeted edits with live HMR. Use with /frontend:iterate.
+description: Iterative browser-based development with inspect overlay. Injects element inspector into dev server (Vite or Next.js) for visual element-picking. Paste reference in chat for targeted edits with live HMR. Use with /frontend-iterate.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
