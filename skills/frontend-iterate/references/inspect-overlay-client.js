@@ -12,6 +12,17 @@ var pinnedElements =
   [];
 var MAX_PINS = 20;
 
+// --- Region select state ---
+var isDragging = false;
+var dragPending = false;
+var dragStartX = 0;
+var dragStartY = 0;
+var dragCurrentX = 0;
+var dragCurrentY = 0;
+var DRAG_THRESHOLD = 5;
+var regionCandidates = [];
+var dragDidComplete = false;
+
 // --- Highlight overlay ---
 var highlight = document.createElement("div");
 highlight.style.cssText =
@@ -50,6 +61,38 @@ parentHighlight.style.cssText =
   "border:1px dashed rgba(255,107,107,0.4);display:none;border-radius:2px;";
 document.body.appendChild(parentHighlight);
 
+// --- Region select box ---
+var selectionBox = document.createElement("div");
+selectionBox.id = "__inspect-selection";
+selectionBox.style.cssText =
+  "position:fixed;pointer-events:none;z-index:99997;" +
+  "border:1px dashed #4a90d9;background:rgba(74,144,217,0.08);" +
+  "display:none;";
+document.body.appendChild(selectionBox);
+
+// --- Region candidate highlights (pool pattern) ---
+var candidatePool = [];
+var candidatePoolUsed = 0;
+
+function getCandidateHighlight(index) {
+  if (index < candidatePool.length) return candidatePool[index];
+  var div = document.createElement("div");
+  div.style.cssText =
+    "position:fixed;pointer-events:none;z-index:99996;" +
+    "background:rgba(74,144,217,0.12);border:1px solid rgba(74,144,217,0.3);" +
+    "display:none;";
+  document.body.appendChild(div);
+  candidatePool.push(div);
+  return div;
+}
+
+function hideCandidateHighlights() {
+  for (var i = 0; i < candidatePool.length; i++) {
+    candidatePool[i].style.display = "none";
+  }
+  candidatePoolUsed = 0;
+}
+
 // --- Gap indicators (dynamic pool for sibling-gap measurements) ---
 var gapPool = [];
 var gapPoolUsed = 0;
@@ -80,6 +123,7 @@ function toggleInspect() {
     document.body.classList.add("__inspect-active");
     document.body.style.userSelect = "none";
   } else {
+    cancelRegionSelect();
     document.body.classList.remove("__inspect-active");
     clearPins();
     highlight.style.display = "none";
@@ -571,6 +615,123 @@ function clearPins() {
   pinnedElements = [];
 }
 
+// --- Region select helpers ---
+function collectCandidates() {
+  regionCandidates = [];
+  var seen = [];
+  var all = document.body.querySelectorAll("*");
+  for (var i = 0; i < all.length; i++) {
+    var el = all[i];
+    if (el.id && el.id.indexOf("__inspect") === 0) continue;
+    if (
+      el === highlight ||
+      el === parentHighlight ||
+      el === label ||
+      el === selectionBox
+    )
+      continue;
+    var cs = window.getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden") continue;
+    if (parseFloat(cs.opacity) === 0) continue;
+    var rect = el.getBoundingClientRect();
+    if (rect.width < 5 || rect.height < 5) continue;
+    var hasVisibleChild = false;
+    for (var j = 0; j < el.children.length; j++) {
+      var child = el.children[j];
+      if (child.id && child.id.indexOf("__inspect") === 0) continue;
+      var ccs = window.getComputedStyle(child);
+      if (ccs.display !== "none" && ccs.visibility !== "hidden") {
+        hasVisibleChild = true;
+        break;
+      }
+    }
+    if (!hasVisibleChild) {
+      var inspectable = findInspectable(el);
+      if (inspectable && seen.indexOf(inspectable) === -1) {
+        seen.push(inspectable);
+        regionCandidates.push({
+          el: inspectable,
+          rect: inspectable.getBoundingClientRect(),
+        });
+      }
+    }
+  }
+}
+
+function getSelectionRect(x1, y1, x2, y2) {
+  return {
+    left: Math.min(x1, x2),
+    top: Math.min(y1, y2),
+    right: Math.max(x1, x2),
+    bottom: Math.max(y1, y2),
+  };
+}
+
+function updateRegionSelect(e) {
+  var sr = getSelectionRect(dragStartX, dragStartY, e.clientX, e.clientY);
+  selectionBox.style.display = "block";
+  selectionBox.style.left = sr.left + "px";
+  selectionBox.style.top = sr.top + "px";
+  selectionBox.style.width = sr.right - sr.left + "px";
+  selectionBox.style.height = sr.bottom - sr.top + "px";
+  candidatePoolUsed = 0;
+  for (var i = 0; i < regionCandidates.length; i++) {
+    var c = regionCandidates[i];
+    if (
+      c.rect.left < sr.right &&
+      c.rect.right > sr.left &&
+      c.rect.top < sr.bottom &&
+      c.rect.bottom > sr.top
+    ) {
+      if (!isPinned(c.el)) {
+        var hl = getCandidateHighlight(candidatePoolUsed++);
+        hl.style.display = "block";
+        hl.style.left = c.rect.left + "px";
+        hl.style.top = c.rect.top + "px";
+        hl.style.width = c.rect.width + "px";
+        hl.style.height = c.rect.height + "px";
+      }
+    }
+  }
+  for (var i = candidatePoolUsed; i < candidatePool.length; i++) {
+    candidatePool[i].style.display = "none";
+  }
+}
+
+function finishRegionSelect() {
+  var sr = getSelectionRect(dragStartX, dragStartY, dragCurrentX, dragCurrentY);
+  var pinned = 0;
+  for (var i = 0; i < regionCandidates.length; i++) {
+    var c = regionCandidates[i];
+    if (
+      c.rect.left < sr.right &&
+      c.rect.right > sr.left &&
+      c.rect.top < sr.bottom &&
+      c.rect.bottom > sr.top
+    ) {
+      if (!isPinned(c.el) && pinnedElements.length < MAX_PINS) {
+        pinnedElements.push(c.el);
+        c.el.style.outline = "2px dashed #4a90d9";
+        c.el.style.outlineOffset = "-2px";
+        pinned++;
+      }
+    }
+  }
+  cancelRegionSelect();
+  if (pinned > 0) {
+    copyPinnedToClipboard();
+    showToast("Selected " + pinned + " element" + (pinned > 1 ? "s" : ""));
+  }
+}
+
+function cancelRegionSelect() {
+  isDragging = false;
+  dragPending = false;
+  selectionBox.style.display = "none";
+  hideCandidateHighlights();
+  regionCandidates = [];
+}
+
 // --- Clipboard helpers ---
 function buildClassName(el) {
   var cn = el.className;
@@ -619,6 +780,11 @@ function onKeyDown(e) {
     e.preventDefault();
     toggleInspect();
   }
+  if (isDragging && (e.key === "Escape" || (e.ctrlKey && e.key === "z"))) {
+    e.preventDefault();
+    cancelRegionSelect();
+    return;
+  }
   if (e.key === "Escape" && inspectActive) {
     e.preventDefault();
     clearPins();
@@ -630,6 +796,12 @@ function onMouseDown(e) {
   if (!inspectActive) return;
   e.preventDefault();
   window.getSelection().removeAllRanges();
+  if (e.button === 0) {
+    dragPending = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    dragDidComplete = false;
+  }
 }
 
 function onSelectStart(e) {
@@ -638,6 +810,27 @@ function onSelectStart(e) {
 
 function onMouseMove(e) {
   if (!inspectActive) return;
+  // Region select: check drag threshold
+  if (dragPending && !isDragging) {
+    var dx = e.clientX - dragStartX;
+    var dy = e.clientY - dragStartY;
+    if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
+      isDragging = true;
+      dragPending = false;
+      collectCandidates();
+      highlight.style.display = "none";
+      label.style.display = "none";
+      hideGapIndicators();
+      parentHighlight.style.display = "none";
+    }
+  }
+  // Region select: update during drag
+  if (isDragging) {
+    dragCurrentX = e.clientX;
+    dragCurrentY = e.clientY;
+    updateRegionSelect(e);
+    return;
+  }
   var el = findInspectable(elementAtPoint(e.clientX, e.clientY));
   if (!el) {
     highlight.style.display = "none";
@@ -699,8 +892,25 @@ function onMouseMove(e) {
   label.style.left = pos.left + "px";
 }
 
+function onMouseUp(e) {
+  if (!inspectActive) return;
+  if (isDragging) {
+    dragCurrentX = e.clientX;
+    dragCurrentY = e.clientY;
+    finishRegionSelect();
+    dragDidComplete = true;
+  }
+  dragPending = false;
+}
+
 function onClick(e) {
   if (!inspectActive) return;
+  if (dragDidComplete) {
+    dragDidComplete = false;
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
   var el = findInspectable(elementAtPoint(e.clientX, e.clientY));
   if (!el) return;
   e.preventDefault();
@@ -765,6 +975,7 @@ document.addEventListener("selectstart", onSelectStart);
 document.addEventListener("mousedown", onMouseDown, true);
 document.addEventListener("mousemove", onMouseMove, true);
 document.addEventListener("click", onClick, true);
+document.addEventListener("mouseup", onMouseUp, true);
 document.addEventListener("touchend", onTouchEnd, true);
 
 // --- Restore visual state after HMR ---
@@ -800,6 +1011,7 @@ if (import.meta.hot) {
     highlight.remove();
     parentHighlight.remove();
     label.remove();
+    selectionBox.remove();
     freezeStyle.remove();
     for (var i = 0; i < gapPool.length; i++) {
       gapPool[i].bar.remove();
@@ -807,11 +1019,17 @@ if (import.meta.hot) {
     for (var i = 0; i < childHighlightPool.length; i++) {
       childHighlightPool[i].remove();
     }
+    for (var i = 0; i < candidatePool.length; i++) {
+      candidatePool[i].remove();
+    }
+    isDragging = false;
+    dragPending = false;
     document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("selectstart", onSelectStart);
     document.removeEventListener("mousedown", onMouseDown, true);
     document.removeEventListener("mousemove", onMouseMove, true);
     document.removeEventListener("click", onClick, true);
+    document.removeEventListener("mouseup", onMouseUp, true);
     document.removeEventListener("touchend", onTouchEnd, true);
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
