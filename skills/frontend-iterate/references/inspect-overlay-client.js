@@ -34,6 +34,22 @@ label.style.cssText =
   "border-radius:3px;display:none;white-space:pre;max-width:90vw;overflow:hidden;";
 document.body.appendChild(label);
 
+// --- Spacing bars (4 semi-transparent bars showing parent distance) ---
+var spacingBars = ["top", "right", "bottom", "left"].map(function (side) {
+  var bar = document.createElement("div");
+  bar.style.cssText =
+    "position:fixed;pointer-events:none;z-index:99997;" +
+    "background:rgba(255,107,107,0.15);display:none;";
+  var lbl = document.createElement("span");
+  lbl.style.cssText =
+    "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);" +
+    "font:10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;" +
+    "color:rgba(255,107,107,0.8);pointer-events:none;white-space:nowrap;";
+  bar.appendChild(lbl);
+  document.body.appendChild(bar);
+  return { bar: bar, label: lbl, side: side };
+});
+
 // --- Toast ---
 function showToast(text) {
   var toast = document.createElement("div");
@@ -60,6 +76,7 @@ function toggleInspect() {
   if (!inspectActive) {
     highlight.style.display = "none";
     label.style.display = "none";
+    hideSpacingBars();
     document.body.style.cursor = "";
   }
 }
@@ -339,6 +356,59 @@ function clampPosition(rect, labelW, labelH) {
   return { top: top, left: left };
 }
 
+// --- Spacing bar updates ---
+function updateSpacingBars(elemRect, parentRect) {
+  var gaps = {
+    top: elemRect.top - parentRect.top,
+    right: parentRect.right - elemRect.right,
+    bottom: parentRect.bottom - elemRect.bottom,
+    left: elemRect.left - parentRect.left,
+  };
+  for (var i = 0; i < spacingBars.length; i++) {
+    var sb = spacingBars[i];
+    var gap = gaps[sb.side];
+    if (gap <= 0) {
+      sb.bar.style.display = "none";
+      continue;
+    }
+    sb.bar.style.display = "block";
+    sb.label.textContent = Math.round(gap) + "";
+    sb.label.style.display = gap < 12 ? "none" : "";
+    switch (sb.side) {
+      case "top":
+        sb.bar.style.top = parentRect.top + "px";
+        sb.bar.style.left = elemRect.left + "px";
+        sb.bar.style.width = elemRect.width + "px";
+        sb.bar.style.height = gap + "px";
+        break;
+      case "bottom":
+        sb.bar.style.top = elemRect.bottom + "px";
+        sb.bar.style.left = elemRect.left + "px";
+        sb.bar.style.width = elemRect.width + "px";
+        sb.bar.style.height = gap + "px";
+        break;
+      case "left":
+        sb.bar.style.top = elemRect.top + "px";
+        sb.bar.style.left = parentRect.left + "px";
+        sb.bar.style.width = gap + "px";
+        sb.bar.style.height = elemRect.height + "px";
+        break;
+      case "right":
+        sb.bar.style.top = elemRect.top + "px";
+        sb.bar.style.left = elemRect.right + "px";
+        sb.bar.style.width = gap + "px";
+        sb.bar.style.height = elemRect.height + "px";
+        break;
+    }
+  }
+}
+
+function hideSpacingBars() {
+  for (var i = 0; i < spacingBars.length; i++) {
+    spacingBars[i].bar.style.display = "none";
+  }
+}
+
 // --- Clipboard helpers ---
 function buildClassName(el) {
   var cn = el.className;
@@ -395,6 +465,7 @@ function onMouseMove(e) {
   if (!el) {
     highlight.style.display = "none";
     label.style.display = "none";
+    hideSpacingBars();
     return;
   }
   var rect = el.getBoundingClientRect();
@@ -403,6 +474,19 @@ function onMouseMove(e) {
   highlight.style.left = rect.left + "px";
   highlight.style.width = rect.width + "px";
   highlight.style.height = rect.height + "px";
+
+  // Spacing bars: element-to-parent distances
+  var parent = el.parentElement;
+  if (
+    parent &&
+    parent !== document.body &&
+    parent !== document.documentElement
+  ) {
+    var parentRect = parent.getBoundingClientRect();
+    updateSpacingBars(rect, parentRect);
+  } else {
+    hideSpacingBars();
+  }
 
   var ref = buildRef(el);
   var styles = extractStyles(el);
@@ -491,6 +575,9 @@ if (import.meta.hot) {
     btn.remove();
     highlight.remove();
     label.remove();
+    for (var i = 0; i < spacingBars.length; i++) {
+      spacingBars[i].bar.remove();
+    }
     document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("mousemove", onMouseMove, true);
     document.removeEventListener("click", onClick, true);
