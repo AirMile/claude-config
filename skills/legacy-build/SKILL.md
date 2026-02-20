@@ -1,5 +1,5 @@
 ---
-name: frontend-build
+name: legacy-build
 description: >-
   Build production-ready React components from wireframes with visual
   component-by-component approval. Use with /frontend-build after

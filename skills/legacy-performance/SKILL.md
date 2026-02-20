@@ -1,5 +1,5 @@
 ---
-name: frontend-perf
+name: legacy-performance
 description: >-
   Audit and fix frontend performance with Lighthouse, bundle analysis, and
   static code review. Targets Core Web Vitals and bundle size optimization.

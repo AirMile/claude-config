@@ -1,5 +1,5 @@
 ---
-name: frontend-data
+name: legacy-data
 description: >-
   Replace hardcoded data in React components with real API connections,
   loading states, and error handling. Component-by-component hookup with

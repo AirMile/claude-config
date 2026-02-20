@@ -1,5 +1,5 @@
 ---
-name: frontend-responsive
+name: legacy-responsive
 description: >-
   Audit and fix responsive design issues across viewports with multi-viewport
   Playwright captures and CSS analysis. Use with /frontend-responsive.

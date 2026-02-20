@@ -1,5 +1,5 @@
 ---
-name: frontend-test
+name: legacy-test
 description: >-
   Generate component unit tests (Vitest + RTL) and Storybook stories for
   React components. Component-by-component with run and fix cycle.

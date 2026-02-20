@@ -1,5 +1,5 @@
 ---
-name: frontend-convert
+name: legacy-convert
 description: >-
   Convert any high-fidelity design (screenshot, HTML, URL) into React+Tailwind
   components with component-by-component review. Use with /frontend-convert for

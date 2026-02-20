@@ -1,5 +1,5 @@
 ---
-name: frontend-compose
+name: legacy-compose
 description: >-
   Compose low-fidelity HTML wireframes using parallel design agents with
   iterative refinement. Use with /frontend-compose for wireframe, mockup,

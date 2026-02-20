@@ -1,5 +1,5 @@
 ---
-name: frontend-seo
+name: legacy-seo
 description: Audit and implement SEO optimizations for web applications. Detects framework (Next.js, Remix, Astro, React, etc.) and applies framework-specific best practices. Use with /frontend-seo.
 disable-model-invocation: true
 metadata:
@@ -203,14 +203,14 @@ Scan every route/page for the following categories:
 
 ### Important (impacts ranking)
 
-| Check              | Rule ID | What to look for                                     |
-| ------------------ | ------- | ---------------------------------------------------- |
-| **Open Graph**     | S101    | og:title, og:description, og:image per route         |
-| **Canonical URLs** | S102    | Proper canonical tags, especially for dynamic routes |
-| **Sitemap**        | S103    | sitemap.xml exists and includes all public routes    |
-| **robots.txt**     | S104    | Exists with sensible defaults                        |
-| **Headings**       | H002/H003 | H1 on every page, logical hierarchy (H1->H2->H3)   |
-| **Image alt text** | R002    | All images have descriptive alt attributes           |
+| Check              | Rule ID   | What to look for                                     |
+| ------------------ | --------- | ---------------------------------------------------- |
+| **Open Graph**     | S101      | og:title, og:description, og:image per route         |
+| **Canonical URLs** | S102      | Proper canonical tags, especially for dynamic routes |
+| **Sitemap**        | S103      | sitemap.xml exists and includes all public routes    |
+| **robots.txt**     | S104      | Exists with sensible defaults                        |
+| **Headings**       | H002/H003 | H1 on every page, logical hierarchy (H1->H2->H3)     |
+| **Image alt text** | R002      | All images have descriptive alt attributes           |
 
 ### Nice-to-have (enhances visibility)
 
@@ -253,6 +253,7 @@ Parse returned snapshot for:
 ```
 
 **Output:**
+
 ```
 RENDER CHECK RESULT
 ───────────────────
@@ -282,6 +283,7 @@ options:
 **On Playwright Unavailable:**
 
 Fall back to static analysis with warning:
+
 ```
 ⚠ Playwright unavailable - using static analysis only
   S003 check: Based on framework detection only
@@ -434,6 +436,7 @@ Result:
 ```
 
 **Render Verification Checklist:**
+
 ```
 Route: /[path]
   Source HTML: [Has content | Empty/Loading]

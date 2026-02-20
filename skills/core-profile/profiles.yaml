@@ -28,18 +28,24 @@ dev:
   - dev-worktree
 
 frontend:
-  - frontend-a11y
-  - frontend-build
-  - frontend-compose
-  - frontend-convert
-  - frontend-data
   - frontend-iterate
-  - frontend-perf
-  - frontend-responsive
-  - frontend-screenshots
-  - frontend-seo
-  - frontend-test
+  - frontend-optimize
+  - frontend-page
   - frontend-theme
+  - frontend-wcag
+
+legacy:
+  - legacy-build
+  - legacy-compose
+  - legacy-convert
+  - legacy-data
+  - legacy-performance
+  - legacy-responsive
+  - legacy-seo
+  - legacy-test
+
+marketing:
+  - marketing-promo
 
 game:
   - game-build

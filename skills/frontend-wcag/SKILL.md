@@ -1,6 +1,6 @@
 ---
-name: frontend-a11y
-description: Audit and fix accessibility issues in web applications. Scans for WCAG 2.1 AA violations, keyboard traps, missing ARIA, and focus management with prioritized fixes. Use with /frontend-a11y.
+name: frontend-wcag
+description: Audit and fix accessibility issues in web applications. Scans for WCAG 2.1 AA violations, keyboard traps, missing ARIA, and focus management with prioritized fixes. Use with /frontend-wcag.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra

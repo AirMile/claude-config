@@ -1,5 +1,5 @@
 ---
-name: frontend-screenshots
+name: marketing-promo
 argument-hint: "[url]"
 description: >-
   Generate marketing-quality screenshots of a web app via MCP Playwright tools.
