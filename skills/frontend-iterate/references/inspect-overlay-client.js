@@ -793,6 +793,17 @@ function onKeyDown(e) {
     cancelRegionSelect();
     return;
   }
+  if (!isDragging && e.ctrlKey && e.key === "z" && pinnedElements.length > 0) {
+    e.preventDefault();
+    var last = pinnedElements[pinnedElements.length - 1];
+    unpinElement(last);
+    showToast(
+      pinnedElements.length > 0
+        ? pinnedElements.length + " pinned"
+        : "Pins cleared",
+    );
+    return;
+  }
   if (e.key === "Escape" && inspectActive) {
     e.preventDefault();
     clearPins();
