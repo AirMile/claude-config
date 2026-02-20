@@ -23,7 +23,7 @@ document.body.appendChild(btn);
 var highlight = document.createElement("div");
 highlight.style.cssText =
   "position:fixed;pointer-events:none;z-index:99998;border:2px solid #4a90d9;" +
-  "background:rgba(74,144,217,0.08);display:none;transition:all 0.05s ease-out;border-radius:2px;";
+  "display:none;transition:all 0.05s ease-out;border-radius:2px;";
 document.body.appendChild(highlight);
 
 // --- Label ---
@@ -34,21 +34,18 @@ label.style.cssText =
   "border-radius:3px;display:none;white-space:pre;max-width:90vw;overflow:hidden;";
 document.body.appendChild(label);
 
-// --- Spacing bars (4 semi-transparent bars showing parent distance) ---
-var spacingBars = ["top", "right", "bottom", "left"].map(function (side) {
-  var bar = document.createElement("div");
-  bar.style.cssText =
-    "position:fixed;pointer-events:none;z-index:99997;" +
-    "background:rgba(255,107,107,0.15);display:none;";
-  var lbl = document.createElement("span");
-  lbl.style.cssText =
-    "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);" +
-    "font:10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;" +
-    "color:rgba(255,107,107,0.8);pointer-events:none;white-space:nowrap;";
-  bar.appendChild(lbl);
-  document.body.appendChild(bar);
-  return { bar: bar, label: lbl, side: side };
-});
+// --- Parent highlight (dashed border showing parent container) ---
+var parentHighlight = document.createElement("div");
+parentHighlight.style.cssText =
+  "position:fixed;pointer-events:none;z-index:99996;" +
+  "border:1px dashed rgba(255,107,107,0.4);display:none;border-radius:2px;";
+document.body.appendChild(parentHighlight);
+
+// --- Gap indicators (dynamic pool for sibling-gap measurements) ---
+var gapPool = [];
+var gapPoolUsed = 0;
+var childHighlightPool = [];
+var childHighlightUsed = 0;
 
 // --- Toast ---
 function showToast(text) {
@@ -76,7 +73,8 @@ function toggleInspect() {
   if (!inspectActive) {
     highlight.style.display = "none";
     label.style.display = "none";
-    hideSpacingBars();
+    hideGapIndicators();
+    parentHighlight.style.display = "none";
     document.body.style.cursor = "";
   }
 }
@@ -356,56 +354,161 @@ function clampPosition(rect, labelW, labelH) {
   return { top: top, left: left };
 }
 
-// --- Spacing bar updates ---
-function updateSpacingBars(elemRect, parentRect) {
-  var gaps = {
-    top: elemRect.top - parentRect.top,
-    right: parentRect.right - elemRect.right,
-    bottom: parentRect.bottom - elemRect.bottom,
-    left: elemRect.left - parentRect.left,
-  };
-  for (var i = 0; i < spacingBars.length; i++) {
-    var sb = spacingBars[i];
-    var gap = gaps[sb.side];
-    if (gap <= 0) {
-      sb.bar.style.display = "none";
-      continue;
-    }
-    sb.bar.style.display = "block";
-    sb.label.textContent = Math.round(gap) + "";
-    sb.label.style.display = gap < 12 ? "none" : "";
-    switch (sb.side) {
-      case "top":
-        sb.bar.style.top = parentRect.top + "px";
-        sb.bar.style.left = elemRect.left + "px";
-        sb.bar.style.width = elemRect.width + "px";
-        sb.bar.style.height = gap + "px";
-        break;
-      case "bottom":
-        sb.bar.style.top = elemRect.bottom + "px";
-        sb.bar.style.left = elemRect.left + "px";
-        sb.bar.style.width = elemRect.width + "px";
-        sb.bar.style.height = gap + "px";
-        break;
-      case "left":
-        sb.bar.style.top = elemRect.top + "px";
-        sb.bar.style.left = parentRect.left + "px";
-        sb.bar.style.width = gap + "px";
-        sb.bar.style.height = elemRect.height + "px";
-        break;
-      case "right":
-        sb.bar.style.top = elemRect.top + "px";
-        sb.bar.style.left = elemRect.right + "px";
-        sb.bar.style.width = gap + "px";
-        sb.bar.style.height = elemRect.height + "px";
-        break;
-    }
-  }
+// --- Gap indicator helpers ---
+function getGapIndicator(index) {
+  if (index < gapPool.length) return gapPool[index];
+  var bar = document.createElement("div");
+  bar.style.cssText =
+    "position:fixed;pointer-events:none;z-index:99997;display:none;";
+  var lbl = document.createElement("span");
+  lbl.style.cssText =
+    "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);" +
+    "font:10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;" +
+    "color:rgba(255,107,107,0.8);pointer-events:none;white-space:nowrap;";
+  bar.appendChild(lbl);
+  document.body.appendChild(bar);
+  gapPool.push({ bar: bar, label: lbl });
+  return gapPool[index];
 }
 
-function hideSpacingBars() {
-  for (var i = 0; i < spacingBars.length; i++) {
-    spacingBars[i].bar.style.display = "none";
+function getChildHighlight(index) {
+  if (index < childHighlightPool.length) return childHighlightPool[index];
+  var el = document.createElement("div");
+  el.style.cssText =
+    "position:fixed;pointer-events:none;z-index:99996;" +
+    "border:1px dashed rgba(255,107,107,0.35);display:none;border-radius:2px;";
+  document.body.appendChild(el);
+  childHighlightPool.push(el);
+  return childHighlightPool[index];
+}
+
+function hideGapIndicators() {
+  for (var i = 0; i < gapPool.length; i++) {
+    gapPool[i].bar.style.display = "none";
+  }
+  gapPoolUsed = 0;
+  for (var i = 0; i < childHighlightPool.length; i++) {
+    childHighlightPool[i].style.display = "none";
+  }
+  childHighlightUsed = 0;
+}
+
+function showGap(x, y, w, h, gap) {
+  var ind = getGapIndicator(gapPoolUsed++);
+  ind.bar.style.display = "block";
+  ind.bar.style.left = x + "px";
+  ind.bar.style.top = y + "px";
+  ind.bar.style.width = w + "px";
+  ind.bar.style.height = h + "px";
+  ind.label.textContent = Math.round(gap) + "";
+  ind.label.style.display = gap < 12 ? "none" : "";
+  // Reset label centering
+  ind.label.style.left = "50%";
+  ind.label.style.top = "50%";
+  ind.label.style.transform = "translate(-50%,-50%)";
+}
+
+function showChildGaps(parentEl) {
+  gapPoolUsed = 0;
+  childHighlightUsed = 0;
+  // Collect visible in-flow children (skip overlay elements)
+  var rects = [];
+  for (var i = 0; i < parentEl.children.length; i++) {
+    var ch = parentEl.children[i];
+    if (ch.id && ch.id.indexOf("__inspect") === 0) continue;
+    if (
+      ch === highlight ||
+      ch === parentHighlight ||
+      ch === label ||
+      ch === btn
+    )
+      continue;
+    var cs = window.getComputedStyle(ch);
+    if (cs.display === "none" || cs.visibility === "hidden") continue;
+    if (cs.position === "absolute" || cs.position === "fixed") continue;
+    rects.push(ch.getBoundingClientRect());
+  }
+  if (rects.length < 2) {
+    hideGapIndicators();
+    return;
+  }
+  // Show dashed border around each child
+  for (var i = 0; i < rects.length; i++) {
+    var chl = getChildHighlight(childHighlightUsed++);
+    chl.style.display = "block";
+    chl.style.top = rects[i].top + "px";
+    chl.style.left = rects[i].left + "px";
+    chl.style.width = rects[i].width + "px";
+    chl.style.height = rects[i].height + "px";
+  }
+  // Sort top-to-left for row grouping
+  rects.sort(function (a, b) {
+    return a.top - b.top || a.left - b.left;
+  });
+  // Group into rows: elements with overlapping vertical ranges
+  var rows = [[rects[0]]];
+  for (var i = 1; i < rects.length; i++) {
+    var row = rows[rows.length - 1];
+    var rowTop = row[0].top;
+    var rowBottom = row[0].bottom;
+    for (var j = 1; j < row.length; j++) {
+      rowTop = Math.min(rowTop, row[j].top);
+      rowBottom = Math.max(rowBottom, row[j].bottom);
+    }
+    var overlap =
+      Math.min(rects[i].bottom, rowBottom) - Math.max(rects[i].top, rowTop);
+    var minH = Math.min(rects[i].height, rowBottom - rowTop);
+    if (minH > 0 && overlap > minH * 0.3) {
+      row.push(rects[i]);
+    } else {
+      rows.push([rects[i]]);
+    }
+  }
+  // Horizontal gaps within each row
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r].sort(function (a, b) {
+      return a.left - b.left;
+    });
+    for (var c = 0; c < row.length - 1; c++) {
+      var gap = row[c + 1].left - row[c].right;
+      if (gap > 0) {
+        var t = Math.min(row[c].top, row[c + 1].top);
+        var b = Math.max(row[c].bottom, row[c + 1].bottom);
+        showGap(row[c].right, t, gap, b - t, gap);
+      }
+    }
+  }
+  // Vertical gaps between rows
+  for (var r = 0; r < rows.length - 1; r++) {
+    var thisBottom = 0;
+    for (var c = 0; c < rows[r].length; c++) {
+      thisBottom = Math.max(thisBottom, rows[r][c].bottom);
+    }
+    var nextTop = Infinity;
+    for (var c = 0; c < rows[r + 1].length; c++) {
+      nextTop = Math.min(nextTop, rows[r + 1][c].top);
+    }
+    var gap = nextTop - thisBottom;
+    if (gap > 0) {
+      var minL = Infinity,
+        maxR = 0;
+      for (var c = 0; c < rows[r].length; c++) {
+        minL = Math.min(minL, rows[r][c].left);
+        maxR = Math.max(maxR, rows[r][c].right);
+      }
+      for (var c = 0; c < rows[r + 1].length; c++) {
+        minL = Math.min(minL, rows[r + 1][c].left);
+        maxR = Math.max(maxR, rows[r + 1][c].right);
+      }
+      showGap(minL, thisBottom, maxR - minL, gap, gap);
+    }
+  }
+  // Hide unused indicators
+  for (var i = gapPoolUsed; i < gapPool.length; i++) {
+    gapPool[i].bar.style.display = "none";
+  }
+  for (var i = childHighlightUsed; i < childHighlightPool.length; i++) {
+    childHighlightPool[i].style.display = "none";
   }
 }
 
@@ -465,7 +568,8 @@ function onMouseMove(e) {
   if (!el) {
     highlight.style.display = "none";
     label.style.display = "none";
-    hideSpacingBars();
+    hideGapIndicators();
+    parentHighlight.style.display = "none";
     return;
   }
   var rect = el.getBoundingClientRect();
@@ -475,17 +579,32 @@ function onMouseMove(e) {
   highlight.style.width = rect.width + "px";
   highlight.style.height = rect.height + "px";
 
-  // Spacing bars: element-to-parent distances
-  var parent = el.parentElement;
-  if (
-    parent &&
-    parent !== document.body &&
-    parent !== document.documentElement
-  ) {
-    var parentRect = parent.getBoundingClientRect();
-    updateSpacingBars(rect, parentRect);
+  // Gap indicators: try element's own children first, then walk up ancestors
+  showChildGaps(el);
+  if (gapPoolUsed > 0) {
+    // Container mode — el has children with gaps
+    parentHighlight.style.display = "none";
   } else {
-    hideSpacingBars();
+    // Leaf mode — walk up to find nearest ancestor with >= 2 children
+    parentHighlight.style.display = "none";
+    var ancestor = el.parentElement;
+    while (
+      ancestor &&
+      ancestor !== document.body &&
+      ancestor !== document.documentElement
+    ) {
+      showChildGaps(ancestor);
+      if (gapPoolUsed > 0) {
+        var ancRect = ancestor.getBoundingClientRect();
+        parentHighlight.style.display = "block";
+        parentHighlight.style.top = ancRect.top + "px";
+        parentHighlight.style.left = ancRect.left + "px";
+        parentHighlight.style.width = ancRect.width + "px";
+        parentHighlight.style.height = ancRect.height + "px";
+        break;
+      }
+      ancestor = ancestor.parentElement;
+    }
   }
 
   var ref = buildRef(el);
@@ -574,9 +693,13 @@ if (import.meta.hot) {
     data.inspectActive = inspectActive;
     btn.remove();
     highlight.remove();
+    parentHighlight.remove();
     label.remove();
-    for (var i = 0; i < spacingBars.length; i++) {
-      spacingBars[i].bar.remove();
+    for (var i = 0; i < gapPool.length; i++) {
+      gapPool[i].bar.remove();
+    }
+    for (var i = 0; i < childHighlightPool.length; i++) {
+      childHighlightPool[i].remove();
     }
     document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("mousemove", onMouseMove, true);
