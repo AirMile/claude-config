@@ -1,23 +1,16 @@
-// --- State (restored from HMR data or fresh) ---
+// --- State (restored from HMR data or fresh) --- // v2: pin-mode + sibling-gap
 var inspectActive =
   (import.meta.hot &&
     import.meta.hot.data &&
     import.meta.hot.data.inspectActive) ||
   false;
 var hasDataAttrs = !!document.querySelector("[data-inspector-relative-path]");
-
-// --- Toggle button (bottom-right, touch-friendly) ---
-var btn = document.createElement("button");
-btn.id = "__inspect-overlay";
-btn.textContent = "\u{1F50D}";
-btn.title = "Toggle Inspect Mode (Alt+I)";
-btn.setAttribute("aria-label", "Toggle inspect mode");
-btn.style.cssText =
-  "position:fixed;bottom:16px;right:16px;z-index:99999;width:44px;height:44px;" +
-  "border-radius:50%;border:2px solid #4a90d9;background:#fff;font-size:20px;" +
-  "cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:all 0.2s;" +
-  "line-height:44px;text-align:center;padding:0;user-select:none;touch-action:manipulation;";
-document.body.appendChild(btn);
+var pinnedElements =
+  (import.meta.hot &&
+    import.meta.hot.data &&
+    import.meta.hot.data.pinnedElements) ||
+  [];
+var MAX_PINS = 20;
 
 // --- Highlight overlay ---
 var highlight = document.createElement("div");
@@ -33,6 +26,22 @@ label.style.cssText =
   "font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;padding:2px 8px;" +
   "border-radius:3px;display:none;white-space:pre;max-width:90vw;overflow:hidden;";
 document.body.appendChild(label);
+
+// --- Freeze style (disables hover transitions/animations in inspect mode) ---
+var freezeStyle = document.createElement("style");
+freezeStyle.textContent =
+  "body.__inspect-active *,body.__inspect-active *::before,body.__inspect-active *::after" +
+  "{transition:none!important;animation-play-state:paused!important;" +
+  "pointer-events:none!important}";
+document.head.appendChild(freezeStyle);
+
+// --- Element lookup (pointer-events are disabled, so use elementFromPoint) ---
+function elementAtPoint(x, y) {
+  freezeStyle.disabled = true;
+  var el = document.elementFromPoint(x, y);
+  freezeStyle.disabled = false;
+  return el;
+}
 
 // --- Parent highlight (dashed border showing parent container) ---
 var parentHighlight = document.createElement("div");
@@ -67,29 +76,26 @@ function showToast(text) {
 // --- Toggle inspect mode ---
 function toggleInspect() {
   inspectActive = !inspectActive;
-  btn.style.background = inspectActive ? "#4a90d9" : "#fff";
-  btn.style.borderColor = inspectActive ? "#2a6cb8" : "#4a90d9";
-  btn.style.transform = inspectActive ? "scale(1.1)" : "scale(1)";
-  if (!inspectActive) {
+  if (inspectActive) {
+    document.body.classList.add("__inspect-active");
+    document.body.style.userSelect = "none";
+  } else {
+    document.body.classList.remove("__inspect-active");
+    clearPins();
     highlight.style.display = "none";
     label.style.display = "none";
     hideGapIndicators();
     parentHighlight.style.display = "none";
     document.body.style.cursor = "";
+    document.body.style.userSelect = "";
   }
 }
-
-btn.addEventListener("click", function (e) {
-  e.stopPropagation();
-  toggleInspect();
-});
 
 // --- Find nearest inspectable element ---
 function findInspectable(el) {
   if (!el || el === document.body || el === document.documentElement)
     return null;
-  if (el.id === "__inspect-overlay" || el.closest("#__inspect-overlay"))
-    return null;
+  if (el.id && el.id.indexOf("__inspect") === 0) return null;
   if (!hasDataAttrs) {
     hasDataAttrs = !!document.querySelector("[data-inspector-relative-path]");
   }
@@ -359,7 +365,8 @@ function getGapIndicator(index) {
   if (index < gapPool.length) return gapPool[index];
   var bar = document.createElement("div");
   bar.style.cssText =
-    "position:fixed;pointer-events:none;z-index:99997;display:none;";
+    "position:fixed;pointer-events:none;z-index:99997;display:none;" +
+    "background:rgba(255,107,107,0.15);";
   var lbl = document.createElement("span");
   lbl.style.cssText =
     "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);" +
@@ -401,11 +408,20 @@ function showGap(x, y, w, h, gap) {
   ind.bar.style.width = w + "px";
   ind.bar.style.height = h + "px";
   ind.label.textContent = Math.round(gap) + "";
-  ind.label.style.display = gap < 12 ? "none" : "";
-  // Reset label centering
-  ind.label.style.left = "50%";
-  ind.label.style.top = "50%";
-  ind.label.style.transform = "translate(-50%,-50%)";
+  ind.label.style.display = "";
+  if (gap < 14) {
+    // Small gap: position label to the right of the bar
+    ind.label.style.left = "auto";
+    ind.label.style.right = "0";
+    ind.label.style.top = "50%";
+    ind.label.style.transform = "translate(calc(100% + 4px),-50%)";
+  } else {
+    // Normal: centered inside
+    ind.label.style.left = "50%";
+    ind.label.style.right = "auto";
+    ind.label.style.top = "50%";
+    ind.label.style.transform = "translate(-50%,-50%)";
+  }
 }
 
 function showChildGaps(parentEl) {
@@ -416,13 +432,7 @@ function showChildGaps(parentEl) {
   for (var i = 0; i < parentEl.children.length; i++) {
     var ch = parentEl.children[i];
     if (ch.id && ch.id.indexOf("__inspect") === 0) continue;
-    if (
-      ch === highlight ||
-      ch === parentHighlight ||
-      ch === label ||
-      ch === btn
-    )
-      continue;
+    if (ch === highlight || ch === parentHighlight || ch === label) continue;
     var cs = window.getComputedStyle(ch);
     if (cs.display === "none" || cs.visibility === "hidden") continue;
     if (cs.position === "absolute" || cs.position === "fixed") continue;
@@ -512,6 +522,55 @@ function showChildGaps(parentEl) {
   }
 }
 
+// --- Pin mode helpers ---
+function isPinned(el) {
+  return pinnedElements.indexOf(el) !== -1;
+}
+
+function copyPinnedToClipboard() {
+  if (pinnedElements.length === 0) return;
+  var items = pinnedElements.map(function (el) {
+    return buildClipboardText(el);
+  });
+  var text =
+    pinnedElements.length === 1 ? items[0] : formatMultiClipboard(items);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard
+      .writeText(text)
+      .then(function () {
+        showToast("Copied " + pinnedElements.length + " pinned");
+      })
+      .catch(function () {
+        showToast("Copy failed");
+      });
+  }
+}
+
+function pinElement(el) {
+  if (isPinned(el) || pinnedElements.length >= MAX_PINS) return;
+  pinnedElements.push(el);
+  el.style.outline = "2px dashed #4a90d9";
+  el.style.outlineOffset = "-2px";
+  copyPinnedToClipboard();
+}
+
+function unpinElement(el) {
+  var idx = pinnedElements.indexOf(el);
+  if (idx === -1) return;
+  pinnedElements.splice(idx, 1);
+  el.style.outline = "";
+  el.style.outlineOffset = "";
+  copyPinnedToClipboard();
+}
+
+function clearPins() {
+  for (var i = 0; i < pinnedElements.length; i++) {
+    pinnedElements[i].style.outline = "";
+    pinnedElements[i].style.outlineOffset = "";
+  }
+  pinnedElements = [];
+}
+
 // --- Clipboard helpers ---
 function buildClassName(el) {
   var cn = el.className;
@@ -560,11 +619,26 @@ function onKeyDown(e) {
     e.preventDefault();
     toggleInspect();
   }
+  if (e.key === "Escape" && inspectActive) {
+    e.preventDefault();
+    clearPins();
+    showToast("Pins cleared");
+  }
+}
+
+function onMouseDown(e) {
+  if (!inspectActive) return;
+  e.preventDefault();
+  window.getSelection().removeAllRanges();
+}
+
+function onSelectStart(e) {
+  if (inspectActive) e.preventDefault();
 }
 
 function onMouseMove(e) {
   if (!inspectActive) return;
-  var el = findInspectable(e.target);
+  var el = findInspectable(elementAtPoint(e.clientX, e.clientY));
   if (!el) {
     highlight.style.display = "none";
     label.style.display = "none";
@@ -627,11 +701,23 @@ function onMouseMove(e) {
 
 function onClick(e) {
   if (!inspectActive) return;
-  var el = findInspectable(e.target);
+  var el = findInspectable(elementAtPoint(e.clientX, e.clientY));
   if (!el) return;
   e.preventDefault();
   e.stopPropagation();
 
+  // Shift+Click: toggle pin
+  if (e.shiftKey) {
+    if (isPinned(el)) {
+      unpinElement(el);
+    } else {
+      pinElement(el);
+    }
+    return;
+  }
+
+  // Regular click: clear pins, copy single element
+  clearPins();
   var ref = buildRef(el);
   var clipText = buildClipboardText(el);
 
@@ -651,7 +737,8 @@ function onClick(e) {
 
 function onTouchEnd(e) {
   if (!inspectActive) return;
-  var el = findInspectable(e.target);
+  var t = e.changedTouches && e.changedTouches[0];
+  var el = findInspectable(t ? elementAtPoint(t.clientX, t.clientY) : e.target);
   if (!el) return;
   e.preventDefault();
 
@@ -674,15 +761,27 @@ function onTouchEnd(e) {
 
 // --- Register listeners ---
 document.addEventListener("keydown", onKeyDown);
+document.addEventListener("selectstart", onSelectStart);
+document.addEventListener("mousedown", onMouseDown, true);
 document.addEventListener("mousemove", onMouseMove, true);
 document.addEventListener("click", onClick, true);
 document.addEventListener("touchend", onTouchEnd, true);
 
 // --- Restore visual state after HMR ---
 if (inspectActive) {
-  btn.style.background = "#4a90d9";
-  btn.style.borderColor = "#2a6cb8";
-  btn.style.transform = "scale(1.1)";
+  document.body.classList.add("__inspect-active");
+  document.body.style.userSelect = "none";
+}
+
+// Restore pin state after HMR (filter removed elements)
+pinnedElements = pinnedElements.filter(function (el) {
+  return document.body.contains(el);
+});
+if (pinnedElements.length > 0) {
+  for (var i = 0; i < pinnedElements.length; i++) {
+    pinnedElements[i].style.outline = "2px dashed #4a90d9";
+    pinnedElements[i].style.outlineOffset = "-2px";
+  }
 }
 
 // --- HMR lifecycle ---
@@ -691,10 +790,17 @@ if (import.meta.hot) {
 
   import.meta.hot.dispose(function (data) {
     data.inspectActive = inspectActive;
-    btn.remove();
+    data.pinnedElements = pinnedElements;
+    // Clear pin outlines before dispose (re-applied after HMR)
+    for (var i = 0; i < pinnedElements.length; i++) {
+      pinnedElements[i].style.outline = "";
+      pinnedElements[i].style.outlineOffset = "";
+    }
+    document.body.classList.remove("__inspect-active");
     highlight.remove();
     parentHighlight.remove();
     label.remove();
+    freezeStyle.remove();
     for (var i = 0; i < gapPool.length; i++) {
       gapPool[i].bar.remove();
     }
@@ -702,10 +808,13 @@ if (import.meta.hot) {
       childHighlightPool[i].remove();
     }
     document.removeEventListener("keydown", onKeyDown);
+    document.removeEventListener("selectstart", onSelectStart);
+    document.removeEventListener("mousedown", onMouseDown, true);
     document.removeEventListener("mousemove", onMouseMove, true);
     document.removeEventListener("click", onClick, true);
     document.removeEventListener("touchend", onTouchEnd, true);
     document.body.style.cursor = "";
+    document.body.style.userSelect = "";
   });
 
   import.meta.hot.on("vite:afterUpdate", function () {
