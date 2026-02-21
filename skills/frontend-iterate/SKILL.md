@@ -4,7 +4,7 @@ description: Iterative browser-based development with inspect overlay. Injects e
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 2.6.0
   category: frontend
 ---
 
@@ -14,149 +14,126 @@ User clicks elements in browser, copies a reference, pastes in chat. Claude make
 
 ## References
 
-- `references/inspect-overlay-plugin.ts` — Vite plugin with embedded overlay script
-- `references/inspect-overlay-component.tsx` — Next.js client component overlay
+- `references/inspect-overlay-plugin.ts` — Vite plugin
+- `references/inspect-overlay-client.js` — Universal vanilla JS overlay (Vite + Next.js)
+- `references/setup-guide.md` — Installation instructions (loaded on-demand)
 
-## FASE 0: Pre-flight
+## FASE 1: Pre-flight
 
-### 0.1 Framework Detection
+### 1.1 Framework & Overlay Detection
 
 Check `package.json` dependencies:
 
-- `next` present → **Next.js** → skip to 0.3
-- `vite` present → **Vite** → continue to 0.2
+- `next` present → **Next.js**
+- `vite` present → **Vite**
 - Neither → abort: "Only Vite and Next.js projects are supported."
 
-### 0.2 React Plugin Detection (Vite only)
+Check styling approach:
 
-Check `vite.config.ts` (or `.js`, `.mjs`) imports:
+- `tailwindcss` in dependencies → **Tailwind** (class: line = utility classes)
+- Otherwise → **Non-Tailwind** (class: line may not contain utilities, rely on file context for edits)
 
-- `@vitejs/plugin-react-swc` → SWC mode (needs switch for full mode)
-- `@vitejs/plugin-react` → Babel mode (ready)
-- Neither → abort: "No React plugin found in vite.config"
+Check overlay installed:
 
-### 0.3 Existing Setup Check
+- **Vite**: Grep `vite.config` for `inspectOverlay`
+- **Next.js**: Check for `inspect-overlay-client.js` in `public/_inspect/`
 
-- **Vite**: Grep `vite.config` for `inspectOverlay` → found = skip to FASE 2
-- **Next.js**: Check for `InspectOverlay` component import in root layout → found = skip to FASE 2
+**Not found → install:**
 
-### 0.4 Dev Server Status
-
-Check if port 3000 is in use. Track for restart after setup.
-
-### Pre-flight Output
-
-Report framework, plugin mode (Vite), overlay status, and dev server status.
-
-## FASE 1A: Setup — Vite
-
-Skip if pre-flight detected existing configuration.
-
-### SWC to Babel Switch (conditional)
-
-Only if `@vitejs/plugin-react-swc` detected.
-
-Ask user:
-
-```yaml
-header: "Plugin"
-question: "De inspect overlay vereist Babel voor data-attributen. Wil je switchen van SWC naar Babel?"
-options:
-  - label: "Ja, switch (Recommended)"
-    description: "Vervangt plugin-react-swc met plugin-react. Dev builds iets trager, geen impact op production."
-  - label: "Nee, zonder data-attributen"
-    description: "Overlay werkt zonder exacte bestandsreferenties. Claude zoekt via tekst/classes."
-multiSelect: false
+```
+Read("references/setup-guide.md")
 ```
 
-If accepted: uninstall `@vitejs/plugin-react-swc`, install `@vitejs/plugin-react`, update vite.config import.
+Follow the setup guide, then continue to 1.2.
 
-If declined: degraded mode — skip babel plugin, overlay works without file:line refs.
+### 1.2 Context Loading
 
-### Install & Configure
+Load project context for informed edits:
 
-1. Install `@react-dev-inspector/babel-plugin` (Babel mode only)
-2. Copy `references/inspect-overlay-plugin.ts` → project root as `inspect-overlay.vite.ts`
-3. Copy `references/inspect-overlay-client.js` → project root
-4. Add to `.gitignore` (if not already present):
-   ```
-   # Inspect overlay (synced from claude-config)
-   inspect-overlay-client.js
-   inspect-overlay.vite.ts
-   ```
-5. Update `vite.config.ts`:
-   - Add `inspectOverlay()` to plugins array
-   - Add babel plugin to `react()` config (Babel mode only)
-6. Restart dev server if running
+- **Theme** (optional): Read `.workspace/config/THEME.md` if it exists
+  - Provides design tokens, color palette, typography scale, spacing system
+  - Used to validate edits against the design system
+  - If not found: no problem, rely on `class:` from clipboard
 
-## FASE 1B: Setup — Next.js
+Report and enter iterate mode:
 
-Skip if pre-flight detected existing configuration.
+```
+✓ Iterate mode actief.
+  Theme: {loaded from THEME.md | not available}
+  Styling: {Tailwind | Non-Tailwind}
+  Plak referenties of beschrijf wijzigingen.
+```
 
-Next.js with Turbopack has no Babel plugin support → always degraded mode (no file:line refs, element-picking via CSS classes/text).
+## FASE 2: Iterate
 
-### Install
+Respond to user input in three patterns.
 
-1. Copy `references/inspect-overlay-component.tsx` → `src/components/dev/InspectOverlay.tsx`
-2. Add `src/components/dev/InspectOverlay.tsx` to `.gitignore` (if not already present)
-3. Add to root `layout.tsx`:
-   - Import `InspectOverlay` from `@/components/dev/InspectOverlay`
-   - Render `{process.env.NODE_ENV === "development" && <InspectOverlay />}` in `<body>`
-4. HMR picks up the change automatically — no server restart needed
+### Pattern A: Rich Clipboard Pasted
 
-## FASE 2: Ready
+User pastes clipboard output from overlay click:
 
-Report overlay status including:
+```
+src/components/Header.tsx:10:4
+  class: flex items-center gap-4 px-6
+  size: 1200 x 64 @1440w
+  parent: flex row, gap 16px, 4 children
+  font: 16px/1.5 Inter
+  color: #1a1a1a
+```
 
-- Mode: Full (Babel) or Degraded
-- Controls: Alt+I toggle (desktop), button bottom-right (mobile)
-- Server URL: tunnel URL if cloudflared running, else localhost:3000
+Or multi-select with `--- 1/N ---` separators (from Shift+click pins).
 
-Then wait for user input.
+**Parsing priority:**
 
-## FASE 3: Iterate
+1. **File reference** (first line) — two formats:
+   - **Full mode**: `src/components/Header.tsx:10:4` → read file at that line ±30 lines context
+   - **Degraded mode**: `div.flex.items-center "Header Text"` (no `/` or `:line`) → grep for a unique segment of the `class:` line (pick 4+ consecutive classes), confirm match with the text content from the first line
+2. **`class:` line is the source of truth** — use existing utility classes to understand the element. Edit by modifying these classes, not by writing new arbitrary values
+3. **Computed styles** (`font:`, `color:`, `size:`) — use as verification of what classes do, not as values to hardcode. Map back to utility classes: `color: #737373` means `text-neutral-500` is active, don't write `text-[#737373]`
+4. **`size:` + viewport** — map `@{width}w` to Tailwind breakpoint:
+   `<640` = default (mobile-first), `≥640` = sm:, `≥768` = md:, `≥1024` = lg:, `≥1280` = xl:, `≥1536` = 2xl:
+   Apply edits to the matching breakpoint prefix. E.g., captured at `@1440w` → changes apply at `xl:` or lower
+5. **`parent:` context** — layout type, gap, and child count of the parent container. Use to choose the right edit approach: flex → gap/flex-basis, grid → col-span/grid-template, block → width/max-width/padding
 
-Respond to user input in two patterns.
+**Workflow:**
 
-### Pattern A: File Reference Pasted
+1. Parse clipboard, locate file (full mode: read at line; degraded mode: grep to find file)
+2. If clipboard pasted WITHOUT instruction: echo understanding first — element type, file location, active breakpoint. E.g., "Header.tsx:10 — flex container, xl breakpoint." If clipboard + instruction in same message: proceed directly to edit.
+3. Make targeted edit using existing class patterns
+4. Report: filepath, line, what changed
 
-User pastes `src/components/Header.tsx:10` (or with column).
+For multi-select: apply instruction across all referenced elements sequentially.
+
+### Pattern B: File Reference Only
+
+User pastes `src/components/Header.tsx:10` (or with column) without style context.
 
 1. Read file, focus on referenced line ±30 lines context
 2. Wait for instruction
 3. Make targeted edit
 4. Report: filepath, line, what changed
 
-### Pattern B: Description Without Reference
+### Pattern C: Description Without Reference
 
 User describes an element (e.g., "make the header background darker").
 
-1. Grep for the element across components. Fallback: `browser_snapshot` to map visual description to DOM.
-2. Confirm match — if ambiguous, ask.
-3. Continue as Pattern A from step 2.
+1. **Locate element** — try in order:
+   a. Grep component files for keywords from the description (e.g., "header" → `Header`, `header`, `<header`)
+   b. If 0 or too many matches: use `browser_snapshot` to find the element in the DOM, extract class names or text content, then grep for those
+2. If ambiguous (2+ candidate files) — show matches and ask user to pick
+3. Read matched file, find the element by class/text context
+4. Wait for instruction
+5. Make targeted edit, report: filepath, line, what changed
 
 ### Guidelines
 
+- **`class:` over computed values** — always prefer existing utility classes over hardcoded values.
+- **Theme-aware** — if THEME.md is loaded, use its tokens for new values (e.g., use `text-primary` over `text-blue-500` if the theme defines primary).
+- **Viewport-aware** — scope edits to the captured breakpoint prefix from `@{width}w`. Edit at `@1440w` → modify `xl:` or lower prefixed classes. Only edit unprefixed (base) classes when the user explicitly targets all screen sizes. This prevents desktop edits from breaking mobile.
+- **Responsive conflict check** — after layout edits (flex, grid, width, gap, padding), scan the element's existing classes for other breakpoint variants of the same property. If the edit conflicts (e.g., adding `xl:gap-6` when `md:gap-8` already exists), warn before applying.
+- **Layout-context aware** — use `parent:` line to choose the right edit approach for size/spacing. Don't guess — the layout type determines the tool: flex → gap/flex-basis, grid → col-span/grid-template, block → width/max-width/padding.
 - Minimal, targeted edits. No surrounding refactors.
-- One change at a time. Multiple requests → sequential.
+- One instruction at a time. Multi-select: apply the same instruction across all pinned elements. Different instructions on different elements → sequential.
 - No screenshots/validation after edit unless asked. Trust HMR.
 - New reference pasted → new iteration immediately.
 - "done" or "klaar" → acknowledge and stop.
-
-## Teardown
-
-Only on explicit request ("remove the overlay", "cleanup iterate").
-
-**Vite:**
-
-1. Delete `inspect-overlay.vite.ts`
-2. Remove `inspectOverlay` import + plugin from `vite.config.ts`
-3. Remove babel plugin from react() config
-4. Optionally uninstall `@react-dev-inspector/babel-plugin`
-5. Restart dev server
-
-**Next.js:**
-
-1. Delete `src/components/dev/InspectOverlay.tsx`
-2. Remove `InspectOverlay` import + render from root `layout.tsx`
-3. HMR removes overlay automatically
