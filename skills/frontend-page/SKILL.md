@@ -1,20 +1,21 @@
 ---
 name: frontend-page
 description: >-
-  Create a new page from user stories to working code in 4 phases: requirements,
-  ASCII layout, code generation, and optional data hookup. Framework-aware output
-  for Next.js, Vite, Remix, Astro. Use with /frontend-page or /frontend-page [page-name].
+  Compose a page from existing building blocks and new components. Inventories
+  built features, selects what belongs on the page, then generates user stories,
+  ASCII layout, and code. Reuses existing components from the dev pipeline.
+  Use with /frontend-page or /frontend-page [page-name].
 argument-hint: "[page-name]"
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 1.1.0
   category: frontend
 ---
 
 # Page
 
-Create a new page from concept to working code. Gather requirements via user stories, design the layout as ASCII art in the terminal, generate the full page, and optionally hook up real data.
+Compose a page by inventorying existing building blocks (components, hooks, services from the dev pipeline) and combining them with new functionality. Selects what belongs on this page, formulates user stories, designs the layout as ASCII art, generates code that reuses existing components, and optionally hooks up real data.
 
 **Pipeline:** `/frontend-theme` (optional) → `/frontend-page` → `/frontend-iterate` → quality skills
 
@@ -44,77 +45,168 @@ multiSelect: false
 # User can choose "Other" for custom page name + description
 ```
 
-### 0.2 Project Context Scan
+### 0.2 Bestaat deze pagina al?
 
-Spawn an **Explore agent** (`subagent_type="Explore"`, thoroughness: "very thorough") to scan the project. This keeps the main context clean.
+```yaml
+header: "Pagina Status"
+question: "Bestaat de {page-name} pagina al in het project?"
+options:
+  - label: "Ja, pagina bestaat", description: "Ik wil de bestaande pagina aanpassen"
+  - label: "Nee, nieuwe pagina (Recommended)", description: "Pagina moet nog gemaakt worden"
+multiSelect: false
+```
+
+**If "Ja"** → proceed to 0.3 (page analysis).
+**If "Nee"** → proceed to 0.3b (theme check), then skip to FASE 1.
+
+### 0.2b Theme Check (always)
+
+Check if `.workspace/config/THEME.md` exists (output from `/frontend-theme`).
+
+- **If found**: read and store as context for code generation (colors, typography, spacing, breakpoints).
+- **If not found**: note absence, use Tailwind defaults during code generation.
+
+```
+Theme: [Available (THEME.md) | Not available — using Tailwind defaults]
+```
+
+### 0.3 Page Analysis (only if page exists)
+
+Spawn an **Explore agent** (`subagent_type="Explore"`, thoroughness: "very thorough") to analyze the existing page. This keeps the main context clean.
 
 **Agent prompt:**
 
 ```
-Scan this project and report back with a structured summary:
+Analyze the existing page "{page-name}" in this project.
 
-1. Framework: Check package.json for next, vite, remix, astro, nuxt, sveltekit.
-   Report framework name + version + router type (App Router vs Pages for Next.js).
+1. Find the page file: Glob for the page name in:
+   - app/**/page.{tsx,jsx} (Next.js App Router)
+   - src/pages/**/*.{tsx,jsx} (Vite/Next Pages)
+   - src/routes/**/*.{tsx,jsx} (Remix)
+   - src/pages/**/*.astro (Astro)
 
-2. Existing pages: Glob for page files:
-   - app/**/page.{tsx,jsx}
-   - src/pages/**/*.{tsx,jsx,vue,svelte,astro}
-   - src/routes/**/*.{tsx,jsx,svelte}
-   List all routes found.
+2. Trace all imports from the page file recursively:
+   - For each imported component: scan for onClick/onSubmit handlers,
+     buttons, links, form elements, interactive elements.
+     Report: component name + user-facing actions
+     (e.g., "ProductCard: [Add to cart] button, [View details] link").
+   - For each imported hook: report what data/state it provides.
+   - For each imported service: report which API endpoints it calls.
 
-3. Existing components: Glob for component files:
-   - src/components/**/*.{tsx,jsx,vue,svelte}
-   - components/**/*.{tsx,jsx,vue,svelte}
-   List component names (no content, just names).
+3. Report the full picture of what this page currently does.
 
-4. API routes: Glob for:
-   - app/api/**/*.{ts,js}
-   - src/api/**/*.{ts,js}
-   - pages/api/**/*.{ts,js}
-   List endpoint paths.
-
-5. Data models: Glob for:
-   - src/types/**/*.{ts,d.ts}
-   - types/**/*.{ts,d.ts}
-   - src/models/**/*.{ts,js}
-   List type/interface names from these files.
-
-6. UI library: Check package.json for tailwindcss, @mui/material,
-   @chakra-ui/react, @mantine/core, shadcn. Check for tailwind.config.*.
-
-7. State management: Check for zustand, redux, jotai, recoil, @tanstack/react-query, swr.
-
-8. Theme: Check if .workspace/config/THEME.md exists. If yes, report token categories.
-
-9. Utility: Check if src/lib/utils.ts exists with cn() function.
-
-Return a structured summary with sections for each point above.
-Do NOT read file contents beyond what's needed for detection.
+Return a structured summary. Focus ONLY on this page and its imports.
 ```
 
-### 0.3 Display Context
-
-Show the scan results to the user:
+Show the results:
 
 ```
-PROJECT CONTEXT
+CURRENT PAGE: {page-name}
 ════════════════════════════════════════════════════════════════
 
-Project:     [name from package.json]
-Framework:   [Next.js 14 App Router | Vite + React | etc.]
-UI Library:  [Tailwind CSS | MUI | None detected]
-State:       [React Query | SWR | Zustand | None detected]
+Page file:   [path to page file]
 
-Pages ({N}):       /products, /cart, /checkout, ...
-Components ({N}):  Button, Card, Header, Footer, ...
-API routes ({N}):  GET /api/products, POST /api/cart, ...
-Data models ({N}): User, Product, Order, ...
+Components on this page:
+  {Component}      → [Button1], [Button2], {handler}
+  {Component}      → [Link1], [FormField], {handler}
 
-Theme:     [Available (THEME.md) | Not available]
-cn() util: [Available | Will create]
+Data layer:
+  {useHook}        → provides {data}
+  {service}        → calls {endpoint}
 
 ════════════════════════════════════════════════════════════════
 ```
+
+Proceed to FASE 0.5 (page inventory).
+
+---
+
+## FASE 0.5: Current Page Inventory
+
+**Condition:** Only execute this phase if the user indicated the page already exists (0.2 → "Ja"). If the page is new, this phase is skipped entirely.
+
+### 0.5.1 Present Current Page Contents
+
+Show what's currently on the page, based on the page analysis from 0.3:
+
+```
+CURRENT PAGE: {page-name}
+════════════════════════════════════════════════════════════════
+
+Components on this page:
+  {Component}      → [Button1], [Button2], {handler}
+  {Component}      → [Link1], [FormField], {handler}
+
+Data layer:
+  {useHook}        → provides {data}
+  {service}        → calls {endpoint}
+
+════════════════════════════════════════════════════════════════
+```
+
+### 0.5.2 Check What to Keep
+
+Present the current components as a multi-select checklist. Everything is pre-selected (kept by default).
+
+```yaml
+header: "Behouden"
+question: "Welke onderdelen wil je behouden op deze pagina? (deselecteer wat weg mag)"
+options:
+  - label: "{Component1}", description: "[Button1], [Button2], {handler}"
+  - label: "{Component2}", description: "[Link1], [FormField], {handler}"
+  - label: "{useHook}", description: "provides {data}"
+multiSelect: true
+# All options pre-selected. User deselects what should be removed.
+```
+
+### 0.5.3 Ask What to Add
+
+```yaml
+header: "Toevoegen"
+question: "Wat wil je toevoegen aan deze pagina?"
+options:
+  - label: "Ik beschrijf het (Recommended)", description: "Beschrijf welke functionaliteit erbij moet"
+  - label: "Niks toevoegen", description: "Alleen de geselecteerde onderdelen herschikken/aanpassen"
+  - label: "Opnieuw opbouwen", description: "Alles weggooien, pagina from scratch"
+multiSelect: false
+```
+
+**If "Ik beschrijf het"**: user describes what to add, proceed to 0.5.4.
+
+**If "Niks toevoegen"**: proceed to FASE 1 with only the kept components (useful for removing/reorganizing).
+
+**If "Opnieuw opbouwen"**: proceed to FASE 1 with empty inventory (from scratch).
+
+### 0.5.4 Confirm Changes
+
+```
+PAGINA PLAN: {page-name}
+════════════════════════════════════════════════════════════════
+
+Blijft:
+  ✓ {Component}    → [Button1], [Button2]
+  ✓ {useHook}      → provides {data}
+
+Verwijderen:
+  ✗ {Component}    → was: [OldButton], {handler}
+
+Toevoegen:
+  + {description}  → {expected actions}
+  + {description}  → {expected actions}
+
+════════════════════════════════════════════════════════════════
+```
+
+```yaml
+header: "Plan"
+question: "Klopt dit overzicht?"
+options:
+  - label: "Ja, ga door (Recommended)", description: "Start met user stories"
+  - label: "Aanpassen", description: "Ik wil het plan wijzigen"
+multiSelect: false
+```
+
+If "Aanpassen": ask what to change, update plan, re-confirm.
 
 ---
 
@@ -176,7 +268,17 @@ multiSelect: false
 
 ### 1.3 Formulate User Stories
 
-Based on answers + project context, formulate user stories:
+Based on answers + project context + page inventory (from FASE 0.5), formulate user stories.
+
+**If inventory exists** (FASE 0.5 was executed):
+
+- Stories for existing components focus on **placement and composition** (not re-defining functionality)
+- Stories for new parts define full functionality as usual
+- The REUSABLE section is pre-filled from the confirmed inventory
+
+**If no inventory** (FASE 0.5 was skipped):
+
+- All stories define full functionality (current behavior)
 
 ```
 USER STORIES
@@ -184,19 +286,29 @@ USER STORIES
 
 Page: [name]
 
+[If inventory exists:]
+Existing (placement):
+1. Als [role] wil ik [existing component] zien op deze pagina zodat [result]
+2. Als [role] wil ik [existing component] kunnen gebruiken om [action]
+
+New (to build):
+3. Als [role] wil ik [new action] zodat [result]
+4. Als [role] wil ik [new action] zodat [result]
+
+[If no inventory:]
 1. Als [role] wil ik [action] zodat [result]
 2. Als [role] wil ik [action] zodat [result]
-3. Als [role] wil ik [action] zodat [result]
 ...
 
 SECTIONS (derived from stories):
-- [Section 1]: [what it contains]
-- [Section 2]: [what it contains]
-- [Section 3]: [what it contains]
+- [Section 1]: [what it contains] [EXISTING | NEW]
+- [Section 2]: [what it contains] [EXISTING | NEW]
+- [Section 3]: [what it contains] [NEW]
 
-REUSABLE (from project):
-- [existing component] → can be reused for [section]
-- [API endpoint] → provides data for [section]
+REUSABLE (from inventory / project scan):
+- [existing component] → reuse for [section]
+- [existing hook] → provides data for [section]
+- [API endpoint] → already available for [section]
 
 ════════════════════════════════════════════════════════════════
 ```
@@ -325,7 +437,7 @@ Sections → Stories:
 
 ### 3.1 Determine Output Structure
 
-Based on the project context scan from FASE 0:
+Detect the framework from `package.json` and existing page file patterns:
 
 | Framework          | Page file                | Component dir            |
 | ------------------ | ------------------------ | ------------------------ |
@@ -337,7 +449,19 @@ Based on the project context scan from FASE 0:
 
 ### 3.2 Generate Complete Page
 
-Generate the full page in one pass based on the approved layout and requirements.
+Generate the page based on the approved layout, requirements, and page inventory.
+
+**For each section in the approved layout, determine the generation strategy:**
+
+```
+IF section maps to existing component from page inventory:
+  → Import the existing component
+  → Pass page-specific props if needed
+  → DO NOT regenerate the component
+
+IF section is new (not in inventory):
+  → Generate new section component (standard behavior)
+```
 
 **Rules:**
 
@@ -347,13 +471,13 @@ Generate the full page in one pass based on the approved layout and requirements
 - TypeScript strict mode with proper interfaces
 - Semantic HTML with aria-labels and keyboard support
 - If THEME.md exists, integrate design tokens into Tailwind config extension
-- Use existing components from the project where they match requirements
+- Import and compose existing components — never regenerate what already works
 - Contextual placeholder text (not "Lorem ipsum") when no real data available
 
 **Generate these files:**
 
-1. **Page file** — main page component with layout structure
-2. **Section components** — one per major layout section (only if complex enough to warrant extraction)
+1. **Page file** — main page component that imports existing components + new section components
+2. **New section components** — only for sections not covered by existing components
 3. **Tailwind config extension** — if THEME.md tokens need to be added (only if not already present)
 4. **cn() utility** — `src/lib/utils.ts` if not present
 
@@ -361,15 +485,23 @@ Generate the full page in one pass based on the approved layout and requirements
 
 ```typescript
 // Page file example (Next.js App Router)
+// Existing components imported from their original location
+import { ProductCard } from '@/components/ProductCard';
+import { useProducts } from '@/hooks/useProducts';
+// New sections generated for this page
 import { HeroSection } from '@/components/[page]/HeroSection';
-import { FeatureCards } from '@/components/[page]/FeatureCards';
+import { CheckoutForm } from '@/components/[page]/CheckoutForm';
 
 export default function [Page]Page() {
   return (
     <main className="min-h-screen">
       <HeroSection />
-      <FeatureCards />
-      {/* ... */}
+      {/* Existing component, composed into page layout */}
+      <section className="grid grid-cols-3 gap-6 px-6 py-12">
+        {products.map(p => <ProductCard key={p.id} product={p} />)}
+      </section>
+      {/* New component, generated for this page */}
+      <CheckoutForm />
     </main>
   );
 }
@@ -407,14 +539,57 @@ CODE GENERATED
 ════════════════════════════════════════════════════════════════
 
 Files created:
-  ✓ app/dashboard/page.tsx          (page)
-  ✓ src/components/dashboard/HeroSection.tsx
-  ✓ src/components/dashboard/FeatureCards.tsx
-  ✓ src/components/dashboard/Testimonials.tsx
-  ✓ src/lib/utils.ts                (cn utility — new)
+  ✓ app/dashboard/page.tsx                    (page)
+  ✓ src/components/dashboard/HeroSection.tsx  (new)
+  ✓ src/components/dashboard/CheckoutForm.tsx (new)
+
+Existing components imported:
+  ✓ src/components/ProductCard.tsx            (reused)
+  ✓ src/hooks/useProducts.ts                 (reused)
 
 Theme: [Integrated from THEME.md | Tailwind defaults used]
-Existing components reused: [Header, Footer | None]
+
+════════════════════════════════════════════════════════════════
+```
+
+### 3.4 Visual Verification
+
+Verify the generated page renders correctly in the browser. See `../shared/PLAYWRIGHT.md` for tool details and error recovery.
+
+**Pre-flight:** Check Playwright MCP tools available (`browser_navigate`, `browser_take_screenshot`, `browser_close`). If unavailable → skip with message: `"Playwright niet beschikbaar — open de pagina handmatig om te verifiëren."`, proceed to FASE 4.
+
+**Sequence:**
+
+1. Start dev server if not running (`npm run dev` or `npx next dev` based on framework detected in 3.1) — run in background
+2. `browser_navigate` → `http://localhost:3000/[page-name]` (adjust port to project config)
+3. `browser_wait_for` → `{ time: 3 }` (allow hydration + client render)
+4. `browser_take_screenshot` → visually verify the page
+5. `browser_close`
+
+**Analyze screenshot for:**
+
+- Page renders without blank screen or error overlay
+- Layout matches the approved ASCII layout from FASE 2
+- Sections are visible and in the correct order
+- No obvious broken styling (missing images are OK with placeholder data)
+
+**Report:**
+
+```
+VISUAL CHECK
+════════════════════════════════════════════════════════════════
+
+URL:     http://localhost:3000/[page-name]
+Status:  [✓ Renders correctly | ⚠ Issues detected]
+
+[If issues detected:]
+Issues:
+  - [description of visual problem]
+  - [description of visual problem]
+
+[Auto-fix issues (missing imports, typos, wrong classes, layout problems)
+ and re-check. Repeat until clean or max 3 attempts.
+ Only escalate to user if the fix is unclear or subjective.]
 
 ════════════════════════════════════════════════════════════════
 ```
@@ -425,7 +600,7 @@ Existing components reused: [Header, Footer | None]
 
 ### 4.1 Detect API Availability
 
-Check the project context scan from FASE 0 for API routes and data models.
+Check `package.json` and glob for API route files to detect available endpoints.
 
 - **API routes found** → offer data hookup
 - **No API routes found** → skip this phase entirely
@@ -561,13 +736,13 @@ This skill must **NEVER**:
 
 - Generate code without approved layout (skip FASE 2)
 - Use "Lorem ipsum" placeholder text — always use contextual, realistic content
-- Modify existing pages — only creates new pages (use `/frontend-iterate` for changes)
+- Regenerate components that already exist in the codebase — import and compose them instead
 - Skip the project context scan
 - Generate framework-incompatible code
 
 This skill must **ALWAYS**:
 
-- Scan the project via Explore agent before asking requirements
+- Analyze existing page via Explore agent when modifying an existing page
 - Formulate user stories and get validation before layout
 - Show ASCII layout and get approval before generating code
 - Follow `shared/RULES.md` and `shared/PATTERNS.md`
