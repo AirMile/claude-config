@@ -13,3 +13,9 @@ settings.local.json
 
 # Workspace (project-specific, not shared)
 .workspace/
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# Test screenshots
+*.png
