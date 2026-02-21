@@ -28,6 +28,7 @@ dev:
   - dev-worktree
 
 frontend:
+  - frontend-convert
   - frontend-iterate
   - frontend-optimize
   - frontend-page
