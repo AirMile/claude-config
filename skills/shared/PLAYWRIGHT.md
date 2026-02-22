@@ -31,6 +31,7 @@ PLAYWRIGHT SEQUENCE
 2. browser_snapshot → (analyze accessibility tree)
 3. browser_take_screenshot → (view visual state)
 4. browser_close
+5. Bash: pkill -f "chrome.*(playwright|mcp-chrome)" 2>/dev/null || true
 ```
 
 ### Dynamic Content Sequence
@@ -45,6 +46,7 @@ PLAYWRIGHT SEQUENCE (Dynamic)
 3. browser_snapshot → (analyze accessibility tree)
 4. browser_take_screenshot → (view visual state)
 5. browser_close
+6. Bash: pkill -f "chrome.*(playwright|mcp-chrome)" 2>/dev/null || true
 ```
 
 ### Timed Wait Sequence
@@ -58,6 +60,7 @@ PLAYWRIGHT SEQUENCE (Timed)
 2. browser_wait_for → { time: 2 }
 3. browser_take_screenshot → (view visual state)
 4. browser_close
+5. Bash: pkill -f "chrome.*(playwright|mcp-chrome)" 2>/dev/null || true
 ```
 
 ---
@@ -254,10 +257,14 @@ Example snapshot content:
 
 ### Resource Cleanup
 
-- **Always** call `browser_close` after analysis
-- **Handle errors** with try/finally pattern
-- **Don't leave** browser sessions hanging
-- **Check** for orphan processes if issues occur
+- **Always** call `browser_close` after analysis — ook bij errors
+- **Handle errors** with try/finally pattern: als een stap faalt, sla door naar `browser_close`
+- **Na `browser_close`**: kill orphaned Chrome processen met:
+  ```bash
+  pkill -f "chrome.*(playwright|mcp-chrome)" 2>/dev/null || true
+  ```
+- Deze bash cleanup is **verplicht** als laatste stap van elke Playwright-sequentie
+- Chrome processen overleven `browser_close` en eten CPU/RAM als ze niet gekilld worden
 
 ---
 
@@ -293,6 +300,7 @@ Per viewport:
 
 After all viewports:
 6. browser_close
+7. Bash: pkill -f "chrome.*(playwright|mcp-chrome)" 2>/dev/null || true
 ```
 
 ### Overflow Detection
