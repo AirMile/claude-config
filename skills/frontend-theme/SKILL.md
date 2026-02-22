@@ -7,7 +7,7 @@ description: >-
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: frontend
 ---
 
@@ -19,9 +19,11 @@ Beheert het project design systeem: design tokens aanmaken, bekijken, updaten, e
 
 ## Overview
 
-Dit command beheert de `THEME.md` file die design tokens bevat (colors, typography, spacing, breakpoints). Het kan tokens automatisch extraheren uit bestaande Tailwind of CSS configuratie.
+Dit command beheert de `theme` sectie in `.workspace/project.json` die design tokens bevat (colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars). Het kan tokens automatisch extraheren uit bestaande Tailwind of CSS configuratie.
 
-**Output locatie:** `.workspace/config/THEME.md`
+**Output locatie:** `.workspace/project.json` → `theme` sectie
+
+**Referentie:** `THEME_TEMPLATE.md` beschrijft de token categorien en naming conventions.
 
 ## When to Use
 
@@ -29,6 +31,91 @@ Dit command beheert de `THEME.md` file die design tokens bevat (colors, typograp
 - Bestaande design tokens bekijken of updaten
 - Tokens extraheren uit Tailwind/CSS config
 - Dark/light mode toevoegen of aanpassen
+
+---
+
+## Theme JSON Schema
+
+De `theme` sectie in `project.json` volgt dit schema:
+
+```json
+{
+  "colors": {
+    "main": [{ "token": "dark", "value": "#hex", "usage": "description" }],
+    "accent": [
+      { "token": "accent-primary", "value": "#hex", "usage": "description" }
+    ],
+    "semantic": [
+      { "token": "success", "value": "#hex", "usage": "description" }
+    ]
+  },
+  "typography": {
+    "families": {
+      "heading": "Font, fallback",
+      "body": "Font, fallback",
+      "mono": "Font, fallback"
+    },
+    "sizes": [{ "token": "text-base", "size": "1rem", "lineHeight": "1.5rem" }]
+  },
+  "spacing": {
+    "base": "4px",
+    "scale": [{ "token": "spacing-4", "value": "16px", "usage": "description" }]
+  },
+  "breakpoints": [
+    { "token": "screen-md", "value": "768px", "target": "Tablets" }
+  ],
+  "borderRadius": [
+    { "token": "rounded-md", "value": "0.375rem", "usage": "description" }
+  ],
+  "shadows": [{ "token": "shadow-md", "value": "...", "usage": "Cards" }],
+  "modes": { "light": ":root { css }", "dark": ".dark { css }" },
+  "cssVars": ":root { full css vars export }"
+}
+```
+
+Zie `shared/DASHBOARD.md` voor het volledige `project.json` schema met alle secties.
+
+---
+
+## Read/Write Protocol
+
+### Lezen
+
+1. Read `.workspace/project.json`
+2. Parse als JSON
+3. Gebruik `theme` sectie (kan leeg/undefined zijn)
+
+### Schrijven
+
+1. Read `.workspace/project.json` (of maak nieuw met leeg schema als niet bestaat)
+2. Parse JSON
+3. Muteer ALLEEN de `theme` sectie (NIET andere secties overschrijven)
+4. Write terug als `JSON.stringify(data, null, 2)`
+
+### Nieuw bestand aanmaken
+
+Als `.workspace/project.json` niet bestaat, maak aan met het lege schema uit `shared/DASHBOARD.md`:
+
+```json
+{
+  "concept": { "name": "", "content": "" },
+  "theme": {},
+  "stack": {
+    "framework": "",
+    "language": "",
+    "styling": "",
+    "db": "",
+    "auth": "",
+    "hosting": "",
+    "packages": []
+  },
+  "data": { "entities": [] },
+  "endpoints": [],
+  "decisions": []
+}
+```
+
+Vul vervolgens de `theme` sectie met de gegenereerde tokens.
 
 ---
 
@@ -96,11 +183,11 @@ PRE-FLIGHT CHECK
 **1. Directory Check**
 
 ```bash
-# Verify .workspace/config/ exists or can be created
+# Verify .workspace/ exists or can be created
 ```
 
 ```
-Directory: [✓|✗] .workspace/config/ - [exists|created|error]
+Directory: [✓|✗] .workspace/ - [exists|created|error]
 ```
 
 **2. Session Check**
@@ -116,8 +203,12 @@ Handoff: [✓|✗] [data available | not applicable]
 
 **3. Conflict Check (voor Create/Update)**
 
+```bash
+# Read .workspace/project.json → check of theme sectie al gevuld is
 ```
-Conflicts: [✓|✗] THEME.md - [not exists | exists (will warn) | locked]
+
+```
+Conflicts: [✓|✗] project.json theme - [empty | has data (will warn) | file missing]
 ```
 
 **Pre-flight Samenvatting:**
@@ -152,13 +243,13 @@ multiSelect: false
 
 ### FASE 1: Actie Selectie
 
-**Check eerst of THEME.md bestaat:**
+**Check eerst of project.json een gevulde theme sectie bevat:**
 
 ```bash
-# Check .workspace/config/THEME.md
+# Read .workspace/project.json → parse JSON → check theme sectie
 ```
 
-**Als THEME.md BESTAAT:**
+**Als theme sectie DATA bevat (niet leeg):**
 
 **AskUserQuestion:**
 
@@ -170,12 +261,12 @@ options:
   - label: "Updaten", description: "Wijzig bestaande tokens"
   - label: "Extraheren", description: "Tokens ophalen uit Tailwind/CSS"
   - label: "Modes", description: "Dark/light mode beheren"
-  - label: "Verwijderen", description: "Theme file verwijderen"
+  - label: "Verwijderen", description: "Theme data verwijderen"
   - label: "Explain question", description: "Leg opties uit"
 multiSelect: false
 ```
 
-**Als THEME.md NIET bestaat:**
+**Als theme sectie LEEG is of project.json niet bestaat:**
 
 **AskUserQuestion:**
 
@@ -324,7 +415,7 @@ multiSelect: false
 
 **Als "Ja, auto-generate":**
 
-- Inverteer background/foreground: `dark` ↔ `light`
+- Inverteer background/foreground: `dark` <> `light`
 - Pas `mid-gray` en `light-gray` aan voor dark context
 - Behoud accent kleuren maar verhoog lightness (~10-15%) voor leesbaarheid op donkere achtergrond
 - Genereer `.dark` CSS block naast `:root`
@@ -351,13 +442,13 @@ Geef je dark mode kleuren (hex values):
 **Als "Nee":**
 
 - Sla dark mode over
-- Theme Modes sectie bevat alleen Light Mode
+- `modes` bevat alleen `light` key
 - → Ga naar Stap 6
 
 **Stap 6: Bevestiging**
 
 ```
-📋 THEME SAMENVATTING
+THEME SAMENVATTING
 
 | Categorie | Waarde |
 |-----------|--------|
@@ -377,7 +468,7 @@ Geef je dark mode kleuren (hex values):
 header: "Confirm"
 question: "Theme aanmaken met deze settings?"
 options:
-  - label: "Ja, aanmaken (Recommended)", description: "Schrijf naar .workspace/config/THEME.md"
+  - label: "Ja, aanmaken (Recommended)", description: "Schrijf naar .workspace/project.json (theme sectie)"
   - label: "Aanpassen", description: "Terug om wijzigingen te maken"
   - label: "Annuleren", description: "Stop zonder aanmaken"
 multiSelect: false
@@ -385,28 +476,34 @@ multiSelect: false
 
 **Als "Ja":**
 
-1. Lees `THEME_TEMPLATE.md` uit resources
-2. Vul template in met user values
-3. **Als dark mode gekozen:** Vul ook `.dark` CSS block in Theme Modes sectie
-4. **Als geen dark mode:** Verwijder Dark Mode blok uit Template, behoud alleen Light Mode
-5. Schrijf naar `.workspace/config/THEME.md`
-6. → Ga naar FASE X: Post-flight Validation
+1. Raadpleeg `THEME_TEMPLATE.md` voor token categorien en naming conventions
+2. Bouw het theme JSON object volgens het schema (zie "Theme JSON Schema" hierboven)
+3. Vul `colors` (main, accent, semantic) met structured token objects
+4. Vul `typography` met families en sizes
+5. Vul `spacing` met base en scale
+6. Vul `breakpoints`, `borderRadius`, `shadows`
+7. **Als dark mode gekozen:** Vul `modes` met zowel `light` als `dark` CSS strings
+8. **Als geen dark mode:** Vul `modes` met alleen `light` key
+9. Genereer `cssVars` — volledige CSS variables string (alle tokens als `:root { ... }`)
+10. Read `.workspace/project.json` (of maak nieuw met leeg schema)
+11. Set `theme` sectie → Write terug als formatted JSON
+12. → Ga naar FASE X: Post-flight Validation
 
 ---
 
 #### Route: Bekijken
 
-1. Lees `.workspace/config/THEME.md`
+1. Read `.workspace/project.json` → parse `theme` sectie
 2. Parse en toon in overzichtelijke tabel:
 
 ```
-📋 HUIDIGE THEME
+HUIDIGE THEME
 
 ## Colors
 | Token | Value | Preview |
 |-------|-------|---------|
-| primary-500 | #3B82F6 | 🟦 |
-| secondary-500 | #10B981 | 🟩 |
+| primary-500 | #3B82F6 | |
+| secondary-500 | #10B981 | |
 | ... | ... | ... |
 
 ## Typography
@@ -452,7 +549,7 @@ THEME PREVIEW
 Generating preview page...
 
 1. Create temporary preview HTML:
-   - Inject CSS variables from THEME.md
+   - Inject CSS variables from project.json theme.cssVars
    - Include color swatches, typography samples, spacing demo
 
 2. Open in default browser:
@@ -482,10 +579,12 @@ multiSelect: true
 
 **Per geselecteerde sectie:**
 
+- Lees huidige waarden uit `project.json` → `theme` sectie
 - Toon huidige waarden
 - Vraag nieuwe waarden (zelfde flow als Aanmaken)
 - Toon diff preview
 - Bevestig wijziging
+- Read project.json → update alleen gewijzigde theme subsecties → Write terug
 - → Ga naar FASE X: Post-flight Validation
 
 ---
@@ -504,7 +603,7 @@ multiSelect: true
 **Output:**
 
 ```
-🔍 DETECTIE RESULTAAT
+DETECTIE RESULTAAT
 
 | Bron | Status | Tokens |
 |------|--------|--------|
@@ -529,10 +628,11 @@ multiSelect: false
 **Stap 2: Extractie uitvoeren**
 
 1. Parse geselecteerde bronnen
-2. Map naar THEME.md structuur
-3. Toon preview van geëxtraheerde tokens
-4. Vraag bevestiging (zelfde als Aanmaken Stap 5)
-5. → Ga naar FASE X: Post-flight Validation
+2. Map naar theme JSON structuur (zie schema hierboven)
+3. Toon preview van geextraheerde tokens
+4. Vraag bevestiging (zelfde als Aanmaken Stap 6)
+5. Write naar project.json theme sectie
+6. → Ga naar FASE X: Post-flight Validation
 
 ---
 
@@ -569,9 +669,11 @@ multiSelect: false
 
 **Als "Auto-generate":**
 
+- Lees huidige kleuren uit project.json → theme.colors
 - Genereer dark variants van huidige kleuren
 - Toon preview
 - Vraag bevestiging
+- Update project.json → theme.modes met dark key
 - → Ga naar FASE X: Post-flight Validation
 
 #### Mode Comparison
@@ -631,10 +733,16 @@ options:
 header: "Delete"
 question: "Weet je zeker dat je de theme wilt verwijderen?"
 options:
-  - label: "Ja, verwijderen", description: "Verwijder .workspace/config/THEME.md"
+  - label: "Ja, verwijderen", description: "Verwijder theme sectie uit project.json"
   - label: "Nee, annuleren (Recommended)", description: "Behoud theme"
 multiSelect: false
 ```
+
+**Als "Ja":**
+
+1. Read `.workspace/project.json`
+2. Set `theme` sectie naar leeg object `{}`
+3. Write terug
 
 ---
 
@@ -650,20 +758,23 @@ POST-FLIGHT CHECK
 **1. File Validation**
 
 ```
-File: [✓|✗] .workspace/config/THEME.md - [exists|missing|empty]
-Size: [✓|✗] {N} bytes - [valid|suspicious]
-Format: [✓|✗] Markdown - [valid|corrupt]
+File: [✓|✗] .workspace/project.json - [exists|missing|empty]
+Theme: [✓|✗] theme sectie - [populated|empty|missing]
+Format: [✓|✗] JSON - [valid|corrupt]
 ```
 
 **2. Content Validation**
 
 ```
 Sections:
-  [✓|✗] Colors - [present|missing]
-  [✓|✗] Typography - [present|missing]
-  [✓|✗] Spacing - [present|missing]
-  [✓|✗] Breakpoints - [present|missing]
-  [✓|✗] Theme Modes - [light only|light+dark|missing]
+  [✓|✗] colors - [present|missing] (main, accent, semantic)
+  [✓|✗] typography - [present|missing] (families, sizes)
+  [✓|✗] spacing - [present|missing] (base, scale)
+  [✓|✗] breakpoints - [present|missing]
+  [✓|✗] borderRadius - [present|missing]
+  [✓|✗] shadows - [present|missing]
+  [✓|✗] modes - [light only|light+dark|missing]
+  [✓|✗] cssVars - [present|missing]
 ```
 
 **3. Value Validation**
@@ -672,11 +783,14 @@ Sections:
 Colors:
   [✓|✗] All hex codes valid (#RRGGBB format)
   [✓|✗] No empty values
+  [✓|✗] Each color has token, value, usage
 Typography:
   [✓|✗] Font families have fallbacks
+  [✓|✗] Sizes have token, size, lineHeight
 Spacing:
   [✓|✗] All values numeric with unit
-Theme Modes:
+  [✓|✗] Scale entries have token, value, usage
+Modes:
   [✓|✗] Light mode :root CSS present and valid
   [✓|✗] Dark mode .dark CSS present (if configured)
   [✓|✗] Dark mode contrast ratios acceptable (AA minimum)
@@ -687,11 +801,19 @@ Theme Modes:
 
 ```
 CSS Export:
-  [✓|✗] CSS Variables section present
+  [✓|✗] cssVars field present and non-empty
   [✓|✗] :root block syntax valid
-  [✓|✗] .dark block syntax valid (if dark mode configured)
-  [✓|✗] Matches token table
-  [✓|✗] All theme mode variables populated (no {placeholders})
+  [✓|✗] Matches structured token data
+  [✓|✗] All variables populated (no {placeholders})
+```
+
+**5. JSON Integrity**
+
+```
+Integrity:
+  [✓|✗] project.json is valid JSON
+  [✓|✗] Other secties ongewijzigd (concept, stack, data, endpoints, decisions)
+  [✓|✗] Theme sectie matches schema
 ```
 
 **Post-flight Samenvatting:**
@@ -705,6 +827,7 @@ Content:   [✓ PASS | ✗ FAIL] - {N}/{M} sections
 Values:    [✓ PASS | ⚠ WARNINGS | ✗ FAIL]
 Modes:     [✓ PASS | ⚠ Light only | ✗ FAIL] - {light|light+dark}
 Export:    [✓ PASS | ✗ FAIL]
+Integrity: [✓ PASS | ✗ FAIL]
 
 Status: [→ Complete | ⚠ Warnings: {list} | ✗ Recovery needed]
 ════════════════════════════════════════════════
@@ -731,19 +854,22 @@ multiSelect: false
 **Na succesvolle actie:**
 
 ```
-✅ THEME [AANGEMAAKT/BIJGEWERKT/VERWIJDERD]
+THEME [AANGEMAAKT/BIJGEWERKT/VERWIJDERD]
 
-Locatie: .workspace/config/THEME.md
+Locatie: .workspace/project.json (theme sectie)
 
 | Categorie | Tokens |
 |-----------|--------|
-| Colors | {N} |
-| Typography | {N} |
+| Colors | {N} (main: {n}, accent: {n}, semantic: {n}) |
+| Typography | {N} (families: {n}, sizes: {n}) |
 | Spacing | {N} |
 | Breakpoints | {N} |
+| Border Radius | {N} |
+| Shadows | {N} |
 | Modes | {light/dark/both} |
+| CSS Vars | {present/missing} |
 
-Next suggested: /frontend-page of /dev-define (met theme als context)
+Theme tokens ready in project.json voor downstream consumption.
 ```
 
 ---
@@ -767,7 +893,8 @@ Next suggested: /frontend-page of /dev-define (met theme als context)
 | ------------------------- | ---------------------------------- |
 | Permission denied         | Suggest alternative path           |
 | Disk full                 | Warn, suggest cleanup              |
-| Directory niet creëerbaar | Offer manual creation instructions |
+| Directory niet creeerbaar | Offer manual creation instructions |
+| JSON parse error          | Backup corrupt file, maak nieuw    |
 
 ### Validation Failures
 
@@ -776,7 +903,8 @@ Next suggested: /frontend-page of /dev-define (met theme als context)
 | Invalid hex code | Suggest closest valid | Show invalid, ask correction |
 | Missing section  | Add with defaults     | Ask for values               |
 | Empty value      | Use default           | Ask for value                |
-| CSS syntax error | Re-generate export    | Show error location          |
+| CSS syntax error | Re-generate cssVars   | Show error location          |
+| Invalid JSON     | Re-generate file      | Show parse error             |
 
 > **Note:** Rollback wordt afgehandeld door Claude Code's ingebouwde "Rewind" functie.
 
@@ -819,7 +947,7 @@ Bij succesvolle completion:
     "from": "frontend-theme",
     "to": "frontend-page",
     "data": {
-      "themeFile": ".workspace/config/THEME.md",
+      "themeLocation": ".workspace/project.json#theme",
       "preset": "Anthropic Style | Custom",
       "tokens": {
         "colors": 12,
@@ -827,7 +955,7 @@ Bij succesvolle completion:
         "spacing": 9
       },
       "modes": ["light", "dark"],
-      "cssExportValid": true
+      "cssVarsPresent": true
     }
   }
 }
@@ -841,25 +969,25 @@ Bij succesvolle completion:
 
 Deze skill garandeert bij completion:
 
-- `.workspace/config/THEME.md` bestaat
-- Bevat valid sections: Colors, Typography, Spacing, Breakpoints
-- CSS export section is syntactically valid
+- `.workspace/project.json` bevat een gevulde `theme` sectie
+- `theme` bevat valid sections: colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars
+- `theme.cssVars` bevat syntactisch valide CSS variables string
 - Handoff data beschikbaar in devinfo
 
-### Suggested Next
+### Consumption by Other Skills
 
-Na succesvolle theme creatie/update:
+Andere skills consumeren theme data als volgt:
 
-```
-Next suggested: /frontend-page of /dev-define (met theme als context)
-Theme tokens ready for wireframe integration.
-```
+- **CSS variables nodig:** Read `project.json` → `theme.cssVars`
+- **Structured tokens nodig:** Read `project.json` → `theme.colors`, `theme.typography`, etc.
+- **Mode-specifiek CSS:** Read `project.json` → `theme.modes.light` / `theme.modes.dark`
 
 ---
 
 ## Resources
 
-- `skills/frontend-theme/references/THEME_TEMPLATE.md` - Template voor nieuwe theme
+- `skills/frontend-theme/references/THEME_TEMPLATE.md` - Referentie voor token categorien en naming conventions
+- `skills/shared/DASHBOARD.md` - project.json schema en merge-strategie
 - `skills/shared/VALIDATION.md` - Pre/post-flight validation templates
 - `skills/shared/DEVINFO.md` - Session state tracking
 
@@ -873,6 +1001,7 @@ Dit command moet **NOOIT**:
 - Bestaande theme overschrijven zonder waarschuwing
 - Tokens raden zonder bron (config of user input)
 - Post-flight validation overslaan
+- Andere secties in project.json overschrijven (alleen `theme` muteren)
 
 Dit command moet **ALTIJD**:
 
@@ -883,3 +1012,4 @@ Dit command moet **ALTIJD**:
 - Bevestiging vragen voor destructieve acties
 - Post-flight validation uitvoeren
 - DevInfo updaten bij fase transities
+- JSON integrity check: andere secties ongewijzigd na write

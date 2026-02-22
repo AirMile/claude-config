@@ -42,16 +42,16 @@ Example triggers:
 
 1. Check if `.workspace/` folder exists
    - If folder does NOT exist → check Obsidian (step 1b below)
-2. Check if `.workspace/concept.md` exists
+2. Check if `.workspace/project.json` exists and contains a `concept` key with non-empty `content`
 3. If exists AND no inline input provided:
-   - Read the concept file
+   - Read `.workspace/project.json`, parse JSON, extract `concept.name` and `concept.content`
    - Show confirmation:
 
      ```
      CONCEPT DETECTED
 
-     File: .workspace/concept.md
-     Title: {extracted title}
+     Source: .workspace/project.json → concept
+     Title: {concept.name}
 
      Dit concept wordt gebruikt voor brainstorming.
      ```
@@ -61,15 +61,13 @@ Example triggers:
      header: "Concept Laden"
      question: "Wil je dit concept uitbreiden?"
      options:
-       - label: "Ja, brainstorm hierop (Recommended)", description: "Gebruik .workspace/concept.md"
+       - label: "Ja, brainstorm hierop (Recommended)", description: "Gebruik concept uit project.json"
        - label: "Ander concept", description: "Ik wil een ander concept plakken"
-       - label: "Chat context", description: "Brainstorm op wat er in dit gesprek is besproken"
        - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
    - If "Ja": proceed with loaded concept
    - If "Ander concept": ask user to paste input
-   - If "Chat context": process using Chat Context flow (see below)
 
 **Step 1a: Scope Check**
 
@@ -79,16 +77,16 @@ Na de concept-detectie, check ook voor bredere scope:
 2. Check of `.workspace/features/` mappen bevat
 3. Glob voor pagina-bestanden (`app/**/page.tsx`, `src/pages/**/*.tsx`)
 
-Als scope-context gevonden EN concept.md al geladen:
+Als scope-context gevonden EN concept al geladen uit project.json:
 
 ```yaml
 header: "Scope"
 question: "Waarover wil je brainstormen?"
 options:
-  - label: "Concept (Recommended)", description: "Werk met .workspace/concept.md"
+  - label: "Concept (Recommended)", description: "Werk met concept uit project.json"
   - label: "Feature uit backlog", description: "Focus op een specifieke feature"
   - label: "Pagina / UX flow", description: "Focus op layout, UX of user flow"
-  - label: "Chat context", description: "Gebruik het gesprek als input"
+  - label: "Los idee", description: "Standalone idee, niet gekoppeld aan het project"
 multiSelect: false
 ```
 
@@ -107,13 +105,21 @@ multiSelect: false
 - Laad pagina-bestand als input-context
 - Check `.workspace/thinking/{naam}.md` voor eerdere thinking output
 
+**If "Los idee":**
+
+- Negeer het geladen concept — dit idee staat los van het project
+- Vraag: "Beschrijf je idee in een paar zinnen"
+- Check `.workspace/thinking/` voor eerdere losse ideeën
+- Proceed to Step 2 with user's input
+
 **Output-pad volgt automatisch de scope:**
 
-- Scope = concept → schrijf naar `.workspace/concept.md`
+- Scope = concept → update `concept` key in `.workspace/project.json`
 - Scope = feature → schrijf naar `.workspace/features/{naam}/thinking.md`
-- Scope = pagina/UX → maak `.workspace/thinking/` aan indien nodig, schrijf naar `.workspace/thinking/{onderwerp}.md`
+- Scope = pagina/UX → schrijf naar `.workspace/thinking/{onderwerp}.md`
+- Scope = los idee → schrijf naar `.workspace/thinking/{onderwerp}.md`
 
-**Step 1b: Check Obsidian vault (if no .workspace/concept.md found)**
+**Step 1b: Check Obsidian vault (if no concept found in project.json)**
 
 If the user provided an inline description/argument:
 
@@ -145,7 +151,7 @@ If the user provided an inline description/argument:
    - If "Chat context gebruiken": process using Chat Context flow (see below)
    - If "Concept plakken": proceed to manual input below
 
-**If no concept file OR user wants different input:**
+**If no concept in project.json OR user wants different input:**
 
 1. Examine the input provided by user
 2. Determine input type:
@@ -154,7 +160,7 @@ If the user provided an inline description/argument:
    - Raw idea description → use as-is
    - Unclear/vague input → ask clarifying questions
 
-3. Use sequential thinking to analyze:
+3. Analyze:
    - What is the core idea?
    - What type of idea is this? (creative concept, product, service, etc)
    - Is there enough information to start brainstorming?
@@ -171,7 +177,6 @@ If the user provided an inline description/argument:
    options:
      - label: "Ja, dit klopt (Recommended)", description: "Start met brainstormen over dit idee"
      - label: "Aanpassen", description: "Ik wil de samenvatting bijwerken"
-     - label: "Uitleg", description: "Leg uit wat deze stap betekent"
    multiSelect: false
    ```
 
@@ -180,14 +185,14 @@ If the user provided an inline description/argument:
    ```
    [Confirmation message that we'll brainstorm about:]
 
-   > [concise idea summary]
+   [concise idea summary]
    ```
 
 **Note:** This step should be quick for `/thinking-idea` output, more thorough for other inputs.
 
 **Chat Context flow:**
 
-1. Use sequential thinking to analyze the conversation history:
+1. Analyze the conversation history:
    - What idea, concept, or topic has been discussed?
    - What are the key details, requirements, or characteristics mentioned?
    - Is there enough substance to work with?
@@ -197,7 +202,7 @@ If the user provided an inline description/argument:
    ```
    CHAT CONTEXT
 
-   > [concise summary of what was discussed in the conversation]
+   [concise summary of what was discussed in the conversation]
    ```
 
 4. Use AskUserQuestion to confirm:
@@ -219,7 +224,7 @@ If the user provided an inline description/argument:
 
 **Process:**
 
-1. Use sequential thinking to analyze:
+1. Analyze:
    - What has been explored so far? (track applied techniques)
    - What aspects of the idea need creative expansion?
    - Which unexplored directions could be valuable?
@@ -268,7 +273,7 @@ If the user provided an inline description/argument:
 
 1. Read the full details of the selected technique from `references/brainstorm-techniques.md`
 
-2. Use sequential thinking to:
+2. Analyze:
    - Understand the technique's framework
    - Formulate 4-6 specific questions based on the technique
    - Develop concrete suggestions tailored to this idea
@@ -308,7 +313,6 @@ If the user provided an inline description/argument:
 - Make questions specific to THIS idea, not generic
 - Generate concrete suggestions, not vague "what ifs"
 - Follow the technique's framework from the reference file
-- Use sequential thinking to explore deeply
 - Focus on generating variations, alternatives, and new possibilities
 - Push boundaries and explore unexpected directions
 
@@ -353,7 +357,7 @@ If the user provided an inline description/argument:
 
 **Process:**
 
-1. Use sequential thinking to determine:
+1. Determine:
    - Which techniques have been applied already
    - Which unexplored techniques are most valuable now
    - How many more techniques would be beneficial
@@ -404,8 +408,8 @@ If the user provided an inline description/argument:
 
 1. Review all insights and variations from all applied techniques
 
-2. Use sequential thinking to:
-   - Integrate the most valuable variations and insights
+2. Integrate:
+   - The most valuable variations and insights
    - Maintain coherence while incorporating improvements
    - Structure the refined idea clearly
    - Decide which elements to include based on what strengthens the idea
@@ -466,14 +470,42 @@ Vraag daarna optioneel:
 
 ```yaml
 header: "Concept"
-question: "Wil je dit ook toevoegen aan concept.md?"
+question: "Wil je dit ook toevoegen aan project.json concept?"
 options:
   - label: "Nee (Recommended)", description: "Output is opgeslagen bij de scope"
-  - label: "Ja, ook naar concept", description: "Update ook .workspace/concept.md"
+  - label: "Ja, ook naar concept", description: "Update ook concept in project.json"
 multiSelect: false
 ```
 
-If "Ja": schrijf ook naar `.workspace/concept.md`.
+If "Ja": lees `.workspace/project.json` (of maak aan), update `concept.name` en `concept.content` met de refined content, schrijf terug.
+
+**If scope = los idee (uit Step 1a):**
+
+Sla op naar `.workspace/thinking/{onderwerp}.md`:
+
+1. Maak `.workspace/thinking/` aan indien nodig
+2. Schrijf naar `.workspace/thinking/{onderwerp}.md`
+
+```
+THINKING OUTPUT SAVED
+
+File: .workspace/thinking/{onderwerp}.md
+Scope: los idee
+Applied techniques: {list of techniques used}
+```
+
+Vraag daarna:
+
+```yaml
+header: "Obsidian"
+question: "Wil je dit idee ook opslaan naar Obsidian?"
+options:
+  - label: "Nee (Recommended)", description: "Output is opgeslagen in .workspace/thinking/"
+  - label: "Ja, naar Obsidian", description: "Sla ook op als Idea note in Obsidian vault"
+multiSelect: false
+```
+
+If "Ja, naar Obsidian": volg de Obsidian save flow (zie hieronder bij "Opslaan naar Obsidian").
 
 **If scope = concept (default) of geen scope gekozen:**
 
@@ -483,21 +515,23 @@ Use AskUserQuestion:
 header: "Output"
 question: "Wat wil je met het uitgebreide concept doen?"
 options:
-  - label: "Opslaan naar concept (Recommended)", description: "Update .workspace/concept.md met uitgebreide versie"
+  - label: "Opslaan naar concept (Recommended)", description: "Update concept in project.json met uitgebreide versie"
   - label: "Opslaan naar Obsidian", description: "Opslaan als permanente Idea note in je Obsidian vault"
-  - label: "Alleen tonen", description: "Toon als markdown code block (niet opslaan)"
+  - label: "Kopieer naar clipboard", description: "Kopieer markdown naar clipboard (niet opslaan)"
 multiSelect: false
 ```
 
 **If "Opslaan naar concept":**
 
-1. Update `.workspace/concept.md` with refined content
-2. Confirm:
+1. Read `.workspace/project.json` (or create `{}` if not exists), parse JSON
+2. Set `concept.name` to the title of the refined idea and `concept.content` to the full refined markdown content
+3. Write updated JSON back to `.workspace/project.json`
+4. Confirm:
 
    ```
    CONCEPT UPDATED
 
-   File: .workspace/concept.md
+   File: .workspace/project.json → concept
    Applied techniques: {list of techniques used}
 
    Next steps:
@@ -507,9 +541,26 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
+**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+
+1. Read `.workspace/project.json` (skip als niet bestaat)
+2. Push naar `thinking` array:
+   ```json
+   {
+     "type": "brainstorm",
+     "date": "{today}",
+     "title": "{onderwerp van de brainstorm}",
+     "content": "{samenvatting van gekozen aanpak}",
+     "variants": ["{variant 1}", "{variant 2}", "..."],
+     "chosen": "{gekozen variant}",
+     "source": "/thinking-brainstorm"
+   }
+   ```
+3. Write `.workspace/project.json`
+
 **If "Opslaan naar Obsidian":**
 
-1. Also update `.workspace/concept.md` (so other skills can pick it up)
+1. Also update `concept` in `.workspace/project.json` (so other skills can pick it up)
 2. If concept was loaded from Obsidian (tracked via `obsidian_source_path`):
    - Overwrite: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
    - Update frontmatter status to `developing` via `mcp__obsidian__update_frontmatter()`
@@ -535,10 +586,10 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
-**If "Alleen tonen":**
+**If "Kopieer naar clipboard":**
 
 1. Wrap output in a code block with `markdown` language tag for copy button
-2. Display the content
+2. Display the content — user copies via the code block's copy button
 
 ---
 
@@ -552,7 +603,6 @@ multiSelect: false
 
 **Technique Selection:**
 
-- Always use sequential thinking to choose most relevant techniques
 - Show 2-3 most relevant techniques (between 2-3 based on how many are truly relevant)
 - Recommend 1-2; after 2 techniques diminishing returns are likely
 - Rank techniques with numbers: 1 = most relevant (at the top), higher numbers = less relevant
@@ -565,7 +615,6 @@ multiSelect: false
 - Make questions specific, not generic
 - Generate concrete suggestions tailored to this idea
 - Follow the technique's framework from reference file
-- Use sequential thinking to explore deeply
 - Push for unexpected directions and variations
 - Make variations actionable, not vague
 
@@ -626,12 +675,11 @@ multiSelect: false
 - One technique at a time: Step 2 → Step 3 → Step 4 → Step 5 → repeat or finish
 - Track: techniques_applied (list of completed techniques)
 
-**Sequential thinking usage:**
+### Terminal Formatting
 
-- Use for input analysis (Step 1)
-- Use for technique selection (Step 2)
-- Use for technique application (Step 3)
-- Use for final output generation (Step 6)
+- NEVER use blockquote syntax (`>`) for displaying content — causes unreadable white background in dark terminals
+- NEVER use inline code backticks for emphasis on regular words — use **bold** or plain text
+- Backticks only for actual code, file paths, and command references
 
 ### Language
 

@@ -43,16 +43,16 @@ Example triggers:
 
 1. Check if `.workspace/` folder exists
    - If folder does NOT exist → check Obsidian (step 1b below)
-2. Check if `.workspace/concept.md` exists
-3. If exists AND no inline input provided:
-   - Read the concept file
+2. Check if `.workspace/project.json` exists and contains a `concept` key
+3. If exists AND has concept AND no inline input provided:
+   - Read `.workspace/project.json`, parse JSON, extract `concept.name` and `concept.content`
    - Show confirmation:
 
      ```
      CONCEPT DETECTED
 
-     File: .workspace/concept.md
-     Title: {extracted title}
+     Source: .workspace/project.json → concept
+     Title: {concept.name}
 
      Dit concept wordt gebruikt voor analyse.
      ```
@@ -62,15 +62,13 @@ Example triggers:
      header: "Concept Laden"
      question: "Wil je dit concept analyseren?"
      options:
-       - label: "Ja, analyseer dit (Recommended)", description: "Gebruik .workspace/concept.md"
+       - label: "Ja, analyseer dit (Recommended)", description: "Gebruik concept uit project.json"
        - label: "Ander concept", description: "Ik wil een ander concept plakken"
-       - label: "Chat context", description: "Analyseer wat er in dit gesprek is besproken"
        - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
    - If "Ja": proceed with loaded concept
    - If "Ander concept": ask user to paste input
-   - If "Chat context": process using Chat Context flow (see below)
 
 **Step 1a: Scope Check**
 
@@ -80,16 +78,16 @@ Na de concept-detectie, check ook voor bredere scope:
 2. Check of `.workspace/features/` mappen bevat
 3. Glob voor pagina-bestanden (`app/**/page.tsx`, `src/pages/**/*.tsx`)
 
-Als scope-context gevonden EN concept.md al geladen:
+Als scope-context gevonden EN concept al geladen:
 
 ```yaml
 header: "Scope"
 question: "Waarover wil je analyseren?"
 options:
-  - label: "Concept (Recommended)", description: "Werk met .workspace/concept.md"
+  - label: "Concept (Recommended)", description: "Werk met concept uit project.json"
   - label: "Feature uit backlog", description: "Focus op een specifieke feature"
   - label: "Pagina / UX flow", description: "Focus op layout, UX of user flow"
-  - label: "Chat context", description: "Gebruik het gesprek als input"
+  - label: "Los idee", description: "Standalone idee, niet gekoppeld aan het project"
 multiSelect: false
 ```
 
@@ -108,13 +106,21 @@ multiSelect: false
 - Laad pagina-bestand als input-context
 - Check `.workspace/thinking/{naam}.md` voor eerdere thinking output
 
+**If "Los idee":**
+
+- Negeer het geladen concept — dit idee staat los van het project
+- Vraag: "Beschrijf je idee in een paar zinnen"
+- Check `.workspace/thinking/` voor eerdere losse ideeën
+- Proceed with user's input
+
 **Output-pad volgt automatisch de scope:**
 
-- Scope = concept → schrijf naar `.workspace/concept.md`
+- Scope = concept → schrijf naar `.workspace/project.json` (concept sectie)
 - Scope = feature → schrijf naar `.workspace/features/{naam}/thinking.md`
-- Scope = pagina/UX → maak `.workspace/thinking/` aan indien nodig, schrijf naar `.workspace/thinking/{onderwerp}.md`
+- Scope = pagina/UX → schrijf naar `.workspace/thinking/{onderwerp}.md`
+- Scope = los idee → schrijf naar `.workspace/thinking/{onderwerp}.md`
 
-**Step 1b: Check Obsidian vault (if no .workspace/concept.md found)**
+**Step 1b: Check Obsidian vault (if no concept in .workspace/project.json found)**
 
 If the user provided an inline description/argument:
 
@@ -169,7 +175,7 @@ If the user provided an inline description/argument:
      ```
    - If no frontmatter found: start with empty list
 
-4. Use sequential thinking to analyze:
+4. Analyze:
    - What is the core idea?
    - What type of idea is this? (creative concept, product, service, etc)
    - Is there enough information to start analysis?
@@ -192,7 +198,7 @@ If the user provided an inline description/argument:
    ```
    [Confirmation message that we'll analyze:]
 
-   > [concise idea summary]
+   [concise idea summary]
 
    Type: [creative concept / product / service / etc]
    ```
@@ -202,7 +208,6 @@ If the user provided an inline description/argument:
      - label: "Correct, start analysis (Recommended)", description: "Begin with technique selection"
      - label: "Adjust summary", description: "Let me refine the idea description"
      - label: "Add more context", description: "I have additional details to share"
-     - label: "Explain question", description: "Explain what this means"
    multiSelect: false
    ```
 
@@ -212,7 +217,7 @@ If the user provided an inline description/argument:
 
 **Chat Context flow:**
 
-1. Use sequential thinking to analyze the conversation history:
+1. Analyze the conversation history:
    - What idea, concept, or topic has been discussed?
    - What are the key details, requirements, or characteristics mentioned?
    - Is there enough substance to work with?
@@ -222,7 +227,7 @@ If the user provided an inline description/argument:
    ```
    CHAT CONTEXT
 
-   > [concise summary of what was discussed in the conversation]
+   [concise summary of what was discussed in the conversation]
    ```
 
 4. Use AskUserQuestion to confirm:
@@ -244,7 +249,7 @@ If the user provided an inline description/argument:
 
 **Process:**
 
-1. Use sequential thinking to determine:
+1. Determine:
    - Is this a creative concept? (game, story, art, music, interactive experience)
    - Is this a product idea? (app, service, business, SaaS, platform)
    - Is this hybrid? (both creative and product aspects)
@@ -256,7 +261,7 @@ If the user provided an inline description/argument:
 
 3. Read the relevant reference files
 
-4. Use sequential thinking to filter and rank techniques:
+4. Filter and rank techniques:
    - For each technique, determine if it's actually relevant to THIS specific idea
    - Remove techniques that don't apply (e.g., Narrative for non-narrative games)
    - Which technique will reveal the most critical weaknesses?
@@ -303,7 +308,7 @@ If the user provided an inline description/argument:
    - Use the research findings to make your questions more concrete, informed, and targeted
    - Example: instead of "Is this technically feasible?", ask "Library X supports Y but has limitation Z — how do you want to handle that?"
 
-3. Use sequential thinking to:
+3. Analyze:
    - Understand the technique's framework
    - Incorporate Context7 research findings into your analysis
    - Formulate 4-6 specific questions based on the technique
@@ -348,7 +353,6 @@ If the user provided an inline description/argument:
 - Make questions specific to THIS idea, not generic
 - Identify real problems, not just surface-level concerns
 - Follow the technique's framework from the reference file
-- Use sequential thinking to deeply analyze from that perspective
 - Be rigorous - apply technical and practical scrutiny
 - Challenge assumptions rather than accepting them
 - Push for concrete solutions or decisions
@@ -398,7 +402,7 @@ If the user provided an inline description/argument:
 
 **Process:**
 
-1. Use sequential thinking to rank remaining relevant techniques:
+1. Rank remaining relevant techniques:
    - Which techniques haven't been applied yet AND are relevant?
    - What weaknesses still need examination?
    - Which technique would add most value now?
@@ -445,7 +449,7 @@ If the user provided an inline description/argument:
 
 1. Review all weaknesses, assumptions, and improvements from all applied techniques
 
-2. Use sequential thinking to:
+2. Analyze and integrate:
    - Address identified problems
    - Strengthen weak assumptions
    - Incorporate improvements and solutions
@@ -500,14 +504,42 @@ Vraag daarna optioneel:
 
 ```yaml
 header: "Concept"
-question: "Wil je dit ook toevoegen aan concept.md?"
+question: "Wil je dit ook toevoegen aan project.json concept?"
 options:
   - label: "Nee (Recommended)", description: "Output is opgeslagen bij de scope"
-  - label: "Ja, ook naar concept", description: "Update ook .workspace/concept.md"
+  - label: "Ja, ook naar concept", description: "Update ook project.json concept sectie"
 multiSelect: false
 ```
 
-If "Ja": schrijf ook naar `.workspace/concept.md`.
+If "Ja": Read `.workspace/project.json` (or create if not exists), parse JSON, set `concept.name` and `concept.content` with the refined content, Write back.
+
+**If scope = los idee (uit Step 1a):**
+
+Sla op naar `.workspace/thinking/{onderwerp}.md`:
+
+1. Maak `.workspace/thinking/` aan indien nodig
+2. Schrijf naar `.workspace/thinking/{onderwerp}.md`
+
+```
+THINKING OUTPUT SAVED
+
+File: .workspace/thinking/{onderwerp}.md
+Scope: los idee
+Applied techniques: {list of techniques used}
+```
+
+Vraag daarna:
+
+```yaml
+header: "Obsidian"
+question: "Wil je dit idee ook opslaan naar Obsidian?"
+options:
+  - label: "Nee (Recommended)", description: "Output is opgeslagen in .workspace/thinking/"
+  - label: "Ja, naar Obsidian", description: "Sla ook op als Idea note in Obsidian vault"
+multiSelect: false
+```
+
+If "Ja, naar Obsidian": volg de Obsidian save flow (zie hieronder bij "Opslaan naar Obsidian").
 
 **If scope = concept (default) of geen scope gekozen:**
 
@@ -517,21 +549,21 @@ Use AskUserQuestion:
 header: "Output"
 question: "Wat wil je met het verfijnde concept doen?"
 options:
-  - label: "Opslaan naar concept (Recommended)", description: "Update .workspace/concept.md met verfijnde versie"
+  - label: "Opslaan naar concept (Recommended)", description: "Update project.json concept sectie met verfijnde versie"
   - label: "Opslaan naar Obsidian", description: "Opslaan als permanente Idea note in je Obsidian vault"
-  - label: "Alleen tonen", description: "Toon als markdown code block (niet opslaan)"
+  - label: "Kopieer naar clipboard", description: "Kopieer markdown naar clipboard (niet opslaan)"
 multiSelect: false
 ```
 
 **If "Opslaan naar concept":**
 
-1. Update `.workspace/concept.md` with refined content
+1. Read `.workspace/project.json` (or create `{}` if not exists), parse JSON, set `concept.name` (extract title from refined content) and `concept.content` (full refined markdown), Write back
 2. Confirm:
 
    ```
    CONCEPT UPDATED
 
-   File: .workspace/concept.md
+   Source: .workspace/project.json → concept
    Applied techniques: {list of techniques used}
 
    Next steps:
@@ -541,9 +573,24 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
+**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+
+1. Read `.workspace/project.json` (skip als niet bestaat)
+2. Push naar `thinking` array:
+   ```json
+   {
+     "type": "critique",
+     "date": "{today}",
+     "title": "Critique: {onderwerp}",
+     "content": "{samenvatting: sterke punten, zwakke punten, belangrijkste suggesties}",
+     "source": "/thinking-critique"
+   }
+   ```
+3. Write `.workspace/project.json`
+
 **If "Opslaan naar Obsidian":**
 
-1. Also update `.workspace/concept.md` (so other skills can pick it up)
+1. Also update `.workspace/project.json` concept section (so other skills can pick it up)
 2. If concept was loaded from Obsidian (tracked via `obsidian_source_path`):
    - Overwrite: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
    - Update frontmatter status to `developing` via `mcp__obsidian__update_frontmatter()`
@@ -569,10 +616,10 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
-**If "Alleen tonen":**
+**If "Kopieer naar clipboard":**
 
 1. Wrap output in a code block with `markdown` language tag for copy button
-2. Display the content
+2. Display the content — user copies via the code block's copy button
 
 ---
 
@@ -596,7 +643,6 @@ multiSelect: false
 - Make questions specific to THIS idea, not generic
 - Identify real problems, not just surface-level concerns
 - Follow the technique's framework from the reference file
-- Use sequential thinking to deeply analyze from that perspective
 - Be rigorous - apply technical and practical scrutiny
 - Challenge assumptions rather than accepting them
 - Push for concrete solutions or decisions
@@ -622,3 +668,9 @@ multiSelect: false
 - NO changelog or "what changed"
 - Make it look like a fresh, standalone idea document
 - Integrate improvements naturally
+
+### Terminal Formatting
+
+- NEVER use blockquote syntax (`>`) for displaying content — causes unreadable white background in dark terminals
+- NEVER use inline code backticks for emphasis on regular words — use **bold** or plain text
+- Backticks only for actual code, file paths, and command references

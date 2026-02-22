@@ -28,16 +28,16 @@ The output is a structured markdown document that can be used as input for `/thi
 
 1. Check if `.workspace/` folder exists
    - If folder does NOT exist → proceed to Step 1b (source selection)
-2. Check if `.workspace/concept.md` exists
-3. If exists AND no inline description provided:
-   - Read the concept file
+2. Check if `.workspace/project.json` exists and contains a `concept` key with non-empty `content`
+3. If concept exists AND no inline description provided:
+   - Read `.workspace/project.json`, parse JSON, extract `concept.name` and `concept.content`
    - Show confirmation:
 
      ```
      EXISTING CONCEPT DETECTED
 
-     File: .workspace/concept.md
-     Title: {extracted title}
+     Source: .workspace/project.json → concept
+     Title: {concept.name}
 
      Er bestaat al een concept.
      ```
@@ -49,7 +49,6 @@ The output is a structured markdown document that can be used as input for `/thi
      options:
        - label: "Bewerken (Recommended)", description: "Pas het bestaande concept aan"
        - label: "Nieuw concept", description: "Begin opnieuw met een nieuw idee"
-       - label: "Chat context", description: "Gebruik wat er in dit gesprek is besproken"
        - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
@@ -60,8 +59,6 @@ The output is a structured markdown document that can be used as input for `/thi
    - **If "Nieuw concept":**
      - Ignore existing file (will be overwritten on save)
      - Proceed with normal flow below
-   - **If "Chat context":**
-     - Process using Chat Context flow (see below)
 
 **Step 1a: Scope Check**
 
@@ -71,16 +68,16 @@ Na de concept-detectie, check ook voor bredere scope:
 2. Check of `.workspace/features/` mappen bevat
 3. Glob voor pagina-bestanden (`app/**/page.tsx`, `src/pages/**/*.tsx`)
 
-Als scope-context gevonden EN concept.md al geladen:
+Als scope-context gevonden EN project.json concept al geladen:
 
 ```yaml
 header: "Scope"
 question: "Waarover wil je nadenken?"
 options:
-  - label: "Concept (Recommended)", description: "Werk met .workspace/concept.md"
+  - label: "Concept (Recommended)", description: "Werk met project.json concept"
   - label: "Feature uit backlog", description: "Focus op een specifieke feature"
   - label: "Pagina / UX flow", description: "Focus op layout, UX of user flow"
-  - label: "Chat context", description: "Gebruik het gesprek als input"
+  - label: "Los idee", description: "Standalone idee, niet gekoppeld aan het project"
 multiSelect: false
 ```
 
@@ -99,11 +96,19 @@ multiSelect: false
 - Laad pagina-bestand als input-context
 - Check `.workspace/thinking/{naam}.md` voor eerdere thinking output
 
+**If "Los idee":**
+
+- Negeer het geladen concept — dit idee staat los van het project
+- Vraag: "Beschrijf je idee in een paar zinnen"
+- Check `.workspace/thinking/` voor eerdere losse ideeën
+- Proceed to Step 2 with user's input
+
 **Output-pad volgt automatisch de scope:**
 
-- Scope = concept → schrijf naar `.workspace/concept.md`
+- Scope = concept → schrijf naar `.workspace/project.json` onder de `concept` key
 - Scope = feature → schrijf naar `.workspace/features/{naam}/thinking.md`
-- Scope = pagina/UX → maak `.workspace/thinking/` aan indien nodig, schrijf naar `.workspace/thinking/{onderwerp}.md`
+- Scope = pagina/UX → schrijf naar `.workspace/thinking/{onderwerp}.md`
+- Scope = los idee → schrijf naar `.workspace/thinking/{onderwerp}.md`
 
 **Step 1b: Source selection (if no concept found)**
 
@@ -115,8 +120,7 @@ Use AskUserQuestion:
 header: "Bron"
 question: "Waar wil je beginnen?"
 options:
-  - label: "Todoist Ideas laden (Recommended)", description: "Kies een idee uit je Todoist Ideas project"
-  - label: "Chat context gebruiken", description: "Gebruik wat er in dit gesprek is besproken als startpunt"
+  - label: "Chat context gebruiken (Recommended)", description: "Gebruik wat er in dit gesprek is besproken als startpunt"
   - label: "Nieuw idee typen", description: "Beschrijf een nieuw idee"
   - label: "Obsidian zoeken", description: "Zoek een bestaand idee in je Obsidian vault"
 multiSelect: false
@@ -125,29 +129,6 @@ multiSelect: false
 **If "Chat context gebruiken":**
 
 Process using Chat Context flow (see below).
-
-**If "Todoist Ideas laden":**
-
-1. Fetch tasks: `mcp__todoist__get_tasks_list(project_id="2362341183")`
-2. Present tasks using AskUserQuestion:
-
-   ```yaml
-   header: "Todoist Idee"
-   question: "Welk idee wil je uitwerken?"
-   options:
-     - label: "{task 1 name}", description: "{description preview or label}"
-     - label: "{task 2 name}", description: "{description preview or label}"
-     - label: "{task 3 name}", description: "{description preview or label}"
-     - label: "{task 4 name}", description: "{description preview or label}"
-   multiSelect: false
-   ```
-
-   - Show max 4 tasks at a time. If more exist, pick the 4 most recent tasks.
-   - If user selects "Other", show next batch or let them type a search term.
-
-3. Load selected task: use task name as idea title, task description as initial context
-4. Track `todoist_source_task_id` for later closing the task after completion
-5. Proceed to Step 2 with loaded context
 
 **If "Nieuw idee typen":**
 Ask: "Wat is je idee? Beschrijf het in 1-2 zinnen."
@@ -186,13 +167,11 @@ Ask: "Wat is je idee? Beschrijf het in 1-2 zinnen."
      multiSelect: false
      ```
    - **If "Ja":** Read the note with `mcp__obsidian__read_note()`, load as starting context, track `obsidian_source_path` for later save-back
-3. Also search Todoist for matching tasks: `mcp__todoist__get_tasks_list(filter="search: {argument}", project_id="2362341183")`
-   - If match found: show "Er staat een vergelijkbaar idee in Todoist: **{task name}**" and offer to load it (with description as extra context)
-4. If no matches anywhere: acknowledge briefly and proceed to Step 2.
+3. If no matches anywhere: acknowledge briefly and proceed to Step 2.
 
 **Chat Context flow:**
 
-1. Use sequential thinking to analyze the conversation history:
+1. Analyze the conversation history:
    - What idea, concept, or topic has been discussed?
    - What are the key details, requirements, or characteristics mentioned?
    - Is there enough substance to work with?
@@ -202,7 +181,7 @@ Ask: "Wat is je idee? Beschrijf het in 1-2 zinnen."
    ```
    CHAT CONTEXT
 
-   > [concise summary of what was discussed in the conversation]
+   [concise summary of what was discussed in the conversation]
    ```
 
 4. Use AskUserQuestion to confirm:
@@ -225,11 +204,11 @@ Develop the idea through rounds of concrete, clickable questions. Rounds are sug
 **Setup:**
 
 1. Determine idea type (creative concept, product, service, etc)
-2. Use sequential thinking to plan questions for the first round
+2. Plan questions for the first round
 
 **Ronde 1 - Fundament (3-4 vragen parallel):**
 
-Use sequential thinking to formulate 3-4 fundamental questions about the idea. Present ALL questions in a single message, each as a separate AskUserQuestion:
+Formulate 3-4 fundamental questions about the idea. Present ALL questions in a single message, each as a separate AskUserQuestion:
 
 ```yaml
 # Question 1
@@ -267,7 +246,7 @@ options:
 multiSelect: false
 ```
 
-**Note:** The examples above are templates. Every question and option MUST be specific to THIS idea. Use sequential thinking to derive concrete, relevant options from the idea context.
+**Note:** The examples above are templates. Every question and option MUST be specific to THIS idea. Derive concrete, relevant options from the idea context.
 
 **After each round**, use AskUserQuestion:
 
@@ -323,7 +302,6 @@ Same pattern: present the "Verdieping" AskUserQuestion after each round. As roun
      - label: "Klopt, genereer output (Recommended)", description: "Samenvatting is correct, ga door naar markdown output"
      - label: "Aanpassen", description: "Ik wil iets wijzigen of toevoegen"
      - label: "Opnieuw samenvatten", description: "Maak een nieuwe samenvatting"
-     - label: "Explain question", description: "Leg uit wat er met de samenvatting gebeurt"
    multiSelect: false
    ```
 4. Incorporate feedback if needed
@@ -386,14 +364,41 @@ Vraag daarna optioneel:
 
 ```yaml
 header: "Concept"
-question: "Wil je dit ook toevoegen aan concept.md?"
+question: "Wil je dit ook toevoegen aan project.json concept?"
 options:
   - label: "Nee (Recommended)", description: "Output is opgeslagen bij de scope"
-  - label: "Ja, ook naar concept", description: "Update ook .workspace/concept.md"
+  - label: "Ja, ook naar concept", description: "Update ook project.json concept"
 multiSelect: false
 ```
 
-If "Ja": schrijf ook naar `.workspace/concept.md`.
+If "Ja": lees `.workspace/project.json` (of maak aan als niet bestaat), parse JSON, set `concept.name` (H1 titel) en `concept.content` (volledige markdown), schrijf terug.
+
+**If scope = los idee (uit Step 1a):**
+
+Sla op naar `.workspace/thinking/{onderwerp}.md`:
+
+1. Maak `.workspace/thinking/` aan indien nodig
+2. Schrijf naar `.workspace/thinking/{onderwerp}.md`
+
+```
+THINKING OUTPUT SAVED
+
+File: .workspace/thinking/{onderwerp}.md
+Scope: los idee
+```
+
+Vraag daarna:
+
+```yaml
+header: "Obsidian"
+question: "Wil je dit idee ook opslaan naar Obsidian?"
+options:
+  - label: "Nee (Recommended)", description: "Output is opgeslagen in .workspace/thinking/"
+  - label: "Ja, naar Obsidian", description: "Sla ook op als Idea note in Obsidian vault"
+multiSelect: false
+```
+
+If "Ja, naar Obsidian": volg de Obsidian save flow (zie hieronder bij "Opslaan naar Obsidian").
 
 **If scope = concept (default) of geen scope gekozen:**
 
@@ -403,22 +408,25 @@ Use AskUserQuestion:
 header: "Output"
 question: "Wat wil je met het concept doen?"
 options:
-  - label: "Opslaan naar concept (Recommended)", description: "Opslaan naar .workspace/concept.md voor verder gebruik"
+  - label: "Opslaan naar concept (Recommended)", description: "Opslaan naar project.json concept voor verder gebruik"
   - label: "Opslaan naar Obsidian", description: "Opslaan als permanente Idea note in je Obsidian vault"
-  - label: "Alleen tonen", description: "Toon als markdown code block (niet opslaan)"
+  - label: "Kopieer naar clipboard", description: "Kopieer markdown naar clipboard (niet opslaan)"
 multiSelect: false
 ```
 
 **If "Opslaan naar concept":**
 
 1. Create `.workspace/` folder if it doesn't exist
-2. Write content to `.workspace/concept.md`
-3. Confirm:
+2. Read `.workspace/project.json` if it exists (otherwise start with `{}`), parse JSON
+3. Set `concept.name` to the H1 title, set `concept.content` to the full markdown output
+4. Write the updated JSON back to `.workspace/project.json`
+5. Confirm:
 
    ```
    CONCEPT SAVED
 
-   File: .workspace/concept.md
+   File: .workspace/project.json → concept
+   Name: {concept.name}
 
    Next steps:
    - /thinking-critique - Kritisch analyseren en versterken
@@ -427,10 +435,25 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
+**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+
+1. Read `.workspace/project.json` (skip als niet bestaat)
+2. Push naar `thinking` array:
+   ```json
+   {
+     "type": "idea",
+     "date": "{today}",
+     "title": "{concept titel}",
+     "content": "{samenvatting van het idee in 2-3 zinnen}",
+     "source": "/thinking-idea"
+   }
+   ```
+3. Write `.workspace/project.json`
+
 **If "Opslaan naar Obsidian":**
 
-1. Also save to `.workspace/concept.md` (so brainstorm/critique can pick it up)
-2. Detect category from content using sequential thinking:
+1. Also save to `.workspace/project.json` concept (so brainstorm/critique can pick it up): read existing JSON (or `{}`), set `concept.name` and `concept.content`, write back
+2. Detect category from content:
    - Game-related → `game`
    - App/service/tool → `app`
    - Story/narrative/writing → `story`
@@ -477,57 +500,10 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
-**If "Alleen tonen":**
+**If "Kopieer naar clipboard":**
 
 1. Wrap output in a code block with `markdown` language tag for copy button
-2. Display the content
-
-### Step 6: Todoist
-
-After saving/showing the output, handle Todoist integration based on the idea's origin.
-
-**If `todoist_source_task_id` IS set (idea loaded from Todoist):**
-
-Use AskUserQuestion:
-
-```yaml
-header: "Todoist"
-question: "Het idee is uitgewerkt. Wat wil je met de Todoist taak doen?"
-options:
-  - label: "Afsluiten (Recommended)", description: "Markeer de Todoist taak als voltooid"
-  - label: "Open laten", description: "Laat de taak open in Todoist"
-multiSelect: false
-```
-
-- **If "Afsluiten":** `mcp__todoist__close_tasks(task_id=todoist_source_task_id)`
-- **If "Open laten":** no action
-
-**If `todoist_source_task_id` is NOT set (idea did not come from Todoist):**
-
-Use AskUserQuestion:
-
-```yaml
-header: "Todoist"
-question: "Wil je een Todoist task aanmaken in het Ideas project?"
-options:
-  - label: "Ja, task aanmaken (Recommended)", description: "Maak een task aan in het Ideas project met de titel en beschrijving"
-  - label: "Nee, overslaan", description: "Geen Todoist task aanmaken"
-multiSelect: false
-```
-
-- **If "Ja, task aanmaken":**
-  1. Extract the H1 title and short description (1-2 sentences) from the generated concept
-  2. Create task: `mcp__todoist__create_tasks(items=[{content: "{title}", description: "{short description}", project_id: "2362341183"}])`
-  3. Confirm:
-
-     ```
-     TODOIST TASK CREATED
-
-     Task: {title}
-     Project: Ideas
-     ```
-
-- **If "Nee, overslaan":** no action
+2. Display the content — user copies via the code block's copy button
 
 ---
 
@@ -547,6 +523,12 @@ multiSelect: false
 - `multiSelect: true` when multiple answers are valid
 - Up to 4 questions parallel per round
 - Recommended option = most contextually likely answer
+
+### Terminal Formatting
+
+- NEVER use blockquote syntax (`>`) for displaying content — causes unreadable white background in dark terminals
+- NEVER use inline code backticks for emphasis on regular words — use **bold** or plain text
+- Backticks only for actual code, file paths, and command references
 
 ### Language
 

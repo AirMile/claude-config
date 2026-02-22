@@ -1,13 +1,13 @@
 ---
 name: thinking-decide
 description: >-
-  Structured decision-making framework using Sequential Thinking MCP. Invoke
-  when user needs help weighing trade-offs between options, comparing pros and
-  cons, or making a strategic choice between approaches. Ideal for architecture
-  decisions, technology choices, and any significant afweging where multiple
-  valid options exist. Surfaces assumptions, generates alternatives, steelmans
-  the strongest counterargument, and delivers a confidence-rated recommendation.
-  Not for trivial choices like naming or formatting.
+  Structured decision-making framework. Invoke when user needs help weighing
+  trade-offs between options, comparing pros and cons, or making a strategic
+  choice between approaches. Ideal for architecture decisions, technology
+  choices, and any significant afweging where multiple valid options exist.
+  Surfaces assumptions, generates alternatives, steelmans the strongest
+  counterargument, and delivers a confidence-rated recommendation. Not for
+  trivial choices like naming or formatting.
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -16,7 +16,7 @@ metadata:
 
 # Decide
 
-Structured decision-making for important choices. Forces explicit reasoning through 4 steps via Sequential Thinking MCP: surface assumptions, generate alternatives, steelman the counterargument, then recommend.
+Structured decision-making for important choices. Forces explicit reasoning through 4 steps: surface assumptions, generate alternatives, steelman the counterargument, then recommend.
 
 **Trigger:** `/thinking-decide` or `/thinking-decide [question or decision]`
 
@@ -40,7 +40,7 @@ NOT for: trivial choices, code formatting, simple bug fixes.
 
 **If no argument** (`/thinking-decide`):
 
-- Analyze the conversation history using sequential thinking:
+- Analyze the conversation history:
   - What decision or question is being discussed?
   - What context has been established?
   - What constraints exist?
@@ -50,7 +50,7 @@ NOT for: trivial choices, code formatting, simple bug fixes.
   ```
   DECISION DETECTED
 
-  > [concise decision statement from conversation]
+  [concise decision statement from conversation]
   ```
 
 - Use AskUserQuestion to confirm:
@@ -66,135 +66,74 @@ NOT for: trivial choices, code formatting, simple bug fixes.
 
 - If "Aanpassen": ask user for revised decision statement, then proceed.
 
-### Step 2: Sequential Thinking — 4 Steps
+### Step 2: Structured Analysis — 4 Steps
 
-Execute exactly 4 Sequential Thinking calls. Each step has a specific purpose and constraints.
-
-**CRITICAL:** Use the `mcp__sequentialthinking__sequentialthinking` tool for each step. Do NOT skip steps or combine them.
+Analyze the decision through exactly 4 steps. Each step has a specific purpose. Do NOT skip steps or combine them.
 
 ---
 
-**Step 2a: ASSUMPTIONS (thoughtNumber=1, totalThoughts=4)**
+**Step 2a: ASSUMPTIONS**
 
-Call Sequential Thinking with:
+Analyze:
 
-```
-thought: "AANNAMES — Decision: [decision statement]
+- What assumptions am I making about what the user actually wants (vs what they said)?
+- What assumptions about the context and constraints?
+- What assumptions about feasible solutions and priorities?
+- What information do I have vs what am I filling in?
 
-What assumptions am I making about:
-- What the user actually wants (vs what they said)
-- The context and constraints
-- What solutions are feasible
-- What the priorities are
-- What information I have vs what I'm filling in
+List at least 3 explicit assumptions. For each, note whether it's validated or unvalidated.
 
-Explicit assumptions:
-1. [assumption 1]
-2. [assumption 2]
-3. [assumption 3]
-...
-
-Which of these are validated vs unvalidated?"
-
-thoughtNumber: 1
-totalThoughts: 4
-nextThoughtNeeded: true
-```
-
-**Quality check:** The output must contain at least 3 explicit assumptions. If fewer, the decision may be too narrow — reconsider the framing.
+**Quality check:** If fewer than 3 assumptions, the decision may be too narrow — reconsider the framing.
 
 ---
 
-**Step 2b: ALTERNATIVES (thoughtNumber=2, totalThoughts=4)**
+**Step 2b: ALTERNATIVES**
 
-Call Sequential Thinking with:
+Generate genuinely different approaches:
 
-```
-thought: "ALTERNATIEVEN — Generate genuinely different approaches.
-
-Rules:
 - Minimum 3 alternatives
-- Must include 'do nothing / status quo' as an option
+- Must include "do nothing / status quo" as an option
 - Alternatives must be DIFFERENT directions, not variations of the same approach
 - For each: 1 sentence description + key trade-off
 
-Alternatives:
-1. [approach] — Trade-off: [what you gain vs lose]
-2. [approach] — Trade-off: [what you gain vs lose]
-3. [approach] — Trade-off: [what you gain vs lose]
-4. Do nothing / status quo — Trade-off: [what you gain vs lose]
-
-Which alternative seems strongest at first glance? (This becomes the target for Step 3)"
-
-thoughtNumber: 2
-totalThoughts: 4
-nextThoughtNeeded: true
-```
-
 **Quality check:** If all alternatives are variations of the same approach (e.g., "use library A" vs "use library B" vs "use library C"), push for a structurally different option (e.g., "build custom" or "avoid the problem entirely").
+
+Identify which alternative seems strongest at first glance — this becomes the target for Step 2c.
 
 ---
 
-**Step 2c: STEELMAN (thoughtNumber=3, totalThoughts=4)**
+**Step 2c: STEELMAN**
 
-Call Sequential Thinking with:
+Construct the strongest possible case AGAINST the preferred alternative from step 2b.
 
-```
-thought: "STAALMAN — The strongest case AGAINST [preferred alternative from step 2].
+This is NOT a weak objection to dismiss. This is the strongest possible argument someone smart and informed could make against this choice. Include concrete scenarios where it fails, hidden costs, second-order effects, or fundamental flaws in the reasoning.
 
-This is NOT a weak objection to dismiss. This is the strongest possible argument someone smart and informed could make against this choice.
+Rate the severity:
 
-The steelman argument:
-[Construct the most compelling case against the preferred option. Include concrete scenarios where it fails, hidden costs, second-order effects, or fundamental flaws in the reasoning.]
-
-How serious is this counterargument?
 - Dealbreaker: fundamentally undermines the approach
 - Significant: real concern that needs mitigation
 - Manageable: valid but addressable
 
-If dealbreaker: reconsider which alternative is actually best."
-
-thoughtNumber: 3
-totalThoughts: 4
-nextThoughtNeeded: true
-```
+If dealbreaker: reconsider which alternative is actually best.
 
 **Quality check:** If the steelman is weak or easily dismissed, it's not a real steelman. Push harder. A good steelman makes you genuinely uncomfortable with the preferred option.
 
 ---
 
-**Step 2d: RECOMMENDATION (thoughtNumber=4, totalThoughts=4)**
+**Step 2d: RECOMMENDATION**
 
-Call Sequential Thinking with:
+Based on assumptions (step 2a), alternatives (step 2b), and the steelman (step 2c), determine:
 
-```
-thought: "AANBEVELING — Based on assumptions (step 1), alternatives (step 2), and the steelman (step 3):
-
-Recommended approach: [choice]
-
-Why this over alternatives:
-- [reason 1, referencing specific trade-offs]
-- [reason 2]
-
-Honest trade-offs:
-- We accept: [downside 1]
-- We accept: [downside 2]
-
-Unvalidated assumptions to check:
-- [assumption from step 1 that could change the recommendation]
-
-Confidence: [High/Medium/Low] — [1 sentence why]"
-
-thoughtNumber: 4
-totalThoughts: 4
-nextThoughtNeeded: false
-```
+- Recommended approach and why this over alternatives (reference specific trade-offs)
+- Honest trade-offs we accept
+- Unvalidated assumptions that could change the recommendation
+- Confidence: High/Medium/Low with 1-sentence rationale
 
 ---
 
 ### Step 3: Present Output
 
-After all 4 Sequential Thinking steps complete, present a compact summary:
+After completing all 4 analysis steps, present a compact summary:
 
 ```
 THINK: [decision statement]
@@ -237,31 +176,50 @@ multiSelect: false
 
 - "Akkoord" → proceed with recommendation, continue conversation
 - "Ander alternatief" → ask which one, briefly explain implications, proceed
-- "Dieper graven" → ask which point, use additional Sequential Thinking steps (thoughtNumber=5+, set needsMoreThoughts=true) to explore
+- "Dieper graven" → ask which point, analyze further in depth
+
+**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+
+1. Read `.workspace/project.json` (skip als niet bestaat)
+2. Push naar `thinking` array:
+   ```json
+   {
+     "type": "decision",
+     "date": "{today}",
+     "title": "{beslissing titel}",
+     "content": "{samenvatting van de analyse}",
+     "options": ["{optie 1}", "{optie 2}", "..."],
+     "chosen": "{gekozen optie}",
+     "rationale": "{waarom deze keuze, 1-2 zinnen}",
+     "source": "/thinking-decide"
+   }
+   ```
+3. Write `.workspace/project.json`
 
 ## Best Practices
 
 ### Quality Over Speed
 
-- Each Sequential Thinking step should contain real analysis, not template-filling
+- Each analysis step should contain real analysis, not template-filling
 - If a step produces shallow output, the skill is not adding value — be rigorous
 - The steelman step is the most important — if it's weak, the whole exercise is theater
 
-### When to Use Branching
+### When to Revise
 
-- If step 2 produces 2+ equally strong alternatives, use `branchFromThought: 2` to explore each
-- If the steelman (step 3) is a dealbreaker, use `isRevision: true, revisesThought: 2` to reconsider alternatives
-
-### When to Use Revision
-
-- If step 3 reveals the preferred option from step 2 is fundamentally flawed
-- If step 4's confidence is "Low" — revise step 2 to find better alternatives
+- If step 2c reveals the preferred option from step 2b is fundamentally flawed — go back and reconsider alternatives
+- If step 2d's confidence is "Low" — revisit step 2b to find better alternatives
 
 ### Keep It Lean
 
-- Total execution: 4 Sequential Thinking calls + 1 summary
+- Total execution: 4 analysis steps + 1 summary
 - No file generation — output stays in the conversation
 - No parallel agents — this is a single-model reasoning exercise
+
+### Terminal Formatting
+
+- NEVER use blockquote syntax (`>`) for displaying content — causes unreadable white background in dark terminals
+- NEVER use inline code backticks for emphasis on regular words — use **bold** or plain text
+- Backticks only for actual code, file paths, and command references
 
 ### Language
 
