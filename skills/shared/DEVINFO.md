@@ -33,7 +33,7 @@ Track progress across skill invocations binnen een sessie:
   },
 
   "currentSkill": {
-    "name": "frontend-compose",
+    "name": "frontend-page",
     "phase": "FASE_2",
     "startedAt": "2024-01-15T10:45:00Z"
   },
@@ -50,7 +50,7 @@ Track progress across skill invocations binnen een sessie:
       }
     },
     {
-      "skill": "frontend-compose",
+      "skill": "frontend-page",
       "status": "in_progress",
       "startedAt": "2024-01-15T10:45:00Z",
       "completedAt": null,
@@ -101,7 +101,7 @@ Track progress across skill invocations binnen een sessie:
       },
       {
         "path": ".workspace/wireframes/dashboard/ux/v1.html",
-        "skill": "frontend-compose",
+        "skill": "frontend-page",
         "timestamp": "2024-01-15T11:30:00Z"
       }
     ],
@@ -126,7 +126,7 @@ Track progress across skill invocations binnen een sessie:
 
   "handoff": {
     "from": "frontend-theme",
-    "to": "frontend-compose",
+    "to": "frontend-page",
     "data": {
       "themeFile": ".workspace/config/THEME.md",
       "preset": "Anthropic Style",
@@ -241,7 +241,7 @@ Roep aan bij elke file create/modify/delete.
 recordFile({
   operation: "created",
   path: ".workspace/wireframes/dashboard/ux/v1.html",
-  skill: "frontend-compose"
+  skill: "frontend-page"
 })
 ````
 
@@ -265,7 +265,7 @@ Roep aan bij failure.
 ```json
 {
   "timestamp": "ISO timestamp",
-  "skill": "frontend-compose",
+  "skill": "frontend-page",
   "phase": "FASE_2",
   "severity": "CRITICAL | HIGH | MEDIUM | LOW",
   "message": "Agent task timeout after 60s",
@@ -298,7 +298,7 @@ Roep aan bij skill completion.
 **Handoff Preparation:**
 ```json
 {
-  "from": "frontend-compose",
+  "from": "frontend-page",
   "to": "frontend-build",
   "data": {
     "selectedWireframe": ".workspace/wireframes/dashboard/ux/v2.html",
@@ -340,7 +340,7 @@ Roep aan als volledige workflow klaar is.
 ```json
 {
   "from": "frontend-theme",
-  "to": "frontend-compose",
+  "to": "frontend-page",
   "data": {
     "themeFile": ".workspace/config/THEME.md",
     "preset": "Anthropic Style | Custom",
@@ -358,7 +358,7 @@ Roep aan als volledige workflow klaar is.
 
 ```json
 {
-  "from": "frontend-compose",
+  "from": "frontend-page",
   "to": "frontend-build",
   "data": {
     "selectedWireframe": ".workspace/wireframes/[page]/[agent]/v2.html",
@@ -614,7 +614,7 @@ Dit helpt met debugging en recovery.
 
 SKILL COMPLETE
 ──────────────
-Skill: frontend-compose
+Skill: frontend-page
 Duration: 15 minutes
 Files created: 6
 Next suggested: /build dashboard
