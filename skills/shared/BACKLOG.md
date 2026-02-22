@@ -2,13 +2,13 @@
 
 De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills die de backlog lezen of schrijven gebruiken dezelfde aanpak.
 
-**Bestand:** `.workspace/backlog.html`
+**Bestand:** `.project/backlog.html`
 **Template:** `{skills_path}/shared/references/backlog-template.html`
 **Server:** `{skills_path}/shared/references/serve-backlog.js` (poort 9876)
 
 ## Backlog lezen
 
-1. Read `.workspace/backlog.html`
+1. Read `.project/backlog.html`
 2. Zoek het JSON-blok: `<script id="backlog-data" type="application/json">...</script>`
 3. Parse de inhoud als JSON
 
@@ -48,19 +48,19 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
 
 ## Backlog schrijven
 
-1. Read `.workspace/backlog.html` (volledige inhoud)
+1. Read `.project/backlog.html` (volledige inhoud)
 2. Parse het JSON-blok (zie hierboven)
 3. Muteer het data object (status wijzigen, items toevoegen, etc.)
 4. Zet `updated` naar huidige datum (`YYYY-MM-DD`)
 5. Serialiseer het JSON object: `JSON.stringify(data, null, 2)`
 6. Vervang het blok tussen `<script id="backlog-data" type="application/json">` en `</script>` met de nieuwe JSON
-7. Write het volledige bestand terug naar `.workspace/backlog.html`
+7. Write het volledige bestand terug naar `.project/backlog.html`
 
 **Gebruik Edit tool** om alleen het JSON-blok te vervangen — niet het hele bestand herschrijven. Zorg dat de `<script>` tags intact blijven.
 
 ## Backlog genereren (nieuwe backlog)
 
-1. Kopieer template: `{skills_path}/shared/references/backlog-template.html` → `.workspace/backlog.html`
+1. Kopieer template: `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
 2. Bouw het JSON data-object met alle features
 3. Vervang het placeholder JSON in het `<script id="backlog-data">` blok met het echte data-object
 4. Start de server als die niet draait:

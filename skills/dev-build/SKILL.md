@@ -20,7 +20,7 @@ Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD or Imp
 
 ## Input
 
-Reads from `.workspace/features/{feature-name}/01-define.md`:
+Reads from `.project/features/{feature-name}/01-define.md`:
 
 - Requirements with IDs (REQ-XXX)
 - Architecture design
@@ -29,7 +29,7 @@ Reads from `.workspace/features/{feature-name}/01-define.md`:
 ## Output Structure
 
 ```
-.workspace/features/{feature-name}/
+.project/features/{feature-name}/
 ├── 01-define.md
 ├── 02-build-log.md
 └── 03-test-checklist.md
@@ -57,13 +57,13 @@ Optionally load stack-baseline for project-specific patterns:
 
    **a) Check backlog for context:**
 
-   Read `.workspace/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
+   Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
    - Filter DEF features: `data.features.filter(f => f.status === "DEF")`
    - Eerste DEF feature is de suggested next feature to build
 
    **b) Select feature:**
    - If backlog suggests a DEF feature → propose it via **AskUserQuestion**
-   - Otherwise → list available features in `.workspace/features/`
+   - Otherwise → list available features in `.project/features/`
    - Use **AskUserQuestion** to let user select
 
 2. Load `01-define.md`:
@@ -127,8 +127,8 @@ Check of bestanden uit de feature-architectuur al op pagina's worden gebruikt.
 **Capture git baseline** (for scoped commit at end of skill):
 
 ```bash
-mkdir -p .workspace/session
-git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+mkdir -p .project/session
+git status --porcelain | sort > .project/session/pre-skill-status.txt
 ```
 
 ### FASE 1: Technique Mapping (Per Requirement)
@@ -295,8 +295,8 @@ Tests: {passed}/{total} PASS
 Files created: {count}
 
 Documentation:
-- .workspace/features/{feature}/02-build-log.md
-- .workspace/features/{feature}/03-test-checklist.md
+- .project/features/{feature}/02-build-log.md
+- .project/features/{feature}/03-test-checklist.md
 ```
 
 **Step 3: Codebase Sync — interactief gesprek**
@@ -384,11 +384,11 @@ Opties:
    CLAUDE.md: no updates needed
    ```
 
-3. Sync backlog (zie `shared/BACKLOG.md`): parse JSON uit `.workspace/backlog.html`, zoek feature in `data.features`/`data.adhoc`, zet `.status = "BLT"`, update `data.updated`, schrijf JSON terug via Edit tool
+3. Sync backlog (zie `shared/BACKLOG.md`): parse JSON uit `.project/backlog.html`, zoek feature in `data.features`/`data.adhoc`, zet `.status = "BLT"`, update `data.updated`, schrijf JSON terug via Edit tool
 
 3b. **Dashboard sync** (zie `shared/DASHBOARD.md`):
 
-- Read `.workspace/project.json` (skip als niet bestaat — dashboard is optioneel)
+- Read `.project/project.json` (skip als niet bestaat — dashboard is optioneel)
 - **Endpoints**: voor elk endpoint dat in deze build is geïmplementeerd:
   - Zoek op method+path in `endpoints` array
   - Gevonden → update `status` naar `"done"`
@@ -398,8 +398,8 @@ Opties:
 - **Features**: update `features` array:
   - Zoek feature op naam, zet status naar `"BLT"`
   - Als feature niet bestaat: push met `{ name, status: "BLT", summary, created }`
-- **Write build.json**: schrijf `.workspace/features/{feature-name}/build.json` met build data (zie `shared/DASHBOARD.md` voor schema)
-- Write `.workspace/project.json`
+- **Write build.json**: schrijf `.project/features/{feature-name}/build.json` met build data (zie `shared/DASHBOARD.md` voor schema)
+- Write `.project/project.json`
 
 4. **Scoped auto-commit** (only this skill's changes):
 
@@ -409,7 +409,7 @@ Opties:
    git status --porcelain | sort > /tmp/current-status.txt
    ```
 
-   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
    - **NEW** (only in current, not in baseline) → `git add` automatically
    - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
    - **PRE-EXISTING** (only in baseline) → do NOT stage
@@ -423,7 +423,7 @@ Opties:
    )"
    ```
 
-   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
+   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
@@ -483,7 +483,7 @@ If implementation is blocked:
 
 ### Error: No define file found
 
-**Cause:** Missing `.workspace/features/{name}/01-define.md`.
+**Cause:** Missing `.project/features/{name}/01-define.md`.
 **Solution:** Run `/dev-define {name}` first to create the feature definition.
 
 ### Error: Tests fail after implementation

@@ -20,8 +20,8 @@ const PROJECTS_ROOT = path.resolve(
   process.argv[2] || path.join(require("os").homedir(), "projects"),
 );
 const PORT = parseInt(process.env.BACKLOG_PORT || "9876", 10);
-const BACKLOG_PATH = ".workspace/backlog.html";
-const DASHBOARD_PATH = ".workspace/project.json";
+const BACKLOG_PATH = ".project/backlog.html";
+const DASHBOARD_PATH = ".project/project.json";
 const TEMPLATE_PATH = path.join(__dirname, "backlog-template.html");
 const DASHBOARD_TEMPLATE_PATH = path.join(__dirname, "dashboard-template.html");
 
@@ -174,9 +174,9 @@ function populateFromWorkspace(projectDir, dashData) {
   const projectPath = path.join(PROJECTS_ROOT, projectDir);
   let changed = false;
 
-  // ── Concept: migrate from legacy .workspace/concept.md ──
+  // ── Concept: migrate from legacy .project/concept.md ──
   const conceptEmpty = !dashData.concept || !dashData.concept.content;
-  const conceptFile = path.join(projectPath, ".workspace/concept.md");
+  const conceptFile = path.join(projectPath, ".project/concept.md");
 
   if (conceptEmpty && fs.existsSync(conceptFile)) {
     try {
@@ -190,11 +190,11 @@ function populateFromWorkspace(projectDir, dashData) {
     } catch {}
   }
 
-  // ── Theme: migrate from legacy .workspace/config/THEME.md ──
+  // ── Theme: migrate from legacy .project/config/THEME.md ──
   const themeEmpty =
     !dashData.theme ||
     (!dashData.theme.colors?.main?.length && !dashData.theme.cssVars);
-  const themeFile = path.join(projectPath, ".workspace/config/THEME.md");
+  const themeFile = path.join(projectPath, ".project/config/THEME.md");
 
   if (themeEmpty && fs.existsSync(themeFile)) {
     try {
@@ -742,8 +742,8 @@ function populateFromWorkspace(projectDir, dashData) {
     }
   }
 
-  // ── Features: populate from .workspace/features/ dirs ──
-  const featuresDir = path.join(projectPath, ".workspace/features");
+  // ── Features: populate from .project/features/ dirs ──
+  const featuresDir = path.join(projectPath, ".project/features");
   if (fs.existsSync(featuresDir)) {
     try {
       if (!dashData.features) dashData.features = [];
@@ -1350,7 +1350,7 @@ http
         const featureName = parts[2];
         const featurePath = path.join(
           projectPath,
-          ".workspace/features",
+          ".project/features",
           featureName,
         );
 

@@ -48,7 +48,7 @@ Parse command arguments to determine mode:
 
 Used by all modes. Scan and build feature table:
 
-1. `ls .workspace/features/`
+1. `ls .project/features/`
 2. Per feature: check `.worktree` file, detect pipeline fase
 3. Get current location: `pwd`
 
@@ -285,7 +285,7 @@ Add tip at bottom: `Tip: /dev-worktree om te switchen, new, of remove`
 1. **Validate feature exists:**
 
    ```bash
-   ls .workspace/features/{name}/
+   ls .project/features/{name}/
    ```
 
    **If not found:**
@@ -294,7 +294,7 @@ Add tip at bottom: `Tip: /dev-worktree om te switchen, new, of remove`
    ❌ Feature niet gevonden: {name}
 
    Beschikbare features:
-   {list from .workspace/features/}
+   {list from .project/features/}
    ```
 
    → EXIT
@@ -302,7 +302,7 @@ Add tip at bottom: `Tip: /dev-worktree om te switchen, new, of remove`
 2. **Check worktree file exists:**
 
    ```bash
-   cat .workspace/features/{name}/.worktree
+   cat .project/features/{name}/.worktree
    ```
 
    **If no .worktree file:**
@@ -357,7 +357,7 @@ Add tip at bottom: `Tip: /dev-worktree om te switchen, new, of remove`
 
 1. **Validate name:**
    - No spaces, special characters
-   - Not already exists in .workspace/features/
+   - Not already exists in .project/features/
 
    **If invalid:**
 
@@ -421,13 +421,13 @@ Add tip at bottom: `Tip: /dev-worktree om te switchen, new, of remove`
 5. **Create feature folder and save metadata:**
 
    ```bash
-   mkdir -p .workspace/features/{name}
+   mkdir -p .project/features/{name}
 
    # Get absolute path
    absolute_path=$(cd "{worktree_path}" && pwd)
 
-   echo "$absolute_path" > .workspace/features/{name}/.worktree
-   echo "{base_branch}" > .workspace/features/{name}/.base-branch
+   echo "$absolute_path" > .project/features/{name}/.worktree
+   echo "{base_branch}" > .project/features/{name}/.base-branch
    ```
 
 6. **Copy .claude folder (if needed):**
@@ -471,7 +471,7 @@ Add tip at bottom: `Tip: /dev-worktree om te switchen, new, of remove`
 1. **Validate feature exists:**
 
    ```bash
-   cat .workspace/features/{name}/.worktree
+   cat .project/features/{name}/.worktree
    ```
 
    **If not found:**
@@ -562,7 +562,7 @@ Add tip at bottom: `Tip: /dev-worktree om te switchen, new, of remove`
    git branch -D {branch_name}
 
    # Remove metadata
-   rm -rf .workspace/features/{name}/
+   rm -rf .project/features/{name}/
    ```
 
    **If "Alleen worktree":**
@@ -572,7 +572,7 @@ Add tip at bottom: `Tip: /dev-worktree om te switchen, new, of remove`
    git worktree remove "{worktree_path}" --force
 
    # Update metadata - mark as no worktree
-   rm .workspace/features/{name}/.worktree
+   rm .project/features/{name}/.worktree
    ```
 
    **If "Annuleren":** EXIT

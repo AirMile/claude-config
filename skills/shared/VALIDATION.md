@@ -226,7 +226,7 @@ Level 5: Template only, user fills in → 1 template
 
 ```markdown
 **Pre-flight:**
-- Directory .workspace/config/ writable
+- Directory .project/config/ writable
 - No conflicting THEME.md (or user confirmed overwrite)
 
 **Post-flight:**

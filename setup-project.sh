@@ -28,8 +28,8 @@ ln -sfn "$CONFIG_DIR/CLAUDE.base.md" "$CLAUDE_DIR/CLAUDE.base.md"
 # Add screenshots to .gitignore if not present
 GITIGNORE="$PROJECT_DIR/.gitignore"
 if [ -f "$GITIGNORE" ]; then
-    if ! grep -q ".workspace/screenshots/" "$GITIGNORE"; then
-        printf '\n# Screenshots (synced via Syncthing)\n.workspace/screenshots/\n' >> "$GITIGNORE"
+    if ! grep -q ".project/screenshots/" "$GITIGNORE"; then
+        printf '\n# Screenshots (synced via Syncthing)\n.project/screenshots/\n' >> "$GITIGNORE"
         echo "Added screenshots to .gitignore"
     fi
 fi

@@ -1076,7 +1076,8 @@
       {
         "concept": {
           "name": "Voorbeeld Project",
-          "content": "# Voorbeeld Project\n\nEen voorbeeld project om het dashboard te demonstreren.\n\n## Core Concept\n\nDit is een demo van het project dashboard met alle secties.\n\n## Doelgroep\n\nDevelopers en designers.\n\n## Scope\n\nIn scope: dashboard UI. Uit scope: productie deployment."
+          "content": "# Voorbeeld Project\n\nEen voorbeeld project om het dashboard te demonstreren.\n\n## Core Concept\n\nDit is een demo van het project dashboard met alle secties.\n\n## Doelgroep\n\nDevelopers en designers.\n\n## Scope\n\nIn scope: dashboard UI. Uit scope: productie deployment.",
+          "thinking": []
         },
         "theme": {
           "colors": {
@@ -1305,6 +1306,7 @@
         concept: {
           name: "",
           content: "",
+          thinking: [],
         },
         theme: {
           colors: { main: [], accent: [], semantic: [] },
@@ -1456,6 +1458,52 @@
 
       // ─── Section Renderers ──────────────────────────────────
 
+      function renderConceptThinking() {
+        const entries = (data.concept && data.concept.thinking) || [];
+        if (entries.length === 0) return "";
+
+        const cards = [...entries]
+          .reverse()
+          .map((e) => {
+            let meta = "";
+            if (e.type === "brainstorm" || e.type === "decision") {
+              if (e.chosen) {
+                meta += `<strong>Gekozen:</strong> ${esc(e.chosen)}`;
+              }
+              const options = e.variants || e.options || [];
+              if (options.length) {
+                meta += `${e.chosen ? " · " : ""}<strong>Opties:</strong> ${options.map((o) => esc(o)).join(", ")}`;
+              }
+            }
+            if (e.type === "decision" && e.rationale) {
+              meta += `<br><strong>Rationale:</strong> ${esc(e.rationale)}`;
+            }
+            const content = e.content || "";
+            const truncated =
+              content.length > 300 ? content.slice(0, 300) + "..." : content;
+            const needsExpand = content.length > 300;
+
+            return `
+          <div class="thinking-entry" data-type="${esc(e.type || "idea")}">
+            <div class="thinking-header">
+              <span class="thinking-type-badge" data-type="${esc(e.type || "idea")}">${esc(e.type || "idea")}</span>
+              <span class="thinking-title">${esc(e.title || "Untitled")}</span>
+              <span class="thinking-date">${esc(e.date || "")}</span>
+            </div>
+            ${meta ? `<div class="thinking-meta">${meta}</div>` : ""}
+            <div class="thinking-content">${md(truncated)}${needsExpand ? ' <span style="color:var(--accent)">[meer]</span>' : ""}</div>
+            <div class="thinking-source">${esc(e.source || "")}</div>
+          </div>`;
+          })
+          .join("");
+
+        return `
+          <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+            <h3 style="font-size:14px;color:var(--text-muted);margin-bottom:12px">Concept Progressie</h3>
+            ${cards}
+          </div>`;
+      }
+
       function renderConcept() {
         const c = data.concept;
         if (!c.name && !c.content) {
@@ -1472,7 +1520,8 @@
             <h2>Concept</h2>
             <button class="edit-btn" onclick="editConcept()">Bewerken</button>
           </div>
-          <div class="concept-content">${md(c.content)}</div>`;
+          <div class="concept-content">${md(c.content)}</div>
+          ${renderConceptThinking()}`;
       }
 
       function renderTheme() {

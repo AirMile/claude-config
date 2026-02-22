@@ -14,7 +14,7 @@ Track progress across skill invocations binnen een sessie:
 
 > **Note:** Rollback wordt afgehandeld door Claude Code's ingebouwde "Rewind" functie.
 
-**Storage locatie:** `.workspace/session/devinfo.json`
+**Storage locatie:** `.project/session/devinfo.json`
 
 ---
 
@@ -45,7 +45,7 @@ Track progress across skill invocations binnen een sessie:
       "startedAt": "2024-01-15T10:30:00Z",
       "completedAt": "2024-01-15T10:44:00Z",
       "output": {
-        "file": ".workspace/config/THEME.md",
+        "file": ".project/config/THEME.md",
         "preset": "Anthropic Style"
       }
     },
@@ -95,12 +95,12 @@ Track progress across skill invocations binnen een sessie:
   "files": {
     "created": [
       {
-        "path": ".workspace/config/THEME.md",
+        "path": ".project/config/THEME.md",
         "skill": "frontend-theme",
         "timestamp": "2024-01-15T10:44:00Z"
       },
       {
-        "path": ".workspace/wireframes/dashboard/ux/v1.html",
+        "path": ".project/wireframes/dashboard/ux/v1.html",
         "skill": "frontend-page",
         "timestamp": "2024-01-15T11:30:00Z"
       }
@@ -128,7 +128,7 @@ Track progress across skill invocations binnen een sessie:
     "from": "frontend-theme",
     "to": "frontend-page",
     "data": {
-      "themeFile": ".workspace/config/THEME.md",
+      "themeFile": ".project/config/THEME.md",
       "preset": "Anthropic Style",
       "tokens": {
         "colors": 12,
@@ -156,7 +156,7 @@ Roep aan bij skill start als geen actieve sessie bestaat.
 1. Genereer nieuw sessionId (UUID v4)
 2. Zet startedAt op huidige timestamp
 3. Initialiseer executionPlan met huidige skill
-4. Schrijf naar `.workspace/session/devinfo.json`
+4. Schrijf naar `.project/session/devinfo.json`
 
 **Output:**
 
@@ -240,7 +240,7 @@ Roep aan bij elke file create/modify/delete.
 ```javascript
 recordFile({
   operation: "created",
-  path: ".workspace/wireframes/dashboard/ux/v1.html",
+  path: ".project/wireframes/dashboard/ux/v1.html",
   skill: "frontend-page"
 })
 ````
@@ -301,7 +301,7 @@ Roep aan bij skill completion.
   "from": "frontend-page",
   "to": "frontend-build",
   "data": {
-    "selectedWireframe": ".workspace/wireframes/dashboard/ux/v2.html",
+    "selectedWireframe": ".project/wireframes/dashboard/ux/v2.html",
     "atomicLevel": "organism",
     "components": ["Header", "Sidebar", "MetricCard", "DataTable"],
     "themeApplied": true
@@ -322,11 +322,11 @@ Roep aan als volledige workflow klaar is.
 
 **Actie:**
 1. Mark session as archived
-2. Move to `.workspace/session/history/[sessionId].json`
+2. Move to `.project/session/history/[sessionId].json`
 3. Generate summary report
 
 **Archive Location:**
-`.workspace/session/history/2024-01-15-frontend-pipeline-uuid.json`
+`.project/session/history/2024-01-15-frontend-pipeline-uuid.json`
 ````
 
 ---
@@ -342,7 +342,7 @@ Roep aan als volledige workflow klaar is.
   "from": "frontend-theme",
   "to": "frontend-page",
   "data": {
-    "themeFile": ".workspace/config/THEME.md",
+    "themeFile": ".project/config/THEME.md",
     "preset": "Anthropic Style | Custom",
     "tokens": {
       "colors": { "count": 12, "hasSemanticColors": true },
@@ -361,7 +361,7 @@ Roep aan als volledige workflow klaar is.
   "from": "frontend-page",
   "to": "frontend-build",
   "data": {
-    "selectedWireframe": ".workspace/wireframes/[page]/[agent]/v2.html",
+    "selectedWireframe": ".project/wireframes/[page]/[agent]/v2.html",
     "selection": {
       "agent": "ux | minimal | rich",
       "version": "v2"
@@ -373,7 +373,7 @@ Roep aan als volledige workflow klaar is.
       { "name": "MetricCard", "atomic": "molecule", "variants": 3 }
     ],
     "themeApplied": true,
-    "themeFile": ".workspace/config/THEME.md"
+    "themeFile": ".project/config/THEME.md"
   }
 }
 ```
@@ -416,7 +416,7 @@ Roep aan als volledige workflow klaar is.
   "from": "frontend-build",
   "to": "frontend-data",
   "data": {
-    "hifiPreview": ".workspace/wireframes/[page]/hifi/preview.html",
+    "hifiPreview": ".project/wireframes/[page]/hifi/preview.html",
     "pageFile": "src/pages/[page].tsx",
     "componentsDirectory": "src/components/[page]/",
     "tailwindConfig": "tailwind.config.js",
@@ -496,7 +496,7 @@ options:
 
 ```
 
-.workspace/ # Intermediate artifacts
+.project/ # Intermediate artifacts
 ├── session/
 │ ├── devinfo.json # Huidige sessie state
 │ └── history/ # Gearchiveerde sessies
@@ -535,7 +535,7 @@ tailwind.config.js # Extended met theme tokens
 ```markdown
 ### Session Check
 
-1. Check of `.workspace/session/devinfo.json` bestaat
+1. Check of `.project/session/devinfo.json` bestaat
 2. Als JA:
    - Lees en parse devinfo
    - Check of dit skill in executionPlan past

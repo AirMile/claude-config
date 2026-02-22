@@ -26,17 +26,17 @@ The output is a structured markdown document that can be used as input for `/thi
 
 **Auto-detect existing concept:**
 
-1. Check if `.workspace/` folder exists
+1. Check if `.project/` folder exists
    - If folder does NOT exist → proceed to Step 1b (source selection)
-2. Check if `.workspace/project.json` exists and contains a `concept` key with non-empty `content`
+2. Check if `.project/project.json` exists and contains a `concept` key with non-empty `content`
 3. If concept exists AND no inline description provided:
-   - Read `.workspace/project.json`, parse JSON, extract `concept.name` and `concept.content`
+   - Read `.project/project.json`, parse JSON, extract `concept.name` and `concept.content`
    - Show confirmation:
 
      ```
      EXISTING CONCEPT DETECTED
 
-     Source: .workspace/project.json → concept
+     Source: .project/project.json → concept
      Title: {concept.name}
 
      Er bestaat al een concept.
@@ -64,8 +64,8 @@ The output is a structured markdown document that can be used as input for `/thi
 
 Na de concept-detectie, check ook voor bredere scope:
 
-1. Check of `.workspace/backlog.html` bestaat
-2. Check of `.workspace/features/` mappen bevat
+1. Check of `.project/backlog.html` bestaat
+2. Check of `.project/features/` mappen bevat
 3. Glob voor pagina-bestanden (`app/**/page.tsx`, `src/pages/**/*.tsx`)
 
 Als scope-context gevonden EN project.json concept al geladen:
@@ -83,7 +83,7 @@ multiSelect: false
 
 **If "Feature uit backlog":**
 
-- Lees `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`), toon features met status TODO of DEF
+- Lees `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`), toon features met status TODO of DEF
 - AskUserQuestion om feature te kiezen
 - Laad `01-define.md` (als die bestaat) als input-context
 - Laad bestaande `thinking.md` (als die bestaat) als vorige thinking output
@@ -94,21 +94,21 @@ multiSelect: false
 - Glob voor pagina-bestanden in het project
 - AskUserQuestion om pagina te kiezen, of laat gebruiker een UX flow beschrijven
 - Laad pagina-bestand als input-context
-- Check `.workspace/thinking/{naam}.md` voor eerdere thinking output
+- Check `.project/thinking/{naam}.md` voor eerdere thinking output
 
 **If "Los idee":**
 
 - Negeer het geladen concept — dit idee staat los van het project
 - Vraag: "Beschrijf je idee in een paar zinnen"
-- Check `.workspace/thinking/` voor eerdere losse ideeën
+- Check `.project/thinking/` voor eerdere losse ideeën
 - Proceed to Step 2 with user's input
 
 **Output-pad volgt automatisch de scope:**
 
-- Scope = concept → schrijf naar `.workspace/project.json` onder de `concept` key
-- Scope = feature → schrijf naar `.workspace/features/{naam}/thinking.md`
-- Scope = pagina/UX → schrijf naar `.workspace/thinking/{onderwerp}.md`
-- Scope = los idee → schrijf naar `.workspace/thinking/{onderwerp}.md`
+- Scope = concept → schrijf naar `.project/project.json` onder de `concept` key
+- Scope = feature → schrijf naar `.project/features/{naam}/thinking.md`
+- Scope = pagina/UX → schrijf naar `.project/thinking/{onderwerp}.md`
+- Scope = los idee → schrijf naar `.project/thinking/{onderwerp}.md`
 
 **Step 1b: Source selection (if no concept found)**
 
@@ -350,8 +350,8 @@ After generating the markdown content, determine output destination based on sco
 
 Sla automatisch op bij de scope-locatie:
 
-- Scope = feature → schrijf naar `.workspace/features/{naam}/thinking.md`
-- Scope = pagina/UX → maak `.workspace/thinking/` aan indien nodig, schrijf naar `.workspace/thinking/{onderwerp}.md`
+- Scope = feature → schrijf naar `.project/features/{naam}/thinking.md`
+- Scope = pagina/UX → maak `.project/thinking/` aan indien nodig, schrijf naar `.project/thinking/{onderwerp}.md`
 
 ```
 THINKING OUTPUT SAVED
@@ -359,6 +359,21 @@ THINKING OUTPUT SAVED
 File: {output-pad}
 Scope: {feature:{naam} | pagina:{onderwerp}}
 ```
+
+**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+
+1. Read `.project/project.json` (skip als niet bestaat)
+2. Push naar `thinking` array:
+   ```json
+   {
+     "type": "idea",
+     "date": "{today}",
+     "title": "{concept titel}",
+     "content": "{volledige markdown output van Step 4}",
+     "source": "/thinking-idea"
+   }
+   ```
+3. Write `.project/project.json`
 
 Vraag daarna optioneel:
 
@@ -371,21 +386,36 @@ options:
 multiSelect: false
 ```
 
-If "Ja": lees `.workspace/project.json` (of maak aan als niet bestaat), parse JSON, set `concept.name` (H1 titel) en `concept.content` (volledige markdown), schrijf terug.
+If "Ja": lees `.project/project.json` (of maak aan als niet bestaat), parse JSON, set `concept.name` (H1 titel) en `concept.content` (volledige markdown), schrijf terug.
 
 **If scope = los idee (uit Step 1a):**
 
-Sla op naar `.workspace/thinking/{onderwerp}.md`:
+Sla op naar `.project/thinking/{onderwerp}.md`:
 
-1. Maak `.workspace/thinking/` aan indien nodig
-2. Schrijf naar `.workspace/thinking/{onderwerp}.md`
+1. Maak `.project/thinking/` aan indien nodig
+2. Schrijf naar `.project/thinking/{onderwerp}.md`
 
 ```
 THINKING OUTPUT SAVED
 
-File: .workspace/thinking/{onderwerp}.md
+File: .project/thinking/{onderwerp}.md
 Scope: los idee
 ```
+
+**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+
+1. Read `.project/project.json` (skip als niet bestaat)
+2. Push naar `thinking` array:
+   ```json
+   {
+     "type": "idea",
+     "date": "{today}",
+     "title": "{concept titel}",
+     "content": "{volledige markdown output van Step 4}",
+     "source": "/thinking-idea"
+   }
+   ```
+3. Write `.project/project.json`
 
 Vraag daarna:
 
@@ -393,7 +423,7 @@ Vraag daarna:
 header: "Obsidian"
 question: "Wil je dit idee ook opslaan naar Obsidian?"
 options:
-  - label: "Nee (Recommended)", description: "Output is opgeslagen in .workspace/thinking/"
+  - label: "Nee (Recommended)", description: "Output is opgeslagen in .project/thinking/"
   - label: "Ja, naar Obsidian", description: "Sla ook op als Idea note in Obsidian vault"
 multiSelect: false
 ```
@@ -416,16 +446,16 @@ multiSelect: false
 
 **If "Opslaan naar concept":**
 
-1. Create `.workspace/` folder if it doesn't exist
-2. Read `.workspace/project.json` if it exists (otherwise start with `{}`), parse JSON
+1. Create `.project/` folder if it doesn't exist
+2. Read `.project/project.json` if it exists (otherwise start with `{}`), parse JSON
 3. Set `concept.name` to the H1 title, set `concept.content` to the full markdown output
-4. Write the updated JSON back to `.workspace/project.json`
+4. Write the updated JSON back to `.project/project.json`
 5. Confirm:
 
    ```
    CONCEPT SAVED
 
-   File: .workspace/project.json → concept
+   File: .project/project.json → concept
    Name: {concept.name}
 
    Next steps:
@@ -435,24 +465,24 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
-**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+**Dashboard sync — concept thinking** (zie `shared/DASHBOARD.md`):
 
-1. Read `.workspace/project.json` (skip als niet bestaat)
-2. Push naar `thinking` array:
+1. Read `.project/project.json` (skip als niet bestaat)
+2. Push naar `concept.thinking` array (initialiseer als `[]` indien nodig):
    ```json
    {
      "type": "idea",
      "date": "{today}",
      "title": "{concept titel}",
-     "content": "{samenvatting van het idee in 2-3 zinnen}",
+     "content": "{volledige markdown output van Step 4}",
      "source": "/thinking-idea"
    }
    ```
-3. Write `.workspace/project.json`
+3. Write `.project/project.json`
 
 **If "Opslaan naar Obsidian":**
 
-1. Also save to `.workspace/project.json` concept (so brainstorm/critique can pick it up): read existing JSON (or `{}`), set `concept.name` and `concept.content`, write back
+1. Also save to `.project/project.json` concept (so brainstorm/critique can pick it up): read existing JSON (or `{}`), set `concept.name` and `concept.content`, write back
 2. Detect category from content:
    - Game-related → `game`
    - App/service/tool → `app`

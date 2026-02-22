@@ -48,7 +48,7 @@ Lines: [count] | Sections: [count] | Has resources: [yes/no]
 Scan for prior skill execution that can inform testing:
 
 1. **Conversation context** — check if the target skill (or a skill from the same pipeline) was invoked earlier in this conversation (e.g., a `/dev-build` invocation when refining `dev-build`)
-2. **devinfo.json** — read `.workspace/session/devinfo.json` if it exists; check `executionPlan` for completed skills matching the target or its pipeline
+2. **devinfo.json** — read `.project/session/devinfo.json` if it exists; check `executionPlan` for completed skills matching the target or its pipeline
 
 **Detection signals:**
 

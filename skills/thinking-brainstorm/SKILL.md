@@ -40,17 +40,17 @@ Example triggers:
 
 **Auto-detect concept file:**
 
-1. Check if `.workspace/` folder exists
+1. Check if `.project/` folder exists
    - If folder does NOT exist → check Obsidian (step 1b below)
-2. Check if `.workspace/project.json` exists and contains a `concept` key with non-empty `content`
+2. Check if `.project/project.json` exists and contains a `concept` key with non-empty `content`
 3. If exists AND no inline input provided:
-   - Read `.workspace/project.json`, parse JSON, extract `concept.name` and `concept.content`
+   - Read `.project/project.json`, parse JSON, extract `concept.name` and `concept.content`
    - Show confirmation:
 
      ```
      CONCEPT DETECTED
 
-     Source: .workspace/project.json → concept
+     Source: .project/project.json → concept
      Title: {concept.name}
 
      Dit concept wordt gebruikt voor brainstorming.
@@ -73,8 +73,8 @@ Example triggers:
 
 Na de concept-detectie, check ook voor bredere scope:
 
-1. Check of `.workspace/backlog.html` bestaat
-2. Check of `.workspace/features/` mappen bevat
+1. Check of `.project/backlog.html` bestaat
+2. Check of `.project/features/` mappen bevat
 3. Glob voor pagina-bestanden (`app/**/page.tsx`, `src/pages/**/*.tsx`)
 
 Als scope-context gevonden EN concept al geladen uit project.json:
@@ -92,7 +92,7 @@ multiSelect: false
 
 **If "Feature uit backlog":**
 
-- Lees `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`), toon features met status TODO of DEF
+- Lees `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`), toon features met status TODO of DEF
 - AskUserQuestion om feature te kiezen
 - Laad `01-define.md` (als die bestaat) als input-context
 - Laad bestaande `thinking.md` (als die bestaat) als vorige thinking output
@@ -103,21 +103,21 @@ multiSelect: false
 - Glob voor pagina-bestanden in het project
 - AskUserQuestion om pagina te kiezen, of laat gebruiker een UX flow beschrijven
 - Laad pagina-bestand als input-context
-- Check `.workspace/thinking/{naam}.md` voor eerdere thinking output
+- Check `.project/thinking/{naam}.md` voor eerdere thinking output
 
 **If "Los idee":**
 
 - Negeer het geladen concept — dit idee staat los van het project
 - Vraag: "Beschrijf je idee in een paar zinnen"
-- Check `.workspace/thinking/` voor eerdere losse ideeën
+- Check `.project/thinking/` voor eerdere losse ideeën
 - Proceed to Step 2 with user's input
 
 **Output-pad volgt automatisch de scope:**
 
-- Scope = concept → update `concept` key in `.workspace/project.json`
-- Scope = feature → schrijf naar `.workspace/features/{naam}/thinking.md`
-- Scope = pagina/UX → schrijf naar `.workspace/thinking/{onderwerp}.md`
-- Scope = los idee → schrijf naar `.workspace/thinking/{onderwerp}.md`
+- Scope = concept → update `concept` key in `.project/project.json`
+- Scope = feature → schrijf naar `.project/features/{naam}/thinking.md`
+- Scope = pagina/UX → schrijf naar `.project/thinking/{onderwerp}.md`
+- Scope = los idee → schrijf naar `.project/thinking/{onderwerp}.md`
 
 **Step 1b: Check Obsidian vault (if no concept found in project.json)**
 
@@ -455,8 +455,8 @@ After generating the refined content, determine output destination based on scop
 
 Sla automatisch op bij de scope-locatie:
 
-- Scope = feature → schrijf naar `.workspace/features/{naam}/thinking.md`
-- Scope = pagina/UX → maak `.workspace/thinking/` aan indien nodig, schrijf naar `.workspace/thinking/{onderwerp}.md`
+- Scope = feature → schrijf naar `.project/features/{naam}/thinking.md`
+- Scope = pagina/UX → maak `.project/thinking/` aan indien nodig, schrijf naar `.project/thinking/{onderwerp}.md`
 
 ```
 THINKING OUTPUT SAVED
@@ -465,6 +465,23 @@ File: {output-pad}
 Scope: {feature:{naam} | pagina:{onderwerp}}
 Applied techniques: {list of techniques used}
 ```
+
+**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+
+1. Read `.project/project.json` (skip als niet bestaat)
+2. Push naar `thinking` array:
+   ```json
+   {
+     "type": "brainstorm",
+     "date": "{today}",
+     "title": "{onderwerp van de brainstorm}",
+     "content": "{volledige refined markdown output van Step 6}",
+     "variants": ["{variant 1}", "{variant 2}", "..."],
+     "chosen": "{gekozen variant}",
+     "source": "/thinking-brainstorm"
+   }
+   ```
+3. Write `.project/project.json`
 
 Vraag daarna optioneel:
 
@@ -477,22 +494,39 @@ options:
 multiSelect: false
 ```
 
-If "Ja": lees `.workspace/project.json` (of maak aan), update `concept.name` en `concept.content` met de refined content, schrijf terug.
+If "Ja": lees `.project/project.json` (of maak aan), update `concept.name` en `concept.content` met de refined content, schrijf terug.
 
 **If scope = los idee (uit Step 1a):**
 
-Sla op naar `.workspace/thinking/{onderwerp}.md`:
+Sla op naar `.project/thinking/{onderwerp}.md`:
 
-1. Maak `.workspace/thinking/` aan indien nodig
-2. Schrijf naar `.workspace/thinking/{onderwerp}.md`
+1. Maak `.project/thinking/` aan indien nodig
+2. Schrijf naar `.project/thinking/{onderwerp}.md`
 
 ```
 THINKING OUTPUT SAVED
 
-File: .workspace/thinking/{onderwerp}.md
+File: .project/thinking/{onderwerp}.md
 Scope: los idee
 Applied techniques: {list of techniques used}
 ```
+
+**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+
+1. Read `.project/project.json` (skip als niet bestaat)
+2. Push naar `thinking` array:
+   ```json
+   {
+     "type": "brainstorm",
+     "date": "{today}",
+     "title": "{onderwerp van de brainstorm}",
+     "content": "{volledige refined markdown output van Step 6}",
+     "variants": ["{variant 1}", "{variant 2}", "..."],
+     "chosen": "{gekozen variant}",
+     "source": "/thinking-brainstorm"
+   }
+   ```
+3. Write `.project/project.json`
 
 Vraag daarna:
 
@@ -500,7 +534,7 @@ Vraag daarna:
 header: "Obsidian"
 question: "Wil je dit idee ook opslaan naar Obsidian?"
 options:
-  - label: "Nee (Recommended)", description: "Output is opgeslagen in .workspace/thinking/"
+  - label: "Nee (Recommended)", description: "Output is opgeslagen in .project/thinking/"
   - label: "Ja, naar Obsidian", description: "Sla ook op als Idea note in Obsidian vault"
 multiSelect: false
 ```
@@ -523,15 +557,15 @@ multiSelect: false
 
 **If "Opslaan naar concept":**
 
-1. Read `.workspace/project.json` (or create `{}` if not exists), parse JSON
+1. Read `.project/project.json` (or create `{}` if not exists), parse JSON
 2. Set `concept.name` to the title of the refined idea and `concept.content` to the full refined markdown content
-3. Write updated JSON back to `.workspace/project.json`
+3. Write updated JSON back to `.project/project.json`
 4. Confirm:
 
    ```
    CONCEPT UPDATED
 
-   File: .workspace/project.json → concept
+   File: .project/project.json → concept
    Applied techniques: {list of techniques used}
 
    Next steps:
@@ -541,26 +575,26 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
-**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+**Dashboard sync — concept thinking** (zie `shared/DASHBOARD.md`):
 
-1. Read `.workspace/project.json` (skip als niet bestaat)
-2. Push naar `thinking` array:
+1. Read `.project/project.json` (skip als niet bestaat)
+2. Push naar `concept.thinking` array (initialiseer als `[]` indien nodig):
    ```json
    {
      "type": "brainstorm",
      "date": "{today}",
      "title": "{onderwerp van de brainstorm}",
-     "content": "{samenvatting van gekozen aanpak}",
+     "content": "{volledige refined markdown output van Step 6}",
      "variants": ["{variant 1}", "{variant 2}", "..."],
      "chosen": "{gekozen variant}",
      "source": "/thinking-brainstorm"
    }
    ```
-3. Write `.workspace/project.json`
+3. Write `.project/project.json`
 
 **If "Opslaan naar Obsidian":**
 
-1. Also update `concept` in `.workspace/project.json` (so other skills can pick it up)
+1. Also update `concept` in `.project/project.json` (so other skills can pick it up)
 2. If concept was loaded from Obsidian (tracked via `obsidian_source_path`):
    - Overwrite: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
    - Update frontmatter status to `developing` via `mcp__obsidian__update_frontmatter()`

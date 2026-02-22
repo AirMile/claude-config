@@ -34,12 +34,12 @@ This rule exists because refactoring external files risks breaking other feature
 ## When to Use
 
 - After `/dev-test` completes with all tests passing
-- When `.workspace/features/{name}/03-test-results.md` exists
+- When `.project/features/{name}/03-test-results.md` exists
 - NOT for: fixing bugs (/dev-test), adding features (/dev-define), planning (/dev-define)
 
 ## Input
 
-Reads from `.workspace/features/{feature-name}/`:
+Reads from `.project/features/{feature-name}/`:
 
 - `01-define.md` - Requirements and architecture
 - `02-build-log.md` - Implementation details and file list
@@ -49,7 +49,7 @@ Reads from `.workspace/features/{feature-name}/`:
 ## Output Structure
 
 ```
-.workspace/features/{feature-name}/
+.project/features/{feature-name}/
 ├── 01-define.md          # Updated: Status: REFACTORED (or CLEAN)
 ├── 02-build-log.md       # From build phase
 ├── 03-test-checklist.md  # From build phase
@@ -79,14 +79,14 @@ Reads from `.workspace/features/{feature-name}/`:
 
 1. **Read backlog for pipeline status:**
 
-   Read `.workspace/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
+   Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
    - Filter TST features: `data.features.filter(f => f.status === "TST")`
    - TST features zijn getest maar nog niet gerefactord
 
 2. **Determine feature queue:**
 
    **a) Feature name provided** (`/dev-refactor auth`):
-   - Validate feature exists in `.workspace/features/`
+   - Validate feature exists in `.project/features/`
    - Feature queue = `[auth]`
 
    **b) No feature name** (`/dev-refactor`):
@@ -99,7 +99,7 @@ Reads from `.workspace/features/{feature-name}/`:
      - multiSelect: false
    - If "Alle features" → feature queue = all TST features
    - If "Eén feature kiezen" → show feature list via AskUserQuestion, queue = selected
-   - If no TST features in backlog → fall back to listing `.workspace/features/` directories that have `03-test-results.md`
+   - If no TST features in backlog → fall back to listing `.project/features/` directories that have `03-test-results.md`
 
    **c) "recent"**: find most recently modified `03-test-results.md`, queue = `[that feature]`
 
@@ -184,8 +184,8 @@ Features:
 **Capture git baseline** (for scoped commit at end of skill):
 
 ```bash
-mkdir -p .workspace/session
-git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+mkdir -p .project/session
+git status --porcelain | sort > .project/session/pre-skill-status.txt
 ```
 
 ### FASE 1: Parallel Batch Analysis + Triage
@@ -701,7 +701,7 @@ IMPROVEMENTS APPLIED
    - ROLLED_BACK: Set `Status: TST` (keep in TST, don't advance)
 
 3. **Sync backlog** (zie `shared/BACKLOG.md`, single edit for all features):
-   - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
+   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - CLEAN en REFACTORED features: zet `.status = "DONE"`
    - ROLLED_BACK features: laat `.status = "TST"`
    - Zet `data.updated` naar huidige datum
@@ -741,12 +741,12 @@ IMPROVEMENTS APPLIED
    Or: `CLAUDE.md: no updates needed (internal changes only)`
 
 5. **Dashboard sync** (zie `shared/DASHBOARD.md`):
-   - Read `.workspace/project.json` (skip als niet bestaat)
+   - Read `.project/project.json` (skip als niet bestaat)
    - Als packages gewijzigd (toegevoegd/verwijderd): merge naar `stack.packages`
    - Als endpoints gewijzigd: merge naar `endpoints`
    - Als data entities gewijzigd: merge naar `data.entities`
    - Update `features` array: CLEAN en REFACTORED features → status `"DONE"`, ROLLED_BACK → ongewijzigd
-   - Write `.workspace/project.json`
+   - Write `.project/project.json`
 
 6. **Scoped auto-commit** (only this skill's changes):
 
@@ -756,7 +756,7 @@ IMPROVEMENTS APPLIED
    git status --porcelain | sort > /tmp/current-status.txt
    ```
 
-   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
    - **NEW** (only in current, not in baseline) → `git add` automatically
    - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
    - **PRE-EXISTING** (only in baseline) → do NOT stage
@@ -785,7 +785,7 @@ IMPROVEMENTS APPLIED
    refactor({feature}): {summary}
    ```
 
-   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
+   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 

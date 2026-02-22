@@ -45,7 +45,7 @@ The skill gathers requirements through targeted questions, optionally researches
    **a) Check backlog for next feature:**
 
    ```
-   Read(".workspace/backlog.html")
+   Read(".project/backlog.html")
    ```
 
    - If backlog exists: parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
@@ -81,7 +81,7 @@ The skill gathers requirements through targeted questions, optionally researches
 3. **Create workspace folder:**
 
    ```bash
-   mkdir -p .workspace/features/{feature-name}
+   mkdir -p .project/features/{feature-name}
    ```
 
 3b. **Check voor bestaande pagina's met deze feature:**
@@ -283,7 +283,7 @@ Show requirements table with acceptance criteria:
 
    a. Create parent documentation:
 
-   Write `.workspace/features/{feature-name}/00-split.md`:
+   Write `.project/features/{feature-name}/00-split.md`:
 
    ````markdown
    # Feature Split: {Feature Name}
@@ -320,8 +320,8 @@ Show requirements table with acceptance criteria:
    b. Create sub-feature workspace folders:
 
    ```bash
-   mkdir -p .workspace/features/{feature-name}-{sub1}
-   mkdir -p .workspace/features/{feature-name}-{sub2}
+   mkdir -p .project/features/{feature-name}-{sub1}
+   mkdir -p .project/features/{feature-name}-{sub2}
    ```
 
    c. Continue FASE 2-5 for EACH sub-feature sequentially:
@@ -331,7 +331,7 @@ Show requirements table with acceptance criteria:
 
 7. **Update backlog (split only):**
 
-   If `.workspace/backlog.html` exists:
+   If `.project/backlog.html` exists:
    - Replace original feature entry with sub-feature entries
    - Each sub-feature gets its own line in the backlog
    - Add `(split from {original-name})` annotation
@@ -546,7 +546,7 @@ IMPLEMENTATION ORDER:
 
 ### FASE 4: Generate Output
 
-Write to `.workspace/features/{feature-name}/01-define.md`:
+Write to `.project/features/{feature-name}/01-define.md`:
 
 ```markdown
 # Feature Definition: {Feature Name}
@@ -650,7 +650,7 @@ Write to `.workspace/features/{feature-name}/01-define.md`:
 
 ### FASE 5: Sync Backlog
 
-**Goal:** Update `.workspace/backlog.html` with new status.
+**Goal:** Update `.project/backlog.html` with new status.
 
 Zie `shared/BACKLOG.md` voor het JSON read/write protocol.
 
@@ -659,7 +659,7 @@ Zie `shared/BACKLOG.md` voor het JSON read/write protocol.
 1. **Check if backlog exists:**
 
    ```
-   Read(".workspace/backlog.html")
+   Read(".project/backlog.html")
    ```
 
    - If file not found: skip sync (no backlog to update)
@@ -692,13 +692,13 @@ Location: {P1 | P2 | P3 | P4}
 
 ### FASE 6: Dashboard Sync
 
-**Goal:** Update `.workspace/project.json` met data, endpoints en stack info uit deze feature definitie.
+**Goal:** Update `.project/project.json` met data, endpoints en stack info uit deze feature definitie.
 
 Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
 
 **Steps:**
 
-1. Read `.workspace/project.json` (of maak nieuw met leeg schema als niet bestaat)
+1. Read `.project/project.json` (of maak nieuw met leeg schema als niet bestaat)
 
 2. **Data entities** — als de feature data entities definieert (uit Architecture > Types/Interfaces of API Contract):
    - Voor elke entity: check of `data.entities` al een entry heeft met die naam
@@ -719,9 +719,9 @@ Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
    - Zo nee: push `{ name: "{feature-name}", status: "DEF", summary: "{from 01-define.md summary}", depends: [], created: "{date}" }`
    - Zo ja: update status naar `"DEF"`
 
-6. **Write define.json** — schrijf `.workspace/features/{feature-name}/define.json` met gestructureerde feature data (zie `shared/DASHBOARD.md` voor schema)
+6. **Write define.json** — schrijf `.project/features/{feature-name}/define.json` met gestructureerde feature data (zie `shared/DASHBOARD.md` voor schema)
 
-7. Write `.workspace/project.json`
+7. Write `.project/project.json`
 
 **Output:**
 

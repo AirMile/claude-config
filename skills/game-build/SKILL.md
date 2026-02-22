@@ -20,7 +20,7 @@ The build phase implements features from requirements using technique mapping: T
 
 ## Input
 
-Reads from `.workspace/features/{feature-name}/01-define.md`:
+Reads from `.project/features/{feature-name}/01-define.md`:
 
 - Requirements with IDs (REQ-XXX)
 - Architecture design
@@ -29,7 +29,7 @@ Reads from `.workspace/features/{feature-name}/01-define.md`:
 ## Output Structure
 
 ```
-.workspace/features/{feature-name}/
+.project/features/{feature-name}/
 ├── 01-define.md          # From define phase (input)
 ├── 02-build-log.md       # TDD cycle log + codebase sync
 ├── 03-playtest.md        # Checklist for test phase
@@ -91,7 +91,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 ### FASE 0: Load Context
 
 1. **If no feature name provided — check backlog:**
-   - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
+   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
    - Filter DEF features: `data.features.filter(f => f.status === "DEF")`
    - Eerste DEF feature is de suggested next feature
    - Use **AskUserQuestion** with backlog-suggested feature:
@@ -151,8 +151,8 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 **Capture git baseline** (for scoped commit at end of skill):
 
 ```bash
-mkdir -p .workspace/session
-git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+mkdir -p .project/session
+git status --porcelain | sort > .project/session/pre-skill-status.txt
 ```
 
 ### FASE 1: Technique Mapping
@@ -627,7 +627,7 @@ Use `/game-test {feature}` with results:
 
 ```
 
-**Create playtest scene** at `.workspace/features/{feature-name}/playtest_scene.tscn`:
+**Create playtest scene** at `.project/features/{feature-name}/playtest_scene.tscn`:
 
 ```
 PlaytestArena (Node2D)
@@ -640,7 +640,7 @@ PlaytestArena (Node2D)
 +-- DebugListener (captures debug signals)
 ```
 
-**DebugListener script** at `.workspace/features/{feature-name}/debug_listener.gd`:
+**DebugListener script** at `.project/features/{feature-name}/debug_listener.gd`:
 
 ```gdscript
 extends Node
@@ -823,12 +823,12 @@ Added:
    - scenes/...
 
    Documentation:
-   - .workspace/features/{feature}/02-build-log.md
-   - .workspace/features/{feature}/03-playtest.md
+   - .project/features/{feature}/02-build-log.md
+   - .project/features/{feature}/03-playtest.md
    ```
 
 3. **Sync backlog** (zie `shared/BACKLOG.md`):
-   - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
+   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "BLT"`
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
@@ -844,11 +844,11 @@ Added:
 
 3b. **Dashboard sync** (zie `shared/DASHBOARD.md`):
 
-- Read `.workspace/project.json` (skip als niet bestaat)
+- Read `.project/project.json` (skip als niet bestaat)
 - Update `features` array: zoek feature op naam, zet status naar `"BLT"`
 - Als feature niet bestaat: push met `{ name, status: "BLT", summary, created }`
-- **Write build.json**: schrijf `.workspace/features/{feature-name}/build.json` met build data (zie `shared/DASHBOARD.md` voor schema)
-- Write `.workspace/project.json`
+- **Write build.json**: schrijf `.project/features/{feature-name}/build.json` met build data (zie `shared/DASHBOARD.md` voor schema)
+- Write `.project/project.json`
 
 4. **Scoped auto-commit** (only this skill's changes):
 
@@ -858,7 +858,7 @@ Added:
    git status --porcelain | sort > /tmp/current-status.txt
    ```
 
-   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
    - **NEW** (only in current, not in baseline) → `git add` automatically
    - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
    - **PRE-EXISTING** (only in baseline) → do NOT stage
@@ -869,7 +869,7 @@ Added:
    git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
    ```
 
-   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
+   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
 
    No Co-Authored-By line.
 

@@ -222,13 +222,13 @@ Generate `.claude/research/stack-baseline.md` — reusable framework conventions
 
 ## Phase 7b: Dashboard Init
 
-**Goal:** Maak `.workspace/project.json` aan als het eerste dashboard bestand voor dit project. core-setup is de eerste skill die draait — alle latere skills bouwen hierop voort.
+**Goal:** Maak `.project/project.json` aan als het eerste dashboard bestand voor dit project. core-setup is de eerste skill die draait — alle latere skills bouwen hierop voort.
 
 Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
 
 **Steps:**
 
-1. Maak `.workspace/project.json` aan met het volledige lege schema uit `shared/DASHBOARD.md`
+1. Maak `.project/project.json` aan met het volledige lege schema uit `shared/DASHBOARD.md`
 2. Vul `concept` sectie:
    - `name`: projectnaam (uit Phase 1/2 user answers)
    - `content`: korte project beschrijving als markdown (uit user answers — wat het project doet, voor wie, kernfunctionaliteit). Hoeft niet uitgebreid — thinking/plan skills vullen dit later aan.
@@ -240,7 +240,7 @@ Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
    - `auth`: uit user answers (Phase 2 Q4/Q5)
    - `hosting`: uit user answers (Phase 2 Q4/Q5)
    - `packages`: uit gegenereerde package.json / project files
-4. Write `.workspace/project.json`
+4. Write `.project/project.json`
 
 **Output:**
 

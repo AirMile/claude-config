@@ -27,7 +27,7 @@ Accepts markdown from:
 
 ## Output
 
-`.workspace/backlog.html` with:
+`.project/backlog.html` with:
 
 - Decomposed features
 - Dependencies
@@ -42,13 +42,13 @@ Accepts markdown from:
 
 **Process:**
 
-1. **Check if .workspace folder exists:**
-   - If `.workspace/` folder does NOT exist → go directly to Scenario D (ask for input)
-   - If `.workspace/` folder exists → continue to step 2
+1. **Check if .project folder exists:**
+   - If `.project/` folder does NOT exist → go directly to Scenario D (ask for input)
+   - If `.project/` folder exists → continue to step 2
 
-2. **Check for existing files (only if .workspace exists):**
-   - Check if `.workspace/project.json` exists and `concept.content` is non-empty
-   - Check if `.workspace/backlog.html` exists
+2. **Check for existing files (only if .project exists):**
+   - Check if `.project/project.json` exists and `concept.content` is non-empty
+   - Check if `.project/backlog.html` exists
 
 3. **Scenario A: Both concept AND backlog exist**
    - Read `project.json` (`concept.content`) and `backlog.html`
@@ -58,8 +58,8 @@ Accepts markdown from:
      ```
      EXISTING BACKLOG DETECTED
 
-     Concept: .workspace/project.json (concept.content)
-     Backlog: .workspace/backlog.html
+     Concept: .project/project.json (concept.content)
+     Backlog: .project/backlog.html
 
      Changes detected:
      - NEW: {list of features in concept but not in backlog}
@@ -96,7 +96,7 @@ Accepts markdown from:
      ```
      CONCEPT DETECTED
 
-     File: .workspace/project.json
+     File: .project/project.json
      Title: {extracted title}
 
      Dit concept wordt gebruikt voor de backlog.
@@ -121,7 +121,7 @@ Accepts markdown from:
      ```
      WARNING: Backlog exists but no concept found
 
-     Backlog: .workspace/backlog.html
+     Backlog: .project/backlog.html
      Concept: Not found (project.json concept.content empty)
 
      Een concept is nodig om de backlog te updaten.
@@ -138,7 +138,7 @@ Accepts markdown from:
      multiSelect: false
      ```
 
-6. **Scenario D: No .workspace folder OR neither file exists**
+6. **Scenario D: No .project folder OR neither file exists**
    - Ask user to paste concept:
      ```yaml
      header: "Input"
@@ -456,8 +456,8 @@ P3:
 
 1. **Kopieer template:**
    - Bron: `{skills_path}/shared/references/backlog-template.html`
-   - Doel: `.workspace/backlog.html`
-   - Maak `.workspace/` aan als die niet bestaat
+   - Doel: `.project/backlog.html`
+   - Maak `.project/` aan als die niet bestaat
 
 2. **Bouw het JSON data-object:**
 
@@ -496,18 +496,18 @@ P3:
 5. **Update project dashboard** (zie `shared/DASHBOARD.md`):
 
    Als concept info beschikbaar uit input:
-   1. Read `.workspace/project.json` (of maak nieuw met leeg schema)
+   1. Read `.project/project.json` (of maak nieuw met leeg schema)
    2. Vul `concept` sectie met name, description, goals, audience, scope — **OVERWRITE**
    3. Vul `stack` sectie met gedetecteerde framework, taal, DB, etc. — alleen als velden leeg zijn
-   4. Write `.workspace/project.json`
+   4. Write `.project/project.json`
 
 **Output:**
 
 ```
 BACKLOG CREATED
 
-File: .workspace/backlog.html
-Dashboard: .workspace/project.json (concept + stack)
+File: .project/backlog.html
+Dashboard: .project/project.json (concept + stack)
 Server: http://localhost:9876/{project-dir}
 
 | Priority | Features |
@@ -550,7 +550,7 @@ Start development:
 ```
 BACKLOG CREATED
 
-File: .workspace/backlog.html
+File: .project/backlog.html
 
 P1 (MVP):
 1. routing (FEATURE)

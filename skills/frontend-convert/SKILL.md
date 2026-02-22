@@ -106,7 +106,7 @@ multiSelect: false
 
 **Theme check:**
 
-Check if `.workspace/config/THEME.md` exists.
+Check if `.project/config/THEME.md` exists.
 
 - **Found + inspiration mode:** Read and store tokens. Mandatory for mapping.
 - **Found + copy mode:** Read as reference. Use for shared utilities (cn(), Tailwind config) but not for color/font values.
@@ -362,7 +362,7 @@ Close browser: `browser_close`
 
 ### 4.1 Update DevInfo
 
-Update `.workspace/session/devinfo.json`:
+Update `.project/session/devinfo.json`:
 
 ```json
 {

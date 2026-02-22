@@ -2,13 +2,13 @@
 
 Het project dashboard is een interactieve UI die project metadata toont en bewerkt. Alle skills die het dashboard lezen of schrijven gebruiken dezelfde aanpak.
 
-**Bestand:** `.workspace/project.json`
+**Bestand:** `.project/project.json`
 **Template:** `{skills_path}/shared/references/dashboard-template.html`
 **Server:** `{skills_path}/shared/references/serve-backlog.js` (poort 9876)
 
 ## Dashboard lezen
 
-1. Read `.workspace/project.json`
+1. Read `.project/project.json`
 2. Parse als JSON
 3. Gebruik de relevante sectie
 
@@ -26,12 +26,12 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 
 ## Dashboard schrijven
 
-1. Read `.workspace/project.json` (of maak nieuw als niet bestaat)
+1. Read `.project/project.json` (of maak nieuw als niet bestaat)
 2. Parse JSON
 3. Muteer de relevante sectie (NIET andere secties overschrijven)
 4. Write terug als `JSON.stringify(data, null, 2)`
 
-**Nieuw bestand aanmaken** als `.workspace/project.json` niet bestaat:
+**Nieuw bestand aanmaken** als `.project/project.json` niet bestaat:
 
 ```json
 {
@@ -64,15 +64,15 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 
 ## Merge-strategie per sectie
 
-| Sectie      | Strategie           | Toelichting                                            |
-| ----------- | ------------------- | ------------------------------------------------------ |
-| `concept`   | **OVERWRITE**       | Volledig overschrijven bij `/dev-plan` of `/game-plan` |
-| `theme`     | **OVERWRITE**       | Volledig overschrijven bij `/frontend-theme`           |
-| `stack`     | **MERGE**           | Voeg packages toe, overschrijf geen bestaande          |
-| `data`      | **MERGE**           | Voeg entities/velden/relaties toe per entity           |
-| `endpoints` | **MERGE**           | Voeg toe of update status, verwijder niet              |
-| `features`  | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet         |
-| `thinking`  | **APPEND**          | Altijd toevoegen, nooit overschrijven of verwijderen   |
+| Sectie      | Strategie           | Toelichting                                          |
+| ----------- | ------------------- | ---------------------------------------------------- |
+| `concept`   | **OVERWRITE**       | `name`+`content` overschrijven, `thinking` is APPEND |
+| `theme`     | **OVERWRITE**       | Volledig overschrijven bij `/frontend-theme`         |
+| `stack`     | **MERGE**           | Voeg packages toe, overschrijf geen bestaande        |
+| `data`      | **MERGE**           | Voeg entities/velden/relaties toe per entity         |
+| `endpoints` | **MERGE**           | Voeg toe of update status, verwijder niet            |
+| `features`  | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet       |
+| `thinking`  | **APPEND**          | Altijd toevoegen, nooit overschrijven of verwijderen |
 
 ### Stack merge
 
@@ -136,12 +136,22 @@ Nooit bestaande entries wijzigen of verwijderen — append-only log.
 ```json
 {
   "name": "Project Naam",
-  "content": "# Project Naam\n\nVolledige concept beschrijving in markdown.\n\n## Core Concept\n\n...\n\n## Doelgroep\n\n..."
+  "content": "# Project Naam\n\nVolledige concept beschrijving in markdown.\n\n## Core Concept\n\n...\n\n## Doelgroep\n\n...",
+  "thinking": [
+    {
+      "type": "idea",
+      "date": "2026-02-20",
+      "title": "Initieel idee",
+      "content": "Volledige markdown output van /thinking-idea",
+      "source": "/thinking-idea"
+    }
+  ]
 }
 ```
 
 `name` = korte project naam (voor dashboard header)
 `content` = volledige concept document in markdown (vervangt legacy `concept.md`)
+`thinking` = concept progressie log (append-only) — toont de stappen van idea → brainstorm → critique voor het concept. Zelfde entry-formaat als main `thinking`, maar specifiek voor concept-scope.
 
 ### theme
 
@@ -277,14 +287,14 @@ Overige velden = structured tokens per categorie
     "type": "idea",
     "date": "2026-02-20",
     "title": "SaaS dashboard voor freelancers",
-    "content": "Kort markdown overzicht van het idee of de analyse",
+    "content": "Volledige markdown output van de thinking skill",
     "source": "/thinking-idea"
   },
   {
     "type": "brainstorm",
     "date": "2026-02-20",
     "title": "Auth strategie",
-    "content": "Gekozen aanpak + samenvatting",
+    "content": "Volledige refined markdown output",
     "variants": ["JWT stateless", "Session cookies", "OAuth-only"],
     "chosen": "JWT stateless",
     "source": "/thinking-brainstorm"
@@ -293,7 +303,7 @@ Overige velden = structured tokens per categorie
     "type": "critique",
     "date": "2026-02-20",
     "title": "Concept review: dashboard MVP",
-    "content": "Analyse + refined versie",
+    "content": "Volledige refined markdown output",
     "source": "/thinking-critique"
   },
   {
@@ -318,7 +328,7 @@ Alle entries hebben `type`, `date`, `title`, `content`, `source`. Extra velden p
 
 ## Feature files (JSON)
 
-Features worden opgeslagen in `.workspace/features/{feature-name}/` als JSON bestanden:
+Features worden opgeslagen in `.project/features/{feature-name}/` als JSON bestanden:
 
 ### define.json
 
@@ -384,15 +394,16 @@ Features worden opgeslagen in `.workspace/features/{feature-name}/` als JSON bes
 
 ## Welke skills schrijven wat
 
-| Sectie      | Geschreven door                                                                           | Wanneer                                 |
-| ----------- | ----------------------------------------------------------------------------------------- | --------------------------------------- |
-| `concept`   | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan       |
-| `theme`     | `/frontend-theme`                                                                         | Na THEME.md generatie                   |
-| `stack`     | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-page`                 | Bij detectie/nieuwe deps                |
-| `data`      | `/dev-define`, `/game-define`                                                             | Bij entity definitie                    |
-| `endpoints` | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build            |
-| `features`  | `/dev-define`, `/dev-build`, `/dev-test`, `/dev-refactor`, `/game-define`, `/game-build`  | Bij status wijziging (DEF/BLT/TST/DONE) |
-| `thinking`  | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Na elke thinking sessie (append)        |
+| Sectie             | Geschreven door                                                                           | Wanneer                                 |
+| ------------------ | ----------------------------------------------------------------------------------------- | --------------------------------------- |
+| `concept`          | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan       |
+| `theme`            | `/frontend-theme`                                                                         | Na THEME.md generatie                   |
+| `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-page`                 | Bij detectie/nieuwe deps                |
+| `data`             | `/dev-define`, `/game-define`                                                             | Bij entity definitie                    |
+| `endpoints`        | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build            |
+| `features`         | `/dev-define`, `/dev-build`, `/dev-test`, `/dev-refactor`, `/game-define`, `/game-build`  | Bij status wijziging (DEF/BLT/TST/DONE) |
+| `concept.thinking` | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)     |
+| `thinking`         | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Bij non-concept thinking (append)       |
 
 ### Skill → project.json sync overzicht
 

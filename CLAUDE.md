@@ -58,15 +58,15 @@ setup-project.sh  Linkt config naar een project's .claude/
 **Dev**: define → plan → build → test → debug → refactor
 **Game**: define → plan → build → test → debug → refactor (Godot 4.x, GDScript, GUT)
 
-State handoff tussen skills via `.workspace/session/devinfo.json` (schema: `shared/DEVINFO.md`).
+State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared/DEVINFO.md`).
 
 ## Belangrijke Patronen
 
-- **`.workspace/`**: alle runtime artifacts (gitignored) — wireframes, config, session, screenshots
+- **`.project/`**: alle runtime artifacts (gitignored) — wireframes, config, session, screenshots
 - **Profiles**: `core-profile/profiles.yaml` + `switch-profile.py` togglet skill visibility per profiel
 - **Format-on-save**: hook runt Prettier (web) of gdformat (GDScript) na elke Write/Edit
 - **Ralph loop**: Windows-only PowerShell iteratie voor autonome TDD sessies
-- **Backlog**: `.workspace/backlog.md` met status TODO → DEF → BLT → TST → DONE
+- **Backlog**: `.project/backlog.md` met status TODO → DEF → BLT → TST → DONE
 - **Build skills**: auto-commit zonder `Co-Authored-By`, auto-sync CLAUDE.md na voltooiing
 
 ## Regels bij Wijzigingen

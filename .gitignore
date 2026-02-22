@@ -11,8 +11,8 @@ Thumbs.db
 # Local settings (template only in repo)
 settings.local.json
 
-# Workspace (project-specific, not shared)
-.workspace/
+# Project state (project-specific, not shared)
+.project/
 
 # Playwright MCP artifacts
 .playwright-mcp/

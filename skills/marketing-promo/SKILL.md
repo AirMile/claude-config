@@ -184,7 +184,7 @@ SCREENSHOT PLAN:
 Create output directory:
 
 ```bash
-mkdir -p .workspace/screenshots
+mkdir -p .project/screenshots
 ```
 
 ## FASE 4: Capture Screenshots
@@ -219,7 +219,7 @@ async (page) => {
   // await p.waitForTimeout(500);
 
   await p.screenshot({
-    path: ".workspace/screenshots/{filename}",
+    path: ".project/screenshots/{filename}",
     fullPage: false,
   });
 
@@ -284,13 +284,13 @@ If credentials were provided in FASE 1:
 1. List generated files:
 
    ```bash
-   ls -la .workspace/screenshots/*.png 2>/dev/null
+   ls -la .project/screenshots/*.png 2>/dev/null
    ```
 
 2. Get dimensions:
 
    ```bash
-   file .workspace/screenshots/*.png
+   file .project/screenshots/*.png
    ```
 
 3. Display summary:
@@ -304,7 +304,7 @@ If credentials were provided in FASE 1:
    | 2 | 02-settings-panel.png | Settings | 2880x1800 |
    ...
 
-   Totaal: {n} screenshots in .workspace/screenshots/
+   Totaal: {n} screenshots in .project/screenshots/
    Kwaliteit: {HiDPI 2x retina | Standaard viewport}
    Doel: {purpose from FASE 1}
    ```

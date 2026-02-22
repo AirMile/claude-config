@@ -19,9 +19,9 @@ Beheert het project design systeem: design tokens aanmaken, bekijken, updaten, e
 
 ## Overview
 
-Dit command beheert de `theme` sectie in `.workspace/project.json` die design tokens bevat (colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars). Het kan tokens automatisch extraheren uit bestaande Tailwind of CSS configuratie.
+Dit command beheert de `theme` sectie in `.project/project.json` die design tokens bevat (colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars). Het kan tokens automatisch extraheren uit bestaande Tailwind of CSS configuratie.
 
-**Output locatie:** `.workspace/project.json` → `theme` sectie
+**Output locatie:** `.project/project.json` → `theme` sectie
 
 **Referentie:** `THEME_TEMPLATE.md` beschrijft de token categorien en naming conventions.
 
@@ -81,20 +81,20 @@ Zie `shared/DASHBOARD.md` voor het volledige `project.json` schema met alle sect
 
 ### Lezen
 
-1. Read `.workspace/project.json`
+1. Read `.project/project.json`
 2. Parse als JSON
 3. Gebruik `theme` sectie (kan leeg/undefined zijn)
 
 ### Schrijven
 
-1. Read `.workspace/project.json` (of maak nieuw met leeg schema als niet bestaat)
+1. Read `.project/project.json` (of maak nieuw met leeg schema als niet bestaat)
 2. Parse JSON
 3. Muteer ALLEEN de `theme` sectie (NIET andere secties overschrijven)
 4. Write terug als `JSON.stringify(data, null, 2)`
 
 ### Nieuw bestand aanmaken
 
-Als `.workspace/project.json` niet bestaat, maak aan met het lege schema uit `shared/DASHBOARD.md`:
+Als `.project/project.json` niet bestaat, maak aan met het lege schema uit `shared/DASHBOARD.md`:
 
 ```json
 {
@@ -183,17 +183,17 @@ PRE-FLIGHT CHECK
 **1. Directory Check**
 
 ```bash
-# Verify .workspace/ exists or can be created
+# Verify .project/ exists or can be created
 ```
 
 ```
-Directory: [✓|✗] .workspace/ - [exists|created|error]
+Directory: [✓|✗] .project/ - [exists|created|error]
 ```
 
 **2. Session Check**
 
 ```bash
-# Check .workspace/session/devinfo.json
+# Check .project/session/devinfo.json
 ```
 
 ```
@@ -204,7 +204,7 @@ Handoff: [✓|✗] [data available | not applicable]
 **3. Conflict Check (voor Create/Update)**
 
 ```bash
-# Read .workspace/project.json → check of theme sectie al gevuld is
+# Read .project/project.json → check of theme sectie al gevuld is
 ```
 
 ```
@@ -246,7 +246,7 @@ multiSelect: false
 **Check eerst of project.json een gevulde theme sectie bevat:**
 
 ```bash
-# Read .workspace/project.json → parse JSON → check theme sectie
+# Read .project/project.json → parse JSON → check theme sectie
 ```
 
 **Als theme sectie DATA bevat (niet leeg):**
@@ -468,7 +468,7 @@ THEME SAMENVATTING
 header: "Confirm"
 question: "Theme aanmaken met deze settings?"
 options:
-  - label: "Ja, aanmaken (Recommended)", description: "Schrijf naar .workspace/project.json (theme sectie)"
+  - label: "Ja, aanmaken (Recommended)", description: "Schrijf naar .project/project.json (theme sectie)"
   - label: "Aanpassen", description: "Terug om wijzigingen te maken"
   - label: "Annuleren", description: "Stop zonder aanmaken"
 multiSelect: false
@@ -485,7 +485,7 @@ multiSelect: false
 7. **Als dark mode gekozen:** Vul `modes` met zowel `light` als `dark` CSS strings
 8. **Als geen dark mode:** Vul `modes` met alleen `light` key
 9. Genereer `cssVars` — volledige CSS variables string (alle tokens als `:root { ... }`)
-10. Read `.workspace/project.json` (of maak nieuw met leeg schema)
+10. Read `.project/project.json` (of maak nieuw met leeg schema)
 11. Set `theme` sectie → Write terug als formatted JSON
 12. → Ga naar FASE X: Post-flight Validation
 
@@ -493,7 +493,7 @@ multiSelect: false
 
 #### Route: Bekijken
 
-1. Read `.workspace/project.json` → parse `theme` sectie
+1. Read `.project/project.json` → parse `theme` sectie
 2. Parse en toon in overzichtelijke tabel:
 
 ```
@@ -740,7 +740,7 @@ multiSelect: false
 
 **Als "Ja":**
 
-1. Read `.workspace/project.json`
+1. Read `.project/project.json`
 2. Set `theme` sectie naar leeg object `{}`
 3. Write terug
 
@@ -758,7 +758,7 @@ POST-FLIGHT CHECK
 **1. File Validation**
 
 ```
-File: [✓|✗] .workspace/project.json - [exists|missing|empty]
+File: [✓|✗] .project/project.json - [exists|missing|empty]
 Theme: [✓|✗] theme sectie - [populated|empty|missing]
 Format: [✓|✗] JSON - [valid|corrupt]
 ```
@@ -856,7 +856,7 @@ multiSelect: false
 ```
 THEME [AANGEMAAKT/BIJGEWERKT/VERWIJDERD]
 
-Locatie: .workspace/project.json (theme sectie)
+Locatie: .project/project.json (theme sectie)
 
 | Categorie | Tokens |
 |-----------|--------|
@@ -947,7 +947,7 @@ Bij succesvolle completion:
     "from": "frontend-theme",
     "to": "frontend-page",
     "data": {
-      "themeLocation": ".workspace/project.json#theme",
+      "themeLocation": ".project/project.json#theme",
       "preset": "Anthropic Style | Custom",
       "tokens": {
         "colors": 12,
@@ -969,7 +969,7 @@ Bij succesvolle completion:
 
 Deze skill garandeert bij completion:
 
-- `.workspace/project.json` bevat een gevulde `theme` sectie
+- `.project/project.json` bevat een gevulde `theme` sectie
 - `theme` bevat valid sections: colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars
 - `theme.cssVars` bevat syntactisch valide CSS variables string
 - Handoff data beschikbaar in devinfo

@@ -23,7 +23,7 @@ Handles hybrid verification of implemented features through automated testing an
 ## When to Use
 
 - After `/dev-build` completes
-- When `.workspace/features/{name}/03-test-checklist.md` exists
+- When `.project/features/{name}/03-test-checklist.md` exists
 - NOT for: planning (/dev-define), implementation (/dev-build)
 
 ## Input Formats
@@ -63,7 +63,7 @@ Everything works except validation is missing and no welcome mail
 
 1. **Read backlog for pipeline status:**
 
-   Read `.workspace/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
+   Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
    - Filter BLT features: `data.features.filter(f => f.status === "BLT")`
    - BLT features zijn klaar voor testing
    - If no feature name provided: suggest the next BLT feature via **AskUserQuestion**
@@ -77,7 +77,7 @@ Everything works except validation is missing and no welcome mail
 3. **Locate and validate test checklist:**
 
    ```
-   .workspace/features/{feature-name}/03-test-checklist.md
+   .project/features/{feature-name}/03-test-checklist.md
    ```
 
    If not found → exit with message to run `/dev-build {feature-name}` first.
@@ -92,8 +92,8 @@ Everything works except validation is missing and no welcome mail
 
    ```
    Feature: {feature-name}
-   Checklist: .workspace/features/{feature-name}/03-test-checklist.md
-   Define: .workspace/features/{feature-name}/01-define.md
+   Checklist: .project/features/{feature-name}/03-test-checklist.md
+   Define: .project/features/{feature-name}/01-define.md
 
    Lees de checklist en define doc. Zoek vervolgens in de source code naar:
    - Form fields, validatie regels, API endpoints relevant voor de test items
@@ -200,8 +200,8 @@ Everything works except validation is missing and no welcome mail
 **Capture git baseline** (for scoped commit at end of skill):
 
 ```bash
-mkdir -p .workspace/session
-git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+mkdir -p .project/session
+git status --porcelain | sort > .project/session/pre-skill-status.txt
 ```
 
 ### FASE 1: Automated Testing (Task Agent)
@@ -790,21 +790,21 @@ Opgenomen in test results.
    ```
 
 3. **Sync backlog** (zie `shared/BACKLOG.md`):
-   - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
+   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "TST"`
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
 4. **Dashboard sync** (zie `shared/DASHBOARD.md`):
-   - Read `.workspace/project.json` (skip als niet bestaat)
+   - Read `.project/project.json` (skip als niet bestaat)
    - Als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`
    - Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`
    - Als data entities gewijzigd: merge naar `data.entities`
    - Update `features` array: zoek feature op naam, zet status naar `"TST"`
-   - Write `.workspace/project.json`
+   - Write `.project/project.json`
 
 5. **Write feature JSON** (naast bestaande markdown):
-   - Write `test.json` naar `.workspace/features/{feature-name}/` met test resultaten (zie `shared/DASHBOARD.md` voor schema)
+   - Write `test.json` naar `.project/features/{feature-name}/` met test resultaten (zie `shared/DASHBOARD.md` voor schema)
 
 6. **Scoped auto-commit** (only this skill's changes):
 
@@ -814,7 +814,7 @@ Opgenomen in test results.
    git status --porcelain | sort > /tmp/current-status.txt
    ```
 
-   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
    - **NEW** (only in current, not in baseline) → `git add` automatically
    - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
    - **PRE-EXISTING** (only in baseline) → do NOT stage
@@ -834,7 +834,7 @@ Opgenomen in test results.
    )"
    ```
 
-   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
+   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
@@ -843,7 +843,7 @@ Opgenomen in test results.
 ## Output Structure
 
 ```
-.workspace/features/{feature-name}/
+.project/features/{feature-name}/
 ├── 01-define.md          # Updated: Status: VERIFIED
 ├── 02-build-log.md       # From build phase
 ├── 03-test-checklist.md  # From build phase

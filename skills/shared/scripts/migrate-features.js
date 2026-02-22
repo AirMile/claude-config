@@ -2,7 +2,7 @@
 // migrate-features.js — Convert markdown feature files to JSON
 // Usage: node migrate-features.js /path/to/project
 //
-// Scans .workspace/features/*/01-define.md, 02-build-log.md, 03-test-checklist.md
+// Scans .project/features/*/01-define.md, 02-build-log.md, 03-test-checklist.md
 // Generates define.json, build.json, test.json alongside the markdown files (not replacing them)
 
 const fs = require("fs");
@@ -14,9 +14,9 @@ if (!projectPath) {
   process.exit(1);
 }
 
-const featuresDir = path.join(projectPath, ".workspace/features");
+const featuresDir = path.join(projectPath, ".project/features");
 if (!fs.existsSync(featuresDir)) {
-  console.log("No .workspace/features/ directory found. Nothing to migrate.");
+  console.log("No .project/features/ directory found. Nothing to migrate.");
   process.exit(0);
 }
 

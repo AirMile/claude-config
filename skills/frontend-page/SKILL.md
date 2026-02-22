@@ -61,7 +61,7 @@ multiSelect: false
 
 ### 0.2b Theme Check (always)
 
-Check if `.workspace/config/THEME.md` exists (output from `/frontend-theme`).
+Check if `.project/config/THEME.md` exists (output from `/frontend-theme`).
 
 - **If found**: read and store as context for code generation (colors, typography, spacing, breakpoints).
 - **If not found**: note absence, use Tailwind defaults during code generation.
@@ -573,7 +573,7 @@ Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
    - {Component}: <form> → placeholder submit
    ```
 
-3. **Als `.workspace/backlog.html` bestaat** (zie `shared/BACKLOG.md`):
+3. **Als `.project/backlog.html` bestaat** (zie `shared/BACKLOG.md`):
    - Parse JSON uit `<script id="backlog-data">` blok
    - Cross-reference gap met `data.features` en `data.adhoc`
    - Match? Noteer: "Feature bestaat in backlog: {name} ({status})"
@@ -581,7 +581,7 @@ Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
      `{ "name": "{feature-naam}", "type": "PAGE-GAP", "status": "TODO", "description": "{beschrijving}", "dependency": null, "source": "/frontend-page {page} — {Component} [{element}]" }`
    - Zet `data.updated` naar huidige datum, schrijf JSON terug via Edit tool
 
-4. **Als `.workspace/backlog.html` NIET bestaat:**
+4. **Als `.project/backlog.html` NIET bestaat:**
    - Rapporteer gaps alleen in completion report (geen backlog om aan toe te voegen)
 
 Gaps verschijnen altijd in het completion report. Toevoegen aan backlog is automatisch maar non-blocking.
@@ -723,14 +723,14 @@ Pattern: [React Query | SWR | Server Components | Plain fetch]
 
 Zie `shared/DASHBOARD.md` voor schema en merge-strategieën.
 
-1. Read `.workspace/project.json` (skip als niet bestaat)
+1. Read `.project/project.json` (skip als niet bestaat)
 2. Als packages geïnstalleerd tijdens code generatie (FASE 3) of data hookup (FASE 4):
    - Merge naar `stack.packages` (voeg toe als niet aanwezig, update versie als nieuwer)
-3. Write `.workspace/project.json`
+3. Write `.project/project.json`
 
 ### Update DevInfo
 
-Update `.workspace/session/devinfo.json` with handoff data for downstream skills:
+Update `.project/session/devinfo.json` with handoff data for downstream skills:
 
 ```json
 {

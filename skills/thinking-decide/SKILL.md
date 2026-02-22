@@ -180,7 +180,7 @@ multiSelect: false
 
 **Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
 
-1. Read `.workspace/project.json` (skip als niet bestaat)
+1. Read `.project/project.json` (skip als niet bestaat)
 2. Push naar `thinking` array:
    ```json
    {
@@ -194,7 +194,7 @@ multiSelect: false
      "source": "/thinking-decide"
    }
    ```
-3. Write `.workspace/project.json`
+3. Write `.project/project.json`
 
 ## Best Practices
 

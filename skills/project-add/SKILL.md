@@ -174,14 +174,14 @@ gh repo clone <owner/repo> {projects_root}/[naam]
 ```bash
 mkdir -p {projects_root}/[naam]/.claude/docs
 mkdir -p {projects_root}/[naam]/.claude/research
-mkdir -p {projects_root}/[naam]/.workspace/sessions/chats
-mkdir -p {projects_root}/[naam]/.workspace/sessions/commands
-mkdir -p {projects_root}/[naam]/.workspace/plans
-mkdir -p {projects_root}/[naam]/.workspace/features
+mkdir -p {projects_root}/[naam]/.project/sessions/chats
+mkdir -p {projects_root}/[naam]/.project/sessions/commands
+mkdir -p {projects_root}/[naam]/.project/plans
+mkdir -p {projects_root}/[naam]/.project/features
 ```
 
 **New mode:** maakt alles vanaf scratch.
-**Clone mode:** project root bestaat al, maakt alleen `.claude/` en `.workspace/` subdirs aan.
+**Clone mode:** project root bestaat al, maakt alleen `.claude/` en `.project/` subdirs aan.
 
 ### FASE 3.5: Profiel Selectie
 
@@ -277,8 +277,8 @@ build/
 Thumbs.db
 
 # Claude workspace (runtime data)
-.workspace/sessions/
-.workspace/features/
+.project/sessions/
+.project/features/
 
 # Claude local config (per-device, not shared)
 .claude/paths.local.yaml
@@ -304,8 +304,8 @@ Check of de volgende entries al in `.gitignore` staan. Voeg alleen ontbrekende e
 
 ```
 # Claude workspace (runtime data)
-.workspace/sessions/
-.workspace/features/
+.project/sessions/
+.project/features/
 
 # Claude local config (per-device, not shared)
 .claude/paths.local.yaml
@@ -486,7 +486,7 @@ Structuur:
 │   ├── docs/
 │   ├── research/
 │   └── CLAUDE.md (of nog te configureren)
-├── .workspace/
+├── .project/
 └── .gitignore
 
 Actief profiel: [profiel naam(en)]
@@ -511,7 +511,7 @@ Structuur:
 │   ├── docs/
 │   ├── research/
 │   └── CLAUDE.md (of nog te configureren)
-├── .workspace/
+├── .project/
 ├── .gitignore (bijgewerkt met claude entries)
 └── [bestaande repo bestanden]
 

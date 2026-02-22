@@ -25,7 +25,7 @@ This skill activates in these scenarios:
 **Primary use:**
 
 - After `/game-build` completes implementation
-- When `.workspace/features/{name}/03-playtest.md` exists
+- When `.project/features/{name}/03-playtest.md` exists
 - When human verification is needed for game mechanics
 
 **Context indicators:**
@@ -127,7 +127,7 @@ Now TESTABLE -> TDD fix loop
 1. **Check backlog for BLT features (if no feature name provided):**
 
    ```
-   Read(".workspace/backlog.html")
+   Read(".project/backlog.html")
    ```
 
    - If backlog exists: parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
@@ -149,7 +149,7 @@ Now TESTABLE -> TDD fix loop
 3. **Locate playtest checklist:**
 
    ```
-   .workspace/features/{feature-name}/03-playtest.md
+   .project/features/{feature-name}/03-playtest.md
    ```
 
 4. **Validate file exists:**
@@ -160,7 +160,7 @@ Now TESTABLE -> TDD fix loop
    NOT FOUND: 03-playtest.md
 
    Feature: {feature-name}
-   Searched: .workspace/features/{feature-name}/
+   Searched: .project/features/{feature-name}/
 
    This feature needs to be built first.
    Run /game-build {feature-name} to implement and generate playtest checklist.
@@ -175,13 +175,13 @@ Now TESTABLE -> TDD fix loop
 
 6. **Verify playtest scene exists:**
 
-   Scene path: `.workspace/features/{feature-name}/playtest_scene.tscn`
+   Scene path: `.project/features/{feature-name}/playtest_scene.tscn`
 
    **If scene exists:**
 
    ```
    PLAYTEST SCENE FOUND
-   Path: .workspace/features/{feature-name}/playtest_scene.tscn
+   Path: .project/features/{feature-name}/playtest_scene.tscn
    Debug listener: Active
    ```
 
@@ -190,7 +190,7 @@ Now TESTABLE -> TDD fix loop
    ```
    ERROR: Playtest scene not found
 
-   Expected: .workspace/features/{feature-name}/playtest_scene.tscn
+   Expected: .project/features/{feature-name}/playtest_scene.tscn
 
    The /game-build phase should have created this scene.
    Run /game-build {feature-name} first, or check if build completed successfully.
@@ -203,7 +203,7 @@ Now TESTABLE -> TDD fix loop
    ```python
    mcp__godot-mcp__run_project(
        projectPath=".",
-       scene=".workspace/features/{feature-name}/playtest_scene.tscn"
+       scene=".project/features/{feature-name}/playtest_scene.tscn"
    )
    ```
 
@@ -298,8 +298,8 @@ Feedback: received
 **Capture git baseline** (for scoped commit at end of skill):
 
 ```bash
-mkdir -p .workspace/session
-git status --porcelain | sort > .workspace/session/pre-skill-status.txt
+mkdir -p .project/session
+git status --porcelain | sort > .project/session/pre-skill-status.txt
 ```
 
 ### FASE 1: Parse Feedback
@@ -1015,7 +1015,7 @@ Opgenomen in test results.
    ```
 
 4. **Sync backlog** (zie `shared/BACKLOG.md`):
-   - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
+   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "TST"`
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
@@ -1028,7 +1028,7 @@ Opgenomen in test results.
    git status --porcelain | sort > /tmp/current-status.txt
    ```
 
-   Categorize files by comparing with `.workspace/session/pre-skill-status.txt`:
+   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
    - **NEW** (only in current, not in baseline) → `git add` automatically
    - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
    - **PRE-EXISTING** (only in baseline) → do NOT stage
@@ -1046,7 +1046,7 @@ Opgenomen in test results.
    )"
    ```
 
-   Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
+   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
@@ -1067,7 +1067,7 @@ Committed: test({feature}): verified
 ## Output Structure
 
 ```
-.workspace/features/{feature-name}/
+.project/features/{feature-name}/
 ├── 01-define.md          # Updated: Status: VERIFIED
 ├── 02-build-log.md       # Implementation log from build phase
 ├── 03-playtest.md        # Playtest checklist from build phase

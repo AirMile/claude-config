@@ -50,7 +50,7 @@ Follow the setup guide, then continue to 1.2.
 
 Load project context for informed edits:
 
-- **Theme** (optional): Read `.workspace/config/THEME.md` if it exists
+- **Theme** (optional): Read `.project/config/THEME.md` if it exists
   - Provides design tokens, color palette, typography scale, spacing system
   - Used to validate edits against the design system
   - If not found: no problem, rely on `class:` from clipboard
