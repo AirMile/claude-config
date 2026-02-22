@@ -181,59 +181,167 @@
         line-height: 1.6;
       }
 
-      /* Concept content (rendered markdown) */
-      .concept-content {
+      /* Shared markdown content styling (marked.js output) */
+      .concept-content,
+      .thinking-content,
+      .research-content {
         font-size: 14px;
         line-height: 1.7;
         color: var(--text-muted);
       }
 
-      .concept-content h2 {
-        font-size: 18px;
+      .concept-content h1,
+      .thinking-content h1,
+      .research-content h1 {
+        font-size: 20px;
         color: var(--text);
+        margin: 0 0 12px;
+        scroll-margin-top: 16px;
+      }
+
+      .concept-content h2,
+      .thinking-content h2,
+      .research-content h2 {
+        font-size: 17px;
+        color: var(--accent);
         margin: 24px 0 8px;
         padding-bottom: 4px;
         border-bottom: 1px solid var(--border);
+        scroll-margin-top: 16px;
       }
 
       .concept-content h2:first-child {
         display: none;
       }
 
-      .concept-content h3 {
+      .concept-content h3,
+      .thinking-content h3,
+      .research-content h3 {
         font-size: 15px;
         color: var(--text);
         margin: 20px 0 6px;
+        scroll-margin-top: 16px;
       }
 
-      .concept-content h4 {
+      .concept-content h4,
+      .thinking-content h4,
+      .research-content h4 {
         font-size: 13px;
         color: var(--text);
         margin: 16px 0 4px;
+        scroll-margin-top: 16px;
       }
 
-      .concept-content p {
+      .concept-content p,
+      .thinking-content p,
+      .research-content p {
         margin: 0 0 12px;
       }
 
-      .concept-content ul {
+      .concept-content ul,
+      .concept-content ol,
+      .thinking-content ul,
+      .thinking-content ol,
+      .research-content ul,
+      .research-content ol {
         margin: 0 0 12px;
         padding-left: 20px;
       }
 
-      .concept-content li {
+      .concept-content li,
+      .thinking-content li,
+      .research-content li {
         margin-bottom: 4px;
+        color: var(--text-muted);
       }
 
-      .concept-content strong {
+      .concept-content strong,
+      .thinking-content strong,
+      .research-content strong {
         color: var(--text);
       }
 
-      .concept-content code {
+      .concept-content code,
+      .thinking-content code,
+      .research-content code {
         background: var(--surface-hover);
         padding: 1px 5px;
         border-radius: 3px;
         font-size: 12px;
+      }
+
+      .concept-content pre,
+      .thinking-content pre,
+      .research-content pre {
+        background: var(--bg);
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 8px 0;
+      }
+
+      .concept-content pre code,
+      .thinking-content pre code,
+      .research-content pre code {
+        background: none;
+        padding: 0;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .concept-content table,
+      .thinking-content table,
+      .research-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+        font-size: 13px;
+      }
+
+      .concept-content th,
+      .thinking-content th,
+      .research-content th {
+        text-align: left;
+        padding: 6px 10px;
+        border-bottom: 2px solid var(--border);
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .concept-content td,
+      .thinking-content td,
+      .research-content td {
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .concept-content hr,
+      .thinking-content hr,
+      .research-content hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 16px 0;
+      }
+
+      .concept-content blockquote,
+      .thinking-content blockquote,
+      .research-content blockquote {
+        padding-left: 12px;
+        margin: 8px 0;
+        color: var(--text-dim);
+      }
+
+      .concept-content a,
+      .thinking-content a,
+      .research-content a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .concept-content a:hover,
+      .thinking-content a:hover,
+      .research-content a:hover {
+        text-decoration: underline;
       }
 
       /* Grid */
@@ -652,20 +760,6 @@
         border-radius: 6px;
         padding: 16px;
         margin-bottom: 10px;
-        border-left: 3px solid var(--border);
-      }
-
-      .thinking-entry[data-type="idea"] {
-        border-left-color: #10b981;
-      }
-      .thinking-entry[data-type="brainstorm"] {
-        border-left-color: #8b5cf6;
-      }
-      .thinking-entry[data-type="critique"] {
-        border-left-color: #f97316;
-      }
-      .thinking-entry[data-type="decision"] {
-        border-left-color: #3b82f6;
       }
 
       .thinking-type-badge {
@@ -714,9 +808,6 @@
 
       .thinking-content {
         font-size: 13px;
-        color: var(--text-muted);
-        line-height: 1.6;
-        white-space: pre-wrap;
       }
 
       .thinking-meta {
@@ -779,24 +870,6 @@
         max-height: 85vh;
         overflow-y: auto;
         margin-bottom: 40px;
-      }
-
-      .research-content {
-        font-size: 14px;
-        line-height: 1.6;
-        color: var(--text-dim);
-      }
-      .research-content strong {
-        color: var(--text);
-      }
-      .research-content h1,
-      .research-content h2,
-      .research-content h3,
-      .research-content h4 {
-        color: var(--text);
-      }
-      .research-content li {
-        color: var(--text-dim);
       }
 
       .modal h3 {
@@ -996,6 +1069,7 @@
         color: var(--accent);
       }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
   </head>
   <body>
     <script id="dashboard-data" type="application/json">
@@ -1187,10 +1261,34 @@
     <div class="toast" id="toast"></div>
 
     <script>
+      // ─── Markdown ─────────────────────────────────────────
+      function slugify(text) {
+        return text
+          .toLowerCase()
+          .replace(/<[^>]*>/g, "")
+          .replace(/[^\w\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-")
+          .trim();
+      }
+
+      const renderer = new marked.Renderer();
+      renderer.heading = function ({ text, depth }) {
+        const id = slugify(text);
+        return `<h${depth} id="${id}">${text}</h${depth}>`;
+      };
+
+      marked.setOptions({ breaks: true, gfm: true, renderer });
+
+      function md(text) {
+        if (!text) return "";
+        return marked.parse(text);
+      }
+
       // ─── State ──────────────────────────────────────────────
       const raw = document.getElementById("dashboard-data").textContent;
       let data = JSON.parse(raw);
-      let activeTab = "concept";
+      let activeTab = localStorage.getItem("dashboard-tab") || "concept";
       let modalContext = null;
 
       const TABS = [
@@ -1282,6 +1380,18 @@
       }
 
       // ─── Modal ──────────────────────────────────────────────
+      // Anchor link navigation within modals (e.g. research TOC)
+      document.getElementById("modal-body").addEventListener("click", (e) => {
+        const a = e.target.closest("a[href^='#']");
+        if (!a) return;
+        e.preventDefault();
+        const id = decodeURIComponent(a.getAttribute("href").slice(1));
+        const target = document.getElementById(id);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+
       function openModal(title, bodyHtml, ctx) {
         modalContext = ctx;
         document.getElementById("modal-title").textContent = title;
@@ -1346,44 +1456,6 @@
 
       // ─── Section Renderers ──────────────────────────────────
 
-      // Simple markdown to HTML (headings, bold, lists, paragraphs)
-      function mdToHtml(md) {
-        if (!md) return "";
-        return md
-          .split("\n\n")
-          .map((block) => {
-            block = block.trim();
-            if (!block) return "";
-            // Headings
-            if (block.startsWith("### "))
-              return `<h4>${esc(block.slice(4))}</h4>`;
-            if (block.startsWith("## "))
-              return `<h3>${esc(block.slice(3))}</h3>`;
-            if (block.startsWith("# "))
-              return `<h2>${esc(block.slice(2))}</h2>`;
-            // Bullet list
-            if (/^[-*] /.test(block)) {
-              const items = block
-                .split("\n")
-                .filter((l) => /^[-*] /.test(l))
-                .map((l) => `<li>${inlineMd(l.replace(/^[-*] /, ""))}</li>`)
-                .join("");
-              return `<ul>${items}</ul>`;
-            }
-            // Paragraph
-            return `<p>${inlineMd(block.replace(/\n/g, " "))}</p>`;
-          })
-          .join("\n");
-      }
-
-      function inlineMd(text) {
-        return esc(text)
-          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-          .replace(/\*(.+?)\*/g, "<em>$1</em>")
-          .replace(/`(.+?)`/g, "<code>$1</code>")
-          .replace(/--/g, "\u2014");
-      }
-
       function renderConcept() {
         const c = data.concept;
         if (!c.name && !c.content) {
@@ -1400,7 +1472,7 @@
             <h2>Concept</h2>
             <button class="edit-btn" onclick="editConcept()">Bewerken</button>
           </div>
-          <div class="concept-content">${mdToHtml(c.content)}</div>`;
+          <div class="concept-content">${md(c.content)}</div>`;
       }
 
       function renderTheme() {
@@ -2000,7 +2072,7 @@
               <span class="thinking-date">${esc(e.date || "")}</span>
             </div>
             ${meta ? `<div class="thinking-meta">${meta}</div>` : ""}
-            <div class="thinking-content">${esc(truncated)}${needsExpand ? ' <span style="color:var(--accent)">[meer]</span>' : ""}</div>
+            <div class="thinking-content">${md(truncated)}${needsExpand ? ' <span style="color:var(--accent)">[meer]</span>' : ""}</div>
             <div class="thinking-source">${esc(e.source || "")}</div>
           </div>`;
           })
@@ -2249,11 +2321,11 @@
 
           let content = "";
           if (research.stack) {
-            content += `<div class="research-content">${markdownToHtml(research.stack)}</div>`;
+            content += `<div class="research-content">${md(research.stack)}</div>`;
           }
           if (research.architecture) {
             content += `<h3 style="margin-top:24px;color:var(--text)">Architecture Baseline</h3>
-              <div class="research-content">${markdownToHtml(research.architecture)}</div>`;
+              <div class="research-content">${md(research.architecture)}</div>`;
           }
 
           openModal("Stack Research", content, { readOnly: true, wide: true });
@@ -2264,64 +2336,6 @@
             { readOnly: true },
           );
         }
-      }
-
-      function markdownToHtml(md) {
-        return (
-          md
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            // Code blocks
-            .replace(
-              /```(\w*)\n([\s\S]*?)```/g,
-              (_, lang, code) =>
-                `<pre style="background:var(--bg-dark);padding:12px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.5;margin:8px 0"><code>${code.trim()}</code></pre>`,
-            )
-            // Inline code
-            .replace(
-              /`([^`]+)`/g,
-              '<code style="background:var(--bg-dark);padding:2px 6px;border-radius:3px;font-size:13px">$1</code>',
-            )
-            // Headers
-            .replace(
-              /^#### (.+)$/gm,
-              '<h4 style="color:var(--text);margin:16px 0 6px;font-size:14px">$1</h4>',
-            )
-            .replace(
-              /^### (.+)$/gm,
-              '<h3 style="color:var(--text);margin:20px 0 8px;font-size:15px">$1</h3>',
-            )
-            .replace(
-              /^## (.+)$/gm,
-              '<h2 style="color:var(--accent);margin:24px 0 10px;font-size:17px;border-bottom:1px solid var(--border);padding-bottom:6px">$1</h2>',
-            )
-            .replace(
-              /^# (.+)$/gm,
-              '<h1 style="color:var(--text);margin:0 0 16px;font-size:20px">$1</h1>',
-            )
-            // Bold & italic
-            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-            .replace(/\*(.+?)\*/g, "<em>$1</em>")
-            // List items
-            .replace(
-              /^- (.+)$/gm,
-              '<li style="margin:2px 0;list-style:disc;margin-left:20px">$1</li>',
-            )
-            .replace(
-              /^  - (.+)$/gm,
-              '<li style="margin:2px 0;list-style:circle;margin-left:36px">$1</li>',
-            )
-            // Horizontal rules
-            .replace(
-              /^---$/gm,
-              '<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">',
-            )
-            // Paragraphs (double newline)
-            .replace(/\n\n/g, '</p><p style="margin:8px 0">')
-            // Single newlines within paragraphs
-            .replace(/\n/g, "<br>")
-        );
       }
 
       function editStack() {
@@ -2796,6 +2810,7 @@
           a.addEventListener("click", (e) => {
             e.preventDefault();
             activeTab = a.dataset.tab;
+            localStorage.setItem("dashboard-tab", activeTab);
             render();
           });
         });
