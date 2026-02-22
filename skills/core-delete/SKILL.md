@@ -111,7 +111,7 @@ For each match, classify it:
 | `HOOK`          | Referenced in hook configuration         | Update or remove hook reference      |
 | `CONFIG`        | Referenced in CLAUDE.md or config        | Update or remove config reference    |
 
-Use sequential thinking to analyze each reference and classify it correctly. Pay attention to the context — is it a hard dependency (workflow breaks without it) or a soft reference (mention in a list)?
+Analyze each reference and classify it correctly. Pay attention to the context — is it a hard dependency (workflow breaks without it) or a soft reference (mention in a list)?
 
 ## FASE 2: Impact Report
 

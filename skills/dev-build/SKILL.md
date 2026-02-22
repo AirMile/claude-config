@@ -385,6 +385,22 @@ Opties:
    ```
 
 3. Sync backlog (zie `shared/BACKLOG.md`): parse JSON uit `.workspace/backlog.html`, zoek feature in `data.features`/`data.adhoc`, zet `.status = "BLT"`, update `data.updated`, schrijf JSON terug via Edit tool
+
+3b. **Dashboard sync** (zie `shared/DASHBOARD.md`):
+
+- Read `.workspace/project.json` (skip als niet bestaat — dashboard is optioneel)
+- **Endpoints**: voor elk endpoint dat in deze build is geïmplementeerd:
+  - Zoek op method+path in `endpoints` array
+  - Gevonden → update `status` naar `"done"`
+  - Niet gevonden → push met `status: "done"`
+- **Stack packages**: als nieuwe dependencies geïnstalleerd tijdens build:
+  - Voor elk nieuw package: push naar `stack.packages` als nog niet aanwezig
+- **Features**: update `features` array:
+  - Zoek feature op naam, zet status naar `"BLT"`
+  - Als feature niet bestaat: push met `{ name, status: "BLT", summary, created }`
+- **Write build.json**: schrijf `.workspace/features/{feature-name}/build.json` met build data (zie `shared/DASHBOARD.md` voor schema)
+- Write `.workspace/project.json`
+
 4. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
@@ -411,18 +427,7 @@ Opties:
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-5. Toon next steps (context-aware):
-
-   Altijd:
-   - `/dev-test {feature}` — Test de gebouwde feature
-
-   Als frontendImpact niet leeg (componenten op pagina's gewijzigd):
-   - `/frontend-iterate` — Controleer visuele impact op bestaande pagina's
-
-   Als feature UI-componenten bevat:
-   - `/frontend-page {page-name}` — Bouw/update pagina met nieuwe componenten
-
-6. Build is officieel compleet
+5. Build is officieel compleet
 
 ## Test Output Parsing (CRITICAL)
 

@@ -827,14 +827,6 @@ Added:
    - .workspace/features/{feature}/03-playtest.md
    ```
 
-   Then show the next step as a separate copyable block:
-
-   ```
-   **Next Step**
-
-   `/game-test {feature}`
-   ```
-
 3. **Sync backlog** (zie `shared/BACKLOG.md`):
    - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "BLT"`
@@ -848,8 +840,15 @@ Added:
 
    Feature: {feature-name}
    Status: DEF -> BLT
-   Next: /game-test {feature}
    ```
+
+3b. **Dashboard sync** (zie `shared/DASHBOARD.md`):
+
+- Read `.workspace/project.json` (skip als niet bestaat)
+- Update `features` array: zoek feature op naam, zet status naar `"BLT"`
+- Als feature niet bestaat: push met `{ name, status: "BLT", summary, created }`
+- **Write build.json**: schrijf `.workspace/features/{feature-name}/build.json` met build data (zie `shared/DASHBOARD.md` voor schema)
+- Write `.workspace/project.json`
 
 4. **Scoped auto-commit** (only this skill's changes):
 

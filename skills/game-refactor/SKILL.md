@@ -847,9 +847,6 @@ IMPROVEMENTS APPLIED
    ✓ /game-refactor - Refactoring
 
    Ready for next feature!
-
-   Next feature from backlog:
-   → /game-define {next-feature}
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 

@@ -76,7 +76,7 @@ stateDiagram-v2
 - **FASE2_ROUND1**: Spawn 2 parallel agents for v1 wireframes
 - **VALIDATE_ROUND1**: Verify all 2 v1 files exist and valid
 - **RETRY_ROUND1**: Retry failed agent only
-- **FASE3_REFLECTION**: Sequential thinking analysis of v1 wireframes
+- **FASE3_REFLECTION**: Analysis of v1 wireframes
 - **FASE4_ROUND2**: Spawn 2 parallel agents for v2 wireframes
 - **VALIDATE_ROUND2**: Verify all 2 v2 files exist and valid
 - **FASE5_REFINE**: User selects basis + elements to combine into refined.html
@@ -98,7 +98,7 @@ FASE 2: Round 1 - 2 agents create v1 wireframes (parallel)
     ↓
     [Validate Round 1]
     ↓
-FASE 3: Visual Reflection (sequential thinking)
+FASE 3: Visual Reflection
     ↓
 FASE 4: Round 2 - 2 agents create v2 wireframes (parallel)
     ↓
@@ -928,9 +928,9 @@ Beschikbare assets voor analyse:
 start .workspace/wireframes/[page-name]/agent-a/v1.html
 ```
 
-### Step 3.2: Sequential Thinking Analysis
+### Step 3.2: Wireframe Analysis
 
-Analyseer ELKE wireframe met sequential thinking, gebruik de screenshots EN snapshots:
+Analyseer ELKE wireframe, gebruik de screenshots EN snapshots:
 
 ```
 Analyseren van [agent] v1 wireframe...

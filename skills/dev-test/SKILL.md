@@ -720,14 +720,12 @@ Use AskUserQuestion tool:
 
 **If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in 03-test-results.md. Do NOT attempt to fix these — they are out of scope.
 
-After documenting, suggest next steps:
+After documenting, show confirmation:
 
 ```
 OBSERVATIE GENOTEERD
 
-Opgenomen in test results. Volgende stappen voor deze items:
-- /dev-define {observation-topic} — als het een nieuwe feature is
-- Voeg toe aan .workspace/backlog.html — als het een bekende TODO is
+Opgenomen in test results.
 ```
 
 ---
@@ -797,7 +795,18 @@ Opgenomen in test results. Volgende stappen voor deze items:
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
-4. **Scoped auto-commit** (only this skill's changes):
+4. **Dashboard sync** (zie `shared/DASHBOARD.md`):
+   - Read `.workspace/project.json` (skip als niet bestaat)
+   - Als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`
+   - Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`
+   - Als data entities gewijzigd: merge naar `data.entities`
+   - Update `features` array: zoek feature op naam, zet status naar `"TST"`
+   - Write `.workspace/project.json`
+
+5. **Write feature JSON** (naast bestaande markdown):
+   - Write `test.json` naar `.workspace/features/{feature-name}/` met test resultaten (zie `shared/DASHBOARD.md` voor schema)
+
+6. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -828,17 +837,6 @@ Opgenomen in test results. Volgende stappen voor deze items:
    Clean up: `rm -f .workspace/session/pre-skill-status.txt /tmp/current-status.txt`
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
-
-5. **Suggest next steps (context-aware):**
-
-   Altijd:
-   - `/dev-refactor {feature-name}` — code quality verbeteren
-
-   Als feature UI-componenten heeft:
-   - `/frontend-page {page}` → bouw/update pagina met deze feature
-
-   Als testfailures architectuurproblemen onthullen (meerdere gekoppelde failures):
-   - `/thinking-decide` → overweeg architectuurwijziging
 
 ---
 

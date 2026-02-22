@@ -215,7 +215,7 @@ Test with: /[prefix]-[name]
 
 ### Step 5: Verification
 
-Verify with sequential thinking:
+Verify:
 
 - [ ] File(s) in correct location
 - [ ] `name` field: kebab-case, matches folder

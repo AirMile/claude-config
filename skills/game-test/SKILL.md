@@ -932,14 +932,12 @@ Use AskUserQuestion tool:
 
 **If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in 03-test-results.md. Do NOT attempt to fix these — they are out of scope.
 
-After documenting, suggest next steps:
+After documenting, show confirmation:
 
 ```
 OBSERVATIE GENOTEERD
 
-Opgenomen in test results. Volgende stappen voor deze items:
-- /game-define {observation-topic} — als het een nieuwe feature is
-- Voeg toe aan .workspace/backlog.html — als het een bekende TODO is
+Opgenomen in test results.
 ```
 
 ---
@@ -1062,10 +1060,6 @@ Status: TST
 Items: {N}/{N} passing
 
 Committed: test({feature}): verified
-
-Next steps:
-- Refactor code quality: /game-refactor {feature-name}
-- Or continue with next feature: /game-define {next-feature}
 ```
 
 ---

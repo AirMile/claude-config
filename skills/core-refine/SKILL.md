@@ -43,9 +43,47 @@ LOADED: [name]
 Lines: [count] | Sections: [count] | Has resources: [yes/no]
 ```
 
+## Step 1.5: Context Detection
+
+Scan for prior skill execution that can inform testing:
+
+1. **Conversation context** — check if the target skill (or a skill from the same pipeline) was invoked earlier in this conversation (e.g., a `/dev-build` invocation when refining `dev-build`)
+2. **devinfo.json** — read `.workspace/session/devinfo.json` if it exists; check `executionPlan` for completed skills matching the target or its pipeline
+
+**Detection signals:**
+
+- Target skill name appears in conversation as a slash command invocation
+- devinfo.json `executionPlan` contains the target skill with status "completed"
+- devinfo.json `executionPlan` contains a skill from the same pipeline (e.g., `dev-define` when refining `dev-build`)
+
+**If context detected, show:**
+
+```
+CONTEXT DETECTED
+
+Source: [conversation | devinfo.json | both]
+Skill(s) found: [list of detected skills with status]
+Artifacts: [relevant files/outputs if available from devinfo]
+
+This context will be used for test simulation if extended mode is selected.
+```
+
+**If no context detected:** proceed silently to Step 2.
+
 ## Step 2: Choose Mode
 
 Use **AskUserQuestion**:
+
+**If context was detected in Step 1.5:**
+
+- header: "Modus"
+- question: "Er is context beschikbaar uit een eerdere skill-uitvoering. Hoe wil je de skill analyseren?"
+- options:
+  - label: "Uitgebreid met test (Recommended)", description: "Test simulatie met de gedetecteerde context als basis — levert de meest bruikbare observaties op"
+  - label: "Quick analyse", description: "Directe analyse zonder test — snel, geschikt voor kleine skills"
+- multiSelect: false
+
+**If no context detected:**
 
 - header: "Modus"
 - question: "Hoe wil je de skill analyseren?"
@@ -60,11 +98,16 @@ Use **AskUserQuestion**:
 
 ### 3.1 Generate Scenario
 
-Analyze the skill and generate a realistic test scenario:
+**If context was detected in Step 1.5** — use the real execution as test basis:
+
+- Build scenario from the actual skill invocation and its outcomes
+- Reference real artifacts (files created, decisions made, errors encountered)
+- If devinfo.json has handoff data or file tracking, incorporate those specifics
+
+**If no context detected** — fabricate a realistic scenario:
 
 - Pick a use case that exercises the skill's main workflow
 - Include at least one edge case or decision point
-- Write a brief scenario description
 
 **Present to user:**
 
@@ -72,7 +115,8 @@ Analyze the skill and generate a realistic test scenario:
 TEST SCENARIO
 
 Scenario: [description]
-Context: [what project/situation we're simulating]
+Context: [real: based on prior execution | simulated: fabricated project context]
+[If real: list key artifacts/decisions from the detected context]
 
 I'll simulate executing this skill. You respond as you normally would.
 Ready? Type anything to start.
@@ -107,7 +151,7 @@ Worked well:
 
 ## Step 4: Analysis
 
-Use **sequential thinking** to analyze the skill across these dimensions. Score each 1-5.
+Analyze the skill across these dimensions. Score each 1-5.
 
 ### 4.1 Redundancy
 

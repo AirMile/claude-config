@@ -47,7 +47,7 @@ Accepts markdown from:
    - If `.workspace/` folder exists → continue to step 2
 
 2. **Check for existing files (only if .workspace exists):**
-   - Check if `.workspace/concept.md` exists
+   - Check if `.workspace/project.json` exists and `concept.content` is non-empty
    - Check if `.workspace/backlog.html` exists
 
 3. **Scenario A: Both concept AND backlog exist**
@@ -58,7 +58,7 @@ Accepts markdown from:
      ```
      EXISTING BACKLOG DETECTED
 
-     Concept: .workspace/concept.md
+     Concept: .workspace/project.json (concept.content)
      Backlog: .workspace/backlog.html
 
      Changes detected:
@@ -96,7 +96,7 @@ Accepts markdown from:
      ```
      CONCEPT DETECTED
 
-     File: .workspace/concept.md
+     File: .workspace/project.json
      Title: {extracted title}
 
      Dit concept wordt gebruikt voor de backlog.
@@ -107,7 +107,7 @@ Accepts markdown from:
      header: "Concept Laden"
      question: "Wil je een backlog genereren van dit concept?"
      options:
-       - label: "Ja, genereer backlog (Recommended)", description: "Gebruik .workspace/concept.md"
+       - label: "Ja, genereer backlog (Recommended)", description: "Gebruik project.json concept"
        - label: "Ander concept", description: "Ik wil een ander concept gebruiken"
        - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
@@ -122,7 +122,7 @@ Accepts markdown from:
      WARNING: Backlog exists but no concept found
 
      Backlog: .workspace/backlog.html
-     Concept: Not found (.workspace/concept.md missing)
+     Concept: Not found (project.json concept.content empty)
 
      Een concept is nodig om de backlog te updaten.
      ```
@@ -163,7 +163,7 @@ Accepts markdown from:
 ```
 INPUT LOADED
 
-Source: [.workspace/concept.md | inline | custom file]
+Source: [project.json concept | inline | custom file]
 Mode: [CREATE | UPDATE]
 Title: {extracted title}
 Sections: {count}
@@ -175,7 +175,7 @@ Sections: {count}
 
 **Goal:** Identify distinct game features from the concept.
 
-1. **Use sequential thinking to analyze:**
+1. **Analyze:**
    - What are the core mechanics?
    - What systems need to be built?
    - What can be split into independent features?
@@ -391,12 +391,20 @@ P3:
    curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node ~/.claude/skills/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
    ```
 
+5. **Update project dashboard** (zie `shared/DASHBOARD.md`):
+
+   Als concept info beschikbaar uit input:
+   1. Read `.workspace/project.json` (of maak nieuw met leeg schema)
+   2. Vul `concept` sectie met name, description, goals, audience, scope — **OVERWRITE**
+   3. Write `.workspace/project.json`
+
 **Output:**
 
 ```
 BACKLOG CREATED
 
 File: .workspace/backlog.html
+Dashboard: .workspace/project.json (concept)
 Server: http://localhost:9876/{project-dir}
 
 | Priority | Features |

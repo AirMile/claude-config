@@ -9,7 +9,6 @@ core:
   - core-md-audit
   - core-md-revise
   - core-refine
-  - core-todo
   - core-setup
   - project-list
   - project-add

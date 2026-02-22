@@ -72,7 +72,7 @@ Run all 10 in background. Collect results when all complete.
 
 ## FASE 3: Aggregation & Report
 
-Use `mcp__sequentialthinking__sequentialthinking` to:
+Analyze:
 
 1. Collect all 10 category scores
 2. Calculate overall security score (weighted average — CRITICAL categories x1.5 weight)

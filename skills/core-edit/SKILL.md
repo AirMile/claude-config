@@ -200,9 +200,9 @@ profiles.yaml: updated
 
 ### Step 5: Verification
 
-#### 5.1 Analyze with Sequential Thinking
+#### 5.1 Verify Changes
 
-Use sequential thinking to verify:
+Verify:
 
 1. List requested changes — what was supposed to change
 2. Verify each change — confirm each modification was applied

@@ -717,6 +717,17 @@ Pattern: [React Query | SWR | Server Components | Plain fetch]
 
 ## Completion
 
+### Dashboard Sync
+
+**Goal:** Sync geïnstalleerde packages naar project.json.
+
+Zie `shared/DASHBOARD.md` voor schema en merge-strategieën.
+
+1. Read `.workspace/project.json` (skip als niet bestaat)
+2. Als packages geïnstalleerd tijdens code generatie (FASE 3) of data hookup (FASE 4):
+   - Merge naar `stack.packages` (voeg toe als niet aanwezig, update versie als nieuwer)
+3. Write `.workspace/project.json`
+
 ### Update DevInfo
 
 Update `.workspace/session/devinfo.json` with handoff data for downstream skills:

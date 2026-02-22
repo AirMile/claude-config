@@ -112,7 +112,7 @@ Each receives: problem summary + relevant file paths + error messages/stack trac
 
 ## FASE 3: Root Cause Analysis
 
-Use `mcp__sequentialthinking__sequentialthinking` to:
+Analyze:
 
 1. List findings from each agent
 2. Identify patterns and correlations

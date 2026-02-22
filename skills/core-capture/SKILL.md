@@ -1,6 +1,6 @@
 ---
 name: core-capture
-description: Quick-capture context from chat or free text to Obsidian and/or Todoist. Use with /capture for lightweight saving of decisions, insights, or action items.
+description: Quick-capture context from chat or free text to Obsidian. Use with /capture for lightweight saving of decisions, insights, or action items.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -10,7 +10,7 @@ metadata:
 
 # Capture
 
-Quick-capture workflow to save context from a conversation or free text to Obsidian and/or Todoist. Lightweight and focused on saving, not generating.
+Quick-capture workflow to save context from a conversation or free text to Obsidian. Lightweight and focused on saving, not generating.
 
 ## When to Use
 
@@ -40,7 +40,7 @@ If an inline argument was provided with `/capture`, treat it as free text input 
 
 **If "Chat context":**
 
-1. Use sequential thinking to analyze the conversation:
+1. Analyze the conversation:
    - What key decision, insight, or action item was discussed?
    - What is the most important takeaway?
 2. Formulate a concise title + body (max 3-5 sentences)
@@ -88,8 +88,7 @@ header: "Bestemming"
 question: "Waar wil je dit opslaan?"
 options:
   - label: "Obsidian (Recommended)", description: "Sla op als notitie in je vault"
-  - label: "Todoist", description: "Maak een task aan"
-  - label: "Beide", description: "Notitie in Obsidian + task in Todoist"
+  - label: "Kopieer naar clipboard", description: "Kopieer markdown naar clipboard (niet opslaan)"
 multiSelect: false
 ```
 
@@ -141,42 +140,10 @@ mcp__obsidian__patch_note(
 
 If patch fails (string not found), skip silently.
 
-### Step 4b: Todoist (if chosen)
+### Step 4b: Clipboard (if chosen)
 
-**Auto-detect project** based on content:
-
-| Content signal            | Todoist project      | Project ID         |
-| ------------------------- | -------------------- | ------------------ |
-| Dev/coding gerelateerd    | Dev Tasks            | `6cf8FHhGmCfh2hJW` |
-| Idee/concept              | Ideas                | `6fCpVXqjQ4CWMPxg` |
-| Academic/studie           | Academic             | `6cf8FGJqFvCF8qj7` |
-| Game gerelateerd          | Games                | `6cfF3rXwVgjj5H7h` |
-| claude-config gerelateerd | claude-config        | `6fCgrv7rjWVchV3C` |
-| Persoonlijke ontwikkeling | Personal Development | `6ch4GxHfrgxgjp8G` |
-| Overig                    | Inbox                | `6cf7xQ2x4W9pm6G2` |
-
-Use AskUserQuestion:
-
-```yaml
-header: "Project"
-question: "Task aanmaken in {suggested project}?"
-options:
-  - label: "Ja (Recommended)", description: "Aanmaken in {suggested project}"
-  - label: "Ander project", description: "Kies een ander Todoist project"
-multiSelect: false
-```
-
-If "Ander project": ask which project to use.
-
-**Create the task:**
-
-```
-mcp__todoist__create_tasks(items=[{
-  content: "{title}",
-  description: "{short description}",
-  project_id: "{project_id}"
-}])
-```
+1. Wrap output in a code block with `markdown` language tag for copy button
+2. Display the content — user copies via the code block's copy button
 
 ### Step 5: Confirmation
 
@@ -185,8 +152,7 @@ Show a confirmation message:
 ```
 CAPTURED!
 
-{If Obsidian:} Obsidian: {folder}/{title}.md
-{If Todoist:}  Todoist:  {title} → {project}
+Obsidian: {folder}/{title}.md
 ```
 
 ## Best Practices
@@ -195,7 +161,7 @@ CAPTURED!
 - Title should be concise and scannable (max ~8 words)
 - Body should be 3-5 sentences max
 - Auto-detect should be a sensible default, not a complex analysis
-- If both destinations are chosen, execute Obsidian first, then Todoist
+- If clipboard chosen, wrap in markdown code block for easy copying
 
 ### Language
 

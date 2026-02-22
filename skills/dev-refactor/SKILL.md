@@ -740,7 +740,15 @@ IMPROVEMENTS APPLIED
 
    Or: `CLAUDE.md: no updates needed (internal changes only)`
 
-5. **Scoped auto-commit** (only this skill's changes):
+5. **Dashboard sync** (zie `shared/DASHBOARD.md`):
+   - Read `.workspace/project.json` (skip als niet bestaat)
+   - Als packages gewijzigd (toegevoegd/verwijderd): merge naar `stack.packages`
+   - Als endpoints gewijzigd: merge naar `endpoints`
+   - Als data entities gewijzigd: merge naar `data.entities`
+   - Update `features` array: CLEAN en REFACTORED features → status `"DONE"`, ROLLED_BACK → ongewijzigd
+   - Write `.workspace/project.json`
+
+6. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -781,7 +789,7 @@ IMPROVEMENTS APPLIED
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-6. **Show completion:**
+7. **Show completion:**
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -802,9 +810,6 @@ IMPROVEMENTS APPLIED
    ✓ /dev-refactor - Refactoring
 
    Ready for production!
-
-   Next feature from backlog:
-   → /dev-define {next-feature}
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 

@@ -584,11 +584,6 @@ Write to `.workspace/features/{feature-name}/01-define.md`:
 ## Test Strategy
 
 {test table}
-
-## Next Steps
-
-Run `/game-build {feature-name}` to start implementation.
-After testing: `/game-refactor {feature-name}` for code quality.
 ```
 
 ### FASE 5: Sync Backlog
@@ -632,6 +627,43 @@ Status: TODO → DEF
 Location: {P1 | P2 | P3 | P4}
 ```
 
+### FASE 6: Dashboard Sync
+
+**Goal:** Update `.workspace/project.json` met data en stack info uit deze feature definitie.
+
+Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
+
+**Steps:**
+
+1. Read `.workspace/project.json` (of maak nieuw met leeg schema als niet bestaat)
+
+2. **Data entities** — als de feature data entities/resources definieert (uit Architecture):
+   - Voor elke entity: check of `data.entities` al een entry heeft met die naam
+   - Zo nee: push hele entity met fields en relations
+   - Zo ja: merge nieuwe velden/relaties toe
+
+3. **Stack** — als de feature Godot plugins of assets introduceert:
+   - Voor elk package: check of `stack.packages` al een entry heeft met die naam
+   - Zo nee: push `{ name, version, purpose }`
+
+4. **Features** — push feature naar `features` array:
+   - Check of feature met deze naam al bestaat
+   - Zo nee: push `{ name: "{feature-name}", status: "DEF", summary: "{from 01-define.md summary}", depends: [], created: "{date}" }`
+   - Zo ja: update status naar `"DEF"`
+
+5. **Write define.json** — schrijf `.workspace/features/{feature-name}/define.json` met gestructureerde feature data (zie `shared/DASHBOARD.md` voor schema)
+
+6. Write `.workspace/project.json`
+
+**Output:**
+
+```
+DASHBOARD SYNCED
+
+Data: {N} entities ({new} nieuw)
+Stack: {N} packages ({new} nieuw)
+```
+
 ## Best Practices
 
 - Use AskUserQuestion for all structured choices
@@ -652,4 +684,3 @@ This skill must ALWAYS:
 - Use business-like, direct tone
 - Extract testable requirements with REQ-IDs and acceptance criteria
 - Include all sections in 01-define.md output
-- Show copyable next command at the end

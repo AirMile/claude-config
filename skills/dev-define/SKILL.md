@@ -646,15 +646,6 @@ Write to `.workspace/features/{feature-name}/01-define.md`:
 ## Test Strategy
 
 {test table}
-
-## Next Steps
-
-Run `/dev-build {feature-name}` to start implementation.
-
-UI-heavy feature? Overweeg eerst:
-
-- `/frontend-theme` - Design tokens en kleurenpalet opzetten
-- `/frontend-page` - Wireframes genereren voor visueel ontwerp
 ```
 
 ### FASE 5: Sync Backlog
@@ -699,6 +690,49 @@ Status: TODO → DEF
 Location: {P1 | P2 | P3 | P4}
 ```
 
+### FASE 6: Dashboard Sync
+
+**Goal:** Update `.workspace/project.json` met data, endpoints en stack info uit deze feature definitie.
+
+Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
+
+**Steps:**
+
+1. Read `.workspace/project.json` (of maak nieuw met leeg schema als niet bestaat)
+
+2. **Data entities** — als de feature data entities definieert (uit Architecture > Types/Interfaces of API Contract):
+   - Voor elke entity: check of `data.entities` al een entry heeft met die naam
+   - Zo nee: push hele entity met fields en relations
+   - Zo ja: merge nieuwe velden/relaties toe (zie `shared/DASHBOARD.md` data merge)
+
+3. **Endpoints** — als de feature API endpoints definieert (uit API Contract):
+   - Voor elk endpoint: check of combinatie method+path al bestaat
+   - Zo nee: push met `status: "planned"`
+   - Zo ja: skip (behoud bestaande)
+
+4. **Stack packages** — als de feature nieuwe packages/tools introduceert:
+   - Voor elk package: check of `stack.packages` al een entry heeft met die naam
+   - Zo nee: push `{ name, version, purpose }`
+
+5. **Features** — push feature naar `features` array:
+   - Check of feature met deze naam al bestaat
+   - Zo nee: push `{ name: "{feature-name}", status: "DEF", summary: "{from 01-define.md summary}", depends: [], created: "{date}" }`
+   - Zo ja: update status naar `"DEF"`
+
+6. **Write define.json** — schrijf `.workspace/features/{feature-name}/define.json` met gestructureerde feature data (zie `shared/DASHBOARD.md` voor schema)
+
+7. Write `.workspace/project.json`
+
+**Output:**
+
+```
+DASHBOARD SYNCED
+
+Data: {N} entities ({new} nieuw, {existing} bestaand)
+Endpoints: {N} endpoints ({new} nieuw)
+Stack: {N} packages ({new} nieuw)
+```
+
 ## Best Practices
 
 - Use AskUserQuestion for all structured choices
@@ -719,4 +753,3 @@ This skill must ALWAYS:
 - Use business-like, direct tone
 - Extract testable requirements with REQ-IDs
 - Include all sections in 01-define.md output
-- Show copyable next command at the end

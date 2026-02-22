@@ -12,7 +12,7 @@ metadata:
 
 ## Overview
 
-Testing skill for feature branches after code review. Analyzes all commits since branch creation, spawns parallel research agents for test strategies via Context7 with sequential thinking (with caching), then spawns generation agents with sequential thinking to create test scenarios. Uses sequential thinking to split tests into automated vs manual. Executes automated tests first, then guides user through manual test execution step-by-step.
+Testing skill for feature branches after code review. Analyzes all commits since branch creation, spawns parallel research agents for test strategies via Context7 (with caching), then spawns generation agents to create test scenarios. Splits tests into automated vs manual. Executes automated tests first, then guides user through manual test execution step-by-step.
 
 **Trigger**: `/team-test` (typically after `/team-review`)
 
@@ -78,21 +78,21 @@ multiSelect: false
 
 ```python
 Task(subagent_type="test-research-unit", prompt="""
-Use sequential thinking to plan research.
+Plan research.
 Check cache for: [frameworks]
 Research unit test strategies via Context7.
 Return findings + what to cache.
 """)
 
 Task(subagent_type="test-research-integration", prompt="""
-Use sequential thinking to plan research.
+Plan research.
 Check cache for: [frameworks]
 Research integration test strategies via Context7.
 Return findings + what to cache.
 """)
 
 Task(subagent_type="test-research-manual", prompt="""
-Use sequential thinking to plan research.
+Plan research.
 Check cache for: [frameworks]
 Research manual test strategies via Context7.
 Return findings + what to cache.
@@ -121,21 +121,21 @@ Spawn 3 parallel generation agents:
 
 ```python
 Task(subagent_type="test-generate-happy-path", prompt="""
-Use sequential thinking to analyze diff.
+Analyze diff.
 Generate happy path test scenarios.
 Diff: [diff]
 Research: [unit + integration research]
 """)
 
 Task(subagent_type="test-generate-edge-cases", prompt="""
-Use sequential thinking to analyze diff.
+Analyze diff.
 Generate edge case test scenarios.
 Diff: [diff]
 Research: [unit + integration research]
 """)
 
 Task(subagent_type="test-generate-integration", prompt="""
-Use sequential thinking to analyze diff.
+Analyze diff.
 Generate integration test scenarios.
 Diff: [diff]
 Research: [integration research]
@@ -156,14 +156,13 @@ Total: N test scenarios
 
 ---
 
-### FASE 3: TEST PLAN CREATION (sequential thinking)
+### FASE 3: TEST PLAN CREATION
 
 **Goal:** Analyze scenarios and split into automated vs manual.
 
-Use sequential thinking to categorize each scenario:
+Categorize each scenario:
 
 ```
-[Sequential thinking analysis]
 - Scenario: [description]
 - Can be automated: [yes/no]
 - Reason: [why automated or manual]
