@@ -606,8 +606,7 @@ Dit helpt met debugging en recovery.
 
 1. Mark skill completed in executionPlan
 2. Prepare handoff data voor volgende skill
-3. Suggest next skill
-4. Archive session if last skill
+3. Archive session if last skill
 
 **Output:**
 ```
@@ -617,7 +616,6 @@ SKILL COMPLETE
 Skill: frontend-page
 Duration: 15 minutes
 Files created: 6
-Next suggested: /build dashboard
 
 ```
 

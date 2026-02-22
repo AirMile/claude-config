@@ -1,0 +1,2819 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --surface-hover: #1c2333;
+        --border: #30363d;
+        --text: #e6edf3;
+        --text-muted: #8b949e;
+        --text-dim: #6e7681;
+        --accent: #58a6ff;
+        --danger: #f85149;
+        --danger-bg: #f8514922;
+        --done: #3fb950;
+        --warn: #d29922;
+        --purple: #d2a8ff;
+        --pink: #f778ba;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        scrollbar-color: var(--border) transparent;
+      }
+
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-dim);
+      }
+
+      /* Header */
+      header {
+        padding: 12px 24px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      header h1 {
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      /* Layout */
+      .layout {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 180px;
+        min-width: 180px;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        padding: 8px 0;
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.15s;
+        border-left: 2px solid transparent;
+      }
+
+      .sidebar a:hover {
+        color: var(--text);
+        background: var(--surface);
+      }
+
+      .sidebar a.active {
+        color: var(--accent);
+        background: var(--surface);
+        border-left-color: var(--accent);
+      }
+
+      /* Content */
+      .content {
+        flex: 1;
+        padding: 24px 32px;
+        overflow-y: auto;
+        min-height: 0;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .section-header h2 {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .edit-btn,
+      .add-btn {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-family: inherit;
+      }
+
+      .edit-btn:hover,
+      .add-btn:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--text-dim);
+        font-size: 13px;
+      }
+
+      .empty-state p {
+        margin-bottom: 12px;
+      }
+
+      /* Cards */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+
+      .card-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .card-body {
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+
+      /* Concept content (rendered markdown) */
+      .concept-content {
+        font-size: 14px;
+        line-height: 1.7;
+        color: var(--text-muted);
+      }
+
+      .concept-content h2 {
+        font-size: 18px;
+        color: var(--text);
+        margin: 24px 0 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .concept-content h2:first-child {
+        display: none;
+      }
+
+      .concept-content h3 {
+        font-size: 15px;
+        color: var(--text);
+        margin: 20px 0 6px;
+      }
+
+      .concept-content h4 {
+        font-size: 13px;
+        color: var(--text);
+        margin: 16px 0 4px;
+      }
+
+      .concept-content p {
+        margin: 0 0 12px;
+      }
+
+      .concept-content ul {
+        margin: 0 0 12px;
+        padding-left: 20px;
+      }
+
+      .concept-content li {
+        margin-bottom: 4px;
+      }
+
+      .concept-content strong {
+        color: var(--text);
+      }
+
+      .concept-content code {
+        background: var(--surface-hover);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+      }
+
+      /* Grid */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+      }
+
+      /* Stat card */
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 14px 16px;
+      }
+
+      .stat-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-dim);
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      /* Lists */
+      .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .tag {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+
+      /* Color swatch */
+      .swatch-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .swatch {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 12px;
+        min-width: 180px;
+      }
+
+      .swatch-color {
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+
+      .swatch-info {
+        font-size: 12px;
+      }
+
+      .swatch-token {
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .swatch-value {
+        color: var(--text-dim);
+        font-family: monospace;
+      }
+
+      /* Code block */
+      .code-block {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 14px;
+        font-family: "JetBrains Mono", "Fira Code", monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--text-muted);
+        white-space: pre-wrap;
+        overflow-x: auto;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      /* Tables */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .data-table th {
+        text-align: left;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-dim);
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border);
+        font-weight: 500;
+      }
+
+      .data-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+
+      .data-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .data-table tr:hover td {
+        background: var(--surface-hover);
+      }
+
+      /* Badges */
+      .badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .badge-get {
+        background: #3fb95033;
+        color: #3fb950;
+      }
+      .badge-post {
+        background: #58a6ff33;
+        color: #58a6ff;
+      }
+      .badge-put,
+      .badge-patch {
+        background: #d2922233;
+        color: #d29922;
+      }
+      .badge-delete {
+        background: #f8514933;
+        color: #f85149;
+      }
+      .badge-done {
+        background: #3fb95022;
+        color: #3fb950;
+      }
+      .badge-planned {
+        background: #8b949e22;
+        color: #8b949e;
+      }
+      .badge-building {
+        background: #58a6ff22;
+        color: #58a6ff;
+      }
+
+      .auth-icon {
+        font-size: 12px;
+      }
+
+      /* Entity card */
+      .entity-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        margin-bottom: 12px;
+        overflow: hidden;
+      }
+
+      .entity-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+      }
+
+      .entity-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      .entity-actions {
+        display: flex;
+        gap: 4px;
+      }
+
+      .entity-actions button {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+      }
+
+      .entity-actions button:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .entity-fields {
+        padding: 0;
+      }
+
+      .entity-field {
+        display: flex;
+        gap: 12px;
+        padding: 6px 14px;
+        font-size: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .entity-field:last-child {
+        border-bottom: none;
+      }
+
+      .field-name {
+        font-weight: 500;
+        color: var(--text);
+        min-width: 100px;
+      }
+
+      .field-type {
+        color: var(--purple);
+        font-family: monospace;
+        min-width: 80px;
+      }
+
+      .field-key {
+        color: var(--warn);
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .entity-relations {
+        padding: 8px 14px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+
+      .relation-arrow {
+        color: var(--accent);
+      }
+
+      /* Features */
+      .feature-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        margin-bottom: 8px;
+        overflow: hidden;
+      }
+
+      .feature-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .feature-header:hover {
+        background: var(--bg);
+      }
+
+      .feature-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 3px;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+      }
+
+      .feature-badge[data-status="TODO"] {
+        background: #6b728033;
+        color: #9ca3af;
+      }
+      .feature-badge[data-status="DEF"] {
+        background: #8b5cf633;
+        color: #a78bfa;
+      }
+      .feature-badge[data-status="BLT"] {
+        background: #3b82f633;
+        color: #60a5fa;
+      }
+      .feature-badge[data-status="TST"] {
+        background: #f9731633;
+        color: #fb923c;
+      }
+      .feature-badge[data-status="DONE"] {
+        background: #10b98133;
+        color: #34d399;
+      }
+
+      .feature-name {
+        font-size: 14px;
+        font-weight: 600;
+        flex: 1;
+      }
+
+      .feature-summary {
+        font-size: 12px;
+        color: var(--text-muted);
+        flex: 2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .feature-date {
+        font-size: 11px;
+        color: var(--text-dim);
+        flex-shrink: 0;
+      }
+
+      .feature-chevron {
+        font-size: 12px;
+        color: var(--text-dim);
+        transition: transform 0.2s;
+        flex-shrink: 0;
+      }
+
+      .feature-card.expanded .feature-chevron {
+        transform: rotate(90deg);
+      }
+
+      .feature-detail {
+        display: none;
+        padding: 0 16px 16px;
+        border-top: 1px solid var(--border);
+      }
+
+      .feature-card.expanded .feature-detail {
+        display: block;
+      }
+
+      .feature-detail-section {
+        margin-top: 12px;
+      }
+
+      .feature-detail-section h4 {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-dim);
+        margin: 0 0 6px;
+      }
+
+      .feature-depends {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+
+      .feature-dep {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 3px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+      }
+
+      .feature-loading {
+        color: var(--text-dim);
+        font-size: 12px;
+        font-style: italic;
+        padding: 8px 0;
+      }
+
+      /* Thinking timeline */
+      .thinking-entry {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 10px;
+        border-left: 3px solid var(--border);
+      }
+
+      .thinking-entry[data-type="idea"] {
+        border-left-color: #10b981;
+      }
+      .thinking-entry[data-type="brainstorm"] {
+        border-left-color: #8b5cf6;
+      }
+      .thinking-entry[data-type="critique"] {
+        border-left-color: #f97316;
+      }
+      .thinking-entry[data-type="decision"] {
+        border-left-color: #3b82f6;
+      }
+
+      .thinking-type-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 3px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+
+      .thinking-type-badge[data-type="idea"] {
+        background: #10b98133;
+        color: #34d399;
+      }
+      .thinking-type-badge[data-type="brainstorm"] {
+        background: #8b5cf633;
+        color: #a78bfa;
+      }
+      .thinking-type-badge[data-type="critique"] {
+        background: #f9731633;
+        color: #fb923c;
+      }
+      .thinking-type-badge[data-type="decision"] {
+        background: #3b82f633;
+        color: #60a5fa;
+      }
+
+      .thinking-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .thinking-title {
+        font-size: 14px;
+        font-weight: 600;
+        flex: 1;
+      }
+
+      .thinking-date {
+        font-size: 11px;
+        color: var(--text-dim);
+      }
+
+      .thinking-content {
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+
+      .thinking-meta {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+
+      .thinking-meta strong {
+        color: var(--text-muted);
+      }
+
+      .thinking-source {
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-top: 6px;
+        font-style: italic;
+      }
+
+      /* Section dividers */
+      .sub-heading {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin: 20px 0 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      hr.divider {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 20px 0;
+      }
+
+      /* Modal */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 100;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 80px;
+        overflow-y: auto;
+      }
+
+      .modal-overlay.active {
+        display: flex;
+      }
+
+      .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        width: 500px;
+        max-width: 90vw;
+        max-height: 85vh;
+        overflow-y: auto;
+        margin-bottom: 40px;
+      }
+
+      .research-content {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text-dim);
+      }
+      .research-content strong {
+        color: var(--text);
+      }
+      .research-content h1,
+      .research-content h2,
+      .research-content h3,
+      .research-content h4 {
+        color: var(--text);
+      }
+      .research-content li {
+        color: var(--text-dim);
+      }
+
+      .modal h3 {
+        font-size: 15px;
+        margin-bottom: 16px;
+      }
+
+      .modal label {
+        display: block;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .modal input,
+      .modal select,
+      .modal textarea {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text);
+        padding: 6px 8px;
+        font-size: 13px;
+        font-family: inherit;
+        margin-bottom: 12px;
+        outline: none;
+      }
+
+      .modal input:focus,
+      .modal select:focus,
+      .modal textarea:focus {
+        border-color: var(--accent);
+      }
+
+      .modal textarea {
+        resize: vertical;
+        min-height: 60px;
+      }
+
+      .modal input[type="color"] {
+        width: 40px;
+        height: 32px;
+        padding: 2px;
+        cursor: pointer;
+      }
+
+      .modal-row {
+        display: flex;
+        gap: 12px;
+      }
+
+      .modal-row > div {
+        flex: 1;
+      }
+
+      .modal-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .modal-buttons button {
+        padding: 6px 14px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        font-family: inherit;
+      }
+
+      .btn-cancel {
+        background: var(--bg);
+        color: var(--text-muted);
+      }
+
+      .btn-cancel:hover {
+        color: var(--text);
+      }
+
+      .btn-save {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+
+      .btn-save:hover {
+        opacity: 0.9;
+      }
+
+      .btn-danger {
+        background: var(--danger);
+        color: #fff;
+        border-color: var(--danger);
+      }
+
+      .btn-danger:hover {
+        opacity: 0.9;
+      }
+
+      /* Dynamic list in modal */
+      .modal-list {
+        margin-bottom: 12px;
+      }
+
+      .modal-list-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+
+      .modal-list-item input {
+        margin-bottom: 0;
+      }
+
+      .modal-list-item .remove-item {
+        background: none;
+        border: none;
+        color: var(--danger);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 4px;
+        line-height: 1;
+      }
+
+      .modal-list-add {
+        background: none;
+        border: 1px dashed var(--border);
+        color: var(--text-dim);
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        font-family: inherit;
+        width: 100%;
+        transition: all 0.15s;
+      }
+
+      .modal-list-add:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* Toast */
+      .toast {
+        position: fixed;
+        bottom: 16px;
+        right: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 14px;
+        font-size: 12px;
+        color: var(--text-muted);
+        z-index: 200;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: all 0.2s;
+        pointer-events: none;
+      }
+
+      .toast.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Font preview */
+      .font-preview {
+        font-size: 18px;
+        line-height: 1.4;
+        padding: 8px 0;
+        color: var(--text);
+      }
+
+      /* Footer link */
+      .footer-bar {
+        border-top: 1px solid var(--border);
+        padding: 8px 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+      }
+
+      .footer-bar a {
+        color: var(--text-dim);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+
+      .footer-bar a:hover {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <script id="dashboard-data" type="application/json">
+      {
+        "concept": {
+          "name": "Voorbeeld Project",
+          "content": "# Voorbeeld Project\n\nEen voorbeeld project om het dashboard te demonstreren.\n\n## Core Concept\n\nDit is een demo van het project dashboard met alle secties.\n\n## Doelgroep\n\nDevelopers en designers.\n\n## Scope\n\nIn scope: dashboard UI. Uit scope: productie deployment."
+        },
+        "theme": {
+          "colors": {
+            "main": [
+              { "token": "dark", "value": "#1a1a2e", "usage": "Primary text" },
+              { "token": "light", "value": "#f5f5f7", "usage": "Background" },
+              {
+                "token": "surface",
+                "value": "#16213e",
+                "usage": "Card backgrounds"
+              }
+            ],
+            "accent": [
+              {
+                "token": "accent-primary",
+                "value": "#3B82F6",
+                "usage": "CTAs and links"
+              },
+              {
+                "token": "accent-secondary",
+                "value": "#8B5CF6",
+                "usage": "Secondary actions"
+              }
+            ],
+            "semantic": [
+              {
+                "token": "success",
+                "value": "#10B981",
+                "usage": "Positive feedback"
+              },
+              { "token": "warning", "value": "#F59E0B", "usage": "Warnings" },
+              { "token": "error", "value": "#EF4444", "usage": "Error states" }
+            ]
+          },
+          "typography": {
+            "families": {
+              "heading": "Inter, sans-serif",
+              "body": "Inter, sans-serif",
+              "mono": "JetBrains Mono, monospace"
+            },
+            "sizes": [
+              {
+                "token": "text-sm",
+                "size": "0.875rem",
+                "lineHeight": "1.25rem"
+              },
+              { "token": "text-base", "size": "1rem", "lineHeight": "1.5rem" },
+              {
+                "token": "text-lg",
+                "size": "1.125rem",
+                "lineHeight": "1.75rem"
+              },
+              { "token": "text-xl", "size": "1.25rem", "lineHeight": "1.75rem" }
+            ]
+          },
+          "spacing": {
+            "base": "4px",
+            "scale": [
+              { "token": "spacing-2", "value": "8px", "usage": "Tight gaps" },
+              {
+                "token": "spacing-4",
+                "value": "16px",
+                "usage": "Component padding"
+              },
+              { "token": "spacing-8", "value": "32px", "usage": "Section gaps" }
+            ]
+          },
+          "breakpoints": [
+            {
+              "token": "screen-sm",
+              "value": "640px",
+              "target": "Mobile landscape"
+            },
+            { "token": "screen-md", "value": "768px", "target": "Tablets" },
+            { "token": "screen-lg", "value": "1024px", "target": "Desktop" }
+          ],
+          "borderRadius": [
+            {
+              "token": "rounded-sm",
+              "value": "0.125rem",
+              "usage": "Subtle rounding"
+            },
+            {
+              "token": "rounded-md",
+              "value": "0.375rem",
+              "usage": "Buttons, inputs"
+            },
+            { "token": "rounded-lg", "value": "0.5rem", "usage": "Cards" }
+          ],
+          "shadows": [
+            {
+              "token": "shadow-sm",
+              "value": "0 1px 2px rgba(0,0,0,0.05)",
+              "usage": "Subtle elevation"
+            },
+            {
+              "token": "shadow-md",
+              "value": "0 4px 6px rgba(0,0,0,0.1)",
+              "usage": "Cards"
+            }
+          ],
+          "modes": {
+            "light": ":root {\n  --bg: #ffffff;\n  --text: #1a1a2e;\n}",
+            "dark": ".dark {\n  --bg: #0d1117;\n  --text: #e6edf3;\n}"
+          },
+          "cssVars": ":root {\n  --color-dark: #1a1a2e;\n  --color-light: #f5f5f7;\n  --color-accent-primary: #3B82F6;\n  --color-success: #10B981;\n  --font-heading: Inter, sans-serif;\n  --font-body: Inter, sans-serif;\n  --spacing-base: 4px;\n}"
+        },
+        "stack": {
+          "framework": "Next.js 14",
+          "language": "TypeScript",
+          "styling": "Tailwind CSS",
+          "db": "PostgreSQL + Prisma",
+          "auth": "NextAuth.js",
+          "hosting": "Vercel",
+          "packages": [
+            { "name": "stripe", "version": "^14.0", "purpose": "Payments" }
+          ]
+        },
+        "data": {
+          "entities": [
+            {
+              "name": "User",
+              "fields": [
+                { "name": "id", "type": "uuid", "key": "PK" },
+                { "name": "email", "type": "string", "key": "unique" }
+              ],
+              "relations": [{ "target": "Order", "type": "1:N" }]
+            }
+          ]
+        },
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/auth/login",
+            "auth": false,
+            "status": "done",
+            "description": "JWT login met email/password"
+          }
+        ],
+        "features": [
+          {
+            "name": "user-auth",
+            "status": "BLT",
+            "summary": "JWT login met email/password en refresh tokens",
+            "depends": [],
+            "created": "2026-02-15"
+          },
+          {
+            "name": "pin-mode",
+            "status": "DEF",
+            "summary": "Shift+Click multi-select voor inspect overlay",
+            "depends": ["clipboard-redesign"],
+            "created": "2026-02-20"
+          }
+        ]
+      }
+    </script>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal">
+      <div class="modal">
+        <h3 id="modal-title">Bewerken</h3>
+        <div id="modal-body"></div>
+        <div class="modal-buttons">
+          <button class="btn-cancel" onclick="closeModal()">Annuleren</button>
+          <button
+            class="btn-danger"
+            id="modal-delete"
+            style="display: none"
+            onclick="handleModalDelete()"
+          >
+            Verwijderen
+          </button>
+          <button class="btn-save" id="modal-save" onclick="handleModalSave()">
+            Opslaan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // ─── State ──────────────────────────────────────────────
+      const raw = document.getElementById("dashboard-data").textContent;
+      let data = JSON.parse(raw);
+      let activeTab = "concept";
+      let modalContext = null;
+
+      const TABS = [
+        { id: "concept", label: "Concept" },
+        { id: "theme", label: "Theme" },
+        { id: "stack", label: "Stack" },
+        { id: "data", label: "Data" },
+        { id: "endpoints", label: "Endpoints" },
+        { id: "features", label: "Features" },
+        { id: "thinking", label: "Thinking" },
+      ];
+
+      const EMPTY = {
+        concept: {
+          name: "",
+          content: "",
+        },
+        theme: {
+          colors: { main: [], accent: [], semantic: [] },
+          typography: {
+            families: { heading: "", body: "", mono: "" },
+            sizes: [],
+          },
+          spacing: { base: "", scale: [] },
+          breakpoints: [],
+          borderRadius: [],
+          shadows: [],
+          modes: {},
+          cssVars: "",
+        },
+        stack: {
+          framework: "",
+          language: "",
+          styling: "",
+          db: "",
+          auth: "",
+          hosting: "",
+          packages: [],
+        },
+        data: { entities: [] },
+        endpoints: [],
+        features: [],
+        thinking: [],
+      };
+
+      // Ensure all sections exist
+      for (const key of Object.keys(EMPTY)) {
+        if (!data[key]) data[key] = JSON.parse(JSON.stringify(EMPTY[key]));
+      }
+
+      // ─── Helpers ────────────────────────────────────────────
+      function esc(str) {
+        const d = document.createElement("div");
+        d.textContent = str || "";
+        return d.innerHTML;
+      }
+
+      function toast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("visible");
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => t.classList.remove("visible"), 2000);
+      }
+
+      const SAVE_URL = (() => {
+        const p = location.pathname.replace(/\/+$/, "");
+        return p ? p + "/save" : "/save";
+      })();
+
+      let saveTimer = null;
+      function syncJSON() {
+        const el = document.getElementById("dashboard-data");
+        el.textContent = "\n" + JSON.stringify(data, null, 2) + "\n";
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+          try {
+            const res = await fetch(SAVE_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error("save failed");
+            toast("Opgeslagen");
+          } catch {
+            toast("Server niet bereikbaar");
+          }
+        }, 300);
+      }
+
+      // ─── Modal ──────────────────────────────────────────────
+      function openModal(title, bodyHtml, ctx) {
+        modalContext = ctx;
+        document.getElementById("modal-title").textContent = title;
+        document.getElementById("modal-body").innerHTML = bodyHtml;
+        document.getElementById("modal-delete").style.display =
+          ctx && ctx.deletable ? "" : "none";
+        const isReadOnly = ctx && ctx.readOnly;
+        document.getElementById("modal-save").style.display = isReadOnly
+          ? "none"
+          : "";
+        document.querySelector("#modal .btn-cancel").textContent = isReadOnly
+          ? "Sluiten"
+          : "Annuleren";
+        document.getElementById("modal").classList.add("active");
+        if (isReadOnly) {
+          document.querySelector("#modal .modal").style.maxWidth = ctx.wide
+            ? "800px"
+            : "";
+        } else {
+          document.querySelector("#modal .modal").style.maxWidth = "";
+        }
+        const first = document.querySelector(
+          "#modal-body input, #modal-body textarea, #modal-body select",
+        );
+        if (first) first.focus();
+      }
+
+      function closeModal() {
+        document.getElementById("modal").classList.remove("active");
+        modalContext = null;
+      }
+
+      function handleModalSave() {
+        if (modalContext && modalContext.onSave) {
+          modalContext.onSave();
+        }
+        closeModal();
+        syncJSON();
+        render();
+      }
+
+      function handleModalDelete() {
+        if (modalContext && modalContext.onDelete) {
+          modalContext.onDelete();
+        }
+        closeModal();
+        syncJSON();
+        render();
+      }
+
+      document.getElementById("modal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("modal")) closeModal();
+      });
+
+      document.getElementById("modal").addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeModal();
+        if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
+          e.preventDefault();
+          handleModalSave();
+        }
+      });
+
+      // ─── Section Renderers ──────────────────────────────────
+
+      // Simple markdown to HTML (headings, bold, lists, paragraphs)
+      function mdToHtml(md) {
+        if (!md) return "";
+        return md
+          .split("\n\n")
+          .map((block) => {
+            block = block.trim();
+            if (!block) return "";
+            // Headings
+            if (block.startsWith("### "))
+              return `<h4>${esc(block.slice(4))}</h4>`;
+            if (block.startsWith("## "))
+              return `<h3>${esc(block.slice(3))}</h3>`;
+            if (block.startsWith("# "))
+              return `<h2>${esc(block.slice(2))}</h2>`;
+            // Bullet list
+            if (/^[-*] /.test(block)) {
+              const items = block
+                .split("\n")
+                .filter((l) => /^[-*] /.test(l))
+                .map((l) => `<li>${inlineMd(l.replace(/^[-*] /, ""))}</li>`)
+                .join("");
+              return `<ul>${items}</ul>`;
+            }
+            // Paragraph
+            return `<p>${inlineMd(block.replace(/\n/g, " "))}</p>`;
+          })
+          .join("\n");
+      }
+
+      function inlineMd(text) {
+        return esc(text)
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*(.+?)\*/g, "<em>$1</em>")
+          .replace(/`(.+?)`/g, "<code>$1</code>")
+          .replace(/--/g, "\u2014");
+      }
+
+      function renderConcept() {
+        const c = data.concept;
+        if (!c.name && !c.content) {
+          return `
+            <div class="section-header">
+              <h2>Concept</h2>
+              <button class="edit-btn" onclick="editConcept()">+ Toevoegen</button>
+            </div>
+            <div class="empty-state"><p>Nog geen concept gedefinieerd.</p>
+            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-plan</code> of <code>/game-plan</code></p></div>`;
+        }
+        return `
+          <div class="section-header">
+            <h2>Concept</h2>
+            <button class="edit-btn" onclick="editConcept()">Bewerken</button>
+          </div>
+          <div class="concept-content">${mdToHtml(c.content)}</div>`;
+      }
+
+      function renderTheme() {
+        const t = data.theme;
+        const colors = t.colors || {};
+        const typo = t.typography || {};
+        const families = typo.families || {};
+        const hasColors = Object.values(colors).some(
+          (arr) => arr && arr.length,
+        );
+        const hasData = hasColors || families.heading || families.body;
+        if (!hasData) {
+          return `
+            <div class="section-header">
+              <h2>Theme</h2>
+            </div>
+            <div class="empty-state"><p>Nog geen theme gedefinieerd.</p>
+            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/frontend-theme</code></p></div>`;
+        }
+
+        // Color swatches grouped by category
+        function renderColorGroup(label, items) {
+          if (!items || !items.length) return "";
+          const swatches = items
+            .map(
+              (c) => `
+            <div class="swatch">
+              <div class="swatch-color" style="background:${esc(c.value)}"></div>
+              <div class="swatch-info">
+                <div class="swatch-token">${esc(c.token)}</div>
+                <div class="swatch-value">${esc(c.value)}${c.usage ? ` — ${esc(c.usage)}` : ""}</div>
+              </div>
+            </div>`,
+            )
+            .join("");
+          return `<div class="sub-heading">${esc(label)}</div><div class="swatch-grid">${swatches}</div>`;
+        }
+        const colorsHtml =
+          renderColorGroup("Main", colors.main) +
+          renderColorGroup("Accent", colors.accent) +
+          renderColorGroup("Semantic", colors.semantic);
+
+        // Typography — families
+        const familiesHtml =
+          families.heading || families.body || families.mono
+            ? `
+          <div class="sub-heading">Font Families</div>
+          <div class="grid-3">
+            <div class="stat-card">
+              <div class="stat-label">Heading</div>
+              <div class="stat-value" style="font-size:13px">${esc(families.heading || "—")}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Body</div>
+              <div class="stat-value" style="font-size:13px">${esc(families.body || "—")}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Mono</div>
+              <div class="stat-value" style="font-size:13px;font-family:monospace">${esc(families.mono || "—")}</div>
+            </div>
+          </div>`
+            : "";
+
+        // Typography — sizes
+        const sizes = typo.sizes || [];
+        const sizesHtml = sizes.length
+          ? `
+          <div class="sub-heading">Type Scale</div>
+          <table class="data-table">
+            <thead><tr><th>Token</th><th>Size</th><th>Line Height</th></tr></thead>
+            <tbody>${sizes
+              .map(
+                (s) => `<tr>
+              <td style="font-weight:500;color:var(--text)">${esc(s.token)}</td>
+              <td style="font-family:monospace">${esc(s.size)}</td>
+              <td style="font-family:monospace">${esc(s.lineHeight)}</td>
+            </tr>`,
+              )
+              .join("")}</tbody>
+          </table>`
+          : "";
+
+        // Spacing
+        const sp = t.spacing || {};
+        const spScale = sp.scale || [];
+        const spacingHtml =
+          sp.base || spScale.length
+            ? `
+          <div class="sub-heading">Spacing</div>
+          ${sp.base ? `<div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">Base unit: <code style="background:var(--surface-hover);padding:1px 5px;border-radius:3px;font-size:12px">${esc(sp.base)}</code></div>` : ""}
+          ${
+            spScale.length
+              ? `<table class="data-table">
+            <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+            <tbody>${spScale
+              .map(
+                (s) => `<tr>
+              <td style="font-weight:500;color:var(--text)">${esc(s.token)}</td>
+              <td style="font-family:monospace">${esc(s.value)}</td>
+              <td>${esc(s.usage || "")}</td>
+            </tr>`,
+              )
+              .join("")}</tbody>
+          </table>`
+              : ""
+          }`
+            : "";
+
+        // Breakpoints
+        const bps = t.breakpoints || [];
+        const bpHtml = bps.length
+          ? `
+          <div class="sub-heading">Breakpoints</div>
+          <table class="data-table">
+            <thead><tr><th>Token</th><th>Value</th><th>Target</th></tr></thead>
+            <tbody>${bps
+              .map(
+                (b) => `<tr>
+              <td style="font-weight:500;color:var(--text)">${esc(b.token)}</td>
+              <td style="font-family:monospace">${esc(b.value)}</td>
+              <td>${esc(b.target || "")}</td>
+            </tr>`,
+              )
+              .join("")}</tbody>
+          </table>`
+          : "";
+
+        // Border radius
+        const radii = t.borderRadius || [];
+        const radiusHtml = radii.length
+          ? `
+          <div class="sub-heading">Border Radius</div>
+          <table class="data-table">
+            <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+            <tbody>${radii
+              .map(
+                (r) => `<tr>
+              <td style="font-weight:500;color:var(--text)">${esc(r.token)}</td>
+              <td style="font-family:monospace">${esc(r.value)}</td>
+              <td>${esc(r.usage || "")}</td>
+            </tr>`,
+              )
+              .join("")}</tbody>
+          </table>`
+          : "";
+
+        // Shadows
+        const shdws = t.shadows || [];
+        const shadowsHtml = shdws.length
+          ? `
+          <div class="sub-heading">Shadows</div>
+          <table class="data-table">
+            <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+            <tbody>${shdws
+              .map(
+                (s) => `<tr>
+              <td style="font-weight:500;color:var(--text)">${esc(s.token)}</td>
+              <td style="font-family:monospace;font-size:11px">${esc(s.value)}</td>
+              <td>${esc(s.usage || "")}</td>
+            </tr>`,
+              )
+              .join("")}</tbody>
+          </table>`
+          : "";
+
+        // Modes
+        const modes = t.modes || {};
+        const modeKeys = Object.keys(modes);
+        const modesHtml = modeKeys.length
+          ? `
+          <div class="sub-heading">Theme Modes</div>
+          ${modeKeys
+            .map(
+              (k) => `
+            <div style="margin-bottom:12px">
+              <span class="tag" style="margin-bottom:6px;display:inline-block">${esc(k)}</span>
+              <div class="code-block">${esc(modes[k])}</div>
+            </div>`,
+            )
+            .join("")}`
+          : "";
+
+        // CSS Variables
+        const cssHtml = t.cssVars
+          ? `
+          <div class="sub-heading">CSS Variables</div>
+          <div class="code-block">${esc(t.cssVars)}</div>`
+          : "";
+
+        return `
+          <div class="section-header">
+            <h2>Theme</h2>
+          </div>
+          ${colorsHtml}
+          ${familiesHtml}
+          ${sizesHtml}
+          <hr class="divider" />
+          ${spacingHtml}
+          ${bpHtml}
+          ${radiusHtml}
+          ${shadowsHtml}
+          ${modesHtml}
+          ${cssHtml}`;
+      }
+
+      function renderStack() {
+        const s = data.stack;
+        const hasData = s.framework || s.language;
+        if (!hasData) {
+          return `
+            <div class="section-header">
+              <h2>Stack</h2>
+            </div>
+            <div class="empty-state"><p>Nog geen stack gedefinieerd.</p>
+            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-plan</code></p></div>`;
+        }
+        const fields = [
+          ["Framework", s.framework],
+          ["Language", s.language],
+          ["Styling", s.styling],
+          ["Database", s.db],
+          ["Auth", s.auth],
+          ["Hosting", s.hosting],
+        ].filter(([, v]) => v);
+
+        const cards = fields
+          .map(
+            ([label, value]) => `
+            <div class="stat-card">
+              <div class="stat-label">${esc(label)}</div>
+              <div class="stat-value">${esc(value)}</div>
+            </div>`,
+          )
+          .join("");
+
+        const pkgs = (s.packages || [])
+          .map(
+            (p) => `
+            <tr>
+              <td style="font-weight:500;color:var(--text)">${esc(p.name)}</td>
+              <td style="font-family:monospace">${esc(p.version)}</td>
+              <td>${esc(p.purpose)}</td>
+              <td style="width:40px;text-align:center">
+                <button onclick="removePackage('${esc(p.name)}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px" title="Verwijderen">&times;</button>
+              </td>
+            </tr>`,
+          )
+          .join("");
+
+        return `
+          <div class="section-header">
+            <h2>Stack</h2>
+            <button class="edit-btn" onclick="showResearch()" style="background:rgba(88,166,255,0.1);color:var(--accent);border-color:rgba(88,166,255,0.2)">Research</button>
+          </div>
+          <div class="grid-3">${cards}</div>
+          ${
+            s.packages && s.packages.length
+              ? `
+            <div class="sub-heading" style="display:flex;align-items:center;gap:12px">
+              Packages
+              <button class="add-btn" onclick="editPackage(-1)">+ Toevoegen</button>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Naam</th><th>Versie</th><th>Doel</th><th></th></tr></thead>
+              <tbody>${pkgs}</tbody>
+            </table>`
+              : `<div style="margin-top:16px"><button class="add-btn" onclick="editPackage(-1)">+ Package toevoegen</button></div>`
+          }`;
+      }
+
+      function renderData() {
+        const d = data.data;
+        const entities = d.entities || [];
+        if (entities.length === 0) {
+          return `
+            <div class="section-header">
+              <h2>Data</h2>
+              <button class="add-btn" onclick="editEntity(-1)">+ Entity toevoegen</button>
+            </div>
+            <div class="empty-state"><p>Nog geen data entities gedefinieerd.</p>
+            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-define</code></p></div>`;
+        }
+
+        const cards = entities
+          .map((e, idx) => {
+            const fields = (e.fields || [])
+              .map(
+                (f) => `
+              <div class="entity-field">
+                <span class="field-name">${esc(f.name)}</span>
+                <span class="field-type">${esc(f.type)}</span>
+                ${f.key ? `<span class="field-key">${esc(f.key)}</span>` : ""}
+              </div>`,
+              )
+              .join("");
+
+            const rels = (e.relations || [])
+              .map(
+                (r) =>
+                  `<span class="relation-arrow">&rarr;</span> ${esc(r.target)} <span style="color:var(--text-dim)">(${esc(r.type)})</span>`,
+              )
+              .join(", ");
+
+            return `
+              <div class="entity-card">
+                <div class="entity-header">
+                  <span class="entity-name">${esc(e.name)}</span>
+                  <div class="entity-actions">
+                    <button onclick="editEntity(${idx})" title="Bewerken">&#9998;</button>
+                    <button onclick="deleteEntity(${idx})" title="Verwijderen">&times;</button>
+                  </div>
+                </div>
+                <div class="entity-fields">${fields}</div>
+                ${rels ? `<div class="entity-relations">${rels}</div>` : ""}
+              </div>`;
+          })
+          .join("");
+
+        return `
+          <div class="section-header">
+            <h2>Data</h2>
+            <button class="add-btn" onclick="editEntity(-1)">+ Entity toevoegen</button>
+          </div>
+          ${cards}`;
+      }
+
+      function renderEndpoints() {
+        const eps = data.endpoints || [];
+        if (eps.length === 0) {
+          return `
+            <div class="section-header">
+              <h2>Endpoints</h2>
+              <button class="add-btn" onclick="editEndpoint(-1)">+ Endpoint toevoegen</button>
+            </div>
+            <div class="empty-state"><p>Nog geen endpoints gedefinieerd.</p>
+            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-define</code> en <code>/dev-build</code></p></div>`;
+        }
+
+        const rows = eps
+          .map(
+            (e, idx) => `
+            <tr style="cursor:pointer" onclick="editEndpoint(${idx})">
+              <td><span class="badge badge-${esc(e.method.toLowerCase())}">${esc(e.method)}</span></td>
+              <td style="font-family:monospace;font-weight:500;color:var(--text)">${esc(e.path)}</td>
+              <td><span class="auth-icon">${e.auth ? "&#128274;" : "&#128275;"}</span></td>
+              <td><span class="badge badge-${esc(e.status)}">${esc(e.status)}</span></td>
+              <td>${esc(e.description)}</td>
+            </tr>`,
+          )
+          .join("");
+
+        return `
+          <div class="section-header">
+            <h2>Endpoints</h2>
+            <button class="add-btn" onclick="editEndpoint(-1)">+ Endpoint toevoegen</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Status</th><th>Beschrijving</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      }
+
+      const featureDetailCache = {};
+
+      function renderFeatures() {
+        const feats = data.features || [];
+        if (feats.length === 0) {
+          return `
+            <div class="section-header">
+              <h2>Features</h2>
+              <button class="add-btn" onclick="editFeature(-1)">+ Feature toevoegen</button>
+            </div>
+            <div class="empty-state"><p>Nog geen features gedefinieerd.</p>
+            <p style="color:var(--text-dim)">Wordt gevuld door /dev-define, /dev-build, /dev-test en andere skills</p></div>`;
+        }
+
+        const statusOrder = ["TODO", "DEF", "BLT", "TST", "DONE"];
+        const sorted = [...feats].sort(
+          (a, b) =>
+            statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status),
+        );
+
+        const cards = sorted
+          .map((f, idx) => {
+            const origIdx = feats.indexOf(f);
+            const deps =
+              f.depends && f.depends.length
+                ? `<span class="feature-depends" style="display:inline-flex;gap:4px;margin-left:8px">${f.depends.map((d) => `<span class="feature-dep">${esc(d)}</span>`).join("")}</span>`
+                : "";
+            return `
+            <div class="feature-card" id="feature-${origIdx}">
+              <div class="feature-header" onclick="toggleFeature(${origIdx})">
+                <span class="feature-badge" data-status="${esc(f.status)}">${esc(f.status)}</span>
+                <span class="feature-name">${esc(f.name)}</span>
+                <span class="feature-summary">${esc(f.summary || "")}${deps}</span>
+                <span class="feature-date">${esc(f.created || "")}</span>
+                <span class="feature-chevron">&#9654;</span>
+              </div>
+              <div class="feature-detail" id="feature-detail-${origIdx}">
+                <div class="feature-loading">Laden...</div>
+              </div>
+            </div>`;
+          })
+          .join("");
+
+        return `
+          <div class="section-header">
+            <h2>Features</h2>
+            <button class="add-btn" onclick="editFeature(-1)">+ Feature toevoegen</button>
+          </div>
+          ${cards}`;
+      }
+
+      function toggleFeature(idx) {
+        const card = document.getElementById("feature-" + idx);
+        if (!card) return;
+        const isExpanded = card.classList.contains("expanded");
+        // Collapse all
+        document
+          .querySelectorAll(".feature-card.expanded")
+          .forEach((c) => c.classList.remove("expanded"));
+        if (!isExpanded) {
+          card.classList.add("expanded");
+          loadFeatureDetail(idx);
+        }
+      }
+
+      async function loadFeatureDetail(idx) {
+        const f = data.features[idx];
+        const el = document.getElementById("feature-detail-" + idx);
+        if (!el || !f) return;
+
+        // Try to load from server
+        const basePath = location.pathname.replace(/\/+$/, "");
+        const url = basePath + "/feature/" + encodeURIComponent(f.name);
+
+        let detail = featureDetailCache[f.name];
+        if (!detail) {
+          try {
+            const res = await fetch(url);
+            if (res.ok) {
+              detail = await res.json();
+              featureDetailCache[f.name] = detail;
+            }
+          } catch {}
+        }
+
+        let html = "";
+
+        // Summary + edit button (top-right)
+        const def = detail && detail.define ? detail.define : null;
+        const summary = (def && def.summary) || f.summary || "";
+        html += `<div class="feature-detail-section" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <p style="font-size:13px;line-height:1.6;color:var(--text);margin:0;flex:1">${summary ? esc(summary) : '<span style="color:var(--text-dim)">Geen beschrijving</span>'}</p>
+          <button class="add-btn" onclick="editFeature(${idx})" style="font-size:11px;padding:4px 10px;flex-shrink:0">Bewerken</button>
+        </div>`;
+
+        // Dependencies
+        const deps = (def && def.depends) || f.depends || [];
+        if (deps.length) {
+          html += `<div class="feature-detail-section"><h4>Dependencies</h4>
+            <div class="feature-depends">${deps.map((d) => `<span class="feature-dep">${esc(d)}</span>`).join("")}</div></div>`;
+        }
+
+        // Design / wireframe (from define)
+        if (def && def.design) {
+          const layout = def.design.layout || "";
+          const components = def.design.components || [];
+          if (layout || components.length) {
+            html += `<div class="feature-detail-section"><h4>Design</h4>`;
+            if (layout) {
+              html += `<pre style="font-size:11px;line-height:1.4;color:var(--text-muted);background:var(--bg);padding:12px;border-radius:4px;overflow-x:auto;white-space:pre">${esc(layout)}</pre>`;
+            }
+            if (components.length) {
+              html += `<p style="font-size:12px;color:var(--text-muted);margin-top:6px"><strong>Components:</strong> ${components.map((c) => `<code>${esc(typeof c === "string" ? c : c.name || JSON.stringify(c))}</code>`).join(", ")}</p>`;
+            }
+            html += `</div>`;
+          }
+        }
+
+        // API Contract (from define)
+        if (def && def.apiContract && def.apiContract.length) {
+          const apis = def.apiContract;
+          html += `<div class="feature-detail-section"><h4>API Contract (${apis.length})</h4>
+            <table class="data-table"><thead><tr><th>Method</th><th>Path</th><th>Beschrijving</th></tr></thead>
+            <tbody>${apis.map((a) => `<tr><td><code>${esc(a.method)}</code></td><td><code>${esc(a.path)}</code></td><td style="color:var(--text-dim)">${esc(a.description || "")}</td></tr>`).join("")}</tbody></table></div>`;
+        }
+
+        // Requirements (from define)
+        if (def && def.requirements && def.requirements.length) {
+          const reqs = def.requirements;
+          html += `<div class="feature-detail-section"><h4>Requirements (${reqs.length})</h4>
+            <table class="data-table"><thead><tr><th>ID</th><th>Beschrijving</th><th>Type</th><th>Acceptance</th></tr></thead>
+            <tbody>${reqs.map((r) => `<tr><td><code>${esc(r.id)}</code></td><td>${esc(r.description)}</td><td>${esc(r.testType || r.category || "")}</td><td style="color:var(--text-dim)">${esc(r.acceptance || "")}</td></tr>`).join("")}</tbody></table></div>`;
+        }
+
+        // Build info (only show if there's actual content)
+        if (detail && detail.build) {
+          const b = detail.build;
+          const hasContent =
+            (b.filesChanged && b.filesChanged.length) ||
+            (b.packagesAdded && b.packagesAdded.length) ||
+            (b.decisions && b.decisions.length) ||
+            b.started;
+          if (hasContent) {
+            html += `<div class="feature-detail-section"><h4>Build</h4>`;
+            if (b.started || b.completed) {
+              html += `<p style="font-size:12px;color:var(--text-dim)">${b.started ? "Started: " + esc(b.started) : ""}${b.started && b.completed ? " — " : ""}${b.completed ? "Completed: " + esc(b.completed) : ""}</p>`;
+            }
+            if (b.filesChanged && b.filesChanged.length) {
+              html += `<p style="font-size:12px;color:var(--text-muted)"><strong>Bestanden (${b.filesChanged.length}):</strong> ${b.filesChanged.map((f) => `<code>${esc(f)}</code>`).join(", ")}</p>`;
+            }
+            if (b.packagesAdded && b.packagesAdded.length) {
+              html += `<p style="font-size:12px;color:var(--text-muted)"><strong>Packages:</strong> ${b.packagesAdded.map((p) => `${esc(p.name)}@${esc(p.version || "")}`).join(", ")}</p>`;
+            }
+            if (b.decisions && b.decisions.length) {
+              html += `<p style="font-size:12px;color:var(--text-muted)"><strong>Beslissingen:</strong> ${b.decisions.map((d) => esc(d)).join("; ")}</p>`;
+            }
+            html += `</div>`;
+          }
+        }
+
+        // Test info
+        if (detail && detail.test) {
+          const t = detail.test;
+          html += `<div class="feature-detail-section"><h4>Tests</h4>`;
+          if (t.finalStatus) {
+            const statusColor =
+              t.finalStatus === "PASSED" ? "var(--accent)" : "#f97316";
+            html += `<p style="font-size:12px"><strong>Status:</strong> <span style="color:${statusColor};font-weight:600">${esc(t.finalStatus)}</span></p>`;
+          }
+          if (t.runs && t.runs.length) {
+            const last = t.runs[t.runs.length - 1];
+            html += `<p style="font-size:12px;color:var(--text-muted)">Laatste run: ${esc(last.date || "")} — ${last.passed} passed, ${last.failed} failed</p>`;
+          }
+          if (t.coverage) {
+            html += `<p style="font-size:12px;color:var(--text-dim)">Coverage: ${t.coverage.statements || 0}% statements, ${t.coverage.branches || 0}% branches</p>`;
+          }
+          html += `</div>`;
+        }
+
+        // Fallback: no detail data from server
+        if (!detail) {
+          html += `<div class="feature-detail-section" style="color:var(--text-dim);font-size:12px">
+            Geen detail data beschikbaar. Feature files worden aangemaakt door /dev-define en /dev-build.
+          </div>`;
+        }
+
+        el.innerHTML = html;
+      }
+
+      function renderThinking() {
+        const entries = data.thinking || [];
+        if (entries.length === 0) {
+          return `
+            <div class="section-header">
+              <h2>Thinking</h2>
+              <button class="add-btn" onclick="editThinking(-1)">+ Entry toevoegen</button>
+            </div>
+            <div class="empty-state"><p>Nog geen thinking entries.</p>
+            <p style="color:var(--text-dim)">Wordt gevuld door /thinking-idea, /thinking-brainstorm, /thinking-critique en /thinking-decide</p></div>`;
+        }
+
+        // Reverse chronological (newest first)
+        const sorted = [...entries]
+          .map((e, i) => ({ ...e, _idx: i }))
+          .reverse();
+
+        const cards = sorted
+          .map((e) => {
+            const idx = e._idx;
+            let meta = "";
+            if (e.type === "brainstorm" || e.type === "decision") {
+              if (e.chosen) {
+                meta += `<strong>Gekozen:</strong> ${esc(e.chosen)}`;
+              }
+              const options = e.variants || e.options || [];
+              if (options.length) {
+                meta += `${e.chosen ? " · " : ""}<strong>Opties:</strong> ${options.map((o) => esc(o)).join(", ")}`;
+              }
+            }
+            if (e.type === "decision" && e.rationale) {
+              meta += `<br><strong>Rationale:</strong> ${esc(e.rationale)}`;
+            }
+
+            // Truncate content for display, show full on click
+            const content = e.content || "";
+            const truncated =
+              content.length > 300 ? content.slice(0, 300) + "..." : content;
+            const needsExpand = content.length > 300;
+
+            return `
+          <div class="thinking-entry" data-type="${esc(e.type || "idea")}" style="cursor:pointer" onclick="editThinking(${idx})">
+            <div class="thinking-header">
+              <span class="thinking-type-badge" data-type="${esc(e.type || "idea")}">${esc(e.type || "idea")}</span>
+              <span class="thinking-title">${esc(e.title || "Untitled")}</span>
+              <span class="thinking-date">${esc(e.date || "")}</span>
+            </div>
+            ${meta ? `<div class="thinking-meta">${meta}</div>` : ""}
+            <div class="thinking-content">${esc(truncated)}${needsExpand ? ' <span style="color:var(--accent)">[meer]</span>' : ""}</div>
+            <div class="thinking-source">${esc(e.source || "")}</div>
+          </div>`;
+          })
+          .join("");
+
+        return `
+          <div class="section-header">
+            <h2>Thinking</h2>
+            <button class="add-btn" onclick="editThinking(-1)">+ Entry toevoegen</button>
+          </div>
+          ${cards}`;
+      }
+
+      // ─── Edit Modals ───────────────────────────────────────
+
+      function editConcept() {
+        const c = data.concept;
+        openModal(
+          "Concept bewerken",
+          `
+          <label>Naam</label>
+          <input type="text" id="f-name" value="${esc(c.name)}" />
+          <label>Concept (Markdown)</label>
+          <textarea id="f-content" rows="20" style="font-family:var(--font-mono);font-size:12px;line-height:1.5">${esc(c.content)}</textarea>
+        `,
+          {
+            onSave() {
+              data.concept.name = document
+                .getElementById("f-name")
+                .value.trim();
+              data.concept.content = document.getElementById("f-content").value;
+            },
+          },
+        );
+      }
+
+      function addGoalField() {
+        const list = document.getElementById("f-goals");
+        const div = document.createElement("div");
+        div.className = "modal-list-item";
+        div.innerHTML = `
+          <input type="text" value="" placeholder="Nieuw doel" />
+          <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>`;
+        list.appendChild(div);
+        div.querySelector("input").focus();
+      }
+
+      function editTheme() {
+        const t = data.theme;
+        const colors = t.colors || {};
+        const typo = t.typography || {};
+        const families = typo.families || {};
+        const sp = t.spacing || {};
+        const modes = t.modes || {};
+
+        // Build color rows for a category
+        function colorRows(category, items) {
+          return (items || [])
+            .map(
+              (c, i) => `
+            <div class="modal-list-item" data-cat="${category}">
+              <input type="text" value="${esc(c.token)}" style="width:100px" data-ctoken placeholder="Token" />
+              <input type="color" value="${esc(c.value)}" data-cvalue />
+              <input type="text" value="${esc(c.value)}" style="width:80px;font-family:monospace" data-chex placeholder="#hex" />
+              <input type="text" value="${esc(c.usage || "")}" style="width:120px" data-cusage placeholder="Usage" />
+              <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>
+            </div>`,
+            )
+            .join("");
+        }
+
+        openModal(
+          "Theme bewerken",
+          `
+          <label>Kleuren — Main</label>
+          <div class="modal-list" id="f-colors-main">${colorRows("main", colors.main)}</div>
+          <button class="modal-list-add" onclick="addColorField('main')">+ Main kleur</button>
+          <br/><br/>
+          <label>Kleuren — Accent</label>
+          <div class="modal-list" id="f-colors-accent">${colorRows("accent", colors.accent)}</div>
+          <button class="modal-list-add" onclick="addColorField('accent')">+ Accent kleur</button>
+          <br/><br/>
+          <label>Kleuren — Semantic</label>
+          <div class="modal-list" id="f-colors-semantic">${colorRows("semantic", colors.semantic)}</div>
+          <button class="modal-list-add" onclick="addColorField('semantic')">+ Semantic kleur</button>
+          <br/><br/>
+          <hr class="divider" />
+          <label>Heading font</label>
+          <input type="text" id="f-font-h" value="${esc(families.heading || "")}" />
+          <label>Body font</label>
+          <input type="text" id="f-font-b" value="${esc(families.body || "")}" />
+          <label>Mono font</label>
+          <input type="text" id="f-font-m" value="${esc(families.mono || "")}" />
+          <hr class="divider" />
+          <label>Type Sizes (JSON)</label>
+          <textarea id="f-sizes" rows="4" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(typo.sizes || [], null, 2))}</textarea>
+          <hr class="divider" />
+          <label>Spacing base</label>
+          <input type="text" id="f-sp-base" value="${esc(sp.base || "")}" placeholder="4px" />
+          <label>Spacing scale (JSON)</label>
+          <textarea id="f-sp-scale" rows="3" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(sp.scale || [], null, 2))}</textarea>
+          <hr class="divider" />
+          <label>Breakpoints (JSON)</label>
+          <textarea id="f-breakpoints" rows="3" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(t.breakpoints || [], null, 2))}</textarea>
+          <label>Border Radius (JSON)</label>
+          <textarea id="f-radius" rows="3" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(t.borderRadius || [], null, 2))}</textarea>
+          <label>Shadows (JSON)</label>
+          <textarea id="f-shadows" rows="3" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(t.shadows || [], null, 2))}</textarea>
+          <hr class="divider" />
+          <label>Mode: light (CSS)</label>
+          <textarea id="f-mode-light" rows="4" style="font-family:monospace;font-size:12px">${esc(modes.light || "")}</textarea>
+          <label>Mode: dark (CSS)</label>
+          <textarea id="f-mode-dark" rows="4" style="font-family:monospace;font-size:12px">${esc(modes.dark || "")}</textarea>
+          <hr class="divider" />
+          <label>CSS Variables</label>
+          <textarea id="f-css" rows="6" style="font-family:monospace;font-size:12px">${esc(t.cssVars || "")}</textarea>
+        `,
+          {
+            onSave() {
+              // Collect colors per category
+              function collectColors(containerId) {
+                return [
+                  ...document.querySelectorAll(
+                    "#" + containerId + " .modal-list-item",
+                  ),
+                ]
+                  .map((row) => ({
+                    token: row.querySelector("[data-ctoken]").value.trim(),
+                    value:
+                      row.querySelector("[data-chex]").value.trim() ||
+                      row.querySelector("[data-cvalue]").value,
+                    usage:
+                      row.querySelector("[data-cusage]").value.trim() ||
+                      undefined,
+                  }))
+                  .filter((c) => c.token);
+              }
+              data.theme.colors = {
+                main: collectColors("f-colors-main"),
+                accent: collectColors("f-colors-accent"),
+                semantic: collectColors("f-colors-semantic"),
+              };
+              data.theme.typography = {
+                families: {
+                  heading: document.getElementById("f-font-h").value.trim(),
+                  body: document.getElementById("f-font-b").value.trim(),
+                  mono: document.getElementById("f-font-m").value.trim(),
+                },
+                sizes: safeParseJSON(
+                  document.getElementById("f-sizes").value,
+                  [],
+                ),
+              };
+              data.theme.spacing = {
+                base: document.getElementById("f-sp-base").value.trim(),
+                scale: safeParseJSON(
+                  document.getElementById("f-sp-scale").value,
+                  [],
+                ),
+              };
+              data.theme.breakpoints = safeParseJSON(
+                document.getElementById("f-breakpoints").value,
+                [],
+              );
+              data.theme.borderRadius = safeParseJSON(
+                document.getElementById("f-radius").value,
+                [],
+              );
+              data.theme.shadows = safeParseJSON(
+                document.getElementById("f-shadows").value,
+                [],
+              );
+              const mLight = document
+                .getElementById("f-mode-light")
+                .value.trim();
+              const mDark = document.getElementById("f-mode-dark").value.trim();
+              data.theme.modes = {};
+              if (mLight) data.theme.modes.light = mLight;
+              if (mDark) data.theme.modes.dark = mDark;
+              data.theme.cssVars = document.getElementById("f-css").value;
+            },
+          },
+        );
+
+        // Sync color pickers with hex inputs
+        setTimeout(() => {
+          document.querySelectorAll("[data-cvalue]").forEach((picker) => {
+            const row = picker.closest(".modal-list-item");
+            const hex = row.querySelector("[data-chex]");
+            picker.addEventListener("input", () => (hex.value = picker.value));
+            hex.addEventListener("input", () => {
+              if (/^#[0-9a-f]{6}$/i.test(hex.value)) picker.value = hex.value;
+            });
+          });
+        }, 0);
+      }
+
+      function safeParseJSON(str, fallback) {
+        try {
+          return JSON.parse(str);
+        } catch {
+          return fallback;
+        }
+      }
+
+      function addColorField(category) {
+        const list = document.getElementById("f-colors-" + category);
+        const div = document.createElement("div");
+        div.className = "modal-list-item";
+        div.setAttribute("data-cat", category);
+        div.innerHTML = `
+          <input type="text" value="" style="width:100px" data-ctoken placeholder="Token" />
+          <input type="color" value="#3B82F6" data-cvalue />
+          <input type="text" value="#3B82F6" style="width:80px;font-family:monospace" data-chex placeholder="#hex" />
+          <input type="text" value="" style="width:120px" data-cusage placeholder="Usage" />
+          <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>`;
+        list.appendChild(div);
+        const picker = div.querySelector("[data-cvalue]");
+        const hex = div.querySelector("[data-chex]");
+        picker.addEventListener("input", () => (hex.value = picker.value));
+        hex.addEventListener("input", () => {
+          if (/^#[0-9a-f]{6}$/i.test(hex.value)) picker.value = hex.value;
+        });
+        div.querySelector("[data-ctoken]").focus();
+      }
+
+      async function showResearch() {
+        try {
+          const basePath = location.pathname.replace(/\/+$/, "");
+          const resp = await fetch(`${basePath}/research`);
+          const research = await resp.json();
+
+          if (!research.stack && !research.architecture) {
+            openModal(
+              "Stack Research",
+              `
+              <div class="empty-state" style="margin:0">
+                <p>Geen research beschikbaar.</p>
+                <p style="color:var(--text-dim)">Wordt gegenereerd door <code>/core-setup</code> Phase 7</p>
+              </div>
+            `,
+              { readOnly: true },
+            );
+            return;
+          }
+
+          let content = "";
+          if (research.stack) {
+            content += `<div class="research-content">${markdownToHtml(research.stack)}</div>`;
+          }
+          if (research.architecture) {
+            content += `<h3 style="margin-top:24px;color:var(--text)">Architecture Baseline</h3>
+              <div class="research-content">${markdownToHtml(research.architecture)}</div>`;
+          }
+
+          openModal("Stack Research", content, { readOnly: true, wide: true });
+        } catch (e) {
+          openModal(
+            "Fout",
+            `<p>Kon research niet laden: ${esc(e.message)}</p>`,
+            { readOnly: true },
+          );
+        }
+      }
+
+      function markdownToHtml(md) {
+        return (
+          md
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            // Code blocks
+            .replace(
+              /```(\w*)\n([\s\S]*?)```/g,
+              (_, lang, code) =>
+                `<pre style="background:var(--bg-dark);padding:12px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.5;margin:8px 0"><code>${code.trim()}</code></pre>`,
+            )
+            // Inline code
+            .replace(
+              /`([^`]+)`/g,
+              '<code style="background:var(--bg-dark);padding:2px 6px;border-radius:3px;font-size:13px">$1</code>',
+            )
+            // Headers
+            .replace(
+              /^#### (.+)$/gm,
+              '<h4 style="color:var(--text);margin:16px 0 6px;font-size:14px">$1</h4>',
+            )
+            .replace(
+              /^### (.+)$/gm,
+              '<h3 style="color:var(--text);margin:20px 0 8px;font-size:15px">$1</h3>',
+            )
+            .replace(
+              /^## (.+)$/gm,
+              '<h2 style="color:var(--accent);margin:24px 0 10px;font-size:17px;border-bottom:1px solid var(--border);padding-bottom:6px">$1</h2>',
+            )
+            .replace(
+              /^# (.+)$/gm,
+              '<h1 style="color:var(--text);margin:0 0 16px;font-size:20px">$1</h1>',
+            )
+            // Bold & italic
+            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+            .replace(/\*(.+?)\*/g, "<em>$1</em>")
+            // List items
+            .replace(
+              /^- (.+)$/gm,
+              '<li style="margin:2px 0;list-style:disc;margin-left:20px">$1</li>',
+            )
+            .replace(
+              /^  - (.+)$/gm,
+              '<li style="margin:2px 0;list-style:circle;margin-left:36px">$1</li>',
+            )
+            // Horizontal rules
+            .replace(
+              /^---$/gm,
+              '<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">',
+            )
+            // Paragraphs (double newline)
+            .replace(/\n\n/g, '</p><p style="margin:8px 0">')
+            // Single newlines within paragraphs
+            .replace(/\n/g, "<br>")
+        );
+      }
+
+      function editStack() {
+        const s = data.stack;
+        openModal(
+          "Stack bewerken",
+          `
+          <div class="modal-row">
+            <div><label>Framework</label><input type="text" id="f-framework" value="${esc(s.framework)}" /></div>
+            <div><label>Language</label><input type="text" id="f-language" value="${esc(s.language)}" /></div>
+          </div>
+          <div class="modal-row">
+            <div><label>Styling</label><input type="text" id="f-styling" value="${esc(s.styling)}" /></div>
+            <div><label>Database</label><input type="text" id="f-db" value="${esc(s.db)}" /></div>
+          </div>
+          <div class="modal-row">
+            <div><label>Auth</label><input type="text" id="f-auth" value="${esc(s.auth)}" /></div>
+            <div><label>Hosting</label><input type="text" id="f-hosting" value="${esc(s.hosting)}" /></div>
+          </div>
+        `,
+          {
+            onSave() {
+              data.stack.framework = document
+                .getElementById("f-framework")
+                .value.trim();
+              data.stack.language = document
+                .getElementById("f-language")
+                .value.trim();
+              data.stack.styling = document
+                .getElementById("f-styling")
+                .value.trim();
+              data.stack.db = document.getElementById("f-db").value.trim();
+              data.stack.auth = document.getElementById("f-auth").value.trim();
+              data.stack.hosting = document
+                .getElementById("f-hosting")
+                .value.trim();
+            },
+          },
+        );
+      }
+
+      function editPackage(idx) {
+        const isNew = idx === -1;
+        const p = isNew
+          ? { name: "", version: "", purpose: "" }
+          : data.stack.packages[idx];
+        openModal(
+          isNew ? "Package toevoegen" : "Package bewerken",
+          `
+          <label>Naam</label>
+          <input type="text" id="f-pkg-name" value="${esc(p.name)}" />
+          <label>Versie</label>
+          <input type="text" id="f-pkg-ver" value="${esc(p.version)}" placeholder="^1.0.0" />
+          <label>Doel</label>
+          <input type="text" id="f-pkg-purpose" value="${esc(p.purpose)}" />
+        `,
+          {
+            deletable: !isNew,
+            onSave() {
+              const pkg = {
+                name: document.getElementById("f-pkg-name").value.trim(),
+                version: document.getElementById("f-pkg-ver").value.trim(),
+                purpose: document.getElementById("f-pkg-purpose").value.trim(),
+              };
+              if (!pkg.name) return;
+              if (!data.stack.packages) data.stack.packages = [];
+              if (isNew) {
+                data.stack.packages.push(pkg);
+              } else {
+                data.stack.packages[idx] = pkg;
+              }
+            },
+            onDelete() {
+              if (!isNew) data.stack.packages.splice(idx, 1);
+            },
+          },
+        );
+      }
+
+      function removePackage(name) {
+        data.stack.packages = (data.stack.packages || []).filter(
+          (p) => p.name !== name,
+        );
+        syncJSON();
+        render();
+        toast(`${name} verwijderd`);
+      }
+
+      function editEntity(idx) {
+        const isNew = idx === -1;
+        const e = isNew
+          ? {
+              name: "",
+              fields: [{ name: "", type: "", key: "" }],
+              relations: [],
+            }
+          : JSON.parse(JSON.stringify(data.data.entities[idx]));
+
+        const fieldsHtml = (e.fields || [])
+          .map(
+            (f, i) => `
+          <div class="modal-list-item">
+            <input type="text" value="${esc(f.name)}" style="width:100px" placeholder="Naam" data-fname="${i}" />
+            <input type="text" value="${esc(f.type)}" style="width:80px" placeholder="Type" data-ftype="${i}" />
+            <input type="text" value="${esc(f.key || "")}" style="width:70px" placeholder="Key" data-fkey="${i}" />
+            <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>
+          </div>`,
+          )
+          .join("");
+
+        const relsHtml = (e.relations || [])
+          .map(
+            (r, i) => `
+          <div class="modal-list-item">
+            <input type="text" value="${esc(r.target)}" style="width:120px" placeholder="Target" data-rtarget="${i}" />
+            <input type="text" value="${esc(r.type)}" style="width:60px" placeholder="1:N" data-rtype="${i}" />
+            <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>
+          </div>`,
+          )
+          .join("");
+
+        openModal(
+          isNew ? "Entity toevoegen" : `${esc(e.name)} bewerken`,
+          `
+          <label>Entity naam</label>
+          <input type="text" id="f-entity-name" value="${esc(e.name)}" />
+          <label>Velden</label>
+          <div class="modal-list" id="f-fields">${fieldsHtml}</div>
+          <button class="modal-list-add" onclick="addEntityField()">+ Veld toevoegen</button>
+          <br/><br/>
+          <label>Relaties</label>
+          <div class="modal-list" id="f-rels">${relsHtml}</div>
+          <button class="modal-list-add" onclick="addEntityRelation()">+ Relatie toevoegen</button>
+        `,
+          {
+            deletable: !isNew,
+            onSave() {
+              const entity = {
+                name: document.getElementById("f-entity-name").value.trim(),
+                fields: [
+                  ...document.querySelectorAll("#f-fields .modal-list-item"),
+                ]
+                  .map((row) => ({
+                    name: row.querySelector("[data-fname]").value.trim(),
+                    type: row.querySelector("[data-ftype]").value.trim(),
+                    key:
+                      row.querySelector("[data-fkey]").value.trim() ||
+                      undefined,
+                  }))
+                  .filter((f) => f.name),
+                relations: [
+                  ...document.querySelectorAll("#f-rels .modal-list-item"),
+                ]
+                  .map((row) => ({
+                    target: row.querySelector("[data-rtarget]").value.trim(),
+                    type: row.querySelector("[data-rtype]").value.trim(),
+                  }))
+                  .filter((r) => r.target),
+              };
+              if (!entity.name) return;
+              if (!data.data.entities) data.data.entities = [];
+              if (isNew) {
+                data.data.entities.push(entity);
+              } else {
+                data.data.entities[idx] = entity;
+              }
+            },
+            onDelete() {
+              if (!isNew) data.data.entities.splice(idx, 1);
+            },
+          },
+        );
+      }
+
+      function addEntityField() {
+        const list = document.getElementById("f-fields");
+        const i = list.children.length;
+        const div = document.createElement("div");
+        div.className = "modal-list-item";
+        div.innerHTML = `
+          <input type="text" value="" style="width:100px" placeholder="Naam" data-fname="${i}" />
+          <input type="text" value="" style="width:80px" placeholder="Type" data-ftype="${i}" />
+          <input type="text" value="" style="width:70px" placeholder="Key" data-fkey="${i}" />
+          <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>`;
+        list.appendChild(div);
+        div.querySelector("[data-fname]").focus();
+      }
+
+      function addEntityRelation() {
+        const list = document.getElementById("f-rels");
+        const i = list.children.length;
+        const div = document.createElement("div");
+        div.className = "modal-list-item";
+        div.innerHTML = `
+          <input type="text" value="" style="width:120px" placeholder="Target" data-rtarget="${i}" />
+          <input type="text" value="" style="width:60px" placeholder="1:N" data-rtype="${i}" />
+          <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>`;
+        list.appendChild(div);
+        div.querySelector("[data-rtarget]").focus();
+      }
+
+      function deleteEntity(idx) {
+        const name = data.data.entities[idx].name;
+        data.data.entities.splice(idx, 1);
+        syncJSON();
+        render();
+        toast(`${name} verwijderd`);
+      }
+
+      function editEndpoint(idx) {
+        const isNew = idx === -1;
+        const e = isNew
+          ? {
+              method: "GET",
+              path: "",
+              auth: false,
+              status: "planned",
+              description: "",
+            }
+          : data.endpoints[idx];
+
+        openModal(
+          isNew ? "Endpoint toevoegen" : `${esc(e.method)} ${esc(e.path)}`,
+          `
+          <div class="modal-row">
+            <div>
+              <label>Method</label>
+              <select id="f-ep-method">
+                ${["GET", "POST", "PUT", "PATCH", "DELETE"].map((m) => `<option value="${m}" ${e.method === m ? "selected" : ""}>${m}</option>`).join("")}
+              </select>
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="f-ep-status">
+                ${["planned", "building", "done"].map((s) => `<option value="${s}" ${e.status === s ? "selected" : ""}>${s}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+          <label>Path</label>
+          <input type="text" id="f-ep-path" value="${esc(e.path)}" placeholder="/api/..." />
+          <label>Beschrijving</label>
+          <input type="text" id="f-ep-desc" value="${esc(e.description)}" />
+          <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="f-ep-auth" ${e.auth ? "checked" : ""} style="width:auto;margin:0" />
+            Authenticatie vereist
+          </label>
+        `,
+          {
+            deletable: !isNew,
+            onSave() {
+              const ep = {
+                method: document.getElementById("f-ep-method").value,
+                path: document.getElementById("f-ep-path").value.trim(),
+                auth: document.getElementById("f-ep-auth").checked,
+                status: document.getElementById("f-ep-status").value,
+                description: document.getElementById("f-ep-desc").value.trim(),
+              };
+              if (!ep.path) return;
+              if (!data.endpoints) data.endpoints = [];
+              if (isNew) {
+                data.endpoints.push(ep);
+              } else {
+                data.endpoints[idx] = ep;
+              }
+            },
+            onDelete() {
+              if (!isNew) data.endpoints.splice(idx, 1);
+            },
+          },
+        );
+      }
+
+      function editFeature(idx) {
+        const isNew = idx === -1;
+        const f = isNew
+          ? {
+              name: "",
+              status: "TODO",
+              summary: "",
+              depends: [],
+              created: new Date().toISOString().slice(0, 10),
+            }
+          : data.features[idx];
+
+        const statusOptions = ["TODO", "DEF", "BLT", "TST", "DONE"]
+          .map(
+            (s) =>
+              `<option value="${s}" ${f.status === s ? "selected" : ""}>${s}</option>`,
+          )
+          .join("");
+
+        const depsHtml = (f.depends || [])
+          .map(
+            (d, i) => `
+          <div class="modal-list-item">
+            <input type="text" value="${esc(d)}" data-dep="${i}" />
+            <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>
+          </div>`,
+          )
+          .join("");
+
+        openModal(
+          isNew ? "Feature toevoegen" : "Feature bewerken",
+          `
+          <label>Naam</label>
+          <input type="text" id="f-feat-name" value="${esc(f.name)}" ${!isNew ? 'readonly style="opacity:0.6"' : ""} />
+          <label>Status</label>
+          <select id="f-feat-status">${statusOptions}</select>
+          <label>Summary</label>
+          <textarea id="f-feat-summary" rows="2">${esc(f.summary || "")}</textarea>
+          <label>Aangemaakt</label>
+          <input type="date" id="f-feat-created" value="${esc(f.created || "")}" />
+          <label>Dependencies</label>
+          <div class="modal-list" id="f-deps">${depsHtml}</div>
+          <button class="modal-list-add" onclick="addDepField()">+ Dependency toevoegen</button>
+        `,
+          {
+            deletable: !isNew,
+            onSave() {
+              const feat = {
+                name: document.getElementById("f-feat-name").value.trim(),
+                status: document.getElementById("f-feat-status").value,
+                summary: document.getElementById("f-feat-summary").value.trim(),
+                created: document.getElementById("f-feat-created").value,
+                depends: [...document.querySelectorAll("#f-deps input")]
+                  .map((i) => i.value.trim())
+                  .filter(Boolean),
+              };
+              if (!feat.name) return;
+              if (!data.features) data.features = [];
+              if (isNew) {
+                data.features.push(feat);
+              } else {
+                data.features[idx] = feat;
+              }
+              delete featureDetailCache[feat.name];
+            },
+            onDelete() {
+              if (!isNew) data.features.splice(idx, 1);
+            },
+          },
+        );
+      }
+
+      function addDepField() {
+        const list = document.getElementById("f-deps");
+        const div = document.createElement("div");
+        div.className = "modal-list-item";
+        div.innerHTML = `
+          <input type="text" value="" placeholder="Feature dependency" data-dep="${list.children.length}" />
+          <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>`;
+        list.appendChild(div);
+        div.querySelector("input").focus();
+      }
+
+      function editThinking(idx) {
+        const isNew = idx === -1;
+        const e = isNew
+          ? {
+              type: "idea",
+              date: new Date().toISOString().slice(0, 10),
+              title: "",
+              content: "",
+              source: "",
+            }
+          : data.thinking[idx];
+
+        const typeOptions = ["idea", "brainstorm", "critique", "decision"]
+          .map(
+            (t) =>
+              `<option value="${t}" ${e.type === t ? "selected" : ""}>${t}</option>`,
+          )
+          .join("");
+
+        openModal(
+          isNew ? "Thinking entry toevoegen" : "Thinking entry bewerken",
+          `
+          <label>Type</label>
+          <select id="f-think-type">${typeOptions}</select>
+          <label>Titel</label>
+          <input type="text" id="f-think-title" value="${esc(e.title || "")}" />
+          <label>Datum</label>
+          <input type="date" id="f-think-date" value="${esc(e.date || "")}" />
+          <label>Inhoud</label>
+          <textarea id="f-think-content" rows="8" style="font-family:var(--font-mono);font-size:12px">${esc(e.content || "")}</textarea>
+          <label>Gekozen optie (brainstorm/decision)</label>
+          <input type="text" id="f-think-chosen" value="${esc(e.chosen || "")}" />
+          <label>Rationale (decision)</label>
+          <textarea id="f-think-rationale" rows="2">${esc(e.rationale || "")}</textarea>
+          <label>Bron</label>
+          <input type="text" id="f-think-source" value="${esc(e.source || "")}" placeholder="/thinking-idea" />
+        `,
+          {
+            deletable: !isNew,
+            onSave() {
+              const entry = {
+                type: document.getElementById("f-think-type").value,
+                date: document.getElementById("f-think-date").value,
+                title: document.getElementById("f-think-title").value.trim(),
+                content: document.getElementById("f-think-content").value,
+                source: document.getElementById("f-think-source").value.trim(),
+              };
+              const chosen = document
+                .getElementById("f-think-chosen")
+                .value.trim();
+              const rationale = document
+                .getElementById("f-think-rationale")
+                .value.trim();
+              if (chosen) entry.chosen = chosen;
+              if (rationale) entry.rationale = rationale;
+              if (!entry.title) return;
+              if (!data.thinking) data.thinking = [];
+              if (isNew) {
+                data.thinking.push(entry);
+              } else {
+                data.thinking[idx] = entry;
+              }
+            },
+            onDelete() {
+              if (!isNew) data.thinking.splice(idx, 1);
+            },
+          },
+        );
+      }
+
+      // ─── Render ─────────────────────────────────────────────
+
+      const renderers = {
+        concept: renderConcept,
+        theme: renderTheme,
+        stack: renderStack,
+        data: renderData,
+        endpoints: renderEndpoints,
+        features: renderFeatures,
+        thinking: renderThinking,
+      };
+
+      function render() {
+        // Header
+        let headerEl = document.querySelector("header");
+        if (!headerEl) {
+          headerEl = document.createElement("header");
+          document.body.prepend(headerEl);
+        }
+        const projectName = data.concept.name || "Dashboard";
+        document.title = projectName + " — Dashboard";
+        headerEl.innerHTML = "";
+
+        // Layout
+        let layoutEl = document.querySelector(".layout");
+        if (!layoutEl) {
+          layoutEl = document.createElement("div");
+          layoutEl.className = "layout";
+          headerEl.after(layoutEl);
+        }
+
+        // Sidebar
+        let sidebarEl = layoutEl.querySelector(".sidebar");
+        if (!sidebarEl) {
+          sidebarEl = document.createElement("nav");
+          sidebarEl.className = "sidebar";
+          layoutEl.prepend(sidebarEl);
+        }
+
+        sidebarEl.innerHTML = TABS.map(
+          (t) =>
+            `<a href="#${t.id}" class="${activeTab === t.id ? "active" : ""}" data-tab="${t.id}">${esc(t.label)}</a>`,
+        ).join("");
+
+        // Wire tab clicks
+        sidebarEl.querySelectorAll("[data-tab]").forEach((a) => {
+          a.addEventListener("click", (e) => {
+            e.preventDefault();
+            activeTab = a.dataset.tab;
+            render();
+          });
+        });
+
+        // Content
+        let contentEl = layoutEl.querySelector(".content");
+        if (!contentEl) {
+          contentEl = document.createElement("main");
+          contentEl.className = "content";
+          layoutEl.appendChild(contentEl);
+        }
+
+        const renderer = renderers[activeTab];
+        contentEl.innerHTML = renderer ? renderer() : "";
+      }
+
+      // ─── Init ───────────────────────────────────────────────
+      render();
+    </script>
+  </body>
+</html>

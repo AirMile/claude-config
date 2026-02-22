@@ -66,11 +66,12 @@ Haal de index op en toon:
 
 ```
 Server: http://localhost:9876
-Projecten met backlog:
-  - {project-naam} → http://localhost:9876/{dir}
+Projecten:
+  - {project-naam} → http://localhost:9876/{dir} (dashboard)
+  - {project-naam} → http://localhost:9876/{dir}/backlog (kanban)
   - ...
 
 Open in VS Code: Ctrl+Shift+P → "Simple Browser: Show" → URL
 ```
 
-Als er geen backlogs gevonden zijn, vermeld dat en hint naar `/dev-plan` om er een te genereren.
+Als er geen projecten gevonden zijn, vermeld dat en hint naar `/dev-plan` om er een te genereren.

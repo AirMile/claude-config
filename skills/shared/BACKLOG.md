@@ -67,7 +67,7 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
    ```bash
    curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node {skills_path}/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
    ```
-5. Toon de URL: `http://localhost:9876/{project-dir}`
+5. Toon de URL: `http://localhost:9876/{project-dir}/backlog`
 
 ## Status flow
 
