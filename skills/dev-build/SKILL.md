@@ -57,10 +57,9 @@ Optionally load stack-baseline for project-specific patterns:
 
    **a) Check backlog for context:**
 
-   Read `.workspace/backlog.md` (if exists) to understand pipeline status:
-   - Which features are in which phase (TODO, DEF, BLT, TST, DONE)
-   - Parse the `**Next:**` line for the suggested next feature
-   - Use this to pre-select the most logical feature to build (status: DEF = defined, ready for build)
+   Read `.workspace/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
+   - Filter DEF features: `data.features.filter(f => f.status === "DEF")`
+   - Eerste DEF feature is de suggested next feature to build
 
    **b) Select feature:**
    - If backlog suggests a DEF feature → propose it via **AskUserQuestion**
@@ -84,6 +83,46 @@ Optionally load stack-baseline for project-specific patterns:
    IMPLEMENTATION ORDER:
    (from 01-define.md)
    ```
+
+**Step 4: Frontend Scan**
+
+Check of bestanden uit de feature-architectuur al op pagina's worden gebruikt.
+
+1. Extraheer bestandspaden uit de "Files to Create" lijst in 01-define.md
+2. Voor elk bestand dat al bestaat:
+   - Grep pagina-bestanden (`app/**/page.tsx`, `src/pages/**/*.tsx`) voor imports
+   - Als gevonden: noteer welke pagina's dit component importeren
+
+3. Als pagina-imports gevonden:
+
+   ```
+   FRONTEND AWARENESS
+
+   Componenten al in gebruik op pagina's:
+   - {ComponentName} → geimporteerd door {page-file}
+
+   Wijzigingen aan deze componenten kunnen bestaande styling beinvloeden.
+   ```
+
+   Use AskUserQuestion:
+
+   ```yaml
+   header: "Frontend Impact"
+   question: "Deze feature raakt componenten op bestaande pagina's. Hoe wil je hiermee omgaan?"
+   options:
+     - label: "Bewust bouwen (Recommended)", description: "Bouw door, respecteer bestaande styling"
+     - label: "Bekijk eerst de pagina's", description: "Laat me eerst de huidige staat zien"
+   multiSelect: false
+   ```
+
+   If "Bewust bouwen": sla frontendImpact-lijst op. Tijdens FASE 2:
+   - Lees bestaand component VOOR wijzigingen
+   - Behoud alle className/styling props
+   - Wijzig alleen functioneel gedrag, niet visuele presentatie
+
+   If "Bekijk eerst de pagina's": toon bestanden, laat user reviewen, vraag opnieuw.
+
+4. Als geen pagina-imports gevonden: skip, ga door als normaal.
 
 **Capture git baseline** (for scoped commit at end of skill):
 
@@ -345,7 +384,7 @@ Opties:
    CLAUDE.md: no updates needed
    ```
 
-3. Move feature from `### DEF` to `### BLT` in `.workspace/backlog.md`
+3. Sync backlog (zie `shared/BACKLOG.md`): parse JSON uit `.workspace/backlog.html`, zoek feature in `data.features`/`data.adhoc`, zet `.status = "BLT"`, update `data.updated`, schrijf JSON terug via Edit tool
 4. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
@@ -372,7 +411,17 @@ Opties:
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-5. Toon: **Next step:** `/dev-test {feature}`
+5. Toon next steps (context-aware):
+
+   Altijd:
+   - `/dev-test {feature}` — Test de gebouwde feature
+
+   Als frontendImpact niet leeg (componenten op pagina's gewijzigd):
+   - `/frontend-iterate` — Controleer visuele impact op bestaande pagina's
+
+   Als feature UI-componenten bevat:
+   - `/frontend-page {page-name}` — Bouw/update pagina met nieuwe componenten
+
 6. Build is officieel compleet
 
 ## Test Output Parsing (CRITICAL)
@@ -417,6 +466,8 @@ If implementation is blocked:
 2. Mark affected requirements as BLOCKED
 3. Continue with other requirements
 4. Report blockers at completion
+5. Als blocker architectureel is (dependency conflict, onduidelijke aanpak):
+   - Suggereer: `/thinking-decide` — analyseer de blocker voordat je verder gaat
 
 ## Troubleshooting
 

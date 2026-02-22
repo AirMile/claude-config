@@ -552,7 +552,41 @@ Theme: [Integrated from THEME.md | Tailwind defaults used]
 ════════════════════════════════════════════════════════════════
 ```
 
-### 3.4 Visual Verification
+### 3.4 Functionality Gap Detection
+
+Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
+
+1. **Scan voor placeholders:**
+   - Lege click handlers: `onClick={() => {}}`, `onClick={handleX}` waar handleX niets doet
+   - TODO comments: `// TODO`, `// FIXME`, `{/* TODO */}`
+   - Placeholder functies: functies die alleen `console.log` doen of leeg zijn
+   - Forms zonder submit handler of met placeholder submit
+   - Links met `href="#"` of `href="javascript:void(0)"`
+
+2. **Als gaps gevonden, rapporteer in completion:**
+
+   ```
+   FUNCTIONALITY GAPS
+
+   Componenten met ontbrekende functionaliteit:
+   - {Component}: [Button "{label}"] → geen handler
+   - {Component}: <form> → placeholder submit
+   ```
+
+3. **Als `.workspace/backlog.html` bestaat** (zie `shared/BACKLOG.md`):
+   - Parse JSON uit `<script id="backlog-data">` blok
+   - Cross-reference gap met `data.features` en `data.adhoc`
+   - Match? Noteer: "Feature bestaat in backlog: {name} ({status})"
+   - Geen match? Voeg toe aan `data.adhoc`:
+     `{ "name": "{feature-naam}", "type": "PAGE-GAP", "status": "TODO", "description": "{beschrijving}", "dependency": null, "source": "/frontend-page {page} — {Component} [{element}]" }`
+   - Zet `data.updated` naar huidige datum, schrijf JSON terug via Edit tool
+
+4. **Als `.workspace/backlog.html` NIET bestaat:**
+   - Rapporteer gaps alleen in completion report (geen backlog om aan toe te voegen)
+
+Gaps verschijnen altijd in het completion report. Toevoegen aan backlog is automatisch maar non-blocking.
+
+### 3.5 Visual Verification
 
 Verify the generated page renders correctly in the browser. See `../shared/PLAYWRIGHT.md` for tool details and error recovery.
 
@@ -719,11 +753,19 @@ Files ({N}):
   Services:   [service paths or "—"]
   Hooks:      [hook paths or "—"]
 
+[Als functionality gaps gedetecteerd:]
+Gaps ({N}):
+  - [Component]: [gap] → /dev-define {feature-naam}
+  - [Component]: [gap] → backlog: {feature-naam} ({status})
+
 Next steps:
   1. npm run dev → open http://localhost:3000/[page]
   2. /frontend-iterate → visual refinement in browser
-  3. /frontend-test → generate component tests
-  4. /frontend-a11y → accessibility audit
+  3. /frontend-wcag → accessibility audit
+  [Als gaps die dev-werk nodig hebben:]
+  4. /dev-define {feature} → definieer ontbrekende functionaliteit
+  [Als layout/UX complex is:]
+  5. /thinking-brainstorm page:{page-name} → brainstorm over UX/layout
 
 ═══════════════════════════════════════════════════════════════
 ```

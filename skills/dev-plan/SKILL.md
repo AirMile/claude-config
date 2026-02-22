@@ -27,7 +27,7 @@ Accepts markdown from:
 
 ## Output
 
-`.workspace/backlog.md` with:
+`.workspace/backlog.html` with:
 
 - Decomposed features
 - Dependencies
@@ -48,7 +48,7 @@ Accepts markdown from:
 
 2. **Check for existing files (only if .workspace exists):**
    - Check if `.workspace/concept.md` exists
-   - Check if `.workspace/backlog.md` exists
+   - Check if `.workspace/backlog.html` exists
 
 3. **Scenario A: Both concept AND backlog exist**
    - Read both files
@@ -59,7 +59,7 @@ Accepts markdown from:
      EXISTING BACKLOG DETECTED
 
      Concept: .workspace/concept.md
-     Backlog: .workspace/backlog.md
+     Backlog: .workspace/backlog.html
 
      Changes detected:
      - NEW: {list of features in concept but not in backlog}
@@ -121,7 +121,7 @@ Accepts markdown from:
      ```
      WARNING: Backlog exists but no concept found
 
-     Backlog: .workspace/backlog.md
+     Backlog: .workspace/backlog.html
      Concept: Not found (.workspace/concept.md missing)
 
      Een concept is nodig om de backlog te updaten.
@@ -297,6 +297,7 @@ Research results remain in conversation context for FASE 1. No files are written
    | INTEGRATION | Third-party services (analytics, payments, auth providers) |
    | UI | Styling, UX improvements, visual components |
    | REFACTOR | Code quality, performance, architecture improvements |
+   | PAGE-GAP | Ontbrekende functionaliteit gevonden door /frontend-page |
 
 **Output:**
 
@@ -449,93 +450,56 @@ Phase 3 (Nice to Have):
 
 ### FASE 4: Generate Backlog
 
-**Goal:** Write the backlog file with status tracking.
+**Goal:** Write de interactieve HTML kanban backlog.
 
-1. **Generate `.workspace/backlog.md`:**
+**Refereer naar `shared/BACKLOG.md` voor het volledige data-formaat.**
 
-```markdown
-# Web Backlog: {Project Name}
+1. **Kopieer template:**
+   - Bron: `{skills_path}/shared/references/backlog-template.html`
+   - Doel: `.workspace/backlog.html`
+   - Maak `.workspace/` aan als die niet bestaat
 
-**Generated:** {date}
-**Updated:** {date}
-**Source:** {/thinking-idea | /thinking-brainstorm}
+2. **Bouw het JSON data-object:**
 
-## Overview
+   ```json
+   {
+     "project": "{Project Name}",
+     "generated": "{YYYY-MM-DD}",
+     "updated": "{YYYY-MM-DD}",
+     "source": "/dev-plan",
+     "overview": "{Brief description from source}",
+     "features": [
+       {
+         "name": "{feature-name}",
+         "type": "FEATURE|API|INTEGRATION|UI|REFACTOR",
+         "status": "TODO",
+         "phase": "mvp|phase2|phase3",
+         "description": "{description}",
+         "dependency": "{other-feature}|null"
+       }
+     ],
+     "adhoc": [],
+     "notes": "{Any notes or considerations}"
+   }
+   ```
 
-{Brief description from source}
+3. **Vervang het JSON-blok** in het gekopieerde template:
+   - Zoek: `<script id="backlog-data" type="application/json">...</script>`
+   - Vervang de inhoud tussen de tags met het gebouwde JSON object
 
-## Status: `TODO` → `DEF` → `BLT` → `DONE`
+4. **Start backlog server** (als niet al draaiend):
 
----
-
-## MVP Features ({done}/{total} done)
-
-### DONE
-
-- **{feature-name}** ({TYPE}) - {short description}
-
-### TODO
-
-- **{feature-name}** ({TYPE}) → {dependency}
-  {description}
-
-**Next:** `/dev-define {first-todo-feature}`
-
----
-
-## Phase 2 Features ({done}/{total} done)
-
-### TODO
-
-- **{feature-name}** ({TYPE}) → {dependency}
-  {description}
-
----
-
-## Phase 3 Features ({done}/{total} done)
-
-### TODO
-
-- **{feature-name}** ({TYPE}) → {dependency}
-  {description}
-
----
-
-## Ad-hoc Features ({done}/{total} done)
-
-Features added outside the original backlog.
-
-### DONE
-
-- **{feature-name}** ({TYPE}) - {date}
-  {description}
-
----
-
-## Feature Map
-```
-
-{dependency tree visualization}
-
-```
-
----
-
-## Notes
-
-{Any extracted notes, open questions, or considerations}
-```
-
-2. **Save file:**
-   - Create `.workspace/` if not exists
-   - Write `.workspace/backlog.md`
+   ```bash
+   curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node ~/.claude/skills/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
+   ```
 
 **Output:**
 
 ```
 BACKLOG CREATED
 
-File: .workspace/backlog.md
+File: .workspace/backlog.html
+Server: http://localhost:9876/{project-dir}
 
 | Phase | Features |
 |-------|----------|
@@ -577,7 +541,7 @@ Start development:
 ```
 BACKLOG CREATED
 
-File: .workspace/backlog.md
+File: .workspace/backlog.html
 
 MVP Features:
 1. routing (FEATURE)

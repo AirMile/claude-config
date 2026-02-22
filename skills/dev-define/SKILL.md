@@ -45,11 +45,12 @@ The skill gathers requirements through targeted questions, optionally researches
    **a) Check backlog for next feature:**
 
    ```
-   Read(".workspace/backlog.md")
+   Read(".workspace/backlog.html")
    ```
 
-   - If backlog exists: parse the `**Next:**` line (e.g. `**Next:** /dev-define page-layout`)
-   - Extract feature name from that line
+   - If backlog exists: parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
+   - Zoek eerste TODO feature: `data.features.find(f => f.status === "TODO")`
+   - Gebruik feature naam als suggestie
 
    **b) If backlog has a next feature:**
 
@@ -82,6 +83,29 @@ The skill gathers requirements through targeted questions, optionally researches
    ```bash
    mkdir -p .workspace/features/{feature-name}
    ```
+
+3b. **Check voor bestaande pagina's met deze feature:**
+
+Glob pagina-bestanden en grep voor imports die de feature-naam bevatten (kebab-case en PascalCase).
+
+```bash
+# Zoek pagina-bestanden
+# app/**/page.tsx, app/**/page.jsx, src/pages/**/*.tsx, src/pages/**/*.jsx
+# Grep voor feature-naam in imports
+```
+
+Als gevonden:
+
+```
+EXISTING PAGE CONTEXT
+
+Feature "{name}" componenten staan al op:
+- {page-file}: importeert {ComponentName}
+
+Architecture houdt rekening met bestaande component-APIs.
+```
+
+Sla op als context voor FASE 3 (Architecture Design).
 
 4. **Load stack-baseline as context:**
 
@@ -307,7 +331,7 @@ Show requirements table with acceptance criteria:
 
 7. **Update backlog (split only):**
 
-   If `.workspace/backlog.md` exists:
+   If `.workspace/backlog.html` exists:
    - Replace original feature entry with sub-feature entries
    - Each sub-feature gets its own line in the backlog
    - Add `(split from {original-name})` annotation
@@ -630,21 +654,21 @@ Run `/dev-build {feature-name}` to start implementation.
 UI-heavy feature? Overweeg eerst:
 
 - `/frontend-theme` - Design tokens en kleurenpalet opzetten
-- `/frontend-compose` - Wireframes genereren voor visueel ontwerp
+- `/frontend-page` - Wireframes genereren voor visueel ontwerp
 ```
 
 ### FASE 5: Sync Backlog
 
-**Goal:** Update `.workspace/backlog.md` with new status.
+**Goal:** Update `.workspace/backlog.html` with new status.
 
-**Backlog uses list-based format (not tables) for better readability.**
+Zie `shared/BACKLOG.md` voor het JSON read/write protocol.
 
 **Steps:**
 
 1. **Check if backlog exists:**
 
    ```
-   Read(".workspace/backlog.md")
+   Read(".workspace/backlog.html")
    ```
 
    - If file not found: skip sync (no backlog to update)

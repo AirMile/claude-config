@@ -71,6 +71,48 @@ Example triggers:
    - If "Ander concept": ask user to paste input
    - If "Chat context": process using Chat Context flow (see below)
 
+**Step 1a: Scope Check**
+
+Na de concept-detectie, check ook voor bredere scope:
+
+1. Check of `.workspace/backlog.html` bestaat
+2. Check of `.workspace/features/` mappen bevat
+3. Glob voor pagina-bestanden (`app/**/page.tsx`, `src/pages/**/*.tsx`)
+
+Als scope-context gevonden EN concept.md al geladen:
+
+```yaml
+header: "Scope"
+question: "Waarover wil je brainstormen?"
+options:
+  - label: "Concept (Recommended)", description: "Werk met .workspace/concept.md"
+  - label: "Feature uit backlog", description: "Focus op een specifieke feature"
+  - label: "Pagina / UX flow", description: "Focus op layout, UX of user flow"
+  - label: "Chat context", description: "Gebruik het gesprek als input"
+multiSelect: false
+```
+
+**If "Feature uit backlog":**
+
+- Lees `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`), toon features met status TODO of DEF
+- AskUserQuestion om feature te kiezen
+- Laad `01-define.md` (als die bestaat) als input-context
+- Laad bestaande `thinking.md` (als die bestaat) als vorige thinking output
+- Geen define? Gebruik feature-beschrijving uit backlog
+
+**If "Pagina / UX flow":**
+
+- Glob voor pagina-bestanden in het project
+- AskUserQuestion om pagina te kiezen, of laat gebruiker een UX flow beschrijven
+- Laad pagina-bestand als input-context
+- Check `.workspace/thinking/{naam}.md` voor eerdere thinking output
+
+**Output-pad volgt automatisch de scope:**
+
+- Scope = concept → schrijf naar `.workspace/concept.md`
+- Scope = feature → schrijf naar `.workspace/features/{naam}/thinking.md`
+- Scope = pagina/UX → maak `.workspace/thinking/` aan indien nodig, schrijf naar `.workspace/thinking/{onderwerp}.md`
+
 **Step 1b: Check Obsidian vault (if no .workspace/concept.md found)**
 
 If the user provided an inline description/argument:
@@ -403,7 +445,37 @@ If the user provided an inline description/argument:
 
 ### Step 7: Output Destination
 
-After generating the refined content, present options for what to do with it.
+After generating the refined content, determine output destination based on scope.
+
+**If scope = feature of pagina (uit Step 1a):**
+
+Sla automatisch op bij de scope-locatie:
+
+- Scope = feature → schrijf naar `.workspace/features/{naam}/thinking.md`
+- Scope = pagina/UX → maak `.workspace/thinking/` aan indien nodig, schrijf naar `.workspace/thinking/{onderwerp}.md`
+
+```
+THINKING OUTPUT SAVED
+
+File: {output-pad}
+Scope: {feature:{naam} | pagina:{onderwerp}}
+Applied techniques: {list of techniques used}
+```
+
+Vraag daarna optioneel:
+
+```yaml
+header: "Concept"
+question: "Wil je dit ook toevoegen aan concept.md?"
+options:
+  - label: "Nee (Recommended)", description: "Output is opgeslagen bij de scope"
+  - label: "Ja, ook naar concept", description: "Update ook .workspace/concept.md"
+multiSelect: false
+```
+
+If "Ja": schrijf ook naar `.workspace/concept.md`.
+
+**If scope = concept (default) of geen scope gekozen:**
 
 Use AskUserQuestion:
 
@@ -416,8 +488,6 @@ options:
   - label: "Alleen tonen", description: "Toon als markdown code block (niet opslaan)"
 multiSelect: false
 ```
-
-**Response handling:**
 
 **If "Opslaan naar concept":**
 

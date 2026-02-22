@@ -136,4 +136,17 @@ User describes an element (e.g., "make the header background darker").
 - One instruction at a time. Multi-select: apply the same instruction across all pinned elements. Different instructions on different elements → sequential.
 - No screenshots/validation after edit unless asked. Trust HMR.
 - New reference pasted → new iteration immediately.
-- "done" or "klaar" → acknowledge and stop.
+- "done" or "klaar" → acknowledge and show context-aware next steps:
+
+  ```
+  Iterate sessie afgesloten.
+
+  Volgende stappen:
+  - /frontend-wcag → accessibility audit
+  - /frontend-optimize → performance optimalisatie
+  [Als structurele layout-wijzigingen gemaakt (secties verplaatst, grid gewijzigd):]
+  - /thinking-brainstorm page:{page} → verken alternatieve layouts
+  - /thinking-critique page:{page} → analyseer UX keuzes
+  [Als elementen met lege handlers opgemerkt:]
+  - /dev-define {feature} → definieer ontbrekende functionaliteit
+  ```

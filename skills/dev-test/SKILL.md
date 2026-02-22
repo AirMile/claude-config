@@ -63,9 +63,9 @@ Everything works except validation is missing and no welcome mail
 
 1. **Read backlog for pipeline status:**
 
-   Read `.workspace/backlog.md` (if exists) to understand current state:
-   - Which features are in which phase (TODO, DEF, BLT, TST, DONE)
-   - Features with status BLT (built) are ready for testing
+   Read `.workspace/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
+   - Filter BLT features: `data.features.filter(f => f.status === "BLT")`
+   - BLT features zijn klaar voor testing
    - If no feature name provided: suggest the next BLT feature via **AskUserQuestion**
 
 2. **Parse user input:**
@@ -727,7 +727,7 @@ OBSERVATIE GENOTEERD
 
 Opgenomen in test results. Volgende stappen voor deze items:
 - /dev-define {observation-topic} — als het een nieuwe feature is
-- Voeg toe aan .workspace/backlog.md — als het een bekende TODO is
+- Voeg toe aan .workspace/backlog.html — als het een bekende TODO is
 ```
 
 ---
@@ -791,13 +791,11 @@ Opgenomen in test results. Volgende stappen voor deze items:
    - {file:line} ({change description})
    ```
 
-3. **Sync backlog:**
-   - Read `.workspace/backlog.md`
-   - Move feature from `### BLT` to `### TST` subsection
-   - In DONE section: dependency arrow `->` changes to description `-`
-   - Update section header counts: `({done}/{total} done)`
-   - Update "Updated" timestamp
-   - Update "Next" suggestion
+3. **Sync backlog** (zie `shared/BACKLOG.md`):
+   - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
+   - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "TST"`
+   - Zet `data.updated` naar huidige datum
+   - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
 4. **Scoped auto-commit** (only this skill's changes):
 
@@ -831,13 +829,16 @@ Opgenomen in test results. Volgende stappen voor deze items:
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-5. **Suggest next step:**
+5. **Suggest next steps (context-aware):**
 
-   ```
-   Next steps:
-   - /dev-refactor {feature-name} - Optioneel: code quality verbeteren
-   - /frontend-seo - Optioneel: SEO audit voor publieke features
-   ```
+   Altijd:
+   - `/dev-refactor {feature-name}` — code quality verbeteren
+
+   Als feature UI-componenten heeft:
+   - `/frontend-page {page}` → bouw/update pagina met deze feature
+
+   Als testfailures architectuurproblemen onthullen (meerdere gekoppelde failures):
+   - `/thinking-decide` → overweeg architectuurwijziging
 
 ---
 
