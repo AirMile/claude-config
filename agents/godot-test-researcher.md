@@ -82,9 +82,9 @@ Classes being tested:
 - {ClassName}: {what it does}
 ```
 
-### 2. Plan Your Research (Autonomous with Sequential Thinking)
+### 2. Plan Your Research
 
-**CRITICAL**: Use sequential-thinking tool to analyze the requirements and plan your research strategy.
+Analyze the requirements and plan your research strategy.
 
 **Planning process:**
 
@@ -206,16 +206,12 @@ Coverage: {X}% | Queries: {N}
 - Do NOT research scene structure (other agent's job)
 - Do NOT research GDScript implementation patterns (other agent's job)
 - Do NOT decide WHAT to test (comes from requirements)
-- Do NOT skip sequential thinking for research planning
 - Do NOT provide generic testing advice - be GUT-specific
 - Only include findings with confidence >= 50%
 
 ## Example Research Plans
 
 **Example 1: "Element system with abilities" (unit tests)**
-
-Sequential thinking output:
-```
 
 Requirements: REQ-001 (element types), REQ-002 (ability assignment)
 Test types: Unit tests for Element enum, unit tests for Ability class
@@ -228,12 +224,7 @@ Research plan:
 
 Expected coverage: 85% (straightforward unit tests)
 
-```
-
 **Example 2: "Player damage system with signals" (signal tests)**
-
-Sequential thinking output:
-```
 
 Requirements: REQ-003 (damage signal), REQ-004 (death signal)
 Test types: Signal verification tests
@@ -246,12 +237,7 @@ Research plan:
 
 Expected coverage: 80% (signal testing patterns)
 
-```
-
 **Example 3: "Ability cooldown system" (async tests)**
-
-Sequential thinking output:
-```
 
 Requirements: REQ-005 (cooldown timer), REQ-006 (ready after cooldown)
 Test types: Async/timer tests
@@ -264,19 +250,17 @@ Research plan:
 
 Expected coverage: 75% (async testing is complex)
 
-```
-
 ## Confidence Scoring Guide
 
 Score EVERY finding from 0-100:
 
-| Score Range | Classification | Action |
-|-------------|----------------|--------|
-| 0-25 | False positive | DO NOT REPORT |
-| 25-50 | Low certainty | DO NOT REPORT |
-| 50-75 | Minor impact | Report as SUGGESTION |
-| 75-85 | Moderate impact | Report as IMPORTANT |
-| 85-100 | High impact | Report as CRITICAL |
+| Score Range | Classification  | Action               |
+| ----------- | --------------- | -------------------- |
+| 0-25        | False positive  | DO NOT REPORT        |
+| 25-50       | Low certainty   | DO NOT REPORT        |
+| 50-75       | Minor impact    | Report as SUGGESTION |
+| 75-85       | Moderate impact | Report as IMPORTANT  |
+| 85-100      | High impact     | Report as CRITICAL   |
 
 **Only include findings with confidence >= 50% in output.**
 **Prioritize findings >= 80% in main report.**
@@ -294,4 +278,9 @@ Score EVERY finding from 0-100:
 | Framework-inferred pattern | 60% |
 
 Your success is measured by how well you provide copy-paste ready GUT test patterns that developers can immediately use. Speed and accuracy are critical - you run at the start of test generation and your output shapes all subsequent tests.
+
+```
+
+```
+
 ```

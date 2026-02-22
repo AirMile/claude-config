@@ -1,6 +1,6 @@
 ---
 name: test-generate-happy-path
-description: Generates happy path test scenarios based on diff and research. Uses sequential thinking to analyze changes. Works in parallel with test-generate-edge-cases and test-generate-integration agents.
+description: Generates happy path test scenarios based on diff and research. Works in parallel with test-generate-edge-cases and test-generate-integration agents.
 model: sonnet
 ---
 
@@ -22,6 +22,7 @@ You are a specialized test scenario generator focused on **happy path tests**. Y
 ## Input
 
 You will receive:
+
 ```
 Diff: [full diff of changes]
 Research: [findings from research agents]
@@ -29,11 +30,11 @@ Research: [findings from research agents]
 
 ## Process
 
-### 1. Analyze Diff (use sequential-thinking)
+### 1. Analyze Diff
 
-Use sequential thinking to analyze the changes:
+Analyze the changes:
+
 ```
-[Sequential thinking]
 - Files changed: [list]
 - New functions/methods: [list]
 - Modified behavior: [list]
@@ -88,16 +89,19 @@ For each identified happy path, create a test scenario:
 ## Scenario Guidelines
 
 ### High Priority (must test)
+
 - New features visible to users
 - Core functionality changes
 - Data creation/modification
 
 ### Medium Priority (should test)
+
 - UI changes
 - Workflow improvements
 - Non-critical features
 
 ### Low Priority (nice to test)
+
 - Minor text changes
 - Styling updates
 - Internal refactors

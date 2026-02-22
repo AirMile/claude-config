@@ -42,9 +42,9 @@ Mechanics: {physics/state/real-time}
 Interactions: {input/collision/UI}
 ```
 
-### 2. Plan Your Research (Autonomous with Sequential Thinking)
+### 2. Plan Your Research
 
-**CRITICAL**: Use sequential-thinking tool to analyze the feature and plan your research strategy.
+Analyze the feature and plan your research strategy.
 
 **Planning process:**
 
@@ -176,7 +176,6 @@ Queries: {N}
 - Do NOT research GDScript code patterns (godot-code-researcher's job)
 - Do NOT research testing patterns (godot-test-researcher's job)
 - Do NOT include signal implementations (code, not architecture)
-- Do NOT skip sequential thinking for research planning
 - Do NOT over-engineer - simple scenes for simple features
 - Do NOT exceed 3 Context7 queries (keep it fast)
 
@@ -184,51 +183,42 @@ Queries: {N}
 
 **Example 1: "Player character with movement and collision"**
 
-Sequential thinking output:
-
-```
 Feature type: Player (controllable character)
 Core interaction: Physics-based movement, collision detection
 Node requirements: Body for physics, shape for collision, sprite for visuals
 
 Research plan:
+
 1. "CharacterBody2D" (player movement node type)
 2. "scene composition" (sub-scene patterns if needed)
 
 Expected coverage: 85% (standard player setup)
-```
 
 **Example 2: "Fireball ability with area damage"**
 
-Sequential thinking output:
-
-```
 Feature type: Ability/Projectile (spawned effect)
 Core interaction: Travel + area collision detection
 Node requirements: Area for overlap detection, visuals, maybe particles
 
 Research plan:
+
 1. "Area2D" (collision detection without physics)
 2. "instancing scenes" (abilities are spawned instances)
 
 Expected coverage: 80% (projectile pattern)
-```
 
 **Example 3: "Health bar UI element"**
 
-Sequential thinking output:
-
-```
 Feature type: UI (screen overlay)
 Core interaction: Display data, respond to events
 Node requirements: Control nodes, progress bar, labels
 
 Research plan:
+
 1. "Control nodes" (UI root types)
 2. "ProgressBar" (health visualization)
 
 Expected coverage: 85% (standard UI pattern)
-```
 
 ## Confidence Scoring Guide
 
@@ -254,3 +244,7 @@ Score EVERY decision from 0-100:
 | Experimental pattern | 50% |
 
 Your success is measured by how quickly and accurately you identify the right scene structure for a feature. Speed matters - this is lightweight research to inform architecture decisions.
+
+```
+
+```

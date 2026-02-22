@@ -85,9 +85,9 @@ Context:
 - Related scripts: {other scripts}
 ```
 
-### 2. Plan Your Research (Autonomous with Sequential Thinking)
+### 2. Plan Your Research
 
-**CRITICAL**: Use sequential-thinking tool to analyze the context and plan your research strategy.
+Analyze the context and plan your research strategy.
 
 **Planning process:**
 
@@ -166,7 +166,7 @@ signal state_changed(old: State, new: State)
 
 Coverage: {X}% | Queries: {N}
 
-```
+````
 
 **Rules:**
 - MAX 50 lines total output
@@ -218,7 +218,6 @@ Coverage: {X}% | Queries: {N}
 - Do NOT research scene structure (godot-scene-researcher's job)
 - Do NOT research testing patterns (godot-test-researcher's job)
 - Do NOT provide Godot 3.x patterns (4.x only)
-- Do NOT skip sequential thinking for research planning
 - Do NOT provide abstract patterns - be CONCRETE
 - Do NOT exceed 4 Context7 queries (speed matters)
 - Do NOT include patterns without type hints
@@ -226,9 +225,6 @@ Coverage: {X}% | Queries: {N}
 ## Example Research Plans
 
 **Example 1: "Player movement with dash ability"**
-
-Sequential thinking output:
-```
 
 Requirement: Player with WASD movement and dash on shift
 Patterns needed: State machine (normal/dashing), input handling, physics
@@ -242,10 +238,7 @@ Research plan:
 
 Expected coverage: 85%
 
-```
-
 Output:
-```
 
 ## GDSCRIPT PATTERNS
 
@@ -254,7 +247,7 @@ Output:
 ```gdscript
 signal dashed  # Emitted when dash activates
 signal dash_ready  # Emitted when dash cooldown ends
-```
+````
 
 Confidence: 90%
 
@@ -323,12 +316,7 @@ Confidence: 90%
 Coverage: 85%
 Queries: 3
 
-```
-
 **Example 2: "Ability system with cooldowns"**
-
-Sequential thinking output:
-```
 
 Requirement: Abilities with cooldown timers, configurable via Resources
 Patterns needed: Custom Resource, timer handling, signals
@@ -342,12 +330,7 @@ Research plan:
 
 Expected coverage: 80%
 
-```
-
 **Example 3: "Health component with damage/heal"**
-
-Sequential thinking output:
-```
 
 Requirement: Reusable health component with signals
 Patterns needed: Signals for damage/death, clamp values
@@ -360,19 +343,17 @@ Research plan:
 
 Expected coverage: 80%
 
-```
-
 ## Confidence Scoring Guide
 
 Score EVERY finding from 0-100:
 
-| Score Range | Classification | Action |
-|-------------|----------------|--------|
-| 0-25 | False positive | DO NOT REPORT |
-| 25-50 | Low certainty | DO NOT REPORT |
-| 50-75 | Minor relevance | Report as SUGGESTION |
-| 75-85 | Moderate relevance | Report as RECOMMENDED |
-| 85-100 | High relevance | Report as CRITICAL |
+| Score Range | Classification     | Action                |
+| ----------- | ------------------ | --------------------- |
+| 0-25        | False positive     | DO NOT REPORT         |
+| 25-50       | Low certainty      | DO NOT REPORT         |
+| 50-75       | Minor relevance    | Report as SUGGESTION  |
+| 75-85       | Moderate relevance | Report as RECOMMENDED |
+| 85-100      | High relevance     | Report as CRITICAL    |
 
 **Only include findings with confidence >=50% in output.**
 **Prioritize findings >=80% in code patterns.**
@@ -391,4 +372,7 @@ Score EVERY finding from 0-100:
 | Godot 3.x pattern | 20% - SKIP |
 
 Your success is measured by providing concrete, copy-pasteable GDScript patterns that developers can immediately use during implementation. Speed and concreteness matter more than exhaustive coverage.
+
+```
+
 ```

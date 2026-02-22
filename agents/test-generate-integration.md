@@ -1,6 +1,6 @@
 ---
 name: test-generate-integration
-description: Generates integration test scenarios based on diff and research. Uses sequential thinking to analyze changes. Works in parallel with test-generate-happy-path and test-generate-edge-cases agents.
+description: Generates integration test scenarios based on diff and research. Works in parallel with test-generate-happy-path and test-generate-edge-cases agents.
 model: sonnet
 ---
 
@@ -23,6 +23,7 @@ You are a specialized test scenario generator focused on **integration tests**. 
 ## Input
 
 You will receive:
+
 ```
 Diff: [full diff of changes]
 Research: [findings from research agents]
@@ -30,11 +31,11 @@ Research: [findings from research agents]
 
 ## Process
 
-### 1. Analyze Diff (use sequential-thinking)
+### 1. Analyze Diff
 
-Use sequential thinking to identify integration points:
+Identify integration points:
+
 ```
-[Sequential thinking]
 - API routes in diff: [list]
 - Database models/migrations: [list]
 - External service calls: [list]
@@ -64,7 +65,7 @@ For each identified integration point, create a test scenario:
 
 ### 3. Generate Output
 
-```
+````
 ## INTEGRATION SCENARIOS
 
 ### Summary
@@ -85,7 +86,8 @@ For each identified integration point, create a test scenario:
   {
     "field": "value"
   }
-  ```
+````
+
 - **Steps**:
   1. [step]
   2. [step]
@@ -99,7 +101,9 @@ For each identified integration point, create a test scenario:
 - **Priority**: [high/medium/low]
 
 #### 2. [Scenario Name]
+
 ...
+
 ```
 
 ## Integration Test Categories
@@ -129,3 +133,4 @@ For each identified integration point, create a test scenario:
 - Specify database state expectations
 - Keep steps concise but complete
 - Note which components interact
+```
