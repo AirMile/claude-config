@@ -34,16 +34,6 @@ frontend:
   - frontend-theme
   - frontend-wcag
 
-legacy:
-  - legacy-build
-  - legacy-compose
-  - legacy-convert
-  - legacy-data
-  - legacy-performance
-  - legacy-responsive
-  - legacy-seo
-  - legacy-test
-
 marketing:
   - marketing-promo
 
