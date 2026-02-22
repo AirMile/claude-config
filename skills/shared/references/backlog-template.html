@@ -1,0 +1,1546 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Backlog</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --surface-hover: #1c2333;
+        --border: #30363d;
+        --text: #e6edf3;
+        --text-muted: #8b949e;
+        --text-dim: #6e7681;
+        --accent: #58a6ff;
+        --danger: #f85149;
+        --danger-bg: #f8514922;
+        --todo: #8b949e;
+        --def: #d2a8ff;
+        --blt: #79c0ff;
+        --tst: #ffa657;
+        --done: #3fb950;
+        --p1: #58a6ff;
+        --p2: #d2a8ff;
+        --p3: #8b949e;
+        --p4: #ffa657;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        overflow-x: auto;
+        scrollbar-color: var(--border) transparent;
+        display: flex;
+        flex-direction: column;
+        min-width: fit-content;
+      }
+
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-dim);
+      }
+
+      ::-webkit-scrollbar-corner {
+        background: var(--bg);
+      }
+
+      header {
+        padding: 12px 24px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      header h1 {
+        font-size: 16px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .next-hint {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .next-hint code {
+        background: var(--surface);
+        padding: 2px 6px;
+        border-radius: 3px;
+        color: var(--accent);
+        font-size: 12px;
+      }
+
+      .copy-btn {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        margin-left: 0;
+        transition: all 0.15s;
+      }
+
+      .copy-btn:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .copy-btn.copied {
+        color: var(--done);
+        border-color: var(--done);
+      }
+
+      header h1 {
+        cursor: pointer;
+        border-bottom: 1px dashed transparent;
+        transition: all 0.15s;
+      }
+
+      header h1:hover {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+
+      .title-input {
+        background: var(--surface);
+        border: 1px solid var(--accent);
+        color: var(--text);
+        font-size: 16px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 4px;
+        outline: none;
+      }
+
+      .promote-btn {
+        position: absolute;
+        bottom: 6px;
+        right: 6px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.15s;
+      }
+
+      .card:hover .promote-btn {
+        opacity: 1;
+      }
+
+      .promote-btn:hover {
+        color: var(--done) !important;
+        border-color: var(--done) !important;
+        background: var(--surface-hover);
+      }
+
+      .back-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.15s;
+      }
+
+      .back-btn:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .stats {
+        display: flex;
+        gap: 8px;
+        padding: 8px 24px;
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+        flex-wrap: wrap;
+      }
+
+      .stat {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+      }
+
+      .stat .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      .board {
+        display: flex;
+        gap: 1px;
+        background: var(--border);
+        min-height: calc(100vh - 90px);
+      }
+
+      .column {
+        flex: 1;
+        min-width: 200px;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .column-header {
+        padding: 12px 12px 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: sticky;
+        top: 0;
+        background: var(--bg);
+        z-index: 1;
+        border-bottom: 2px solid var(--border);
+      }
+
+      .column-header .indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .column-header h2 {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .column-header .count {
+        font-size: 12px;
+        color: var(--text-dim);
+        background: var(--surface);
+        padding: 0 6px;
+        border-radius: 10px;
+      }
+
+      .column-header .add-btn {
+        margin-left: auto;
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        width: 22px;
+        height: 22px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+      }
+
+      .column-header .add-btn:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+        background: #58a6ff11;
+      }
+
+      .cards {
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+        min-height: 60px;
+      }
+
+      .cards.drag-over {
+        background: #58a6ff08;
+        border-radius: 4px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px;
+        cursor: grab;
+        transition: all 0.15s;
+        position: relative;
+      }
+
+      .card:hover {
+        background: var(--surface-hover);
+      }
+
+      .card.dragging {
+        opacity: 0.4;
+        cursor: grabbing;
+      }
+
+      .card.drag-preview {
+        border-color: var(--accent);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      }
+
+      .card-top {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      .card-name {
+        font-size: 13px;
+        font-weight: 600;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: text;
+      }
+
+      .card-tags {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        margin-top: 6px;
+        flex-wrap: wrap;
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 2px;
+        opacity: 0;
+        transition: opacity 0.15s;
+      }
+
+      .card:hover .card-actions {
+        opacity: 1;
+      }
+
+      .card-actions button {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        cursor: pointer;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.1s;
+      }
+
+      .card-actions .edit-btn:hover {
+        color: var(--accent);
+        background: #58a6ff11;
+      }
+
+      .card-actions .delete-btn:hover {
+        color: var(--danger);
+        background: var(--danger-bg);
+      }
+
+      .badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 1px 6px;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+      }
+
+      .badge-feature {
+        background: #1f6feb33;
+        color: #58a6ff;
+      }
+      .badge-api {
+        background: #3fb95033;
+        color: #3fb950;
+      }
+      .badge-integration {
+        background: #d2a8ff33;
+        color: #d2a8ff;
+      }
+      .badge-ui {
+        background: #f778ba33;
+        color: #f778ba;
+      }
+      .badge-refactor {
+        background: #8b949e33;
+        color: #8b949e;
+      }
+      .badge-page-gap {
+        background: #ffa65733;
+        color: #ffa657;
+      }
+
+      .phase-tag {
+        font-size: 10px;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-weight: 500;
+      }
+
+      .phase-p1 {
+        background: #58a6ff22;
+        color: #58a6ff;
+      }
+      .phase-p2 {
+        background: #d2a8ff22;
+        color: #d2a8ff;
+      }
+      .phase-p3 {
+        background: #8b949e22;
+        color: #8b949e;
+      }
+      .phase-p4 {
+        background: #ffa65722;
+        color: #ffa657;
+      }
+
+      .card-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.4;
+      }
+
+      .card-dep {
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-top: 4px;
+      }
+
+      .card-source {
+        font-size: 11px;
+        color: var(--adhoc);
+        margin-top: 4px;
+        font-style: italic;
+      }
+
+      .card-date {
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-top: 4px;
+      }
+
+      .empty {
+        font-size: 12px;
+        color: var(--text-dim);
+        text-align: center;
+        padding: 24px 8px;
+        font-style: italic;
+      }
+
+      /* Modal */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-overlay.active {
+        display: flex;
+      }
+
+      .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        width: 380px;
+        max-width: 90vw;
+      }
+
+      .modal h3 {
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+
+      .modal label {
+        display: block;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .modal input,
+      .modal select,
+      .modal textarea {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text);
+        padding: 6px 8px;
+        font-size: 13px;
+        font-family: inherit;
+        margin-bottom: 12px;
+        outline: none;
+      }
+
+      .modal input:focus,
+      .modal select:focus,
+      .modal textarea:focus {
+        border-color: var(--accent);
+      }
+
+      .modal textarea {
+        resize: vertical;
+        min-height: 60px;
+      }
+
+      .modal-row {
+        display: flex;
+        gap: 12px;
+      }
+
+      .modal-row > div {
+        flex: 1;
+      }
+
+      .modal-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .modal-buttons button {
+        padding: 6px 14px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        font-family: inherit;
+      }
+
+      .btn-cancel {
+        background: var(--bg);
+        color: var(--text-muted);
+      }
+
+      .btn-cancel:hover {
+        color: var(--text);
+      }
+
+      .btn-save {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+
+      .btn-save:hover {
+        opacity: 0.9;
+      }
+
+      .btn-danger {
+        background: var(--danger);
+        color: #fff;
+        border-color: var(--danger);
+      }
+
+      .btn-danger:hover {
+        opacity: 0.9;
+      }
+
+      /* Detail modal */
+      .detail-modal .modal {
+        width: 440px;
+      }
+
+      .detail-modal h3 {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+
+      .detail-field {
+        margin-bottom: 12px;
+      }
+
+      .detail-field .detail-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+      }
+
+      .detail-field .detail-value {
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.4;
+      }
+
+      .detail-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .detail-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+
+      .detail-actions button {
+        flex: 1;
+        padding: 8px 14px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        font-family: inherit;
+      }
+
+      /* Toast */
+      .toast {
+        position: fixed;
+        bottom: 16px;
+        right: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 14px;
+        font-size: 12px;
+        color: var(--text-muted);
+        z-index: 200;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: all 0.2s;
+        pointer-events: none;
+      }
+
+      .toast.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Drop indicator */
+      .drop-indicator {
+        height: 2px;
+        background: var(--accent);
+        border-radius: 1px;
+        margin: -1px 0;
+        opacity: 0;
+        transition: opacity 0.1s;
+      }
+
+      .drop-indicator.active {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <script id="backlog-data" type="application/json">
+      {
+        "project": "E-commerce Dashboard",
+        "generated": "2026-02-20",
+        "updated": "2026-02-22",
+        "source": "/thinking-idea",
+        "overview": "Dashboard voor product management, orders, analytics en klantenbeheer",
+        "features": [
+          {
+            "name": "routing",
+            "type": "FEATURE",
+            "status": "DONE",
+            "phase": "P1",
+            "description": "Next.js app router setup met pagina structuur",
+            "dependency": null,
+            "date": "2026-02-16"
+          },
+          {
+            "name": "auth-pages",
+            "type": "FEATURE",
+            "status": "DONE",
+            "phase": "P1",
+            "description": "Login, registratie en wachtwoord reset flows",
+            "dependency": "routing",
+            "date": "2026-02-17"
+          },
+          {
+            "name": "api-auth",
+            "type": "API",
+            "status": "TST",
+            "phase": "P1",
+            "description": "JWT authenticatie endpoints met refresh tokens",
+            "dependency": "auth-pages"
+          },
+          {
+            "name": "dashboard-layout",
+            "type": "FEATURE",
+            "status": "BLT",
+            "phase": "P1",
+            "description": "Sidebar navigatie, header met user menu, content area",
+            "dependency": "auth-pages"
+          },
+          {
+            "name": "product-list",
+            "type": "FEATURE",
+            "status": "DEF",
+            "phase": "P1",
+            "description": "Tabel met producten, zoeken, filteren en paginatie",
+            "dependency": "dashboard-layout"
+          },
+          {
+            "name": "api-products",
+            "type": "API",
+            "status": "TODO",
+            "phase": "P2",
+            "description": "CRUD endpoints voor producten met image upload",
+            "dependency": "product-list"
+          },
+          {
+            "name": "product-detail",
+            "type": "FEATURE",
+            "status": "DEF",
+            "phase": "P2",
+            "description": "Product bewerk pagina met rich text editor",
+            "dependency": "api-products"
+          },
+          {
+            "name": "order-overview",
+            "type": "FEATURE",
+            "status": "TODO",
+            "phase": "P2",
+            "description": "Order lijst met status filters en zoeken",
+            "dependency": "dashboard-layout"
+          },
+          {
+            "name": "stripe-integration",
+            "type": "INTEGRATION",
+            "status": "TODO",
+            "phase": "P2",
+            "description": "Stripe checkout en webhook verwerking",
+            "dependency": "api-products"
+          },
+          {
+            "name": "analytics-dashboard",
+            "type": "INTEGRATION",
+            "status": "TODO",
+            "phase": "P3",
+            "description": "Revenue grafieken, top producten, conversie metrics",
+            "dependency": "order-overview"
+          },
+          {
+            "name": "dark-mode",
+            "type": "UI",
+            "status": "TODO",
+            "phase": "P3",
+            "description": "Dark/light mode toggle met system preference detectie",
+            "dependency": null
+          },
+          {
+            "name": "performance-optimization",
+            "type": "REFACTOR",
+            "status": "TODO",
+            "phase": "P3",
+            "description": "Image optimization, lazy loading, bundle splitting",
+            "dependency": null
+          }
+        ],
+        "adhoc": [
+          {
+            "name": "order-processing",
+            "type": "PAGE-GAP",
+            "status": "TODO",
+            "description": "Submit handler voor checkout form",
+            "dependency": null,
+            "source": "/frontend-page checkout — CheckoutForm [Bestelling plaatsen]"
+          },
+          {
+            "name": "coupon-validation",
+            "type": "PAGE-GAP",
+            "status": "TODO",
+            "description": "Coupon code validatie en korting berekening",
+            "dependency": null,
+            "source": "/frontend-page checkout — CouponInput [Toepassen]"
+          }
+        ],
+        "notes": "Focus op core CRUD flow eerst. Stripe pas na stabiele product/order pipeline."
+      }
+    </script>
+
+    <!-- Modal for add/edit -->
+    <div class="modal-overlay" id="modal">
+      <div class="modal">
+        <h3 id="modal-title">Card toevoegen</h3>
+
+        <label for="field-name">Naam</label>
+        <input type="text" id="field-name" placeholder="feature-naam" />
+
+        <label for="field-desc">Beschrijving</label>
+        <textarea id="field-desc" placeholder="Korte beschrijving"></textarea>
+
+        <div class="modal-row">
+          <div>
+            <label for="field-type">Type</label>
+            <select id="field-type">
+              <option value="FEATURE">FEATURE</option>
+              <option value="API">API</option>
+              <option value="INTEGRATION">INTEGRATION</option>
+              <option value="UI">UI</option>
+              <option value="REFACTOR">REFACTOR</option>
+              <option value="PAGE-GAP">PAGE-GAP</option>
+            </select>
+          </div>
+          <div>
+            <label for="field-phase">Prioriteit</label>
+            <select id="field-phase">
+              <option value="P1">P1 (MVP)</option>
+              <option value="P2">P2</option>
+              <option value="P3">P3</option>
+              <option value="P4">P4</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="field-dep">Dependency (optioneel)</label>
+        <input type="text" id="field-dep" placeholder="feature-naam" />
+
+        <div class="modal-buttons">
+          <button class="btn-cancel" onclick="closeModal()">Annuleren</button>
+          <button class="btn-save" id="modal-save">Opslaan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete confirm -->
+    <div class="modal-overlay" id="delete-modal">
+      <div class="modal">
+        <h3>Card verwijderen</h3>
+        <p
+          style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px"
+        >
+          Weet je zeker dat je
+          <strong id="delete-name" style="color: var(--text)"></strong> wilt
+          verwijderen?
+        </p>
+        <div class="modal-buttons">
+          <button class="btn-cancel" onclick="closeDeleteModal()">
+            Annuleren
+          </button>
+          <button class="btn-danger" id="delete-confirm">Verwijderen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail modal -->
+    <div class="modal-overlay detail-modal" id="detail-modal">
+      <div class="modal">
+        <h3 id="detail-title"></h3>
+        <div id="detail-body"></div>
+        <div class="detail-actions">
+          <button class="btn-cancel" onclick="closeDetailModal()">
+            Sluiten
+          </button>
+          <button class="btn-save" id="detail-promote" style="display: none">
+            ▶ Promote
+          </button>
+          <button class="btn-save" id="detail-edit">✎ Bewerken</button>
+          <button class="btn-danger" id="detail-delete">✕ Verwijderen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // ─── State ──────────────────────────────────────────────
+      const fileRaw = document.getElementById("backlog-data").textContent;
+      let data = JSON.parse(fileRaw);
+
+      const STATUSES = ["TODO", "DEF", "BLT", "TST", "DONE"];
+      const STATUS_COLORS = {
+        TODO: "var(--todo)",
+        DEF: "var(--def)",
+        BLT: "var(--blt)",
+        TST: "var(--tst)",
+        DONE: "var(--done)",
+      };
+      const PHASE_LABELS = {
+        P1: "P1 (MVP)",
+        P2: "P2",
+        P3: "P3",
+        P4: "P4",
+      };
+      const PHASE_CLASSES = {
+        P1: "phase-p1",
+        P2: "phase-p2",
+        P3: "phase-p3",
+        P4: "phase-p4",
+      };
+
+      // ─── Helpers ────────────────────────────────────────────
+      function getAllItems() {
+        return [
+          ...data.features.map((f, i) => ({
+            ...f,
+            _list: "features",
+            _idx: i,
+            phaseKey: f.phase,
+          })),
+          ...data.adhoc.map((f, i) => ({
+            ...f,
+            _list: "adhoc",
+            _idx: i,
+            phaseKey: "P4",
+          })),
+        ];
+      }
+
+      function findItem(name) {
+        let item = data.features.find((f) => f.name === name);
+        if (item) return { item, list: "features" };
+        item = data.adhoc.find((f) => f.name === name);
+        if (item) return { item, list: "adhoc" };
+        return null;
+      }
+
+      function removeItem(name) {
+        const fi = data.features.findIndex((f) => f.name === name);
+        if (fi !== -1) {
+          data.features.splice(fi, 1);
+          return;
+        }
+        const ai = data.adhoc.findIndex((f) => f.name === name);
+        if (ai !== -1) data.adhoc.splice(ai, 1);
+      }
+
+      function updateStatus(name, newStatus) {
+        const found = findItem(name);
+        if (!found) return;
+        found.item.status = newStatus;
+        if (newStatus === "DONE") {
+          found.item.date = new Date().toISOString().slice(0, 10);
+        }
+      }
+
+      function syncJSON() {
+        data.updated = new Date().toISOString().slice(0, 10);
+        // Update DOM
+        const el = document.getElementById("backlog-data");
+        el.textContent = "\n" + JSON.stringify(data, null, 2) + "\n";
+        // Auto-save to server → writes to disk
+        saveToDisk();
+      }
+
+      // Detect save URL: /{project}/save when served by backlog server
+      const SAVE_URL = (() => {
+        const p = location.pathname.replace(/\/+$/, "");
+        return p ? p + "/save" : "/save";
+      })();
+
+      let saveTimer = null;
+      function saveToDisk() {
+        // Debounce: wait 300ms after last change before saving
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+          try {
+            const res = await fetch(SAVE_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error("save failed");
+          } catch {
+            toast("Server niet bereikbaar — start: node serve-backlog.js");
+          }
+        }, 300);
+      }
+
+      function toast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("visible");
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => t.classList.remove("visible"), 2000);
+      }
+
+      // ─── Next Hint ──────────────────────────────────────────
+      function getNextHint() {
+        const prefix =
+          data.source && data.source.startsWith("/game") ? "game" : "dev";
+        const cmds = {
+          BLT: "test",
+          TST: "refactor",
+          DEF: "build",
+          TODO: "define",
+        };
+        const all = [...data.features, ...data.adhoc];
+        for (const status of ["BLT", "TST", "DEF", "TODO"]) {
+          const f = all.find((f) => f.status === status);
+          if (f) return `/${prefix}-${cmds[status]} ${f.name}`;
+        }
+        return null;
+      }
+
+      // ─── Render ─────────────────────────────────────────────
+      function render() {
+        // Clear
+        document
+          .querySelectorAll("header, .board")
+          .forEach((el) => el.remove());
+
+        const all = getAllItems();
+
+        // Header
+        const header = document.createElement("header");
+        const nextHint = getNextHint();
+        header.innerHTML = `
+          <a href="/" class="back-btn">\u2190 Overzicht</a>
+          <h1 title="Klik om te bewerken">${esc(data.project)}</h1>
+          <div class="header-right">
+            ${nextHint ? `<span class="next-hint"><code>${esc(nextHint)}</code> <button class="copy-btn" title="Kopieer naar clipboard">Copy</button></span>` : ""}
+          </div>
+        `;
+
+        // Editable title
+        header.querySelector("h1").addEventListener("click", () => {
+          const h1 = header.querySelector("h1");
+          const input = document.createElement("input");
+          input.className = "title-input";
+          input.value = data.project;
+          input.style.width = Math.max(120, h1.offsetWidth + 20) + "px";
+          h1.replaceWith(input);
+          input.focus();
+          input.select();
+          const save = () => {
+            const val = input.value.trim();
+            if (val && val !== data.project) {
+              data.project = val;
+              syncJSON();
+            }
+            render();
+          };
+          input.addEventListener("blur", save);
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") input.blur();
+            if (e.key === "Escape") {
+              input.value = data.project;
+              input.blur();
+            }
+          });
+        });
+
+        // Copy next hint
+        const copyBtn = header.querySelector(".copy-btn");
+        if (copyBtn) {
+          copyBtn.addEventListener("click", () => {
+            navigator.clipboard.writeText(nextHint).then(() => {
+              copyBtn.textContent = "Copied!";
+              copyBtn.classList.add("copied");
+              setTimeout(() => {
+                copyBtn.textContent = "Copy";
+                copyBtn.classList.remove("copied");
+              }, 1500);
+            });
+          });
+        }
+
+        document.body.prepend(header);
+
+        // Board
+        const board = document.createElement("div");
+        board.className = "board";
+
+        STATUSES.forEach((status) => {
+          const col = document.createElement("div");
+          col.className = "column";
+          col.dataset.status = status;
+
+          const items = all.filter((f) => f.status === status);
+
+          col.innerHTML = `
+            <div class="column-header">
+              <span class="indicator" style="background:${STATUS_COLORS[status]}"></span>
+              <h2>${status}</h2>
+              <span class="count">${items.length}</span>
+              <button class="add-btn" title="Card toevoegen" data-status="${status}">+</button>
+            </div>
+          `;
+
+          const cards = document.createElement("div");
+          cards.className = "cards";
+          cards.dataset.status = status;
+
+          // Drop zone events
+          cards.addEventListener("dragover", handleDragOver);
+          cards.addEventListener("dragleave", handleDragLeave);
+          cards.addEventListener("drop", handleDrop);
+
+          if (items.length === 0) {
+            cards.innerHTML = '<div class="empty">Geen items</div>';
+          } else {
+            items.forEach((f) => {
+              cards.appendChild(createCard(f));
+            });
+          }
+
+          col.appendChild(cards);
+          board.appendChild(col);
+        });
+
+        header.after(board);
+
+        // Wire add buttons
+        document.querySelectorAll(".add-btn").forEach((btn) => {
+          btn.addEventListener("click", () => openAddModal(btn.dataset.status));
+        });
+      }
+
+      function esc(str) {
+        const d = document.createElement("div");
+        d.textContent = str || "";
+        return d.innerHTML;
+      }
+
+      function createCard(f) {
+        const typeClass = "badge-" + f.type.toLowerCase().replace("_", "-");
+        const phaseClass = PHASE_CLASSES[f.phaseKey] || "phase-p4";
+        const phaseLabel = PHASE_LABELS[f.phaseKey] || "P4";
+
+        let extra = "";
+        if (f.dependency)
+          extra += `<div class="card-dep">\u2192 ${esc(f.dependency)}</div>`;
+        if (f.source)
+          extra += `<div class="card-source">${esc(f.source)}</div>`;
+        if (f.date && f.status === "DONE")
+          extra += `<div class="card-date">${esc(f.date)}</div>`;
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.draggable = true;
+        card.dataset.name = f.name;
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="card-name">${esc(f.name)}</span>
+            <div class="card-actions">
+              <button class="edit-btn" title="Bewerken">\u270E</button>
+              <button class="delete-btn" title="Verwijderen">\u2715</button>
+            </div>
+          </div>
+          <div class="card-desc">${esc(f.description)}</div>
+          <div class="card-tags">
+            <span class="badge ${typeClass}">${esc(f.type)}</span>
+            <span class="phase-tag ${phaseClass}">${phaseLabel}</span>
+          </div>
+          ${extra}
+          ${f.status !== "DONE" ? `<button class="promote-btn" title="${f.status} \u2192 ${STATUSES[STATUSES.indexOf(f.status) + 1]}">\u25B6</button>` : ""}
+        `;
+
+        // Drag events
+        card.addEventListener("dragstart", handleDragStart);
+        card.addEventListener("dragend", handleDragEnd);
+
+        // Action buttons
+        const promoteBtn = card.querySelector(".promote-btn");
+        if (promoteBtn) {
+          promoteBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const idx = STATUSES.indexOf(f.status);
+            if (idx < STATUSES.length - 1) {
+              const oldStatus = f.status;
+              const newStatus = STATUSES[idx + 1];
+              updateStatus(f.name, newStatus);
+              syncJSON();
+              render();
+              toast(`${f.name}: ${oldStatus} \u2192 ${newStatus}`);
+            }
+          });
+        }
+        card.querySelector(".edit-btn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          openEditModal(f.name);
+        });
+        card.querySelector(".delete-btn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          openDeleteModal(f.name);
+        });
+
+        // Click card to open detail
+        card.style.cursor = "pointer";
+        card.addEventListener("click", () => openDetailModal(f.name));
+
+        return card;
+      }
+
+      // ─── Drag & Drop ───────────────────────────────────────
+      let draggedName = null;
+
+      function handleDragStart(e) {
+        draggedName = this.dataset.name;
+        this.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", draggedName);
+      }
+
+      function handleDragEnd() {
+        this.classList.remove("dragging");
+        document
+          .querySelectorAll(".cards.drag-over")
+          .forEach((c) => c.classList.remove("drag-over"));
+        draggedName = null;
+      }
+
+      function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        this.classList.add("drag-over");
+      }
+
+      function handleDragLeave() {
+        this.classList.remove("drag-over");
+      }
+
+      function handleDrop(e) {
+        e.preventDefault();
+        this.classList.remove("drag-over");
+        const name = e.dataTransfer.getData("text/plain");
+        const newStatus = this.dataset.status;
+
+        if (!name || !newStatus) return;
+
+        const found = findItem(name);
+        if (!found) return;
+        if (found.item.status === newStatus) return;
+
+        const oldStatus = found.item.status;
+        updateStatus(name, newStatus);
+        syncJSON();
+        render();
+        toast(`${name}: ${oldStatus} \u2192 ${newStatus}`);
+      }
+
+      // ─── Modal: Add / Edit ─────────────────────────────────
+      let editingName = null;
+      let addToStatus = null;
+
+      function openAddModal(status) {
+        editingName = null;
+        addToStatus = status;
+        document.getElementById("modal-title").textContent = "Card toevoegen";
+        document.getElementById("field-name").value = "";
+        document.getElementById("field-desc").value = "";
+        document.getElementById("field-type").value = "FEATURE";
+        document.getElementById("field-phase").value = "P1";
+        document.getElementById("field-dep").value = "";
+        document.getElementById("field-name").disabled = false;
+        document.getElementById("modal-save").textContent = "Toevoegen";
+        document.getElementById("modal").classList.add("active");
+        document.getElementById("field-name").focus();
+      }
+
+      function openEditModal(name) {
+        const found = findItem(name);
+        if (!found) return;
+
+        editingName = name;
+        addToStatus = null;
+        document.getElementById("modal-title").textContent = "Card bewerken";
+        document.getElementById("field-name").value = found.item.name;
+        document.getElementById("field-desc").value =
+          found.item.description || "";
+        document.getElementById("field-type").value = found.item.type;
+        document.getElementById("field-phase").value =
+          found.list === "adhoc" ? "P4" : found.item.phase || "P1";
+        document.getElementById("field-dep").value =
+          found.item.dependency || "";
+        document.getElementById("field-name").disabled = false;
+        document.getElementById("modal-save").textContent = "Opslaan";
+        document.getElementById("modal").classList.add("active");
+        document.getElementById("field-name").focus();
+      }
+
+      function closeModal() {
+        document.getElementById("modal").classList.remove("active");
+        editingName = null;
+        addToStatus = null;
+      }
+
+      document.getElementById("modal-save").addEventListener("click", () => {
+        const name = document.getElementById("field-name").value.trim();
+        const desc = document.getElementById("field-desc").value.trim();
+        const type = document.getElementById("field-type").value;
+        const phase = document.getElementById("field-phase").value;
+        const dep = document.getElementById("field-dep").value.trim() || null;
+
+        if (!name) return;
+
+        if (editingName) {
+          // Edit existing
+          const found = findItem(editingName);
+          if (!found) return;
+
+          // If phase changed to/from adhoc, move between lists
+          const wasAdhoc = found.list === "adhoc";
+          const isAdhoc = phase === "P4";
+
+          if (wasAdhoc && !isAdhoc) {
+            // Move from adhoc to features
+            removeItem(editingName);
+            data.features.push({
+              name,
+              type,
+              status: found.item.status,
+              phase,
+              description: desc,
+              dependency: dep,
+              date: found.item.date || null,
+              source: found.item.source || null,
+            });
+          } else if (!wasAdhoc && isAdhoc) {
+            // Move from features to adhoc
+            removeItem(editingName);
+            data.adhoc.push({
+              name,
+              type,
+              status: found.item.status,
+              description: desc,
+              dependency: dep,
+              source: found.item.source || null,
+            });
+          } else {
+            // Same list, update in place
+            found.item.name = name;
+            found.item.description = desc;
+            found.item.type = type;
+            found.item.dependency = dep;
+            if (!wasAdhoc) found.item.phase = phase;
+          }
+
+          toast(`${name} bijgewerkt`);
+        } else {
+          // Add new
+          const newItem = {
+            name,
+            type,
+            status: addToStatus || "TODO",
+            description: desc,
+            dependency: dep,
+          };
+
+          if (phase === "P4") {
+            data.adhoc.push(newItem);
+          } else {
+            newItem.phase = phase;
+            data.features.push(newItem);
+          }
+
+          toast(`${name} toegevoegd`);
+        }
+
+        syncJSON();
+        closeModal();
+        render();
+      });
+
+      // Enter key saves modal
+      document.getElementById("modal").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
+          e.preventDefault();
+          document.getElementById("modal-save").click();
+        }
+        if (e.key === "Escape") closeModal();
+      });
+
+      // ─── Modal: Delete ─────────────────────────────────────
+      let deletingName = null;
+
+      function openDeleteModal(name) {
+        deletingName = name;
+        document.getElementById("delete-name").textContent = name;
+        document.getElementById("delete-modal").classList.add("active");
+      }
+
+      function closeDeleteModal() {
+        document.getElementById("delete-modal").classList.remove("active");
+        deletingName = null;
+      }
+
+      document
+        .getElementById("delete-confirm")
+        .addEventListener("click", () => {
+          if (!deletingName) return;
+          const name = deletingName;
+          removeItem(name);
+          syncJSON();
+          closeDeleteModal();
+          render();
+          toast(`${name} verwijderd`);
+        });
+
+      document
+        .getElementById("delete-modal")
+        .addEventListener("keydown", (e) => {
+          if (e.key === "Escape") closeDeleteModal();
+          if (e.key === "Enter") {
+            e.preventDefault();
+            document.getElementById("delete-confirm").click();
+          }
+        });
+
+      // ─── Detail Modal ────────────────────────────────────────
+      let detailName = null;
+
+      function openDetailModal(name) {
+        const found = findItem(name);
+        if (!found) return;
+        detailName = name;
+        const f = found.item;
+        const phaseLabel =
+          found.list === "adhoc"
+            ? "P4"
+            : PHASE_LABELS[f.phase] || f.phase || "—";
+
+        document.getElementById("detail-title").textContent = f.name;
+
+        let html = "";
+        if (f.description) {
+          html += `<div class="detail-field"><div class="detail-label">Beschrijving</div><div class="detail-value">${esc(f.description)}</div></div>`;
+        }
+        html += `<div class="detail-field"><div class="detail-tags">`;
+        html += `<span class="badge badge-${f.type.toLowerCase().replace("_", "-")}">${esc(f.type)}</span>`;
+        html += `<span class="phase-tag ${PHASE_CLASSES[found.list === "adhoc" ? "P4" : f.phase] || "phase-p4"}">${phaseLabel}</span>`;
+        html += `<span class="badge" style="background:${STATUS_COLORS[f.status]}22;color:${STATUS_COLORS[f.status]}">${f.status}</span>`;
+        html += `</div></div>`;
+        if (f.dependency) {
+          html += `<div class="detail-field"><div class="detail-label">Dependency</div><div class="detail-value">${esc(f.dependency)}</div></div>`;
+        }
+        if (f.source) {
+          html += `<div class="detail-field"><div class="detail-label">Bron</div><div class="detail-value">${esc(f.source)}</div></div>`;
+        }
+        if (f.date) {
+          html += `<div class="detail-field"><div class="detail-label">Datum</div><div class="detail-value">${esc(f.date)}</div></div>`;
+        }
+
+        document.getElementById("detail-body").innerHTML = html;
+
+        // Show promote button only if not DONE
+        const promoteBtn = document.getElementById("detail-promote");
+        if (f.status !== "DONE") {
+          const next = STATUSES[STATUSES.indexOf(f.status) + 1];
+          promoteBtn.textContent = `▶ ${f.status} → ${next}`;
+          promoteBtn.style.display = "";
+        } else {
+          promoteBtn.style.display = "none";
+        }
+
+        document.getElementById("detail-modal").classList.add("active");
+      }
+
+      function closeDetailModal() {
+        document.getElementById("detail-modal").classList.remove("active");
+        detailName = null;
+      }
+
+      document.getElementById("detail-edit").addEventListener("click", () => {
+        const name = detailName;
+        closeDetailModal();
+        if (name) openEditModal(name);
+      });
+
+      document
+        .getElementById("detail-promote")
+        .addEventListener("click", () => {
+          if (!detailName) return;
+          const found = findItem(detailName);
+          if (!found) return;
+          const idx = STATUSES.indexOf(found.item.status);
+          if (idx < STATUSES.length - 1) {
+            const oldStatus = found.item.status;
+            const newStatus = STATUSES[idx + 1];
+            updateStatus(detailName, newStatus);
+            syncJSON();
+            closeDetailModal();
+            render();
+            toast(`${detailName}: ${oldStatus} → ${newStatus}`);
+          }
+        });
+
+      document.getElementById("detail-delete").addEventListener("click", () => {
+        const name = detailName;
+        closeDetailModal();
+        if (name) openDeleteModal(name);
+      });
+
+      document
+        .getElementById("detail-modal")
+        .addEventListener("keydown", (e) => {
+          if (e.key === "Escape") closeDetailModal();
+        });
+
+      // Close modals on overlay click
+      document.getElementById("modal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("modal")) closeModal();
+      });
+      document.getElementById("delete-modal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("delete-modal"))
+          closeDeleteModal();
+      });
+      document.getElementById("detail-modal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("detail-modal"))
+          closeDetailModal();
+      });
+
+      // ─── Init ───────────────────────────────────────────────
+      render();
+    </script>
+  </body>
+</html>

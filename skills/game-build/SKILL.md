@@ -91,9 +91,9 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 ### FASE 0: Load Context
 
 1. **If no feature name provided — check backlog:**
-   - Read `.workspace/backlog.md`
-   - Find features with status `DEF` (defined, ready to build)
-   - Parse `**Next:**` line for suggested feature
+   - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
+   - Filter DEF features: `data.features.filter(f => f.status === "DEF")`
+   - Eerste DEF feature is de suggested next feature
    - Use **AskUserQuestion** with backlog-suggested feature:
      ```
      Backlog suggests: {feature-name}
@@ -835,31 +835,11 @@ Added:
    `/game-test {feature}`
    ```
 
-3. **Sync backlog:**
-
-   **Backlog uses list-based format (not tables).**
-   - Read `.workspace/backlog.md`
-   - Find feature in MVP/Phase 2/Phase 3/Ad-hoc sections
-   - Move feature from `### DEF` to `### BLT` subsection
-   - Update section header counts: `({done}/{total} done)`
-   - Update "Updated" timestamp
-   - Add `**Next:** /game-test {feature}` at top of backlog
-
-   **Example:**
-
-   ```markdown
-   ### DEF
-
-   - **element-water** (CONTENT) -> ability-system
-   ```
-
-   Moves to:
-
-   ```markdown
-   ### BLT
-
-   - **element-water** (CONTENT) -> ability-system
-   ```
+3. **Sync backlog** (zie `shared/BACKLOG.md`):
+   - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
+   - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "BLT"`
+   - Zet `data.updated` naar huidige datum
+   - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
    **Output:**
 

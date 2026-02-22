@@ -79,9 +79,9 @@ Reads from `.workspace/features/{feature-name}/`:
 
 1. **Read backlog for pipeline status:**
 
-   Read `.workspace/backlog.md` (if exists) to understand current state:
-   - Which features are in which phase (TODO, DEF, BLT, TST, DONE)
-   - Collect ALL features in `### TST` section — these are tested but not yet refactored
+   Read `.workspace/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
+   - Filter TST features: `data.features.filter(f => f.status === "TST")`
+   - TST features zijn getest maar nog niet gerefactord
 
 2. **Determine feature queue:**
 
@@ -700,14 +700,12 @@ IMPROVEMENTS APPLIED
    - REFACTORED: Set `Status: REFACTORED` with date
    - ROLLED_BACK: Set `Status: TST` (keep in TST, don't advance)
 
-3. **Sync backlog (single edit for all features):**
-   - Read `.workspace/backlog.md`
-   - Move CLEAN and REFACTORED features from `### TST` to `### DONE`
-   - ROLLED_BACK features stay in `### TST`
-   - In DONE: dependency arrow `->` changes to description `-`
-   - Update section header counts: `({done}/{total} done)`
-   - Update "Updated" timestamp
-   - Update "Next" suggestion
+3. **Sync backlog** (zie `shared/BACKLOG.md`, single edit for all features):
+   - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
+   - CLEAN en REFACTORED features: zet `.status = "DONE"`
+   - ROLLED_BACK features: laat `.status = "TST"`
+   - Zet `data.updated` naar huidige datum
+   - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
 4. **CLAUDE.md Auto-Sync (conditional)** — only execute if REFACTORED features include structural changes:
 

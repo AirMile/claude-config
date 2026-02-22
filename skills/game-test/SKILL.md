@@ -127,11 +127,11 @@ Now TESTABLE -> TDD fix loop
 1. **Check backlog for BLT features (if no feature name provided):**
 
    ```
-   Read(".workspace/backlog.md")
+   Read(".workspace/backlog.html")
    ```
 
-   - If backlog exists: find features in `### BLT` section
-   - Parse `**Next:**` for suggestion (e.g. `**Next:** /game-test {feature-name}`)
+   - If backlog exists: parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
+   - Filter BLT features: `data.features.filter(f => f.status === "BLT")`
 
    Use **AskUserQuestion** if BLT features found:
    - header: "Feature"
@@ -939,7 +939,7 @@ OBSERVATIE GENOTEERD
 
 Opgenomen in test results. Volgende stappen voor deze items:
 - /game-define {observation-topic} — als het een nieuwe feature is
-- Voeg toe aan .workspace/backlog.md — als het een bekende TODO is
+- Voeg toe aan .workspace/backlog.html — als het een bekende TODO is
 ```
 
 ---
@@ -1016,41 +1016,11 @@ Opgenomen in test results. Volgende stappen voor deze items:
    - `scenes/abilities/water_ability.tscn` (added AudioStreamPlayer)
    ```
 
-4. **Sync backlog:**
-
-   **Backlog uses list-based format (not tables).**
-   - Read `.workspace/backlog.md`
-   - Find feature in MVP/Phase 2/Phase 3/Ad-hoc sections
-   - Move feature from `### BLT` to `### TST` subsection
-   - Update section header counts: `({done}/{total} done)`
-   - Update "Updated" timestamp
-   - Update "Next" suggestion: `**Next:** /game-refactor {feature-name}` or `/game-define {next-todo-feature}`
-
-   **Example:**
-
-   ```markdown
-   ### BLT
-
-   - **element-water** (CONTENT) → ability-system
-   ```
-
-   Moves to:
-
-   ```markdown
-   ### TST
-
-   - **element-water** (CONTENT) → ability-system
-   ```
-
-   **Output:**
-
-   ```
-   BACKLOG SYNCED
-
-   Feature: {feature-name}
-   Status: BLT → TST
-   Progress: MVP {done}/{total} done
-   ```
+4. **Sync backlog** (zie `shared/BACKLOG.md`):
+   - Read `.workspace/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
+   - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "TST"`
+   - Zet `data.updated` naar huidige datum
+   - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
 5. **Scoped auto-commit** (only this skill's changes):
 

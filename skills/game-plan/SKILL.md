@@ -27,11 +27,11 @@ Accepts markdown from:
 
 ## Output
 
-`.workspace/backlog.md` with:
+`.workspace/backlog.html` with:
 
 - Decomposed features
 - Dependencies
-- MVP vs Phase 2/3 priority
+- P1/P2/P3 priority
 - Direct links to `/game-define {feature}`
 
 ## Workflow
@@ -48,7 +48,7 @@ Accepts markdown from:
 
 2. **Check for existing files (only if .workspace exists):**
    - Check if `.workspace/concept.md` exists
-   - Check if `.workspace/backlog.md` exists
+   - Check if `.workspace/backlog.html` exists
 
 3. **Scenario A: Both concept AND backlog exist**
    - Read both files
@@ -59,7 +59,7 @@ Accepts markdown from:
      EXISTING BACKLOG DETECTED
 
      Concept: .workspace/concept.md
-     Backlog: .workspace/backlog.md
+     Backlog: .workspace/backlog.html
 
      Changes detected:
      - NEW: {list of features in concept but not in backlog}
@@ -121,7 +121,7 @@ Accepts markdown from:
      ```
      WARNING: Backlog exists but no concept found
 
-     Backlog: .workspace/backlog.md
+     Backlog: .workspace/backlog.html
      Concept: Not found (.workspace/concept.md missing)
 
      Een concept is nodig om de backlog te updaten.
@@ -296,10 +296,10 @@ player-movement (base)
 
 ### FASE 3: Priority Assignment
 
-**Goal:** Determine MVP vs later phases.
+**Goal:** Prioriteiten toekennen (P1–P3).
 
-1. **Use AskUserQuestion for MVP scope:**
-   - header: "MVP Scope"
+1. **Use AskUserQuestion for P1 (MVP) scope:**
+   - header: "P1 (MVP)"
    - question: "Wat is minimaal nodig voor een speelbaar prototype?"
    - options: (dynamically generated from features)
      - label: "{feature-1}", description: "{description}"
@@ -308,8 +308,8 @@ player-movement (base)
    - multiSelect: true
 
 2. **Auto-assign remaining features:**
-   - Phase 2: Direct dependencies of MVP features
-   - Phase 3: Nice-to-have, polish, extra content
+   - P2: Direct dependencies of P1 features
+   - P3: Nice-to-have, polish, extra content
 
 3. **Validate with user:**
    Show proposed prioritization.
@@ -319,13 +319,13 @@ player-movement (base)
    - question: "Klopt deze prioritering?"
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Prioriteiten zijn correct"
-     - label: "Features verplaatsen", description: "Ik wil features tussen fases verplaatsen"
+     - label: "Features verplaatsen", description: "Ik wil features tussen P1/P2/P3 verplaatsen"
      - label: "Aanpassen", description: "Andere wijzigingen aan prioriteiten"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 4
-   - "Features verplaatsen" → ask which features to move between MVP/Phase 2/Phase 3, update, re-ask
+   - "Features verplaatsen" → ask which features to move between P1/P2/P3, update, re-ask
    - "Aanpassen" → let user describe changes, apply, show updated prioritization, re-ask
 
    **Loop until user confirms priorities are correct.**
@@ -335,116 +335,79 @@ player-movement (base)
 ```
 PRIORITY ASSIGNED
 
-MVP (Must Have):
+P1 (MVP):
 - {feature}: {reason}
 - {feature}: {reason}
 
-Phase 2 (Should Have):
+P2:
 - {feature}: {reason}
 
-Phase 3 (Nice to Have):
+P3:
 - {feature}: {reason}
 ```
 
 ### FASE 4: Generate Backlog
 
-**Goal:** Write the backlog file with status tracking.
+**Goal:** Write de interactieve HTML kanban backlog.
 
-1. **Generate `.workspace/backlog.md`:**
+**Refereer naar `shared/BACKLOG.md` voor het volledige data-formaat.**
 
-```markdown
-# Game Backlog: {Project Name}
+1. **Kopieer template:**
+   - Bron: `{skills_path}/shared/references/backlog-template.html`
+   - Doel: `.workspace/backlog.html`
+   - Maak `.workspace/` aan als die niet bestaat
 
-**Generated:** {date}
-**Updated:** {date}
-**Source:** {/thinking-idea | /thinking-brainstorm}
+2. **Bouw het JSON data-object:**
 
-## Overview
+   ```json
+   {
+     "project": "{Project Name}",
+     "generated": "{YYYY-MM-DD}",
+     "updated": "{YYYY-MM-DD}",
+     "source": "/game-plan",
+     "overview": "{Brief description from source}",
+     "features": [
+       {
+         "name": "{feature-name}",
+         "type": "CORE|MECHANIC|CONTENT|POLISH|UI",
+         "status": "TODO",
+         "phase": "P1|P2|P3",
+         "description": "{description}",
+         "dependency": "{other-feature}|null"
+       }
+     ],
+     "adhoc": [],
+     "notes": "{Any notes or considerations}"
+   }
+   ```
 
-{Brief description from source}
+3. **Vervang het JSON-blok** in het gekopieerde template:
+   - Zoek: `<script id="backlog-data" type="application/json">...</script>`
+   - Vervang de inhoud tussen de tags met het gebouwde JSON object
 
-## Status: `TODO` → `DEF` → `BLT` → `TST` → `DONE`
+4. **Start backlog server** (als niet al draaiend):
 
----
-
-## MVP Features ({done}/{total} done)
-
-### DONE
-
-- **{feature-name}** ({TYPE}) - {short description}
-
-### TODO
-
-- **{feature-name}** ({TYPE}) → {dependency}
-  {description}
-
-**Next:** `/game-define {first-todo-feature}`
-
----
-
-## Phase 2 Features ({done}/{total} done)
-
-### TODO
-
-- **{feature-name}** ({TYPE}) → {dependency}
-  {description}
-
----
-
-## Phase 3 Features ({done}/{total} done)
-
-### TODO
-
-- **{feature-name}** ({TYPE}) → {dependency}
-  {description}
-
----
-
-## Ad-hoc Features ({done}/{total} done)
-
-Features added outside the original backlog.
-
-### DONE
-
-- **{feature-name}** ({TYPE}) - {date}
-  {description}
-
----
-
-## Feature Map
-```
-
-{dependency tree visualization}
-
-```
-
----
-
-## Notes
-
-{Any extracted notes, open questions, or considerations}
-```
-
-2. **Save file:**
-   - Create `.workspace/` if not exists
-   - Write `.workspace/backlog.md`
+   ```bash
+   curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node ~/.claude/skills/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
+   ```
 
 **Output:**
 
 ```
 BACKLOG CREATED
 
-File: .workspace/backlog.md
+File: .workspace/backlog.html
+Server: http://localhost:9876/{project-dir}
 
-| Phase | Features |
-|-------|----------|
-| MVP | {count} |
-| Phase 2 | {count} |
-| Phase 3 | {count} |
-| Total | {count} |
+| Priority | Features |
+|----------|----------|
+| P1 (MVP) | {count} |
+| P2       | {count} |
+| P3       | {count} |
+| Total    | {count} |
 
 Start development:
-/game-define {first-mvp-feature}
+/game-define {first-P1-feature}
 ```
 
 ## Best Practices
@@ -461,11 +424,11 @@ Start development:
 - Prefer vertical slices over horizontal layers
 - Base systems first, content last
 
-### MVP Scope
+### P1 (MVP) Scope
 
 - Playable > Feature-complete
 - Core loop first
-- Polish is Phase 3
+- Polish is P3
 
 ## Example
 
@@ -476,22 +439,22 @@ Start development:
 ```
 BACKLOG CREATED
 
-File: .workspace/backlog.md
+File: .workspace/backlog.html
 
-MVP Features:
+P1 (MVP):
 1. player-movement (CORE)
 2. basic-combat (MECHANIC)
 3. health-system (MECHANIC)
 4. ability-system (MECHANIC)
 5. element-water (CONTENT)
 
-Phase 2:
+P2:
 6. element-fire (CONTENT)
 7. element-earth (CONTENT)
 8. element-air (CONTENT)
 9. ability-draft (MECHANIC)
 
-Phase 3:
+P3:
 10. round-system (MECHANIC)
 11. ui-hud (UI)
 12. screen-shake (POLISH)

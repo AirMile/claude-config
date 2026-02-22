@@ -44,11 +44,12 @@ The skill gathers requirements through targeted questions, optionally researches
    **a) Check backlog for next feature:**
 
    ```
-   Read(".workspace/backlog.md")
+   Read(".workspace/backlog.html")
    ```
 
-   - If backlog exists: parse the `**Next:**` line (e.g. `**Next:** /game-define player-movement`)
-   - Extract feature name from that line
+   - If backlog exists: parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
+   - Zoek eerste TODO feature: `data.features.find(f => f.status === "TODO")`
+   - Gebruik feature naam als suggestie
 
    **b) If backlog has a next feature:**
 
@@ -301,7 +302,7 @@ Show requirements table with acceptance criteria:
 
 7. **Update backlog (split only):**
 
-   If `.workspace/backlog.md` exists:
+   If `.workspace/backlog.html` exists:
    - Replace original feature entry with sub-feature entries
    - Each sub-feature gets its own line in the backlog
    - Add `(split from {original-name})` annotation
@@ -592,69 +593,34 @@ After testing: `/game-refactor {feature-name}` for code quality.
 
 ### FASE 5: Sync Backlog
 
-**Goal:** Update `.workspace/backlog.md` with new status.
+**Goal:** Update `.workspace/backlog.html` with new status.
 
-**Backlog uses list-based format (not tables) for better readability.**
+Zie `shared/BACKLOG.md` voor het JSON read/write protocol.
 
 **Steps:**
 
 1. **Check if backlog exists:**
 
    ```
-   Read(".workspace/backlog.md")
+   Read(".workspace/backlog.html")
    ```
 
    - If file not found: skip sync (no backlog to update)
 
-2. **Find feature in backlog:**
-   - Search MVP Features, Phase 2, Phase 3 sections for feature name
-   - If found: move from `### TODO` to `### DEF` subsection
-   - If NOT found: add to "Ad-hoc Features" section
+2. **Parse JSON data:**
+   - Extraheer JSON uit `<script id="backlog-data" type="application/json">` blok
+   - Parse als object (zie `shared/BACKLOG.md`)
 
-3. **Update feature status (if found in planned features):**
+3. **Find feature and update status:**
+   - Zoek in `data.features`: `data.features.find(f => f.name === "{feature-name}")`
+   - Gevonden → zet `.status = "DEF"` en `.date = "{current date}"`
+   - Niet gevonden → zoek in `data.adhoc`
+   - Nog niet gevonden → voeg toe aan `data.adhoc`:
+     `{ "name": "{feature}", "type": "FEATURE", "status": "DEF", "description": "{from 01-define.md}", "dependency": null, "source": "/game-define" }`
 
-   Move the line from TODO section:
-
-   ```markdown
-   ### TODO
-
-   - **element-water** (CONTENT) → ability-system
-     Water abilities (projectile, shield, etc.)
-   ```
-
-   To DEF section:
-
-   ```markdown
-   ### DEF
-
-   - **element-water** (CONTENT) → ability-system
-     Water abilities (projectile, shield, etc.)
-   ```
-
-4. **Add to Ad-hoc Features (if NOT found in planned features):**
-
-   Add to Ad-hoc section under `### DEF`:
-
-   ```markdown
-   ### DEF
-
-   - **mouse-aim** (MECHANIC) - {date}
-     {description from 01-define.md}
-   ```
-
-5. **Update section header counts:**
-   - `## MVP Features ({done}/{total} done)`
-   - Recalculate done count
-
-6. **Update "Updated" timestamp:**
-
-   ```
-   **Updated:** {current date}
-   ```
-
-7. **Update "Next" suggestion:**
-   - Find first feature in `### TODO` section
-   - Update: `**Next:** /game-define {first-todo-feature}`
+4. **Update metadata and write back:**
+   - Zet `data.updated` naar huidige datum (`YYYY-MM-DD`)
+   - Vervang het JSON-blok in het HTML bestand via Edit tool (keep `<script>` tags intact)
 
 **Output:**
 
@@ -663,7 +629,7 @@ BACKLOG SYNCED
 
 Feature: {feature-name}
 Status: TODO → DEF
-Location: {MVP Features | Phase 2 | Ad-hoc}
+Location: {P1 | P2 | P3 | P4}
 ```
 
 ## Best Practices

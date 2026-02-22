@@ -31,7 +31,7 @@ Accepts markdown from:
 
 - Decomposed features
 - Dependencies
-- MVP vs Phase 2/3 priority
+- P1/P2/P3 priority
 - Direct links to `/dev-define {feature}`
 
 ## Workflow
@@ -397,10 +397,10 @@ routing (base)
 
 ### FASE 3: Priority Assignment
 
-**Goal:** Determine MVP vs later phases.
+**Goal:** Prioriteiten toekennen (P1–P3).
 
-1. **Use AskUserQuestion for MVP scope:**
-   - header: "MVP Scope"
+1. **Use AskUserQuestion for P1 (MVP) scope:**
+   - header: "P1 (MVP)"
    - question: "Wat is minimaal nodig voor een werkend prototype?"
    - options: (dynamically generated from features)
      - label: "{feature-1}", description: "{description}"
@@ -409,25 +409,25 @@ routing (base)
    - multiSelect: true
 
 2. **Auto-assign remaining features using heuristics:**
-   - Phase 2: Features that directly extend MVP functionality OR are prerequisites for important Phase 3 features
-   - Phase 3: Nice-to-have, polish, extra content, integrations without core impact
-   - When unclear: prefer Phase 2 (easier to demote than to promote later)
+   - P2: Features that directly extend P1 functionality OR are prerequisites for important P3 features
+   - P3: Nice-to-have, polish, extra content, integrations without core impact
+   - When unclear: prefer P2 (easier to demote than to promote later)
 
 3. **Review with user:**
 
    Show proposed prioritization table, then use AskUserQuestion:
    - header: "Priority Review"
-   - question: "Klopt deze fase-indeling? Je kunt features verplaatsen tussen fases."
+   - question: "Klopt deze prioritering? Je kunt features verplaatsen tussen P1/P2/P3."
    - options:
-     - label: "Ja, dit klopt (Recommended)", description: "Fase-indeling is correct, genereer backlog"
-     - label: "Features verplaatsen", description: "Een of meer features naar een andere fase"
-     - label: "Explain question", description: "Leg de fase-indeling uit"
+     - label: "Ja, dit klopt (Recommended)", description: "Prioriteiten zijn correct, genereer backlog"
+     - label: "Features verplaatsen", description: "Een of meer features naar een andere prioriteit"
+     - label: "Explain question", description: "Leg P1/P2/P3 uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 4
-   - "Features verplaatsen" → ask which features and target phase, update table, re-ask
-   - "Explain question" → explain MVP/Phase 2/Phase 3 criteria, re-ask
+   - "Features verplaatsen" → ask which features and target priority, update table, re-ask
+   - "Explain question" → explain P1 (MVP) / P2 / P3 criteria, re-ask
    - "Other" → parse user's freeform input, apply changes, re-ask
 
    **Loop until user confirms prioritization is correct.**
@@ -437,14 +437,14 @@ routing (base)
 ```
 PRIORITY ASSIGNED
 
-MVP (Must Have):
+P1 (MVP):
 - {feature}: {reason}
 - {feature}: {reason}
 
-Phase 2 (Should Have):
+P2:
 - {feature}: {reason}
 
-Phase 3 (Nice to Have):
+P3:
 - {feature}: {reason}
 ```
 
@@ -473,7 +473,7 @@ Phase 3 (Nice to Have):
          "name": "{feature-name}",
          "type": "FEATURE|API|INTEGRATION|UI|REFACTOR",
          "status": "TODO",
-         "phase": "mvp|phase2|phase3",
+         "phase": "P1|P2|P3",
          "description": "{description}",
          "dependency": "{other-feature}|null"
        }
@@ -501,15 +501,15 @@ BACKLOG CREATED
 File: .workspace/backlog.html
 Server: http://localhost:9876/{project-dir}
 
-| Phase | Features |
-|-------|----------|
-| MVP | {count} |
-| Phase 2 | {count} |
-| Phase 3 | {count} |
-| Total | {count} |
+| Priority | Features |
+|----------|----------|
+| P1 (MVP) | {count} |
+| P2       | {count} |
+| P3       | {count} |
+| Total    | {count} |
 
 Start development:
-/dev-define {first-mvp-feature}
+/dev-define {first-P1-feature}
 ```
 
 ## Best Practices
@@ -526,11 +526,11 @@ Start development:
 - Prefer vertical slices over horizontal layers
 - Base systems first, content last
 
-### MVP Scope
+### P1 (MVP) Scope
 
 - Functional > Feature-complete
 - Core user flow first
-- Polish is Phase 3
+- Polish is P3
 
 ## Example
 
@@ -543,20 +543,20 @@ BACKLOG CREATED
 
 File: .workspace/backlog.html
 
-MVP Features:
+P1 (MVP):
 1. routing (FEATURE)
 2. auth-pages (FEATURE)
 3. api-auth (API)
 4. dashboard-layout (FEATURE)
 5. product-list (FEATURE)
 
-Phase 2:
+P2:
 6. api-products (API)
 7. product-detail (FEATURE)
 8. cart-component (FEATURE)
 9. stripe-integration (INTEGRATION)
 
-Phase 3:
+P3:
 10. analytics-dashboard (INTEGRATION)
 11. dark-mode (UI)
 12. performance-optimization (REFACTOR)

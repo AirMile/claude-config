@@ -673,58 +673,21 @@ Zie `shared/BACKLOG.md` voor het JSON read/write protocol.
 
    - If file not found: skip sync (no backlog to update)
 
-2. **Find feature in backlog:**
-   - Search MVP Features, Phase 2, Phase 3 sections for feature name
-   - If found: move from `### TODO` to `### DEF` subsection
-   - If NOT found: add to "Ad-hoc Features" section
+2. **Parse JSON data:**
+   - Extraheer JSON uit `<script id="backlog-data" type="application/json">` blok
+   - Parse als object (zie `shared/BACKLOG.md`)
 
-3. **Update feature status (if found in planned features):**
+3. **Find feature and update status:**
+   - Zoek in `data.features`: `data.features.find(f => f.name === "{feature-name}")`
+   - Gevonden → zet `.status = "DEF"` en `.date = "{current date}"`
+   - Niet gevonden → zoek in `data.adhoc`
+   - Nog niet gevonden → voeg toe aan `data.adhoc`:
+     `{ "name": "{feature}", "type": "FEATURE", "status": "DEF", "description": "{from 01-define.md}", "dependency": null, "source": "/dev-define" }`
+   - **Note:** If feature was split in FASE 1b, sync each sub-feature individually.
 
-   Move the line from TODO section:
-
-   ```markdown
-   ### TODO
-
-   - **contact-form** (FEATURE) → forms
-     Contact formulier met validatie
-   ```
-
-   To DEF section:
-
-   ```markdown
-   ### DEF
-
-   - **contact-form** (FEATURE) → forms
-     Contact formulier met validatie
-   ```
-
-4. **Add to Ad-hoc Features (if NOT found in planned features):**
-
-   Add to Ad-hoc section under `### DEF`:
-
-   ```markdown
-   ### DEF
-
-   - **dark-mode** (FEATURE) - {date}
-     {description from 01-define.md}
-   ```
-
-   **Note:** If feature was split in FASE 1b, sync each sub-feature individually.
-   Each sub-feature entry should include `(split from {parent})` annotation.
-
-5. **Update section header counts:**
-   - `## MVP Features ({done}/{total} done)`
-   - Recalculate done count
-
-6. **Update "Updated" timestamp:**
-
-   ```
-   **Updated:** {current date}
-   ```
-
-7. **Update "Next" suggestion:**
-   - Find first feature in `### TODO` section
-   - Update: `**Next:** /dev-define {first-todo-feature}`
+4. **Update metadata and write back:**
+   - Zet `data.updated` naar huidige datum (`YYYY-MM-DD`)
+   - Vervang het JSON-blok in het HTML bestand via Edit tool (keep `<script>` tags intact)
 
 **Output:**
 
@@ -733,7 +696,7 @@ BACKLOG SYNCED
 
 Feature: {feature-name}
 Status: TODO → DEF
-Location: {MVP Features | Phase 2 | Ad-hoc}
+Location: {P1 | P2 | P3 | P4}
 ```
 
 ## Best Practices
