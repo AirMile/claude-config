@@ -16,8 +16,6 @@ This is the test phase of the dev workflow: define -> build -> **test**
 
 Handles hybrid verification of implemented features through automated testing and manual walkthrough, issue categorization, and iterative fix loops until all items pass.
 
-**Execution model:** Automated tests run in a **separate Task agent** (isolated context window) to prevent snapshot/screenshot data from flooding the main conversation. The agent uses MCP browser tools for DOM verification and bash commands for running existing test suites. Only structured results (pass/fail + evidence summary) are returned to the main conversation.
-
 **Trigger**: `/dev-test` or `/dev-test {feature-name}` or `/dev-test {feature-name} {feedback}`
 
 ## When to Use
@@ -149,7 +147,7 @@ Everything works except validation is missing and no welcome mail
 
 8. **Dev server + Cloudflare Tunnel** (uses same setup as `/dev-server`)
 
-   If any items are classified as AUTO:
+   Always start dev server + tunnel — needed for both AUTO and MANUAL items.
 
    **a) Check for existing tunnel:**
 
@@ -163,9 +161,13 @@ Everything works except validation is missing and no welcome mail
    curl -s -o /dev/null -w "%{http_code}" {tunnel_url}
    ```
 
-   **If HTTP 200** → tunnel running, use this URL, proceed to FASE 1.
+   **If HTTP 200** → verify it serves the correct project: `curl -s {tunnel_url} | grep -i "{project-name}"`. If mismatch (e.g. tunnel serves a different project) → kill and restart tunnel for this project.
+
+   **If verified** → tunnel running, use this URL, proceed to FASE 1.
 
    **b) No tunnel running — start dev server + tunnel:**
+
+   **Vite projects:** Check if `server.allowedHosts` is set in vite.config. If not, temporarily add `allowedHosts: true` before starting (Vite 7+ blocks tunnel hostnames with 403). Revert after testing.
 
    Follow the same process as `/dev-server`:
 
@@ -229,12 +231,8 @@ ITEMS:
 INSTRUCTIES:
 1. Navigeer naar de dev server URL en verifieer dat deze draait
 2. Voor elk item:
-   a. Voer de stappen uit met browser tools (browser_navigate, browser_snapshot,
-      browser_click, browser_fill_form, browser_type, browser_press_key,
-      browser_resize, browser_take_screenshot, browser_wait_for, browser_evaluate)
-   b. OF run bestaande tests via bash als die er zijn (npm test, npx vitest, npx playwright test)
-   c. Analyseer het resultaat (snapshot/screenshot/test output)
-   d. Bepaal PASS of FAIL met bewijs en redenering
+   a. Voer de stappen uit met MCP browser tools of bestaande test suites via bash
+   b. Analyseer het resultaat en bepaal PASS of FAIL met bewijs en redenering
 3. Als een browser tool faalt voor een item, markeer als TOOL_ERROR
 4. Geef gestructureerde resultaten terug
 
@@ -254,8 +252,7 @@ The Task agent's output will likely be **truncated** because its full conversati
 
 1. If TaskOutput contains `AUTOMATED_RESULTS_START` → parse directly from the output
 2. If TaskOutput is truncated (no `AUTOMATED_RESULTS_START` visible):
-   - The output includes a file path (e.g. `C:\...\tasks\{id}.output`)
-   - Use **Grep** to find the line containing `AUTOMATED_RESULTS_START` in that file
+   - Use **Grep** to find `AUTOMATED_RESULTS_START` in the agent's output file
    - Use **Read** with the line offset to read from `AUTOMATED_RESULTS_START` to `AUTOMATED_RESULTS_END`
 3. Extract ONLY the structured block between the markers — ignore the rest of the agent log
 4. Any items with `TOOL_ERROR` → reclassify as MANUAL for FASE 2
@@ -475,13 +472,7 @@ Use AskUserQuestion tool:
   - label: "Nee, direct fixen", description: "Fix zonder research"
 - multiSelect: false
 
-Then apply TDD:
-
-1. Write test that captures the reported issue
-2. Run test → expect FAIL
-3. Implement minimal fix
-4. Run test → expect PASS
-5. Max 3 attempts before asking user
+Then apply TDD: test → red → fix → green. Max 3 attempts before asking user.
 
 After each successful fix, output:
 
@@ -557,33 +548,7 @@ Re-test ONLY fixed items, using the appropriate method per test_type.
 
 Re-run all fixed AUTO items via a **Task agent** (same approach as FASE 1).
 
-**Task agent prompt template:**
-
-```
-Re-test de volgende gefixte items automatisch via browser tools en bash commands.
-Dev server: {url}
-Feature: {feature-name}
-
-GEFIXTE ITEMS:
-{for each fixed AUTO item:}
-- Item {N}: {title}
-  Wijziging: {summary of fix + root cause}
-  Stappen: {test steps}
-  Testdata: {test data}
-  Verwacht: {expected outcome after fix}
-
-INSTRUCTIES:
-Zelfde als FASE 1 — voer stappen uit, analyseer resultaat, geef gestructureerd terug.
-
-RESULTAAT FORMAT (strict):
-RETEST_RESULTS_START
-| # | Test | Resultaat | Bewijs | Redenering |
-|---|------|-----------|--------|------------|
-| {N} | {title} | PASS/FAIL/TOOL_ERROR | {wat gezien} | {waarom pass/fail} |
-RETEST_RESULTS_END
-```
-
-Parse and display results same as FASE 1 (including truncation handling — grep for `RETEST_RESULTS_START` in output file if truncated). TOOL_ERROR items move to Phase B (manual re-test).
+Use same Task agent approach as FASE 1. Include per item: title, fix summary, test steps, expected outcome. Use result markers `RETEST_RESULTS_START` / `RETEST_RESULTS_END`. Parse same as FASE 1 (including truncation handling). TOOL_ERROR items move to Phase B (manual re-test).
 
 #### Phase B: Manual Re-test
 
@@ -654,13 +619,11 @@ Loop back to FASE 3 until all pass or user exits. On loop-back:
 
 ### FASE 6: Completion
 
-#### Step 0: Fix Sync (only when fixes were applied in FASE 4)
+#### Step 1: Fix Sync (only when fixes were applied in FASE 4)
 
 **Skip this step if all items passed on first attempt (no fixes needed).**
 
-The Fix Sync ensures the user understands what changed in the codebase during the test-fix cycle. Simpler than the build's Codebase Sync — test fixes are typically smaller and more targeted.
-
-**0a) Claude summarizes** — per fix, in plain language:
+**1a) Claude summarizes** — per fix, in plain language:
 
 ```
 FIX SYNC: {feature-name}
@@ -687,7 +650,7 @@ Fix 2: Welcome mail not sent
 - Watch out: Mail sending is async — if it fails, the user IS registered but won't get the mail
 ```
 
-**0b) Comprehension check** via AskUserQuestion:
+**1b) Comprehension check** via AskUserQuestion:
 
 - header: "Fix Sync"
 - question: "Snap je de fixes die zijn toegepast?"
@@ -701,11 +664,11 @@ Fix 2: Welcome mail not sent
 **If "Ik heb een vraag"** → answer the question, then re-ask.
 **Loop until "Ja, helder".**
 
-**0c) Save fix sync** — store the summary for inclusion in 03-test-results.md (Step 2).
+**1c) Save fix sync** — store the summary for inclusion in 03-test-results.md (Step 3).
 
 ---
 
-#### Step 0b: Out-of-scope Observations (always — even without fixes)
+#### Step 2: Out-of-scope Observations (always — even without fixes)
 
 The user was actively testing the feature and may have noticed issues outside the current scope. Capture these before closing out.
 
@@ -730,9 +693,9 @@ Opgenomen in test results.
 
 ---
 
-1. **Update 01-define.md:** Set `Status: VERIFIED` with date.
+3. **Update 01-define.md:** Set `Status: VERIFIED` with date.
 
-2. **Create 03-test-results.md:**
+4. **Create 03-test-results.md:**
 
    ```markdown
    # Test Results: {feature-name}
@@ -789,13 +752,13 @@ Opgenomen in test results.
    - {file:line} ({change description})
    ```
 
-3. **Sync backlog** (zie `shared/BACKLOG.md`):
+5. **Sync backlog** (zie `shared/BACKLOG.md`):
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "TST"`
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
-4. **Dashboard sync** (zie `shared/DASHBOARD.md`):
+6. **Dashboard sync** (zie `shared/DASHBOARD.md`):
    - Read `.project/project.json` (skip als niet bestaat)
    - Als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`
    - Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`
@@ -803,10 +766,10 @@ Opgenomen in test results.
    - Update `features` array: zoek feature op naam, zet status naar `"TST"`
    - Write `.project/project.json`
 
-5. **Write feature JSON** (naast bestaande markdown):
+7. **Write feature JSON** (naast bestaande markdown):
    - Write `test.json` naar `.project/features/{feature-name}/` met test resultaten (zie `shared/DASHBOARD.md` voor schema)
 
-6. **Scoped auto-commit** (only this skill's changes):
+8. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -865,57 +828,3 @@ Opgenomen in test results.
 → FASE 5: Re-test → Task agent re-tests item 2 (PASS), manual re-test item 4 (PASS)
 → FASE 6: All 4 pass → commit test(user-registration): verified
 ```
-
-## Troubleshooting
-
-### Error: Dev server not running
-
-**Cause:** AUTO/BROWSER tests require a running dev server with Cloudflare Tunnel.
-**Solution:** The skill auto-starts the dev server + tunnel (same as `/dev-server`). If it fails, run `/dev-server` manually first. The skill checks for an existing tunnel in `/tmp/cloudflared.log` before starting a new one.
-
-### Error: Task agent timeout on browser tests
-
-**Cause:** Browser MCP tools may be slow or page not loading.
-**Solution:** Check that the dev server is responding. Try running the test manually. If persistent, the skill falls back to all-manual testing.
-
-### Error: Classification seems wrong
-
-**Cause:** Some items may be borderline between AUTO and MANUAL.
-**Solution:** The skill asks for user override after initial classification. Review the proposed split and adjust before testing starts.
-
-## Restrictions
-
-This skill must NEVER:
-
-- Install Auto npm packages solely for this skill (use MCP browser tools + existing project test suites)
-- Run automated tests in the main conversation context (always use a Task agent)
-- Read source files directly in the main conversation for test data (always use Explore agent)
-- Skip classification (every item must be classified before testing)
-- Run auto tests without dev server check
-- Silently override user classification choices
-- Skip testing for fixable issues (validation, business logic, or edge cases need TDD or Implementation First)
-- Guess what subjective feedback means
-- Apply fixes without documenting changes
-- Mark complete if any items still failing
-- Re-test items that already passed
-
-This skill must ALWAYS:
-
-- Classify each test item as AUTO or MANUAL before testing begins
-- Allow user override of classification before starting tests
-- Run automated tests in a separate Task agent (isolated context window)
-- Capture evidence per automated test (what Claude saw in snapshot/screenshot)
-- Mention pass/fail reasoning per automated test
-- Use bash commands for existing test suites when available (npm test, npx vitest, npx playwright test)
-- Graceful fallback to all-manual on any tool/agent failure (dev server down, MCP connection lost, agent timeout)
-- Re-test AUTO items automatically via Task agent after fixes (FASE 5 Phase A)
-- Merge automated and manual results in one combined summary (FASE 2b)
-- Generate realistic, copy-pasteable test data per item before starting
-- Show setup instructions once for manual items, then each item individually
-- Collect PASS/FAIL/SKIP per manual item via AskUserQuestion
-- Parse all feedback formats (numbered, free text) when inline feedback is provided
-- Categorize each failure (TESTABLE/MEASURABLE/SUBJECTIVE) with test_type tag
-- Use TDD loop for testable issues
-- Ask clarifying questions for subjective issues
-- Loop until all items pass
-- Update documentation on completion with hybrid results format
