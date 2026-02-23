@@ -753,6 +753,81 @@
         padding: 8px 0;
       }
 
+      .feature-tabs {
+        display: flex;
+        gap: 4px;
+        padding: 10px 0 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 12px;
+      }
+
+      .feature-tab {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 4px 4px 0 0;
+        cursor: pointer;
+        color: var(--text-dim);
+        border: 1px solid transparent;
+        border-bottom: none;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        background: transparent;
+        transition:
+          color 0.15s,
+          background 0.15s;
+      }
+
+      .feature-tab:hover {
+        color: var(--text-muted);
+        background: var(--bg);
+      }
+
+      .feature-tab.active {
+        color: var(--text);
+        background: var(--surface);
+        border-color: var(--border);
+        border-bottom-color: var(--surface);
+      }
+
+      .feature-filter-bar {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        padding: 8px 0 12px;
+        flex-wrap: wrap;
+      }
+      .feature-filter-chip {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 12px;
+        cursor: pointer;
+        color: var(--text-dim);
+        background: transparent;
+        border: 1px solid var(--border);
+        transition: all 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .feature-filter-chip:hover {
+        color: var(--text-muted);
+        border-color: var(--text-dim);
+      }
+      .feature-filter-chip.active {
+        color: var(--text);
+        background: var(--surface);
+        border-color: var(--text-dim);
+      }
+      .feature-filter-count {
+        font-size: 10px;
+        font-weight: 400;
+        color: var(--text-dim);
+        min-width: 14px;
+        text-align: center;
+      }
+
       /* Thinking timeline */
       .thinking-entry {
         background: var(--surface);
@@ -1356,6 +1431,28 @@
         t._timer = setTimeout(() => t.classList.remove("visible"), 2000);
       }
 
+      function openInVSCode(url, el) {
+        const orig = el.style.color;
+        el.style.color = "var(--text-dim)";
+        fetch(url, { method: "POST" })
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.ok) {
+              el.style.color = "var(--done)";
+              setTimeout(() => (el.style.color = orig), 1000);
+            } else {
+              el.style.color = "var(--danger)";
+              toast("Fout: " + (d.error || "onbekend"));
+              setTimeout(() => (el.style.color = orig), 2000);
+            }
+          })
+          .catch(() => {
+            el.style.color = "var(--danger)";
+            toast("Kon VS Code niet bereiken");
+            setTimeout(() => (el.style.color = orig), 2000);
+          });
+      }
+
       const SAVE_URL = (() => {
         const p = location.pathname.replace(/\/+$/, "");
         return p ? p + "/save" : "/save";
@@ -1885,6 +1982,35 @@
       }
 
       const featureDetailCache = {};
+      const featureTabState = {};
+      let featureFilterStatus = "ALL";
+
+      function filterFeatures(status) {
+        featureFilterStatus = status;
+        document
+          .querySelectorAll(".feature-filter-chip")
+          .forEach((chip) =>
+            chip.classList.toggle("active", chip.dataset.status === status),
+          );
+        document.querySelectorAll(".feature-card").forEach((card) => {
+          if (status === "ALL") {
+            card.style.display = "";
+          } else {
+            card.style.display = card.dataset.status === status ? "" : "none";
+          }
+        });
+        // Update count
+        const countEl = document.getElementById("feature-filter-count");
+        if (countEl) {
+          const visible = document.querySelectorAll(
+            ".feature-card" +
+              (status === "ALL" ? "" : '[data-status="' + status + '"]'),
+          ).length;
+          const total = document.querySelectorAll(".feature-card").length;
+          countEl.textContent =
+            status === "ALL" ? total + " features" : visible + " / " + total;
+        }
+      }
 
       function renderFeatures() {
         const feats = data.features || [];
@@ -1904,15 +2030,31 @@
             statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status),
         );
 
+        // Count per status
+        const counts = { ALL: feats.length };
+        feats.forEach((f) => {
+          counts[f.status] = (counts[f.status] || 0) + 1;
+        });
+
+        const filterChips = ["ALL", ...statusOrder]
+          .filter((s) => s === "ALL" || counts[s])
+          .map(
+            (s) =>
+              `<button class="feature-filter-chip${s === featureFilterStatus ? " active" : ""}" data-status="${s}" onclick="filterFeatures('${s}')">${s === "ALL" ? "Alles" : s}<span class="feature-filter-count">${counts[s] || 0}</span></button>`,
+          )
+          .join("");
+
         const cards = sorted
           .map((f, idx) => {
             const origIdx = feats.indexOf(f);
+            const hidden =
+              featureFilterStatus !== "ALL" && f.status !== featureFilterStatus;
             const deps =
               f.depends && f.depends.length
                 ? `<span class="feature-depends" style="display:inline-flex;gap:4px;margin-left:8px">${f.depends.map((d) => `<span class="feature-dep">${esc(d)}</span>`).join("")}</span>`
                 : "";
             return `
-            <div class="feature-card" id="feature-${origIdx}">
+            <div class="feature-card" id="feature-${origIdx}" data-status="${esc(f.status)}"${hidden ? ' style="display:none"' : ""}>
               <div class="feature-header" onclick="toggleFeature(${origIdx})">
                 <span class="feature-badge" data-status="${esc(f.status)}">${esc(f.status)}</span>
                 <span class="feature-name">${esc(f.name)}</span>
@@ -1932,6 +2074,7 @@
             <h2>Features</h2>
             <button class="add-btn" onclick="editFeature(-1)">+ Feature toevoegen</button>
           </div>
+          <div class="feature-filter-bar">${filterChips}<span id="feature-filter-count" style="font-size:11px;color:var(--text-dim);margin-left:auto">${feats.length} features</span></div>
           ${cards}`;
       }
 
@@ -1939,7 +2082,6 @@
         const card = document.getElementById("feature-" + idx);
         if (!card) return;
         const isExpanded = card.classList.contains("expanded");
-        // Collapse all
         document
           .querySelectorAll(".feature-card.expanded")
           .forEach((c) => c.classList.remove("expanded"));
@@ -1954,7 +2096,6 @@
         const el = document.getElementById("feature-detail-" + idx);
         if (!el || !f) return;
 
-        // Try to load from server
         const basePath = location.pathname.replace(/\/+$/, "");
         const url = basePath + "/feature/" + encodeURIComponent(f.name);
 
@@ -1971,7 +2112,7 @@
 
         let html = "";
 
-        // Summary + edit button (top-right)
+        // Summary + edit button (always visible above tabs)
         const def = detail && detail.define ? detail.define : null;
         const summary = (def && def.summary) || f.summary || "";
         html += `<div class="feature-detail-section" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
@@ -1979,15 +2120,134 @@
           <button class="add-btn" onclick="editFeature(${idx})" style="font-size:11px;padding:4px 10px;flex-shrink:0">Bewerken</button>
         </div>`;
 
+        // Determine available tabs
+        const tabs = [];
+        if (detail && detail.define) tabs.push("define");
+        if (detail && detail.build) tabs.push("build");
+        if (detail && detail.test) tabs.push("test");
+        if (detail && detail.refactor) tabs.push("refactor");
+        // Files tab: only after build (when files actually exist)
+        if (detail && detail.build && collectFiles(detail).length)
+          tabs.push("files");
+
+        if (tabs.length === 0) {
+          html += `<div class="feature-detail-section" style="color:var(--text-dim);font-size:12px">
+            Geen detail data beschikbaar. Feature files worden aangemaakt door /dev-define en /dev-build.
+          </div>`;
+          el.innerHTML = html;
+          return;
+        }
+
+        // Default to most advanced phase
+        if (!featureTabState[idx] || !tabs.includes(featureTabState[idx])) {
+          featureTabState[idx] = tabs[tabs.length - 1];
+        }
+        const activeTab = featureTabState[idx];
+
+        const tabLabels = {
+          define: "Define",
+          build: "Build",
+          test: "Test",
+          refactor: "Refactor",
+          files: "Files",
+        };
+        html += `<div class="feature-tabs">${tabs.map((t) => `<button class="feature-tab${t === activeTab ? " active" : ""}" onclick="switchFeatureTab(${idx},'${t}')">${tabLabels[t]}</button>`).join("")}</div>`;
+        html += `<div id="feature-tab-content-${idx}">${renderPhaseTab(detail, activeTab)}</div>`;
+
+        el.innerHTML = html;
+      }
+
+      function switchFeatureTab(idx, tab) {
+        featureTabState[idx] = tab;
+        const detail = featureDetailCache[data.features[idx].name];
+        const card = document.getElementById("feature-" + idx);
+        if (card) {
+          card
+            .querySelectorAll(".feature-tab")
+            .forEach((btn) =>
+              btn.classList.toggle(
+                "active",
+                btn.textContent.trim().toLowerCase() === tab,
+              ),
+            );
+        }
+        const content = document.getElementById("feature-tab-content-" + idx);
+        if (content && detail) content.innerHTML = renderPhaseTab(detail, tab);
+      }
+
+      function renderPhaseTab(detail, tab) {
+        switch (tab) {
+          case "define":
+            return renderDefineTab(detail.define);
+          case "build":
+            return renderBuildTab(detail.build);
+          case "test":
+            return renderTestTab(detail.test);
+          case "refactor":
+            return renderRefactorTab(detail.refactor);
+          case "files":
+            return renderFilesTab(detail);
+          default:
+            return "";
+        }
+      }
+
+      // Collect unique files from build/test/refactor phases
+      function collectFiles(detail) {
+        const seen = new Set();
+        const files = [];
+        const add = (fp) => {
+          if (!fp || seen.has(fp)) return;
+          seen.add(fp);
+          files.push(fp);
+        };
+
+        if (detail.build) {
+          const b = detail.build;
+          if (b.filesChanged) b.filesChanged.forEach(add);
+          if (b.files) {
+            (b.files.created || []).forEach(add);
+            (b.files.modified || []).forEach(add);
+          }
+        }
+        if (detail.test && detail.test.filesChanged) {
+          detail.test.filesChanged.forEach(add);
+        }
+        if (detail.refactor && detail.refactor.filesChanged) {
+          detail.refactor.filesChanged.forEach(add);
+        }
+
+        return files.sort();
+      }
+
+      function renderFilesTab(detail) {
+        const files = collectFiles(detail);
+        if (!files.length) return "";
+        const basePath = location.pathname.replace(/\/+$/, "");
+        let html = `<div class="feature-detail-section"><h4>Bestanden (${files.length})</h4>
+          <div style="display:flex;flex-direction:column;gap:2px">`;
+        files.forEach((f) => {
+          const openUrl =
+            basePath + "/open/" + encodeURIComponent(f).replace(/%2F/g, "/");
+          html += `<a href="#" onclick="openInVSCode('${openUrl}',this);return false" style="color:var(--accent);text-decoration:none;font-size:12px;font-family:monospace;cursor:pointer;padding:4px 0" title="Open in VS Code">${esc(f)}</a>`;
+        });
+        html += `</div></div>`;
+        return html;
+      }
+
+      function renderDefineTab(def) {
+        if (!def) return "";
+        let html = "";
+
         // Dependencies
-        const deps = (def && def.depends) || f.depends || [];
+        const deps = def.depends || [];
         if (deps.length) {
           html += `<div class="feature-detail-section"><h4>Dependencies</h4>
             <div class="feature-depends">${deps.map((d) => `<span class="feature-dep">${esc(d)}</span>`).join("")}</div></div>`;
         }
 
-        // Design / wireframe (from define)
-        if (def && def.design) {
+        // Design / wireframe
+        if (def.design) {
           const layout = def.design.layout || "";
           const components = def.design.components || [];
           if (layout || components.length) {
@@ -2002,75 +2262,458 @@
           }
         }
 
-        // API Contract (from define)
-        if (def && def.apiContract && def.apiContract.length) {
-          const apis = def.apiContract;
-          html += `<div class="feature-detail-section"><h4>API Contract (${apis.length})</h4>
-            <table class="data-table"><thead><tr><th>Method</th><th>Path</th><th>Beschrijving</th></tr></thead>
-            <tbody>${apis.map((a) => `<tr><td><code>${esc(a.method)}</code></td><td><code>${esc(a.path)}</code></td><td style="color:var(--text-dim)">${esc(a.description || "")}</td></tr>`).join("")}</tbody></table></div>`;
+        // Architecture: Files (new schema: architecture.files[], old schema: files.create[]/modify[]/tests[])
+        let archFiles =
+          def.architecture &&
+          def.architecture.files &&
+          def.architecture.files.length
+            ? def.architecture.files
+            : null;
+        if (!archFiles && def.files) {
+          archFiles = [];
+          ["create", "modify", "tests"].forEach((action) => {
+            (def.files[action] || []).forEach((p) =>
+              archFiles.push({
+                path: p,
+                action: action === "tests" ? "create" : action,
+                purpose: action === "tests" ? "test" : "",
+              }),
+            );
+          });
+        }
+        if (archFiles && archFiles.length) {
+          const actionColor = {
+            create: "var(--done)",
+            modify: "var(--accent)",
+            delete: "var(--danger)",
+          };
+          html += `<div class="feature-detail-section"><h4>Architecture — Files (${archFiles.length})</h4>
+            <table class="data-table"><thead><tr><th>Actie</th><th>Bestand</th><th>Doel</th></tr></thead>
+            <tbody>${archFiles
+              .map(
+                (f) => `<tr>
+              <td><span style="color:${actionColor[f.action] || "var(--text-muted)"};font-size:11px;font-weight:600">${esc((f.action || "").toUpperCase())}</span></td>
+              <td><code style="font-size:11px">${esc(f.path)}</code></td>
+              <td style="color:var(--text-dim);font-size:12px">${esc(f.purpose || "")}</td>
+            </tr>`,
+              )
+              .join("")}</tbody></table></div>`;
         }
 
-        // Requirements (from define)
-        if (def && def.requirements && def.requirements.length) {
+        // Architecture: Interfaces
+        if (
+          def.architecture &&
+          def.architecture.interfaces &&
+          def.architecture.interfaces.length
+        ) {
+          html += `<div class="feature-detail-section"><h4>Interfaces / Types</h4>`;
+          def.architecture.interfaces.forEach((iface) => {
+            html += `<p style="font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-muted)">${esc(iface.name)}</p>
+              <pre style="font-size:11px;line-height:1.4;color:var(--text-muted);background:var(--bg);padding:8px;border-radius:4px;overflow-x:auto">${esc(iface.definition)}</pre>`;
+          });
+          html += `</div>`;
+        }
+
+        // API Contract
+        if (def.apiContract && def.apiContract.length) {
+          const apis = def.apiContract;
+          html += `<div class="feature-detail-section"><h4>API Contract (${apis.length})</h4>
+            <table class="data-table"><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Beschrijving</th></tr></thead>
+            <tbody>${apis.map((a) => `<tr><td><code>${esc(a.method)}</code></td><td><code>${esc(a.path)}</code></td><td style="font-size:11px">${esc(a.auth || "")}</td><td style="color:var(--text-dim)">${esc(a.description || "")}</td></tr>`).join("")}</tbody></table></div>`;
+        }
+
+        // Requirements
+        if (def.requirements && def.requirements.length) {
           const reqs = def.requirements;
           html += `<div class="feature-detail-section"><h4>Requirements (${reqs.length})</h4>
             <table class="data-table"><thead><tr><th>ID</th><th>Beschrijving</th><th>Type</th><th>Acceptance</th></tr></thead>
-            <tbody>${reqs.map((r) => `<tr><td><code>${esc(r.id)}</code></td><td>${esc(r.description)}</td><td>${esc(r.testType || r.category || "")}</td><td style="color:var(--text-dim)">${esc(r.acceptance || "")}</td></tr>`).join("")}</tbody></table></div>`;
+            <tbody>${reqs.map((r) => `<tr><td><code>${esc(r.id)}</code></td><td>${esc(r.description)}</td><td>${esc(r.testType || r.category || "")}</td><td style="color:var(--text-dim)">${esc(r.acceptance || r.acceptanceCriteria || "")}</td></tr>`).join("")}</tbody></table></div>`;
         }
 
-        // Build info (only show if there's actual content)
-        if (detail && detail.build) {
-          const b = detail.build;
-          const hasContent =
-            (b.filesChanged && b.filesChanged.length) ||
-            (b.packagesAdded && b.packagesAdded.length) ||
-            (b.decisions && b.decisions.length) ||
-            b.started;
-          if (hasContent) {
-            html += `<div class="feature-detail-section"><h4>Build</h4>`;
-            if (b.started || b.completed) {
-              html += `<p style="font-size:12px;color:var(--text-dim)">${b.started ? "Started: " + esc(b.started) : ""}${b.started && b.completed ? " — " : ""}${b.completed ? "Completed: " + esc(b.completed) : ""}</p>`;
-            }
-            if (b.filesChanged && b.filesChanged.length) {
-              html += `<p style="font-size:12px;color:var(--text-muted)"><strong>Bestanden (${b.filesChanged.length}):</strong> ${b.filesChanged.map((f) => `<code>${esc(f)}</code>`).join(", ")}</p>`;
-            }
-            if (b.packagesAdded && b.packagesAdded.length) {
-              html += `<p style="font-size:12px;color:var(--text-muted)"><strong>Packages:</strong> ${b.packagesAdded.map((p) => `${esc(p.name)}@${esc(p.version || "")}`).join(", ")}</p>`;
-            }
-            if (b.decisions && b.decisions.length) {
-              html += `<p style="font-size:12px;color:var(--text-muted)"><strong>Beslissingen:</strong> ${b.decisions.map((d) => esc(d)).join("; ")}</p>`;
-            }
-            html += `</div>`;
-          }
-        }
-
-        // Test info
-        if (detail && detail.test) {
-          const t = detail.test;
-          html += `<div class="feature-detail-section"><h4>Tests</h4>`;
-          if (t.finalStatus) {
-            const statusColor =
-              t.finalStatus === "PASSED" ? "var(--accent)" : "#f97316";
-            html += `<p style="font-size:12px"><strong>Status:</strong> <span style="color:${statusColor};font-weight:600">${esc(t.finalStatus)}</span></p>`;
-          }
-          if (t.runs && t.runs.length) {
-            const last = t.runs[t.runs.length - 1];
-            html += `<p style="font-size:12px;color:var(--text-muted)">Laatste run: ${esc(last.date || "")} — ${last.passed} passed, ${last.failed} failed</p>`;
-          }
-          if (t.coverage) {
-            html += `<p style="font-size:12px;color:var(--text-dim)">Coverage: ${t.coverage.statements || 0}% statements, ${t.coverage.branches || 0}% branches</p>`;
+        // Build Sequence (new: [{step,requirements[],description,dependsOn[]}], old: ["REQ-001",...], also: buildOrder)
+        const buildSeq = def.buildSequence || def.buildOrder;
+        if (buildSeq && buildSeq.length) {
+          html += `<div class="feature-detail-section"><h4>Build Volgorde</h4>`;
+          if (typeof buildSeq[0] === "string") {
+            // Legacy flat array
+            html += buildSeq
+              .map(
+                (
+                  r,
+                  i,
+                ) => `<div style="padding:4px 0;font-size:12px;display:flex;gap:8px;align-items:baseline">
+              <span style="color:var(--text-dim);font-weight:600;flex-shrink:0">${i + 1}.</span>
+              <span><code>${esc(r)}</code></span>
+            </div>`,
+              )
+              .join("");
+          } else {
+            html += buildSeq
+              .map((s) => {
+                const depNote =
+                  s.dependsOn && s.dependsOn.length
+                    ? ` <span style="color:var(--text-dim);font-size:11px">na stap ${s.dependsOn.join(", ")}</span>`
+                    : "";
+                const reqs = (s.requirements || [])
+                  .map((r) => `<code>${esc(r)}</code>`)
+                  .join(" + ");
+                return `<div style="padding:4px 0;font-size:12px;display:flex;gap:8px;align-items:baseline">
+              <span style="color:var(--text-dim);font-weight:600;flex-shrink:0">${s.step}.</span>
+              <span>${reqs} — ${esc(s.description || "")}${depNote}</span>
+            </div>`;
+              })
+              .join("");
           }
           html += `</div>`;
         }
 
-        // Fallback: no detail data from server
-        if (!detail) {
-          html += `<div class="feature-detail-section" style="color:var(--text-dim);font-size:12px">
-            Geen detail data beschikbaar. Feature files worden aangemaakt door /dev-define en /dev-build.
-          </div>`;
+        // Test Strategy
+        if (def.testStrategy && def.testStrategy.length) {
+          html += `<div class="feature-detail-section"><h4>Test Strategie</h4>
+            <table class="data-table"><thead><tr><th>Requirement</th><th>Test File</th><th>Beschrijving</th></tr></thead>
+            <tbody>${def.testStrategy.map((t) => `<tr><td><code>${esc(t.requirementId)}</code></td><td><code style="font-size:11px">${esc(t.testFile)}</code></td><td style="color:var(--text-dim)">${esc(t.description)}</td></tr>`).join("")}</tbody></table></div>`;
         }
 
-        el.innerHTML = html;
+        return html;
+      }
+
+      function renderBuildTab(build) {
+        if (!build) return "";
+        let html = "";
+
+        // Summary stats (new: build.summary, old: top-level techniques/tests/files)
+        const s =
+          build.summary ||
+          (build.techniques || build.tests
+            ? {
+                testsPass: build.tests && build.tests.passed,
+                testsTotal: build.tests && build.tests.total,
+                techniques: {
+                  tdd: (build.techniques && build.techniques.tdd) || 0,
+                  implementationFirst:
+                    (build.techniques &&
+                      (build.techniques["implementation-first"] ||
+                        build.techniques.implementationFirst)) ||
+                    0,
+                },
+                filesCreated:
+                  build.files && build.files.created
+                    ? build.files.created.length
+                    : 0,
+                filesModified:
+                  build.files && build.files.modified
+                    ? build.files.modified.length
+                    : 0,
+              }
+            : null);
+        if (s) {
+          const bx =
+            "background:var(--bg);padding:8px 14px;border-radius:4px;border:1px solid var(--border)";
+          html += `<div class="feature-detail-section"><div style="display:flex;gap:12px;flex-wrap:wrap">
+            <div style="${bx}"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">Tests</div><div style="font-size:16px;font-weight:600">${s.testsPass || 0}/${s.testsTotal || 0}</div></div>
+            <div style="${bx}"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">TDD / Impl</div><div style="font-size:16px;font-weight:600">${(s.techniques && s.techniques.tdd) || 0} / ${(s.techniques && s.techniques.implementationFirst) || 0}</div></div>
+            <div style="${bx}"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">Files</div><div style="font-size:16px;font-weight:600">${(s.filesCreated || 0) + (s.filesModified || 0)}</div></div>
+          </div>
+          </div></div>`;
+        }
+
+        // Dates (outside summary block so they show even without summary stats)
+        if (build.started || build.completed || build.buildDate) {
+          html += `<div class="feature-detail-section"><p style="font-size:12px;color:var(--text-dim)">${build.started ? "Started: " + esc(build.started) : ""}${build.started && build.completed ? " — " : ""}${build.completed ? "Completed: " + esc(build.completed) : ""}${!build.started && build.buildDate ? "Datum: " + esc(build.buildDate) : ""}</p></div>`;
+        }
+
+        // Per-requirement details
+        if (build.requirements && build.requirements.length) {
+          html += `<div class="feature-detail-section"><h4>Gebouwd per Requirement</h4>`;
+          build.requirements.forEach((req) => {
+            const reqStatus = req.status
+              ? ` <span style="font-size:10px;color:${req.status === "PASS" ? "var(--done)" : "var(--danger)"};font-weight:600">${esc(req.status)}</span>`
+              : "";
+            html += `<div style="padding:8px 0;border-top:1px solid var(--border)">
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+                <code style="font-size:11px">${esc(req.id)}</code>
+                ${req.description ? `<span style="font-size:12px;font-weight:600">${esc(req.description)}</span>` : ""}
+                <span style="font-size:10px;color:var(--text-dim);margin-left:auto">${esc(req.technique || "")}${reqStatus}</span>
+              </div>
+              ${req.files && req.files.length ? `<p style="font-size:11px;color:var(--text-dim)">${req.files.map((f) => `<code>${esc(f)}</code>`).join(", ")}</p>` : ""}
+              ${req.syncNote ? `<p style="font-size:12px;color:var(--text-muted);margin-top:4px">${esc(req.syncNote)}</p>` : ""}
+            </div>`;
+          });
+          html += `</div>`;
+        }
+
+        // Codebase Sync explanation (markdown)
+        if (build.codeSyncExplanation) {
+          html += `<div class="feature-detail-section"><h4>Codebase Sync</h4>
+            <div class="concept-content" style="font-size:13px">${md(build.codeSyncExplanation)}</div></div>`;
+        }
+
+        // Decisions
+        if (build.decisions && build.decisions.length) {
+          html += `<div class="feature-detail-section"><h4>Beslissingen</h4>
+            <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${build.decisions.map((d) => `<li style="margin-bottom:4px">${esc(d)}</li>`).join("")}</ul></div>`;
+        }
+
+        // Blockers
+        if (build.blockers && build.blockers.length) {
+          html += `<div class="feature-detail-section"><h4>Blockers</h4>
+            <ul style="padding-left:16px;font-size:12px;color:var(--danger)">${build.blockers.map((b) => `<li>${esc(b)}</li>`).join("")}</ul></div>`;
+        }
+
+        // Files changed (fallback: filesChanged[], or old schema files.created[]+files.modified[])
+        let allFiles = build.filesChanged;
+        if (!allFiles && build.files) {
+          allFiles = [].concat(
+            build.files.created || [],
+            build.files.modified || [],
+          );
+        }
+        if (allFiles && allFiles.length) {
+          html += `<div class="feature-detail-section"><h4>Bestanden (${allFiles.length})</h4>
+            <p style="font-size:12px;color:var(--text-muted)">${allFiles.map((f) => `<code>${esc(f)}</code>`).join(", ")}</p></div>`;
+        }
+
+        // Test checklist
+        if (build.testChecklist && build.testChecklist.length) {
+          const total = build.testChecklist.length;
+          const pending = build.testChecklist.filter(
+            (t) => t.status === "pending",
+          ).length;
+          html += `<div class="feature-detail-section"><h4>Test Checklist (${total} items${pending ? ", " + pending + " pending" : ""})</h4>
+            <table class="data-table"><thead><tr><th>#</th><th>Test</th><th>Requirement</th><th>Status</th></tr></thead>
+            <tbody>${build.testChecklist
+              .map((t) => {
+                const sc =
+                  t.status === "pass"
+                    ? "var(--done)"
+                    : t.status === "fail"
+                      ? "var(--danger)"
+                      : "var(--text-dim)";
+                const reqId = t.requirementId || "";
+                return `<tr><td style="color:var(--text-dim)">${t.id}</td><td style="font-size:12px">${esc(t.title || t.description || "")}</td><td>${reqId ? `<code style="font-size:11px">${esc(reqId)}</code>` : ""}</td><td><span style="color:${sc};font-size:11px;font-weight:600">${esc((t.status || "pending").toUpperCase())}</span></td></tr>`;
+              })
+              .join("")}</tbody></table></div>`;
+        }
+
+        return html;
+      }
+
+      function renderTestTab(test) {
+        if (!test) return "";
+        let html = "";
+
+        // Status + coverage header (finalStatus = new schema, status = old schema)
+        const testStatus = test.finalStatus || test.status || "UNKNOWN";
+        const statusColor = ["PASSED", "VERIFIED", "PASS"].includes(testStatus)
+          ? "var(--done)"
+          : "var(--danger)";
+        html += `<div class="feature-detail-section"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:700;color:${statusColor}">${esc(testStatus)}</span>
+          ${
+            test.coverage
+              ? `
+            <div style="background:var(--bg);padding:6px 12px;border-radius:4px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--text-dim)">Statements</div><div style="font-size:14px;font-weight:600">${test.coverage.statements || 0}%</div></div>
+            <div style="background:var(--bg);padding:6px 12px;border-radius:4px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--text-dim)">Branches</div><div style="font-size:14px;font-weight:600">${test.coverage.branches || 0}%</div></div>
+          `
+              : ""
+          }
+        </div></div>`;
+
+        // Summary stats (old schema: test.summary with total/passed/failed/manual/auto)
+        if (test.summary) {
+          const ts = test.summary;
+          const statStyle =
+            "background:var(--bg);padding:6px 12px;border-radius:4px;border:1px solid var(--border)";
+          html += `<div class="feature-detail-section"><div style="display:flex;gap:12px;flex-wrap:wrap">
+            <div style="${statStyle}"><div style="font-size:10px;color:var(--text-dim)">Total</div><div style="font-size:14px;font-weight:600">${ts.total || 0}</div></div>
+            <div style="${statStyle}"><div style="font-size:10px;color:var(--text-dim)">Passed</div><div style="font-size:14px;font-weight:600;color:var(--done)">${ts.passed || 0}</div></div>
+            ${ts.failed ? `<div style="${statStyle}"><div style="font-size:10px;color:var(--text-dim)">Failed</div><div style="font-size:14px;font-weight:600;color:var(--danger)">${ts.failed}</div></div>` : ""}
+            ${ts.manual ? `<div style="${statStyle}"><div style="font-size:10px;color:var(--text-dim)">Manual</div><div style="font-size:14px;font-weight:600">${ts.manual}</div></div>` : ""}
+            ${ts.auto ? `<div style="${statStyle}"><div style="font-size:10px;color:var(--text-dim)">Auto</div><div style="font-size:14px;font-weight:600">${ts.auto}</div></div>` : ""}
+          </div></div>`;
+        }
+
+        // Session history (rich detail)
+        const sessions = test.sessions;
+        if (sessions && sessions.length) {
+          sessions.forEach((session) => {
+            html += `<div class="feature-detail-section">
+              <h4>Sessie ${session.sessionNumber} — ${esc(session.date)}</h4>
+              <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px">${session.totals.pass} pass &middot; ${session.totals.fail} fail &middot; ${session.totals.skip || 0} skip</p>
+              <table class="data-table"><thead><tr><th>#</th><th>Test</th><th>Type</th><th>Initial</th><th>Final</th><th>Fix</th></tr></thead>
+              <tbody>${session.items
+                .map((item) => {
+                  const ic =
+                    item.initialStatus === "PASS"
+                      ? "var(--done)"
+                      : "var(--danger)";
+                  const fc =
+                    item.finalStatus === "PASS"
+                      ? "var(--done)"
+                      : "var(--danger)";
+                  return `<tr>
+                  <td style="color:var(--text-dim)">${item.id}</td>
+                  <td style="font-size:12px">${esc(item.title)}</td>
+                  <td><span style="font-size:10px;color:var(--text-dim)">${esc(item.type)}</span></td>
+                  <td><span style="color:${ic};font-size:11px;font-weight:600">${esc(item.initialStatus)}</span></td>
+                  <td><span style="color:${fc};font-size:11px;font-weight:600">${esc(item.finalStatus)}</span></td>
+                  <td style="font-size:11px;color:var(--text-dim)">${item.fixApplied ? esc(item.fixApplied) : "—"}</td>
+                </tr>`;
+                })
+                .join("")}</tbody></table>
+            </div>`;
+          });
+        } else if (test.items && test.items.length) {
+          // Legacy flat items array (old schema)
+          html += `<div class="feature-detail-section"><h4>Test Items</h4>
+            <table class="data-table"><thead><tr><th>#</th><th>Test</th><th>Type</th><th>Status</th></tr></thead>
+            <tbody>${test.items
+              .map((item) => {
+                const st = item.finalStatus || item.status || item.result || "";
+                const sc =
+                  st === "PASS"
+                    ? "var(--done)"
+                    : st === "FAIL"
+                      ? "var(--danger)"
+                      : "var(--text-dim)";
+                return `<tr><td style="color:var(--text-dim)">${item.id || ""}</td><td style="font-size:12px">${esc(item.title || item.description || "")}</td><td><span style="font-size:10px;color:var(--text-dim)">${esc(item.type || "")}</span></td><td><span style="color:${sc};font-size:11px;font-weight:600">${esc(st.toUpperCase())}</span></td></tr>`;
+              })
+              .join("")}</tbody></table></div>`;
+        } else if (test.runs && test.runs.length) {
+          // Legacy runs array fallback
+          const last = test.runs[test.runs.length - 1];
+          html += `<div class="feature-detail-section"><h4>Laatste Run — ${esc(last.date || "")}</h4>
+            <p style="font-size:12px;color:var(--text-muted)">${last.passed} passed, ${last.failed} failed</p></div>`;
+        }
+
+        // Fix Sync narrative
+        if (test.fixSync) {
+          html += `<div class="feature-detail-section"><h4>Fix Sync</h4>
+            <div class="concept-content" style="font-size:13px">${md(test.fixSync)}</div></div>`;
+        }
+
+        // Observations
+        if (test.observations && test.observations.length) {
+          html += `<div class="feature-detail-section"><h4>Observaties</h4>
+            <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${test.observations.map((o) => `<li style="margin-bottom:4px">${esc(o)}</li>`).join("")}</ul></div>`;
+        }
+
+        // Tests Added + Files Modified
+        if (
+          (test.testsAdded && test.testsAdded.length) ||
+          (test.filesModified && test.filesModified.length)
+        ) {
+          html += `<div class="feature-detail-section" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">`;
+          if (test.testsAdded && test.testsAdded.length) {
+            html += `<div><h4>Tests Toegevoegd</h4><ul style="padding-left:16px;font-size:11px;color:var(--text-dim)">${test.testsAdded.map((f) => `<li><code>${esc(f)}</code></li>`).join("")}</ul></div>`;
+          }
+          if (test.filesModified && test.filesModified.length) {
+            html += `<div><h4>Files Gewijzigd</h4><ul style="padding-left:16px;font-size:11px;color:var(--text-dim)">${test.filesModified.map((f) => `<li><code>${esc(typeof f === "string" ? f : f.path)}</code>${f.description ? " — " + esc(f.description) : ""}</li>`).join("")}</ul></div>`;
+          }
+          html += `</div>`;
+        }
+
+        return html;
+      }
+
+      function renderRefactorTab(refactor) {
+        if (!refactor) return "";
+        let html = "";
+
+        const statusColor =
+          {
+            CLEAN: "var(--done)",
+            REFACTORED: "var(--accent)",
+            ROLLED_BACK: "var(--danger)",
+          }[refactor.status] || "var(--text-muted)";
+        html += `<div class="feature-detail-section"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:700;color:${statusColor}">${esc(refactor.status)}</span>
+          ${refactor.summary && refactor.summary.improvementsApplied > 0 ? `<span style="font-size:12px;color:var(--text-dim)">${refactor.summary.improvementsApplied} verbeteringen &middot; ${refactor.summary.filesModified} files</span>` : ""}
+        </div></div>`;
+
+        // CLEAN: positive observations only
+        if (refactor.status === "CLEAN") {
+          if (
+            refactor.positiveObservations &&
+            refactor.positiveObservations.length
+          ) {
+            html += `<div class="feature-detail-section"><h4>Positieve Observaties</h4>
+              <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${refactor.positiveObservations.map((o) => `<li>${esc(o)}</li>`).join("")}</ul></div>`;
+          }
+          return html;
+        }
+
+        // ROLLED_BACK: failure analysis + pending
+        if (refactor.status === "ROLLED_BACK") {
+          if (refactor.failureAnalysis) {
+            html += `<div class="feature-detail-section"><h4>Failure Analyse</h4>
+              <div class="concept-content" style="font-size:13px">${md(refactor.failureAnalysis)}</div></div>`;
+          }
+          if (
+            refactor.pendingImprovements &&
+            refactor.pendingImprovements.length
+          ) {
+            html += `<div class="feature-detail-section"><h4>Uitgestelde Verbeteringen</h4>
+              <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${refactor.pendingImprovements.map((p) => `<li>${esc(p)}</li>`).join("")}</ul></div>`;
+          }
+          return html;
+        }
+
+        // REFACTORED: improvements per category
+        const categoryLabels = {
+          security: "Security",
+          performance: "Performance",
+          dry: "DRY / Refactoring",
+          simplification: "Simplificatie",
+          clarity: "Leesbaarheid",
+          quality: "Code Quality",
+          errorHandling: "Error Handling",
+        };
+        const imp = refactor.improvements || {};
+        const categories = Object.keys(categoryLabels).filter(
+          (k) => imp[k] && imp[k].length,
+        );
+
+        if (categories.length) {
+          html += `<div class="feature-detail-section"><h4>Verbeteringen</h4>`;
+          categories.forEach((cat) => {
+            html += `<div style="margin-bottom:12px">
+              <p style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">${categoryLabels[cat]}</p>
+              ${imp[cat]
+                .map(
+                  (
+                    item,
+                  ) => `<div style="padding:6px 0;border-top:1px solid var(--border)">
+                <div style="display:flex;gap:8px;align-items:baseline;font-size:12px">
+                  <code style="font-size:10px;color:var(--text-dim)">${esc(item.file)}:${item.line}</code>
+                  <span style="color:var(--text-dim);font-size:10px;font-weight:600;flex-shrink:0">Risk: ${esc(item.risk || "LOW")}</span>
+                </div>
+                <p style="font-size:12px;margin-top:2px">${esc(item.issue)}</p>
+                <p style="font-size:12px;color:var(--text-muted)">${esc(item.fix)} &rarr; ${esc(item.result)}</p>
+              </div>`,
+                )
+                .join("")}
+            </div>`;
+          });
+          html += `</div>`;
+        }
+
+        // Decisions
+        if (refactor.decisions && refactor.decisions.length) {
+          html += `<div class="feature-detail-section"><h4>Beslissingen</h4>
+            ${refactor.decisions.map((d) => `<div style="font-size:12px;padding:4px 0"><strong>${esc(d.decision)}</strong>: ${esc(d.rationale)}</div>`).join("")}</div>`;
+        }
+
+        // Positive observations
+        if (
+          refactor.positiveObservations &&
+          refactor.positiveObservations.length
+        ) {
+          html += `<div class="feature-detail-section"><h4>Positieve Observaties</h4>
+            <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${refactor.positiveObservations.map((o) => `<li>${esc(o)}</li>`).join("")}</ul></div>`;
+        }
+
+        return html;
       }
 
       function renderThinking() {
@@ -2667,7 +3310,7 @@
               depends: [],
               created: new Date().toISOString().slice(0, 10),
             }
-          : data.features[idx];
+          : { ...data.features[idx] };
 
         const statusOptions = ["TODO", "DEF", "BLT", "TST", "DONE"]
           .map(

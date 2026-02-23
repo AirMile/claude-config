@@ -8,6 +8,7 @@ core:
   - core-explore
   - core-md-audit
   - core-md-revise
+  - core-pull
   - core-refine
   - core-setup
   - project-list

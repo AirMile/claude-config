@@ -51,3 +51,7 @@ Follow COMMAND.md instructions exactly — deviate only on explicit user request
 
 **Enabled:** {{DOC_GENERATORS_ENABLED}}
 **Available:** {{DOC_GENERATORS_AVAILABLE}}
+
+## Project Context
+
+Lees `.project/project.json` bij sessiestart voor actuele project context (structuur, routing, patterns, features, stack, endpoints, entities). Skills houden dit automatisch bij na elke build/refactor.

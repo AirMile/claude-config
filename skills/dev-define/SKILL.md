@@ -1,755 +1,198 @@
 ---
 name: dev-define
-description: Define web feature requirements and architecture with structured output. Use with /dev-define to create detailed feature specifications before building.
+description: Define feature requirements and architecture with structured output. Use with /dev-define to create feature specifications before building.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.2.0
   category: dev
 ---
 
-# Web Feature Definition
+# Feature Definition
 
-## Overview
+FASE 1 van de dev workflow: define → build → test.
 
-This skill defines web feature requirements and architecture for React/web projects. It is FASE 1 of a 3-step dev workflow: define -> build -> test.
+Verzamel requirements, ontwerp architectuur, genereer gestructureerd definitiebestand voor de build-fase.
 
-The skill gathers requirements through targeted questions, optionally researches stack patterns, and designs the implementation. Output is a consolidated documentation file ready for the build phase.
-
-**Trigger**: `/dev-define` or `/dev-define [feature-name]`
-
-## When to Use
-
-**Triggers:**
-
-- `/dev-define` - Start with feature name prompt
-- `/dev-define auth` - Define authentication system
-- `/dev-define product-list` - Define product list component
-
-**Works best with:**
-
-- React projects (JavaScript or TypeScript)
-- Full-stack apps with Laravel backend
-- Web apps needing components, hooks, state management
+**Trigger**: `/dev-define` of `/dev-define [feature-name]`
 
 ## Workflow
 
-### FASE 0: Feature Name
+### FASE 0: Feature Name & Context
 
-1. **If name provided** (`/dev-define auth`):
-   - Use provided name as feature name
-   - Continue to step 3
+1. **If name provided** (`/dev-define auth`): gebruik als feature name, ga naar stap 3.
 
 2. **If no name** (`/dev-define`):
 
-   **a) Check backlog for next feature:**
+   a) Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data">`
+   → Zoek eerste TODO: `data.features.find(f => f.status === "TODO")`
 
-   ```
-   Read(".project/backlog.html")
-   ```
+   b) **Als backlog feature gevonden:**
+   AskUserQuestion: "Volgende feature uit backlog: **{name}**. Hiermee doorgaan?"
+   - "{name} (Recommended)" / "Andere feature"
+   - Backlog gekozen → stap 3. "Andere feature" → optie c.
 
-   - If backlog exists: parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
-   - Zoek eerste TODO feature: `data.features.find(f => f.status === "TODO")`
-   - Gebruik feature naam als suggestie
+   c) **Geen backlog of andere feature gewenst:**
+   AskUserQuestion: "Welke feature wil je definiëren?" met 3 suggesties relevant voor het project.
 
-   **b) If backlog has a next feature:**
-
-   Use **AskUserQuestion** tool:
-   - header: "Feature Name"
-   - question: "Volgende feature uit backlog: **{feature-name}**. Hiermee doorgaan?"
-   - options:
-     - label: "{feature-name} (Recommended)", description: "{description from backlog TODO list}"
-     - label: "Andere feature", description: "Ik wil een andere feature definiëren"
-   - multiSelect: false
-
-   - If user picks the backlog feature → use that name, continue to step 3
-   - If user picks "Andere feature" → fall through to option (c)
-
-   **c) If no backlog found OR user wants a different feature:**
-
-   Use **AskUserQuestion** tool:
-   - header: "Feature Name"
-   - question: "Welke feature wil je definiëren? Kies een suggestie of typ je eigen feature-naam via 'Other'."
-   - options:
-     - label: "auth", description: "Authenticatie, login, registratie"
-     - label: "dashboard", description: "Dashboard pagina met overzicht"
-     - label: "form-validation", description: "Formulier met validatie logica"
-   - multiSelect: false
-
-   The user can type any feature name via the built-in "Other" option. Use the selected/typed value as feature name.
-
-3. **Create workspace folder:**
-
-   ```bash
-   mkdir -p .project/features/{feature-name}
-   ```
-
-3b. **Check voor bestaande pagina's met deze feature:**
-
-Glob pagina-bestanden en grep voor imports die de feature-naam bevatten (kebab-case en PascalCase).
-
-```bash
-# Zoek pagina-bestanden
-# app/**/page.tsx, app/**/page.jsx, src/pages/**/*.tsx, src/pages/**/*.jsx
-# Grep voor feature-naam in imports
-```
-
-Als gevonden:
-
-```
-EXISTING PAGE CONTEXT
-
-Feature "{name}" componenten staan al op:
-- {page-file}: importeert {ComponentName}
-
-Architecture houdt rekening met bestaande component-APIs.
-```
-
-Sla op als context voor FASE 3 (Architecture Design).
-
-4. **Load stack-baseline as context:**
-
-   ```
-   Read(".claude/research/stack-baseline.md")
-   ```
-
-   - If found: store as context for all subsequent phases (requirements, design, architecture)
-   - If not found: note absence, continue without (research may be triggered in FASE 2)
-
-   ```
-   ℹ Stack baseline loaded — context available for all phases.
-   ```
-
-   Or if not found:
-
-   ```
-   ⚠ Stack baseline not found — run /core-setup to generate.
-   ```
+3. **Project folder + context** (paralleliseer):
+   - `mkdir -p .project/features/{feature-name}`
+   - Glob + Grep voor bestaande code die de feature-naam importeert
+   - Read `.project/project.json` → `concept.content` als context
+   - Read `.claude/research/stack-baseline.md`
 
 ### FASE 1: Requirements Gathering
 
-Ask 5 targeted questions using AskUserQuestion:
+3-5 vragen via AskUserQuestion, afgestemd op stack en projecttype.
 
-**Question 1: Core Function**
+**Must-cover categorieën** (altijd dekken, formulering adaptief per stack):
 
-- header: "Core Function"
-- question: "Wat moet deze feature doen vanuit gebruikersperspectief?"
+- **Core function**: wat moet het doen vanuit gebruikersperspectief?
+- **Data/state**: waar komt data vandaan, hoe wordt het opgeslagen/beheerd?
+- **Interacties/output**: wat ziet of doet de gebruiker? (UI events, visuele feedback, CLI output, etc.)
 
-**Question 2: Patterns**
+**Vraag 1 (altijd): Core Function** — "Wat moet deze feature doen?" met 2-3 opties.
 
-- header: "Patterns"
-- question: "Welke patterns zijn betrokken?"
-- options: Component-based, Hook-based, Context/State, Server-side
+**Vraag 2-4 (adaptief)**: Dek de must-cover categorieën. Kies subcategorieën passend bij de stack (patterns, visual/output, persistence, API design). Leid opties af uit de baseline en bestaande code.
 
-**Question 3: User Interactions**
+**Vraag 5 (optioneel)**: Alleen bij complexe configuratie of meerdere benaderingen.
 
-- header: "Interactions"
-- question: "Welke user interacties moet deze feature ondersteunen?"
-- options: Form inputs, Click handlers, Navigation, Real-time updates
-
-**Question 4: Visual Feedback**
-
-- header: "Visuals"
-- question: "Welke visuele feedback is nodig?"
-- options: Loading states, Animations, Toast/alerts, Form validation
-
-**Question 5: Data Flow**
-
-- header: "Data Flow"
-- question: "Waar komt de data vandaan?"
-- options:
-  - label: "API calls", description: "Data van Laravel backend"
-  - label: "Local state only", description: "Alleen client-side state"
-  - label: "Persisted storage", description: "LocalStorage, IndexedDB"
-  - label: "Real-time", description: "WebSocket, Server-Sent Events"
-- multiSelect: true
+**User-delegatie**: als de user antwoordt met "wat denk jij?" of vergelijkbaar, geef een korte aanbeveling met trade-off en ga door met die keuze.
 
 #### Requirement Extraction
 
-After questions, extract testable requirements:
+Extraheer testbare requirements als tabel:
 
-- Each requirement gets an ID (REQ-001, REQ-002, etc.)
-- Categorize by type (core, component, hook, state)
-- Determine test type for each
-- Define acceptance criteria per requirement (concrete, verifiable conditions informed by stack-baseline context when available)
+| ID  | Requirement | Category | Test Type | Acceptance Criteria |
+| --- | ----------- | -------- | --------- | ------------------- |
 
-Show requirements table with acceptance criteria:
-
-| ID      | Requirement   | Category   | Test Type | Acceptance Criteria    |
-| ------- | ------------- | ---------- | --------- | ---------------------- |
-| REQ-001 | {description} | {category} | {type}    | {verifiable condition} |
-
-**Confirm with user** via **AskUserQuestion**:
-
-- header: "Requirements"
-- question: "Akkoord met deze requirements?"
-- options:
-  - label: "Akkoord (Recommended)", description: "Requirements zijn compleet en correct"
-  - label: "Aanpassen", description: "Ik wil requirements wijzigen of toevoegen"
-  - label: "Opnieuw beginnen", description: "Verwerp alles en stel nieuwe vragen"
-- multiSelect: false
-
-**If "Aanpassen"** → ask what to change, update requirements table, re-confirm.
-**If "Opnieuw beginnen"** → restart FASE 1 from Question 1.
+Bevestig met user via AskUserQuestion: "Akkoord (Recommended)" / "Aanpassen" / "Opnieuw beginnen"
 
 ### FASE 1b: Scope Analysis & Feature Splitting
 
-**Goal:** Analyze gathered requirements and decide whether to keep as a single feature or split into multiple sub-features for optimal build execution.
+**Cluster identificatie**: groepeer requirements op basis van afhankelijkheden:
 
-**Steps:**
+- Requirements met directe dependencies → zelfde cluster
+- Requirements zonder cross-dependencies → aparte clusters
+- Geïsoleerde requirements → eigen cluster of bij dichtstbijzijnde gerelateerd cluster
 
-1. **Analyze requirement scope:**
+**Decision logic:**
 
-   Count requirements and map dependency graph from FASE 1 output.
+- ≤6 requirements, single concern → SINGLE
+- 7-10 requirements → EVALUATE: ≥2 clusters met ≤2 cross-deps → RECOMMEND SPLIT
+- \>10 requirements → RECOMMEND SPLIT (tenzij lineaire keten, single concern)
 
-   ```
-   SCOPE ANALYSIS:
+**Output**: toon scope analyse met totaal requirements, categorieën, en dependency depth.
 
-   Total requirements: {count}
-   Categories: {list of unique categories}
-   Dependency depth: {max chain length}
-   ```
+**Als SINGLE**: toon kort, ga door.
 
-2. **Identify dependency clusters:**
+**Als SPLIT aanbevolen**:
 
-   Group requirements that depend on each other into clusters:
-   - Requirements with direct dependencies → same cluster
-   - Requirements with no cross-dependencies → separate clusters
-   - Single isolated requirements → own cluster or attach to nearest related cluster
-
-3. **Apply decision logic:**
-
-   ```
-   IF requirements ≤ 6 AND single category/concern:
-     → SINGLE feature (continue normally)
-
-   IF requirements 7-10:
-     → EVALUATE: check if ≥2 natural clusters exist with ≤2 cross-dependencies
-     → If clusters found: RECOMMEND SPLIT
-     → If tightly coupled: SINGLE feature
-
-   IF requirements > 10:
-     → RECOMMEND SPLIT (unless linear dependency chain with single concern)
-   ```
-
-4. **If SINGLE feature:**
-
-   ```
-   ✓ Scope analysis: SINGLE FEATURE
-
-   Requirements: {count}
-   Reason: {e.g., "tightly coupled, single concern", "≤6 requirements"}
-
-   → Continuing to architecture design.
-   ```
-
-   Proceed to FASE 2.
-
-5. **If SPLIT recommended:**
-
-   Show proposed split:
-
-   ```
-   SPLIT RECOMMENDATION:
-
-   Requirements: {count} → {n} sub-features
-
-   1. {feature-name}-{sub1} (REQ-001, REQ-002, REQ-003)
-      Focus: {description of this group's concern}
-
-   2. {feature-name}-{sub2} (REQ-004, REQ-005)
-      Focus: {description of this group's concern}
-
-   Build order: {sub1} → {sub2}
-   Cross-dependencies: {list or "none"}
-   ```
-
-   Use **AskUserQuestion** for confirmation:
-   - header: "Feature Split"
-   - question: "Akkoord met deze opsplitsing?"
-   - options:
-     - label: "Akkoord (Recommended)", description: "Opsplitsen in {n} sub-features"
-     - label: "Aanpassen", description: "Ik wil de groepering wijzigen"
-     - label: "Eén feature houden", description: "Niet splitsen, alles in één feature"
-     - label: "Vraag uitleggen", description: "Leg uit wat dit betekent"
-   - multiSelect: false
-
-   **Response Handling:**
-   - Akkoord → proceed with split
-   - Aanpassen → ask which requirements should move where, regenerate split
-   - Eén feature houden → proceed as SINGLE feature to FASE 2
-
-6. **Execute split (if approved):**
-
-   a. Create parent documentation:
-
-   Write `.project/features/{feature-name}/00-split.md`:
-
-   ````markdown
-   # Feature Split: {Feature Name}
-
-   **Created:** {date}
-   **Status:** split
-   **Original requirements:** {count}
-   **Sub-features:** {count}
-
-   ## Split Decision
-
-   Reason: {why split was recommended}
-
-   ## Sub-features
-
-   | #   | Sub-feature   | Requirements              | Focus   |
-   | --- | ------------- | ------------------------- | ------- |
-   | 1   | {name}-{sub1} | REQ-001, REQ-002, REQ-003 | {focus} |
-   | 2   | {name}-{sub2} | REQ-004, REQ-005          | {focus} |
-
-   ## Build Order
-
-   1. {name}-{sub1} (base, no dependencies)
-   2. {name}-{sub2} (after {sub1})
-
-   ## Commands
-
-   ```
-   /dev-build {name}-{sub1}
-   /dev-build {name}-{sub2}
-   ```
-   ````
-
-   b. Create sub-feature workspace folders:
-
-   ```bash
-   mkdir -p .project/features/{feature-name}-{sub1}
-   mkdir -p .project/features/{feature-name}-{sub2}
-   ```
-
-   c. Continue FASE 2-5 for EACH sub-feature sequentially:
+1. Toon voorstel met clusters, build order, cross-dependencies
+2. AskUserQuestion: "Akkoord met opsplitsing?" — Akkoord / Aanpassen / Eén feature houden
+3. Bij split:
+   - Schrijf `.project/features/{feature-name}/00-split.md` met: split decision, sub-feature tabel (requirements + focus), build order
+   - Maak sub-feature folders: `mkdir -p .project/features/{feature-name}-{sub}`
    - Re-number requirements per sub-feature (REQ-001, REQ-002, etc.)
-   - Each sub-feature gets its own architecture, wireframe, and 01-define.md
-   - Use build order: complete all FASEs for sub-feature 1 before starting sub-feature 2
+   - Doorloop FASE 2-5 per sub-feature in build order
+   - Bij backlog: sync elke sub-feature individueel
 
-7. **Update backlog (split only):**
+### FASE 2: Architecture
 
-   If `.project/backlog.html` exists:
-   - Replace original feature entry with sub-feature entries
-   - Each sub-feature gets its own line in the backlog
-   - Add `(split from {original-name})` annotation
+Ontwerp in drie stappen:
 
-### FASE 2: Architecture Check (Automatisch)
+1. **Baseline check**:
+   - Doorzoek `stack-baseline.md` op patronen relevant voor deze feature
+   - **Pattern gevonden** → gebruik als basis voor design, skip research
+   - **Pattern niet gevonden** → launch research:
+     ```
+     Task(subagent_type="general-purpose", prompt="
+     Feature: {feature-name}
+     Requirements: {requirement lijst}
+     Research architecture patterns via Context7.
+     Return: recommended patterns, state approach, file structure.
+     ")
+     ```
+     Na research: update `stack-baseline.md` met nieuwe patronen (append, niet overschrijven)
+   - **Geen baseline file** → altijd research uitvoeren. Baseline NIET aanmaken (dat is /core-setup)
 
-**Goal:** Automatisch bepalen of research nodig is op basis van stack-baseline.
+2. **Bestaande code**: Glob + Read de meest relevante bestanden met vergelijkbare patterns. Dit informeert het ontwerp.
 
-**Steps:**
+3. **Design**: ontwerp op basis van requirements, baseline en bestaande code:
+   - **File structuur**: create/modify tabel
+   - **Interfaces/Types**: als relevant
+   - **Design sketch**: alleen voor visuele features — ASCII wireframe (web/UI) of scene composition (3D/game). Overweeg: responsive breakpoints, loading state, empty state, error state.
+     Bij visuele features: bevestig wireframe met user via AskUserQuestion: "Klopt dit visuele ontwerp?" — "Ja (Recommended)" / "Aanpassen"
+   - **Dependency analysis**: REQ→REQ relaties
+   - **Build sequence**: genummerde implementatievolgorde
+   - **Test strategy**: REQ→testfile→beschrijving tabel
 
-1. **Use pre-loaded stack-baseline:**
-   - Use the baseline context loaded in FASE 0
-   - If baseline was not found in FASE 0, skip to step 5 (baseline not found fallback)
+### FASE 3: Write define.json
 
-2. **Extract feature type from requirements:**
-   Map the feature to a category:
-   - "component" / "ui" → Component
-   - "page" / "route" → Page/Route
-   - "api" / "fetch" / "data" → API Integration
-   - "state" / "context" / "store" → State Management
-   - "form" / "input" → Form Handling
-   - "auth" / "login" → Authentication
+Schrijf `.project/features/{feature-name}/define.json` (zie `shared/DASHBOARD.md` voor volledig schema):
 
-3. **Check Feature Pattern Index in baseline:**
+| Veld                        | Conditie                      |
+| --------------------------- | ----------------------------- |
+| `name`, `created`, `status` | altijd                        |
+| `summary`                   | altijd                        |
+| `depends`                   | altijd (lege array als geen)  |
+| `userAnswers`               | altijd                        |
+| `requirements`              | altijd                        |
+| `stackResearch`             | alleen als research is gedaan |
+| `design`                    | alleen visuele features       |
+| `architecture.files`        | altijd                        |
+| `architecture.interfaces`   | als relevant                  |
+| `apiContract`               | alleen bij backend            |
+| `buildSequence`             | altijd                        |
+| `testStrategy`              | altijd                        |
 
-   Look for matching row in `## Feature Pattern Index` table:
+**`buildSequence`** structuur — dev-build itereert dit direct:
 
-   ```
-   | Feature Type | Component Type | Pattern | State Approach |
-   |--------------|----------------|---------|----------------|
-   | Component | Functional | Composition | Props |
-   | Page/Route | Page Component | File-based routing | Local state |
-   | API Integration | Hook | Custom hook | React Query/SWR |
-   | State Management | Context/Store | Provider pattern | Context API |
-   | Form Handling | Form Component | Controlled | Form state |
-   | Authentication | HOC/Hook | Protected routes | Auth context |
-   ```
-
-4. **Decision:**
-
-   **A) Pattern FOUND in baseline:**
-
-   ```
-   ✓ Architecture pattern gevonden in baseline
-
-   | Field | Value |
-   |-------|-------|
-   | Feature Type | {type} |
-   | Component Type | {from baseline} |
-   | Pattern | {from baseline} |
-   | State Approach | {from baseline} |
-
-   → Baseline gebruiken, research overgeslagen.
-   ```
-
-   - Use patterns from baseline for FASE 3
-   - Skip web-stack-researcher agent
-
-   **B) Pattern NOT FOUND in baseline:**
-
-   ```
-   ⚠ Geen architecture pattern gevonden voor "{feature-type}"
-
-   → Research wordt uitgevoerd en baseline wordt bijgewerkt.
-   ```
-
-   - Launch web-stack-researcher agent:
-
-   ```
-   Task(subagent_type="web-stack-researcher", prompt="
-   Feature: {feature-name}
-   Type: {feature-type}
-
-   Requirements:
-   {list of requirements}
-
-   Patterns: {selected}
-   Interactions: {selected}
-
-   Research React/web architecture patterns for this feature.
-   Return: Component type, pattern approach, state management, hooks needed.
-   ")
-   ```
-
-   - **Update stack-baseline.md** with new pattern:
-     - Add row to Feature Pattern Index table
-     - Add relevant hook patterns if new
-     - Add component patterns if new
-
-5. **Baseline not found fallback:**
-
-   If `.claude/research/stack-baseline.md` does not exist:
-
-   ```
-   ⚠ Stack baseline niet gevonden.
-
-   → Volledige research wordt uitgevoerd.
-   Tip: Run /core-setup om baseline te genereren.
-   ```
-
-   - Always launch web-stack-researcher agent
-   - Do NOT create baseline (that's /setup's job)
-
-### FASE 2b: Design & Wireframe
-
-**Goal:** Define visual layout and component placement before architecture design.
-
-**Condition:** Only execute this phase if the feature type involves UI, Page, Form, or visual components. If the feature is non-visual (hooks, API layers, state management, utilities), skip with:
-
-```
-FASE 2b: N/A — non-visual feature
+```json
+[
+  {
+    "step": 1,
+    "requirements": ["REQ-001"],
+    "description": "...",
+    "dependsOn": []
+  },
+  {
+    "step": 2,
+    "requirements": ["REQ-002"],
+    "description": "...",
+    "dependsOn": [1]
+  },
+  {
+    "step": 3,
+    "requirements": ["REQ-003", "REQ-004"],
+    "description": "... (gecombineerd)",
+    "dependsOn": [2]
+  }
+]
 ```
 
-**Steps:**
-
-1. **Describe layout in ASCII wireframe:**
-
-   ```
-   ┌─────────────────────────────────┐
-   │ {Header/Nav}                    │
-   ├─────────┬───────────────────────┤
-   │ {Side}  │ {Main Content}        │
-   │         │ ┌───────────────────┐ │
-   │         │ │ {Component}       │ │
-   │         │ └───────────────────┘ │
-   └─────────┴───────────────────────┘
-   ```
-
-2. **Define responsive behavior:**
-   | Breakpoint | Layout Change |
-   |------------|---------------|
-   | Mobile (<640px) | {description} |
-   | Tablet (640-1024px) | {description} |
-   | Desktop (>1024px) | {description} |
-
-3. **Map components to wireframe:**
-   - Label each wireframe section with the component name
-   - Note key interactive elements (buttons, inputs, toggles)
-   - Identify state-dependent visual changes (loading, empty, error)
-
-4. **Confirm wireframe with user:**
-   Use **AskUserQuestion**:
-   - header: "Wireframe"
-   - question: "Klopt dit visuele ontwerp?"
-   - options:
-     - label: "Ja (Recommended)", description: "Wireframe is correct, ga door"
-     - label: "Aanpassen", description: "Ik wil het ontwerp wijzigen"
-   - multiSelect: false
-
-### FASE 3: Architecture Design
-
-Design based on requirements (and research if done):
-
-**Component Tree:**
-
-```
-{RootComponent} ({feature-name})
-├── {ChildComponent} ({ComponentType})
-└── {ChildComponent} ({ComponentType})
-```
-
-**Files:**
-| File | Type | Purpose |
-|------|------|---------|
-| {path}.tsx | Component | {purpose} |
-| {path}.ts | Hook | {purpose} |
-| {path}.css | Styles | {purpose} |
-
-**Hooks:**
-| Hook | Purpose | Returns |
-|------|---------|---------|
-| use{Name} | {purpose} | {return type} |
-
-**Types/Interfaces:**
-| File | Export | Purpose |
-|------|--------|---------|
-| {path}.ts | {TypeName} | {purpose} |
-
-**Test Strategy:**
-| REQ ID | Test File | Test Function | Type |
-|--------|-----------|---------------|------|
-
-### Dependency Analysis
-
-Determine implementation order based on requirement dependencies:
-
-**Analysis process:**
-
-1. For each requirement, identify dependencies on other requirements
-2. Base requirements (no dependencies) come first
-3. Dependent requirements follow their dependencies
-
-**Output format:**
-
-```
-DEPENDENCY ANALYSIS:
-
-REQ-001: {description}
-  └── Dependencies: None (BASE)
-
-REQ-002: {description}
-  └── Dependencies: REQ-001 (needs {reason})
-
-REQ-003: {description}
-  └── Dependencies: REQ-002 (needs {reason})
-
-IMPLEMENTATION ORDER:
-1. REQ-001 (base)
-2. REQ-002 (after REQ-001)
-3. REQ-003 (after REQ-002)
-```
-
-### FASE 4: Generate Output
-
-Write to `.project/features/{feature-name}/01-define.md`:
-
-```markdown
-# Feature Definition: {Feature Name}
-
-**Created:** {date}
-**Status:** defined
-
-## Summary
-
-{description}
-
-## Requirements
-
-| ID      | Requirement   | Category   | Test Type | Acceptance Criteria   |
-| ------- | ------------- | ---------- | --------- | --------------------- |
-| REQ-001 | {description} | {category} | {type}    | {acceptance criteria} |
-
-## User Answers
-
-{answers from FASE 1}
-
-## API Contract (alleen als stack Laravel bevat)
-
-### Endpoints
-
-| Method | Endpoint        | Request                 | Response             | Auth    |
-| ------ | --------------- | ----------------------- | -------------------- | ------- |
-| GET    | /api/{resource} | -                       | {Resource}Collection | Sanctum |
-| POST   | /api/{resource} | Create{Resource}Request | {Resource}Resource   | Sanctum |
-
-### Request Types
-
-| Type                    | Field   | Validation |
-| ----------------------- | ------- | ---------- |
-| Create{Resource}Request | {field} | {rules}    |
-
-### Response Types
-
-| Type               | Field   | Type   |
-| ------------------ | ------- | ------ |
-| {Resource}Resource | id      | number |
-| {Resource}Resource | {field} | {type} |
-
-### Laravel Files
-
-| File                                               | Type       | Purpose             |
-| -------------------------------------------------- | ---------- | ------------------- |
-| app/Models/{Resource}.php                          | Model      | Eloquent model      |
-| app/Http/Controllers/Api/{Resource}Controller.php  | Controller | API handlers        |
-| app/Http/Resources/{Resource}Resource.php          | Resource   | JSON transformation |
-| database/migrations/xxxx*create*{table}\_table.php | Migration  | Schema              |
-
-## Stack Research
-
-{if research was done}
-
-## Design & Wireframe
-
-### Layout
-
-{ASCII wireframe}
-
-### Responsive Behavior
-
-{responsive table}
-
-### Component Map
-
-{component-to-wireframe mapping}
-
-## Architecture
-
-### Component Tree
-
-{component tree}
-
-### Files to Create
-
-{components, hooks, types, styles}
-
-### Hooks
-
-{hooks table}
-
-## Implementation Order
-
-### Dependency Analysis
-
-{dependency analysis from FASE 3}
-
-### Build Sequence
-
-1. REQ-XXX - {description} (base)
-2. REQ-XXX - {description} (after REQ-XXX)
-   ...
-
-## Test Strategy
-
-{test table}
-```
-
-### FASE 5: Sync Backlog
-
-**Goal:** Update `.project/backlog.html` with new status.
-
-Zie `shared/BACKLOG.md` voor het JSON read/write protocol.
-
-**Steps:**
-
-1. **Check if backlog exists:**
-
-   ```
-   Read(".project/backlog.html")
-   ```
-
-   - If file not found: skip sync (no backlog to update)
-
-2. **Parse JSON data:**
-   - Extraheer JSON uit `<script id="backlog-data" type="application/json">` blok
-   - Parse als object (zie `shared/BACKLOG.md`)
-
-3. **Find feature and update status:**
-   - Zoek in `data.features`: `data.features.find(f => f.name === "{feature-name}")`
-   - Gevonden → zet `.status = "DEF"` en `.date = "{current date}"`
-   - Niet gevonden → zoek in `data.adhoc`
-   - Nog niet gevonden → voeg toe aan `data.adhoc`:
-     `{ "name": "{feature}", "type": "FEATURE", "status": "DEF", "description": "{from 01-define.md}", "dependency": null, "source": "/dev-define" }`
-   - **Note:** If feature was split in FASE 1b, sync each sub-feature individually.
-
-4. **Update metadata and write back:**
-   - Zet `data.updated` naar huidige datum (`YYYY-MM-DD`)
-   - Vervang het JSON-blok in het HTML bestand via Edit tool (keep `<script>` tags intact)
-
-**Output:**
-
-```
-BACKLOG SYNCED
-
-Feature: {feature-name}
-Status: TODO → DEF
-Location: {P1 | P2 | P3 | P4}
-```
-
-### FASE 6: Dashboard Sync
-
-**Goal:** Update `.project/project.json` met data, endpoints en stack info uit deze feature definitie.
-
-Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
-
-**Steps:**
-
-1. Read `.project/project.json` (of maak nieuw met leeg schema als niet bestaat)
-
-2. **Data entities** — als de feature data entities definieert (uit Architecture > Types/Interfaces of API Contract):
-   - Voor elke entity: check of `data.entities` al een entry heeft met die naam
-   - Zo nee: push hele entity met fields en relations
-   - Zo ja: merge nieuwe velden/relaties toe (zie `shared/DASHBOARD.md` data merge)
-
-3. **Endpoints** — als de feature API endpoints definieert (uit API Contract):
-   - Voor elk endpoint: check of combinatie method+path al bestaat
-   - Zo nee: push met `status: "planned"`
-   - Zo ja: skip (behoud bestaande)
-
-4. **Stack packages** — als de feature nieuwe packages/tools introduceert:
-   - Voor elk package: check of `stack.packages` al een entry heeft met die naam
-   - Zo nee: push `{ name, version, purpose }`
-
-5. **Features** — push feature naar `features` array:
-   - Check of feature met deze naam al bestaat
-   - Zo nee: push `{ name: "{feature-name}", status: "DEF", summary: "{from 01-define.md summary}", depends: [], created: "{date}" }`
-   - Zo ja: update status naar `"DEF"`
-
-6. **Write define.json** — schrijf `.project/features/{feature-name}/define.json` met gestructureerde feature data (zie `shared/DASHBOARD.md` voor schema)
-
-7. Write `.project/project.json`
-
-**Output:**
-
-```
-DASHBOARD SYNCED
-
-Data: {N} entities ({new} nieuw, {existing} bestaand)
-Endpoints: {N} endpoints ({new} nieuw)
-Stack: {N} packages ({new} nieuw)
-```
-
-## Best Practices
-
-- Use AskUserQuestion for all structured choices
-- Extract testable requirements with REQ-IDs
-- Stack research is optional but recommended for complex features
-- Keep architecture focused on what's needed
+Gecombineerde steps: meerdere REQs in `requirements[]` array, `dependsOn` verwijst naar step nummers.
+
+### FASE 4: Sync Backlog
+
+1. Read `.project/backlog.html` → niet gevonden: skip.
+2. Parse JSON uit `<script id="backlog-data">`.
+3. Zoek feature → zet status `"DEF"`, datum `"{date}"`. Niet gevonden → voeg toe aan adhoc.
+4. Zet `data.updated` naar vandaag. Schrijf terug via Edit (keep `<script>` tags intact).
+
+### FASE 5: Dashboard Sync
+
+1. Read `.project/project.json`
+2. Update feature in `features` array: status → `"DEF"`, update summary
+3. Merge per entity type (check altijd op bestaande voor push):
+   - **Data entities**: check op naam → nieuw: push met fields/relations → bestaand: merge nieuwe velden
+   - **Endpoints**: check op method+path → nieuw: push met `status: "planned"` → bestaand: skip
+   - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
+   - **Features**: check op naam → nieuw: push `{ name, status: "DEF", summary, created }` → bestaand: update status
+4. Write `.project/project.json`
 
 ## Restrictions
 
-This skill must NEVER:
-
-- Write actual implementation code (that's /dev-build's job)
-- Skip the requirements extraction step
-- Proceed without user confirmation at checkpoints
-
-This skill must ALWAYS:
-
-- Use business-like, direct tone
-- Extract testable requirements with REQ-IDs
-- Include all sections in 01-define.md output
+- Schrijf GEEN implementatiecode (dat is /dev-build)
+- Sla requirements extractie niet over
+- Ga niet verder zonder user-bevestiging bij checkpoints

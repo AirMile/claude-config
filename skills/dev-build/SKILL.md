@@ -18,15 +18,14 @@ Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD or Imp
 
 ## Input
 
-Reads `.project/features/{feature-name}/01-define.md`: requirements (REQ-XXX), architecture, implementation order.
+Reads `.project/features/{feature-name}/define.json`: requirements (REQ-XXX), architecture, implementation order.
 
 ## Output
 
 ```
 .project/features/{feature-name}/
-├── 01-define.md
-├── 02-build-log.md
-└── 03-test-checklist.md
+├── define.json
+└── build.json
 ```
 
 ## Process
@@ -55,17 +54,26 @@ If no feature name provided:
 1. Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`). Filter `status === "DEF"` features → suggest first via **AskUserQuestion**
 2. Otherwise → list features in `.project/features/`, let user select
 
-Load `01-define.md`. Extract requirements, architecture, implementation order. Display:
+Load `define.json`. Extract:
+
+- `requirements[]` → requirement lijst
+- `buildSequence[]` → implementatievolgorde (gesorteerd op step)
+- `architecture.files[]` → bestanden om te maken/wijzigen
+- `testStrategy[]` → test mapping
+
+If `define.json` not found → exit met bericht om `/dev-define` eerst te runnen.
+
+Display:
 
 ```
 FEATURE: {feature-name}
 
 REQUIREMENTS:
-- REQ-001: [description]
+- REQ-001: [requirements[0].description]
   ...
 
 IMPLEMENTATION ORDER:
-(from 01-define.md)
+(from define.json buildSequence, sorted by step)
 ```
 
 **Step 4: Frontend Scan** (web projects only)
@@ -107,27 +115,21 @@ After all requirements: run integration tests across requirements.
 
 **On test failure:** fix implementation, re-run. Continue only on PASS.
 
-**On blocker:** log in build-log, mark BLOCKED, continue with other requirements. Suggest `/thinking-decide` for architectural blockers.
+**On blocker:** log in build.json blockers array, mark BLOCKED, continue with other requirements. Suggest `/thinking-decide` for architectural blockers.
 
-### FASE 3: Generate Test Checklist
+### FASE 3: Build Summary
 
-Create `03-test-checklist.md` met:
+Collect build data for `build.json` (written in FASE 4C):
 
-- Build summary (feature, date, techniques, test count)
-- Automated tests status table (REQ | Technique | Test | Status)
-- Files created/modified
-- Manual testing checklist
-- Feedback format: `/dev-test {feature}` met `1:PASS` / `2:FAIL {reason}`
+- `testChecklist[]`: per test item — `id`, `title`, `requirementId`, `steps`, `expected`, `status`
+- `requirements[]`: per REQ — technique, files, tests, syncNote
+- `integrationTests`: results
+- `blockers`: lijst (of lege array)
+- `filesChanged`: alle aangemaakte/gewijzigde bestanden
+- `packagesAdded`: nieuwe dependencies
+- `decisions`: niet-voor-de-hand-liggende keuzes
 
 ### FASE 4A: Documentation
-
-**Build log** — create `02-build-log.md`:
-
-- Summary table (feature, date, techniques, tests)
-- Per requirement: technique, files, tests, SYNC
-- Integration test results
-- Blockers (of "Geen")
-- Codebase Sync section (placeholder, filled in 4B)
 
 **Build summary** — display to user:
 
@@ -157,22 +159,22 @@ Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
 
 **4B-3) Follow-up loop** — beantwoord vragen, herhaal begripscheck tot "Ja, helder".
 
-**Na bevestiging:** schrijf sync naar `02-build-log.md` onder `## Codebase Sync` in gewone taal.
+**Na bevestiging:** sla de sync uitleg op als `codeSyncExplanation` veld in build.json (plain markdown string met ASCII diagrammen).
 
 ### FASE 4C: Project Sync
 
-**CLAUDE.md Auto-Sync:**
+**Context sync** (zie `shared/DASHBOARD.md` → `context` sectie):
 
-Compare build output against CLAUDE.md. Update directly (no confirmation):
+Compare build output against `.project/project.json` context. Update directly (no confirmation):
 
-- New files → `## Project structuur`
-- New routes → `## Routing`
-- New non-obvious patterns → `## Non-obvious patterns`
-- New env vars/config → relevant section
+- New files/directories → `context.structure` (overwrite full tree)
+- New routes → `context.routing` (overwrite full array)
+- New non-obvious patterns → `context.patterns` (merge: add new, update existing)
+- Set `context.updated` to current date
 
-Quality rules (core-md-audit): project-specific only, one line per item, concise. Skip if no structural impact or no CLAUDE.md exists.
+Quality rules: project-specific only, one line per item, concise. Skip if no structural impact or no `.project/project.json` exists.
 
-Log: `CLAUDE.md: {N} updates ({sections})` of `CLAUDE.md: no updates needed`
+Log: `context: {N} updates ({keys})` of `context: no updates needed`
 
 **Backlog sync** (zie `shared/BACKLOG.md`): parse JSON uit `.project/backlog.html`, zet feature `.status = "BLT"`, update `data.updated`.
 
@@ -181,7 +183,7 @@ Log: `CLAUDE.md: {N} updates ({sections})` of `CLAUDE.md: no updates needed`
 - Features: zet status naar `"BLT"`
 - Endpoints: update status naar `"done"` als endpoints geïmplementeerd (skip als geen endpoints)
 - Stack packages: push nieuwe dependencies
-- Write `.project/features/{feature-name}/build.json` met build data
+- Write `.project/features/{feature-name}/build.json` met verrijkt schema (zie `shared/DASHBOARD.md`): `summary`, `requirements[]` (per-REQ details met technique/files/tests/syncNote), `integrationTests`, `blockers`, `codeSyncExplanation`, `filesChanged`, `packagesAdded`, `decisions`, en `testChecklist[]` (met id/title/requirementId/steps/expected/status)
 
 ### FASE 4D: Scoped Commit
 

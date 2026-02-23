@@ -169,8 +169,8 @@ function createDashboard(projectDir) {
   return file;
 }
 
-// Auto-populate empty dashboard sections from workspace files (legacy migration)
-function populateFromWorkspace(projectDir, dashData) {
+// Auto-populate empty dashboard sections from project files (legacy migration)
+function populateFromProject(projectDir, dashData) {
   const projectPath = path.join(PROJECTS_ROOT, projectDir);
   let changed = false;
 
@@ -751,17 +751,59 @@ function populateFromWorkspace(projectDir, dashData) {
         const featurePath = path.join(featuresDir, featureName);
         if (!fs.statSync(featurePath).isDirectory()) continue;
 
-        // Skip if feature already in array
-        if (dashData.features.some((f) => f.name === featureName)) continue;
+        // Promote status based on pipeline JSON files
+        function promoteStatus(s, fp) {
+          if (s === "DEF" || s === "TODO") {
+            if (fs.existsSync(path.join(fp, "build.json"))) s = "BLT";
+          }
+          if (s === "BLT") {
+            if (fs.existsSync(path.join(fp, "test.json"))) s = "TST";
+          }
+          if (s === "TST") {
+            const refJson = path.join(fp, "refactor.json");
+            if (fs.existsSync(refJson)) {
+              try {
+                const ref = JSON.parse(fs.readFileSync(refJson, "utf8"));
+                if (ref.status === "CLEAN" || ref.status === "REFACTORED")
+                  s = "DONE";
+              } catch {
+                s = "DONE";
+              }
+            }
+          }
+          return s;
+        }
 
-        // Try define.json first, fallback to 01-define.md
+        // Update existing feature status, or add new
+        const existing = dashData.features.find((f) => f.name === featureName);
+        if (existing) {
+          const promoted = promoteStatus(existing.status, featurePath);
+          if (promoted !== existing.status) {
+            existing.status = promoted;
+            changed = true;
+          }
+          // Also fill summary from define.json if missing
+          if (!existing.summary) {
+            const defineJson = path.join(featurePath, "define.json");
+            if (fs.existsSync(defineJson)) {
+              try {
+                const def = JSON.parse(fs.readFileSync(defineJson, "utf8"));
+                if (def.summary) {
+                  existing.summary = def.summary;
+                  changed = true;
+                }
+              } catch {}
+            }
+          }
+          continue;
+        }
+
         let status = "TODO";
         let summary = "";
         let created = "";
         let depends = [];
 
         const defineJson = path.join(featurePath, "define.json");
-        const defineMd = path.join(featurePath, "01-define.md");
 
         if (fs.existsSync(defineJson)) {
           try {
@@ -771,49 +813,9 @@ function populateFromWorkspace(projectDir, dashData) {
             created = def.created || "";
             depends = def.depends || [];
           } catch {}
-        } else if (fs.existsSync(defineMd)) {
-          try {
-            const md = fs.readFileSync(defineMd, "utf8");
-            const statusMatch = md.match(/\*\*Status:\*\*\s*(\w+)/i);
-            if (statusMatch) {
-              const s = statusMatch[1].toUpperCase();
-              if (s === "DEFINED") status = "DEF";
-              else if (s === "VERIFIED") status = "TST";
-              else if (s === "REFACTORED" || s === "CLEAN" || s === "DONE")
-                status = "DONE";
-              else status = s;
-            }
-            const summaryMatch = md.match(/## Summary\s*\n\n([^\n]+)/);
-            if (summaryMatch) summary = summaryMatch[1].trim();
-            const createdMatch = md.match(
-              /\*\*Created:\*\*\s*(\d{4}-\d{2}-\d{2})/,
-            );
-            if (createdMatch) created = createdMatch[1];
-          } catch {}
         }
 
-        // Check build/test status from other files
-        if (status === "DEF" || status === "TODO") {
-          if (
-            fs.existsSync(path.join(featurePath, "build.json")) ||
-            fs.existsSync(path.join(featurePath, "02-build-log.md"))
-          ) {
-            status = "BLT";
-          }
-        }
-        if (status === "BLT") {
-          if (
-            fs.existsSync(path.join(featurePath, "test.json")) ||
-            fs.existsSync(path.join(featurePath, "03-test-results.md"))
-          ) {
-            status = "TST";
-          }
-        }
-        if (status === "TST") {
-          if (fs.existsSync(path.join(featurePath, "04-refactor.md"))) {
-            status = "DONE";
-          }
-        }
+        status = promoteStatus(status, featurePath);
 
         dashData.features.push({
           name: featureName,
@@ -846,7 +848,7 @@ function getNavBarHtml(projectDir, activePage) {
   return `
 <style>
   body { padding-top: 48px !important; }
-  body > header > h1 { display:none !important; }
+  body > header { display:none !important; }
   #project-nav { position:fixed; top:0; left:0; right:0; height:48px; background:#0d1117; border-bottom:1px solid #30363d; display:flex; align-items:center; z-index:9999; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; padding:0 20px; }
   #project-nav a { text-decoration:none; transition:all 0.15s; }
   #project-nav .pn-back { color:#8b949e; }
@@ -907,8 +909,8 @@ function serveDashboard(projectDir) {
     } catch {}
   }
 
-  // Auto-populate from workspace files if sections are empty
-  dashData = populateFromWorkspace(projectDir, dashData);
+  // Auto-populate from project files if sections are empty
+  dashData = populateFromProject(projectDir, dashData);
 
   let html = fs.readFileSync(DASHBOARD_TEMPLATE_PATH, "utf8");
   html = html.replace(
@@ -916,7 +918,22 @@ function serveDashboard(projectDir) {
     `$1\n${JSON.stringify(dashData, null, 2)}\n$3`,
   );
   const nav = getNavBarHtml(projectDir, "dashboard");
-  html = html.replace("</body>", nav + "</body>");
+  const dashRefresh = `<script>
+(function(){
+  var base = location.pathname.replace(/\\/+$/, "");
+  var es = new EventSource(base + "/events");
+  es.onmessage = function(e) {
+    if (e.data !== "dashboard") return;
+    if (document.querySelector(".modal.visible, .modal[style*='display: flex']")) return;
+    fetch(base + "/data").then(function(r){ return r.json(); }).then(function(newData) {
+      if (JSON.stringify(newData) === JSON.stringify(data)) return;
+      data = newData;
+      render();
+    }).catch(function(){});
+  };
+})();
+</script>`;
+  html = html.replace("</body>", dashRefresh + nav + "</body>");
   return html;
 }
 
@@ -1053,7 +1070,10 @@ http
     // Index
     if (req.method === "GET" && parts.length === 0) {
       const projects = findProjects();
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache, no-store",
+      });
       res.end(indexPage(projects));
       return;
     }
@@ -1062,9 +1082,12 @@ http
     //   /{project}              → dashboard (main page)
     //   /{project}/save         → save dashboard (project.json)
     //   /{project}/create       → create dashboard
+    //   /{project}/data         → dashboard JSON (API)
+    //   /{project}/events       → SSE file-change stream
     //   /{project}/backlog      → backlog kanban
     //   /{project}/backlog/save → save backlog
     //   /{project}/backlog/create → create backlog
+    //   /{project}/backlog/data → backlog JSON (API)
     if (parts.length >= 1) {
       const projectDir = parts[0];
 
@@ -1079,6 +1102,96 @@ http
       if (!fs.existsSync(projectPath)) {
         res.writeHead(404);
         res.end("Project niet gevonden: " + esc(projectDir));
+        return;
+      }
+
+      // ── SSE: push file-change events to browser ──
+      if (req.method === "GET" && parts[1] === "events" && parts.length === 2) {
+        res.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        });
+        res.write("data: connected\n\n");
+
+        const backlogFile = path.join(projectPath, BACKLOG_PATH);
+        const dashFile = path.join(projectPath, DASHBOARD_PATH);
+        let lastBacklogMtime = 0;
+        let lastDashMtime = 0;
+
+        try {
+          lastBacklogMtime = fs.existsSync(backlogFile)
+            ? fs.statSync(backlogFile).mtimeMs
+            : 0;
+        } catch {}
+        try {
+          lastDashMtime = fs.existsSync(dashFile)
+            ? fs.statSync(dashFile).mtimeMs
+            : 0;
+        } catch {}
+
+        const poll = setInterval(() => {
+          try {
+            const bm = fs.existsSync(backlogFile)
+              ? fs.statSync(backlogFile).mtimeMs
+              : 0;
+            const dm = fs.existsSync(dashFile)
+              ? fs.statSync(dashFile).mtimeMs
+              : 0;
+            if (bm !== lastBacklogMtime) {
+              lastBacklogMtime = bm;
+              res.write("data: backlog\n\n");
+            }
+            if (dm !== lastDashMtime) {
+              lastDashMtime = dm;
+              res.write("data: dashboard\n\n");
+            }
+          } catch {}
+        }, 1000);
+
+        req.on("close", () => clearInterval(poll));
+        return;
+      }
+
+      // ── Backlog data API ──
+      if (
+        req.method === "GET" &&
+        parts[1] === "backlog" &&
+        parts[2] === "data" &&
+        parts.length === 3
+      ) {
+        const file = path.join(projectPath, BACKLOG_PATH);
+        try {
+          const html = fs.readFileSync(file, "utf8");
+          const match = html.match(
+            /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
+          );
+          if (match) {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(match[1].trim());
+          } else {
+            res.writeHead(404);
+            res.end("{}");
+          }
+        } catch {
+          res.writeHead(404);
+          res.end("{}");
+        }
+        return;
+      }
+
+      // ── Dashboard data API ──
+      if (req.method === "GET" && parts[1] === "data" && parts.length === 2) {
+        const dashFile = path.join(projectPath, DASHBOARD_PATH);
+        try {
+          let dashData = JSON.parse(fs.readFileSync(dashFile, "utf8"));
+          dashData = populateFromProject(projectDir, dashData);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(dashData));
+        } catch {
+          res.writeHead(404);
+          res.end("{}");
+        }
         return;
       }
 
@@ -1136,8 +1249,6 @@ http
   .column-header { padding: 10px 12px !important; }
   .edit-btn { display:none !important; }
   .card-actions button { width:20px !important; height:20px !important; border-radius:3px !important; font-size:10px !important; }
-  .copy-cmd-btn { position:absolute; bottom:6px; right:6px; background:var(--surface); border:1px solid var(--border); color:var(--text-dim); cursor:pointer; width:20px; height:20px; border-radius:3px; font-size:10px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
-  .copy-cmd-btn:hover { color:var(--done,#3fb950); border-color:var(--done,#3fb950); background:var(--surface-hover,#1c2333); }
   .detail-actions { justify-content:flex-start !important; }
   .detail-actions button { flex:none !important; width:auto !important; height:auto !important; padding:4px 10px !important; font-size:12px !important; display:inline-flex !important; align-items:center !important; gap:4px !important; background:var(--surface) !important; color:var(--text-muted) !important; border:1px solid var(--border) !important; border-radius:4px !important; transition:all 0.15s !important; }
   .detail-actions button:hover { border-color:var(--text-dim) !important; color:var(--text) !important; }
@@ -1150,30 +1261,73 @@ http
   .phase-p4 { border-color:#ffa65755 !important; }
   .status-tag { font-size:10px; padding:1px 6px; border-radius:10px; font-weight:600; display:inline-flex; align-items:center; gap:4px; background:transparent; letter-spacing:0.3px; }
   .status-tag::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
+  .copy-cmd-btn { display:none !important; }
+  .card-menu { position:relative; }
+  .card-menu-dropdown { display:none; position:absolute; top:100%; right:0; margin-top:4px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:2px 0; min-width:80px; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
+  .card-menu-dropdown.open { display:block; }
+  .card-menu-dropdown button { display:flex; align-items:center; gap:6px; width:100% !important; padding:5px 10px !important; background:none !important; border:none !important; color:var(--text-dim); font-size:12px; cursor:pointer; transition:all 0.1s; font-family:inherit; height:auto !important; border-radius:0 !important; justify-content:flex-start !important; white-space:nowrap; }
+  .card-menu-dropdown button:hover { background:var(--surface-hover,#1c2333); color:var(--text,#e6edf3); }
+  .card-menu-dropdown .menu-delete:hover { color:var(--danger,#f85149) !important; background:var(--danger-bg,rgba(248,81,73,0.1)) !important; }
 </style>
 <script>
 (function(){
-  var origCreate = window.createCard;
-  if (!origCreate) return;
   var NEXT = {TODO:"define",DEF:"build",BLT:"test",TST:"refactor"};
   var prefix = (window.data && window.data.source && window.data.source.startsWith("/game")) ? "game" : "dev";
-  window.createCard = function(f) {
-    var card = origCreate(f);
-    var verb = NEXT[f.status];
-    if (verb && !card.querySelector(".copy-cmd-btn")) {
-      var cmd = "/" + prefix + "-" + verb + " " + f.name;
-      var btn = document.createElement("button");
-      btn.className = "copy-cmd-btn";
-      btn.title = cmd;
-      btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
-      btn.addEventListener("click", function(e) {
-        e.stopPropagation();
-        navigator.clipboard.writeText(cmd).then(function() { toast("Gekopieerd: " + cmd); });
-      });
-      card.appendChild(btn);
+  // Patch createCard: replace old buttons with hamburger menu
+  var origCreate = window.createCard;
+  if (origCreate) {
+    window.createCard = function(f) {
+      var card = origCreate(f);
+      var old = card.querySelector(".copy-cmd-btn");
+      if (old) old.remove();
+      var actions = card.querySelector(".card-actions");
+      if (actions && !actions.querySelector(".card-menu")) {
+        // Remove old buttons
+        actions.querySelectorAll(".detail-btn, .delete-btn, .edit-btn").forEach(function(b) { b.remove(); });
+        // Add hamburger menu
+        var menu = document.createElement("div");
+        menu.className = "card-menu";
+        menu.innerHTML = '<button class="menu-btn" title="Menu">\u2630</button><div class="card-menu-dropdown"><button class="menu-details">Details</button><button class="menu-delete">Verwijder</button></div>';
+        actions.appendChild(menu);
+        menu.querySelector(".menu-btn").addEventListener("click", function(e) {
+          e.stopPropagation();
+          var dd = menu.querySelector(".card-menu-dropdown");
+          document.querySelectorAll(".card-menu-dropdown.open").forEach(function(d) { if (d !== dd) d.classList.remove("open"); });
+          dd.classList.toggle("open");
+        });
+        menu.querySelector(".menu-details").addEventListener("click", function(e) {
+          e.stopPropagation();
+          menu.querySelector(".card-menu-dropdown").classList.remove("open");
+          openDetailModal(f.name);
+        });
+        menu.querySelector(".menu-delete").addEventListener("click", function(e) {
+          e.stopPropagation();
+          menu.querySelector(".card-menu-dropdown").classList.remove("open");
+          openDeleteModal(f.name);
+        });
+      }
+      return card;
+    };
+  }
+  // Close menus on outside click
+  document.addEventListener("click", function() {
+    document.querySelectorAll(".card-menu-dropdown.open").forEach(function(d) { d.classList.remove("open"); });
+  });
+  // Capture card clicks: copy command instead of opening modal
+  document.addEventListener("click", function(e) {
+    var card = e.target.closest(".card");
+    if (!card || e.target.closest("button")) return;
+    var name = card.dataset.name;
+    if (!name || !window.findItem) return;
+    var found = window.findItem(name);
+    if (!found) return;
+    var verb = NEXT[found.item.status];
+    if (verb) {
+      e.stopImmediatePropagation();
+      var cmd = "/" + prefix + "-" + verb + " " + found.item.name;
+      navigator.clipboard.writeText(cmd).then(function() { toast("Gekopieerd: " + cmd); });
     }
-    return card;
-  };
+  }, true);
   // Patch detail modal: hide promote, add copy button, make buttons compact with text
   var promoteBtn = document.getElementById("detail-promote");
   if (promoteBtn) promoteBtn.style.display = "none";
@@ -1222,9 +1376,29 @@ http
   }
   if (window.render) render();
 })();
+</script>
+<script>
+(function(){
+  var base = location.pathname.replace(/\\/backlog\\/?$/, "");
+  var es = new EventSource(base + "/events");
+  es.onmessage = function(e) {
+    if (e.data !== "backlog") return;
+    var modal = document.getElementById("detail-modal");
+    if (modal && modal.classList.contains("visible")) return;
+    fetch(base + "/backlog/data").then(function(r){ return r.json(); }).then(function(newData) {
+      if (JSON.stringify(newData) === JSON.stringify(data)) return;
+      data = newData;
+      render();
+      toast("Backlog bijgewerkt");
+    }).catch(function(){});
+  };
+})();
 </script>`;
           html = html.replace("</body>", backlogPatch + nav + "</body>");
-          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+          res.writeHead(200, {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-cache, no-store",
+          });
           res.end(html);
         } catch (e) {
           res.writeHead(500);
@@ -1368,42 +1542,35 @@ http
 
         const result = { name: featureName };
 
-        // Read define.json or 01-define.md
+        // Read define.json
         const defineJson = path.join(featurePath, "define.json");
-        const defineMd = path.join(featurePath, "01-define.md");
         if (fs.existsSync(defineJson)) {
           try {
             result.define = JSON.parse(fs.readFileSync(defineJson, "utf8"));
           } catch {}
-        } else if (fs.existsSync(defineMd)) {
-          try {
-            result.defineMd = fs.readFileSync(defineMd, "utf8");
-          } catch {}
         }
 
-        // Read build.json or 02-build-log.md
+        // Read build.json
         const buildJson = path.join(featurePath, "build.json");
-        const buildMd = path.join(featurePath, "02-build-log.md");
         if (fs.existsSync(buildJson)) {
           try {
             result.build = JSON.parse(fs.readFileSync(buildJson, "utf8"));
           } catch {}
-        } else if (fs.existsSync(buildMd)) {
-          try {
-            result.buildMd = fs.readFileSync(buildMd, "utf8");
-          } catch {}
         }
 
-        // Read test.json or 03-test-results.md
+        // Read test.json
         const testJson = path.join(featurePath, "test.json");
-        const testMd = path.join(featurePath, "03-test-results.md");
         if (fs.existsSync(testJson)) {
           try {
             result.test = JSON.parse(fs.readFileSync(testJson, "utf8"));
           } catch {}
-        } else if (fs.existsSync(testMd)) {
+        }
+
+        // Read refactor.json
+        const refactorJson = path.join(featurePath, "refactor.json");
+        if (fs.existsSync(refactorJson)) {
           try {
-            result.testMd = fs.readFileSync(testMd, "utf8");
+            result.refactor = JSON.parse(fs.readFileSync(refactorJson, "utf8"));
           } catch {}
         }
 
@@ -1412,11 +1579,63 @@ http
         return;
       }
 
+      // Open file in VS Code: /{project}/open/{filepath...}
+      if (req.method === "POST" && parts[1] === "open" && parts.length >= 3) {
+        const relPath = parts.slice(2).join("/");
+        if (relPath.includes("..")) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Ongeldig pad" }));
+          return;
+        }
+        const filePath = path.join(projectPath, relPath);
+        if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Bestand niet gevonden" }));
+          return;
+        }
+        try {
+          const { execSync } = require("child_process");
+          // Find VS Code remote CLI and IPC socket
+          const codeCliGlob = require("child_process")
+            .execSync(
+              "ls -t /home/claude/.vscode-server/cli/servers/*/server/bin/remote-cli/code 2>/dev/null | head -1",
+              { encoding: "utf8" },
+            )
+            .trim();
+          const ipcSock = require("child_process")
+            .execSync(
+              "ls -t /run/user/$(id -u)/vscode-ipc-*.sock 2>/dev/null | head -1",
+              { encoding: "utf8" },
+            )
+            .trim();
+          if (!codeCliGlob || !ipcSock) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "VS Code CLI niet beschikbaar" }));
+            return;
+          }
+          execSync(
+            `VSCODE_IPC_HOOK_CLI="${ipcSock}" "${codeCliGlob}" "${filePath}"`,
+            {
+              timeout: 5000,
+            },
+          );
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, file: relPath }));
+        } catch (e) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+        return;
+      }
+
       // Serve dashboard (main page for project)
       if (req.method === "GET" && parts.length === 1) {
         try {
           const html = serveDashboard(projectDir);
-          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+          res.writeHead(200, {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-cache, no-store",
+          });
           res.end(html);
         } catch (e) {
           res.writeHead(500);

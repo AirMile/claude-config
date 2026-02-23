@@ -1,9 +1,9 @@
 ---
 name: core-refine
 description: >-
-  Analyze and refactor skills to be leaner and Claude-native. Detects redundancy,
-  dead paths, over-explanation, and poor structure. Optional test simulation for
-  deeper insights. Use with /core-refine or /core-refine [skill-name].
+  Analyze and refine skills for clarity, correctness, and effectiveness. Detects
+  redundancy, dead paths, ambiguity, and poor structure. Optional test simulation
+  for deeper insights. Use with /core-refine or /core-refine [skill-name].
 argument-hint: "[skill-name]"
 disable-model-invocation: true
 metadata:
@@ -14,7 +14,7 @@ metadata:
 
 # Refine
 
-Analyze and refactor skills. Two modes: quick (analysis only) or extended (test simulation + analysis).
+Analyze and refine skills for quality. Two modes: quick (analysis only) or extended (test simulation + analysis).
 
 **Trigger**: `/core-refine` or `/core-refine [skill-name]`
 
@@ -40,7 +40,7 @@ Analyze and refactor skills. Two modes: quick (analysis only) or extended (test 
 ```
 LOADED: [name]
 [one-line summary from description]
-Lines: [count] | Sections: [count] | Has resources: [yes/no]
+Sections: [count] | Has resources: [yes/no]
 ```
 
 ## Step 1.5: Context Detection
@@ -248,9 +248,9 @@ Based on analysis, propose concrete changes.
 
 **Refactor principles:**
 
-- Remove what Claude already knows — don't explain the obvious
-- Shorten verbose instructions to imperative one-liners where possible
-- Kill dead paths entirely — don't comment them out
+- Remove what Claude already knows — redundancy reduces signal
+- Improve clarity — rephrase confusing or ambiguous instructions
+- Remove dead paths — unreachable logic adds noise
 - Restructure for top-to-bottom readability
 - Preserve all unique, project-specific knowledge
 - Keep AskUserQuestion integrations (UX, not noise)
@@ -264,9 +264,6 @@ Based on analysis, propose concrete changes.
 
    ```
    REFACTOR SUMMARY: [skill-name]
-
-   Lines: [before] → [after] ([change%])
-   Sections: [before] → [after]
 
    Changes:
    - [change 1: what and why]
@@ -290,7 +287,7 @@ After approval, apply changes with Edit tool.
 ```
 REFINED: [skill-name]
 
-Lines: [before] → [after] ([change%])
 Score: [before]/[max] → estimated [after]/[max]
 Changes applied: [count]
+Key improvements: [summary of what got better]
 ```

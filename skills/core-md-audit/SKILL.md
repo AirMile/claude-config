@@ -50,14 +50,14 @@ Evalueer elk CLAUDE.md bestand tegen de quality criteria. Zie [references/qualit
 
 **Quick Assessment Checklist:**
 
-| Criterium                         | Gewicht | Check                                              |
-| --------------------------------- | ------- | -------------------------------------------------- |
-| Commands/workflows gedocumenteerd | Hoog    | Zijn build/test/deploy commands aanwezig?          |
-| Architecture duidelijkheid        | Hoog    | Kan Claude de codebase structuur begrijpen?        |
-| Non-obvious patterns              | Medium  | Zijn gotchas en quirks gedocumenteerd?             |
-| Beknoptheid                       | Medium  | Geen verbose uitleg of voor de hand liggende info? |
-| Actualiteit                       | Hoog    | Reflecteert het de huidige codebase state?         |
-| Uitvoerbaarheid                   | Hoog    | Zijn instructies uitvoerbaar, niet vaag?           |
+| Criterium                         | Gewicht | Check                                                                       |
+| --------------------------------- | ------- | --------------------------------------------------------------------------- |
+| Commands/workflows gedocumenteerd | Hoog    | Zijn build/test/deploy commands aanwezig?                                   |
+| Architecture duidelijkheid        | Hoog    | Kan Claude de codebase structuur begrijpen? (check `project.json` context)  |
+| Non-obvious patterns              | Medium  | Zijn gotchas en quirks gedocumenteerd? (in `project.json` context.patterns) |
+| Beknoptheid                       | Medium  | Geen verbose uitleg of voor de hand liggende info?                          |
+| Actualiteit                       | Hoog    | Reflecteert het de huidige codebase state?                                  |
+| Uitvoerbaarheid                   | Hoog    | Zijn instructies uitvoerbaar, niet vaag?                                    |
 
 **Quality Scores:**
 
@@ -142,6 +142,7 @@ Zie [references/update-guidelines.md](references/update-guidelines.md) voor voll
 - ```bash
 
   ```
+
 - npm install
 - npm run dev # Start development server op port 3000
 - ```

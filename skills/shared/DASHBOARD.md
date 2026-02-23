@@ -14,15 +14,16 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 
 **Secties:**
 
-| Sectie      | Beschrijving                                 |
-| ----------- | -------------------------------------------- |
-| `concept`   | Project naam + volledige concept (markdown)  |
-| `theme`     | Kleuren, fonts, spacing, CSS vars            |
-| `stack`     | Framework, taal, DB, hosting, packages       |
-| `data`      | Entities, velden, relaties                   |
-| `endpoints` | Method, path, auth, status, beschrijving     |
-| `features`  | Naam, status, summary, depends, created      |
-| `thinking`  | Chronologisch log van ideeën en beslissingen |
+| Sectie      | Beschrijving                                           |
+| ----------- | ------------------------------------------------------ |
+| `concept`   | Project naam + volledige concept (markdown)            |
+| `theme`     | Kleuren, fonts, spacing, CSS vars                      |
+| `stack`     | Framework, taal, DB, hosting, packages                 |
+| `data`      | Entities, velden, relaties                             |
+| `endpoints` | Method, path, auth, status, beschrijving               |
+| `features`  | Naam, status, summary, depends, created                |
+| `thinking`  | Chronologisch log van ideeën en beslissingen           |
+| `context`   | Project structuur, routing, patterns (runtime context) |
 
 ## Dashboard schrijven
 
@@ -58,7 +59,13 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
   "data": { "entities": [] },
   "endpoints": [],
   "features": [],
-  "thinking": []
+  "thinking": [],
+  "context": {
+    "structure": "",
+    "routing": [],
+    "patterns": [],
+    "updated": ""
+  }
 }
 ```
 
@@ -73,6 +80,7 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 | `endpoints` | **MERGE**           | Voeg toe of update status, verwijder niet            |
 | `features`  | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet       |
 | `thinking`  | **APPEND**          | Altijd toevoegen, nooit overschrijven of verwijderen |
+| `context`   | **MERGE per key**   | Update structure/routing/patterns individueel        |
 
 ### Stack merge
 
@@ -128,6 +136,20 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 ```
 
 Nooit bestaande entries wijzigen of verwijderen — append-only log.
+
+### Context merge
+
+```
+1. Read project.json
+2. Voor elk veld in context:
+   - structure: OVERWRITE (volledige file tree)
+   - routing: OVERWRITE (volledige routing array)
+   - patterns: MERGE (voeg nieuwe toe, update bestaande op key)
+   - updated: zet naar huidige datum
+3. Write project.json
+```
+
+Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar `project.json` voor deze runtime context.
 
 ## Sectie schema's
 
@@ -326,11 +348,39 @@ Alle entries hebben `type`, `date`, `title`, `content`, `source`. Extra velden p
 - `brainstorm`: `variants` (alle opties), `chosen` (gekozen optie)
 - `decision`: `options`, `chosen`, `rationale`
 
+### context
+
+```json
+{
+  "structure": "src/\n  app/          # Next.js pages\n  components/   # UI components\n  lib/          # Utils",
+  "routing": [
+    "/ → Home",
+    "/diensten/:slug → Service detail",
+    "/api/auth/* → Auth endpoints"
+  ],
+  "patterns": [
+    "Path alias: @/ → src/",
+    "Env setup: copy .env.example → .env",
+    "Sanity preview: Draft mode via /api/preview"
+  ],
+  "updated": "2026-02-20"
+}
+```
+
+`structure` = file tree (zelfde formaat als voorheen in CLAUDE.md `## Project structuur`). Key directories met inline comments.
+`routing` = route patterns met arrow notation. Alleen voor web projects met routing.
+`patterns` = non-obvious patterns, gotchas, env setup. Eén string per item, `key: detail` formaat. Quality rules: project-specific only, concise, elk item moet z'n plek verdienen.
+`updated` = datum van laatste context update.
+
+**Dit vervangt de dynamische CLAUDE.md secties** (`## Project structuur`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md bevat nu alleen een referentie naar `project.json` voor deze context.
+
 ## Feature files (JSON)
 
-Features worden opgeslagen in `.project/features/{feature-name}/` als JSON bestanden:
+Features worden opgeslagen in `.project/features/{feature-name}/` als JSON bestanden. Dit is de **enige output** van de dev skills — geen aparte markdown bestanden.
 
 ### define.json
+
+Geschreven door `/dev-define` in FASE 3.
 
 ```json
 {
@@ -339,6 +389,8 @@ Features worden opgeslagen in `.project/features/{feature-name}/` als JSON besta
   "status": "DEF",
   "depends": ["clipboard-redesign"],
   "summary": "Shift+Click multi-select voor inspect overlay",
+  "userAnswers": { "coreFunction": "...", "patterns": "..." },
+  "stackResearch": "Optioneel. Markdown string met research bevindingen.",
   "requirements": [
     {
       "id": "REQ-001",
@@ -348,75 +400,294 @@ Features worden opgeslagen in `.project/features/{feature-name}/` als JSON besta
       "acceptance": "Element heeft pinned state na Shift+Click"
     }
   ],
-  "userAnswers": { "coreFunction": "...", "patterns": "..." },
-  "design": { "layout": "ASCII wireframe text", "components": [] },
+  "design": {
+    "layout": "ASCII wireframe tekst (alleen visuele features)",
+    "components": ["PinBar", "PinOverlay"]
+  },
+  "architecture": {
+    "files": [
+      {
+        "path": "src/hooks/usePinMode.ts",
+        "action": "create",
+        "purpose": "State management voor pin mode"
+      },
+      {
+        "path": "src/components/Inspector.tsx",
+        "action": "modify",
+        "purpose": "Shift+Click handler toevoegen"
+      }
+    ],
+    "interfaces": [
+      {
+        "name": "PinnedElement",
+        "definition": "interface PinnedElement { id: string; selector: string; rect: DOMRect }"
+      }
+    ]
+  },
   "apiContract": [
-    { "method": "POST", "path": "/api/pins", "description": "..." }
+    {
+      "method": "POST",
+      "path": "/api/pins",
+      "request": "CreatePinRequest",
+      "response": "PinResource",
+      "auth": "bearer",
+      "description": "Pin een element permanent op"
+    }
+  ],
+  "buildSequence": [
+    {
+      "step": 1,
+      "requirements": ["REQ-001"],
+      "description": "State hook implementeren",
+      "dependsOn": []
+    },
+    {
+      "step": 2,
+      "requirements": ["REQ-002"],
+      "description": "Shift+Click handler wiring",
+      "dependsOn": [1]
+    },
+    {
+      "step": 3,
+      "requirements": ["REQ-003", "REQ-004"],
+      "description": "PinBar UI (gecombineerd)",
+      "dependsOn": [2]
+    }
+  ],
+  "testStrategy": [
+    {
+      "requirementId": "REQ-001",
+      "testFile": "src/hooks/__tests__/usePinMode.test.ts",
+      "description": "Valideert dat pin state correct toggled"
+    }
   ]
 }
 ```
 
+**Conditionele velden:** `stackResearch` (alleen bij research), `design` (alleen visuele features), `architecture.interfaces` (als relevant), `apiContract` (alleen backend).
+
+**Altijd aanwezig:** `name`, `created`, `status`, `summary`, `requirements`, `architecture.files`, `buildSequence`, `testStrategy`.
+
 ### build.json
+
+Geschreven door `/dev-build` in FASE 4C.
 
 ```json
 {
   "feature": "pin-mode",
   "started": "2026-02-20",
   "completed": "2026-02-20",
-  "filesChanged": ["src/hooks/usePinMode.ts", "src/components/PinBar.tsx"],
-  "packagesAdded": [{ "name": "...", "version": "..." }],
-  "decisions": ["Used local state instead of context for performance"],
+  "summary": {
+    "techniques": { "tdd": 3, "implementationFirst": 2 },
+    "testsPass": 8,
+    "testsTotal": 8,
+    "filesCreated": 2,
+    "filesModified": 1
+  },
+  "filesChanged": [
+    "src/hooks/usePinMode.ts",
+    "src/components/PinBar.tsx",
+    "src/components/Inspector.tsx"
+  ],
+  "packagesAdded": [{ "name": "zustand", "version": "^4.4.0" }],
+  "decisions": [
+    "Used local state instead of context — context would re-render entire tree on every pin"
+  ],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "description": "usePinMode hook",
+      "technique": "TDD",
+      "files": ["src/hooks/usePinMode.ts"],
+      "tests": ["src/hooks/__tests__/usePinMode.test.ts"],
+      "syncNote": "Hook exposes togglePin(id), pinnedIds array, clearAll. Uses Map internally for O(1) lookup."
+    }
+  ],
+  "integrationTests": {
+    "passed": true,
+    "notes": "Alle cross-REQ integratie tests geslaagd"
+  },
+  "blockers": [],
+  "codeSyncExplanation": "Markdown string met plain-language uitleg van de feature. Dashboard rendert via md().",
   "testChecklist": [
-    { "id": "REQ-001", "description": "...", "status": "pending" }
+    {
+      "id": 1,
+      "title": "Pin element via Shift+Click",
+      "requirementId": "REQ-001",
+      "steps": [
+        "Open de inspector",
+        "Shift+Click op element",
+        "Controleer PinBar"
+      ],
+      "expected": "Element verschijnt in PinBar",
+      "status": "pending"
+    }
   ]
 }
 ```
 
+**`testChecklist[].status`**: `"pending"` (initieel door `/dev-build`), `"pass"` / `"fail"` / `"skip"` (bijgewerkt door `/dev-test`).
+
 ### test.json
+
+Geschreven door `/dev-test` in FASE 6.
 
 ```json
 {
   "feature": "pin-mode",
-  "runs": [
+  "finalStatus": "PASSED",
+  "coverage": { "statements": 92, "branches": 85 },
+  "sessions": [
     {
-      "date": "2026-02-20",
-      "passed": 5,
-      "failed": 1,
-      "fixes": ["Fixed edge case in unpinItem when array empty"]
+      "sessionNumber": 1,
+      "date": "2026-02-21",
+      "totals": {
+        "pass": 4,
+        "fail": 2,
+        "skip": 0,
+        "autoPass": 2,
+        "autoFail": 1,
+        "manualPass": 2,
+        "manualFail": 1
+      },
+      "items": [
+        {
+          "id": 1,
+          "title": "Pin element via Shift+Click",
+          "type": "AUTO",
+          "initialStatus": "PASS",
+          "finalStatus": "PASS",
+          "evidence": "DOM snapshot: PinBar zichtbaar met 1 element",
+          "fixApplied": null
+        },
+        {
+          "id": 2,
+          "title": "Unpin via Shift+Click",
+          "type": "AUTO",
+          "initialStatus": "FAIL",
+          "finalStatus": "PASS",
+          "evidence": "DOM snapshot: PinBar leeg na tweede Shift+Click",
+          "fixApplied": "usePinMode toggle logica gecorrigeerd"
+        }
+      ]
     }
   ],
-  "finalStatus": "PASSED",
-  "coverage": { "statements": 92, "branches": 85 }
+  "runs": [
+    {
+      "date": "2026-02-21",
+      "passed": 4,
+      "failed": 0,
+      "fixes": ["usePinMode toggle fix"]
+    }
+  ],
+  "fixSync": "Optioneel. Markdown string met plain-language beschrijving van fixes. Dashboard rendert via md().",
+  "observations": [
+    "Inspector z-index conflict bij overlapping modals — suggest: /dev-define z-index-system"
+  ],
+  "testsAdded": ["src/hooks/__tests__/usePinMode.test.ts"],
+  "filesModified": [
+    {
+      "path": "src/hooks/usePinMode.ts",
+      "description": "Toggle fix voor reeds gepind element (regel 34)"
+    }
+  ]
 }
 ```
 
-**Naast JSON**: de bestaande markdown bestanden (01-define.md, 02-build-log.md, 03-test-checklist.md) blijven bestaan als leesbare documentatie. De JSON bestanden zijn de machine-readable versie voor het dashboard.
+**`runs[]`**: compact overzicht (backward compat). **`sessions[]`**: volledige detail per test sessie.
+
+### refactor.json
+
+Geschreven door `/dev-refactor` in FASE 5.
+
+**REFACTORED variant:**
+
+```json
+{
+  "feature": "pin-mode",
+  "date": "2026-02-22",
+  "status": "REFACTORED",
+  "summary": {
+    "scope": "ALL",
+    "improvementsApplied": 4,
+    "filesModified": 2,
+    "testsPassing": "8/8"
+  },
+  "improvements": {
+    "security": [],
+    "performance": [
+      {
+        "file": "src/hooks/usePinMode.ts",
+        "line": 23,
+        "issue": "Array.find() in hot path",
+        "fix": "Vervangen door Map",
+        "result": "Render tijd -40%",
+        "risk": "LOW"
+      }
+    ],
+    "dry": [],
+    "simplification": [
+      {
+        "file": "src/components/PinBar.tsx",
+        "line": 45,
+        "issue": "Inline conditional 3 niveaus diep",
+        "fix": "Extracted naar helper",
+        "result": "Leesbaarheid verbeterd",
+        "risk": "LOW"
+      }
+    ],
+    "clarity": [],
+    "quality": [],
+    "errorHandling": []
+  },
+  "decisions": [
+    {
+      "decision": "Map ipv Array voor pin state",
+      "rationale": "PinBar kan 50+ elementen tonen — O(1) lookup"
+    }
+  ],
+  "positiveObservations": ["Error boundaries correct geïmplementeerd"],
+  "filesModified": ["src/hooks/usePinMode.ts", "src/components/PinBar.tsx"],
+  "failureAnalysis": null,
+  "pendingImprovements": []
+}
+```
+
+**CLEAN variant:** `status: "CLEAN"`, lege `improvements`, alleen `positiveObservations`.
+
+**ROLLED_BACK variant:** `status: "ROLLED_BACK"`, `failureAnalysis` met markdown string, `pendingImprovements[]` met items die herpoging nodig hebben.
+
+**Status waarden:** `CLEAN` | `REFACTORED` | `ROLLED_BACK`
+**Improvement categorieën:** `security` | `performance` | `dry` | `simplification` | `clarity` | `quality` | `errorHandling`
+**Risk waarden:** `LOW` | `MED`
 
 ## Welke skills schrijven wat
 
-| Sectie             | Geschreven door                                                                           | Wanneer                                 |
-| ------------------ | ----------------------------------------------------------------------------------------- | --------------------------------------- |
-| `concept`          | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan       |
-| `theme`            | `/frontend-theme`                                                                         | Na THEME.md generatie                   |
-| `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-page`                 | Bij detectie/nieuwe deps                |
-| `data`             | `/dev-define`, `/game-define`                                                             | Bij entity definitie                    |
-| `endpoints`        | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build            |
-| `features`         | `/dev-define`, `/dev-build`, `/dev-test`, `/dev-refactor`, `/game-define`, `/game-build`  | Bij status wijziging (DEF/BLT/TST/DONE) |
-| `concept.thinking` | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)     |
-| `thinking`         | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Bij non-concept thinking (append)       |
+| Sectie             | Geschreven door                                                                           | Wanneer                                           |
+| ------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `concept`          | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan                 |
+| `theme`            | `/frontend-theme`                                                                         | Na THEME.md generatie                             |
+| `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-page`                 | Bij detectie/nieuwe deps                          |
+| `data`             | `/dev-define`, `/game-define`                                                             | Bij entity definitie                              |
+| `endpoints`        | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build                      |
+| `features`         | `/dev-define`, `/dev-build`, `/dev-test`, `/dev-refactor`, `/game-define`, `/game-build`  | Bij status wijziging (DEF/BLT/TST/DONE)           |
+| `concept.thinking` | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)               |
+| `thinking`         | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Bij non-concept thinking (append)                 |
+| `context`          | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`             | Bij build/refactor (structuur, routing, patterns) |
 
 ### Skill → project.json sync overzicht
 
-| Skill            | Wat schrijven                                                                 | Wanneer              |
-| ---------------- | ----------------------------------------------------------------------------- | -------------------- |
-| `/core-setup`    | `stack` (volledig: framework, language, styling, db, auth, hosting, packages) | Na project generatie |
-| `/dev-define`    | `data.entities`, `endpoints`, `stack.packages`, `features` (status DEF)       | FASE 6               |
-| `/dev-build`     | `endpoints` (status done), `stack.packages`, `features` (status BLT)          | FASE 4 step 3b       |
-| `/dev-test`      | `stack.packages`, `endpoints`, `data.entities`, `features` (status TST)       | FASE 6 completion    |
-| `/dev-refactor`  | `stack.packages`, `endpoints`, `data.entities`, `features` (status DONE)      | FASE 5 completion    |
-| `/frontend-page` | `stack.packages`                                                              | Na FASE 4            |
-| `/game-define`   | `data.entities`, `stack.packages`, `features` (status DEF)                    | FASE 6               |
-| `/game-build`    | `features` (status BLT)                                                       | FASE 5 completion    |
+| Skill            | Wat schrijven                                                                                                  | Wanneer              |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `/core-setup`    | `stack` (volledig), `context` (initieel: structure, routing, patterns)                                         | Na project generatie |
+| `/dev-define`    | `data.entities`, `endpoints`, `stack.packages`, `features` (status DEF)                                        | FASE 6               |
+| `/dev-build`     | `endpoints` (status done), `stack.packages`, `features` (status BLT), `context` (structure, routing, patterns) | FASE 4C              |
+| `/dev-test`      | `stack.packages`, `endpoints`, `data.entities`, `features` (status TST)                                        | FASE 6 completion    |
+| `/dev-refactor`  | `stack.packages`, `endpoints`, `data.entities`, `features` (status DONE), `context` (conditional)              | FASE 5 completion    |
+| `/frontend-page` | `stack.packages`                                                                                               | Na FASE 4            |
+| `/game-define`   | `data.entities`, `stack.packages`, `features` (status DEF)                                                     | FASE 6               |
+| `/game-build`    | `features` (status BLT), `context` (structure, patterns)                                                       | FASE 5 completion    |
+| `/game-refactor` | `features` (status DONE), `context` (conditional)                                                              | FASE 5 completion    |
 
 ## Server
 
@@ -425,7 +696,7 @@ De server draait op `http://localhost:9876` en serveert zowel backlogs als dashb
 - `http://localhost:9876/` — overzicht alle projecten
 - `http://localhost:9876/{project}` — project dashboard (hoofdpagina)
 - `http://localhost:9876/{project}/backlog` — backlog kanban
-- `http://localhost:9876/{project}/feature/{name}` — feature detail (define + build + test JSON)
+- `http://localhost:9876/{project}/feature/{name}` — feature detail (define + build + test + refactor JSON)
 
 Start de server:
 

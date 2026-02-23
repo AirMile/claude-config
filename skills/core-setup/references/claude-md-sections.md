@@ -6,9 +6,7 @@ This is the standard CLAUDE.md structure. All pipeline skills expect these secti
 
 1. `## Commands` — always
 2. `## Project` / `### Stack` — always (pipeline reads `### Stack` for stack detection)
-3. `## Project structuur` — always
-4. `## Routing` — web projects with routing only
-5. `## Non-obvious patterns` — always (populated by dev-build auto-sync)
+3. `## Project Context` — always (reference to `.project/project.json` for runtime context)
 
 ---
 
@@ -108,72 +106,21 @@ npm run preview  # Preview production build
 
 ---
 
-## Project Structuur Template
+## Project Context Template
 
 ```markdown
-## Project structuur
-```
+## Project Context
 
-src/
-pages/ # Home, ProjectDetail (lazy-loaded)
-components/
-ui/ # Button, ProjectCard, ContactForm
-sections/ # Hero, About, Projects, Skills, Contact
-animation/ # FadeIn, StaggerContainer, PageTransition
-providers/ # LenisProvider
-hooks/ # useLocale, useSEO, useStructuredData
-data/ # Project metadata
-locales/ # en.json, nl.json
-lib/ # constants, i18n config, animation presets
-api/ # Serverless functions
-scripts/ # Build/conversion scripts
-
-```
-
+Lees `.project/project.json` bij sessiestart voor actuele project context (structuur, routing, patterns, features, stack, endpoints, entities). Skills houden dit automatisch bij na elke build/refactor.
 ```
 
 **Rules:**
 
-- Generate from actual file tree after project files are created
-- One-line comments per directory explaining purpose
-- Include directories outside `src/` if they exist (api/, scripts/, etc.)
-- List key files in each directory, not every file
-
----
-
-## Routing Template
-
-```markdown
-## Routing
-
-`/` → redirect to default locale
-`/:locale` → Home (all sections)
-`/:locale/projects/:slug` → Project detail
-```
-
-**Rules:**
-
-- Only for web projects with routing
-- Show route patterns with arrow notation
-- Omit for CLI, game, backend-only projects
-
----
-
-## Non-obvious Patterns Template
-
-```markdown
-## Non-obvious patterns
-
-- **Path alias**: `@/` → `src/` (vite.config.ts + tsconfig.json)
-- **Env setup**: copy `.env.example` → `.env`
-```
-
-**Rules:**
-
-- Always include this section, even if nearly empty at setup time
-- Add any patterns discovered during setup (path aliases, env config)
-- Gets populated by `/dev-build` auto-sync as features are built
-- Follow core-md-audit quality guidelines: concise, non-obvious, project-specific
+- Always include this section — it replaces the former `## Project structuur`, `## Routing`, and `## Non-obvious patterns` sections
+- Runtime context (file tree, routes, patterns) lives in `.project/project.json` under the `context` key
+- See `shared/DASHBOARD.md` for the `context` section schema
+- `/core-setup` initializes `context` during Phase 7b
+- `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor` update `context` after each run
 
 ---
 
@@ -231,34 +178,11 @@ npm run start    # Start production server
 **Responsive:** mobile-first
 **Data Fetching:** plain-fetch
 
-## Project structuur
+## Project Context
 
-```
-src/
-  app/            # Next.js app router pages
-  components/
-    ui/           # Shared UI components
-    sections/     # Page sections
-    layout/       # Header, Footer, Navigation
-  lib/            # Utilities, constants, Sanity client
-  styles/         # Global CSS, Tailwind config
-```
-
-## Routing
-
-`/` → Home
-`/diensten` → Services overview
-`/diensten/:slug` → Service detail
-`/over-ons` → About
-`/contact` → Contact form
-
-## Non-obvious patterns
-
-- **Path alias**: `@/` → `src/`
-- **Env setup**: copy `.env.example` → `.env` (Sanity project ID + Resend API key)
-- **Sanity preview**: Draft mode via `/api/preview` route with secret token
+Lees `.project/project.json` bij sessiestart voor actuele project context (structuur, routing, patterns, features, stack, endpoints, entities). Skills houden dit automatisch bij na elke build/refactor.
 
 ```
 
-**Note:** Separate Tech Stack, Workspace Configuration, and Development Setup sections are deprecated. Use the canonical structure above.
+**Note:** The former `## Project structuur`, `## Routing`, and `## Non-obvious patterns` sections are deprecated. Runtime context now lives in `.project/project.json` under the `context` key. Use the canonical structure above.
 ```

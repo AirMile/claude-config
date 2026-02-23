@@ -742,25 +742,28 @@ Append the architecture explanation to `02-build-log.md`:
 - {decision 2}: {why}
 ```
 
-### FASE 4b: CLAUDE.md Auto-Sync
+### FASE 4b: Context Sync
 
-Update the project's CLAUDE.md with new scenes, scripts, signals, and resources created during this build.
+Update `.project/project.json` context with new scenes, scripts, signals, and resources created during this build (zie `shared/DASHBOARD.md` → `context` sectie).
 
 **Process:**
 
-1. Read current project CLAUDE.md
+1. Read `.project/project.json` (skip als niet bestaat)
 2. Identify new additions from this build:
    - New scenes (.tscn files)
    - New scripts (.gd files) with their class names
    - New signals defined
    - New resources (.tres files)
-3. Update relevant CLAUDE.md sections (project structure, conventions, signals)
-4. Follow `core-md-audit` quality rules — no stale info, no duplication, concise entries
+3. Update context keys:
+   - `context.structure`: overwrite full file tree
+   - `context.patterns`: merge new patterns (signals, autoloads, conventions)
+   - `context.updated`: set to current date
+4. Quality rules: no stale info, no duplication, concise entries
 
 **Output:**
 
 ```
-CLAUDE.md SYNCED
+CONTEXT SYNCED
 
 Added:
 - scripts/abilities/water_ability.gd (WaterAbility class)

@@ -276,7 +276,7 @@ build/
 .DS_Store
 Thumbs.db
 
-# Claude workspace (runtime data)
+# Claude project (runtime data)
 .project/sessions/
 .project/features/
 
@@ -303,7 +303,7 @@ echo '{"permissions": {"allow": []}}' > {projects_root}/[naam]/.claude/settings.
 Check of de volgende entries al in `.gitignore` staan. Voeg alleen ontbrekende entries toe:
 
 ```
-# Claude workspace (runtime data)
+# Claude project (runtime data)
 .project/sessions/
 .project/features/
 

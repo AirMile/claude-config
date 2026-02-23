@@ -63,11 +63,12 @@ State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared
 ## Belangrijke Patronen
 
 - **`.project/`**: alle runtime artifacts (gitignored) — wireframes, config, session, screenshots
+- **`.project/project.json`**: centraal project dashboard met context (structuur, routing, patterns), features, stack, endpoints, entities, thinking. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md verwijst hiernaar voor runtime context.
 - **Profiles**: `core-profile/profiles.yaml` + `switch-profile.py` togglet skill visibility per profiel
 - **Format-on-save**: hook runt Prettier (web) of gdformat (GDScript) na elke Write/Edit
 - **Ralph loop**: Windows-only PowerShell iteratie voor autonome TDD sessies
 - **Backlog**: `.project/backlog.md` met status TODO → DEF → BLT → TST → DONE
-- **Build skills**: auto-commit zonder `Co-Authored-By`, auto-sync CLAUDE.md na voltooiing
+- **Build skills**: auto-commit zonder `Co-Authored-By`, auto-sync `project.json` context na voltooiing
 
 ## Regels bij Wijzigingen
 

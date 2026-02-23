@@ -750,7 +750,7 @@ IMPROVEMENTS APPLIED
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
-4. **CLAUDE.md Auto-Sync (conditional)** — only execute if REFACTORED features include structural changes:
+4. **Context sync (conditional)** — only execute if REFACTORED features include structural changes:
 
    **Trigger condition** — execute this step if ANY of these apply across REFACTORED features:
    - Scripts were renamed or moved to different directories
@@ -761,28 +761,29 @@ IMPROVEMENTS APPLIED
    **Skip this step if:**
    - All improvements were internal code quality only (naming, DRY, type hints, clarity)
    - Only performance optimizations without structural impact
-   - No CLAUDE.md exists in the project root
+   - No `.project/project.json` exists
 
-   **Process (when triggered):**
+   **Process (when triggered)** (zie `shared/DASHBOARD.md` → `context` sectie):
 
-   a. Read the current `CLAUDE.md`
-   b. Compare `modified_files` and `created_files` from FASE 4 against CLAUDE.md content
-   c. Update affected sections:
-   - Script paths that changed → update in `## Project structuur`
+   a. Read `.project/project.json`
+   b. Compare `modified_files` and `created_files` from FASE 4 against `context`
+   c. Update affected keys:
+   - Script paths that changed → update `context.structure` (overwrite full tree)
    - Extracted scripts/scenes → add to structure tree
-   - Changed patterns → update `## Non-obvious patterns`
+   - Changed patterns → update `context.patterns` (merge)
+   - Set `context.updated` to current date
      d. **Apply directly** (no user confirmation)
-     e. Follow core-md-audit quality rules:
+     e. Quality rules:
    - Only project-specific, non-obvious information
    - One line per item, concise
-   - Each line must earn its place in the context window
+   - Each item must earn its place
      f. Log:
 
    ```
-   CLAUDE.md: {N} updates ({sections touched})
+   context: {N} updates ({keys touched})
    ```
 
-   Or: `CLAUDE.md: no updates needed (internal changes only)`
+   Or: `context: no updates needed (internal changes only)`
 
 5. **Scoped auto-commit** (only this skill's changes):
 
@@ -926,4 +927,4 @@ This skill must ALWAYS:
 - Run full GUT test suite after applying changes per feature
 - Analyze test failures before rollback (distinguish stale tests from regressions)
 - Apply balance filter: skip findings where the "fix" reduces readability
-- Check CLAUDE.md for project-specific coding conventions during analysis
+- Check CLAUDE.md and `.project/project.json` context for project-specific conventions during analysis

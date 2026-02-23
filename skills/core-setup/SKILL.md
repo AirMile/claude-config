@@ -198,9 +198,7 @@ Generate CLAUDE.md following the **canonical structure** from `references/claude
 - `## Project` / `### Stack`: Always. Pipeline skills read `### Stack` for stack detection
 - `### Standards`: Only for web projects
 - `### Testing`: Only if testing frameworks configured
-- `## Project structuur`: Always. Generate from actual file tree after Phase 3/4
-- `## Routing`: Only for web projects with routing. Omit for CLI, game, backend-only
-- `## Non-obvious patterns`: Always (even if empty). Gets populated by dev-build auto-sync
+- `## Project Context`: Always. Reference to `.project/project.json` for runtime context (structure, routing, patterns)
 - `### Stack` subcategories are flexible — add what's relevant, omit what's not
 
 ---
@@ -240,7 +238,12 @@ Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
    - `auth`: uit user answers (Phase 2 Q4/Q5)
    - `hosting`: uit user answers (Phase 2 Q4/Q5)
    - `packages`: uit gegenereerde package.json / project files
-4. Write `.project/project.json`
+4. Vul `context` sectie (initieel, wordt bijgewerkt door build/refactor skills):
+   - `structure`: file tree van project (zelfde formaat als voorheen in CLAUDE.md). Generate from actual file tree after Phase 3/4
+   - `routing`: route patterns met arrow notation (alleen web projects met routing, anders lege array)
+   - `patterns`: non-obvious patterns ontdekt tijdens setup (path aliases, env config, etc.)
+   - `updated`: huidige datum
+5. Write `.project/project.json`
 
 **Output:**
 

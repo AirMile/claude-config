@@ -78,7 +78,7 @@ The skill gathers requirements through targeted questions, optionally researches
 
    The user can type any feature name via the built-in "Other" option.
 
-3. **Create workspace folder:**
+3. **Create project folder:**
 
    ```bash
    mkdir -p .project/features/{feature-name}
@@ -288,7 +288,7 @@ Show requirements table with acceptance criteria:
    ```
    ````
 
-   b. Create sub-feature workspace folders:
+   b. Create sub-feature project folders:
 
    ```bash
    mkdir -p .project/features/{feature-name}-{sub1}

@@ -21,7 +21,7 @@ Handles hybrid verification of implemented features through automated testing an
 ## When to Use
 
 - After `/dev-build` completes
-- When `.project/features/{name}/03-test-checklist.md` exists
+- When `.project/features/{name}/build.json` exists (with `testChecklist[]`)
 - NOT for: planning (/dev-define), implementation (/dev-build)
 
 ## Input Formats
@@ -70,17 +70,19 @@ Everything works except validation is missing and no welcome mail
    - Feature name only → proceed to classification and hybrid testing
    - Feature name + inline feedback → skip to FASE 1b (backward compatible, no automation)
    - Feature name + free text → skip to FASE 1b (backward compatible, no automation)
-   - "recent" → find most recently modified 03-test-checklist.md
+   - "recent" → find most recently modified build.json
 
-3. **Locate and validate test checklist:**
+3. **Locate and validate build output:**
 
    ```
-   .project/features/{feature-name}/03-test-checklist.md
+   .project/features/{feature-name}/build.json
    ```
 
-   If not found → exit with message to run `/dev-build {feature-name}` first.
+   Parse `testChecklist[]` array. Each item has: `id`, `title`, `requirementId`, `steps[]`, `expected`, `status`.
 
-4. **Read checklist** and parse test items with expected behavior.
+   If `build.json` not found → exit with message to run `/dev-build {feature-name}` first.
+
+4. **Read checklist** from `build.json.testChecklist` and use structured test items.
 
 5. **Generate Test Data** (via Explore agent — zero source file reads in main context)
 
@@ -90,8 +92,8 @@ Everything works except validation is missing and no welcome mail
 
    ```
    Feature: {feature-name}
-   Checklist: .project/features/{feature-name}/03-test-checklist.md
-   Define: .project/features/{feature-name}/01-define.md
+   Checklist: .project/features/{feature-name}/build.json (testChecklist[])
+   Define: .project/features/{feature-name}/define.json
 
    Lees de checklist en define doc. Zoek vervolgens in de source code naar:
    - Form fields, validatie regels, API endpoints relevant voor de test items
@@ -664,7 +666,7 @@ Fix 2: Welcome mail not sent
 **If "Ik heb een vraag"** → answer the question, then re-ask.
 **Loop until "Ja, helder".**
 
-**1c) Save fix sync** — store the summary for inclusion in 03-test-results.md (Step 3).
+**1c) Save fix sync** — store the summary for inclusion in `test.json` (fixSync field).
 
 ---
 
@@ -681,7 +683,7 @@ Use AskUserQuestion tool:
   - label: "Ja, ik heb iets opgemerkt", description: "Ik wil iets noteren voor later"
 - multiSelect: false
 
-**If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in 03-test-results.md. Do NOT attempt to fix these — they are out of scope.
+**If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in `test.json` (observations field). Do NOT attempt to fix these — they are out of scope.
 
 After documenting, show confirmation:
 
@@ -693,72 +695,15 @@ Opgenomen in test results.
 
 ---
 
-3. **Update 01-define.md:** Set `Status: VERIFIED` with date.
+3. **Update define.json:** Set `status: "VERIFIED"` with date.
 
-4. **Create 03-test-results.md:**
-
-   ```markdown
-   # Test Results: {feature-name}
-
-   ## Summary
-
-   | Metric  | Value       |
-   | ------- | ----------- |
-   | Status  | VERIFIED    |
-   | Items   | {N}         |
-   | Passed  | {N}         |
-   | Auto    | {N}         |
-   | Manual  | {N}         |
-   | Skipped | {N}         |
-   | Date    | {timestamp} |
-
-   ## Test History
-
-   ### Session 1: {date}
-
-   | #   | Test               | Type   | Initial | Final | Fixes Applied     |
-   | --- | ------------------ | ------ | ------- | ----- | ----------------- |
-   | 1   | Valid registration | AUTO   | PASS    | PASS  | -                 |
-   | 2   | Without email      | AUTO   | FAIL    | PASS  | {fix description} |
-   | 3   | Welcome mail       | MANUAL | FAIL    | PASS  | {fix description} |
-
-   ## Automated Test Evidence
-
-   | #   | Test               | Bewijs                                     |
-   | --- | ------------------ | ------------------------------------------ |
-   | 1   | Valid registration | Snapshot: /dashboard + h1 'Welkom'         |
-   | 2   | Without email      | Snapshot: foutmelding 'Email is verplicht' |
-
-   ## Fix Sync
-
-   {Only if fixes were applied. Written in plain language from the sync conversation.}
-
-   {Per fix:}
-
-   - **{item title}**: {problem} → {fix} ({file:line})
-
-   ## Observations
-
-   {Only if user reported out-of-scope observations during testing.}
-
-   - {observation description} → suggested: /dev-define {topic}
-
-   ## Tests Added
-
-   - {test files added}
-
-   ## Files Modified
-
-   - {file:line} ({change description})
-   ```
-
-5. **Sync backlog** (zie `shared/BACKLOG.md`):
+4. **Sync backlog** (zie `shared/BACKLOG.md`):
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "TST"`
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
-6. **Dashboard sync** (zie `shared/DASHBOARD.md`):
+5. **Dashboard sync** (zie `shared/DASHBOARD.md`):
    - Read `.project/project.json` (skip als niet bestaat)
    - Als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`
    - Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`
@@ -766,8 +711,10 @@ Opgenomen in test results.
    - Update `features` array: zoek feature op naam, zet status naar `"TST"`
    - Write `.project/project.json`
 
-7. **Write feature JSON** (naast bestaande markdown):
-   - Write `test.json` naar `.project/features/{feature-name}/` met test resultaten (zie `shared/DASHBOARD.md` voor schema)
+6. **Write test.json:**
+   - Write `test.json` naar `.project/features/{feature-name}/` met verrijkt schema (zie `shared/DASHBOARD.md`): `finalStatus`, `coverage`, `sessions[]` (per-sessie detail met items[]), `runs[]` (compact), `fixSync` (markdown string), `observations[]`, `testsAdded[]`, `filesModified[]`.
+
+7. **Update build.json testChecklist**: Read `build.json`, update `testChecklist[].status` per item (`"pass"` / `"fail"` / `"skip"`), write terug.
 
 8. **Scoped auto-commit** (only this skill's changes):
 
@@ -807,10 +754,9 @@ Opgenomen in test results.
 
 ```
 .project/features/{feature-name}/
-├── 01-define.md          # Updated: Status: VERIFIED
-├── 02-build-log.md       # From build phase
-├── 03-test-checklist.md  # From build phase
-└── 03-test-results.md    # NEW: Hybrid test history and results (auto + manual)
+├── define.json           # Updated: status: "VERIFIED"
+├── build.json            # Updated: testChecklist[].status per item
+└── test.json             # NEW: Enriched test results (sessions, fixes, observations)
 ```
 
 ## Example Flow (compact)
