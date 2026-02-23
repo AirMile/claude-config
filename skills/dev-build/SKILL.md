@@ -1,32 +1,26 @@
 ---
 name: dev-build
-description: Build features with automatic stack detection and TDD or implementation-first technique selection. Use with /dev-build after /dev-define. Reads requirements from workspace and builds sequentially.
+description: Build features with TDD or implementation-first per requirement. Use with /dev-build after /dev-define.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 1.1.0
   category: dev
 ---
 
 # Build
 
-## Overview
+**FASE 2** of the dev workflow: define -> **build** -> test
 
-This is **FASE 2** of the dev workflow: define -> **build** -> test
-
-Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD or Implementation First), then builds sequentially.
+Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD or Implementation First), builds sequentially.
 
 **Trigger**: `/dev-build` or `/dev-build [feature-name]`
 
 ## Input
 
-Reads from `.project/features/{feature-name}/01-define.md`:
+Reads `.project/features/{feature-name}/01-define.md`: requirements (REQ-XXX), architecture, implementation order.
 
-- Requirements with IDs (REQ-XXX)
-- Architecture design
-- Implementation order
-
-## Output Structure
+## Output
 
 ```
 .project/features/{feature-name}/
@@ -37,401 +31,186 @@ Reads from `.project/features/{feature-name}/01-define.md`:
 
 ## Process
 
-### FASE 0: Stack Detection & Context Loading
+### FASE 0: Context Loading
 
-**Step 1: Detect Stack**
-
-1. Read `.claude/CLAUDE.md`
-2. Find `### Stack` section under `## Project`
-3. Parse stack type and testing framework
-
-**Step 2: Load Context**
-
-Optionally load stack-baseline for project-specific patterns:
-
-- `.claude/research/stack-baseline.md` (if exists)
-
-**Step 3: Load Feature Context**
-
-1. If no feature name provided:
-
-   **a) Check backlog for context:**
-
-   Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
-   - Filter DEF features: `data.features.filter(f => f.status === "DEF")`
-   - Eerste DEF feature is de suggested next feature to build
-
-   **b) Select feature:**
-   - If backlog suggests a DEF feature → propose it via **AskUserQuestion**
-   - Otherwise → list available features in `.project/features/`
-   - Use **AskUserQuestion** to let user select
-
-2. Load `01-define.md`:
-   - Extract all requirements (REQ-XXX format)
-   - Parse architecture design
-   - Extract implementation order
-
-3. Display:
-
-   ```
-   FEATURE: {feature-name}
-
-   REQUIREMENTS:
-   - REQ-001: [description]
-   - REQ-002: [description]
-
-   IMPLEMENTATION ORDER:
-   (from 01-define.md)
-   ```
-
-**Step 4: Frontend Scan**
-
-Check of bestanden uit de feature-architectuur al op pagina's worden gebruikt.
-
-1. Extraheer bestandspaden uit de "Files to Create" lijst in 01-define.md
-2. Voor elk bestand dat al bestaat:
-   - Grep pagina-bestanden (`app/**/page.tsx`, `src/pages/**/*.tsx`) voor imports
-   - Als gevonden: noteer welke pagina's dit component importeren
-
-3. Als pagina-imports gevonden:
-
-   ```
-   FRONTEND AWARENESS
-
-   Componenten al in gebruik op pagina's:
-   - {ComponentName} → geimporteerd door {page-file}
-
-   Wijzigingen aan deze componenten kunnen bestaande styling beinvloeden.
-   ```
-
-   Use AskUserQuestion:
-
-   ```yaml
-   header: "Frontend Impact"
-   question: "Deze feature raakt componenten op bestaande pagina's. Hoe wil je hiermee omgaan?"
-   options:
-     - label: "Bewust bouwen (Recommended)", description: "Bouw door, respecteer bestaande styling"
-     - label: "Bekijk eerst de pagina's", description: "Laat me eerst de huidige staat zien"
-   multiSelect: false
-   ```
-
-   If "Bewust bouwen": sla frontendImpact-lijst op. Tijdens FASE 2:
-   - Lees bestaand component VOOR wijzigingen
-   - Behoud alle className/styling props
-   - Wijzig alleen functioneel gedrag, niet visuele presentatie
-
-   If "Bekijk eerst de pagina's": toon bestanden, laat user reviewen, vraag opnieuw.
-
-4. Als geen pagina-imports gevonden: skip, ga door als normaal.
-
-**Capture git baseline** (for scoped commit at end of skill):
+**Capture git baseline** (eerste actie — voor context loading):
 
 ```bash
 mkdir -p .project/session
 git status --porcelain | sort > .project/session/pre-skill-status.txt
 ```
 
-### FASE 1: Technique Mapping (Per Requirement)
+**Step 1: Detect Stack**
 
-Analyze EACH requirement individually and assign a technique:
+Read CLAUDE.md. Parse `### Stack` under `## Project` for engine/framework, language, and test runner.
 
-```
-For each REQ-XXX:
-  IF requirement involves:
-    - validation rules, business logic, calculations, complex conditions
-    → TDD
+**Step 2: Load Context**
 
-  IF requirement involves:
-    - CRUD, middleware, config, straightforward wiring
-    → Implementation First
+Load `.claude/research/stack-baseline.md` if exists.
 
-  DEFAULT → Implementation First
-```
+**Step 3: Load Feature**
 
-Display technique map:
+If no feature name provided:
+
+1. Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`). Filter `status === "DEF"` features → suggest first via **AskUserQuestion**
+2. Otherwise → list features in `.project/features/`, let user select
+
+Load `01-define.md`. Extract requirements, architecture, implementation order. Display:
 
 ```
-TECHNIQUE MAP:
+FEATURE: {feature-name}
 
-| REQ     | Technique            | Reason               |
-|---------|----------------------|----------------------|
-| REQ-001 | TDD                  | validation logic     |
-| REQ-002 | Implementation First | CRUD endpoint        |
-| REQ-003 | TDD                  | business rules       |
+REQUIREMENTS:
+- REQ-001: [description]
+  ...
+
+IMPLEMENTATION ORDER:
+(from 01-define.md)
 ```
 
-Use **AskUserQuestion** tool:
+**Step 4: Frontend Scan** (web projects only)
 
-- header: "Technique Map"
-- question: "Akkoord met deze technique-toewijzing?"
-- options:
-  - label: "Akkoord (Recommended)", description: "Start build met deze TDD/Implementation First verdeling"
-  - label: "Aanpassen", description: "Ik wil de technique-toewijzing wijzigen"
-- multiSelect: false
+Skip als geen `app/**/page.tsx` of `src/pages/**/*.tsx` bestaan.
 
-**If "Aanpassen"** → ask which requirements should change technique, update map, re-display.
+Als bestanden uit "Files to Create" al geïmporteerd worden door pagina's: toon impact, vraag via AskUserQuestion of user bewust wil bouwen (respecteer bestaande styling) of eerst pagina's wil reviewen.
 
-### FASE 2: Execute Build (Per Requirement)
+### FASE 1: Technique Mapping
+
+Assign per requirement:
+
+- **TDD**: validation rules, business logic, calculations, complex conditions, testable math
+- **Implementation First**: CRUD, middleware, config, wiring, visual/particle effects
+
+Display technique map table. Confirm via **AskUserQuestion** (Akkoord / Aanpassen).
+
+Bij "Aanpassen": toon requirements opnieuw, vraag per requirement welke technique met **AskUserQuestion**.
+
+### FASE 2: Execute Build
 
 For each requirement in IMPLEMENTATION ORDER:
 
-1. Load technique resource:
-   ```
-   Read(".claude/skills/dev-build/techniques/{assigned-technique}.md")
-   ```
-2. Execute the technique workflow for THIS requirement
-3. Output per requirement:
+1. Load technique: `Read(".claude/skills/dev-build/techniques/{technique}.md")`
+2. Execute technique workflow
+3. If build sequence combines requirements (e.g., "REQ-002 + REQ-003"), build as single unit — apply the technique of the primary requirement
+4. If a requirement's behavior is already (partly) implemented by an earlier REQ: write tests only (skip RED, verify GREEN). Output: `RED: N/A (covered by REQ-XXX)`
+5. Apply `.claude/skills/shared/RULES.md` Algemeen (R007-R008) + TypeScript (T001-T103) rules
+6. Output per requirement:
    ```
    [REQ-XXX] {description}
    Technique: {TDD | Implementation First}
    {technique-specific output}
-   SYNC: {pattern/concept} in {file(s)} — {1-2 sentences: what, why, what depends on it}
+   SYNC: {pattern/concept} in {file(s)} — {what, why, what depends on it}
    Progress: {done}/{total}
    ```
 
-After all requirements complete: run integration tests across requirements.
+After all requirements: run integration tests across requirements.
 
-**Shared rules:**
+**On test failure:** fix implementation, re-run. Continue only on PASS.
 
-- `../shared/RULES.md` — Algemeen (R007-R008) en TypeScript rules (T001-T103) voor code quality
-- Requirements implemented SEQUENTIALLY (dependency order from 01-define.md)
-- Context7 research if unfamiliar pattern needed
-- All requirements must have tests before completion
+**On blocker:** log in build-log, mark BLOCKED, continue with other requirements. Suggest `/thinking-decide` for architectural blockers.
 
 ### FASE 3: Generate Test Checklist
 
-Create `03-test-checklist.md`:
+Create `03-test-checklist.md` met:
 
-```markdown
-# Test Checklist: {Feature}
+- Build summary (feature, date, techniques, test count)
+- Automated tests status table (REQ | Technique | Test | Status)
+- Files created/modified
+- Manual testing checklist
+- Feedback format: `/dev-test {feature}` met `1:PASS` / `2:FAIL {reason}`
 
-## Build Summary
+### FASE 4A: Documentation
 
-**Feature:** {feature-name}
-**Build Date:** {date}
-**Techniques:** TDD ({n}), Implementation First ({n})
-**Tests:** {passed}/{total} passing
+**Build log** — create `02-build-log.md`:
 
-## Automated Tests Status
+- Summary table (feature, date, techniques, tests)
+- Per requirement: technique, files, tests, SYNC
+- Integration test results
+- Blockers (of "Geen")
+- Codebase Sync section (placeholder, filled in 4B)
 
-| REQ     | Technique | Test               | Status |
-| ------- | --------- | ------------------ | ------ |
-| REQ-001 | TDD       | {test description} | PASS   |
-
-## Files Created
-
-{list of created/modified files}
-
-## Manual Testing Required
-
-### Checklist
-
-| #   | Test               | Pass | Notes |
-| --- | ------------------ | ---- | ----- |
-| 1   | {test description} | [ ]  |       |
-
-## Feedback Format
-
-Use `/dev-test {feature}` with results:
-```
-
-1:PASS
-2:FAIL {reason}
-
-```
-
-```
-
-### FASE 4: Completion
-
-**Step 1: Update build log**
-
-Create/update `02-build-log.md` with this template:
-
-```markdown
-# Build Log: {feature-name}
-
-## Summary
-
-| Metric     | Value                                 |
-| ---------- | ------------------------------------- |
-| Feature    | {feature-name}                        |
-| Build Date | {date}                                |
-| Techniques | TDD ({n}), Implementation First ({n}) |
-| Tests      | {passed}/{total} passing              |
-
-## Requirements Built
-
-{for each requirement in implementation order:}
-
-### REQ-XXX: {description}
-
-- **Technique:** {TDD | Implementation First}
-- **Files:** {files created/modified}
-- **Tests:** {test file(s)}
-- **SYNC:** {pattern/concept} in {file(s)} — {what, why, what depends on it}
-
-## Integration Tests
-
-{integration test results}
-
-## Blockers
-
-{blockers encountered, or "Geen"}
-
-## Codebase Sync
-
-{filled in after step 3}
-```
-
-**Step 2: Build summary**
+**Build summary** — display to user:
 
 ```
 BUILD COMPLETE: {feature}
 ========================
-
 Techniques: TDD ({n}), Implementation First ({n})
 Tests: {passed}/{total} PASS
 Files created: {count}
-
-Documentation:
-- .project/features/{feature}/02-build-log.md
-- .project/features/{feature}/03-test-checklist.md
 ```
 
-**Step 3: Codebase Sync — interactief gesprek**
+### FASE 4B: Codebase Sync
 
-De Codebase Sync is het belangrijkste onderdeel van de build. Het doel: de gebruiker begrijpt hoe de gebouwde feature werkt, zodat hij goede beslissingen kan nemen in test- en refactor-fases.
+Het doel: de gebruiker begrijpt hoe de feature werkt voor goede beslissingen in test- en refactor-fases.
 
-**3a) Claude legt uit** — alsof je het aan een student uitlegt. Geen jargon, geen aannames over voorkennis. Drie onderdelen:
+**4B-1) Uitleg** — alsof je het aan een student uitlegt. Vier onderdelen:
 
-- **Wat doet het?**: wat de feature doet in 1-2 simpele zinnen, alsof je het aan iemand uitlegt die de code niet kent
-- **Hoe ziet het eruit?**: 1-2 ASCII diagrammen die de architectuur visueel maken. Kies het meest relevante type:
-  - **Data flow**: request → handler → service → database (voor API/backend features)
-  - **Component diagram**: welke modules/files met elkaar praten (voor multi-file features)
-  - **State diagram**: state transitions (voor features met state management)
-  - Hou diagrammen compact (max 15 regels per diagram). Gebruik box-drawing characters (┌─┐│└─┘) en pijlen (→ ← ↓ ↑).
+- **Wat doet het?**: 1-2 zinnen, geen jargon
+- **Hoe ziet het eruit?**: 1-2 ASCII diagrammen (max 15 regels per diagram). Kies meest relevant type: data flow, component diagram, of state diagram. Gebruik box-drawing characters (┌─┐│└─┘) en pijlen (→ ← ↓ ↑).
+- **Hoe werkt het onder de motorkap?**: data flow stap voor stap, met concrete voorbeelden
+- **Waar moet je op letten?**: alleen niet-voor-de-hand-liggende keuzes — _waarom_, niet _wat_
 
-  ```
-  Example:
-  ┌──────────┐    ┌───────────┐    ┌──────────┐
-  │  Route   │───→│  Service  │───→│ Database │
-  │ POST /api│    │ validate  │    │  users   │
-  └──────────┘    │ transform │    └──────────┘
-                  └───────────┘
-  ```
-
-- **Hoe werkt het onder de motorkap?**: de data flow stap voor stap, met concrete voorbeelden ("als een gebruiker X doet, dan gebeurt Y")
-- **Waar moet je op letten?**: alleen niet-voor-de-hand-liggende keuzes — leg uit _waarom_, niet alleen _wat_
-
-**3b) Begripscheck** — via **AskUserQuestion**:
+**4B-2) Begripscheck** via **AskUserQuestion**:
 
 Vraag: "Snap je hoe de feature werkt?"
+Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
 
-Opties:
+**4B-3) Follow-up loop** — beantwoord vragen, herhaal begripscheck tot "Ja, helder".
 
-- "Ja, helder"
-- "Leg het uitgebreider uit" — "Geef een stap-voor-stap uitleg met voorbeelden, alsof ik nieuw ben in programmeren"
-- "Ik heb een vraag"
+**Na bevestiging:** schrijf sync naar `02-build-log.md` onder `## Codebase Sync` in gewone taal.
 
-**3c) Follow-up loop** — als de gebruiker iets niet snapt:
+### FASE 4C: Project Sync
 
-1. Beantwoord de vraag of leg dieper uit
-2. Stel opnieuw de begripscheck (herhaal 3b)
-3. Herhaal tot de gebruiker "Ja, helder" bevestigt
+**CLAUDE.md Auto-Sync:**
 
-**Step 4: Na bevestiging**
+Compare build output against CLAUDE.md. Update directly (no confirmation):
 
-1. Schrijf de sync naar `02-build-log.md` onder `## Codebase Sync` — schrijf de uitleg zoals gegeven in het gesprek (geen template, gewone taal)
+- New files → `## Project structuur`
+- New routes → `## Routing`
+- New non-obvious patterns → `## Non-obvious patterns`
+- New env vars/config → relevant section
 
-2. **CLAUDE.md Auto-Sync** — update project documentation with build changes:
+Quality rules (core-md-audit): project-specific only, one line per item, concise. Skip if no structural impact or no CLAUDE.md exists.
 
-   a. Read the current `CLAUDE.md` in the project root. If no CLAUDE.md exists, skip this step.
+Log: `CLAUDE.md: {N} updates ({sections})` of `CLAUDE.md: no updates needed`
 
-   b. Compare the build output (`02-build-log.md` files list + Codebase Sync conversation) against CLAUDE.md content. Identify gaps:
+**Backlog sync** (zie `shared/BACKLOG.md`): parse JSON uit `.project/backlog.html`, zet feature `.status = "BLT"`, update `data.updated`.
 
-   | Change Type                                      | CLAUDE.md Section to Update            |
-   | ------------------------------------------------ | -------------------------------------- |
-   | New components/hooks/pages added                 | `## Project structuur` (add to tree)   |
-   | New routes created                               | `## Routing` (add route)               |
-   | New non-obvious patterns discovered during build | `## Non-obvious patterns` (add bullet) |
-   | New environment variables or config required     | Relevant config section                |
+**Dashboard sync** (zie `shared/DASHBOARD.md`): read `.project/project.json` (skip als niet bestaat).
 
-   c. **Apply updates directly** (no user confirmation — this is part of the build flow).
+- Features: zet status naar `"BLT"`
+- Endpoints: update status naar `"done"` als endpoints geïmplementeerd (skip als geen endpoints)
+- Stack packages: push nieuwe dependencies
+- Write `.project/features/{feature-name}/build.json` met build data
 
-   d. **Quality rules** — follow core-md-audit guidelines strictly:
-   - Only add project-specific, non-obvious information
-   - One line per item, concise
-   - No generic best practices or obvious info
-   - No additions if the change is already covered in CLAUDE.md
-   - No additions for purely internal implementation details (private helpers, local state)
-   - Each line must earn its place in the context window
+### FASE 4D: Scoped Commit
 
-   e. **Skip entirely if:**
-   - All changes are already reflected in CLAUDE.md
-   - The feature only adds internal logic without structural impact
-   - No CLAUDE.md exists in the project root
+Compare current git status with baseline:
 
-   f. Log what was updated:
+```bash
+git status --porcelain | sort > /tmp/current-status.txt
+```
 
-   ```
-   CLAUDE.md: {N} updates ({list of sections touched})
-   ```
+Categorize files vs `.project/session/pre-skill-status.txt`:
 
-   Or if nothing changed:
+- **NEW** (only in current, not in baseline) → `git add`
+- **OVERLAP** (same filename in both, regardless of status) → warn user via AskUserQuestion, ask if own changes may be staged
+- **PRE-EXISTING** (only in baseline) → do NOT stage
+- **Gitignored** (in .gitignore) → skip, do not stage
 
-   ```
-   CLAUDE.md: no updates needed
-   ```
+If baseline file doesn't exist, fall back to `git add -A`.
 
-3. Sync backlog (zie `shared/BACKLOG.md`): parse JSON uit `.project/backlog.html`, zoek feature in `data.features`/`data.adhoc`, zet `.status = "BLT"`, update `data.updated`, schrijf JSON terug via Edit tool
+```bash
+git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
+```
 
-3b. **Dashboard sync** (zie `shared/DASHBOARD.md`):
+Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
 
-- Read `.project/project.json` (skip als niet bestaat — dashboard is optioneel)
-- **Endpoints**: voor elk endpoint dat in deze build is geïmplementeerd:
-  - Zoek op method+path in `endpoints` array
-  - Gevonden → update `status` naar `"done"`
-  - Niet gevonden → push met `status: "done"`
-- **Stack packages**: als nieuwe dependencies geïnstalleerd tijdens build:
-  - Voor elk nieuw package: push naar `stack.packages` als nog niet aanwezig
-- **Features**: update `features` array:
-  - Zoek feature op naam, zet status naar `"BLT"`
-  - Als feature niet bestaat: push met `{ name, status: "BLT", summary, created }`
-- **Write build.json**: schrijf `.project/features/{feature-name}/build.json` met build data (zie `shared/DASHBOARD.md` voor schema)
-- Write `.project/project.json`
+**No Co-Authored-By footer on pipeline commits.**
 
-4. **Scoped auto-commit** (only this skill's changes):
+## Test Output Parsing
 
-   Compare current git status with baseline from FASE 0:
-
-   ```bash
-   git status --porcelain | sort > /tmp/current-status.txt
-   ```
-
-   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
-   - **NEW** (only in current, not in baseline) → `git add` automatically
-   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
-   - **PRE-EXISTING** (only in baseline) → do NOT stage
-
-   If baseline file doesn't exist, fall back to `git add -A`.
-
-   ```bash
-   git commit -m "$(cat <<'EOF'
-   build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)
-   EOF
-   )"
-   ```
-
-   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
-
-   **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
-
-5. Build is officieel compleet
-
-## Test Output Parsing (CRITICAL)
-
-Condense all test output to this format. Omit stack traces, framework banners, and verbose output.
+Condense test output:
 
 **PASS:** `TESTS: {n}/{n} PASS ({time})`
 
@@ -445,53 +224,8 @@ FAILED:
 
 ## Stack-Specific Behavior
 
-Determine test commands, file extensions, mocking approach, and async patterns from:
+Determine test commands, file extensions, mocking approach from:
 
 1. `### Testing` section in CLAUDE.md
-2. Stack-baseline patterns (`.claude/research/stack-baseline.md`)
-3. Claude's own knowledge of the detected framework
-
-## Error Handling
-
-### Test Failures
-
-If a test fails unexpectedly:
-
-1. Log the failure
-2. Analyze the error
-3. Fix the implementation
-4. Re-run test
-5. Continue only when PASS
-
-### Build Blockers
-
-If implementation is blocked:
-
-1. Log the blocker in 02-build-log.md
-2. Mark affected requirements as BLOCKED
-3. Continue with other requirements
-4. Report blockers at completion
-5. Als blocker architectureel is (dependency conflict, onduidelijke aanpak):
-   - Suggereer: `/thinking-decide` — analyseer de blocker voordat je verder gaat
-
-## Troubleshooting
-
-### Error: Stack not detected
-
-**Cause:** No `### Stack` section found in CLAUDE.md.
-**Solution:** Run `/core-setup` first, or manually add a `### Stack` section under `## Project` in CLAUDE.md.
-
-### Error: No define file found
-
-**Cause:** Missing `.project/features/{name}/01-define.md`.
-**Solution:** Run `/dev-define {name}` first to create the feature definition.
-
-### Error: Tests fail after implementation
-
-**Cause:** TDD cycle not completing — test expectations may not match implementation.
-**Solution:** Check the test output carefully. If the test itself is wrong, fix the test first, then re-run. The RED-GREEN-REFACTOR cycle should catch this.
-
-### Error: Technique detection picks wrong approach
-
-**Cause:** Requirement type misidentified (TDD vs Implementation First).
-**Solution:** You can override technique selection. If a requirement has clear testable behavior, use TDD. If it's UI/visual, use Implementation First.
+2. Stack-baseline (`.claude/research/stack-baseline.md`)
+3. Claude's own knowledge

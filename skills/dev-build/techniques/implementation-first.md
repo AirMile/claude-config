@@ -1,11 +1,5 @@
 # Technique: Implementation First
 
-## When to use
-
-- CRUD operations, middleware, straightforward features
-- Clear requirements where architecture is obvious
-- Features where the shape is well-understood upfront
-
 ## Single Requirement Workflow
 
 ### Step 1: Implement

@@ -1,11 +1,5 @@
 # Technique: TDD (Test-Driven Development)
 
-## When to use
-
-- Business logic, validation rules, complex calculations
-- Features where correctness is critical
-- Code with many edge cases
-
 ## Single Requirement Workflow
 
 ### Step 1: Write Test (RED)
