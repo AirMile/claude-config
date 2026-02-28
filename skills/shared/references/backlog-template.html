@@ -768,10 +768,28 @@
           html += `</div></div>`;
         }
 
-        // Dependencies
-        const deps = d.depends || [];
-        if (deps.length) {
-          html += `<div class="fd-section"><div class="fd-deps">${deps.map((dep) => `<span class="fd-dep">${esc(dep)}</span>`).join("")}</div></div>`;
+        // Files
+        const files = d.files || [];
+        if (files.length) {
+          const icons = { create: "+", modify: "~" };
+          const colors = {
+            create: "var(--done)",
+            modify: "var(--accent)",
+          };
+          html += `<div class="fd-section"><h4>Files (${files.length})</h4><div class="fd-files">`;
+          files.forEach((f) => {
+            const basePath = location.pathname.replace(/\/backlog\/?$/, "");
+            const openUrl =
+              basePath +
+              "/open/" +
+              encodeURIComponent(f.path).replace(/%2F/g, "/");
+            html += `<div class="fd-file">
+              <span class="fd-file-icon" style="color:${colors[f.action] || "var(--text-dim)"}">${icons[f.action] || "?"}</span>
+              <a class="fd-file-path" href="#" onclick="openInVSCode('${openUrl}',this);return false" title="Open in VS Code">${esc(f.path)}</a>
+              <span class="fd-file-purpose">${esc(f.purpose || "")}</span>
+            </div>`;
+          });
+          html += `</div></div>`;
         }
 
         // Requirements
@@ -802,30 +820,6 @@
             .join("");
           html += `<div class="fd-section"><h4>Requirements (${reqs.length})</h4>
             <table class="fd-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
-        }
-
-        // Files
-        const files = d.files || [];
-        if (files.length) {
-          const icons = { create: "+", modify: "~" };
-          const colors = {
-            create: "var(--done)",
-            modify: "var(--accent)",
-          };
-          html += `<div class="fd-section"><h4>Files (${files.length})</h4><div class="fd-files">`;
-          files.forEach((f) => {
-            const basePath = location.pathname.replace(/\/backlog\/?$/, "");
-            const openUrl =
-              basePath +
-              "/open/" +
-              encodeURIComponent(f.path).replace(/%2F/g, "/");
-            html += `<div class="fd-file">
-              <span class="fd-file-icon" style="color:${colors[f.action] || "var(--text-dim)"}">${icons[f.action] || "?"}</span>
-              <a class="fd-file-path" href="#" onclick="openInVSCode('${openUrl}',this);return false" title="Open in VS Code">${esc(f.path)}</a>
-              <span class="fd-file-purpose">${esc(f.purpose || "")}</span>
-            </div>`;
-          });
-          html += `</div></div>`;
         }
 
         // Build
