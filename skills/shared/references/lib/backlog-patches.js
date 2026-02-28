@@ -22,16 +22,11 @@ var backlogPatch = `<style>
   .status-tag { font-size:10px; padding:1px 6px; border-radius:10px; font-weight:600; display:inline-flex; align-items:center; gap:4px; background:transparent; letter-spacing:0.3px; }
   .status-tag::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
   .copy-cmd-btn { display:none !important; }
+  .card-menu { display:none !important; }
   .card-clip { background:none !important; border:none !important; color:var(--text-dim) !important; cursor:pointer; padding:2px !important; opacity:0; transition:opacity 0.15s !important; flex-shrink:0; }
   .card:hover .card-clip { opacity:1; }
   .card-clip:hover { color:var(--accent,#58a6ff) !important; }
   .card-clip.copied { color:var(--done,#3fb950) !important; opacity:1; }
-  .card-menu { position:relative; }
-  .card-menu-dropdown { display:none; position:absolute; top:100%; right:0; margin-top:4px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:2px 0; min-width:80px; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
-  .card-menu-dropdown.open { display:block; }
-  .card-menu-dropdown button { display:flex; align-items:center; gap:6px; width:100% !important; padding:5px 10px !important; background:none !important; border:none !important; color:var(--text-dim); font-size:12px; cursor:pointer; transition:all 0.1s; font-family:inherit; height:auto !important; border-radius:0 !important; justify-content:flex-start !important; white-space:nowrap; }
-  .card-menu-dropdown button:hover { background:var(--surface-hover,#1c2333); color:var(--text,#e6edf3); }
-  .card-menu-dropdown .menu-delete:hover { color:var(--danger,#f85149) !important; background:var(--danger-bg,rgba(248,81,73,0.1)) !important; }
 </style>
 <script>
 (function(){
@@ -66,44 +61,12 @@ var backlogPatch = `<style>
               }, 1500);
             });
           });
-          // Insert before hamburger menu
-          var menuEl = actions.querySelector(".card-menu");
-          if (menuEl) actions.insertBefore(clipBtn, menuEl);
-          else actions.appendChild(clipBtn);
+          actions.appendChild(clipBtn);
         }
-      }
-      if (actions && !actions.querySelector(".card-menu")) {
-        // Remove old buttons
-        actions.querySelectorAll(".detail-btn, .delete-btn, .edit-btn").forEach(function(b) { b.remove(); });
-        // Add hamburger menu
-        var menu = document.createElement("div");
-        menu.className = "card-menu";
-        menu.innerHTML = '<button class="menu-btn" title="Menu">\\u2630</button><div class="card-menu-dropdown"><button class="menu-details">Details</button><button class="menu-delete">Verwijder</button></div>';
-        actions.appendChild(menu);
-        menu.querySelector(".menu-btn").addEventListener("click", function(e) {
-          e.stopPropagation();
-          var dd = menu.querySelector(".card-menu-dropdown");
-          document.querySelectorAll(".card-menu-dropdown.open").forEach(function(d) { if (d !== dd) d.classList.remove("open"); });
-          dd.classList.toggle("open");
-        });
-        menu.querySelector(".menu-details").addEventListener("click", function(e) {
-          e.stopPropagation();
-          menu.querySelector(".card-menu-dropdown").classList.remove("open");
-          openDetailModal(f.name);
-        });
-        menu.querySelector(".menu-delete").addEventListener("click", function(e) {
-          e.stopPropagation();
-          menu.querySelector(".card-menu-dropdown").classList.remove("open");
-          openDeleteModal(f.name);
-        });
       }
       return card;
     };
   }
-  // Close menus on outside click
-  document.addEventListener("click", function() {
-    document.querySelectorAll(".card-menu-dropdown.open").forEach(function(d) { d.classList.remove("open"); });
-  });
   // Capture card clicks: open detail modal
   document.addEventListener("click", function(e) {
     var card = e.target.closest(".card");

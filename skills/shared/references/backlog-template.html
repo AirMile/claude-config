@@ -445,15 +445,7 @@
         card.innerHTML = `
           <div class="card-top">
             <span class="card-name">${esc(f.name)}</span>
-            <div class="card-actions">
-              <div class="card-menu">
-                <button class="menu-btn" title="Menu">\u2630</button>
-                <div class="card-menu-dropdown">
-                  <button class="menu-details">Details</button>
-                  <button class="menu-delete">Verwijder</button>
-                </div>
-              </div>
-            </div>
+            <div class="card-actions"></div>
           </div>
           <div class="card-desc">${esc(f.description)}</div>
           <div class="card-tags">
@@ -467,28 +459,6 @@
         card.addEventListener("dragstart", handleDragStart);
         card.addEventListener("dragend", handleDragEnd);
 
-        // Hamburger menu
-        const menuBtn = card.querySelector(".menu-btn");
-        const dropdown = card.querySelector(".card-menu-dropdown");
-        menuBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          // Close other open menus
-          document.querySelectorAll(".card-menu-dropdown.open").forEach((d) => {
-            if (d !== dropdown) d.classList.remove("open");
-          });
-          dropdown.classList.toggle("open");
-        });
-        card.querySelector(".menu-details").addEventListener("click", (e) => {
-          e.stopPropagation();
-          dropdown.classList.remove("open");
-          openDetailModal(f.name);
-        });
-        card.querySelector(".menu-delete").addEventListener("click", (e) => {
-          e.stopPropagation();
-          dropdown.classList.remove("open");
-          openDeleteModal(f.name);
-        });
-
         // Click card to open detail modal
         card.style.cursor = "pointer";
         card.addEventListener("click", () => {
@@ -497,13 +467,6 @@
 
         return card;
       }
-
-      // Close menus on outside click
-      document.addEventListener("click", () => {
-        document
-          .querySelectorAll(".card-menu-dropdown.open")
-          .forEach((d) => d.classList.remove("open"));
-      });
 
       // ─── Drag & Drop ───────────────────────────────────────
       let draggedName = null;
