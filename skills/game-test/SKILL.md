@@ -25,13 +25,13 @@ This skill activates in these scenarios:
 **Primary use:**
 
 - After `/game-build` completes implementation
-- When `.project/features/{name}/03-playtest.md` exists
+- When `.project/features/{name}/feature.json` exists with `tests.checklist[]`
 - When human verification is needed for game mechanics
 
 **Context indicators:**
 
 - Feature has been implemented with build phase
-- Playtest checklist exists in 03-playtest.md
+- Playtest checklist exists in feature.json `tests.checklist[]`
 - User wants to verify gameplay feels correct
 
 **NOT for:**
@@ -144,20 +144,20 @@ Now TESTABLE -> TDD fix loop
 2. **Parse user input:**
    - If feature name only -> show checklist, wait for feedback
    - If feature name + feedback -> parse feedback immediately
-   - If "recent" -> find most recently modified 03-playtest.md
+   - If "recent" -> find most recently modified feature.json with `tests.checklist`
 
 3. **Locate playtest checklist:**
 
    ```
-   .project/features/{feature-name}/03-playtest.md
+   .project/features/{feature-name}/feature.json → tests.checklist[]
    ```
 
-4. **Validate file exists:**
+4. **Validate feature.json exists with tests.checklist:**
 
-   **If file not found:**
+   **If not found:**
 
    ```
-   NOT FOUND: 03-playtest.md
+   NOT FOUND: feature.json with tests.checklist
 
    Feature: {feature-name}
    Searched: .project/features/{feature-name}/
@@ -169,8 +169,8 @@ Now TESTABLE -> TDD fix loop
    -> Exit skill
 
 5. **Read playtest checklist:**
-   - Parse test items with numbers
-   - Note expected behavior for each item
+   - Parse `tests.checklist[]` from feature.json
+   - Note expected behavior for each item (from `title` field)
    - Count total items
 
 6. **Verify playtest scene exists:**
@@ -207,7 +207,7 @@ Now TESTABLE -> TDD fix loop
    )
    ```
 
-   **Display test scenario from 03-playtest.md:**
+   **Display test scenario from feature.json tests.checklist:**
 
    ```
    GAME LAUNCHED - {feature-name}
@@ -913,7 +913,7 @@ Fix 2: No sound on cast
 **If "Ik heb een vraag"** → answer the question, then re-ask.
 **Loop until "Ja, helder".**
 
-**0c) Save fix sync** — store the summary for inclusion in 03-test-results.md (Step 3).
+**0c) Save fix sync** — store the summary for inclusion in feature.json `tests.sessions[]`.
 
 ---
 
@@ -930,7 +930,7 @@ Use AskUserQuestion tool:
   - label: "Ja, ik heb iets opgemerkt", description: "Ik wil iets noteren voor later"
 - multiSelect: false
 
-**If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in 03-test-results.md. Do NOT attempt to fix these — they are out of scope.
+**If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in feature.json `observations[]`. Do NOT attempt to fix these — they are out of scope.
 
 After documenting, show confirmation:
 
@@ -961,66 +961,26 @@ Opgenomen in test results.
    Feature ready for integration.
    ```
 
-2. **Update 01-define.md:**
-   - Add `Status: VERIFIED` to frontmatter or summary
-   - Record verification date
+2. **Write feature.json** (read-modify-write):
+   1. Read `.project/features/{feature-name}/feature.json`
+   2. Update existing sections:
+      - `status` → `"TST"` or `"VERIFIED"`
+      - `requirements[].status` → `"PASS"` or `"FAIL"` per item
+      - `tests.checklist[].status` → update per item with evidence
+   3. Add/update `tests` section:
+      - `tests.finalStatus`: `"VERIFIED"` or `"PASSED"` or `"FAILED"`
+      - `tests.sessions[]`: push session with `{ date, pass, fail, fixes }`
+      - `tests.fixSync`: fix summary (if fixes were applied)
+   4. Add `observations[]` if user reported out-of-scope issues
+   5. Write feature.json back (do NOT overwrite other sections)
 
-3. **Create/Update 03-test-results.md:**
-
-   ```markdown
-   # Test Results: {feature-name}
-
-   ## Summary
-
-   | Metric | Value       |
-   | ------ | ----------- |
-   | Status | VERIFIED    |
-   | Items  | {N}         |
-   | Passed | {N}         |
-   | Date   | {timestamp} |
-
-   ## Playtest History
-
-   ### Session 1: {date}
-
-   | #   | Initial | Final | Fixes Applied         |
-   | --- | ------- | ----- | --------------------- |
-   | 1   | PASS    | PASS  | -                     |
-   | 2   | PASS    | PASS  | -                     |
-   | 3   | FAIL    | PASS  | Puddle radius 50->100 |
-   | 4   | FAIL    | PASS  | Added cast sound      |
-
-   ## Fix Sync
-
-   {Only if fixes were applied. Written in plain language from the sync conversation.}
-
-   {Per fix:}
-
-   - **{item title}**: {problem} → {fix} ({file:line})
-
-   ## Observations
-
-   {Only if user reported out-of-scope observations during playtesting.}
-
-   - {observation description} → suggested: /game-define {topic}
-
-   ## Tests Added
-
-   - `tests/test_{feature}_puddle_radius.gd`
-
-   ## Files Modified
-
-   - `scripts/abilities/water_ability.gd` (line 45: radius)
-   - `scenes/abilities/water_ability.tscn` (added AudioStreamPlayer)
-   ```
-
-4. **Sync backlog** (zie `shared/BACKLOG.md`):
+3. **Sync backlog** (zie `shared/BACKLOG.md`):
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "TST"`
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
-5. **Scoped auto-commit** (only this skill's changes):
+4. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -1068,10 +1028,7 @@ Committed: test({feature}): verified
 
 ```
 .project/features/{feature-name}/
-├── 01-define.md          # Updated: Status: VERIFIED
-├── 02-build-log.md       # Implementation log from build phase
-├── 03-playtest.md        # Playtest checklist from build phase
-└── 03-test-results.md    # NEW: Playtest history and results
+└── feature.json    # Enriched with tests section (finalStatus, sessions, checklist updates, observations)
 ```
 
 ## Example Session

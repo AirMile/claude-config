@@ -21,7 +21,7 @@ Handles hybrid verification of implemented features through automated testing an
 ## When to Use
 
 - After `/dev-build` completes
-- When `.project/features/{name}/build.json` exists (with `testChecklist[]`)
+- When `.project/features/{name}/feature.json` exists (with `tests.checklist[]`)
 - NOT for: planning (/dev-define), implementation (/dev-build)
 
 ## Input Formats
@@ -70,19 +70,19 @@ Everything works except validation is missing and no welcome mail
    - Feature name only → proceed to classification and hybrid testing
    - Feature name + inline feedback → skip to FASE 1b (backward compatible, no automation)
    - Feature name + free text → skip to FASE 1b (backward compatible, no automation)
-   - "recent" → find most recently modified build.json
+   - "recent" → find most recently modified feature.json with `build` section
 
 3. **Locate and validate build output:**
 
    ```
-   .project/features/{feature-name}/build.json
+   .project/features/{feature-name}/feature.json
    ```
 
-   Parse `testChecklist[]` array. Each item has: `id`, `title`, `requirementId`, `steps[]`, `expected`, `status`.
+   Parse `tests.checklist[]` array. Each item has: `id`, `title`, `requirementId`, `steps[]`, `expected`, `status`.
 
-   If `build.json` not found → exit with message to run `/dev-build {feature-name}` first.
+   If `feature.json` not found or has no `tests.checklist` → exit with message to run `/dev-build {feature-name}` first.
 
-4. **Read checklist** from `build.json.testChecklist` and use structured test items.
+4. **Read checklist** from `feature.json` → `tests.checklist` and use structured test items.
 
 5. **Generate Test Data** (via Explore agent — zero source file reads in main context)
 
@@ -92,10 +92,9 @@ Everything works except validation is missing and no welcome mail
 
    ```
    Feature: {feature-name}
-   Checklist: .project/features/{feature-name}/build.json (testChecklist[])
-   Define: .project/features/{feature-name}/define.json
+   Feature file: .project/features/{feature-name}/feature.json (tests.checklist[] + requirements[])
 
-   Lees de checklist en define doc. Zoek vervolgens in de source code naar:
+   Lees de feature.json (checklist + requirements). Zoek vervolgens in de source code naar:
    - Form fields, validatie regels, API endpoints relevant voor de test items
    - Bestaande test files die hergebruikt kunnen worden
 
@@ -666,7 +665,7 @@ Fix 2: Welcome mail not sent
 **If "Ik heb een vraag"** → answer the question, then re-ask.
 **Loop until "Ja, helder".**
 
-**1c) Save fix sync** — store the summary for inclusion in `test.json` (fixSync field).
+**1c) Save fix sync** — store the summary for inclusion in `feature.json` (tests.fixSync field).
 
 ---
 
@@ -683,7 +682,7 @@ Use AskUserQuestion tool:
   - label: "Ja, ik heb iets opgemerkt", description: "Ik wil iets noteren voor later"
 - multiSelect: false
 
-**If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in `test.json` (observations field). Do NOT attempt to fix these — they are out of scope.
+**If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in `feature.json` (observations field). Do NOT attempt to fix these — they are out of scope.
 
 After documenting, show confirmation:
 
@@ -695,7 +694,14 @@ Opgenomen in test results.
 
 ---
 
-3. **Update define.json:** Set `status: "VERIFIED"` with date.
+3. **Write feature.json** (read-modify-write):
+   - Read `.project/features/{feature-name}/feature.json`
+   - Update `status` → `"TST"` (of `"VERIFIED"` als alle items PASS)
+   - Update `requirements[].status` → `"PASS"` / `"FAIL"` per REQ
+   - Update `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item
+   - Voeg/update `tests` sectie: `finalStatus`, `coverage`, `sessions[]`, `fixSync`
+   - Voeg `observations[]` toe (indien aanwezig)
+   - Write `feature.json` terug (NIET andere secties overschrijven)
 
 4. **Sync backlog** (zie `shared/BACKLOG.md`):
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
@@ -711,12 +717,7 @@ Opgenomen in test results.
    - Update `features` array: zoek feature op naam, zet status naar `"TST"`
    - Write `.project/project.json`
 
-6. **Write test.json:**
-   - Write `test.json` naar `.project/features/{feature-name}/` met verrijkt schema (zie `shared/DASHBOARD.md`): `finalStatus`, `coverage`, `sessions[]` (per-sessie detail met items[]), `runs[]` (compact), `fixSync` (markdown string), `observations[]`, `testsAdded[]`, `filesModified[]`.
-
-7. **Update build.json testChecklist**: Read `build.json`, update `testChecklist[].status` per item (`"pass"` / `"fail"` / `"skip"`), write terug.
-
-8. **Scoped auto-commit** (only this skill's changes):
+6. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -754,9 +755,7 @@ Opgenomen in test results.
 
 ```
 .project/features/{feature-name}/
-├── define.json           # Updated: status: "VERIFIED"
-├── build.json            # Updated: testChecklist[].status per item
-└── test.json             # NEW: Enriched test results (sessions, fixes, observations)
+└── feature.json           # Enriched: tests section, requirements[].status, observations
 ```
 
 ## Example Flow (compact)

@@ -297,7 +297,7 @@ Show requirements table with acceptance criteria:
 
    c. Continue FASE 2-5 for EACH sub-feature sequentially:
    - Re-number requirements per sub-feature (REQ-001, REQ-002, etc.)
-   - Each sub-feature gets its own architecture, scene layout, and 01-define.md
+   - Each sub-feature gets its own architecture, scene layout, and feature.json
    - Use build order: complete all FASEs for sub-feature 1 before starting sub-feature 2
 
 7. **Update backlog (split only):**
@@ -515,76 +515,23 @@ IMPLEMENTATION ORDER:
 3. REQ-003 (after REQ-002)
 ```
 
-### FASE 4: Generate Output
+### FASE 4: Write feature.json
 
-Write to `.project/features/{feature-name}/01-define.md`:
+Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md` voor volledig schema):
 
-```markdown
-# Feature Definition: {Feature Name}
-
-**Created:** {date}
-**Status:** defined
-
-## Summary
-
-{description}
-
-## Requirements
-
-| ID      | Requirement   | Category   | Test Type | Acceptance Criteria    |
-| ------- | ------------- | ---------- | --------- | ---------------------- |
-| REQ-001 | {description} | {category} | {type}    | {verifiable condition} |
-
-## User Answers
-
-{answers from FASE 1}
-
-## Godot Research
-
-{if research was done}
-
-## Scene Layout
-
-{if visual feature — ASCII scene layout from FASE 2b}
-
-## Gameplay Flow
-
-{if visual feature — state diagram from FASE 2b}
-
-## Split Decision
-
-{if split — reference to 00-split.md}
-
-## Architecture
-
-### Scene Tree
-
-{scene tree}
-
-### Files to Create
-
-{scenes, scripts, resources}
-
-### Signals
-
-{signal table}
-
-## Implementation Order
-
-### Dependency Analysis
-
-{dependency analysis from FASE 3}
-
-### Build Sequence
-
-1. REQ-XXX - {description} (base)
-2. REQ-XXX - {description} (after REQ-XXX)
-   ...
-
-## Test Strategy
-
-{test table}
-```
+| Veld                        | Conditie                                                                           |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `name`, `created`, `status` | altijd (status = `"DEF"`)                                                          |
+| `summary`                   | altijd                                                                             |
+| `depends`                   | altijd (lege array als geen)                                                       |
+| `choices`                   | altijd (user antwoorden)                                                           |
+| `requirements`              | altijd (elke REQ met `status: "pending"`)                                          |
+| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`)       |
+| `architecture`              | altijd (`componentTree`, `interfaces`)                                             |
+| `design`                    | alleen visuele features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`) |
+| `buildSequence`             | altijd                                                                             |
+| `testStrategy`              | altijd                                                                             |
+| `research`                  | alleen als research is gedaan                                                      |
 
 ### FASE 5: Sync Backlog
 
@@ -611,7 +558,7 @@ Zie `shared/BACKLOG.md` voor het JSON read/write protocol.
    - Gevonden → zet `.status = "DEF"` en `.date = "{current date}"`
    - Niet gevonden → zoek in `data.adhoc`
    - Nog niet gevonden → voeg toe aan `data.adhoc`:
-     `{ "name": "{feature}", "type": "FEATURE", "status": "DEF", "description": "{from 01-define.md}", "dependency": null, "source": "/game-define" }`
+     `{ "name": "{feature}", "type": "FEATURE", "status": "DEF", "description": "{from feature.json summary}", "dependency": null, "source": "/game-define" }`
 
 4. **Update metadata and write back:**
    - Zet `data.updated` naar huidige datum (`YYYY-MM-DD`)
@@ -648,10 +595,14 @@ Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
 
 4. **Features** — push feature naar `features` array:
    - Check of feature met deze naam al bestaat
-   - Zo nee: push `{ name: "{feature-name}", status: "DEF", summary: "{from 01-define.md summary}", depends: [], created: "{date}" }`
+   - Zo nee: push `{ name: "{feature-name}", status: "DEF", summary: "{from feature.json summary}", depends: [], created: "{date}" }`
    - Zo ja: update status naar `"DEF"`
 
-5. **Write define.json** — schrijf `.project/features/{feature-name}/define.json` met gestructureerde feature data (zie `shared/DASHBOARD.md` voor schema)
+5. **Architecture** — genereer/update `architecture` sectie als feature scene tree en/of signals heeft:
+   - `diagram`: Mermaid `graph TD` vanuit scene tree hiërarchie (nodes, children). Signal flow als edges (`emitter --|signal_name|--> receiver`). State machines als subgraph
+   - `description`: markdown scene overzicht + signals + state machines
+   - OVERWRITE (vervangt vorige diagram met bijgewerkte versie)
+   - Skip als feature te klein is (enkele node zonder signals)
 
 6. Write `.project/project.json`
 
@@ -683,4 +634,4 @@ This skill must ALWAYS:
 
 - Use business-like, direct tone
 - Extract testable requirements with REQ-IDs and acceptance criteria
-- Include all sections in 01-define.md output
+- Include all required sections in feature.json output

@@ -4,1116 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard</title>
-    <style>
-      :root {
-        --bg: #0d1117;
-        --surface: #161b22;
-        --surface-hover: #1c2333;
-        --border: #30363d;
-        --text: #e6edf3;
-        --text-muted: #8b949e;
-        --text-dim: #6e7681;
-        --accent: #58a6ff;
-        --danger: #f85149;
-        --danger-bg: #f8514922;
-        --done: #3fb950;
-        --warn: #d29922;
-        --purple: #d2a8ff;
-        --pink: #f778ba;
-      }
-
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
-          sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        scrollbar-color: var(--border) transparent;
-      }
-
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: var(--border);
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: var(--text-dim);
-      }
-
-      /* Header */
-      header {
-        padding: 12px 24px;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        gap: 16px;
-      }
-
-      header h1 {
-        font-size: 16px;
-        font-weight: 600;
-      }
-
-      /* Layout */
-      .layout {
-        display: flex;
-        flex: 1;
-        min-height: 0;
-      }
-
-      /* Sidebar */
-      .sidebar {
-        width: 180px;
-        min-width: 180px;
-        border-right: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        padding: 8px 0;
-      }
-
-      .sidebar a {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 16px;
-        color: var(--text-muted);
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 500;
-        transition: all 0.15s;
-        border-left: 2px solid transparent;
-      }
-
-      .sidebar a:hover {
-        color: var(--text);
-        background: var(--surface);
-      }
-
-      .sidebar a.active {
-        color: var(--accent);
-        background: var(--surface);
-        border-left-color: var(--accent);
-      }
-
-      /* Content */
-      .content {
-        flex: 1;
-        padding: 24px 32px;
-        overflow-y: auto;
-        min-height: 0;
-      }
-
-      .section-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-
-      .section-header h2 {
-        font-size: 18px;
-        font-weight: 600;
-      }
-
-      .edit-btn,
-      .add-btn {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        color: var(--text-muted);
-        padding: 4px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        cursor: pointer;
-        transition: all 0.15s;
-        font-family: inherit;
-      }
-
-      .edit-btn:hover,
-      .add-btn:hover {
-        color: var(--accent);
-        border-color: var(--accent);
-      }
-
-      .empty-state {
-        text-align: center;
-        padding: 48px 24px;
-        color: var(--text-dim);
-        font-size: 13px;
-      }
-
-      .empty-state p {
-        margin-bottom: 12px;
-      }
-
-      /* Cards */
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 16px;
-        margin-bottom: 12px;
-      }
-
-      .card-title {
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 8px;
-      }
-
-      .card-body {
-        font-size: 13px;
-        color: var(--text-muted);
-        line-height: 1.6;
-      }
-
-      /* Shared markdown content styling (marked.js output) */
-      .concept-content,
-      .thinking-content,
-      .research-content {
-        font-size: 14px;
-        line-height: 1.7;
-        color: var(--text-muted);
-      }
-
-      .concept-content h1,
-      .thinking-content h1,
-      .research-content h1 {
-        font-size: 20px;
-        color: var(--text);
-        margin: 0 0 12px;
-        scroll-margin-top: 16px;
-      }
-
-      .concept-content h2,
-      .thinking-content h2,
-      .research-content h2 {
-        font-size: 17px;
-        color: var(--accent);
-        margin: 24px 0 8px;
-        padding-bottom: 4px;
-        border-bottom: 1px solid var(--border);
-        scroll-margin-top: 16px;
-      }
-
-      .concept-content h2:first-child {
-        display: none;
-      }
-
-      .concept-content h3,
-      .thinking-content h3,
-      .research-content h3 {
-        font-size: 15px;
-        color: var(--text);
-        margin: 20px 0 6px;
-        scroll-margin-top: 16px;
-      }
-
-      .concept-content h4,
-      .thinking-content h4,
-      .research-content h4 {
-        font-size: 13px;
-        color: var(--text);
-        margin: 16px 0 4px;
-        scroll-margin-top: 16px;
-      }
-
-      .concept-content p,
-      .thinking-content p,
-      .research-content p {
-        margin: 0 0 12px;
-      }
-
-      .concept-content ul,
-      .concept-content ol,
-      .thinking-content ul,
-      .thinking-content ol,
-      .research-content ul,
-      .research-content ol {
-        margin: 0 0 12px;
-        padding-left: 20px;
-      }
-
-      .concept-content li,
-      .thinking-content li,
-      .research-content li {
-        margin-bottom: 4px;
-        color: var(--text-muted);
-      }
-
-      .concept-content strong,
-      .thinking-content strong,
-      .research-content strong {
-        color: var(--text);
-      }
-
-      .concept-content code,
-      .thinking-content code,
-      .research-content code {
-        background: var(--surface-hover);
-        padding: 1px 5px;
-        border-radius: 3px;
-        font-size: 12px;
-      }
-
-      .concept-content pre,
-      .thinking-content pre,
-      .research-content pre {
-        background: var(--bg);
-        padding: 12px;
-        border-radius: 6px;
-        overflow-x: auto;
-        margin: 8px 0;
-      }
-
-      .concept-content pre code,
-      .thinking-content pre code,
-      .research-content pre code {
-        background: none;
-        padding: 0;
-        font-size: 13px;
-        line-height: 1.5;
-      }
-
-      .concept-content table,
-      .thinking-content table,
-      .research-content table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 12px 0;
-        font-size: 13px;
-      }
-
-      .concept-content th,
-      .thinking-content th,
-      .research-content th {
-        text-align: left;
-        padding: 6px 10px;
-        border-bottom: 2px solid var(--border);
-        color: var(--text);
-        font-weight: 600;
-      }
-
-      .concept-content td,
-      .thinking-content td,
-      .research-content td {
-        padding: 6px 10px;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .concept-content hr,
-      .thinking-content hr,
-      .research-content hr {
-        border: none;
-        border-top: 1px solid var(--border);
-        margin: 16px 0;
-      }
-
-      .concept-content blockquote,
-      .thinking-content blockquote,
-      .research-content blockquote {
-        padding-left: 12px;
-        margin: 8px 0;
-        color: var(--text-dim);
-      }
-
-      .concept-content a,
-      .thinking-content a,
-      .research-content a {
-        color: var(--accent);
-        text-decoration: none;
-      }
-
-      .concept-content a:hover,
-      .thinking-content a:hover,
-      .research-content a:hover {
-        text-decoration: underline;
-      }
-
-      /* Grid */
-      .grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-
-      .grid-3 {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 12px;
-      }
-
-      /* Stat card */
-      .stat-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 14px 16px;
-      }
-
-      .stat-label {
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--text-dim);
-        margin-bottom: 4px;
-      }
-
-      .stat-value {
-        font-size: 14px;
-        font-weight: 500;
-      }
-
-      /* Lists */
-      .tag-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 8px;
-      }
-
-      .tag {
-        font-size: 11px;
-        padding: 2px 8px;
-        border-radius: 12px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        color: var(--text-muted);
-      }
-
-      /* Color swatch */
-      .swatch-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 16px;
-      }
-
-      .swatch {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 8px 12px;
-        min-width: 180px;
-      }
-
-      .swatch-color {
-        width: 28px;
-        height: 28px;
-        border-radius: 4px;
-        border: 1px solid var(--border);
-        flex-shrink: 0;
-      }
-
-      .swatch-info {
-        font-size: 12px;
-      }
-
-      .swatch-token {
-        font-weight: 500;
-        color: var(--text);
-      }
-
-      .swatch-value {
-        color: var(--text-dim);
-        font-family: monospace;
-      }
-
-      /* Code block */
-      .code-block {
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 14px;
-        font-family: "JetBrains Mono", "Fira Code", monospace;
-        font-size: 12px;
-        line-height: 1.6;
-        color: var(--text-muted);
-        white-space: pre-wrap;
-        overflow-x: auto;
-        max-height: 300px;
-        overflow-y: auto;
-      }
-
-      /* Tables */
-      .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-      }
-
-      .data-table th {
-        text-align: left;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--text-dim);
-        padding: 8px 12px;
-        border-bottom: 1px solid var(--border);
-        font-weight: 500;
-      }
-
-      .data-table td {
-        padding: 8px 12px;
-        border-bottom: 1px solid var(--border);
-        color: var(--text-muted);
-      }
-
-      .data-table tr:last-child td {
-        border-bottom: none;
-      }
-
-      .data-table tr:hover td {
-        background: var(--surface-hover);
-      }
-
-      /* Badges */
-      .badge {
-        display: inline-block;
-        font-size: 10px;
-        font-weight: 600;
-        padding: 2px 8px;
-        border-radius: 3px;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-      }
-
-      .badge-get {
-        background: #3fb95033;
-        color: #3fb950;
-      }
-      .badge-post {
-        background: #58a6ff33;
-        color: #58a6ff;
-      }
-      .badge-put,
-      .badge-patch {
-        background: #d2922233;
-        color: #d29922;
-      }
-      .badge-delete {
-        background: #f8514933;
-        color: #f85149;
-      }
-      .badge-done {
-        background: #3fb95022;
-        color: #3fb950;
-      }
-      .badge-planned {
-        background: #8b949e22;
-        color: #8b949e;
-      }
-      .badge-building {
-        background: #58a6ff22;
-        color: #58a6ff;
-      }
-
-      .auth-icon {
-        font-size: 12px;
-      }
-
-      /* Entity card */
-      .entity-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        margin-bottom: 12px;
-        overflow: hidden;
-      }
-
-      .entity-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 14px;
-        border-bottom: 1px solid var(--border);
-        background: var(--bg);
-      }
-
-      .entity-name {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--accent);
-      }
-
-      .entity-actions {
-        display: flex;
-        gap: 4px;
-      }
-
-      .entity-actions button {
-        background: none;
-        border: 1px solid var(--border);
-        color: var(--text-dim);
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 11px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.15s;
-      }
-
-      .entity-actions button:hover {
-        color: var(--accent);
-        border-color: var(--accent);
-      }
-
-      .entity-fields {
-        padding: 0;
-      }
-
-      .entity-field {
-        display: flex;
-        gap: 12px;
-        padding: 6px 14px;
-        font-size: 12px;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .entity-field:last-child {
-        border-bottom: none;
-      }
-
-      .field-name {
-        font-weight: 500;
-        color: var(--text);
-        min-width: 100px;
-      }
-
-      .field-type {
-        color: var(--purple);
-        font-family: monospace;
-        min-width: 80px;
-      }
-
-      .field-key {
-        color: var(--warn);
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-      }
-
-      .entity-relations {
-        padding: 8px 14px;
-        border-top: 1px solid var(--border);
-        font-size: 12px;
-        color: var(--text-dim);
-      }
-
-      .relation-arrow {
-        color: var(--accent);
-      }
-
-      /* Features */
-      .feature-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        margin-bottom: 8px;
-        overflow: hidden;
-      }
-
-      .feature-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
-        cursor: pointer;
-        transition: background 0.15s;
-      }
-
-      .feature-header:hover {
-        background: var(--bg);
-      }
-
-      .feature-badge {
-        font-size: 10px;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 3px;
-        letter-spacing: 0.5px;
-        flex-shrink: 0;
-      }
-
-      .feature-badge[data-status="TODO"] {
-        background: #6b728033;
-        color: #9ca3af;
-      }
-      .feature-badge[data-status="DEF"] {
-        background: #8b5cf633;
-        color: #a78bfa;
-      }
-      .feature-badge[data-status="BLT"] {
-        background: #3b82f633;
-        color: #60a5fa;
-      }
-      .feature-badge[data-status="TST"] {
-        background: #f9731633;
-        color: #fb923c;
-      }
-      .feature-badge[data-status="DONE"] {
-        background: #10b98133;
-        color: #34d399;
-      }
-
-      .feature-name {
-        font-size: 14px;
-        font-weight: 600;
-        flex: 1;
-      }
-
-      .feature-summary {
-        font-size: 12px;
-        color: var(--text-muted);
-        flex: 2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .feature-date {
-        font-size: 11px;
-        color: var(--text-dim);
-        flex-shrink: 0;
-      }
-
-      .feature-chevron {
-        font-size: 12px;
-        color: var(--text-dim);
-        transition: transform 0.2s;
-        flex-shrink: 0;
-      }
-
-      .feature-card.expanded .feature-chevron {
-        transform: rotate(90deg);
-      }
-
-      .feature-detail {
-        display: none;
-        padding: 0 16px 16px;
-        border-top: 1px solid var(--border);
-      }
-
-      .feature-card.expanded .feature-detail {
-        display: block;
-      }
-
-      .feature-detail-section {
-        margin-top: 12px;
-      }
-
-      .feature-detail-section h4 {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--text-dim);
-        margin: 0 0 6px;
-      }
-
-      .feature-depends {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-top: 4px;
-      }
-
-      .feature-dep {
-        font-size: 11px;
-        padding: 2px 8px;
-        border-radius: 3px;
-        background: var(--bg);
-        border: 1px solid var(--border);
-        color: var(--text-dim);
-      }
-
-      .feature-loading {
-        color: var(--text-dim);
-        font-size: 12px;
-        font-style: italic;
-        padding: 8px 0;
-      }
-
-      .feature-section-divider {
-        border-top: 1px solid var(--border);
-        margin-top: 16px;
-        padding-top: 12px;
-      }
-
-      .feature-filter-bar {
-        display: flex;
-        gap: 4px;
-        align-items: center;
-        padding: 8px 0 12px;
-        flex-wrap: wrap;
-      }
-      .feature-filter-chip {
-        font-size: 11px;
-        font-weight: 600;
-        padding: 4px 10px;
-        border-radius: 12px;
-        cursor: pointer;
-        color: var(--text-dim);
-        background: transparent;
-        border: 1px solid var(--border);
-        transition: all 0.15s;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-      }
-      .feature-filter-chip:hover {
-        color: var(--text-muted);
-        border-color: var(--text-dim);
-      }
-      .feature-filter-chip.active {
-        color: var(--text);
-        background: var(--surface);
-        border-color: var(--text-dim);
-      }
-      .feature-filter-count {
-        font-size: 10px;
-        font-weight: 400;
-        color: var(--text-dim);
-        min-width: 14px;
-        text-align: center;
-      }
-
-      /* Thinking timeline */
-      .thinking-entry {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 16px;
-        margin-bottom: 10px;
-      }
-
-      .thinking-type-badge {
-        font-size: 10px;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 3px;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-      }
-
-      .thinking-type-badge[data-type="idea"] {
-        background: #10b98133;
-        color: #34d399;
-      }
-      .thinking-type-badge[data-type="brainstorm"] {
-        background: #8b5cf633;
-        color: #a78bfa;
-      }
-      .thinking-type-badge[data-type="critique"] {
-        background: #f9731633;
-        color: #fb923c;
-      }
-      .thinking-type-badge[data-type="decision"] {
-        background: #3b82f633;
-        color: #60a5fa;
-      }
-
-      .thinking-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 8px;
-      }
-
-      .thinking-title {
-        font-size: 14px;
-        font-weight: 600;
-        flex: 1;
-      }
-
-      .thinking-date {
-        font-size: 11px;
-        color: var(--text-dim);
-      }
-
-      .thinking-content {
-        font-size: 13px;
-      }
-
-      .thinking-meta {
-        margin-top: 8px;
-        font-size: 12px;
-        color: var(--text-dim);
-      }
-
-      .thinking-meta strong {
-        color: var(--text-muted);
-      }
-
-      .thinking-source {
-        font-size: 11px;
-        color: var(--text-dim);
-        margin-top: 6px;
-        font-style: italic;
-      }
-
-      /* Section dividers */
-      .sub-heading {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-muted);
-        margin: 20px 0 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      hr.divider {
-        border: none;
-        border-top: 1px solid var(--border);
-        margin: 20px 0;
-      }
-
-      /* Modal */
-      .modal-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 100;
-        align-items: flex-start;
-        justify-content: center;
-        padding-top: 80px;
-        overflow-y: auto;
-      }
-
-      .modal-overlay.active {
-        display: flex;
-      }
-
-      .modal {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 20px;
-        width: 500px;
-        max-width: 90vw;
-        max-height: 85vh;
-        overflow-y: auto;
-        margin-bottom: 40px;
-      }
-
-      .modal h3 {
-        font-size: 15px;
-        margin-bottom: 16px;
-      }
-
-      .modal label {
-        display: block;
-        font-size: 11px;
-        color: var(--text-muted);
-        margin-bottom: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .modal input,
-      .modal select,
-      .modal textarea {
-        width: 100%;
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        color: var(--text);
-        padding: 6px 8px;
-        font-size: 13px;
-        font-family: inherit;
-        margin-bottom: 12px;
-        outline: none;
-      }
-
-      .modal input:focus,
-      .modal select:focus,
-      .modal textarea:focus {
-        border-color: var(--accent);
-      }
-
-      .modal textarea {
-        resize: vertical;
-        min-height: 60px;
-      }
-
-      .modal input[type="color"] {
-        width: 40px;
-        height: 32px;
-        padding: 2px;
-        cursor: pointer;
-      }
-
-      .modal-row {
-        display: flex;
-        gap: 12px;
-      }
-
-      .modal-row > div {
-        flex: 1;
-      }
-
-      .modal-buttons {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 4px;
-      }
-
-      .modal-buttons button {
-        padding: 6px 14px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500;
-        cursor: pointer;
-        border: 1px solid var(--border);
-        font-family: inherit;
-      }
-
-      .btn-cancel {
-        background: var(--bg);
-        color: var(--text-muted);
-      }
-
-      .btn-cancel:hover {
-        color: var(--text);
-      }
-
-      .btn-save {
-        background: var(--accent);
-        color: #fff;
-        border-color: var(--accent);
-      }
-
-      .btn-save:hover {
-        opacity: 0.9;
-      }
-
-      .btn-danger {
-        background: var(--danger);
-        color: #fff;
-        border-color: var(--danger);
-      }
-
-      .btn-danger:hover {
-        opacity: 0.9;
-      }
-
-      /* Dynamic list in modal */
-      .modal-list {
-        margin-bottom: 12px;
-      }
-
-      .modal-list-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 6px;
-      }
-
-      .modal-list-item input {
-        margin-bottom: 0;
-      }
-
-      .modal-list-item .remove-item {
-        background: none;
-        border: none;
-        color: var(--danger);
-        cursor: pointer;
-        font-size: 14px;
-        padding: 4px;
-        line-height: 1;
-      }
-
-      .modal-list-add {
-        background: none;
-        border: 1px dashed var(--border);
-        color: var(--text-dim);
-        padding: 4px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        cursor: pointer;
-        font-family: inherit;
-        width: 100%;
-        transition: all 0.15s;
-      }
-
-      .modal-list-add:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-
-      /* Toast */
-      .toast {
-        position: fixed;
-        bottom: 16px;
-        right: 16px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 8px 14px;
-        font-size: 12px;
-        color: var(--text-muted);
-        z-index: 200;
-        opacity: 0;
-        transform: translateY(8px);
-        transition: all 0.2s;
-        pointer-events: none;
-      }
-
-      .toast.visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      /* Font preview */
-      .font-preview {
-        font-size: 18px;
-        line-height: 1.4;
-        padding: 8px 0;
-        color: var(--text);
-      }
-
-      /* Footer link */
-      .footer-bar {
-        border-top: 1px solid var(--border);
-        padding: 8px 24px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 12px;
-      }
-
-      .footer-bar a {
-        color: var(--text-dim);
-        text-decoration: none;
-        transition: color 0.15s;
-      }
-
-      .footer-bar a:hover {
-        color: var(--accent);
-      }
-    </style>
+    <link rel="stylesheet" href="/css/dashboard.css?v=4" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   </head>
   <body>
     <script id="dashboard-data" type="application/json">
@@ -1122,6 +15,10 @@
           "name": "Voorbeeld Project",
           "content": "# Voorbeeld Project\n\nEen voorbeeld project om het dashboard te demonstreren.\n\n## Core Concept\n\nDit is een demo van het project dashboard met alle secties.\n\n## Doelgroep\n\nDevelopers en designers.\n\n## Scope\n\nIn scope: dashboard UI. Uit scope: productie deployment.",
           "thinking": []
+        },
+        "architecture": {
+          "diagram": "graph TD\n  Client[Browser Client] --> Gateway[API Gateway]\n  Gateway --> Auth[Auth Service]\n  Gateway --> App[App Service]\n  App --> DB[(PostgreSQL)]\n  App --> Cache[(Redis Cache)]\n  Auth --> DB\n  App --> Queue[Message Queue]\n  Queue --> Worker[Background Worker]\n  Worker --> DB",
+          "description": "## Overzicht\n\nHet systeem volgt een service-georiënteerde architectuur met een centrale API gateway.\n\n## Componenten\n\n- **API Gateway** — Routing, rate limiting, request validation\n- **Auth Service** — JWT authenticatie, sessie management\n- **App Service** — Core business logic\n- **Background Worker** — Async taken via message queue"
         },
         "theme": {
           "colors": {
@@ -1338,12 +235,8 @@
 
       const TABS = [
         { id: "concept", label: "Concept" },
+        { id: "architecture", label: "Architecture" },
         { id: "design", label: "Design" },
-        { id: "theme", label: "Theme" },
-        { id: "stack", label: "Stack" },
-        { id: "data", label: "Data" },
-        { id: "endpoints", label: "Endpoints" },
-        { id: "features", label: "Features" },
         { id: "thinking", label: "Thinking" },
       ];
 
@@ -1352,6 +245,10 @@
           name: "",
           content: "",
           thinking: [],
+        },
+        architecture: {
+          diagram: "",
+          description: "",
         },
         design: {
           pages: [],
@@ -1382,7 +279,6 @@
         },
         data: { entities: [] },
         endpoints: [],
-        features: [],
         thinking: [],
       };
 
@@ -1596,7 +492,146 @@
           ${renderConceptThinking()}`;
       }
 
-      function renderDesign() {
+      let archSubTab = localStorage.getItem("arch-subtab") || "diagram";
+
+      function switchArchSubTab(tab) {
+        archSubTab = tab;
+        localStorage.setItem("arch-subtab", tab);
+        render();
+      }
+
+      function renderArchSubTabs() {
+        const tabs = [
+          { id: "diagram", label: "Diagram" },
+          { id: "stack", label: "Stack" },
+          { id: "data", label: "Data" },
+          { id: "endpoints", label: "Endpoints" },
+        ];
+        return `<div class="arch-subtabs">${tabs
+          .map(
+            (t) =>
+              `<button class="arch-subtab${archSubTab === t.id ? " active" : ""}" onclick="switchArchSubTab('${t.id}')">${esc(t.label)}</button>`,
+          )
+          .join("")}</div>`;
+      }
+
+      function renderArchDiagram() {
+        const a = data.architecture || {};
+        const hasDiagram = a.diagram && a.diagram.trim();
+        const hasDesc = a.description && a.description.trim();
+
+        if (!hasDiagram && !hasDesc) {
+          return `
+            <div class="empty-state"><p>Nog geen architectuur gedefinieerd.</p>
+            <p style="color:var(--text-dim)">Wordt gevuld door <code>/dev-define</code> of <code>/dev-build</code></p></div>`;
+        }
+
+        const diagramHtml = hasDiagram
+          ? `<div class="architecture-diagram" id="arch-diagram"></div>`
+          : "";
+
+        const descHtml = hasDesc
+          ? `<div class="architecture-description">${md(a.description)}</div>`
+          : "";
+
+        setTimeout(() => {
+          const el = document.getElementById("arch-diagram");
+          if (el && hasDiagram) {
+            el.innerHTML = "";
+            mermaid
+              .render("arch-mermaid", a.diagram)
+              .then(({ svg }) => {
+                el.innerHTML = svg;
+              })
+              .catch((err) => {
+                el.innerHTML = `<div class="architecture-error">Diagram fout: ${esc(err.message || String(err))}</div>`;
+              });
+          }
+        }, 0);
+
+        return `
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <button class="edit-btn" onclick="editArchitecture()">Diagram bewerken</button>
+          </div>
+          ${diagramHtml}
+          ${descHtml}`;
+      }
+
+      function renderArchitecture() {
+        const subRenderers = {
+          diagram: renderArchDiagram,
+          stack: renderStack,
+          data: renderData,
+          endpoints: renderEndpoints,
+        };
+        const renderer = subRenderers[archSubTab] || renderArchDiagram;
+        return `
+          <div class="section-header">
+            <h2>Architecture</h2>
+          </div>
+          ${renderArchSubTabs()}
+          ${renderer()}`;
+      }
+
+      function editArchitecture() {
+        const a = data.architecture || {};
+        openModal(
+          "Architecture bewerken",
+          `
+          <label>Mermaid Diagram</label>
+          <textarea id="f-arch-diagram" rows="12" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5">${esc(a.diagram || "graph TD\n  A[Client] --> B[Server]\n  B --> C[(Database)]")}</textarea>
+          <label>Beschrijving (Markdown)</label>
+          <textarea id="f-arch-desc" rows="6">${esc(a.description || "")}</textarea>
+        `,
+          {
+            wide: true,
+            onSave() {
+              data.architecture = data.architecture || {};
+              data.architecture.diagram =
+                document.getElementById("f-arch-diagram").value;
+              data.architecture.description =
+                document.getElementById("f-arch-desc").value;
+            },
+          },
+        );
+      }
+
+      let designSubTab = localStorage.getItem("design-subtab") || "design";
+
+      function switchDesignSubTab(tab) {
+        designSubTab = tab;
+        localStorage.setItem("design-subtab", tab);
+        render();
+      }
+
+      function renderDesignSubTabs() {
+        const tabs = [
+          { id: "design", label: "Design" },
+          { id: "theme", label: "Theme" },
+        ];
+        return `<div class="arch-subtabs">${tabs
+          .map(
+            (t) =>
+              `<button class="arch-subtab${designSubTab === t.id ? " active" : ""}" onclick="switchDesignSubTab('${t.id}')">${esc(t.label)}</button>`,
+          )
+          .join("")}</div>`;
+      }
+
+      function renderDesignTab() {
+        const subRenderers = {
+          design: renderDesignContent,
+          theme: renderTheme,
+        };
+        const renderer = subRenderers[designSubTab] || renderDesignContent;
+        return `
+          <div class="section-header">
+            <h2>Design</h2>
+          </div>
+          ${renderDesignSubTabs()}
+          ${renderer()}`;
+      }
+
+      function renderDesignContent() {
         const d = data.design || {};
         const pages = d.pages || [];
         const flows = d.flows || [];
@@ -1605,7 +640,6 @@
 
         if (!hasData) {
           return `
-            <div class="section-header"><h2>Design</h2></div>
             <div class="empty-state"><p>Nog geen design spec gedefinieerd.</p>
             <p style="color:var(--text-dim)">Wordt gevuld door <code>/frontend-design</code></p></div>`;
         }
@@ -1672,7 +706,6 @@
           : "";
 
         return `
-          <div class="section-header"><h2>Design</h2></div>
           ${pagesHtml}
           ${flowsHtml}
           ${principlesHtml}`;
@@ -1689,190 +722,185 @@
         const hasData = hasColors || families.heading || families.body;
         if (!hasData) {
           return `
-            <div class="section-header">
-              <h2>Theme</h2>
-            </div>
             <div class="empty-state"><p>Nog geen theme gedefinieerd.</p>
             <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/frontend-theme</code></p></div>`;
         }
 
-        // Color swatches grouped by category
-        function renderColorGroup(label, items) {
+        // ── Colors ──
+        function renderPalette(label, items) {
           if (!items || !items.length) return "";
-          const swatches = items
-            .map(
-              (c) => `
-            <div class="swatch">
-              <div class="swatch-color" style="background:${esc(c.value)}"></div>
-              <div class="swatch-info">
-                <div class="swatch-token">${esc(c.token)}</div>
-                <div class="swatch-value">${esc(c.value)}${c.usage ? ` — ${esc(c.usage)}` : ""}</div>
-              </div>
-            </div>`,
-            )
-            .join("");
-          return `<div class="sub-heading">${esc(label)}</div><div class="swatch-grid">${swatches}</div>`;
+          return `
+            <div class="sg-section">
+              <div class="sg-section-title">${esc(label)}</div>
+              <div class="sg-palette">${items
+                .map(
+                  (c) => `
+                <div class="sg-color">
+                  <div class="sg-color-swatch" style="background:${esc(c.value)}"></div>
+                  <div class="sg-color-info">
+                    <div class="sg-color-token">${esc(c.token)}</div>
+                    <div class="sg-color-value">${esc(c.value)}</div>
+                    ${c.usage ? `<div class="sg-color-usage">${esc(c.usage)}</div>` : ""}
+                  </div>
+                </div>`,
+                )
+                .join("")}</div>
+            </div>`;
         }
         const colorsHtml =
-          renderColorGroup("Main", colors.main) +
-          renderColorGroup("Accent", colors.accent) +
-          renderColorGroup("Semantic", colors.semantic);
+          renderPalette("Main Colors", colors.main) +
+          renderPalette("Accent Colors", colors.accent) +
+          renderPalette("Semantic Colors", colors.semantic);
 
-        // Typography — families
-        const familiesHtml =
-          families.heading || families.body || families.mono
-            ? `
-          <div class="sub-heading">Font Families</div>
-          <div class="grid-3">
-            <div class="stat-card">
-              <div class="stat-label">Heading</div>
-              <div class="stat-value" style="font-size:13px">${esc(families.heading || "—")}</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Body</div>
-              <div class="stat-value" style="font-size:13px">${esc(families.body || "—")}</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Mono</div>
-              <div class="stat-value" style="font-size:13px;font-family:monospace">${esc(families.mono || "—")}</div>
-            </div>
-          </div>`
-            : "";
+        // ── Typography ──
+        const specimenEntries = [
+          { label: "Heading", family: families.heading },
+          { label: "Body", family: families.body },
+          { label: "Mono", family: families.mono },
+        ].filter((e) => e.family);
 
-        // Typography — sizes
-        const sizes = typo.sizes || [];
-        const sizesHtml = sizes.length
+        const specimensHtml = specimenEntries.length
           ? `
-          <div class="sub-heading">Type Scale</div>
-          <table class="data-table">
-            <thead><tr><th>Token</th><th>Size</th><th>Line Height</th></tr></thead>
-            <tbody>${sizes
+          <div class="sg-section">
+            <div class="sg-section-title">Typography</div>
+            <div class="sg-font-specimens">${specimenEntries
               .map(
-                (s) => `<tr>
-              <td style="font-weight:500;color:var(--text)">${esc(s.token)}</td>
-              <td style="font-family:monospace">${esc(s.size)}</td>
-              <td style="font-family:monospace">${esc(s.lineHeight)}</td>
-            </tr>`,
+                (e) => `
+              <div class="sg-font-card">
+                <div class="sg-font-specimen" style="font-family:${esc(e.family)}">Aa</div>
+                <div class="sg-font-name">${esc(e.label)}</div>
+                <div class="sg-font-family">${esc(e.family)}</div>
+              </div>`,
               )
-              .join("")}</tbody>
-          </table>`
+              .join("")}</div>
+          </div>`
           : "";
 
-        // Spacing
+        // ── Type Scale ──
+        const sizes = typo.sizes || [];
+        const typeScaleHtml = sizes.length
+          ? `
+          <div class="sg-section">
+            <div class="sg-section-title">Type Scale</div>
+            <div class="sg-type-scale">${sizes
+              .map(
+                (s) => `
+              <div class="sg-type-row">
+                <div class="sg-type-label">${esc(s.token)}<br>${esc(s.size)}</div>
+                <div class="sg-type-preview" style="font-size:${esc(s.size)};line-height:${esc(s.lineHeight)};font-family:${esc(families.body || "inherit")}">The quick brown fox jumps</div>
+              </div>`,
+              )
+              .join("")}</div>
+          </div>`
+          : "";
+
+        // ── Spacing ──
         const sp = t.spacing || {};
         const spScale = sp.scale || [];
-        const spacingHtml =
-          sp.base || spScale.length
-            ? `
-          <div class="sub-heading">Spacing</div>
-          ${sp.base ? `<div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">Base unit: <code style="background:var(--surface-hover);padding:1px 5px;border-radius:3px;font-size:12px">${esc(sp.base)}</code></div>` : ""}
-          ${
-            spScale.length
-              ? `<table class="data-table">
-            <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
-            <tbody>${spScale
+        const spacingHtml = spScale.length
+          ? `
+          <div class="sg-section">
+            <div class="sg-section-title">Spacing${sp.base ? ` — base: ${esc(sp.base)}` : ""}</div>
+            <div class="sg-spacing-scale">${spScale
               .map(
-                (s) => `<tr>
-              <td style="font-weight:500;color:var(--text)">${esc(s.token)}</td>
-              <td style="font-family:monospace">${esc(s.value)}</td>
-              <td>${esc(s.usage || "")}</td>
-            </tr>`,
+                (s) => `
+              <div class="sg-spacing-row">
+                <div class="sg-spacing-label">${esc(s.token)}</div>
+                <div class="sg-spacing-bar" style="width:${esc(s.value)}"></div>
+                <div class="sg-spacing-value">${esc(s.value)}</div>
+              </div>`,
               )
-              .join("")}</tbody>
-          </table>`
-              : ""
-          }`
-            : "";
+              .join("")}</div>
+          </div>`
+          : "";
 
-        // Breakpoints
+        // ── Breakpoints ──
         const bps = t.breakpoints || [];
         const bpHtml = bps.length
           ? `
-          <div class="sub-heading">Breakpoints</div>
-          <table class="data-table">
-            <thead><tr><th>Token</th><th>Value</th><th>Target</th></tr></thead>
-            <tbody>${bps
+          <div class="sg-section">
+            <div class="sg-section-title">Breakpoints</div>
+            <div class="sg-spacing-scale">${bps
               .map(
-                (b) => `<tr>
-              <td style="font-weight:500;color:var(--text)">${esc(b.token)}</td>
-              <td style="font-family:monospace">${esc(b.value)}</td>
-              <td>${esc(b.target || "")}</td>
-            </tr>`,
+                (b) => `
+              <div class="sg-spacing-row">
+                <div class="sg-spacing-label">${esc(b.token)}</div>
+                <div class="sg-spacing-bar" style="width:min(${esc(b.value)}, 100%);opacity:0.4"></div>
+                <div class="sg-spacing-value">${esc(b.value)}${b.target ? ` — ${esc(b.target)}` : ""}</div>
+              </div>`,
               )
-              .join("")}</tbody>
-          </table>`
+              .join("")}</div>
+          </div>`
           : "";
 
-        // Border radius
+        // ── Border Radius ──
         const radii = t.borderRadius || [];
         const radiusHtml = radii.length
           ? `
-          <div class="sub-heading">Border Radius</div>
-          <table class="data-table">
-            <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
-            <tbody>${radii
+          <div class="sg-section">
+            <div class="sg-section-title">Border Radius</div>
+            <div class="sg-radius-grid">${radii
               .map(
-                (r) => `<tr>
-              <td style="font-weight:500;color:var(--text)">${esc(r.token)}</td>
-              <td style="font-family:monospace">${esc(r.value)}</td>
-              <td>${esc(r.usage || "")}</td>
-            </tr>`,
+                (r) => `
+              <div class="sg-radius-item">
+                <div class="sg-radius-box" style="border-radius:${esc(r.value)}"></div>
+                <div class="sg-radius-label">${esc(r.token)}<br>${esc(r.value)}</div>
+              </div>`,
               )
-              .join("")}</tbody>
-          </table>`
+              .join("")}</div>
+          </div>`
           : "";
 
-        // Shadows
+        // ── Shadows ──
         const shdws = t.shadows || [];
         const shadowsHtml = shdws.length
           ? `
-          <div class="sub-heading">Shadows</div>
-          <table class="data-table">
-            <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
-            <tbody>${shdws
+          <div class="sg-section">
+            <div class="sg-section-title">Shadows</div>
+            <div class="sg-shadow-grid">${shdws
               .map(
-                (s) => `<tr>
-              <td style="font-weight:500;color:var(--text)">${esc(s.token)}</td>
-              <td style="font-family:monospace;font-size:11px">${esc(s.value)}</td>
-              <td>${esc(s.usage || "")}</td>
-            </tr>`,
+                (s) => `
+              <div class="sg-shadow-item">
+                <div class="sg-shadow-box" style="box-shadow:${esc(s.value)}"></div>
+                <div class="sg-shadow-label">${esc(s.token)}</div>
+              </div>`,
               )
-              .join("")}</tbody>
-          </table>`
+              .join("")}</div>
+          </div>`
           : "";
 
-        // Modes
+        // ── Modes ──
         const modes = t.modes || {};
         const modeKeys = Object.keys(modes);
         const modesHtml = modeKeys.length
           ? `
-          <div class="sub-heading">Theme Modes</div>
-          ${modeKeys
-            .map(
-              (k) => `
-            <div style="margin-bottom:12px">
-              <span class="tag" style="margin-bottom:6px;display:inline-block">${esc(k)}</span>
-              <div class="code-block">${esc(modes[k])}</div>
-            </div>`,
-            )
-            .join("")}`
+          <div class="sg-section">
+            <div class="sg-section-title">Theme Modes</div>
+            ${modeKeys
+              .map(
+                (k) => `
+              <div style="margin-bottom:12px">
+                <span class="tag" style="margin-bottom:6px;display:inline-block">${esc(k)}</span>
+                <div class="code-block">${esc(modes[k])}</div>
+              </div>`,
+              )
+              .join("")}
+          </div>`
           : "";
 
-        // CSS Variables
+        // ── CSS Variables ──
         const cssHtml = t.cssVars
           ? `
-          <div class="sub-heading">CSS Variables</div>
-          <div class="code-block">${esc(t.cssVars)}</div>`
+          <div class="sg-section">
+            <div class="sg-section-title">CSS Variables</div>
+            <div class="code-block">${esc(t.cssVars)}</div>
+          </div>`
           : "";
 
         return `
-          <div class="section-header">
-            <h2>Theme</h2>
-          </div>
           ${colorsHtml}
-          ${familiesHtml}
-          ${sizesHtml}
-          <hr class="divider" />
+          ${specimensHtml}
+          ${typeScaleHtml}
           ${spacingHtml}
           ${bpHtml}
           ${radiusHtml}
@@ -2036,435 +1064,6 @@
             <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Status</th><th>Beschrijving</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>`;
-      }
-
-      const featureDetailCache = {};
-      let featureFilterStatus = "ALL";
-
-      function filterFeatures(status) {
-        featureFilterStatus = status;
-        document
-          .querySelectorAll(".feature-filter-chip")
-          .forEach((chip) =>
-            chip.classList.toggle("active", chip.dataset.status === status),
-          );
-        document.querySelectorAll(".feature-card").forEach((card) => {
-          if (status === "ALL") {
-            card.style.display = "";
-          } else {
-            card.style.display = card.dataset.status === status ? "" : "none";
-          }
-        });
-        const countEl = document.getElementById("feature-filter-count");
-        if (countEl) {
-          const visible = document.querySelectorAll(
-            ".feature-card" +
-              (status === "ALL" ? "" : '[data-status="' + status + '"]'),
-          ).length;
-          const total = document.querySelectorAll(".feature-card").length;
-          countEl.textContent =
-            status === "ALL" ? total + " features" : visible + " / " + total;
-        }
-      }
-
-      function renderFeatures() {
-        const feats = data.features || [];
-        if (feats.length === 0) {
-          return `
-            <div class="section-header">
-              <h2>Features</h2>
-              <button class="add-btn" onclick="editFeature(-1)">+ Feature toevoegen</button>
-            </div>
-            <div class="empty-state"><p>Nog geen features gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Wordt gevuld door /dev-define, /dev-build, /dev-test en andere skills</p></div>`;
-        }
-
-        const statusOrder = ["TODO", "DEF", "BLT", "TST", "DONE"];
-        const sorted = [...feats].sort(
-          (a, b) =>
-            statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status),
-        );
-
-        const counts = { ALL: feats.length };
-        feats.forEach((f) => {
-          counts[f.status] = (counts[f.status] || 0) + 1;
-        });
-
-        const filterChips = ["ALL", ...statusOrder]
-          .filter((s) => s === "ALL" || counts[s])
-          .map(
-            (s) =>
-              `<button class="feature-filter-chip${s === featureFilterStatus ? " active" : ""}" data-status="${s}" onclick="filterFeatures('${s}')">${s === "ALL" ? "Alles" : s}<span class="feature-filter-count">${counts[s] || 0}</span></button>`,
-          )
-          .join("");
-
-        const cards = sorted
-          .map((f) => {
-            const origIdx = feats.indexOf(f);
-            const hidden =
-              featureFilterStatus !== "ALL" && f.status !== featureFilterStatus;
-            const deps =
-              f.depends && f.depends.length
-                ? `<span class="feature-depends" style="display:inline-flex;gap:4px;margin-left:8px">${f.depends.map((d) => `<span class="feature-dep">${esc(d)}</span>`).join("")}</span>`
-                : "";
-            return `
-            <div class="feature-card" id="feature-${origIdx}" data-status="${esc(f.status)}"${hidden ? ' style="display:none"' : ""}>
-              <div class="feature-header" onclick="toggleFeature(${origIdx})">
-                <span class="feature-badge" data-status="${esc(f.status)}">${esc(f.status)}</span>
-                <span class="feature-name">${esc(f.name)}</span>
-                <span class="feature-summary">${esc(f.summary || "")}${deps}</span>
-                <span class="feature-date">${esc(f.created || "")}</span>
-                <span class="feature-chevron">&#9654;</span>
-              </div>
-              <div class="feature-detail" id="feature-detail-${origIdx}">
-                <div class="feature-loading">Laden...</div>
-              </div>
-            </div>`;
-          })
-          .join("");
-
-        return `
-          <div class="section-header">
-            <h2>Features</h2>
-            <button class="add-btn" onclick="editFeature(-1)">+ Feature toevoegen</button>
-          </div>
-          <div class="feature-filter-bar">${filterChips}<span id="feature-filter-count" style="font-size:11px;color:var(--text-dim);margin-left:auto">${feats.length} features</span></div>
-          ${cards}`;
-      }
-
-      function toggleFeature(idx) {
-        const card = document.getElementById("feature-" + idx);
-        if (!card) return;
-        const isExpanded = card.classList.contains("expanded");
-        document
-          .querySelectorAll(".feature-card.expanded")
-          .forEach((c) => c.classList.remove("expanded"));
-        if (!isExpanded) {
-          card.classList.add("expanded");
-          loadFeatureDetail(idx);
-        }
-      }
-
-      async function loadFeatureDetail(idx) {
-        const f = data.features[idx];
-        const el = document.getElementById("feature-detail-" + idx);
-        if (!el || !f) return;
-
-        const basePath = location.pathname.replace(/\/+$/, "");
-        const url = basePath + "/feature/" + encodeURIComponent(f.name);
-
-        let detail = featureDetailCache[f.name];
-        if (!detail) {
-          try {
-            const res = await fetch(url);
-            if (res.ok) {
-              detail = await res.json();
-              featureDetailCache[f.name] = detail;
-            }
-          } catch {}
-        }
-
-        if (
-          !detail ||
-          (!detail.requirements && !detail.build && !detail.tests)
-        ) {
-          el.innerHTML = `<div class="feature-detail-section" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-            <p style="font-size:13px;color:var(--text-dim);margin:0;flex:1">${f.summary ? esc(f.summary) : "Geen detail data beschikbaar."}</p>
-            <button class="add-btn" onclick="editFeature(${idx})" style="font-size:11px;padding:4px 10px;flex-shrink:0">Bewerken</button>
-          </div>`;
-          return;
-        }
-
-        el.innerHTML = renderFeatureDetail(detail, idx);
-      }
-
-      // Unified feature detail renderer — single page with conditional sections
-      function renderFeatureDetail(d, idx) {
-        let html = "";
-        const bx =
-          "background:var(--bg);padding:8px 14px;border-radius:4px;border:1px solid var(--border)";
-
-        // ── Summary + edit button ──
-        const summary = d.summary || "";
-        const explanation =
-          d.build && d.build.explanation ? d.build.explanation : "";
-        html += `<div class="feature-detail-section" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-          <div style="flex:1">
-            <p style="font-size:13px;line-height:1.6;color:var(--text);margin:0">${summary ? esc(summary) : '<span style="color:var(--text-dim)">Geen beschrijving</span>'}</p>
-            ${explanation ? `<div class="concept-content" style="font-size:12px;color:var(--text-muted);margin-top:8px">${md(explanation)}</div>` : ""}
-          </div>
-          <button class="add-btn" onclick="editFeature(${idx})" style="font-size:11px;padding:4px 10px;flex-shrink:0">Bewerken</button>
-        </div>`;
-
-        // ── Dependencies ──
-        const deps = d.depends || [];
-        if (deps.length) {
-          html += `<div class="feature-detail-section"><div class="feature-depends">${deps.map((dep) => `<span class="feature-dep">${esc(dep)}</span>`).join("")}</div></div>`;
-        }
-
-        // ── Requirements ──
-        const reqs = d.requirements || [];
-        if (reqs.length) {
-          const hasBuild = reqs.some((r) => r.technique);
-          const hasStatus = reqs.some(
-            (r) => r.status && r.status !== "pending",
-          );
-          let headers = "<th>ID</th><th>Beschrijving</th><th>Cat</th>";
-          if (hasBuild) headers += "<th>Techniek</th>";
-          if (hasStatus) headers += "<th>Status</th>";
-
-          const rows = reqs
-            .map((r) => {
-              let row = `<td><code>${esc(r.id)}</code></td><td>${esc(r.description)}</td><td style="font-size:11px;color:var(--text-dim)">${esc(r.category || "")}</td>`;
-              if (hasBuild)
-                row += `<td style="font-size:11px">${esc(r.technique || "")}</td>`;
-              if (hasStatus) {
-                const sc =
-                  r.status === "PASS"
-                    ? "var(--done)"
-                    : r.status === "FAIL"
-                      ? "var(--danger)"
-                      : "var(--text-dim)";
-                row += `<td><span style="color:${sc};font-size:11px;font-weight:600">${esc((r.status || "pending").toUpperCase())}</span></td>`;
-              }
-              return `<tr>${row}</tr>`;
-            })
-            .join("");
-
-          html += `<div class="feature-detail-section feature-section-divider"><h4>Requirements (${reqs.length})</h4>
-            <table class="data-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
-
-          // SyncNotes (collapsed under requirements if present)
-          const withNotes = reqs.filter((r) => r.syncNote);
-          if (withNotes.length) {
-            html += `<div class="feature-detail-section" style="margin-top:8px">`;
-            withNotes.forEach((r) => {
-              html += `<div style="padding:4px 0;font-size:12px"><code style="font-size:10px;color:var(--text-dim)">${esc(r.id)}</code> <span style="color:var(--text-muted)">${esc(r.syncNote)}</span></div>`;
-            });
-            html += `</div>`;
-          }
-        }
-
-        // ── Files ──
-        const files = d.files || [];
-        if (files.length) {
-          const basePath = location.pathname.replace(/\/+$/, "");
-          const actionIcon = { create: "+", modify: "~" };
-          const actionColor = {
-            create: "var(--done)",
-            modify: "var(--accent)",
-          };
-          const sourceFiles = files.filter((f) => f.type !== "test");
-          const testFiles = files.filter((f) => f.type === "test");
-
-          html += `<div class="feature-detail-section feature-section-divider"><h4>Files (${files.length})</h4>
-            <div style="display:flex;flex-direction:column;gap:2px">`;
-          const renderFile = (f) => {
-            const icon = actionIcon[f.action] || "?";
-            const color = actionColor[f.action] || "var(--text-dim)";
-            const openUrl =
-              basePath +
-              "/open/" +
-              encodeURIComponent(f.path).replace(/%2F/g, "/");
-            return `<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0">
-              <span style="color:${color};font-weight:700;font-size:12px;width:14px;text-align:center;flex-shrink:0">${icon}</span>
-              <a href="#" onclick="openInVSCode('${openUrl}',this);return false" style="color:var(--accent);text-decoration:none;font-size:12px;font-family:monospace;cursor:pointer" title="Open in VS Code">${esc(f.path)}</a>
-              <span style="font-size:11px;color:var(--text-dim);flex:1">${esc(f.purpose || "")}</span>
-            </div>`;
-          };
-          sourceFiles.forEach((f) => {
-            html += renderFile(f);
-          });
-          if (testFiles.length) {
-            html += `<div style="margin-top:6px;padding-top:4px;border-top:1px dashed var(--border)">`;
-            testFiles.forEach((f) => {
-              html += renderFile(f);
-            });
-            html += `</div>`;
-          }
-          html += `</div></div>`;
-        }
-
-        // ── Choices ──
-        const choices = d.choices || {};
-        const choiceKeys = Object.keys(choices);
-        if (choiceKeys.length) {
-          html += `<div class="feature-detail-section feature-section-divider"><h4>Keuzes</h4>
-            <div style="display:flex;flex-direction:column;gap:4px">`;
-          choiceKeys.forEach((k) => {
-            html += `<div style="font-size:12px"><span style="color:var(--text-dim);font-weight:600">${esc(k)}:</span> <span style="color:var(--text-muted)">${esc(choices[k])}</span></div>`;
-          });
-          html += `</div></div>`;
-        }
-
-        // ── Architecture ──
-        if (d.architecture) {
-          const arch = d.architecture;
-          if (
-            arch.componentTree ||
-            (arch.interfaces && arch.interfaces.length)
-          ) {
-            html += `<div class="feature-detail-section feature-section-divider"><h4>Architecture</h4>`;
-            if (arch.componentTree) {
-              html += `<pre style="font-size:11px;line-height:1.4;color:var(--text-muted);background:var(--bg);padding:12px;border-radius:4px;overflow-x:auto;white-space:pre">${esc(arch.componentTree)}</pre>`;
-            }
-            if (arch.interfaces && arch.interfaces.length) {
-              arch.interfaces.forEach((iface) => {
-                html += `<p style="font-size:12px;font-weight:600;margin:8px 0 4px;color:var(--text-muted)">${esc(iface.name)}</p>
-                  <pre style="font-size:11px;line-height:1.4;color:var(--text-muted);background:var(--bg);padding:8px;border-radius:4px;overflow-x:auto">${esc(iface.definition)}</pre>`;
-              });
-            }
-            html += `</div>`;
-          }
-        }
-
-        // ── Design ──
-        if (d.design) {
-          const wireframe = d.design.wireframe || d.design.layout || "";
-          const components = d.design.components || [];
-          if (wireframe || components.length) {
-            html += `<div class="feature-detail-section feature-section-divider"><h4>Design</h4>`;
-            if (wireframe) {
-              html += `<pre style="font-size:11px;line-height:1.4;color:var(--text-muted);background:var(--bg);padding:12px;border-radius:4px;overflow-x:auto;white-space:pre">${esc(wireframe)}</pre>`;
-            }
-            if (components.length) {
-              html += `<p style="font-size:12px;color:var(--text-muted);margin-top:6px"><strong>Components:</strong> ${components.map((c) => `<code>${esc(typeof c === "string" ? c : c.name || JSON.stringify(c))}</code>`).join(", ")}</p>`;
-            }
-            html += `</div>`;
-          }
-        }
-
-        // ── API Contract ──
-        if (d.apiContract && d.apiContract.length) {
-          html += `<div class="feature-detail-section feature-section-divider"><h4>API Contract (${d.apiContract.length})</h4>
-            <table class="data-table"><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Beschrijving</th></tr></thead>
-            <tbody>${d.apiContract.map((a) => `<tr><td><code>${esc(a.method)}</code></td><td><code>${esc(a.path)}</code></td><td style="font-size:11px">${esc(a.auth || "")}</td><td style="color:var(--text-dim)">${esc(a.description || "")}</td></tr>`).join("")}</tbody></table></div>`;
-        }
-
-        // ── Build ──
-        if (d.build) {
-          const b = d.build;
-          html += `<div class="feature-detail-section feature-section-divider"><h4>Build</h4>
-            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
-              <div style="${bx}"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">Tests</div><div style="font-size:16px;font-weight:600">${b.testsPass || 0}/${b.testsTotal || 0}</div></div>
-              ${b.techniques ? `<div style="${bx}"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">TDD / Impl</div><div style="font-size:16px;font-weight:600">${b.techniques.tdd || 0} / ${b.techniques.implementationFirst || b.techniques["implementation-first"] || 0}</div></div>` : ""}
-            </div>`;
-          if (b.started || b.completed) {
-            html += `<p style="font-size:12px;color:var(--text-dim)">${b.started ? "Started: " + esc(b.started) : ""}${b.started && b.completed ? " — " : ""}${b.completed ? "Completed: " + esc(b.completed) : ""}</p>`;
-          }
-          if (b.decisions && b.decisions.length) {
-            html += `<div style="margin-top:8px"><span style="font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase">Beslissingen</span>
-              <ul style="padding-left:16px;font-size:12px;color:var(--text-muted);margin-top:4px">${b.decisions.map((dec) => `<li style="margin-bottom:4px">${esc(dec)}</li>`).join("")}</ul></div>`;
-          }
-          html += `</div>`;
-        }
-
-        // ── Packages ──
-        if (d.packages && d.packages.length) {
-          html += `<div class="feature-detail-section"><div class="feature-depends">${d.packages.map((p) => `<span class="feature-dep" title="${esc(p.purpose || "")}">${esc(p.name)}${p.version ? " " + esc(p.version) : ""}</span>`).join("")}</div></div>`;
-        }
-
-        // ── Tests ──
-        if (d.tests) {
-          const t = d.tests;
-          const testStatus = t.finalStatus || "UNKNOWN";
-          const statusColor = ["PASSED", "VERIFIED", "PASS"].includes(
-            testStatus,
-          )
-            ? "var(--done)"
-            : "var(--danger)";
-
-          html += `<div class="feature-detail-section feature-section-divider"><h4>Tests</h4>
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-              <span style="font-size:14px;font-weight:700;color:${statusColor}">${esc(testStatus)}</span>
-              ${t.coverage ? `<div style="${bx}"><div style="font-size:10px;color:var(--text-dim)">Stmts</div><div style="font-size:14px;font-weight:600">${t.coverage.statements || 0}%</div></div><div style="${bx}"><div style="font-size:10px;color:var(--text-dim)">Branch</div><div style="font-size:14px;font-weight:600">${t.coverage.branches || 0}%</div></div>` : ""}
-            </div>`;
-
-          // Checklist
-          if (t.checklist && t.checklist.length) {
-            html += `<table class="data-table"><thead><tr><th>#</th><th>Test</th><th>Type</th><th>Status</th></tr></thead>
-              <tbody>${t.checklist
-                .map((item) => {
-                  const sc =
-                    item.status === "PASS" || item.status === "pass"
-                      ? "var(--done)"
-                      : item.status === "FAIL" || item.status === "fail"
-                        ? "var(--danger)"
-                        : "var(--text-dim)";
-                  return `<tr><td style="color:var(--text-dim)">${item.id}</td><td style="font-size:12px">${esc(item.title)}</td><td><span style="font-size:10px;color:var(--text-dim)">${esc(item.type || "")}</span></td><td><span style="color:${sc};font-size:11px;font-weight:600">${esc((item.status || "pending").toUpperCase())}</span></td></tr>`;
-                })
-                .join("")}</tbody></table>`;
-          }
-
-          // Sessions
-          if (t.sessions && t.sessions.length) {
-            t.sessions.forEach((s, si) => {
-              html += `<p style="font-size:12px;color:var(--text-dim);margin-top:8px">Sessie ${si + 1} (${esc(s.date || "")}): ${s.pass || 0} pass, ${s.fail || 0} fail${s.fixes && s.fixes.length ? " — fixes: " + s.fixes.map((f) => esc(f)).join(", ") : ""}</p>`;
-            });
-          }
-          html += `</div>`;
-        }
-
-        // ── Refactor ──
-        if (d.refactor) {
-          const r = d.refactor;
-          const refColor =
-            {
-              CLEAN: "var(--done)",
-              REFACTORED: "var(--accent)",
-              ROLLED_BACK: "var(--danger)",
-            }[r.status] || "var(--text-muted)";
-
-          html += `<div class="feature-detail-section feature-section-divider"><h4>Refactor</h4>
-            <span style="font-size:14px;font-weight:700;color:${refColor}">${esc(r.status)}</span>`;
-
-          if (r.status === "ROLLED_BACK" && r.failureAnalysis) {
-            html += `<div class="concept-content" style="font-size:13px;margin-top:8px">${md(r.failureAnalysis)}</div>`;
-          }
-
-          // Improvements
-          const categoryLabels = {
-            security: "Security",
-            performance: "Performance",
-            dry: "DRY",
-            simplification: "Simplificatie",
-            clarity: "Leesbaarheid",
-            quality: "Quality",
-            errorHandling: "Error Handling",
-          };
-          const imp = r.improvements || {};
-          const cats = Object.keys(categoryLabels).filter(
-            (k) => imp[k] && imp[k].length,
-          );
-          if (cats.length) {
-            cats.forEach((cat) => {
-              html += `<div style="margin-top:8px"><span style="font-size:11px;font-weight:600;color:var(--text-muted)">${categoryLabels[cat]}</span>`;
-              imp[cat].forEach((item) => {
-                html += `<div style="padding:4px 0;font-size:12px"><code style="font-size:10px;color:var(--text-dim)">${esc(item.file)}:${item.line}</code> ${esc(item.issue)} → ${esc(item.fix)}</div>`;
-              });
-              html += `</div>`;
-            });
-          }
-
-          // Decisions
-          if (r.decisions && r.decisions.length) {
-            html += `<div style="margin-top:8px">${r.decisions.map((dec) => `<div style="font-size:12px;padding:2px 0"><strong>${esc(dec.decision || dec)}</strong>${dec.rationale ? ": " + esc(dec.rationale) : ""}</div>`).join("")}</div>`;
-          }
-
-          // Positive observations
-          if (r.positiveObservations && r.positiveObservations.length) {
-            html += `<ul style="padding-left:16px;font-size:12px;color:var(--text-muted);margin-top:8px">${r.positiveObservations.map((o) => `<li>${esc(o)}</li>`).join("")}</ul>`;
-          }
-          html += `</div>`;
-        }
-
-        // ── Observations ──
-        if (d.observations && d.observations.length) {
-          html += `<div class="feature-detail-section feature-section-divider"><h4>Observaties</h4>
-            <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${d.observations.map((o) => `<li style="margin-bottom:4px">${esc(o)}</li>`).join("")}</ul></div>`;
-        }
-
-        return html;
       }
 
       function renderThinking() {
@@ -3051,89 +1650,6 @@
         );
       }
 
-      function editFeature(idx) {
-        const isNew = idx === -1;
-        const f = isNew
-          ? {
-              name: "",
-              status: "TODO",
-              summary: "",
-              depends: [],
-              created: new Date().toISOString().slice(0, 10),
-            }
-          : { ...data.features[idx] };
-
-        const statusOptions = ["TODO", "DEF", "BLT", "TST", "DONE"]
-          .map(
-            (s) =>
-              `<option value="${s}" ${f.status === s ? "selected" : ""}>${s}</option>`,
-          )
-          .join("");
-
-        const depsHtml = (f.depends || [])
-          .map(
-            (d, i) => `
-          <div class="modal-list-item">
-            <input type="text" value="${esc(d)}" data-dep="${i}" />
-            <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>
-          </div>`,
-          )
-          .join("");
-
-        openModal(
-          isNew ? "Feature toevoegen" : "Feature bewerken",
-          `
-          <label>Naam</label>
-          <input type="text" id="f-feat-name" value="${esc(f.name)}" ${!isNew ? 'readonly style="opacity:0.6"' : ""} />
-          <label>Status</label>
-          <select id="f-feat-status">${statusOptions}</select>
-          <label>Summary</label>
-          <textarea id="f-feat-summary" rows="2">${esc(f.summary || "")}</textarea>
-          <label>Aangemaakt</label>
-          <input type="date" id="f-feat-created" value="${esc(f.created || "")}" />
-          <label>Dependencies</label>
-          <div class="modal-list" id="f-deps">${depsHtml}</div>
-          <button class="modal-list-add" onclick="addDepField()">+ Dependency toevoegen</button>
-        `,
-          {
-            deletable: !isNew,
-            onSave() {
-              const feat = {
-                name: document.getElementById("f-feat-name").value.trim(),
-                status: document.getElementById("f-feat-status").value,
-                summary: document.getElementById("f-feat-summary").value.trim(),
-                created: document.getElementById("f-feat-created").value,
-                depends: [...document.querySelectorAll("#f-deps input")]
-                  .map((i) => i.value.trim())
-                  .filter(Boolean),
-              };
-              if (!feat.name) return;
-              if (!data.features) data.features = [];
-              if (isNew) {
-                data.features.push(feat);
-              } else {
-                data.features[idx] = feat;
-              }
-              delete featureDetailCache[feat.name];
-            },
-            onDelete() {
-              if (!isNew) data.features.splice(idx, 1);
-            },
-          },
-        );
-      }
-
-      function addDepField() {
-        const list = document.getElementById("f-deps");
-        const div = document.createElement("div");
-        div.className = "modal-list-item";
-        div.innerHTML = `
-          <input type="text" value="" placeholder="Feature dependency" data-dep="${list.children.length}" />
-          <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>`;
-        list.appendChild(div);
-        div.querySelector("input").focus();
-      }
-
       function editThinking(idx) {
         const isNew = idx === -1;
         const e = isNew
@@ -3208,12 +1724,8 @@
 
       const renderers = {
         concept: renderConcept,
-        design: renderDesign,
-        theme: renderTheme,
-        stack: renderStack,
-        data: renderData,
-        endpoints: renderEndpoints,
-        features: renderFeatures,
+        architecture: renderArchitecture,
+        design: renderDesignTab,
         thinking: renderThinking,
       };
 
@@ -3272,6 +1784,22 @@
       }
 
       // ─── Init ───────────────────────────────────────────────
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "dark",
+        themeVariables: {
+          darkMode: true,
+          background: "#161b22",
+          primaryColor: "#58a6ff",
+          primaryTextColor: "#e6edf3",
+          primaryBorderColor: "#30363d",
+          lineColor: "#8b949e",
+          secondaryColor: "#1c2333",
+          tertiaryColor: "#0d1117",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+        },
+      });
       render();
     </script>
   </body>

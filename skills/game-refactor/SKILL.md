@@ -24,7 +24,7 @@ Batch-first architecture: analyzes ALL features in parallel via Explore agents, 
 
 **This skill ONLY refactors files that belong to the feature.**
 
-- Extract all code file paths from `02-build-log.md` — these are the **pipeline files**
+- Extract all code file paths from `feature.json` → `files[]` — these are the **pipeline files**
 - ONLY these files may be analyzed, planned, and modified
 - **NEVER** touch, scan, plan, or modify files outside this list
 - Valid path patterns: `scripts/`, `scenes/`, `resources/`, `tests/`
@@ -37,27 +37,18 @@ This rule exists because refactoring external files risks breaking other feature
 ## When to Use
 
 - After `/game-test` completes with all playtest items passing
-- When `.project/features/{name}/03-test-results.md` exists
+- When `.project/features/{name}/feature.json` exists with `tests` section
 - NOT for: fixing bugs (/game-test), adding features (/game-define), planning (/game-plan)
 
 ## Input
 
-Reads from `.project/features/{feature-name}/`:
-
-- `01-define.md` - Requirements and architecture
-- `02-build-log.md` - Implementation details and file list
-- `03-playtest.md` - Playtest checklist
-- `03-test-results.md` - Verification results
+Reads `.project/features/{feature-name}/feature.json`: requirements, files, build, tests sections.
 
 ## Output Structure
 
 ```
 .project/features/{feature-name}/
-├── 01-define.md          # Updated: Status: REFACTORED (or CLEAN)
-├── 02-build-log.md       # From build phase
-├── 03-playtest.md        # From build phase
-├── 03-test-results.md    # From test phase
-└── 04-refactor.md        # NEW: Refactor log (full or compact depending on findings)
+└── feature.json    # Enriched with refactor section (status, improvements, decisions)
 ```
 
 ## Two Research Layers
@@ -101,24 +92,24 @@ Reads from `.project/features/{feature-name}/`:
      - multiSelect: false
    - If "Alle features" — feature queue = all TST features
    - If "Eén feature kiezen" — show feature list via AskUserQuestion, queue = selected
-   - If no TST features in backlog — fall back to listing `.project/features/` directories that have `03-test-results.md`
+   - If no TST features in backlog — fall back to listing `.project/features/` directories that have `feature.json` with `tests` section
 
-   **c) "recent"**: find most recently modified `03-test-results.md`, queue = `[that feature]`
+   **c) "recent"**: find most recently modified `feature.json` with `tests` section, queue = `[that feature]`
 
-3. **Load ALL feature docs for every feature in queue:**
+3. **Load feature.json for every feature in queue:**
 
-   For each feature, read (in parallel where possible):
-   - `01-define.md` for requirements and architecture
-   - `02-build-log.md` for implementation details and file list
-   - `03-playtest.md` for playtest items
-   - `03-test-results.md` for verification results
+   For each feature, read `feature.json`. Extract:
+   - `requirements[]` for requirements and architecture
+   - `files[]` for implementation details and file list
+   - `tests.checklist[]` for playtest items
+   - `tests` section for verification results
 
-   Validate `03-test-results.md` exists for each feature. If any missing — remove from queue and warn.
+   Validate feature.json exists with `tests` section for each feature. If any missing — remove from queue and warn.
 
 4. **Build pipeline files list per feature:**
 
-   For each feature, extract all code file paths from `02-build-log.md`:
-   - Primary: parse from `## Files Modified` table (file path column)
+   For each feature, extract all code file paths from `feature.json` → `files[]`:
+   - Primary: parse `files[].path` from feature.json
    - Fallback: grep for file paths matching `scripts/`, `scenes/`, `resources/`, `tests/`
    - Store as `pipeline_files[feature_name]`
 
@@ -621,136 +612,76 @@ IMPROVEMENTS APPLIED
 
 **Goal:** Proportional documentation, single backlog update, single commit.
 
-1. **Create `04-refactor.md` per feature (proportional to findings):**
+1. **Write feature.json per feature** (read-modify-write):
 
-   **For CLEAN features (0 findings, early-exited at FASE 1):**
+   For each feature:
+   1. Read `.project/features/{feature-name}/feature.json`
+   2. Add `refactor` section:
 
-   ```markdown
-   # Refactor Log: {feature-name}
+      **For CLEAN features:**
 
-   Generated: {timestamp}
+      ```json
+      {
+        "refactor": {
+          "status": "CLEAN",
+          "improvements": {},
+          "decisions": [],
+          "positiveObservations": ["..."],
+          "failureAnalysis": null,
+          "pendingImprovements": []
+        }
+      }
+      ```
 
-   ## Summary
+      **For REFACTORED features:**
 
-   | Metric   | Value                  |
-   | -------- | ---------------------- |
-   | Status   | CLEAN                  |
-   | Findings | 0                      |
-   | Analysis | Parallel Explore agent |
+      ```json
+      {
+        "refactor": {
+          "status": "REFACTORED",
+          "improvements": {
+            "security": [{ "file": "...", "issue": "...", "fix": "..." }],
+            "performance": [],
+            "signals": [],
+            "dry": [],
+            "clarity": []
+          },
+          "decisions": [{ "decision": "...", "rationale": "..." }],
+          "positiveObservations": ["..."],
+          "failureAnalysis": null,
+          "pendingImprovements": []
+        }
+      }
+      ```
 
-   ## Positive Observations
+      **For ROLLED_BACK features:**
 
-   - {observations from Explore agent's POSITIVE_OBSERVATIONS}
+      ```json
+      {
+        "refactor": {
+          "status": "ROLLED_BACK",
+          "improvements": {},
+          "decisions": [],
+          "positiveObservations": [],
+          "failureAnalysis": "...",
+          "pendingImprovements": ["..."]
+        }
+      }
+      ```
 
-   No refactoring needed — code quality is good.
-   ```
+   3. Update top-level `status`:
+      - CLEAN/REFACTORED: `"DONE"`
+      - ROLLED_BACK: keep `"TST"`
+   4. Write feature.json back (do NOT overwrite other sections)
 
-   **For REFACTORED features (had findings, successfully applied):**
-
-   ```markdown
-   # Refactor Log: {feature-name}
-
-   Generated: {timestamp}
-
-   ## Summary
-
-   | Metric         | Value                        |
-   | -------------- | ---------------------------- |
-   | Status         | REFACTORED                   |
-   | Scope          | {ALL / HIGH+MED / HIGH only} |
-   | Improvements   | {count}                      |
-   | Files modified | {count}                      |
-   | GUT tests      | {X/X} passing                |
-
-   ## What Was Improved
-
-   - {high-level description}
-
-   ## Key Decisions
-
-   - {decision}: {rationale}
-
-   ## Improvements
-
-   ### Security
-
-   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
-
-   ### Memory Management
-
-   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
-
-   ### Performance
-
-   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
-
-   ### Signals & Scene Tree
-
-   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
-
-   ### DRY/Refactoring
-
-   - {file:line} ↔ {file:line} - {extraction} → {result} (Risk: {L/M})
-
-   ### Type Safety
-
-   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
-
-   ### Clarity
-
-   - {file:line} - {issue} → {fix} → {result} (Risk: {L/M})
-
-   ## Positive Observations
-
-   - {what was already done well}
-
-   ## Modified Files
-
-   - {file} - {description of changes}
-   ```
-
-   **For ROLLED_BACK features (had findings, apply/test failed):**
-
-   ```markdown
-   # Refactor Log: {feature-name}
-
-   Generated: {timestamp}
-
-   ## Summary
-
-   | Metric               | Value                      |
-   | -------------------- | -------------------------- |
-   | Status               | ROLLED_BACK                |
-   | Reason               | {test failure description} |
-   | Planned improvements | {count}                    |
-
-   ## What Was Attempted
-
-   - {description of planned improvements}
-
-   ## Failure Analysis
-
-   - {which tests failed and why}
-   - {whether it was a regression vs stale test}
-
-   ## Pending Improvements
-
-   - {improvements that could be retried with a more conservative approach}
-   ```
-
-2. **Update `01-define.md` for each feature:**
-   - CLEAN: Set `Status: CLEAN` with date
-   - REFACTORED: Set `Status: REFACTORED` with date
-   - ROLLED_BACK: Set `Status: TST` (keep in TST, don't advance)
-
-3. **Sync backlog** (zie `shared/BACKLOG.md`, single edit for all features):
+2. **Sync backlog** (zie `shared/BACKLOG.md`, single edit for all features):
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - CLEAN en REFACTORED features: zet `.status = "DONE"`
    - ROLLED_BACK features: laat `.status = "TST"`
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
-4. **Context sync (conditional)** — only execute if REFACTORED features include structural changes:
+3. **Context sync (conditional)** — only execute if REFACTORED features include structural changes:
 
    **Trigger condition** — execute this step if ANY of these apply across REFACTORED features:
    - Scripts were renamed or moved to different directories
@@ -772,6 +703,7 @@ IMPROVEMENTS APPLIED
    - Extracted scripts/scenes → add to structure tree
    - Changed patterns → update `context.patterns` (merge)
    - Set `context.updated` to current date
+   - Als `architecture.diagram` bestaat: regenereer vanuit huidige scene/signal structuur (OVERWRITE)
      d. **Apply directly** (no user confirmation)
      e. Quality rules:
    - Only project-specific, non-obvious information
@@ -785,7 +717,7 @@ IMPROVEMENTS APPLIED
 
    Or: `context: no updates needed (internal changes only)`
 
-5. **Scoped auto-commit** (only this skill's changes):
+4. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -826,7 +758,7 @@ IMPROVEMENTS APPLIED
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-6. **Show completion:**
+5. **Show completion:**
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -860,7 +792,7 @@ IMPROVEMENTS APPLIED
 **No features found** — exit: "Run /game-define and /game-build first"
 **No test results for any feature** — exit: "Run /game-test first"
 **Some features missing test results** — remove from queue, warn, continue with rest
-**Build log empty** — skip feature, warn: "No code files found in 02-build-log.md for {feature}"
+**Feature.json missing files[]** — skip feature, warn: "No code files found in feature.json for {feature}"
 
 ### Refactor Patterns Failures
 
@@ -894,9 +826,9 @@ This skill must NEVER:
 
 - Read pipeline source files directly in the main conversation (always use Explore agent)
 - Pass full file contents to research agents (pass structured analysis from Explore agent)
-- Analyze, plan, or modify files outside pipeline_files (extracted from 02-build-log.md)
+- Analyze, plan, or modify files outside pipeline_files (extracted from feature.json files[])
 - Include external file findings in any plan
-- Proceed without existing 03-test-results.md
+- Proceed without existing feature.json with tests section
 - Make breaking changes (signal signatures, exported variables, public methods)
 - Over-simplify code by removing helpful abstractions or combining too many concerns
 - Prioritize fewer lines over readability (explicit > compact)

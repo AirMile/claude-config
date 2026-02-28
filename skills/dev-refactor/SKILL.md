@@ -22,7 +22,7 @@ Batch-first architecture: analyzes ALL features in parallel via Explore agents, 
 
 **This skill ONLY refactors files that belong to the feature.**
 
-- Extract all code file paths from `build.json` → `filesChanged[]` — these are the **pipeline files**
+- Extract all code file paths from `feature.json` → `files[]` — these are the **pipeline files**
 - ONLY these files may be analyzed, planned, and modified
 - **NEVER** touch, scan, plan, or modify files outside this list
 - **Exception:** New utility/helper files may be **created** if they exclusively extract code from pipeline files (e.g., extracting shared logic into a new `utils/` file). Existing external files may NEVER be modified.
@@ -34,25 +34,18 @@ This rule exists because refactoring external files risks breaking other feature
 ## When to Use
 
 - After `/dev-test` completes with all tests passing
-- When `.project/features/{name}/test.json` exists
+- When `.project/features/{name}/feature.json` exists met `tests` sectie
 - NOT for: fixing bugs (/dev-test), adding features (/dev-define), planning (/dev-define)
 
 ## Input
 
-Reads from `.project/features/{feature-name}/`:
-
-- `define.json` - Requirements and architecture
-- `build.json` - Implementation details, file list (`filesChanged`), requirements, decisions, test checklist (`testChecklist`)
-- `test.json` - Verification results
+Reads `.project/features/{feature-name}/feature.json` — unified feature file met requirements, architecture, files, build, tests secties.
 
 ## Output Structure
 
 ```
 .project/features/{feature-name}/
-├── define.json           # Updated: status REFACTORED (or CLEAN)
-├── build.json            # From build phase
-├── test.json             # From test phase
-└── refactor.json         # NEW: Refactor log (full or compact depending on findings)
+└── feature.json           # Enriched: refactor section, status updated
 ```
 
 ## Two Research Layers
@@ -97,23 +90,20 @@ Reads from `.project/features/{feature-name}/`:
      - multiSelect: false
    - If "Alle features" → feature queue = all TST features
    - If "Eén feature kiezen" → show feature list via AskUserQuestion, queue = selected
-   - If no TST features in backlog → fall back to listing `.project/features/` directories that have `test.json`
+   - If no TST features in backlog → fall back to listing `.project/features/` directories die `feature.json` hebben met `tests` sectie
 
-   **c) "recent"**: find most recently modified `test.json`, queue = `[that feature]`
+   **c) "recent"**: find most recently modified `feature.json` with `tests` sectie, queue = `[that feature]`
 
 3. **Load ALL feature docs for every feature in queue:**
 
-   For each feature, read (in parallel where possible):
-   - `define.json` for requirements and architecture
-   - `build.json` for implementation details, file list, and test checklist
-   - `test.json` for verification results
+   For each feature, read `feature.json` — bevat requirements, architecture, files, build, tests secties.
 
-   Validate `test.json` exists for each feature. If any missing → remove from queue and warn.
+   Validate `tests` sectie exists in `feature.json` for each feature. If missing → remove from queue and warn.
 
 4. **Build pipeline files list per feature:**
 
-   For each feature, extract all code file paths from `build.json`:
-   - Parse `filesChanged[]` array (each entry has `path` and `changeType`)
+   For each feature, extract all code file paths from `feature.json`:
+   - Parse `files[]` array (each entry has `path`, `type`, `action`)
    - Store as `pipeline_files[feature_name]`
 
 5. **Load or generate refactor-patterns.md:**
@@ -574,30 +564,32 @@ IMPROVEMENTS APPLIED
 
 **Goal:** Proportional documentation, single backlog update, single commit.
 
-1. **Write `refactor.json` per feature** (zie `shared/DASHBOARD.md` voor volledig schema):
+1. **Write feature.json per feature** (read-modify-write):
 
-   Write `.project/features/{feature-name}/refactor.json`:
+   Read `.project/features/{feature-name}/feature.json`, voeg `refactor` sectie toe:
 
-   **Altijd aanwezig:** `feature`, `date`, `status`, `summary`, `improvements` (object met categorieën), `decisions[]`, `positiveObservations[]`, `filesModified[]`, `failureAnalysis`, `pendingImprovements[]`.
+   **Altijd aanwezig in refactor:** `status`, `improvements` (object met categorieën), `decisions[]`, `positiveObservations[]`, `failureAnalysis`, `pendingImprovements[]`.
 
    **Per status variant:**
-   - CLEAN: `summary.improvementsApplied = 0`, lege `improvements`, alleen `positiveObservations`
-   - REFACTORED: gevulde `improvements` per categorie, `decisions` met rationale
-   - ROLLED_BACK: `failureAnalysis` (markdown string), `pendingImprovements[]`
+   - CLEAN: `refactor.status = "CLEAN"`, lege `improvements`, alleen `positiveObservations`
+   - REFACTORED: `refactor.status = "REFACTORED"`, gevulde `improvements` per categorie, `decisions` met rationale
+   - ROLLED_BACK: `refactor.status = "ROLLED_BACK"`, `failureAnalysis` (markdown string), `pendingImprovements[]`
 
-2. **Update `define.json` for each feature:**
-   - CLEAN: Set `status: "CLEAN"` with date
-   - REFACTORED: Set `status: "REFACTORED"` with date
-   - ROLLED_BACK: Set `status: "TST"` (keep in TST, don't advance)
+   **Update top-level feature status:**
+   - CLEAN: `status: "DONE"`
+   - REFACTORED: `status: "DONE"`
+   - ROLLED_BACK: `status: "TST"` (keep in TST, don't advance)
 
-3. **Sync backlog** (zie `shared/BACKLOG.md`, single edit for all features):
+   Write `feature.json` terug (NIET andere secties overschrijven)
+
+2. **Sync backlog** (zie `shared/BACKLOG.md`, single edit for all features):
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - CLEAN en REFACTORED features: zet `.status = "DONE"`
    - ROLLED_BACK features: laat `.status = "TST"`
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 
-4. **Context sync (conditional)** — only execute if REFACTORED features include structural changes:
+3. **Context sync (conditional)** — only execute if REFACTORED features include structural changes:
 
    **Trigger condition** — execute this step if ANY of these apply across REFACTORED features:
    - Files were renamed or moved to different directories
@@ -618,6 +610,7 @@ IMPROVEMENTS APPLIED
    - Extracted components/hooks → add to structure tree
    - Changed patterns → update `context.patterns` (merge)
    - Set `context.updated` to current date
+   - Als `architecture.diagram` bestaat: regenereer vanuit huidige codebase structuur (OVERWRITE)
      d. **Apply directly** (no user confirmation)
      e. Quality rules:
    - Only project-specific, non-obvious information
@@ -631,7 +624,7 @@ IMPROVEMENTS APPLIED
 
    Or: `context: no updates needed (internal changes only)`
 
-5. **Dashboard sync** (zie `shared/DASHBOARD.md`):
+4. **Dashboard sync** (zie `shared/DASHBOARD.md`):
    - Read `.project/project.json` (skip als niet bestaat)
    - Als packages gewijzigd (toegevoegd/verwijderd): merge naar `stack.packages`
    - Als endpoints gewijzigd: merge naar `endpoints`
@@ -639,7 +632,7 @@ IMPROVEMENTS APPLIED
    - Update `features` array: CLEAN en REFACTORED features → status `"DONE"`, ROLLED_BACK → ongewijzigd
    - Write `.project/project.json`
 
-6. **Scoped auto-commit** (only this skill's changes):
+5. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -680,7 +673,7 @@ IMPROVEMENTS APPLIED
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-7. **Show completion:**
+6. **Show completion:**
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -713,7 +706,7 @@ IMPROVEMENTS APPLIED
 **No features found** → exit: "Run /dev-define and /dev-build first"
 **No test results for any feature** → exit: "Run /dev-test first"
 **Some features missing test results** → remove from queue, warn, continue with rest
-**Build log empty** → skip feature, warn: "No code files found in build.json for {feature}"
+**No files in feature** → skip feature, warn: "No code files found in feature.json for {feature}"
 
 ### Refactor Patterns Failures
 
@@ -748,9 +741,9 @@ This skill must NEVER:
 
 - Read pipeline source files directly in the main conversation (always use Explore agent)
 - Pass full file contents to research agents (pass structured analysis from Explore agent)
-- Analyze, plan, or modify files outside pipeline_files (extracted from build.json)
+- Analyze, plan, or modify files outside pipeline_files (extracted from feature.json)
 - Include external file findings in any plan
-- Proceed without existing test.json
+- Proceed without existing tests section in feature.json
 - Make breaking changes (API, schema, parameter changes)
 - Over-simplify code by removing helpful abstractions or combining too many concerns
 - Prioritize fewer lines over readability (explicit > compact)

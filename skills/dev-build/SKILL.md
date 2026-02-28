@@ -18,14 +18,13 @@ Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD or Imp
 
 ## Input
 
-Reads `.project/features/{feature-name}/define.json`: requirements (REQ-XXX), architecture, implementation order.
+Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), architecture, implementation order.
 
 ## Output
 
 ```
 .project/features/{feature-name}/
-├── define.json
-└── build.json
+└── feature.json    # Enriched with build, packages, tests.checklist sections
 ```
 
 ## Process
@@ -52,16 +51,16 @@ Load `.claude/research/stack-baseline.md` if exists.
 If no feature name provided:
 
 1. Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`). Filter `status === "DEF"` features → suggest first via **AskUserQuestion**
-2. Otherwise → list features in `.project/features/`, let user select
+2. Otherwise → list features in `.project/features/` die `feature.json` hebben, let user select
 
-Load `define.json`. Extract:
+Load `feature.json`. Extract:
 
 - `requirements[]` → requirement lijst
 - `buildSequence[]` → implementatievolgorde (gesorteerd op step)
-- `architecture.files[]` → bestanden om te maken/wijzigen
+- `files[]` → bestanden om te maken/wijzigen
 - `testStrategy[]` → test mapping
 
-If `define.json` not found → exit met bericht om `/dev-define` eerst te runnen.
+If `feature.json` not found → exit met bericht om `/dev-define` eerst te runnen.
 
 Display:
 
@@ -73,7 +72,7 @@ REQUIREMENTS:
   ...
 
 IMPLEMENTATION ORDER:
-(from define.json buildSequence, sorted by step)
+(from feature.json buildSequence, sorted by step)
 ```
 
 **Step 4: Frontend Scan** (web projects only)
@@ -115,19 +114,19 @@ After all requirements: run integration tests across requirements.
 
 **On test failure:** fix implementation, re-run. Continue only on PASS.
 
-**On blocker:** log in build.json blockers array, mark BLOCKED, continue with other requirements. Suggest `/thinking-decide` for architectural blockers.
+**On blocker:** log in feature.json build.blockers array, mark BLOCKED, continue with other requirements. Suggest `/thinking-decide` for architectural blockers.
 
 ### FASE 3: Build Summary
 
-Collect build data for `build.json` (written in FASE 4C):
+Collect build data for `feature.json` (written in FASE 4C):
 
-- `testChecklist[]`: per test item — `id`, `title`, `requirementId`, `steps`, `expected`, `status`
-- `requirements[]`: per REQ — technique, files, tests, syncNote
-- `integrationTests`: results
-- `blockers`: lijst (of lege array)
-- `filesChanged`: alle aangemaakte/gewijzigde bestanden
-- `packagesAdded`: nieuwe dependencies
-- `decisions`: niet-voor-de-hand-liggende keuzes
+- `tests.checklist[]`: per test item — `id`, `title`, `requirementId`, `steps`, `expected`, `status: "pending"`
+- `requirements[]`: per REQ — enrich met `technique`, `syncNote`, `status: "built"`
+- `files[]`: update met actuele bestanden (merge met bestaande files uit define)
+- `build.integrationTests`: results
+- `build.blockers`: lijst (of lege array)
+- `packages[]`: nieuwe dependencies (`name`, `version`, `purpose`)
+- `build.decisions`: niet-voor-de-hand-liggende keuzes
 
 ### FASE 4A: Documentation
 
@@ -159,7 +158,7 @@ Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
 
 **4B-3) Follow-up loop** — beantwoord vragen, herhaal begripscheck tot "Ja, helder".
 
-**Na bevestiging:** sla de sync uitleg op als `codeSyncExplanation` veld in build.json (plain markdown string met ASCII diagrammen).
+**Na bevestiging:** sla de sync uitleg op als `build.explanation` veld in feature.json (plain markdown string met ASCII diagrammen).
 
 ### FASE 4C: Project Sync
 
@@ -183,7 +182,29 @@ Log: `context: {N} updates ({keys})` of `context: no updates needed`
 - Features: zet status naar `"BLT"`
 - Endpoints: update status naar `"done"` als endpoints geïmplementeerd (skip als geen endpoints)
 - Stack packages: push nieuwe dependencies
-- Write `.project/features/{feature-name}/build.json` met verrijkt schema (zie `shared/DASHBOARD.md`): `summary`, `requirements[]` (per-REQ details met technique/files/tests/syncNote), `integrationTests`, `blockers`, `codeSyncExplanation`, `filesChanged`, `packagesAdded`, `decisions`, en `testChecklist[]` (met id/title/requirementId/steps/expected/status)
+
+**Architecture sync** (na dashboard sync):
+
+- Lees huidige `architecture.diagram` uit project.json
+- Als diagram bestaat: update met werkelijke implementatie (nieuwe routes, services, file structure)
+- Als diagram niet bestaat EN project heeft meerdere modules/services: genereer nieuw Mermaid `graph TD`
+- Input: `context.structure` + `context.routing` + geïmplementeerde bestanden
+- Output: bijgewerkt `architecture.diagram` + `architecture.description` (OVERWRITE)
+- Skip als geen structurele impact (bijv. alleen een utility functie toegevoegd)
+- Log: `architecture: updated` of `architecture: no updates needed`
+
+**Write feature.json** (read-modify-write):
+
+1. Read `.project/features/{feature-name}/feature.json`
+2. Update bestaande secties:
+   - `status` → `"BLT"`
+   - `requirements[]` → enrich elke REQ met `technique`, `syncNote`, `status: "built"`
+   - `files[]` → merge met actuele bestanden (nieuwe files toevoegen, bestaande updaten)
+3. Voeg nieuwe secties toe:
+   - `build`: `{ started, completed, techniques: { tdd, implementationFirst }, testsPass, testsTotal, decisions, explanation }` (`explanation` = de codeSyncExplanation markdown)
+   - `packages[]`: nieuwe dependencies
+   - `tests.checklist[]`: test items met `status: "pending"`
+4. Write `feature.json` terug (NIET andere secties overschrijven)
 
 ### FASE 4D: Scoped Commit
 

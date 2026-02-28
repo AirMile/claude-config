@@ -127,24 +127,24 @@ Ontwerp in drie stappen:
    - **Build sequence**: genummerde implementatievolgorde
    - **Test strategy**: REQ→testfile→beschrijving tabel
 
-### FASE 3: Write define.json
+### FASE 3: Write feature.json
 
-Schrijf `.project/features/{feature-name}/define.json` (zie `shared/DASHBOARD.md` voor volledig schema):
+Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md` voor volledig schema):
 
-| Veld                        | Conditie                      |
-| --------------------------- | ----------------------------- |
-| `name`, `created`, `status` | altijd                        |
-| `summary`                   | altijd                        |
-| `depends`                   | altijd (lege array als geen)  |
-| `userAnswers`               | altijd                        |
-| `requirements`              | altijd                        |
-| `stackResearch`             | alleen als research is gedaan |
-| `design`                    | alleen visuele features       |
-| `architecture.files`        | altijd                        |
-| `architecture.interfaces`   | als relevant                  |
-| `apiContract`               | alleen bij backend            |
-| `buildSequence`             | altijd                        |
-| `testStrategy`              | altijd                        |
+| Veld                        | Conditie                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| `name`, `created`, `status` | altijd (status = `"DEF"`)                                                    |
+| `summary`                   | altijd                                                                       |
+| `depends`                   | altijd (lege array als geen)                                                 |
+| `choices`                   | altijd (user antwoorden)                                                     |
+| `requirements`              | altijd (elke REQ met `status: "pending"`)                                    |
+| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`) |
+| `architecture`              | altijd (`componentTree`, `interfaces`)                                       |
+| `design`                    | alleen visuele features                                                      |
+| `apiContract`               | alleen bij backend                                                           |
+| `buildSequence`             | altijd                                                                       |
+| `testStrategy`              | altijd                                                                       |
+| `research`                  | alleen als research is gedaan                                                |
 
 **`buildSequence`** structuur — dev-build itereert dit direct:
 
@@ -189,6 +189,11 @@ Gecombineerde steps: meerdere REQs in `requirements[]` array, `dependsOn` verwij
    - **Endpoints**: check op method+path → nieuw: push met `status: "planned"` → bestaand: skip
    - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
    - **Features**: check op naam → nieuw: push `{ name, status: "DEF", summary, created }` → bestaand: update status
+   - **Architecture**: genereer/update `architecture` sectie als project meerdere componenten/modules heeft:
+     - `diagram`: Mermaid `graph TD` vanuit componentTree — nodes voor modules/services, edges voor dependencies/data flow. Gebruik `[(DB)]` voor databases, `[Service]` voor modules, `{{Gateway}}` voor middleware
+     - `description`: markdown overzicht + componentenlijst met verantwoordelijkheden
+     - OVERWRITE (vervangt vorige diagram met bijgewerkte versie)
+     - Skip als single-file feature zonder architecturele impact
 4. Write `.project/project.json`
 
 ## Restrictions

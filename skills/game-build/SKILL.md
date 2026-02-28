@@ -20,21 +20,15 @@ The build phase implements features from requirements using technique mapping: T
 
 ## Input
 
-Reads from `.project/features/{feature-name}/01-define.md`:
-
-- Requirements with IDs (REQ-XXX)
-- Architecture design
-- Scene/script structure
+Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), architecture, files, buildSequence.
 
 ## Output Structure
 
 ```
 .project/features/{feature-name}/
-├── 01-define.md          # From define phase (input)
-├── 02-build-log.md       # TDD cycle log + codebase sync
-├── 03-playtest.md        # Checklist for test phase
-├── playtest_scene.tscn   # Auto-generated test scene
-└── debug_listener.gd     # Debug signal capture script
+├── feature.json           # Enriched with build, packages, tests.checklist sections
+├── playtest_scene.tscn    # Auto-generated test scene
+└── debug_listener.gd      # Debug signal capture script
 
 scenes/                    # Created .tscn files
 scripts/                   # Created .gd files
@@ -110,14 +104,14 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
      Continuing without baseline...
      ```
 
-3. **Load 01-define.md:**
-   - Extract all requirements (REQ-XXX format)
-   - Parse architecture design
+3. **Load feature.json:**
+   - Extract `requirements[]` (REQ-XXX format)
+   - Parse `architecture`, `files[]`
    - Identify scene/script structure
 
 4. **Read implementation order:**
 
-   Extract the implementation order from the `## Implementation Order` section in 01-define.md.
+   Extract the `buildSequence[]` from feature.json (sorted by step).
    This was determined during the define phase.
 
    ```
@@ -241,7 +235,7 @@ For each **TDD** requirement, generate a corresponding test stub:
 ```gdscript
 extends GutTest
 ## Tests for {Feature}
-## Generated from 01-define.md requirements
+## Generated from feature.json requirements
 
 var _sut: ClassName  # System Under Test
 
@@ -343,7 +337,7 @@ FOR each TDD REQ-XXX in DEPENDENCY ORDER:
 **After all TDD requirements processed:**
 
 All TDD requirements should be PASS before proceeding to Track B.
-If any requirement cannot pass, log as BLOCKED in 02-build-log.md.
+If any requirement cannot pass, log as BLOCKED in feature.json build.blockers.
 
 ##### RED-GREEN-REFACTOR per test:
 
@@ -467,7 +461,7 @@ Progress: {passed}/{total} tests passing
 
 For each Implementation First requirement (in dependency order):
 
-1. **Implement directly** based on requirements and architecture from 01-define.md
+1. **Implement directly** based on requirements and architecture from feature.json
 2. **Add debug hooks** (same rules as TDD track)
 3. **Write verification test** afterwards to capture expected behavior:
 
@@ -567,65 +561,27 @@ get_debug_output()
 
 #### Playtest Checklist + Scene
 
-Generate `03-playtest.md`:
+Build `tests.checklist[]` data for feature.json (written in FASE 5):
 
-```markdown
-# Playtest Checklist: {Feature}
-
-## Build Summary
-
-**Feature:** {feature-name}
-**Build Date:** {date}
-**Tests:** {passed}/{total} passing ({tdd} TDD, {impl} impl-first)
-
-## Automated Tests Status
-
-| REQ     | Test                              | Technique  | Status |
-| ------- | --------------------------------- | ---------- | ------ |
-| REQ-001 | test_req001_water_deals_20_damage | TDD        | PASS   |
-| REQ-002 | test_req002_puddle_spawns         | Impl-First | PASS   |
-
-## Files Created
-
-### Scenes
-
-- `scenes/{feature}.tscn`
-
-### Scripts
-
-- `scripts/{category}/{script}.gd`
-
-### Resources
-
-- `resources/{category}/{resource}.tres`
-
-## Manual Playtest Required
-
-### Setup
-
-1. Run scene: `res://scenes/{test_scene}.tscn`
-2. Controls: {describe controls}
-
-### Checklist
-
-| #   | Test                  | Pass | Notes |
-| --- | --------------------- | ---- | ----- |
-| 1   | {Visual/audio test 1} | [ ]  |       |
-| 2   | {Visual/audio test 2} | [ ]  |       |
-| 3   | {Edge case test}      | [ ]  |       |
-
-## Feedback Format
-
-Use `/game-test {feature}` with results:
+```json
+{
+  "tests": {
+    "checklist": [
+      {
+        "id": 1,
+        "title": "{Visual/audio test 1}",
+        "type": "MANUAL",
+        "requirementId": "REQ-001",
+        "status": "pending",
+        "evidence": null,
+        "fixApplied": null
+      }
+    ]
+  }
+}
 ```
 
-1:PASS
-2:FAIL {reason}
-3:PASS
-
-```
-
-```
+Include both automated test results and manual playtest items in the checklist. Automated items get `type: "AUTO"`, manual playtest items get `type: "MANUAL"`.
 
 **Create playtest scene** at `.project/features/{feature-name}/playtest_scene.tscn`:
 
@@ -722,25 +678,9 @@ Opties:
 
 **Follow-up loop:** If user has questions or picks "Leg het uitgebreider uit", answer with more detail and examples. Repeat AskUserQuestion until user confirms understanding.
 
-#### Step 3: Write Sync to Build Log
+#### Step 3: Save Sync to feature.json
 
-Append the architecture explanation to `02-build-log.md`:
-
-```markdown
-## Codebase Sync
-
-**Explained to user:** {date}
-**User confirmed understanding:** yes
-
-### Architecture Summary
-
-{plain language explanation from Step 1}
-
-### Key Decisions
-
-- {decision 1}: {why}
-- {decision 2}: {why}
-```
+Store the architecture explanation as `build.explanation` field in feature.json (plain markdown string with ASCII diagrams and key decisions).
 
 ### FASE 4b: Context Sync
 
@@ -760,6 +700,15 @@ Update `.project/project.json` context with new scenes, scripts, signals, and re
    - `context.updated`: set to current date
 4. Quality rules: no stale info, no duplication, concise entries
 
+**Architecture sync** (na context sync):
+
+- Lees huidige `architecture.diagram` uit project.json
+- Update met werkelijke scene tree, signals, autoloads uit deze build
+- Voeg nieuwe scenes/scripts/signals toe aan diagram, verwijder nodes die niet meer bestaan
+- Als diagram niet bestaat EN project heeft meerdere scenes/signals: genereer nieuw Mermaid `graph TD`
+- Skip als geen structurele impact
+- Log: `architecture: updated` of `architecture: no updates needed`
+
 **Output:**
 
 ```
@@ -773,44 +722,7 @@ Added:
 
 ### FASE 5: Completion
 
-1. **Update build log:**
-   Create/update `02-build-log.md` with full TDD history:
-
-   ```markdown
-   # Build Log: {Feature}
-
-   ## Summary
-
-   - Start: {timestamp}
-   - Complete: {timestamp}
-   - Tests: {count} ({tdd_count} TDD, {impl_count} impl-first)
-   - Iterations: {count}
-
-   ## TDD Cycle Log
-
-   ### test_req001_water_deals_20_damage [TDD]
-
-   - RED: FAIL - WaterAbility class not found
-   - GREEN: PASS - Created water_ability.gd
-   - REFACTOR: Added type hints
-
-   ### test_req002_puddle_spawns [IMPL-FIRST]
-
-   - IMPLEMENTED: Created puddle scene and node config
-   - VERIFIED: Verification test passes
-
-   ## Files Created
-
-   - scripts/abilities/water_ability.gd
-   - tests/test_water_ability.gd
-     ...
-
-   ## Codebase Sync
-
-   (appended in FASE 4)
-   ```
-
-2. **Output summary:**
+1. **Output summary:**
 
    ```
    BUILD COMPLETE: {feature}
@@ -824,13 +736,9 @@ Added:
    - tests/scenes/test_{feature}_runtime.tscn
    - scripts/...
    - scenes/...
-
-   Documentation:
-   - .project/features/{feature}/02-build-log.md
-   - .project/features/{feature}/03-playtest.md
    ```
 
-3. **Sync backlog** (zie `shared/BACKLOG.md`):
+2. **Sync backlog** (zie `shared/BACKLOG.md`):
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
    - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "BLT"`
    - Zet `data.updated` naar huidige datum
@@ -850,7 +758,17 @@ Added:
 - Read `.project/project.json` (skip als niet bestaat)
 - Update `features` array: zoek feature op naam, zet status naar `"BLT"`
 - Als feature niet bestaat: push met `{ name, status: "BLT", summary, created }`
-- **Write build.json**: schrijf `.project/features/{feature-name}/build.json` met build data (zie `shared/DASHBOARD.md` voor schema)
+- **Write feature.json** (read-modify-write):
+  1. Read `.project/features/{feature-name}/feature.json`
+  2. Update existing sections:
+     - `status` → `"BLT"`
+     - `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`
+     - `files[]` → merge with actual files (add new, update existing)
+  3. Add new sections:
+     - `build`: `{ started, completed, techniques: { tdd, implementationFirst }, testsPass, testsTotal, decisions, explanation }`
+     - `packages[]`: new dependencies
+     - `tests.checklist[]`: test items with `status: "pending"`
+  4. Write feature.json back (do NOT overwrite other sections)
 - Write `.project/project.json`
 
 4. **Scoped auto-commit** (only this skill's changes):
@@ -966,7 +884,7 @@ If a test fails unexpectedly during GREEN phase:
 
 If implementation is blocked:
 
-1. Log the blocker in 02-build-log.md
+1. Log the blocker in feature.json build.blockers
 2. Mark affected tests as BLOCKED
 3. Continue with other tests
 4. Report blockers at completion
