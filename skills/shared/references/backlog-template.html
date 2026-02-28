@@ -244,6 +244,8 @@
       // ─── State ──────────────────────────────────────────────
       const fileRaw = document.getElementById("backlog-data").textContent;
       let data = JSON.parse(fileRaw);
+      if (!data.features) data.features = [];
+      if (!data.adhoc) data.adhoc = [];
 
       const STATUSES = ["TODO", "DEF", "BLT", "TST", "DONE"];
       const STATUS_COLORS = {
