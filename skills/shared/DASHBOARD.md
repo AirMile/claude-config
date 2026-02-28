@@ -6,7 +6,7 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 **Template:** `{skills_path}/shared/references/dashboard-template.html`
 **Server:** `{skills_path}/shared/references/serve-backlog.js` (poort 9876)
 
-**UI tabs:** Concept | Architecture (subtabs: Diagram, Stack, Data, Endpoints) | Design (subtabs: Design, Theme) | Thinking
+**UI tabs:** Concept | Architecture (subtabs: Diagram, Stack) | Design (subtabs: Design, Theme) | Thinking
 `stack`, `data`, `endpoints` en `theme` zijn subtabs in de UI, maar blijven aparte secties in project.json.
 `features` heeft geen eigen tab — feature detail is zichtbaar via de backlog detail modal (fetcht `feature.json`).
 
