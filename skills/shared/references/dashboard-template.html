@@ -231,12 +231,17 @@
       const raw = document.getElementById("dashboard-data").textContent;
       let data = JSON.parse(raw);
       let activeTab = localStorage.getItem("dashboard-tab") || "concept";
+      // Migrate old tab names
+      if (activeTab === "architecture") activeTab = "diagram";
+      if (activeTab === "features") activeTab = "concept";
       let modalContext = null;
 
       const TABS = [
         { id: "concept", label: "Concept" },
-        { id: "architecture", label: "Architecture" },
+        { id: "diagram", label: "Diagram" },
+        { id: "stack", label: "Stack" },
         { id: "design", label: "Design" },
+        { id: "theme", label: "Theme" },
         { id: "thinking", label: "Thinking" },
       ];
 
@@ -492,27 +497,6 @@
           ${renderConceptThinking()}`;
       }
 
-      let archSubTab = localStorage.getItem("arch-subtab") || "diagram";
-
-      function switchArchSubTab(tab) {
-        archSubTab = tab;
-        localStorage.setItem("arch-subtab", tab);
-        render();
-      }
-
-      function renderArchSubTabs() {
-        const tabs = [
-          { id: "diagram", label: "Diagram" },
-          { id: "stack", label: "Stack" },
-        ];
-        return `<div class="arch-subtabs">${tabs
-          .map(
-            (t) =>
-              `<button class="arch-subtab${archSubTab === t.id ? " active" : ""}" onclick="switchArchSubTab('${t.id}')">${esc(t.label)}</button>`,
-          )
-          .join("")}</div>`;
-      }
-
       function renderArchDiagram() {
         const a = data.architecture || {};
         const hasDiagram = a.diagram && a.diagram.trim();
@@ -520,7 +504,8 @@
 
         if (!hasDiagram && !hasDesc) {
           return `
-            <div class="empty-state"><p>Nog geen architectuur gedefinieerd.</p>
+            <div class="section-header"><h2>Diagram</h2></div>
+            <div class="empty-state"><p>Nog geen architectuur diagram gedefinieerd.</p>
             <p style="color:var(--text-dim)">Wordt gevuld door <code>/dev-define</code> of <code>/dev-build</code></p></div>`;
         }
 
@@ -548,25 +533,12 @@
         }, 0);
 
         return `
-          <div style="display:flex;gap:8px;margin-bottom:16px">
-            <button class="edit-btn" onclick="editArchitecture()">Diagram bewerken</button>
+          <div class="section-header">
+            <h2>Diagram</h2>
+            <button class="edit-btn" onclick="editArchitecture()">Bewerken</button>
           </div>
           ${diagramHtml}
           ${descHtml}`;
-      }
-
-      function renderArchitecture() {
-        const subRenderers = {
-          diagram: renderArchDiagram,
-          stack: renderStack,
-        };
-        const renderer = subRenderers[archSubTab] || renderArchDiagram;
-        return `
-          <div class="section-header">
-            <h2>Architecture</h2>
-          </div>
-          ${renderArchSubTabs()}
-          ${renderer()}`;
       }
 
       function editArchitecture() {
@@ -592,41 +564,6 @@
         );
       }
 
-      let designSubTab = localStorage.getItem("design-subtab") || "design";
-
-      function switchDesignSubTab(tab) {
-        designSubTab = tab;
-        localStorage.setItem("design-subtab", tab);
-        render();
-      }
-
-      function renderDesignSubTabs() {
-        const tabs = [
-          { id: "design", label: "Design" },
-          { id: "theme", label: "Theme" },
-        ];
-        return `<div class="arch-subtabs">${tabs
-          .map(
-            (t) =>
-              `<button class="arch-subtab${designSubTab === t.id ? " active" : ""}" onclick="switchDesignSubTab('${t.id}')">${esc(t.label)}</button>`,
-          )
-          .join("")}</div>`;
-      }
-
-      function renderDesignTab() {
-        const subRenderers = {
-          design: renderDesignContent,
-          theme: renderTheme,
-        };
-        const renderer = subRenderers[designSubTab] || renderDesignContent;
-        return `
-          <div class="section-header">
-            <h2>Design</h2>
-          </div>
-          ${renderDesignSubTabs()}
-          ${renderer()}`;
-      }
-
       function renderDesignContent() {
         const d = data.design || {};
         const pages = d.pages || [];
@@ -636,6 +573,7 @@
 
         if (!hasData) {
           return `
+            <div class="section-header"><h2>Design</h2></div>
             <div class="empty-state"><p>Nog geen design spec gedefinieerd.</p>
             <p style="color:var(--text-dim)">Wordt gevuld door <code>/frontend-design</code></p></div>`;
         }
@@ -702,6 +640,7 @@
           : "";
 
         return `
+          <div class="section-header"><h2>Design</h2></div>
           ${pagesHtml}
           ${flowsHtml}
           ${principlesHtml}`;
@@ -718,6 +657,7 @@
         const hasData = hasColors || families.heading || families.body;
         if (!hasData) {
           return `
+            <div class="section-header"><h2>Theme</h2></div>
             <div class="empty-state"><p>Nog geen theme gedefinieerd.</p>
             <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/frontend-theme</code></p></div>`;
         }
@@ -894,6 +834,7 @@
           : "";
 
         return `
+          <div class="section-header"><h2>Theme</h2></div>
           ${colorsHtml}
           ${specimensHtml}
           ${typeScaleHtml}
@@ -1444,8 +1385,10 @@
 
       const renderers = {
         concept: renderConcept,
-        architecture: renderArchitecture,
-        design: renderDesignTab,
+        diagram: renderArchDiagram,
+        stack: renderStack,
+        design: renderDesignContent,
+        theme: renderTheme,
         thinking: renderThinking,
       };
 
