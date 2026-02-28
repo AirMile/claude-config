@@ -62,6 +62,36 @@ Load `feature.json`. Extract:
 
 If `feature.json` not found → exit met bericht om `/dev-define` eerst te runnen.
 
+**Step 3B: Dependency Check**
+
+Skip if `feature.json` has no `depends` array, or `depends` is empty.
+
+1. Read `.project/backlog.html`. Not found → skip this step.
+2. Parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`).
+3. For each name in `feature.json depends[]`:
+   - Find matching feature in `data.features` by `name`
+   - Not found in backlog → skip (no warning)
+   - Found → check `status`. Sufficient: `"TST"` or `"DONE"`. Insufficient: anything else
+4. Collect insufficient dependencies as `blockers[]`.
+5. If `blockers` is empty → proceed.
+6. If `blockers` is not empty → show via **AskUserQuestion**:
+
+   ```
+   header: "Dependencies"
+   question: "Feature '{feature-name}' is afhankelijk van features die nog niet getest zijn:
+              {per blocker: '- {dep-name} (status: {status})'}
+              Doorgaan of eerst de dependency afronden?"
+   options:
+     - label: "Stop — werk eerst {primary-dep} af (Recommended)"
+       description: "Exit. Rond eerst de blocking feature af via /dev-test of /dev-build."
+     - label: "Toch doorgaan"
+       description: "Bouw deze feature ondanks de openstaande dependency."
+   multiSelect: false
+   ```
+
+   - "Stop" → exit: `Gestopt. Werk eerst '{primary-dep}' af (huidige status: {status}).`
+   - "Toch doorgaan" → continue to display block.
+
 Display:
 
 ```
