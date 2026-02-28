@@ -238,7 +238,12 @@ http
           // Strip legacy elements from old backlogs
           html = html.replace(/<a[^>]*class="back-btn"[^>]*>[^<]*<\/a>/g, "");
           const nav = getNavBarHtml(projectDir, "backlog");
-          html = html.replace("</body>", backlogPatch + nav + "</body>");
+          const projectRoot = path.join(PROJECTS_ROOT, projectDir);
+          const rootScript = `<script>window.__projectRoot=${JSON.stringify(projectRoot)};</script>`;
+          html = html.replace(
+            "</body>",
+            rootScript + backlogPatch + nav + "</body>",
+          );
           res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",
             "Cache-Control": "no-cache, no-store",

@@ -732,10 +732,16 @@ body {
   flex-shrink: 0;
 }
 
-.fd-file-path {
+a.fd-file-path {
   font-family: monospace;
   font-size: 11px;
   color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.fd-file-path:hover {
+  text-decoration: underline;
 }
 
 .fd-file-purpose {

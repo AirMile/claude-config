@@ -790,9 +790,12 @@
           };
           html += `<div class="fd-section"><h4>Files (${files.length})</h4><div class="fd-files">`;
           files.forEach((f) => {
+            const root = window.__projectRoot || "";
+            const abs = root ? root + "/" + f.path : f.path;
+            const href = "vscode://file/" + encodeURI(abs);
             html += `<div class="fd-file">
               <span class="fd-file-icon" style="color:${colors[f.action] || "var(--text-dim)"}">${icons[f.action] || "?"}</span>
-              <span class="fd-file-path">${esc(f.path)}</span>
+              <a class="fd-file-path" href="${href}" title="Open in VS Code: ${esc(abs)}">${esc(f.path)}</a>
               <span class="fd-file-purpose">${esc(f.purpose || "")}</span>
             </div>`;
           });
