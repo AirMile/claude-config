@@ -29,6 +29,7 @@ dev:
 
 frontend:
   - frontend-convert
+  - frontend-design
   - frontend-iterate
   - frontend-optimize
   - frontend-page

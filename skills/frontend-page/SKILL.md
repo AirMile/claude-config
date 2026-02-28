@@ -212,6 +212,40 @@ If "Aanpassen": ask what to change, update plan, re-confirm.
 
 ## FASE 1: Requirements (User Stories)
 
+### 1.0 Design Check
+
+Check `.project/project.json` → `design.pages` for the requested page name.
+
+**If design data exists AND requested page is defined there:**
+
+Show the existing design spec:
+
+```
+DESIGN DATA BESCHIKBAAR
+════════════════════════════════════════════════════════════════
+Page:     {design.pages[name].name}
+Purpose:  {design.pages[name].purpose}
+Sections: {design.pages[name].sections joined}
+Flows:    {design.pages[name].flows joined}
+Status:   {design.pages[name].status}
+════════════════════════════════════════════════════════════════
+```
+
+```yaml
+header: "Design Spec"
+question: "Er is al een design spec voor deze pagina. Wil je die als basis gebruiken?"
+options:
+  - label: "Ja, gebruik design spec (Recommended)", description: "Pre-fill requirements uit design data"
+  - label: "Nee, opnieuw definiëren", description: "Negeer design spec, begin from scratch"
+multiSelect: false
+```
+
+**If "Ja":** Pre-fill user stories from `design.pages[name].purpose` + `sections` + `flows`. Jump to 1.3 (Formulate User Stories) with pre-generated stories based on design data. User ALWAYS verifies and can adjust — never skip verification.
+
+**If "Nee":** Proceed as normal (1.1 and further).
+
+**If design data does not exist or page not defined:** Proceed as normal.
+
 ### 1.1 Gather Purpose
 
 If not already provided via argument, ask:
@@ -727,6 +761,16 @@ Zie `shared/DASHBOARD.md` voor schema en merge-strategieën.
 2. Als packages geïnstalleerd tijdens code generatie (FASE 3) of data hookup (FASE 4):
    - Merge naar `stack.packages` (voeg toe als niet aanwezig, update versie als nieuwer)
 3. Write `.project/project.json`
+
+### Design Sync
+
+Update `.project/project.json` → `design.pages` to reflect the built page:
+
+1. Read `project.json` → `design` section (skip if design section doesn't exist)
+2. Find page by name in `design.pages`:
+   - **Exists:** Update `status` to `"BLT"`, merge new sections discovered during build into `sections` array
+   - **Does not exist:** Add new page entry with `name`, `purpose` (from FASE 1), `sections` (from generated components), `status: "BLT"`, empty `flows` and `notes`
+3. Write `project.json` (only mutate `design` section)
 
 ### Update DevInfo
 

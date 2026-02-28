@@ -249,6 +249,22 @@ multiSelect: false
 # Read .project/project.json → parse JSON → check theme sectie
 ```
 
+**Design Principles Context (optional):**
+
+Check `.project/project.json` → `design.principles`. If principles exist, show them as context before action selection:
+
+```
+DESIGN PRINCIPES BESCHIKBAAR
+════════════════════════════════════════════════════════════════
+- {principle.name}: {principle.description}
+- {principle.name}: {principle.description}
+════════════════════════════════════════════════════════════════
+
+Deze principes worden meegenomen als suggestie bij token keuzes.
+```
+
+Principles are advisory — use them to inform suggestions (e.g., if "Mobile-first" exists, suggest mobile-optimized breakpoints), but don't enforce.
+
 **Als theme sectie DATA bevat (niet leeg):**
 
 **AskUserQuestion:**
@@ -936,6 +952,18 @@ Update devinfo bij elke fase transitie:
 - `ACTION_SELECT` → `CREATE|UPDATE|EXTRACT|MODES|DELETE`
 - `CONFIRM` → `POSTFLIGHT`
 - `POSTFLIGHT` → `COMPLETE`
+
+### Design Sync
+
+Update `.project/project.json` → `design.principles` with concrete design system decisions:
+
+1. Read `project.json` → `design.principles` (skip if design section doesn't exist)
+2. Generate principle entries from the created/updated theme:
+   - Spacing: e.g., `{ "name": "{base}px spacing scale", "description": "Base unit {base}px, scale: {scale values}" }`
+   - Typography: e.g., `{ "name": "Font: {heading} + {body}", "description": "Headings: {heading family}, Body: {body family}" }`
+   - Colors: e.g., `{ "name": "Color palette: {scheme}", "description": "Primary: {main color}, Accent: {accent color}" }`
+3. Merge on `name` — add new principles, never overwrite existing user-defined principles
+4. Write `project.json` (only mutate `design.principles`)
 
 ### Completion Handoff
 

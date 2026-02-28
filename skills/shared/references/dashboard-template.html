@@ -753,41 +753,10 @@
         padding: 8px 0;
       }
 
-      .feature-tabs {
-        display: flex;
-        gap: 4px;
-        padding: 10px 0 0;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 12px;
-      }
-
-      .feature-tab {
-        font-size: 11px;
-        font-weight: 600;
-        padding: 6px 12px;
-        border-radius: 4px 4px 0 0;
-        cursor: pointer;
-        color: var(--text-dim);
-        border: 1px solid transparent;
-        border-bottom: none;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        background: transparent;
-        transition:
-          color 0.15s,
-          background 0.15s;
-      }
-
-      .feature-tab:hover {
-        color: var(--text-muted);
-        background: var(--bg);
-      }
-
-      .feature-tab.active {
-        color: var(--text);
-        background: var(--surface);
-        border-color: var(--border);
-        border-bottom-color: var(--surface);
+      .feature-section-divider {
+        border-top: 1px solid var(--border);
+        margin-top: 16px;
+        padding-top: 12px;
       }
 
       .feature-filter-bar {
@@ -1369,6 +1338,7 @@
 
       const TABS = [
         { id: "concept", label: "Concept" },
+        { id: "design", label: "Design" },
         { id: "theme", label: "Theme" },
         { id: "stack", label: "Stack" },
         { id: "data", label: "Data" },
@@ -1382,6 +1352,11 @@
           name: "",
           content: "",
           thinking: [],
+        },
+        design: {
+          pages: [],
+          flows: [],
+          principles: [],
         },
         theme: {
           colors: { main: [], accent: [], semantic: [] },
@@ -1619,6 +1594,88 @@
           </div>
           <div class="concept-content">${md(c.content)}</div>
           ${renderConceptThinking()}`;
+      }
+
+      function renderDesign() {
+        const d = data.design || {};
+        const pages = d.pages || [];
+        const flows = d.flows || [];
+        const principles = d.principles || [];
+        const hasData = pages.length || flows.length || principles.length;
+
+        if (!hasData) {
+          return `
+            <div class="section-header"><h2>Design</h2></div>
+            <div class="empty-state"><p>Nog geen design spec gedefinieerd.</p>
+            <p style="color:var(--text-dim)">Wordt gevuld door <code>/frontend-design</code></p></div>`;
+        }
+
+        const statusOrder = ["IDEA", "DEF", "BLT", "DONE"];
+
+        const pagesHtml = pages.length
+          ? `<h3 style="margin:24px 0 12px;font-size:14px;color:var(--text-dim)">Pagina's (${pages.length})</h3>
+          ${pages
+            .map(
+              (p) => `
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:8px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span class="feature-badge" data-status="${esc(p.status || "DEF")}">${esc(p.status || "DEF")}</span>
+                <span style="font-weight:600;font-size:14px">${esc(p.name)}</span>
+              </div>
+              <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">${esc(p.purpose || "")}</div>
+              ${
+                p.sections && p.sections.length
+                  ? `<div style="display:flex;flex-wrap:wrap;gap:4px">${p.sections.map((s) => `<span style="font-size:11px;padding:2px 8px;border-radius:3px;background:var(--surface-hover);color:var(--text-dim)">${esc(s)}</span>`).join("")}</div>`
+                  : ""
+              }
+              ${
+                p.flows && p.flows.length
+                  ? `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">Flows: ${p.flows.map((f) => esc(f)).join(", ")}</div>`
+                  : ""
+              }
+              ${p.notes ? `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">${esc(p.notes)}</div>` : ""}
+            </div>`,
+            )
+            .join("")}`
+          : "";
+
+        const flowsHtml = flows.length
+          ? `<h3 style="margin:24px 0 12px;font-size:14px;color:var(--text-dim)">User Flows (${flows.length})</h3>
+          ${flows
+            .map(
+              (f) => `
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:8px">
+              <div style="font-weight:600;font-size:14px;margin-bottom:8px">${esc(f.name)}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+                ${f.steps.map((s, i) => `<span style="font-size:11px;padding:2px 8px;border-radius:3px;background:var(--surface-hover);color:var(--text)">${esc(s)}</span>${i < f.steps.length - 1 ? '<span style="color:var(--text-dim);font-size:12px;margin:0 2px">\u2192</span>' : ""}`).join("")}
+              </div>
+              ${f.notes ? `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">${esc(f.notes)}</div>` : ""}
+            </div>`,
+            )
+            .join("")}`
+          : "";
+
+        const principlesHtml = principles.length
+          ? `<h3 style="margin:24px 0 12px;font-size:14px;color:var(--text-dim)">Design Principes (${principles.length})</h3>
+          <table class="data-table">
+            <thead><tr><th>Principe</th><th>Beschrijving</th></tr></thead>
+            <tbody>${principles
+              .map(
+                (p) => `
+              <tr>
+                <td style="font-weight:500;color:var(--text);white-space:nowrap">${esc(p.name)}</td>
+                <td>${esc(p.description)}</td>
+              </tr>`,
+              )
+              .join("")}</tbody>
+          </table>`
+          : "";
+
+        return `
+          <div class="section-header"><h2>Design</h2></div>
+          ${pagesHtml}
+          ${flowsHtml}
+          ${principlesHtml}`;
       }
 
       function renderTheme() {
@@ -1982,7 +2039,6 @@
       }
 
       const featureDetailCache = {};
-      const featureTabState = {};
       let featureFilterStatus = "ALL";
 
       function filterFeatures(status) {
@@ -1999,7 +2055,6 @@
             card.style.display = card.dataset.status === status ? "" : "none";
           }
         });
-        // Update count
         const countEl = document.getElementById("feature-filter-count");
         if (countEl) {
           const visible = document.querySelectorAll(
@@ -2030,7 +2085,6 @@
             statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status),
         );
 
-        // Count per status
         const counts = { ALL: feats.length };
         feats.forEach((f) => {
           counts[f.status] = (counts[f.status] || 0) + 1;
@@ -2045,7 +2099,7 @@
           .join("");
 
         const cards = sorted
-          .map((f, idx) => {
+          .map((f) => {
             const origIdx = feats.indexOf(f);
             const hidden =
               featureFilterStatus !== "ALL" && f.status !== featureFilterStatus;
@@ -2110,150 +2164,168 @@
           } catch {}
         }
 
-        let html = "";
-
-        // Summary + edit button (always visible above tabs)
-        const def = detail && detail.define ? detail.define : null;
-        const summary = (def && def.summary) || f.summary || "";
-        html += `<div class="feature-detail-section" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-          <p style="font-size:13px;line-height:1.6;color:var(--text);margin:0;flex:1">${summary ? esc(summary) : '<span style="color:var(--text-dim)">Geen beschrijving</span>'}</p>
-          <button class="add-btn" onclick="editFeature(${idx})" style="font-size:11px;padding:4px 10px;flex-shrink:0">Bewerken</button>
-        </div>`;
-
-        // Determine available tabs
-        const tabs = [];
-        if (detail && detail.define) tabs.push("define");
-        if (detail && detail.build) tabs.push("build");
-        if (detail && detail.test) tabs.push("test");
-        if (detail && detail.refactor) tabs.push("refactor");
-        // Files tab: only after build (when files actually exist)
-        if (detail && detail.build && collectFiles(detail).length)
-          tabs.push("files");
-
-        if (tabs.length === 0) {
-          html += `<div class="feature-detail-section" style="color:var(--text-dim);font-size:12px">
-            Geen detail data beschikbaar. Feature files worden aangemaakt door /dev-define en /dev-build.
+        if (
+          !detail ||
+          (!detail.requirements && !detail.build && !detail.tests)
+        ) {
+          el.innerHTML = `<div class="feature-detail-section" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <p style="font-size:13px;color:var(--text-dim);margin:0;flex:1">${f.summary ? esc(f.summary) : "Geen detail data beschikbaar."}</p>
+            <button class="add-btn" onclick="editFeature(${idx})" style="font-size:11px;padding:4px 10px;flex-shrink:0">Bewerken</button>
           </div>`;
-          el.innerHTML = html;
           return;
         }
 
-        // Default to most advanced phase
-        if (!featureTabState[idx] || !tabs.includes(featureTabState[idx])) {
-          featureTabState[idx] = tabs[tabs.length - 1];
-        }
-        const activeTab = featureTabState[idx];
-
-        const tabLabels = {
-          define: "Define",
-          build: "Build",
-          test: "Test",
-          refactor: "Refactor",
-          files: "Files",
-        };
-        html += `<div class="feature-tabs">${tabs.map((t) => `<button class="feature-tab${t === activeTab ? " active" : ""}" onclick="switchFeatureTab(${idx},'${t}')">${tabLabels[t]}</button>`).join("")}</div>`;
-        html += `<div id="feature-tab-content-${idx}">${renderPhaseTab(detail, activeTab)}</div>`;
-
-        el.innerHTML = html;
+        el.innerHTML = renderFeatureDetail(detail, idx);
       }
 
-      function switchFeatureTab(idx, tab) {
-        featureTabState[idx] = tab;
-        const detail = featureDetailCache[data.features[idx].name];
-        const card = document.getElementById("feature-" + idx);
-        if (card) {
-          card
-            .querySelectorAll(".feature-tab")
-            .forEach((btn) =>
-              btn.classList.toggle(
-                "active",
-                btn.textContent.trim().toLowerCase() === tab,
-              ),
-            );
+      // Unified feature detail renderer — single page with conditional sections
+      function renderFeatureDetail(d, idx) {
+        let html = "";
+        const bx =
+          "background:var(--bg);padding:8px 14px;border-radius:4px;border:1px solid var(--border)";
+
+        // ── Summary + edit button ──
+        const summary = d.summary || "";
+        const explanation =
+          d.build && d.build.explanation ? d.build.explanation : "";
+        html += `<div class="feature-detail-section" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div style="flex:1">
+            <p style="font-size:13px;line-height:1.6;color:var(--text);margin:0">${summary ? esc(summary) : '<span style="color:var(--text-dim)">Geen beschrijving</span>'}</p>
+            ${explanation ? `<div class="concept-content" style="font-size:12px;color:var(--text-muted);margin-top:8px">${md(explanation)}</div>` : ""}
+          </div>
+          <button class="add-btn" onclick="editFeature(${idx})" style="font-size:11px;padding:4px 10px;flex-shrink:0">Bewerken</button>
+        </div>`;
+
+        // ── Dependencies ──
+        const deps = d.depends || [];
+        if (deps.length) {
+          html += `<div class="feature-detail-section"><div class="feature-depends">${deps.map((dep) => `<span class="feature-dep">${esc(dep)}</span>`).join("")}</div></div>`;
         }
-        const content = document.getElementById("feature-tab-content-" + idx);
-        if (content && detail) content.innerHTML = renderPhaseTab(detail, tab);
-      }
 
-      function renderPhaseTab(detail, tab) {
-        switch (tab) {
-          case "define":
-            return renderDefineTab(detail.define);
-          case "build":
-            return renderBuildTab(detail.build);
-          case "test":
-            return renderTestTab(detail.test);
-          case "refactor":
-            return renderRefactorTab(detail.refactor);
-          case "files":
-            return renderFilesTab(detail);
-          default:
-            return "";
-        }
-      }
+        // ── Requirements ──
+        const reqs = d.requirements || [];
+        if (reqs.length) {
+          const hasBuild = reqs.some((r) => r.technique);
+          const hasStatus = reqs.some(
+            (r) => r.status && r.status !== "pending",
+          );
+          let headers = "<th>ID</th><th>Beschrijving</th><th>Cat</th>";
+          if (hasBuild) headers += "<th>Techniek</th>";
+          if (hasStatus) headers += "<th>Status</th>";
 
-      // Collect unique files from build/test/refactor phases
-      function collectFiles(detail) {
-        const seen = new Set();
-        const files = [];
-        const add = (fp) => {
-          if (!fp || seen.has(fp)) return;
-          seen.add(fp);
-          files.push(fp);
-        };
+          const rows = reqs
+            .map((r) => {
+              let row = `<td><code>${esc(r.id)}</code></td><td>${esc(r.description)}</td><td style="font-size:11px;color:var(--text-dim)">${esc(r.category || "")}</td>`;
+              if (hasBuild)
+                row += `<td style="font-size:11px">${esc(r.technique || "")}</td>`;
+              if (hasStatus) {
+                const sc =
+                  r.status === "PASS"
+                    ? "var(--done)"
+                    : r.status === "FAIL"
+                      ? "var(--danger)"
+                      : "var(--text-dim)";
+                row += `<td><span style="color:${sc};font-size:11px;font-weight:600">${esc((r.status || "pending").toUpperCase())}</span></td>`;
+              }
+              return `<tr>${row}</tr>`;
+            })
+            .join("");
 
-        if (detail.build) {
-          const b = detail.build;
-          if (b.filesChanged) b.filesChanged.forEach(add);
-          if (b.files) {
-            (b.files.created || []).forEach(add);
-            (b.files.modified || []).forEach(add);
+          html += `<div class="feature-detail-section feature-section-divider"><h4>Requirements (${reqs.length})</h4>
+            <table class="data-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
+
+          // SyncNotes (collapsed under requirements if present)
+          const withNotes = reqs.filter((r) => r.syncNote);
+          if (withNotes.length) {
+            html += `<div class="feature-detail-section" style="margin-top:8px">`;
+            withNotes.forEach((r) => {
+              html += `<div style="padding:4px 0;font-size:12px"><code style="font-size:10px;color:var(--text-dim)">${esc(r.id)}</code> <span style="color:var(--text-muted)">${esc(r.syncNote)}</span></div>`;
+            });
+            html += `</div>`;
           }
         }
-        if (detail.test && detail.test.filesChanged) {
-          detail.test.filesChanged.forEach(add);
+
+        // ── Files ──
+        const files = d.files || [];
+        if (files.length) {
+          const basePath = location.pathname.replace(/\/+$/, "");
+          const actionIcon = { create: "+", modify: "~" };
+          const actionColor = {
+            create: "var(--done)",
+            modify: "var(--accent)",
+          };
+          const sourceFiles = files.filter((f) => f.type !== "test");
+          const testFiles = files.filter((f) => f.type === "test");
+
+          html += `<div class="feature-detail-section feature-section-divider"><h4>Files (${files.length})</h4>
+            <div style="display:flex;flex-direction:column;gap:2px">`;
+          const renderFile = (f) => {
+            const icon = actionIcon[f.action] || "?";
+            const color = actionColor[f.action] || "var(--text-dim)";
+            const openUrl =
+              basePath +
+              "/open/" +
+              encodeURIComponent(f.path).replace(/%2F/g, "/");
+            return `<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0">
+              <span style="color:${color};font-weight:700;font-size:12px;width:14px;text-align:center;flex-shrink:0">${icon}</span>
+              <a href="#" onclick="openInVSCode('${openUrl}',this);return false" style="color:var(--accent);text-decoration:none;font-size:12px;font-family:monospace;cursor:pointer" title="Open in VS Code">${esc(f.path)}</a>
+              <span style="font-size:11px;color:var(--text-dim);flex:1">${esc(f.purpose || "")}</span>
+            </div>`;
+          };
+          sourceFiles.forEach((f) => {
+            html += renderFile(f);
+          });
+          if (testFiles.length) {
+            html += `<div style="margin-top:6px;padding-top:4px;border-top:1px dashed var(--border)">`;
+            testFiles.forEach((f) => {
+              html += renderFile(f);
+            });
+            html += `</div>`;
+          }
+          html += `</div></div>`;
         }
-        if (detail.refactor && detail.refactor.filesChanged) {
-          detail.refactor.filesChanged.forEach(add);
+
+        // ── Choices ──
+        const choices = d.choices || {};
+        const choiceKeys = Object.keys(choices);
+        if (choiceKeys.length) {
+          html += `<div class="feature-detail-section feature-section-divider"><h4>Keuzes</h4>
+            <div style="display:flex;flex-direction:column;gap:4px">`;
+          choiceKeys.forEach((k) => {
+            html += `<div style="font-size:12px"><span style="color:var(--text-dim);font-weight:600">${esc(k)}:</span> <span style="color:var(--text-muted)">${esc(choices[k])}</span></div>`;
+          });
+          html += `</div></div>`;
         }
 
-        return files.sort();
-      }
-
-      function renderFilesTab(detail) {
-        const files = collectFiles(detail);
-        if (!files.length) return "";
-        const basePath = location.pathname.replace(/\/+$/, "");
-        let html = `<div class="feature-detail-section"><h4>Bestanden (${files.length})</h4>
-          <div style="display:flex;flex-direction:column;gap:2px">`;
-        files.forEach((f) => {
-          const openUrl =
-            basePath + "/open/" + encodeURIComponent(f).replace(/%2F/g, "/");
-          html += `<a href="#" onclick="openInVSCode('${openUrl}',this);return false" style="color:var(--accent);text-decoration:none;font-size:12px;font-family:monospace;cursor:pointer;padding:4px 0" title="Open in VS Code">${esc(f)}</a>`;
-        });
-        html += `</div></div>`;
-        return html;
-      }
-
-      function renderDefineTab(def) {
-        if (!def) return "";
-        let html = "";
-
-        // Dependencies
-        const deps = def.depends || [];
-        if (deps.length) {
-          html += `<div class="feature-detail-section"><h4>Dependencies</h4>
-            <div class="feature-depends">${deps.map((d) => `<span class="feature-dep">${esc(d)}</span>`).join("")}</div></div>`;
+        // ── Architecture ──
+        if (d.architecture) {
+          const arch = d.architecture;
+          if (
+            arch.componentTree ||
+            (arch.interfaces && arch.interfaces.length)
+          ) {
+            html += `<div class="feature-detail-section feature-section-divider"><h4>Architecture</h4>`;
+            if (arch.componentTree) {
+              html += `<pre style="font-size:11px;line-height:1.4;color:var(--text-muted);background:var(--bg);padding:12px;border-radius:4px;overflow-x:auto;white-space:pre">${esc(arch.componentTree)}</pre>`;
+            }
+            if (arch.interfaces && arch.interfaces.length) {
+              arch.interfaces.forEach((iface) => {
+                html += `<p style="font-size:12px;font-weight:600;margin:8px 0 4px;color:var(--text-muted)">${esc(iface.name)}</p>
+                  <pre style="font-size:11px;line-height:1.4;color:var(--text-muted);background:var(--bg);padding:8px;border-radius:4px;overflow-x:auto">${esc(iface.definition)}</pre>`;
+              });
+            }
+            html += `</div>`;
+          }
         }
 
-        // Design / wireframe
-        if (def.design) {
-          const layout = def.design.layout || "";
-          const components = def.design.components || [];
-          if (layout || components.length) {
-            html += `<div class="feature-detail-section"><h4>Design</h4>`;
-            if (layout) {
-              html += `<pre style="font-size:11px;line-height:1.4;color:var(--text-muted);background:var(--bg);padding:12px;border-radius:4px;overflow-x:auto;white-space:pre">${esc(layout)}</pre>`;
+        // ── Design ──
+        if (d.design) {
+          const wireframe = d.design.wireframe || d.design.layout || "";
+          const components = d.design.components || [];
+          if (wireframe || components.length) {
+            html += `<div class="feature-detail-section feature-section-divider"><h4>Design</h4>`;
+            if (wireframe) {
+              html += `<pre style="font-size:11px;line-height:1.4;color:var(--text-muted);background:var(--bg);padding:12px;border-radius:4px;overflow-x:auto;white-space:pre">${esc(wireframe)}</pre>`;
             }
             if (components.length) {
               html += `<p style="font-size:12px;color:var(--text-muted);margin-top:6px"><strong>Components:</strong> ${components.map((c) => `<code>${esc(typeof c === "string" ? c : c.name || JSON.stringify(c))}</code>`).join(", ")}</p>`;
@@ -2262,455 +2334,134 @@
           }
         }
 
-        // Architecture: Files (new schema: architecture.files[], old schema: files.create[]/modify[]/tests[])
-        let archFiles =
-          def.architecture &&
-          def.architecture.files &&
-          def.architecture.files.length
-            ? def.architecture.files
-            : null;
-        if (!archFiles && def.files) {
-          archFiles = [];
-          ["create", "modify", "tests"].forEach((action) => {
-            (def.files[action] || []).forEach((p) =>
-              archFiles.push({
-                path: p,
-                action: action === "tests" ? "create" : action,
-                purpose: action === "tests" ? "test" : "",
-              }),
-            );
-          });
-        }
-        if (archFiles && archFiles.length) {
-          const actionColor = {
-            create: "var(--done)",
-            modify: "var(--accent)",
-            delete: "var(--danger)",
-          };
-          html += `<div class="feature-detail-section"><h4>Architecture — Files (${archFiles.length})</h4>
-            <table class="data-table"><thead><tr><th>Actie</th><th>Bestand</th><th>Doel</th></tr></thead>
-            <tbody>${archFiles
-              .map(
-                (f) => `<tr>
-              <td><span style="color:${actionColor[f.action] || "var(--text-muted)"};font-size:11px;font-weight:600">${esc((f.action || "").toUpperCase())}</span></td>
-              <td><code style="font-size:11px">${esc(f.path)}</code></td>
-              <td style="color:var(--text-dim);font-size:12px">${esc(f.purpose || "")}</td>
-            </tr>`,
-              )
-              .join("")}</tbody></table></div>`;
-        }
-
-        // Architecture: Interfaces
-        if (
-          def.architecture &&
-          def.architecture.interfaces &&
-          def.architecture.interfaces.length
-        ) {
-          html += `<div class="feature-detail-section"><h4>Interfaces / Types</h4>`;
-          def.architecture.interfaces.forEach((iface) => {
-            html += `<p style="font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-muted)">${esc(iface.name)}</p>
-              <pre style="font-size:11px;line-height:1.4;color:var(--text-muted);background:var(--bg);padding:8px;border-radius:4px;overflow-x:auto">${esc(iface.definition)}</pre>`;
-          });
-          html += `</div>`;
-        }
-
-        // API Contract
-        if (def.apiContract && def.apiContract.length) {
-          const apis = def.apiContract;
-          html += `<div class="feature-detail-section"><h4>API Contract (${apis.length})</h4>
+        // ── API Contract ──
+        if (d.apiContract && d.apiContract.length) {
+          html += `<div class="feature-detail-section feature-section-divider"><h4>API Contract (${d.apiContract.length})</h4>
             <table class="data-table"><thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Beschrijving</th></tr></thead>
-            <tbody>${apis.map((a) => `<tr><td><code>${esc(a.method)}</code></td><td><code>${esc(a.path)}</code></td><td style="font-size:11px">${esc(a.auth || "")}</td><td style="color:var(--text-dim)">${esc(a.description || "")}</td></tr>`).join("")}</tbody></table></div>`;
+            <tbody>${d.apiContract.map((a) => `<tr><td><code>${esc(a.method)}</code></td><td><code>${esc(a.path)}</code></td><td style="font-size:11px">${esc(a.auth || "")}</td><td style="color:var(--text-dim)">${esc(a.description || "")}</td></tr>`).join("")}</tbody></table></div>`;
         }
 
-        // Requirements
-        if (def.requirements && def.requirements.length) {
-          const reqs = def.requirements;
-          html += `<div class="feature-detail-section"><h4>Requirements (${reqs.length})</h4>
-            <table class="data-table"><thead><tr><th>ID</th><th>Beschrijving</th><th>Type</th><th>Acceptance</th></tr></thead>
-            <tbody>${reqs.map((r) => `<tr><td><code>${esc(r.id)}</code></td><td>${esc(r.description)}</td><td>${esc(r.testType || r.category || "")}</td><td style="color:var(--text-dim)">${esc(r.acceptance || r.acceptanceCriteria || "")}</td></tr>`).join("")}</tbody></table></div>`;
-        }
-
-        // Build Sequence (new: [{step,requirements[],description,dependsOn[]}], old: ["REQ-001",...], also: buildOrder)
-        const buildSeq = def.buildSequence || def.buildOrder;
-        if (buildSeq && buildSeq.length) {
-          html += `<div class="feature-detail-section"><h4>Build Volgorde</h4>`;
-          if (typeof buildSeq[0] === "string") {
-            // Legacy flat array
-            html += buildSeq
-              .map(
-                (
-                  r,
-                  i,
-                ) => `<div style="padding:4px 0;font-size:12px;display:flex;gap:8px;align-items:baseline">
-              <span style="color:var(--text-dim);font-weight:600;flex-shrink:0">${i + 1}.</span>
-              <span><code>${esc(r)}</code></span>
-            </div>`,
-              )
-              .join("");
-          } else {
-            html += buildSeq
-              .map((s) => {
-                const depNote =
-                  s.dependsOn && s.dependsOn.length
-                    ? ` <span style="color:var(--text-dim);font-size:11px">na stap ${s.dependsOn.join(", ")}</span>`
-                    : "";
-                const reqs = (s.requirements || [])
-                  .map((r) => `<code>${esc(r)}</code>`)
-                  .join(" + ");
-                return `<div style="padding:4px 0;font-size:12px;display:flex;gap:8px;align-items:baseline">
-              <span style="color:var(--text-dim);font-weight:600;flex-shrink:0">${s.step}.</span>
-              <span>${reqs} — ${esc(s.description || "")}${depNote}</span>
+        // ── Build ──
+        if (d.build) {
+          const b = d.build;
+          html += `<div class="feature-detail-section feature-section-divider"><h4>Build</h4>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+              <div style="${bx}"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">Tests</div><div style="font-size:16px;font-weight:600">${b.testsPass || 0}/${b.testsTotal || 0}</div></div>
+              ${b.techniques ? `<div style="${bx}"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">TDD / Impl</div><div style="font-size:16px;font-weight:600">${b.techniques.tdd || 0} / ${b.techniques.implementationFirst || b.techniques["implementation-first"] || 0}</div></div>` : ""}
             </div>`;
-              })
-              .join("");
+          if (b.started || b.completed) {
+            html += `<p style="font-size:12px;color:var(--text-dim)">${b.started ? "Started: " + esc(b.started) : ""}${b.started && b.completed ? " — " : ""}${b.completed ? "Completed: " + esc(b.completed) : ""}</p>`;
+          }
+          if (b.decisions && b.decisions.length) {
+            html += `<div style="margin-top:8px"><span style="font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase">Beslissingen</span>
+              <ul style="padding-left:16px;font-size:12px;color:var(--text-muted);margin-top:4px">${b.decisions.map((dec) => `<li style="margin-bottom:4px">${esc(dec)}</li>`).join("")}</ul></div>`;
           }
           html += `</div>`;
         }
 
-        // Test Strategy
-        if (def.testStrategy && def.testStrategy.length) {
-          html += `<div class="feature-detail-section"><h4>Test Strategie</h4>
-            <table class="data-table"><thead><tr><th>Requirement</th><th>Test File</th><th>Beschrijving</th></tr></thead>
-            <tbody>${def.testStrategy.map((t) => `<tr><td><code>${esc(t.requirementId)}</code></td><td><code style="font-size:11px">${esc(t.testFile)}</code></td><td style="color:var(--text-dim)">${esc(t.description)}</td></tr>`).join("")}</tbody></table></div>`;
+        // ── Packages ──
+        if (d.packages && d.packages.length) {
+          html += `<div class="feature-detail-section"><div class="feature-depends">${d.packages.map((p) => `<span class="feature-dep" title="${esc(p.purpose || "")}">${esc(p.name)}${p.version ? " " + esc(p.version) : ""}</span>`).join("")}</div></div>`;
         }
 
-        return html;
-      }
+        // ── Tests ──
+        if (d.tests) {
+          const t = d.tests;
+          const testStatus = t.finalStatus || "UNKNOWN";
+          const statusColor = ["PASSED", "VERIFIED", "PASS"].includes(
+            testStatus,
+          )
+            ? "var(--done)"
+            : "var(--danger)";
 
-      function renderBuildTab(build) {
-        if (!build) return "";
-        let html = "";
-
-        // Summary stats (new: build.summary, old: top-level techniques/tests/files)
-        const s =
-          build.summary ||
-          (build.techniques || build.tests
-            ? {
-                testsPass: build.tests && build.tests.passed,
-                testsTotal: build.tests && build.tests.total,
-                techniques: {
-                  tdd: (build.techniques && build.techniques.tdd) || 0,
-                  implementationFirst:
-                    (build.techniques &&
-                      (build.techniques["implementation-first"] ||
-                        build.techniques.implementationFirst)) ||
-                    0,
-                },
-                filesCreated:
-                  build.files && build.files.created
-                    ? build.files.created.length
-                    : 0,
-                filesModified:
-                  build.files && build.files.modified
-                    ? build.files.modified.length
-                    : 0,
-              }
-            : null);
-        if (s) {
-          const bx =
-            "background:var(--bg);padding:8px 14px;border-radius:4px;border:1px solid var(--border)";
-          html += `<div class="feature-detail-section"><div style="display:flex;gap:12px;flex-wrap:wrap">
-            <div style="${bx}"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">Tests</div><div style="font-size:16px;font-weight:600">${s.testsPass || 0}/${s.testsTotal || 0}</div></div>
-            <div style="${bx}"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">TDD / Impl</div><div style="font-size:16px;font-weight:600">${(s.techniques && s.techniques.tdd) || 0} / ${(s.techniques && s.techniques.implementationFirst) || 0}</div></div>
-            <div style="${bx}"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">Files</div><div style="font-size:16px;font-weight:600">${(s.filesCreated || 0) + (s.filesModified || 0)}</div></div>
-          </div>
-          </div></div>`;
-        }
-
-        // Dates (outside summary block so they show even without summary stats)
-        if (build.started || build.completed || build.buildDate) {
-          html += `<div class="feature-detail-section"><p style="font-size:12px;color:var(--text-dim)">${build.started ? "Started: " + esc(build.started) : ""}${build.started && build.completed ? " — " : ""}${build.completed ? "Completed: " + esc(build.completed) : ""}${!build.started && build.buildDate ? "Datum: " + esc(build.buildDate) : ""}</p></div>`;
-        }
-
-        // Per-requirement details
-        if (build.requirements && build.requirements.length) {
-          html += `<div class="feature-detail-section"><h4>Gebouwd per Requirement</h4>`;
-          build.requirements.forEach((req) => {
-            const reqStatus = req.status
-              ? ` <span style="font-size:10px;color:${req.status === "PASS" ? "var(--done)" : "var(--danger)"};font-weight:600">${esc(req.status)}</span>`
-              : "";
-            html += `<div style="padding:8px 0;border-top:1px solid var(--border)">
-              <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
-                <code style="font-size:11px">${esc(req.id)}</code>
-                ${req.description ? `<span style="font-size:12px;font-weight:600">${esc(req.description)}</span>` : ""}
-                <span style="font-size:10px;color:var(--text-dim);margin-left:auto">${esc(req.technique || "")}${reqStatus}</span>
-              </div>
-              ${req.files && req.files.length ? `<p style="font-size:11px;color:var(--text-dim)">${req.files.map((f) => `<code>${esc(f)}</code>`).join(", ")}</p>` : ""}
-              ${req.syncNote ? `<p style="font-size:12px;color:var(--text-muted);margin-top:4px">${esc(req.syncNote)}</p>` : ""}
+          html += `<div class="feature-detail-section feature-section-divider"><h4>Tests</h4>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+              <span style="font-size:14px;font-weight:700;color:${statusColor}">${esc(testStatus)}</span>
+              ${t.coverage ? `<div style="${bx}"><div style="font-size:10px;color:var(--text-dim)">Stmts</div><div style="font-size:14px;font-weight:600">${t.coverage.statements || 0}%</div></div><div style="${bx}"><div style="font-size:10px;color:var(--text-dim)">Branch</div><div style="font-size:14px;font-weight:600">${t.coverage.branches || 0}%</div></div>` : ""}
             </div>`;
-          });
-          html += `</div>`;
-        }
 
-        // Codebase Sync explanation (markdown)
-        if (build.codeSyncExplanation) {
-          html += `<div class="feature-detail-section"><h4>Codebase Sync</h4>
-            <div class="concept-content" style="font-size:13px">${md(build.codeSyncExplanation)}</div></div>`;
-        }
-
-        // Decisions
-        if (build.decisions && build.decisions.length) {
-          html += `<div class="feature-detail-section"><h4>Beslissingen</h4>
-            <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${build.decisions.map((d) => `<li style="margin-bottom:4px">${esc(d)}</li>`).join("")}</ul></div>`;
-        }
-
-        // Blockers
-        if (build.blockers && build.blockers.length) {
-          html += `<div class="feature-detail-section"><h4>Blockers</h4>
-            <ul style="padding-left:16px;font-size:12px;color:var(--danger)">${build.blockers.map((b) => `<li>${esc(b)}</li>`).join("")}</ul></div>`;
-        }
-
-        // Files changed (fallback: filesChanged[], or old schema files.created[]+files.modified[])
-        let allFiles = build.filesChanged;
-        if (!allFiles && build.files) {
-          allFiles = [].concat(
-            build.files.created || [],
-            build.files.modified || [],
-          );
-        }
-        if (allFiles && allFiles.length) {
-          html += `<div class="feature-detail-section"><h4>Bestanden (${allFiles.length})</h4>
-            <p style="font-size:12px;color:var(--text-muted)">${allFiles.map((f) => `<code>${esc(f)}</code>`).join(", ")}</p></div>`;
-        }
-
-        // Test checklist
-        if (build.testChecklist && build.testChecklist.length) {
-          const total = build.testChecklist.length;
-          const pending = build.testChecklist.filter(
-            (t) => t.status === "pending",
-          ).length;
-          html += `<div class="feature-detail-section"><h4>Test Checklist (${total} items${pending ? ", " + pending + " pending" : ""})</h4>
-            <table class="data-table"><thead><tr><th>#</th><th>Test</th><th>Requirement</th><th>Status</th></tr></thead>
-            <tbody>${build.testChecklist
-              .map((t) => {
-                const sc =
-                  t.status === "pass"
-                    ? "var(--done)"
-                    : t.status === "fail"
-                      ? "var(--danger)"
-                      : "var(--text-dim)";
-                const reqId = t.requirementId || "";
-                return `<tr><td style="color:var(--text-dim)">${t.id}</td><td style="font-size:12px">${esc(t.title || t.description || "")}</td><td>${reqId ? `<code style="font-size:11px">${esc(reqId)}</code>` : ""}</td><td><span style="color:${sc};font-size:11px;font-weight:600">${esc((t.status || "pending").toUpperCase())}</span></td></tr>`;
-              })
-              .join("")}</tbody></table></div>`;
-        }
-
-        return html;
-      }
-
-      function renderTestTab(test) {
-        if (!test) return "";
-        let html = "";
-
-        // Status + coverage header (finalStatus = new schema, status = old schema)
-        const testStatus = test.finalStatus || test.status || "UNKNOWN";
-        const statusColor = ["PASSED", "VERIFIED", "PASS"].includes(testStatus)
-          ? "var(--done)"
-          : "var(--danger)";
-        html += `<div class="feature-detail-section"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <span style="font-size:14px;font-weight:700;color:${statusColor}">${esc(testStatus)}</span>
-          ${
-            test.coverage
-              ? `
-            <div style="background:var(--bg);padding:6px 12px;border-radius:4px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--text-dim)">Statements</div><div style="font-size:14px;font-weight:600">${test.coverage.statements || 0}%</div></div>
-            <div style="background:var(--bg);padding:6px 12px;border-radius:4px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--text-dim)">Branches</div><div style="font-size:14px;font-weight:600">${test.coverage.branches || 0}%</div></div>
-          `
-              : ""
-          }
-        </div></div>`;
-
-        // Summary stats (old schema: test.summary with total/passed/failed/manual/auto)
-        if (test.summary) {
-          const ts = test.summary;
-          const statStyle =
-            "background:var(--bg);padding:6px 12px;border-radius:4px;border:1px solid var(--border)";
-          html += `<div class="feature-detail-section"><div style="display:flex;gap:12px;flex-wrap:wrap">
-            <div style="${statStyle}"><div style="font-size:10px;color:var(--text-dim)">Total</div><div style="font-size:14px;font-weight:600">${ts.total || 0}</div></div>
-            <div style="${statStyle}"><div style="font-size:10px;color:var(--text-dim)">Passed</div><div style="font-size:14px;font-weight:600;color:var(--done)">${ts.passed || 0}</div></div>
-            ${ts.failed ? `<div style="${statStyle}"><div style="font-size:10px;color:var(--text-dim)">Failed</div><div style="font-size:14px;font-weight:600;color:var(--danger)">${ts.failed}</div></div>` : ""}
-            ${ts.manual ? `<div style="${statStyle}"><div style="font-size:10px;color:var(--text-dim)">Manual</div><div style="font-size:14px;font-weight:600">${ts.manual}</div></div>` : ""}
-            ${ts.auto ? `<div style="${statStyle}"><div style="font-size:10px;color:var(--text-dim)">Auto</div><div style="font-size:14px;font-weight:600">${ts.auto}</div></div>` : ""}
-          </div></div>`;
-        }
-
-        // Session history (rich detail)
-        const sessions = test.sessions;
-        if (sessions && sessions.length) {
-          sessions.forEach((session) => {
-            html += `<div class="feature-detail-section">
-              <h4>Sessie ${session.sessionNumber} — ${esc(session.date)}</h4>
-              <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px">${session.totals.pass} pass &middot; ${session.totals.fail} fail &middot; ${session.totals.skip || 0} skip</p>
-              <table class="data-table"><thead><tr><th>#</th><th>Test</th><th>Type</th><th>Initial</th><th>Final</th><th>Fix</th></tr></thead>
-              <tbody>${session.items
+          // Checklist
+          if (t.checklist && t.checklist.length) {
+            html += `<table class="data-table"><thead><tr><th>#</th><th>Test</th><th>Type</th><th>Status</th></tr></thead>
+              <tbody>${t.checklist
                 .map((item) => {
-                  const ic =
-                    item.initialStatus === "PASS"
+                  const sc =
+                    item.status === "PASS" || item.status === "pass"
                       ? "var(--done)"
-                      : "var(--danger)";
-                  const fc =
-                    item.finalStatus === "PASS"
-                      ? "var(--done)"
-                      : "var(--danger)";
-                  return `<tr>
-                  <td style="color:var(--text-dim)">${item.id}</td>
-                  <td style="font-size:12px">${esc(item.title)}</td>
-                  <td><span style="font-size:10px;color:var(--text-dim)">${esc(item.type)}</span></td>
-                  <td><span style="color:${ic};font-size:11px;font-weight:600">${esc(item.initialStatus)}</span></td>
-                  <td><span style="color:${fc};font-size:11px;font-weight:600">${esc(item.finalStatus)}</span></td>
-                  <td style="font-size:11px;color:var(--text-dim)">${item.fixApplied ? esc(item.fixApplied) : "—"}</td>
-                </tr>`;
+                      : item.status === "FAIL" || item.status === "fail"
+                        ? "var(--danger)"
+                        : "var(--text-dim)";
+                  return `<tr><td style="color:var(--text-dim)">${item.id}</td><td style="font-size:12px">${esc(item.title)}</td><td><span style="font-size:10px;color:var(--text-dim)">${esc(item.type || "")}</span></td><td><span style="color:${sc};font-size:11px;font-weight:600">${esc((item.status || "pending").toUpperCase())}</span></td></tr>`;
                 })
-                .join("")}</tbody></table>
-            </div>`;
-          });
-        } else if (test.items && test.items.length) {
-          // Legacy flat items array (old schema)
-          html += `<div class="feature-detail-section"><h4>Test Items</h4>
-            <table class="data-table"><thead><tr><th>#</th><th>Test</th><th>Type</th><th>Status</th></tr></thead>
-            <tbody>${test.items
-              .map((item) => {
-                const st = item.finalStatus || item.status || item.result || "";
-                const sc =
-                  st === "PASS"
-                    ? "var(--done)"
-                    : st === "FAIL"
-                      ? "var(--danger)"
-                      : "var(--text-dim)";
-                return `<tr><td style="color:var(--text-dim)">${item.id || ""}</td><td style="font-size:12px">${esc(item.title || item.description || "")}</td><td><span style="font-size:10px;color:var(--text-dim)">${esc(item.type || "")}</span></td><td><span style="color:${sc};font-size:11px;font-weight:600">${esc(st.toUpperCase())}</span></td></tr>`;
-              })
-              .join("")}</tbody></table></div>`;
-        } else if (test.runs && test.runs.length) {
-          // Legacy runs array fallback
-          const last = test.runs[test.runs.length - 1];
-          html += `<div class="feature-detail-section"><h4>Laatste Run — ${esc(last.date || "")}</h4>
-            <p style="font-size:12px;color:var(--text-muted)">${last.passed} passed, ${last.failed} failed</p></div>`;
-        }
-
-        // Fix Sync narrative
-        if (test.fixSync) {
-          html += `<div class="feature-detail-section"><h4>Fix Sync</h4>
-            <div class="concept-content" style="font-size:13px">${md(test.fixSync)}</div></div>`;
-        }
-
-        // Observations
-        if (test.observations && test.observations.length) {
-          html += `<div class="feature-detail-section"><h4>Observaties</h4>
-            <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${test.observations.map((o) => `<li style="margin-bottom:4px">${esc(o)}</li>`).join("")}</ul></div>`;
-        }
-
-        // Tests Added + Files Modified
-        if (
-          (test.testsAdded && test.testsAdded.length) ||
-          (test.filesModified && test.filesModified.length)
-        ) {
-          html += `<div class="feature-detail-section" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">`;
-          if (test.testsAdded && test.testsAdded.length) {
-            html += `<div><h4>Tests Toegevoegd</h4><ul style="padding-left:16px;font-size:11px;color:var(--text-dim)">${test.testsAdded.map((f) => `<li><code>${esc(f)}</code></li>`).join("")}</ul></div>`;
+                .join("")}</tbody></table>`;
           }
-          if (test.filesModified && test.filesModified.length) {
-            html += `<div><h4>Files Gewijzigd</h4><ul style="padding-left:16px;font-size:11px;color:var(--text-dim)">${test.filesModified.map((f) => `<li><code>${esc(typeof f === "string" ? f : f.path)}</code>${f.description ? " — " + esc(f.description) : ""}</li>`).join("")}</ul></div>`;
+
+          // Sessions
+          if (t.sessions && t.sessions.length) {
+            t.sessions.forEach((s, si) => {
+              html += `<p style="font-size:12px;color:var(--text-dim);margin-top:8px">Sessie ${si + 1} (${esc(s.date || "")}): ${s.pass || 0} pass, ${s.fail || 0} fail${s.fixes && s.fixes.length ? " — fixes: " + s.fixes.map((f) => esc(f)).join(", ") : ""}</p>`;
+            });
           }
           html += `</div>`;
         }
 
-        return html;
-      }
+        // ── Refactor ──
+        if (d.refactor) {
+          const r = d.refactor;
+          const refColor =
+            {
+              CLEAN: "var(--done)",
+              REFACTORED: "var(--accent)",
+              ROLLED_BACK: "var(--danger)",
+            }[r.status] || "var(--text-muted)";
 
-      function renderRefactorTab(refactor) {
-        if (!refactor) return "";
-        let html = "";
+          html += `<div class="feature-detail-section feature-section-divider"><h4>Refactor</h4>
+            <span style="font-size:14px;font-weight:700;color:${refColor}">${esc(r.status)}</span>`;
 
-        const statusColor =
-          {
-            CLEAN: "var(--done)",
-            REFACTORED: "var(--accent)",
-            ROLLED_BACK: "var(--danger)",
-          }[refactor.status] || "var(--text-muted)";
-        html += `<div class="feature-detail-section"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <span style="font-size:14px;font-weight:700;color:${statusColor}">${esc(refactor.status)}</span>
-          ${refactor.summary && refactor.summary.improvementsApplied > 0 ? `<span style="font-size:12px;color:var(--text-dim)">${refactor.summary.improvementsApplied} verbeteringen &middot; ${refactor.summary.filesModified} files</span>` : ""}
-        </div></div>`;
-
-        // CLEAN: positive observations only
-        if (refactor.status === "CLEAN") {
-          if (
-            refactor.positiveObservations &&
-            refactor.positiveObservations.length
-          ) {
-            html += `<div class="feature-detail-section"><h4>Positieve Observaties</h4>
-              <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${refactor.positiveObservations.map((o) => `<li>${esc(o)}</li>`).join("")}</ul></div>`;
+          if (r.status === "ROLLED_BACK" && r.failureAnalysis) {
+            html += `<div class="concept-content" style="font-size:13px;margin-top:8px">${md(r.failureAnalysis)}</div>`;
           }
-          return html;
-        }
 
-        // ROLLED_BACK: failure analysis + pending
-        if (refactor.status === "ROLLED_BACK") {
-          if (refactor.failureAnalysis) {
-            html += `<div class="feature-detail-section"><h4>Failure Analyse</h4>
-              <div class="concept-content" style="font-size:13px">${md(refactor.failureAnalysis)}</div></div>`;
+          // Improvements
+          const categoryLabels = {
+            security: "Security",
+            performance: "Performance",
+            dry: "DRY",
+            simplification: "Simplificatie",
+            clarity: "Leesbaarheid",
+            quality: "Quality",
+            errorHandling: "Error Handling",
+          };
+          const imp = r.improvements || {};
+          const cats = Object.keys(categoryLabels).filter(
+            (k) => imp[k] && imp[k].length,
+          );
+          if (cats.length) {
+            cats.forEach((cat) => {
+              html += `<div style="margin-top:8px"><span style="font-size:11px;font-weight:600;color:var(--text-muted)">${categoryLabels[cat]}</span>`;
+              imp[cat].forEach((item) => {
+                html += `<div style="padding:4px 0;font-size:12px"><code style="font-size:10px;color:var(--text-dim)">${esc(item.file)}:${item.line}</code> ${esc(item.issue)} → ${esc(item.fix)}</div>`;
+              });
+              html += `</div>`;
+            });
           }
-          if (
-            refactor.pendingImprovements &&
-            refactor.pendingImprovements.length
-          ) {
-            html += `<div class="feature-detail-section"><h4>Uitgestelde Verbeteringen</h4>
-              <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${refactor.pendingImprovements.map((p) => `<li>${esc(p)}</li>`).join("")}</ul></div>`;
+
+          // Decisions
+          if (r.decisions && r.decisions.length) {
+            html += `<div style="margin-top:8px">${r.decisions.map((dec) => `<div style="font-size:12px;padding:2px 0"><strong>${esc(dec.decision || dec)}</strong>${dec.rationale ? ": " + esc(dec.rationale) : ""}</div>`).join("")}</div>`;
           }
-          return html;
-        }
 
-        // REFACTORED: improvements per category
-        const categoryLabels = {
-          security: "Security",
-          performance: "Performance",
-          dry: "DRY / Refactoring",
-          simplification: "Simplificatie",
-          clarity: "Leesbaarheid",
-          quality: "Code Quality",
-          errorHandling: "Error Handling",
-        };
-        const imp = refactor.improvements || {};
-        const categories = Object.keys(categoryLabels).filter(
-          (k) => imp[k] && imp[k].length,
-        );
-
-        if (categories.length) {
-          html += `<div class="feature-detail-section"><h4>Verbeteringen</h4>`;
-          categories.forEach((cat) => {
-            html += `<div style="margin-bottom:12px">
-              <p style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">${categoryLabels[cat]}</p>
-              ${imp[cat]
-                .map(
-                  (
-                    item,
-                  ) => `<div style="padding:6px 0;border-top:1px solid var(--border)">
-                <div style="display:flex;gap:8px;align-items:baseline;font-size:12px">
-                  <code style="font-size:10px;color:var(--text-dim)">${esc(item.file)}:${item.line}</code>
-                  <span style="color:var(--text-dim);font-size:10px;font-weight:600;flex-shrink:0">Risk: ${esc(item.risk || "LOW")}</span>
-                </div>
-                <p style="font-size:12px;margin-top:2px">${esc(item.issue)}</p>
-                <p style="font-size:12px;color:var(--text-muted)">${esc(item.fix)} &rarr; ${esc(item.result)}</p>
-              </div>`,
-                )
-                .join("")}
-            </div>`;
-          });
+          // Positive observations
+          if (r.positiveObservations && r.positiveObservations.length) {
+            html += `<ul style="padding-left:16px;font-size:12px;color:var(--text-muted);margin-top:8px">${r.positiveObservations.map((o) => `<li>${esc(o)}</li>`).join("")}</ul>`;
+          }
           html += `</div>`;
         }
 
-        // Decisions
-        if (refactor.decisions && refactor.decisions.length) {
-          html += `<div class="feature-detail-section"><h4>Beslissingen</h4>
-            ${refactor.decisions.map((d) => `<div style="font-size:12px;padding:4px 0"><strong>${esc(d.decision)}</strong>: ${esc(d.rationale)}</div>`).join("")}</div>`;
-        }
-
-        // Positive observations
-        if (
-          refactor.positiveObservations &&
-          refactor.positiveObservations.length
-        ) {
-          html += `<div class="feature-detail-section"><h4>Positieve Observaties</h4>
-            <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${refactor.positiveObservations.map((o) => `<li>${esc(o)}</li>`).join("")}</ul></div>`;
+        // ── Observations ──
+        if (d.observations && d.observations.length) {
+          html += `<div class="feature-detail-section feature-section-divider"><h4>Observaties</h4>
+            <ul style="padding-left:16px;font-size:12px;color:var(--text-muted)">${d.observations.map((o) => `<li style="margin-bottom:4px">${esc(o)}</li>`).join("")}</ul></div>`;
         }
 
         return html;
@@ -3457,6 +3208,7 @@
 
       const renderers = {
         concept: renderConcept,
+        design: renderDesign,
         theme: renderTheme,
         stack: renderStack,
         data: renderData,
