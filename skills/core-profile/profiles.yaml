@@ -25,6 +25,7 @@ dev:
   - dev-refactor
   - dev-server
   - dev-test
+  - dev-todo
   - dev-worktree
 
 frontend:
