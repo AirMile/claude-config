@@ -352,6 +352,28 @@
         t._timer = setTimeout(() => t.classList.remove("visible"), 2000);
       }
 
+      function openInVSCode(url, el) {
+        const orig = el.style.color;
+        el.style.color = "var(--text-dim)";
+        fetch(url, { method: "POST" })
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.ok) {
+              el.style.color = "var(--done)";
+              setTimeout(() => (el.style.color = orig), 1000);
+            } else {
+              el.style.color = "var(--danger)";
+              toast("Fout: " + (d.error || "onbekend"));
+              setTimeout(() => (el.style.color = orig), 2000);
+            }
+          })
+          .catch(() => {
+            el.style.color = "var(--danger)";
+            toast("Kon VS Code niet bereiken");
+            setTimeout(() => (el.style.color = orig), 2000);
+          });
+      }
+
       // ─── Render ─────────────────────────────────────────────
       function render() {
         // Clear
@@ -790,12 +812,14 @@
           };
           html += `<div class="fd-section"><h4>Files (${files.length})</h4><div class="fd-files">`;
           files.forEach((f) => {
-            const root = window.__projectRoot || "";
-            const abs = root ? root + "/" + f.path : f.path;
-            const href = "vscode://file/" + encodeURI(abs);
+            const basePath = location.pathname.replace(/\/backlog\/?$/, "");
+            const openUrl =
+              basePath +
+              "/open/" +
+              encodeURIComponent(f.path).replace(/%2F/g, "/");
             html += `<div class="fd-file">
               <span class="fd-file-icon" style="color:${colors[f.action] || "var(--text-dim)"}">${icons[f.action] || "?"}</span>
-              <a class="fd-file-path" href="${href}" title="Open in VS Code: ${esc(abs)}">${esc(f.path)}</a>
+              <a class="fd-file-path" href="#" onclick="openInVSCode('${openUrl}',this);return false" title="Open in VS Code">${esc(f.path)}</a>
               <span class="fd-file-purpose">${esc(f.purpose || "")}</span>
             </div>`;
           });
