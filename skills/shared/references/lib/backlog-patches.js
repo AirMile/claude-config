@@ -7,7 +7,7 @@ var backlogPatch = `<style>
   .stats { display:none !important; }
   .board { min-height: calc(100vh - 48px) !important; }
   .column-header { padding: 10px 12px !important; }
-  .edit-btn { display:none !important; }
+  .edit-btn, .delete-btn, .detail-btn { display:none !important; }
   .card-actions button { width:20px !important; height:20px !important; border-radius:3px !important; font-size:10px !important; }
   .detail-actions { justify-content:flex-start !important; }
   .detail-actions button { flex:none !important; width:auto !important; height:auto !important; padding:4px 10px !important; font-size:12px !important; display:inline-flex !important; align-items:center !important; gap:4px !important; background:var(--surface) !important; color:var(--text-muted) !important; border:1px solid var(--border) !important; border-radius:4px !important; transition:all 0.15s !important; }
