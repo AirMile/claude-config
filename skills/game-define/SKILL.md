@@ -556,9 +556,8 @@ Zie `shared/BACKLOG.md` voor het JSON read/write protocol.
 3. **Find feature and update status:**
    - Zoek in `data.features`: `data.features.find(f => f.name === "{feature-name}")`
    - Gevonden → zet `.status = "DEF"` en `.date = "{current date}"`
-   - Niet gevonden → zoek in `data.adhoc`
-   - Nog niet gevonden → voeg toe aan `data.adhoc`:
-     `{ "name": "{feature}", "type": "FEATURE", "status": "DEF", "description": "{from feature.json summary}", "dependency": null, "source": "/game-define" }`
+   - Niet gevonden → voeg toe aan `data.features`:
+     `{ "name": "{feature}", "type": "FEATURE", "status": "DEF", "phase": "P4", "description": "{from feature.json summary}", "dependency": null, "source": "/game-define" }`
 
 4. **Update metadata and write back:**
    - Zet `data.updated` naar huidige datum (`YYYY-MM-DD`)

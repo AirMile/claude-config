@@ -31,7 +31,7 @@ Accepts markdown from:
 
 - Decomposed features
 - Dependencies
-- P1/P2/P3 priority
+- P1/P2/P3/P4 priority (MoSCoW)
 - Direct links to `/dev-define {feature}`
 
 ## Workflow
@@ -417,17 +417,17 @@ routing (base)
 
    Show proposed prioritization table, then use AskUserQuestion:
    - header: "Priority Review"
-   - question: "Klopt deze prioritering? Je kunt features verplaatsen tussen P1/P2/P3."
+   - question: "Klopt deze prioritering? Je kunt features verplaatsen tussen P1/P2/P3/P4."
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Prioriteiten zijn correct, genereer backlog"
      - label: "Features verplaatsen", description: "Een of meer features naar een andere prioriteit"
-     - label: "Explain question", description: "Leg P1/P2/P3 uit"
+     - label: "Explain question", description: "Leg P1/P2/P3/P4 uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 4
    - "Features verplaatsen" → ask which features and target priority, update table, re-ask
-   - "Explain question" → explain P1 (MVP) / P2 / P3 criteria, re-ask
+   - "Explain question" → explain P1 (Must) / P2 (Should) / P3 (Could) / P4 (Maybe) criteria, re-ask
    - "Other" → parse user's freeform input, apply changes, re-ask
 
    **Loop until user confirms prioritization is correct.**
@@ -437,14 +437,17 @@ routing (base)
 ```
 PRIORITY ASSIGNED
 
-P1 (MVP):
+P1 (Must):
 - {feature}: {reason}
 - {feature}: {reason}
 
-P2:
+P2 (Should):
 - {feature}: {reason}
 
-P3:
+P3 (Could):
+- {feature}: {reason}
+
+P4 (Maybe):
 - {feature}: {reason}
 ```
 
@@ -473,12 +476,11 @@ P3:
          "name": "{feature-name}",
          "type": "FEATURE|API|INTEGRATION|UI|REFACTOR",
          "status": "TODO",
-         "phase": "P1|P2|P3",
+         "phase": "P1|P2|P3|P4",
          "description": "{description}",
          "dependency": "{other-feature}|null"
        }
      ],
-     "adhoc": [],
      "notes": "{Any notes or considerations}"
    }
    ```

@@ -26,20 +26,10 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
       "name": "feature-naam",
       "type": "FEATURE|API|INTEGRATION|UI|REFACTOR",
       "status": "TODO|DEF|BLT|TST|DONE",
-      "phase": "P1|P2|P3",
+      "phase": "P1|P2|P3|P4",
       "description": "Beschrijving",
       "dependency": "andere-feature|null",
       "date": "2026-01-15|null"
-    }
-  ],
-  "adhoc": [
-    {
-      "name": "item-naam",
-      "type": "PAGE-GAP|FEATURE|...",
-      "status": "TODO|DEF|BLT|TST|DONE",
-      "description": "Beschrijving",
-      "dependency": "null",
-      "source": "bron van het ad-hoc item"
     }
   ],
   "notes": "Eventuele notities"
@@ -75,13 +65,13 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
 TODO → DEF → BLT → TST → DONE
 ```
 
-| Status | Betekenis              | Gezet door    |
-| ------ | ---------------------- | ------------- |
-| TODO   | Nog niet opgepakt      | /dev-plan     |
-| DEF    | Gedefinieerd           | /dev-define   |
-| BLT    | Gebouwd                | /dev-build    |
-| TST    | Getest                 | /dev-test     |
-| DONE   | Afgerond + gerefactord | /dev-refactor |
+| Status | Betekenis              | Gezet door           |
+| ------ | ---------------------- | -------------------- |
+| TODO   | Nog niet opgepakt      | /dev-plan, /dev-todo |
+| DEF    | Gedefinieerd           | /dev-define          |
+| BLT    | Gebouwd                | /dev-build           |
+| TST    | Getest                 | /dev-test            |
+| DONE   | Afgerond + gerefactord | /dev-refactor        |
 
 ## Features filteren
 
@@ -92,6 +82,6 @@ Volgende TODO feature:    data.features.find(f => f.status === "TODO")
 Alle DEF features:        data.features.filter(f => f.status === "DEF")
 Alle BLT features:        data.features.filter(f => f.status === "BLT")
 Alle TST features:        data.features.filter(f => f.status === "TST")
-P1 (MVP) features:        data.features.filter(f => f.phase === "P1")
-Ad-hoc items:             data.adhoc
+P1 (Must) features:       data.features.filter(f => f.phase === "P1")
+P4 (Maybe) features:      data.features.filter(f => f.phase === "P4")
 ```

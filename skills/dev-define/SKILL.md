@@ -177,7 +177,7 @@ Gecombineerde steps: meerdere REQs in `requirements[]` array, `dependsOn` verwij
 
 1. Read `.project/backlog.html` → niet gevonden: skip.
 2. Parse JSON uit `<script id="backlog-data">`.
-3. Zoek feature → zet status `"DEF"`, datum `"{date}"`. Niet gevonden → voeg toe aan adhoc.
+3. Zoek feature → zet status `"DEF"`, datum `"{date}"`. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`.
 4. Zet `data.updated` naar vandaag. Schrijf terug via Edit (keep `<script>` tags intact).
 
 ### FASE 5: Dashboard Sync

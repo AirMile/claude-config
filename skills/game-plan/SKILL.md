@@ -319,13 +319,13 @@ player-movement (base)
    - question: "Klopt deze prioritering?"
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Prioriteiten zijn correct"
-     - label: "Features verplaatsen", description: "Ik wil features tussen P1/P2/P3 verplaatsen"
+     - label: "Features verplaatsen", description: "Ik wil features tussen P1/P2/P3/P4 verplaatsen"
      - label: "Aanpassen", description: "Andere wijzigingen aan prioriteiten"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 4
-   - "Features verplaatsen" → ask which features to move between P1/P2/P3, update, re-ask
+   - "Features verplaatsen" → ask which features to move between P1/P2/P3/P4, update, re-ask
    - "Aanpassen" → let user describe changes, apply, show updated prioritization, re-ask
 
    **Loop until user confirms priorities are correct.**
@@ -371,12 +371,11 @@ P3:
          "name": "{feature-name}",
          "type": "CORE|MECHANIC|CONTENT|POLISH|UI",
          "status": "TODO",
-         "phase": "P1|P2|P3",
+         "phase": "P1|P2|P3|P4",
          "description": "{description}",
          "dependency": "{other-feature}|null"
        }
      ],
-     "adhoc": [],
      "notes": "{Any notes or considerations}"
    }
    ```

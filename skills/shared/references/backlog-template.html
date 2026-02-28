@@ -113,13 +113,12 @@
             "phase": "P3",
             "description": "Image optimization, lazy loading, bundle splitting",
             "dependency": null
-          }
-        ],
-        "adhoc": [
+          },
           {
             "name": "order-processing",
             "type": "PAGE-GAP",
             "status": "TODO",
+            "phase": "P4",
             "description": "Submit handler voor checkout form",
             "dependency": null,
             "source": "/frontend-page checkout — CheckoutForm [Bestelling plaatsen]"
@@ -128,6 +127,7 @@
             "name": "coupon-validation",
             "type": "PAGE-GAP",
             "status": "TODO",
+            "phase": "P4",
             "description": "Coupon code validatie en korting berekening",
             "dependency": null,
             "source": "/frontend-page checkout — CouponInput [Toepassen]"
@@ -245,7 +245,6 @@
       const fileRaw = document.getElementById("backlog-data").textContent;
       let data = JSON.parse(fileRaw);
       if (!data.features) data.features = [];
-      if (!data.adhoc) data.adhoc = [];
 
       const STATUSES = ["TODO", "DEF", "BLT", "TST", "DONE"];
       const STATUS_COLORS = {
@@ -256,10 +255,10 @@
         DONE: "var(--done)",
       };
       const PHASE_LABELS = {
-        P1: "P1 (MVP)",
-        P2: "P2",
-        P3: "P3",
-        P4: "P4",
+        P1: "P1 · Must",
+        P2: "P2 · Should",
+        P3: "P3 · Could",
+        P4: "P4 · Maybe",
       };
       const PHASE_CLASSES = {
         P1: "phase-p1",
@@ -270,38 +269,23 @@
 
       // ─── Helpers ────────────────────────────────────────────
       function getAllItems() {
-        return [
-          ...data.features.map((f, i) => ({
-            ...f,
-            _list: "features",
-            _idx: i,
-            phaseKey: f.phase,
-          })),
-          ...data.adhoc.map((f, i) => ({
-            ...f,
-            _list: "adhoc",
-            _idx: i,
-            phaseKey: "P4",
-          })),
-        ];
+        return data.features.map((f, i) => ({
+          ...f,
+          _list: "features",
+          _idx: i,
+          phaseKey: f.phase || "P1",
+        }));
       }
 
       function findItem(name) {
-        let item = data.features.find((f) => f.name === name);
+        const item = data.features.find((f) => f.name === name);
         if (item) return { item, list: "features" };
-        item = data.adhoc.find((f) => f.name === name);
-        if (item) return { item, list: "adhoc" };
         return null;
       }
 
       function removeItem(name) {
         const fi = data.features.findIndex((f) => f.name === name);
-        if (fi !== -1) {
-          data.features.splice(fi, 1);
-          return;
-        }
-        const ai = data.adhoc.findIndex((f) => f.name === name);
-        if (ai !== -1) data.adhoc.splice(ai, 1);
+        if (fi !== -1) data.features.splice(fi, 1);
       }
 
       function updateStatus(name, newStatus) {
@@ -569,8 +553,7 @@
         document.getElementById("field-desc").value =
           found.item.description || "";
         document.getElementById("field-type").value = found.item.type;
-        document.getElementById("field-phase").value =
-          found.list === "adhoc" ? "P4" : found.item.phase || "P1";
+        document.getElementById("field-phase").value = found.item.phase || "P1";
         document.getElementById("field-dep").value =
           found.item.dependency || "";
         document.getElementById("field-name").disabled = false;
@@ -599,60 +582,23 @@
           const found = findItem(editingName);
           if (!found) return;
 
-          // If phase changed to/from adhoc, move between lists
-          const wasAdhoc = found.list === "adhoc";
-          const isAdhoc = phase === "P4";
-
-          if (wasAdhoc && !isAdhoc) {
-            // Move from adhoc to features
-            removeItem(editingName);
-            data.features.push({
-              name,
-              type,
-              status: found.item.status,
-              phase,
-              description: desc,
-              dependency: dep,
-              date: found.item.date || null,
-              source: found.item.source || null,
-            });
-          } else if (!wasAdhoc && isAdhoc) {
-            // Move from features to adhoc
-            removeItem(editingName);
-            data.adhoc.push({
-              name,
-              type,
-              status: found.item.status,
-              description: desc,
-              dependency: dep,
-              source: found.item.source || null,
-            });
-          } else {
-            // Same list, update in place
-            found.item.name = name;
-            found.item.description = desc;
-            found.item.type = type;
-            found.item.dependency = dep;
-            if (!wasAdhoc) found.item.phase = phase;
-          }
+          found.item.name = name;
+          found.item.description = desc;
+          found.item.type = type;
+          found.item.phase = phase;
+          found.item.dependency = dep;
 
           toast(`${name} bijgewerkt`);
         } else {
           // Add new
-          const newItem = {
+          data.features.push({
             name,
             type,
             status: addToStatus || "TODO",
+            phase,
             description: desc,
             dependency: dep,
-          };
-
-          if (phase === "P4") {
-            data.adhoc.push(newItem);
-          } else {
-            newItem.phase = phase;
-            data.features.push(newItem);
-          }
+          });
 
           toast(`${name} toegevoegd`);
         }
@@ -904,10 +850,7 @@
         if (!found) return;
         detailName = name;
         const f = found.item;
-        const phaseLabel =
-          found.list === "adhoc"
-            ? "P4"
-            : PHASE_LABELS[f.phase] || f.phase || "—";
+        const phaseLabel = PHASE_LABELS[f.phase] || f.phase || "—";
 
         document.getElementById("detail-title").textContent = f.name;
 
@@ -917,7 +860,7 @@
         }
         html += `<div class="detail-field"><div class="detail-tags">`;
         html += `<span class="badge badge-${f.type.toLowerCase().replace("_", "-")}">${esc(f.type)}</span>`;
-        html += `<span class="phase-tag ${PHASE_CLASSES[found.list === "adhoc" ? "P4" : f.phase] || "phase-p4"}">${phaseLabel}</span>`;
+        html += `<span class="phase-tag ${PHASE_CLASSES[f.phase] || "phase-p4"}">${phaseLabel}</span>`;
         html += `<span class="status-tag" style="color:${STATUS_COLORS[f.status]}">${f.status}</span>`;
         html += `</div></div>`;
         if (f.dependency) {

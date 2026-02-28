@@ -740,7 +740,7 @@ Added:
 
 2. **Sync backlog** (zie `shared/BACKLOG.md`):
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
-   - Zoek feature in `data.features`/`data.adhoc`, zet `.status = "BLT"`
+   - Zoek feature in `data.features`, zet `.status = "BLT"`
    - Zet `data.updated` naar huidige datum
    - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
 

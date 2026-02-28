@@ -98,7 +98,6 @@ function createBacklog(projectDir) {
       source: "manual",
       overview: "",
       features: [],
-      adhoc: [],
       notes: "",
     },
     null,

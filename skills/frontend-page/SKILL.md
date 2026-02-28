@@ -609,10 +609,10 @@ Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
 
 3. **Als `.project/backlog.html` bestaat** (zie `shared/BACKLOG.md`):
    - Parse JSON uit `<script id="backlog-data">` blok
-   - Cross-reference gap met `data.features` en `data.adhoc`
+   - Cross-reference gap met `data.features`
    - Match? Noteer: "Feature bestaat in backlog: {name} ({status})"
-   - Geen match? Voeg toe aan `data.adhoc`:
-     `{ "name": "{feature-naam}", "type": "PAGE-GAP", "status": "TODO", "description": "{beschrijving}", "dependency": null, "source": "/frontend-page {page} — {Component} [{element}]" }`
+   - Geen match? Voeg toe aan `data.features`:
+     `{ "name": "{feature-naam}", "type": "PAGE-GAP", "status": "TODO", "phase": "P4", "description": "{beschrijving}", "dependency": null, "source": "/frontend-page {page} — {Component} [{element}]" }`
    - Zet `data.updated` naar huidige datum, schrijf JSON terug via Edit tool
 
 4. **Als `.project/backlog.html` NIET bestaat:**

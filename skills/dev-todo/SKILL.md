@@ -44,7 +44,6 @@ Voeg snel 1 feature toe aan de backlog zonder het volledige `/dev-plan` proces. 
           "source": "/dev-todo",
           "overview": "",
           "features": [],
-          "adhoc": [],
           "notes": ""
         }
         ```
@@ -60,13 +59,13 @@ Twee vragen via AskUserQuestion:
 header: "Priority"
 question: "Welke prioriteit heeft deze feature?"
 options:
-  - label: "P1 (MVP) (Recommended)"
+  - label: "P1 · Must (Recommended)"
     description: "Must-have voor launch"
-  - label: "P2 (Important)"
+  - label: "P2 · Should"
     description: "Belangrijk maar niet blokkerend"
-  - label: "P3 (Nice-to-have)"
+  - label: "P3 · Could"
     description: "Als er tijd is"
-  - label: "P4 (Later)"
+  - label: "P4 · Maybe"
     description: "Parkeren voor later"
 multiSelect: false
 ```
@@ -96,10 +95,13 @@ multiSelect: false
 
 3. **Duplicaat check:** zoek `data.features.find(f => f.name === naam)`
    - Gevonden → toon waarschuwing:
+
      ```
      LET OP: Feature "{naam}" bestaat al in de backlog (status: {status}).
      ```
+
      AskUserQuestion:
+
      ```yaml
      header: "Duplicaat"
      question: "Deze feature bestaat al. Wat wil je doen?"
