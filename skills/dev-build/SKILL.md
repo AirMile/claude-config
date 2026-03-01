@@ -1,10 +1,10 @@
 ---
 name: dev-build
-description: Build features with TDD or implementation-first per requirement. Use with /dev-build after /dev-define.
+description: Build features with TDD or implementation-first per requirement. Use with /dev-build or /dev-build [feature-name] after /dev-define.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.1.0
+  version: 1.3.0
   category: dev
 ---
 
@@ -31,85 +31,48 @@ Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), a
 
 ### FASE 0: Context Loading
 
-**Capture git baseline** (eerste actie — voor context loading):
+**Capture git baseline** (eerste actie):
 
 ```bash
 mkdir -p .project/session
-git status --porcelain | sort > .project/session/pre-skill-status.txt
+git rev-parse HEAD > .project/session/pre-skill-sha.txt
 ```
 
-**Step 1: Detect Stack**
+**Detect stack:** lees CLAUDE.md `### Stack` sectie + `.claude/research/stack-baseline.md` (als beschikbaar).
 
-Read CLAUDE.md. Parse `### Stack` under `## Project` for engine/framework, language, and test runner.
-
-**Step 2: Load Context**
-
-Load `.claude/research/stack-baseline.md` if exists.
-
-**Step 3: Load Feature**
+**Load feature:**
 
 If no feature name provided:
 
-1. Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`). Filter `status === "DEF"` features → suggest first via **AskUserQuestion**
-2. Otherwise → list features in `.project/features/` die `feature.json` hebben, let user select
+1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DEF"` → suggest via **AskUserQuestion**
+2. Fallback: list `.project/features/` met `feature.json`, let user select
 
-Load `feature.json`. Extract:
+Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`.
 
-- `requirements[]` → requirement lijst
-- `buildSequence[]` → implementatievolgorde (gesorteerd op step)
-- `files[]` → bestanden om te maken/wijzigen
-- `testStrategy[]` → test mapping
+Niet gevonden → exit: "Run `/dev-define` eerst."
 
-If `feature.json` not found → exit met bericht om `/dev-define` eerst te runnen.
+**Dependency check:**
 
-**Step 3B: Dependency Check**
+Skip als geen `depends[]` of leeg.
 
-Skip if `feature.json` has no `depends` array, or `depends` is empty.
+1. Parse `.project/backlog.html`. Niet gevonden → skip.
+2. Per dependency: status moet `"TST"` of `"DONE"` zijn.
+3. Blockers gevonden → **AskUserQuestion**:
+   - "Stop — werk eerst {dep} af (Recommended)" / "Toch doorgaan"
+   - Stop → exit. Doorgaan → continue.
 
-1. Read `.project/backlog.html`. Not found → skip this step.
-2. Parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`).
-3. For each name in `feature.json depends[]`:
-   - Find matching feature in `data.features` by `name`
-   - Not found in backlog → skip (no warning)
-   - Found → check `status`. Sufficient: `"TST"` or `"DONE"`. Insufficient: anything else
-4. Collect insufficient dependencies as `blockers[]`.
-5. If `blockers` is empty → proceed.
-6. If `blockers` is not empty → show via **AskUserQuestion**:
-
-   ```
-   header: "Dependencies"
-   question: "Feature '{feature-name}' is afhankelijk van features die nog niet getest zijn:
-              {per blocker: '- {dep-name} (status: {status})'}
-              Doorgaan of eerst de dependency afronden?"
-   options:
-     - label: "Stop — werk eerst {primary-dep} af (Recommended)"
-       description: "Exit. Rond eerst de blocking feature af via /dev-test of /dev-build."
-     - label: "Toch doorgaan"
-       description: "Bouw deze feature ondanks de openstaande dependency."
-   multiSelect: false
-   ```
-
-   - "Stop" → exit: `Gestopt. Werk eerst '{primary-dep}' af (huidige status: {status}).`
-   - "Toch doorgaan" → continue to display block.
-
-Display:
+**Display** feature overview:
 
 ```
 FEATURE: {feature-name}
 
 REQUIREMENTS:
-- REQ-001: [requirements[0].description]
+- REQ-001: {description}
   ...
 
 IMPLEMENTATION ORDER:
-(from feature.json buildSequence, sorted by step)
+(from buildSequence, sorted by step)
 ```
-
-**Step 4: Frontend Scan** (web projects only)
-
-Skip als geen `app/**/page.tsx` of `src/pages/**/*.tsx` bestaan.
-
-Als bestanden uit "Files to Create" al geïmporteerd worden door pagina's: toon impact, vraag via AskUserQuestion of user bewust wil bouwen (respecteer bestaande styling) of eerst pagina's wil reviewen.
 
 ### FASE 1: Technique Mapping
 
@@ -120,7 +83,7 @@ Assign per requirement:
 
 Display technique map table. Confirm via **AskUserQuestion** (Akkoord / Aanpassen).
 
-Bij "Aanpassen": toon requirements opnieuw, vraag per requirement welke technique met **AskUserQuestion**.
+Bij "Aanpassen": vraag per requirement welke technique.
 
 ### FASE 2: Execute Build
 
@@ -128,10 +91,9 @@ For each requirement in IMPLEMENTATION ORDER:
 
 1. Load technique: `Read(".claude/skills/dev-build/techniques/{technique}.md")`
 2. Execute technique workflow
-3. If build sequence combines requirements (e.g., "REQ-002 + REQ-003"), build as single unit — apply the technique of the primary requirement
-4. If a requirement's behavior is already (partly) implemented by an earlier REQ: write tests only (skip RED, verify GREEN). Output: `RED: N/A (covered by REQ-XXX)`
-5. Apply `.claude/skills/shared/RULES.md` Algemeen (R007-R008) + TypeScript (T001-T103) rules
-6. Output per requirement:
+3. Enforce: strict TS (geen any, null checks), async error handling, geen secrets in client code
+4. **Update feature.json** na elke REQ: zet `requirements[].status` → `"built"` en voeg `technique` + `syncNote` toe. Dit bewaart voortgang bij context compaction.
+5. Output per requirement:
    ```
    [REQ-XXX] {description}
    Technique: {TDD | Implementation First}
@@ -140,27 +102,20 @@ For each requirement in IMPLEMENTATION ORDER:
    Progress: {done}/{total}
    ```
 
-After all requirements: run integration tests across requirements.
+**Edge cases:**
 
-**On test failure:** fix implementation, re-run. Continue only on PASS.
+- **Combined steps** (e.g. "REQ-002 + REQ-003"): build als één unit. Technique = die van het eerste REQ in de combinatie.
+- **Already covered**: als een REQ al (deels) werkt door een eerder REQ → schrijf alleen tests, verify GREEN. Output: `RED: N/A (covered by REQ-XXX)`
 
-**On blocker:** log in feature.json build.blockers array, mark BLOCKED, continue with other requirements. Suggest `/thinking-decide` for architectural blockers.
+**After all requirements:** run volledige test suite. Verify geen regressies.
 
-### FASE 3: Build Summary
+**On test failure:** fix, re-run. Continue alleen op PASS.
 
-Collect build data for `feature.json` (written in FASE 4C):
+**On blocker:** log in feature.json `build.blockers[]`, mark BLOCKED, ga door met andere requirements. Suggest `/thinking-decide` voor architecturele blockers.
 
-- `tests.checklist[]`: per test item — `id`, `title`, `requirementId`, `steps`, `expected`, `status: "pending"`
-- `requirements[]`: per REQ — enrich met `technique`, `syncNote`, `status: "built"`
-- `files[]`: update met actuele bestanden (merge met bestaande files uit define)
-- `build.integrationTests`: results
-- `build.blockers`: lijst (of lege array)
-- `packages[]`: nieuwe dependencies (`name`, `version`, `purpose`)
-- `build.decisions`: niet-voor-de-hand-liggende keuzes
+### FASE 3A: Documentation
 
-### FASE 4A: Documentation
-
-**Build summary** — display to user:
+**Build summary** — display:
 
 ```
 BUILD COMPLETE: {feature}
@@ -170,94 +125,86 @@ Tests: {passed}/{total} PASS
 Files created: {count}
 ```
 
-### FASE 4B: Codebase Sync
+### FASE 3B: Codebase Sync
 
-Het doel: de gebruiker begrijpt hoe de feature werkt voor goede beslissingen in test- en refactor-fases.
+De gebruiker moet begrijpen hoe de feature werkt voor goede beslissingen in test- en refactor-fases.
 
-**4B-1) Uitleg** — alsof je het aan een student uitlegt. Vier onderdelen:
+**Uitleg** — alsof je het aan een student uitlegt:
 
 - **Wat doet het?**: 1-2 zinnen, geen jargon
-- **Hoe ziet het eruit?**: 1-2 ASCII diagrammen (max 15 regels per diagram). Kies meest relevant type: data flow, component diagram, of state diagram. Gebruik box-drawing characters (┌─┐│└─┘) en pijlen (→ ← ↓ ↑).
-- **Hoe werkt het onder de motorkap?**: data flow stap voor stap, met concrete voorbeelden
+- **Hoe ziet het eruit?**: 1-2 ASCII diagrammen (max 15 regels). Box-drawing chars (┌─┐│└─┘) en pijlen (→ ← ↓ ↑).
+- **Hoe werkt het onder de motorkap?**: data flow stap voor stap, concrete voorbeelden
 - **Waar moet je op letten?**: alleen niet-voor-de-hand-liggende keuzes — _waarom_, niet _wat_
 
-**4B-2) Begripscheck** via **AskUserQuestion**:
+**Begripscheck** via **AskUserQuestion**:
 
 Vraag: "Snap je hoe de feature werkt?"
 Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
 
-**4B-3) Follow-up loop** — beantwoord vragen, herhaal begripscheck tot "Ja, helder".
+Follow-up loop tot "Ja, helder". Sla uitleg op als `build.explanation` in feature.json.
 
-**Na bevestiging:** sla de sync uitleg op als `build.explanation` veld in feature.json (plain markdown string met ASCII diagrammen).
+### FASE 3C: Project Sync
 
-### FASE 4C: Project Sync
+**Context sync** (zie `shared/DASHBOARD.md` → `context`):
 
-**Context sync** (zie `shared/DASHBOARD.md` → `context` sectie):
+Vergelijk build output met `.project/project.json`. Update direct (geen confirmatie):
 
-Compare build output against `.project/project.json` context. Update directly (no confirmation):
+- Files/directories → `context.structure` (overwrite)
+- Routes → `context.routing` (overwrite)
+- Non-obvious patterns → `context.patterns` (merge)
+- `context.updated` → huidige datum
 
-- New files/directories → `context.structure` (overwrite full tree)
-- New routes → `context.routing` (overwrite full array)
-- New non-obvious patterns → `context.patterns` (merge: add new, update existing)
-- Set `context.updated` to current date
+Skip als geen structurele impact of geen `project.json`. Log: `context: {N} updates ({keys})`.
 
-Quality rules: project-specific only, one line per item, concise. Skip if no structural impact or no `.project/project.json` exists.
+**Backlog sync** (zie `shared/BACKLOG.md`): status → `"BLT"`, `data.updated` → nu.
 
-Log: `context: {N} updates ({keys})` of `context: no updates needed`
+**Dashboard sync** (zie `shared/DASHBOARD.md`):
 
-**Backlog sync** (zie `shared/BACKLOG.md`): parse JSON uit `.project/backlog.html`, zet feature `.status = "BLT"`, update `data.updated`.
+- Feature status → `"BLT"`
+- Endpoints → `"done"` als geïmplementeerd
+- Stack packages → push nieuwe dependencies
 
-**Dashboard sync** (zie `shared/DASHBOARD.md`): read `.project/project.json` (skip als niet bestaat).
+**Architecture sync:**
 
-- Features: zet status naar `"BLT"`
-- Endpoints: update status naar `"done"` als endpoints geïmplementeerd (skip als geen endpoints)
-- Stack packages: push nieuwe dependencies
-
-**Architecture sync** (na dashboard sync):
-
-- Lees huidige `architecture.diagram` uit project.json
-- Als diagram bestaat: update met werkelijke implementatie (nieuwe routes, services, file structure)
-- Als diagram niet bestaat EN project heeft meerdere modules/services: genereer nieuw Mermaid `graph TD`
-- Input: `context.structure` + `context.routing` + geïmplementeerde bestanden
-- Output: bijgewerkt `architecture.diagram` + `architecture.description` (OVERWRITE)
-- Skip als geen structurele impact (bijv. alleen een utility functie toegevoegd)
+- Diagram bestaat → update met werkelijke implementatie
+- Geen diagram EN meerdere modules → genereer Mermaid `graph TD`
+- Geen structurele impact → skip
 - Log: `architecture: updated` of `architecture: no updates needed`
 
 **Write feature.json** (read-modify-write):
 
-1. Read `.project/features/{feature-name}/feature.json`
-2. Update bestaande secties:
-   - `status` → `"BLT"`
-   - `requirements[]` → enrich elke REQ met `technique`, `syncNote`, `status: "built"`
-   - `files[]` → merge met actuele bestanden (nieuwe files toevoegen, bestaande updaten)
-3. Voeg nieuwe secties toe:
-   - `build`: `{ started, completed, techniques: { tdd, implementationFirst }, testsPass, testsTotal, decisions, explanation }` (`explanation` = de codeSyncExplanation markdown)
-   - `packages[]`: nieuwe dependencies
-   - `tests.checklist[]`: test items met `status: "pending"`
-4. Write `feature.json` terug (NIET andere secties overschrijven)
+1. Read huidige `feature.json`
+2. Update: `status → "BLT"`, `files[]` → merge met actuele bestanden
+3. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions, explanation), `packages[]`, `tests.checklist[]` (status: "pending")
+4. Write terug — bestaande secties NIET overschrijven
 
-### FASE 4D: Scoped Commit
+Note: `requirements[]` hoeft hier niet meer enriched — dat is al per-REQ gedaan in FASE 2 stap 4.
 
-Compare current git status with baseline:
+### FASE 3D: Scoped Commit
+
+**Strategie**: stage alleen files die door deze build zijn aangemaakt of gewijzigd. Laat pre-existing dirty files met rust.
 
 ```bash
-git status --porcelain | sort > /tmp/current-status.txt
+git status --porcelain
 ```
 
-Categorize files vs `.project/session/pre-skill-status.txt`:
+Categoriseer elke file:
 
-- **NEW** (only in current, not in baseline) → `git add`
-- **OVERLAP** (same filename in both, regardless of status) → warn user via AskUserQuestion, ask if own changes may be staged
-- **PRE-EXISTING** (only in baseline) → do NOT stage
-- **Gitignored** (in .gitignore) → skip, do not stage
+1. **Check baseline**: vergelijk met de SHA uit `.project/session/pre-skill-sha.txt`:
+   ```bash
+   git diff --name-only $(cat .project/session/pre-skill-sha.txt) HEAD 2>/dev/null
+   ```
+   Bestanden die NIET in deze diff staan EN al dirty waren → PRE-EXISTING, niet stagen.
+2. **Nieuwe/gewijzigde bestanden van deze feature** (bestanden uit `feature.json files[]`, test files, project config) → `git add`.
+3. **Untracked bestanden** die niet bij de feature horen → niet stagen.
 
-If baseline file doesn't exist, fall back to `git add -A`.
+Als baseline SHA niet bestaat → fallback: vergelijk met `feature.json files[]` lijst.
 
 ```bash
 git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
 ```
 
-Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
+Clean up: `rm -f .project/session/pre-skill-sha.txt`
 
 **No Co-Authored-By footer on pipeline commits.**
 
@@ -274,11 +221,3 @@ TESTS: {passed}/{total} PASS ({time})
 FAILED:
 - {file}:{line} - {reason <50 chars}
 ```
-
-## Stack-Specific Behavior
-
-Determine test commands, file extensions, mocking approach from:
-
-1. `### Testing` section in CLAUDE.md
-2. Stack-baseline (`.claude/research/stack-baseline.md`)
-3. Claude's own knowledge
