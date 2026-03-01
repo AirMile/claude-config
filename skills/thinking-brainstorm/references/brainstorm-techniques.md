@@ -9,6 +9,7 @@ These techniques help creatively expand ideas through exploration, variation gen
 **When to use:** To push boundaries and explore provocative variations of the core concept.
 
 **Approach:**
+
 - What if we changed [core element] completely?
 - What if this existed in [different context/world]?
 - What if we removed [constraint] entirely?
@@ -16,6 +17,7 @@ These techniques help creatively expand ideas through exploration, variation gen
 - What if [opposite of current approach]?
 
 **Output structure:**
+
 - 5-10 provocative "what if" scenarios
 - Brief exploration of each scenario's implications
 - Most promising scenarios highlighted
@@ -26,6 +28,7 @@ These techniques help creatively expand ideas through exploration, variation gen
 **When to use:** To find innovative solutions by connecting to totally different domains.
 
 **Approach:**
+
 - What other fields solve similar problems differently?
 - What does this idea remind you of in nature? In other industries? In history?
 - How would [different profession] approach this?
@@ -33,6 +36,7 @@ These techniques help creatively expand ideas through exploration, variation gen
 - What can we learn from [unrelated domain]?
 
 **Output structure:**
+
 - 3-5 analogies from different domains
 - Key insights from each analogy
 - Transferable concepts identified
@@ -43,6 +47,7 @@ These techniques help creatively expand ideas through exploration, variation gen
 **When to use:** To discover alternatives by flipping the concept upside down.
 
 **Approach:**
+
 - What if we did the exact opposite?
 - Instead of [X], what if [opposite of X]?
 - Reverse the user journey—what happens?
@@ -50,6 +55,7 @@ These techniques help creatively expand ideas through exploration, variation gen
 - Flip assumptions—what if [assumption] is wrong?
 
 **Output structure:**
+
 - Core elements identified
 - Reversals/inversions for each element
 - Surprising insights from inversions
@@ -60,6 +66,7 @@ These techniques help creatively expand ideas through exploration, variation gen
 **When to use:** When you need to rebuild the idea from fundamental truths.
 
 **Approach:**
+
 - What are we really trying to achieve? (strip away assumptions)
 - What are the fundamental constraints? (physics, human nature, etc)
 - What is absolutely necessary vs conventional?
@@ -67,6 +74,7 @@ These techniques help creatively expand ideas through exploration, variation gen
 - What assumptions can we challenge?
 
 **Output structure:**
+
 - Core problem broken down to fundamentals
 - Assumptions identified and challenged
 - Fundamental constraints vs arbitrary ones
@@ -81,6 +89,7 @@ These techniques help creatively expand ideas through exploration, variation gen
 
 **Approach:**
 Apply each letter systematically:
+
 - **S**ubstitute: What can we replace?
 - **C**ombine: What can we merge?
 - **A**dapt: What can we adjust?
@@ -90,6 +99,7 @@ Apply each letter systematically:
 - **R**everse: What can we rearrange or flip?
 
 **Output structure:**
+
 - Variations per SCAMPER dimension
 - Most promising variations highlighted
 - Combinations of variations explored
@@ -101,6 +111,7 @@ Apply each letter systematically:
 
 **Approach:**
 Apply each "hat" perspective:
+
 - **White Hat**: Facts and information (what do we know?)
 - **Red Hat**: Emotions and intuition (what does gut say?)
 - **Black Hat**: Caution and risks (what could go wrong?)
@@ -109,6 +120,7 @@ Apply each "hat" perspective:
 - **Blue Hat**: Process and overview (how do we proceed?)
 
 **Output structure:**
+
 - Insights from each perspective
 - Contradictions between perspectives
 - Balanced view incorporating all hats
@@ -119,19 +131,77 @@ Apply each "hat" perspective:
 **When to use:** For visual exploration of connections and branches from the core idea.
 
 **Approach:**
+
 - Start with core idea in center
-- Branch out major themes/aspects
-- Sub-branch details, features, variations
+- Branch out major themes/aspects (3-5 branches)
+- Sub-branch details, features, variations (2-4 per branch)
 - Find connections between branches
 - Identify gaps or unexplored areas
 - Look for patterns and clusters
 
-**Output structure:**
-- Text representation of mind map structure
-- Major branches identified
-- Key connections discovered
-- Unexplored areas highlighted
-- Patterns and insights
+**Output: ASCII Tree Visualization**
+
+Render the mind map as an ASCII tree using box-drawing characters. The tree makes relationships, hierarchy, and gaps immediately visible — far more effective than flat bullet lists.
+
+**Rendering rules:**
+
+- Use `───` for horizontal connections, `│` for vertical lines
+- Use `├─` for middle branches, `└─` for last branch in a group
+- Use `┌─` for the first branch when connecting upward to center
+- Core idea centered, branches extend right
+- Maximum 3 levels deep (core → branch → sub-branch → leaf)
+- Mark unexplored areas with `(?)` suffix
+- Mark cross-connections with `←→` annotations below the tree
+- Keep branch labels short (2-4 words max)
+
+**Template:**
+
+```
+                  ┌─ [Sub-branch] ─── [Leaf]
+                  │                   └─ [Leaf]
+  [Core Idea] ───┼─ [Branch 2] ───── [Sub-branch]
+                  │                   └─ [Sub-branch] (?)
+                  └─ [Branch 3] ───── [Sub-branch]
+                                      └─ [Sub-branch]
+
+  Connecties: [Branch 1:Sub-X] ←→ [Branch 3:Sub-Y]
+  Gaps: [Branch 2] heeft nog weinig diepte
+```
+
+**Example — game concept:**
+
+```
+                      ┌─ Co-op campaign
+                      │  └─ Drop-in/drop-out
+  Multiplayer ────────┤
+                      └─ PvP arena
+                         └─ Ranked seasons (?)
+
+                      ┌─ Crafting ────── Resource gathering
+                      │                  └─ Recipe discovery
+  Core Mechanics ─────┤
+                      ├─ Exploration ─── Procedural maps
+                      │                  └─ Hidden lore
+                      └─ Combat ──────── Combo system (?)
+
+                      ┌─ Fantasy base
+  Setting ────────────┤
+                      └─ Sci-fi ruins ── Ancient tech
+                                         └─ Magitech fusion
+
+  Connecties: Crafting ←→ Ancient tech (magitech recipes)
+              Exploration ←→ Lore (environmental storytelling)
+  Gaps: PvP balance, Combat depth
+```
+
+**After presenting the tree:**
+
+1. Walk through each branch briefly (1-2 sentences per branch)
+2. Highlight the most interesting cross-connections
+3. Ask the user which branches to explore deeper or expand
+4. Use their response to grow the tree in the next iteration
+
+**Iteration:** When the user wants to go deeper on a branch, redraw the tree with that branch expanded (more sub-branches/leaves) while keeping the rest compact.
 
 ## Collaborative Techniques
 
@@ -140,6 +210,7 @@ Apply each "hat" perspective:
 **When to use:** To build on ideas iteratively without blocking or criticism.
 
 **Approach:**
+
 - Start with base idea
 - Add "Yes, and what if we also..." variations
 - Build on each addition without rejecting
@@ -147,6 +218,7 @@ Apply each "hat" perspective:
 - Find unexpected combinations
 
 **Output structure:**
+
 - Base idea
 - Chain of "yes, and" additions
 - Most interesting evolved versions
@@ -157,6 +229,7 @@ Apply each "hat" perspective:
 **When to use:** For generating many variations through alternating idea building.
 
 **Approach:**
+
 - Generate initial variations of core idea
 - Take each variation and iterate on it
 - Create variations of variations
@@ -164,6 +237,7 @@ Apply each "hat" perspective:
 - Cross-pollinate ideas
 
 **Output structure:**
+
 - Generation 1 variations (direct from core)
 - Generation 2 variations (iterations on gen 1)
 - Generation 3+ if valuable
@@ -175,6 +249,7 @@ Apply each "hat" perspective:
 **When to use:** To break patterns and discover unexpected connections.
 
 **Approach:**
+
 - Pick random words/concepts/images
 - Force connections between random element and your idea
 - Ask: How could [random element] inspire a feature?
@@ -182,6 +257,7 @@ Apply each "hat" perspective:
 - Embrace absurdity to find novelty
 
 **Output structure:**
+
 - Random elements used
 - Forced connections made
 - Valuable insights from unexpected links
@@ -195,6 +271,7 @@ Apply each "hat" perspective:
 **When to use:** To dig deeper into motivations, root causes, or core purposes.
 
 **Approach:**
+
 - Start with the idea or a feature
 - Ask "Why?" (why does this matter?)
 - For the answer, ask "Why?" again
@@ -203,6 +280,7 @@ Apply each "hat" perspective:
 - Use insights to strengthen or redirect
 
 **Output structure:**
+
 - Initial statement
 - 5 levels of "why" with answers
 - Root motivation/purpose discovered
@@ -214,6 +292,7 @@ Apply each "hat" perspective:
 **When to use:** For systematic exploration of parameter combinations.
 
 **Approach:**
+
 - Identify key dimensions/parameters of the idea
 - List options for each dimension
 - Create matrix of possibilities
@@ -221,6 +300,7 @@ Apply each "hat" perspective:
 - Evaluate interesting combinations
 
 **Output structure:**
+
 - Key dimensions identified (3-5)
 - Options per dimension (3-7 each)
 - Interesting combinations explored
@@ -232,6 +312,7 @@ Apply each "hat" perspective:
 **When to use:** To break assumptions through deliberately bold/absurd statements.
 
 **Approach:**
+
 - Make provocative statements about the idea
 - "Po: [absurd statement]" (e.g., "Po: users never see the interface")
 - Explore implications of provocation
@@ -239,6 +320,7 @@ Apply each "hat" perspective:
 - Translate absurdity into viable innovation
 
 **Output structure:**
+
 - 3-5 provocative statements
 - Exploration of each provocation
 - Valuable insights extracted
@@ -252,6 +334,7 @@ Apply each "hat" perspective:
 **When to use:** To bridge unrelated concepts and discover novel combinations.
 
 **Approach:**
+
 - Pick unrelated concepts, objects, or ideas
 - Force relationships between them and your idea
 - Ask: What if we combined [X] with [Y]?
@@ -259,6 +342,7 @@ Apply each "hat" perspective:
 - Find surprising synergies
 
 **Output structure:**
+
 - Unrelated concepts paired
 - Forced relationship explorations
 - Surprising synergies discovered
@@ -270,6 +354,7 @@ Apply each "hat" perspective:
 **When to use:** When you want to challenge core beliefs about how things "should" be.
 
 **Approach:**
+
 - List core assumptions about the idea
 - Systematically reverse each assumption
 - Explore: What if [opposite of assumption] were true?
@@ -277,6 +362,7 @@ Apply each "hat" perspective:
 - Identify which reversals create value
 
 **Output structure:**
+
 - Core assumptions listed
 - Reversals of each assumption
 - Implications of each reversal
@@ -288,6 +374,7 @@ Apply each "hat" perspective:
 **When to use:** For exploring different stakeholder perspectives and their needs.
 
 **Approach:**
+
 - Identify key stakeholders/personas
 - Role-play each perspective deeply
 - What does this person need? Fear? Want?
@@ -295,6 +382,7 @@ Apply each "hat" perspective:
 - Find insights from conflicting perspectives
 
 **Output structure:**
+
 - Key roles/stakeholders identified
 - Perspective from each role
 - Needs and objections per role
@@ -306,6 +394,7 @@ Apply each "hat" perspective:
 **When to use:** To explore how the idea would work in different eras or future scenarios.
 
 **Approach:**
+
 - How would this work 100 years ago?
 - How would this work 50 years in the future?
 - What if technology level was different?
@@ -313,6 +402,7 @@ Apply each "hat" perspective:
 - What timeless elements emerge?
 
 **Output structure:**
+
 - Different time periods explored
 - Adaptations needed per era
 - Timeless core elements identified
@@ -324,6 +414,7 @@ Apply each "hat" perspective:
 **When to use:** When extreme limitations force creative problem-solving.
 
 **Approach:**
+
 - What if budget was 1/10th?
 - What if time was 1/4th?
 - What if team was just one person?
@@ -331,6 +422,7 @@ Apply each "hat" perspective:
 - How do constraints force innovation?
 
 **Output structure:**
+
 - Constraints applied
 - Solutions under each constraint
 - Forced innovations identified
@@ -342,6 +434,7 @@ Apply each "hat" perspective:
 **When to use:** To use extended metaphors as frameworks for solutions.
 
 **Approach:**
+
 - Find metaphor for the idea (e.g., "like a garden")
 - Map elements deeply (plants=features, soil=foundation, etc)
 - Push metaphor to explore new areas
@@ -349,6 +442,7 @@ Apply each "hat" perspective:
 - Extract insights from metaphorical thinking
 
 **Output structure:**
+
 - Core metaphor established
 - Mapping of elements
 - Insights from metaphor
@@ -360,6 +454,7 @@ Apply each "hat" perspective:
 **When to use:** When you need to reframe the problem through better questions.
 
 **Approach:**
+
 - Generate questions instead of answers
 - What are we not asking?
 - What would [expert] ask about this?
@@ -367,6 +462,7 @@ Apply each "hat" perspective:
 - Find the questions that matter most
 
 **Output structure:**
+
 - 20-30 questions generated
 - Questions categorized (assumptions, users, technical, etc)
 - Most powerful questions identified
