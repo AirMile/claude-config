@@ -126,7 +126,7 @@ function parseDefine(md, featureName) {
   if (statusMatch) {
     const s = statusMatch[1].toLowerCase();
     if (s === "defined") result.status = "DEF";
-    else if (s === "verified") result.status = "TST";
+    else if (s === "verified") result.status = "DONE";
     else if (s === "refactored" || s === "clean" || s === "done")
       result.status = "DONE";
     else result.status = s.toUpperCase();

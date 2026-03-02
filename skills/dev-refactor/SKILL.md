@@ -12,7 +12,7 @@ metadata:
 
 ## Overview
 
-This is **FASE 4** of the dev workflow: define -> build -> test -> **refactor**
+Optional quality step on completed features. Not a status-gate — features are DONE after `/dev-test`. This skill improves code structure, naming, and patterns on already-finished features.
 
 Batch-first architecture: analyzes ALL features in parallel via Explore agents, triages clean vs dirty, generates stack-aware refactor patterns via Context7, creates one combined plan with one approval, and applies changes with per-feature rollback.
 
@@ -33,7 +33,7 @@ This rule exists because refactoring external files risks breaking other feature
 
 ## When to Use
 
-- After `/dev-test` completes with all tests passing
+- After `/dev-test` completes (features in DONE status)
 - When `.project/features/{name}/feature.json` exists met `tests` sectie
 - NOT for: fixing bugs (/dev-test), adding features (/dev-define), planning (/dev-define)
 
@@ -71,28 +71,38 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
 1. **Read backlog for pipeline status:**
 
    Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
-   - Filter TST features: `data.features.filter(f => f.status === "TST")`
-   - TST features zijn getest maar nog niet gerefactord
+   - Filter DONE features: `data.features.filter(f => f.status === "DONE")`
+   - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` sectie
+   - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
 
 2. **Determine feature queue:**
 
    **a) Feature name provided** (`/dev-refactor auth`):
    - Validate feature exists in `.project/features/`
-   - Feature queue = `[auth]`
+   - Feature queue = `[auth]` (regardless of refactor status)
 
    **b) No feature name** (`/dev-refactor`):
-   - If TST features found in backlog: present them via **AskUserQuestion**:
-     - header: "Refactor"
-     - question: "Welke features wil je refactoren? ({N} features in TST status)"
+   - Present scope selection via **AskUserQuestion**:
+     - header: "Scope"
+     - question: "Wat wil je refactoren?"
      - options:
-       - label: "Alle {N} features (Recommended)", description: "{feature1}, {feature2}, ..."
-       - label: "Eén feature kiezen", description: "Selecteer een specifieke feature"
+       - label: "Nog niet gerefactorde features (Recommended)", description: "{N} features: {feature1}, {feature2}, ..."
+       - label: "Alle DONE features", description: "Alle {M} DONE features, inclusief eerder gerefactorde"
+       - label: "Hele codebase", description: "Scan alle source files, niet feature-gebonden"
      - multiSelect: false
-   - If "Alle features" → feature queue = all TST features
-   - If "Eén feature kiezen" → show feature list via AskUserQuestion, queue = selected
-   - If no TST features in backlog → fall back to listing `.project/features/` directories die `feature.json` hebben met `tests` sectie
+   - If "Nog niet gerefactorde features" → feature queue = unrefactored DONE features
+   - If "Alle DONE features" → feature queue = all DONE features
+   - If "Hele codebase" → **codebase mode** (see below)
+   - If 0 unrefactored features: toon "Alle features zijn al gerefactord" in de optie beschrijving
 
    **c) "recent"**: find most recently modified `feature.json` with `tests` sectie, queue = `[that feature]`
+
+   **Codebase mode** ("Hele codebase"):
+   - Pipeline files = alle source bestanden uit project (detecteer `src/` of equivalent uit `project.json` `context.structure` of CLAUDE.md)
+   - Exclude: `node_modules/`, `.project/`, test files, config files
+   - Geen feature.json schrijven — resultaat opslaan in `.project/session/codebase-refactor.json`
+   - Commit message: `refactor(codebase): {summary}`
+   - Skip FASE 5 feature.json/backlog updates — alleen commit + rapport
 
 3. **Load ALL feature docs for every feature in queue:**
 
@@ -579,9 +589,9 @@ IMPROVEMENTS APPLIED
    - ROLLED_BACK: `refactor.status = "ROLLED_BACK"`, `failureAnalysis` (markdown string), `pendingImprovements[]`
 
    **Update top-level feature status:**
-   - CLEAN: `status: "DONE"`
-   - REFACTORED: `status: "DONE"`
-   - ROLLED_BACK: `status: "TST"` (keep in TST, don't advance)
+   - CLEAN: `status: "DONE"` (ongewijzigd)
+   - REFACTORED: `status: "DONE"` (ongewijzigd)
+   - ROLLED_BACK: `status: "DONE"` (ongewijzigd — refactor.status documenteert de rollback)
 
    Bestaande secties NIET overschrijven.
 
@@ -593,13 +603,13 @@ IMPROVEMENTS APPLIED
 
    Muteer beide in memory:
 
-   **Backlog** (zie `shared/BACKLOG.md`): CLEAN en REFACTORED features → `.status = "DONE"`, ROLLED_BACK → `.status = "TST"`. Zet `data.updated` naar huidige datum.
+   **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet `data.updated` naar huidige datum.
 
    **Dashboard** (zie `shared/DASHBOARD.md`):
    - Als packages gewijzigd (toegevoegd/verwijderd): merge naar `stack.packages`
    - Als endpoints gewijzigd: merge naar `endpoints`
    - Als data entities gewijzigd: merge naar `data.entities`
-   - `features` array: CLEAN/REFACTORED → status `"DONE"`, ROLLED_BACK → ongewijzigd
+   - `features` array: status blijft `"DONE"` (ongewijzigd voor alle varianten)
 
    **Context sync (conditioneel)** — alleen als REFACTORED features structurele wijzigingen bevatten:
 
@@ -674,13 +684,7 @@ IMPROVEMENTS APPLIED
    {for each ROLLED_BACK feature:}
    ✗ {name} — rolled back ({reason})
 
-   All phases completed:
-   ✓ /dev-define - Definition
-   ✓ /dev-build - Implementation
-   ✓ /dev-test - Verification
-   ✓ /dev-refactor - Refactoring
-
-   Ready for production!
+   Refactoring complete. Features remain in DONE status.
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 

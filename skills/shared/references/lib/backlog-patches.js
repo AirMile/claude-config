@@ -33,8 +33,39 @@ var backlogPatch = `<style>
   @keyframes activeDot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 </style>
 <script>
+// Migrate: remove TST column from existing backlogs
+// const/let vars are in global scope but not on window — access directly
+var _tsi = typeof STATUSES !== "undefined" ? STATUSES.indexOf("TST") : -1;
+if (_tsi !== -1) STATUSES.splice(_tsi, 1);
+if (typeof STATUS_COLORS !== "undefined") delete STATUS_COLORS.TST;
+// Migrate TST features to DONE
+if (typeof data !== "undefined" && data.features) {
+  var _migrated = false;
+  data.features.forEach(function(f) {
+    if (f.status === "TST") { f.status = "DONE"; _migrated = true; }
+  });
+  if (_migrated && typeof syncJSON !== "undefined") syncJSON();
+}
+// Patch dependency: hide when dependency feature is DONE
 (function(){
-  var NEXT = {TODO:"define",DEF:"build",BLT:"test",TST:"refactor"};
+  var _baseCreate = typeof createCard !== "undefined" ? createCard : null;
+  if (_baseCreate) {
+    createCard = function(f) {
+      var origDep = f.dependency;
+      if (f.dependency && typeof findItem !== "undefined") {
+        var dep = findItem(f.dependency);
+        if (dep && dep.item.status === "DONE") f.dependency = null;
+      }
+      var card = _baseCreate(f);
+      f.dependency = origDep;
+      return card;
+    };
+  }
+})();
+</script>
+<script>
+(function(){
+  var NEXT = {TODO:"define",DEF:"build",BLT:"test"};
   var prefix = (window.data && window.data.source && window.data.source.startsWith("/game")) ? "game" : "dev";
   // Patch createCard: replace old buttons with hamburger menu
   var origCreate = window.createCard;

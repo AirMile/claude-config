@@ -1007,9 +1007,9 @@ Opgenomen in test results.
 
    Muteer beide in memory:
 
-   **feature.json**: `status` → `"TST"` or `"VERIFIED"`, `requirements[].status` → `"PASS"` / `"FAIL"` per item, `tests.checklist[].status` → update per item with evidence. Add/update `tests` sectie: `finalStatus`, `sessions[]` (push `{ date, pass, fail, fixes }`), `fixSync`. Add `observations[]` if user reported out-of-scope issues. NIET andere secties overschrijven.
+   **feature.json**: `status` → `"DONE"`, `requirements[].status` → `"PASS"` / `"FAIL"` per item, `tests.checklist[].status` → update per item with evidence. Add/update `tests` sectie: `finalStatus`, `sessions[]` (push `{ date, pass, fail, fixes }`), `fixSync`. Add `observations[]` if user reported out-of-scope issues. NIET andere secties overschrijven.
 
-   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "TST"`, `data.updated` → huidige datum.
+   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "DONE"`, `data.updated` → huidige datum.
 
    Schrijf parallel terug:
    - Write `feature.json`
@@ -1051,7 +1051,7 @@ Opgenomen in test results.
 VERIFICATION COMPLETE
 
 Feature: {feature-name}
-Status: TST
+Status: DONE
 Items: {N}/{N} passing
 
 Committed: test({feature}): verified

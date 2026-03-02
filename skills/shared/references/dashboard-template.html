@@ -1036,9 +1036,6 @@
               <td style="font-weight:500;color:var(--text)">${esc(p.name)}</td>
               <td style="font-family:monospace">${esc(p.version)}</td>
               <td>${esc(p.purpose)}</td>
-              <td style="width:40px;text-align:center">
-                <button onclick="removePackage('${esc(p.name)}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px" title="Verwijderen">&times;</button>
-              </td>
             </tr>`,
           )
           .join("");
@@ -1052,15 +1049,12 @@
           ${
             s.packages && s.packages.length
               ? `
-            <div class="sub-heading" style="display:flex;align-items:center;gap:12px">
-              Packages
-              <button class="add-btn" onclick="editPackage(-1)">+ Toevoegen</button>
-            </div>
+            <div class="sub-heading">Packages</div>
             <table class="data-table">
-              <thead><tr><th>Naam</th><th>Versie</th><th>Doel</th><th></th></tr></thead>
+              <thead><tr><th>Naam</th><th>Versie</th><th>Doel</th></tr></thead>
               <tbody>${pkgs}</tbody>
             </table>`
-              : `<div style="margin-top:16px"><button class="add-btn" onclick="editPackage(-1)">+ Package toevoegen</button></div>`
+              : ""
           }`;
       }
 
@@ -1070,7 +1064,6 @@
           return `
             <div class="section-header">
               <h2>Thinking</h2>
-              <button class="add-btn" onclick="editThinking(-1)">+ Entry toevoegen</button>
             </div>
             <div class="empty-state"><p>Nog geen thinking entries.</p>
             <p style="color:var(--text-dim)">Wordt gevuld door /thinking-idea, /thinking-brainstorm, /thinking-critique en /thinking-decide</p></div>`;
@@ -1083,7 +1076,6 @@
 
         const cards = sorted
           .map((e) => {
-            const idx = e._idx;
             let meta = "";
             if (e.type === "brainstorm" || e.type === "decision") {
               if (e.chosen) {
@@ -1105,7 +1097,7 @@
             const needsExpand = content.length > 300;
 
             return `
-          <div class="thinking-entry" data-type="${esc(e.type || "idea")}" style="cursor:pointer" onclick="editThinking(${idx})">
+          <div class="thinking-entry" data-type="${esc(e.type || "idea")}">
             <div class="thinking-header">
               <span class="thinking-type-badge" data-type="${esc(e.type || "idea")}">${esc(e.type || "idea")}</span>
               <span class="thinking-title">${esc(e.title || "Untitled")}</span>
@@ -1121,7 +1113,6 @@
         return `
           <div class="section-header">
             <h2>Thinking</h2>
-            <button class="add-btn" onclick="editThinking(-1)">+ Entry toevoegen</button>
           </div>
           ${cards}`;
       }
@@ -1147,196 +1138,6 @@
             },
           },
         );
-      }
-
-      function addGoalField() {
-        const list = document.getElementById("f-goals");
-        const div = document.createElement("div");
-        div.className = "modal-list-item";
-        div.innerHTML = `
-          <input type="text" value="" placeholder="Nieuw doel" />
-          <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>`;
-        list.appendChild(div);
-        div.querySelector("input").focus();
-      }
-
-      function editTheme() {
-        const t = data.theme;
-        const colors = t.colors || {};
-        const typo = t.typography || {};
-        const families = typo.families || {};
-        const sp = t.spacing || {};
-        const modes = t.modes || {};
-
-        // Build color rows for a category
-        function colorRows(category, items) {
-          return (items || [])
-            .map(
-              (c, i) => `
-            <div class="modal-list-item" data-cat="${category}">
-              <input type="text" value="${esc(c.token)}" style="width:100px" data-ctoken placeholder="Token" />
-              <input type="color" value="${esc(c.value)}" data-cvalue />
-              <input type="text" value="${esc(c.value)}" style="width:80px;font-family:monospace" data-chex placeholder="#hex" />
-              <input type="text" value="${esc(c.usage || "")}" style="width:120px" data-cusage placeholder="Usage" />
-              <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>
-            </div>`,
-            )
-            .join("");
-        }
-
-        openModal(
-          "Theme bewerken",
-          `
-          <label>Kleuren — Main</label>
-          <div class="modal-list" id="f-colors-main">${colorRows("main", colors.main)}</div>
-          <button class="modal-list-add" onclick="addColorField('main')">+ Main kleur</button>
-          <br/><br/>
-          <label>Kleuren — Accent</label>
-          <div class="modal-list" id="f-colors-accent">${colorRows("accent", colors.accent)}</div>
-          <button class="modal-list-add" onclick="addColorField('accent')">+ Accent kleur</button>
-          <br/><br/>
-          <label>Kleuren — Semantic</label>
-          <div class="modal-list" id="f-colors-semantic">${colorRows("semantic", colors.semantic)}</div>
-          <button class="modal-list-add" onclick="addColorField('semantic')">+ Semantic kleur</button>
-          <br/><br/>
-          <hr class="divider" />
-          <label>Heading font</label>
-          <input type="text" id="f-font-h" value="${esc(families.heading || "")}" />
-          <label>Body font</label>
-          <input type="text" id="f-font-b" value="${esc(families.body || "")}" />
-          <label>Mono font</label>
-          <input type="text" id="f-font-m" value="${esc(families.mono || "")}" />
-          <hr class="divider" />
-          <label>Type Sizes (JSON)</label>
-          <textarea id="f-sizes" rows="4" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(typo.sizes || [], null, 2))}</textarea>
-          <hr class="divider" />
-          <label>Spacing base</label>
-          <input type="text" id="f-sp-base" value="${esc(sp.base || "")}" placeholder="4px" />
-          <label>Spacing scale (JSON)</label>
-          <textarea id="f-sp-scale" rows="3" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(sp.scale || [], null, 2))}</textarea>
-          <hr class="divider" />
-          <label>Breakpoints (JSON)</label>
-          <textarea id="f-breakpoints" rows="3" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(t.breakpoints || [], null, 2))}</textarea>
-          <label>Border Radius (JSON)</label>
-          <textarea id="f-radius" rows="3" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(t.borderRadius || [], null, 2))}</textarea>
-          <label>Shadows (JSON)</label>
-          <textarea id="f-shadows" rows="3" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(t.shadows || [], null, 2))}</textarea>
-          <hr class="divider" />
-          <label>Mode: light (CSS)</label>
-          <textarea id="f-mode-light" rows="4" style="font-family:monospace;font-size:12px">${esc(modes.light || "")}</textarea>
-          <label>Mode: dark (CSS)</label>
-          <textarea id="f-mode-dark" rows="4" style="font-family:monospace;font-size:12px">${esc(modes.dark || "")}</textarea>
-          <hr class="divider" />
-          <label>CSS Variables</label>
-          <textarea id="f-css" rows="6" style="font-family:monospace;font-size:12px">${esc(t.cssVars || "")}</textarea>
-        `,
-          {
-            onSave() {
-              // Collect colors per category
-              function collectColors(containerId) {
-                return [
-                  ...document.querySelectorAll(
-                    "#" + containerId + " .modal-list-item",
-                  ),
-                ]
-                  .map((row) => ({
-                    token: row.querySelector("[data-ctoken]").value.trim(),
-                    value:
-                      row.querySelector("[data-chex]").value.trim() ||
-                      row.querySelector("[data-cvalue]").value,
-                    usage:
-                      row.querySelector("[data-cusage]").value.trim() ||
-                      undefined,
-                  }))
-                  .filter((c) => c.token);
-              }
-              data.theme.colors = {
-                main: collectColors("f-colors-main"),
-                accent: collectColors("f-colors-accent"),
-                semantic: collectColors("f-colors-semantic"),
-              };
-              data.theme.typography = {
-                families: {
-                  heading: document.getElementById("f-font-h").value.trim(),
-                  body: document.getElementById("f-font-b").value.trim(),
-                  mono: document.getElementById("f-font-m").value.trim(),
-                },
-                sizes: safeParseJSON(
-                  document.getElementById("f-sizes").value,
-                  [],
-                ),
-              };
-              data.theme.spacing = {
-                base: document.getElementById("f-sp-base").value.trim(),
-                scale: safeParseJSON(
-                  document.getElementById("f-sp-scale").value,
-                  [],
-                ),
-              };
-              data.theme.breakpoints = safeParseJSON(
-                document.getElementById("f-breakpoints").value,
-                [],
-              );
-              data.theme.borderRadius = safeParseJSON(
-                document.getElementById("f-radius").value,
-                [],
-              );
-              data.theme.shadows = safeParseJSON(
-                document.getElementById("f-shadows").value,
-                [],
-              );
-              const mLight = document
-                .getElementById("f-mode-light")
-                .value.trim();
-              const mDark = document.getElementById("f-mode-dark").value.trim();
-              data.theme.modes = {};
-              if (mLight) data.theme.modes.light = mLight;
-              if (mDark) data.theme.modes.dark = mDark;
-              data.theme.cssVars = document.getElementById("f-css").value;
-            },
-          },
-        );
-
-        // Sync color pickers with hex inputs
-        setTimeout(() => {
-          document.querySelectorAll("[data-cvalue]").forEach((picker) => {
-            const row = picker.closest(".modal-list-item");
-            const hex = row.querySelector("[data-chex]");
-            picker.addEventListener("input", () => (hex.value = picker.value));
-            hex.addEventListener("input", () => {
-              if (/^#[0-9a-f]{6}$/i.test(hex.value)) picker.value = hex.value;
-            });
-          });
-        }, 0);
-      }
-
-      function safeParseJSON(str, fallback) {
-        try {
-          return JSON.parse(str);
-        } catch {
-          return fallback;
-        }
-      }
-
-      function addColorField(category) {
-        const list = document.getElementById("f-colors-" + category);
-        const div = document.createElement("div");
-        div.className = "modal-list-item";
-        div.setAttribute("data-cat", category);
-        div.innerHTML = `
-          <input type="text" value="" style="width:100px" data-ctoken placeholder="Token" />
-          <input type="color" value="#3B82F6" data-cvalue />
-          <input type="text" value="#3B82F6" style="width:80px;font-family:monospace" data-chex placeholder="#hex" />
-          <input type="text" value="" style="width:120px" data-cusage placeholder="Usage" />
-          <button class="remove-item" onclick="this.parentElement.remove()">&times;</button>`;
-        list.appendChild(div);
-        const picker = div.querySelector("[data-cvalue]");
-        const hex = div.querySelector("[data-chex]");
-        picker.addEventListener("input", () => (hex.value = picker.value));
-        hex.addEventListener("input", () => {
-          if (/^#[0-9a-f]{6}$/i.test(hex.value)) picker.value = hex.value;
-        });
-        div.querySelector("[data-ctoken]").focus();
       }
 
       async function showResearch() {
@@ -1376,162 +1177,6 @@
             { readOnly: true },
           );
         }
-      }
-
-      function editStack() {
-        const s = data.stack;
-        openModal(
-          "Stack bewerken",
-          `
-          <div class="modal-row">
-            <div><label>Framework</label><input type="text" id="f-framework" value="${esc(s.framework)}" /></div>
-            <div><label>Language</label><input type="text" id="f-language" value="${esc(s.language)}" /></div>
-          </div>
-          <div class="modal-row">
-            <div><label>Styling</label><input type="text" id="f-styling" value="${esc(s.styling)}" /></div>
-            <div><label>Database</label><input type="text" id="f-db" value="${esc(s.db)}" /></div>
-          </div>
-          <div class="modal-row">
-            <div><label>Auth</label><input type="text" id="f-auth" value="${esc(s.auth)}" /></div>
-            <div><label>Hosting</label><input type="text" id="f-hosting" value="${esc(s.hosting)}" /></div>
-          </div>
-        `,
-          {
-            onSave() {
-              data.stack.framework = document
-                .getElementById("f-framework")
-                .value.trim();
-              data.stack.language = document
-                .getElementById("f-language")
-                .value.trim();
-              data.stack.styling = document
-                .getElementById("f-styling")
-                .value.trim();
-              data.stack.db = document.getElementById("f-db").value.trim();
-              data.stack.auth = document.getElementById("f-auth").value.trim();
-              data.stack.hosting = document
-                .getElementById("f-hosting")
-                .value.trim();
-            },
-          },
-        );
-      }
-
-      function editPackage(idx) {
-        const isNew = idx === -1;
-        const p = isNew
-          ? { name: "", version: "", purpose: "" }
-          : data.stack.packages[idx];
-        openModal(
-          isNew ? "Package toevoegen" : "Package bewerken",
-          `
-          <label>Naam</label>
-          <input type="text" id="f-pkg-name" value="${esc(p.name)}" />
-          <label>Versie</label>
-          <input type="text" id="f-pkg-ver" value="${esc(p.version)}" placeholder="^1.0.0" />
-          <label>Doel</label>
-          <input type="text" id="f-pkg-purpose" value="${esc(p.purpose)}" />
-        `,
-          {
-            deletable: !isNew,
-            onSave() {
-              const pkg = {
-                name: document.getElementById("f-pkg-name").value.trim(),
-                version: document.getElementById("f-pkg-ver").value.trim(),
-                purpose: document.getElementById("f-pkg-purpose").value.trim(),
-              };
-              if (!pkg.name) return;
-              if (!data.stack.packages) data.stack.packages = [];
-              if (isNew) {
-                data.stack.packages.push(pkg);
-              } else {
-                data.stack.packages[idx] = pkg;
-              }
-            },
-            onDelete() {
-              if (!isNew) data.stack.packages.splice(idx, 1);
-            },
-          },
-        );
-      }
-
-      function removePackage(name) {
-        data.stack.packages = (data.stack.packages || []).filter(
-          (p) => p.name !== name,
-        );
-        syncJSON();
-        render();
-        toast(`${name} verwijderd`);
-      }
-
-      function editThinking(idx) {
-        const isNew = idx === -1;
-        const e = isNew
-          ? {
-              type: "idea",
-              date: new Date().toISOString().slice(0, 10),
-              title: "",
-              content: "",
-              source: "",
-            }
-          : data.thinking[idx];
-
-        const typeOptions = ["idea", "brainstorm", "critique", "decision"]
-          .map(
-            (t) =>
-              `<option value="${t}" ${e.type === t ? "selected" : ""}>${t}</option>`,
-          )
-          .join("");
-
-        openModal(
-          isNew ? "Thinking entry toevoegen" : "Thinking entry bewerken",
-          `
-          <label>Type</label>
-          <select id="f-think-type">${typeOptions}</select>
-          <label>Titel</label>
-          <input type="text" id="f-think-title" value="${esc(e.title || "")}" />
-          <label>Datum</label>
-          <input type="date" id="f-think-date" value="${esc(e.date || "")}" />
-          <label>Inhoud</label>
-          <textarea id="f-think-content" rows="8" style="font-family:var(--font-mono);font-size:12px">${esc(e.content || "")}</textarea>
-          <label>Gekozen optie (brainstorm/decision)</label>
-          <input type="text" id="f-think-chosen" value="${esc(e.chosen || "")}" />
-          <label>Rationale (decision)</label>
-          <textarea id="f-think-rationale" rows="2">${esc(e.rationale || "")}</textarea>
-          <label>Bron</label>
-          <input type="text" id="f-think-source" value="${esc(e.source || "")}" placeholder="/thinking-idea" />
-        `,
-          {
-            deletable: !isNew,
-            onSave() {
-              const entry = {
-                type: document.getElementById("f-think-type").value,
-                date: document.getElementById("f-think-date").value,
-                title: document.getElementById("f-think-title").value.trim(),
-                content: document.getElementById("f-think-content").value,
-                source: document.getElementById("f-think-source").value.trim(),
-              };
-              const chosen = document
-                .getElementById("f-think-chosen")
-                .value.trim();
-              const rationale = document
-                .getElementById("f-think-rationale")
-                .value.trim();
-              if (chosen) entry.chosen = chosen;
-              if (rationale) entry.rationale = rationale;
-              if (!entry.title) return;
-              if (!data.thinking) data.thinking = [];
-              if (isNew) {
-                data.thinking.push(entry);
-              } else {
-                data.thinking[idx] = entry;
-              }
-            },
-            onDelete() {
-              if (!isNew) data.thinking.splice(idx, 1);
-            },
-          },
-        );
       }
 
       // ─── Render ─────────────────────────────────────────────

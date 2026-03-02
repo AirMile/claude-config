@@ -14,7 +14,7 @@ metadata:
 
 ## Overview
 
-This is **FASE 4** of the gamedev workflow: plan -> define -> build -> test -> **refactor**
+Optional quality step on completed features. Not a status-gate — features are DONE after `/game-test`. This skill improves code structure, naming, and patterns on already-finished features.
 
 Batch-first architecture: analyzes ALL features in parallel via Explore agents, triages clean vs dirty, generates GDScript-aware refactor patterns via Context7, creates one combined plan with one approval, and applies changes with per-feature rollback.
 
@@ -36,7 +36,7 @@ This rule exists because refactoring external files risks breaking other feature
 
 ## When to Use
 
-- After `/game-test` completes with all playtest items passing
+- After `/game-test` completes (features in DONE status)
 - When `.project/features/{name}/feature.json` exists with `tests` section
 - NOT for: fixing bugs (/game-test), adding features (/game-define), planning (/game-plan)
 
@@ -73,28 +73,38 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 1. **Read backlog for pipeline status:**
 
    Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
-   - Filter TST features: `data.features.filter(f => f.status === "TST")`
-   - TST features zijn getest maar nog niet gerefactord
+   - Filter DONE features: `data.features.filter(f => f.status === "DONE")`
+   - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` sectie
+   - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
 
 2. **Determine feature queue:**
 
    **a) Feature name provided** (`/game-refactor water-ability`):
    - Validate feature exists in `.project/features/`
-   - Feature queue = `[water-ability]`
+   - Feature queue = `[water-ability]` (regardless of refactor status)
 
    **b) No feature name** (`/game-refactor`):
-   - If TST features found in backlog: present them via **AskUserQuestion**:
-     - header: "Refactor"
-     - question: "Welke features wil je refactoren? ({N} features in TST status)"
+   - Present scope selection via **AskUserQuestion**:
+     - header: "Scope"
+     - question: "Wat wil je refactoren?"
      - options:
-       - label: "Alle {N} features (Recommended)", description: "{feature1}, {feature2}, ..."
-       - label: "Eén feature kiezen", description: "Selecteer een specifieke feature"
+       - label: "Nog niet gerefactorde features (Recommended)", description: "{N} features: {feature1}, {feature2}, ..."
+       - label: "Alle DONE features", description: "Alle {M} DONE features, inclusief eerder gerefactorde"
+       - label: "Hele codebase", description: "Scan alle source files, niet feature-gebonden"
      - multiSelect: false
-   - If "Alle features" — feature queue = all TST features
-   - If "Eén feature kiezen" — show feature list via AskUserQuestion, queue = selected
-   - If no TST features in backlog — fall back to listing `.project/features/` directories that have `feature.json` with `tests` section
+   - If "Nog niet gerefactorde features" → feature queue = unrefactored DONE features
+   - If "Alle DONE features" → feature queue = all DONE features
+   - If "Hele codebase" → **codebase mode** (see below)
+   - If 0 unrefactored features: toon "Alle features zijn al gerefactord" in de optie beschrijving
 
    **c) "recent"**: find most recently modified `feature.json` with `tests` section, queue = `[that feature]`
+
+   **Codebase mode** ("Hele codebase"):
+   - Pipeline files = alle GDScript bestanden uit project (detecteer `src/`, `scripts/`, of scene directories uit project.json of CLAUDE.md)
+   - Exclude: `.godot/`, `.project/`, `addons/gut/`, test files
+   - Geen feature.json schrijven — resultaat opslaan in `.project/session/codebase-refactor.json`
+   - Commit message: `refactor(codebase): {summary}`
+   - Skip FASE 5 feature.json/backlog updates — alleen commit + rapport
 
 3. **Load feature.json for every feature in queue:**
 
@@ -672,7 +682,7 @@ IMPROVEMENTS APPLIED
 
    3. Update top-level `status`:
       - CLEAN/REFACTORED: `"DONE"`
-      - ROLLED_BACK: keep `"TST"`
+      - ROLLED_BACK: keep `"DONE"` (refactor.status documenteert de rollback)
    4. Write feature.json back (do NOT overwrite other sections)
 
    Als N > 1 features: lees alle feature.json parallel, muteer elk in memory, schrijf alle parallel terug.
@@ -685,7 +695,7 @@ IMPROVEMENTS APPLIED
 
    Muteer beide in memory:
 
-   **Backlog** (zie `shared/BACKLOG.md`): CLEAN en REFACTORED features → `.status = "DONE"`, ROLLED_BACK → `.status = "TST"`. Zet `data.updated` naar huidige datum.
+   **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet `data.updated` naar huidige datum.
 
    **Dashboard** (zie `shared/DASHBOARD.md`): ongewijzigd — er is geen aparte dashboard merge in game-refactor anders dan feature status.
 
@@ -762,14 +772,7 @@ IMPROVEMENTS APPLIED
    {for each ROLLED_BACK feature:}
    ✗ {name} — rolled back ({reason})
 
-   All phases completed:
-   ✓ /game-plan - Planning
-   ✓ /game-define - Definition
-   ✓ /game-build - Implementation
-   ✓ /game-test - Verification
-   ✓ /game-refactor - Refactoring
-
-   Ready for next feature!
+   Refactoring complete. Features remain in DONE status.
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 

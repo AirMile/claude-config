@@ -62,7 +62,7 @@ Niet gevonden → exit: "Run `/dev-define` eerst."
 Skip als geen `depends[]` of leeg.
 
 1. Parse `.project/backlog.html`. Niet gevonden → skip.
-2. Per dependency: status moet `"TST"` of `"DONE"` zijn.
+2. Per dependency: status moet `"DONE"` zijn.
 3. Blockers gevonden → **AskUserQuestion**:
    - "Stop — werk eerst {dep} af (Recommended)" / "Toch doorgaan"
    - Stop → exit. Doorgaan → continue.

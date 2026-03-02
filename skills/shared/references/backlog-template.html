@@ -37,7 +37,7 @@
           {
             "name": "api-auth",
             "type": "API",
-            "status": "TST",
+            "status": "DONE",
             "phase": "P1",
             "description": "JWT authenticatie endpoints met refresh tokens",
             "dependency": "auth-pages"
@@ -246,12 +246,11 @@
       let data = JSON.parse(fileRaw);
       if (!data.features) data.features = [];
 
-      const STATUSES = ["TODO", "DEF", "BLT", "TST", "DONE"];
+      const STATUSES = ["TODO", "DEF", "BLT", "DONE"];
       const STATUS_COLORS = {
         TODO: "var(--todo)",
         DEF: "var(--def)",
         BLT: "var(--blt)",
-        TST: "var(--tst)",
         DONE: "var(--done)",
       };
       const PHASE_LABELS = {
@@ -428,8 +427,12 @@
         const phaseLabel = PHASE_LABELS[f.phaseKey] || "P4";
 
         let extra = "";
-        if (f.dependency)
-          extra += `<div class="card-dep"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M4 7V5a4 4 0 118 0v2h1a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1h1zm2 0h4V5a2 2 0 10-4 0v2z"/></svg> ${esc(f.dependency)}</div>`;
+        if (f.dependency) {
+          const depFound = findItem(f.dependency);
+          const depResolved = depFound && depFound.item.status === "DONE";
+          if (!depResolved)
+            extra += `<div class="card-dep"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M4 7V5a4 4 0 118 0v2h1a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1h1zm2 0h4V5a2 2 0 10-4 0v2z"/></svg> ${esc(f.dependency)}</div>`;
+        }
         if (f.source)
           extra += `<div class="card-source">${esc(f.source)}</div>`;
         if (f.date && f.status === "DONE")
@@ -441,7 +444,6 @@
           TODO: "define",
           DEF: "build",
           BLT: "test",
-          TST: "refactor",
         };
         const nextVerb = NEXT_SKILL[f.status] || null;
         const nextCmd = nextVerb ? `/${prefix}-${nextVerb} ${f.name}` : "";
@@ -882,7 +884,6 @@
           TODO: "define",
           DEF: "build",
           BLT: "test",
-          TST: "refactor",
         };
         const verb = NEXT[f.status];
         const copyBtn = document.getElementById("detail-copy");

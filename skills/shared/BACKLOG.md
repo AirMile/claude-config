@@ -25,7 +25,7 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
     {
       "name": "feature-naam",
       "type": "FEATURE|API|INTEGRATION|UI|REFACTOR",
-      "status": "TODO|DEF|BLT|TST|DONE",
+      "status": "TODO|DEF|BLT|DONE",
       "phase": "P1|P2|P3|P4",
       "description": "Beschrijving",
       "dependency": "andere-feature|null",
@@ -72,16 +72,17 @@ Dit reduceert 6+ sequentiële round-trips naar 2. Bestanden zijn onafhankelijk �
 ## Status flow
 
 ```
-TODO → DEF → BLT → TST → DONE
+TODO → DEF → BLT → DONE
 ```
 
-| Status | Betekenis              | Gezet door           |
-| ------ | ---------------------- | -------------------- |
-| TODO   | Nog niet opgepakt      | /dev-plan, /dev-todo |
-| DEF    | Gedefinieerd           | /dev-define          |
-| BLT    | Gebouwd                | /dev-build           |
-| TST    | Getest                 | /dev-test            |
-| DONE   | Afgerond + gerefactord | /dev-refactor        |
+| Status | Betekenis         | Gezet door           |
+| ------ | ----------------- | -------------------- |
+| TODO   | Nog niet opgepakt | /dev-plan, /dev-todo |
+| DEF    | Gedefinieerd      | /dev-define          |
+| BLT    | Gebouwd           | /dev-build           |
+| DONE   | Getest & klaar    | /dev-test            |
+
+`/dev-refactor` is een optionele kwaliteitsstap op DONE features — geen status-gate.
 
 ## Features filteren
 
@@ -91,7 +92,7 @@ Voorbeelden van veelvoorkomende queries op het JSON object:
 Volgende TODO feature:    data.features.find(f => f.status === "TODO")
 Alle DEF features:        data.features.filter(f => f.status === "DEF")
 Alle BLT features:        data.features.filter(f => f.status === "BLT")
-Alle TST features:        data.features.filter(f => f.status === "TST")
+Alle DONE features:       data.features.filter(f => f.status === "DONE")
 P1 (Must) features:       data.features.filter(f => f.phase === "P1")
 P4 (Maybe) features:      data.features.filter(f => f.phase === "P4")
 ```

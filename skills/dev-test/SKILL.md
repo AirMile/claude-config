@@ -803,11 +803,11 @@ Opgenomen in test results.
 
    Muteer alle drie in memory:
 
-   **feature.json**: Update `status` → `"TST"` (of `"VERIFIED"` als alle items PASS), `requirements[].status` → `"PASS"` / `"FAIL"` per REQ, `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item. Voeg/update `tests` sectie: `finalStatus`, `coverage`, `sessions[]`, `fixSync`. Voeg `observations[]` toe (indien aanwezig). NIET andere secties overschrijven.
+   **feature.json**: Update `status` → `"DONE"`, `requirements[].status` → `"PASS"` / `"FAIL"` per REQ, `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item. Voeg/update `tests` sectie: `finalStatus`, `coverage`, `sessions[]`, `fixSync`. Voeg `observations[]` toe (indien aanwezig). NIET andere secties overschrijven.
 
-   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "TST"`, `data.updated` → huidige datum.
+   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "DONE"`, `data.updated` → huidige datum.
 
-   **Dashboard** (zie `shared/DASHBOARD.md`): als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`. Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`. Als data entities gewijzigd: merge naar `data.entities`. Update `features` array: zoek feature op naam, zet status naar `"TST"`.
+   **Dashboard** (zie `shared/DASHBOARD.md`): als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`. Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`. Als data entities gewijzigd: merge naar `data.entities`. Update `features` array: zoek feature op naam, zet status naar `"DONE"`.
 
    Schrijf parallel terug:
    - Write `feature.json`

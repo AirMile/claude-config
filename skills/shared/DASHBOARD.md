@@ -342,7 +342,7 @@ Overige velden = structured tokens per categorie
 ]
 ```
 
-**Status waarden:** `TODO` | `DEF` | `BLT` | `TST` | `DONE`
+**Status waarden:** `TODO` | `DEF` | `BLT` | `DONE`
 
 ### thinking
 
@@ -430,26 +430,26 @@ Alle entries hebben `type`, `date`, `title`, `content`, `source`. Extra velden p
 | `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-page`                 | Bij detectie/nieuwe deps                          |
 | `data`             | `/dev-define`, `/game-define`                                                             | Bij entity definitie                              |
 | `endpoints`        | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build                      |
-| `features`         | `/dev-define`, `/dev-build`, `/dev-test`, `/dev-refactor`, `/game-define`, `/game-build`  | Bij status wijziging (DEF/BLT/TST/DONE)           |
+| `features`         | `/dev-define`, `/dev-build`, `/dev-test`, `/game-define`, `/game-build`                   | Bij status wijziging (DEF/BLT/DONE)               |
 | `concept.thinking` | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)               |
 | `thinking`         | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Bij non-concept thinking (append)                 |
 | `context`          | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`             | Bij build/refactor (structuur, routing, patterns) |
 
 ### Skill → project.json sync overzicht
 
-| Skill              | Wat schrijven                                                                                                                   | Wanneer              |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| `/core-setup`      | `stack` (volledig), `context` (initieel: structure, routing, patterns)                                                          | Na project generatie |
-| `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (status DEF), `architecture`                                         | FASE 6               |
-| `/dev-build`       | `endpoints` (status done), `stack.packages`, `features` (status BLT), `context`, `architecture`                                 | FASE 4C              |
-| `/dev-test`        | `stack.packages`, `endpoints`, `data.entities`, `features` (status TST)                                                         | FASE 6 completion    |
-| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`, `features` (status DONE), `context` (conditional), `architecture` (conditional) | FASE 5 completion    |
-| `/frontend-design` | `design` (pages, flows, principles)                                                                                             | Bij elke uitvoering  |
-| `/frontend-page`   | `stack.packages`, `design.pages` (status, sections)                                                                             | Na FASE 4            |
-| `/frontend-theme`  | `design.principles` (design system beslissingen)                                                                                | Na completion        |
-| `/game-define`     | `data.entities`, `stack.packages`, `features` (status DEF), `architecture`                                                      | FASE 6               |
-| `/game-build`      | `features` (status BLT), `context` (structure, patterns), `architecture`                                                        | FASE 5 completion    |
-| `/game-refactor`   | `features` (status DONE), `context` (conditional), `architecture` (conditional)                                                 | FASE 5 completion    |
+| Skill              | Wat schrijven                                                                                         | Wanneer              |
+| ------------------ | ----------------------------------------------------------------------------------------------------- | -------------------- |
+| `/core-setup`      | `stack` (volledig), `context` (initieel: structure, routing, patterns)                                | Na project generatie |
+| `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (status DEF), `architecture`               | FASE 6               |
+| `/dev-build`       | `endpoints` (status done), `stack.packages`, `features` (status BLT), `context`, `architecture`       | FASE 4C              |
+| `/dev-test`        | `stack.packages`, `endpoints`, `data.entities`, `features` (status DONE)                              | FASE 6 completion    |
+| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`, `context` (conditional), `architecture` (conditional) | FASE 5 completion    |
+| `/frontend-design` | `design` (pages, flows, principles)                                                                   | Bij elke uitvoering  |
+| `/frontend-page`   | `stack.packages`, `design.pages` (status, sections)                                                   | Na FASE 4            |
+| `/frontend-theme`  | `design.principles` (design system beslissingen)                                                      | Na completion        |
+| `/game-define`     | `data.entities`, `stack.packages`, `features` (status DEF), `architecture`                            | FASE 6               |
+| `/game-build`      | `features` (status BLT), `context` (structure, patterns), `architecture`                              | FASE 5 completion    |
+| `/game-refactor`   | `features` (status DONE), `context` (conditional), `architecture` (conditional)                       | FASE 5 completion    |
 
 ## Server
 

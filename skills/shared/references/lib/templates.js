@@ -184,7 +184,7 @@ function indexPage(projects) {
     .page-header { padding:40px 48px 0; max-width:800px; margin:0 auto; }
     .page-header h1 { font-size:24px; font-weight:700; letter-spacing:-0.5px; }
 
-    .projects-list { display:flex; flex-direction:column; gap:4px; padding:24px 48px 48px; max-width:800px; margin:0 auto; }
+    .projects-list { display:flex; flex-direction:column; gap:8px; padding:24px 48px 48px; max-width:800px; margin:0 auto; }
 
     .section-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--muted); padding:20px 0 8px; }
     .section-label:first-child { padding-top:0; }
