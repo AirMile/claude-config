@@ -395,13 +395,9 @@
           cards.addEventListener("dragleave", handleDragLeave);
           cards.addEventListener("drop", handleDrop);
 
-          if (items.length === 0) {
-            cards.innerHTML = '<div class="empty">Geen items</div>';
-          } else {
-            items.forEach((f) => {
-              cards.appendChild(createCard(f));
-            });
-          }
+          items.forEach((f) => {
+            cards.appendChild(createCard(f));
+          });
 
           col.appendChild(cards);
           board.appendChild(col);

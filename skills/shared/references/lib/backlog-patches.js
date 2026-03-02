@@ -33,6 +33,8 @@ var backlogPatch = `<style>
   @keyframes activeDot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 </style>
 <script>
+// Remove "Geen items" empty placeholders
+document.querySelectorAll(".empty").forEach(function(el) { el.remove(); });
 // Migrate: remove TST column from existing backlogs
 // const/let vars are in global scope but not on window — access directly
 var _tsi = typeof STATUSES !== "undefined" ? STATUSES.indexOf("TST") : -1;
@@ -169,7 +171,7 @@ if (typeof data !== "undefined" && data.features) {
   var origRenderDeps = window.render;
   if (origRenderDeps) {
     var _prevRender = window.render;
-    window.render = function() { _prevRender(); patchDeps(); };
+    window.render = function() { _prevRender(); document.querySelectorAll(".empty").forEach(function(el){ el.remove(); }); patchDeps(); };
   }
   patchDeps();
   if (window.render) render();
