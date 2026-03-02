@@ -1058,6 +1058,30 @@
           }`;
       }
 
+      function showThinking(idx) {
+        const e = (data.thinking || [])[idx];
+        if (!e) return;
+        let meta = "";
+        if (e.type === "brainstorm" || e.type === "decision") {
+          if (e.chosen) meta += `<strong>Gekozen:</strong> ${esc(e.chosen)}`;
+          const options = e.variants || e.options || [];
+          if (options.length)
+            meta += `${e.chosen ? " · " : ""}<strong>Opties:</strong> ${options.map((o) => esc(o)).join(", ")}`;
+        }
+        if (e.type === "decision" && e.rationale) {
+          meta += `<br><strong>Rationale:</strong> ${esc(e.rationale)}`;
+        }
+        openModal(
+          e.title || "Untitled",
+          `
+          ${meta ? `<div class="thinking-meta" style="margin-bottom:12px">${meta}</div>` : ""}
+          <div class="thinking-content">${md(e.content || "")}</div>
+          ${e.source ? `<div class="thinking-source" style="margin-top:12px">${esc(e.source)}</div>` : ""}
+        `,
+          { readOnly: true, wide: true },
+        );
+      }
+
       function renderThinking() {
         const entries = data.thinking || [];
         if (entries.length === 0) {
@@ -1097,7 +1121,7 @@
             const needsExpand = content.length > 300;
 
             return `
-          <div class="thinking-entry" data-type="${esc(e.type || "idea")}">
+          <div class="thinking-entry" data-type="${esc(e.type || "idea")}" style="cursor:pointer" onclick="showThinking(${e._idx})">
             <div class="thinking-header">
               <span class="thinking-type-badge" data-type="${esc(e.type || "idea")}">${esc(e.type || "idea")}</span>
               <span class="thinking-title">${esc(e.title || "Untitled")}</span>
