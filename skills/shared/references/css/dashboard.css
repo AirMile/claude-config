@@ -1152,6 +1152,67 @@ hr.divider {
   height: auto;
 }
 
+/* Diagram Lightbox */
+.diagram-lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #0d1117;
+  z-index: 10000;
+  flex-direction: column;
+}
+
+.diagram-lightbox.active {
+  display: flex;
+}
+
+.diagram-lightbox-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+.diagram-lightbox-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.diagram-lightbox-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.diagram-lightbox-close:hover {
+  color: #fff;
+}
+
+.diagram-lightbox-viewport {
+  flex: 1;
+  overflow: hidden;
+  cursor: grab;
+  position: relative;
+}
+
+.diagram-lightbox-content {
+  transform-origin: 0 0;
+  display: inline-block;
+  padding: 40px;
+  background: var(--surface, #161b22);
+  border-radius: 8px;
+}
+
+.diagram-lightbox-content svg {
+  filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.3));
+}
+
 .architecture-description {
   font-size: 14px;
   line-height: 1.7;

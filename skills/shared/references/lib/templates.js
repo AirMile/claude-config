@@ -90,10 +90,15 @@ function serveDashboard(projectDir) {
   dashData = populateFromProject(projectDir, dashData);
 
   var html = fs.readFileSync(DASHBOARD_TEMPLATE_PATH, "utf8");
-  html = html.replace(
-    /(<script id="dashboard-data" type="application\/json">)([\s\S]*?)(<\/script>)/,
-    "$1\n" + JSON.stringify(dashData, null, 2) + "\n$3",
-  );
+  var startTag = '<script id="dashboard-data" type="application/json">';
+  var startIdx = html.indexOf(startTag) + startTag.length;
+  var endIdx = html.indexOf("</script>", startIdx);
+  html =
+    html.substring(0, startIdx) +
+    "\n" +
+    JSON.stringify(dashData, null, 2) +
+    "\n" +
+    html.substring(endIdx);
   const nav = getNavBarHtml(projectDir, "dashboard");
   const dashRefresh = `<script>
 (function(){

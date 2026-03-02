@@ -7,7 +7,7 @@ var backlogPatch = `<style>
   .stats { display:none !important; }
   .board { min-height: calc(100vh - 48px) !important; }
   .column-header { padding: 10px 12px !important; }
-  .edit-btn, .delete-btn, .detail-btn { display:none !important; }
+  .edit-btn, .delete-btn, .detail-btn, .add-btn, .column-header .count { display:none !important; }
   .card-actions button { width:20px !important; height:20px !important; border-radius:3px !important; font-size:10px !important; }
   .detail-actions { justify-content:flex-start !important; }
   .detail-actions button { flex:none !important; width:auto !important; height:auto !important; padding:4px 10px !important; font-size:12px !important; display:inline-flex !important; align-items:center !important; gap:4px !important; background:var(--surface) !important; color:var(--text-muted) !important; border:1px solid var(--border) !important; border-radius:4px !important; transition:all 0.15s !important; }
@@ -27,6 +27,10 @@ var backlogPatch = `<style>
   .card:hover .card-clip { opacity:1; }
   .card-clip:hover { color:var(--accent,#58a6ff) !important; }
   .card-clip.copied { color:var(--done,#3fb950) !important; opacity:1; }
+  .card-active { }
+  .active-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:600; padding:1px 7px; border-radius:8px; background:rgba(88,166,255,0.12); color:#58a6ff; letter-spacing:0.2px; white-space:nowrap; }
+  .active-badge .active-dot { width:6px; height:6px; border-radius:50%; background:#58a6ff; animation:activeDot 1.5s ease-in-out infinite; flex-shrink:0; }
+  @keyframes activeDot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 </style>
 <script>
 (function(){
@@ -122,14 +126,83 @@ var backlogPatch = `<style>
       }
     };
   }
+  // Patch card-dep: replace arrow with lock icon
+  var lockSvg = '<svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0"><path d="M4 7V5a4 4 0 118 0v2h1a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1h1zm2 0h4V5a2 2 0 10-4 0v2z"/></svg>';
+  function patchDeps() {
+    document.querySelectorAll(".card-dep").forEach(function(el) {
+      if (el.dataset.patched) return;
+      el.dataset.patched = "1";
+      el.innerHTML = el.innerHTML.replace(/\\u2192\\s*/, lockSvg + " ");
+    });
+  }
+  var origRenderDeps = window.render;
+  if (origRenderDeps) {
+    var _prevRender = window.render;
+    window.render = function() { _prevRender(); patchDeps(); };
+  }
+  patchDeps();
   if (window.render) render();
 })();
 </script>
 <script>
 (function(){
   var base = location.pathname.replace(/\\/backlog\\/?$/, "");
+  var SKILL_LABELS = {define:"defining",plan:"planning",build:"building",test:"testing",debug:"debugging",refactor:"refactoring"};
+  var activeFeatures = [];
+
+  function updateActiveCards() {
+    // Remove old indicators
+    document.querySelectorAll(".card-active").forEach(function(c) {
+      c.classList.remove("card-active");
+      var badge = c.querySelector(".active-badge");
+      if (badge) badge.remove();
+    });
+    if (!activeFeatures.length) return;
+    // Build lookup: feature name → skill
+    var lookup = {};
+    activeFeatures.forEach(function(a) { if (a.feature) lookup[a.feature] = a.skill; });
+    // Find matching cards
+    document.querySelectorAll(".card").forEach(function(c) {
+      var skill = lookup[c.dataset.name];
+      if (!skill) return;
+      c.classList.add("card-active");
+      var label = SKILL_LABELS[skill] || skill;
+      var badge = document.createElement("span");
+      badge.className = "active-badge";
+      badge.innerHTML = '<span class="active-dot"></span>' + label + "\\u2026";
+      var tags = c.querySelector(".card-tags");
+      if (tags) tags.appendChild(badge);
+    });
+  }
+
+  function fetchSession() {
+    fetch(base + "/session").then(function(r){ return r.json(); }).then(function(list) {
+      if (!Array.isArray(list)) list = list.feature ? [list] : [];
+      if (JSON.stringify(list) === JSON.stringify(activeFeatures)) return;
+      activeFeatures = list;
+      updateActiveCards();
+    }).catch(function(){});
+  }
+
+  // Patch render to re-apply indicators after board redraw
+  var origRender = window.render;
+  if (origRender) {
+    window.render = function() {
+      origRender();
+      updateActiveCards();
+    };
+  }
+
+  // Initial fetch
+  fetchSession();
+
+  // SSE
   var es = new EventSource(base + "/events");
   es.onmessage = function(e) {
+    if (e.data === "session") {
+      fetchSession();
+      return;
+    }
     if (e.data !== "backlog") return;
     var modal = document.getElementById("detail-modal");
     if (modal && modal.classList.contains("visible")) return;

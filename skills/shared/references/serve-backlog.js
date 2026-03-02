@@ -57,7 +57,7 @@ http
       if (fs.existsSync(cssFile)) {
         res.writeHead(200, {
           "Content-Type": "text/css; charset=utf-8",
-          "Cache-Control": "public, max-age=3600",
+          "Cache-Control": "no-cache",
         });
         res.end(fs.readFileSync(cssFile, "utf8"));
         return;
@@ -113,8 +113,10 @@ http
 
         const backlogFile = path.join(projectPath, BACKLOG_PATH);
         const dashFile = path.join(projectPath, DASHBOARD_PATH);
+        const sessionDir = path.join(projectPath, ".project/session");
         var lastBacklogMtime = 0;
         var lastDashMtime = 0;
+        var lastSessionMtime = 0;
 
         try {
           lastBacklogMtime = fs.existsSync(backlogFile)
@@ -126,6 +128,11 @@ http
             ? fs.statSync(dashFile).mtimeMs
             : 0;
         } catch {}
+        try {
+          lastSessionMtime = fs.existsSync(sessionDir)
+            ? fs.statSync(sessionDir).mtimeMs
+            : 0;
+        } catch {}
 
         const poll = setInterval(function () {
           try {
@@ -135,6 +142,9 @@ http
             const dm = fs.existsSync(dashFile)
               ? fs.statSync(dashFile).mtimeMs
               : 0;
+            const am = fs.existsSync(sessionDir)
+              ? fs.statSync(sessionDir).mtimeMs
+              : 0;
             if (bm !== lastBacklogMtime) {
               lastBacklogMtime = bm;
               res.write("data: backlog\n\n");
@@ -143,12 +153,52 @@ http
               lastDashMtime = dm;
               res.write("data: dashboard\n\n");
             }
+            if (am !== lastSessionMtime) {
+              lastSessionMtime = am;
+              res.write("data: session\n\n");
+            }
           } catch {}
         }, 1000);
 
         req.on("close", function () {
           clearInterval(poll);
         });
+        return;
+      }
+
+      // ── Session active API ──
+      if (
+        req.method === "GET" &&
+        parts[1] === "session" &&
+        parts.length === 2
+      ) {
+        const sessionDir = path.join(projectPath, ".project/session");
+        var active = [];
+        try {
+          if (fs.existsSync(sessionDir)) {
+            var now = Date.now();
+            fs.readdirSync(sessionDir).forEach(function (f) {
+              if (!f.startsWith("active-") || !f.endsWith(".json")) return;
+              try {
+                var entry = JSON.parse(
+                  fs.readFileSync(path.join(sessionDir, f), "utf8"),
+                );
+                // Skip stale entries (older than 2 hours)
+                if (
+                  entry.startedAt &&
+                  now - new Date(entry.startedAt).getTime() > 7200000
+                )
+                  return;
+                active.push(entry);
+              } catch {}
+            });
+          }
+        } catch {}
+        res.writeHead(200, {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+        });
+        res.end(JSON.stringify(active));
         return;
       }
 
@@ -273,10 +323,15 @@ http
             const jsonStr = JSON.stringify(jsonData, null, 2);
 
             const html = fs.readFileSync(file, "utf8");
-            const updated = html.replace(
-              /(<script id="backlog-data" type="application\/json">)([\s\S]*?)(<\/script>)/,
-              "$1\n" + jsonStr + "\n$3",
-            );
+            var startTag = '<script id="backlog-data" type="application/json">';
+            var sIdx = html.indexOf(startTag) + startTag.length;
+            var eIdx = html.indexOf("</script>", sIdx);
+            const updated =
+              html.substring(0, sIdx) +
+              "\n" +
+              jsonStr +
+              "\n" +
+              html.substring(eIdx);
 
             fs.writeFileSync(file, updated, "utf8");
             res.writeHead(200, { "Content-Type": "application/json" });

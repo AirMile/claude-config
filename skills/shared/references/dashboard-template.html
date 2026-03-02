@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard</title>
-    <link rel="stylesheet" href="/css/dashboard.css?v=4" />
+    <link rel="stylesheet" href="/css/dashboard.css?v=7" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   </head>
@@ -201,6 +201,24 @@
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
+
+    <!-- Diagram Lightbox -->
+    <div class="diagram-lightbox" id="diagram-lightbox">
+      <div class="diagram-lightbox-toolbar">
+        <span class="diagram-lightbox-hint"
+          >Scroll om te zoomen &middot; Sleep om te pannen</span
+        >
+        <button class="diagram-lightbox-close" onclick="closeDiagramLightbox()">
+          &times;
+        </button>
+      </div>
+      <div class="diagram-lightbox-viewport" id="diagram-lightbox-viewport">
+        <div
+          class="diagram-lightbox-content"
+          id="diagram-lightbox-content"
+        ></div>
+      </div>
+    </div>
 
     <script>
       // ─── Markdown ─────────────────────────────────────────
@@ -429,13 +447,145 @@
         }
       });
 
+      // ─── Diagram Lightbox (pan & zoom) ─────────────────────
+      (function () {
+        const lb = document.getElementById("diagram-lightbox");
+        const vp = document.getElementById("diagram-lightbox-viewport");
+        const ct = document.getElementById("diagram-lightbox-content");
+        let scale = 1,
+          tx = 0,
+          ty = 0,
+          dragging = false,
+          startX,
+          startY;
+
+        function apply() {
+          ct.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+        }
+
+        window.openDiagramLightbox = function () {
+          const src = document.querySelector("#arch-diagram svg");
+          if (!src) return;
+          ct.innerHTML = "";
+          const clone = src.cloneNode(true);
+          const origId = src.getAttribute("id") || "arch-mermaid";
+          const newId = origId + "-lb";
+          clone.setAttribute("id", newId);
+          clone.querySelectorAll("style").forEach((s) => {
+            s.textContent = s.textContent.replaceAll("#" + origId, "#" + newId);
+          });
+          const vb = clone.getAttribute("viewBox");
+          if (vb) {
+            const [, , w, h] = vb.split(/\s+/).map(Number);
+            clone.setAttribute("width", w);
+            clone.setAttribute("height", h);
+          }
+          clone.style.maxWidth = "none";
+          ct.appendChild(clone);
+          lb.classList.add("active");
+          document.body.style.overflow = "hidden";
+          // fit diagram to viewport with padding
+          const vpRect = vp.getBoundingClientRect();
+          const pad = 40;
+          const svgW =
+            clone.getBoundingClientRect().width ||
+            parseFloat(clone.getAttribute("width"));
+          const svgH =
+            clone.getBoundingClientRect().height ||
+            parseFloat(clone.getAttribute("height"));
+          scale = Math.min(
+            (vpRect.width - pad * 2) / svgW,
+            (vpRect.height - pad * 2) / svgH,
+            1,
+          );
+          tx = (vpRect.width - svgW * scale) / 2;
+          ty = (vpRect.height - svgH * scale) / 2;
+          apply();
+        };
+
+        window.closeDiagramLightbox = function () {
+          lb.classList.remove("active");
+          document.body.style.overflow = "";
+        };
+
+        lb.addEventListener("click", (e) => {
+          if (e.target === lb || e.target === vp) closeDiagramLightbox();
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && lb.classList.contains("active"))
+            closeDiagramLightbox();
+        });
+
+        vp.addEventListener(
+          "wheel",
+          (e) => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+            const rect = vp.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            tx = mx - factor * (mx - tx);
+            ty = my - factor * (my - ty);
+            scale *= factor;
+            apply();
+          },
+          { passive: false },
+        );
+
+        vp.addEventListener("mousedown", (e) => {
+          if (e.button !== 0) return;
+          dragging = true;
+          startX = e.clientX - tx;
+          startY = e.clientY - ty;
+          vp.style.cursor = "grabbing";
+        });
+
+        window.addEventListener("mousemove", (e) => {
+          if (!dragging) return;
+          tx = e.clientX - startX;
+          ty = e.clientY - startY;
+          apply();
+        });
+
+        window.addEventListener("mouseup", () => {
+          dragging = false;
+          vp.style.cursor = "grab";
+        });
+      })();
+
       // ─── Section Renderers ──────────────────────────────────
+
+      function showConceptThinking(idx) {
+        const e = ((data.concept && data.concept.thinking) || [])[idx];
+        if (!e) return;
+        let meta = "";
+        if (e.type === "brainstorm" || e.type === "decision") {
+          if (e.chosen) meta += `<strong>Gekozen:</strong> ${esc(e.chosen)}`;
+          const options = e.variants || e.options || [];
+          if (options.length)
+            meta += `${e.chosen ? " · " : ""}<strong>Opties:</strong> ${options.map((o) => esc(o)).join(", ")}`;
+        }
+        if (e.type === "decision" && e.rationale) {
+          meta += `<br><strong>Rationale:</strong> ${esc(e.rationale)}`;
+        }
+        openModal(
+          e.title || "Untitled",
+          `
+          ${meta ? `<div class="thinking-meta" style="margin-bottom:12px">${meta}</div>` : ""}
+          <div class="thinking-content">${md(e.content || "")}</div>
+          ${e.source ? `<div class="thinking-source" style="margin-top:12px">${esc(e.source)}</div>` : ""}
+        `,
+          { readOnly: true, wide: true },
+        );
+      }
 
       function renderConceptThinking() {
         const entries = (data.concept && data.concept.thinking) || [];
         if (entries.length === 0) return "";
 
         const cards = [...entries]
+          .map((e, i) => ({ ...e, _idx: i }))
           .reverse()
           .map((e) => {
             let meta = "";
@@ -457,7 +607,7 @@
             const needsExpand = content.length > 300;
 
             return `
-          <div class="thinking-entry" data-type="${esc(e.type || "idea")}">
+          <div class="thinking-entry" data-type="${esc(e.type || "idea")}" style="cursor:pointer" onclick="showConceptThinking(${e._idx})">
             <div class="thinking-header">
               <span class="thinking-type-badge" data-type="${esc(e.type || "idea")}">${esc(e.type || "idea")}</span>
               <span class="thinking-title">${esc(e.title || "Untitled")}</span>
@@ -525,6 +675,9 @@
               .render("arch-mermaid", a.diagram)
               .then(({ svg }) => {
                 el.innerHTML = svg;
+                el.style.cursor = "pointer";
+                el.title = "Klik om fullscreen te openen";
+                el.onclick = () => openDiagramLightbox();
               })
               .catch((err) => {
                 el.innerHTML = `<div class="architecture-error">Diagram fout: ${esc(err.message || String(err))}</div>`;

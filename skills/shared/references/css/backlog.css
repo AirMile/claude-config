@@ -341,9 +341,17 @@ body {
 }
 
 .card-dep {
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 500;
   color: var(--text-dim);
-  margin-top: 4px;
+  margin-top: 6px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(139, 148, 158, 0.08);
+  border: 1px solid rgba(139, 148, 158, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .card-source {
