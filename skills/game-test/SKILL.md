@@ -198,6 +198,43 @@ Now TESTABLE -> TDD fix loop
 
    -> Exit skill
 
+6b. **Post-Build Baseline Check** (als `build` sectie bestaat in feature.json)
+
+Herrun de integration test scene als baseline gate voordat de gebruiker gaat playtesten. Dit vangt regressies op die na de build kunnen zijn ontstaan.
+
+```bash
+# Run integration test scene
+"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s res://tests/scenes/test_{feature}_runtime.tscn
+```
+
+Parse output voor `FINAL:PASS` of `FINAL:FAIL`.
+
+Display: `BASELINE: integration tests → {PASS|FAIL}`
+Bij FAIL: waarschuw ("Integration tests falen — mogelijke regressie sinds build"), toon gefaalde tests, ga door met playtest.
+
+Als integration test scene niet bestaat → skip, geen output.
+
+6c. **Cross-Requirement Gameplay Scenario's** (als `build` sectie bestaat en 2+ requirements)
+
+Analyseer `requirements[]` uit feature.json. Identificeer combinaties waar gameplay-interacties meerdere requirements raken.
+
+Genereer maximaal 3 gameplay scenario's:
+
+```
+GAMEPLAY SCENARIO'S: {feature}
+
+| # | Scenario                                      | Requirements     |
+|---|-----------------------------------------------|------------------|
+| G1| Gebruik ability → observeer effect → check cooldown | REQ-001 + REQ-003 |
+| G2| Ability op meerdere vijanden → effects stapelen?    | REQ-001 + REQ-002 |
+| G3| Ability tijdens beweging → positie correct?         | REQ-001 + REQ-004 |
+```
+
+Voeg deze toe aan de checklist als extra items met `"integration": true, "type": "MANUAL"`.
+Ze worden meegenomen in de playtest instructies.
+
+Als er geen logische cross-requirement combinaties zijn → skip, geen output.
+
 7. **Launch game with test scenario:**
 
    ```python
@@ -300,6 +337,7 @@ Feedback: received
 ```bash
 mkdir -p .project/session
 git status --porcelain | sort > .project/session/pre-skill-status.txt
+echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
 ### FASE 1: Parse Feedback
@@ -961,26 +999,23 @@ Opgenomen in test results.
    Feature ready for integration.
    ```
 
-2. **Write feature.json** (read-modify-write):
-   1. Read `.project/features/{feature-name}/feature.json`
-   2. Update existing sections:
-      - `status` → `"TST"` or `"VERIFIED"`
-      - `requirements[].status` → `"PASS"` or `"FAIL"` per item
-      - `tests.checklist[].status` → update per item with evidence
-   3. Add/update `tests` section:
-      - `tests.finalStatus`: `"VERIFIED"` or `"PASSED"` or `"FAILED"`
-      - `tests.sessions[]`: push session with `{ date, pass, fail, fixes }`
-      - `tests.fixSync`: fix summary (if fixes were applied)
-   4. Add `observations[]` if user reported out-of-scope issues
-   5. Write feature.json back (do NOT overwrite other sections)
+2. **Parallel sync** (feature.json + backlog):
 
-3. **Sync backlog** (zie `shared/BACKLOG.md`):
-   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
-   - Zoek feature in `data.features`, zet `.status = "TST"`
-   - Zet `data.updated` naar huidige datum
-   - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
+   Lees parallel (skip als niet bestaat):
+   - `.project/features/{feature-name}/feature.json`
+   - `.project/backlog.html`
 
-4. **Scoped auto-commit** (only this skill's changes):
+   Muteer beide in memory:
+
+   **feature.json**: `status` → `"TST"` or `"VERIFIED"`, `requirements[].status` → `"PASS"` / `"FAIL"` per item, `tests.checklist[].status` → update per item with evidence. Add/update `tests` sectie: `finalStatus`, `sessions[]` (push `{ date, pass, fail, fixes }`), `fixSync`. Add `observations[]` if user reported out-of-scope issues. NIET andere secties overschrijven.
+
+   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "TST"`, `data.updated` → huidige datum.
+
+   Schrijf parallel terug:
+   - Write `feature.json`
+   - Edit `backlog.html` (keep `<script>` tags intact)
+
+3. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -1006,7 +1041,7 @@ Opgenomen in test results.
    )"
    ```
 
-   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
+   Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 

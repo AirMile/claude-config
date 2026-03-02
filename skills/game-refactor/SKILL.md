@@ -185,6 +185,7 @@ Features:
 ```bash
 mkdir -p .project/session
 git status --porcelain | sort > .project/session/pre-skill-status.txt
+echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
 ### FASE 1: Parallel Batch Analysis + Triage
@@ -674,50 +675,39 @@ IMPROVEMENTS APPLIED
       - ROLLED_BACK: keep `"TST"`
    4. Write feature.json back (do NOT overwrite other sections)
 
-2. **Sync backlog** (zie `shared/BACKLOG.md`, single edit for all features):
-   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
-   - CLEAN en REFACTORED features: zet `.status = "DONE"`
-   - ROLLED_BACK features: laat `.status = "TST"`
-   - Zet `data.updated` naar huidige datum
-   - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
+   Als N > 1 features: lees alle feature.json parallel, muteer elk in memory, schrijf alle parallel terug.
 
-3. **Context sync (conditional)** — only execute if REFACTORED features include structural changes:
+2. **Parallel sync** (backlog + dashboard + conditionele context sync):
 
-   **Trigger condition** — execute this step if ANY of these apply across REFACTORED features:
-   - Scripts were renamed or moved to different directories
-   - New scripts were created via extraction (e.g., shared utils extracted from components)
-   - Scene structure fundamentally changed
-   - Autoload/singleton patterns changed
+   Lees parallel (skip als niet bestaat):
+   - `.project/backlog.html`
+   - `.project/project.json`
 
-   **Skip this step if:**
-   - All improvements were internal code quality only (naming, DRY, type hints, clarity)
-   - Only performance optimizations without structural impact
-   - No `.project/project.json` exists
+   Muteer beide in memory:
 
-   **Process (when triggered)** (zie `shared/DASHBOARD.md` → `context` sectie):
+   **Backlog** (zie `shared/BACKLOG.md`): CLEAN en REFACTORED features → `.status = "DONE"`, ROLLED_BACK → `.status = "TST"`. Zet `data.updated` naar huidige datum.
 
-   a. Read `.project/project.json`
-   b. Compare `modified_files` and `created_files` from FASE 4 against `context`
-   c. Update affected keys:
-   - Script paths that changed → update `context.structure` (overwrite full tree)
+   **Dashboard** (zie `shared/DASHBOARD.md`): ongewijzigd — er is geen aparte dashboard merge in game-refactor anders dan feature status.
+
+   **Context sync (conditioneel)** — alleen als REFACTORED features structurele wijzigingen bevatten:
+
+   Trigger als ANY: scripts hernoemd/verplaatst, nieuwe scripts via extractie, scene structure fundamenteel gewijzigd, autoload/singleton patterns gewijzigd.
+   Skip als: alleen interne code quality (naming, DRY, type hints, clarity), performance zonder structurele impact.
+
+   Wanneer getriggerd (in dezelfde project.json mutatie):
+   - `context.structure` → overwrite full tree met gewijzigde script paths
    - Extracted scripts/scenes → add to structure tree
-   - Changed patterns → update `context.patterns` (merge)
-   - Set `context.updated` to current date
-   - Als `architecture.diagram` bestaat: regenereer vanuit huidige scene/signal structuur (OVERWRITE)
-     d. **Apply directly** (no user confirmation)
-     e. Quality rules:
-   - Only project-specific, non-obvious information
-   - One line per item, concise
-   - Each item must earn its place
-     f. Log:
+   - `context.patterns` → merge gewijzigde patterns
+   - `context.updated` → huidige datum
+   - `architecture.diagram` → regenereer vanuit huidige scene/signal structuur (OVERWRITE)
+   - Quality: only project-specific, non-obvious, one line per item
+   - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
 
-   ```
-   context: {N} updates ({keys touched})
-   ```
+   Schrijf parallel terug:
+   - Edit `backlog.html` (keep `<script>` tags intact)
+   - Write `project.json`
 
-   Or: `context: no updates needed (internal changes only)`
-
-4. **Scoped auto-commit** (only this skill's changes):
+3. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -754,11 +744,11 @@ IMPROVEMENTS APPLIED
    refactor({feature}): {summary}
    ```
 
-   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
+   Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-5. **Show completion:**
+4. **Show completion:**
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

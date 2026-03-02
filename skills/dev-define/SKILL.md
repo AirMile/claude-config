@@ -37,6 +37,7 @@ Verzamel requirements, ontwerp architectuur, genereer gestructureerd definitiebe
 
 3. **Project folder + context** (paralleliseer):
    - `mkdir -p .project/features/{feature-name}`
+   - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json`
    - Glob + Grep voor bestaande code die de feature-naam importeert
    - Read `.project/project.json` → `concept.content` als context
    - Read `.claude/research/stack-baseline.md`
@@ -173,28 +174,40 @@ Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md`
 
 Gecombineerde steps: meerdere REQs in `requirements[]` array, `dependsOn` verwijst naar step nummers.
 
-### FASE 4: Sync Backlog
+### FASE 4: Sync
 
-1. Read `.project/backlog.html` → niet gevonden: skip.
-2. Parse JSON uit `<script id="backlog-data">`.
-3. Zoek feature → zet status `"DEF"`, datum `"{date}"`. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`.
-4. Zet `data.updated` naar vandaag. Schrijf terug via Edit (keep `<script>` tags intact).
+Lees parallel (skip als niet bestaat):
 
-### FASE 5: Dashboard Sync
+- `.project/backlog.html`
+- `.project/project.json`
 
-1. Read `.project/project.json`
-2. Update feature in `features` array: status → `"DEF"`, update summary
-3. Merge per entity type (check altijd op bestaande voor push):
-   - **Data entities**: check op naam → nieuw: push met fields/relations → bestaand: merge nieuwe velden
-   - **Endpoints**: check op method+path → nieuw: push met `status: "planned"` → bestaand: skip
-   - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
-   - **Features**: check op naam → nieuw: push `{ name, status: "DEF", summary, created }` → bestaand: update status
-   - **Architecture**: genereer/update `architecture` sectie als project meerdere componenten/modules heeft:
-     - `diagram`: Mermaid `graph TD` vanuit componentTree — nodes voor modules/services, edges voor dependencies/data flow. Gebruik `[(DB)]` voor databases, `[Service]` voor modules, `{{Gateway}}` voor middleware
-     - `description`: markdown overzicht + componentenlijst met verantwoordelijkheden
-     - OVERWRITE (vervangt vorige diagram met bijgewerkte versie)
-     - Skip als single-file feature zonder architecturele impact
-4. Write `.project/project.json`
+Muteer beide in memory:
+
+**Backlog** (zie `shared/BACKLOG.md`):
+
+- Zoek feature → zet status `"DEF"`, datum `"{date}"`. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`.
+- Zet `data.updated` naar vandaag.
+
+**Dashboard** (zie `shared/DASHBOARD.md`):
+
+- Update feature in `features` array: status → `"DEF"`, update summary
+- Merge per entity type (check altijd op bestaande voor push):
+  - **Data entities**: check op naam → nieuw: push met fields/relations → bestaand: merge nieuwe velden
+  - **Endpoints**: check op method+path → nieuw: push met `status: "planned"` → bestaand: skip
+  - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
+  - **Features**: check op naam → nieuw: push `{ name, status: "DEF", summary, created }` → bestaand: update status
+  - **Architecture**: genereer/update `architecture` sectie als project meerdere componenten/modules heeft:
+    - `diagram`: Mermaid `graph TD` vanuit componentTree — nodes voor modules/services, edges voor dependencies/data flow. Gebruik `[(DB)]` voor databases, `[Service]` voor modules, `{{Gateway}}` voor middleware
+    - `description`: markdown overzicht + componentenlijst met verantwoordelijkheden
+    - OVERWRITE (vervangt vorige diagram met bijgewerkte versie)
+    - Skip als single-file feature zonder architecturele impact
+
+Schrijf parallel terug:
+
+- Edit `backlog.html` (keep `<script>` tags intact)
+- Write `project.json`
+
+Clean up: `rm -f .project/session/active-{feature-name}.json`
 
 ## Restrictions
 

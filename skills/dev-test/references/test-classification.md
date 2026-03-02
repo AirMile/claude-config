@@ -88,3 +88,30 @@ NOT MANUAL (these are AUTO):
 | File state          | cat/read file → check contents match expected                                     |
 | DB state            | query command → check result matches expected                                     |
 | Dev server detect   | curl HEAD on common ports (3000, 3001, 5173, 8080) → first 200 response is target |
+
+---
+
+### Post-Build Classification Override
+
+Wanneer `feature.json` een `build` sectie heeft (dev-build is voltooid, tests bestaan al):
+
+**Principe:** dev-build tests verifiëren per-requirement logica (unit niveau). dev-test verifieert geïntegreerd gedrag (E2E). Bestaande test suite draaien is een baseline gate, geen test item.
+
+**Override regels:**
+
+| Originele Classificatie        | Post-Build Override       | Conditie                     |
+| ------------------------------ | ------------------------- | ---------------------------- |
+| AUTO/CLI "Existing test suite" | AUTO/BROWSER              | Feature heeft UI             |
+| AUTO/CLI "Existing test suite" | AUTO/CLI "API integratie" | Pure API feature             |
+| AUTO/CLI (specifiek command)   | Ongewijzigd               | Build, typecheck, file state |
+| AUTO/BROWSER                   | Ongewijzigd               | Al E2E verificatie           |
+| MANUAL                         | Ongewijzigd               | Subjectief oordeel           |
+
+**Post-build specifieke patronen:**
+
+| Pattern              | Steps                                                          |
+| -------------------- | -------------------------------------------------------------- |
+| E2E user flow        | navigate → fill_form → submit → verify redirect + success      |
+| Cross-page flow      | actie pagina A → navigeer B → verify state carries over        |
+| API integratie chain | curl POST (create) → curl GET (verify) → curl DELETE (cleanup) |
+| Cross-requirement    | complete flow A → verify dat flow B correct beïnvloed is       |

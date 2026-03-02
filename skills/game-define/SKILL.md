@@ -78,10 +78,12 @@ The skill gathers requirements through targeted questions, optionally researches
 
    The user can type any feature name via the built-in "Other" option.
 
-3. **Create project folder:**
+3. **Create project folder + signal active feature:**
 
    ```bash
    mkdir -p .project/features/{feature-name}
+   mkdir -p .project/session
+   echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
    ```
 
 4. **Load architecture-baseline as context:**
@@ -533,77 +535,38 @@ Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md`
 | `testStrategy`              | altijd                                                                             |
 | `research`                  | alleen als research is gedaan                                                      |
 
-### FASE 5: Sync Backlog
+### FASE 5: Sync
 
-**Goal:** Update `.project/backlog.html` with new status.
+Lees parallel (skip als niet bestaat):
 
-Zie `shared/BACKLOG.md` voor het JSON read/write protocol.
+- `.project/backlog.html`
+- `.project/project.json`
 
-**Steps:**
+Muteer beide in memory:
 
-1. **Check if backlog exists:**
+**Backlog** (zie `shared/BACKLOG.md`):
 
-   ```
-   Read(".project/backlog.html")
-   ```
+- Zoek feature: `data.features.find(f => f.name === "{feature-name}")`
+- Gevonden → zet `.status = "DEF"` en `.date = "{current date}"`
+- Niet gevonden → voeg toe: `{ "name": "{feature}", "type": "FEATURE", "status": "DEF", "phase": "P4", "description": "{from feature.json summary}", "dependency": null, "source": "/game-define" }`
+- Zet `data.updated` naar huidige datum
 
-   - If file not found: skip sync (no backlog to update)
+**Dashboard** (zie `shared/DASHBOARD.md`):
 
-2. **Parse JSON data:**
-   - Extraheer JSON uit `<script id="backlog-data" type="application/json">` blok
-   - Parse als object (zie `shared/BACKLOG.md`)
+- **Data entities**: voor elke entity check of `data.entities` al entry heeft met die naam → nee: push met fields/relations → ja: merge nieuwe velden
+- **Stack**: als Godot plugins/assets → check `stack.packages` op naam → nee: push `{ name, version, purpose }`
+- **Features**: check op naam → nee: push `{ name, status: "DEF", summary, depends: [], created }` → ja: update status naar `"DEF"`
+- **Architecture**: genereer/update als feature scene tree en/of signals heeft:
+  - `diagram`: Mermaid `graph TD` vanuit scene tree hiërarchie. Signal flow als edges. State machines als subgraph
+  - `description`: markdown scene overzicht + signals + state machines
+  - OVERWRITE. Skip als feature te klein (enkele node zonder signals)
 
-3. **Find feature and update status:**
-   - Zoek in `data.features`: `data.features.find(f => f.name === "{feature-name}")`
-   - Gevonden → zet `.status = "DEF"` en `.date = "{current date}"`
-   - Niet gevonden → voeg toe aan `data.features`:
-     `{ "name": "{feature}", "type": "FEATURE", "status": "DEF", "phase": "P4", "description": "{from feature.json summary}", "dependency": null, "source": "/game-define" }`
+Schrijf parallel terug:
 
-4. **Update metadata and write back:**
-   - Zet `data.updated` naar huidige datum (`YYYY-MM-DD`)
-   - Vervang het JSON-blok in het HTML bestand via Edit tool (keep `<script>` tags intact)
+- Edit `backlog.html` (keep `<script>` tags intact)
+- Write `project.json`
 
-**Output:**
-
-```
-BACKLOG SYNCED
-
-Feature: {feature-name}
-Status: TODO → DEF
-Location: {P1 | P2 | P3 | P4}
-```
-
-### FASE 6: Dashboard Sync
-
-**Goal:** Update `.project/project.json` met data en stack info uit deze feature definitie.
-
-Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
-
-**Steps:**
-
-1. Read `.project/project.json` (of maak nieuw met leeg schema als niet bestaat)
-
-2. **Data entities** — als de feature data entities/resources definieert (uit Architecture):
-   - Voor elke entity: check of `data.entities` al een entry heeft met die naam
-   - Zo nee: push hele entity met fields en relations
-   - Zo ja: merge nieuwe velden/relaties toe
-
-3. **Stack** — als de feature Godot plugins of assets introduceert:
-   - Voor elk package: check of `stack.packages` al een entry heeft met die naam
-   - Zo nee: push `{ name, version, purpose }`
-
-4. **Features** — push feature naar `features` array:
-   - Check of feature met deze naam al bestaat
-   - Zo nee: push `{ name: "{feature-name}", status: "DEF", summary: "{from feature.json summary}", depends: [], created: "{date}" }`
-   - Zo ja: update status naar `"DEF"`
-
-5. **Architecture** — genereer/update `architecture` sectie als feature scene tree en/of signals heeft:
-   - `diagram`: Mermaid `graph TD` vanuit scene tree hiërarchie (nodes, children). Signal flow als edges (`emitter --|signal_name|--> receiver`). State machines als subgraph
-   - `description`: markdown scene overzicht + signals + state machines
-   - OVERWRITE (vervangt vorige diagram met bijgewerkte versie)
-   - Skip als feature te klein is (enkele node zonder signals)
-
-6. Write `.project/project.json`
+Clean up: `rm -f .project/session/active-{feature-name}.json`
 
 **Output:**
 

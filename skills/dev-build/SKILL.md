@@ -38,6 +38,12 @@ mkdir -p .project/session
 git rev-parse HEAD > .project/session/pre-skill-sha.txt
 ```
 
+**Signal active feature** (na feature naam bepaling):
+
+```bash
+echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+```
+
 **Detect stack:** lees CLAUDE.md `### Stack` sectie + `.claude/research/stack-baseline.md` (als beschikbaar).
 
 **Load feature:**
@@ -136,51 +142,63 @@ De gebruiker moet begrijpen hoe de feature werkt voor goede beslissingen in test
 - **Hoe werkt het onder de motorkap?**: data flow stap voor stap, concrete voorbeelden
 - **Waar moet je op letten?**: alleen niet-voor-de-hand-liggende keuzes — _waarom_, niet _wat_
 
+### FASE 3C: Project Sync
+
+Lees parallel (skip als niet bestaat):
+
+- `.project/features/{feature-name}/feature.json`
+- `.project/backlog.html`
+- `.project/project.json`
+
+Muteer alle drie in memory:
+
+**feature.json**: `status → "BLT"`, `files[]` → merge met actuele bestanden. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]`. Bestaande secties NIET overschrijven. Note: `requirements[]` is al enriched in FASE 2 stap 4.
+
+**tests.checklist[]** — per requirement minimaal 1 test item:
+
+```json
+{
+  "id": 1,
+  "title": "beschrijving van wat te verifiëren",
+  "requirementId": "REQ-XXX",
+  "steps": ["navigeer naar /pad", "vul X in", "klik op Y"],
+  "expected": "verwacht zichtbaar resultaat (redirect, melding, data in UI)",
+  "status": "pending"
+}
+```
+
+Richtlijnen:
+
+- Schrijf steps als USER ACTIES (navigeer, klik, vul in), niet als code (assert, expect)
+- Expected = wat de gebruiker ZOU ZIEN, niet wat een unit test checkt
+- UI features: beschrijf browser-interacties
+- API features: beschrijf curl/HTTP stappen met concrete endpoints
+- Voeg GEEN item toe dat "run npm test" is — unit tests zijn al gedekt door de build
+
+**Backlog** (zie `shared/BACKLOG.md`): status → `"BLT"`, `data.updated` → nu.
+
+**Context** (zie `shared/DASHBOARD.md` → `context`): vergelijk build output met project.json. Update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip als geen structurele impact. Log: `context: {N} updates ({keys})`.
+
+**Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"BLT"`, endpoints → `"done"` als geïmplementeerd, stack packages → push nieuwe dependencies.
+
+**Architecture**: diagram bestaat → update met werkelijke implementatie. Geen diagram EN meerdere modules → genereer Mermaid `graph TD`. Geen structurele impact → skip. Log: `architecture: updated` of `architecture: no updates needed`.
+
+Schrijf parallel terug:
+
+- Write `feature.json`
+- Edit `backlog.html` (keep `<script>` tags intact)
+- Write `project.json`
+
+### FASE 3D: Begripscheck
+
 **Begripscheck** via **AskUserQuestion**:
 
 Vraag: "Snap je hoe de feature werkt?"
 Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
 
-Follow-up loop tot "Ja, helder". Sla uitleg op als `build.explanation` in feature.json.
+Follow-up loop tot "Ja, helder". Sla uitleg op als `build.explanation` in feature.json (targeted Edit).
 
-### FASE 3C: Project Sync
-
-**Context sync** (zie `shared/DASHBOARD.md` → `context`):
-
-Vergelijk build output met `.project/project.json`. Update direct (geen confirmatie):
-
-- Files/directories → `context.structure` (overwrite)
-- Routes → `context.routing` (overwrite)
-- Non-obvious patterns → `context.patterns` (merge)
-- `context.updated` → huidige datum
-
-Skip als geen structurele impact of geen `project.json`. Log: `context: {N} updates ({keys})`.
-
-**Backlog sync** (zie `shared/BACKLOG.md`): status → `"BLT"`, `data.updated` → nu.
-
-**Dashboard sync** (zie `shared/DASHBOARD.md`):
-
-- Feature status → `"BLT"`
-- Endpoints → `"done"` als geïmplementeerd
-- Stack packages → push nieuwe dependencies
-
-**Architecture sync:**
-
-- Diagram bestaat → update met werkelijke implementatie
-- Geen diagram EN meerdere modules → genereer Mermaid `graph TD`
-- Geen structurele impact → skip
-- Log: `architecture: updated` of `architecture: no updates needed`
-
-**Write feature.json** (read-modify-write):
-
-1. Read huidige `feature.json`
-2. Update: `status → "BLT"`, `files[]` → merge met actuele bestanden
-3. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions, explanation), `packages[]`, `tests.checklist[]` (status: "pending")
-4. Write terug — bestaande secties NIET overschrijven
-
-Note: `requirements[]` hoeft hier niet meer enriched — dat is al per-REQ gedaan in FASE 2 stap 4.
-
-### FASE 3D: Scoped Commit
+### FASE 3E: Scoped Commit
 
 **Strategie**: stage alleen files die door deze build zijn aangemaakt of gewijzigd. Laat pre-existing dirty files met rust.
 
@@ -204,7 +222,7 @@ Als baseline SHA niet bestaat → fallback: vergelijk met `feature.json files[]`
 git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
 ```
 
-Clean up: `rm -f .project/session/pre-skill-sha.txt`
+Clean up: `rm -f .project/session/pre-skill-sha.txt .project/session/active-{feature-name}.json`
 
 **No Co-Authored-By footer on pipeline commits.**
 

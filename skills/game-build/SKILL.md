@@ -147,6 +147,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 ```bash
 mkdir -p .project/session
 git status --porcelain | sort > .project/session/pre-skill-status.txt
+echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
 ### FASE 1: Technique Mapping
@@ -561,7 +562,7 @@ get_debug_output()
 
 #### Playtest Checklist + Scene
 
-Build `tests.checklist[]` data for feature.json (written in FASE 5):
+Build `tests.checklist[]` data for feature.json (written in FASE 4b):
 
 ```json
 {
@@ -569,12 +570,16 @@ Build `tests.checklist[]` data for feature.json (written in FASE 5):
     "checklist": [
       {
         "id": 1,
-        "title": "{Visual/audio test 1}",
+        "title": "{wat te verifiëren}",
         "type": "MANUAL",
         "requirementId": "REQ-001",
-        "status": "pending",
-        "evidence": null,
-        "fixApplied": null
+        "steps": [
+          "open game",
+          "gebruik ability op vijand",
+          "observeer schade-effect"
+        ],
+        "expected": "vijand toont damage number, health bar daalt",
+        "status": "pending"
       }
     ]
   }
@@ -582,6 +587,14 @@ Build `tests.checklist[]` data for feature.json (written in FASE 5):
 ```
 
 Include both automated test results and manual playtest items in the checklist. Automated items get `type: "AUTO"`, manual playtest items get `type: "MANUAL"`.
+
+Richtlijnen voor checklist items:
+
+- Schrijf steps als SPELER ACTIES (beweeg naar, druk op, gebruik ability), niet als code
+- Expected = wat de speler ZOU ZIEN/HOREN (visueel effect, geluid, UI update)
+- Voeg GEEN item toe dat "run GUT tests" is — unit tests zijn al gedekt door de build
+- MANUAL items: beschrijf concrete gameplay-interacties
+- AUTO items: beschrijf wat de integration test scene verifieert
 
 **Create playtest scene** at `.project/features/{feature-name}/playtest_scene.tscn`:
 
@@ -664,7 +677,35 @@ Claude explains the built architecture in plain, beginner-friendly language. No 
 - **Hoe werkt het onder de motorkap?**: welke scripts/scenes samenwerken, stap voor stap met concrete voorbeelden ("als de speler X doet, dan roept script A functie B aan, wat Y veroorzaakt")
 - **Waar moet je op letten?**: niet-voor-de-hand-liggende keuzes met uitleg _waarom_
 
-#### Step 2: Comprehension Check
+### FASE 4b: Project Sync
+
+Lees parallel (skip als niet bestaat):
+
+- `.project/features/{feature-name}/feature.json`
+- `.project/backlog.html`
+- `.project/project.json`
+
+Muteer alle drie in memory:
+
+**feature.json**: `status → "BLT"`, `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]` (status: "pending"). Bestaande secties NIET overschrijven.
+
+**Backlog** (zie `shared/BACKLOG.md`): status → `"BLT"`, `data.updated` → nu.
+
+**Context** (zie `shared/DASHBOARD.md` → `context`): identify new scenes (.tscn), scripts (.gd) with class names, signals, resources (.tres). Update `context.structure` (overwrite), `context.patterns` (merge signals, autoloads, conventions), `context.updated`. Skip als geen structurele impact.
+
+**Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"BLT"`. Als feature niet bestaat: push met `{ name, status: "BLT", summary, created }`.
+
+**Architecture**: update diagram met werkelijke scene tree, signals, autoloads. Voeg nieuwe toe, verwijder verwijderde nodes. Als diagram niet bestaat EN meerdere scenes/signals → genereer Mermaid `graph TD`. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
+
+Schrijf parallel terug:
+
+- Write `feature.json`
+- Edit `backlog.html` (keep `<script>` tags intact)
+- Write `project.json`
+
+### FASE 5: Begripscheck + Completion
+
+#### Step 1: Comprehension Check
 
 Use **AskUserQuestion**:
 
@@ -678,121 +719,49 @@ Opties:
 
 **Follow-up loop:** If user has questions or picks "Leg het uitgebreider uit", answer with more detail and examples. Repeat AskUserQuestion until user confirms understanding.
 
-#### Step 3: Save Sync to feature.json
+Na "Ja, helder": sla uitleg op als `build.explanation` in feature.json (targeted Edit).
 
-Store the architecture explanation as `build.explanation` field in feature.json (plain markdown string with ASCII diagrams and key decisions).
-
-### FASE 4b: Context Sync
-
-Update `.project/project.json` context with new scenes, scripts, signals, and resources created during this build (zie `shared/DASHBOARD.md` → `context` sectie).
-
-**Process:**
-
-1. Read `.project/project.json` (skip als niet bestaat)
-2. Identify new additions from this build:
-   - New scenes (.tscn files)
-   - New scripts (.gd files) with their class names
-   - New signals defined
-   - New resources (.tres files)
-3. Update context keys:
-   - `context.structure`: overwrite full file tree
-   - `context.patterns`: merge new patterns (signals, autoloads, conventions)
-   - `context.updated`: set to current date
-4. Quality rules: no stale info, no duplication, concise entries
-
-**Architecture sync** (na context sync):
-
-- Lees huidige `architecture.diagram` uit project.json
-- Update met werkelijke scene tree, signals, autoloads uit deze build
-- Voeg nieuwe scenes/scripts/signals toe aan diagram, verwijder nodes die niet meer bestaan
-- Als diagram niet bestaat EN project heeft meerdere scenes/signals: genereer nieuw Mermaid `graph TD`
-- Skip als geen structurele impact
-- Log: `architecture: updated` of `architecture: no updates needed`
-
-**Output:**
+#### Step 2: Output summary
 
 ```
-CONTEXT SYNCED
+BUILD COMPLETE: {feature}
+========================
 
-Added:
-- scripts/abilities/water_ability.gd (WaterAbility class)
-- scenes/abilities/water_projectile.tscn
-- signal: debug_ability_used
+Tests: {passed}/{total} PASS ({tdd} TDD, {impl} impl-first)
+Files created: {count}
+
+Created files:
+- tests/test_{feature}.gd
+- tests/scenes/test_{feature}_runtime.tscn
+- scripts/...
+- scenes/...
 ```
 
-### FASE 5: Completion
+### FASE 6: Scoped Commit
 
-1. **Output summary:**
+**Scoped auto-commit** (only this skill's changes):
 
-   ```
-   BUILD COMPLETE: {feature}
-   ========================
+Compare current git status with baseline from FASE 0:
 
-   Tests: {passed}/{total} PASS ({tdd} TDD, {impl} impl-first)
-   Files created: {count}
+```bash
+git status --porcelain | sort > /tmp/current-status.txt
+```
 
-   Created files:
-   - tests/test_{feature}.gd
-   - tests/scenes/test_{feature}_runtime.tscn
-   - scripts/...
-   - scenes/...
-   ```
+Categorize files by comparing with `.project/session/pre-skill-status.txt`:
 
-2. **Sync backlog** (zie `shared/BACKLOG.md`):
-   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
-   - Zoek feature in `data.features`, zet `.status = "BLT"`
-   - Zet `data.updated` naar huidige datum
-   - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
+- **NEW** (only in current, not in baseline) → `git add` automatically
+- **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
+- **PRE-EXISTING** (only in baseline) → do NOT stage
 
-   **Output:**
+If baseline file doesn't exist, fall back to `git add -A`.
 
-   ```
-   BACKLOG SYNCED
+```bash
+git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
+```
 
-   Feature: {feature-name}
-   Status: DEF -> BLT
-   ```
+Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
-3b. **Dashboard sync** (zie `shared/DASHBOARD.md`):
-
-- Read `.project/project.json` (skip als niet bestaat)
-- Update `features` array: zoek feature op naam, zet status naar `"BLT"`
-- Als feature niet bestaat: push met `{ name, status: "BLT", summary, created }`
-- **Write feature.json** (read-modify-write):
-  1. Read `.project/features/{feature-name}/feature.json`
-  2. Update existing sections:
-     - `status` → `"BLT"`
-     - `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`
-     - `files[]` → merge with actual files (add new, update existing)
-  3. Add new sections:
-     - `build`: `{ started, completed, techniques: { tdd, implementationFirst }, testsPass, testsTotal, decisions, explanation }`
-     - `packages[]`: new dependencies
-     - `tests.checklist[]`: test items with `status: "pending"`
-  4. Write feature.json back (do NOT overwrite other sections)
-- Write `.project/project.json`
-
-4. **Scoped auto-commit** (only this skill's changes):
-
-   Compare current git status with baseline from FASE 0:
-
-   ```bash
-   git status --porcelain | sort > /tmp/current-status.txt
-   ```
-
-   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
-   - **NEW** (only in current, not in baseline) → `git add` automatically
-   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
-   - **PRE-EXISTING** (only in baseline) → do NOT stage
-
-   If baseline file doesn't exist, fall back to `git add -A`.
-
-   ```bash
-   git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
-   ```
-
-   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
-
-   No Co-Authored-By line.
+No Co-Authored-By line.
 
 ## GUT Test Conventions
 

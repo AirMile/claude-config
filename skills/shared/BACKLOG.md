@@ -48,6 +48,16 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
 
 **Gebruik Edit tool** om alleen het JSON-blok te vervangen — niet het hele bestand herschrijven. Zorg dat de `<script>` tags intact blijven.
 
+## Parallel sync
+
+Wanneer een skill meerdere bestanden tegelijk synchroniseert (backlog + project.json + feature.json):
+
+1. **Lees parallel**: alle bestanden in één tool call batch
+2. **Muteer in memory**: pas alle data objecten aan
+3. **Schrijf parallel**: alle bestanden in één tool call batch
+
+Dit reduceert 6+ sequentiële round-trips naar 2. Bestanden zijn onafhankelijk — geen volgorde vereist.
+
 ## Backlog genereren (nieuwe backlog)
 
 1. Kopieer template: `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`

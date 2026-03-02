@@ -112,11 +112,102 @@ Everything works except validation is missing and no welcome mail
 
    Parse the agent's structured output. This gives you test data and classification hints without consuming any main context on source file reads.
 
+   **Post-build uitbreiding** — als `build` sectie bestaat in feature.json, voeg toe aan de agent prompt:
+
+   ```
+   build sectie bestaat — per test item, geef ook aan:
+   - Al gedekt: {wat bestaande build tests al verifiëren voor dit item}
+   - Aanbevolen delta: {wat EXTRA getest moet worden bovenop build tests}
+   ```
+
+5b. **Post-Build Strategy Detectie**
+
+Lees `build` sectie uit feature.json.
+
+**IF `build` sectie bestaat** (= dev-build is voltooid):
+
+```
+postBuildMode = true
+hasUI = feature.json heeft "design" veld OF files[] bevat frontend bestanden (.tsx, .vue, .svelte)
+isPureAPI = feature.json heeft "apiContract" EN NIET hasUI
+```
+
+Display:
+
+```
+POST-BUILD DETECTIE: {build.testsTotal} bestaande tests ({build.techniques.tdd} TDD, {build.techniques.implementationFirst} impl-first)
+Strategie: {hasUI → "E2E browser verificatie" | isPureAPI → "API integratie" | else → "Integratie verificatie"}
+Baseline: bestaande test suite als pre-check (niet als primaire test)
+```
+
+**ELSE**: `postBuildMode = false` — ga door met bestaand classificatiegedrag.
+
+5c. **Cross-Requirement Integratie Scenario's** (alleen bij `postBuildMode`)
+
+Analyseer `requirements[]` uit feature.json. Identificeer combinaties waar het resultaat van één requirement input is voor een andere.
+
+Genereer maximaal 3 integratie-scenario's:
+
+```
+INTEGRATIE SCENARIO'S: {feature}
+
+| # | Scenario                                      | Requirements     | Type         |
+|---|-----------------------------------------------|------------------|--------------|
+| I1| Koop crypto → portfolio toont nieuwe asset    | REQ-001 + REQ-002| AUTO/BROWSER |
+| I2| Twee aankopen → portfolio combineert          | REQ-001 + REQ-002| AUTO/BROWSER |
+| I3| Koop → transactie in geschiedenis             | REQ-001 + REQ-003| AUTO/BROWSER |
+```
+
+Voeg deze toe aan de checklist als extra items met `"integration": true`. Ze worden mee-geclassificeerd en mee-getest in FASE 1/2.
+
+Als er geen logische cross-requirement combinaties zijn → skip, geen output.
+
 6. **Classify each test item**
 
-   For each checklist item, apply the classification criteria above and assign **AUTO** or **MANUAL**.
+   **IF `postBuildMode`:**
 
-   Display the classification:
+   **a) Baseline check** — run bestaande test suite eenmalig als gate (niet als test item):
+
+   ```bash
+   npm test 2>&1 | tail -5  # of project-specifiek test command
+   ```
+
+   Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n} tests)`
+   Bij FAIL: waarschuw (post-build regressie mogelijk), ga door met classificatie.
+
+   **b) Per checklist item, post-build classificatie:**
+   - Item met `steps[]` die browser-interacties beschrijven (navigeer, klik, vul in) → **AUTO/BROWSER**
+   - Item met `steps[]` die HTTP/curl beschrijven → **AUTO/CLI** met integratie-pattern
+   - Item zonder `steps[]` dat zou matchen met "Existing test suite" pattern:
+     - `hasUI` → **AUTO/BROWSER** (E2E verificatie, niet npm test)
+     - `isPureAPI` → **AUTO/CLI** met integratie-pattern (curl chain)
+   - AUTO/BROWSER items → ongewijzigd
+   - MANUAL items → ongewijzigd
+   - Niet-test-suite CLI checks (build, typecheck) → ongewijzigd
+
+   > Zie `references/test-classification.md` → "Post-Build Classification Override" voor volledige override tabel.
+
+   **c) Display** met extra "Al Gedekt" en "Delta" kolommen:
+
+   ```
+   TEST CLASSIFICATIE: {feature-name} (POST-BUILD)
+
+   | # | Test                     | Type         | Al Gedekt              | Delta                            |
+   |---|--------------------------|--------------|------------------------|----------------------------------|
+   | 1 | Register with valid data | AUTO/BROWSER | Unit: schema validates | E2E: form → redirect → welkomst  |
+   | 2 | Without email            | AUTO/BROWSER | Unit: schema rejects   | E2E: form → inline error         |
+   | 3 | Welcome mail sent        | MANUAL       | -                      | Mail delivery verificatie        |
+   | I1| Koop → portfolio update  | AUTO/BROWSER | -                      | Cross-req integratie             |
+
+   AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}
+   BASELINE: npm test pre-check (niet in telling)
+   ```
+
+   **ELSE (geen postBuildMode):**
+
+   For each checklist item, apply the classification criteria and assign **AUTO** or **MANUAL**.
+
+   Display:
 
    ```
    TEST CLASSIFICATIE: {feature-name}
@@ -205,6 +296,7 @@ Everything works except validation is missing and no welcome mail
 ```bash
 mkdir -p .project/session
 git status --porcelain | sort > .project/session/pre-skill-status.txt
+echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
 ### FASE 1: Automated Testing (Task Agent)
@@ -236,6 +328,14 @@ INSTRUCTIES:
    b. Analyseer het resultaat en bepaal PASS of FAIL met bewijs en redenering
 3. Als een browser tool faalt voor een item, markeer als TOOL_ERROR
 4. Geef gestructureerde resultaten terug
+
+{if postBuildMode:}
+POST-BUILD CONTEXT:
+- Bestaande unit tests zijn al GREEN (baseline pre-check: PASS)
+- Focus op INTEGRATIE en E2E gedrag, niet op per-requirement unit logica
+- Verifieer dat componenten SAMENWERKEN, niet dat individuele units werken
+- Draai NIET opnieuw npm test — dat is al als baseline gecheckt
+{end if}
 
 RESULTAAT FORMAT (strict):
 AUTOMATED_RESULTS_START
@@ -694,30 +794,27 @@ Opgenomen in test results.
 
 ---
 
-3. **Write feature.json** (read-modify-write):
-   - Read `.project/features/{feature-name}/feature.json`
-   - Update `status` → `"TST"` (of `"VERIFIED"` als alle items PASS)
-   - Update `requirements[].status` → `"PASS"` / `"FAIL"` per REQ
-   - Update `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item
-   - Voeg/update `tests` sectie: `finalStatus`, `coverage`, `sessions[]`, `fixSync`
-   - Voeg `observations[]` toe (indien aanwezig)
-   - Write `feature.json` terug (NIET andere secties overschrijven)
+3. **Parallel sync** (feature.json + backlog + dashboard):
 
-4. **Sync backlog** (zie `shared/BACKLOG.md`):
-   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
-   - Zoek feature in `data.features`, zet `.status = "TST"`
-   - Zet `data.updated` naar huidige datum
-   - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
+   Lees parallel (skip als niet bestaat):
+   - `.project/features/{feature-name}/feature.json`
+   - `.project/backlog.html`
+   - `.project/project.json`
 
-5. **Dashboard sync** (zie `shared/DASHBOARD.md`):
-   - Read `.project/project.json` (skip als niet bestaat)
-   - Als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`
-   - Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`
-   - Als data entities gewijzigd: merge naar `data.entities`
-   - Update `features` array: zoek feature op naam, zet status naar `"TST"`
-   - Write `.project/project.json`
+   Muteer alle drie in memory:
 
-6. **Scoped auto-commit** (only this skill's changes):
+   **feature.json**: Update `status` → `"TST"` (of `"VERIFIED"` als alle items PASS), `requirements[].status` → `"PASS"` / `"FAIL"` per REQ, `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item. Voeg/update `tests` sectie: `finalStatus`, `coverage`, `sessions[]`, `fixSync`. Voeg `observations[]` toe (indien aanwezig). NIET andere secties overschrijven.
+
+   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "TST"`, `data.updated` → huidige datum.
+
+   **Dashboard** (zie `shared/DASHBOARD.md`): als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`. Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`. Als data entities gewijzigd: merge naar `data.entities`. Update `features` array: zoek feature op naam, zet status naar `"TST"`.
+
+   Schrijf parallel terug:
+   - Write `feature.json`
+   - Edit `backlog.html` (keep `<script>` tags intact)
+   - Write `project.json`
+
+4. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -745,7 +842,7 @@ Opgenomen in test results.
    )"
    ```
 
-   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
+   Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 

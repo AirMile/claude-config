@@ -172,6 +172,7 @@ Features:
 ```bash
 mkdir -p .project/session
 git status --porcelain | sort > .project/session/pre-skill-status.txt
+echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
 ### FASE 1: Parallel Batch Analysis + Triage
@@ -566,7 +567,9 @@ IMPROVEMENTS APPLIED
 
 1. **Write feature.json per feature** (read-modify-write):
 
-   Read `.project/features/{feature-name}/feature.json`, voeg `refactor` sectie toe:
+   Als N > 1 features: lees alle `.project/features/{name}/feature.json` parallel, muteer elk in memory, schrijf alle parallel terug.
+
+   Voeg `refactor` sectie toe per feature:
 
    **Altijd aanwezig in refactor:** `status`, `improvements` (object met categorieën), `decisions[]`, `positiveObservations[]`, `failureAnalysis`, `pendingImprovements[]`.
 
@@ -580,59 +583,43 @@ IMPROVEMENTS APPLIED
    - REFACTORED: `status: "DONE"`
    - ROLLED_BACK: `status: "TST"` (keep in TST, don't advance)
 
-   Write `feature.json` terug (NIET andere secties overschrijven)
+   Bestaande secties NIET overschrijven.
 
-2. **Sync backlog** (zie `shared/BACKLOG.md`, single edit for all features):
-   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok
-   - CLEAN en REFACTORED features: zet `.status = "DONE"`
-   - ROLLED_BACK features: laat `.status = "TST"`
-   - Zet `data.updated` naar huidige datum
-   - Schrijf JSON terug via Edit tool (keep `<script>` tags intact)
+2. **Parallel sync** (backlog + dashboard + conditionele context sync):
 
-3. **Context sync (conditional)** — only execute if REFACTORED features include structural changes:
+   Lees parallel (skip als niet bestaat):
+   - `.project/backlog.html`
+   - `.project/project.json`
 
-   **Trigger condition** — execute this step if ANY of these apply across REFACTORED features:
-   - Files were renamed or moved to different directories
-   - New files were created via extraction (e.g., shared utils extracted from components)
-   - Patterns fundamentally changed (e.g., state management approach, routing structure)
+   Muteer beide in memory:
 
-   **Skip this step if:**
-   - All improvements were internal code quality only (naming, DRY, simplification, clarity)
-   - Only performance optimizations without structural impact
-   - No `.project/project.json` exists
+   **Backlog** (zie `shared/BACKLOG.md`): CLEAN en REFACTORED features → `.status = "DONE"`, ROLLED_BACK → `.status = "TST"`. Zet `data.updated` naar huidige datum.
 
-   **Process (when triggered)** (zie `shared/DASHBOARD.md` → `context` sectie):
-
-   a. Read `.project/project.json`
-   b. Compare `modified_files` and `created_files` from FASE 4 against `context`
-   c. Update affected keys:
-   - File paths that changed → update `context.structure` (overwrite full tree)
-   - Extracted components/hooks → add to structure tree
-   - Changed patterns → update `context.patterns` (merge)
-   - Set `context.updated` to current date
-   - Als `architecture.diagram` bestaat: regenereer vanuit huidige codebase structuur (OVERWRITE)
-     d. **Apply directly** (no user confirmation)
-     e. Quality rules:
-   - Only project-specific, non-obvious information
-   - One line per item, concise
-   - Each item must earn its place
-     f. Log:
-
-   ```
-   context: {N} updates ({keys touched})
-   ```
-
-   Or: `context: no updates needed (internal changes only)`
-
-4. **Dashboard sync** (zie `shared/DASHBOARD.md`):
-   - Read `.project/project.json` (skip als niet bestaat)
+   **Dashboard** (zie `shared/DASHBOARD.md`):
    - Als packages gewijzigd (toegevoegd/verwijderd): merge naar `stack.packages`
    - Als endpoints gewijzigd: merge naar `endpoints`
    - Als data entities gewijzigd: merge naar `data.entities`
-   - Update `features` array: CLEAN en REFACTORED features → status `"DONE"`, ROLLED_BACK → ongewijzigd
-   - Write `.project/project.json`
+   - `features` array: CLEAN/REFACTORED → status `"DONE"`, ROLLED_BACK → ongewijzigd
 
-5. **Scoped auto-commit** (only this skill's changes):
+   **Context sync (conditioneel)** — alleen als REFACTORED features structurele wijzigingen bevatten:
+
+   Trigger als ANY: bestanden hernoemd/verplaatst, nieuwe bestanden via extractie, patterns fundamenteel gewijzigd.
+   Skip als: alleen interne code quality, performance zonder structurele impact.
+
+   Wanneer getriggerd (in dezelfde project.json mutatie):
+   - `context.structure` → overwrite full tree met gewijzigde file paths
+   - Extracted components/hooks → add to structure tree
+   - `context.patterns` → merge gewijzigde patterns
+   - `context.updated` → huidige datum
+   - `architecture.diagram` → regenereer als die bestaat (OVERWRITE)
+   - Quality: only project-specific, non-obvious, one line per item
+   - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
+
+   Schrijf parallel terug:
+   - Edit `backlog.html` (keep `<script>` tags intact)
+   - Write `project.json`
+
+3. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
 
@@ -669,11 +656,11 @@ IMPROVEMENTS APPLIED
    refactor({feature}): {summary}
    ```
 
-   Clean up: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt`
+   Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
    **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
-6. **Show completion:**
+4. **Show completion:**
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
