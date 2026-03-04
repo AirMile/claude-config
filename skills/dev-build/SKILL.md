@@ -131,18 +131,7 @@ Tests: {passed}/{total} PASS
 Files created: {count}
 ```
 
-### FASE 3B: Codebase Sync
-
-De gebruiker moet begrijpen hoe de feature werkt voor goede beslissingen in test- en refactor-fases.
-
-**Uitleg** — alsof je het aan een student uitlegt:
-
-- **Wat doet het?**: 1-2 zinnen, geen jargon
-- **Hoe ziet het eruit?**: 1-2 ASCII diagrammen (max 15 regels). Box-drawing chars (┌─┐│└─┘) en pijlen (→ ← ↓ ↑).
-- **Hoe werkt het onder de motorkap?**: data flow stap voor stap, concrete voorbeelden
-- **Waar moet je op letten?**: alleen niet-voor-de-hand-liggende keuzes — _waarom_, niet _wat_
-
-### FASE 3C: Project Sync
+### FASE 3B: Project Sync
 
 Lees parallel (skip als niet bestaat):
 
@@ -189,16 +178,37 @@ Schrijf parallel terug:
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Write `project.json`
 
-### FASE 3D: Begripscheck
+### FASE 3C: Begripscheck
 
-**Begripscheck** via **AskUserQuestion**:
+**STOP — ga NIET door naar de commit zonder deze fase volledig af te ronden.**
+
+Display een visuele separator:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEGRIPSCHECK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Stap 1 — Uitleg displayen (verplicht, niet overslaan)**
+
+De gebruiker moet begrijpen hoe de feature werkt voor goede beslissingen in test- en refactor-fases. Display de volgende uitleg alsof je het aan een student uitlegt:
+
+- **Wat doet het?**: 1-2 zinnen, geen jargon
+- **Hoe ziet het eruit?**: 1-2 ASCII diagrammen (max 15 regels). Box-drawing chars (┌─┐│└─┘) en pijlen (→ ← ↓ ↑).
+- **Hoe werkt het onder de motorkap?**: data flow stap voor stap, concrete voorbeelden
+- **Waar moet je op letten?**: alleen niet-voor-de-hand-liggende keuzes — _waarom_, niet _wat_
+
+**Stap 2 — Begripscheck (verplicht, niet overslaan)**
+
+**AskUserQuestion** direct na de uitleg:
 
 Vraag: "Snap je hoe de feature werkt?"
 Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
 
 Follow-up loop tot "Ja, helder". Sla uitleg op als `build.explanation` in feature.json (targeted Edit).
 
-### FASE 3E: Scoped Commit
+### FASE 3D: Scoped Commit
 
 **Strategie**: stage alleen files die door deze build zijn aangemaakt of gewijzigd. Laat pre-existing dirty files met rust.
 
