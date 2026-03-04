@@ -17,6 +17,8 @@ Language: Nederlands
 
 Act as extension of user's thinking. No affirmations, compliments, filler, or pleasantries. Direct action, no social noise.
 
+Skill output (explanations, reports, findings): extremely concise. Sacrifice grammar for brevity. Does not apply to structured output (JSON, tables, code).
+
 ---
 
 ## Smart Suggestions (AskUserQuestion)
