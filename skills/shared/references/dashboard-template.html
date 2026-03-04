@@ -252,6 +252,7 @@
       // Migrate old tab names
       if (activeTab === "architecture") activeTab = "diagram";
       if (activeTab === "features") activeTab = "concept";
+      if (activeTab === "config") activeTab = "concept";
       let modalContext = null;
 
       const TABS = [
@@ -261,6 +262,7 @@
         { id: "theme", label: "Theme" },
         { id: "stack", label: "Stack" },
         { id: "thinking", label: "Thinking" },
+        { id: "config", label: "Config" },
       ];
 
       const EMPTY = {
@@ -1203,6 +1205,101 @@
         }
       }
 
+      // ─── Config (CLAUDE.md) ────────────────────────────────
+
+      let configCache = null;
+      let configEditing = false;
+
+      function renderConfig() {
+        const base = location.pathname.replace(/\/+$/, "");
+
+        if (configCache === null) {
+          fetch(base + "/claude-md")
+            .then((r) => r.json())
+            .then((d) => {
+              configCache = d.content || "";
+              const el = document.querySelector(".content");
+              if (el && activeTab === "config") el.innerHTML = renderConfig();
+            })
+            .catch(() => {
+              configCache = "";
+            });
+          return '<div style="padding:40px;color:var(--text-dim)">Laden...</div>';
+        }
+
+        if (configEditing) {
+          return `
+            <div class="section-header">
+              <h2>CLAUDE.md</h2>
+              <div style="display:flex;gap:8px">
+                <button id="config-save" style="padding:4px 14px;border-radius:6px;border:1px solid var(--accent);background:rgba(88,166,255,0.15);color:var(--accent);cursor:pointer;font-size:13px">Opslaan</button>
+                <button id="config-cancel" style="padding:4px 14px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-size:13px">Annuleren</button>
+              </div>
+            </div>
+            <textarea id="config-editor" style="width:100%;min-height:500px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;tab-size:2">${esc(configCache)}</textarea>`;
+        }
+
+        if (!configCache) {
+          return `
+            <div class="section-header"><h2>CLAUDE.md</h2></div>
+            <div style="padding:40px;text-align:center;color:var(--text-dim)">
+              <p>Geen .claude/CLAUDE.md gevonden</p>
+              <button id="config-create" style="margin-top:16px;padding:8px 20px;border-radius:6px;border:1px solid var(--accent);background:rgba(88,166,255,0.15);color:var(--accent);cursor:pointer;font-size:13px">Aanmaken</button>
+            </div>`;
+        }
+
+        return `
+          <div class="section-header">
+            <h2>CLAUDE.md</h2>
+            <button id="config-edit" style="padding:4px 14px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-size:13px">Bewerken</button>
+          </div>
+          <div class="research-content">${md(configCache)}</div>`;
+      }
+
+      document.addEventListener("click", (e) => {
+        const base = location.pathname.replace(/\/+$/, "");
+
+        if (e.target.id === "config-edit") {
+          configEditing = true;
+          render();
+          return;
+        }
+
+        if (e.target.id === "config-cancel") {
+          configEditing = false;
+          render();
+          return;
+        }
+
+        if (e.target.id === "config-create") {
+          configCache = "# " + (data.concept.name || "Project") + "\n\n";
+          configEditing = true;
+          render();
+          return;
+        }
+
+        if (e.target.id === "config-save") {
+          const textarea = document.getElementById("config-editor");
+          if (!textarea) return;
+          const content = textarea.value;
+          fetch(base + "/claude-md", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content }),
+          })
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.ok) {
+                configCache = content;
+                configEditing = false;
+                render();
+              }
+            })
+            .catch((err) => alert("Opslaan mislukt: " + err.message));
+          return;
+        }
+      });
+
       // ─── Render ─────────────────────────────────────────────
 
       const renderers = {
@@ -1212,6 +1309,7 @@
         design: renderDesignContent,
         theme: renderTheme,
         thinking: renderThinking,
+        config: renderConfig,
       };
 
       function render() {

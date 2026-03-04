@@ -172,6 +172,7 @@ function indexPage(projects) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Projects</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
   <style>
     :root { --bg:#0d1117; --surface:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --purple:#d2a8ff; --green:#3fb950; }
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -213,20 +214,119 @@ function indexPage(projects) {
     .nav-new { background:none; color:var(--muted); border:1px dashed var(--border); }
     .nav-new:hover { color:var(--accent); border-color:var(--accent); border-style:solid; background:rgba(88,166,255,0.05); }
 
+    .page-header { display:flex; align-items:center; justify-content:space-between; }
+    .config-open-btn { padding:6px 14px; border-radius:6px; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; border:1px solid var(--border); background:var(--surface); color:var(--muted); transition:all 0.15s; }
+    .config-open-btn:hover { color:var(--text); border-color:#484f58; background:#1c2333; }
+    .config-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:start; padding:48px 24px; overflow-y:auto; }
+    .config-overlay.visible { display:flex; }
+    .config-modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; width:100%; max-width:720px; max-height:calc(100vh - 96px); overflow-y:auto; padding:24px; }
+    .config-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .config-header h3 { font-size:16px; font-weight:600; }
+    .config-btn { padding:4px 14px; border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit; }
+    .config-btn-edit { border:1px solid var(--border); background:none; color:var(--muted); }
+    .config-btn-edit:hover { color:var(--text); border-color:#484f58; }
+    .config-btn-save { border:1px solid var(--accent); background:rgba(88,166,255,0.15); color:var(--accent); }
+    .config-btn-cancel { border:1px solid var(--border); background:none; color:var(--muted); }
+    .config-btn-close { border:1px solid var(--border); background:none; color:var(--muted); font-size:18px; line-height:1; padding:4px 8px; }
+    .config-btn-close:hover { color:var(--text); border-color:#484f58; }
+    .config-md { font-size:13px; line-height:1.6; color:var(--muted); }
+    .config-md h1 { font-size:18px; color:var(--text); margin:0 0 8px; }
+    .config-md h2 { font-size:15px; color:var(--accent); margin:20px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--border); }
+    .config-md h3 { font-size:14px; color:var(--text); margin:16px 0 4px; }
+    .config-md p { margin:0 0 8px; }
+    .config-md ul, .config-md ol { margin:0 0 8px; padding-left:20px; }
+    .config-md li { margin-bottom:2px; }
+    .config-md strong { color:var(--text); }
+    .config-md code { background:rgba(110,118,129,0.15); padding:1px 5px; border-radius:3px; font-size:12px; }
+    .config-md pre { background:var(--bg); padding:12px; border-radius:6px; overflow-x:auto; margin:8px 0; }
+    .config-md pre code { background:none; padding:0; }
+    .config-md hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
+    .config-md a { color:var(--accent); text-decoration:none; }
+
     @media (max-width:600px) {
       .projects-list { padding:24px; }
       .page-header { padding:32px 24px 0; }
       .project-row { flex-wrap:wrap; }
+      .global-config { padding:0 24px 24px; }
     }
   </style>
 </head>
 <body>
   <div class="page-header">
     <h1>Projects</h1>
+    <button class="config-open-btn" id="config-open">Global Config</button>
   </div>
   <div class="projects-list">
     ${activeRows}
   </div>
+  <div class="config-overlay" id="config-overlay">
+    <div class="config-modal" id="config-modal"></div>
+  </div>
+  <script>
+  (function() {
+    var cache = null;
+    var editing = false;
+    var overlay = document.getElementById("config-overlay");
+    var modal = document.getElementById("config-modal");
+
+    function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+    function md(s) { try { return marked.parse(s||""); } catch(e) { return esc(s); } }
+
+    function renderModal() {
+      if (cache === null) {
+        modal.innerHTML = '<div style="color:var(--muted);padding:12px">Laden...</div>';
+        fetch("/global/claude-md").then(function(r){return r.json()}).then(function(d) {
+          cache = d.content || "";
+          renderModal();
+        }).catch(function() { cache = ""; renderModal(); });
+        return;
+      }
+
+      if (editing) {
+        modal.innerHTML =
+          '<div class="config-header"><h3>~/.claude/CLAUDE.md</h3><div style="display:flex;gap:8px">' +
+          '<button class="config-btn config-btn-save" id="gcfg-save">Opslaan</button>' +
+          '<button class="config-btn config-btn-cancel" id="gcfg-cancel">Annuleren</button>' +
+          '</div></div>' +
+          '<textarea id="gcfg-editor" style="width:100%;min-height:400px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:monospace;font-size:13px;line-height:1.5;resize:vertical;tab-size:2">' + esc(cache) + '</textarea>';
+        return;
+      }
+
+      modal.innerHTML =
+        '<div class="config-header"><h3>~/.claude/CLAUDE.md</h3><div style="display:flex;gap:8px">' +
+        '<button class="config-btn config-btn-edit" id="gcfg-edit">Bewerken</button>' +
+        '<button class="config-btn config-btn-close" id="gcfg-close">&times;</button>' +
+        '</div></div>' +
+        '<div class="config-md">' + md(cache) + '</div>';
+    }
+
+    document.getElementById("config-open").addEventListener("click", function() {
+      overlay.classList.add("visible");
+      renderModal();
+    });
+
+    overlay.addEventListener("click", function(e) {
+      if (e.target === overlay) { overlay.classList.remove("visible"); editing = false; }
+    });
+
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape" && overlay.classList.contains("visible")) { overlay.classList.remove("visible"); editing = false; }
+    });
+
+    document.addEventListener("click", function(e) {
+      if (e.target.id === "gcfg-close") { overlay.classList.remove("visible"); editing = false; }
+      if (e.target.id === "gcfg-edit") { editing = true; renderModal(); }
+      if (e.target.id === "gcfg-cancel") { editing = false; renderModal(); }
+      if (e.target.id === "gcfg-save") {
+        var ta = document.getElementById("gcfg-editor");
+        if (!ta) return;
+        fetch("/global/claude-md", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({content:ta.value}) })
+          .then(function(r){return r.json()}).then(function(d) { if(d.ok){cache=ta.value;editing=false;renderModal()} })
+          .catch(function(err){alert("Opslaan mislukt: "+err.message)});
+      }
+    });
+  })();
+  </script>
 </body>
 </html>`;
 }

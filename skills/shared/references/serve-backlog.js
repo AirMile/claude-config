@@ -75,6 +75,47 @@ http
       return;
     }
 
+    // Global CLAUDE.md (read/write)
+    if (
+      parts[0] === "global" &&
+      parts[1] === "claude-md" &&
+      parts.length === 2
+    ) {
+      const globalPath = path.join(
+        require("os").homedir(),
+        ".claude/CLAUDE.md",
+      );
+
+      if (req.method === "GET") {
+        let content = "";
+        if (fs.existsSync(globalPath)) {
+          try {
+            content = fs.readFileSync(globalPath, "utf8");
+          } catch {}
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ content }));
+        return;
+      }
+
+      if (req.method === "POST") {
+        let body = "";
+        req.on("data", (chunk) => (body += chunk));
+        req.on("end", () => {
+          try {
+            const { content } = JSON.parse(body);
+            fs.writeFileSync(globalPath, content, "utf8");
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true }));
+          } catch (err) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+        return;
+      }
+    }
+
     // Project routes:
     //   /{project}              → dashboard (main page)
     //   /{project}/save         → save dashboard (project.json)
@@ -420,6 +461,42 @@ http
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result));
         return;
+      }
+
+      // CLAUDE.md (read/write)
+      if (parts[1] === "claude-md" && parts.length === 2) {
+        const claudePath = path.join(projectPath, ".claude/CLAUDE.md");
+
+        if (req.method === "GET") {
+          let content = "";
+          if (fs.existsSync(claudePath)) {
+            try {
+              content = fs.readFileSync(claudePath, "utf8");
+            } catch {}
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ content }));
+          return;
+        }
+
+        if (req.method === "POST") {
+          let body = "";
+          req.on("data", (chunk) => (body += chunk));
+          req.on("end", () => {
+            try {
+              const { content } = JSON.parse(body);
+              const dir = path.dirname(claudePath);
+              if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+              fs.writeFileSync(claudePath, content, "utf8");
+              res.writeHead(200, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: true }));
+            } catch (err) {
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: err.message }));
+            }
+          });
+          return;
+        }
       }
 
       // Feature detail (feature.json)
