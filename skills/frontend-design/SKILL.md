@@ -298,6 +298,29 @@ PAGINA'S
 ════════════════════════════════════════════════
 ```
 
+#### Stap 2b: Design Alternatieven (optioneel)
+
+Bij pagina's met ≥3 secties, bied aan:
+
+```yaml
+header: "Alternatieven"
+question: "Wil je alternatieve layouts vergelijken voor {page-name}?"
+options:
+  - label: "Nee, ga door (Recommended)", description: "Huidige indeling is goed"
+  - label: "Ja, 2 alternatieven", description: "Genereer 2 radicaal andere sectiedelingen"
+multiSelect: false
+```
+
+**Als "Ja":** spawn 2 agents parallel, elk met een andere constraint:
+
+- Agent 1: "Minimaliseer secties — max 2, combineer waar mogelijk"
+- Agent 2: "Maximaliseer focus — elke sectie heeft één doel"
+
+Presenteer de 3 opties (origineel + 2 alternatieven) als ASCII wireframes.
+User kiest via AskUserQuestion welke layout, of combineert elementen.
+
+Bij pagina's met <3 secties: skip deze stap.
+
 ```yaml
 header: "Pagina's"
 question: "Kloppen deze pagina's?"
