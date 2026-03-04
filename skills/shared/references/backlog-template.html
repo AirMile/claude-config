@@ -375,7 +375,11 @@
           col.className = "column";
           col.dataset.status = status;
 
-          const items = all.filter((f) => f.status === status);
+          const items = all
+            .filter((f) => f.status === status)
+            .sort((a, b) =>
+              (a.phaseKey || "P4").localeCompare(b.phaseKey || "P4"),
+            );
 
           col.innerHTML = `
             <div class="column-header">
