@@ -230,6 +230,14 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
       - "Clever" code die moeilijk te begrijpen is
       - Inconsistentie met project conventions uit CLAUDE.md
       - Violations van `../shared/RULES.md` — Algemeen + TypeScript secties (R007-R008, T001-T203)
+      - Stringly-typed code: raw strings waar constants, enums (string unions), of branded types al bestaan in de codebase
+
+      EFFICIENCY:
+      - N+1 patterns: loops met database/API calls per iteratie
+      - Missed concurrency: onafhankelijke operaties die sequentieel draaien (Promise.all, parallel reads)
+      - Hot-path bloat: blocking werk op startup of per-request/per-render paden
+      - Memory: unbounded data structures, ontbrekende cleanup, event listener leaks
+      - Overly broad operations: hele bestanden lezen als alleen een deel nodig is, alle items laden om er één te filteren
 
       BALANCE (NIET rapporteren als finding):
       - Abstracties die meerdere keren hergebruikt worden
@@ -277,6 +285,10 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
    CLARITY_FINDINGS:
    - {file:line} {type} — {beschrijving} — Code: {snippet}
    (of "Geen clarity issues gevonden")
+
+   EFFICIENCY_FINDINGS:
+   - {file:line} {type} — {beschrijving} — Code: {snippet}
+   (of "Geen efficiency issues gevonden")
 
    BALANCE_SKIPPED:
    - {file:line} {type} — {reden waarom dit NIET als finding is opgenomen}
@@ -410,7 +422,7 @@ Refactor patterns updated: {yes/no}
    Combine all findings from all HAS_FINDINGS features:
    - **Cross-feature deduplication**: same pattern in multiple files → 1 plan item with multiple locations
    - Each improvement gets impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW
-   - Sort: HIGH first (security), then MED (performance, DRY), then LOW (clarity, quality, simplification)
+   - Sort: HIGH first (security), then MED (performance, DRY, efficiency), then LOW (clarity, quality, simplification)
    - **Only pipeline files** may be included
    - Group by feature for clarity
 
@@ -420,7 +432,7 @@ Refactor patterns updated: {yes/no}
    REFACTOR PLAN ({N} features, {M} improvements)
 
    🔴 HIGH: [X] improvements (security)
-   🟡 MED: [Y] improvements (performance, DRY, error handling)
+   🟡 MED: [Y] improvements (performance, DRY, efficiency, error handling)
    🟢 LOW: [Z] improvements (code quality, simplification)
 
    ── {feature-1} ──
@@ -479,11 +491,12 @@ Refactor patterns updated: {yes/no}
 
 1. Security improvements
 2. Performance optimizations
-3. DRY/Refactoring improvements
-4. Simplification (remove over-engineering)
-5. Clarity (readability improvements)
-6. Code quality improvements
-7. Error handling improvements
+3. Efficiency improvements
+4. DRY/Refactoring improvements
+5. Simplification (remove over-engineering)
+6. Clarity (readability improvements)
+7. Code quality improvements
+8. Error handling improvements
 
 **Steps:**
 
