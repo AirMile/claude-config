@@ -1,0 +1,170 @@
+/* Backlog UI patches — extracted from lib/backlog-patches.js */
+
+body > header {
+  display: none !important;
+}
+.promote-btn {
+  display: none !important;
+}
+#detail-promote {
+  display: none !important;
+}
+.stats {
+  display: none !important;
+}
+.board {
+  min-height: calc(100vh - 48px) !important;
+}
+.column-header {
+  padding: 10px 12px !important;
+}
+.edit-btn,
+.delete-btn,
+.detail-btn,
+.add-btn,
+.column-header .count {
+  display: none !important;
+}
+.card-actions button {
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 3px !important;
+  font-size: 10px !important;
+}
+.detail-actions {
+  justify-content: flex-start !important;
+}
+.detail-actions button {
+  flex: none !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background: var(--surface) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 4px !important;
+  transition: all 0.15s !important;
+}
+.detail-actions button:hover {
+  border-color: var(--text-dim) !important;
+  color: var(--text) !important;
+}
+.detail-actions button.btn-danger:hover {
+  background: var(--danger) !important;
+  color: #fff !important;
+  border-color: var(--danger) !important;
+}
+.detail-actions .btn-copy:hover {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+}
+.phase-tag {
+  background: transparent !important;
+  border: 1px solid !important;
+}
+.phase-p1 {
+  color: var(--p1) !important;
+  border-color: color-mix(in srgb, var(--p1) 33%, transparent) !important;
+}
+.phase-p2 {
+  color: var(--p2) !important;
+  border-color: color-mix(in srgb, var(--p2) 33%, transparent) !important;
+}
+.phase-p3 {
+  color: var(--p3) !important;
+  border-color: color-mix(in srgb, var(--p3) 33%, transparent) !important;
+}
+.phase-p4 {
+  color: var(--p4) !important;
+  border-color: color-mix(in srgb, var(--p4) 33%, transparent) !important;
+}
+.status-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  letter-spacing: 0.3px;
+}
+.status-tag::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.copy-cmd-btn {
+  display: none !important;
+}
+.card-menu {
+  display: none !important;
+}
+.card-clip {
+  background: none !important;
+  border: none !important;
+  color: var(--text-dim) !important;
+  cursor: pointer;
+  padding: 2px !important;
+  opacity: 0;
+  transition: opacity 0.15s !important;
+  flex-shrink: 0;
+}
+.card:hover .card-clip {
+  opacity: 1;
+}
+.card-clip:hover {
+  color: var(--accent, #58a6ff) !important;
+}
+.card-clip.copied {
+  color: var(--done, #3fb950) !important;
+  opacity: 1;
+}
+.card-assignee {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted, #8b949e);
+  width: 100%;
+}
+.card-active {
+}
+.active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 8px;
+  background: var(--active-bg);
+  color: var(--accent);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.active-badge .active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: activeDot 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes activeDot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}

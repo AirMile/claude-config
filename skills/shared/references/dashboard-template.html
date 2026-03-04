@@ -3,8 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
     <title>Dashboard</title>
+    <script src="/lib/themes.js"></script>
     <link rel="stylesheet" href="/css/dashboard.css?v=7" />
+    <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   </head>
@@ -609,14 +612,12 @@
             const needsExpand = content.length > 300;
 
             return `
-          <div class="thinking-entry" data-type="${esc(e.type || "idea")}" style="cursor:pointer" onclick="showConceptThinking(${e._idx})">
+          <div class="thinking-entry thinking-entry-compact" data-type="${esc(e.type || "idea")}" style="cursor:pointer" onclick="showConceptThinking(${e._idx})">
             <div class="thinking-header">
               <span class="thinking-type-badge" data-type="${esc(e.type || "idea")}">${esc(e.type || "idea")}</span>
               <span class="thinking-title">${esc(e.title || "Untitled")}</span>
               <span class="thinking-date">${esc(e.date || "")}</span>
             </div>
-            ${meta ? `<div class="thinking-meta">${meta}</div>` : ""}
-            <div class="thinking-content">${md(truncated)}${needsExpand ? ' <span style="color:var(--accent)">[meer]</span>' : ""}</div>
             <div class="thinking-source">${esc(e.source || "")}</div>
           </div>`;
           })
@@ -1339,10 +1340,48 @@
           layoutEl.prepend(sidebarEl);
         }
 
-        sidebarEl.innerHTML = TABS.map(
-          (t) =>
-            `<a href="#${t.id}" class="${activeTab === t.id ? "active" : ""}" data-tab="${t.id}">${esc(t.label)}</a>`,
-        ).join("");
+        // Hide tabs for empty optional sections
+        const d = data.design || {};
+        const th = data.theme || {};
+        const tk = data.thinking || [];
+        const hasDesign =
+          (d.pages && d.pages.length) ||
+          (d.flows && d.flows.length) ||
+          (d.principles && d.principles.length);
+        const hasTheme =
+          (th.colors &&
+            (th.colors.main.length ||
+              th.colors.accent.length ||
+              th.colors.semantic.length)) ||
+          (th.typography &&
+            th.typography.sizes &&
+            th.typography.sizes.length) ||
+          th.cssVars;
+        const hasThinking = tk.length > 0;
+        const hiddenTabs = {};
+        if (!hasDesign) hiddenTabs.design = true;
+        if (!hasTheme) hiddenTabs.theme = true;
+        if (!hasThinking) hiddenTabs.thinking = true;
+
+        // Teammate role: only show concept, design, theme, stack
+        if (window.__role === "teammate") {
+          const allowed = { concept: 1, design: 1, theme: 1, stack: 1 };
+          TABS.forEach((t) => {
+            if (!allowed[t.id]) hiddenTabs[t.id] = true;
+          });
+        }
+
+        const visibleTabs = TABS.filter((t) => !hiddenTabs[t.id]);
+        if (hiddenTabs[activeTab]) {
+          activeTab = visibleTabs[0].id;
+        }
+
+        sidebarEl.innerHTML = visibleTabs
+          .map(
+            (t) =>
+              `<a href="#${t.id}" class="${activeTab === t.id ? "active" : ""}" data-tab="${t.id}">${esc(t.label)}</a>`,
+          )
+          .join("");
 
         // Wire tab clicks
         sidebarEl.querySelectorAll("[data-tab]").forEach((a) => {
@@ -1364,6 +1403,13 @@
 
         const renderer = renderers[activeTab];
         contentEl.innerHTML = renderer ? renderer() : "";
+
+        // Teammate: hide edit buttons on non-concept tabs
+        if (window.__role === "teammate" && activeTab !== "concept") {
+          contentEl.querySelectorAll(".edit-btn").forEach((b) => {
+            b.style.display = "none";
+          });
+        }
       }
 
       // ─── Init ───────────────────────────────────────────────

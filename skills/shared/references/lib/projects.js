@@ -8,6 +8,7 @@ const {
   DASHBOARD_PATH,
   TEMPLATE_PATH,
 } = require("./config");
+const { createDefaultDashboardData } = require("./defaults");
 
 function findProjects() {
   const projects = [];
@@ -118,35 +119,7 @@ function createDashboard(projectDir) {
   const wsDir = path.dirname(file);
   if (!fs.existsSync(wsDir)) fs.mkdirSync(wsDir, { recursive: true });
 
-  const emptyData = {
-    concept: {
-      name: projectDir,
-      content: "",
-    },
-    theme: {
-      colors: { main: [], accent: [], semantic: [] },
-      typography: { families: { heading: "", body: "", mono: "" }, sizes: [] },
-      spacing: { base: "", scale: [] },
-      breakpoints: [],
-      borderRadius: [],
-      shadows: [],
-      modes: {},
-      cssVars: "",
-    },
-    stack: {
-      framework: "",
-      language: "",
-      styling: "",
-      db: "",
-      auth: "",
-      hosting: "",
-      packages: [],
-    },
-    data: { entities: [] },
-    endpoints: [],
-    features: [],
-    thinking: [],
-  };
+  const emptyData = createDefaultDashboardData(projectDir);
 
   fs.writeFileSync(file, JSON.stringify(emptyData, null, 2), "utf8");
   return file;

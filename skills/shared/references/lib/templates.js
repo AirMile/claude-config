@@ -8,6 +8,7 @@ const {
   DASHBOARD_TEMPLATE_PATH,
 } = require("./config");
 const { populateFromProject } = require("./populate");
+const { createDefaultDashboardData } = require("./defaults");
 
 function esc(str) {
   return String(str || "")
@@ -17,29 +18,36 @@ function esc(str) {
     .replace(/"/g, "&quot;");
 }
 
-function getNavBarHtml(projectDir, activePage) {
+function getNavBarHtml(projectDir, activePage, session) {
   const dashClass = activePage === "dashboard" ? "active" : "";
   const backlogClass = activePage === "backlog" ? "active" : "";
   const projectName = projectDir;
+
+  // Teammates with 1 project: no back link. Multiple projects: show back link.
+  const isTeammate = session && session.role === "teammate";
+  const showBack =
+    !isTeammate || (session.projects && session.projects.length > 1);
+  const backHtml = showBack
+    ? '<a href="/" class="pn-back">&larr; Projects</a><span class="pn-sep">/</span>'
+    : "";
 
   return `
 <style>
   body { padding-top: 48px !important; }
   body > header { display:none !important; }
-  #project-nav { position:fixed; top:0; left:0; right:0; height:48px; background:#0d1117; border-bottom:1px solid #30363d; display:flex; align-items:center; z-index:9999; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; padding:0 20px; }
+  #project-nav { position:fixed; top:0; left:0; right:0; height:48px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; z-index:9999; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; padding:0 20px; }
   #project-nav a { text-decoration:none; transition:all 0.15s; }
-  #project-nav .pn-back { color:#8b949e; }
-  #project-nav .pn-back:hover { color:#58a6ff; }
-  #project-nav .pn-sep { color:#30363d; margin:0 8px; }
+  #project-nav .pn-back { color:var(--text-muted); }
+  #project-nav .pn-back:hover { color:var(--accent); }
+  #project-nav .pn-sep { color:var(--border); margin:0 8px; }
   #project-nav .pn-tabs { display:flex; gap:4px; }
-  #project-nav .pn-tab { color:#8b949e; padding:6px 14px; border-bottom:2px solid transparent; }
-  #project-nav .pn-tab:hover { color:#e6edf3; }
-  #project-nav .pn-tab.active { color:#e6edf3; border-bottom-color:#58a6ff; }
-  #project-nav .pn-name { color:#e6edf3; font-weight:600; margin-left:auto; white-space:nowrap; }
+  #project-nav .pn-tab { color:var(--text-muted); padding:6px 14px; border-bottom:2px solid transparent; }
+  #project-nav .pn-tab:hover { color:var(--text); }
+  #project-nav .pn-tab.active { color:var(--text); border-bottom-color:var(--accent); }
+  #project-nav .pn-name { color:var(--text); font-weight:600; margin-left:auto; white-space:nowrap; }
 </style>
 <nav id="project-nav">
-  <a href="/" class="pn-back">&larr; Projects</a>
-  <span class="pn-sep">/</span>
+  ${backHtml}
   <div class="pn-tabs">
     <a href="/${esc(projectDir)}/backlog" class="pn-tab ${backlogClass}">Backlog</a>
     <a href="/${esc(projectDir)}" class="pn-tab ${dashClass}">Dashboard</a>
@@ -48,37 +56,9 @@ function getNavBarHtml(projectDir, activePage) {
 </nav>`;
 }
 
-function serveDashboard(projectDir) {
+function serveDashboard(projectDir, session) {
   const dashFile = path.join(PROJECTS_ROOT, projectDir, DASHBOARD_PATH);
-  var dashData = {
-    concept: {
-      name: projectDir,
-      content: "",
-    },
-    theme: {
-      colors: { main: [], accent: [], semantic: [] },
-      typography: { families: { heading: "", body: "", mono: "" }, sizes: [] },
-      spacing: { base: "", scale: [] },
-      breakpoints: [],
-      borderRadius: [],
-      shadows: [],
-      modes: {},
-      cssVars: "",
-    },
-    stack: {
-      framework: "",
-      language: "",
-      styling: "",
-      db: "",
-      auth: "",
-      hosting: "",
-      packages: [],
-    },
-    data: { entities: [] },
-    endpoints: [],
-    features: [],
-    thinking: [],
-  };
+  var dashData = createDefaultDashboardData(projectDir);
 
   if (fs.existsSync(dashFile)) {
     try {
@@ -99,7 +79,19 @@ function serveDashboard(projectDir) {
     JSON.stringify(dashData, null, 2) +
     "\n" +
     html.substring(endIdx);
-  const nav = getNavBarHtml(projectDir, "dashboard");
+  const nav = getNavBarHtml(projectDir, "dashboard", session);
+
+  // Inject role script for teammates
+  var roleScript = "";
+  if (session && session.role === "teammate") {
+    roleScript =
+      "<script>window.__role=" +
+      JSON.stringify(session.role) +
+      ";window.__userName=" +
+      JSON.stringify(session.name || "") +
+      ";</script>";
+  }
+
   const dashRefresh = `<script>
 (function(){
   var base = location.pathname.replace(/\\/+$/, "");
@@ -115,11 +107,12 @@ function serveDashboard(projectDir) {
   };
 })();
 </script>`;
-  html = html.replace("</body>", dashRefresh + nav + "</body>");
+  html = html.replace("</body>", roleScript + dashRefresh + nav + "</body>");
   return html;
 }
 
-function indexPage(projects) {
+function indexPage(projects, session, tunnelUrl) {
+  const isAdmin = !session || session.role === "admin";
   const activeProjects = projects.filter(function (p) {
     return p.hasBacklog || p.hasDashboard;
   });
@@ -164,14 +157,17 @@ function indexPage(projects) {
   };
 
   const activeRows = activeProjects.map(projectCard).join("");
-  const emptyRows = emptyProjects.map(emptyCard).join("");
+  const emptyRows = isAdmin ? emptyProjects.map(emptyCard).join("") : "";
 
   return `<!doctype html>
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
   <title>Projects</title>
+  <script src="/lib/themes.js"></script>
+  <link rel="stylesheet" href="/css/theme-picker.css">
   <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
   <style>
     :root { --bg:#0d1117; --surface:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --purple:#d2a8ff; --green:#3fb950; }
@@ -191,7 +187,7 @@ function indexPage(projects) {
     .section-label:first-child { padding-top:0; }
 
     .project-row { display:flex; align-items:center; gap:16px; padding:14px 20px; background:var(--surface); border:1px solid var(--border); border-radius:8px; transition:all 0.15s ease; cursor:pointer; }
-    .project-row:hover { border-color:#484f58; background:#1c2333; }
+    .project-row:hover { border-color:color-mix(in srgb, var(--border) 70%, var(--text-muted)); background:var(--surface-hover); }
 
     .empty-row { border-style:dashed; opacity:0.5; }
     .empty-row:hover { opacity:0.8; }
@@ -205,18 +201,18 @@ function indexPage(projects) {
 
     .nav-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:6px; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; text-decoration:none; transition:all 0.15s ease; border:1px solid transparent; white-space:nowrap; }
 
-    .nav-dash { background:rgba(210,168,255,0.1); color:var(--purple); border-color:rgba(210,168,255,0.2); }
-    .nav-dash:hover { background:rgba(210,168,255,0.18); border-color:rgba(210,168,255,0.4); }
+    .nav-dash { background:color-mix(in srgb, var(--purple) 10%, transparent); color:var(--purple); border-color:color-mix(in srgb, var(--purple) 20%, transparent); }
+    .nav-dash:hover { background:color-mix(in srgb, var(--purple) 18%, transparent); border-color:color-mix(in srgb, var(--purple) 40%, transparent); }
 
-    .nav-backlog { background:rgba(88,166,255,0.1); color:var(--accent); border-color:rgba(88,166,255,0.2); }
-    .nav-backlog:hover { background:rgba(88,166,255,0.18); border-color:rgba(88,166,255,0.4); }
+    .nav-backlog { background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--accent); border-color:color-mix(in srgb, var(--accent) 20%, transparent); }
+    .nav-backlog:hover { background:color-mix(in srgb, var(--accent) 18%, transparent); border-color:color-mix(in srgb, var(--accent) 40%, transparent); }
 
     .nav-new { background:none; color:var(--muted); border:1px dashed var(--border); }
-    .nav-new:hover { color:var(--accent); border-color:var(--accent); border-style:solid; background:rgba(88,166,255,0.05); }
+    .nav-new:hover { color:var(--accent); border-color:var(--accent); border-style:solid; background:color-mix(in srgb, var(--accent) 5%, transparent); }
 
     .page-header { display:flex; align-items:center; justify-content:space-between; }
     .config-open-btn { padding:6px 14px; border-radius:6px; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; border:1px solid var(--border); background:var(--surface); color:var(--muted); transition:all 0.15s; }
-    .config-open-btn:hover { color:var(--text); border-color:#484f58; background:#1c2333; }
+    .config-open-btn:hover { color:var(--text); border-color:color-mix(in srgb, var(--border) 70%, var(--text-muted)); background:var(--surface-hover); }
     .config-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:start; padding:48px 24px; overflow-y:auto; }
     .config-overlay.visible { display:flex; }
     .config-modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; width:100%; max-width:720px; max-height:calc(100vh - 96px); overflow-y:auto; padding:24px; }
@@ -224,11 +220,11 @@ function indexPage(projects) {
     .config-header h3 { font-size:16px; font-weight:600; }
     .config-btn { padding:4px 14px; border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit; }
     .config-btn-edit { border:1px solid var(--border); background:none; color:var(--muted); }
-    .config-btn-edit:hover { color:var(--text); border-color:#484f58; }
-    .config-btn-save { border:1px solid var(--accent); background:rgba(88,166,255,0.15); color:var(--accent); }
+    .config-btn-edit:hover { color:var(--text); border-color:color-mix(in srgb, var(--border) 70%, var(--text-muted)); }
+    .config-btn-save { border:1px solid var(--accent); background:color-mix(in srgb, var(--accent) 15%, transparent); color:var(--accent); }
     .config-btn-cancel { border:1px solid var(--border); background:none; color:var(--muted); }
     .config-btn-close { border:1px solid var(--border); background:none; color:var(--muted); font-size:18px; line-height:1; padding:4px 8px; }
-    .config-btn-close:hover { color:var(--text); border-color:#484f58; }
+    .config-btn-close:hover { color:var(--text); border-color:color-mix(in srgb, var(--border) 70%, var(--text-muted)); }
     .config-md { font-size:13px; line-height:1.6; color:var(--muted); }
     .config-md h1 { font-size:18px; color:var(--text); margin:0 0 8px; }
     .config-md h2 { font-size:15px; color:var(--accent); margin:20px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--border); }
@@ -237,7 +233,7 @@ function indexPage(projects) {
     .config-md ul, .config-md ol { margin:0 0 8px; padding-left:20px; }
     .config-md li { margin-bottom:2px; }
     .config-md strong { color:var(--text); }
-    .config-md code { background:rgba(110,118,129,0.15); padding:1px 5px; border-radius:3px; font-size:12px; }
+    .config-md code { background:color-mix(in srgb, var(--text-dim) 15%, transparent); padding:1px 5px; border-radius:3px; font-size:12px; }
     .config-md pre { background:var(--bg); padding:12px; border-radius:6px; overflow-x:auto; margin:8px 0; }
     .config-md pre code { background:none; padding:0; }
     .config-md hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
@@ -254,16 +250,136 @@ function indexPage(projects) {
 <body>
   <div class="page-header">
     <h1>Projects</h1>
-    <button class="config-open-btn" id="config-open">Global Config</button>
+    ${isAdmin ? '<div style="display:flex;gap:8px"><button class="config-open-btn" id="invite-open">Invite</button><button class="config-open-btn" id="config-open">Global Config</button></div>' : ""}
   </div>
   <div class="projects-list">
     ${activeRows}
   </div>
+  <div class="config-overlay" id="invite-overlay">
+    <div class="config-modal" id="invite-modal"></div>
+  </div>
   <div class="config-overlay" id="config-overlay">
     <div class="config-modal" id="config-modal"></div>
   </div>
+  ${
+    isAdmin
+      ? "<script>var __projectDirs=" +
+        JSON.stringify(
+          activeProjects.map(function (p) {
+            return p.dir;
+          }),
+        ) +
+        ";var __tunnelUrl=" +
+        JSON.stringify(tunnelUrl || null) +
+        ";</script>"
+      : ""
+  }
   <script>
   (function() {
+    if (!document.getElementById("invite-open")) return;
+    var overlay = document.getElementById("invite-overlay");
+    var modal = document.getElementById("invite-modal");
+    var invites = null;
+
+    function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+    function renderInvites() {
+      var formHtml =
+        '<div class="config-header"><h3>Teammates uitnodigen</h3>' +
+        '<button class="config-btn config-btn-close" id="inv-close">&times;</button></div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div><label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);display:block;margin-bottom:6px">Naam</label>' +
+        '<input id="inv-name" style="width:100%;max-width:240px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;font-family:inherit;outline:none;transition:border-color 0.15s;color-scheme:dark" placeholder="Jan"></div>' +
+        '<div><label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);display:block;margin-bottom:6px">Projecten</label>' +
+        '<div id="inv-projects" style="display:flex;gap:6px;flex-wrap:wrap">' +
+        (__projectDirs||[]).map(function(d) {
+          return '<label style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;transition:all 0.15s;user-select:none">' +
+            '<input type="checkbox" value="' + esc(d) + '" style="accent-color:var(--accent);margin:0"> ' + esc(d) + '</label>';
+        }).join("") +
+        '</div></div>' +
+        '<div style="padding-top:4px"><button class="config-btn config-btn-save" id="inv-create" style="padding:8px 20px">Invite aanmaken</button></div></div>' +
+        '<div style="height:20px"></div>';
+
+      var listHtml = "";
+      if (invites && invites.length) {
+        listHtml = '<div style="border-top:1px solid var(--border);padding-top:16px">' +
+          '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px">Actieve invites</div>';
+        invites.forEach(function(inv) {
+          var base = __tunnelUrl || location.origin;
+          var url = base + "/invite/" + inv.token;
+          listHtml +=
+            '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;background:var(--bg);border:1px solid var(--border);border-radius:6px">' +
+            '<span style="font-weight:600;font-size:13px;color:var(--text)">' + esc(inv.name) + '</span>' +
+            '<span style="font-size:12px;color:var(--muted)">' + esc(inv.projects.join(", ")) + '</span>' +
+            '<span style="flex:1"></span>' +
+            '<button class="config-btn config-btn-edit inv-copy" data-url="' + esc(url) + '" style="font-size:12px;padding:4px 12px">Kopieer link</button>' +
+            '<button class="config-btn config-btn-close inv-del" data-token="' + esc(inv.token) + '" style="font-size:14px;padding:2px 8px">&times;</button>' +
+            '</div>';
+        });
+        listHtml += '</div>';
+      }
+
+      modal.innerHTML = formHtml + listHtml;
+    }
+
+    function loadInvites() {
+      fetch("/admin/invites").then(function(r){return r.json()}).then(function(data) {
+        invites = data;
+        renderInvites();
+      }).catch(function() { invites = []; renderInvites(); });
+    }
+
+    document.getElementById("invite-open").addEventListener("click", function() {
+      overlay.classList.add("visible");
+      loadInvites();
+    });
+
+    overlay.addEventListener("click", function(e) {
+      if (e.target === overlay) overlay.classList.remove("visible");
+    });
+
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape" && overlay.classList.contains("visible")) overlay.classList.remove("visible");
+    });
+
+    document.addEventListener("click", function(e) {
+      if (e.target.id === "inv-close") overlay.classList.remove("visible");
+
+      if (e.target.id === "inv-create") {
+        var name = document.getElementById("inv-name").value.trim();
+        var checks = document.querySelectorAll("#inv-projects input:checked");
+        var projects = [];
+        checks.forEach(function(c) { projects.push(c.value); });
+        if (!name || !projects.length) return;
+        fetch("/admin/invite", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name:name,projects:projects}) })
+          .then(function(r){return r.json()}).then(function(d) {
+            if (d.ok) {
+              document.getElementById("inv-name").value = "";
+              document.querySelectorAll("#inv-projects input").forEach(function(c){c.checked=false});
+              loadInvites();
+            }
+          });
+      }
+
+      if (e.target.classList.contains("inv-copy")) {
+        var url = e.target.dataset.url;
+        navigator.clipboard.writeText(url).then(function() {
+          e.target.textContent = "Gekopieerd!";
+          setTimeout(function() { e.target.textContent = "Link"; }, 1500);
+        });
+      }
+
+      if (e.target.classList.contains("inv-del")) {
+        var token = e.target.dataset.token;
+        fetch("/admin/invite/" + token, { method:"DELETE" })
+          .then(function(r){return r.json()}).then(function(d) { if(d.ok) loadInvites(); });
+      }
+    });
+  })();
+  </script>
+  <script>
+  (function() {
+    if (!document.getElementById("config-open")) return;
     var cache = null;
     var editing = false;
     var overlay = document.getElementById("config-overlay");

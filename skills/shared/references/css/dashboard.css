@@ -7,12 +7,21 @@
   --text-muted: #8b949e;
   --text-dim: #6e7681;
   --accent: #58a6ff;
+  --accent-subtle: #58a6ff08;
+  --accent-tint: #58a6ff11;
+  --active-bg: rgba(88, 166, 255, 0.12);
   --danger: #f85149;
   --danger-bg: #f8514922;
   --done: #3fb950;
   --warn: #d29922;
+  --orange: #ffa657;
   --purple: #d2a8ff;
   --pink: #f778ba;
+  --todo-color: #9ca3af;
+  --def-color: #a78bfa;
+  --blt-color: #60a5fa;
+  --tst-color: #fb923c;
+  --done-color: #34d399;
 }
 
 * {
@@ -488,33 +497,33 @@ header h1 {
 }
 
 .badge-get {
-  background: #3fb95033;
-  color: #3fb950;
+  background: color-mix(in srgb, var(--done) 20%, transparent);
+  color: var(--done);
 }
 .badge-post {
-  background: #58a6ff33;
-  color: #58a6ff;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
 }
 .badge-put,
 .badge-patch {
-  background: #d2922233;
-  color: #d29922;
+  background: color-mix(in srgb, var(--warn) 20%, transparent);
+  color: var(--warn);
 }
 .badge-delete {
-  background: #f8514933;
-  color: #f85149;
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  color: var(--danger);
 }
 .badge-done {
-  background: #3fb95022;
-  color: #3fb950;
+  background: color-mix(in srgb, var(--done) 13%, transparent);
+  color: var(--done);
 }
 .badge-planned {
-  background: #8b949e22;
-  color: #8b949e;
+  background: color-mix(in srgb, var(--text-muted) 13%, transparent);
+  color: var(--text-muted);
 }
 .badge-building {
-  background: #58a6ff22;
-  color: #58a6ff;
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  color: var(--accent);
 }
 
 .auth-icon {
@@ -648,24 +657,24 @@ header h1 {
 }
 
 .feature-badge[data-status="TODO"] {
-  background: #6b728033;
-  color: #9ca3af;
+  background: color-mix(in srgb, var(--todo-color) 20%, transparent);
+  color: var(--todo-color);
 }
 .feature-badge[data-status="DEF"] {
-  background: #8b5cf633;
-  color: #a78bfa;
+  background: color-mix(in srgb, var(--def-color) 20%, transparent);
+  color: var(--def-color);
 }
 .feature-badge[data-status="BLT"] {
-  background: #3b82f633;
-  color: #60a5fa;
+  background: color-mix(in srgb, var(--blt-color) 20%, transparent);
+  color: var(--blt-color);
 }
 .feature-badge[data-status="TST"] {
-  background: #f9731633;
-  color: #fb923c;
+  background: color-mix(in srgb, var(--tst-color) 20%, transparent);
+  color: var(--tst-color);
 }
 .feature-badge[data-status="DONE"] {
-  background: #10b98133;
-  color: #34d399;
+  background: color-mix(in srgb, var(--done-color) 20%, transparent);
+  color: var(--done-color);
 }
 
 .feature-name {
@@ -808,20 +817,20 @@ header h1 {
 }
 
 .thinking-type-badge[data-type="idea"] {
-  background: #10b98133;
-  color: #34d399;
+  background: color-mix(in srgb, var(--done-color) 20%, transparent);
+  color: var(--done-color);
 }
 .thinking-type-badge[data-type="brainstorm"] {
-  background: #8b5cf633;
-  color: #a78bfa;
+  background: color-mix(in srgb, var(--def-color) 20%, transparent);
+  color: var(--def-color);
 }
 .thinking-type-badge[data-type="critique"] {
-  background: #f9731633;
-  color: #fb923c;
+  background: color-mix(in srgb, var(--tst-color) 20%, transparent);
+  color: var(--tst-color);
 }
 .thinking-type-badge[data-type="decision"] {
-  background: #3b82f633;
-  color: #60a5fa;
+  background: color-mix(in srgb, var(--blt-color) 20%, transparent);
+  color: var(--blt-color);
 }
 
 .thinking-header {
@@ -861,6 +870,20 @@ header h1 {
   color: var(--text-dim);
   margin-top: 6px;
   font-style: italic;
+}
+
+.thinking-entry-compact {
+  padding: 8px 12px;
+  margin-bottom: 6px;
+}
+
+.thinking-entry-compact .thinking-header {
+  margin-bottom: 0;
+}
+
+.thinking-entry-compact .thinking-source {
+  margin-top: 2px;
+  font-size: 10px;
 }
 
 /* Section dividers */
@@ -1157,7 +1180,7 @@ hr.divider {
   display: none;
   position: fixed;
   inset: 0;
-  background: #0d1117;
+  background: var(--bg);
   z-index: 10000;
   flex-direction: column;
 }

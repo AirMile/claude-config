@@ -1,0 +1,231 @@
+/* Theme picker + custom editor styles */
+
+.theme-picker {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 9999;
+}
+
+.theme-picker-toggle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.theme-picker-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.theme-picker-dropdown {
+  display: none;
+  position: absolute;
+  top: 38px;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.theme-picker-dropdown.open {
+  display: block;
+}
+
+.theme-picker-section {
+  margin-bottom: 10px;
+}
+
+.theme-picker-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.theme-picker-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.theme-picker-modes,
+.theme-picker-profiles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.theme-mode-btn,
+.theme-profile-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.1s;
+}
+
+.theme-mode-btn:hover,
+.theme-profile-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.theme-mode-btn.active,
+.theme-profile-btn.active {
+  background: var(--accent-tint, rgba(88, 166, 255, 0.07));
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.theme-edit-btn {
+  width: 100%;
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.15s;
+}
+
+.theme-edit-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Custom editor modal */
+
+.theme-editor-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-editor-overlay.active {
+  display: flex;
+}
+
+.theme-editor-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  width: 360px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.theme-editor-modal h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.theme-editor-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.theme-editor-field label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.theme-editor-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-editor-input-row input[type="color"] {
+  width: 32px;
+  height: 28px;
+  padding: 1px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.theme-editor-hex {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-muted);
+}
+
+.theme-editor-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.theme-editor-actions button {
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  font-family: inherit;
+}
+
+.theme-editor-reset {
+  background: none;
+  color: var(--text-dim);
+  margin-right: auto;
+}
+
+.theme-editor-reset:hover {
+  color: var(--text);
+}
+
+.theme-editor-cancel {
+  background: var(--bg);
+  color: var(--text-muted);
+}
+
+.theme-editor-cancel:hover {
+  color: var(--text);
+}
+
+.theme-editor-save {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.theme-editor-save:hover {
+  opacity: 0.9;
+}
