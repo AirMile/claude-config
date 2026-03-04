@@ -31,7 +31,7 @@ Accepts markdown from:
 
 - Decomposed features
 - Dependencies
-- P1/P2/P3/P4 priority (MoSCoW)
+- P1/P2/P3/P4 priority
 - Direct links to `/dev-define {feature}`
 
 ## Workflow
@@ -399,8 +399,8 @@ routing (base)
 
 **Goal:** Prioriteiten toekennen (P1–P3).
 
-1. **Use AskUserQuestion for P1 (MVP) scope:**
-   - header: "P1 (MVP)"
+1. **Use AskUserQuestion for P1 scope:**
+   - header: "P1"
    - question: "Wat is minimaal nodig voor een werkend prototype?"
    - options: (dynamically generated from features)
      - label: "{feature-1}", description: "{description}"
@@ -427,7 +427,7 @@ routing (base)
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 4
    - "Features verplaatsen" → ask which features and target priority, update table, re-ask
-   - "Explain question" → explain P1 (Must) / P2 (Should) / P3 (Could) / P4 (Maybe) criteria, re-ask
+   - "Explain question" → explain P1 / P2 / P3 / P4 criteria, re-ask
    - "Other" → parse user's freeform input, apply changes, re-ask
 
    **Loop until user confirms prioritization is correct.**
@@ -437,17 +437,17 @@ routing (base)
 ```
 PRIORITY ASSIGNED
 
-P1 (Must):
+P1:
 - {feature}: {reason}
 - {feature}: {reason}
 
-P2 (Should):
+P2:
 - {feature}: {reason}
 
-P3 (Could):
+P3:
 - {feature}: {reason}
 
-P4 (Maybe):
+P4:
 - {feature}: {reason}
 ```
 
@@ -514,7 +514,7 @@ Server: http://localhost:9876/{project-dir}
 
 | Priority | Features |
 |----------|----------|
-| P1 (MVP) | {count} |
+| P1 | {count} |
 | P2       | {count} |
 | P3       | {count} |
 | Total    | {count} |
@@ -537,7 +537,7 @@ Start development:
 - Prefer vertical slices over horizontal layers
 - Base systems first, content last
 
-### P1 (MVP) Scope
+### P1 Scope
 
 - Functional > Feature-complete
 - Core user flow first
@@ -554,7 +554,7 @@ BACKLOG CREATED
 
 File: .project/backlog.html
 
-P1 (MVP):
+P1:
 1. routing (FEATURE)
 2. auth-pages (FEATURE)
 3. api-auth (API)

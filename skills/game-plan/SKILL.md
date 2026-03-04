@@ -298,8 +298,8 @@ player-movement (base)
 
 **Goal:** Prioriteiten toekennen (P1–P3).
 
-1. **Use AskUserQuestion for P1 (MVP) scope:**
-   - header: "P1 (MVP)"
+1. **Use AskUserQuestion for P1 scope:**
+   - header: "P1"
    - question: "Wat is minimaal nodig voor een speelbaar prototype?"
    - options: (dynamically generated from features)
      - label: "{feature-1}", description: "{description}"
@@ -335,7 +335,7 @@ player-movement (base)
 ```
 PRIORITY ASSIGNED
 
-P1 (MVP):
+P1:
 - {feature}: {reason}
 - {feature}: {reason}
 
@@ -408,7 +408,7 @@ Server: http://localhost:9876/{project-dir}
 
 | Priority | Features |
 |----------|----------|
-| P1 (MVP) | {count} |
+| P1 | {count} |
 | P2       | {count} |
 | P3       | {count} |
 | Total    | {count} |
@@ -431,7 +431,7 @@ Start development:
 - Prefer vertical slices over horizontal layers
 - Base systems first, content last
 
-### P1 (MVP) Scope
+### P1 Scope
 
 - Playable > Feature-complete
 - Core loop first
@@ -448,7 +448,7 @@ BACKLOG CREATED
 
 File: .project/backlog.html
 
-P1 (MVP):
+P1:
 1. player-movement (CORE)
 2. basic-combat (MECHANIC)
 3. health-system (MECHANIC)

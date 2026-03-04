@@ -15,10 +15,10 @@ var backlogPatch = `<style>
   .detail-actions button.btn-danger:hover { background:var(--danger) !important; color:#fff !important; border-color:var(--danger) !important; }
   .detail-actions .btn-copy:hover { background:var(--accent) !important; color:#fff !important; border-color:var(--accent) !important; }
   .phase-tag { background:transparent !important; border:1px solid !important; }
-  .phase-p1 { border-color:#58a6ff55 !important; }
-  .phase-p2 { border-color:#d2a8ff55 !important; }
-  .phase-p3 { border-color:#8b949e55 !important; }
-  .phase-p4 { border-color:#ffa65755 !important; }
+  .phase-p1 { color:#d1453b !important; border-color:#d1453b55 !important; }
+  .phase-p2 { color:#eb8909 !important; border-color:#eb890955 !important; }
+  .phase-p3 { color:#246fe0 !important; border-color:#246fe055 !important; }
+  .phase-p4 { color:#8b949e !important; border-color:#8b949e55 !important; }
   .status-tag { font-size:10px; padding:1px 6px; border-radius:10px; font-weight:600; display:inline-flex; align-items:center; gap:4px; background:transparent; letter-spacing:0.3px; }
   .status-tag::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
   .copy-cmd-btn { display:none !important; }
@@ -33,6 +33,12 @@ var backlogPatch = `<style>
   @keyframes activeDot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 </style>
 <script>
+// Override MoSCoW labels: use plain P1/P2/P3/P4
+if (typeof PHASE_LABELS !== "undefined") { PHASE_LABELS.P1 = "P1"; PHASE_LABELS.P2 = "P2"; PHASE_LABELS.P3 = "P3"; PHASE_LABELS.P4 = "P4"; }
+// Override status colors: kanban flow (grey→blue→orange→green)
+document.documentElement.style.setProperty("--def", "#58a6ff");
+document.documentElement.style.setProperty("--blt", "#d29922");
+if (typeof STATUS_COLORS !== "undefined") { STATUS_COLORS.DEF = "#58a6ff"; STATUS_COLORS.BLT = "#d29922"; }
 // Remove "Geen items" empty placeholders
 document.querySelectorAll(".empty").forEach(function(el) { el.remove(); });
 // Migrate: remove TST column from existing backlogs
@@ -48,6 +54,98 @@ if (typeof data !== "undefined" && data.features) {
   });
   if (_migrated && typeof syncJSON !== "undefined") syncJSON();
 }
+// Patch: assignee support for existing backlogs
+(function(){
+  // 1. Inject assignee input field into modal if not present
+  if (!document.getElementById("field-assignee")) {
+    var depInput = document.getElementById("field-dep");
+    if (depInput) {
+      var lbl = document.createElement("label");
+      lbl.setAttribute("for", "field-assignee");
+      lbl.textContent = "Toewijzen aan (optioneel)";
+      lbl.style.cssText = "display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;";
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.id = "field-assignee"; inp.placeholder = "naam teammate";
+      inp.style.cssText = "width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:13px;font-family:inherit;margin-bottom:12px;outline:none;";
+      depInput.parentNode.insertBefore(lbl, depInput.nextSibling);
+      lbl.parentNode.insertBefore(inp, lbl.nextSibling);
+    }
+  }
+  // 2. Patch openAddModal: clear assignee field
+  var origAdd = window.openAddModal;
+  if (origAdd) {
+    window.openAddModal = function(status) {
+      origAdd(status);
+      var f = document.getElementById("field-assignee");
+      if (f) f.value = "";
+    };
+  }
+  // 3. Patch openEditModal: populate assignee field
+  var origEdit = window.openEditModal;
+  if (origEdit) {
+    window.openEditModal = function(name) {
+      origEdit(name);
+      var found = window.findItem(name);
+      var f = document.getElementById("field-assignee");
+      if (f && found) f.value = found.item.assignee || "";
+    };
+  }
+  // 4. Patch save: after the template's handler saves, set assignee on the feature
+  var saveBtn = document.getElementById("modal-save");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", function() {
+      var f = document.getElementById("field-assignee");
+      var nameField = document.getElementById("field-name");
+      if (!f || !nameField) return;
+      var assigneeVal = f.value.trim() || null;
+      var featureName = nameField.value.trim();
+      if (!featureName) return;
+      // Use setTimeout(0) to run after the template's handler has saved
+      setTimeout(function() {
+        var found = window.findItem(featureName);
+        if (found) {
+          found.item.assignee = assigneeVal;
+          if (typeof syncJSON === "function") syncJSON();
+          if (typeof render === "function") render();
+        }
+      }, 0);
+    });
+  }
+  // 5. Patch createCard: show assignee badge on cards
+  var _baseCreateAssignee = window.createCard;
+  if (_baseCreateAssignee) {
+    window.createCard = function(f) {
+      var card = _baseCreateAssignee(f);
+      if (f.assignee && !card.querySelector(".card-assignee")) {
+        var el = document.createElement("div");
+        el.className = "card-assignee";
+        el.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg> ' + (typeof esc !== "undefined" ? esc(f.assignee) : f.assignee);
+        card.appendChild(el);
+      }
+      return card;
+    };
+  }
+  // 6. Patch openDetailModal: show assignee in detail view
+  var _baseDetail = window.openDetailModal;
+  if (_baseDetail) {
+    window.openDetailModal = function(name) {
+      _baseDetail(name);
+      var found = window.findItem(name);
+      if (!found) return;
+      var body = document.getElementById("detail-body");
+      if (body && found.item.assignee && !body.querySelector(".assignee-field")) {
+        var tags = body.querySelector(".detail-tags");
+        var ref = tags ? tags.closest(".detail-field") : null;
+        var html = '<div class="detail-field assignee-field"><div class="detail-label">Toegewezen aan</div><div class="detail-value">' + (typeof esc !== "undefined" ? esc(found.item.assignee) : found.item.assignee) + '</div></div>';
+        if (ref && ref.nextSibling) {
+          ref.insertAdjacentHTML("afterend", html);
+        } else if (body.firstChild) {
+          body.children[0].insertAdjacentHTML("afterend", html);
+        }
+      }
+    };
+  }
+})();
 // Patch dependency: hide when dependency feature is DONE
 (function(){
   var _baseCreate = typeof createCard !== "undefined" ? createCard : null;
@@ -60,6 +158,9 @@ if (typeof data !== "undefined" && data.features) {
       }
       var card = _baseCreate(f);
       f.dependency = origDep;
+      // Swap tag order: phase-tag before badge
+      var tags = card.querySelector(".card-tags");
+      if (tags) { var phase = tags.querySelector(".phase-tag"); if (phase) tags.insertBefore(phase, tags.firstChild); }
       return card;
     };
   }
@@ -80,23 +181,41 @@ if (typeof data !== "undefined" && data.features) {
       // Add clipboard button (visible on hover)
       if (actions && !actions.querySelector(".card-clip")) {
         var verb = NEXT[f.status];
-        if (verb) {
+        var showClip = verb || f.assignee;
+        if (showClip) {
           var clipBtn = document.createElement("button");
           clipBtn.className = "card-clip";
-          clipBtn.title = "/" + prefix + "-" + verb + " " + f.name;
-          clipBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
+          var clipSvg = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
+          var checkSvg = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.5 3.5 7-7"/></svg>';
+          if (f.assignee) {
+            clipBtn.title = "Kopieer task brief voor " + f.assignee;
+          } else {
+            clipBtn.title = "/" + prefix + "-" + verb + " " + f.name;
+          }
+          clipBtn.innerHTML = clipSvg;
           clipBtn.addEventListener("click", function(e) {
             e.stopPropagation();
-            var cmd = "/" + prefix + "-" + verb + " " + f.name;
-            navigator.clipboard.writeText(cmd).then(function() {
+            function showCopied(msg) {
               clipBtn.classList.add("copied");
-              clipBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.5 3.5 7-7"/></svg>';
-              toast("Gekopieerd: " + cmd);
+              clipBtn.innerHTML = checkSvg;
+              toast(msg);
               setTimeout(function() {
                 clipBtn.classList.remove("copied");
-                clipBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
+                clipBtn.innerHTML = clipSvg;
               }, 1500);
-            });
+            }
+            if (f.assignee && typeof generateTaskBrief === "function") {
+              generateTaskBrief(f).then(function(brief) {
+                navigator.clipboard.writeText(brief).then(function() {
+                  showCopied("Task brief gekopieerd voor " + f.assignee);
+                });
+              });
+            } else if (verb) {
+              var cmd = "/" + prefix + "-" + verb + " " + f.name;
+              navigator.clipboard.writeText(cmd).then(function() {
+                showCopied("Gekopieerd: " + cmd);
+              });
+            }
           });
           actions.appendChild(clipBtn);
         }
@@ -147,11 +266,21 @@ if (typeof data !== "undefined" && data.features) {
       var verb = NEXT[found.item.status];
       var cb = document.getElementById("detail-copy");
       if (cb) {
-        if (verb) {
+        var copySvg = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
+        if (found.item.assignee) {
+          cb.innerHTML = copySvg + " Brief";
+          cb.title = "Kopieer task brief voor " + found.item.assignee;
+          cb.dataset.cmd = "";
+          cb.dataset.assignee = found.item.assignee;
+          cb.dataset.feature = found.item.name;
+          cb.style.display = "";
+        } else if (verb) {
           var cmd = "/" + prefix + "-" + verb + " " + found.item.name;
-          cb.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg> Kopieer';
+          cb.innerHTML = copySvg + " Kopieer";
           cb.title = cmd;
           cb.dataset.cmd = cmd;
+          cb.dataset.assignee = "";
+          cb.dataset.feature = "";
           cb.style.display = "";
         } else {
           cb.style.display = "none";
@@ -246,6 +375,99 @@ if (typeof data !== "undefined" && data.features) {
       toast("Backlog bijgewerkt");
     }).catch(function(){});
   };
+})();
+</script>
+<script>
+// Task brief generator: produces markdown brief for teammate assignment
+window.generateTaskBrief = async function(f) {
+  var lines = [];
+  lines.push("## " + f.name);
+  lines.push("**Type:** " + f.type + " | **Prioriteit:** " + (f.phase || "P1") + " | **Status:** " + f.status);
+  lines.push("");
+  if (f.description) { lines.push("### Beschrijving"); lines.push(f.description); lines.push(""); }
+
+  // Fetch feature.json for rich data (DEF+ status)
+  var detail = null;
+  try {
+    var basePath = location.pathname.replace(/\\/backlog\\/?$/, "").replace(/\\/+$/, "");
+    var res = await fetch(basePath + "/feature/" + encodeURIComponent(f.name));
+    if (res.ok) detail = await res.json();
+  } catch(e) {}
+
+  if (detail) {
+    if (detail.summary) { lines.push(detail.summary); lines.push(""); }
+    if (detail.requirements && detail.requirements.length) {
+      lines.push("### Requirements");
+      lines.push("| # | Requirement | Acceptatiecriteria |");
+      lines.push("|---|------------|-------------------|");
+      detail.requirements.forEach(function(r) {
+        lines.push("| " + r.id + " | " + r.description + " | " + (r.acceptance || "-") + " |");
+      });
+      lines.push("");
+    }
+    if (detail.files && detail.files.length) {
+      lines.push("### Bestanden");
+      detail.files.forEach(function(file) {
+        lines.push("- " + file.action + " " + file.path + " — " + (file.purpose || ""));
+      });
+      lines.push("");
+    }
+    if (detail.buildSequence && detail.buildSequence.length) {
+      lines.push("### Build Volgorde");
+      detail.buildSequence.forEach(function(step) {
+        lines.push(step.step + ". " + step.description);
+      });
+      lines.push("");
+    }
+    if (detail.testStrategy && detail.testStrategy.length) {
+      lines.push("### Test Strategie");
+      detail.testStrategy.forEach(function(t) {
+        lines.push("- " + (t.requirementId || t.id || "") + ": " + (t.description || t.approach || ""));
+      });
+      lines.push("");
+    }
+    if (detail.durableDecisions && detail.durableDecisions.length) {
+      lines.push("### Beslissingen");
+      detail.durableDecisions.forEach(function(d) { lines.push("- " + d); });
+      lines.push("");
+    }
+  }
+
+  if (f.dependency) {
+    var depFound = typeof findItem !== "undefined" ? findItem(f.dependency) : null;
+    var depStatus = depFound ? depFound.item.status : "onbekend";
+    lines.push("### Dependencies");
+    lines.push("- Afhankelijk van: **" + f.dependency + "** (status: " + depStatus + ")");
+    lines.push("");
+  }
+
+  return lines.join("\\n");
+};
+</script>
+<script>
+// Patch render: sort cards by priority (P1 first) within each column
+(function(){
+  var PHASE_ORDER = {P1:1, P2:2, P3:3, P4:4};
+  var _origRenderSort = window.render;
+  if (_origRenderSort) {
+    window.render = function() {
+      _origRenderSort();
+      document.querySelectorAll(".cards").forEach(function(container) {
+        var cards = Array.from(container.children);
+        if (cards.length < 2) return;
+        cards.sort(function(a, b) {
+          var pa = 4, pb = 4;
+          var tagA = a.querySelector(".phase-tag");
+          var tagB = b.querySelector(".phase-tag");
+          if (tagA) { for (var k in PHASE_ORDER) { if (tagA.classList.contains("phase-" + k.toLowerCase())) { pa = PHASE_ORDER[k]; break; } } }
+          if (tagB) { for (var k in PHASE_ORDER) { if (tagB.classList.contains("phase-" + k.toLowerCase())) { pb = PHASE_ORDER[k]; break; } } }
+          return pa - pb;
+        });
+        cards.forEach(function(c) { container.appendChild(c); });
+      });
+    };
+  }
+  if (window.render) render();
 })();
 </script>`;
 

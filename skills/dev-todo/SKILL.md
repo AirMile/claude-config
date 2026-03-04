@@ -59,13 +59,13 @@ Twee vragen via AskUserQuestion:
 header: "Priority"
 question: "Welke prioriteit heeft deze feature?"
 options:
-  - label: "P1 · Must (Recommended)"
-    description: "Must-have voor launch"
-  - label: "P2 · Should"
+  - label: "P1 (Recommended)"
+    description: "Hoogste prioriteit"
+  - label: "P2"
     description: "Belangrijk maar niet blokkerend"
-  - label: "P3 · Could"
+  - label: "P3"
     description: "Als er tijd is"
-  - label: "P4 · Maybe"
+  - label: "P4"
     description: "Parkeren voor later"
 multiSelect: false
 ```
@@ -133,6 +133,48 @@ multiSelect: false
 
 6. **Schrijf terug:** Edit `backlog.html` — vervang JSON tussen `<script id="backlog-data" type="application/json">` en `</script>` tags. Houd de `<script>` tags intact.
 
+### FASE 2b: Toewijzing (optioneel)
+
+AskUserQuestion:
+
+```yaml
+header: "Toewijzing"
+question: "Wil je dit item toewijzen?"
+options:
+  - label: "Nee (Recommended)"
+    description: "Geen toewijzing — ik pak dit zelf"
+  - label: "Teammate toewijzen"
+    description: "Wijs toe aan een teammate"
+multiSelect: false
+```
+
+**Nee**: ga door naar FASE 3.
+
+**Teammate toewijzen**:
+
+1. AskUserQuestion: "Naam van de teammate?" (vrije tekst)
+2. Read `.project/backlog.html` → parse JSON
+3. Zoek de zojuist toegevoegde feature → zet `assignee` op de naam
+4. Write backlog terug (zelfde patroon als FASE 2 stap 6)
+5. Toon task brief in terminal output:
+
+```
+TASK BRIEF — {naam}
+Toegewezen aan: {teammate}
+
+## {naam}
+**Type:** {type} | **Prioriteit:** {phase}
+
+### Beschrijving
+{beschrijving}
+
+### Volgende stap
+Deze feature moet eerst gedefinieerd worden.
+Bespreek met {teammate} wat de scope en requirements zijn.
+```
+
+6. Toon bericht: "Kopieer bovenstaande tekst en stuur naar {teammate}."
+
 ### FASE 3: Output
 
 ```
@@ -140,6 +182,7 @@ TODO TOEGEVOEGD
 
   {naam}                {phase} · {type}
   {beschrijving}
+  Toegewezen aan: {teammate}    ← alleen tonen als assignee gezet
 
   Backlog: .project/backlog.html
   Volgende stap: /dev-define {naam}

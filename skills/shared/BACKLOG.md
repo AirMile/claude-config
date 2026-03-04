@@ -29,6 +29,7 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
       "phase": "P1|P2|P3|P4",
       "description": "Beschrijving",
       "dependency": "andere-feature|null",
+      "assignee": "naam|null",
       "date": "2026-01-15|null"
     }
   ],
@@ -93,6 +94,6 @@ Volgende TODO feature:    data.features.find(f => f.status === "TODO")
 Alle DEF features:        data.features.filter(f => f.status === "DEF")
 Alle BLT features:        data.features.filter(f => f.status === "BLT")
 Alle DONE features:       data.features.filter(f => f.status === "DONE")
-P1 (Must) features:       data.features.filter(f => f.phase === "P1")
-P4 (Maybe) features:      data.features.filter(f => f.phase === "P4")
+P1 features:              data.features.filter(f => f.phase === "P1")
+P4 features:              data.features.filter(f => f.phase === "P4")
 ```

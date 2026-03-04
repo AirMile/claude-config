@@ -163,7 +163,7 @@
           <div>
             <label for="field-phase">Prioriteit</label>
             <select id="field-phase">
-              <option value="P1">P1 (MVP)</option>
+              <option value="P1">P1</option>
               <option value="P2">P2</option>
               <option value="P3">P3</option>
               <option value="P4">P4</option>
@@ -173,6 +173,9 @@
 
         <label for="field-dep">Dependency (optioneel)</label>
         <input type="text" id="field-dep" placeholder="feature-naam" />
+
+        <label for="field-assignee">Toewijzen aan (optioneel)</label>
+        <input type="text" id="field-assignee" placeholder="naam teammate" />
 
         <div class="modal-buttons">
           <button class="btn-cancel" onclick="closeModal()">Annuleren</button>
@@ -254,9 +257,10 @@
         DONE: "var(--done)",
       };
       const PHASE_LABELS = {
-        P1: "P1 · Must",
-        P2: "P2 · Should",
-        P3: "P3 · Could",
+        P1: "P1",
+        P2: "P2",
+        P3: "P3",
+        P4: "P4",
         P4: "P4 · Maybe",
       };
       const PHASE_CLASSES = {
@@ -437,6 +441,8 @@
           extra += `<div class="card-source">${esc(f.source)}</div>`;
         if (f.date && f.status === "DONE")
           extra += `<div class="card-date">${esc(f.date)}</div>`;
+        if (f.assignee)
+          extra += `<div class="card-assignee"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg> ${esc(f.assignee)}</div>`;
 
         const prefix =
           data.source && data.source.startsWith("/game") ? "game" : "dev";
@@ -459,8 +465,8 @@
           </div>
           <div class="card-desc">${esc(f.description)}</div>
           <div class="card-tags">
-            <span class="badge ${typeClass}">${esc(f.type)}</span>
             <span class="phase-tag ${phaseClass}">${phaseLabel}</span>
+            <span class="badge ${typeClass}">${esc(f.type)}</span>
           </div>
           ${extra}
         `;
@@ -538,6 +544,7 @@
         document.getElementById("field-type").value = "FEATURE";
         document.getElementById("field-phase").value = "P1";
         document.getElementById("field-dep").value = "";
+        document.getElementById("field-assignee").value = "";
         document.getElementById("field-name").disabled = false;
         document.getElementById("modal-save").textContent = "Toevoegen";
         document.getElementById("modal").classList.add("active");
@@ -558,6 +565,8 @@
         document.getElementById("field-phase").value = found.item.phase || "P1";
         document.getElementById("field-dep").value =
           found.item.dependency || "";
+        document.getElementById("field-assignee").value =
+          found.item.assignee || "";
         document.getElementById("field-name").disabled = false;
         document.getElementById("modal-save").textContent = "Opslaan";
         document.getElementById("modal").classList.add("active");
@@ -576,6 +585,8 @@
         const type = document.getElementById("field-type").value;
         const phase = document.getElementById("field-phase").value;
         const dep = document.getElementById("field-dep").value.trim() || null;
+        const assignee =
+          document.getElementById("field-assignee").value.trim() || null;
 
         if (!name) return;
 
@@ -589,6 +600,7 @@
           found.item.type = type;
           found.item.phase = phase;
           found.item.dependency = dep;
+          found.item.assignee = assignee;
 
           toast(`${name} bijgewerkt`);
         } else {
@@ -600,6 +612,7 @@
             phase,
             description: desc,
             dependency: dep,
+            assignee,
           });
 
           toast(`${name} toegevoegd`);
@@ -861,12 +874,15 @@
           html += `<div class="detail-field"><div class="detail-label">Beschrijving</div><div class="detail-value">${esc(f.description)}</div></div>`;
         }
         html += `<div class="detail-field"><div class="detail-tags">`;
-        html += `<span class="badge badge-${f.type.toLowerCase().replace("_", "-")}">${esc(f.type)}</span>`;
         html += `<span class="phase-tag ${PHASE_CLASSES[f.phase] || "phase-p4"}">${phaseLabel}</span>`;
+        html += `<span class="badge badge-${f.type.toLowerCase().replace("_", "-")}">${esc(f.type)}</span>`;
         html += `<span class="status-tag" style="color:${STATUS_COLORS[f.status]}">${f.status}</span>`;
         html += `</div></div>`;
         if (f.dependency) {
           html += `<div class="detail-field"><div class="detail-label">Dependency</div><div class="detail-value">${esc(f.dependency)}</div></div>`;
+        }
+        if (f.assignee) {
+          html += `<div class="detail-field"><div class="detail-label">Toegewezen aan</div><div class="detail-value">${esc(f.assignee)}</div></div>`;
         }
         if (f.source) {
           html += `<div class="detail-field"><div class="detail-label">Bron</div><div class="detail-value">${esc(f.source)}</div></div>`;
@@ -887,10 +903,21 @@
         };
         const verb = NEXT[f.status];
         const copyBtn = document.getElementById("detail-copy");
-        if (verb) {
+        if (f.assignee) {
+          // Teammate: show brief button
+          copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg> Brief`;
+          copyBtn.title = `Kopieer task brief voor ${f.assignee}`;
+          copyBtn.dataset.cmd = "";
+          copyBtn.dataset.assignee = f.assignee;
+          copyBtn.dataset.feature = f.name;
+          copyBtn.style.display = "";
+        } else if (verb) {
           const cmd = `/${prefix}-${verb} ${f.name}`;
+          copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg> Kopieer`;
           copyBtn.title = cmd;
           copyBtn.dataset.cmd = cmd;
+          copyBtn.dataset.assignee = "";
+          copyBtn.dataset.feature = "";
           copyBtn.style.display = "";
         } else {
           copyBtn.style.display = "none";
@@ -909,11 +936,23 @@
 
       document.getElementById("detail-copy").addEventListener("click", () => {
         const btn = document.getElementById("detail-copy");
-        const cmd = btn.dataset.cmd;
-        if (cmd) {
-          navigator.clipboard.writeText(cmd).then(() => {
-            toast(`Gekopieerd: ${cmd}`);
-          });
+        if (btn.dataset.assignee) {
+          const name = btn.dataset.feature;
+          const found = findItem(name);
+          if (found && typeof generateTaskBrief === "function") {
+            generateTaskBrief(found.item).then((brief) => {
+              navigator.clipboard.writeText(brief).then(() => {
+                toast("Task brief gekopieerd");
+              });
+            });
+          }
+        } else {
+          const cmd = btn.dataset.cmd;
+          if (cmd) {
+            navigator.clipboard.writeText(cmd).then(() => {
+              toast(`Gekopieerd: ${cmd}`);
+            });
+          }
         }
       });
 

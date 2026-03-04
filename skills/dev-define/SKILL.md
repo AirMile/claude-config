@@ -181,6 +181,61 @@ Alleen opnemen als er daadwerkelijk cross-requirement beslissingen zijn. Bij sim
 ]
 ```
 
+### FASE 3b: Toewijzing
+
+AskUserQuestion:
+
+```yaml
+header: "Toewijzing"
+question: "Wie gaat dit bouwen?"
+options:
+  - label: "Zelf bouwen (Recommended)"
+    description: "Ik bouw dit met /dev-build"
+  - label: "Teammate toewijzen"
+    description: "Genereer een task brief"
+multiSelect: false
+```
+
+**Zelf bouwen**: `assignee` blijft `null`. Ga door naar FASE 4.
+
+**Teammate toewijzen**:
+
+1. AskUserQuestion: "Naam van de teammate?" (vrije tekst)
+2. Zet `assignee` in memory (meenemen naar FASE 4 backlog sync)
+3. Genereer task brief in terminal output vanuit feature.json data:
+
+```
+───────────────────────────────────────
+TASK BRIEF — {feature-name}
+Toegewezen aan: {naam}
+───────────────────────────────────────
+
+## {feature-name}
+**Type:** {type} | **Prioriteit:** {phase} | **Status:** DEF
+
+### Beschrijving
+{summary uit feature.json}
+
+### Requirements
+| # | Requirement | Acceptatiecriteria |
+|---|------------|-------------------|
+{elke REQ uit feature.json}
+
+### Bestanden
+{elke file: actie + pad + doel}
+
+### Build Volgorde
+{genummerde stappen uit buildSequence}
+
+### Test Strategie
+{per REQ: testfile + beschrijving}
+
+### Dependencies
+{dependency + status als relevant}
+```
+
+4. Toon bericht: "Kopieer bovenstaande tekst en stuur naar {naam}."
+
 ### FASE 4: Sync
 
 Lees parallel **direct voor het editen** (skip als niet bestaat) — vertrouw NIET op reads uit eerdere fases (Prettier/linters kunnen bestanden tussentijds wijzigen):
@@ -192,7 +247,7 @@ Muteer beide in memory:
 
 **Backlog** (zie `shared/BACKLOG.md`):
 
-- Zoek feature → zet status `"DEF"`, datum `"{date}"`. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`.
+- Zoek feature → zet status `"DEF"`, datum `"{date}"`, `assignee` (als gezet in FASE 3b). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`.
 - Zet `data.updated` naar vandaag.
 
 **Dashboard** (zie `shared/DASHBOARD.md`):
