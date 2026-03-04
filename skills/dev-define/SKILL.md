@@ -1,18 +1,16 @@
 ---
 name: dev-define
-description: Define feature requirements and architecture with structured output. Use with /dev-define to create feature specifications before building.
+description: Feature requirements en architectuur definiëren met gestructureerde output. Gebruik met /dev-define voor feature specificaties voor de build-fase.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.2.0
+  version: 2.3.0
   category: dev
 ---
 
 # Feature Definition
 
 FASE 1 van de dev workflow: define → build → test.
-
-Verzamel requirements, ontwerp architectuur, genereer gestructureerd definitiebestand voor de build-fase.
 
 **Trigger**: `/dev-define` of `/dev-define [feature-name]`
 
@@ -50,40 +48,45 @@ Verzamel requirements, ontwerp architectuur, genereer gestructureerd definitiebe
 
 - **Core function**: wat moet het doen vanuit gebruikersperspectief?
 - **Data/state**: waar komt data vandaan, hoe wordt het opgeslagen/beheerd?
-- **Interacties/output**: wat ziet of doet de gebruiker? (UI events, visuele feedback, CLI output, etc.)
+- **Output/contract**: wat levert het op? (backend: response types, error handling, exported interface. UI: events, visuele feedback. CLI: output format.)
 
 **Vraag 1 (altijd): Core Function** — "Wat moet deze feature doen?" met 2-3 opties.
 
-**Vraag 2-4 (adaptief)**: Dek de must-cover categorieën. Kies subcategorieën passend bij de stack (patterns, visual/output, persistence, API design). Leid opties af uit de baseline en bestaande code.
+**Vraag 2-4 (adaptief)**: Dek de must-cover categorieën. Kies subcategorieën passend bij de stack (patterns, visual/output, persistence, API design). Leid opties af uit de baseline en bestaande code. Combineer gerelateerde vragen in één AskUserQuestion call als ze samen logisch zijn (max 2 per call).
 
 **Vraag 5 (optioneel)**: Alleen bij complexe configuratie of meerdere benaderingen.
 
 **User-delegatie**: als de user antwoordt met "wat denk jij?" of vergelijkbaar, geef een korte aanbeveling met trade-off en ga door met die keuze.
 
+#### Doorvraag-check
+
+Na de initiële vragen, evalueer of er open branches zijn:
+
+- Onbesproken edge cases in de antwoorden
+- Impliciete aannames die niet bevestigd zijn
+- Conflicten tussen antwoorden
+
+**≤3 requirements verwacht**: skip doorvraag, ga naar extraction.
+**>3 requirements verwacht**: stel 1-2 gerichte doorvragen over de belangrijkste open branch. Formuleer als "Wat gebeurt er als...?" of "Hoe gaat dit om met...?"
+
+Max 2 extra vragen, dan door naar extraction.
+
 #### Requirement Extraction
 
 Extraheer testbare requirements als tabel:
 
-| ID  | Requirement | Category | Test Type | Acceptance Criteria |
-| --- | ----------- | -------- | --------- | ------------------- |
+| ID  | Requirement | Category | Acceptance Criteria |
+| --- | ----------- | -------- | ------------------- |
 
 Bevestig met user via AskUserQuestion: "Akkoord (Recommended)" / "Aanpassen" / "Opnieuw beginnen"
 
 ### FASE 1b: Scope Analysis & Feature Splitting
 
-**Cluster identificatie**: groepeer requirements op basis van afhankelijkheden:
+**≤6 requirements**: toon totaal + "SINGLE — ga door". Skip cluster-analyse.
 
-- Requirements met directe dependencies → zelfde cluster
-- Requirements zonder cross-dependencies → aparte clusters
-- Geïsoleerde requirements → eigen cluster of bij dichtstbijzijnde gerelateerd cluster
+**7-10 requirements**: cluster op afhankelijkheden. ≥2 clusters met ≤2 cross-deps → RECOMMEND SPLIT.
 
-**Decision logic:**
-
-- ≤6 requirements, single concern → SINGLE
-- 7-10 requirements → EVALUATE: ≥2 clusters met ≤2 cross-deps → RECOMMEND SPLIT
-- \>10 requirements → RECOMMEND SPLIT (tenzij lineaire keten, single concern)
-
-**Output**: toon scope analyse met totaal requirements, categorieën, en dependency depth.
+**>10 requirements**: RECOMMEND SPLIT (tenzij lineaire keten, single concern).
 
 **Als SINGLE**: toon kort, ga door.
 
@@ -95,7 +98,7 @@ Bevestig met user via AskUserQuestion: "Akkoord (Recommended)" / "Aanpassen" / "
    - Schrijf `.project/features/{feature-name}/00-split.md` met: split decision, sub-feature tabel (requirements + focus), build order
    - Maak sub-feature folders: `mkdir -p .project/features/{feature-name}-{sub}`
    - Re-number requirements per sub-feature (REQ-001, REQ-002, etc.)
-   - Doorloop FASE 2-5 per sub-feature in build order
+   - Doorloop FASE 2-4 per sub-feature in build order
    - Bij backlog: sync elke sub-feature individueel
 
 ### FASE 2: Architecture
@@ -105,12 +108,13 @@ Ontwerp in drie stappen:
 1. **Baseline check**:
    - Doorzoek `stack-baseline.md` op patronen relevant voor deze feature
    - **Pattern gevonden** → gebruik als basis voor design, skip research
-   - **Pattern niet gevonden** → launch research:
+   - **Pattern niet gevonden** → launch research agent:
      ```
-     Task(subagent_type="general-purpose", prompt="
+     Agent(subagent_type="general-purpose", prompt="
      Feature: {feature-name}
      Requirements: {requirement lijst}
-     Research architecture patterns via Context7.
+     Research architecture patterns. Gebruik Context7 voor library/framework
+     patterns, WebSearch voor externe APIs en services.
      Return: recommended patterns, state approach, file structure.
      ")
      ```
@@ -125,7 +129,7 @@ Ontwerp in drie stappen:
    - **Design sketch**: alleen voor visuele features — ASCII wireframe (web/UI) of scene composition (3D/game). Overweeg: responsive breakpoints, loading state, empty state, error state.
      Bij visuele features: bevestig wireframe met user via AskUserQuestion: "Klopt dit visuele ontwerp?" — "Ja (Recommended)" / "Aanpassen"
    - **Dependency analysis**: REQ→REQ relaties
-   - **Build sequence**: genummerde implementatievolgorde
+   - **Build sequence**: genummerde implementatievolgorde. Combineer REQs in dezelfde step als ze dezelfde file raken en geen onderlinge dependencies hebben.
    - **Test strategy**: REQ→testfile→beschrijving tabel
 
 ### FASE 3: Write feature.json
@@ -145,7 +149,18 @@ Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md`
 | `apiContract`               | alleen bij backend                                                           |
 | `buildSequence`             | altijd                                                                       |
 | `testStrategy`              | altijd                                                                       |
+| `durableDecisions`          | bij >3 requirements — beslissingen die over alle REQs gelden                 |
 | `research`                  | alleen als research is gedaan                                                |
+
+**`durableDecisions`** — beslissingen die tijdens de build NIET veranderen:
+
+- Route structuren / URL patronen
+- Database schema shape
+- Key data models en hun relaties
+- Auth/authz aanpak
+- Externe service boundaries
+
+Alleen opnemen als er daadwerkelijk cross-requirement beslissingen zijn. Bij simpele features (≤3 REQs) overslaan.
 
 **`buildSequence`** structuur — dev-build itereert dit direct:
 
@@ -159,24 +174,16 @@ Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md`
   },
   {
     "step": 2,
-    "requirements": ["REQ-002"],
+    "requirements": ["REQ-002", "REQ-003"],
     "description": "...",
     "dependsOn": [1]
-  },
-  {
-    "step": 3,
-    "requirements": ["REQ-003", "REQ-004"],
-    "description": "... (gecombineerd)",
-    "dependsOn": [2]
   }
 ]
 ```
 
-Gecombineerde steps: meerdere REQs in `requirements[]` array, `dependsOn` verwijst naar step nummers.
-
 ### FASE 4: Sync
 
-Lees parallel (skip als niet bestaat):
+Lees parallel **direct voor het editen** (skip als niet bestaat) — vertrouw NIET op reads uit eerdere fases (Prettier/linters kunnen bestanden tussentijds wijzigen):
 
 - `.project/backlog.html`
 - `.project/project.json`
@@ -197,7 +204,7 @@ Muteer beide in memory:
   - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
   - **Features**: check op naam → nieuw: push `{ name, status: "DEF", summary, created }` → bestaand: update status
   - **Architecture**: genereer/update `architecture` sectie als project meerdere componenten/modules heeft:
-    - `diagram`: Mermaid `graph TD` vanuit componentTree — nodes voor modules/services, edges voor dependencies/data flow. Gebruik `[(DB)]` voor databases, `[Service]` voor modules, `{{Gateway}}` voor middleware
+    - `diagram`: Mermaid `graph TD` vanuit componentTree — nodes voor modules/services, edges voor dependencies/data flow
     - `description`: markdown overzicht + componentenlijst met verantwoordelijkheden
     - OVERWRITE (vervangt vorige diagram met bijgewerkte versie)
     - Skip als single-file feature zonder architecturele impact
@@ -205,7 +212,7 @@ Muteer beide in memory:
 Schrijf parallel terug:
 
 - Edit `backlog.html` (keep `<script>` tags intact)
-- Write `project.json`
+- Edit `project.json` (gebruik Edit voor gerichte wijzigingen, niet Write)
 
 Clean up: `rm -f .project/session/active-{feature-name}.json`
 
