@@ -151,7 +151,8 @@ Everything works except validation is missing and no welcome mail
    ```
    build sectie bestaat — per test item, geef ook aan:
    - Al gedekt: {wat bestaande build tests al verifiëren voor dit item}
-   - Aanbevolen delta: {wat EXTRA getest moet worden bovenop build tests}
+   - httpContractTested: true/false (test de build test al het HTTP/functie contract voor dit item? Kijk naar test files: gebruiken ze http.createServer/fetch/supertest of testen ze alleen functie-level?)
+   - delta: {wat EXTRA verificatie nodig is bovenop build tests, of "geen"}
    ```
 
 5b. **Post-Build Strategy Detectie**
@@ -210,31 +211,36 @@ Als er geen logische cross-requirement combinaties zijn → skip, geen output.
    Bij FAIL: waarschuw (post-build regressie mogelijk), ga door met classificatie.
 
    **b) Per checklist item, post-build classificatie:**
-   - Item met `steps[]` die browser-interacties beschrijven (navigeer, klik, vul in) → **AUTO/BROWSER**
-   - Item met `steps[]` die HTTP/curl beschrijven → **AUTO/CLI** met integratie-pattern
-   - Item zonder `steps[]` dat zou matchen met "Existing test suite" pattern:
-     - `hasUI` → **AUTO/BROWSER** (E2E verificatie, niet npm test)
-     - `isPureAPI` → **AUTO/CLI** met integratie-pattern (curl chain)
-   - AUTO/BROWSER items → ongewijzigd
+
+   Gebruik de `httpContractTested` en `delta` velden uit de Explore agent output:
+
+   - Item met `httpContractTested: true` EN `delta: "geen"` → **COVERED** (build tests dekken het al, telt als PASS via baseline)
+   - Item met `httpContractTested: true` EN `delta` bevat iets → **AUTO/CLI** of **AUTO/BROWSER** (alleen de delta testen)
+   - Item met `httpContractTested: false` → bestaande classificatie:
+     - `steps[]` met browser-interacties → **AUTO/BROWSER**
+     - `steps[]` met HTTP/curl → **AUTO/CLI**
+     - `hasUI` → **AUTO/BROWSER**
+     - `isPureAPI` → **AUTO/CLI**
+   - Integratie-scenario's (5c) → altijd **AUTO/CLI** of **AUTO/BROWSER** (nooit COVERED — cross-req is per definitie nieuwe verificatie)
    - MANUAL items → ongewijzigd
    - Niet-test-suite CLI checks (build, typecheck) → ongewijzigd
 
-   > Zie `references/test-classification.md` → "Post-Build Classification Override" voor volledige override tabel.
+   > Zie `references/test-classification.md` → "Post-Build Classification Override" voor volledige override tabel inclusief COVERED.
 
-   **c) Display** met extra "Al Gedekt" en "Delta" kolommen:
+   **c) Display** met Type kolom die COVERED toont:
 
    ```
    TEST CLASSIFICATIE: {feature-name} (POST-BUILD)
 
-   | # | Test                     | Type         | Al Gedekt              | Delta                            |
-   |---|--------------------------|--------------|------------------------|----------------------------------|
-   | 1 | Register with valid data | AUTO/BROWSER | Unit: schema validates | E2E: form → redirect → welkomst  |
-   | 2 | Without email            | AUTO/BROWSER | Unit: schema rejects   | E2E: form → inline error         |
-   | 3 | Welcome mail sent        | MANUAL       | -                      | Mail delivery verificatie        |
-   | I1| Koop → portfolio update  | AUTO/BROWSER | -                      | Cross-req integratie             |
+   | # | Test                     | Type         | Reden                                    |
+   |---|--------------------------|--------------|------------------------------------------|
+   | 1 | Register with valid data | COVERED      | Build test: HTTP 200 + schema validation |
+   | 2 | Without email            | COVERED      | Build test: HTTP 400 + error response    |
+   | 3 | Welcome mail sent        | MANUAL       | Niet door build gedekt                   |
+   | I1| Koop → portfolio update  | AUTO/BROWSER | Cross-req integratie                     |
 
-   AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}
-   BASELINE: npm test pre-check (niet in telling)
+   COVERED: {n} (gedekt door baseline)  AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}
+   BASELINE: npm test pre-check → COVERED items tellen als PASS
    ```
 
    **ELSE (geen postBuildMode):**
@@ -259,6 +265,22 @@ Als er geen logische cross-requirement combinaties zijn → skip, geen output.
 
 7. **User override**
 
+   **IF er COVERED items zijn**, gebruik aangepaste opties:
+
+   Use AskUserQuestion tool:
+   - header: "Test Classificatie"
+   - question: "{n} items gedekt door build tests, {m} integratie-scenario's. Wil je de classificatie aanpassen?"
+   - options:
+     - label: "Classificatie akkoord (Aanbevolen)", description: "COVERED items skippen, alleen integratie + overige AUTO/MANUAL testen"
+     - label: "Toch alles testen", description: "Negeer COVERED, test alle items inclusief al-gedekte"
+     - label: "Items aanpassen", description: "Ik wil items van AUTO naar MANUAL verplaatsen"
+     - label: "Alles handmatig", description: "Sla automatische tests over, test alles handmatig"
+   - multiSelect: false
+
+   **If "Toch alles testen"** → reclassify all COVERED items as AUTO/CLI or AUTO/BROWSER (bestaande logica).
+
+   **ELSE (geen COVERED items)**, gebruik standaard opties:
+
    Use AskUserQuestion tool:
    - header: "Test Classificatie"
    - question: "Wil je de classificatie aanpassen? Je kunt AUTO items naar MANUAL verplaatsen."
@@ -273,7 +295,22 @@ Als er geen logische cross-requirement combinaties zijn → skip, geen output.
 
 8. **Dev server + Cloudflare Tunnel** (uses same setup as `/dev-server`)
 
-   Always start dev server + tunnel — needed for both AUTO and MANUAL items.
+   **Conditioneel starten** — niet altijd nodig:
+
+   ```
+   IF alle non-COVERED items zijn AUTO/CLI (in-process testbaar, geen live server nodig):
+     → Skip dev server + tunnel entirely
+     → Task agent bouwt app in-process (mongodb-memory-server, test DB, etc.)
+     → Display: "Dev server overgeslagen — alle tests in-process uitvoerbaar"
+
+   IF er MANUAL of AUTO/BROWSER items zijn:
+     → Start dev server + tunnel (volledige setup hieronder)
+
+   IF er AUTO/CLI items zijn die een live server vereisen (externe API integratie, geen in-process DB beschikbaar):
+     → Start dev server op localhost (zonder tunnel)
+   ```
+
+   **Wanneer dev server nodig is:**
 
    **a) Check for existing tunnel:**
 
@@ -325,6 +362,12 @@ Als er geen logische cross-requirement combinaties zijn → skip, geen output.
 
 ---
 
+**Tag backlog card als actief** (direct na feature validatie):
+
+Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
+Zoek feature op naam → zet `"inProgress": "test"`, `data.updated` naar nu.
+Schrijf terug via Edit (keep `<script>` tags intact).
+
 **Capture git baseline** (for scoped commit at end of skill):
 
 ```bash
@@ -335,9 +378,11 @@ echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}"}'
 
 ### FASE 1: Automated Testing (Task Agent)
 
-**When:** There are AUTO items after classification and dev server is confirmed running.
+**When:** There are non-COVERED AUTO items after classification. Dev server moet draaien als er AUTO/BROWSER of live-server AUTO/CLI items zijn; voor in-process AUTO/CLI items is geen dev server nodig.
 
-**Launch a Task agent** to execute all AUTO items in a separate context window. This prevents snapshot/screenshot data from consuming the main conversation context.
+**Skip FASE 1 entirely** als alle AUTO items COVERED zijn (alleen MANUAL items over → ga naar FASE 2).
+
+**Launch a Task agent** to execute all non-COVERED AUTO items in a separate context window. This prevents snapshot/screenshot data from consuming the main conversation context. COVERED items worden NIET meegegeven — die tellen al als PASS via baseline.
 
 **Task agent prompt template:**
 
@@ -496,20 +541,34 @@ Use AskUserQuestion tool per item:
 
 ### FASE 2b: Combined Results
 
-Merge automated results (from FASE 1) and manual results (from FASE 2) into one combined summary:
+Merge COVERED, automated (FASE 1), and manual (FASE 2) results into one combined summary.
+
+**Compact format** — wanneer `postBuildMode` + alle items PASS + er zijn COVERED items:
+
+```
+TEST RESULTAAT: {feature-name} (POST-BUILD)
+
+BASELINE: npm test → PASS ({n}/{n})
+COVERED: {n} items (build tests dekken contract)
+INTEGRATIE: {n} scenario's → {n} PASS
+TOTAAL: {n}/{n} PASS
+
+Geen fixes nodig.
+```
+
+**Volledige tabel** — wanneer er FAIL items zijn OF geen COVERED items:
 
 ```
 GECOMBINEERDE RESULTATEN: {feature-name}
 
-| # | Test                  | Type   | Resultaat              |
-|---|-----------------------|--------|------------------------|
-| 1 | Valid registration    | AUTO   | ✓ PASS                |
-| 2 | Without email         | AUTO   | ✗ FAIL: geen error    |
-| 3 | Welcome mail          | MANUAL | ✗ FAIL: geen mail     |
-| 4 | Mobile layout         | AUTO   | ✓ PASS                |
-| 5 | Feels intuitive       | MANUAL | ✓ PASS                |
+| # | Test                  | Type    | Resultaat              |
+|---|-----------------------|---------|------------------------|
+| 1 | Valid registration    | COVERED | ✓ PASS (baseline)     |
+| 2 | Without email         | AUTO    | ✗ FAIL: geen error    |
+| 3 | Welcome mail          | MANUAL  | ✗ FAIL: geen mail     |
+| I1| Cross-req flow        | AUTO    | ✓ PASS                |
 
-AUTO PASS: {n}  AUTO FAIL: {n}
+COVERED: {n}  AUTO PASS: {n}  AUTO FAIL: {n}
 MANUAL PASS: {n}  MANUAL FAIL: {n}  SKIP: {n}
 TOTAAL PASS: {n}  TOTAAL FAIL: {n}
 ```
@@ -839,11 +898,34 @@ Opgenomen in test results.
 
    Muteer alle drie in memory:
 
-   **feature.json**: Update `status` → `"DONE"`, `requirements[].status` → `"PASS"` / `"FAIL"` per REQ, `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item. Voeg/update `tests` sectie: `finalStatus`, `coverage`, `sessions[]`, `fixSync`. Voeg `observations[]` toe (indien aanwezig). NIET andere secties overschrijven.
+   **feature.json** (read-modify-write — behoud alle bestaande secties):
+   - `status` → `"DONE"`
+   - `requirements[].status` → `"PASS"` / `"FAIL"` per REQ
+   - `tests` → merge onderstaande velden IN de bestaande `tests` sectie (niet overschrijven):
+     - `checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item (behoud `id`, `title`, `steps[]`, `expected` etc.)
+     - `finalStatus` → `"PASSED"` (als alles pass) of `"FAILED"`
+     - `coverage` → `{ "statements": N, "branches": N }` (als beschikbaar, anders weglaten)
+     - `sessions[]` → append huidige sessie: `{ "date": "YYYY-MM-DD", "pass": N, "fail": N, "skip": N }`
+     - `fixSync` → array van fix summaries uit FASE 4 (als fixes toegepast, anders weglaten)
+   - `observations[]` → toevoegen (indien aanwezig)
 
-   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "DONE"`, `data.updated` → huidige datum.
+   Voorbeeld resultaat `tests` na update:
 
-   **Dashboard** (zie `shared/DASHBOARD.md`): als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`. Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`. Als data entities gewijzigd: merge naar `data.entities`. Update `features` array: zoek feature op naam, zet status naar `"DONE"`.
+   ```json
+   "tests": {
+     "finalStatus": "PASSED",
+     "checklist": [
+       { "id": 1, "title": "Register with valid data", "status": "PASS", "steps": [...], "expected": "..." },
+       { "id": 2, "title": "Without email", "status": "PASS", "steps": [...], "expected": "..." }
+     ],
+     "sessions": [{ "date": "2026-03-05", "pass": 2, "fail": 0, "skip": 0 }],
+     "fixSync": ["Email validation: added Zod .email() to schema (lib/validations/auth.ts:23)"]
+   }
+   ```
+
+   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "DONE"`, verwijder `inProgress` veld, `data.updated` → huidige datum.
+
+   **Dashboard** (zie `shared/DASHBOARD.md`): als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`. Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`. Als data entities gewijzigd: merge naar `data.entities`. Update `features` array: zoek feature op naam, zet status naar `"DONE"`. **Architecture** (alleen als fixes zijn toegepast in FASE 4 EN `architecture` sectie bestaat in project.json, **volg diagram conventies uit `shared/DASHBOARD.md`**): `architecture.diagram` → verifieer dat feature nodes `:::done` zijn, update file references in node labels als bestanden zijn gewijzigd/toegevoegd, voeg nieuwe nodes toe als componenten zijn toegevoegd. `architecture.files` → merge nieuwe/gewijzigde bestanden uit fix loop (source fixes + nieuwe test files). Skip als geen fixes of geen architecture sectie.
 
    Schrijf parallel terug:
    - Write `feature.json`
@@ -867,9 +949,10 @@ Opgenomen in test results.
 
    ```bash
    git commit -m "$(cat <<'EOF'
-   test({feature}): verified - {N} items pass ({auto} auto, {manual} manual)
+   test({feature}): {N} requirements verified ({auto} auto, {manual} manual)
 
    Hybrid test verification complete.
+   - Covered by build tests: {covered_count} items
    - Automated (browser + CLI): {auto_count} items
    - Manual walkthrough: {manual_count} items
    - Fixed: {list of fixes}
@@ -891,18 +974,30 @@ Opgenomen in test results.
 └── feature.json           # Enriched: tests section, requirements[].status, observations
 ```
 
-## Example Flow (compact)
+## Example Flows (compact)
 
+**UI feature met fixes:**
 ```
 /dev-test user-registration
-→ FASE 0: Classify → 3 AUTO (2 browser, 1 CLI) + 1 MANUAL
+→ FASE 0: Classify → 2 COVERED + 1 AUTO/BROWSER + 1 MANUAL
 → FASE 0: User override → akkoord
-→ FASE 0: Dev server check → tunnel running → https://xxx.trycloudflare.com → 200 OK
-→ FASE 1: Task agent runs 3 AUTO items → 2 PASS, 1 FAIL (no error msg)
+→ FASE 0: Dev server → tunnel running → https://xxx.trycloudflare.com
+→ FASE 1: Task agent runs 1 AUTO/BROWSER item → FAIL (no error msg)
 → FASE 2: Manual walkthrough 1 item (welcome mail) → FAIL (no mail)
-→ FASE 2b: Combined → 2 PASS, 2 FAIL
+→ FASE 2b: Combined → 2 COVERED PASS + 1 FAIL + 1 FAIL
 → FASE 3: Categorize → item 2: TDD, item 4: Impl First
 → FASE 4: Fix loop → both fixed
-→ FASE 5: Re-test → Task agent re-tests item 2 (PASS), manual re-test item 4 (PASS)
+→ FASE 5: Re-test → 1 auto PASS, 1 manual PASS
 → FASE 6: All 4 pass → commit test(user-registration): verified
+```
+
+**Pure API post-build (fast path):**
+```
+/dev-test api-routes
+→ FASE 0: Classify → 6 COVERED + 3 integratie AUTO/CLI
+→ FASE 0: User override → akkoord (COVERED skippen)
+→ FASE 0: Dev server → overgeslagen (in-process testbaar)
+→ FASE 1: Task agent runs 3 integratie items → 3 PASS
+→ FASE 2b: Compact → COVERED 6, INTEGRATIE 3 PASS, TOTAAL 9/9
+→ FASE 6: commit test(api-routes): verified
 ```

@@ -7,7 +7,11 @@ Extracted from SKILL.md for progressive disclosure (Anthropic skill spec).
 
 ## Test Classification
 
-Each test item is classified as **AUTO** or **MANUAL** before testing begins.
+Each test item is classified as **COVERED**, **AUTO**, or **MANUAL** before testing begins.
+
+- **COVERED** — build tests already verify this item's contract (only in post-build mode)
+- **AUTO** — can be tested automatically (two sub-methods: BROWSER or CLI)
+- **MANUAL** — requires human perception or judgment
 
 AUTO items have two sub-methods — the Task agent picks the best one per item:
 
@@ -59,6 +63,26 @@ NOT MANUAL (these are AUTO):
 - Error messages appear → AUTO/BROWSER (trigger error + snapshot)
 - Multi-step flows with deterministic outcomes → AUTO/BROWSER (sequence of actions + snapshots)
 
+### COVERED (post-build only)
+
+Assign COVERED when ALL of the following are true:
+
+- **Post-build mode is active** (feature.json has `build` section)
+- **Baseline passes** (npm test → all green)
+- **Build tests already verify the HTTP/function contract** for this item (`httpContractTested: true` from Explore agent)
+- **No meaningful delta** beyond what build tests cover (`delta: "geen"`)
+
+COVERED items:
+- Are NOT sent to the Task agent for execution
+- Count as PASS automatically (verified by baseline test suite)
+- Are displayed in the classification table with reason "Build test dekken contract"
+
+NOT COVERED (even when build tests exist):
+- Cross-requirement integration scenarios — always AUTO (new verification by definition)
+- Items where build tests only test function-level but the item requires HTTP contract verification
+- Items with external dependencies not covered by build tests (e.g., email delivery, third-party API responses)
+- Items where the Explore agent identifies a meaningful delta
+
 ### Auto Test Patterns Reference
 
 **BROWSER patterns** (MCP browser tools):
@@ -99,13 +123,15 @@ Wanneer `feature.json` een `build` sectie heeft (dev-build is voltooid, tests be
 
 **Override regels:**
 
-| Originele Classificatie        | Post-Build Override       | Conditie                     |
-| ------------------------------ | ------------------------- | ---------------------------- |
-| AUTO/CLI "Existing test suite" | AUTO/BROWSER              | Feature heeft UI             |
-| AUTO/CLI "Existing test suite" | AUTO/CLI "API integratie" | Pure API feature             |
-| AUTO/CLI (specifiek command)   | Ongewijzigd               | Build, typecheck, file state |
-| AUTO/BROWSER                   | Ongewijzigd               | Al E2E verificatie           |
-| MANUAL                         | Ongewijzigd               | Subjectief oordeel           |
+| Originele Classificatie        | Post-Build Override       | Conditie                                          |
+| ------------------------------ | ------------------------- | ------------------------------------------------- |
+| Any (httpContractTested + geen delta) | **COVERED**        | Build tests dekken HTTP contract, geen extra delta |
+| AUTO/CLI "Existing test suite" | AUTO/BROWSER              | Feature heeft UI, delta bestaat                    |
+| AUTO/CLI "Existing test suite" | AUTO/CLI "API integratie" | Pure API feature, delta bestaat                    |
+| AUTO/CLI (specifiek command)   | Ongewijzigd               | Build, typecheck, file state                       |
+| AUTO/BROWSER                   | Ongewijzigd               | Al E2E verificatie                                 |
+| MANUAL                         | Ongewijzigd               | Subjectief oordeel                                 |
+| Integratie-scenario (5c)       | AUTO (nooit COVERED)      | Cross-req is altijd nieuwe verificatie             |
 
 **Post-build specifieke patronen:**
 
