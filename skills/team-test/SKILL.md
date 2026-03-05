@@ -1,151 +1,282 @@
 ---
 name: team-test
-description: Test teammate's code on a feature branch after review with automated tests and functionality validation. Use with /team-test after /team-review.
+description: Verify teammate code delivery. Checks completeness against task brief (feature.json) or backlog TODO, generates tests, maps results to requirements. Use with /team-test after teammate code delivery.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: team
 ---
 
-# Test Other Skill
+# Test — Teammate Verification
 
 ## Overview
 
-Testing skill for feature branches after code review. Analyzes all commits since branch creation, spawns parallel research agents for test strategies via Context7 (with caching), then spawns generation agents to create test scenarios. Splits tests into automated vs manual. Executes automated tests first, then guides user through manual test execution step-by-step.
+Verify teammate code delivery. Detects available context (feature.json with requirements, backlog TODO with description, or just a branch diff), checks completeness where possible, generates and runs tests, and produces structured feedback.
 
-**Trigger**: `/team-test` (typically after `/team-review`)
+**Trigger**: `/team-test` or `/team-test {feature-name}` or `/team-test {feature-name} {feedback}`
 
 ## When to Use
 
-Activate this skill after code review of teammate's code needs testing.
-
-**Primary trigger:**
-
-- `/team-test` command after `/team-review` completed
-- When feature branch code from teammate needs verification
-
-**Context indicators:**
-
-- On feature branch (not main/master/develop)
-- Code review completed
-- Changes ready for testing before merge
+- After teammate delivers code on a feature (with or without `/dev-define`)
+- When teammate pushes code for a backlog TODO item
+- When teammate branch code needs verification before merge
 
 **NOT for:**
 
 - Testing own code (use `/dev-test`)
-- Main/develop branch
-- Code without prior review
+- Unit-level test writing during build (use `/dev-build`)
+
+## Input Formats
+
+```
+# Auto-detect context (recommended)
+/team-test
+
+# Specific feature
+/team-test user-registration
+
+# Inline feedback (skips automation)
+/team-test user-registration
+1:PASS
+2:FAIL no validation error
+3:PASS
+```
 
 ## Workflow
 
-### FASE 0: BRANCH DETECTION & VALIDATION
+### FASE 0: Context Detection
 
-1. Get current branch: `git branch --show-current`
-2. Validate not on main/master/develop - if so, stop with error message
-3. Find parent branch via merge-base: `git merge-base HEAD develop` (fallback to main/master)
-4. Get all commits since branch creation: `git log <merge-base>..HEAD --oneline`
-5. Get full diff: `git diff <merge-base>..HEAD`
-6. Identify languages/frameworks in changed files
+1. **Get branch and project info:**
 
-**Output:**
+   ```bash
+   git branch --show-current
+   ```
 
-```
-📋 BRANCH ANALYSIS
+2. **Find context (in order of richness):**
 
-Branch: feature/xyz
-Commits: X commits since develop
-Files changed: Y files
-Languages: [detected languages/frameworks]
+   a. **feature.json** — if feature name given → `.project/features/{name}/feature.json`. Otherwise → scan `.project/features/*/feature.json` for features with status BLT or TST, or with an assignee.
 
-**Confirm:** Doorgaan met test generatie?
+   b. **Backlog TODO** — if no feature.json found, check `.project/backlog.html` for a TODO/BLT/TST item matching the feature name or branch name. Extract the item's description/title.
 
-options:
-  - label: "Ja, genereer tests (Recommended)", description: "Start research en genereer test scenarios"
-  - label: "Nee, annuleer", description: "Stop het test proces"
-  - label: "Uitleg", description: "Leg uit wat er gaat gebeuren"
-multiSelect: false
-```
+   c. **Nothing** — no feature.json, no backlog match.
+
+3. **Determine mode:**
+
+   | Condition                                          | Mode           | Description                                      |
+   | -------------------------------------------------- | -------------- | ------------------------------------------------ |
+   | feature.json exists with `requirements[]`          | `BRIEF_REVIEW` | Full brief available — completeness check + test |
+   | No feature.json, but backlog TODO with description | `TODO_REVIEW`  | Backlog description as test basis                |
+   | No feature.json, no backlog match                  | `BRANCH_ONLY`  | Git diff only — test what's visible              |
+
+4. **Parse user input:**
+   - Feature name only → proceed to FASE 0.5
+   - Feature name + inline feedback → skip to FASE 4b (direct feedback, no automation)
+   - Feature name + free text → skip to FASE 4b
+
+5. **Output:**
+
+   ```
+   CONTEXT DETECTIE
+
+   Modus:     {BRIEF_REVIEW | TODO_REVIEW | BRANCH_ONLY}
+   Feature:   {name or branch name}
+   Assignee:  {name or "geen"}
+   Branch:    {branch}
+   Context:   {feature.json | backlog TODO | git diff only}
+   Status:    {backlog status: BLT/TST/etc or "onbekend"}
+   ```
+
+   Use AskUserQuestion to confirm:
+   - header: "Test Modus"
+   - question: "Doorgaan met {mode} voor {feature}?"
+   - options:
+     - label: "Ja, doorgaan (Recommended)", description: "{mode description}"
+     - label: "Andere feature", description: "Ik wil een andere feature testen"
+     - label: "Annuleren", description: "Stop"
+   - multiSelect: false
 
 ---
 
-### FASE 1: RESEARCH VIA AGENTS (parallel)
+### FASE 0.5: Completeness Check
 
-**Goal:** Research test strategies via Context7, check cache first.
+**Skip if:** `BRANCH_ONLY` mode (no context available).
+
+Compare the code diff against the available context to verify completeness.
+
+1. **Load context:**
+
+   **`BRIEF_REVIEW`:** Load `.project/features/{feature-name}/feature.json`. Extract: `requirements[]`, `files[]`, `buildSequence[]`, `testStrategy[]`.
+
+   **`TODO_REVIEW`:** Extract backlog item description/title. Parse into informal requirements (each distinct expectation from the description becomes a check item). No files[] or buildSequence[] available.
+
+2. **Get relevant diff:**
+
+   Filter commits by assignee name if known:
+
+   ```bash
+   git log --author="{assignee}" --oneline --since="2 weeks ago" -- .
+   git diff $(git merge-base HEAD main)..HEAD
+   ```
+
+   Fallback if on main or no assignee: diff last N commits relevant to the feature.
+
+3. **Spawn Explore agent** for completeness analysis:
+
+   **For `BRIEF_REVIEW`:**
+
+   ```
+   Analyze the code diff against feature requirements.
+
+   Requirements:
+   {JSON of requirements[] from feature.json}
+
+   Expected files:
+   {JSON of files[] from feature.json}
+
+   Build sequence:
+   {JSON of buildSequence[] from feature.json}
+
+   Git diff:
+   {full diff output}
+
+   For each requirement:
+   - Is it implemented? (search for relevant code in the diff)
+   - Are expected files created/modified?
+   - Does it meet the acceptance criteria?
+
+   Return structured output:
+   COMPLETENESS_START
+   | REQ | Description | Status | Evidence | Missing |
+   |-----|------------|--------|----------|---------|
+   | {id} | {description} | FOUND/MISSING/PARTIAL | {file:line or —} | {what's missing} |
+   COMPLETENESS_END
+
+   MISSING_FILES: {files from expected list not found in diff, comma-separated, or "none"}
+   EXTRA_FILES: {files in diff not in expected list, comma-separated, or "none"}
+   COVERAGE: {N}/{total} requirements found
+   ```
+
+   **For `TODO_REVIEW`:**
+
+   ```
+   Analyze the code diff against the backlog task description.
+
+   Task: {backlog item title}
+   Description: {backlog item description}
+
+   Git diff:
+   {full diff output}
+
+   Parse the description into distinct expectations. For each:
+   - Is it addressed in the code? (search for relevant implementation)
+   - Is the implementation complete or partial?
+
+   Return structured output:
+   COMPLETENESS_START
+   | # | Expectation | Status | Evidence | Missing |
+   |---|------------|--------|----------|---------|
+   | 1 | {parsed expectation} | FOUND/MISSING/PARTIAL | {file:line or —} | {what's missing} |
+   COMPLETENESS_END
+
+   COVERAGE: {N}/{total} expectations found
+   ```
+
+4. **Parse and display results:**
+
+   ```
+   COMPLETENESS CHECK: {feature-name}
+
+   | #       | Beschrijving              | Status    | Bewijs              |
+   |---------|--------------------------|-----------|---------------------|
+   | REQ-001 | User kan inloggen        | ✓ FOUND   | src/auth/login.ts   |
+   | REQ-002 | Validatie op email       | ~ PARTIAL | src/auth/login.ts   |
+   | REQ-003 | Rate limiting            | ✗ MISSING | —                   |
+
+   Dekking: {N}/{total} ({percentage}%)
+   {BRIEF_REVIEW only:} Ontbrekende bestanden: {list or "geen"}
+   {BRIEF_REVIEW only:} Extra bestanden: {list or "geen"}
+   ```
+
+5. **If coverage < 100%:**
+
+   Use AskUserQuestion:
+   - header: "Incomplete"
+   - question: "{N} items niet (volledig) gevonden. Wat wil je doen?"
+   - options:
+     - label: "Toch doorgaan (Recommended)", description: "Test wat er WEL is, rapporteer ontbrekende items"
+     - label: "Terugkoppelen", description: "Genereer feedback voor teammate, stop testing"
+     - label: "Annuleren", description: "Stop"
+   - multiSelect: false
+
+   If "Terugkoppelen" → skip to FASE 7 (generate feedback with completeness results).
+
+---
+
+### FASE 1: Research via Agents (parallel)
+
+**Goal:** Research test strategies. Unchanged from current skill, with additions.
 
 1. Check if project has existing test infrastructure and patterns.
 2. Spawn 3 parallel research agents:
 
-```python
-Task(subagent_type="test-research-unit", prompt="""
-Plan research.
-Check cache for: [frameworks]
-Research unit test strategies via Context7.
-Return findings + what to cache.
-""")
+   ```
+   Agent(subagent_type="test-research-unit", prompt="...")
+   Agent(subagent_type="test-research-integration", prompt="...")
+   Agent(subagent_type="test-research-manual", prompt="...")
+   ```
 
-Task(subagent_type="test-research-integration", prompt="""
-Plan research.
-Check cache for: [frameworks]
-Research integration test strategies via Context7.
-Return findings + what to cache.
-""")
+   **Addition for `BRIEF_REVIEW`:** Include `testStrategy[]` and `requirements[]` from feature.json in agent prompts. This gives agents concrete test targets instead of just raw diff analysis.
 
-Task(subagent_type="test-research-manual", prompt="""
-Plan research.
-Check cache for: [frameworks]
-Research manual test strategies via Context7.
-Return findings + what to cache.
-""")
-```
+   **Addition for `TODO_REVIEW`:** Include backlog description and parsed expectations from FASE 0.5 in agent prompts.
 
-3. Collect results from all agents
+3. Collect results.
 
-**Output:**
+   ```
+   RESEARCH COMPLETE
 
-```
-🔍 RESEARCH COMPLETE
-
-Unit strategies: [summary]
-Integration strategies: [summary]
-Manual strategies: [summary]
-```
+   Unit strategies: {summary}
+   Integration strategies: {summary}
+   Manual strategies: {summary}
+   ```
 
 ---
 
-### FASE 2: SCENARIO GENERATION (parallel)
+### FASE 2: Scenario Generation (parallel)
 
-**Goal:** Generate test scenarios based on diff + research.
+**Goal:** Generate test scenarios based on diff + research + requirements.
 
 Spawn 3 parallel generation agents:
 
-```python
-Task(subagent_type="test-generate-happy-path", prompt="""
-Analyze diff.
-Generate happy path test scenarios.
-Diff: [diff]
-Research: [unit + integration research]
-""")
-
-Task(subagent_type="test-generate-edge-cases", prompt="""
-Analyze diff.
-Generate edge case test scenarios.
-Diff: [diff]
-Research: [unit + integration research]
-""")
-
-Task(subagent_type="test-generate-integration", prompt="""
-Analyze diff.
-Generate integration test scenarios.
-Diff: [diff]
-Research: [integration research]
-""")
+```
+Agent(subagent_type="test-generate-happy-path", prompt="...")
+Agent(subagent_type="test-generate-edge-cases", prompt="...")
+Agent(subagent_type="test-generate-integration", prompt="...")
 ```
 
-**Output:**
+**Addition for `BRIEF_REVIEW`:** Each agent receives requirements[] and completeness results. Agent prompts include:
 
 ```
-🧪 SCENARIOS GENERATED
+Requirements to cover:
+{list of FOUND requirements with acceptance criteria}
+
+Do NOT generate scenarios for MISSING requirements (they are not implemented).
+Map each scenario to a requirement ID (REQ-001, REQ-002, etc).
+```
+
+**Addition for `TODO_REVIEW`:** Each agent receives parsed expectations and completeness results. Agent prompts include:
+
+```
+Expectations to cover:
+{list of FOUND expectations from FASE 0.5}
+
+Map each scenario to an expectation number (#1, #2, etc).
+```
+
+Output:
+
+```
+SCENARIOS GENERATED
 
 Happy path: X scenarios
 Edge cases: Y scenarios
@@ -156,145 +287,431 @@ Total: N test scenarios
 
 ---
 
-### FASE 3: TEST PLAN CREATION
+### FASE 3: Test Plan + Classification
 
-**Goal:** Analyze scenarios and split into automated vs manual.
+**Goal:** Classify scenarios into AUTO/MANUAL, generate test data, set up dev server.
 
-Categorize each scenario:
+> **Classification criteria:** See `../dev-test/references/test-classification.md` for AUTO/BROWSER, AUTO/CLI, and MANUAL criteria with pattern tables.
+
+1. **Generate test data** (via Explore agent — zero source file reads in main context):
+
+   ```
+   Feature: {feature-name}
+   Scenarios from FASE 2: {list of scenarios with requirement mapping}
+
+   Lees de source code en zoek naar:
+   - Form fields, validatie regels, API endpoints relevant voor de test items
+   - Bestaande test files die hergebruikt kunnen worden
+
+   Geef terug als gestructureerd overzicht:
+   FEATURE_CONTEXT_START
+   Bestaande tests: {pad naar test files, of "geen"}
+   Per scenario:
+   - Item {N}: {title}
+     Testdata: {concrete waarden}
+     Verwacht: {expected outcome}
+     Aanbevolen methode: BROWSER | CLI | MANUAL
+     Reden: {waarom deze methode}
+   FEATURE_CONTEXT_END
+   ```
+
+2. **Classify each scenario** using `test-classification.md` criteria:
+
+   ```
+   TEST CLASSIFICATIE: {feature-name}
+
+   | # | Test                     | Type         | Requirement | Reden                              |
+   |---|--------------------------|--------------|-------------|------------------------------------|
+   | 1 | Register with valid data | AUTO/BROWSER | REQ-001     | DOM: redirect + welkomst zichtbaar |
+   | 2 | Without email            | AUTO/BROWSER | REQ-002     | DOM: foutmelding zichtbaar         |
+   | 3 | Welcome mail sent        | MANUAL       | REQ-004     | Email verificatie niet via DOM     |
+
+   AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}
+   ```
+
+3. **User override:**
+
+   Use AskUserQuestion:
+   - header: "Test Plan"
+   - question: "Doorgaan met test uitvoering?"
+   - options:
+     - label: "Ja, voer tests uit (Recommended)", description: "Start automated tests, daarna manual"
+     - label: "Alleen automated", description: "Skip manual tests"
+     - label: "Alles handmatig", description: "Sla automatische tests over"
+     - label: "Annuleren", description: "Stop"
+   - multiSelect: false
+
+4. **Dev server + Cloudflare Tunnel:**
+
+   Always start dev server + tunnel — needed for both AUTO and MANUAL items.
+
+   a) Check for existing tunnel:
+
+   ```bash
+   grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log 2>/dev/null | head -1
+   ```
+
+   If found, verify it's live: `curl -s -o /dev/null -w "%{http_code}" {tunnel_url}`. If HTTP 200 and serves correct project → use it.
+
+   b) No tunnel running — start dev server + tunnel (same process as `/dev-server`):
+
+   ```bash
+   # Detect framework from package.json and start
+   # Wait for server ready
+   for i in $(seq 1 15); do curl -s http://localhost:3000 > /dev/null 2>&1 && break || sleep 1; done
+
+   # Start Cloudflare Tunnel
+   cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflared.log 2>&1 &
+   sleep 8
+   grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | head -1
+   ```
+
+   c) If server or tunnel fails:
+
+   ```
+   ⚠ Dev server + tunnel niet gestart. Alle items worden MANUAL.
+   ```
+
+   Graceful fallback: reclassify ALL items as MANUAL, skip FASE 4.
+
+---
+
+### FASE 4: Automated Test Execution (Task Agent)
+
+**When:** There are AUTO items after classification and dev server is confirmed running.
+
+**Launch a Task agent** to execute all AUTO items in a separate context window. This prevents snapshot/screenshot data from consuming the main conversation context.
+
+**Task agent prompt template:**
 
 ```
-- Scenario: [description]
-- Can be automated: [yes/no]
-- Reason: [why automated or manual]
-- Test type: [unit/feature/integration/manual]
+Test de volgende items automatisch via browser tools en bash commands.
+Dev server: {url}
+Feature: {feature-name}
+
+ITEMS:
+{for each AUTO item:}
+- Item {N}: {title} [Requirement: {REQ-ID}]
+  Stappen: {test steps}
+  Testdata: {test data from FASE 3}
+  Verwacht: {expected outcome}
+  Methode: {BROWSER of CLI}
+  Patroon: {matching test pattern from test-classification.md}
+
+INSTRUCTIES:
+1. Navigeer naar de dev server URL en verifieer dat deze draait
+2. Voor elk item:
+   a. Voer de stappen uit met MCP browser tools of bash commands
+   b. Analyseer het resultaat en bepaal PASS of FAIL met bewijs
+3. Als een browser tool faalt voor een item, markeer als TOOL_ERROR
+
+RESULTAAT FORMAT (strict):
+AUTOMATED_RESULTS_START
+| # | Test | Requirement | Resultaat | Bewijs | Redenering |
+|---|------|-------------|-----------|--------|------------|
+| {N} | {title} | {REQ-ID} | PASS/FAIL/TOOL_ERROR | {wat gezien} | {waarom pass/fail} |
+AUTOMATED_RESULTS_END
+
+FALLBACK_ITEMS: {items met TOOL_ERROR, komma-gescheiden nummers, of "geen"}
 ```
 
-**Criteria for automated:**
+**Parse agent results:**
 
-- Unit logic (functions, methods)
-- API endpoints
-- Database operations
-- Validation rules
-- Existing test infrastructure supports it
+1. If TaskOutput contains `AUTOMATED_RESULTS_START` → parse directly
+2. If truncated → use Grep to find markers in agent output file, Read with offset
+3. TOOL_ERROR items → reclassify as MANUAL for FASE 5
 
-**Criteria for manual:**
-
-- UI/UX flows
-- Visual appearance
-- Browser-specific behavior
-- Complex user interactions
-- No existing test infrastructure
-
-**Output:**
+Display:
 
 ```
-📋 TEST PLAN
+AUTO TEST RESULTATEN: {feature-name}
 
-## Automated Tests (X tests)
-| # | Scenario | Type | File |
-|---|----------|------|------|
-| 1 | [scenario] | unit | [file] |
+| # | Test              | Requirement | Resultaat | Bewijs (kort)              |
+|---|-------------------|-------------|-----------|----------------------------|
+| 1 | Valid registration| REQ-001     | ✓ PASS    | /dashboard + welkomstmelding |
+| 2 | Without email     | REQ-002     | ✗ FAIL    | Geen foutmelding zichtbaar |
 
-## Manual Tests (Y tests)
-| # | Scenario | Steps |
-|---|----------|-------|
-| 1 | [scenario] | [steps] |
+AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}
+```
 
-**Confirm:** Doorgaan met test uitvoering?
+**If agent fails entirely:** Graceful fallback → reclassify all AUTO as MANUAL, proceed to FASE 5.
 
-options:
-  - label: "Ja, voer tests uit (Recommended)", description: "Start automated tests, daarna manual tests"
-  - label: "Alleen automated tests", description: "Skip manual tests"
-  - label: "Nee, annuleer", description: "Stop het test proces"
-  - label: "Uitleg", description: "Leg het test plan uit"
-multiSelect: false
+---
+
+### FASE 4b: Parse Inline Feedback
+
+**When:** User provided inline feedback via `/team-test {name} {feedback}` or free text.
+
+Parse user feedback into structured results (item number, PASS/FAIL, notes). Accept both numbered format and free text. Map to requirements where possible.
+
+After parsing, show summary and proceed to FASE 6 (skip FASE 4 + 5).
+
+---
+
+### FASE 5: Manual Test Execution (interactive)
+
+**When:** There are MANUAL items (originally classified or reclassified from TOOL_ERROR fallback).
+
+Show setup instructions once, then loop through each MANUAL item:
+
+```
+TEST SETUP: {feature-name}
+Open {tunnel_url}
+```
+
+**For each MANUAL item:**
+
+```
+──────────────────────────────────────
+HANDMATIG TEST {n}/{total_manual}: {item title}
+──────────────────────────────────────
+
+STAPPEN:
+1. {concrete action, e.g. "Ga naar /register"}
+2. {concrete action with data, e.g. "Vul in: Email → test@voorbeeld.nl"}
+3. {concrete action, e.g. "Klik op 'Registreren'"}
+
+TESTDATA:
+┌─────────────┬──────────────────────┐
+│ Veld        │ Waarde               │
+├─────────────┼──────────────────────┤
+│ Naam        │ Test User            │
+│ Email       │ test@voorbeeld.nl    │
+└─────────────┴──────────────────────┘
+
+VERWACHT:
+→ {exact expected outcome}
+
+REQUIREMENT: {REQ-ID}: {description}
+```
+
+Use AskUserQuestion per item:
+
+- header: "Test {n}/{total_manual}"
+- question: "Resultaat van '{item title}'?"
+- options:
+  - label: "Pass (Recommended)", description: "Werkt zoals verwacht"
+  - label: "Fail", description: "Werkt niet — ik geef details"
+  - label: "Skip", description: "Kan niet testen, sla over"
+- multiSelect: false
+
+**If Pass** → record PASS, next item.
+**If Fail** → ask for brief details (what happened instead?), record FAIL + notes, next item.
+**If Skip** → record SKIP, next item.
+
+---
+
+### FASE 5b: Combined Results
+
+Merge automated (FASE 4) and manual (FASE 5) results:
+
+```
+GECOMBINEERDE RESULTATEN: {feature-name}
+
+| # | Test                  | Type   | Requirement | Resultaat              |
+|---|-----------------------|--------|-------------|------------------------|
+| 1 | Valid registration    | AUTO   | REQ-001     | ✓ PASS                |
+| 2 | Without email         | AUTO   | REQ-002     | ✗ FAIL: geen error    |
+| 3 | Welcome mail          | MANUAL | REQ-004     | ✗ FAIL: geen mail     |
+
+AUTO PASS: {n}  AUTO FAIL: {n}
+MANUAL PASS: {n}  MANUAL FAIL: {n}  SKIP: {n}
+TOTAAL PASS: {n}  TOTAAL FAIL: {n}
 ```
 
 ---
 
-### FASE 4: AUTOMATED TEST EXECUTION
+### FASE 6: Results Report + Action Choice
 
-**Goal:** Run automated tests first.
-
-1. Detect and run the project's test command:
-   - Check CLAUDE.md for test instructions
-   - Check `package.json` scripts for "test" command
-   - Fallback: `npx vitest run` / `npx jest` / `python -m pytest`
-
-2. Parse results
-
-**Output:**
+**Goal:** Combined report with requirement coverage, then choose: feedback or fix.
 
 ```
-🤖 AUTOMATED TESTS
+TEST RESULTATEN: {feature-name}
 
-Passed: X
-Failed: Y
-Skipped: Z
+REQUIREMENT DEKKING
+| REQ     | Beschrijving         | In Code | Getest | Resultaat |
+|---------|---------------------|---------|--------|-----------|
+| REQ-001 | User kan inloggen   | ✓       | ✓      | PASS      |
+| REQ-002 | Email validatie     | ✓       | ✓      | FAIL      |
+| REQ-003 | Rate limiting       | ✗       | —      | MISSING   |
+| REQ-004 | Welcome mail        | ✓       | ✓      | PASS      |
 
-[If failures:]
-Failed tests:
-- [test name]: [error]
+Totaal: {pass}/{total} PASS | {fail} FAIL | {missing} MISSING
 ```
+
+**If all PASS + no MISSING** → skip action choice, proceed to FASE 7 (feedback = positief bericht).
+
+**If any FAIL or MISSING:**
+
+Use AskUserQuestion:
+
+- header: "Actie"
+- question: "Er zijn {fail} gefaalde en {missing} ontbrekende items. Wat wil je doen?"
+- options:
+  - label: "Terugkoppelen (Recommended)", description: "Genereer feedback voor teammate — zij fixen het zelf"
+  - label: "Zelf fixen", description: "Fix de issues in hun code en stuur als werkend terug"
+  - label: "Beide", description: "Fix wat kan, koppel de rest terug"
+- multiSelect: false
+
+**If "Terugkoppelen"** → proceed to FASE 7 (feedback).
+**If "Zelf fixen"** → proceed to FASE 6c (fix loop for ALL failed items).
+**If "Beide"** → proceed to FASE 6c (fix loop). After fixes, FASE 7 generates feedback for remaining MISSING/unfixed items.
 
 ---
 
-### FASE 5: MANUAL TEST EXECUTION (interactive)
+### FASE 6c: Fix Loop
 
-**Goal:** Guide user through manual tests step-by-step.
+**When:** User chose "Zelf fixen" or "Beide" in FASE 6.
 
-For each manual test:
+For each FAIL item, analyze and fix:
+
+1. **Analyze root cause** — read relevant source files, understand what's wrong
+2. **Apply fix** — edit the code directly
+3. **Verify** — run the relevant test (AUTO items: re-run via Task agent or CLI, MANUAL items: ask user to re-check)
+
+After each fix:
 
 ```
-🧪 TEST {X}/{total}: {Scenario Name}
-
-1. {Step 1 instruction}
-2. {Step 2 instruction}
-3. {Step 3 instruction}
-
-Expected: {expected result}
-
-**Confirm:** Test resultaat?
-
-options:
-  - label: "Geslaagd (Recommended)", description: "Test werkt zoals verwacht"
-  - label: "Gefaald", description: "Er zijn problemen gevonden"
-  - label: "Overslaan", description: "Test nu niet uitvoeren"
-  - label: "Uitleg", description: "Leg de verwachte resultaten uit"
-multiSelect: false
+[FIX] Item {N}: {title} [{REQ-ID}]
+Root cause: {what was wrong, file:line}
+Fix: {what was changed and why}
+Impact: {what this affects}
 ```
 
-**Handle responses:**
+**Re-test after all fixes:**
 
-- **1 (ok):** `✅ {Scenario} - PASSED` → next test
-- **2 (issues):** Ask for description → log issue → next test
-- **3 (skip):** `⊘ {Scenario} - SKIPPED` → next test
+- AUTO items that were fixed → re-run via Task agent (same approach as FASE 4)
+- MANUAL items that were fixed → guided re-test (same approach as FASE 5)
+
+Display re-test results:
+
+```
+RE-TEST RESULTATEN: {feature-name}
+
+| # | Test              | Type   | Requirement | Resultaat |
+|---|-------------------|--------|-------------|-----------|
+| 2 | Without email     | AUTO   | REQ-002     | ✓ PASS   |
+| 3 | Welcome mail      | MANUAL | REQ-004     | ✓ PASS   |
+
+RE-TEST PASS: {n}  RE-TEST FAIL: {n}
+```
+
+**If items still failing after fix attempt:**
+
+Use AskUserQuestion:
+
+- header: "Fix Mislukt"
+- question: "Item {N} werkt nog niet na fix. Wat wil je doen?"
+- options:
+  - label: "Nog een poging (Recommended)", description: "Probeer een andere fix strategie"
+  - label: "Terugkoppelen", description: "Stuur als feedback naar teammate"
+  - label: "Accepteren", description: "Markeer als bekend issue"
+- multiSelect: false
+
+Max 3 fix attempts per item before forcing fallback to feedback.
+
+After fix loop completes → proceed to FASE 7.
 
 ---
 
-### FASE 6: RESULTS REPORT
+### FASE 7: Update + Feedback
 
-**Goal:** Generate combined report.
+#### Step 1: Feature.json + Backlog Update
+
+**Skip if:** `TODO_REVIEW` or `BRANCH_ONLY` mode (no feature.json to update).
+**Only runs in:** `BRIEF_REVIEW` mode.
+
+1. **Update feature.json:**
+   - `requirements[].status` → `"pass"` / `"fail"` / `"missing"` per requirement
+   - Add/update `tests` section with session results
+   - Update feature `status` if appropriate
+
+2. **Update backlog** (if `.project/backlog.html` exists):
+   - All PASS + no MISSING → status to `DONE`
+   - Otherwise → status stays at `TST`
+
+3. **Auto-commit:**
+
+   ```bash
+   git add .project/features/{feature-name}/feature.json .project/backlog.html
+   git commit -m "test({feature}): {pass}/{total} requirements verified"
+   ```
+
+   **IMPORTANT:** Do NOT add Co-Authored-By footer to pipeline commits.
+
+#### Step 2: Teammate Feedback
+
+**Skip if:** `BRANCH_ONLY` mode (no assignee context).
+**Runs in:** `BRIEF_REVIEW` and `TODO_REVIEW` modes.
+
+Generate structured feedback based on test results, completeness check, and any fixes applied.
+
+**If all PASS (or all fixed):**
 
 ```
-📊 TEST RESULTS
+FEEDBACK VOOR {assignee}
 
-## Automated Tests
-Passed: X | Failed: Y | Skipped: Z
+Feature: {feature-name}
+Status: ✓ Alles PASS
 
-## Manual Tests
-Passed: X | Failed: Y | Skipped: Z
+✓ Wat werkt:
+{list of passing requirements/expectations with brief evidence}
 
-## Issues Found
-| # | Test | Type | Issue |
-|---|------|------|-------|
-| 1 | [test] | [auto/manual] | [description] |
+{If fixes were applied:}
+Fixes toegepast:
+{numbered list of fixes with file:line references}
 
-## Summary
-Total tests: N
-Pass rate: X%
-
-Recommendation: [ready for merge / needs fixes]
+Klaar voor merge.
 ```
+
+**If FAIL or MISSING items remain:**
+
+```
+FEEDBACK VOOR {assignee}
+
+Feature: {feature-name}
+Status: {pass}/{total} PASS
+
+✓ Wat werkt:
+{list of passing requirements with brief evidence}
+
+✗ Issues:
+{numbered list of failing/missing items with specific details:}
+1. {REQ-ID} ({description}): {what's wrong or missing}
+   Verwacht: {acceptance criteria}
+   Gevonden: {what was found, or "niet geïmplementeerd"}
+
+{If some items were fixed:}
+✓ Al gefixt:
+{list of fixes applied with file:line references}
+
+Volgende stap: {concrete action items for remaining issues}
+```
+
+Use AskUserQuestion:
+
+- header: "Feedback"
+- question: "Feedback voor {assignee} gegenereerd. Wat wil je ermee doen?"
+- options:
+  - label: "Kopieer naar clipboard (Recommended)", description: "Kopieer feedback markdown voor delen"
+  - label: "Opslaan als bestand", description: "Sla op in .project/features/{feature}/feedback.md"
+  - label: "Overslaan", description: "Geen actie"
+- multiSelect: false
 
 ---
+
+## Mode Comparison
+
+| Aspect              | BRIEF_REVIEW     | TODO_REVIEW            | BRANCH_ONLY     |
+| ------------------- | ---------------- | ---------------------- | --------------- |
+| Context source      | feature.json     | backlog description    | git diff only   |
+| Completeness check  | ✓ (requirements) | ✓ (parsed expects)     | ✗               |
+| Research agents     | ✓                | ✓                      | ✓               |
+| Scenario generation | ✓ (req-mapped)   | ✓ (expectation-mapped) | ✓ (diff-only)   |
+| Classification      | ✓ (AUTO/MANUAL)  | ✓ (AUTO/MANUAL)        | ✓ (AUTO/MANUAL) |
+| Task agent testing  | ✓                | ✓                      | ✓               |
+| Manual walkthrough  | ✓ (guided)       | ✓ (guided)             | ✓ (guided)      |
+| Coverage tracking   | ✓ (requirements) | ✓ (expectations)       | ✗               |
+| Fix or feedback     | ✓ (keuze)        | ✓ (keuze)              | ✓ (keuze)       |
+| Feature.json update | ✓                | ✗                      | ✗               |
+| Teammate feedback   | ✓                | ✓                      | ✗               |
