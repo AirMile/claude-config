@@ -53,15 +53,22 @@ Verify teammate code delivery. Detects available context (feature.json with requ
    git branch --show-current
    ```
 
-2. **Find context (in order of richness):**
+2. **Capture git baseline** (voor scoped commit in FASE 7):
 
-   a. **feature.json** — if feature name given → `.project/features/{name}/feature.json`. Otherwise → scan `.project/features/*/feature.json` for features with status BLT or TST, or with an assignee.
+   ```bash
+   mkdir -p .project/session
+   git status --porcelain | sort > .project/session/pre-skill-status.txt
+   ```
 
-   b. **Backlog TODO** — if no feature.json found, check `.project/backlog.html` for a TODO/BLT/TST item matching the feature name or branch name. Extract the item's description/title.
+3. **Find context (in order of richness):**
+
+   a. **feature.json** — if feature name given → `.project/features/{name}/feature.json`. Otherwise → scan `.project/features/*/feature.json` for features with status BLT, or with an assignee.
+
+   b. **Backlog TODO** — if no feature.json found, check `.project/backlog.html` for a TODO/BLT item matching the feature name or branch name. Extract the item's description/title.
 
    c. **Nothing** — no feature.json, no backlog match.
 
-3. **Determine mode:**
+4. **Determine mode:**
 
    | Condition                                          | Mode           | Description                                      |
    | -------------------------------------------------- | -------------- | ------------------------------------------------ |
@@ -69,12 +76,12 @@ Verify teammate code delivery. Detects available context (feature.json with requ
    | No feature.json, but backlog TODO with description | `TODO_REVIEW`  | Backlog description as test basis                |
    | No feature.json, no backlog match                  | `BRANCH_ONLY`  | Git diff only — test what's visible              |
 
-4. **Parse user input:**
+5. **Parse user input:**
    - Feature name only → proceed to FASE 0.5
    - Feature name + inline feedback → skip to FASE 4b (direct feedback, no automation)
    - Feature name + free text → skip to FASE 4b
 
-5. **Output:**
+6. **Output:**
 
    ```
    CONTEXT DETECTIE
@@ -84,7 +91,7 @@ Verify teammate code delivery. Detects available context (feature.json with requ
    Assignee:  {name or "geen"}
    Branch:    {branch}
    Context:   {feature.json | backlog TODO | git diff only}
-   Status:    {backlog status: BLT/TST/etc or "onbekend"}
+   Status:    {backlog status: BLT/DONE/etc or "onbekend"}
    ```
 
    Use AskUserQuestion to confirm:
@@ -95,6 +102,43 @@ Verify teammate code delivery. Detects available context (feature.json with requ
      - label: "Andere feature", description: "Ik wil een andere feature testen"
      - label: "Annuleren", description: "Stop"
    - multiSelect: false
+
+7. **Signal active feature** (na feature naam bepaald):
+
+   ```bash
+   echo '{"feature":"{feature-name}","skill":"team-test","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+   ```
+
+8. **Load stack & project context** (voor agent prompts):
+
+   **Stack detectie:**
+   - Lees CLAUDE.md `### Stack` sectie
+   - Lees `.claude/research/stack-baseline.md` (als beschikbaar)
+   - Fallback: detecteer uit package.json / go.mod / etc.
+
+   **Project context:** Lees `.project/project.json` (als bestaat). Extract alleen:
+   - `stack` (framework, language, testing, packages)
+   - `context` (structure, routing, patterns)
+   - `endpoints` (method, path, auth)
+   - `data.entities` (names, fields, relations)
+
+   Als project.json of stack-baseline niet bestaat → ga door zonder (backwards compatible).
+
+   **Stel STACK_CONTEXT samen** (wordt meegegeven aan alle agents in deze skill):
+
+   ```
+   STACK CONTEXT:
+   Framework: {stack.framework} ({stack.language})
+   Testing: {stack testing info of stack-baseline testing conventions}
+   Packages: {relevante packages}
+
+   PROJECT CONTEXT:
+   Structure: {context.structure of "niet beschikbaar"}
+   Routing: {context.routing of "niet beschikbaar"}
+   Patterns: {context.patterns of "niet beschikbaar"}
+   Endpoints: {endpoints of "niet beschikbaar"}
+   Entities: {data.entities of "niet beschikbaar"}
+   ```
 
 ---
 
@@ -127,6 +171,8 @@ Compare the code diff against the available context to verify completeness.
 
    ```
    Analyze the code diff against feature requirements.
+
+   {STACK_CONTEXT}
 
    Requirements:
    {JSON of requirements[] from feature.json}
@@ -161,6 +207,8 @@ Compare the code diff against the available context to verify completeness.
 
    ```
    Analyze the code diff against the backlog task description.
+
+   {STACK_CONTEXT}
 
    Task: {backlog item title}
    Description: {backlog item description}
@@ -218,12 +266,12 @@ Compare the code diff against the available context to verify completeness.
 **Goal:** Research test strategies. Unchanged from current skill, with additions.
 
 1. Check if project has existing test infrastructure and patterns.
-2. Spawn 3 parallel research agents:
+2. Spawn 3 parallel research agents. Include `{STACK_CONTEXT}` in all agent prompts:
 
    ```
-   Agent(subagent_type="test-research-unit", prompt="...")
-   Agent(subagent_type="test-research-integration", prompt="...")
-   Agent(subagent_type="test-research-manual", prompt="...")
+   Agent(subagent_type="test-research-unit", prompt="{STACK_CONTEXT}\n...")
+   Agent(subagent_type="test-research-integration", prompt="{STACK_CONTEXT}\n...")
+   Agent(subagent_type="test-research-manual", prompt="{STACK_CONTEXT}\n...")
    ```
 
    **Addition for `BRIEF_REVIEW`:** Include `testStrategy[]` and `requirements[]` from feature.json in agent prompts. This gives agents concrete test targets instead of just raw diff analysis.
@@ -246,12 +294,12 @@ Compare the code diff against the available context to verify completeness.
 
 **Goal:** Generate test scenarios based on diff + research + requirements.
 
-Spawn 3 parallel generation agents:
+Spawn 3 parallel generation agents. Include `{STACK_CONTEXT}` in all agent prompts:
 
 ```
-Agent(subagent_type="test-generate-happy-path", prompt="...")
-Agent(subagent_type="test-generate-edge-cases", prompt="...")
-Agent(subagent_type="test-generate-integration", prompt="...")
+Agent(subagent_type="test-generate-happy-path", prompt="{STACK_CONTEXT}\n...")
+Agent(subagent_type="test-generate-edge-cases", prompt="{STACK_CONTEXT}\n...")
+Agent(subagent_type="test-generate-integration", prompt="{STACK_CONTEXT}\n...")
 ```
 
 **Addition for `BRIEF_REVIEW`:** Each agent receives requirements[] and completeness results. Agent prompts include:
@@ -299,9 +347,12 @@ Total: N test scenarios
    Feature: {feature-name}
    Scenarios from FASE 2: {list of scenarios with requirement mapping}
 
+   {STACK_CONTEXT}
+
    Lees de source code en zoek naar:
    - Form fields, validatie regels, API endpoints relevant voor de test items
    - Bestaande test files die hergebruikt kunnen worden
+   - Test patterns passend bij de stack (bijv. Vitest voor React, PHPUnit voor Laravel)
 
    Geef terug als gestructureerd overzicht:
    FEATURE_CONTEXT_START
@@ -388,6 +439,8 @@ Total: N test scenarios
 Test de volgende items automatisch via browser tools en bash commands.
 Dev server: {url}
 Feature: {feature-name}
+
+{STACK_CONTEXT}
 
 ITEMS:
 {for each AUTO item:}
@@ -616,25 +669,61 @@ After fix loop completes → proceed to FASE 7.
 
 ### FASE 7: Update + Feedback
 
-#### Step 1: Feature.json + Backlog Update
+#### Step 1: Parallel Sync (feature.json + backlog + dashboard)
 
-**Skip if:** `TODO_REVIEW` or `BRANCH_ONLY` mode (no feature.json to update).
-**Only runs in:** `BRIEF_REVIEW` mode.
-
-1. **Update feature.json:**
+1. **Update feature.json** (`BRIEF_REVIEW` mode only, skip als niet bestaat):
    - `requirements[].status` → `"pass"` / `"fail"` / `"missing"` per requirement
    - Add/update `tests` section with session results
    - Update feature `status` if appropriate
+   - NIET andere secties overschrijven
 
-2. **Update backlog** (if `.project/backlog.html` exists):
-   - All PASS + no MISSING → status to `DONE`
-   - Otherwise → status stays at `TST`
+2. **Update backlog** (als `.project/backlog.html` bestaat, `BRIEF_REVIEW` of `TODO_REVIEW` mode):
+   (zie `shared/BACKLOG.md` voor parse/write patroon)
+   - Zoek feature in `data.features[]` op naam
+   - All PASS + no MISSING → `.status = "DONE"`
+   - Otherwise → `.status` blijft `"BLT"`
+   - `data.updated` → huidige datum
+   - Edit `backlog.html` (keep `<script>` tags intact)
 
-3. **Auto-commit:**
+3. **Update project.json** (als `.project/project.json` bestaat, `BRIEF_REVIEW` of `TODO_REVIEW` mode):
+   (zie `shared/DASHBOARD.md`)
+   - `features` array: zoek feature op naam, zet status naar `"DONE"` (all pass) of `"BLT"` (fails remaining)
+   - `stack.packages`: merge als packages geïnstalleerd tijdens fix loop
+   - `endpoints`: merge als gewijzigd tijdens fixes
+   - `data.entities`: merge als gewijzigd tijdens fixes
+
+   Schrijf parallel terug:
+   - Write `feature.json` (als gewijzigd)
+   - Edit `backlog.html` (keep `<script>` tags intact)
+   - Write `project.json` (als gewijzigd)
+
+4. **Scoped auto-commit** (only this skill's changes):
+
+   Compare current git status with baseline from FASE 0:
 
    ```bash
-   git add .project/features/{feature-name}/feature.json .project/backlog.html
+   git status --porcelain | sort > /tmp/current-status.txt
+   ```
+
+   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
+   - **NEW** (only in current, not in baseline) → `git add` automatically
+   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
+   - **PRE-EXISTING** (only in baseline) → do NOT stage
+
+   If baseline file doesn't exist, fall back to staging only known skill output files:
+
+   ```bash
+   git add .project/features/{feature-name}/feature.json .project/backlog.html .project/project.json
+   ```
+
+   ```bash
    git commit -m "test({feature}): {pass}/{total} requirements verified"
+   ```
+
+   **Cleanup:**
+
+   ```bash
+   rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt
    ```
 
    **IMPORTANT:** Do NOT add Co-Authored-By footer to pipeline commits.
@@ -693,8 +782,8 @@ Use AskUserQuestion:
 - header: "Feedback"
 - question: "Feedback voor {assignee} gegenereerd. Wat wil je ermee doen?"
 - options:
-  - label: "Kopieer naar clipboard (Recommended)", description: "Kopieer feedback markdown voor delen"
-  - label: "Opslaan als bestand", description: "Sla op in .project/features/{feature}/feedback.md"
+  - label: "Opslaan als bestand (Recommended)", description: "Sla op in .project/features/{feature}/feedback.md"
+  - label: "Toon in chat", description: "Print feedback in conversatie (handmatig kopiëren)"
   - label: "Overslaan", description: "Geen actie"
 - multiSelect: false
 

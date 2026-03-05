@@ -84,7 +84,38 @@ Everything works except validation is missing and no welcome mail
 
 4. **Read checklist** from `feature.json` → `tests.checklist` and use structured test items.
 
-5. **Generate Test Data** (via Explore agent — zero source file reads in main context)
+5. **Load stack & project context** (voor agent prompts):
+
+   **Stack detectie:**
+   - Lees CLAUDE.md `### Stack` sectie
+   - Lees `.claude/research/stack-baseline.md` (als beschikbaar)
+   - Fallback: detecteer uit package.json / go.mod / etc.
+
+   **Project context:** Lees `.project/project.json` (als bestaat). Extract alleen:
+   - `stack` (framework, language, testing, packages)
+   - `context` (structure, routing, patterns)
+   - `endpoints` (method, path, auth)
+   - `data.entities` (names, fields, relations)
+
+   Als project.json of stack-baseline niet bestaat → ga door zonder (backwards compatible).
+
+   **Stel STACK_CONTEXT samen** (wordt meegegeven aan alle agents in deze skill):
+
+   ```
+   STACK CONTEXT:
+   Framework: {stack.framework} ({stack.language})
+   Testing: {stack testing info of stack-baseline testing conventions}
+   Packages: {relevante packages}
+
+   PROJECT CONTEXT:
+   Structure: {context.structure of "niet beschikbaar"}
+   Routing: {context.routing of "niet beschikbaar"}
+   Patterns: {context.patterns of "niet beschikbaar"}
+   Endpoints: {endpoints of "niet beschikbaar"}
+   Entities: {data.entities of "niet beschikbaar"}
+   ```
+
+6. **Generate Test Data** (via Explore agent — zero source file reads in main context)
 
    **Always** use a Task agent (Explore) to gather test data. Never read source files directly in the main conversation.
 
@@ -94,9 +125,12 @@ Everything works except validation is missing and no welcome mail
    Feature: {feature-name}
    Feature file: .project/features/{feature-name}/feature.json (tests.checklist[] + requirements[])
 
+   {STACK_CONTEXT}
+
    Lees de feature.json (checklist + requirements). Zoek vervolgens in de source code naar:
    - Form fields, validatie regels, API endpoints relevant voor de test items
    - Bestaande test files die hergebruikt kunnen worden
+   - Test patterns passend bij de stack (bijv. Vitest voor React, PHPUnit voor Laravel)
 
    Geef terug als gestructureerd overzicht:
    FEATURE_CONTEXT_START
@@ -311,6 +345,8 @@ echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}"}'
 Test de volgende items automatisch via browser tools en bash commands.
 Dev server: {url}
 Feature: {feature-name}
+
+{STACK_CONTEXT}
 
 ITEMS:
 {for each AUTO item:}
@@ -649,7 +685,7 @@ Re-test ONLY fixed items, using the appropriate method per test_type.
 
 Re-run all fixed AUTO items via a **Task agent** (same approach as FASE 1).
 
-Use same Task agent approach as FASE 1. Include per item: title, fix summary, test steps, expected outcome. Use result markers `RETEST_RESULTS_START` / `RETEST_RESULTS_END`. Parse same as FASE 1 (including truncation handling). TOOL_ERROR items move to Phase B (manual re-test).
+Use same Task agent approach as FASE 1 (inclusief `{STACK_CONTEXT}` in prompt). Include per item: title, fix summary, test steps, expected outcome. Use result markers `RETEST_RESULTS_START` / `RETEST_RESULTS_END`. Parse same as FASE 1 (including truncation handling). TOOL_ERROR items move to Phase B (manual re-test).
 
 #### Phase B: Manual Re-test
 

@@ -466,7 +466,7 @@ Alle entries hebben `type`, `date`, `title`, `content`, `source`. Extra velden p
 | `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-page`                 | Bij detectie/nieuwe deps                          |
 | `data`             | `/dev-define`, `/game-define`                                                             | Bij entity definitie                              |
 | `endpoints`        | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build                      |
-| `features`         | `/dev-define`, `/dev-build`, `/dev-test`, `/game-define`, `/game-build`                   | Bij status wijziging (DEF/BLT/DONE)               |
+| `features`         | `/dev-define`, `/dev-build`, `/dev-test`, `/team-test`, `/game-define`, `/game-build`     | Bij status wijziging (DEF/BLT/DONE)               |
 | `concept.thinking` | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)               |
 | `thinking`         | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Bij non-concept thinking (append)                 |
 | `context`          | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`             | Bij build/refactor (structuur, routing, patterns) |
@@ -485,6 +485,7 @@ Alle entries hebben `type`, `date`, `title`, `content`, `source`. Extra velden p
 | `/frontend-theme`  | `design.principles` (design system beslissingen)                                                      | Na completion        |
 | `/game-define`     | `data.entities`, `stack.packages`, `features` (status DEF), `architecture`                            | FASE 6               |
 | `/game-build`      | `features` (status BLT), `context` (structure, patterns), `architecture`                              | FASE 5 completion    |
+| `/team-test`       | `features` (status DONE/BLT), `stack.packages`, `endpoints`, `data.entities` (conditional, na fixes)  | FASE 7 completion    |
 | `/game-refactor`   | `features` (status DONE), `context` (conditional), `architecture` (conditional)                       | FASE 5 completion    |
 
 ## Server

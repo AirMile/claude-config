@@ -16,7 +16,7 @@
       // Add clipboard button (visible on hover)
       if (actions && !actions.querySelector(".card-clip")) {
         var verb = NEXT[f.status];
-        var showClip = verb || f.assignee;
+        var showClip = verb || (f.assignee && f.status !== "DONE");
         if (showClip) {
           var clipBtn = document.createElement("button");
           clipBtn.className = "card-clip";
@@ -24,8 +24,11 @@
             '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
           var checkSvg =
             '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.5 3.5 7-7"/></svg>';
-          if (f.assignee) {
-            clipBtn.title = "Kopieer task brief voor " + f.assignee;
+          if (f.assignee && f.status === "BLT") {
+            clipBtn.title = "/team-test " + f.name;
+          } else if (f.assignee) {
+            clipBtn.title =
+              "/" + prefix + "-" + (verb || "test") + " " + f.name;
           } else {
             clipBtn.title = "/" + prefix + "-" + verb + " " + f.name;
           }
@@ -41,11 +44,10 @@
                 clipBtn.innerHTML = clipSvg;
               }, 1500);
             }
-            if (f.assignee && typeof generateTaskBrief === "function") {
-              generateTaskBrief(f).then(function (brief) {
-                navigator.clipboard.writeText(brief).then(function () {
-                  showCopied("Task brief gekopieerd voor " + f.assignee);
-                });
+            if (f.assignee && f.status === "BLT") {
+              var cmd = "/team-test " + f.name;
+              navigator.clipboard.writeText(cmd).then(function () {
+                showCopied("Gekopieerd: " + cmd);
               });
             } else if (verb) {
               var cmd = "/" + prefix + "-" + verb + " " + f.name;
@@ -102,11 +104,24 @@
     copyBtn.style.display = "none";
     detailActions.insertBefore(copyBtn, detailActions.firstChild);
     copyBtn.addEventListener("click", function () {
-      var cmd = copyBtn.dataset.cmd;
-      if (cmd)
-        navigator.clipboard.writeText(cmd).then(function () {
-          toast("Gekopieerd: " + cmd);
-        });
+      var assignee = copyBtn.dataset.assignee;
+      var feature = copyBtn.dataset.feature;
+      if (assignee && feature && typeof generateTaskBrief === "function") {
+        var found = window.findItem(feature);
+        if (found) {
+          generateTaskBrief(found.item).then(function (brief) {
+            navigator.clipboard.writeText(brief).then(function () {
+              toast("Task brief gekopieerd voor " + assignee);
+            });
+          });
+        }
+      } else {
+        var cmd = copyBtn.dataset.cmd;
+        if (cmd)
+          navigator.clipboard.writeText(cmd).then(function () {
+            toast("Gekopieerd: " + cmd);
+          });
+      }
     });
   }
   // Patch openDetailModal to populate copy button
@@ -121,7 +136,7 @@
       if (cb) {
         var copySvg =
           '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
-        if (found.item.assignee) {
+        if (found.item.assignee && found.item.status !== "DONE") {
           cb.innerHTML = copySvg + " Brief";
           cb.title = "Kopieer task brief voor " + found.item.assignee;
           cb.dataset.cmd = "";
