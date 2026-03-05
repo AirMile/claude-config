@@ -556,9 +556,10 @@ Muteer beide in memory:
 - **Data entities**: voor elke entity check of `data.entities` al entry heeft met die naam → nee: push met fields/relations → ja: merge nieuwe velden
 - **Stack**: als Godot plugins/assets → check `stack.packages` op naam → nee: push `{ name, version, purpose }`
 - **Features**: check op naam → nee: push `{ name, status: "DEF", summary, depends: [], created }` → ja: update status naar `"DEF"`
-- **Architecture**: genereer/update als feature scene tree en/of signals heeft:
-  - `diagram`: Mermaid `graph TD` vanuit scene tree hiërarchie. Signal flow als edges. State machines als subgraph
-  - `description`: markdown scene overzicht + signals + state machines
+- **Architecture**: genereer/update als feature scene tree en/of signals heeft. **Volg diagram conventies uit `shared/DASHBOARD.md`**:
+  - `diagram`: Mermaid `graph TD` met classDef (done/planned/external), subgraphs per domein. Scene tree als nodes, signal flow als edges, state machines als subgraph. Alle features DEF → `:::planned`, bestaande → `:::done`
+  - `description`: functionele beschrijvingen per component (geen filenamen)
+  - `files`: mapping van gebouwde componenten → `{ component, src: [...], test: [...] }`
   - OVERWRITE. Skip als feature te klein (enkele node zonder signals)
 
 Schrijf parallel terug:

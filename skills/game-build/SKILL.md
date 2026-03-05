@@ -695,7 +695,7 @@ Muteer alle drie in memory:
 
 **Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"BLT"`. Als feature niet bestaat: push met `{ name, status: "BLT", summary, created }`.
 
-**Architecture**: update diagram met werkelijke scene tree, signals, autoloads. Voeg nieuwe toe, verwijder verwijderde nodes. Als diagram niet bestaat EN meerdere scenes/signals → genereer Mermaid `graph TD`. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
+**Architecture** (**volg diagram conventies uit `shared/DASHBOARD.md`**): update diagram met werkelijke scene tree, signals, autoloads. Gebouwde feature nodes `:::planned` → `:::done`, voeg file reference toe (`Naam<br/>script.gd`), update `architecture.files` met `{ component, src, test }`. Als diagram niet bestaat EN meerdere scenes/signals → genereer nieuw diagram met classDef + subgraphs. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
 
 Schrijf parallel terug:
 

@@ -258,9 +258,10 @@ Muteer beide in memory:
   - **Endpoints**: check op method+path → nieuw: push met `status: "planned"` → bestaand: skip
   - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
   - **Features**: check op naam → nieuw: push `{ name, status: "DEF", summary, created }` → bestaand: update status
-  - **Architecture**: genereer/update `architecture` sectie als project meerdere componenten/modules heeft:
-    - `diagram`: Mermaid `graph TD` vanuit componentTree — nodes voor modules/services, edges voor dependencies/data flow
-    - `description`: markdown overzicht + componentenlijst met verantwoordelijkheden
+  - **Architecture**: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg diagram conventies uit `shared/DASHBOARD.md`**:
+    - `diagram`: Mermaid `graph TD` met classDef (done/planned/external), subgraphs per domein, functionele node labels met file reference (`Naam<br/>file.js`). Alle features DEF → `:::planned`, bestaande gebouwde → `:::done`
+    - `description`: functionele beschrijvingen per component (geen filenamen)
+    - `files`: mapping van gebouwde componenten → `{ component, src: [...], test: [...] }`
     - OVERWRITE (vervangt vorige diagram met bijgewerkte versie)
     - Skip als single-file feature zonder architecturele impact
 

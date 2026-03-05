@@ -210,13 +210,49 @@ Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar 
 
 ```json
 {
-  "diagram": "graph TD\n  A[Client] --> B[API Gateway]\n  B --> C[Auth Service]\n  B --> D[App Service]\n  D --> E[(Database)]",
-  "description": "## Overzicht\n\nService-georiënteerde architectuur met centrale API gateway.\n\n## Componenten\n\n- **API Gateway** — Routing, rate limiting\n- **Auth Service** — JWT authenticatie"
+  "diagram": "graph TD\n    classDef done fill:#13261c,stroke:#3fb950,stroke-width:1.5px,color:#c9d1d9\n    classDef planned fill:#1b1530,stroke:#8b5cf6,stroke-dasharray:5 5,color:#8b949e\n    classDef external fill:#1c2128,stroke:#30363d,color:#8b949e\n\n    subgraph API[\"API Laag\"]\n        GW[API Gateway<br/>gateway.js]:::done\n        AUTH[Auth Service]:::planned\n    end\n\n    DB[(PostgreSQL)]:::external\n\n    GW --> AUTH\n    GW --> DB",
+  "description": "## API Gateway\n\nRouting en rate limiting voor alle endpoints.\n\n## Auth Service (gepland)\n\nJWT authenticatie en sessie management.",
+  "files": [
+    {
+      "component": "API Gateway",
+      "src": ["src/gateway.js", "src/middleware/rateLimit.js"],
+      "test": ["test/gateway.test.js"]
+    }
+  ]
 }
 ```
 
 `diagram` = Mermaid diagram syntax (wordt visueel gerenderd met Mermaid.js)
-`description` = optionele markdown beschrijving van de architectuur
+`description` = markdown beschrijving per component (functioneel, geen filenamen)
+`files` = optionele mapping van component → source + test bestanden (collapsible in UI)
+
+#### Diagram conventies
+
+Skills die het diagram genereren of updaten MOETEN deze conventies volgen:
+
+**classDef (verplicht als status bekend):**
+
+```
+classDef done fill:#13261c,stroke:#3fb950,stroke-width:1.5px,color:#c9d1d9
+classDef planned fill:#1b1530,stroke:#8b5cf6,stroke-dasharray:5 5,color:#8b949e
+classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
+```
+
+**Status toewijzing:** `:::done` = gebouwd (feature status BLT/DONE), `:::planned` = nog niet gebouwd (TODO/DEF), `:::external` = externe services/databases.
+
+**Subgraphs:** Groepeer gerelateerde nodes in `subgraph Name["Label"] ... end` blokken per domein (bijv. "Data Laag", "Externe Bronnen", "Verwerking").
+
+**Node labels:** Functionele naam + file reference op tweede regel:
+
+- Gebouwde nodes: `GW[API Gateway<br/>gateway.js]:::done`
+- Geplande nodes (geen files): `AUTH[Auth Service]:::planned`
+- Externe: `DB[(PostgreSQL)]:::external`
+
+**Description:** Functionele beschrijvingen per component. Geen filenamen — die staan in `files`.
+
+**Files mapping:** Na build, vul `architecture.files` aan met `{ component, src: [...], test: [...] }` per gebouwd component.
+
+**Toggle support:** De dashboard UI heeft een Alles/Gebouwd toggle die `:::planned` nodes filtert. Dit werkt automatisch als de classDef conventies gevolgd worden.
 
 ### theme
 

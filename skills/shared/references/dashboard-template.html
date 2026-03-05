@@ -644,16 +644,104 @@
         return `
           <div class="section-header">
             <h2>Concept</h2>
-            <button class="edit-btn" onclick="editConcept()">Bewerken</button>
+            <button class="edit-btn icon-btn" onclick="editConcept()" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
           <div class="concept-content">${md(c.content)}</div>
           ${renderConceptThinking()}`;
+      }
+
+      let _diagramRenderId = 0;
+      let _diagramShowAll = localStorage.getItem("diagram-scope") !== "built";
+
+      function filterDiagram(src, showAll) {
+        if (showAll) return src;
+        const lines = src.split("\n");
+        const planned = new Set();
+        for (const l of lines) {
+          const m = l.match(/^\s*(\w+)[\[({].*:::planned/);
+          if (m) planned.add(m[1]);
+        }
+        if (!planned.size) return src;
+        // pass 1: remove planned nodes and their connections
+        const filtered = lines.filter((l) => {
+          if (/^\s*(classDef|graph|flowchart)\s/.test(l)) return true;
+          if (/^\s*subgraph\s/.test(l) || /^\s*end\s*$/.test(l)) return true;
+          for (const id of planned) {
+            if (new RegExp("^\\s*" + id + "[\\[({]").test(l)) return false;
+          }
+          if (/-->|---|\.-|==>/.test(l)) {
+            for (const id of planned) {
+              if (new RegExp("(^|\\s)" + id + "(\\s|$|[\\[(-])").test(l))
+                return false;
+            }
+          }
+          return true;
+        });
+        // pass 2: remove empty subgraphs
+        const result = [];
+        let i = 0;
+        while (i < filtered.length) {
+          if (/^\s*subgraph\s/.test(filtered[i])) {
+            let j = i + 1;
+            while (j < filtered.length && !/^\s*end\s*$/.test(filtered[j])) j++;
+            let hasContent = false;
+            for (let k = i + 1; k < j; k++) {
+              if (filtered[k].trim()) {
+                hasContent = true;
+                break;
+              }
+            }
+            if (hasContent) {
+              for (let k = i; k <= j; k++) result.push(filtered[k]);
+            }
+            i = j + 1;
+          } else {
+            result.push(filtered[i]);
+            i++;
+          }
+        }
+        return result.join("\n");
+      }
+
+      function renderMermaidDiagram(diagramSrc) {
+        const el = document.getElementById("arch-diagram");
+        if (!el || !diagramSrc) return;
+        const filtered = filterDiagram(diagramSrc, _diagramShowAll);
+        el.innerHTML = "";
+        const id = "arch-mermaid-" + ++_diagramRenderId;
+        mermaid
+          .render(id, filtered)
+          .then(({ svg }) => {
+            el.innerHTML = svg;
+            el.style.cursor = "pointer";
+            el.title = "Klik om fullscreen te openen";
+            el.onclick = () => openDiagramLightbox();
+          })
+          .catch((err) => {
+            el.innerHTML = `<div class="architecture-error">Diagram fout: ${esc(err.message || String(err))}</div>`;
+          });
+      }
+
+      function toggleDiagramScope(showAll) {
+        _diagramShowAll = showAll;
+        localStorage.setItem("diagram-scope", showAll ? "all" : "built");
+        document
+          .querySelectorAll(".arch-toggle button")
+          .forEach((b) => b.classList.remove("active"));
+        document
+          .querySelector(
+            `.arch-toggle button[data-scope="${showAll ? "all" : "built"}"]`,
+          )
+          ?.classList.add("active");
+        const a = data.architecture || {};
+        if (a.diagram) renderMermaidDiagram(a.diagram);
       }
 
       function renderArchDiagram() {
         const a = data.architecture || {};
         const hasDiagram = a.diagram && a.diagram.trim();
         const hasDesc = a.description && a.description.trim();
+        const hasFiles = a.files && a.files.length;
 
         if (!hasDiagram && !hasDesc) {
           return `
@@ -661,6 +749,21 @@
             <div class="empty-state"><p>Nog geen architectuur diagram gedefinieerd.</p>
             <p style="color:var(--text-dim)">Wordt gevuld door <code>/dev-define</code> of <code>/dev-build</code></p></div>`;
         }
+
+        const hasPlanned = hasDiagram && /:::planned/.test(a.diagram);
+        const hasExternal = hasDiagram && /:::external/.test(a.diagram);
+
+        const toggleHtml =
+          hasDiagram && hasPlanned
+            ? `<div class="arch-toggle">
+              <button data-scope="all" class="${_diagramShowAll ? "active" : ""}" onclick="toggleDiagramScope(true)">Alles</button>
+              <button data-scope="built" class="${!_diagramShowAll ? "active" : ""}" onclick="toggleDiagramScope(false)">Gebouwd</button>
+            </div>`
+            : "";
+
+        const toolbarHtml = toggleHtml
+          ? `<div class="arch-toolbar">${toggleHtml}</div>`
+          : "";
 
         const diagramHtml = hasDiagram
           ? `<div class="architecture-diagram" id="arch-diagram"></div>`
@@ -670,35 +773,50 @@
           ? `<div class="architecture-description">${md(a.description)}</div>`
           : "";
 
-        setTimeout(() => {
-          const el = document.getElementById("arch-diagram");
-          if (el && hasDiagram) {
-            el.innerHTML = "";
-            mermaid
-              .render("arch-mermaid", a.diagram)
-              .then(({ svg }) => {
-                el.innerHTML = svg;
-                el.style.cursor = "pointer";
-                el.title = "Klik om fullscreen te openen";
-                el.onclick = () => openDiagramLightbox();
-              })
-              .catch((err) => {
-                el.innerHTML = `<div class="architecture-error">Diagram fout: ${esc(err.message || String(err))}</div>`;
-              });
-          }
-        }, 0);
+        if (hasDiagram) {
+          setTimeout(() => renderMermaidDiagram(a.diagram), 0);
+        }
+
+        // Make description h2 headers clickable if matching files entry
+        if (hasFiles && hasDesc) {
+          setTimeout(() => {
+            const descEl = document.querySelector(".architecture-description");
+            if (!descEl) return;
+            const fileMap = {};
+            a.files.forEach((f) => {
+              fileMap[f.component.toLowerCase()] = f.src?.[0];
+            });
+            descEl.querySelectorAll("h2").forEach((h) => {
+              const name = h.textContent.replace(/\s*\(gepland\)/i, "").trim();
+              const file = fileMap[name.toLowerCase()];
+              if (!file) return;
+              h.style.cursor = "pointer";
+              h.title = "Open " + file + " in VS Code";
+              h.classList.add("arch-desc-link");
+              h.onclick = () => {
+                const url =
+                  location.pathname.replace(/\/$/, "") +
+                  "/open/" +
+                  encodeURIComponent(file).replace(/%2F/g, "/");
+                openInVSCode(url, h);
+              };
+            });
+          }, 0);
+        }
 
         return `
           <div class="section-header">
             <h2>Diagram</h2>
-            <button class="edit-btn" onclick="editArchitecture()">Bewerken</button>
+            <button class="edit-btn icon-btn" onclick="editArchitecture()" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
+          ${toolbarHtml}
           ${diagramHtml}
           ${descHtml}`;
       }
 
       function editArchitecture() {
         const a = data.architecture || {};
+        const filesJson = a.files ? JSON.stringify(a.files, null, 2) : "";
         openModal(
           "Architecture bewerken",
           `
@@ -706,6 +824,8 @@
           <textarea id="f-arch-diagram" rows="12" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5">${esc(a.diagram || "graph TD\n  A[Client] --> B[Server]\n  B --> C[(Database)]")}</textarea>
           <label>Beschrijving (Markdown)</label>
           <textarea id="f-arch-desc" rows="6">${esc(a.description || "")}</textarea>
+          <label>Bestanden (JSON)</label>
+          <textarea id="f-arch-files" rows="6" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"component":"Naam","src":["pad"],"test":["pad"]}]'>${esc(filesJson)}</textarea>
         `,
           {
             wide: true,
@@ -715,6 +835,16 @@
                 document.getElementById("f-arch-diagram").value;
               data.architecture.description =
                 document.getElementById("f-arch-desc").value;
+              const fv = document.getElementById("f-arch-files").value.trim();
+              if (fv) {
+                try {
+                  data.architecture.files = JSON.parse(fv);
+                } catch (e) {
+                  /* keep existing */
+                }
+              } else {
+                delete data.architecture.files;
+              }
             },
           },
         );
@@ -1046,7 +1176,7 @@
         return `
           <div class="section-header">
             <h2>Stack</h2>
-            <button class="edit-btn" onclick="showResearch()" style="background:rgba(88,166,255,0.1);color:var(--accent);border-color:rgba(88,166,255,0.2)">Research</button>
+            <button class="edit-btn icon-btn" onclick="showResearch()" style="background:rgba(88,166,255,0.1);color:var(--accent);border-color:rgba(88,166,255,0.2)" title="Research"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
           </div>
           <div class="grid-3">${cards}</div>
           ${
@@ -1233,8 +1363,8 @@
             <div class="section-header">
               <h2>CLAUDE.md</h2>
               <div style="display:flex;gap:8px">
-                <button id="config-save" style="padding:4px 14px;border-radius:6px;border:1px solid var(--accent);background:rgba(88,166,255,0.15);color:var(--accent);cursor:pointer;font-size:13px">Opslaan</button>
-                <button id="config-cancel" style="padding:4px 14px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-size:13px">Annuleren</button>
+                <button id="config-save" class="edit-btn" style="background:rgba(88,166,255,0.1);color:var(--accent);border-color:rgba(88,166,255,0.2)">Opslaan</button>
+                <button id="config-cancel" class="edit-btn">Annuleren</button>
               </div>
             </div>
             <textarea id="config-editor" style="width:100%;min-height:500px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;tab-size:2">${esc(configCache)}</textarea>`;
@@ -1245,14 +1375,14 @@
             <div class="section-header"><h2>CLAUDE.md</h2></div>
             <div style="padding:40px;text-align:center;color:var(--text-dim)">
               <p>Geen .claude/CLAUDE.md gevonden</p>
-              <button id="config-create" style="margin-top:16px;padding:8px 20px;border-radius:6px;border:1px solid var(--accent);background:rgba(88,166,255,0.15);color:var(--accent);cursor:pointer;font-size:13px">Aanmaken</button>
+              <button id="config-create" class="edit-btn" style="margin-top:16px;padding:8px 20px;background:rgba(88,166,255,0.1);color:var(--accent);border-color:rgba(88,166,255,0.2)">Aanmaken</button>
             </div>`;
         }
 
         return `
           <div class="section-header">
             <h2>CLAUDE.md</h2>
-            <button id="config-edit" style="padding:4px 14px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-size:13px">Bewerken</button>
+            <button id="config-edit" class="edit-btn icon-btn" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
           <div class="research-content">${md(configCache)}</div>`;
       }
@@ -1420,11 +1550,11 @@
           darkMode: true,
           background: "#161b22",
           primaryColor: "#58a6ff",
-          primaryTextColor: "#e6edf3",
+          primaryTextColor: "#c9d1d9",
           primaryBorderColor: "#30363d",
-          lineColor: "#8b949e",
-          secondaryColor: "#1c2333",
-          tertiaryColor: "#0d1117",
+          lineColor: "#586069",
+          secondaryColor: "#1c2128",
+          tertiaryColor: "#161b22",
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
         },

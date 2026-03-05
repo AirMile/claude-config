@@ -150,6 +150,14 @@ header h1 {
   border-color: var(--accent);
 }
 
+.icon-btn {
+  padding: 5px 6px;
+  line-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .empty-state {
   text-align: center;
   padding: 48px 24px;
@@ -1288,6 +1296,59 @@ hr.divider {
   padding: 12px;
   background: var(--danger-bg);
   border-radius: 4px;
+}
+
+/* Architecture toggle & legend */
+.arch-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.arch-toggle {
+  display: inline-flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.arch-toggle button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.arch-toggle button:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+.arch-toggle button:hover {
+  color: var(--text-muted);
+}
+
+.arch-toggle button.active {
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+
+/* Architecture clickable description headers */
+.arch-desc-link {
+  transition: color 0.15s;
+}
+
+.arch-desc-link:hover {
+  color: var(--accent) !important;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
 }
 
 /* ─── Styleguide ─────────────────────────────────── */

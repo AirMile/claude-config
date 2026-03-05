@@ -709,7 +709,7 @@ IMPROVEMENTS APPLIED
    - Extracted scripts/scenes → add to structure tree
    - `context.patterns` → merge gewijzigde patterns
    - `context.updated` → huidige datum
-   - `architecture.diagram` → regenereer vanuit huidige scene/signal structuur (OVERWRITE)
+   - `architecture.diagram` → regenereer vanuit huidige scene/signal structuur (OVERWRITE, **volg diagram conventies uit `shared/DASHBOARD.md`**: classDef, subgraphs, file references, `architecture.files` bijwerken)
    - Quality: only project-specific, non-obvious, one line per item
    - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
 
