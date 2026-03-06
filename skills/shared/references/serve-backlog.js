@@ -34,6 +34,7 @@ const {
   findProjects,
   createBacklog,
   createDashboard,
+  touchProject,
 } = require("./lib/projects");
 const { populateFromProject } = require("./lib/populate");
 const {
@@ -587,6 +588,7 @@ http
         parts[1] === "backlog" &&
         parts.length === 2
       ) {
+        touchProject(projectDir);
         const file = path.join(projectPath, BACKLOG_PATH);
         if (!fs.existsSync(file)) {
           try {
@@ -892,6 +894,7 @@ http
 
       // Serve dashboard (main page for project)
       if (req.method === "GET" && parts.length === 1) {
+        touchProject(projectDir);
         try {
           const html = serveDashboard(projectDir, session);
           res.writeHead(200, {

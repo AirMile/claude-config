@@ -406,11 +406,7 @@
           col.className = "column";
           col.dataset.status = status;
 
-          const items = all
-            .filter((f) => f.status === status)
-            .sort((a, b) =>
-              (a.phaseKey || "P4").localeCompare(b.phaseKey || "P4"),
-            );
+          const items = all.filter((f) => f.status === status);
 
           col.innerHTML = `
             <div class="column-header">
@@ -457,13 +453,15 @@
         const phaseClass = PHASE_CLASSES[f.phaseKey] || "phase-p4";
         const phaseLabel = PHASE_LABELS[f.phaseKey] || "P4";
 
-        let extra = "";
+        let depTag = "";
         if (f.dependency) {
           const depFound = findItem(f.dependency);
           const depResolved = depFound && depFound.item.status === "DONE";
           if (!depResolved)
-            extra += `<div class="card-dep"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M4 7V5a4 4 0 118 0v2h1a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1h1zm2 0h4V5a2 2 0 10-4 0v2z"/></svg> ${esc(f.dependency)}</div>`;
+            depTag = `<span class="card-dep"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M4 7V5a4 4 0 118 0v2h1a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1h1zm2 0h4V5a2 2 0 10-4 0v2z"/></svg> ${esc(f.dependency)}</span>`;
         }
+
+        let extra = "";
         if (f.source)
           extra += `<div class="card-source">${esc(f.source)}</div>`;
         if (f.date && f.status === "DONE")
@@ -497,6 +495,7 @@
             <span class="phase-tag ${phaseClass}">${phaseLabel}</span>
             <span class="badge ${typeClass}">${esc(f.type)}</span>
             ${stageTag}
+            ${depTag}
           </div>
           ${extra}
         `;
@@ -515,54 +514,107 @@
       }
 
       // ─── Drag & Drop ───────────────────────────────────────
-      let draggedName = null;
+      let dragEl = null;
+      let dragName = null;
+      let dragOrigStatus = null;
+      let dropSucceeded = false;
 
       function handleDragStart(e) {
-        draggedName = this.dataset.name;
-        this.classList.add("dragging");
+        dragEl = this;
+        dragName = this.dataset.name;
+        const found = findItem(dragName);
+        dragOrigStatus = found ? found.item.status : null;
+        dropSucceeded = false;
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", draggedName);
+        e.dataTransfer.setData("text/plain", dragName);
+        // Delay ghost class so browser captures drag image first
+        setTimeout(() => this.classList.add("ghost"), 0);
       }
 
       function handleDragEnd() {
-        this.classList.remove("dragging");
-        document
-          .querySelectorAll(".cards.drag-over")
-          .forEach((c) => c.classList.remove("drag-over"));
-        draggedName = null;
+        if (!dragEl) return;
+        dragEl.classList.remove("ghost");
+
+        if (dropSucceeded) {
+          // Sync DOM order back to data.features
+          const newOrder = [];
+          document.querySelectorAll(".cards").forEach((container) => {
+            container.querySelectorAll(".card").forEach((card) => {
+              const item = data.features.find(
+                (f) => f.name === card.dataset.name,
+              );
+              if (item) newOrder.push(item);
+            });
+          });
+          data.features.forEach((f) => {
+            if (!newOrder.find((n) => n.name === f.name)) newOrder.push(f);
+          });
+          data.features = newOrder;
+          syncJSON();
+
+          const found = findItem(dragName);
+          const newStatus = found ? found.item.status : null;
+          if (dragOrigStatus !== newStatus) {
+            toast(`${dragName}: ${dragOrigStatus} \u2192 ${newStatus}`);
+          } else {
+            toast(`${dragName} verplaatst`);
+          }
+        }
+
+        // Always re-render to clean state
+        render();
+        dropSucceeded = false;
+        dragEl = null;
+        dragName = null;
+        dragOrigStatus = null;
+      }
+
+      function getClosestCard(container, y) {
+        const cards = [...container.querySelectorAll(".card:not(.ghost)")];
+        let closest = null;
+        let closestOffset = Number.NEGATIVE_INFINITY;
+        for (const card of cards) {
+          const rect = card.getBoundingClientRect();
+          const offset = y - rect.top - rect.height / 2;
+          if (offset < 0 && offset > closestOffset) {
+            closestOffset = offset;
+            closest = card;
+          }
+        }
+        return closest;
       }
 
       function handleDragOver(e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
-        this.classList.add("drag-over");
+        if (!dragEl) return;
+        const closest = getClosestCard(this, e.clientY);
+        if (closest) {
+          this.insertBefore(dragEl, closest);
+        } else {
+          this.appendChild(dragEl);
+        }
       }
 
-      function handleDragLeave() {
-        this.classList.remove("drag-over");
-      }
+      function handleDragLeave() {}
 
       function handleDrop(e) {
         e.preventDefault();
-        this.classList.remove("drag-over");
-        const name = e.dataTransfer.getData("text/plain");
+        dropSucceeded = true;
+        if (!dragEl || !dragName) return;
+
         const newStatus = this.dataset.status;
-
-        if (!name || !newStatus) return;
-
-        const found = findItem(name);
+        const found = findItem(dragName);
         if (!found) return;
-        if (found.item.status === newStatus) return;
 
-        const oldStatus = found.item.status;
-        if (newStatus === "DOING") {
-          updateStatus(name, newStatus, found.item.stage || "defining");
-        } else {
-          updateStatus(name, newStatus);
+        // Update status for cross-column moves
+        if (found.item.status !== newStatus) {
+          if (newStatus === "DOING") {
+            updateStatus(dragName, newStatus, found.item.stage || "defining");
+          } else {
+            updateStatus(dragName, newStatus);
+          }
         }
-        syncJSON();
-        render();
-        toast(`${name}: ${oldStatus} \u2192 ${newStatus}`);
       }
 
       // ─── Modal: Add / Edit ─────────────────────────────────

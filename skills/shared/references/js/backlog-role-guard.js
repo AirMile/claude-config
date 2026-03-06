@@ -65,7 +65,7 @@
     }
   });
 
-  // ── Patch openDetailModal: show/hide claim + brief buttons ──
+  // ── Patch openDetailModal: show/hide claim + brief + stage picker ──
   var origDetail = window.openDetailModal;
   if (origDetail) {
     window.openDetailModal = function (name) {
@@ -87,6 +87,18 @@
         bb.dataset.feature = name;
         bb.style.display = "";
       }
+
+      // Stage picker: show for teammate's own assigned cards
+      var isMyCard = found.item.assignee === window.__userName;
+      var pickers = document.querySelectorAll(".status-picker, .stage-picker");
+      pickers.forEach(function (p) {
+        if (isMyCard) {
+          p.style.display = "";
+          p.style.pointerEvents = "";
+        } else {
+          p.style.display = "none";
+        }
+      });
     };
   }
 

@@ -73,6 +73,17 @@
           actions.appendChild(clipBtn);
         }
       }
+      // Move stage badge + card-dep into shared sub-tags row
+      var stage = card.querySelector(".stage-badge");
+      var dep = card.querySelector(".card-dep");
+      if (stage || dep) {
+        var sub = document.createElement("div");
+        sub.className = "card-sub-tags";
+        if (stage) sub.appendChild(stage);
+        if (dep) sub.appendChild(dep);
+        var tags = card.querySelector(".card-tags");
+        if (tags) tags.after(sub);
+      }
       return card;
     };
   }
@@ -138,7 +149,99 @@
       }
     });
   }
-  // Patch openDetailModal to populate copy button
+  // ── Status/Stage picker helpers ──
+  var STAGES = ["defining", "defined", "building", "built", "testing"];
+  var ALL_STATUSES =
+    typeof STATUSES !== "undefined" ? STATUSES : ["TODO", "DOING", "DONE"];
+
+  function buildStatusPicker(f, name) {
+    var html =
+      '<div class="detail-field"><div class="detail-label">Status</div><div class="status-picker">';
+    ALL_STATUSES.forEach(function (s) {
+      var cls = s === f.status ? " active" : "";
+      var color =
+        (typeof STATUS_COLORS !== "undefined" && STATUS_COLORS[s]) ||
+        "var(--text-muted)";
+      html +=
+        '<span class="status-opt' +
+        cls +
+        '" data-status="' +
+        s +
+        '" style="color:' +
+        color +
+        ";border:1px solid " +
+        color +
+        '">' +
+        s +
+        "</span>";
+    });
+    html += "</div></div>";
+    return html;
+  }
+
+  function buildStagePicker(f) {
+    if (f.status !== "DOING") return "";
+    var html =
+      '<div class="detail-field"><div class="detail-label">Stage</div><div class="stage-picker">';
+    STAGES.forEach(function (s) {
+      var cls = s === f.stage ? " active" : "";
+      html +=
+        '<span class="stage-badge stage-' +
+        s +
+        cls +
+        '" data-stage="' +
+        s +
+        '">' +
+        s +
+        "</span>";
+    });
+    html += "</div></div>";
+    return html;
+  }
+
+  function bindPickers(name) {
+    document
+      .querySelectorAll(".status-picker .status-opt")
+      .forEach(function (el) {
+        el.addEventListener("click", function () {
+          var found = typeof findItem !== "undefined" ? findItem(name) : null;
+          if (!found) return;
+          var newStatus = el.dataset.status;
+          if (newStatus === found.item.status) return;
+          if (newStatus === "DOING") {
+            if (typeof updateStatus !== "undefined")
+              updateStatus(name, "DOING", found.item.stage || "defining");
+          } else {
+            if (typeof updateStatus !== "undefined")
+              updateStatus(name, newStatus);
+          }
+          if (typeof syncJSON !== "undefined") syncJSON();
+          if (typeof render !== "undefined") render();
+          if (typeof toast !== "undefined") toast(name + ": → " + newStatus);
+          // Re-open modal to refresh
+          if (typeof window.openDetailModal !== "undefined")
+            window.openDetailModal(name);
+        });
+      });
+    document
+      .querySelectorAll(".stage-picker .stage-badge")
+      .forEach(function (el) {
+        el.addEventListener("click", function () {
+          var found = typeof findItem !== "undefined" ? findItem(name) : null;
+          if (!found) return;
+          var newStage = el.dataset.stage;
+          if (newStage === found.item.stage) return;
+          found.item.stage = newStage;
+          if (typeof syncJSON !== "undefined") syncJSON();
+          if (typeof render !== "undefined") render();
+          if (typeof toast !== "undefined") toast(name + ": " + newStage);
+          if (typeof window.openDetailModal !== "undefined")
+            window.openDetailModal(name);
+        });
+      });
+  }
+
+  // Patch openDetailModal to populate copy button + pickers
   var origOpen = window.openDetailModal;
   if (origOpen) {
     window.openDetailModal = function (name) {
@@ -168,6 +271,15 @@
         } else {
           cb.style.display = "none";
         }
+      }
+      // Add status/stage pickers
+      var body = document.getElementById("detail-body");
+      var existing = body.querySelector(".status-picker, .stage-picker");
+      if (!existing) {
+        var pickerHtml =
+          buildStatusPicker(found.item, name) + buildStagePicker(found.item);
+        body.insertAdjacentHTML("beforeend", pickerHtml);
+        bindPickers(name);
       }
     };
   }

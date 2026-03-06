@@ -10,6 +10,20 @@ const {
 } = require("./config");
 const { createDefaultDashboardData } = require("./defaults");
 
+// ── Last-opened tracking ──
+const LAST_OPENED_FILE = path.join(PROJECTS_ROOT, ".last-opened.json");
+let lastOpened = {};
+try {
+  lastOpened = JSON.parse(fs.readFileSync(LAST_OPENED_FILE, "utf8"));
+} catch {}
+
+function touchProject(dir) {
+  lastOpened[dir] = Date.now();
+  try {
+    fs.writeFileSync(LAST_OPENED_FILE, JSON.stringify(lastOpened), "utf8");
+  } catch {}
+}
+
 function findProjects() {
   const projects = [];
   try {
@@ -71,16 +85,22 @@ function findProjects() {
         hasDashboard,
         file,
         mtime,
+        lastOpened: lastOpened[name] || 0,
       });
     }
   } catch {}
-  // Active projects first (most recently used first), then empty (alphabetical)
+  // Active projects first (most recently opened first), then empty (alphabetical)
   return projects.sort(function (a, b) {
     const aActive = a.hasBacklog || a.hasDashboard;
     const bActive = b.hasBacklog || b.hasDashboard;
     if (aActive && !bActive) return -1;
     if (!aActive && bActive) return 1;
-    if (aActive && bActive) return b.mtime - a.mtime;
+    if (aActive && bActive) {
+      // Prefer lastOpened, fall back to mtime
+      var aTime = a.lastOpened || a.mtime;
+      var bTime = b.lastOpened || b.mtime;
+      return bTime - aTime;
+    }
     return a.dir.localeCompare(b.dir);
   });
 }
@@ -129,4 +149,5 @@ module.exports = {
   findProjects,
   createBacklog,
   createDashboard,
+  touchProject,
 };
