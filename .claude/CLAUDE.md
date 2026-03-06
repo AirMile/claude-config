@@ -67,7 +67,7 @@ State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared
 - **Profiles**: `core-profile/profiles.yaml` + `switch-profile.py` togglet skill visibility per profiel
 - **Format-on-save**: hook runt Prettier (web) of gdformat (GDScript) na elke Write/Edit
 - **Ralph loop**: Windows-only PowerShell iteratie voor autonome TDD sessies
-- **Backlog**: `.project/backlog.md` met status TODO → DEF → BLT → TST → DONE
+- **Backlog**: `.project/backlog.html` met status TODO → DOING (stages: defining/defined/building/built/testing) → DONE
 - **Build skills**: auto-commit zonder `Co-Authored-By`, auto-sync `project.json` context na voltooiing
 
 ## Regels bij Wijzigingen

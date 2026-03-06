@@ -62,9 +62,9 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 3. **Find context (in order of richness):**
 
-   a. **feature.json** — if feature name given → `.project/features/{name}/feature.json`. Otherwise → scan `.project/features/*/feature.json` for features with status BLT, or with an assignee.
+   a. **feature.json** — if feature name given → `.project/features/{name}/feature.json`. Otherwise → scan `.project/features/*/feature.json` for features with status DOING + stage built, or with an assignee.
 
-   b. **Backlog TODO** — if no feature.json found, check `.project/backlog.html` for a TODO/BLT item matching the feature name or branch name. Extract the item's description/title.
+   b. **Backlog TODO** — if no feature.json found, check `.project/backlog.html` for a TODO/DOING item matching the feature name or branch name. Extract the item's description/title.
 
    c. **Nothing** — no feature.json, no backlog match.
 
@@ -91,7 +91,7 @@ Verify teammate code delivery. Detects available context (feature.json with requ
    Assignee:  {name or "geen"}
    Branch:    {branch}
    Context:   {feature.json | backlog TODO | git diff only}
-   Status:    {backlog status: BLT/DONE/etc or "onbekend"}
+   Status:    {backlog status: DOING/DONE/etc or "onbekend"}
    ```
 
    Use AskUserQuestion to confirm:
@@ -669,7 +669,7 @@ After fix loop completes → proceed to FASE 7.
 
 ### FASE 7: Update + Feedback
 
-#### Step 1: Parallel Sync (feature.json + backlog + dashboard)
+#### Step 1: Parallel Sync (feature.json + backlog + dashboard) — volg `shared/SYNC.md` 3-File Sync Pattern
 
 1. **Update feature.json** (`BRIEF_REVIEW` mode only, skip als niet bestaat):
    - `requirements[].status` → `"pass"` / `"fail"` / `"missing"` per requirement
@@ -680,17 +680,21 @@ After fix loop completes → proceed to FASE 7.
 2. **Update backlog** (als `.project/backlog.html` bestaat, `BRIEF_REVIEW` of `TODO_REVIEW` mode):
    (zie `shared/BACKLOG.md` voor parse/write patroon)
    - Zoek feature in `data.features[]` op naam
-   - All PASS + no MISSING → `.status = "DONE"`
-   - Otherwise → `.status` blijft `"BLT"`
+   - All PASS + no MISSING → `.status = "DONE"`, verwijder `stage`
+   - Otherwise → `.status` blijft `"DOING"`, `.stage` blijft `"built"`
    - `data.updated` → huidige datum
    - Edit `backlog.html` (keep `<script>` tags intact)
 
 3. **Update project.json** (als `.project/project.json` bestaat, `BRIEF_REVIEW` of `TODO_REVIEW` mode):
    (zie `shared/DASHBOARD.md`)
-   - `features` array: zoek feature op naam, zet status naar `"DONE"` (all pass) of `"BLT"` (fails remaining)
+   - `features` array: zoek feature op naam, zet status naar `"DONE"` (all pass) of `"DOING"` + stage `"built"` (fails remaining)
    - `stack.packages`: merge als packages geïnstalleerd tijdens fix loop
    - `endpoints`: merge als gewijzigd tijdens fixes
    - `data.entities`: merge als gewijzigd tijdens fixes
+   - `architecture` (**volg diagram conventies uit `shared/DASHBOARD.md`**):
+     - `architecture.diagram`: feature status → `"DONE"` → verifieer dat nodes `:::done` zijn (dev-build zet dit normaal al, maar check/corrigeer als nodig). Als FASE 6c fixes zijn toegepast → update file references in node labels (`Naam<br/>file.js`), voeg nieuwe nodes toe als componenten zijn toegevoegd
+     - `architecture.files`: merge nieuwe/gewijzigde bestanden uit fix loop (test files uit FASE 4, source fixes uit FASE 6c)
+     - Skip als geen `architecture` sectie bestaat in project.json
 
    Schrijf parallel terug:
    - Write `feature.json` (als gewijzigd)

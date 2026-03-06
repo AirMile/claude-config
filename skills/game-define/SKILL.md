@@ -521,21 +521,23 @@ IMPLEMENTATION ORDER:
 
 Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md` voor volledig schema):
 
-| Veld                        | Conditie                                                                           |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| `name`, `created`, `status` | altijd (status = `"DEF"`)                                                          |
-| `summary`                   | altijd                                                                             |
-| `depends`                   | altijd (lege array als geen)                                                       |
-| `choices`                   | altijd (user antwoorden)                                                           |
-| `requirements`              | altijd (elke REQ met `status: "pending"`)                                          |
-| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`)       |
-| `architecture`              | altijd (`componentTree`, `interfaces`)                                             |
-| `design`                    | alleen visuele features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`) |
-| `buildSequence`             | altijd                                                                             |
-| `testStrategy`              | altijd                                                                             |
-| `research`                  | alleen als research is gedaan                                                      |
+| Veld                                 | Conditie                                                                           |
+| ------------------------------------ | ---------------------------------------------------------------------------------- |
+| `name`, `created`, `status`, `stage` | altijd (status = `"DOING"`, stage = `"defined"`)                                   |
+| `summary`                            | altijd                                                                             |
+| `depends`                            | altijd (lege array als geen)                                                       |
+| `choices`                            | altijd (user antwoorden)                                                           |
+| `requirements`                       | altijd (elke REQ met `status: "pending"`)                                          |
+| `files`                              | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`)       |
+| `architecture`                       | altijd (`componentTree`, `interfaces`)                                             |
+| `design`                             | alleen visuele features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`) |
+| `buildSequence`                      | altijd                                                                             |
+| `testStrategy`                       | altijd                                                                             |
+| `research`                           | alleen als research is gedaan                                                      |
 
 ### FASE 5: Sync
+
+Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
 
 Lees parallel (skip als niet bestaat):
 
@@ -547,17 +549,17 @@ Muteer beide in memory:
 **Backlog** (zie `shared/BACKLOG.md`):
 
 - Zoek feature: `data.features.find(f => f.name === "{feature-name}")`
-- Gevonden → zet `.status = "DEF"` en `.date = "{current date}"`
-- Niet gevonden → voeg toe: `{ "name": "{feature}", "type": "FEATURE", "status": "DEF", "phase": "P4", "description": "{from feature.json summary}", "dependency": null, "source": "/game-define" }`
+- Gevonden → zet `.status = "DOING"`, `.stage = "defined"` en `.date = "{current date}"`
+- Niet gevonden → voeg toe: `{ "name": "{feature}", "type": "FEATURE", "status": "DOING", "stage": "defined", "phase": "P4", "description": "{from feature.json summary}", "dependency": null, "source": "/game-define" }`
 - Zet `data.updated` naar huidige datum
 
 **Dashboard** (zie `shared/DASHBOARD.md`):
 
 - **Data entities**: voor elke entity check of `data.entities` al entry heeft met die naam → nee: push met fields/relations → ja: merge nieuwe velden
 - **Stack**: als Godot plugins/assets → check `stack.packages` op naam → nee: push `{ name, version, purpose }`
-- **Features**: check op naam → nee: push `{ name, status: "DEF", summary, depends: [], created }` → ja: update status naar `"DEF"`
+- **Features**: check op naam → nee: push `{ name, status: "DOING", stage: "defined", summary, depends: [], created }` → ja: update status naar `"DOING"`, stage naar `"defined"`
 - **Architecture**: genereer/update als feature scene tree en/of signals heeft. **Volg diagram conventies uit `shared/DASHBOARD.md`**:
-  - `diagram`: Mermaid `graph TD` met classDef (done/planned/external), subgraphs per domein. Scene tree als nodes, signal flow als edges, state machines als subgraph. Alle features DEF → `:::planned`, bestaande → `:::done`
+  - `diagram`: Mermaid `graph TD` met classDef (done/planned/external), subgraphs per domein. Scene tree als nodes, signal flow als edges, state machines als subgraph. Alle features DOING → `:::planned`, bestaande → `:::done`
   - `description`: functionele beschrijvingen per component (geen filenamen)
   - `files`: mapping van gebouwde componenten → `{ component, src: [...], test: [...] }`
   - OVERWRITE. Skip als feature te klein (enkele node zonder signals)

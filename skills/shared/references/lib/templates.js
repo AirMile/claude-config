@@ -81,15 +81,15 @@ function serveDashboard(projectDir, session) {
     html.substring(endIdx);
   const nav = getNavBarHtml(projectDir, "dashboard", session);
 
-  // Inject role script for teammates
-  var roleScript = "";
+  // Inject role variables for teammates (raw JS, no script tags — injected inside existing script block)
+  var roleJs = "";
   if (session && session.role === "teammate") {
-    roleScript =
-      "<script>window.__role=" +
+    roleJs =
+      "window.__role=" +
       JSON.stringify(session.role) +
       ";window.__userName=" +
       JSON.stringify(session.name || "") +
-      ";</script>";
+      ";\n";
   }
 
   const dashRefresh = `<script>
@@ -107,7 +107,12 @@ function serveDashboard(projectDir, session) {
   };
 })();
 </script>`;
-  html = html.replace("</body>", roleScript + dashRefresh + nav + "</body>");
+  // Role JS must be injected BEFORE the init render() call (after mermaid.initialize)
+  html = html.replace(
+    "      });\n      render();\n    </script>",
+    "      });\n" + roleJs + "      render();\n    </script>",
+  );
+  html = html.replace("</body>", dashRefresh + nav + "</body>");
   return html;
 }
 

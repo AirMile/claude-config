@@ -181,20 +181,35 @@ multiSelect: false
 **Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
 
 1. Read `.project/project.json` (skip als niet bestaat)
-2. Push naar `thinking` array:
+2. Schrijf volledige analyse naar `.project/thinking/{today}-decision-{slug}.md`
+3. Push naar `thinking` array:
    ```json
    {
      "type": "decision",
      "date": "{today}",
      "title": "{beslissing titel}",
-     "content": "{samenvatting van de analyse}",
+     "summary": "{key insight van de beslissing, max 200 chars}",
+     "file": ".project/thinking/{today}-decision-{slug}.md",
      "options": ["{optie 1}", "{optie 2}", "..."],
      "chosen": "{gekozen optie}",
      "rationale": "{waarom deze keuze, 1-2 zinnen}",
      "source": "/thinking-decide"
    }
    ```
-3. Write `.project/project.json`
+4. Write `.project/project.json`
+
+**Feature scope koppeling:** als de beslissing in de context van een actieve feature valt (check `.project/session/active-*.json`), push ook naar `feature.json` → `durableDecisions[]`:
+
+```json
+{
+  "decision": "{beslissing titel}",
+  "chosen": "{gekozen optie}",
+  "rationale": "{waarom, 1-2 zinnen}",
+  "date": "{today}"
+}
+```
+
+Lees `.project/features/{feature-name}/feature.json`, initialiseer `durableDecisions` als `[]` indien nodig, push entry, schrijf terug.
 
 ## Best Practices
 

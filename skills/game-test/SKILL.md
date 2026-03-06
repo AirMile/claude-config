@@ -131,11 +131,11 @@ Now TESTABLE -> TDD fix loop
    ```
 
    - If backlog exists: parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
-   - Filter BLT features: `data.features.filter(f => f.status === "BLT")`
+   - Filter built features: `data.features.filter(f => f.status === "DOING" && f.stage === "built")`
 
-   Use **AskUserQuestion** if BLT features found:
+   Use **AskUserQuestion** if built features found:
    - header: "Feature"
-   - question: "Welke feature wil je testen? ({N} features in BLT status)"
+   - question: "Welke feature wil je testen? ({N} features in built stage)"
    - options:
      - label: "{feature-name} (Recommended)", description: "Volgende uit backlog"
      - label: "Andere feature", description: "Ik wil een andere feature testen"

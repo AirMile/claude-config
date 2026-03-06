@@ -12,7 +12,7 @@ metadata:
 
 **FASE 2** of the dev workflow: define -> **build** -> test
 
-Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD or Implementation First), builds sequentially.
+Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD, Implementation First, or Implementation Only), builds sequentially.
 
 **Trigger**: `/dev-build` or `/dev-build [feature-name]`
 
@@ -44,13 +44,41 @@ git rev-parse HEAD > .project/session/pre-skill-sha.txt
 echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
-**Detect stack:** lees CLAUDE.md `### Stack` sectie + `.claude/research/stack-baseline.md` (als beschikbaar).
+**Detect stack:** lees CLAUDE.md `### Stack` sectie + `.claude/research/stack-baseline.md` (als beschikbaar). Als stack-baseline niet bestaat → fallback op `project.json.stack` (framework, language, packages).
+
+**Project context** (optioneel, skip als niet bestaat):
+
+Lees `.project/project.json`. Extract:
+
+- `stack` — framework, language, packages (fallback voor stack-baseline)
+- `context.structure` — waar bestanden horen (map structuur)
+- `context.patterns` — bestaande code patterns om te volgen
+- `endpoints` — bestaande API surface (voorkomt dubbele routes)
+- `data.entities` — bestaand DB schema (voorkomt conflicten)
+
+Als project.json niet bestaat → ga door zonder (backwards compatible).
+
+**Stel PROJECT_CONTEXT samen** (wordt meegegeven aan technique execution in FASE 2):
+
+Bouw selectief op basis van `feature.json` → `files[]` paden:
+
+- `Structure` en `Patterns` → altijd meenemen (compact)
+- `Endpoints` → alleen als feature `routes/`, `api/`, of `pages/` raakt
+- `Entities` → alleen als feature `models/`, `schema`, of `entities/` raakt
+
+```
+PROJECT CONTEXT:
+Structure: {context.structure of "niet beschikbaar"}
+Patterns: {context.patterns of "niet beschikbaar"}
+Endpoints: {endpoints of "niet beschikbaar" — skip als feature geen routes raakt}
+Entities: {data.entities of "niet beschikbaar" — skip als feature geen models raakt}
+```
 
 **Load feature:**
 
 If no feature name provided:
 
-1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DEF"` → suggest via **AskUserQuestion**
+1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DOING" && stage === "defined"` → suggest via **AskUserQuestion**
 2. Fallback: list `.project/features/` met `feature.json`, let user select
 
 Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`.
@@ -66,6 +94,13 @@ Skip als geen `depends[]` of leeg.
 3. Blockers gevonden → **AskUserQuestion**:
    - "Stop — werk eerst {dep} af (Recommended)" / "Toch doorgaan"
    - Stop → exit. Doorgaan → continue.
+
+**Tag backlog card als actief** (direct na feature laden):
+
+Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
+Zoek feature op naam → zet `"stage": "building"`, `"inProgress": "build"`, `data.updated` naar nu.
+Schrijf terug via Edit (keep `<script>` tags intact).
+De card blijft in DOING kolom, stage gaat naar `building`.
 
 **Display** feature overview:
 
@@ -85,7 +120,8 @@ IMPLEMENTATION ORDER:
 Assign per requirement:
 
 - **TDD**: validation rules, business logic, calculations, complex conditions, testable math
-- **Implementation First**: CRUD, middleware, config, wiring, visual/particle effects
+- **Implementation First**: CRUD, middleware, config, wiring
+- **Implementation Only**: pure styling/layout, visual/particle effects, static content, env config, prototype code — alleen wanneer automated tests geen waarde toevoegen. Verplichte reden: `visual-only`, `config-only`, of `prototype`
 
 Display technique map table. Confirm via **AskUserQuestion** (Akkoord / Aanpassen).
 
@@ -98,11 +134,11 @@ For each requirement in IMPLEMENTATION ORDER:
 1. Load technique: `Read(".claude/skills/dev-build/techniques/{technique}.md")`
 2. Execute technique workflow
 3. Enforce: strict TS (geen any, null checks), async error handling, geen secrets in client code
-4. **Update feature.json** na elke REQ: zet `requirements[].status` → `"built"` en voeg `technique` + `syncNote` toe. Dit bewaart voortgang bij context compaction.
+4. **Update feature.json** na elke REQ: zet `requirements[].status` → `"built"` en voeg `technique` + `syncNote` toe. Bij Implementation Only: voeg ook `skipTestReason` toe (`visual-only`, `config-only`, of `prototype`). Dit bewaart voortgang bij context compaction.
 5. Output per requirement:
    ```
    [REQ-XXX] {description}
-   Technique: {TDD | Implementation First}
+   Technique: {TDD | Implementation First | Implementation Only}
    {technique-specific output}
    SYNC: {pattern/concept} in {file(s)} — {what, why, what depends on it}
    Progress: {done}/{total}
@@ -126,12 +162,14 @@ For each requirement in IMPLEMENTATION ORDER:
 ```
 BUILD COMPLETE: {feature}
 ========================
-Techniques: TDD ({n}), Implementation First ({n})
+Techniques: TDD ({n}), Implementation First ({n}), Implementation Only ({n})
 Tests: {passed}/{total} PASS
 Files created: {count}
 ```
 
 ### FASE 3B: Project Sync
+
+Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
 
 Lees parallel (skip als niet bestaat):
 
@@ -141,7 +179,7 @@ Lees parallel (skip als niet bestaat):
 
 Muteer alle drie in memory:
 
-**feature.json**: `status → "BLT"`, `files[]` → merge met actuele bestanden. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]`. Bestaande secties NIET overschrijven. Note: `requirements[]` is al enriched in FASE 2 stap 4.
+**feature.json**: `status → "DOING"`, `stage → "built"`, `files[]` → merge met actuele bestanden. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]`. Bestaande secties NIET overschrijven. Note: `requirements[]` is al enriched in FASE 2 stap 4.
 
 **tests.checklist[]** — per requirement minimaal 1 test item:
 
@@ -164,11 +202,11 @@ Richtlijnen:
 - API features: beschrijf curl/HTTP stappen met concrete endpoints
 - Voeg GEEN item toe dat "run npm test" is — unit tests zijn al gedekt door de build
 
-**Backlog** (zie `shared/BACKLOG.md`): status → `"BLT"`, `data.updated` → nu.
+**Backlog** (zie `shared/BACKLOG.md`): `stage → "built"`, verwijder `inProgress` veld, `data.updated` → nu. Status blijft `"DOING"`.
 
 **Context** (zie `shared/DASHBOARD.md` → `context`): vergelijk build output met project.json. Update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip als geen structurele impact. Log: `context: {N} updates ({keys})`.
 
-**Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"BLT"`, endpoints → `"done"` als geïmplementeerd, stack packages → push nieuwe dependencies.
+**Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`, endpoints → `"done"` als geïmplementeerd, stack packages → push nieuwe dependencies.
 
 **Architecture** (**volg diagram conventies uit `shared/DASHBOARD.md`**): diagram bestaat → update: gebouwde feature nodes `:::planned` → `:::done`, voeg file reference toe aan node label (`Naam<br/>file.js`), update `architecture.files` met `{ component, src, test }`, update `description` met functionele tekst. Geen diagram EN meerdere modules → genereer nieuw diagram met classDef + subgraphs. Geen structurele impact → skip. Log: `architecture: updated` of `architecture: no updates needed`.
 

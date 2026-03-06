@@ -37,8 +37,22 @@ FASE 1 van de dev workflow: define → build → test.
    - `mkdir -p .project/features/{feature-name}`
    - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json`
    - Glob + Grep voor bestaande code die de feature-naam importeert
-   - Read `.project/project.json` → `concept.content` als context
-   - Read `.claude/research/stack-baseline.md`
+   - Read `.project/project.json` → extract:
+     - `stack` — framework, language, packages (fallback als stack-baseline.md niet bestaat)
+     - `concept.pitch` als feature context (korte samenvatting). Fallback: als pitch leeg, gebruik eerste 2 zinnen van `concept.content`
+     - `features[]` — bestaande features (voorkomt duplicaten/overlap)
+     - `endpoints` — bestaande API surface
+     - `data.entities` — bestaand data model
+     - `context.patterns` — bestaande code patterns
+   - Read `.claude/research/stack-baseline.md` (conventie/patterns detail — als niet beschikbaar, gebruik `project.json.stack` als basis)
+
+**Tag backlog card als actief** (direct na feature naam bepaling):
+
+Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
+Zoek feature op naam → zet `"status": "DOING"`, `"stage": "defining"`, `"inProgress": "define"`, `data.updated` naar nu.
+Schrijf terug via Edit (keep `<script>` tags intact).
+Niet gevonden → skip (feature wordt pas bij FASE 4 aan backlog toegevoegd).
+De card verhuist naar de DOING kolom met stage `defining`.
 
 ### FASE 1: Requirements Gathering
 
@@ -136,21 +150,21 @@ Ontwerp in drie stappen:
 
 Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md` voor volledig schema):
 
-| Veld                        | Conditie                                                                     |
-| --------------------------- | ---------------------------------------------------------------------------- |
-| `name`, `created`, `status` | altijd (status = `"DEF"`)                                                    |
-| `summary`                   | altijd                                                                       |
-| `depends`                   | altijd (lege array als geen)                                                 |
-| `choices`                   | altijd (user antwoorden)                                                     |
-| `requirements`              | altijd (elke REQ met `status: "pending"`)                                    |
-| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`) |
-| `architecture`              | altijd (`componentTree`, `interfaces`)                                       |
-| `design`                    | alleen visuele features                                                      |
-| `apiContract`               | alleen bij backend                                                           |
-| `buildSequence`             | altijd                                                                       |
-| `testStrategy`              | altijd                                                                       |
-| `durableDecisions`          | bij >3 requirements — beslissingen die over alle REQs gelden                 |
-| `research`                  | alleen als research is gedaan                                                |
+| Veld                                 | Conditie                                                                     |
+| ------------------------------------ | ---------------------------------------------------------------------------- |
+| `name`, `created`, `status`, `stage` | altijd (status = `"DOING"`, stage = `"defined"`)                             |
+| `summary`                            | altijd                                                                       |
+| `depends`                            | altijd (lege array als geen)                                                 |
+| `choices`                            | altijd (user antwoorden)                                                     |
+| `requirements`                       | altijd (elke REQ met `status: "pending"`)                                    |
+| `files`                              | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`) |
+| `architecture`                       | altijd (`componentTree`, `interfaces`)                                       |
+| `design`                             | alleen visuele features                                                      |
+| `apiContract`                        | alleen bij backend                                                           |
+| `buildSequence`                      | altijd                                                                       |
+| `testStrategy`                       | altijd                                                                       |
+| `durableDecisions`                   | bij >3 requirements — beslissingen die over alle REQs gelden                 |
+| `research`                           | alleen als research is gedaan                                                |
 
 **`durableDecisions`** — beslissingen die tijdens de build NIET veranderen:
 
@@ -238,6 +252,8 @@ Toegewezen aan: {naam}
 
 ### FASE 4: Sync
 
+Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
+
 Lees parallel **direct voor het editen** (skip als niet bestaat) — vertrouw NIET op reads uit eerdere fases (Prettier/linters kunnen bestanden tussentijds wijzigen):
 
 - `.project/backlog.html`
@@ -247,19 +263,19 @@ Muteer beide in memory:
 
 **Backlog** (zie `shared/BACKLOG.md`):
 
-- Zoek feature → zet status `"DEF"`, datum `"{date}"`, `assignee` (als gezet in FASE 3b). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`.
+- Zoek feature → zet status `"DOING"`, `stage: "defined"`, verwijder `inProgress` veld, datum `"{date}"`, `assignee` (als gezet in FASE 3b). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`.
 - Zet `data.updated` naar vandaag.
 
 **Dashboard** (zie `shared/DASHBOARD.md`):
 
-- Update feature in `features` array: status → `"DEF"`, update summary
+- Update feature in `features` array: status → `"DOING"`, stage → `"defined"`, update summary
 - Merge per entity type (check altijd op bestaande voor push):
   - **Data entities**: check op naam → nieuw: push met fields/relations → bestaand: merge nieuwe velden
   - **Endpoints**: check op method+path → nieuw: push met `status: "planned"` → bestaand: skip
   - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
-  - **Features**: check op naam → nieuw: push `{ name, status: "DEF", summary, created }` → bestaand: update status
+  - **Features**: check op naam → nieuw: push `{ name, status: "DOING", stage: "defined", summary, created }` → bestaand: update status
   - **Architecture**: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg diagram conventies uit `shared/DASHBOARD.md`**:
-    - `diagram`: Mermaid `graph TD` met classDef (done/planned/external), subgraphs per domein, functionele node labels met file reference (`Naam<br/>file.js`). Alle features DEF → `:::planned`, bestaande gebouwde → `:::done`
+    - `diagram`: Mermaid `graph TD` met classDef (done/planned/external), subgraphs per domein, functionele node labels met file reference (`Naam<br/>file.js`). Alle features DOING → `:::planned`, bestaande gebouwde → `:::done`
     - `description`: functionele beschrijvingen per component (geen filenamen)
     - `files`: mapping van gebouwde componenten → `{ component, src: [...], test: [...] }`
     - OVERWRITE (vervangt vorige diagram met bijgewerkte versie)

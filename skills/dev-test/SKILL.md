@@ -62,9 +62,9 @@ Everything works except validation is missing and no welcome mail
 1. **Read backlog for pipeline status:**
 
    Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
-   - Filter BLT features: `data.features.filter(f => f.status === "BLT")`
-   - BLT features zijn klaar voor testing
-   - If no feature name provided: suggest the next BLT feature via **AskUserQuestion**
+   - Filter built features: `data.features.filter(f => f.status === "DOING" && f.stage === "built")`
+   - Built features zijn klaar voor testing
+   - If no feature name provided: suggest the next built feature via **AskUserQuestion**
 
 2. **Parse user input:**
    - Feature name only → proceed to classification and hybrid testing
@@ -213,7 +213,6 @@ Als er geen logische cross-requirement combinaties zijn → skip, geen output.
    **b) Per checklist item, post-build classificatie:**
 
    Gebruik de `httpContractTested` en `delta` velden uit de Explore agent output:
-
    - Item met `httpContractTested: true` EN `delta: "geen"` → **COVERED** (build tests dekken het al, telt als PASS via baseline)
    - Item met `httpContractTested: true` EN `delta` bevat iets → **AUTO/CLI** of **AUTO/BROWSER** (alleen de delta testen)
    - Item met `httpContractTested: false` → bestaande classificatie:
@@ -365,7 +364,7 @@ Als er geen logische cross-requirement combinaties zijn → skip, geen output.
 **Tag backlog card als actief** (direct na feature validatie):
 
 Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-Zoek feature op naam → zet `"inProgress": "test"`, `data.updated` naar nu.
+Zoek feature op naam → zet `"stage": "testing"`, `"inProgress": "test"`, `data.updated` naar nu.
 Schrijf terug via Edit (keep `<script>` tags intact).
 
 **Capture git baseline** (for scoped commit at end of skill):
@@ -889,7 +888,7 @@ Opgenomen in test results.
 
 ---
 
-3. **Parallel sync** (feature.json + backlog + dashboard):
+3. **Parallel sync** (feature.json + backlog + dashboard) — volg `shared/SYNC.md` 3-File Sync Pattern, skill-specifieke mutaties hieronder:
 
    Lees parallel (skip als niet bestaat):
    - `.project/features/{feature-name}/feature.json`
@@ -923,7 +922,7 @@ Opgenomen in test results.
    }
    ```
 
-   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "DONE"`, verwijder `inProgress` veld, `data.updated` → huidige datum.
+   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "DONE"`, verwijder `stage` en `inProgress` velden, `data.updated` → huidige datum.
 
    **Dashboard** (zie `shared/DASHBOARD.md`): als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`. Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`. Als data entities gewijzigd: merge naar `data.entities`. Update `features` array: zoek feature op naam, zet status naar `"DONE"`. **Architecture** (alleen als fixes zijn toegepast in FASE 4 EN `architecture` sectie bestaat in project.json, **volg diagram conventies uit `shared/DASHBOARD.md`**): `architecture.diagram` → verifieer dat feature nodes `:::done` zijn, update file references in node labels als bestanden zijn gewijzigd/toegevoegd, voeg nieuwe nodes toe als componenten zijn toegevoegd. `architecture.files` → merge nieuwe/gewijzigde bestanden uit fix loop (source fixes + nieuwe test files). Skip als geen fixes of geen architecture sectie.
 
@@ -977,6 +976,7 @@ Opgenomen in test results.
 ## Example Flows (compact)
 
 **UI feature met fixes:**
+
 ```
 /dev-test user-registration
 → FASE 0: Classify → 2 COVERED + 1 AUTO/BROWSER + 1 MANUAL
@@ -992,6 +992,7 @@ Opgenomen in test results.
 ```
 
 **Pure API post-build (fast path):**
+
 ```
 /dev-test api-routes
 → FASE 0: Classify → 6 COVERED + 3 integratie AUTO/CLI

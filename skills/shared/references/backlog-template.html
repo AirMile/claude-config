@@ -48,7 +48,8 @@
           {
             "name": "dashboard-layout",
             "type": "FEATURE",
-            "status": "BLT",
+            "status": "DOING",
+            "stage": "built",
             "phase": "P1",
             "description": "Sidebar navigatie, header met user menu, content area",
             "dependency": "auth-pages"
@@ -56,7 +57,8 @@
           {
             "name": "product-list",
             "type": "FEATURE",
-            "status": "DEF",
+            "status": "DOING",
+            "stage": "defined",
             "phase": "P1",
             "description": "Tabel met producten, zoeken, filteren en paginatie",
             "dependency": "dashboard-layout"
@@ -72,7 +74,8 @@
           {
             "name": "product-detail",
             "type": "FEATURE",
-            "status": "DEF",
+            "status": "DOING",
+            "stage": "defined",
             "phase": "P2",
             "description": "Product bewerk pagina met rich text editor",
             "dependency": "api-products"
@@ -252,11 +255,10 @@
       let data = JSON.parse(fileRaw);
       if (!data.features) data.features = [];
 
-      const STATUSES = ["TODO", "DEF", "BLT", "DONE"];
+      const STATUSES = ["TODO", "DOING", "DONE"];
       const STATUS_COLORS = {
         TODO: "var(--todo)",
-        DEF: "var(--def)",
-        BLT: "var(--blt)",
+        DOING: "var(--doing)",
         DONE: "var(--done)",
       };
       const PHASE_LABELS = {
@@ -294,12 +296,17 @@
         if (fi !== -1) data.features.splice(fi, 1);
       }
 
-      function updateStatus(name, newStatus) {
+      function updateStatus(name, newStatus, newStage) {
         const found = findItem(name);
         if (!found) return;
         found.item.status = newStatus;
-        if (newStatus === "DONE") {
-          found.item.date = new Date().toISOString().slice(0, 10);
+        if (newStatus === "DOING") {
+          found.item.stage = newStage || found.item.stage || "defining";
+        } else {
+          delete found.item.stage;
+          if (newStatus === "DONE") {
+            found.item.date = new Date().toISOString().slice(0, 10);
+          }
         }
       }
 
@@ -364,6 +371,23 @@
             toast("Kon VS Code niet bereiken");
             setTimeout(() => (el.style.color = orig), 2000);
           });
+      }
+
+      // ─── Next skill helper ────────────────────────────────────
+      function getNextSkill(f) {
+        if (f.status === "TODO") return "define";
+        if (f.status === "DOING") {
+          return (
+            {
+              defining: "define",
+              defined: "build",
+              building: "build",
+              built: "test",
+              testing: "test",
+            }[f.stage] || "define"
+          );
+        }
+        return null;
       }
 
       // ─── Render ─────────────────────────────────────────────
@@ -446,15 +470,17 @@
           extra += `<div class="card-date">${esc(f.date)}</div>`;
         if (f.assignee)
           extra += `<div class="card-assignee"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg> ${esc(f.assignee)}</div>`;
+        if (f.inProgress)
+          extra += `<span class="card-active">${esc(f.inProgress)}...</span>`;
+
+        const stageTag =
+          f.status === "DOING" && f.stage
+            ? `<span class="stage-badge stage-${f.stage}">${esc(f.stage)}</span>`
+            : "";
 
         const prefix =
           data.source && data.source.startsWith("/game") ? "game" : "dev";
-        const NEXT_SKILL = {
-          TODO: "define",
-          DEF: "build",
-          BLT: "test",
-        };
-        const nextVerb = NEXT_SKILL[f.status] || null;
+        const nextVerb = getNextSkill(f);
         const nextCmd = nextVerb ? `/${prefix}-${nextVerb} ${f.name}` : "";
 
         const card = document.createElement("div");
@@ -470,6 +496,7 @@
           <div class="card-tags">
             <span class="phase-tag ${phaseClass}">${phaseLabel}</span>
             <span class="badge ${typeClass}">${esc(f.type)}</span>
+            ${stageTag}
           </div>
           ${extra}
         `;
@@ -528,7 +555,11 @@
         if (found.item.status === newStatus) return;
 
         const oldStatus = found.item.status;
-        updateStatus(name, newStatus);
+        if (newStatus === "DOING") {
+          updateStatus(name, newStatus, found.item.stage || "defining");
+        } else {
+          updateStatus(name, newStatus);
+        }
         syncJSON();
         render();
         toast(`${name}: ${oldStatus} \u2192 ${newStatus}`);
@@ -880,6 +911,10 @@
         html += `<span class="phase-tag ${PHASE_CLASSES[f.phase] || "phase-p4"}">${phaseLabel}</span>`;
         html += `<span class="badge badge-${f.type.toLowerCase().replace("_", "-")}">${esc(f.type)}</span>`;
         html += `<span class="status-tag" style="color:${STATUS_COLORS[f.status]}">${f.status}</span>`;
+        if (f.status === "DOING" && f.stage)
+          html += `<span class="stage-badge stage-${f.stage}">${esc(f.stage)}</span>`;
+        if (f.inProgress)
+          html += `<span class="card-active">${esc(f.inProgress)}...</span>`;
         html += `</div></div>`;
         if (f.dependency) {
           html += `<div class="detail-field"><div class="detail-label">Dependency</div><div class="detail-value">${esc(f.dependency)}</div></div>`;
@@ -899,12 +934,7 @@
         // Show copy button if there's a next skill
         const prefix =
           data.source && data.source.startsWith("/game") ? "game" : "dev";
-        const NEXT = {
-          TODO: "define",
-          DEF: "build",
-          BLT: "test",
-        };
-        const verb = NEXT[f.status];
+        const verb = getNextSkill(f);
         const copyBtn = document.getElementById("detail-copy");
         if (f.assignee) {
           // Teammate: show brief button

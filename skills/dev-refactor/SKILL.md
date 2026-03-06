@@ -116,6 +116,14 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
    - Parse `files[]` array (each entry has `path`, `type`, `action`)
    - Store as `pipeline_files[feature_name]`
 
+4b. **Load project conventions** (optioneel):
+
+Lees `.project/project.json` (als bestaat). Extract `context.patterns`.
+
+Als beschikbaar: voeg toe aan Explore agent prompt in FASE 1 onder
+`PROJECT CONVENTIONS:` sectie. Helpt agents onderscheid maken tussen
+"intentioneel project pattern" en "code smell".
+
 5. **Load or generate refactor-patterns.md:**
 
    ```
@@ -246,11 +254,17 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
       - Benoemde constanten zelfs als ze maar 1x gebruikt worden (als ze readability verbeteren)
       - Voorkeur voor explicit boven compact — meer regels is OK als het duidelijker is
 
-   2. STACK-SPECIFIEK (uit refactor-patterns):
+   2. PROJECT CONVENTIONS (uit project.json):
+
+      {context.patterns of "niet beschikbaar — gebruik CLAUDE.md als fallback"}
+
+      Als een pattern consistent is met project conventions → NIET rapporteren als finding.
+
+   3. STACK-SPECIFIEK (uit refactor-patterns):
 
       {injected patterns per library from refactor-patterns.md}
 
-   3. ARCHITECTUUR overzicht:
+   4. ARCHITECTUUR overzicht:
       - Welke libraries/frameworks worden gebruikt
       - Belangrijkste patterns (hooks, API routes, components, etc.)
       - Libraries die NIET in refactor-patterns.md staan
@@ -608,7 +622,7 @@ IMPROVEMENTS APPLIED
 
    Bestaande secties NIET overschrijven.
 
-2. **Parallel sync** (backlog + dashboard + conditionele context sync):
+2. **Parallel sync** (backlog + dashboard + conditionele context sync) — volg `shared/SYNC.md` 3-File Sync Pattern, skill-specifieke mutaties hieronder:
 
    Lees parallel (skip als niet bestaat):
    - `.project/backlog.html`

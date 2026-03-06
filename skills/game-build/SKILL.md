@@ -86,12 +86,12 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 1. **If no feature name provided — check backlog:**
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
-   - Filter DEF features: `data.features.filter(f => f.status === "DEF")`
-   - Eerste DEF feature is de suggested next feature
+   - Filter defined features: `data.features.filter(f => f.status === "DOING" && f.stage === "defined")`
+   - Eerste defined feature is de suggested next feature
    - Use **AskUserQuestion** with backlog-suggested feature:
      ```
      Backlog suggests: {feature-name}
-     DEF features available: {list}
+     Defined features available: {list}
      Build {feature-name}? (or specify another)
      ```
 
@@ -679,6 +679,8 @@ Claude explains the built architecture in plain, beginner-friendly language. No 
 
 ### FASE 4b: Project Sync
 
+Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
+
 Lees parallel (skip als niet bestaat):
 
 - `.project/features/{feature-name}/feature.json`
@@ -687,13 +689,13 @@ Lees parallel (skip als niet bestaat):
 
 Muteer alle drie in memory:
 
-**feature.json**: `status → "BLT"`, `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]` (status: "pending"). Bestaande secties NIET overschrijven.
+**feature.json**: `status → "DOING"`, `stage → "built"`, `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]` (status: "pending"). Bestaande secties NIET overschrijven.
 
-**Backlog** (zie `shared/BACKLOG.md`): status → `"BLT"`, `data.updated` → nu.
+**Backlog** (zie `shared/BACKLOG.md`): `stage → "built"`, verwijder `inProgress` veld, `data.updated` → nu. Status blijft `"DOING"`.
 
 **Context** (zie `shared/DASHBOARD.md` → `context`): identify new scenes (.tscn), scripts (.gd) with class names, signals, resources (.tres). Update `context.structure` (overwrite), `context.patterns` (merge signals, autoloads, conventions), `context.updated`. Skip als geen structurele impact.
 
-**Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"BLT"`. Als feature niet bestaat: push met `{ name, status: "BLT", summary, created }`.
+**Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`. Als feature niet bestaat: push met `{ name, status: "DOING", stage: "built", summary, created }`.
 
 **Architecture** (**volg diagram conventies uit `shared/DASHBOARD.md`**): update diagram met werkelijke scene tree, signals, autoloads. Gebouwde feature nodes `:::planned` → `:::done`, voeg file reference toe (`Naam<br/>script.gd`), update `architecture.files` met `{ component, src, test }`. Als diagram niet bestaat EN meerdere scenes/signals → genereer nieuw diagram met classDef + subgraphs. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
 

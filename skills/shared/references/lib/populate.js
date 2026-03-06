@@ -293,14 +293,16 @@ function populateFromProject(projectDir, dashData) {
           return null;
         }
 
-        // Promote status based on feature.json
+        // Promote status based on feature.json (migrates legacy DEF/BLT)
         function promoteStatus(s, fp) {
           if (fs.existsSync(path.join(fp, "feature.json"))) {
             try {
               const feat = JSON.parse(
                 fs.readFileSync(path.join(fp, "feature.json"), "utf8"),
               );
-              return feat.status || s;
+              var st = feat.status || s;
+              if (st === "DEF" || st === "BLT") st = "DOING";
+              return st;
             } catch {}
           }
           return s;
@@ -334,7 +336,7 @@ function populateFromProject(projectDir, dashData) {
 
         const featData = readFeatureData(featurePath);
         if (featData) {
-          status = featData.status || "DEF";
+          status = featData.status || "DOING";
           summary = featData.summary || "";
           created = featData.created || "";
           depends = featData.depends || [];

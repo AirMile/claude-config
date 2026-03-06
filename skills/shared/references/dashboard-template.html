@@ -1495,7 +1495,13 @@
 
         // Teammate role: only show concept, design, theme, stack
         if (window.__role === "teammate") {
-          const allowed = { concept: 1, design: 1, theme: 1, stack: 1 };
+          const allowed = {
+            concept: 1,
+            diagram: 1,
+            design: 1,
+            theme: 1,
+            stack: 1,
+          };
           TABS.forEach((t) => {
             if (!allowed[t.id]) hiddenTabs[t.id] = true;
           });
@@ -1534,8 +1540,8 @@
         const renderer = renderers[activeTab];
         contentEl.innerHTML = renderer ? renderer() : "";
 
-        // Teammate: hide edit buttons on non-concept tabs
-        if (window.__role === "teammate" && activeTab !== "concept") {
+        // Teammate: hide all edit buttons
+        if (window.__role === "teammate") {
           contentEl.querySelectorAll(".edit-btn").forEach((b) => {
             b.style.display = "none";
           });

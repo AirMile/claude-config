@@ -39,6 +39,24 @@ AskUserQuestion:
 Collect relevant source files (exclude dependencies, build output, static assets).
 Group by type: routes/controllers, models/data, config, middleware, templates/views.
 
+### Step 4: Load project context
+
+Lees `.project/project.json` (als bestaat). Extract:
+
+- `endpoints` — API surface (method, path, auth per route)
+- `data.entities` — data model (entity names, fields, relations)
+- `context.patterns` — auth patterns, middleware setup
+
+**Stel OWASP_CONTEXT samen** (meegeven aan scanner agents in FASE 2):
+
+```
+API SURFACE: {endpoints of "niet beschikbaar — scanners moeten zelf endpoints ontdekken"}
+DATA MODEL: {entities of "niet beschikbaar"}
+AUTH PATTERNS: {auth-gerelateerde patterns of "niet beschikbaar"}
+```
+
+Als project.json niet bestaat → ga door zonder (backwards compatible).
+
 ---
 
 ## FASE 2: Parallel Scan
@@ -62,6 +80,7 @@ Each agent receives:
 
 - Tech stack summary
 - File list (grouped by type)
+- OWASP_CONTEXT (uit stap 4 — endpoints, data model, auth patterns)
 - Project root path
 
 Each agent returns structured output with: category score (/10), positives, findings (file, line, severity, confidence, issue, fix, CWE), verdict.

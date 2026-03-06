@@ -363,17 +363,19 @@ Scope: {feature:{naam} | pagina:{onderwerp}}
 **Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
 
 1. Read `.project/project.json` (skip als niet bestaat)
-2. Push naar `thinking` array:
+2. Schrijf volledige markdown naar `.project/thinking/{today}-idea-{slug}.md`
+3. Push naar `thinking` array:
    ```json
    {
      "type": "idea",
      "date": "{today}",
      "title": "{concept titel}",
-     "content": "{volledige markdown output van Step 4}",
+     "summary": "{key insight, max 200 chars}",
+     "file": ".project/thinking/{today}-idea-{slug}.md",
      "source": "/thinking-idea"
    }
    ```
-3. Write `.project/project.json`
+4. Write `.project/project.json`
 
 Vraag daarna optioneel:
 
@@ -386,32 +388,33 @@ options:
 multiSelect: false
 ```
 
-If "Ja": lees `.project/project.json` (of maak aan als niet bestaat), parse JSON, set `concept.name` (H1 titel) en `concept.content` (volledige markdown), schrijf terug.
+If "Ja": lees `.project/project.json` (of maak aan als niet bestaat), parse JSON, set `concept.name` (H1 titel), `concept.pitch` (eerste alinea, 1-2 zinnen) en `concept.content` (volledige markdown), schrijf terug.
 
 **If scope = los idee (uit Step 1a):**
 
-Sla op naar `.project/thinking/{onderwerp}.md`:
+Sla op naar `.project/thinking/{today}-idea-{slug}.md`:
 
 1. Maak `.project/thinking/` aan indien nodig
-2. Schrijf naar `.project/thinking/{onderwerp}.md`
+2. Schrijf naar `.project/thinking/{today}-idea-{slug}.md`
 
 ```
 THINKING OUTPUT SAVED
 
-File: .project/thinking/{onderwerp}.md
+File: .project/thinking/{today}-idea-{slug}.md
 Scope: los idee
 ```
 
 **Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
 
 1. Read `.project/project.json` (skip als niet bestaat)
-2. Push naar `thinking` array:
+2. Push naar `thinking` array (file is al geschreven hierboven):
    ```json
    {
      "type": "idea",
      "date": "{today}",
      "title": "{concept titel}",
-     "content": "{volledige markdown output van Step 4}",
+     "summary": "{key insight, max 200 chars}",
+     "file": ".project/thinking/{today}-idea-{slug}.md",
      "source": "/thinking-idea"
    }
    ```
@@ -448,7 +451,7 @@ multiSelect: false
 
 1. Create `.project/` folder if it doesn't exist
 2. Read `.project/project.json` if it exists (otherwise start with `{}`), parse JSON
-3. Set `concept.name` to the H1 title, set `concept.content` to the full markdown output
+3. Set `concept.name` to the H1 title, `concept.pitch` to de eerste alinea (1-2 zinnen), `concept.content` to the full markdown output
 4. Write the updated JSON back to `.project/project.json`
 5. Confirm:
 
@@ -468,21 +471,23 @@ multiSelect: false
 **Dashboard sync — concept thinking** (zie `shared/DASHBOARD.md`):
 
 1. Read `.project/project.json` (skip als niet bestaat)
-2. Push naar `concept.thinking` array (initialiseer als `[]` indien nodig):
+2. Schrijf volledige markdown naar `.project/thinking/{today}-idea-{slug}.md`
+3. Push naar `concept.thinking` array (initialiseer als `[]` indien nodig):
    ```json
    {
      "type": "idea",
      "date": "{today}",
      "title": "{concept titel}",
-     "content": "{volledige markdown output van Step 4}",
+     "summary": "{key insight, max 200 chars}",
+     "file": ".project/thinking/{today}-idea-{slug}.md",
      "source": "/thinking-idea"
    }
    ```
-3. Write `.project/project.json`
+4. Write `.project/project.json`
 
 **If "Opslaan naar Obsidian":**
 
-1. Also save to `.project/project.json` concept (so brainstorm/critique can pick it up): read existing JSON (or `{}`), set `concept.name` and `concept.content`, write back
+1. Also save to `.project/project.json` concept (so brainstorm/critique can pick it up): read existing JSON (or `{}`), set `concept.name`, `concept.pitch` (eerste alinea) and `concept.content`, write back
 2. Detect category from content:
    - Game-related → `game`
    - App/service/tool → `app`

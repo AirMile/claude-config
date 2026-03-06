@@ -1,6 +1,20 @@
 // Card menu, clipboard, detail modal patches
 (function () {
-  var NEXT = { TODO: "define", DEF: "build", BLT: "test" };
+  function getNextVerb(f) {
+    if (f.status === "TODO") return "define";
+    if (f.status === "DOING") {
+      return (
+        {
+          defining: "define",
+          defined: "build",
+          building: "build",
+          built: "test",
+          testing: "test",
+        }[f.stage] || "define"
+      );
+    }
+    return null;
+  }
   var prefix =
     window.data && window.data.source && window.data.source.startsWith("/game")
       ? "game"
@@ -15,7 +29,7 @@
       var actions = card.querySelector(".card-actions");
       // Add clipboard button (visible on hover)
       if (actions && !actions.querySelector(".card-clip")) {
-        var verb = NEXT[f.status];
+        var verb = getNextVerb(f);
         var showClip = verb || (f.assignee && f.status !== "DONE");
         if (showClip) {
           var clipBtn = document.createElement("button");
@@ -24,7 +38,7 @@
             '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
           var checkSvg =
             '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.5 3.5 7-7"/></svg>';
-          if (f.assignee && f.status === "BLT") {
+          if (f.assignee && f.stage === "built") {
             clipBtn.title = "/team-test " + f.name;
           } else if (f.assignee) {
             clipBtn.title =
@@ -44,7 +58,7 @@
                 clipBtn.innerHTML = clipSvg;
               }, 1500);
             }
-            if (f.assignee && f.status === "BLT") {
+            if (f.assignee && f.stage === "built") {
               var cmd = "/team-test " + f.name;
               navigator.clipboard.writeText(cmd).then(function () {
                 showCopied("Gekopieerd: " + cmd);
@@ -131,7 +145,7 @@
       origOpen(name);
       var found = window.findItem(name);
       if (!found) return;
-      var verb = NEXT[found.item.status];
+      var verb = getNextVerb(found.item);
       var cb = document.getElementById("detail-copy");
       if (cb) {
         var copySvg =

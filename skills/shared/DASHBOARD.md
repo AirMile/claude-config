@@ -44,6 +44,7 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 {
   "concept": {
     "name": "",
+    "pitch": "",
     "content": ""
   },
   "architecture": {
@@ -86,18 +87,18 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 
 ## Merge-strategie per sectie
 
-| Sectie         | Strategie           | Toelichting                                             |
-| -------------- | ------------------- | ------------------------------------------------------- |
-| `concept`      | **OVERWRITE**       | `name`+`content` overschrijven, `thinking` is APPEND    |
-| `architecture` | **OVERWRITE**       | Diagram + beschrijving volledig overschrijven           |
-| `design`       | **MERGE op `name`** | Pages/flows/principles merge op naam, nooit auto-delete |
-| `theme`        | **OVERWRITE**       | Volledig overschrijven bij `/frontend-theme`            |
-| `stack`        | **MERGE**           | Voeg packages toe, overschrijf geen bestaande           |
-| `data`         | **MERGE**           | Voeg entities/velden/relaties toe per entity            |
-| `endpoints`    | **MERGE**           | Voeg toe of update status, verwijder niet               |
-| `features`     | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet          |
-| `thinking`     | **APPEND**          | Altijd toevoegen, nooit overschrijven of verwijderen    |
-| `context`      | **MERGE per key**   | Update structure/routing/patterns individueel           |
+| Sectie         | Strategie           | Toelichting                                                  |
+| -------------- | ------------------- | ------------------------------------------------------------ |
+| `concept`      | **OVERWRITE**       | `name`+`pitch`+`content` overschrijven, `thinking` is APPEND |
+| `architecture` | **OVERWRITE**       | Diagram + beschrijving volledig overschrijven                |
+| `design`       | **MERGE op `name`** | Pages/flows/principles merge op naam, nooit auto-delete      |
+| `theme`        | **OVERWRITE**       | Volledig overschrijven bij `/frontend-theme`                 |
+| `stack`        | **MERGE**           | Voeg packages toe, overschrijf geen bestaande                |
+| `data`         | **MERGE**           | Voeg entities/velden/relaties toe per entity                 |
+| `endpoints`    | **MERGE**           | Voeg toe of update status, verwijder niet                    |
+| `features`     | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet               |
+| `thinking`     | **APPEND**          | Altijd toevoegen, nooit overschrijven of verwijderen         |
+| `context`      | **MERGE per key**   | Update structure/routing/patterns individueel                |
 
 ### Stack merge
 
@@ -154,7 +155,7 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 2. Voor elke feature:
    - Check of feature.name al bestaat in features array
    - Zo nee: push nieuwe feature
-   - Zo ja: update status (bijv. "DEF" -> "BLT"), update summary als gewijzigd
+   - Zo ja: update status/stage (bijv. "DOING" stage "defined" -> "built"), update summary als gewijzigd
 3. Write project.json
 ```
 
@@ -189,13 +190,15 @@ Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar 
 ```json
 {
   "name": "Project Naam",
+  "pitch": "Korte samenvatting van het concept in 1-2 zinnen.",
   "content": "# Project Naam\n\nVolledige concept beschrijving in markdown.\n\n## Core Concept\n\n...\n\n## Doelgroep\n\n...",
   "thinking": [
     {
       "type": "idea",
       "date": "2026-02-20",
       "title": "Initieel idee",
-      "content": "Volledige markdown output van /thinking-idea",
+      "summary": "Key insight van de thinking output (max 200 chars)",
+      "file": ".project/thinking/2026-02-20-idea-initieel-idee.md",
       "source": "/thinking-idea"
     }
   ]
@@ -203,6 +206,7 @@ Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar 
 ```
 
 `name` = korte project naam (voor dashboard header)
+`pitch` = 1-2 zinnen samenvatting van het concept (voor lichte context loading door dev skills). Leeg = fallback naar eerste 2 zinnen van `content`.
 `content` = volledige concept document in markdown (vervangt legacy `concept.md`)
 `thinking` = concept progressie log (append-only) — toont de stappen van idea → brainstorm → critique voor het concept. Zelfde entry-formaat als main `thinking`, maar specifiek voor concept-scope.
 
@@ -370,7 +374,8 @@ Overige velden = structured tokens per categorie
 [
   {
     "name": "pin-mode",
-    "status": "DEF",
+    "status": "DOING",
+    "stage": "defined",
     "summary": "Shift+Click multi-select voor inspect overlay",
     "depends": ["clipboard-redesign"],
     "created": "2026-02-20"
@@ -378,7 +383,8 @@ Overige velden = structured tokens per categorie
 ]
 ```
 
-**Status waarden:** `TODO` | `DEF` | `BLT` | `DONE`
+**Status waarden:** `TODO` | `DOING` | `DONE`
+**Stage waarden (alleen bij DOING):** `defining` | `defined` | `building` | `built` | `testing`
 
 ### thinking
 
@@ -388,14 +394,16 @@ Overige velden = structured tokens per categorie
     "type": "idea",
     "date": "2026-02-20",
     "title": "SaaS dashboard voor freelancers",
-    "content": "Volledige markdown output van de thinking skill",
+    "summary": "SaaS dashboard met real-time urenregistratie en factuurintegratie voor ZZP'ers.",
+    "file": ".project/thinking/2026-02-20-idea-saas-dashboard.md",
     "source": "/thinking-idea"
   },
   {
     "type": "brainstorm",
     "date": "2026-02-20",
     "title": "Auth strategie",
-    "content": "Volledige refined markdown output",
+    "summary": "JWT stateless gekozen voor schaalbaarheid en toekomstige mobile app support.",
+    "file": ".project/thinking/2026-02-20-brainstorm-auth-strategie.md",
     "variants": ["JWT stateless", "Session cookies", "OAuth-only"],
     "chosen": "JWT stateless",
     "source": "/thinking-brainstorm"
@@ -404,14 +412,16 @@ Overige velden = structured tokens per categorie
     "type": "critique",
     "date": "2026-02-20",
     "title": "Concept review: dashboard MVP",
-    "content": "Volledige refined markdown output",
+    "summary": "MVP scope te breed: factuurmodule uitstellen, focus op urenregistratie + rapportage.",
+    "file": ".project/thinking/2026-02-20-critique-dashboard-mvp.md",
     "source": "/thinking-critique"
   },
   {
     "type": "decision",
     "date": "2026-02-20",
     "title": "JWT vs Session auth",
-    "content": "Volledige analyse",
+    "summary": "JWT gekozen: stateless API nodig voor mobile app later, acceptabele trade-off op revocation.",
+    "file": ".project/thinking/2026-02-20-decision-jwt-vs-session.md",
     "options": ["JWT", "Session cookies", "OAuth-only"],
     "chosen": "JWT",
     "rationale": "Stateless API nodig voor mobile app later",
@@ -422,10 +432,15 @@ Overige velden = structured tokens per categorie
 
 **Type waarden:** `idea` | `brainstorm` | `critique` | `decision`
 
-Alle entries hebben `type`, `date`, `title`, `content`, `source`. Extra velden per type:
+Alle entries hebben `type`, `date`, `title`, `summary`, `file`, `source`. Extra velden per type:
 
 - `brainstorm`: `variants` (alle opties), `chosen` (gekozen optie)
 - `decision`: `options`, `chosen`, `rationale`
+
+`summary` = max 200 chars, key insight van de thinking output.
+`file` = pad naar volledige markdown in `.project/thinking/`. Bestandsnaam: `{date}-{type}-{slug}.md`.
+
+**Legacy:** oude entries met `content` i.p.v. `summary`+`file` blijven werken. Skills die entries lezen checken op `file` (nieuw) of `content` (legacy).
 
 ### context
 
@@ -466,27 +481,27 @@ Alle entries hebben `type`, `date`, `title`, `content`, `source`. Extra velden p
 | `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-page`                 | Bij detectie/nieuwe deps                          |
 | `data`             | `/dev-define`, `/game-define`                                                             | Bij entity definitie                              |
 | `endpoints`        | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build                      |
-| `features`         | `/dev-define`, `/dev-build`, `/dev-test`, `/team-test`, `/game-define`, `/game-build`     | Bij status wijziging (DEF/BLT/DONE)               |
+| `features`         | `/dev-define`, `/dev-build`, `/dev-test`, `/team-test`, `/game-define`, `/game-build`     | Bij status wijziging (DOING/DONE)                 |
 | `concept.thinking` | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)               |
 | `thinking`         | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Bij non-concept thinking (append)                 |
 | `context`          | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`             | Bij build/refactor (structuur, routing, patterns) |
 
 ### Skill → project.json sync overzicht
 
-| Skill              | Wat schrijven                                                                                         | Wanneer              |
-| ------------------ | ----------------------------------------------------------------------------------------------------- | -------------------- |
-| `/core-setup`      | `stack` (volledig), `context` (initieel: structure, routing, patterns)                                | Na project generatie |
-| `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (status DEF), `architecture`               | FASE 6               |
-| `/dev-build`       | `endpoints` (status done), `stack.packages`, `features` (status BLT), `context`, `architecture`       | FASE 4C              |
-| `/dev-test`        | `stack.packages`, `endpoints`, `data.entities`, `features` (status DONE)                              | FASE 6 completion    |
-| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`, `context` (conditional), `architecture` (conditional) | FASE 5 completion    |
-| `/frontend-design` | `design` (pages, flows, principles)                                                                   | Bij elke uitvoering  |
-| `/frontend-page`   | `stack.packages`, `design.pages` (status, sections)                                                   | Na FASE 4            |
-| `/frontend-theme`  | `design.principles` (design system beslissingen)                                                      | Na completion        |
-| `/game-define`     | `data.entities`, `stack.packages`, `features` (status DEF), `architecture`                            | FASE 6               |
-| `/game-build`      | `features` (status BLT), `context` (structure, patterns), `architecture`                              | FASE 5 completion    |
-| `/team-test`       | `features` (status DONE/BLT), `stack.packages`, `endpoints`, `data.entities` (conditional, na fixes)  | FASE 7 completion    |
-| `/game-refactor`   | `features` (status DONE), `context` (conditional), `architecture` (conditional)                       | FASE 5 completion    |
+| Skill              | Wat schrijven                                                                                                | Wanneer              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ | -------------------- |
+| `/core-setup`      | `stack` (volledig), `context` (initieel: structure, routing, patterns)                                       | Na project generatie |
+| `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (status DOING+defined), `architecture`            | FASE 6               |
+| `/dev-build`       | `endpoints` (status done), `stack.packages`, `features` (status DOING+built), `context`, `architecture`      | FASE 4C              |
+| `/dev-test`        | `stack.packages`, `endpoints`, `data.entities`, `features` (status DONE)                                     | FASE 6 completion    |
+| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`, `context` (conditional), `architecture` (conditional)        | FASE 5 completion    |
+| `/frontend-design` | `design` (pages, flows, principles)                                                                          | Bij elke uitvoering  |
+| `/frontend-page`   | `stack.packages`, `design.pages` (status, sections)                                                          | Na FASE 4            |
+| `/frontend-theme`  | `design.principles` (design system beslissingen)                                                             | Na completion        |
+| `/game-define`     | `data.entities`, `stack.packages`, `features` (status DOING+defined), `architecture`                         | FASE 6               |
+| `/game-build`      | `features` (status DOING+built), `context` (structure, patterns), `architecture`                             | FASE 5 completion    |
+| `/team-test`       | `features` (status DONE/DOING+built), `stack.packages`, `endpoints`, `data.entities` (conditional, na fixes) | FASE 7 completion    |
+| `/game-refactor`   | `features` (status DONE), `context` (conditional), `architecture` (conditional)                              | FASE 5 completion    |
 
 ## Server
 

@@ -12,8 +12,8 @@
   var activeFeatures = [];
 
   function updateActiveCards() {
-    // Remove old indicators
-    document.querySelectorAll(".card-active").forEach(function (c) {
+    // Remove old session-based indicators (only from .card elements, not inline spans)
+    document.querySelectorAll(".card.card-active").forEach(function (c) {
       c.classList.remove("card-active");
       var badge = c.querySelector(".active-badge");
       if (badge) badge.remove();
@@ -29,6 +29,9 @@
       var skill = lookup[c.dataset.name];
       if (!skill) return;
       c.classList.add("card-active");
+      // Hide inline JSON-based span to avoid duplicate indicator
+      var inlineSpan = c.querySelector("span.card-active");
+      if (inlineSpan) inlineSpan.style.display = "none";
       var label = SKILL_LABELS[skill] || skill;
       var badge = document.createElement("span");
       badge.className = "active-badge";

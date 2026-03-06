@@ -469,19 +469,21 @@ Applied techniques: {list of techniques used}
 **Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
 
 1. Read `.project/project.json` (skip als niet bestaat)
-2. Push naar `thinking` array:
+2. Schrijf volledige markdown naar `.project/thinking/{today}-brainstorm-{slug}.md`
+3. Push naar `thinking` array:
    ```json
    {
      "type": "brainstorm",
      "date": "{today}",
      "title": "{onderwerp van de brainstorm}",
-     "content": "{volledige refined markdown output van Step 6}",
+     "summary": "{key insight, max 200 chars}",
+     "file": ".project/thinking/{today}-brainstorm-{slug}.md",
      "variants": ["{variant 1}", "{variant 2}", "..."],
      "chosen": "{gekozen variant}",
      "source": "/thinking-brainstorm"
    }
    ```
-3. Write `.project/project.json`
+4. Write `.project/project.json`
 
 Vraag daarna optioneel:
 
@@ -494,19 +496,19 @@ options:
 multiSelect: false
 ```
 
-If "Ja": lees `.project/project.json` (of maak aan), update `concept.name` en `concept.content` met de refined content, schrijf terug.
+If "Ja": lees `.project/project.json` (of maak aan), update `concept.name`, `concept.pitch` (eerste alinea, 1-2 zinnen) en `concept.content` met de refined content, schrijf terug.
 
 **If scope = los idee (uit Step 1a):**
 
-Sla op naar `.project/thinking/{onderwerp}.md`:
+Sla op naar `.project/thinking/{today}-brainstorm-{slug}.md`:
 
 1. Maak `.project/thinking/` aan indien nodig
-2. Schrijf naar `.project/thinking/{onderwerp}.md`
+2. Schrijf naar `.project/thinking/{today}-brainstorm-{slug}.md`
 
 ```
 THINKING OUTPUT SAVED
 
-File: .project/thinking/{onderwerp}.md
+File: .project/thinking/{today}-brainstorm-{slug}.md
 Scope: los idee
 Applied techniques: {list of techniques used}
 ```
@@ -514,13 +516,14 @@ Applied techniques: {list of techniques used}
 **Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
 
 1. Read `.project/project.json` (skip als niet bestaat)
-2. Push naar `thinking` array:
+2. Push naar `thinking` array (file is al geschreven hierboven):
    ```json
    {
      "type": "brainstorm",
      "date": "{today}",
      "title": "{onderwerp van de brainstorm}",
-     "content": "{volledige refined markdown output van Step 6}",
+     "summary": "{key insight, max 200 chars}",
+     "file": ".project/thinking/{today}-brainstorm-{slug}.md",
      "variants": ["{variant 1}", "{variant 2}", "..."],
      "chosen": "{gekozen variant}",
      "source": "/thinking-brainstorm"
@@ -558,7 +561,7 @@ multiSelect: false
 **If "Opslaan naar concept":**
 
 1. Read `.project/project.json` (or create `{}` if not exists), parse JSON
-2. Set `concept.name` to the title of the refined idea and `concept.content` to the full refined markdown content
+2. Set `concept.name` to the title of the refined idea, `concept.pitch` to de eerste alinea (1-2 zinnen), `concept.content` to the full refined markdown content
 3. Write updated JSON back to `.project/project.json`
 4. Confirm:
 
@@ -578,23 +581,25 @@ multiSelect: false
 **Dashboard sync — concept thinking** (zie `shared/DASHBOARD.md`):
 
 1. Read `.project/project.json` (skip als niet bestaat)
-2. Push naar `concept.thinking` array (initialiseer als `[]` indien nodig):
+2. Schrijf volledige markdown naar `.project/thinking/{today}-brainstorm-{slug}.md`
+3. Push naar `concept.thinking` array (initialiseer als `[]` indien nodig):
    ```json
    {
      "type": "brainstorm",
      "date": "{today}",
      "title": "{onderwerp van de brainstorm}",
-     "content": "{volledige refined markdown output van Step 6}",
+     "summary": "{key insight, max 200 chars}",
+     "file": ".project/thinking/{today}-brainstorm-{slug}.md",
      "variants": ["{variant 1}", "{variant 2}", "..."],
      "chosen": "{gekozen variant}",
      "source": "/thinking-brainstorm"
    }
    ```
-3. Write `.project/project.json`
+4. Write `.project/project.json`
 
 **If "Opslaan naar Obsidian":**
 
-1. Also update `concept` in `.project/project.json` (so other skills can pick it up)
+1. Also update `concept` in `.project/project.json` (so other skills can pick it up) — set `concept.name`, `concept.pitch` (eerste alinea) en `concept.content`
 2. If concept was loaded from Obsidian (tracked via `obsidian_source_path`):
    - Overwrite: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
    - Update frontmatter status to `developing` via `mcp__obsidian__update_frontmatter()`

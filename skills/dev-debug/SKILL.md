@@ -10,7 +10,51 @@ metadata:
 
 # Debug
 
-Structured 8-phase debugging: intake → investigate → analyze → research → fix plans → select → implement → verify.
+Structured 9-phase debugging: context → intake → investigate → analyze → research → fix plans → select → implement → verify.
+
+## FASE 0: Context Loading
+
+**Stack context** (optioneel, skip wat niet bestaat):
+
+- Lees CLAUDE.md `### Stack` sectie
+- Lees `.claude/research/stack-baseline.md`
+
+**Project context** (optioneel, skip als niet bestaat):
+
+- Lees `.project/project.json` → extract:
+  - `stack` (framework, language, packages)
+  - `context` (structure, routing, patterns)
+  - `endpoints` (method, path, auth)
+  - `data.entities` (names, fields, relations)
+
+**Active feature detectie** (optioneel):
+
+- Check `.project/session/active-*.json` files
+- Fallback: lees `.project/backlog.html` → zoek features met `inProgress` veld, of meest recente `"DOING"` feature
+- Als actieve feature gevonden: noteer als context hint voor investigation agents
+
+**Stel DEBUG_CONTEXT samen** per agent (gerichte subsets, niet alles aan iedereen):
+
+```
+SHARED (alle agents):
+STACK: {framework} ({language}) — {packages}
+
+debug-error-tracer:
+PATTERNS: {context.patterns of "niet beschikbaar"}
+
+debug-change-detective:
+STRUCTURE: {context.structure of "niet beschikbaar"}
+ACTIVE FEATURE: {feature naam + status of "geen"}
+
+debug-context-mapper:
+STRUCTURE: {context.structure of "niet beschikbaar"}
+ENDPOINTS: {endpoints of "niet beschikbaar"}
+ENTITIES: {data.entities of "niet beschikbaar"}
+```
+
+Als niets beschikbaar → ga door zonder context (backwards compatible).
+
+---
 
 ## FASE 1: Problem Intake
 
@@ -106,7 +150,7 @@ Launch 3 agents in parallel:
 | debug-change-detective | Recent changes | Git history, recent commits affecting area |
 | debug-context-mapper   | Code context   | Related files, dependencies, data flow     |
 
-Each receives: problem summary + relevant file paths + error messages/stack traces.
+Each receives: problem summary + relevant file paths + error messages/stack traces + **agent-specifieke** DEBUG_CONTEXT subset (uit FASE 0).
 
 ---
 

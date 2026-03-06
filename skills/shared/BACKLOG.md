@@ -25,12 +25,14 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
     {
       "name": "feature-naam",
       "type": "FEATURE|API|INTEGRATION|UI|REFACTOR",
-      "status": "TODO|DEF|BLT|DONE",
+      "status": "TODO|DOING|DONE",
+      "stage": "defining|defined|building|built|testing|null",
       "phase": "P1|P2|P3|P4",
       "description": "Beschrijving",
       "dependency": "andere-feature|null",
       "assignee": "naam|null",
-      "date": "2026-01-15|null"
+      "date": "2026-01-15|null",
+      "inProgress": "define|build|test|null"
     }
   ],
   "notes": "Eventuele notities"
@@ -73,17 +75,45 @@ Dit reduceert 6+ sequentiële round-trips naar 2. Bestanden zijn onafhankelijk �
 ## Status flow
 
 ```
-TODO → DEF → BLT → DONE
+TODO → DOING → DONE
 ```
 
-| Status | Betekenis         | Gezet door           |
-| ------ | ----------------- | -------------------- |
-| TODO   | Nog niet opgepakt | /dev-plan, /dev-todo |
-| DEF    | Gedefinieerd      | /dev-define          |
-| BLT    | Gebouwd           | /dev-build           |
-| DONE   | Getest & klaar    | /dev-test            |
+| Status | Betekenis      | Gezet door                         |
+| ------ | -------------- | ---------------------------------- |
+| TODO   | Niet opgepakt  | /dev-plan, /dev-todo               |
+| DOING  | In bewerking   | /dev-define, /dev-build, /dev-test |
+| DONE   | Getest & klaar | /dev-test                          |
 
 `/dev-refactor` is een optionele kwaliteitsstap op DONE features — geen status-gate.
+
+## Stage (voortgang binnen DOING)
+
+```
+defining → defined → building → built → testing → [DONE]
+```
+
+| Stage    | Betekenis          | Gezet door         |
+| -------- | ------------------ | ------------------ |
+| defining | Wordt gedefinieerd | /dev-define FASE 0 |
+| defined  | Gedefinieerd       | /dev-define klaar  |
+| building | Wordt gebouwd      | /dev-build FASE 0  |
+| built    | Gebouwd            | /dev-build klaar   |
+| testing  | Wordt getest       | /dev-test FASE 0   |
+
+`stage` is persistent — blijft staan tussen skill-invocaties. Wordt verwijderd bij `DONE`.
+
+## Active skill indicator
+
+Skills zetten `inProgress` op een feature bij de start van hun FASE 0, en verwijderen het bij de afsluitende sync. Dit is een **tijdelijk** veld (anders dan `stage` dat persistent is).
+
+| Skill       | Zet `inProgress`      | Verwijdert `inProgress` |
+| ----------- | --------------------- | ----------------------- |
+| /dev-define | `"define"` bij FASE 0 | FASE 4 sync             |
+| /dev-build  | `"build"` bij FASE 0  | FASE 3B sync            |
+| /dev-test   | `"test"` bij FASE 0   | FASE 6 sync             |
+
+De backlog template rendert dit als een pulserende tag op de card.
+Als een skill crasht, blijft het veld staan tot de volgende skill het overschrijft of verwijdert.
 
 ## Features filteren
 
@@ -91,9 +121,9 @@ Voorbeelden van veelvoorkomende queries op het JSON object:
 
 ```
 Volgende TODO feature:    data.features.find(f => f.status === "TODO")
-Alle DEF features:        data.features.filter(f => f.status === "DEF")
-Alle BLT features:        data.features.filter(f => f.status === "BLT")
+Alle DOING features:      data.features.filter(f => f.status === "DOING")
+Defined (klaar voor build): data.features.filter(f => f.status === "DOING" && f.stage === "defined")
+Built (klaar voor test):    data.features.filter(f => f.status === "DOING" && f.stage === "built")
 Alle DONE features:       data.features.filter(f => f.status === "DONE")
 P1 features:              data.features.filter(f => f.phase === "P1")
-P4 features:              data.features.filter(f => f.phase === "P4")
 ```
