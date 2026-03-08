@@ -25,7 +25,6 @@ dev:
   - dev-refactor
   - dev-server
   - dev-test
-  - dev-todo
   - dev-worktree
 
 frontend:
@@ -61,5 +60,6 @@ thinking:
   - thinking-brainstorm
   - thinking-critique
   - thinking-decide
+  - thinking-feature
   - thinking-idea
   - thinking-research
