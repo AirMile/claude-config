@@ -129,23 +129,34 @@
     copyBtn.style.display = "none";
     detailActions.insertBefore(copyBtn, detailActions.firstChild);
     copyBtn.addEventListener("click", function () {
-      var assignee = copyBtn.dataset.assignee;
-      var feature = copyBtn.dataset.feature;
-      if (assignee && feature && typeof generateTaskBrief === "function") {
-        var found = window.findItem(feature);
-        if (found) {
-          generateTaskBrief(found.item).then(function (brief) {
-            navigator.clipboard.writeText(brief).then(function () {
-              toast("Task brief gekopieerd voor " + assignee);
-            });
+      var cmd = copyBtn.dataset.cmd;
+      if (cmd)
+        navigator.clipboard.writeText(cmd).then(function () {
+          toast("Gekopieerd: " + cmd);
+        });
+    });
+  }
+  // Add brief button: always copies task brief (for admin + teammate)
+  if (detailActions && !document.getElementById("detail-brief")) {
+    var briefSvg =
+      '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
+    var briefBtn = document.createElement("button");
+    briefBtn.id = "detail-brief";
+    briefBtn.className = "btn-copy";
+    briefBtn.innerHTML = briefSvg + " Brief";
+    briefBtn.style.display = "none";
+    detailActions.insertBefore(briefBtn, detailActions.firstChild);
+    briefBtn.addEventListener("click", function () {
+      var name = briefBtn.dataset.feature;
+      if (!name) return;
+      var found = typeof findItem !== "undefined" ? findItem(name) : null;
+      if (!found) return;
+      if (typeof generateTaskBrief === "function") {
+        generateTaskBrief(found.item).then(function (brief) {
+          navigator.clipboard.writeText(brief).then(function () {
+            if (typeof toast === "function") toast("Brief gekopieerd");
           });
-        }
-      } else {
-        var cmd = copyBtn.dataset.cmd;
-        if (cmd)
-          navigator.clipboard.writeText(cmd).then(function () {
-            toast("Gekopieerd: " + cmd);
-          });
+        });
       }
     });
   }
@@ -253,24 +264,21 @@
       if (cb) {
         var copySvg =
           '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
-        if (found.item.assignee && found.item.status !== "DONE") {
-          cb.innerHTML = copySvg + " Brief";
-          cb.title = "Kopieer task brief voor " + found.item.assignee;
-          cb.dataset.cmd = "";
-          cb.dataset.assignee = found.item.assignee;
-          cb.dataset.feature = found.item.name;
-          cb.style.display = "";
-        } else if (verb) {
+        if (verb) {
           var cmd = "/" + prefix + "-" + verb + " " + found.item.name;
           cb.innerHTML = copySvg + " Kopieer";
           cb.title = cmd;
           cb.dataset.cmd = cmd;
-          cb.dataset.assignee = "";
-          cb.dataset.feature = "";
           cb.style.display = "";
         } else {
           cb.style.display = "none";
         }
+      }
+      // Brief button: always show for non-DONE cards
+      var bb = document.getElementById("detail-brief");
+      if (bb) {
+        bb.dataset.feature = found.item.name;
+        bb.style.display = found.item.status !== "DONE" ? "" : "none";
       }
       // Add status/stage pickers
       var body = document.getElementById("detail-body");

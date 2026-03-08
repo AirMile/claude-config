@@ -253,14 +253,14 @@
       let data = JSON.parse(raw);
       let activeTab = localStorage.getItem("dashboard-tab") || "concept";
       // Migrate old tab names
-      if (activeTab === "architecture") activeTab = "diagram";
+      if (activeTab === "diagram") activeTab = "architecture";
       if (activeTab === "features") activeTab = "concept";
       if (activeTab === "config") activeTab = "concept";
       let modalContext = null;
 
       const TABS = [
         { id: "concept", label: "Concept" },
-        { id: "diagram", label: "Diagram" },
+        { id: "architecture", label: "Architecture" },
         { id: "design", label: "Design" },
         { id: "theme", label: "Theme" },
         { id: "stack", label: "Stack" },
@@ -737,7 +737,7 @@
         if (a.diagram) renderMermaidDiagram(a.diagram);
       }
 
-      function renderArchDiagram() {
+      function renderArchitecture() {
         const a = data.architecture || {};
         const hasDiagram = a.diagram && a.diagram.trim();
         const hasDesc = a.description && a.description.trim();
@@ -745,8 +745,8 @@
 
         if (!hasDiagram && !hasDesc) {
           return `
-            <div class="section-header"><h2>Diagram</h2></div>
-            <div class="empty-state"><p>Nog geen architectuur diagram gedefinieerd.</p>
+            <div class="section-header"><h2>Architecture</h2></div>
+            <div class="empty-state"><p>Nog geen architectuur gedefinieerd.</p>
             <p style="color:var(--text-dim)">Wordt gevuld door <code>/dev-define</code> of <code>/dev-build</code></p></div>`;
         }
 
@@ -806,7 +806,7 @@
 
         return `
           <div class="section-header">
-            <h2>Diagram</h2>
+            <h2>Architecture</h2>
             <button class="edit-btn icon-btn" onclick="editArchitecture()" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
           ${toolbarHtml}
@@ -1435,7 +1435,7 @@
 
       const renderers = {
         concept: renderConcept,
-        diagram: renderArchDiagram,
+        architecture: renderArchitecture,
         stack: renderStack,
         design: renderDesignContent,
         theme: renderTheme,
@@ -1478,11 +1478,11 @@
           (d.pages && d.pages.length) ||
           (d.flows && d.flows.length) ||
           (d.principles && d.principles.length);
+        const tc = th.colors && !Array.isArray(th.colors) ? th.colors : {};
         const hasTheme =
-          (th.colors &&
-            (th.colors.main.length ||
-              th.colors.accent.length ||
-              th.colors.semantic.length)) ||
+          (tc.main && tc.main.length) ||
+          (tc.accent && tc.accent.length) ||
+          (tc.semantic && tc.semantic.length) ||
           (th.typography &&
             th.typography.sizes &&
             th.typography.sizes.length) ||
@@ -1497,7 +1497,7 @@
         if (window.__role === "teammate") {
           const allowed = {
             concept: 1,
-            diagram: 1,
+            architecture: 1,
             design: 1,
             theme: 1,
             stack: 1,

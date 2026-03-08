@@ -29,41 +29,24 @@
       if (!name || !window.__userName) return;
       var found = typeof findItem !== "undefined" ? findItem(name) : null;
       if (!found) return;
-      found.item.assignee = window.__userName;
+      var isMine = found.item.assignee === window.__userName;
+      found.item.assignee = isMine ? null : window.__userName;
       if (typeof syncJSON === "function") syncJSON();
       if (typeof render === "function") render();
-      // Close detail modal
-      var modal = document.getElementById("detail-modal");
-      if (modal) modal.classList.remove("visible");
-      if (typeof toast === "function")
-        toast("Geclaimed door " + window.__userName);
+      if (isMine) {
+        if (typeof toast === "function") toast("Unclaimed: " + name);
+        // Re-open modal to refresh button state
+        if (typeof window.openDetailModal === "function")
+          window.openDetailModal(name);
+      } else {
+        // Close detail modal after claim
+        var modal = document.getElementById("detail-modal");
+        if (modal) modal.classList.remove("visible");
+        if (typeof toast === "function")
+          toast("Geclaimed door " + window.__userName);
+      }
     });
   }
-
-  // ── Add "Brief" copy button in detail modal ──
-  var briefBtn = document.createElement("button");
-  briefBtn.id = "detail-brief";
-  briefBtn.className = "btn-copy";
-  briefBtn.innerHTML =
-    '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg> Brief';
-  briefBtn.style.display = "none";
-  if (detailActions) {
-    detailActions.insertBefore(briefBtn, detailActions.firstChild);
-  }
-
-  briefBtn.addEventListener("click", function () {
-    var name = briefBtn.dataset.feature;
-    if (!name) return;
-    var found = typeof findItem !== "undefined" ? findItem(name) : null;
-    if (!found) return;
-    if (typeof generateTaskBrief === "function") {
-      generateTaskBrief(found.item).then(function (brief) {
-        navigator.clipboard.writeText(brief).then(function () {
-          if (typeof toast === "function") toast("Brief gekopieerd");
-        });
-      });
-    }
-  });
 
   // ── Patch openDetailModal: show/hide claim + brief + stage picker ──
   var origDetail = window.openDetailModal;
@@ -73,12 +56,15 @@
       var found = typeof findItem !== "undefined" ? findItem(name) : null;
       if (!found) return;
 
-      // Claim button: show if not yet assigned to this user
+      // Claim/Unclaim button: toggle label based on assignment
       var cb = document.getElementById("detail-claim");
       if (cb) {
         cb.dataset.feature = name;
-        cb.style.display =
-          found.item.assignee === window.__userName ? "none" : "";
+        var isMine = found.item.assignee === window.__userName;
+        cb.innerHTML = isMine
+          ? '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/><line x1="12" y1="3" x2="15" y2="6" stroke="currentColor" stroke-width="2"/><line x1="15" y1="3" x2="12" y2="6" stroke="currentColor" stroke-width="2"/></svg> Unclaim'
+          : '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg> Claim';
+        cb.style.display = "";
       }
 
       // Brief button: always show
