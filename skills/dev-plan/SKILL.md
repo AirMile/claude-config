@@ -53,6 +53,9 @@ Accepts markdown from:
 3. **Scenario A: Both concept AND backlog exist**
    - Read `project.json` (`concept.content`) and `backlog.html`
    - Analyze differences between concept and existing backlog
+   - Check `concept.thinking` entries with date AFTER `backlog.updated` to understand concept evolution
+   - Check `thinking[]` array in `project.json` for entries with `newFeature` field to identify independently-added features (via `/thinking-feature`)
+   - Compare current `concept.content` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
      ```
@@ -61,10 +64,20 @@ Accepts markdown from:
      Concept: .project/project.json (concept.content)
      Backlog: .project/backlog.html
 
-     Changes detected:
+     Concept evolution since last backlog update ({backlog.updated}):
+     {for each concept.thinking entry after backlog.updated:}
+     - [{type}] {date}: {summary} (via {source})
+
+     Feature changes detected:
      - NEW: {list of features in concept but not in backlog}
-     - REMOVED: {list of features in backlog but not in concept}
+     - MODIFIED: {list of features in both but with changed description/scope}
+     - INDEPENDENT: {list of features in backlog added via /thinking-feature, not from concept}
+     - REMOVED: {list of features in backlog, not in concept, AND not independently added}
      - UNCHANGED: {count} features
+
+     Protected features (not affected by update):
+     - DOING: {list with current stage}
+     - DONE: {list}
      ```
 
    - Use AskUserQuestion:
@@ -79,9 +92,13 @@ Accepts markdown from:
      multiSelect: false
      ```
    - **If "Update backlog":**
-     - Preserve existing priority assignments and notes
-     - Add new features from concept
-     - Mark removed features as deprecated (don't delete)
+     - **Merge rules by feature status:**
+       - **DOING/DONE features** (protected): preserve status, stage, priority, assignee, date, and notes. Only enrich description if concept provides new insights — never overwrite.
+       - **TODO features (modified)**: update description/scope from concept, preserve priority and notes
+       - **New features**: add as TODO with auto-assigned priority (user reviews in FASE 3)
+       - **Removed TODO features**: mark as deprecated (don't delete)
+       - **Removed DOING/DONE features**: show warning and ask user whether to keep or deprecate — these represent in-progress work that may still be relevant
+       - **INDEPENDENT features** (added via `/thinking-feature`): always preserve unchanged — these are not derived from concept. Keep status, stage, priority, assignee, date, and description intact. Never deprecate or remove.
      - Continue to FASE 1 with update mode
    - **If "Nieuwe backlog":**
      - Use concept as input, ignore existing backlog
@@ -284,6 +301,13 @@ Research results remain in conversation context for FASE 1. No files are written
 
    **Granularity decision:** When a feature could be defined as one large item OR multiple smaller items, apply the right-size rule: each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — they're easier to combine than to split later.
 
+   **If in update mode (from FASE 0 Scenario A):**
+   - Start from existing backlog features as baseline — do NOT extract from scratch
+   - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
+   - INDEPENDENT features (added via `/thinking-feature`): always preserve unchanged — they are not concept-derived
+   - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
+   - Present the merged feature list with change markers for clarity
+
 2. **Extract features:**
    - Each feature = one `/dev-define` unit
    - Feature should be implementable independently (with dependencies)
@@ -306,11 +330,14 @@ FEATURES EXTRACTED
 
 Found {count} features:
 
-| # | Feature | Type | Description |
-|---|---------|------|-------------|
-| 1 | {name} | {type} | {one-line description} |
-| 2 | {name} | {type} | {one-line description} |
+| # | Feature | Type | Description | Change |
+|---|---------|------|-------------|--------|
+| 1 | {name} | {type} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
+| 2 | {name} | {type} | {one-line description} | {marker or — if unchanged} |
 ...
+
+In update mode, the Change column shows what happened to each feature.
+In create mode, the Change column is omitted.
 ```
 
 4. **Review with user:**
@@ -457,10 +484,9 @@ P4:
 
 **Refereer naar `shared/BACKLOG.md` voor het volledige data-formaat.**
 
-1. **Kopieer template:**
-   - Bron: `{skills_path}/shared/references/backlog-template.html`
-   - Doel: `.project/backlog.html`
-   - Maak `.project/` aan als die niet bestaat
+1. **Template or merge:**
+   - **Create mode**: Kopieer template van `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`. Maak `.project/` aan als die niet bestaat.
+   - **Update mode**: Lees bestaande `.project/backlog.html`, parse het huidige JSON-blok. Kopieer NIET opnieuw het template — update in-place.
 
 2. **Bouw het JSON data-object:**
 
@@ -484,6 +510,14 @@ P4:
      "notes": "{Any notes or considerations}"
    }
    ```
+
+   **In update mode, apply merge rules:**
+   - For each existing backlog feature: preserve `status`, `stage`, `phase`, `assignee`, `date`, `inProgress` from the current backlog
+   - For MODIFIED features (TODO status): update `description` and `type` from new extraction
+   - For MODIFIED features (DOING/DONE status): only enrich `description` if concept adds new insights — never overwrite
+   - For NEW features: add with `status: "TODO"`, `stage: null`
+   - For DEPRECATED features: keep in the array but set `status: "DEPRECATED"`
+   - Set `updated` to current date, keep original `generated` date
 
 3. **Vervang het JSON-blok** in het gekopieerde template:
    - Zoek: `<script id="backlog-data" type="application/json">...</script>`

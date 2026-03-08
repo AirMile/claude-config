@@ -4,7 +4,7 @@ description: Transform idea or brainstorm output into a prioritized game feature
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 1.1.0
   category: game
 ---
 
@@ -31,7 +31,7 @@ Accepts markdown from:
 
 - Decomposed features
 - Dependencies
-- P1/P2/P3 priority
+- P1/P2/P3/P4 priority
 - Direct links to `/game-define {feature}`
 
 ## Workflow
@@ -51,8 +51,11 @@ Accepts markdown from:
    - Check if `.project/backlog.html` exists
 
 3. **Scenario A: Both concept AND backlog exist**
-   - Read both files
+   - Read `project.json` (`concept.content`) and `backlog.html`
    - Analyze differences between concept and existing backlog
+   - Check `concept.thinking` entries with date AFTER `backlog.updated` to understand concept evolution
+   - Check `thinking[]` array in `project.json` for entries with `newFeature` field to identify independently-added features (via `/thinking-feature`)
+   - Compare current `concept.content` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
      ```
@@ -61,10 +64,20 @@ Accepts markdown from:
      Concept: .project/project.json (concept.content)
      Backlog: .project/backlog.html
 
-     Changes detected:
+     Concept evolution since last backlog update ({backlog.updated}):
+     {for each concept.thinking entry after backlog.updated:}
+     - [{type}] {date}: {summary} (via {source})
+
+     Feature changes detected:
      - NEW: {list of features in concept but not in backlog}
-     - REMOVED: {list of features in backlog but not in concept}
+     - MODIFIED: {list of features in both but with changed description/scope}
+     - INDEPENDENT: {list of features in backlog added via /thinking-feature, not from concept}
+     - REMOVED: {list of features in backlog, not in concept, AND not independently added}
      - UNCHANGED: {count} features
+
+     Protected features (not affected by update):
+     - DOING: {list with current stage}
+     - DONE: {list}
      ```
 
    - Use AskUserQuestion:
@@ -79,9 +92,13 @@ Accepts markdown from:
      multiSelect: false
      ```
    - **If "Update backlog":**
-     - Preserve existing priority assignments and notes
-     - Add new features from concept
-     - Mark removed features as deprecated (don't delete)
+     - **Merge rules by feature status:**
+       - **DOING/DONE features** (protected): preserve status, stage, priority, assignee, date, and notes. Only enrich description if concept provides new insights — never overwrite.
+       - **TODO features (modified)**: update description/scope from concept, preserve priority and notes
+       - **New features**: add as TODO with auto-assigned priority (user reviews in FASE 3)
+       - **Removed TODO features**: mark as deprecated (don't delete)
+       - **Removed DOING/DONE features**: show warning and ask user whether to keep or deprecate — these represent in-progress work that may still be relevant
+       - **INDEPENDENT features** (added via `/thinking-feature`): always preserve unchanged — these are not derived from concept. Keep status, stage, priority, assignee, date, and description intact. Never deprecate or remove.
      - Continue to FASE 1 with update mode
    - **If "Nieuwe backlog":**
      - Use concept as input, ignore existing backlog
@@ -167,9 +184,103 @@ Source: [project.json concept | inline | custom file]
 Mode: [CREATE | UPDATE]
 Title: {extracted title}
 Sections: {count}
-
-→ Analyzing for features...
 ```
+
+**Research offer:**
+
+Use AskUserQuestion:
+
+```yaml
+header: "Research"
+question: "Wil je eerst onderzoek doen voordat features worden geëxtraheerd?"
+options:
+  - label: "Nee, direct extraheren (Recommended)"
+    description: "Ga door naar feature extractie"
+  - label: "Ja, research doen"
+    description: "Codebase, Context7, en/of web research"
+  - label: "Explain question"
+    description: "Leg uit wat research toevoegt"
+multiSelect: false
+```
+
+**Response handling:**
+
+- "Nee" → skip to FASE 1
+- "Ja" → proceed to FASE 0.5
+- "Explain question" → explain that research can analyze existing codebase, check framework docs, and find web examples to inform better feature extraction. Re-ask.
+
+### FASE 0.5: Research (Optional)
+
+**Goal:** Gather codebase, documentation, and web research to inform feature extraction.
+
+**Triggered when:** User chooses "Ja, research doen" at end of FASE 0.
+
+**Step 1: Analyze Research Needs**
+
+Determine what research is needed based on the loaded concept:
+
+```
+Research checklist:
+├─ User: Are there ambiguities that need clarification?
+├─ Codebase: Is there an existing codebase with relevant code to analyze?
+├─ Context7: Does the concept reference specific frameworks/libraries?
+└─ Web: Is external information needed (patterns, pitfalls, examples)?
+```
+
+**Output:** List of research categories to execute.
+
+**Step 2: User Clarification (if needed)**
+
+If ambiguities are identified, use AskUserQuestion to clarify before spawning research agents.
+
+**Step 3: Parallel Research Execution**
+
+Spawn agents based on Step 1 analysis. Only spawn agents for categories identified as needed.
+
+**Codebase research (if existing codebase detected):**
+
+```
+Task tool with subagent_type: code-explorer
+├─ Focus: similar-features
+├─ Focus: architecture
+└─ Focus: implementation
+```
+
+**Context7 research (if framework/library docs needed):**
+
+```
+Task tool with subagent_type:
+├─ architecture-researcher
+├─ best-practices-researcher
+└─ testing-researcher
+```
+
+**Web research (if external information needed):**
+
+```
+Task tool with subagent_type:
+├─ plan-web-patterns (best practices, modern approaches)
+├─ plan-web-pitfalls (issues, constraints, anti-patterns)
+└─ plan-web-examples (real-world implementations)
+```
+
+**Step 4: Research Summary**
+
+After all agents return, display a compact summary:
+
+```
+RESEARCH COMPLETE
+
+| Category | Agents | Key Findings |
+|----------|--------|--------------|
+| Codebase | {N}/3  | {summary of existing patterns/features} |
+| Context7 | {N}/3  | {summary of framework guidance} |
+| Web      | {N}/3  | {summary of patterns/pitfalls} |
+
+→ Research results will inform feature extraction...
+```
+
+Research results remain in conversation context for FASE 1. No files are written.
 
 ### FASE 1: Feature Extraction
 
@@ -179,6 +290,20 @@ Sections: {count}
    - What are the core mechanics?
    - What systems need to be built?
    - What can be split into independent features?
+
+   **If research was performed (FASE 0.5), also consider:**
+   - What already exists in the codebase that can be reused or extended?
+   - What framework patterns or conventions should guide the decomposition?
+   - What pitfalls or anti-patterns were identified to avoid?
+
+   **Granularity decision:** When a feature could be defined as one large item OR multiple smaller items, apply the right-size rule: each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — they're easier to combine than to split later.
+
+   **If in update mode (from FASE 0 Scenario A):**
+   - Start from existing backlog features as baseline — do NOT extract from scratch
+   - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
+   - INDEPENDENT features (added via `/thinking-feature`): always preserve unchanged — they are not concept-derived
+   - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
+   - Present the merged feature list with change markers for clarity
 
 2. **Extract features:**
    - Each feature = one `/game-define` unit
@@ -201,11 +326,14 @@ FEATURES EXTRACTED
 
 Found {count} features:
 
-| # | Feature | Type | Description |
-|---|---------|------|-------------|
-| 1 | {name} | {type} | {one-line description} |
-| 2 | {name} | {type} | {one-line description} |
+| # | Feature | Type | Description | Change |
+|---|---------|------|-------------|--------|
+| 1 | {name} | {type} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
+| 2 | {name} | {type} | {one-line description} | {marker or — if unchanged} |
 ...
+
+In update mode, the Change column shows what happened to each feature.
+In create mode, the Change column is omitted.
 ```
 
 4. **Review with user:**
@@ -215,18 +343,15 @@ Found {count} features:
    - question: "Kloppen deze features? Je kunt toevoegen, verwijderen of aanpassen."
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Features zijn correct, ga door naar dependencies"
-     - label: "Feature toevoegen", description: "Ik mis een feature"
-     - label: "Feature verwijderen", description: "Een feature hoort hier niet"
-     - label: "Feature aanpassen", description: "Naam, type of beschrijving wijzigen"
-     - label: "Meerdere wijzigingen", description: "Ik wil meerdere dingen aanpassen"
+     - label: "Features aanpassen", description: "Toevoegen, verwijderen, of naam/type/beschrijving wijzigen"
+     - label: "Explain question", description: "Leg de opties uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 2
-   - "Feature toevoegen" → ask for details, add to list, show updated table, re-ask
-   - "Feature verwijderen" → ask which one (by number), remove, show updated table, re-ask
-   - "Feature aanpassen" → ask which one and what to change, update, show updated table, re-ask
-   - "Meerdere wijzigingen" → let user describe all changes, apply, show updated table, re-ask
+   - "Features aanpassen" → ask what to change (add/remove/edit), apply changes, show updated table, re-ask
+   - "Explain question" → explain feature extraction process and options, re-ask
+   - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms features are correct.**
 
@@ -281,22 +406,21 @@ player-movement (base)
    - question: "Klopt deze volgorde? Je kunt dependencies aanpassen."
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Dependencies zijn correct, ga door naar prioriteit"
-     - label: "Dependency toevoegen", description: "Feature X moet na Y komen"
-     - label: "Dependency verwijderen", description: "Feature X hoeft niet op Y te wachten"
-     - label: "Volgorde aanpassen", description: "Andere implementatievolgorde gewenst"
+     - label: "Dependencies aanpassen", description: "Toevoegen, verwijderen of volgorde wijzigen"
+     - label: "Explain question", description: "Leg de dependency-analyse uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 3
-   - "Dependency toevoegen" → ask which feature depends on which, update graph, show updated table, re-ask
-   - "Dependency verwijderen" → ask which dependency to remove, update graph, show updated table, re-ask
-   - "Volgorde aanpassen" → let user describe desired order, recalculate dependencies, show updated table, re-ask
+   - "Dependencies aanpassen" → ask what to change (add/remove/reorder), update graph, show updated table, re-ask
+   - "Explain question" → explain dependency analysis and implications, re-ask
+   - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms dependencies are correct.**
 
 ### FASE 3: Priority Assignment
 
-**Goal:** Prioriteiten toekennen (P1–P3).
+**Goal:** Prioriteiten toekennen (P1–P4).
 
 1. **Use AskUserQuestion for P1 scope:**
    - header: "P1"
@@ -307,9 +431,11 @@ player-movement (base)
      - ... (all features)
    - multiSelect: true
 
-2. **Auto-assign remaining features:**
-   - P2: Direct dependencies of P1 features
-   - P3: Nice-to-have, polish, extra content
+2. **Auto-assign remaining features using heuristics:**
+   - P2: Features that directly extend P1 functionality OR are prerequisites for important P3 features
+   - P3: Nice-to-have, polish, extra content, integrations without core impact
+   - P4: Stretch goals, experimental features, future considerations
+   - When unclear: prefer P2 (easier to demote than to promote later)
 
 3. **Validate with user:**
    Show proposed prioritization.
@@ -343,6 +469,9 @@ P2:
 - {feature}: {reason}
 
 P3:
+- {feature}: {reason}
+
+P4:
 - {feature}: {reason}
 ```
 
@@ -411,6 +540,7 @@ Server: http://localhost:9876/{project-dir}
 | P1 | {count} |
 | P2       | {count} |
 | P3       | {count} |
+| P4       | {count} |
 | Total    | {count} |
 
 Start development:
