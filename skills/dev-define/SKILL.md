@@ -276,7 +276,7 @@ Muteer beide in memory:
   - **Features**: check op naam → nieuw: push `{ name, status: "DOING", stage: "defined", summary, created }` → bestaand: update status
   - **Architecture**: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg diagram conventies uit `shared/DASHBOARD.md`**:
     - `diagram`: Mermaid `graph TD` met classDef (done/planned/external), subgraphs per domein, functionele node labels met file reference (`Naam<br/>file.js`). Alle features DOING → `:::planned`, bestaande gebouwde → `:::done`
-    - `description`: functionele beschrijvingen per component (geen filenamen)
+    - `description`: start met `## Data Flow` (2-4 regels pipeline), daarna functionele beschrijvingen gegroepeerd per laag (match subgraphs). Bullet-formaat, geen filenamen. Volg conventie uit `shared/DASHBOARD.md`.
     - `files`: mapping van gebouwde componenten → `{ component, src: [...], test: [...] }`
     - OVERWRITE (vervangt vorige diagram met bijgewerkte versie)
     - Skip als single-file feature zonder architecturele impact

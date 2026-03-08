@@ -208,7 +208,7 @@ Richtlijnen:
 
 **Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`, endpoints → `"done"` als geïmplementeerd, stack packages → push nieuwe dependencies.
 
-**Architecture** (**volg diagram conventies uit `shared/DASHBOARD.md`**): diagram bestaat → update: gebouwde feature nodes `:::planned` → `:::done`, voeg file reference toe aan node label (`Naam<br/>file.js`), update `architecture.files` met `{ component, src, test }`, update `description` met functionele tekst. Geen diagram EN meerdere modules → genereer nieuw diagram met classDef + subgraphs. Geen structurele impact → skip. Log: `architecture: updated` of `architecture: no updates needed`.
+**Architecture** (**volg diagram conventies uit `shared/DASHBOARD.md`**): diagram bestaat → update: gebouwde feature nodes `:::planned` → `:::done`, voeg file reference toe aan node label (`Naam<br/>file.js`), update `architecture.files` met `{ component, src, test }`, update `description`: behoud `## Data Flow` sectie (update als pipeline veranderd), update functionele beschrijvingen per laag (match subgraphs, bullet-formaat). Geen diagram EN meerdere modules → genereer nieuw diagram met classDef + subgraphs. Geen structurele impact → skip. Log: `architecture: updated` of `architecture: no updates needed`.
 
 Schrijf parallel terug:
 

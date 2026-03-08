@@ -66,6 +66,48 @@ NOT for: trivial choices, code formatting, simple bug fixes.
 
 - If "Aanpassen": ask user for revised decision statement, then proceed.
 
+### Step 1a: Scope Detection (if .project exists)
+
+Na de beslissing vastgesteld, check voor project-context:
+
+1. Check of `.project/project.json` bestaat met concept
+2. Check of `.project/backlog.html` bestaat
+3. Check of `.project/features/` mappen bevat
+
+Als scope-context gevonden:
+
+```yaml
+header: "Scope"
+question: "Waar gaat deze beslissing over?"
+options:
+  - label: "Project-breed (Recommended)", description: "Architectuur, tech stack, of strategie beslissing"
+  - label: "Feature-specifiek", description: "Beslissing over een specifieke feature"
+  - label: "Losse beslissing", description: "Niet gekoppeld aan het project"
+multiSelect: false
+```
+
+**If "Feature-specifiek":**
+
+- Lees `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`), toon features met status TODO of DOING
+- AskUserQuestion om feature te kiezen
+- Laad feature context: `01-define.md`, `thinking.md` (als ze bestaan)
+- Feature context meegeven als achtergrond bij de beslissing
+
+**If "Project-breed":**
+
+- Laad `concept.content` als achtergrond
+- Beslissing gaat over het hele project
+
+**If "Losse beslissing":**
+
+- Geen extra context laden
+
+**Output-pad volgt automatisch de scope:**
+
+- Scope = feature → schrijf naar `.project/features/{naam}/decisions.md` (append)
+- Scope = project → schrijf naar `.project/thinking/{today}-decision-{slug}.md`
+- Scope = los → schrijf naar `.project/thinking/{today}-decision-{slug}.md`
+
 ### Step 2: Structured Analysis — 4 Steps
 
 Analyze the decision through exactly 4 steps. Each step has a specific purpose. Do NOT skip steps or combine them.
@@ -180,6 +222,29 @@ multiSelect: false
 
 **Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
 
+**If scope = feature (uit Step 1a):**
+
+1. Read `.project/project.json` (skip als niet bestaat)
+2. Schrijf volledige analyse naar `.project/features/{naam}/decisions.md` (append als bestand al bestaat)
+3. Push naar `thinking` array:
+   ```json
+   {
+     "type": "decision",
+     "date": "{today}",
+     "title": "{beslissing titel}",
+     "summary": "{key insight van de beslissing, max 200 chars}",
+     "file": ".project/features/{naam}/decisions.md",
+     "featureScope": "{naam}",
+     "options": ["{optie 1}", "{optie 2}", "..."],
+     "chosen": "{gekozen optie}",
+     "rationale": "{waarom deze keuze, 1-2 zinnen}",
+     "source": "/thinking-decide"
+   }
+   ```
+4. Write `.project/project.json`
+
+**If scope = project of los (of geen scope gekozen):**
+
 1. Read `.project/project.json` (skip als niet bestaat)
 2. Schrijf volledige analyse naar `.project/thinking/{today}-decision-{slug}.md`
 3. Push naar `thinking` array:
@@ -198,7 +263,7 @@ multiSelect: false
    ```
 4. Write `.project/project.json`
 
-**Feature scope koppeling:** als de beslissing in de context van een actieve feature valt (check `.project/session/active-*.json`), push ook naar `feature.json` → `durableDecisions[]`:
+**Feature scope koppeling:** als de beslissing in de context van een actieve feature valt (via Step 1a scope of via `.project/session/active-*.json`), push ook naar `feature.json` → `durableDecisions[]`:
 
 ```json
 {

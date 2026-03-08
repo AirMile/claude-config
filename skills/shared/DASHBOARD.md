@@ -6,7 +6,7 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 **Template:** `{skills_path}/shared/references/dashboard-template.html`
 **Server:** `{skills_path}/shared/references/serve-backlog.js` (poort 9876)
 
-**UI tabs:** Concept | Diagram | Design | Theme | Stack | Thinking
+**UI tabs:** Concept | Architecture | Design | Theme | Stack | Thinking
 `stack`, `data`, `endpoints` en `theme` zijn subtabs in de UI, maar blijven aparte secties in project.json.
 `features` heeft geen eigen tab — feature detail is zichtbaar via de backlog detail modal (fetcht `feature.json`).
 
@@ -215,7 +215,7 @@ Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar 
 ```json
 {
   "diagram": "graph TD\n    classDef done fill:#13261c,stroke:#3fb950,stroke-width:1.5px,color:#c9d1d9\n    classDef planned fill:#1b1530,stroke:#8b5cf6,stroke-dasharray:5 5,color:#8b949e\n    classDef external fill:#1c2128,stroke:#30363d,color:#8b949e\n\n    subgraph API[\"API Laag\"]\n        GW[API Gateway<br/>gateway.js]:::done\n        AUTH[Auth Service]:::planned\n    end\n\n    DB[(PostgreSQL)]:::external\n\n    GW --> AUTH\n    GW --> DB",
-  "description": "## API Gateway\n\nRouting en rate limiting voor alle endpoints.\n\n## Auth Service (gepland)\n\nJWT authenticatie en sessie management.",
+  "description": "## Data Flow\n\nRequest → API Gateway → Auth check → App Service → Database.\n\n## API Laag\n\n- **API Gateway** — Routing en rate limiting voor alle endpoints\n\n## Services\n\n- **Auth Service (gepland)** — JWT authenticatie en sessie management\n- **App Service** — Core business logic en data access",
   "files": [
     {
       "component": "API Gateway",
@@ -227,7 +227,7 @@ Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar 
 ```
 
 `diagram` = Mermaid diagram syntax (wordt visueel gerenderd met Mermaid.js)
-`description` = markdown beschrijving per component (functioneel, geen filenamen)
+`description` = markdown met data flow overzicht + functionele beschrijvingen gegroepeerd per laag (geen filenamen)
 `files` = optionele mapping van component → source + test bestanden (collapsible in UI)
 
 #### Diagram conventies
@@ -252,7 +252,7 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 - Geplande nodes (geen files): `AUTH[Auth Service]:::planned`
 - Externe: `DB[(PostgreSQL)]:::external`
 
-**Description:** Functionele beschrijvingen per component. Geen filenamen — die staan in `files`.
+**Description:** Start met een `## Data Flow` sectie (2-4 regels die de volledige pipeline beschrijven). Daarna functionele beschrijvingen gegroepeerd per laag (match de subgraph indeling van het diagram). Bullet-formaat: `- **Component** — korte functionele beschrijving`. Geplande componenten markeren met `(gepland)`. Geen filenamen — die staan in `files`.
 
 **Files mapping:** Na build, vul `architecture.files` aan met `{ component, src: [...], test: [...] }` per gebouwd component.
 
