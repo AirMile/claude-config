@@ -1,10 +1,10 @@
 ---
 name: game-build
-description: Build features with technique mapping (TDD vs Implementation First) for Godot 4.x. Use with /game-build after /game-define. TDD for logic/calculations, Implementation First for visual/scene setup.
+description: Build features with technique mapping (TDD, Implementation First, or Implementation Only) for Godot 4.x. Use with /game-build after /game-define.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 2.1.0
   category: game
 ---
 
@@ -14,7 +14,7 @@ metadata:
 
 FASE 2 of the gamedev workflow: plan -> define -> **build** -> test -> refactor
 
-The build phase implements features from requirements using technique mapping: TDD for logic/calculations, Implementation First for visual/scene setup. It generates tests, iterates through RED-GREEN-REFACTOR cycles, and syncs codebase understanding.
+The build phase implements features from requirements using technique mapping: TDD for logic/calculations, Implementation First for visual/scene setup, Implementation Only for pure visual/config without testable logic. It generates tests, iterates through RED-GREEN-REFACTOR cycles, and syncs codebase understanding.
 
 **Trigger**: `/game-build` or `/game-build [feature-name]`
 
@@ -104,12 +104,56 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
      Continuing without baseline...
      ```
 
-3. **Load feature.json:**
-   - Extract `requirements[]` (REQ-XXX format)
-   - Parse `architecture`, `files[]`
-   - Identify scene/script structure
+3. **Project context** (optioneel, skip als niet bestaat):
 
-4. **Read implementation order:**
+   Lees `.project/project.json`. Extract:
+   - `stack` — framework, language, packages (fallback voor architecture-baseline)
+   - `context.structure` — waar bestanden horen (map structuur)
+   - `context.patterns` — bestaande code patterns om te volgen
+   - `data.entities` — bestaand data model (voorkomt conflicten)
+
+   Als project.json niet bestaat → ga door zonder (backwards compatible).
+
+   **Stel PROJECT_CONTEXT samen** (wordt meegegeven aan technique execution in FASE 2/3):
+
+   Bouw selectief op basis van `feature.json` → `files[]` paden:
+   - `Structure` en `Patterns` → altijd meenemen (compact)
+   - `Entities` → alleen als feature scenes/resources met data raakt
+
+   ```
+   PROJECT CONTEXT:
+   Structure: {context.structure of "niet beschikbaar"}
+   Patterns: {context.patterns of "niet beschikbaar"}
+   Entities: {data.entities of "niet beschikbaar" — skip als feature geen data raakt}
+   ```
+
+4. **Load feature.json:**
+
+   If no feature name provided:
+   1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DOING" && stage === "defined"` → suggest via **AskUserQuestion**
+   2. Fallback: list `.project/features/` met `feature.json`, let user select
+
+   Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`.
+
+   Niet gevonden → exit: "Run `/game-define` eerst."
+
+   **Dependency check:**
+
+   Skip als geen `depends[]` of leeg.
+   1. Parse `.project/backlog.html`. Niet gevonden → skip.
+   2. Per dependency: status moet `"DONE"` zijn.
+   3. Blockers gevonden → **AskUserQuestion**:
+      - "Stop — werk eerst {dep} af (Recommended)" / "Toch doorgaan"
+      - Stop → exit. Doorgaan → continue.
+
+   **Tag backlog card als actief** (direct na feature laden):
+
+   Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
+   Zoek feature op naam → zet `"stage": "building"`, `"inProgress": "build"`, `data.updated` naar nu.
+   Schrijf terug via Edit (keep `<script>` tags intact).
+   De card blijft in DOING kolom, stage gaat naar `building`.
+
+5. **Read implementation order:**
 
    Extract the `buildSequence[]` from feature.json (sorted by step).
    This was determined during the define phase.
@@ -121,7 +165,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    3. REQ-003 (after REQ-002)
    ```
 
-5. **Display context:**
+6. **Display context:**
 
    ```
    FEATURE: {feature-name}
@@ -152,7 +196,7 @@ echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}
 
 ### FASE 1: Technique Mapping
 
-Per requirement, assign a technique: **TDD** or **Implementation First**.
+Per requirement, assign a technique: **TDD**, **Implementation First**, or **Implementation Only**.
 
 #### Decision Logic
 
@@ -169,9 +213,17 @@ Per requirement, assign a technique: **TDD** or **Implementation First**.
 
 - Scene tree construction and node configuration
 - Resource creation (.tres files)
-- Visual configuration (sprites, animations, particles)
+- Visual configuration (sprites, animations, particles) with testable properties
 - Audio setup (AudioStreamPlayer nodes)
 - UI layout and theme configuration
+
+**Implementation Only** (geen tests — alleen wanneer automated tests geen waarde toevoegen):
+
+- Pure visual/particle effects zonder logic (bijv. screen shake, particle colors)
+- Audio configuration (volume, bus assignment)
+- Static scene configuration (camera, lighting, environment setup)
+- Prototype code (explicit markering)
+- Verplichte reden: `visual-only`, `config-only`, of `prototype`
 
 See `techniques/implementation-first.md` for the full Implementation First process.
 
@@ -186,15 +238,19 @@ TDD:
 
 IMPLEMENTATION FIRST:
 - REQ-002: Puddle spawns at impact location [scene setup]
-- REQ-004: Water splash particle effect [visual]
+
+IMPLEMENTATION ONLY:
+- REQ-004: Water splash particle effect [visual-only]
 ```
 
 Use **AskUserQuestion** for confirmation:
 
 ```
-Technique mapping ready. {n_tdd} TDD, {n_impl} Implementation First.
+Technique mapping ready. {n_tdd} TDD, {n_impl} Implementation First, {n_only} Implementation Only.
 Confirm or adjust? (show mapping above)
 ```
+
+Bij "Aanpassen": vraag per requirement welke technique.
 
 ### FASE 2: Generate Tests (TDD Requirements)
 
@@ -487,6 +543,16 @@ func test_req{xxx}_{description}() -> void:
 
 See `techniques/implementation-first.md` for detailed patterns.
 
+#### Track C: Implementation Only Requirements
+
+For each Implementation Only requirement (in dependency order):
+
+1. **Implement directly** based on requirements and architecture from feature.json
+2. **Add debug hooks** (same rules as TDD track)
+3. **NO tests** — skip test generation entirely
+4. **Update feature.json**: zet `requirements[].status` → `"built"`, voeg `technique: "implementation-only"` en `skipTestReason` toe (`visual-only`, `config-only`, of `prototype`)
+5. Log: `IMPL-ONLY: REQ-{xxx} implemented (reason: {skipTestReason})`
+
 **Loop completion:**
 
 ```
@@ -494,6 +560,7 @@ BUILD CYCLE COMPLETE
 
 TDD: {tdd_passed}/{tdd_total} tests PASS
 Impl-First: {impl_passed}/{impl_total} verified
+Impl-Only: {only_count} implemented (no tests)
 
 Files created:
 - scripts/abilities/water_ability.gd
@@ -729,7 +796,8 @@ Na "Ja, helder": sla uitleg op als `build.explanation` in feature.json (targeted
 BUILD COMPLETE: {feature}
 ========================
 
-Tests: {passed}/{total} PASS ({tdd} TDD, {impl} impl-first)
+Techniques: TDD ({n}), Implementation First ({n}), Implementation Only ({n})
+Tests: {passed}/{total} PASS
 Files created: {count}
 
 Created files:
@@ -758,7 +826,7 @@ Categorize files by comparing with `.project/session/pre-skill-status.txt`:
 If baseline file doesn't exist, fall back to `git add -A`.
 
 ```bash
-git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
+git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first, {only} impl-only)"
 ```
 
 Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`

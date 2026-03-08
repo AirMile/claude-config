@@ -4,7 +4,7 @@ description: Define game feature requirements and architecture with structured o
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 2.1.0
   category: game
 ---
 
@@ -105,6 +105,24 @@ The skill gathers requirements through targeted questions, optionally researches
    ⚠ Architecture baseline not found — run /core-setup to generate.
    ```
 
+5. **Load project context** (paralleliseer met stap 4):
+   - Glob + Grep voor bestaande code die de feature-naam importeert
+   - Read `.project/project.json` → extract:
+     - `stack` — framework, language, packages (fallback als architecture-baseline niet bestaat)
+     - `concept.pitch` als feature context (korte samenvatting). Fallback: als pitch leeg, gebruik eerste 2 zinnen van `concept.content`
+     - `features[]` — bestaande features (voorkomt duplicaten/overlap)
+     - `data.entities` — bestaand data model
+     - `context.patterns` — bestaande code patterns
+   - Als project.json niet bestaat → ga door zonder (backwards compatible)
+
+**Tag backlog card als actief** (direct na feature naam bepaling):
+
+Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
+Zoek feature op naam → zet `"status": "DOING"`, `"stage": "defining"`, `"inProgress": "define"`, `data.updated` naar nu.
+Schrijf terug via Edit (keep `<script>` tags intact).
+Niet gevonden → skip (feature wordt pas bij FASE 5 aan backlog toegevoegd).
+De card verhuist naar de DOING kolom met stage `defining`.
+
 ### FASE 1: Requirements Gathering
 
 Ask 5 targeted questions using AskUserQuestion:
@@ -137,6 +155,21 @@ Ask 5 targeted questions using AskUserQuestion:
 - header: "Data"
 - question: "Welke data moet worden opgeslagen/beheerd?"
 - options: Stats/values, Inventory/collections, State persistence, Configuration
+
+**User-delegatie**: als de user antwoordt met "wat denk jij?" of vergelijkbaar, geef een korte aanbeveling met trade-off en ga door met die keuze.
+
+#### Doorvraag-check
+
+Na de initiële vragen, evalueer of er open branches zijn:
+
+- Onbesproken edge cases in de antwoorden
+- Impliciete aannames die niet bevestigd zijn
+- Conflicten tussen antwoorden
+
+**≤3 requirements verwacht**: skip doorvraag, ga naar extraction.
+**>3 requirements verwacht**: stel 1-2 gerichte doorvragen over de belangrijkste open branch. Formuleer als "Wat gebeurt er als...?" of "Hoe gaat dit om met...?"
+
+Max 2 extra vragen, dan door naar extraction.
 
 #### Requirement Extraction
 
