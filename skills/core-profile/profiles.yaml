@@ -20,6 +20,7 @@ dev:
   - dev-debug
   - dev-doctor
   - dev-define
+  - dev-feature
   - dev-owasp
   - dev-plan
   - dev-refactor
@@ -60,6 +61,5 @@ thinking:
   - thinking-brainstorm
   - thinking-critique
   - thinking-decide
-  - thinking-feature
   - thinking-idea
   - thinking-research

@@ -1,21 +1,21 @@
 ---
-name: thinking-feature
+name: dev-feature
 description: >-
   Capture and develop new feature ideas for existing products. Combines quick
-  backlog entry with optional light thinking rounds. Use with /thinking-feature
+  backlog entry with optional light thinking rounds. Use with /dev-feature
   when you have a new feature idea to add to the backlog.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 2.0.0
-  category: thinking
+  category: dev
 ---
 
 # Feature
 
 Capture new feature ideas, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have a feature idea" and a backlog item ready for `/dev-define`.
 
-**Trigger**: `/thinking-feature` or `/thinking-feature [beschrijving]`
+**Trigger**: `/dev-feature` or `/dev-feature [beschrijving]`
 
 ## When to Use
 
@@ -30,8 +30,8 @@ NOT for: concept-level ideation (`/thinking-idea`), iterating on existing featur
 ### FASE 0: Input + Backlog Check
 
 1. **Beschrijving bepalen:**
-   - Argument meegegeven (`/thinking-feature contactformulier toevoegen`) → gebruik als startbeschrijving
-   - Geen argument (`/thinking-feature`) → AskUserQuestion:
+   - Argument meegegeven (`/dev-feature contactformulier toevoegen`) → gebruik als startbeschrijving
+   - Geen argument (`/dev-feature`) → AskUserQuestion:
      ```yaml
      header: "Feature"
      question: "Wat wil je toevoegen?"
@@ -52,7 +52,7 @@ NOT for: concept-level ideation (`/thinking-idea`), iterating on existing featur
           "project": "{project directory name}",
           "generated": "{YYYY-MM-DD}",
           "updated": "{YYYY-MM-DD}",
-          "source": "/thinking-feature",
+          "source": "/dev-feature",
           "overview": "",
           "features": [],
           "notes": ""
@@ -243,7 +243,7 @@ multiSelect: false
        "summary": "{beschrijving, max 200 chars}",
        "file": ".project/features/{naam}/thinking.md",
        "newFeature": "{naam}",
-       "source": "/thinking-feature"
+       "source": "/dev-feature"
      }
      ```
    - Als geen thinking rounds gedaan (snel toevoegen), `file` weglaten
