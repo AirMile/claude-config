@@ -54,7 +54,7 @@ Accepts markdown from:
    - Read `project.json` (`concept.content`) and `backlog.html`
    - Analyze differences between concept and existing backlog
    - Check `concept.thinking` entries with date AFTER `backlog.updated` to understand concept evolution
-   - Check `thinking[]` array in `project.json` for entries with `newFeature` field to identify independently-added features (via `/thinking-feature`)
+   - Check `thinking[]` array in `project.json` for entries with `newFeature` field to identify independently-added features (via `/dev-feature`)
    - Compare current `concept.content` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
@@ -71,7 +71,7 @@ Accepts markdown from:
      Feature changes detected:
      - NEW: {list of features in concept but not in backlog}
      - MODIFIED: {list of features in both but with changed description/scope}
-     - INDEPENDENT: {list of features in backlog added via /thinking-feature, not from concept}
+     - INDEPENDENT: {list of features in backlog added via /dev-feature, not from concept}
      - REMOVED: {list of features in backlog, not in concept, AND not independently added}
      - UNCHANGED: {count} features
 
@@ -98,7 +98,7 @@ Accepts markdown from:
        - **New features**: add as TODO with auto-assigned priority (user reviews in FASE 3)
        - **Removed TODO features**: mark as deprecated (don't delete)
        - **Removed DOING/DONE features**: show warning and ask user whether to keep or deprecate — these represent in-progress work that may still be relevant
-       - **INDEPENDENT features** (added via `/thinking-feature`): always preserve unchanged — these are not derived from concept. Keep status, stage, priority, assignee, date, and description intact. Never deprecate or remove.
+       - **INDEPENDENT features** (added via `/dev-feature`): always preserve unchanged — these are not derived from concept. Keep status, stage, priority, assignee, date, and description intact. Never deprecate or remove.
      - Continue to FASE 1 with update mode
    - **If "Nieuwe backlog":**
      - Use concept as input, ignore existing backlog
@@ -301,7 +301,7 @@ Research results remain in conversation context for FASE 1. No files are written
    **If in update mode (from FASE 0 Scenario A):**
    - Start from existing backlog features as baseline — do NOT extract from scratch
    - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
-   - INDEPENDENT features (added via `/thinking-feature`): always preserve unchanged — they are not concept-derived
+   - INDEPENDENT features (added via `/dev-feature`): always preserve unchanged — they are not concept-derived
    - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
    - Present the merged feature list with change markers for clarity
 

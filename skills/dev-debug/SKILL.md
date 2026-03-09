@@ -30,7 +30,7 @@ Structured 9-phase debugging: context → intake → investigate → analyze →
 **Active feature detectie** (optioneel):
 
 - Check `.project/session/active-*.json` files
-- Fallback: lees `.project/backlog.html` → zoek features met `inProgress` veld, of meest recente `"DOING"` feature
+- Fallback: lees `.project/backlog.html` → zoek meest recente `"DOING"` feature (features met `-ing` stage suffix zijn actief)
 - Als actieve feature gevonden: noteer als context hint voor investigation agents
 
 **Stel DEBUG_CONTEXT samen** per agent (gerichte subsets, niet alles aan iedereen):

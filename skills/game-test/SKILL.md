@@ -332,7 +332,10 @@ Feedback: received
 
 ---
 
-**Capture git baseline** (for scoped commit at end of skill):
+**Tag backlog + capture baseline:**
+
+- Backlog: lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`). Zoek feature op naam → zet `"stage": "testing"`, `data.updated` → nu (Edit, keep `<script>` tags intact)
+- Git baseline + session file:
 
 ```bash
 mkdir -p .project/session

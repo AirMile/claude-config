@@ -78,6 +78,14 @@ The skill gathers requirements through targeted questions, optionally researches
 
    The user can type any feature name via the built-in "Other" option.
 
+**Tag backlog card als actief** (direct na feature naam bepaling):
+
+Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
+Zoek feature op naam → zet `"status": "DOING"`, `"stage": "defining"`, `data.updated` naar nu.
+Schrijf terug via Edit (keep `<script>` tags intact).
+Niet gevonden → skip (feature wordt pas bij FASE 5 aan backlog toegevoegd).
+De card verhuist naar de DOING kolom met stage `defining`.
+
 3. **Create project folder + signal active feature:**
 
    ```bash
@@ -114,14 +122,6 @@ The skill gathers requirements through targeted questions, optionally researches
      - `data.entities` — bestaand data model
      - `context.patterns` — bestaande code patterns
    - Als project.json niet bestaat → ga door zonder (backwards compatible)
-
-**Tag backlog card als actief** (direct na feature naam bepaling):
-
-Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-Zoek feature op naam → zet `"status": "DOING"`, `"stage": "defining"`, `"inProgress": "define"`, `data.updated` naar nu.
-Schrijf terug via Edit (keep `<script>` tags intact).
-Niet gevonden → skip (feature wordt pas bij FASE 5 aan backlog toegevoegd).
-De card verhuist naar de DOING kolom met stage `defining`.
 
 ### FASE 1: Requirements Gathering
 

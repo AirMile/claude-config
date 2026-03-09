@@ -38,12 +38,6 @@ mkdir -p .project/session
 git rev-parse HEAD > .project/session/pre-skill-sha.txt
 ```
 
-**Signal active feature** (na feature naam bepaling):
-
-```bash
-echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
-```
-
 **Detect stack:** lees CLAUDE.md `### Stack` sectie + `.claude/research/stack-baseline.md` (als beschikbaar). Als stack-baseline niet bestaat → fallback op `project.json.stack` (framework, language, packages).
 
 **Project context** (optioneel, skip als niet bestaat):
@@ -98,9 +92,15 @@ Skip als geen `depends[]` of leeg.
 **Tag backlog card als actief** (direct na feature laden):
 
 Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-Zoek feature op naam → zet `"stage": "building"`, `"inProgress": "build"`, `data.updated` naar nu.
+Zoek feature op naam → zet `"stage": "building"`, `data.updated` naar nu.
 Schrijf terug via Edit (keep `<script>` tags intact).
 De card blijft in DOING kolom, stage gaat naar `building`.
+
+**Signal active feature** (na backlog update):
+
+```bash
+echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+```
 
 **Display** feature overview:
 
@@ -123,9 +123,7 @@ Assign per requirement:
 - **Implementation First**: CRUD, middleware, config, wiring
 - **Implementation Only**: pure styling/layout, visual/particle effects, static content, env config, prototype code — alleen wanneer automated tests geen waarde toevoegen. Verplichte reden: `visual-only`, `config-only`, of `prototype`
 
-Display technique map table. Confirm via **AskUserQuestion** (Akkoord / Aanpassen).
-
-Bij "Aanpassen": vraag per requirement welke technique.
+Display technique map table. Proceed automatically — do NOT confirm with the user. The decision logic above is deterministic enough to auto-assign.
 
 ### FASE 2: Execute Build
 
@@ -202,7 +200,7 @@ Richtlijnen:
 - API features: beschrijf curl/HTTP stappen met concrete endpoints
 - Voeg GEEN item toe dat "run npm test" is — unit tests zijn al gedekt door de build
 
-**Backlog** (zie `shared/BACKLOG.md`): `stage → "built"`, verwijder `inProgress` veld, `data.updated` → nu. Status blijft `"DOING"`.
+**Backlog** (zie `shared/BACKLOG.md`): `stage → "built"`, `data.updated` → nu. Status blijft `"DOING"`.
 
 **Context** (zie `shared/DASHBOARD.md` → `context`): vergelijk build output met project.json. Update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip als geen structurele impact. Log: `context: {N} updates ({keys})`.
 

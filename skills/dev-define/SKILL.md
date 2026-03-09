@@ -33,6 +33,14 @@ FASE 1 van de dev workflow: define → build → test.
    c) **Geen backlog of andere feature gewenst:**
    AskUserQuestion: "Welke feature wil je definiëren?" met 3 suggesties relevant voor het project.
 
+**Tag backlog card als actief** (direct na feature naam bepaling):
+
+Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
+Zoek feature op naam → zet `"status": "DOING"`, `"stage": "defining"`, `data.updated` naar nu.
+Schrijf terug via Edit (keep `<script>` tags intact).
+Niet gevonden → skip (feature wordt pas bij FASE 4 aan backlog toegevoegd).
+De card verhuist naar de DOING kolom met stage `defining`.
+
 3. **Project folder + context** (paralleliseer):
    - `mkdir -p .project/features/{feature-name}`
    - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json`
@@ -45,14 +53,6 @@ FASE 1 van de dev workflow: define → build → test.
      - `data.entities` — bestaand data model
      - `context.patterns` — bestaande code patterns
    - Read `.claude/research/stack-baseline.md` (conventie/patterns detail — als niet beschikbaar, gebruik `project.json.stack` als basis)
-
-**Tag backlog card als actief** (direct na feature naam bepaling):
-
-Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-Zoek feature op naam → zet `"status": "DOING"`, `"stage": "defining"`, `"inProgress": "define"`, `data.updated` naar nu.
-Schrijf terug via Edit (keep `<script>` tags intact).
-Niet gevonden → skip (feature wordt pas bij FASE 4 aan backlog toegevoegd).
-De card verhuist naar de DOING kolom met stage `defining`.
 
 ### FASE 1: Requirements Gathering
 
@@ -263,7 +263,7 @@ Muteer beide in memory:
 
 **Backlog** (zie `shared/BACKLOG.md`):
 
-- Zoek feature → zet status `"DOING"`, `stage: "defined"`, verwijder `inProgress` veld, datum `"{date}"`, `assignee` (als gezet in FASE 3b). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`.
+- Zoek feature → zet status `"DOING"`, `stage: "defined"`, datum `"{date}"`, `assignee` (als gezet in FASE 3b). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`.
 - Zet `data.updated` naar vandaag.
 
 **Dashboard** (zie `shared/DASHBOARD.md`):

@@ -25,7 +25,6 @@ Lees **direct voor het editen** — vertrouw NIET op reads uit eerdere fases (Pr
 - Parse JSON uit `<script id="backlog-data">`
 - Zoek feature op naam
 - Update `status` naar skill-specifieke waarde
-- Verwijder `inProgress` veld
 - Zet `data.updated` → huidige datum
 - Niet gevonden → voeg toe aan `data.features`
 

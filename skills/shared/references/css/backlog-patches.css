@@ -136,35 +136,3 @@ body > header {
   color: var(--text-muted, #8b949e);
   width: 100%;
 }
-.card-active {
-}
-.active-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 8px;
-  background: var(--active-bg);
-  color: var(--accent);
-  letter-spacing: 0.2px;
-  white-space: nowrap;
-}
-.active-badge .active-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: activeDot 1.5s ease-in-out infinite;
-  flex-shrink: 0;
-}
-@keyframes activeDot {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
-}

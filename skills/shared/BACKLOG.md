@@ -31,8 +31,7 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
       "description": "Beschrijving",
       "dependency": "andere-feature|null",
       "assignee": "naam|null",
-      "date": "2026-01-15|null",
-      "inProgress": "define|build|test|null"
+      "date": "2026-01-15|null"
     }
   ],
   "notes": "Eventuele notities"
@@ -80,7 +79,7 @@ TODO → DOING → DONE
 
 | Status | Betekenis      | Gezet door                         |
 | ------ | -------------- | ---------------------------------- |
-| TODO   | Niet opgepakt  | /dev-plan, /thinking-feature       |
+| TODO   | Niet opgepakt  | /dev-plan, /dev-feature            |
 | DOING  | In bewerking   | /dev-define, /dev-build, /dev-test |
 | DONE   | Getest & klaar | /dev-test                          |
 
@@ -101,19 +100,6 @@ defining → defined → building → built → testing → [DONE]
 | testing  | Wordt getest       | /dev-test FASE 0   |
 
 `stage` is persistent — blijft staan tussen skill-invocaties. Wordt verwijderd bij `DONE`.
-
-## Active skill indicator
-
-Skills zetten `inProgress` op een feature bij de start van hun FASE 0, en verwijderen het bij de afsluitende sync. Dit is een **tijdelijk** veld (anders dan `stage` dat persistent is).
-
-| Skill       | Zet `inProgress`      | Verwijdert `inProgress` |
-| ----------- | --------------------- | ----------------------- |
-| /dev-define | `"define"` bij FASE 0 | FASE 4 sync             |
-| /dev-build  | `"build"` bij FASE 0  | FASE 3B sync            |
-| /dev-test   | `"test"` bij FASE 0   | FASE 6 sync             |
-
-De backlog template rendert dit als een pulserende tag op de card.
-Als een skill crasht, blijft het veld staan tot de volgende skill het overschrijft of verwijdert.
 
 ## Features filteren
 

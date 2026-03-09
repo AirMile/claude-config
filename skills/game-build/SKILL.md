@@ -149,7 +149,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    **Tag backlog card als actief** (direct na feature laden):
 
    Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-   Zoek feature op naam → zet `"stage": "building"`, `"inProgress": "build"`, `data.updated` naar nu.
+   Zoek feature op naam → zet `"stage": "building"`, `data.updated` naar nu.
    Schrijf terug via Edit (keep `<script>` tags intact).
    De card blijft in DOING kolom, stage gaat naar `building`.
 
@@ -243,14 +243,7 @@ IMPLEMENTATION ONLY:
 - REQ-004: Water splash particle effect [visual-only]
 ```
 
-Use **AskUserQuestion** for confirmation:
-
-```
-Technique mapping ready. {n_tdd} TDD, {n_impl} Implementation First, {n_only} Implementation Only.
-Confirm or adjust? (show mapping above)
-```
-
-Bij "Aanpassen": vraag per requirement welke technique.
+Proceed automatically — do NOT confirm with the user. The decision logic above is deterministic enough to auto-assign. Display the mapping for visibility, then continue to the next phase.
 
 ### FASE 2: Generate Tests (TDD Requirements)
 
@@ -758,7 +751,7 @@ Muteer alle drie in memory:
 
 **feature.json**: `status → "DOING"`, `stage → "built"`, `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]` (status: "pending"). Bestaande secties NIET overschrijven.
 
-**Backlog** (zie `shared/BACKLOG.md`): `stage → "built"`, verwijder `inProgress` veld, `data.updated` → nu. Status blijft `"DOING"`.
+**Backlog** (zie `shared/BACKLOG.md`): `stage → "built"`, `data.updated` → nu. Status blijft `"DOING"`.
 
 **Context** (zie `shared/DASHBOARD.md` → `context`): identify new scenes (.tscn), scripts (.gd) with class names, signals, resources (.tres). Update `context.structure` (overwrite), `context.patterns` (merge signals, autoloads, conventions), `context.updated`. Skip als geen structurele impact.
 

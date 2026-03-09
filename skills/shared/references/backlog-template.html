@@ -468,9 +468,6 @@
           extra += `<div class="card-date">${esc(f.date)}</div>`;
         if (f.assignee)
           extra += `<div class="card-assignee"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg> ${esc(f.assignee)}</div>`;
-        if (f.inProgress)
-          extra += `<span class="card-active">${esc(f.inProgress)}...</span>`;
-
         const stageTag =
           f.status === "DOING" && f.stage
             ? `<span class="stage-badge stage-${f.stage}">${esc(f.stage)}</span>`
@@ -965,8 +962,6 @@
         html += `<span class="status-tag" style="color:${STATUS_COLORS[f.status]}">${f.status}</span>`;
         if (f.status === "DOING" && f.stage)
           html += `<span class="stage-badge stage-${f.stage}">${esc(f.stage)}</span>`;
-        if (f.inProgress)
-          html += `<span class="card-active">${esc(f.inProgress)}...</span>`;
         html += `</div></div>`;
         if (f.dependency) {
           html += `<div class="detail-field"><div class="detail-label">Dependency</div><div class="detail-value">${esc(f.dependency)}</div></div>`;
