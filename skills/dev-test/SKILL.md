@@ -4,107 +4,61 @@ description: Hybrid testing verification combining automated browser and CLI tes
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 1.1.0
   category: dev
 ---
 
 # Test
 
-## Overview
+Test phase: define → build → **test**
 
-This is the test phase of the dev workflow: define -> build -> **test**
+Hybrid verification: automated (browser/CLI) + manual walkthrough + issue categorization + fix loops.
 
-Handles hybrid verification of implemented features through automated testing and manual walkthrough, issue categorization, and iterative fix loops until all items pass.
-
-**Trigger**: `/dev-test` or `/dev-test {feature-name}` or `/dev-test {feature-name} {feedback}`
-
-## When to Use
-
-- After `/dev-build` completes
-- When `.project/features/{name}/feature.json` exists (with `tests.checklist[]`)
-- NOT for: planning (/dev-define), implementation (/dev-build)
+**Trigger**: `/dev-test {feature-name}` or `/dev-test {feature-name} {feedback}`
 
 ## Input Formats
 
 ```
-# Format 1: Inline feedback (recommended — skips automation entirely)
-/dev-test user-registration
-1:PASS
-2:FAIL no validation error
-3:PASS
-4:FAIL no mail sent
-
-# Format 2: Feature name only (hybrid: auto + manual walkthrough)
-/dev-test user-registration
-
-# Format 3: Free text (skips automation entirely)
-/dev-test user-registration
-Everything works except validation is missing and no welcome mail
+/dev-test user-registration                              # hybrid: auto + manual
+/dev-test user-registration 1:PASS 2:FAIL no validation  # inline feedback (skips automation)
+/dev-test user-registration Everything works except...    # free text (skips automation)
 ```
 
 ## Feedback Categorization
 
-| Type           | Example                               | Action                                  |
-| -------------- | ------------------------------------- | --------------------------------------- |
-| **TESTABLE**   | "returns 500 instead of 422"          | Technique selection (TDD or Impl First) |
-| **MEASURABLE** | "response too slow", "font too small" | Direct fix                              |
-| **SUBJECTIVE** | "doesn't feel right"                  | Ask for specifics, then re-categorize   |
+| Type           | Example                      | Action                           |
+| -------------- | ---------------------------- | -------------------------------- |
+| **TESTABLE**   | "returns 500 instead of 422" | TDD or Implementation First      |
+| **MEASURABLE** | "response too slow"          | Direct fix                       |
+| **SUBJECTIVE** | "doesn't feel right"         | Ask for specifics, re-categorize |
 
-> **Test classification criteria and automation patterns:**
-> See `references/test-classification.md` for AUTO/BROWSER, AUTO/CLI, and MANUAL criteria with pattern tables.
->
-> **Code quality rules:** `../shared/RULES.md` — Algemeen (R007-R008) en TypeScript rules (T001-T103) bij fix loops.
+> Classification criteria: `references/test-classification.md`
+> Code quality rules: `../shared/RULES.md` (R007-R008)
 
 ## Workflow
 
 ### FASE 0: Load Context and Classify
 
-1. **Read backlog for pipeline status:**
+1. **Read backlog** — `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` (zie `shared/BACKLOG.md`). Filter `status === "DOING" && stage === "built"`. Geen feature name → suggest via AskUserQuestion.
 
-   Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
-   - Filter built features: `data.features.filter(f => f.status === "DOING" && f.stage === "built")`
-   - Built features zijn klaar voor testing
-   - If no feature name provided: suggest the next built feature via **AskUserQuestion**
+2. **Parse input:**
+   - Feature name only → proceed to classification
+   - Feature name + inline feedback → skip to FASE 1b
+   - Feature name + free text → skip to FASE 1b
 
-2. **Parse user input:**
-   - Feature name only → proceed to classification and hybrid testing
-   - Feature name + inline feedback → skip to FASE 1b (backward compatible, no automation)
-   - Feature name + free text → skip to FASE 1b (backward compatible, no automation)
-   - "recent" → find most recently modified feature.json with `build` section
+3. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`. Geen checklist → exit: run `/dev-build` first.
 
-3. **Locate and validate build output:**
+4. **Tag backlog + capture baseline:**
+   - Backlog: zet `stage: "testing"`, `data.updated` → nu (Edit, keep `<script>` tags intact)
+   - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
+   - Session file: `echo '{"feature":"{name}","skill":"test","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
 
-   ```
-   .project/features/{feature-name}/feature.json
-   ```
-
-   Parse `tests.checklist[]` array. Each item has: `id`, `title`, `requirementId`, `steps[]`, `expected`, `status`.
-
-   If `feature.json` not found or has no `tests.checklist` → exit with message to run `/dev-build {feature-name}` first.
-
-4. **Read checklist** from `feature.json` → `tests.checklist` and use structured test items.
-
-5. **Load stack & project context** (voor agent prompts):
-
-   **Stack detectie:**
-   - Lees CLAUDE.md `### Stack` sectie
-   - Lees `.claude/research/stack-baseline.md` (als beschikbaar)
-   - Fallback: detecteer uit package.json / go.mod / etc.
-
-   **Project context:** Lees `.project/project.json` (als bestaat). Extract alleen:
-   - `stack` (framework, language, testing, packages)
-   - `context` (structure, routing, patterns)
-   - `endpoints` (method, path, auth)
-   - `data.entities` (names, fields, relations)
-
-   Als project.json of stack-baseline niet bestaat → ga door zonder (backwards compatible).
-
-   **Stel STACK_CONTEXT samen** (wordt meegegeven aan alle agents in deze skill):
+5. **Load stack & project context** — CLAUDE.md stack sectie + `.claude/research/stack-baseline.md` + `.project/project.json` (als beschikbaar). Stel STACK_CONTEXT samen:
 
    ```
    STACK CONTEXT:
-   Framework: {stack.framework} ({stack.language})
-   Testing: {stack testing info of stack-baseline testing conventions}
+   Framework: {framework} ({language})
+   Testing: {testing info}
    Packages: {relevante packages}
 
    PROJECT CONTEXT:
@@ -115,434 +69,186 @@ Everything works except validation is missing and no welcome mail
    Entities: {data.entities of "niet beschikbaar"}
    ```
 
-6. **Generate Test Data** (via Explore agent — zero source file reads in main context)
-
-   **Always** use a Task agent (Explore) to gather test data. Never read source files directly in the main conversation.
-
-   Launch Explore agent with prompt:
+6. **Gather test data** via Explore agent (zero source file reads in main context):
 
    ```
    Feature: {feature-name}
-   Feature file: .project/features/{feature-name}/feature.json (tests.checklist[] + requirements[])
+   Feature file: .project/features/{feature-name}/feature.json
 
    {STACK_CONTEXT}
 
-   Lees de feature.json (checklist + requirements). Zoek vervolgens in de source code naar:
-   - Form fields, validatie regels, API endpoints relevant voor de test items
-   - Bestaande test files die hergebruikt kunnen worden
-   - Test patterns passend bij de stack (bijv. Vitest voor React, PHPUnit voor Laravel)
+   Lees feature.json (checklist + requirements). Zoek in source code naar:
+   - Validatie regels, API endpoints relevant voor test items
+   - Bestaande test files en test patterns
 
-   Geef terug als gestructureerd overzicht:
+   Geef terug als:
    FEATURE_CONTEXT_START
-   Bestaande tests: {pad naar test files, of "geen"}
+   Bestaande tests: {paden, of "geen"}
    Per test item:
    - Item {N}: {title}
      Testdata: {concrete waarden}
      Verwacht: {expected outcome}
      Aanbevolen methode: BROWSER | CLI
-     Reden: {waarom deze methode}
+     Reden: {waarom}
    FEATURE_CONTEXT_END
    ```
 
-   Parse the agent's structured output. This gives you test data and classification hints without consuming any main context on source file reads.
-
-   **Post-build uitbreiding** — als `build` sectie bestaat in feature.json, voeg toe aan de agent prompt:
+   **Bij `build` sectie in feature.json**, voeg toe aan Explore prompt:
 
    ```
-   build sectie bestaat — per test item, geef ook aan:
-   - Al gedekt: {wat bestaande build tests al verifiëren voor dit item}
-   - httpContractTested: true/false (test de build test al het HTTP/functie contract voor dit item? Kijk naar test files: gebruiken ze http.createServer/fetch/supertest of testen ze alleen functie-level?)
-   - delta: {wat EXTRA verificatie nodig is bovenop build tests, of "geen"}
+   Per test item, geef ook aan:
+   - Al gedekt: {wat build tests verifiëren}
+   - httpContractTested: true/false (test de build test het HTTP/functie contract? Kijk naar test files)
+   - delta: {extra verificatie nodig bovenop build tests, of "geen"}
    ```
 
-5b. **Post-Build Strategy Detectie**
-
-Lees `build` sectie uit feature.json.
-
-**IF `build` sectie bestaat** (= dev-build is voltooid):
-
-```
-postBuildMode = true
-hasUI = feature.json heeft "design" veld OF files[] bevat frontend bestanden (.tsx, .vue, .svelte)
-isPureAPI = feature.json heeft "apiContract" EN NIET hasUI
-```
-
-Display:
-
-```
-POST-BUILD DETECTIE: {build.testsTotal} bestaande tests ({build.techniques.tdd} TDD, {build.techniques.implementationFirst} impl-first)
-Strategie: {hasUI → "E2E browser verificatie" | isPureAPI → "API integratie" | else → "Integratie verificatie"}
-Baseline: bestaande test suite als pre-check (niet als primaire test)
-```
-
-**ELSE**: `postBuildMode = false` — ga door met bestaand classificatiegedrag.
-
-5c. **Cross-Requirement Integratie Scenario's** (alleen bij `postBuildMode`)
-
-Analyseer `requirements[]` uit feature.json. Identificeer combinaties waar het resultaat van één requirement input is voor een andere.
-
-Genereer maximaal 3 integratie-scenario's:
-
-```
-INTEGRATIE SCENARIO'S: {feature}
-
-| # | Scenario                                      | Requirements     | Type         |
-|---|-----------------------------------------------|------------------|--------------|
-| I1| Koop crypto → portfolio toont nieuwe asset    | REQ-001 + REQ-002| AUTO/BROWSER |
-| I2| Twee aankopen → portfolio combineert          | REQ-001 + REQ-002| AUTO/BROWSER |
-| I3| Koop → transactie in geschiedenis             | REQ-001 + REQ-003| AUTO/BROWSER |
-```
-
-Voeg deze toe aan de checklist als extra items met `"integration": true`. Ze worden mee-geclassificeerd en mee-getest in FASE 1/2.
-
-Als er geen logische cross-requirement combinaties zijn → skip, geen output.
-
-6. **Classify each test item**
-
-   **IF `postBuildMode`:**
-
-   **a) Baseline check** — run bestaande test suite eenmalig als gate (niet als test item):
-
-   ```bash
-   npm test 2>&1 | tail -5  # of project-specifiek test command
-   ```
-
-   Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n} tests)`
-   Bij FAIL: waarschuw (post-build regressie mogelijk), ga door met classificatie.
-
-   **b) Per checklist item, post-build classificatie:**
-
-   Gebruik de `httpContractTested` en `delta` velden uit de Explore agent output:
-   - Item met `httpContractTested: true` EN `delta: "geen"` → **COVERED** (build tests dekken het al, telt als PASS via baseline)
-   - Item met `httpContractTested: true` EN `delta` bevat iets → **AUTO/CLI** of **AUTO/BROWSER** (alleen de delta testen)
-   - Item met `httpContractTested: false` → bestaande classificatie:
-     - `steps[]` met browser-interacties → **AUTO/BROWSER**
-     - `steps[]` met HTTP/curl → **AUTO/CLI**
-     - `hasUI` → **AUTO/BROWSER**
-     - `isPureAPI` → **AUTO/CLI**
-   - Integratie-scenario's (5c) → altijd **AUTO/CLI** of **AUTO/BROWSER** (nooit COVERED — cross-req is per definitie nieuwe verificatie)
-   - MANUAL items → ongewijzigd
-   - Niet-test-suite CLI checks (build, typecheck) → ongewijzigd
-
-   > Zie `references/test-classification.md` → "Post-Build Classification Override" voor volledige override tabel inclusief COVERED.
-
-   **c) Display** met Type kolom die COVERED toont:
+7. **Post-build strategie** (alleen als `build` sectie bestaat):
 
    ```
-   TEST CLASSIFICATIE: {feature-name} (POST-BUILD)
-
-   | # | Test                     | Type         | Reden                                    |
-   |---|--------------------------|--------------|------------------------------------------|
-   | 1 | Register with valid data | COVERED      | Build test: HTTP 200 + schema validation |
-   | 2 | Without email            | COVERED      | Build test: HTTP 400 + error response    |
-   | 3 | Welcome mail sent        | MANUAL       | Niet door build gedekt                   |
-   | I1| Koop → portfolio update  | AUTO/BROWSER | Cross-req integratie                     |
-
-   COVERED: {n} (gedekt door baseline)  AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}
-   BASELINE: npm test pre-check → COVERED items tellen als PASS
+   postBuildMode = true
+   hasUI = feature.json heeft "design" veld OF files[] bevat frontend bestanden (.tsx, .vue, .svelte)
+   isPureAPI = feature.json heeft "apiContract" EN NIET hasUI
    ```
-
-   **ELSE (geen postBuildMode):**
-
-   For each checklist item, apply the classification criteria and assign **AUTO** or **MANUAL**.
 
    Display:
 
    ```
-   TEST CLASSIFICATIE: {feature-name}
-
-   | # | Test                    | Type       | Reden                                    |
-   |---|-------------------------|------------|------------------------------------------|
-   | 1 | Register with valid data| AUTO | DOM: redirect + welkomstmelding zichtbaar |
-   | 2 | Without email           | AUTO | DOM: foutmelding zichtbaar               |
-   | 3 | Welcome mail sent       | MANUAL     | Email verificatie niet via DOM            |
-   | 4 | Layout on mobile        | AUTO | Responsive: resize + screenshot          |
-   | 5 | Feels intuitive         | MANUAL     | Subjectief UX oordeel                    |
-
-   AUTO: {n}  MANUAL: {n}
+   POST-BUILD DETECTIE: {testsTotal} bestaande tests ({tdd} TDD, {implFirst} impl-first)
+   Strategie: {hasUI → "E2E browser verificatie" | isPureAPI → "API integratie" | else → "Integratie verificatie"}
+   Baseline: bestaande test suite als pre-check
    ```
 
-7. **User override**
+8. **Cross-requirement integratie** (alleen bij `postBuildMode`) — Analyseer `requirements[]`, identificeer combinaties waar output van één requirement input is voor een andere. Max 3 scenario's, voeg toe als checklist items met `"integration": true`. Geen logische combinaties → skip.
 
-   **IF er COVERED items zijn**, gebruik aangepaste opties:
+9. **Classify test items:**
 
-   Use AskUserQuestion tool:
-   - header: "Test Classificatie"
-   - question: "{n} items gedekt door build tests, {m} integratie-scenario's. Wil je de classificatie aanpassen?"
-   - options:
-     - label: "Classificatie akkoord (Aanbevolen)", description: "COVERED items skippen, alleen integratie + overige AUTO/MANUAL testen"
-     - label: "Toch alles testen", description: "Negeer COVERED, test alle items inclusief al-gedekte"
-     - label: "Items aanpassen", description: "Ik wil items van AUTO naar MANUAL verplaatsen"
-     - label: "Alles handmatig", description: "Sla automatische tests over, test alles handmatig"
-   - multiSelect: false
+   **Bij `postBuildMode`:**
 
-   **If "Toch alles testen"** → reclassify all COVERED items as AUTO/CLI or AUTO/BROWSER (bestaande logica).
+   a) Baseline check: `npm test 2>&1 | tail -5` (of project-specifiek command).
+   Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n})`
 
-   **ELSE (geen COVERED items)**, gebruik standaard opties:
+   b) Per item, gebruik Explore agent output:
+   - `httpContractTested: true` + `delta: "geen"` → **COVERED**
+   - `httpContractTested: true` + delta → **AUTO/CLI** of **AUTO/BROWSER** (alleen delta)
+   - `httpContractTested: false` → classificeer op steps/hasUI/isPureAPI
+   - Integratie-scenario's → altijd **AUTO** (nooit COVERED)
 
-   Use AskUserQuestion tool:
-   - header: "Test Classificatie"
-   - question: "Wil je de classificatie aanpassen? Je kunt AUTO items naar MANUAL verplaatsen."
-   - options:
-     - label: "Classificatie akkoord (Aanbevolen)", description: "Start hybrid testing met deze indeling"
-     - label: "Items aanpassen", description: "Ik wil items van AUTO naar MANUAL verplaatsen"
-     - label: "Alles handmatig", description: "Sla automatische tests over, test alles handmatig"
-   - multiSelect: false
+   > Volledige override tabel: `references/test-classification.md` → "Post-Build Classification Override"
 
-   **If "Items aanpassen"** → ask which items to move to MANUAL, update classification.
-   **If "Alles handmatig"** → set all items to MANUAL, skip FASE 1 entirely.
+   c) Display classificatie tabel met Type kolom (COVERED/AUTO/MANUAL) + reden.
+   Samenvattingsregel: `COVERED: {n}  AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}`
 
-8. **Dev server + Cloudflare Tunnel** (uses same setup as `/dev-server`)
+   **Zonder `postBuildMode`:** Classificeer als AUTO of MANUAL per `references/test-classification.md`.
 
-   **Conditioneel starten** — niet altijd nodig:
+   d) User override via AskUserQuestion:
+   - Bij COVERED items: Akkoord (Aanbevolen) | Toch alles testen | Items aanpassen | Alles handmatig
+   - Zonder COVERED: Akkoord (Aanbevolen) | Items aanpassen | Alles handmatig
 
-   ```
-   IF alle non-COVERED items zijn AUTO/CLI (in-process testbaar, geen live server nodig):
-     → Skip dev server + tunnel entirely
-     → Task agent bouwt app in-process (mongodb-memory-server, test DB, etc.)
-     → Display: "Dev server overgeslagen — alle tests in-process uitvoerbaar"
+10. **Dev server** (conditioneel):
 
-   IF er MANUAL of AUTO/BROWSER items zijn:
-     → Start dev server + tunnel (volledige setup hieronder)
+    ```
+    Alle non-COVERED items AUTO/CLI (in-process testbaar) → skip dev server entirely
+    MANUAL of AUTO/BROWSER items                          → start via /dev-server proces (tunnel nodig)
+    AUTO/CLI met live server vereist                      → start op localhost (zonder tunnel)
+    ```
 
-   IF er AUTO/CLI items zijn die een live server vereisen (externe API integratie, geen in-process DB beschikbaar):
-     → Start dev server op localhost (zonder tunnel)
-   ```
-
-   **Wanneer dev server nodig is:**
-
-   **a) Check for existing tunnel:**
-
-   ```bash
-   grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log 2>/dev/null | head -1
-   ```
-
-   If a URL is found, verify it's live:
-
-   ```bash
-   curl -s -o /dev/null -w "%{http_code}" {tunnel_url}
-   ```
-
-   **If HTTP 200** → verify it serves the correct project: `curl -s {tunnel_url} | grep -i "{project-name}"`. If mismatch (e.g. tunnel serves a different project) → kill and restart tunnel for this project.
-
-   **If verified** → tunnel running, use this URL, proceed to FASE 1.
-
-   **b) No tunnel running — start dev server + tunnel:**
-
-   **Vite projects:** Check if `server.allowedHosts` is set in vite.config. If not, temporarily add `allowedHosts: true` before starting (Vite 7+ blocks tunnel hostnames with 403). Revert after testing.
-
-   Follow the same process as `/dev-server`:
-
-   ```bash
-   # Kill stale processes
-   fuser -k 3000/tcp 2>/dev/null; pkill -f cloudflared 2>/dev/null
-   sleep 1
-
-   # Detect framework from package.json and start
-   # Next.js: npx next dev --port 3000 &
-   # Vite: npx vite --port 3000 --host &
-
-   # Wait for server ready
-   for i in $(seq 1 15); do curl -s http://localhost:3000 > /dev/null 2>&1 && break || sleep 1; done
-
-   # Start Cloudflare Tunnel
-   cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflared.log 2>&1 &
-   sleep 8
-   grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | head -1
-   ```
-
-   **c) If server or tunnel fails to start:**
-
-   ```
-   ⚠ Dev server + tunnel niet gestart. Alle items worden MANUAL.
-   ```
-
-   Graceful fallback: reclassify ALL items as MANUAL, skip FASE 1, proceed to FASE 2.
+    Bij falen → graceful fallback: alle items worden MANUAL, skip FASE 1.
 
 ---
 
-**Tag backlog card als actief** (direct na feature validatie):
+### FASE 1: Automated Testing
 
-Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-Zoek feature op naam → zet `"stage": "testing"`, `"inProgress": "test"`, `data.updated` naar nu.
-Schrijf terug via Edit (keep `<script>` tags intact).
+**Skip** als alle AUTO items COVERED zijn.
 
-**Capture git baseline** (for scoped commit at end of skill):
+Launch Agent om non-COVERED AUTO items uit te voeren in apart context window.
 
-```bash
-mkdir -p .project/session
-git status --porcelain | sort > .project/session/pre-skill-status.txt
-echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
-```
-
-### FASE 1: Automated Testing (Task Agent)
-
-**When:** There are non-COVERED AUTO items after classification. Dev server moet draaien als er AUTO/BROWSER of live-server AUTO/CLI items zijn; voor in-process AUTO/CLI items is geen dev server nodig.
-
-**Skip FASE 1 entirely** als alle AUTO items COVERED zijn (alleen MANUAL items over → ga naar FASE 2).
-
-**Launch a Task agent** to execute all non-COVERED AUTO items in a separate context window. This prevents snapshot/screenshot data from consuming the main conversation context. COVERED items worden NIET meegegeven — die tellen al als PASS via baseline.
-
-**Task agent prompt template:**
+Agent prompt:
 
 ```
 Test de volgende items automatisch via browser tools en bash commands.
-Dev server: {url}
 Feature: {feature-name}
+{IF dev server draait: Dev server: {url}}
 
 {STACK_CONTEXT}
 
 ITEMS:
-{for each AUTO item:}
+{per AUTO item:}
 - Item {N}: {title}
   Stappen: {test steps}
   Testdata: {test data}
   Verwacht: {expected outcome}
   Methode: {BROWSER of CLI}
-  Patroon: {matching test pattern from reference table}
 
 INSTRUCTIES:
-1. Navigeer naar de dev server URL en verifieer dat deze draait
-2. Voor elk item:
-   a. Voer de stappen uit met MCP browser tools of bestaande test suites via bash
-   b. Analyseer het resultaat en bepaal PASS of FAIL met bewijs en redenering
-3. Als een browser tool faalt voor een item, markeer als TOOL_ERROR
-4. Geef gestructureerde resultaten terug
+1. Voer stappen uit met MCP browser tools of bash commands
+2. Bepaal PASS/FAIL met bewijs en redenering
+3. Browser tool faalt → markeer als TOOL_ERROR
 
-{if postBuildMode:}
-POST-BUILD CONTEXT:
-- Bestaande unit tests zijn al GREEN (baseline pre-check: PASS)
-- Focus op INTEGRATIE en E2E gedrag, niet op per-requirement unit logica
-- Verifieer dat componenten SAMENWERKEN, niet dat individuele units werken
-- Draai NIET opnieuw npm test — dat is al als baseline gecheckt
-{end if}
+{IF postBuildMode:}
+POST-BUILD: baseline al GREEN. Focus op INTEGRATIE, niet unit logica.
+Draai NIET opnieuw npm test.
+{END IF}
 
-RESULTAAT FORMAT (strict):
+RESULTAAT FORMAT:
 AUTOMATED_RESULTS_START
 | # | Test | Resultaat | Bewijs | Redenering |
 |---|------|-----------|--------|------------|
-| {N} | {title} | PASS/FAIL/TOOL_ERROR | {wat gezien} | {waarom pass/fail} |
 AUTOMATED_RESULTS_END
 
-FALLBACK_ITEMS: {items met TOOL_ERROR, komma-gescheiden nummers, of "geen"}
+FALLBACK_ITEMS: {TOOL_ERROR items, of "geen"}
 ```
 
-**Parse agent results:**
+**Parse resultaten:** als output truncated is (geen markers zichtbaar), gebruik Grep om `AUTOMATED_RESULTS_START` te vinden in agent output. TOOL_ERROR items → reclassify als MANUAL.
 
-The Task agent's output will likely be **truncated** because its full conversation log (snapshots, screenshots, tool calls) is very large. This is expected. To extract the structured results:
+**Agent faalt volledig:** graceful fallback → alle AUTO items worden MANUAL.
 
-1. If TaskOutput contains `AUTOMATED_RESULTS_START` → parse directly from the output
-2. If TaskOutput is truncated (no `AUTOMATED_RESULTS_START` visible):
-   - Use **Grep** to find `AUTOMATED_RESULTS_START` in the agent's output file
-   - Use **Read** with the line offset to read from `AUTOMATED_RESULTS_START` to `AUTOMATED_RESULTS_END`
-3. Extract ONLY the structured block between the markers — ignore the rest of the agent log
-4. Any items with `TOOL_ERROR` → reclassify as MANUAL for FASE 2
-5. Display automated results in main conversation:
-
-```
-AUTO TEST RESULTATEN: {feature-name}
-
-| # | Test              | Resultaat | Bewijs (kort)              |
-|---|-------------------|-----------|----------------------------|
-| 1 | Valid registration| ✓ PASS    | /dashboard + welkomstmelding |
-| 2 | Without email     | ✗ FAIL    | Geen foutmelding zichtbaar |
-| 4 | Mobile layout     | ✓ PASS    | Layout correct bij 375px   |
-
-AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}
-```
-
-**If agent fails entirely (timeout, crash, MCP unavailable):**
-
-```
-⚠ Automatische tests niet gelukt — alle items worden MANUAL.
-```
-
-Graceful fallback: reclassify all AUTO items as MANUAL, proceed to FASE 2.
+Display: `AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}`
 
 ---
 
 ### FASE 1b: Parse Inline Feedback
 
-**When:** User provided inline feedback via `/dev-test {name} {feedback}` or free text (skipping FASE 1 AND FASE 2 entirely — backward compatible).
+**Wanneer:** user gaf feedback mee bij `/dev-test {name} {feedback}` (skipt FASE 1 + 2).
 
-Parse user feedback into structured results (item number, PASS/FAIL, notes).
-Accept both numbered format (`1:PASS 2:FAIL note`) and free text.
+Parse naar item/PASS/FAIL/notes. Accepteer `1:PASS 2:FAIL note` en vrije tekst.
+Toon samenvatting, ga naar FASE 3.
 
-After parsing, show summary table and proceed directly to FASE 3 (categorize issues).
-
-**Note:** When inline feedback is provided, automation is skipped entirely. All items are treated as MANUAL with user-provided results.
-
-**If feedback is ambiguous:**
-
-Use AskUserQuestion tool:
-
-- header: "Feedback Onduidelijk"
-- question: "Ik kon de feedback niet goed parsen. Kun je het in dit formaat geven?"
-- options:
-  - label: "Opnieuw invoeren (Aanbevolen)", description: "Gebruik formaat: 1:PASS 2:FAIL [notes]"
-  - label: "Per item doorgaan", description: "Ik vraag per item of het PASS of FAIL is"
-  - label: "Uitleg", description: "Leg de feedback formaten uit"
-- multiSelect: false
+Onduidelijke feedback → AskUserQuestion: Opnieuw invoeren (Aanbevolen) | Per item doorgaan | Uitleg.
 
 ---
 
 ### FASE 2: Manual Walkthrough
 
-**When:** There are MANUAL items to test (either originally classified or reclassified from fallback).
+**Wanneer:** er zijn MANUAL items.
 
-Show setup instructions once (stack-appropriate from CLAUDE.md), then loop through each MANUAL item individually:
-
-```
-TEST SETUP: {feature-name}
-{e.g. "Open {tunnel_url}" — use the Cloudflare tunnel URL from step 8}
-```
-
-**For each MANUAL item (1 to N):**
+Toon setup eenmalig (bijv. "Open {tunnel_url}"). Per MANUAL item:
 
 ```
 ──────────────────────────────────────
-HANDMATIG TEST {n}/{total_manual}: {item title}
+HANDMATIG TEST {n}/{total}: {title}
 ──────────────────────────────────────
 
 STAPPEN:
-1. {concrete action, e.g. "Ga naar /register"}
-2. {concrete action with data, e.g. "Vul in: Email → test@voorbeeld.nl"}
-3. {concrete action, e.g. "Klik op 'Registreren'"}
+1. {concrete actie met data}
 
 TESTDATA:
-┌─────────────┬──────────────────────┐
-│ Veld        │ Waarde               │
-├─────────────┼──────────────────────┤
-│ Naam        │ Test User            │
-│ Email       │ test@voorbeeld.nl    │
-│ Wachtwoord  │ Test1234!            │
-└─────────────┴──────────────────────┘
+{tabel met velden + waarden}
 
 VERWACHT:
-→ {exact expected outcome, e.g. "Redirect naar /dashboard, welkomstmelding zichtbaar"}
+→ {expected outcome}
 ```
 
-Use AskUserQuestion tool per item:
-
-- header: "Test {n}/{total_manual}"
-- question: "Resultaat van '{item title}'?"
-- options:
-  - label: "Pass (Recommended)", description: "Werkt zoals verwacht"
-  - label: "Fail", description: "Werkt niet — ik geef details"
-  - label: "Skip", description: "Kan niet testen, sla over"
-- multiSelect: false
-
-**If Pass** → record PASS, continue to next item
-**If Fail** → ask for brief details (what happened instead?), record FAIL + notes, continue to next item
-**If Skip** → record SKIP with reason, continue to next item
+AskUserQuestion per item: Pass (Aanbevolen) | Fail | Skip.
+- Fail → vraag kort wat er mis ging
+- Skip → noteer reden
 
 ---
 
 ### FASE 2b: Combined Results
 
-Merge COVERED, automated (FASE 1), and manual (FASE 2) results into one combined summary.
+Merge COVERED + automated + manual resultaten.
 
-**Compact format** — wanneer `postBuildMode` + alle items PASS + er zijn COVERED items:
+**Compact** (postBuildMode + alle PASS + COVERED items):
 
 ```
 TEST RESULTAAT: {feature-name} (POST-BUILD)
@@ -555,450 +261,177 @@ TOTAAL: {n}/{n} PASS
 Geen fixes nodig.
 ```
 
-**Volledige tabel** — wanneer er FAIL items zijn OF geen COVERED items:
+**Volledige tabel** (bij FAILs of geen COVERED):
 
 ```
 GECOMBINEERDE RESULTATEN: {feature-name}
 
-| # | Test                  | Type    | Resultaat              |
-|---|-----------------------|---------|------------------------|
-| 1 | Valid registration    | COVERED | ✓ PASS (baseline)     |
-| 2 | Without email         | AUTO    | ✗ FAIL: geen error    |
-| 3 | Welcome mail          | MANUAL  | ✗ FAIL: geen mail     |
-| I1| Cross-req flow        | AUTO    | ✓ PASS                |
-
-COVERED: {n}  AUTO PASS: {n}  AUTO FAIL: {n}
-MANUAL PASS: {n}  MANUAL FAIL: {n}  SKIP: {n}
-TOTAAL PASS: {n}  TOTAAL FAIL: {n}
+| # | Test | Type | Resultaat |
+|---|----- |------|-----------|
 ```
 
-**User verification of auto-failed items:**
+Bij AUTO FAILs → AskUserQuestion: Vertrouw auto resultaten (Aanbevolen) | Handmatig controleren.
+Bij SKIPs → AskUserQuestion: Accepteren (Aanbevolen) | Later testen.
 
-If any AUTO items failed automatically, offer the user the option to manually verify:
-
-Use AskUserQuestion tool:
-
-- header: "Auto-gefaalde Items"
-- question: "Er zijn {n} automatisch gefaalde items. Wil je deze handmatig controleren?"
-- options:
-  - label: "Vertrouw auto resultaten (Aanbevolen)", description: "Ga door met fixen van gefaalde items"
-  - label: "Handmatig controleren", description: "Ik wil de auto-gefaalde items zelf checken"
-- multiSelect: false
-
-**If "Handmatig controleren"** → run manual walkthrough for those items, update results accordingly.
-
-**If 1+ SKIP items**, ask user to acknowledge:
-
-Use **AskUserQuestion** tool:
-
-- header: "Skipped Items"
-- question: "Er zijn {n} overgeslagen items. Accepteer je dit?"
-- options:
-  - label: "Accepteren (Recommended)", description: "Overgeslagen items worden niet getest in deze sessie"
-  - label: "Later testen", description: "Noteer als TODO voor een volgende test sessie"
-- multiSelect: false
-
-**If "Later testen"** → mark SKIP items with `TODO_RETEST` tag for FASE 6 summary.
-
-**If all PASS** → skip to FASE 6
-**If any FAIL** → proceed to FASE 3 (categorize issues)
+Alle PASS → FASE 6. FAILs → FASE 3.
 
 ---
 
 ### FASE 3: Categorize Issues
 
-For each FAIL item, categorize using the Feedback Categorization table above. Include the test_type tag (AUTO/MANUAL) per issue.
+Per FAIL: categoriseer als TESTABLE/MEASURABLE/SUBJECTIVE (zie tabel hierboven).
+SUBJECTIVE → AskUserQuestion voor verduidelijking, dan re-categoriseer.
 
-**For SUBJECTIVE issues**, ask for clarification immediately:
-
-Use AskUserQuestion tool:
-
-- header: "Verduidelijking Item {N}"
-- question: "'{notes}' is niet specifiek genoeg. Wat is er precies mis?"
-- options: (context-dependent, e.g. "Te snel/langzaam", "Functionaliteit", "Anders")
-- multiSelect: false
-
-After clarification, re-categorize as TESTABLE or MEASURABLE.
-
-**Technique mapping for TESTABLE issues:**
-
-Analyze each TESTABLE issue individually and assign a technique:
-
-```
-For each TESTABLE issue:
-  IF issue involves:
-    - validation rules, business logic, calculations, edge cases, race conditions
-    → TDD
-
-  IF issue involves:
-    - CRUD wiring, config, missing imports, straightforward plumbing, routing
-    → Implementation First
-
-  DEFAULT → TDD
-```
+Technique mapping voor TESTABLE:
+- Validatie, business logic, edge cases, race conditions → **TDD**
+- CRUD wiring, config, imports, routing → **Implementation First**
+- Default → TDD
 
 Display technique map:
 
 ```
-TECHNIQUE MAP (fixes):
-
-| Item | Issue                | Type   | Technique            | Reason              |
-|------|----------------------|--------|----------------------|---------------------|
-| {N}  | {issue description}  | AUTO   | TDD                  | {reason}            |
-| {N}  | {issue description}  | MANUAL | Implementation First | {reason}            |
+| Item | Issue | Type | Technique | Reason |
 ```
 
 ---
 
 ### FASE 4: Fix Loop
 
-For each TESTABLE issue, execute the assigned technique. For MEASURABLE issues, apply Direct Fix.
-
 #### TDD Fix
 
-Assess complexity first. For complex issues (race conditions, auth flows, caching):
+Complexe issues → AskUserQuestion: Research via Context7 (Aanbevolen) | Direct fixen.
 
-Use AskUserQuestion tool:
-
-- header: "Research"
-- question: "Dit is een complexe fix ({brief description}). Wil je patterns researchen?"
-- options:
-  - label: "Ja, research (Aanbevolen)", description: "Research beste aanpak via Context7"
-  - label: "Nee, direct fixen", description: "Fix zonder research"
-- multiSelect: false
-
-Then apply TDD: test → red → fix → green. Max 3 attempts before asking user.
-
-After each successful fix, output:
+TDD: test → red → fix → green. Max 3 pogingen, daarna vraag user.
 
 ```
 [FIX] Item {N}: {title}
-Technique: TDD
-Type: {AUTO|MANUAL}
-RED:   FAIL ({what the test captured})
-GREEN: PASS
-SYNC:  Root cause: {what was actually wrong, file:line}.
-       Fix: {what pattern/approach was used and why}.
-       Impact: {what this affects — isolated to this file, or touches other parts}.
+Technique: TDD | Type: {AUTO|MANUAL}
+RED: FAIL ({wat})  GREEN: PASS
+SYNC: Root cause: {file:line}. Fix: {aanpak}. Impact: {scope}.
 ```
 
-**If test unexpectedly PASSES:**
-
-Use AskUserQuestion tool:
-
-- header: "Test Passed"
-- question: "De test slaagt al. Wat wil je doen?"
-- options:
-  - label: "Overslaan (Aanbevolen)", description: "Item lijkt al gefixt, ga naar volgende"
-  - label: "Test aanpassen", description: "De test klopt niet, ik geef nieuwe details"
-  - label: "Handmatig checken", description: "Stop en check dit handmatig"
-- multiSelect: false
+Test slaagt al → AskUserQuestion: Overslaan (Aanbevolen) | Test aanpassen | Handmatig checken.
 
 #### Implementation First Fix
 
-For TESTABLE issues assigned Implementation First technique:
-
-1. Analyze the reported issue and locate root cause
-2. Implement the fix directly
-3. Write test that verifies the fix works
-4. Run test → expect PASS
-5. If FAIL → adjust implementation, max 3 attempts before asking user
-
-After each successful fix, output:
+Fix → schrijf test → verify PASS. Max 3 pogingen.
 
 ```
 [FIX] Item {N}: {title}
-Technique: Implementation First
-Type: {AUTO|MANUAL}
-IMPLEMENTED: {what was fixed}
-TESTED: PASS
-SYNC:  Root cause: {what was actually wrong, file:line}.
-       Fix: {what was changed and why this approach}.
-       Impact: {what this affects in the codebase}.
+Technique: Implementation First | Type: {AUTO|MANUAL}
+IMPLEMENTED: {wat}  TESTED: PASS
+SYNC: Root cause: {file:line}. Fix: {aanpak}. Impact: {scope}.
 ```
 
-#### MEASURABLE Issues: Direct Fix
+#### MEASURABLE: Direct Fix
 
-Locate code, apply fix directly (config, styling, timing), document the change.
-Cannot be auto-verified — needs manual re-test.
-
-After each fix, output:
+Fix direct (config, styling, timing). Needs manual re-test.
 
 ```
 [FIX] Item {N}: {title}
-Technique: Direct Fix
-Type: {AUTO|MANUAL}
-SYNC:  Root cause: {what was actually wrong, file:line}.
-       Fix: {what was changed and why this approach}.
-       Impact: {what this affects in the codebase}.
+Technique: Direct Fix | Type: {AUTO|MANUAL}
+SYNC: Root cause: {file:line}. Fix: {aanpak}. Impact: {scope}.
 ```
 
 ---
 
-### FASE 5: Re-test (Hybrid)
+### FASE 5: Re-test
 
-Re-test ONLY fixed items, using the appropriate method per test_type.
+Re-test ALLEEN gefixte items.
 
-#### Phase A: Auto Re-test (Task Agent)
+**Phase A: Auto** — fixed AUTO items via Agent (zelfde aanpak als FASE 1, markers `RETEST_RESULTS_START`/`RETEST_RESULTS_END`). TOOL_ERROR → Phase B.
 
-Re-run all fixed AUTO items via a **Task agent** (same approach as FASE 1).
+**Phase B: Manual** — fixed MANUAL items via walkthrough. Toon WIJZIGING (fix summary) + originele stappen.
 
-Use same Task agent approach as FASE 1 (inclusief `{STACK_CONTEXT}` in prompt). Include per item: title, fix summary, test steps, expected outcome. Use result markers `RETEST_RESULTS_START` / `RETEST_RESULTS_END`. Parse same as FASE 1 (including truncation handling). TOOL_ERROR items move to Phase B (manual re-test).
-
-#### Phase B: Manual Re-test
-
-Re-test MANUAL items that failed, using the same guided walkthrough pattern:
-
-**For each fixed MANUAL item:**
-
-```
-──────────────────────────────────────
-HANDMATIG RE-TEST {n}/{total_manual_retest}: {item title}
-──────────────────────────────────────
-
-WIJZIGING:
-→ {summary of change + root cause, e.g. "Client-side required validation + inline error
-   toegevoegd — form miste frontend validatie terwijl backend (Zod) al correct was"}
-
-STAPPEN:
-1. {same concrete steps as original test}
-2. {with same or updated test data}
-
-TESTDATA:
-{same table format as FASE 2}
-
-VERWACHT:
-→ {expected outcome after fix}
-```
-
-Use same AskUserQuestion per item (Pass/Fail/Skip).
-
-**After all re-tests, show combined re-test results:**
-
-```
-RE-TEST RESULTATEN: {feature-name}
-
-| # | Test              | Type   | Resultaat              |
-|---|-------------------|--------|------------------------|
-| 2 | Without email     | AUTO   | ✓ PASS                |
-| 3 | Welcome mail      | MANUAL | ✓ PASS                |
-
-RE-TEST PASS: {n}  RE-TEST FAIL: {n}
-```
-
----
+Display re-test resultaten.
 
 ### FASE 5b: Re-test Loop
 
-Parse re-test results. If all pass → FASE 6.
+Alles pass → FASE 6.
 
-**If items still failing:**
-
-Use AskUserQuestion tool:
-
-- header: "Item {N} Faalt Nog"
-- question: "Item {N} ({AUTO|MANUAL}) werkt nog niet na fix. Wat wil je doen?"
-- options:
-  - label: "Meer details geven (Aanbevolen)", description: "Ik geef specifiekere feedback"
-  - label: "Andere aanpak", description: "Probeer een andere fix strategie"
-  - label: "Accepteren zoals het is", description: "Markeer als acceptabel voor nu"
-  - label: "Handmatig fixen", description: "Stop en fix het zelf"
-- multiSelect: false
-
-Loop back to FASE 3 until all pass or user exits. On loop-back:
-
-- AUTO items that still fail → re-run automatically in FASE 5 Phase A
-- MANUAL items that still fail → re-test manually in FASE 5 Phase B
+Items falen nog → AskUserQuestion: Meer details (Aanbevolen) | Andere aanpak | Accepteren | Zelf fixen.
+Loop terug naar FASE 3. AUTO items → re-run in FASE 5A. MANUAL items → re-test in FASE 5B.
 
 ---
 
 ### FASE 6: Completion
 
-#### Step 1: Fix Sync (only when fixes were applied in FASE 4)
+#### Step 1: Fix Sync (skip als geen fixes)
 
-**Skip this step if all items passed on first attempt (no fixes needed).**
-
-**1a) Claude summarizes** — per fix, in plain language:
+Per fix in plain language:
 
 ```
-FIX SYNC: {feature-name}
-=========================
-
-{For each fix applied:}
-
-Fix {N}: {item title}
-- Problem: {what was wrong, in plain language}
-- Change: {what was modified} ({file:line})
-- Approach: {why this fix, not an alternative — only if non-obvious}
-- Watch out: {anything the user should know — only if relevant}
-
-{Example:}
-
-Fix 1: Email validation missing
-- Problem: Form submitted without validating email format
-- Change: Added Zod email validation to registration schema (lib/validations/auth.ts:23)
-- Approach: Used Zod's built-in .email() instead of regex — already used elsewhere in the project
-
-Fix 2: Welcome mail not sent
-- Problem: sendWelcomeMail() was called before user was saved to DB
-- Change: Moved mail call to after successful DB insert (app/api/register/route.ts:45)
-- Watch out: Mail sending is async — if it fails, the user IS registered but won't get the mail
+Fix {N}: {title}
+- Problem: {wat}
+- Change: {file:line}
+- Watch out: {alleen als relevant}
 ```
 
-**1b) Comprehension check** via AskUserQuestion:
+AskUserQuestion: Ja, helder (Aanbevolen) | Leg meer uit | Ik heb een vraag. Loop tot helder.
 
-- header: "Fix Sync"
-- question: "Snap je de fixes die zijn toegepast?"
-- options:
-  - label: "Ja, helder (Aanbevolen)", description: "Ik begrijp wat er is veranderd en waarom"
-  - label: "Leg meer uit", description: "Geef een uitgebreidere uitleg met voorbeelden"
-  - label: "Ik heb een vraag", description: "Ik wil iets specifieks vragen"
-- multiSelect: false
+Sla fix sync op voor `feature.json` (tests.fixSync).
 
-**If "Leg meer uit"** → explain each fix in more detail with before/after examples, then re-ask.
-**If "Ik heb een vraag"** → answer the question, then re-ask.
-**Loop until "Ja, helder".**
+#### Step 2: Observaties
 
-**1c) Save fix sync** — store the summary for inclusion in `feature.json` (tests.fixSync field).
+AskUserQuestion: Nee, alles goed (Aanbevolen) | Ja, ik heb iets opgemerkt.
+"Ja" → vraag beschrijving, noteer voor feature.json (observations[]).
+
+#### Step 3: 3-File Sync
+
+Volg `shared/SYNC.md` protocol. Skill-specifieke mutaties:
+
+**feature.json:**
+- `status` → `"DONE"`
+- `requirements[].status` → `"PASS"` / `"FAIL"` per REQ
+- `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item
+- `tests.finalStatus` → `"PASSED"` of `"FAILED"`
+- `tests.sessions[]` → append `{ "date": "YYYY-MM-DD", "pass": N, "fail": N, "skip": N }`
+- `tests.fixSync` → fix summaries (als fixes toegepast)
+- `observations[]` → toevoegen (indien aanwezig)
+
+**backlog:** `status = "DONE"`, verwijder `stage`, `updated` → nu.
+
+**project.json:** Feature status → `"DONE"`. Bij fixes in FASE 4: merge gewijzigde bestanden naar `architecture.files`, update diagram nodes naar `:::done`. Merge nieuwe packages/endpoints/entities als relevant.
+
+#### Step 4: Scoped commit
+
+Vergelijk `git status --porcelain | sort` met `.project/session/pre-skill-status.txt`:
+- **NEW** (alleen in current) → `git add`
+- **OVERLAP** (in beide) → AskUserQuestion: Include (Aanbevolen) | Skip
+- **PRE-EXISTING** (alleen baseline) → niet stagen
+
+Baseline niet gevonden → fallback `git add -A`.
+
+```bash
+git commit -m "test({feature}): {N} requirements verified ({auto} auto, {manual} manual)
+
+Hybrid test verification complete.
+- Covered: {covered} | Auto: {auto} | Manual: {manual}
+- Fixed: {list} | Tests added: {count}"
+```
+
+Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{name}.json`
+
+Geen Co-Authored-By footer bij pipeline commits.
 
 ---
 
-#### Step 2: Out-of-scope Observations (always — even without fixes)
-
-The user was actively testing the feature and may have noticed issues outside the current scope. Capture these before closing out.
-
-Use AskUserQuestion tool:
-
-- header: "Observaties"
-- question: "Is je tijdens het testen nog iets anders opgevallen buiten de scope van deze feature?"
-- options:
-  - label: "Nee, alles goed (Aanbevolen)", description: "Geen verdere opmerkingen"
-  - label: "Ja, ik heb iets opgemerkt", description: "Ik wil iets noteren voor later"
-- multiSelect: false
-
-**If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in `feature.json` (observations field). Do NOT attempt to fix these — they are out of scope.
-
-After documenting, show confirmation:
+## Example Flows
 
 ```
-OBSERVATIE GENOTEERD
-
-Opgenomen in test results.
-```
-
----
-
-3. **Parallel sync** (feature.json + backlog + dashboard) — volg `shared/SYNC.md` 3-File Sync Pattern, skill-specifieke mutaties hieronder:
-
-   Lees parallel (skip als niet bestaat):
-   - `.project/features/{feature-name}/feature.json`
-   - `.project/backlog.html`
-   - `.project/project.json`
-
-   Muteer alle drie in memory:
-
-   **feature.json** (read-modify-write — behoud alle bestaande secties):
-   - `status` → `"DONE"`
-   - `requirements[].status` → `"PASS"` / `"FAIL"` per REQ
-   - `tests` → merge onderstaande velden IN de bestaande `tests` sectie (niet overschrijven):
-     - `checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item (behoud `id`, `title`, `steps[]`, `expected` etc.)
-     - `finalStatus` → `"PASSED"` (als alles pass) of `"FAILED"`
-     - `coverage` → `{ "statements": N, "branches": N }` (als beschikbaar, anders weglaten)
-     - `sessions[]` → append huidige sessie: `{ "date": "YYYY-MM-DD", "pass": N, "fail": N, "skip": N }`
-     - `fixSync` → array van fix summaries uit FASE 4 (als fixes toegepast, anders weglaten)
-   - `observations[]` → toevoegen (indien aanwezig)
-
-   Voorbeeld resultaat `tests` na update:
-
-   ```json
-   "tests": {
-     "finalStatus": "PASSED",
-     "checklist": [
-       { "id": 1, "title": "Register with valid data", "status": "PASS", "steps": [...], "expected": "..." },
-       { "id": 2, "title": "Without email", "status": "PASS", "steps": [...], "expected": "..." }
-     ],
-     "sessions": [{ "date": "2026-03-05", "pass": 2, "fail": 0, "skip": 0 }],
-     "fixSync": ["Email validation: added Zod .email() to schema (lib/validations/auth.ts:23)"]
-   }
-   ```
-
-   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "DONE"`, verwijder `stage` en `inProgress` velden, `data.updated` → huidige datum.
-
-   **Dashboard** (zie `shared/DASHBOARD.md`): als packages geïnstalleerd tijdens fix loop: merge naar `stack.packages`. Als endpoints gewijzigd/toegevoegd: merge naar `endpoints`. Als data entities gewijzigd: merge naar `data.entities`. Update `features` array: zoek feature op naam, zet status naar `"DONE"`. **Architecture** (alleen als fixes zijn toegepast in FASE 4 EN `architecture` sectie bestaat in project.json, **volg diagram conventies uit `shared/DASHBOARD.md`**): `architecture.diagram` → verifieer dat feature nodes `:::done` zijn, update file references in node labels als bestanden zijn gewijzigd/toegevoegd, voeg nieuwe nodes toe als componenten zijn toegevoegd. `architecture.files` → merge nieuwe/gewijzigde bestanden uit fix loop (source fixes + nieuwe test files). Skip als geen fixes of geen architecture sectie.
-
-   Schrijf parallel terug:
-   - Write `feature.json`
-   - Edit `backlog.html` (keep `<script>` tags intact)
-   - Write `project.json`
-
-4. **Scoped auto-commit** (only this skill's changes):
-
-   Compare current git status with baseline from FASE 0:
-
-   ```bash
-   git status --porcelain | sort > /tmp/current-status.txt
-   ```
-
-   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
-   - **NEW** (only in current, not in baseline) → `git add` automatically
-   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
-   - **PRE-EXISTING** (only in baseline) → do NOT stage
-
-   If baseline file doesn't exist, fall back to `git add -A`.
-
-   ```bash
-   git commit -m "$(cat <<'EOF'
-   test({feature}): {N} requirements verified ({auto} auto, {manual} manual)
-
-   Hybrid test verification complete.
-   - Covered by build tests: {covered_count} items
-   - Automated (browser + CLI): {auto_count} items
-   - Manual walkthrough: {manual_count} items
-   - Fixed: {list of fixes}
-   - Tests added: {count}
-   EOF
-   )"
-   ```
-
-   Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
-
-   **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
-
----
-
-## Output Structure
-
-```
-.project/features/{feature-name}/
-└── feature.json           # Enriched: tests section, requirements[].status, observations
-```
-
-## Example Flows (compact)
-
-**UI feature met fixes:**
-
-```
-/dev-test user-registration
-→ FASE 0: Classify → 2 COVERED + 1 AUTO/BROWSER + 1 MANUAL
-→ FASE 0: User override → akkoord
-→ FASE 0: Dev server → tunnel running → https://xxx.trycloudflare.com
-→ FASE 1: Task agent runs 1 AUTO/BROWSER item → FAIL (no error msg)
-→ FASE 2: Manual walkthrough 1 item (welcome mail) → FAIL (no mail)
-→ FASE 2b: Combined → 2 COVERED PASS + 1 FAIL + 1 FAIL
-→ FASE 3: Categorize → item 2: TDD, item 4: Impl First
-→ FASE 4: Fix loop → both fixed
-→ FASE 5: Re-test → 1 auto PASS, 1 manual PASS
-→ FASE 6: All 4 pass → commit test(user-registration): verified
-```
-
-**Pure API post-build (fast path):**
-
-```
+# Pure API (fast path)
 /dev-test api-routes
-→ FASE 0: Classify → 6 COVERED + 3 integratie AUTO/CLI
-→ FASE 0: User override → akkoord (COVERED skippen)
-→ FASE 0: Dev server → overgeslagen (in-process testbaar)
-→ FASE 1: Task agent runs 3 integratie items → 3 PASS
-→ FASE 2b: Compact → COVERED 6, INTEGRATIE 3 PASS, TOTAAL 9/9
-→ FASE 6: commit test(api-routes): verified
+→ FASE 0: 6 COVERED + 3 integratie AUTO/CLI → dev server skip
+→ FASE 1: 3 integratie → 3 PASS
+→ FASE 2b: Compact → 9/9 PASS
+→ FASE 6: commit
+
+# UI feature met fixes
+/dev-test user-registration
+→ FASE 0: 2 COVERED + 1 AUTO/BROWSER + 1 MANUAL → tunnel
+→ FASE 1: AUTO/BROWSER → FAIL
+→ FASE 2: Manual → FAIL
+→ FASE 3-4: TDD + Impl First fixes
+→ FASE 5: Re-test → all PASS
+→ FASE 6: Fix sync + commit
 ```
