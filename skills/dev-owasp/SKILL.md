@@ -95,9 +95,10 @@ Analyze:
 
 1. Collect all 10 category scores
 2. Calculate overall security score (weighted average — CRITICAL categories x1.5 weight)
-3. Filter findings: discard confidence < 60%
-4. Group findings by severity: CRITICAL → HIGH → MEDIUM → LOW
-5. Count totals per severity
+3. **Anti-fantasy check:** Als 3+ scanners score 9-10 geven → flag als verdacht. Verwacht onderbouwing per hoge score. Heroverweeg: "Zou een pentester deze scores geven?"
+4. Filter findings: discard confidence < 60%
+5. Group findings by severity: CRITICAL → HIGH → MEDIUM → LOW
+6. Count totals per severity
 
 Present consolidated report:
 
@@ -121,6 +122,8 @@ CRITICAL: [N] | HIGH: [N] | MEDIUM: [N] | LOW: [N]
 TOP CRITICAL/HIGH FINDINGS:
 1. [severity] [category] — [issue] — [file:line]
 2. ...
+
+Verdict: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OF CRITICAL findings)
 ```
 
 AskUserQuestion:

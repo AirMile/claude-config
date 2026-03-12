@@ -6,18 +6,20 @@ Herbruikbare validation patterns voor alle skills. Referentie document voor pre-
 
 ## Pre-Flight Checklist Pattern
 
-Run deze checks **VOORDAT** dure operaties starten (parallel agents, file generation, API calls).
+Run deze checks **VOORDAT** dure operaties starten (agents, file generation, API calls).
 
 ### 1. Context Validation
 
 ```markdown
 **Context Check:**
+
 - [ ] Vereiste input bestanden aanwezig
 - [ ] Dependencies beschikbaar (andere skills output)
 - [ ] User confirmation verkregen waar nodig
 ```
 
 **Implementatie:**
+
 ```
 PRE-FLIGHT: Context
 -------------------
@@ -30,6 +32,7 @@ Confirmation: [✓|✗] [actie] - [status]
 
 ```markdown
 **Resource Check:**
+
 - [ ] Output directory bestaat of kan gecreëerd worden
 - [ ] Schrijfrechten beschikbaar
 - [ ] Geen conflicterende processen
@@ -37,6 +40,7 @@ Confirmation: [✓|✗] [actie] - [status]
 ```
 
 **Implementatie:**
+
 ```
 PRE-FLIGHT: Resources
 ---------------------
@@ -49,12 +53,14 @@ Conflicts: [✓|✗] [process] - [status]
 
 ```markdown
 **Scope Check:**
+
 - [ ] Input parameters valide
 - [ ] Output paden correct
 - [ ] Geen overschrijf-conflicten
 ```
 
 **Implementatie:**
+
 ```
 PRE-FLIGHT: Scope
 -----------------
@@ -86,12 +92,14 @@ Run deze checks **NA** generatie/modificatie operaties.
 
 ```markdown
 **Existence Check:**
+
 - [ ] Alle verwachte bestanden aangemaakt
 - [ ] Geen lege of corrupte outputs
 - [ ] Bestandsgroottes realistisch
 ```
 
 **Implementatie:**
+
 ```
 POST-FLIGHT: Existence
 ----------------------
@@ -105,12 +113,14 @@ Corrupt files: [N] detected
 
 ```markdown
 **Structural Check:**
+
 - [ ] Bestanden parseerbaar (HTML valid, JSON valid, etc.)
 - [ ] Vereiste secties aanwezig
 - [ ] Encoding correct (UTF-8)
 ```
 
 **Implementatie:**
+
 ```
 POST-FLIGHT: Structure
 ----------------------
@@ -124,12 +134,14 @@ Required sections:
 
 ```markdown
 **Semantic Check:**
+
 - [ ] Content matcht intent
 - [ ] Geen placeholder/template variables remaining
 - [ ] Interne referenties kloppen
 ```
 
 **Implementatie:**
+
 ```
 POST-FLIGHT: Semantic
 ---------------------
@@ -171,6 +183,7 @@ Strategy per retry:
 ```
 
 **Implementatie:**
+
 ```markdown
 ### On Failure - Retry Sequence
 
@@ -203,6 +216,7 @@ Level 5: Abort (preserve user work, clean exit)
 ```
 
 **Frontend-Specific Degradation:**
+
 ```
 WIREFRAME DEGRADATION
 ─────────────────────
@@ -212,6 +226,18 @@ Level 3: 3 sequential agents, 1 round → 3 wireframes
 Level 4: 1 agent, 3 styles sequential → 3 wireframes
 Level 5: Template only, user fills in → 1 template
 ```
+
+### Escalatie Protocol
+
+Na uitputting van retries (3x gefaald of Level 4-5 degradation), kies een escalatie-optie via AskUserQuestion:
+
+| Optie              | Wanneer                       | Actie                                 |
+| ------------------ | ----------------------------- | ------------------------------------- |
+| Reassign           | Ander agent/aanpak geschikter | Spawn alternatief of wissel strategie |
+| Decompose          | Taak te complex               | Splits in subtaken, retry per subtaak |
+| Revise approach    | Strategie werkt niet          | AskUserQuestion met alternatieven     |
+| Accept with limits | Deels gelukt                  | Documenteer gaps, ga door met partial |
+| Defer              | Niet urgent                   | Markeer als TODO, ga door             |
 
 ### Rollback
 
@@ -226,10 +252,12 @@ Level 5: Template only, user fills in → 1 template
 
 ```markdown
 **Pre-flight:**
+
 - Directory .project/config/ writable
 - No conflicting THEME.md (or user confirmed overwrite)
 
 **Post-flight:**
+
 - THEME.md exists and valid markdown
 - Required sections: Colors, Typography, Spacing
 - All color values valid hex (#RRGGBB)
@@ -241,16 +269,18 @@ Level 5: Template only, user fills in → 1 template
 
 ```markdown
 **Pre-flight:**
+
 - Theme dependency satisfied (if selected)
 - Output directory ready
 - HTML template intact
 - Task tool available (or fallback ready)
 
 **Post-flight:**
+
 - All expected HTML files exist
 - HTML parseable
 - Navigation links valid
-- data-* attributes present (if atomic level requires)
+- data-\* attributes present (if atomic level requires)
 - Theme variables applied (if theme selected)
 ```
 
@@ -258,11 +288,13 @@ Level 5: Template only, user fills in → 1 template
 
 ```markdown
 **Pre-flight:**
+
 - THEME.md exists and valid
 - Source wireframe exists
 - data-component attributes extractable
 
 **Post-flight:**
+
 - CSS/Tailwind output syntactically valid
 - All tokens resolved (no undefined variables)
 - No orphaned references
@@ -273,11 +305,13 @@ Level 5: Template only, user fills in → 1 template
 
 ```markdown
 **Pre-flight:**
+
 - Style outputs exist
 - Component list available
 - Template files intact
 
 **Post-flight:**
+
 - All component files generated
 - TypeScript compiles (no syntax errors)
 - Imports resolve

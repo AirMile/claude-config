@@ -239,6 +239,7 @@ VERWACHT:
 ```
 
 AskUserQuestion per item: Pass (Aanbevolen) | Fail | Skip.
+
 - Fail → vraag kort wat er mis ging
 - Skip → noteer reden
 
@@ -283,6 +284,7 @@ Per FAIL: categoriseer als TESTABLE/MEASURABLE/SUBJECTIVE (zie tabel hierboven).
 SUBJECTIVE → AskUserQuestion voor verduidelijking, dan re-categoriseer.
 
 Technique mapping voor TESTABLE:
+
 - Validatie, business logic, edge cases, race conditions → **TDD**
 - CRUD wiring, config, imports, routing → **Implementation First**
 - Default → TDD
@@ -347,10 +349,37 @@ Display re-test resultaten.
 
 ### FASE 5b: Re-test Loop
 
-Alles pass → FASE 6.
+Alles pass → FASE 5c.
 
 Items falen nog → AskUserQuestion: Meer details (Aanbevolen) | Andere aanpak | Accepteren | Zelf fixen.
 Loop terug naar FASE 3. AUTO items → re-run in FASE 5A. MANUAL items → re-test in FASE 5B.
+
+---
+
+### FASE 5c: Regression Check
+
+**Skip when:**
+
+- Geen fixes toegepast in FASE 4
+- Geen eerder-PASS AUTO items in FASE 2b
+- Alle fixes waren MANUAL-only (config/styling)
+
+Draai alle eerder-PASS AUTO items opnieuw via Agent (zelfde aanpak als FASE 1).
+
+```
+REGRESSION CHECK: {feature-name}
+
+| # | Test               | Was    | Nu     |
+|---|--------------------|--------|--------|
+| 1 | Route rendering    | ✓ PASS | ✓ PASS |
+| 3 | Form validation    | ✓ PASS | ✗ FAIL |
+
+Regressies: {n} | Stabiel: {n}
+```
+
+**Geen regressies:** Door naar FASE 6.
+
+**Regressies:** Toon en bied keuze via AskUserQuestion: Fixen (Aanbevolen) | Accepteren. Bij fixen → terug naar FASE 4 voor alleen de regressie-items. Herhaal FASE 5c NIET na regressie-fix (max 1 pass).
 
 ---
 
@@ -381,6 +410,7 @@ AskUserQuestion: Nee, alles goed (Aanbevolen) | Ja, ik heb iets opgemerkt.
 Volg `shared/SYNC.md` protocol. Skill-specifieke mutaties:
 
 **feature.json:**
+
 - `status` → `"DONE"`
 - `requirements[].status` → `"PASS"` / `"FAIL"` per REQ
 - `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item
@@ -396,6 +426,7 @@ Volg `shared/SYNC.md` protocol. Skill-specifieke mutaties:
 #### Step 4: Scoped commit
 
 Vergelijk `git status --porcelain | sort` met `.project/session/pre-skill-status.txt`:
+
 - **NEW** (alleen in current) → `git add`
 - **OVERLAP** (in beide) → AskUserQuestion: Include (Aanbevolen) | Skip
 - **PRE-EXISTING** (alleen baseline) → niet stagen

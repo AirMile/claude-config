@@ -561,6 +561,49 @@ Files created:
 ...
 ```
 
+### FASE 3a: Full Regression Gate
+
+**Goal:** Verify that the new feature hasn't broken existing features.
+
+Na succesvolle afronding van alle tracks, run de **volledige GUT test suite** (niet alleen de huidige feature):
+
+```bash
+"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit
+```
+
+Parse output met dezelfde regels als alle test runs (zie Test Output Parsing).
+
+**PASS:** Alle tests slagen — ga door naar FASE 3b.
+
+```
+REGRESSION CHECK: {total}/{total} PASS — geen regressies
+```
+
+**FAIL:** Andere feature tests falen — dit is een gate.
+
+```
+REGRESSION CHECK: {passed}/{total} PASS
+REGRESSIES GEVONDEN:
+- test_{other_feature}.test_xxx: {reason}
+- test_{other_feature}.test_yyy: {reason}
+
+Bestanden overlap: {lijst van bestanden die zowel door deze feature als de falende feature worden gebruikt}
+```
+
+Bij regressie:
+
+1. Analyseer of de huidige feature de regressie veroorzaakt (check gedeelde bestanden/signals)
+2. Als JA: fix de regressie voordat je doorgaat. Re-run full suite na fix.
+3. Als NEE (pre-existing failure): waarschuw gebruiker, laat kiezen via AskUserQuestion:
+   - "Fix eerst de regressie (Recommended)" / "Toch doorgaan (regressie was er al voor deze build)"
+4. Max 2 fix-pogingen. Daarna: rapporteer als blocker en laat gebruiker beslissen.
+
+**Skip condition:** Als er geen andere test-bestanden bestaan (eerste feature), skip met:
+
+```
+REGRESSION CHECK: overgeslagen (geen eerdere features met tests)
+```
+
 ### FASE 3b: Integration Tests + Playtest (PARALLEL)
 
 These two tasks have NO dependencies on each other - run them in parallel.

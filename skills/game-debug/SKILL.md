@@ -1,7 +1,7 @@
 ---
 name: game-debug
 description: >-
-  Systematic debugging for Godot projects with parallel investigation agents,
+  Systematic debugging for Godot projects with inline investigation,
   root cause analysis, and 3 fix strategies. Use for runtime errors, physics
   bugs, signal issues, or scene tree problems.
 disable-model-invocation: true
@@ -92,24 +92,56 @@ AskUserQuestion:
 - header: "Bevestiging"
 - question: "Klopt deze probleem samenvatting?"
 - options:
-  - "Ja, start onderzoek (Aanbevolen)" — Start parallel agent investigation
+  - "Ja, start onderzoek (Aanbevolen)" — Start inline investigation
   - "Nee, correctie nodig" — Meer details of correcties geven
 
 If "Nee" → ask for corrections, update summary, re-confirm.
 
 ---
 
-## FASE 2: Codebase Investigation
+## FASE 2: Codebase Investigation (Explore agent)
 
-Launch 3 agents in parallel:
+Spawn one Explore agent (`subagent_type="Explore"`, thoroughness: "very thorough") to investigate in an isolated context. This keeps source file reads and git output out of the main session.
 
-| Agent                  | Focus          | Input                                      |
-| ---------------------- | -------------- | ------------------------------------------ |
-| debug-error-tracer     | Error origin   | Stack trace, error message, exception flow |
-| debug-change-detective | Recent changes | Git history, recent commits affecting area |
-| debug-context-mapper   | Code context   | Related files, dependencies, data flow     |
+Agent prompt:
 
-Each receives: problem summary + relevant file paths + error messages/stack traces.
+```
+Investigate this Godot bug. Perform 3 passes that build on each other.
+
+PROBLEM:
+{problem summary from FASE 1}
+{error message / stack trace / details}
+
+PASS 1 — ERROR TRACE:
+- Parse stack trace / error message → identify root location
+- Read the source file at the error location (GDScript .gd files)
+- Trace the call stack: what called this code? What signals trigger it?
+- Map the exception/error flow: where is it caught (or not)?
+
+PASS 2 — CONTEXT MAP (use locations from Pass 1):
+- Read the scene tree: which nodes reference each other? Parent/child?
+- Check signal connections: connect() calls, @onready vars, $NodePath references
+- Trace data flow: exports, autoloads, Resources passed between scripts
+- Identify external factors (physics layers, input actions, scene transitions)
+
+PASS 3 — CHANGE ANALYSIS (use files from Pass 1+2):
+- git log --oneline -10 -- {affected files}
+- git blame {error location}
+- Was this working before? What changed?
+
+RETURN FORMAT:
+INVESTIGATION_START
+Error location: {file:line}
+Call stack: {caller → callee chain, including signals}
+Root code: {the problematic code snippet, max 20 lines}
+Scene tree: {relevant node hierarchy}
+Signal flow: {signal chain involved}
+Recent changes: {relevant commits with dates}
+Regression risk: {yes/no — was this area recently modified?}
+INVESTIGATION_END
+```
+
+Parse the agent's `INVESTIGATION_START...END` block — only the compact findings enter the main context.
 
 ---
 
@@ -117,7 +149,7 @@ Each receives: problem summary + relevant file paths + error messages/stack trac
 
 Analyze:
 
-1. List findings from each agent
+1. Combine findings from all 3 investigation passes
 2. Identify patterns and correlations
 3. Form hypotheses about root cause
 4. Evaluate each hypothesis against evidence

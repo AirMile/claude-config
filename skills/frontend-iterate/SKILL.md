@@ -17,6 +17,7 @@ User clicks elements in browser, copies a reference, pastes in chat. Claude make
 - `references/inspect-overlay-plugin.ts` — Vite plugin
 - `references/inspect-overlay-client.js` — Universal vanilla JS overlay (Vite + Next.js)
 - `references/setup-guide.md` — Installation instructions (loaded on-demand)
+- `../shared/DESIGN.md` — Anti-patterns, color, typography, motion
 
 ## FASE 1: Pre-flight
 

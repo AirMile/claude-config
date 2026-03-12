@@ -1,10 +1,10 @@
 ---
 name: team-review
-description: Code review for feature branches with bug detection, CLAUDE.md compliance, git history analysis, confidence scoring, and optional PR integration. Combines code-analysis agents with Context7 best-practice research.
+description: Code review for feature branches with bug detection, CLAUDE.md compliance, git history analysis, confidence scoring, and optional PR integration. Inline analysis with optional Context7 best-practice research.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 3.0.0
   category: team
 ---
 
@@ -12,7 +12,7 @@ metadata:
 
 ## Overview
 
-Code review skill for feature branches. Runs code-analysis agents (compliance, bugs, history) with confidence scoring and filtering, optionally enriched with Context7 best-practice research. Supports PR integration for posting review comments.
+Code review skill for feature branches. Performs inline code analysis (compliance, bugs, history) with confidence scoring and filtering, optionally enriched with Context7 best-practice research. Supports PR integration for posting review comments.
 
 **Trigger**: `/team-review`
 
@@ -46,8 +46,8 @@ Not for:
 
 Use AskUserQuestion with 2 options:
 
-- **Quick review** — Only code-analysis agents (compliance, bugs, history). Fast, focused on issues.
-- **Full review (Recommended)** — Code-analysis + Context7 research agents. More comprehensive, includes best-practice feedback.
+- **Quick review** — Inline analysis (compliance, bugs, history). Fast, focused on issues.
+- **Full review (Recommended)** — Inline analysis + Context7 best-practice research. More comprehensive, includes naming/pattern/structure feedback.
 
 ### Step 3: Gather Context
 
@@ -55,31 +55,79 @@ Use AskUserQuestion with 2 options:
 2. Identify languages/frameworks in the changed files
 3. Prepare git blame for changed files: for each changed file, run `git blame <merge-base>..HEAD -- <file>`
 
-### Step 4: Launch Review Agents
+### Step 4: Inline Review Analysis
 
-**Always launch** (3 parallel agents via Task tool):
+Perform 3 analysis passes on the diff. All passes use the same diff and context — no agents needed.
 
-- `subagent_type=review-compliance` — CLAUDE.md compliance check
-  - Prompt: include full diff + all CLAUDE.md content
-- `subagent_type=review-bugs` — Bug detection scan
-  - Prompt: include full diff only
-- `subagent_type=review-history` — Historical context analysis
-  - Prompt: include full diff + git blame output
+**Operational stance:** Skeptisch. Default: er zijn problemen tot het tegendeel bewezen is.
 
-**Only in Full mode** (3 additional parallel agents via Task tool):
+**Anti-fantasy check per pass:** Verwacht minimaal 1-2 findings per pass bij diff >50 regels. Zero findings vereist een expliciete verklaring waarom (bijv. "diff bevat alleen styling/config").
 
-- `subagent_type=review-naming` — Naming conventions research
-  - Prompt: include languages/frameworks + project conventions
-- `subagent_type=review-patterns` — Code patterns research
-  - Prompt: include languages/frameworks + project conventions
-- `subagent_type=review-structure` — Structure research
-  - Prompt: include languages/frameworks + project conventions
+**Grounding vereiste:** Elke finding moet een evidence pair bevatten:
+
+- **Regel/Bron:** "[exacte quote uit CLAUDE.md / best practice / git history]"
+- **Code:** "[exacte code die het schendt, met file:line]"
+- **Impact:** "[wat er mis kan gaan]"
+
+#### Pass 1: CLAUDE.md Compliance
+
+Extract actionable rules from CLAUDE.md (skip tool usage rules, workflow rules). For each rule about code style, naming, architecture, language policy, file organization, or technology choices:
+
+- Scan diff for violations **introduced in this diff only**
+- Cite the exact CLAUDE.md rule for each violation
+- Score confidence per finding (0-100)
+
+Skip: pre-existing issues, moved-only code, pedantic interpretations, rules not applicable to code review.
+
+#### Pass 2: Bug Scan
+
+Scan changed code for these categories:
+
+- **Logical errors** — wrong comparison, inverted conditions, incorrect operator
+- **Null/undefined handling** — missing null checks, unsafe access chains
+- **Race conditions** — shared state mutation, async ordering issues
+- **Resource leaks** — unclosed handles, missing cleanup, event listener leaks
+- **Off-by-one errors** — loop bounds, array indexing, slice ranges
+- **Type mismatches** — wrong argument types, implicit coercion bugs
+- **Error handling gaps** — swallowed errors, missing catch, unchecked return values
+- **Copy-paste errors** — duplicated code with wrong variable names
+
+Before reporting, verify: is it actually a bug (not intentional)? Would a linter catch it? Is there a guard earlier? Score confidence per finding.
+
+#### Pass 3: History Analysis
+
+Using git blame output, analyze:
+
+- **Broken patterns** — file consistently uses approach A, change introduces approach B
+- **Regression risk** — diff modifies code that was part of a bug fix
+- **Churn detection** — files with high recent churn being modified again
+- **Convention breaks** — file establishes a convention the change doesn't follow
+
+Skip: intentional refactors, ongoing migrations, new files with no history.
+
+#### Pass 4 (Full mode only): Best Practice Research
+
+Call Context7 inline for the detected languages/frameworks:
+
+- **Naming conventions** — are names idiomatic for the framework?
+- **Code patterns** — are there anti-patterns or better alternatives?
+- **Structure** — does the organization follow framework conventions?
 
 ### Step 5: Confidence Scoring & Filtering
 
-Collect all findings from agents and apply filtering:
+Apply filtering across all passes:
 
 **Filter threshold: 70+** — only include findings with confidence >= 70.
+
+**Confidence rubric:**
+
+| Score | Meaning                                        |
+| ----- | ---------------------------------------------- |
+| 0     | False positive, does not hold up on inspection |
+| 25    | Possibly real, but not verified                |
+| 50    | Real issue, but minor/nitpick                  |
+| 75    | Verified issue, important                      |
+| 100   | Absolutely certain, evidence confirms it       |
 
 Discard findings that match false positive criteria:
 
@@ -89,6 +137,8 @@ Discard findings that match false positive criteria:
 - Style issues not defined in CLAUDE.md
 - Issues with lint-ignore comments
 - Intentional functionality changes
+
+**Zero-findings self-check:** Als alle passes samen 0 findings rapporteren bij diff >50 regels → heroverweeg: "Ben ik optimistisch? Zou een kritische reviewer dit laten passeren?" Doorloop de diff nogmaals met focus op gemiste issues.
 
 ### Step 6: Generate Feedback
 
@@ -122,6 +172,15 @@ Format output as:
 ### Positives
 
 - [what was done well]
+```
+
+**Verdict (altijd opnemen):**
+
+```
+### Verdict
+
+APPROVE — 0 critical findings + ≤2 important findings
+REQUEST CHANGES — any critical OR >2 important findings
 ```
 
 If no issues found above threshold, say so clearly and focus on positives.

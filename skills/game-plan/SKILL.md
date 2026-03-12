@@ -231,54 +231,58 @@ Research checklist:
 
 **Step 2: User Clarification (if needed)**
 
-If ambiguities are identified, use AskUserQuestion to clarify before spawning research agents.
+If ambiguities are identified, use AskUserQuestion to clarify before starting research.
 
-**Step 3: Parallel Research Execution**
+**Step 3: Research (Explore agent)**
 
-Spawn agents based on Step 1 analysis. Only spawn agents for categories identified as needed.
+Spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to do all research in an isolated context. This keeps Context7 results, web search output, and source file reads out of the main session.
 
-**Codebase research (if existing codebase detected):**
-
-```
-Task tool with subagent_type: code-explorer
-├─ Focus: similar-features
-├─ Focus: architecture
-└─ Focus: implementation
-```
-
-**Context7 research (if framework/library docs needed):**
+Agent prompt — include only research categories identified as needed in Step 1:
 
 ```
-Task tool with subagent_type:
-├─ architecture-researcher
-├─ best-practices-researcher
-└─ testing-researcher
-```
+Research the following for a Godot 4.x game feature plan.
 
-**Web research (if external information needed):**
+{If codebase research needed:}
+CODEBASE ANALYSIS:
+- Find similar features, existing patterns, scene tree conventions
+- Check existing implementations that can be reused
+- Note file structure and autoload conventions
 
-```
-Task tool with subagent_type:
-├─ plan-web-patterns (best practices, modern approaches)
-├─ plan-web-pitfalls (issues, constraints, anti-patterns)
-└─ plan-web-examples (real-world implementations)
+{If Context7 research needed:}
+GODOT RESEARCH:
+- resolve-library-id + query-docs for: Godot 4.x, GUT
+- Focus: scene composition, node types, GDScript patterns, signal usage, testing setup
+
+{If web research needed:}
+WEB RESEARCH (use WebSearch):
+- "Godot 4.x {mechanic} implementation patterns"
+- "Godot {feature-type} common pitfalls"
+
+RETURN FORMAT:
+RESEARCH_START
+Codebase: {3-5 bullet points: existing patterns, reusable scenes/scripts, conventions}
+Godot: {3-5 bullet points: scene architecture, GDScript patterns, pitfalls}
+Web: {3-5 bullet points: real-world patterns, warnings, recommendations}
+RESEARCH_END
 ```
 
 **Step 4: Research Summary**
 
-After all agents return, display a compact summary:
+Parse the agent's `RESEARCH_START...END` block. Display:
 
 ```
 RESEARCH COMPLETE
 
-| Category | Agents | Key Findings |
-|----------|--------|--------------|
-| Codebase | {N}/3  | {summary of existing patterns/features} |
-| Context7 | {N}/3  | {summary of framework guidance} |
-| Web      | {N}/3  | {summary of patterns/pitfalls} |
+| Category | Key Findings |
+|----------|--------------|
+| Codebase | {summary of existing patterns/features} |
+| Context7 | {summary of Godot guidance} |
+| Web      | {summary of patterns/pitfalls} |
 
 → Research results will inform feature extraction...
 ```
+
+Only the compact summary enters the main context for FASE 1.
 
 Research results remain in conversation context for FASE 1. No files are written.
 
@@ -354,6 +358,30 @@ In create mode, the Change column is omitted.
    - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms features are correct.**
+
+5. **Core loop validatie (alleen in create mode of bij gewijzigde P1 features):**
+
+   Controleer of de P1 features samen een speelbare gameplay loop vormen:
+
+   ```
+   LOOP VALIDATIE
+
+   Moment-to-moment (0-30s):
+   - Actie: {wat doet de speler} → Reactie: {wat doet het systeem} → Feedback: {wat ziet/hoort de speler}
+
+   Session loop (5-30min):
+   - Doel: {wat probeert de speler te bereiken}
+   - Poging: {hoe probeert de speler dat}
+   - Uitkomst: {win/verlies/progressie}
+
+   P1 loop compleet? {JA / NEE — {ontbrekend element}}
+   ```
+
+   - Als de loop NIET compleet is: toon welk element mist en stel voor om een feature toe te voegen of te promoten naar P1
+   - Als de loop WEL compleet is: toon bevestiging en ga door
+
+   **Voorbeeld van een incompleet P1:**
+   - Features: `player-movement`, `health-system`, `basic-combat` → Actie en reactie aanwezig, maar geen win/verlies conditie → suggest: `round-system` naar P1
 
 ### FASE 2: Dependency Analysis
 

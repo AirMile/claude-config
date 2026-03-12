@@ -122,17 +122,11 @@ Ontwerp in drie stappen:
 1. **Baseline check**:
    - Doorzoek `stack-baseline.md` op patronen relevant voor deze feature
    - **Pattern gevonden** → gebruik als basis voor design, skip research
-   - **Pattern niet gevonden** → launch research agent:
-     ```
-     Agent(subagent_type="general-purpose", prompt="
-     Feature: {feature-name}
-     Requirements: {requirement lijst}
-     Research architecture patterns. Gebruik Context7 voor library/framework
-     patterns, WebSearch voor externe APIs en services.
-     Return: recommended patterns, state approach, file structure.
-     ")
-     ```
-     Na research: update `stack-baseline.md` met nieuwe patronen (append, niet overschrijven)
+   - **Pattern niet gevonden** → inline research:
+     - Call `resolve-library-id` + `query-docs` via Context7 voor library/framework patterns
+     - Call WebSearch voor externe APIs en services
+     - Focus: recommended patterns, state approach, file structure
+       Na research: update `stack-baseline.md` met nieuwe patronen (append, niet overschrijven)
    - **Geen baseline file** → altijd research uitvoeren. Baseline NIET aanmaken (dat is /core-setup)
 
 2. **Bestaande code**: Glob + Read de meest relevante bestanden met vergelijkbare patterns. Dit informeert het ontwerp.

@@ -108,12 +108,7 @@ If "Ja, ik geef credentials" → follow-up **AskUserQuestion**:
 
 ## FASE 2: Analyze Codebase for Features
 
-Launch an **Explore agent** to discover routes and screenshottable features. This keeps source file reads out of the main context.
-
-**Agent prompt:**
-
-```
-Analyze this codebase to find pages and features suitable for marketing screenshots.
+Discover routes and screenshottable features inline using Glob, Grep, and Read.
 
 1. Read README.md (and any docs/) for feature descriptions and app purpose
 2. Find routing configuration:
@@ -135,11 +130,12 @@ Return structured output:
 FEATURES_START
 | # | Feature | URL Path | Description | Required State |
 |---|---------|----------|-------------|----------------|
-| 1 | {name}  | {path}   | {what it shows} | {logged in / public / modal open / etc.} |
+| 1 | {name} | {path} | {what it shows} | {logged in / public / modal open / etc.} |
 FEATURES_END
 
 APP_DESCRIPTION: {1-2 sentence summary of what the app does}
 THEME_SUPPORT: {yes/no}
+
 ```
 
 Parse the structured output from the agent.
@@ -149,13 +145,16 @@ Parse the structured output from the agent.
 Display discovered features:
 
 ```
+
 FEATURES GEVONDEN: {app description}
 
-| # | Feature | URL | Beschrijving | Status |
-|---|---------|-----|--------------|--------|
+| #   | Feature | URL | Beschrijving | Status |
+| --- | ------- | --- | ------------ | ------ |
+
 {features table from agent}
 
 Voorgestelde screenshots: {count based on FASE 1 selection}
+
 ```
 
 Use **AskUserQuestion**:
@@ -172,20 +171,23 @@ If "Ik kies specifieke" → ask for numbers.
 After selection, assign numbered filenames:
 
 ```
+
 SCREENSHOT PLAN:
 
-| # | Bestand | Feature | URL |
-|---|---------|---------|-----|
-| 1 | 01-{feature-slug}.png | {feature} | {url} |
-| 2 | 02-{feature-slug}.png | {feature} | {url} |
+| #   | Bestand               | Feature   | URL   |
+| --- | --------------------- | --------- | ----- |
+| 1   | 01-{feature-slug}.png | {feature} | {url} |
+| 2   | 02-{feature-slug}.png | {feature} | {url} |
+
 ...
-```
+
+````
 
 Create output directory:
 
 ```bash
 mkdir -p .project/screenshots
-```
+````
 
 ## FASE 4: Capture Screenshots
 

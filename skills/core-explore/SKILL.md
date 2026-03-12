@@ -1,6 +1,6 @@
 ---
 name: core-explore
-description: Explore the codebase using parallel agents to answer specific questions. Use with /core-explore to investigate code structure, find implementations, or understand architecture.
+description: Explore the codebase to answer specific questions. Use with /core-explore to investigate code structure, find implementations, or understand architecture.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -10,7 +10,7 @@ metadata:
 
 # Explore
 
-Spawn Explore agents to investigate the codebase for a user query. Synthesize the results and provide a clear answer.
+Investigate the codebase inline for a user query. Use Glob, Grep, and Read to find answers and provide a clear summary.
 
 ## When to Use
 
@@ -34,15 +34,15 @@ Examples:
    - Extract the core of what the user wants to know
    - Determine search strategy (patterns, files, keywords)
 
-2. **Spawn Explore agents**
-   - Use Task tool with `subagent_type: Explore`
-   - Provide clear prompt with the user question
-   - Specify thoroughness: "medium" for standard, "very thorough" for complex questions
+2. **Search the codebase inline**
+   - Use Glob to find relevant files by pattern
+   - Use Grep to search for keywords, function names, patterns
+   - Use Read to examine relevant code sections
+   - Follow import chains and references to build understanding
 
-3. **Synthesize results**
-   - Combine findings from agents
+3. **Structure the answer**
    - Filter relevant information
-   - Structure the answer
+   - Organize by relevance to the question
 
 4. **Answer the question**
    - Provide a clear, summarizing answer

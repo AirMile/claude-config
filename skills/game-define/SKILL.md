@@ -186,6 +186,26 @@ Show requirements table with acceptance criteria:
 | ------- | ------------- | ---------- | --------- | ---------------------- |
 | REQ-001 | {description} | {category} | {type}    | {verifiable condition} |
 
+#### Tuning Levers & Edge Cases (mechanica-requirements)
+
+Voor requirements die **getallen of timing** bevatten (damage, speed, cooldown, radius, etc.), extraheer tuning levers:
+
+| Parameter | Default  | Min   | Max   | Impact                            |
+| --------- | -------- | ----- | ----- | --------------------------------- |
+| {naam}    | {waarde} | {min} | {max} | {wat verandert er voor de speler} |
+
+Markeer defaults als `[PLACEHOLDER]` als ze nog niet geplaytest zijn.
+
+Voor requirements met **interacties of state changes**, documenteer edge cases:
+
+- Wat als de waarde 0 is?
+- Wat als twee acties tegelijk triggeren?
+- Wat als de speler maximale/minimale resource heeft?
+
+Alleen relevante edge cases — niet elk requirement heeft ze. Skip bij simpele features (≤3 requirements zonder getallen).
+
+Tuning levers worden opgeslagen in `feature.json` per requirement als `tuningLevers[]`.
+
 **Confirm with user** via **AskUserQuestion**:
 
 - header: "Requirements"

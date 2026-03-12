@@ -23,6 +23,7 @@ Compose a page by inventorying existing building blocks (components, hooks, serv
 
 - `../shared/RULES.md` — React/TypeScript coding rules
 - `../shared/PATTERNS.md` — Component patterns (compound, render props, etc.)
+- `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
 
 ---
@@ -32,7 +33,24 @@ Compose a page by inventorying existing building blocks (components, hooks, serv
 ### 0.1 Argument Check
 
 - **Argument provided** (`/frontend-page dashboard`): use as page name, proceed to 0.2.
-- **No argument** (`/frontend-page`): ask for page name and purpose:
+- **No argument** (`/frontend-page`):
+
+Check `.project/project.json` → `design.pages` for pages with status `DEF` or `IDEA`.
+
+**If defined pages found:**
+
+```yaml
+header: "Pagina"
+question: "Welke pagina wil je bouwen?"
+options:
+  # Dynamisch gegenereerd uit design.pages waar status = DEF of IDEA
+  - label: "{page.name}", description: "{page.purpose} — {page.sections.length} secties"
+  # Max 4 pagina's, rest via "Other"
+multiSelect: false
+# User can choose "Other" for a page not in the design spec
+```
+
+**If no design pages found (or no project.json):**
 
 ```yaml
 header: "Pagina"
@@ -72,9 +90,9 @@ Theme: [Available (THEME.md) | Not available — using Tailwind defaults]
 
 ### 0.3 Page Analysis (only if page exists)
 
-Spawn an **Explore agent** (`subagent_type="Explore"`, thoroughness: "very thorough") to analyze the existing page. This keeps the main context clean.
+Spawn an Explore agent (`subagent_type="Explore"`, thoroughness: "very thorough") to analyze the existing page. This keeps recursive import tracing out of the main context — important because the skill continues with wireframing and building after this.
 
-**Agent prompt:**
+Agent prompt:
 
 ```
 Analyze the existing page "{page-name}" in this project.
@@ -96,25 +114,28 @@ Analyze the existing page "{page-name}" in this project.
 3. Report the full picture of what this page currently does.
 
 Return a structured summary. Focus ONLY on this page and its imports.
+
 ```
 
 Show the results:
 
 ```
+
 CURRENT PAGE: {page-name}
 ════════════════════════════════════════════════════════════════
 
-Page file:   [path to page file]
+Page file: [path to page file]
 
 Components on this page:
-  {Component}      → [Button1], [Button2], {handler}
-  {Component}      → [Link1], [FormField], {handler}
+{Component} → [Button1], [Button2], {handler}
+{Component} → [Link1], [FormField], {handler}
 
 Data layer:
-  {useHook}        → provides {data}
-  {service}        → calls {endpoint}
+{useHook} → provides {data}
+{service} → calls {endpoint}
 
 ════════════════════════════════════════════════════════════════
+
 ```
 
 Proceed to FASE 0.5 (page inventory).
@@ -130,18 +151,20 @@ Proceed to FASE 0.5 (page inventory).
 Show what's currently on the page, based on the page analysis from 0.3:
 
 ```
+
 CURRENT PAGE: {page-name}
 ════════════════════════════════════════════════════════════════
 
 Components on this page:
-  {Component}      → [Button1], [Button2], {handler}
-  {Component}      → [Link1], [FormField], {handler}
+{Component} → [Button1], [Button2], {handler}
+{Component} → [Link1], [FormField], {handler}
 
 Data layer:
-  {useHook}        → provides {data}
-  {service}        → calls {endpoint}
+{useHook} → provides {data}
+{service} → calls {endpoint}
 
 ════════════════════════════════════════════════════════════════
+
 ```
 
 ### 0.5.2 Check What to Keep

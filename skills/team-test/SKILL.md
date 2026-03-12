@@ -1,6 +1,6 @@
 ---
 name: team-test
-description: Verify teammate code delivery. Checks completeness against task brief (feature.json) or backlog TODO, generates tests, maps results to requirements. Use with /team-test after teammate code delivery.
+description: Verify teammate code delivery. Checks completeness against task brief (feature.json) or backlog TODO, generates tests inline, maps results to requirements. Use with /team-test after teammate code delivery.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -53,7 +53,7 @@ Verify teammate code delivery. Detects available context (feature.json with requ
    git branch --show-current
    ```
 
-2. **Capture git baseline** (voor scoped commit in FASE 7):
+2. **Capture git baseline** (voor scoped commit in FASE 6):
 
    ```bash
    mkdir -p .project/session
@@ -78,8 +78,8 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 5. **Parse user input:**
    - Feature name only → proceed to FASE 0.5
-   - Feature name + inline feedback → skip to FASE 4b (direct feedback, no automation)
-   - Feature name + free text → skip to FASE 4b
+   - Feature name + inline feedback → skip to FASE 3b (direct feedback, no automation)
+   - Feature name + free text → skip to FASE 3b
 
 6. **Output:**
 
@@ -257,85 +257,62 @@ Compare the code diff against the available context to verify completeness.
      - label: "Annuleren", description: "Stop"
    - multiSelect: false
 
-   If "Terugkoppelen" → skip to FASE 7 (generate feedback with completeness results).
+   If "Terugkoppelen" → skip to FASE 6 (generate feedback with completeness results).
 
 ---
 
-### FASE 1: Research via Agents (parallel)
+### FASE 1: Research + Scenario Generation (Explore agent)
 
-**Goal:** Research test strategies. Unchanged from current skill, with additions.
+**Goal:** Research test strategies and generate scenarios. Runs in a single Explore agent to keep Context7 results and scenario details out of the main context.
 
-1. Check if project has existing test infrastructure and patterns.
-2. Spawn 3 parallel research agents. Include `{STACK_CONTEXT}` in all agent prompts:
-
-   ```
-   Agent(subagent_type="test-research-unit", prompt="{STACK_CONTEXT}\n...")
-   Agent(subagent_type="test-research-integration", prompt="{STACK_CONTEXT}\n...")
-   Agent(subagent_type="test-research-manual", prompt="{STACK_CONTEXT}\n...")
-   ```
-
-   **Addition for `BRIEF_REVIEW`:** Include `testStrategy[]` and `requirements[]` from feature.json in agent prompts. This gives agents concrete test targets instead of just raw diff analysis.
-
-   **Addition for `TODO_REVIEW`:** Include backlog description and parsed expectations from FASE 0.5 in agent prompts.
-
-3. Collect results.
-
-   ```
-   RESEARCH COMPLETE
-
-   Unit strategies: {summary}
-   Integration strategies: {summary}
-   Manual strategies: {summary}
-   ```
-
----
-
-### FASE 2: Scenario Generation (parallel)
-
-**Goal:** Generate test scenarios based on diff + research + requirements.
-
-Spawn 3 parallel generation agents. Include `{STACK_CONTEXT}` in all agent prompts:
+Spawn one Explore agent (`subagent_type="Explore"`, thoroughness: "very thorough") with the following prompt:
 
 ```
-Agent(subagent_type="test-generate-happy-path", prompt="{STACK_CONTEXT}\n...")
-Agent(subagent_type="test-generate-edge-cases", prompt="{STACK_CONTEXT}\n...")
-Agent(subagent_type="test-generate-integration", prompt="{STACK_CONTEXT}\n...")
-```
+{STACK_CONTEXT}
 
-**Addition for `BRIEF_REVIEW`:** Each agent receives requirements[] and completeness results. Agent prompts include:
+Feature: {feature-name}
+Diff: {diff summary — changed files + key changes, NOT full diff}
 
-```
-Requirements to cover:
-{list of FOUND requirements with acceptance criteria}
+{BRIEF_REVIEW: "Requirements: {JSON of requirements[]}" + "testStrategy: {JSON of testStrategy[]}"}
+{TODO_REVIEW: "Expectations: {parsed expectations from FASE 0.5}"}
 
-Do NOT generate scenarios for MISSING requirements (they are not implemented).
-Map each scenario to a requirement ID (REQ-001, REQ-002, etc).
-```
+OPERATIONAL STANCE: Failure-seeking. Default: er zijn scenarios gemist.
+Verwacht minimaal 3 edge cases en 2 integratie-risico's. Minder vereist onderbouwing.
+Self-check: "Welke randgevallen heeft de developer waarschijnlijk niet overwogen?"
 
-**Addition for `TODO_REVIEW`:** Each agent receives parsed expectations and completeness results. Agent prompts include:
+TASKS:
+1. Check existing test infrastructure: grep for test files, configs, frameworks
+2. Research via Context7: resolve-library-id + query-docs for the testing framework
+   Focus: test structure conventions, assertion patterns, mocking, integration setup
+3. Generate test scenarios in 3 sections:
+   - HAPPY PATH: core functionality works as expected
+   - EDGE CASES: boundary conditions, validation, error states (MINIMUM 3)
+   - INTEGRATION: cross-component interaction, API flows, data persistence (MINIMUM 2)
+   {BRIEF_REVIEW: "Map each scenario to a requirement ID (REQ-001, etc). Skip MISSING requirements."}
+   {TODO_REVIEW: "Map each scenario to an expectation number (#1, #2, etc)."}
 
-```
-Expectations to cover:
-{list of FOUND expectations from FASE 0.5}
+RETURN FORMAT:
+RESEARCH_SUMMARY: {2-3 lines: testing framework, key conventions, existing test patterns}
 
-Map each scenario to an expectation number (#1, #2, etc).
-```
+SCENARIOS_START
+HAPPY PATH:
+{numbered scenarios}
 
-Output:
+EDGE CASES:
+{numbered scenarios}
 
-```
-SCENARIOS GENERATED
-
-Happy path: X scenarios
-Edge cases: Y scenarios
-Integration: Z scenarios
+INTEGRATION:
+{numbered scenarios}
+SCENARIOS_END
 
 Total: N test scenarios
 ```
 
+Parse the agent output — only the structured `SCENARIOS_START...END` block and research summary enter the main context.
+
 ---
 
-### FASE 3: Test Plan + Classification
+### FASE 2: Test Plan + Classification
 
 **Goal:** Classify scenarios into AUTO/MANUAL, generate test data, set up dev server.
 
@@ -345,7 +322,7 @@ Total: N test scenarios
 
    ```
    Feature: {feature-name}
-   Scenarios from FASE 2: {list of scenarios with requirement mapping}
+   Scenarios from FASE 1: {list of scenarios with requirement mapping}
 
    {STACK_CONTEXT}
 
@@ -423,11 +400,11 @@ Total: N test scenarios
    ⚠ Dev server + tunnel niet gestart. Alle items worden MANUAL.
    ```
 
-   Graceful fallback: reclassify ALL items as MANUAL, skip FASE 4.
+   Graceful fallback: reclassify ALL items as MANUAL, skip FASE 3.
 
 ---
 
-### FASE 4: Automated Test Execution (Task Agent)
+### FASE 3: Automated Test Execution (Task Agent)
 
 **When:** There are AUTO items after classification and dev server is confirmed running.
 
@@ -446,7 +423,7 @@ ITEMS:
 {for each AUTO item:}
 - Item {N}: {title} [Requirement: {REQ-ID}]
   Stappen: {test steps}
-  Testdata: {test data from FASE 3}
+  Testdata: {test data from FASE 2}
   Verwacht: {expected outcome}
   Methode: {BROWSER of CLI}
   Patroon: {matching test pattern from test-classification.md}
@@ -472,7 +449,7 @@ FALLBACK_ITEMS: {items met TOOL_ERROR, komma-gescheiden nummers, of "geen"}
 
 1. If TaskOutput contains `AUTOMATED_RESULTS_START` → parse directly
 2. If truncated → use Grep to find markers in agent output file, Read with offset
-3. TOOL_ERROR items → reclassify as MANUAL for FASE 5
+3. TOOL_ERROR items → reclassify as MANUAL for FASE 4
 
 Display:
 
@@ -487,21 +464,21 @@ AUTO TEST RESULTATEN: {feature-name}
 AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}
 ```
 
-**If agent fails entirely:** Graceful fallback → reclassify all AUTO as MANUAL, proceed to FASE 5.
+**If agent fails entirely:** Graceful fallback → reclassify all AUTO as MANUAL, proceed to FASE 4.
 
 ---
 
-### FASE 4b: Parse Inline Feedback
+### FASE 3b: Parse Inline Feedback
 
 **When:** User provided inline feedback via `/team-test {name} {feedback}` or free text.
 
 Parse user feedback into structured results (item number, PASS/FAIL, notes). Accept both numbered format and free text. Map to requirements where possible.
 
-After parsing, show summary and proceed to FASE 6 (skip FASE 4 + 5).
+After parsing, show summary and proceed to FASE 5 (skip FASE 3 + 4).
 
 ---
 
-### FASE 5: Manual Test Execution (interactive)
+### FASE 4: Manual Test Execution (interactive)
 
 **When:** There are MANUAL items (originally classified or reclassified from TOOL_ERROR fallback).
 
@@ -554,9 +531,9 @@ Use AskUserQuestion per item:
 
 ---
 
-### FASE 5b: Combined Results
+### FASE 4b: Combined Results
 
-Merge automated (FASE 4) and manual (FASE 5) results:
+Merge automated (FASE 3) and manual (FASE 4) results:
 
 ```
 GECOMBINEERDE RESULTATEN: {feature-name}
@@ -574,7 +551,64 @@ TOTAAL PASS: {n}  TOTAAL FAIL: {n}
 
 ---
 
-### FASE 6: Results Report + Action Choice
+### FASE 4c: Coverage Adequacy Analysis
+
+**Trigger:** Altijd na FASE 4b (ongeacht of alles PASS of er FAILs zijn).
+
+**Doel:** Analyseer of de gegenereerde test scenarios de code _voldoende_ dekken, of dat er blinde vlekken zijn.
+
+**Spawn Explore agent** (`subagent_type="Explore"`, thoroughness: "very thorough"):
+
+```
+Analyseer of de test scenarios de code volledig dekken.
+
+{STACK_CONTEXT}
+
+Feature: {feature-name}
+Code diff: {diff summary}
+
+Uitgevoerde test scenarios:
+{lijst van alle scenarios met resultaten uit FASE 4b}
+
+ANALYSEER:
+1. Welke code paths in de diff worden NIET geraakt door de huidige scenarios?
+2. Welke error handling / edge cases zijn niet getest?
+3. Zijn er security-relevante paden (auth, input validatie, permissies) zonder test?
+4. Zijn er integratie-punten met andere componenten die niet getest zijn?
+
+RETURN FORMAT:
+ADEQUACY_START
+Coverage: VOLDOENDE | ONVOLDOENDE
+Gaps: {lijst van ontbrekende scenarios, of "geen"}
+Suggested: {0-3 extra scenario-voorstellen als gaps gevonden}
+ADEQUACY_END
+```
+
+**Als VOLDOENDE + geen gaps:**
+
+```
+COVERAGE ANALYSE: ✓ Scenarios dekken de code adequaat
+```
+
+Ga door naar FASE 5.
+
+**Als ONVOLDOENDE of gaps gevonden:**
+
+```
+COVERAGE ANALYSE: {feature-name}
+
+Gaps gevonden:
+1. {gap beschrijving}
+2. {gap beschrijving}
+
+Extra scenarios worden automatisch toegevoegd en getest...
+```
+
+Classificeer de voorgestelde scenarios (FASE 2 logica), voer ze uit (FASE 3/4 logica), en merge resultaten terug in de FASE 4b tabel. Geen user interactie — Claude voegt gaps automatisch toe en test ze. Max 1 iteratie (geen herhaling van FASE 4c na de extra scenarios).
+
+---
+
+### FASE 5: Results Report + Action Choice
 
 **Goal:** Combined report with requirement coverage, then choose: feedback or fix.
 
@@ -592,7 +626,7 @@ REQUIREMENT DEKKING
 Totaal: {pass}/{total} PASS | {fail} FAIL | {missing} MISSING
 ```
 
-**If all PASS + no MISSING** → skip action choice, proceed to FASE 7 (feedback = positief bericht).
+**If all PASS + no MISSING** → skip action choice, proceed to FASE 6 (feedback = positief bericht).
 
 **If any FAIL or MISSING:**
 
@@ -606,15 +640,15 @@ Use AskUserQuestion:
   - label: "Beide", description: "Fix wat kan, koppel de rest terug"
 - multiSelect: false
 
-**If "Terugkoppelen"** → proceed to FASE 7 (feedback).
-**If "Zelf fixen"** → proceed to FASE 6c (fix loop for ALL failed items).
-**If "Beide"** → proceed to FASE 6c (fix loop). After fixes, FASE 7 generates feedback for remaining MISSING/unfixed items.
+**If "Terugkoppelen"** → proceed to FASE 6 (feedback).
+**If "Zelf fixen"** → proceed to FASE 5c (fix loop for ALL failed items).
+**If "Beide"** → proceed to FASE 5c (fix loop). After fixes, FASE 6 generates feedback for remaining MISSING/unfixed items.
 
 ---
 
-### FASE 6c: Fix Loop
+### FASE 5c: Fix Loop
 
-**When:** User chose "Zelf fixen" or "Beide" in FASE 6.
+**When:** User chose "Zelf fixen" or "Beide" in FASE 5.
 
 For each FAIL item, analyze and fix:
 
@@ -633,8 +667,8 @@ Impact: {what this affects}
 
 **Re-test after all fixes:**
 
-- AUTO items that were fixed → re-run via Task agent (same approach as FASE 4)
-- MANUAL items that were fixed → guided re-test (same approach as FASE 5)
+- AUTO items that were fixed → re-run via Task agent (same approach as FASE 3)
+- MANUAL items that were fixed → guided re-test (same approach as FASE 4)
 
 Display re-test results:
 
@@ -663,11 +697,56 @@ Use AskUserQuestion:
 
 Max 3 fix attempts per item before forcing fallback to feedback.
 
-After fix loop completes → proceed to FASE 7.
+After fix loop completes → proceed to FASE 5d.
 
 ---
 
-### FASE 7: Update + Feedback
+### FASE 5d: Regression Check
+
+**Skip when:**
+
+- Geen fixes toegepast in FASE 5c
+- Geen eerder-PASS AUTO items in FASE 4b
+- Alle fixes waren MANUAL-only (config/styling — lage kans op side effects)
+
+**Doel:** Verifieer dat fixes geen eerder-werkende functionaliteit hebben gebroken.
+
+Verzamel alle items uit FASE 4b die PASS waren EN AUTO classificatie hadden. Draai deze opnieuw via Task agent (zelfde aanpak als FASE 3).
+
+Display:
+
+```
+REGRESSION CHECK: {feature-name}
+
+{n} eerder-PASS AUTO items opnieuw getest...
+
+| # | Test               | Was    | Nu     |
+|---|--------------------|--------|--------|
+| 1 | Valid registration | ✓ PASS | ✓ PASS |
+| 4 | Email format       | ✓ PASS | ✗ FAIL |
+
+Regressies: {n} | Stabiel: {n}
+```
+
+**Geen regressies:** Door naar FASE 6.
+
+**Regressies gevonden:** Voeg FAIL items toe aan de resultaten. Bied dezelfde fix/feedback keuze als FASE 5:
+
+Use AskUserQuestion:
+
+- header: "Regressie"
+- question: "{n} eerder-werkende items falen nu. Wat wil je doen?"
+- options:
+  - label: "Fixen (Recommended)", description: "Fix de regressies (terug naar FASE 5c voor deze items)"
+  - label: "Terugkoppelen", description: "Meld regressies in feedback aan teammate"
+  - label: "Accepteren", description: "Markeer als bekend issue"
+- multiSelect: false
+
+**Na regressie-fix:** Herhaal FASE 5d NIET (max 1 regression pass om loops te voorkomen).
+
+---
+
+### FASE 6: Update + Feedback
 
 #### Step 1: Parallel Sync (feature.json + backlog + dashboard) — volg `shared/SYNC.md` 3-File Sync Pattern
 
@@ -692,8 +771,8 @@ After fix loop completes → proceed to FASE 7.
    - `endpoints`: merge als gewijzigd tijdens fixes
    - `data.entities`: merge als gewijzigd tijdens fixes
    - `architecture` (**volg diagram conventies uit `shared/DASHBOARD.md`**):
-     - `architecture.diagram`: feature status → `"DONE"` → verifieer dat nodes `:::done` zijn (dev-build zet dit normaal al, maar check/corrigeer als nodig). Als FASE 6c fixes zijn toegepast → update file references in node labels (`Naam<br/>file.js`), voeg nieuwe nodes toe als componenten zijn toegevoegd
-     - `architecture.files`: merge nieuwe/gewijzigde bestanden uit fix loop (test files uit FASE 4, source fixes uit FASE 6c)
+     - `architecture.diagram`: feature status → `"DONE"` → verifieer dat nodes `:::done` zijn (dev-build zet dit normaal al, maar check/corrigeer als nodig). Als FASE 5c fixes zijn toegepast → update file references in node labels (`Naam<br/>file.js`), voeg nieuwe nodes toe als componenten zijn toegevoegd
+     - `architecture.files`: merge nieuwe/gewijzigde bestanden uit fix loop (test files uit FASE 3, source fixes uit FASE 5c)
      - Skip als geen `architecture` sectie bestaat in project.json
 
    Schrijf parallel terug:
@@ -738,6 +817,11 @@ After fix loop completes → proceed to FASE 7.
 **Runs in:** `BRIEF_REVIEW` and `TODO_REVIEW` modes.
 
 Generate structured feedback based on test results, completeness check, and any fixes applied.
+
+**Feature Readiness Verdict (altijd opnemen):**
+
+- `READY` — ≥90% requirements/scenarios pass + 0 CRITICAL failures
+- `NOT READY` — anders (inclusief reden)
 
 **If all PASS (or all fixed):**
 
@@ -799,7 +883,7 @@ Use AskUserQuestion:
 | ------------------- | ---------------- | ---------------------- | --------------- |
 | Context source      | feature.json     | backlog description    | git diff only   |
 | Completeness check  | ✓ (requirements) | ✓ (parsed expects)     | ✗               |
-| Research agents     | ✓                | ✓                      | ✓               |
+| Inline research     | ✓                | ✓                      | ✓               |
 | Scenario generation | ✓ (req-mapped)   | ✓ (expectation-mapped) | ✓ (diff-only)   |
 | Classification      | ✓ (AUTO/MANUAL)  | ✓ (AUTO/MANUAL)        | ✓ (AUTO/MANUAL) |
 | Task agent testing  | ✓                | ✓                      | ✓               |

@@ -23,6 +23,7 @@ Convert visual input into working code. Accepts screenshots, Figma exports, webs
 
 - `../shared/RULES.md` — React/TypeScript coding rules
 - `../shared/PATTERNS.md` — Component patterns (compound, render props, etc.)
+- `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
 - `../shared/PLAYWRIGHT.md` — Browser automation, screenshot capture
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
 

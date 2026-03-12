@@ -45,7 +45,17 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
       "acceptance": "Element heeft pinned state na Shift+Click",
       "technique": "TDD",
       "syncNote": "Hook exposes togglePin(id), pinnedIds array, clearAll. Uses Map internally for O(1) lookup.",
-      "status": "PASS"
+      "status": "PASS",
+      "tuningLevers": [
+        {
+          "parameter": "max_pins",
+          "default": 10,
+          "min": 1,
+          "max": 50,
+          "impact": "Hoeveel elementen tegelijk vergelijkbaar"
+        }
+      ],
+      "edgeCases": ["Wat als max pins bereikt en gebruiker nog een pint?"]
     }
   ],
 
@@ -210,6 +220,8 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 - `design` — alleen visuele features
 - `apiContract` — alleen backend features
 - `research` — alleen als stack/architecture research gedaan
+- `requirements[].tuningLevers` — alleen bij mechanica-requirements met getallen/timing
+- `requirements[].edgeCases` — alleen bij requirements met interacties/state changes
 
 **Toegevoegd door build:**
 

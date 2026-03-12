@@ -200,10 +200,44 @@ Now TESTABLE -> TDD fix loop
 
 6b. **Post-Build Baseline Check** (als `build` sectie bestaat in feature.json)
 
-Herrun de integration test scene als baseline gate voordat de gebruiker gaat playtesten. Dit vangt regressies op die na de build kunnen zijn ontstaan.
+Twee checks vóór playtest:
+
+**Check 1: Full GUT Regression Suite**
+
+Run de volledige GUT test suite om te verifiëren dat alle features nog werken:
 
 ```bash
-# Run integration test scene
+"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit
+```
+
+Parse output (zelfde regels als game-build: PASS 1 regel, FAIL max 10 regels).
+
+```
+BASELINE: full suite → {passed}/{total} PASS
+```
+
+Bij failures:
+
+- Onderscheid failures van de HUIDIGE feature vs ANDERE features
+- Huidige feature fails → waarschuw, ga door met playtest (dit is wat we gaan testen)
+- Andere feature fails → waarschuw:
+
+  ```
+  ⚠ REGRESSIE: {N} tests van andere features falen
+  - test_{other}.test_xxx: {reason}
+  ```
+
+  Use AskUserQuestion:
+  - "Doorgaan met playtest (Recommended)" — "Regressies worden gerapporteerd maar blokkeren de test niet"
+  - "Stop — eerst regressies fixen" — "Fix de andere features voordat je deze test"
+
+Als GUT niet beschikbaar of geen test bestanden → skip met: `BASELINE: overgeslagen (geen GUT tests gevonden)`
+
+**Check 2: Integration Test Scene**
+
+Herrun de integration test scene als aanvullende check:
+
+```bash
 "/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s res://tests/scenes/test_{feature}_runtime.tscn
 ```
 
@@ -901,6 +935,37 @@ Provide feedback when ready.
    - Apply new fixes
    - Generate new re-test checklist
    - Continue until all pass or user exits
+
+---
+
+### FASE 5c: Regression Check
+
+**Skip when:**
+
+- Geen TDD fixes toegepast in FASE 3 (alleen MEASURABLE fixes → lage kans op side effects)
+- Geen bestaande test files om te draaien
+
+**Doel:** Verifieer dat fixes geen eerder-werkende tests hebben gebroken.
+
+Draai `gut_cmdln.gd` opnieuw voor ALLE bestaande test files (niet alleen de gefixte). Vergelijk output met de FASE 0.6b baseline.
+
+```
+REGRESSION CHECK: {feature-name}
+
+GUT test suite opnieuw gedraaid...
+
+Baseline: {n} pass / {n} fail
+Nu:       {n} pass / {n} fail
+
+Nieuwe failures:
+- test_{x}.gd::test_{method}: {assertion error}
+
+Regressies: {n} | Stabiel: {n}
+```
+
+**Geen regressies:** Door naar FASE 6.
+
+**Regressies:** Toon en bied keuze via AskUserQuestion: Fixen (Aanbevolen) | Accepteren. Bij fixen → terug naar FASE 3 voor alleen de regressie-items. Herhaal FASE 5c NIET na regressie-fix (max 1 pass).
 
 ---
 

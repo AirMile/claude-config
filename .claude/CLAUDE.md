@@ -29,7 +29,7 @@ Cross-platform: **Linux (VPS)** en **Windows (lokale dev)**.
 skills/           55+ skills in 8 categorieën
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (elk met SKILL.md)
-agents/           50+ sub-agent definities (.md met YAML frontmatter)
+agents/           25 sub-agent definities (.md met YAML frontmatter)
 hooks/            format-on-save.cjs (Prettier/gdformat), stop.ps1 (Ralph loop)
 scripts/ralph/    Windows PowerShell agentic TDD loop
 CLAUDE.base.md    Template voor per-project CLAUDE.md generatie
@@ -50,7 +50,8 @@ setup-project.sh  Linkt config naar een project's .claude/
 
 - Frontmatter: name, description, model (`sonnet` default), color
 - Draaien via `Task` tool in geïsoleerde context — output compact houden
-- Worden gespawned door skills voor parallelle taken (bijv. frontend-compose: 2 wireframe agents, dev-owasp: 10 scanner agents)
+- Alleen gebruiken waar agents échte waarde toevoegen: schaal-parallelisme (OWASP scanners), onafhankelijk denken (fix strategies), context-isolatie bij grote hoeveelheden (refactor Explore)
+- Meeste skills doen analyse inline — agents alleen voor de uitzonderingen hierboven
 
 ## Pipelines
 

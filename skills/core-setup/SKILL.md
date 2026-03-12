@@ -207,7 +207,7 @@ Generate CLAUDE.md following the **canonical structure** from `references/claude
 
 Generate `.claude/research/stack-baseline.md` — reusable framework conventions that avoid duplicate Context7 queries in other skills.
 
-**Run as background Task agent** for parallel execution with Phase 7b/8.
+**Run as Explore agent** (`subagent_type="Explore"`) for context isolation — Context7 queries for multiple stack technologies produce substantial output that shouldn't stay in the main session.
 
 1. For each major technology in the stack, query Context7 (`resolve-library-id` → `query-docs`)
 2. Distill per technology: conventions (5-10), patterns (5-10), idioms (3-5), testing (3-5), pitfalls (3-5)

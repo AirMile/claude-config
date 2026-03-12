@@ -10,10 +10,10 @@ Extracted from SKILL.md for progressive disclosure (Anthropic skill spec).
 Each test item is classified as **COVERED**, **AUTO**, or **MANUAL** before testing begins.
 
 - **COVERED** — build tests already verify this item's contract (only in post-build mode)
-- **AUTO** — can be tested automatically (two sub-methods: BROWSER or CLI)
+- **AUTO** — can be tested automatically (three sub-methods: BROWSER, CLI, or A11Y)
 - **MANUAL** — requires human perception or judgment
 
-AUTO items have two sub-methods — the Task agent picks the best one per item:
+AUTO items have three sub-methods — the Task agent picks the best one per item:
 
 ### AUTO/BROWSER (MCP browser tools)
 
@@ -40,6 +40,40 @@ Common AUTO/CLI scenarios:
 - Build verification (npm run build + check exit code)
 - Linting/type checking (npx tsc --noEmit, npx eslint)
 
+### AUTO/A11Y (accessibility checks via browser)
+
+Assign AUTO/A11Y when ALL of the following are true:
+
+- **Programmatically verifiable**: pass/fail determined by automated a11y scan or DOM inspection
+- **WCAG-based**: check maps to a concrete WCAG 2.2 success criterion
+- **No assistive tech needed**: doesn't require actual screen reader or physical device
+
+axe-core injection (Task agent does this before any A11Y scan):
+
+```js
+evaluate(() => {
+  const s = document.createElement("script");
+  s.src = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js";
+  document.head.appendChild(s);
+  return new Promise((r) => (s.onload = r));
+});
+```
+
+Common AUTO/A11Y scenarios:
+
+| Pattern            | Steps                                                                          |
+| ------------------ | ------------------------------------------------------------------------------ |
+| axe-core scan      | navigate, inject axe, evaluate(() => axe.run()), check violations              |
+| Heading hierarchy  | navigate, snapshot, verify h1→h2→h3 order (no skipped levels)                  |
+| Image alt text     | navigate, snapshot, verify all `<img>` have meaningful alt                     |
+| ARIA labels        | navigate, snapshot, verify interactive elements have accessible names          |
+| Color contrast     | navigate, inject axe, evaluate(() => axe.run({ runOnly: ['color-contrast'] })) |
+| Keyboard tab order | press_key Tab × N, snapshot per focus, verify logical order                    |
+| Focus visible      | press_key Tab, snapshot, verify focus indicator visible                        |
+| Form labels        | navigate, snapshot, verify all inputs have associated labels                   |
+| Skip navigation    | press_key Tab (first), snapshot, verify skip link present                      |
+| Language attribute | evaluate(() => document.documentElement.lang), verify non-empty                |
+
 ### MANUAL (human walkthrough)
 
 Assign MANUAL **only** when human perception or judgment is truly required — if it can be objectively checked, it's AUTO.
@@ -48,7 +82,7 @@ MANUAL when ANY of the following are true:
 
 - **Subjective visual quality**: animation smoothness, design "feel", whitespace balance, color harmony
 - **Perception-based**: "feels fast enough", "feels intuitive", "looks professional"
-- **Assistive technology**: screen reader flow, VoiceOver, keyboard-only UX feel
+- **Assistive technology**: screen reader flow, VoiceOver experience
 - **Audio/sound**: sounds play correctly, volume appropriate, timing right
 - **Physical multi-device**: "log out on phone, log in on desktop" (requires actual second device)
 
@@ -62,6 +96,8 @@ NOT MANUAL (these are AUTO):
 - Redirect happens after action → AUTO/BROWSER (navigate + check URL)
 - Error messages appear → AUTO/BROWSER (trigger error + snapshot)
 - Multi-step flows with deterministic outcomes → AUTO/BROWSER (sequence of actions + snapshots)
+- Heading hierarchy, alt text, ARIA labels, contrast ratio → AUTO/A11Y
+- Keyboard tab order (logical sequence) → AUTO/A11Y
 
 ### COVERED (post-build only)
 
@@ -73,11 +109,13 @@ Assign COVERED when ALL of the following are true:
 - **No meaningful delta** beyond what build tests cover (`delta: "geen"`)
 
 COVERED items:
+
 - Are NOT sent to the Task agent for execution
 - Count as PASS automatically (verified by baseline test suite)
 - Are displayed in the classification table with reason "Build test dekken contract"
 
 NOT COVERED (even when build tests exist):
+
 - Cross-requirement integration scenarios — always AUTO (new verification by definition)
 - Items where build tests only test function-level but the item requires HTTP contract verification
 - Items with external dependencies not covered by build tests (e.g., email delivery, third-party API responses)
@@ -123,15 +161,15 @@ Wanneer `feature.json` een `build` sectie heeft (dev-build is voltooid, tests be
 
 **Override regels:**
 
-| Originele Classificatie        | Post-Build Override       | Conditie                                          |
-| ------------------------------ | ------------------------- | ------------------------------------------------- |
-| Any (httpContractTested + geen delta) | **COVERED**        | Build tests dekken HTTP contract, geen extra delta |
-| AUTO/CLI "Existing test suite" | AUTO/BROWSER              | Feature heeft UI, delta bestaat                    |
-| AUTO/CLI "Existing test suite" | AUTO/CLI "API integratie" | Pure API feature, delta bestaat                    |
-| AUTO/CLI (specifiek command)   | Ongewijzigd               | Build, typecheck, file state                       |
-| AUTO/BROWSER                   | Ongewijzigd               | Al E2E verificatie                                 |
-| MANUAL                         | Ongewijzigd               | Subjectief oordeel                                 |
-| Integratie-scenario (5c)       | AUTO (nooit COVERED)      | Cross-req is altijd nieuwe verificatie             |
+| Originele Classificatie               | Post-Build Override       | Conditie                                           |
+| ------------------------------------- | ------------------------- | -------------------------------------------------- |
+| Any (httpContractTested + geen delta) | **COVERED**               | Build tests dekken HTTP contract, geen extra delta |
+| AUTO/CLI "Existing test suite"        | AUTO/BROWSER              | Feature heeft UI, delta bestaat                    |
+| AUTO/CLI "Existing test suite"        | AUTO/CLI "API integratie" | Pure API feature, delta bestaat                    |
+| AUTO/CLI (specifiek command)          | Ongewijzigd               | Build, typecheck, file state                       |
+| AUTO/BROWSER                          | Ongewijzigd               | Al E2E verificatie                                 |
+| MANUAL                                | Ongewijzigd               | Subjectief oordeel                                 |
+| Integratie-scenario (5c)              | AUTO (nooit COVERED)      | Cross-req is altijd nieuwe verificatie             |
 
 **Post-build specifieke patronen:**
 

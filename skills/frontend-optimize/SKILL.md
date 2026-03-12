@@ -20,6 +20,7 @@ Unified audit & fix for performance, SEO, AEO (AI search optimization), and resp
 ## References
 
 - `../shared/RULES.md` — P-series (performance), S-series (SEO), H-series (responsive/HTML)
+- `../shared/DESIGN.md` — Anti-patterns (AI design tells), motion timing, interaction states
 - `../shared/PLAYWRIGHT.md` — CWV measurement, multi-viewport captures, overflow detection
 - `../shared/PATTERNS.md` — Code splitting, memoization patterns
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff

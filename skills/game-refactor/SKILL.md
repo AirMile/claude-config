@@ -290,7 +290,17 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
       - Typed variables voor readability
       - Voorkeur voor explicit boven compact — meer regels is OK als het duidelijker is
 
-   5. ARCHITECTUUR overzicht:
+   5. ASSET GEZONDHEID (lichtgewicht check):
+      - Texturen groter dan nodig (bijv. 2048x2048 voor een kleine sprite)
+      - Ongecomprimeerde audio bestanden (.wav waar .ogg volstaat)
+      - Scenes met excessieve node counts (>50 nodes voor simpele features)
+      - Missing LOD op 3D meshes (indien van toepassing)
+      - Ongebruikte resources in scene (preload/load zonder referentie)
+
+      Rapporteer als ASSET_FINDINGS (of "Geen asset issues gevonden").
+      Alleen flaggen als het een concreet probleem is, niet als theoretisch risico.
+
+   6. ARCHITECTUUR overzicht:
       - Welke Godot features/systems worden gebruikt
       - Belangrijkste patterns (state machines, signals, autoloads, etc.)
       - Scene composition patterns
@@ -325,6 +335,10 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
    CLARITY_FINDINGS:
    - {file:line} {type} — {beschrijving} — Code: {snippet}
    (of "Geen clarity issues gevonden")
+
+   ASSET_FINDINGS:
+   - {file} {type} — {beschrijving} (bijv. "texture 2048x2048 voor 32px sprite")
+   (of "Geen asset issues gevonden")
 
    BALANCE_SKIPPED:
    - {file:line} {type} — {reden waarom dit NIET als finding is opgenomen}

@@ -1,6 +1,6 @@
 ---
 name: dev-debug
-description: Systematic debugging with parallel investigation agents, root cause analysis, and 3 fix strategies. Use for runtime errors, build failures, unexpected behavior, or test failures.
+description: Systematic debugging with inline investigation, root cause analysis, and 3 fix strategies. Use for runtime errors, build failures, unexpected behavior, or test failures.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -33,21 +33,13 @@ Structured 9-phase debugging: context → intake → investigate → analyze →
 - Fallback: lees `.project/backlog.html` → zoek meest recente `"DOING"` feature (features met `-ing` stage suffix zijn actief)
 - Als actieve feature gevonden: noteer als context hint voor investigation agents
 
-**Stel DEBUG_CONTEXT samen** per agent (gerichte subsets, niet alles aan iedereen):
+**Stel DEBUG_CONTEXT samen** (alle info beschikbaar voor inline investigation):
 
 ```
-SHARED (alle agents):
 STACK: {framework} ({language}) — {packages}
-
-debug-error-tracer:
 PATTERNS: {context.patterns of "niet beschikbaar"}
-
-debug-change-detective:
 STRUCTURE: {context.structure of "niet beschikbaar"}
 ACTIVE FEATURE: {feature naam + status of "geen"}
-
-debug-context-mapper:
-STRUCTURE: {context.structure of "niet beschikbaar"}
 ENDPOINTS: {endpoints of "niet beschikbaar"}
 ENTITIES: {data.entities of "niet beschikbaar"}
 ```
@@ -133,24 +125,60 @@ AskUserQuestion:
 - header: "Bevestiging"
 - question: "Klopt deze probleem samenvatting?"
 - options:
-  - "Ja, start onderzoek (Aanbevolen)" — Start parallel agent investigation
+  - "Ja, start onderzoek (Aanbevolen)" — Start inline investigation
   - "Nee, correctie nodig" — Meer details of correcties geven
 
 If "Nee" → ask for corrections, update summary, re-confirm.
 
 ---
 
-## FASE 2: Codebase Investigation
+## FASE 2: Codebase Investigation (Explore agent)
 
-Launch 3 agents in parallel:
+Spawn one Explore agent (`subagent_type="Explore"`, thoroughness: "very thorough") to investigate in an isolated context. This keeps source file reads and git output out of the main session — critical because FASE 3-8 still need context space for root cause analysis, fix planning, and implementation.
 
-| Agent                  | Focus          | Input                                      |
-| ---------------------- | -------------- | ------------------------------------------ |
-| debug-error-tracer     | Error origin   | Stack trace, error message, exception flow |
-| debug-change-detective | Recent changes | Git history, recent commits affecting area |
-| debug-context-mapper   | Code context   | Related files, dependencies, data flow     |
+Agent prompt:
 
-Each receives: problem summary + relevant file paths + error messages/stack traces + **agent-specifieke** DEBUG_CONTEXT subset (uit FASE 0).
+```
+Investigate this bug. Perform 3 passes that build on each other.
+
+DEBUG_CONTEXT:
+{DEBUG_CONTEXT from FASE 0}
+
+PROBLEM:
+{problem summary from FASE 1}
+{error message / stack trace / details}
+
+PASS 1 — ERROR TRACE:
+- Parse stack trace / error message → identify root location
+- Read the source file at the error location
+- Trace the call stack: what called this code? What data flows in?
+- Map the exception/error flow: where is it caught (or not)?
+
+PASS 2 — CONTEXT MAP (use locations from Pass 1):
+- Read imports and dependents of the affected file(s)
+- Trace data flow: where does input come from? Where does output go?
+- Check endpoints and entities from DEBUG_CONTEXT for relevant connections
+- Identify external factors (APIs, DB, file system, environment)
+
+PASS 3 — CHANGE ANALYSIS (use files from Pass 1+2):
+- git log --oneline -10 -- {affected files}
+- git blame {error location}
+- Was this working before? What changed?
+
+RETURN FORMAT:
+INVESTIGATION_START
+Error location: {file:line}
+Call stack: {caller → callee chain}
+Root code: {the problematic code snippet, max 20 lines}
+Dependencies: {key imports and dependents}
+Data flow: {input source → processing → output}
+External factors: {APIs, DB, env vars involved}
+Recent changes: {relevant commits with dates}
+Regression risk: {yes/no — was this area recently modified?}
+INVESTIGATION_END
+```
+
+Parse the agent's `INVESTIGATION_START...END` block — only the compact findings enter the main context.
 
 ---
 
@@ -158,7 +186,7 @@ Each receives: problem summary + relevant file paths + error messages/stack trac
 
 Analyze:
 
-1. List findings from each agent
+1. Combine findings from all 3 investigation passes
 2. Identify patterns and correlations
 3. Form hypotheses about root cause
 4. Evaluate each hypothesis against evidence

@@ -23,7 +23,10 @@ Dit command beheert de `theme` sectie in `.project/project.json` die design toke
 
 **Output locatie:** `.project/project.json` → `theme` sectie
 
-**Referentie:** `THEME_TEMPLATE.md` beschrijft de token categorien en naming conventions.
+**Referenties:**
+
+- `THEME_TEMPLATE.md` — Token categorieën en naming conventions
+- `../shared/DESIGN.md` — Anti-patterns, OKLCH kleuradvies, typography, motion, interaction states
 
 ## When to Use
 

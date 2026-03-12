@@ -97,14 +97,17 @@ Analyze the context and plan your research strategy.
 4. **Prioritize** - Most critical patterns first (called during implementation)
 5. **Estimate coverage** - 2-4 queries maximum (speed matters)
 
+**Architecture decision tree:** Read `skills/game-build/techniques/architecture-decisions.md` for data storage, composition vs inheritance, and communication pattern decisions. Use this to inform your pattern recommendations.
+
 **Pattern identification checklist:**
 
-- Does it need inter-object communication? -> Signals
+- Does it need inter-object communication? -> Signals (see decision tree: signals up, methods down)
 - Does it have multiple states? -> State machine with enum
-- Does it need configurable data? -> Custom Resource
+- Does it need configurable data? -> Custom Resource (shared) or @export (per-instance)
 - Does it need editor-exposed values? -> @export variables
 - Does it process every frame? -> \_process or \_physics_process
-- Is it a global system? -> Autoload pattern
+- Is it a global system? -> Autoload pattern (spaarzaam — no gameplay logic)
+- Does it share behavior across node types? -> Component pattern (child node, NOT inheritance)
 
 ### 3. Execute Context7 Research
 

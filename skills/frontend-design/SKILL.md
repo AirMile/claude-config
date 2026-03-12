@@ -22,6 +22,7 @@ Beheert de design specificatie van het project: pagina's, user flows, en design 
 ## References
 
 - `../shared/DASHBOARD.md` — project.json schema en merge-strategieën
+- `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
 
 ---

@@ -231,58 +231,59 @@ Research checklist:
 
 **Step 2: User Clarification (if needed)**
 
-If ambiguities are identified, use AskUserQuestion to clarify before spawning research agents.
+If ambiguities are identified, use AskUserQuestion to clarify before starting research.
 
-**Step 3: Parallel Research Execution**
+**Step 3: Research (Explore agent)**
 
-Spawn agents based on Step 1 analysis. Only spawn agents for categories identified as needed.
+Spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to do all research in an isolated context. This keeps Context7 results, web search output, and source file reads out of the main session.
 
-**Codebase research (if existing codebase detected):**
-
-```
-Task tool with subagent_type: code-explorer
-├─ Focus: similar-features
-├─ Focus: architecture
-└─ Focus: implementation
-```
-
-**Context7 research (if framework/library docs needed):**
+Agent prompt — include only research categories identified as needed in Step 1:
 
 ```
-Task tool with subagent_type:
-├─ architecture-researcher
-├─ best-practices-researcher
-└─ testing-researcher
-```
+Research the following for a web project feature plan.
 
-**Web research (if external information needed):**
+{If codebase research needed:}
+CODEBASE ANALYSIS:
+- Find similar features, existing patterns, architecture conventions
+- Check existing implementations that can be reused
+- Note file structure conventions
 
-```
-Task tool with subagent_type:
-├─ plan-web-patterns (best practices, modern approaches)
-├─ plan-web-pitfalls (issues, constraints, anti-patterns)
-├─ plan-web-examples (real-world implementations)
-├─ plan-web-ecosystem (libraries, tools, packages)
-└─ plan-web-architecture (system design, scalability)
+{If Context7 research needed:}
+FRAMEWORK RESEARCH:
+- resolve-library-id + query-docs for: {frameworks/libraries}
+- Focus: architecture patterns, best practices, common pitfalls, testing setup
+
+{If web research needed:}
+WEB RESEARCH (use WebSearch):
+- "{framework} {feature-type} best practices"
+- "{framework} {feature-type} common pitfalls"
+- "{feature-type} production examples"
+
+RETURN FORMAT:
+RESEARCH_START
+Codebase: {3-5 bullet points: existing patterns, reusable code, conventions}
+Framework: {3-5 bullet points: architecture patterns, best practices, pitfalls}
+Web: {3-5 bullet points: real-world patterns, warnings, recommendations}
+RESEARCH_END
 ```
 
 **Step 4: Research Summary**
 
-After all agents return, display a compact summary:
+Parse the agent's `RESEARCH_START...END` block. Display:
 
 ```
 RESEARCH COMPLETE
 
-| Category | Agents | Key Findings |
-|----------|--------|--------------|
-| Codebase | {N}/3  | {summary of existing patterns/features} |
-| Context7 | {N}/3  | {summary of framework guidance} |
-| Web      | {N}/5  | {summary of patterns/pitfalls} |
+| Category | Key Findings |
+|----------|--------------|
+| Codebase | {summary of existing patterns/features} |
+| Context7 | {summary of framework guidance} |
+| Web      | {summary of patterns/pitfalls} |
 
 → Research results will inform feature extraction...
 ```
 
-Research results remain in conversation context for FASE 1. No files are written.
+Only the compact summary enters the main context for FASE 1.
 
 ### FASE 1: Feature Extraction
 
