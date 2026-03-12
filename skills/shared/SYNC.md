@@ -4,6 +4,28 @@ Shared 3-file sync pattern voor skill completion. Skills verwijzen hiernaar voor
 
 ---
 
+## Worktree-aware Pad Resolutie
+
+Skills kunnen draaien in een git worktree (parallelle feature development). Omdat `.project/` gitignored is, bestaat het alleen in de main worktree.
+
+### Detectie (eenmalig per skill)
+
+Bij de eerste `.project/` operatie (read of write):
+
+1. `git worktree list --porcelain | head -1` → extraheer pad na `worktree ` → `{main_worktree}`
+2. `git rev-parse --show-toplevel` → `{current}`
+3. **Verschillend** → in worktree. Gebruik `{main_worktree}/.project/` voor ALLE `.project/` operaties.
+   Log: `WORKTREE: .project/ → {main_worktree}/.project/`
+4. **Gelijk** → niet in worktree. Gebruik `.project/` relatief.
+
+### Scope
+
+- **`.project/`** (feature.json, backlog.html, project.json, session) → altijd main worktree
+- **Source code** (implementatie, tests) → lokale worktree (eigen branch)
+- Detectie eenmaal uitvoeren, geresolvd pad hergebruiken in alle fases
+
+---
+
 ## 3-File Sync Pattern
 
 Bij skill completion, sync feature state naar 3 bestanden:

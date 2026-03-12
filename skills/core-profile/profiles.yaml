@@ -26,7 +26,6 @@ dev:
   - dev-refactor
   - dev-server
   - dev-test
-  - dev-worktree
 
 frontend:
   - frontend-convert
