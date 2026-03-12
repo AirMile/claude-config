@@ -418,25 +418,58 @@ Summary: {clean_count} clean, {findings_count} with findings
 
    **If research NOT needed** — proceed directly to FASE 3.
 
-   **If research needed** — spawn godot-code-researcher agent(s):
+   **If research needed** — spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to research Godot patterns in an isolated context. This keeps Context7 results out of the main session.
 
-   | Agent                  | When to spawn                                             |
-   | ---------------------- | --------------------------------------------------------- |
-   | godot-code-researcher  | Complex Godot patterns, scene architecture, signal design |
-   | performance-researcher | \_process bottlenecks, physics optimization, draw calls   |
-   | resource-researcher    | Memory management, resource loading strategies            |
+   Determine which research domains to include based on findings:
 
-   Agent context includes:
-   - **Aggregated analysis** from ALL affected features (ANALYSIS_START..ANALYSIS_END blocks)
-   - Architecture baseline (if available)
-   - Specific questions to answer
-   - Context7 for Godot documentation
+   | Domain              | Include when                                              |
+   | ------------------- | --------------------------------------------------------- |
+   | Godot patterns      | Complex scene architecture, signal design, state machines |
+   | Performance         | \_process bottlenecks, physics optimization, draw calls   |
+   | Resource management | Memory management, resource loading strategies            |
+
+   Agent prompt — include only domains identified as needed:
+
+   ```
+   Research Godot 4.x best practices for a refactoring task.
+
+   Architecture baseline: {from architecture-baseline.md, or "none"}
+
+   Aggregated analysis:
+   {ANALYSIS_START..ANALYSIS_END blocks from all HAS_FINDINGS features}
+
+   {If godot patterns domain needed:}
+   GODOT PATTERNS:
+   - resolve-library-id for Godot → query-docs
+   - Focus: scene composition, signal patterns (signals up, methods down), state machines, component pattern, typed GDScript
+
+   {If performance domain needed:}
+   PERFORMANCE:
+   - Focus: _process vs _physics_process optimization, draw call reduction, physics layer usage, object pooling
+
+   {If resource management domain needed:}
+   RESOURCE MANAGEMENT:
+   - Focus: ResourceLoader, preload vs load, custom Resources, memory management, scene instancing
+
+   Also read: skills/game-build/techniques/architecture-decisions.md for decision tree context.
+
+   RETURN FORMAT:
+   RESEARCH_START
+   Godot patterns: {3-5 bullet points: scene architecture, signals, state machines}
+   Performance: {3-5 bullet points: optimization patterns, bottleneck fixes}
+   Resource management: {3-5 bullet points: loading strategies, memory patterns}
+   RESEARCH_END
+
+   Only include sections for domains you were asked to research.
+   ```
 
    **If uncovered patterns found** — also update refactor-patterns.md:
    - Context7 query for each uncovered Godot system
    - Append new sections to existing refactor-patterns.md
 
 **Output:**
+
+Parse the agent's `RESEARCH_START...END` block. Display:
 
 ```
 RESEARCH DECISION
@@ -451,8 +484,7 @@ RESEARCH DECISION
 Research: Skipped (existing knowledge sufficient)
 
 {if research:}
-Research: {N} agents spawned ({list})
-Reason: {why research was needed}
+Research: Explore agent ({domains researched})
 Refactor patterns updated: {yes/no}
 
 → Ready for combined plan.

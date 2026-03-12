@@ -29,7 +29,7 @@ Cross-platform: **Linux (VPS)** en **Windows (lokale dev)**.
 skills/           55+ skills in 8 categorieën
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (elk met SKILL.md)
-agents/           25 sub-agent definities (.md met YAML frontmatter)
+agents/           20 sub-agent definities (.md met YAML frontmatter)
 hooks/            format-on-save.cjs (Prettier/gdformat), stop.ps1 (Ralph loop)
 scripts/ralph/    Windows PowerShell agentic TDD loop
 CLAUDE.base.md    Template voor per-project CLAUDE.md generatie

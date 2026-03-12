@@ -244,45 +244,6 @@ Toegewezen aan: {naam}
 
 4. Toon bericht: "Kopieer bovenstaande tekst en stuur naar {naam}."
 
-### FASE 3c: Workspace Setup
-
-Alleen tonen als de user in FASE 3b "Zelf bouwen" kiest.
-
-AskUserQuestion:
-
-```yaml
-header: "Workspace"
-question: "Wil je een worktree aanmaken voor de build?"
-options:
-  - label: "Nee, huidige directory (Recommended)"
-    description: "Werk op de huidige branch"
-  - label: "Ja, worktree aanmaken"
-    description: "Aparte workspace op feature/{name} — ideaal bij parallel werken"
-multiSelect: false
-```
-
-**Nee**: ga door naar FASE 4.
-
-**Ja**:
-
-1. Detect base branch: `git branch --show-current` → `{base}`
-2. Detect project naam: `basename $(git rev-parse --show-toplevel)` → `{project-dir}`
-3. `git worktree add ../{project-dir}-{feature-name} -b feature/{feature-name} {base}`
-4. Sla metadata op: `echo "{absolute-path}" > .project/features/{feature-name}/.worktree`
-5. Toon:
-
-```
-WORKTREE AANGEMAAKT
-
-Pad:    ../{project-dir}-{feature-name}
-Branch: feature/{feature-name}
-
-Open een nieuwe terminal in dat pad en run:
-/dev-build {feature-name}
-```
-
-Ga door naar FASE 4 (sync schrijft naar main worktree's `.project/`).
-
 ### FASE 4: Sync
 
 Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.

@@ -382,26 +382,66 @@ Summary: {clean_count} clean, {findings_count} with findings
 
    **If research NOT needed** → proceed directly to FASE 3.
 
-   **If research needed** → spawn only the relevant research agents:
+   **If research needed** → spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to do all research in an isolated context. This keeps Context7 results out of the main session.
 
-   | Agent                     | When to spawn                                       |
-   | ------------------------- | --------------------------------------------------- |
-   | security-researcher       | Security patterns found OR auth/crypto/input flows  |
-   | performance-researcher    | N+1 patterns, heavy loops, or caching opportunities |
-   | quality-researcher        | Complex abstractions or unclear patterns            |
-   | error-handling-researcher | Missing error handling in critical paths            |
+   Determine which research domains to include based on findings:
 
-   Agent context includes:
-   - Tech stack (from CLAUDE.md)
-   - **Aggregated analysis** from ALL affected features (ANALYSIS_START..ANALYSIS_END blocks)
-   - Stack baseline (if available)
-   - Specific questions to answer
+   | Domain         | Include when                                        |
+   | -------------- | --------------------------------------------------- |
+   | Security       | Security patterns found OR auth/crypto/input flows  |
+   | Performance    | N+1 patterns, heavy loops, or caching opportunities |
+   | Quality        | Complex abstractions or unclear patterns            |
+   | Error handling | Missing error handling in critical paths            |
+
+   Agent prompt — include only domains identified as needed:
+
+   ```
+   Research best practices for a refactoring task.
+
+   Tech stack: {from CLAUDE.md}
+   Stack baseline: {from stack-baseline.md, or "none"}
+
+   Aggregated analysis:
+   {ANALYSIS_START..ANALYSIS_END blocks from all HAS_FINDINGS features}
+
+   {If security domain needed:}
+   SECURITY:
+   - resolve-library-id + query-docs for: {relevant frameworks}
+   - Focus: input validation, auth patterns, injection prevention, OWASP
+
+   {If performance domain needed:}
+   PERFORMANCE:
+   - resolve-library-id + query-docs for: {relevant frameworks}
+   - Focus: N+1 queries, caching, eager loading, indexing, resource usage
+
+   {If quality domain needed:}
+   QUALITY:
+   - resolve-library-id + query-docs for: {relevant frameworks}
+   - Focus: design patterns, SOLID, DRY, complexity reduction
+
+   {If error-handling domain needed:}
+   ERROR HANDLING:
+   - resolve-library-id + query-docs for: {relevant frameworks}
+   - Focus: exception patterns, retry logic, graceful degradation
+
+   RETURN FORMAT:
+   RESEARCH_START
+   Security: {3-5 bullet points: vulnerabilities found, best practices, framework features}
+   Performance: {3-5 bullet points: optimization patterns, caching strategies, query fixes}
+   Quality: {3-5 bullet points: design patterns, refactoring approaches, conventions}
+   Error handling: {3-5 bullet points: exception patterns, resilience, logging}
+   RESEARCH_END
+
+   Only include sections for domains you were asked to research.
+   ```
 
    **If uncovered libraries found** → also update refactor-patterns.md:
    - Context7 query for each uncovered library
    - Append new sections to existing refactor-patterns.md
 
 **Output:**
+
+Parse the agent's `RESEARCH_START...END` block. Display:
 
 ```
 RESEARCH DECISION
@@ -416,8 +456,7 @@ RESEARCH DECISION
 Research: Skipped (existing knowledge sufficient)
 
 {if research:}
-Research: {N} agents spawned ({list})
-Reason: {why research was needed}
+Research: Explore agent ({domains researched})
 Refactor patterns updated: {yes/no}
 
 → Ready for combined plan.

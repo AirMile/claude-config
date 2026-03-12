@@ -146,6 +146,24 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
       - "Stop — werk eerst {dep} af (Recommended)" / "Toch doorgaan"
       - Stop → exit. Doorgaan → continue.
 
+   **Workspace setup** (optioneel):
+
+   Alleen tonen als we NIET al in een worktree zitten:
+   1. Check: `git rev-parse --show-toplevel` vs eerste pad uit `git worktree list --porcelain`
+      → Verschillend: al in worktree → skip
+   2. AskUserQuestion:
+      ```yaml
+      header: "Workspace"
+      question: "Wil je in een worktree werken voor deze build?"
+      options:
+        - label: "Nee, huidige directory (Recommended)"
+          description: "Werk op de huidige branch"
+        - label: "Ja, worktree aanmaken"
+          description: "Geïsoleerde workspace — ideaal bij parallel werken"
+      multiSelect: false
+      ```
+   3. Ja → `EnterWorktree(name: "{feature-name}")`
+
    **Tag backlog card als actief** (direct na feature laden):
 
    Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
