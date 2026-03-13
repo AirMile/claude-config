@@ -292,6 +292,24 @@ Same pattern: present the "Verdieping" AskUserQuestion after each round. As roun
 - Help articulate what's in the user's head
 - Save criticism or expansion for later--this phase is pure idea capture
 
+### CHECKPOINT: Idee Samenvatting
+
+Na de vraagrondes, presenteer een gestructureerd overzicht van alle verzamelde input voordat de synthese begint:
+
+| Aspect       | Waarde                                  |
+| ------------ | --------------------------------------- |
+| Onderwerp    | {idee titel/onderwerp}                  |
+| Scope        | {concept / feature / pagina / los idee} |
+| Doelgroep    | {uit ronde 1}                           |
+| Kernervaring | {uit ronde 1}                           |
+| Verdiepingen | {samenvatting van follow-up rondes}     |
+
+Vraag via AskUserQuestion: "Klopt dit overzicht voordat we samenvatten?"
+
+- "Ga door naar samenvatting (Recommended)" — door naar synthese
+- "Nog een ronde" — terug naar Step 2 voor extra vragen
+- "Aanpassen" — corrigeer specifiek punt
+
 ### Step 3: Synthesize and Confirm
 
 1. Create a concise summary based on all input

@@ -93,6 +93,26 @@ Ask sequentially, one question per response:
 
 ---
 
+## CHECKPOINT: Interview Samenvatting
+
+Presenteer alle verzamelde informatie uit Phase 1-2 als gestructureerde tabel:
+
+| Aspect        | Waarde                            |
+| ------------- | --------------------------------- |
+| Taal          | {gekozen taal}                    |
+| Projectnaam   | {naam}                            |
+| Type          | {project type}                    |
+| Stack         | {gekozen frameworks/tools}        |
+| Suggesties    | {complementaire libraries}        |
+| Web standards | {data fetching, a11y, responsive} |
+
+Vraag via AskUserQuestion: "Klopt dit overzicht? Wil je iets aanpassen?"
+
+- "Ga door met setup (Recommended)" — door naar Phase 3
+- "Aanpassen" — terug naar relevante vraag
+
+Na bevestiging: toon een ASCII flowchart van de initialisatiepaden op basis van de gekozen stack (welke configs, welke pipeline skills, welke hooks worden geconfigureerd).
+
 ## Phase 3: Generate Project
 
 1. **Fetch latest versions** via `npm view` / `pip show` / `cargo search` or equivalent for the stack's package manager.

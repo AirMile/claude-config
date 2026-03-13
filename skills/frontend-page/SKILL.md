@@ -386,6 +386,26 @@ If "Aanpassen": ask what to change, update stories, re-validate.
 
 ---
 
+## CHECKPOINT: Page Requirements Samenvatting
+
+Na requirements validatie, presenteer een compleet overzicht:
+
+| Aspect       | Waarde                                     |
+| ------------ | ------------------------------------------ |
+| Pagina       | {naam}                                     |
+| Doel         | {beschrijving}                             |
+| User stories | {N} stories                                |
+| Secties      | {lijst met NEW/EXISTING markering}         |
+| Hergebruik   | {bestaande componenten/hooks}              |
+| Theme        | {THEME.md beschikbaar / Tailwind defaults} |
+
+Vraag via AskUserQuestion: "Klopt dit overzicht voordat we doorgaan naar layout?"
+
+- "Ga door (Recommended)" — door naar ASCII layout
+- "Aanpassen" — terug naar relevante vraag
+
+---
+
 ## FASE 2: ASCII Layout
 
 ### 2.1 Generate Initial Layout

@@ -464,6 +464,10 @@ Geef je dark mode kleuren (hex values):
 - `modes` bevat alleen `light` key
 - → Ga naar Stap 6
 
+**CHECKPOINT: Design Tokens Samenvatting**
+
+Presenteer alle verzamelde tokens als overzicht voordat ze worden opgeslagen:
+
 **Stap 6: Bevestiging**
 
 ```

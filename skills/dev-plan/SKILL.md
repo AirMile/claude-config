@@ -370,7 +370,7 @@ In create mode, the Change column is omitted.
    - What other features must exist first?
    - Can this be built standalone?
 
-2. **Build dependency graph:**
+2. **Build dependency graph** — genereer een ASCII decomposition tree met feature → epics → stories structuur en dependency edges:
 
    ```
    routing (base)

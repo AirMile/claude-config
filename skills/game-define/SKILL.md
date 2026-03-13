@@ -220,6 +220,25 @@ Tuning levers worden opgeslagen in `feature.json` per requirement als `tuningLev
 **If "Aanpassen"** → ask what to change, update requirements table, re-confirm.
 **If "Opnieuw beginnen"** → restart FASE 1 from Question 1.
 
+### CHECKPOINT: Requirements Samenvatting
+
+Na de requirements tabel bevestiging, presenteer een compleet overzicht:
+
+| Aspect        | Waarde                      |
+| ------------- | --------------------------- |
+| Feature       | {naam}                      |
+| Core function | {vanuit spelersperspectief} |
+| Mechanics     | {gekozen mechanics}         |
+| Interactions  | {gekozen interacties}       |
+| Visuals       | {gekozen visuele feedback}  |
+| Data          | {gekozen data management}   |
+| Requirements  | {N} requirements            |
+
+Vraag via AskUserQuestion: "Klopt dit overzicht voordat we doorgaan naar architectuur?"
+
+- "Ga door (Recommended)" — door naar scope analysis + architectuur
+- "Aanpassen" — terug naar relevante vraag
+
 ### FASE 1b: Scope Analysis & Feature Splitting
 
 **Goal:** Analyze gathered requirements and decide whether to keep as a single feature or split into multiple sub-features for optimal build execution.
@@ -514,7 +533,7 @@ FASE 2b: N/A — non-visual feature
 
 ### FASE 3: Architecture Design
 
-Design based on requirements (and research if done):
+Design based on requirements (and research if done). Genereer een ASCII state machine van de core gameplay loop (states + transitions + triggers) naast de scene tree:
 
 **Scene Tree:**
 

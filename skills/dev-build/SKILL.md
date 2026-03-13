@@ -147,7 +147,7 @@ Assign per requirement:
 - **Implementation First**: CRUD, middleware, config, wiring
 - **Implementation Only**: pure styling/layout, visual/particle effects, static content, env config, prototype code — alleen wanneer automated tests geen waarde toevoegen. Verplichte reden: `visual-only`, `config-only`, of `prototype`
 
-Display technique map table. Proceed automatically — do NOT confirm with the user. The decision logic above is deterministic enough to auto-assign.
+Display technique map table met een ASCII flowchart van de gekozen workflow per technique (TDD: test→red→fix→green, Implementation First: impl→test→verify, Implementation Only: impl→done). Proceed automatically — do NOT confirm with the user. The decision logic above is deterministic enough to auto-assign.
 
 ### FASE 2: Execute Build
 

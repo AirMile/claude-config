@@ -108,6 +108,21 @@ multiSelect: false
 - Scope = project → schrijf naar `.project/thinking/{today}-decision-{slug}.md`
 - Scope = los → schrijf naar `.project/thinking/{today}-decision-{slug}.md`
 
+### CHECKPOINT: Decision Samenvatting
+
+Na het vaststellen van de beslissing en scope, presenteer een overzicht:
+
+| Aspect     | Waarde                                    |
+| ---------- | ----------------------------------------- |
+| Beslissing | {decision statement}                      |
+| Scope      | {project-breed / feature-specifiek / los} |
+| Context    | {relevante project/feature context}       |
+
+Vraag via AskUserQuestion: "Klopt dit voordat we de analyse starten?"
+
+- "Ga door (Recommended)" — door naar gestructureerde analyse
+- "Aanpassen" — herformuleer de beslissing
+
 ### Step 2: Structured Analysis — 4 Steps
 
 Analyze the decision through exactly 4 steps. Each step has a specific purpose. Do NOT skip steps or combine them.
@@ -175,7 +190,7 @@ Based on assumptions (step 2a), alternatives (step 2b), and the steelman (step 2
 
 ### Step 3: Present Output
 
-After completing all 4 analysis steps, present a compact summary:
+After completing all 4 analysis steps, present a visual decision flow as ASCII diagram (options → assumptions → steelman → recommendation), followed by a compact summary:
 
 ```
 THINK: [decision statement]

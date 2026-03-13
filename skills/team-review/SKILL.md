@@ -57,7 +57,7 @@ Use AskUserQuestion with 2 options:
 
 ### Step 4: Inline Review Analysis
 
-Perform 3 analysis passes on the diff. All passes use the same diff and context — no agents needed.
+Perform 3 analysis passes on the diff. All passes use the same diff and context — no agents needed. Toon een ASCII diagram van de parallelle review architectuur (3 passes → merge → filter → output).
 
 **Operational stance:** Skeptisch. Default: er zijn problemen tot het tegendeel bewezen is.
 

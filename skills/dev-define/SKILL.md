@@ -96,6 +96,23 @@ Extraheer testbare requirements als tabel:
 
 Bevestig met user via AskUserQuestion: "Akkoord (Recommended)" / "Aanpassen" / "Opnieuw beginnen"
 
+### CHECKPOINT: Requirements Samenvatting
+
+Na de requirements tabel bevestiging, presenteer een compleet overzicht van alle verzamelde input:
+
+| Aspect          | Waarde                       |
+| --------------- | ---------------------------- |
+| Feature         | {naam}                       |
+| Core function   | {samenvatting user antwoord} |
+| Data/state      | {samenvatting}               |
+| Output/contract | {samenvatting}               |
+| Requirements    | {N} requirements             |
+
+Vraag via AskUserQuestion: "Klopt dit overzicht voordat we doorgaan naar architectuur?"
+
+- "Ga door (Recommended)" — door naar scope analysis + architectuur
+- "Aanpassen" — terug naar relevante vraag
+
 ### FASE 1b: Scope Analysis & Feature Splitting
 
 **≤6 requirements**: toon totaal + "SINGLE — ga door". Skip cluster-analyse.
@@ -133,7 +150,7 @@ Ontwerp in drie stappen:
 
 2. **Bestaande code**: Glob + Read de meest relevante bestanden met vergelijkbare patterns. Dit informeert het ontwerp.
 
-3. **Design**: ontwerp op basis van requirements, baseline en bestaande code:
+3. **Design**: ontwerp op basis van requirements, baseline en bestaande code. Genereer een ASCII diagram van de gekozen architectuur (component layers, data flow, of module relaties — afhankelijk van project type):
    - **File structuur**: create/modify tabel
    - **Interfaces/Types**: als relevant
    - **Design sketch**: alleen voor visuele features — ASCII wireframe (web/UI) of scene composition (3D/game). Overweeg: responsive breakpoints, loading state, empty state, error state.

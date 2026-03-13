@@ -120,7 +120,7 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
 
 8. **Cross-requirement integratie** (alleen bij `postBuildMode`) — Analyseer `requirements[]`, identificeer combinaties waar output van één requirement input is voor een andere. Max 3 scenario's, voeg toe als checklist items met `"integration": true`. Geen logische combinaties → skip.
 
-9. **Classify test items:**
+9. **Classify test items** — toon na classificatie een ASCII flowchart van de test executie flow (COVERED → skip, AUTO → agent, MANUAL → walkthrough, met fix-loop bij FAILs):
 
    **Bij `postBuildMode`:**
 

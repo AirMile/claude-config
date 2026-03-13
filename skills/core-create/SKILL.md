@@ -118,6 +118,8 @@ Use **AskUserQuestion** tool:
 - Define the PROCESS — not how to think
 - Keep it lean: let Claude use its own knowledge for domain details
 - Include AskUserQuestion where user decisions are genuinely needed
+- **ASCII diagram**: if the skill has a complex flow, architecture, or decomposition phase — add an instruction to generate an ASCII diagram at that point (what to diagram + when, not a hardcoded diagram). See `shared/SKILL-PATTERNS.md`
+- **Interview checkpoint**: if the skill gathers 3+ inputs before execution — add a CHECKPOINT between gathering and execution phases. Format: summary table of all collected input + AskUserQuestion confirmation before proceeding. See `shared/SKILL-PATTERNS.md`
 
 **Enter plan mode** before writing the draft:
 

@@ -89,6 +89,13 @@ Confirm with a short "Klopt dit?" in plain text before proceeding. Only use AskU
 - Skill content, instructions, examples: English
 - AskUserQuestion labels/descriptions: Follow user's language preference from CLAUDE.md
 
+**When reviewing the skill, also consider suggesting these patterns if missing:**
+
+- **ASCII diagram**: if the skill has a complex flow, architecture, or decomposition phase — suggest adding an instruction to generate an ASCII diagram at that point. See `shared/SKILL-PATTERNS.md`
+- **Interview checkpoint**: if the skill gathers 3+ inputs before execution — suggest adding a CHECKPOINT between gathering and execution phases (summary table + confirmation). See `shared/SKILL-PATTERNS.md`
+
+Only suggest these if they add genuine value — not every skill needs them.
+
 **Enter plan mode** before showing the preview:
 
 1. Use the **EnterPlanMode** tool to switch to plan mode
