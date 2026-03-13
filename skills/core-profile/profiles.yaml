@@ -48,6 +48,8 @@ game:
   - game-test
 
 project:
+  - project-backlog-serve
+  - project-claim
   - project-list
   - project-add
   - project-remove
