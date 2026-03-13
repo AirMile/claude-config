@@ -240,7 +240,7 @@ Schrijf parallel terug:
 - Write `project.json` (stack, features, endpoints, data)
 - Write `project-context.json` (context, architecture — maak aan als niet bestaat)
 
-### FASE 3C: Begripscheck
+### FASE 3C: Wat hebben we gebouwd?
 
 **STOP — ga NIET door naar de commit zonder deze fase volledig af te ronden.**
 
@@ -248,7 +248,7 @@ Display een visuele separator:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BEGRIPSCHECK
+WAT HEBBEN WE GEBOUWD?
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -256,10 +256,9 @@ BEGRIPSCHECK
 
 De gebruiker moet begrijpen hoe de feature werkt voor goede beslissingen in test- en refactor-fases. Display de volgende uitleg alsof je het aan een student uitlegt:
 
-- **Wat doet het?**: 1-2 zinnen, geen jargon
-- **Hoe ziet het eruit?**: 1-2 ASCII diagrammen (max 15 regels). Box-drawing chars (┌─┐│└─┘) en pijlen (→ ← ↓ ↑).
-- **Hoe werkt het onder de motorkap?**: data flow stap voor stap, concrete voorbeelden
-- **Waar moet je op letten?**: alleen niet-voor-de-hand-liggende keuzes — _waarom_, niet _wat_
+- **Wat doet het?**: 1-2 zinnen zoals je het aan een vriend zou uitleggen. Beschrijf wat de gebruiker ziet en kan doen — geen technische termen.
+- **Voorbeeld**: 1 concreet scenario in 2-3 zinnen. UI feature: "Stel je voor: je klikt op X, vult Y in, ziet Z." Backend/API feature: "Er komt een verzoek binnen met X, het systeem doet Y, en stuurt Z terug."
+- **Hoe werkt het?**: 1 ASCII diagram dat het hele verhaal vertelt. Gebruik blokjes en pijlen met korte labels. De gebruiker moet het diagram kunnen lezen zonder uitleg ernaast. Voorbeeld: `[Gebruiker klikt "Opslaan"] → [Formulier checkt invoer] → [Server slaat op] → [✓ Bevestiging]`
 
 **Stap 2 — Begripscheck (verplicht, niet overslaan)**
 
