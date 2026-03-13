@@ -18,6 +18,7 @@ const JS_FILES = [
   "backlog-sort.js",
   "backlog-drag.js",
   "backlog-role-guard.js",
+  "backlog-github.js",
 ];
 
 // Read at startup, cache in memory

@@ -884,6 +884,260 @@ http
         return;
       }
 
+      // GitHub config check — admin only
+      if (
+        req.method === "GET" &&
+        parts[1] === "github" &&
+        parts[2] === "config-check" &&
+        parts.length === 3
+      ) {
+        if (session.role !== "admin") {
+          res.writeHead(403, { "Content-Type": "application/json" });
+          res.end('{"error":"Geen toegang"}');
+          return;
+        }
+        var ghConfigPath = path.join(
+          projectPath,
+          ".project",
+          "github-project.json",
+        );
+        var configured = false;
+        if (fs.existsSync(ghConfigPath)) {
+          try {
+            var cfg = JSON.parse(fs.readFileSync(ghConfigPath, "utf8"));
+            configured = !!(
+              cfg.owner &&
+              cfg.repo &&
+              cfg.project_number &&
+              cfg.username
+            );
+          } catch {}
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ configured: configured }));
+        return;
+      }
+
+      // Push backlog item to GitHub as Done — admin only
+      if (
+        req.method === "POST" &&
+        parts[1] === "github" &&
+        parts[2] === "push-done"
+      ) {
+        if (session.role !== "admin") {
+          res.writeHead(403, { "Content-Type": "application/json" });
+          res.end('{"error":"Geen toegang"}');
+          return;
+        }
+        var ghBody = "";
+        req.on("data", function (chunk) {
+          ghBody += chunk;
+        });
+        req.on("end", async function () {
+          try {
+            var payload = JSON.parse(ghBody);
+            var itemName = payload.name;
+            if (!itemName) {
+              res.writeHead(400, { "Content-Type": "application/json" });
+              res.end('{"error":"name is verplicht"}');
+              return;
+            }
+
+            // Read github-project config
+            var ghConfigPath = path.join(
+              projectPath,
+              ".project",
+              "github-project.json",
+            );
+            if (!fs.existsSync(ghConfigPath)) {
+              res.writeHead(400, { "Content-Type": "application/json" });
+              res.end('{"error":"Geen .project/github-project.json gevonden"}');
+              return;
+            }
+            var ghConfig = JSON.parse(fs.readFileSync(ghConfigPath, "utf8"));
+            if (
+              !ghConfig.owner ||
+              !ghConfig.repo ||
+              !ghConfig.project_number ||
+              !ghConfig.username
+            ) {
+              res.writeHead(400, { "Content-Type": "application/json" });
+              res.end(
+                '{"error":"github-project.json mist owner, repo, project_number of username"}',
+              );
+              return;
+            }
+
+            // Read backlog data
+            var backlogFile = path.join(projectPath, BACKLOG_PATH);
+            var html = fs.readFileSync(backlogFile, "utf8");
+            var jsonMatch = html.match(
+              /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
+            );
+            if (!jsonMatch) {
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end('{"error":"Backlog JSON niet gevonden"}');
+              return;
+            }
+            var backlogData = JSON.parse(jsonMatch[1]);
+            var item = backlogData.features.find(function (f) {
+              return f.name === itemName;
+            });
+            if (!item) {
+              res.writeHead(404, { "Content-Type": "application/json" });
+              res.end('{"error":"Item niet gevonden in backlog"}');
+              return;
+            }
+
+            // Async exec helper
+            function ghExec(cmd) {
+              return new Promise(function (resolve, reject) {
+                require("child_process").exec(
+                  cmd,
+                  { encoding: "utf8", timeout: 30000 },
+                  function (err, stdout) {
+                    if (err) reject(err);
+                    else resolve(stdout.trim());
+                  },
+                );
+              });
+            }
+
+            var ownerRepo = ghConfig.owner + "/" + ghConfig.repo;
+            var issueUrl = item.github_issue || null;
+            var issueNumber = null;
+            var ghItemId = item.github_item_id || null;
+
+            // Step 1: Create issue if it doesn't exist on GitHub
+            if (!issueUrl) {
+              // Title: readable name (kebab-case → Title Case)
+              var title = item.name
+                .replace(/-/g, " ")
+                .replace(/\b\w/g, function (c) {
+                  return c.toUpperCase();
+                });
+              var body = item.description || "";
+              var createOut = await ghExec(
+                "gh issue create -R " +
+                  ownerRepo +
+                  " --title " +
+                  JSON.stringify(title) +
+                  " --body " +
+                  JSON.stringify(body) +
+                  " --assignee " +
+                  ghConfig.username,
+              );
+              // gh issue create returns the issue URL
+              issueUrl = createOut;
+              var numMatch = issueUrl.match(/\/(\d+)$/);
+              issueNumber = numMatch ? numMatch[1] : null;
+            } else {
+              // Extract issue number from existing URL
+              var urlMatch = issueUrl.match(/\/issues\/(\d+)$/);
+              issueNumber = urlMatch ? urlMatch[1] : null;
+            }
+
+            // Step 2: Get project ID and field IDs via GraphQL
+            var projectQuery = await ghExec(
+              "gh api graphql -f query='{ user(login: \"" +
+                ghConfig.owner +
+                '") { projectV2(number: ' +
+                ghConfig.project_number +
+                ") { id fields(first: 20) { nodes { ... on ProjectV2SingleSelectField { name id options { name id } } } } } } }'",
+            );
+            var projectData = JSON.parse(projectQuery);
+            var proj = projectData.data.user.projectV2;
+            var projectId = proj.id;
+            var statusField = proj.fields.nodes.find(function (f) {
+              return f.name === "Status";
+            });
+            var statusFieldId = statusField.id;
+            var doneOptionId = statusField.options.find(function (o) {
+              return o.name === "Done";
+            }).id;
+
+            // Step 3: Add issue to project if not already there
+            if (!ghItemId) {
+              // Get issue node ID
+              var repoMatch = issueUrl.match(
+                /github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/,
+              );
+              var repoOwner = repoMatch ? repoMatch[1] : ghConfig.owner;
+              var repoName = repoMatch ? repoMatch[2] : ghConfig.repo;
+              var repoIssueNum = repoMatch ? repoMatch[3] : issueNumber;
+              var issueIdQuery = await ghExec(
+                "gh api graphql -f query='{ repository(owner: \"" +
+                  repoOwner +
+                  '", name: "' +
+                  repoName +
+                  '") { issue(number: ' +
+                  repoIssueNum +
+                  ") { id } } }'",
+              );
+              var issueNodeId =
+                JSON.parse(issueIdQuery).data.repository.issue.id;
+
+              var addResult = await ghExec(
+                "gh api graphql -f query='mutation { addProjectV2ItemById(input: { projectId: \"" +
+                  projectId +
+                  '" contentId: "' +
+                  issueNodeId +
+                  "\" }) { item { id } } }'",
+              );
+              ghItemId =
+                JSON.parse(addResult).data.addProjectV2ItemById.item.id;
+            }
+
+            // Step 4: Set status to Done
+            await ghExec(
+              "gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: { projectId: \"" +
+                projectId +
+                '" itemId: "' +
+                ghItemId +
+                '" fieldId: "' +
+                statusFieldId +
+                '" value: { singleSelectOptionId: "' +
+                doneOptionId +
+                "\" } }) { projectV2Item { id } } }'",
+            );
+
+            // Step 5: Close the issue
+            if (issueNumber) {
+              await ghExec(
+                "gh issue close " + issueNumber + " -R " + ownerRepo,
+              );
+            }
+
+            // Step 6: Update backlog with github_issue and github_item_id
+            item.github_issue = issueUrl;
+            item.github_item_id = ghItemId;
+            var startTag = '<script id="backlog-data" type="application/json">';
+            var sIdx = html.indexOf(startTag) + startTag.length;
+            var eIdx = html.indexOf("</script>", sIdx);
+            var updated =
+              html.substring(0, sIdx) +
+              "\n" +
+              JSON.stringify(backlogData, null, 2) +
+              "\n" +
+              html.substring(eIdx);
+            fs.writeFileSync(backlogFile, updated, "utf8");
+
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                ok: true,
+                issue_url: issueUrl,
+                issue_number: parseInt(issueNumber),
+              }),
+            );
+          } catch (e) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: e.message }));
+          }
+        });
+        return;
+      }
+
       // Open file in VS Code — admin only
       if (req.method === "POST" && parts[1] === "open" && parts.length >= 3) {
         if (session.role !== "admin") {
