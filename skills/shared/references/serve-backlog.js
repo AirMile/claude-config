@@ -54,6 +54,20 @@ const {
 } = require("./lib/auth");
 const { loginPage } = require("./lib/login");
 
+// Async exec helper for GitHub CLI commands
+function ghExec(cmd) {
+  return new Promise(function (resolve, reject) {
+    require("child_process").exec(
+      cmd,
+      { encoding: "utf8", timeout: 30000 },
+      function (err, stdout) {
+        if (err) reject(err);
+        else resolve(stdout.trim());
+      },
+    );
+  });
+}
+
 // Remembered tunnel URL (auto-detected from incoming non-localhost requests)
 var tunnelUrl = null;
 
@@ -989,20 +1003,6 @@ http
               return;
             }
 
-            // Async exec helper
-            function ghExec(cmd) {
-              return new Promise(function (resolve, reject) {
-                require("child_process").exec(
-                  cmd,
-                  { encoding: "utf8", timeout: 30000 },
-                  function (err, stdout) {
-                    if (err) reject(err);
-                    else resolve(stdout.trim());
-                  },
-                );
-              });
-            }
-
             var ownerRepo = ghConfig.owner + "/" + ghConfig.repo;
             var issueUrl = item.github_issue || null;
             var issueNumber = null;
@@ -1127,7 +1127,7 @@ http
               JSON.stringify({
                 ok: true,
                 issue_url: issueUrl,
-                issue_number: parseInt(issueNumber),
+                issue_number: issueNumber ? parseInt(issueNumber) : null,
               }),
             );
           } catch (e) {

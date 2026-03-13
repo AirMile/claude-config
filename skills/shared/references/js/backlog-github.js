@@ -60,6 +60,43 @@
     }
   }
 
+  // Collect unpushed DONE feature names from backlog data embedded in page
+  function getUnpushedNames() {
+    var names = [];
+    try {
+      var el = document.getElementById("backlog-data");
+      if (!el) return names;
+      var data = JSON.parse(el.textContent);
+      if (!data.features) return names;
+      data.features.forEach(function (f) {
+        if (f.status === "DONE" && !(f.github_issue && f.github_item_id)) {
+          names.push(f.name);
+        }
+      });
+    } catch (e) {}
+    return names;
+  }
+
+  // Push a single item by name, returns promise with result
+  function pushOne(name) {
+    var projectDir = getProjectDir();
+    return fetch("/" + projectDir + "/github/push-done", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name }),
+    })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        if (data.ok) return { name: name, ok: true, issue_url: data.issue_url };
+        return { name: name, ok: false, error: data.error || "onbekend" };
+      })
+      .catch(function (err) {
+        return { name: name, ok: false, error: err.message };
+      });
+  }
+
   // Add bulk push button to DONE column header
   function addBulkButton() {
     if (document.querySelector(".gh-bulk-btn")) return;
@@ -76,14 +113,8 @@
     });
     if (!doneCol) return;
 
-    // Check if there are unpushed DONE items
-    var cards = doneCol.querySelectorAll(".card");
-    var hasUnpushed = false;
-    cards.forEach(function (c) {
-      var btn = c.querySelector("button.card-gh-done");
-      if (btn && !btn.disabled) hasUnpushed = true;
-    });
-    if (!hasUnpushed) return;
+    var unpushed = getUnpushedNames();
+    if (unpushed.length === 0) return;
 
     var header = doneCol.querySelector(".column-header");
     if (!header) return;
@@ -94,17 +125,15 @@
     bulkBtn.title = "Push alle DONE items naar GitHub";
     bulkBtn.addEventListener("click", function (e) {
       e.stopPropagation();
-      doBulkPush(bulkBtn, doneCol);
+      doBulkPush(bulkBtn);
     });
     header.appendChild(bulkBtn);
   }
 
-  // Bulk push: iterate over unpushed DONE items sequentially
-  function doBulkPush(bulkBtn, doneCol) {
-    var buttons = doneCol.querySelectorAll(
-      "button.card-gh-done:not([disabled])",
-    );
-    var total = buttons.length;
+  // Bulk push: sequential fetch calls with progress feedback
+  function doBulkPush(bulkBtn) {
+    var names = getUnpushedNames();
+    var total = names.length;
     if (total === 0) return;
 
     bulkBtn.disabled = true;
@@ -117,44 +146,35 @@
     }
 
     function pushNext(idx) {
-      if (idx >= buttons.length) {
-        // Done
+      if (idx >= names.length) {
         bulkBtn.innerHTML = checkSvg + " " + done + "/" + total;
         if (errors > 0) {
           bulkBtn.innerHTML += " (" + errors + " fouten)";
         }
+        // Re-render to update all cards with new github links/icons
+        if (typeof render === "function") render();
         setTimeout(function () {
           bulkBtn.disabled = false;
           bulkBtn.innerHTML = origHtml;
-          // Remove bulk button if no unpushed items left
-          var remaining = doneCol.querySelectorAll(
-            "button.card-gh-done:not([disabled])",
-          );
-          if (remaining.length === 0) bulkBtn.remove();
+          if (errors === 0) bulkBtn.remove();
         }, 3000);
         return;
       }
 
       updateProgress();
-      // Simulate click on the individual card button
-      buttons[idx].click();
-
-      // Wait for the button to become disabled (push complete) or revert (error)
-      var checkInterval = setInterval(function () {
-        // Success: button shows check and is disabled
-        if (buttons[idx].disabled && !buttons[idx].querySelector(".gh-spin")) {
-          clearInterval(checkInterval);
+      pushOne(names[idx]).then(function (result) {
+        if (result.ok) {
           done++;
-          updateProgress();
-          pushNext(idx + 1);
-        }
-        // Error: button re-enabled with ghSvg
-        if (!buttons[idx].disabled && !buttons[idx].querySelector(".gh-spin")) {
-          clearInterval(checkInterval);
+          if (typeof toast === "function")
+            toast(result.name + " → GitHub Done ✓");
+        } else {
           errors++;
-          pushNext(idx + 1);
+          if (typeof toast === "function")
+            toast("Fout " + result.name + ": " + result.error);
         }
-      }, 200);
+        updateProgress();
+        pushNext(idx + 1);
+      });
     }
 
     pushNext(0);
