@@ -1,6 +1,6 @@
 ---
 name: fix-thorough
-description: Creates fix plans with "Complete fix" philosophy. Addresses root cause fully, includes tests, and cleans up related issues. Works in parallel with fix-minimal and fix-defensive agents for user choice.
+description: Complete root-cause fix strategy
 model: sonnet
 ---
 

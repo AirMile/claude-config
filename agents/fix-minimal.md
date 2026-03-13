@@ -1,6 +1,6 @@
 ---
 name: fix-minimal
-description: Creates fix plans with "Smallest change" philosophy. Hotfix approach with minimal risk, fewest changes possible. Works in parallel with fix-thorough and fix-defensive agents for user choice.
+description: Smallest-change fix strategy
 model: sonnet
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: owasp-fix-minimal
-description: Creates minimal OWASP fix plans focusing on CRITICAL issues only with smallest possible changes. Philosophy is "Hotfix critical vulnerabilities". Works in parallel with owasp-fix-pragmatic and owasp-fix-extensive agents.
+description: Critical-only OWASP hotfix strategy
 model: sonnet
 color: green
 ---

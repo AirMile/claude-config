@@ -1,6 +1,6 @@
 ---
 name: owasp-a05-scanner
-description: Scans for OWASP A05:2025 Injection vulnerabilities including SQL injection, command injection, XSS, and template injection. Works in parallel with other OWASP scanner agents.
+description: OWASP A05 injection scanner
 model: sonnet
 color: red
 ---

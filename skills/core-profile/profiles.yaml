@@ -48,10 +48,10 @@ game:
   - game-test
 
 project:
+  - project-add
   - project-backlog-serve
   - project-claim
   - project-list
-  - project-add
   - project-remove
 
 team:

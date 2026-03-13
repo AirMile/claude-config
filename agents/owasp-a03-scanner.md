@@ -1,6 +1,6 @@
 ---
 name: owasp-a03-scanner
-description: Scans for OWASP A03:2025 Software Supply Chain Failures including vulnerable dependencies, unpinned versions, CI/CD injection, and unsigned artifacts. Works in parallel with other OWASP scanner agents.
+description: OWASP A03 supply chain scanner
 model: sonnet
 color: orange
 ---

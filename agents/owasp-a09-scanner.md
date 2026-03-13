@@ -1,6 +1,6 @@
 ---
 name: owasp-a09-scanner
-description: Scans for OWASP A09:2025 Security Logging and Monitoring Failures including missing audit logs, sensitive data in logs, and insufficient alerting. Works in parallel with other OWASP scanner agents.
+description: OWASP A09 logging/monitoring scanner
 model: sonnet
 color: yellow
 ---

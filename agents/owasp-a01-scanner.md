@@ -1,6 +1,6 @@
 ---
 name: owasp-a01-scanner
-description: Scans for OWASP A01:2025 Broken Access Control vulnerabilities including authorization bypass, IDOR, path traversal, and SSRF. Works in parallel with other OWASP scanner agents.
+description: OWASP A01 access control scanner
 model: sonnet
 color: red
 ---

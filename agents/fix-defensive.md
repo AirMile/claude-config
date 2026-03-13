@@ -1,6 +1,6 @@
 ---
 name: fix-defensive
-description: Creates fix plans with "Prevent recurrence" philosophy. Adds safeguards, validation, and defensive programming to prevent similar issues. Works in parallel with fix-minimal and fix-thorough agents for user choice.
+description: Prevent-recurrence fix strategy
 model: sonnet
 ---
 

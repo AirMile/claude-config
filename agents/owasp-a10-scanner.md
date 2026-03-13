@@ -1,6 +1,6 @@
 ---
 name: owasp-a10-scanner
-description: Scans for OWASP A10:2025 Mishandling Exceptional Conditions including unhandled exceptions, verbose errors, resource exhaustion, and denial of service vulnerabilities. Works in parallel with other OWASP scanner agents.
+description: OWASP A10 exception handling scanner
 model: sonnet
 color: yellow
 ---

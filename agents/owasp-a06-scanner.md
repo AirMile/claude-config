@@ -1,6 +1,6 @@
 ---
 name: owasp-a06-scanner
-description: Scans for OWASP A06:2025 Insecure Design vulnerabilities including missing rate limiting, business logic flaws, and inadequate threat modeling. Works in parallel with other OWASP scanner agents.
+description: OWASP A06 insecure design scanner
 model: sonnet
 color: yellow
 ---

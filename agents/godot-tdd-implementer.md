@@ -1,6 +1,6 @@
 ---
 name: godot-tdd-implementer
-description: Implements a single requirement using TDD cycle (RED-GREEN-REFACTOR). Runs in own context to prevent main session context bloat. Used by /game-build for each requirement.
+description: TDD cycle implementer per requirement
 model: sonnet
 color: blue
 ---

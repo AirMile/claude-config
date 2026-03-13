@@ -1,6 +1,6 @@
 ---
 name: godot-scene-researcher
-description: Specialized research agent for Godot 4.x scene architecture. Researches scene tree composition, node type selection, scene inheritance vs composition. Used by /game-define for high-level architecture design.
+description: Godot 4.x scene architecture researcher
 model: haiku
 color: cyan
 ---

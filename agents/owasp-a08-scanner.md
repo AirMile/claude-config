@@ -1,6 +1,6 @@
 ---
 name: owasp-a08-scanner
-description: Scans for OWASP A08:2025 Software and Data Integrity Failures including insecure deserialization, unsigned updates, and CI/CD integrity issues. Works in parallel with other OWASP scanner agents.
+description: OWASP A08 data integrity scanner
 model: sonnet
 color: orange
 ---

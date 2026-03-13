@@ -1,6 +1,6 @@
 ---
 name: owasp-a07-scanner
-description: Scans for OWASP A07:2025 Authentication Failures including weak passwords, session issues, missing MFA, and credential exposure. Works in parallel with other OWASP scanner agents.
+description: OWASP A07 authentication failures scanner
 model: sonnet
 color: orange
 ---

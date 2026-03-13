@@ -1,6 +1,6 @@
 ---
 name: owasp-a04-scanner
-description: Scans for OWASP A04:2025 Cryptographic Failures including hardcoded secrets, weak hashing, insecure encryption, and key management issues. Works in parallel with other OWASP scanner agents.
+description: OWASP A04 cryptographic failures scanner
 model: sonnet
 color: red
 ---

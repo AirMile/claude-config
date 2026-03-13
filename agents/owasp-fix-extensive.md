@@ -1,6 +1,6 @@
 ---
 name: owasp-fix-extensive
-description: Creates comprehensive OWASP fix plans addressing all findings across all severity levels. Philosophy is "Full security remediation". Works in parallel with owasp-fix-minimal and owasp-fix-pragmatic agents.
+description: Full OWASP remediation strategy
 model: sonnet
 color: red
 ---

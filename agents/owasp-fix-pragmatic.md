@@ -1,6 +1,6 @@
 ---
 name: owasp-fix-pragmatic
-description: Creates pragmatic OWASP fix plans balancing security impact with implementation effort. Fixes CRITICAL and HIGH severity issues. Works in parallel with owasp-fix-minimal and owasp-fix-extensive agents.
+description: Pragmatic OWASP fix strategy
 model: sonnet
 color: yellow
 ---

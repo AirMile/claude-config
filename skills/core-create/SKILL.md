@@ -56,6 +56,10 @@ The colon notation does NOT match skill directory names and breaks slash command
 - `$ARGUMENTS` / `$ARGUMENTS[N]` / `$N` — argument injection
 - `` !`command` `` — dynamic context injection (shell commands run before content is sent)
 
+### Agent Definitions
+
+When creating an agent (`agents/*.md`), keep the `description` field short (max ~5 words). Agents are invoked by skills that provide full context — verbose descriptions waste tokens in every conversation.
+
 ### Supporting Files
 
 Skills can include files alongside SKILL.md (scripts/, references/, templates/). Reference them from SKILL.md.

@@ -259,6 +259,10 @@ argument-hint: [hint]
 
 If a skill being edited is missing `name` or has a weak `description`, suggest improvements as part of the edit.
 
+## Agent Definitions
+
+When editing an agent (`agents/*.md`), keep the `description` field short (max ~5 words). Agents are invoked by skills that provide full context — verbose descriptions waste tokens in every conversation.
+
 ## Special Cases
 
 ### Delete

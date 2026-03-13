@@ -1,6 +1,6 @@
 ---
 name: godot-test-researcher
-description: Specialized research agent for GUT (Godot Unit Test) patterns. Researches test structure, assertions, signal testing, mocking, and integration tests. Used just-in-time during /game-build test generation phase.
+description: GUT test pattern researcher
 model: haiku
 color: yellow
 ---

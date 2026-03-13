@@ -1,6 +1,6 @@
 ---
 name: owasp-a02-scanner
-description: Scans for OWASP A02:2025 Security Misconfiguration vulnerabilities including debug mode, default credentials, missing headers, and verbose errors. Works in parallel with other OWASP scanner agents.
+description: OWASP A02 security misconfiguration scanner
 model: sonnet
 color: orange
 ---

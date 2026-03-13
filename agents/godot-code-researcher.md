@@ -1,6 +1,6 @@
 ---
 name: godot-code-researcher
-description: Specialized research agent for Godot 4.x GDScript patterns. Researches signals, state machines, typed GDScript, custom Resources, and export variables. Used just-in-time during /game-build implementation phase.
+description: Godot 4.x GDScript pattern researcher
 model: haiku
 color: green
 ---
