@@ -98,7 +98,7 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
    **c) "recent"**: find most recently modified `feature.json` with `tests` sectie, queue = `[that feature]`
 
    **Codebase mode** ("Hele codebase"):
-   - Pipeline files = alle source bestanden uit project (detecteer `src/` of equivalent uit `project.json` `context.structure` of CLAUDE.md)
+   - Pipeline files = alle source bestanden uit project (detecteer `src/` of equivalent uit `project-context.json` `context.structure`, of CLAUDE.md)
    - Exclude: `node_modules/`, `.project/`, test files, config files
    - Geen feature.json schrijven — resultaat opslaan in `.project/session/codebase-refactor.json`
    - Commit message: `refactor(codebase): {summary}`
@@ -118,7 +118,7 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
 
 4b. **Load project conventions** (optioneel):
 
-Lees `.project/project.json` (als bestaat). Extract `context.patterns`.
+Lees `.project/project-context.json` (als bestaat). Extract `context.patterns`.
 
 Als beschikbaar: voeg toe aan Explore agent prompt in FASE 1 onder
 `PROJECT CONVENTIONS:` sectie. Helpt agents onderscheid maken tussen
@@ -254,7 +254,7 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
       - Benoemde constanten zelfs als ze maar 1x gebruikt worden (als ze readability verbeteren)
       - Voorkeur voor explicit boven compact — meer regels is OK als het duidelijker is
 
-   2. PROJECT CONVENTIONS (uit project.json):
+   2. PROJECT CONVENTIONS (uit project-context.json):
 
       {context.patterns of "niet beschikbaar — gebruik CLAUDE.md als fallback"}
 
@@ -666,8 +666,9 @@ IMPROVEMENTS APPLIED
    Lees parallel (skip als niet bestaat):
    - `.project/backlog.html`
    - `.project/project.json`
+   - `.project/project-context.json`
 
-   Muteer beide in memory:
+   Muteer in memory:
 
    **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet `data.updated` naar huidige datum.
 
@@ -677,12 +678,12 @@ IMPROVEMENTS APPLIED
    - Als data entities gewijzigd: merge naar `data.entities`
    - `features` array: status blijft `"DONE"` (ongewijzigd voor alle varianten)
 
-   **Context sync (conditioneel)** — alleen als REFACTORED features structurele wijzigingen bevatten:
+   **Context sync (conditioneel, schrijf naar `project-context.json`)** — alleen als REFACTORED features structurele wijzigingen bevatten:
 
    Trigger als ANY: bestanden hernoemd/verplaatst, nieuwe bestanden via extractie, patterns fundamenteel gewijzigd.
    Skip als: alleen interne code quality, performance zonder structurele impact.
 
-   Wanneer getriggerd (in dezelfde project.json mutatie):
+   Wanneer getriggerd (in project-context.json):
    - `context.structure` → overwrite full tree met gewijzigde file paths
    - Extracted components/hooks → add to structure tree
    - `context.patterns` → merge gewijzigde patterns
@@ -691,9 +692,29 @@ IMPROVEMENTS APPLIED
    - Quality: only project-specific, non-obvious, one line per item
    - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
 
+   **Learning Extraction** — extracteer projectbrede learnings:
+
+   Lees de zojuist geschreven `feature.json` refactor sectie en evalueer:
+   - `refactor.decisions[]` met rationale → type `convention` (patronen die project-breed gelden)
+   - `refactor.positiveObservations[]` → type `observation` (indien cross-feature relevant)
+
+   **Append** naar `project-context.json` → `learnings[]`:
+
+   ```json
+   {
+     "date": "YYYY-MM-DD",
+     "feature": "{feature-name}",
+     "type": "convention|observation",
+     "summary": "Max 200 chars"
+   }
+   ```
+
+   Check duplicaten (feature + summary). Geen relevante learnings → skip.
+
    Schrijf parallel terug:
    - Edit `backlog.html` (keep `<script>` tags intact)
-   - Write `project.json`
+   - Write `project.json` (stack, features, endpoints, data)
+   - Write `project-context.json` (context, architecture, learnings — maak aan als niet bestaat)
 
 3. **Scoped auto-commit** (only this skill's changes):
 

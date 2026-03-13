@@ -47,11 +47,13 @@ De card verhuist naar de DOING kolom met stage `defining`.
    - Glob + Grep voor bestaande code die de feature-naam importeert
    - Read `.project/project.json` → extract:
      - `stack` — framework, language, packages (fallback als stack-baseline.md niet bestaat)
-     - `concept.pitch` als feature context (korte samenvatting). Fallback: als pitch leeg, gebruik eerste 2 zinnen van `concept.content`
+     - `concept.pitch` als feature context (korte samenvatting). Fallback: als pitch leeg, lees `.project/project-concept.md` → eerste 2 zinnen
      - `features[]` — bestaande features (voorkomt duplicaten/overlap)
      - `endpoints` — bestaande API surface
      - `data.entities` — bestaand data model
+   - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
+     - `learnings[]` — eerder geleerde patronen en pitfalls. Gebruik als input bij architectuur-keuzes en requirement-formulering.
    - Read `.claude/research/stack-baseline.md` (conventie/patterns detail — als niet beschikbaar, gebruik `project.json.stack` als basis)
 
 ### FASE 1: Requirements Gathering
@@ -252,8 +254,9 @@ Lees parallel **direct voor het editen** (skip als niet bestaat) — vertrouw NI
 
 - `.project/backlog.html`
 - `.project/project.json`
+- `.project/project-context.json`
 
-Muteer beide in memory:
+Muteer in memory:
 
 **Backlog** (zie `shared/BACKLOG.md`):
 
@@ -268,7 +271,7 @@ Muteer beide in memory:
   - **Endpoints**: check op method+path → nieuw: push met `status: "planned"` → bestaand: skip
   - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
   - **Features**: check op naam → nieuw: push `{ name, status: "DOING", stage: "defined", summary, created }` → bestaand: update status
-  - **Architecture**: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg diagram conventies uit `shared/DASHBOARD.md`**:
+  - **Architecture** in `.project/project-context.json`: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg diagram conventies uit `shared/DASHBOARD.md`**:
     - `diagram`: Mermaid `graph TD` met classDef (done/planned/external), subgraphs per domein, functionele node labels met file reference (`Naam<br/>file.js`). Alle features DOING → `:::planned`, bestaande gebouwde → `:::done`
     - `description`: start met `## Data Flow` (2-4 regels pipeline), daarna functionele beschrijvingen gegroepeerd per laag (match subgraphs). Bullet-formaat, geen filenamen. Volg conventie uit `shared/DASHBOARD.md`.
     - `files`: mapping van gebouwde componenten → `{ component, src: [...], test: [...] }`
@@ -278,7 +281,8 @@ Muteer beide in memory:
 Schrijf parallel terug:
 
 - Edit `backlog.html` (keep `<script>` tags intact)
-- Edit `project.json` (gebruik Edit voor gerichte wijzigingen, niet Write)
+- Edit `project.json` (features, endpoints, data, stack — gebruik Edit voor gerichte wijzigingen, niet Write)
+- Edit `project-context.json` (als architecture gewijzigd)
 
 Clean up: `rm -f .project/session/active-{feature-name}.json`
 

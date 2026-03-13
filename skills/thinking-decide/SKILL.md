@@ -70,7 +70,7 @@ NOT for: trivial choices, code formatting, simple bug fixes.
 
 Na de beslissing vastgesteld, check voor project-context:
 
-1. Check of `.project/project.json` bestaat met concept
+1. Check of `.project/project-concept.md` bestaat (primary) of `.project/project.json` een non-empty `concept.content` heeft (legacy fallback)
 2. Check of `.project/backlog.html` bestaat
 3. Check of `.project/features/` mappen bevat
 
@@ -95,7 +95,7 @@ multiSelect: false
 
 **If "Project-breed":**
 
-- Laad `concept.content` als achtergrond
+- Laad concept uit `.project/project-concept.md` als achtergrond
 - Beslissing gaat over het hele project
 
 **If "Losse beslissing":**

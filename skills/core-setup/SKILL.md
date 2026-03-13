@@ -198,7 +198,7 @@ Generate CLAUDE.md following the **canonical structure** from `references/claude
 - `## Project` / `### Stack`: Always. Pipeline skills read `### Stack` for stack detection
 - `### Standards`: Only for web projects
 - `### Testing`: Only if testing frameworks configured
-- `## Project Context`: Always. Reference to `.project/project.json` for runtime context (structure, routing, patterns)
+- `## Project Context`: Always. Reference to `.project/project.json` (stack, features, endpoints) and `.project/project-context.json` (structure, routing, patterns, architecture)
 - `### Stack` subcategories are flexible — add what's relevant, omit what's not
 
 ---
@@ -238,12 +238,13 @@ Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
    - `auth`: uit user answers (Phase 2 Q4/Q5)
    - `hosting`: uit user answers (Phase 2 Q4/Q5)
    - `packages`: uit gegenereerde package.json / project files
-4. Vul `context` sectie (initieel, wordt bijgewerkt door build/refactor skills):
-   - `structure`: file tree van project (zelfde formaat als voorheen in CLAUDE.md). Generate from actual file tree after Phase 3/4
-   - `routing`: route patterns met arrow notation (alleen web projects met routing, anders lege array)
-   - `patterns`: non-obvious patterns ontdekt tijdens setup (path aliases, env config, etc.)
-   - `updated`: huidige datum
-5. Write `.project/project.json`
+4. Write `.project/project.json`
+5. Maak `.project/project-context.json` aan met `context` sectie (initieel, wordt bijgewerkt door build/refactor skills):
+   - `context.structure`: file tree van project (zelfde formaat als voorheen in CLAUDE.md). Generate from actual file tree after Phase 3/4
+   - `context.routing`: route patterns met arrow notation (alleen web projects met routing, anders lege array)
+   - `context.patterns`: non-obvious patterns ontdekt tijdens setup (path aliases, env config, etc.)
+   - `context.updated`: huidige datum
+   - Write `.project/project-context.json`
 
 **Output:**
 

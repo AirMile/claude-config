@@ -47,11 +47,13 @@ Accepts markdown from:
    - If `.project/` folder exists → continue to step 2
 
 2. **Check for existing files (only if .project exists):**
-   - Check if `.project/project.json` exists and `concept.content` is non-empty
+   - Check if `.project/project-concept.md` exists (primary concept source)
+   - Fallback: check if `.project/project.json` exists and `concept.content` is non-empty (legacy)
    - Check if `.project/backlog.html` exists
 
 3. **Scenario A: Both concept AND backlog exist**
-   - Read `project.json` (`concept.content`) and `backlog.html`
+   - Read concept: `.project/project-concept.md` als plain markdown, of fallback `project.json` (`concept.content`)
+   - Read `backlog.html`
    - Analyze differences between concept and existing backlog
    - Check `concept.thinking` entries with date AFTER `backlog.updated` to understand concept evolution
    - Check `thinking[]` array in `project.json` for entries with `newFeature` field to identify independently-added features (via `/dev-feature`)
@@ -61,7 +63,7 @@ Accepts markdown from:
      ```
      EXISTING BACKLOG DETECTED
 
-     Concept: .project/project.json (concept.content)
+     Concept: .project/project-concept.md (of fallback: project.json concept.content)
      Backlog: .project/backlog.html
 
      Concept evolution since last backlog update ({backlog.updated}):
@@ -107,13 +109,13 @@ Accepts markdown from:
      - Show detailed diff and exit
 
 4. **Scenario B: Only concept exists (no backlog)**
-   - Read `project.json` (`concept.content`)
+   - Read concept: `.project/project-concept.md` als plain markdown, of fallback `project.json` (`concept.content`)
    - Show confirmation:
 
      ```
      CONCEPT DETECTED
 
-     File: .project/project.json
+     File: .project/project-concept.md (of project.json)
      Title: {extracted title}
 
      Dit concept wordt gebruikt voor de backlog.
@@ -124,7 +126,7 @@ Accepts markdown from:
      header: "Concept Laden"
      question: "Wil je een backlog genereren van dit concept?"
      options:
-       - label: "Ja, genereer backlog (Recommended)", description: "Gebruik project.json concept"
+       - label: "Ja, genereer backlog (Recommended)", description: "Gebruik project concept"
        - label: "Ander concept", description: "Ik wil een ander concept gebruiken"
        - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false

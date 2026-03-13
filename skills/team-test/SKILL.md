@@ -118,11 +118,13 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
    **Project context:** Lees `.project/project.json` (als bestaat). Extract alleen:
    - `stack` (framework, language, testing, packages)
-   - `context` (structure, routing, patterns)
    - `endpoints` (method, path, auth)
    - `data.entities` (names, fields, relations)
 
-   Als project.json of stack-baseline niet bestaat → ga door zonder (backwards compatible).
+   Lees `.project/project-context.json` (als bestaat). Extract:
+   - `context` (structure, routing, patterns)
+
+   Als project.json/project-context.json of stack-baseline niet bestaat → ga door zonder (backwards compatible).
 
    **Stel STACK_CONTEXT samen** (wordt meegegeven aan alle agents in deze skill):
 
@@ -770,15 +772,16 @@ Use AskUserQuestion:
    - `stack.packages`: merge als packages geïnstalleerd tijdens fix loop
    - `endpoints`: merge als gewijzigd tijdens fixes
    - `data.entities`: merge als gewijzigd tijdens fixes
-   - `architecture` (**volg diagram conventies uit `shared/DASHBOARD.md`**):
+   - `architecture` in `.project/project-context.json` — **volg diagram conventies uit `shared/DASHBOARD.md`**:
      - `architecture.diagram`: feature status → `"DONE"` → verifieer dat nodes `:::done` zijn (dev-build zet dit normaal al, maar check/corrigeer als nodig). Als FASE 5c fixes zijn toegepast → update file references in node labels (`Naam<br/>file.js`), voeg nieuwe nodes toe als componenten zijn toegevoegd
      - `architecture.files`: merge nieuwe/gewijzigde bestanden uit fix loop (test files uit FASE 3, source fixes uit FASE 5c)
-     - Skip als geen `architecture` sectie bestaat in project.json
+     - Skip als geen `architecture` sectie bestaat in project-context.json of project.json
 
    Schrijf parallel terug:
    - Write `feature.json` (als gewijzigd)
    - Edit `backlog.html` (keep `<script>` tags intact)
-   - Write `project.json` (als gewijzigd)
+   - Write `project.json` (als gewijzigd — stack, features, endpoints, data)
+   - Write `project-context.json` (als architecture gewijzigd)
 
 4. **Scoped auto-commit** (only this skill's changes):
 
@@ -796,7 +799,7 @@ Use AskUserQuestion:
    If baseline file doesn't exist, fall back to staging only known skill output files:
 
    ```bash
-   git add .project/features/{feature-name}/feature.json .project/backlog.html .project/project.json
+   git add .project/features/{feature-name}/feature.json .project/backlog.html .project/project.json .project/project-context.json
    ```
 
    ```bash

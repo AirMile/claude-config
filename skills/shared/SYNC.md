@@ -1,6 +1,6 @@
 # Project Sync Protocol
 
-Shared 3-file sync pattern voor skill completion. Skills verwijzen hiernaar voor het generieke protocol en specificeren alleen hun eigen mutaties.
+Shared sync pattern voor skill completion. Skills verwijzen hiernaar voor het generieke protocol en specificeren alleen hun eigen mutaties.
 
 ---
 
@@ -26,9 +26,9 @@ Bij de eerste `.project/` operatie (read of write):
 
 ---
 
-## 3-File Sync Pattern
+## Sync Pattern
 
-Bij skill completion, sync feature state naar 3 bestanden:
+Bij skill completion, sync feature state naar de relevante bestanden:
 
 ### Stap 1: Read (parallel, skip als niet bestaat)
 
@@ -37,6 +37,8 @@ Lees **direct voor het editen** — vertrouw NIET op reads uit eerdere fases (Pr
 - `.project/features/{feature-name}/feature.json`
 - `.project/backlog.html`
 - `.project/project.json`
+- `.project/project-context.json` (alleen als context/architecture/learnings gewijzigd — build/test/refactor skills)
+- `.project/project-concept.md` (alleen als concept gewijzigd — thinking/plan skills)
 
 ### Stap 2: Muteer in memory
 
@@ -54,20 +56,33 @@ Lees **direct voor het editen** — vertrouw NIET op reads uit eerdere fases (Pr
 
 Merge per sectie — check altijd op bestaande entries voor push:
 
-| Sectie           | Merge logica                                                          |
-| ---------------- | --------------------------------------------------------------------- |
-| `features[]`     | Check op naam → nieuw: push → bestaand: update status                 |
-| `stack.packages` | Check op naam → nieuw: push `{ name, version, purpose }` → skip       |
-| `endpoints`      | Check op method+path → nieuw: push → bestaand: update status          |
-| `data.entities`  | Check op naam → nieuw: push met fields/relations → bestaand: merge    |
-| `context`        | Update structure/routing/patterns individueel (alleen bij impact)     |
-| `architecture`   | Volg diagram conventies uit `shared/DASHBOARD.md` (alleen bij impact) |
+| Sectie           | Merge logica                                                       |
+| ---------------- | ------------------------------------------------------------------ |
+| `features[]`     | Check op naam → nieuw: push → bestaand: update status              |
+| `stack.packages` | Check op naam → nieuw: push `{ name, version, purpose }` → skip    |
+| `endpoints`      | Check op method+path → nieuw: push → bestaand: update status       |
+| `data.entities`  | Check op naam → nieuw: push met fields/relations → bestaand: merge |
+
+**project-context.json** (zie `shared/DASHBOARD.md`):
+
+Lees `.project/project-context.json` (of maak aan met `{}`). Merge per sectie:
+
+| Sectie         | Merge logica                                                          |
+| -------------- | --------------------------------------------------------------------- |
+| `context`      | Update structure/routing/patterns individueel (alleen bij impact)     |
+| `architecture` | Volg diagram conventies uit `shared/DASHBOARD.md` (alleen bij impact) |
+| `learnings`    | Check op date+feature → nieuw: push → bestaand: skip (append-only)    |
+
+**project-concept.md** (alleen bij concept-schrijvende skills):
+
+Schrijf het volledige concept document als plain markdown naar `.project/project-concept.md`. Update gelijktijdig `concept.name` en `concept.pitch` in `project.json` (zodat lichte readers actuele metadata hebben).
 
 ### Stap 3: Write (parallel)
 
 - Write `feature.json` (of targeted Edit als alleen specifieke velden wijzigen)
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Write `project.json` (of targeted Edit)
+- Write `project-context.json` (als context/architecture/learnings gewijzigd)
 
 ### Active Feature Cleanup
 

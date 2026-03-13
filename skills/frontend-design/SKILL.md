@@ -229,13 +229,17 @@ Guided 4-step creation flow.
 
 #### Stap 1: Projectcontext
 
-Check if `concept` section exists in project.json.
+Check for concept:
 
-**If concept exists:**
+1. Primary: check if `.project/project-concept.md` exists → Read als plain markdown
+2. Fallback: check if `concept` section exists in project.json met non-empty `concept.content`
+
+**If concept exists (uit project-concept.md of project.json):**
 
 ```
 PROJECT CONTEXT
 ════════════════════════════════════════════════
+Bron:    {project-concept.md | project.json}
 Naam:    {concept.name}
 Concept: {concept.content — first 200 chars}
 ════════════════════════════════════════════════

@@ -90,13 +90,13 @@ Changed areas:
 2. Read changed files (or their directory structure if many)
 3. Compare against each canonical section:
 
-   | Target                               | What to check                                                       |
-   | ------------------------------------ | ------------------------------------------------------------------- |
-   | CLAUDE.md `## Commands`              | New scripts in package.json? Changed build commands?                |
-   | CLAUDE.md `## Project` / `### Stack` | New dependencies added? Libraries changed?                          |
-   | project.json `context.structure`     | New directories/files? Moved/renamed files? Deleted directories?    |
-   | project.json `context.routing`       | New routes? Changed route patterns?                                 |
-   | project.json `context.patterns`      | New patterns visible in changed code? Gotchas from session context? |
+   | Target                                   | What to check                                                       |
+   | ---------------------------------------- | ------------------------------------------------------------------- |
+   | CLAUDE.md `## Commands`                  | New scripts in package.json? Changed build commands?                |
+   | CLAUDE.md `## Project` / `### Stack`     | New dependencies added? Libraries changed?                          |
+   | project-context.json `context.structure` | New directories/files? Moved/renamed files? Deleted directories?    |
+   | project-context.json `context.routing`   | New routes? Changed route patterns?                                 |
+   | project-context.json `context.patterns`  | New patterns visible in changed code? Gotchas from session context? |
 
 4. Also check session context (conversation history) for:
    - Gotchas or workarounds discovered during debugging
@@ -110,7 +110,7 @@ Show each proposed change with context:
 ````
 PROPOSED UPDATES ({N})
 
-1. project.json context.structure — add new directories
+1. project-context.json context.structure — add new directories
    Reason: src/utils/ and src/types/ were added by team
 
    ```diff
@@ -121,7 +121,7 @@ PROPOSED UPDATES ({N})
       hooks/
 ````
 
-2. project.json context.patterns — add new gotcha
+2. project-context.json context.patterns — add new gotcha
 
    Reason: discovered during debugging session
 
@@ -186,12 +186,12 @@ These are the standard CLAUDE.md section names. Always target the correct sectio
 2. `## Project` / `### Stack` — project metadata and tech stack
 3. `## Project Context` — reference to `.project/project.json`
 
-**project.json context keys** (zie `shared/DASHBOARD.md`):
+**project-context.json context keys** (zie `shared/DASHBOARD.md`):
 4. `context.structure` — directory tree with comments
 5. `context.routing` — route patterns (web projects)
 6. `context.patterns` — gotchas, quirks, non-obvious architecture decisions
 
-For CLAUDE.md sections (1-3), propose Edit tool changes. For project.json context (4-6), propose JSON updates to `.project/project.json`.
+For CLAUDE.md sections (1-3), propose Edit tool changes. For context keys (4-6), propose JSON updates to `.project/project-context.json`.
 
 ## Edge Cases
 

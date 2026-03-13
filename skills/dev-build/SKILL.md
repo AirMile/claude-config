@@ -45,10 +45,15 @@ git rev-parse HEAD > .project/session/pre-skill-sha.txt
 Lees `.project/project.json`. Extract:
 
 - `stack` — framework, language, packages (fallback voor stack-baseline)
-- `context.structure` — waar bestanden horen (map structuur)
-- `context.patterns` — bestaande code patterns om te volgen
 - `endpoints` — bestaande API surface (voorkomt dubbele routes)
 - `data.entities` — bestaand DB schema (voorkomt conflicten)
+
+Lees `.project/project-context.json` (als bestaat). Extract:
+
+- `context.structure` — waar bestanden horen (map structuur)
+- `context.patterns` — bestaande code patterns om te volgen
+- `architecture` — huidige architectuur diagram en beschrijving
+- `learnings[]` — eerder geleerde patronen en pitfalls (indien aanwezig). Gebruik als context bij implementatie-keuzes.
 
 Als project.json niet bestaat → ga door zonder (backwards compatible).
 
@@ -193,8 +198,9 @@ Lees parallel (skip als niet bestaat):
 - `.project/features/{feature-name}/feature.json`
 - `.project/backlog.html`
 - `.project/project.json`
+- `.project/project-context.json`
 
-Muteer alle drie in memory:
+Muteer in memory:
 
 **feature.json**: `status → "DOING"`, `stage → "built"`, `files[]` → merge met actuele bestanden. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]`. Bestaande secties NIET overschrijven. Note: `requirements[]` is al enriched in FASE 2 stap 4.
 
@@ -221,17 +227,18 @@ Richtlijnen:
 
 **Backlog** (zie `shared/BACKLOG.md`): `stage → "built"`, `data.updated` → nu. Status blijft `"DOING"`.
 
-**Context** (zie `shared/DASHBOARD.md` → `context`): vergelijk build output met project.json. Update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip als geen structurele impact. Log: `context: {N} updates ({keys})`.
+**Context** (zie `shared/DASHBOARD.md` → `context`): vergelijk build output met project-context.json. Update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip als geen structurele impact. Log: `context: {N} updates ({keys})`.
 
 **Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`, endpoints → `"done"` als geïmplementeerd, stack packages → push nieuwe dependencies.
 
-**Architecture** (**volg diagram conventies uit `shared/DASHBOARD.md`**): diagram bestaat → update: gebouwde feature nodes `:::planned` → `:::done`, voeg file reference toe aan node label (`Naam<br/>file.js`), update `architecture.files` met `{ component, src, test }`, update `description`: behoud `## Data Flow` sectie (update als pipeline veranderd), update functionele beschrijvingen per laag (match subgraphs, bullet-formaat). Geen diagram EN meerdere modules → genereer nieuw diagram met classDef + subgraphs. Geen structurele impact → skip. Log: `architecture: updated` of `architecture: no updates needed`.
+**Architecture** (schrijf naar `project-context.json`, **volg diagram conventies uit `shared/DASHBOARD.md`**): diagram bestaat → update: gebouwde feature nodes `:::planned` → `:::done`, voeg file reference toe aan node label (`Naam<br/>file.js`), update `architecture.files` met `{ component, src, test }`, update `description`: behoud `## Data Flow` sectie (update als pipeline veranderd), update functionele beschrijvingen per laag (match subgraphs, bullet-formaat). Geen diagram EN meerdere modules → genereer nieuw diagram met classDef + subgraphs. Geen structurele impact → skip. Log: `architecture: updated` of `architecture: no updates needed`.
 
 Schrijf parallel terug:
 
 - Write `feature.json`
 - Edit `backlog.html` (keep `<script>` tags intact)
-- Write `project.json`
+- Write `project.json` (stack, features, endpoints, data)
+- Write `project-context.json` (context, architecture — maak aan als niet bestaat)
 
 ### FASE 3C: Begripscheck
 

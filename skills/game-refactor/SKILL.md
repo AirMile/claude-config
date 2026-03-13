@@ -738,8 +738,9 @@ IMPROVEMENTS APPLIED
    Lees parallel (skip als niet bestaat):
    - `.project/backlog.html`
    - `.project/project.json`
+   - `.project/project-context.json`
 
-   Muteer beide in memory:
+   Muteer in memory:
 
    **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet `data.updated` naar huidige datum.
 
@@ -750,7 +751,7 @@ IMPROVEMENTS APPLIED
    Trigger als ANY: scripts hernoemd/verplaatst, nieuwe scripts via extractie, scene structure fundamenteel gewijzigd, autoload/singleton patterns gewijzigd.
    Skip als: alleen interne code quality (naming, DRY, type hints, clarity), performance zonder structurele impact.
 
-   Wanneer getriggerd (in dezelfde project.json mutatie):
+   Wanneer getriggerd (in `project-context.json` mutatie):
    - `context.structure` → overwrite full tree met gewijzigde script paths
    - Extracted scripts/scenes → add to structure tree
    - `context.patterns` → merge gewijzigde patterns
@@ -762,6 +763,7 @@ IMPROVEMENTS APPLIED
    Schrijf parallel terug:
    - Edit `backlog.html` (keep `<script>` tags intact)
    - Write `project.json`
+   - Write `project-context.json` (als context/architecture gewijzigd)
 
 3. **Scoped auto-commit** (only this skill's changes):
 
@@ -898,4 +900,4 @@ This skill must ALWAYS:
 - Run full GUT test suite after applying changes per feature
 - Analyze test failures before rollback (distinguish stale tests from regressions)
 - Apply balance filter: skip findings where the "fix" reduces readability
-- Check CLAUDE.md and `.project/project.json` context for project-specific conventions during analysis
+- Check CLAUDE.md, `.project/project.json`, and `.project/project-context.json` for project-specific conventions during analysis

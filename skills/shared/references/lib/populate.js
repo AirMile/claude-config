@@ -8,11 +8,31 @@ function populateFromProject(projectDir, dashData) {
   const projectPath = path.join(PROJECTS_ROOT, projectDir);
   var changed = false;
 
-  // ── Concept: migrate from legacy .project/concept.md ──
+  // ── Concept: load from project-concept.md (new split format) ──
   const conceptEmpty = !dashData.concept || !dashData.concept.content;
+  const conceptMdSplit = path.join(projectPath, ".project/project-concept.md");
+
+  if (conceptEmpty && fs.existsSync(conceptMdSplit)) {
+    try {
+      const md = fs.readFileSync(conceptMdSplit, "utf8");
+      if (!dashData.concept) dashData.concept = {};
+
+      const titleMatch = md.match(/^#\s+(.+)$/m);
+      if (titleMatch && !dashData.concept.name)
+        dashData.concept.name = titleMatch[1].trim();
+      dashData.concept.content = md;
+      changed = true;
+    } catch {}
+  }
+
+  // ── Concept: migrate from legacy .project/concept.md ──
   const conceptFile = path.join(projectPath, ".project/concept.md");
 
-  if (conceptEmpty && fs.existsSync(conceptFile)) {
+  if (
+    conceptEmpty &&
+    !dashData.concept?.content &&
+    fs.existsSync(conceptFile)
+  ) {
     try {
       const md = fs.readFileSync(conceptFile, "utf8");
       if (!dashData.concept) dashData.concept = {};
@@ -21,6 +41,32 @@ function populateFromProject(projectDir, dashData) {
       if (titleMatch) dashData.concept.name = titleMatch[1].trim();
       dashData.concept.content = md;
       changed = true;
+    } catch {}
+  }
+
+  // ── Context + Architecture: load from project-context.json ──
+  const contextJsonFile = path.join(
+    projectPath,
+    ".project/project-context.json",
+  );
+  if (fs.existsSync(contextJsonFile)) {
+    try {
+      const ctx = JSON.parse(fs.readFileSync(contextJsonFile, "utf8"));
+      if (
+        ctx.architecture &&
+        (!dashData.architecture || !dashData.architecture.diagram)
+      ) {
+        dashData.architecture = ctx.architecture;
+        changed = true;
+      }
+      if (ctx.context && (!dashData.context || !dashData.context.structure)) {
+        dashData.context = ctx.context;
+        changed = true;
+      }
+      if (ctx.learnings && !dashData.learnings) {
+        dashData.learnings = ctx.learnings;
+        changed = true;
+      }
     } catch {}
   }
 

@@ -701,6 +701,58 @@ http
         req.on("end", function () {
           try {
             const jsonData = JSON.parse(body);
+
+            // Split concept.content to project-concept.md if conceptFile is set
+            if (jsonData.concept && jsonData.concept.conceptFile) {
+              const conceptMdPath = path.join(
+                projectPath,
+                ".project/project-concept.md",
+              );
+              if (jsonData.concept.content) {
+                const conceptDir = path.join(projectPath, ".project");
+                if (!fs.existsSync(conceptDir))
+                  fs.mkdirSync(conceptDir, { recursive: true });
+                fs.writeFileSync(
+                  conceptMdPath,
+                  jsonData.concept.content,
+                  "utf8",
+                );
+                // Keep only metadata in project.json
+                delete jsonData.concept.content;
+              }
+            }
+
+            // Split architecture + context + learnings to project-context.json
+            const contextFields = ["architecture", "context", "learnings"];
+            const contextData = {};
+            var hasContextFields = false;
+            for (const field of contextFields) {
+              if (jsonData[field]) {
+                contextData[field] = jsonData[field];
+                delete jsonData[field];
+                hasContextFields = true;
+              }
+            }
+            if (hasContextFields) {
+              const ctxPath = path.join(
+                projectPath,
+                ".project/project-context.json",
+              );
+              var existingCtx = {};
+              try {
+                existingCtx = JSON.parse(fs.readFileSync(ctxPath, "utf8"));
+              } catch {}
+              Object.assign(existingCtx, contextData);
+              const ctxDir = path.join(projectPath, ".project");
+              if (!fs.existsSync(ctxDir))
+                fs.mkdirSync(ctxDir, { recursive: true });
+              fs.writeFileSync(
+                ctxPath,
+                JSON.stringify(existingCtx, null, 2),
+                "utf8",
+              );
+            }
+
             const dashFile = path.join(projectPath, DASHBOARD_PATH);
             const wsDir = path.dirname(dashFile);
             if (!fs.existsSync(wsDir)) fs.mkdirSync(wsDir, { recursive: true });

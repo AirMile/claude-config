@@ -28,16 +28,16 @@ The output is a structured markdown document that can be used as input for `/thi
 
 1. Check if `.project/` folder exists
    - If folder does NOT exist → proceed to Step 1b (source selection)
-2. Check if `.project/project.json` exists and contains a `concept` key with non-empty `content`
+2. Check if `.project/project-concept.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
 3. If concept exists AND no inline description provided:
-   - Read `.project/project.json`, parse JSON, extract `concept.name` and `concept.content`
+   - Read `.project/project-concept.md` for the full concept document. Extract title from first H1 heading.
    - Show confirmation:
 
      ```
      EXISTING CONCEPT DETECTED
 
-     Source: .project/project.json → concept
-     Title: {concept.name}
+     Source: .project/project-concept.md
+     Title: {concept title from H1}
 
      Er bestaat al een concept.
      ```
@@ -105,7 +105,7 @@ multiSelect: false
 
 **Output-pad volgt automatisch de scope:**
 
-- Scope = concept → schrijf naar `.project/project.json` onder de `concept` key
+- Scope = concept → schrijf naar `.project/project-concept.md` + update project.json metadata (name, pitch)
 - Scope = feature → schrijf naar `.project/features/{naam}/thinking.md`
 - Scope = pagina/UX → schrijf naar `.project/thinking/{onderwerp}.md`
 - Scope = los idee → schrijf naar `.project/thinking/{onderwerp}.md`
@@ -381,14 +381,14 @@ Vraag daarna optioneel:
 
 ```yaml
 header: "Concept"
-question: "Wil je dit ook toevoegen aan project.json concept?"
+question: "Wil je dit ook opslaan als project concept?"
 options:
   - label: "Nee (Recommended)", description: "Output is opgeslagen bij de scope"
-  - label: "Ja, ook naar concept", description: "Update ook project.json concept"
+  - label: "Ja, ook naar concept", description: "Update ook project-concept.md"
 multiSelect: false
 ```
 
-If "Ja": lees `.project/project.json` (of maak aan als niet bestaat), parse JSON, set `concept.name` (H1 titel), `concept.pitch` (eerste alinea, 1-2 zinnen) en `concept.content` (volledige markdown), schrijf terug.
+If "Ja": Write het volledige concept document als plain markdown naar `.project/project-concept.md`. Update ook project.json: Read `.project/project.json` (of maak aan met {}), set `concept.name` (H1 titel), `concept.pitch` (eerste alinea, 1-2 zinnen), `concept.conceptFile = "project-concept.md"`. Verwijder `concept.content` als die bestaat (gemigreerd naar .md). Write terug.
 
 **If scope = los idee (uit Step 1a):**
 
@@ -441,7 +441,7 @@ Use AskUserQuestion:
 header: "Output"
 question: "Wat wil je met het concept doen?"
 options:
-  - label: "Opslaan naar concept (Recommended)", description: "Opslaan naar project.json concept voor verder gebruik"
+  - label: "Opslaan naar concept (Recommended)", description: "Opslaan naar project-concept.md voor verder gebruik"
   - label: "Opslaan naar Obsidian", description: "Opslaan als permanente Idea note in je Obsidian vault"
   - label: "Kopieer naar clipboard", description: "Kopieer markdown naar clipboard (niet opslaan)"
 multiSelect: false
@@ -450,15 +450,14 @@ multiSelect: false
 **If "Opslaan naar concept":**
 
 1. Create `.project/` folder if it doesn't exist
-2. Read `.project/project.json` if it exists (otherwise start with `{}`), parse JSON
-3. Set `concept.name` to the H1 title, `concept.pitch` to de eerste alinea (1-2 zinnen), `concept.content` to the full markdown output
-4. Write the updated JSON back to `.project/project.json`
-5. Confirm:
+2. Write het volledige concept document als plain markdown naar `.project/project-concept.md`
+3. Update ook project.json: Read `.project/project.json` (of maak aan met `{}`), set `concept.name` (H1 titel), `concept.pitch` (eerste alinea, 1-2 zinnen), `concept.conceptFile = "project-concept.md"`. Verwijder `concept.content` als die bestaat (gemigreerd naar .md). Write terug.
+4. Confirm:
 
    ```
    CONCEPT SAVED
 
-   File: .project/project.json → concept
+   File: .project/project-concept.md
    Name: {concept.name}
 
    Next steps:
@@ -487,7 +486,7 @@ multiSelect: false
 
 **If "Opslaan naar Obsidian":**
 
-1. Also save to `.project/project.json` concept (so brainstorm/critique can pick it up): read existing JSON (or `{}`), set `concept.name`, `concept.pitch` (eerste alinea) and `concept.content`, write back
+1. Also save concept: Write het volledige concept document naar `.project/project-concept.md`. Update `.project/project.json` (of maak aan met `{}`): set `concept.name`, `concept.pitch` (eerste alinea), `concept.conceptFile = "project-concept.md"`. Verwijder `concept.content` als die bestaat.
 2. Detect category from content:
    - Game-related → `game`
    - App/service/tool → `app`

@@ -46,7 +46,7 @@ Pull remote changes, analyseer de diff, en ververs `.project/project.json` conte
 
    Als geen remote of fetch faalt → exit met error.
 
-3. Check `.project/project.json` existence → onthoud als `has_project_json`.
+3. Check `.project/project-context.json` existence → onthoud als `has_context_json`. Fallback: check `.project/project.json` → onthoud als `has_project_json`.
 
 ### FASE 1: Pull
 
@@ -67,10 +67,10 @@ Als conflicts → toon conflicting files, exit met instructie om conflicts te re
 **Bepaal of we doorgaan:**
 
 - Pull had nieuwe commits → door naar FASE 2
-- "Already up to date" EN `has_project_json` = true → door naar FASE 2 met `force_full_scan = true` (context kan stale zijn)
-- "Already up to date" EN `has_project_json` = false → exit:
+- "Already up to date" EN (`has_context_json` OF `has_project_json`) = true → door naar FASE 2 met `force_full_scan = true` (context kan stale zijn)
+- "Already up to date" EN geen van beide bestaan → exit:
   ```
-  ALREADY UP TO DATE (no project.json — run /core-setup to initialize)
+  ALREADY UP TO DATE (no project-context.json or project.json — run /core-setup to initialize)
   ```
 
 Als gestasht in FASE 0: `git stash pop`. Bij conflict → meld en exit.
@@ -133,13 +133,13 @@ needs_patterns  = config_files.length > 0 OF force_full_scan
 
 ### FASE 3: Context Sync
 
-Skip volledig als `has_project_json` = false. Toon:
+Skip volledig als noch `has_context_json` noch `has_project_json` = true. Toon:
 
 ```
-SKIP CONTEXT SYNC (no project.json — run /core-setup to initialize)
+SKIP CONTEXT SYNC (no project-context.json or project.json — run /core-setup to initialize)
 ```
 
-Lees `.project/project.json`, parse JSON. Update `context` sectie gericht:
+Lees `.project/project-context.json`, parse JSON. Update `context` sectie gericht:
 
 **3a) Structure scan** (alleen als `needs_structure`)
 
@@ -189,7 +189,7 @@ Scan voor automatisch detecteerbare patterns:
 
 Set `context.updated` naar huidige datum (`YYYY-MM-DD`). Doe dit altijd, ook als alleen code-only changes.
 
-Write `project.json` terug met `JSON.stringify(data, null, 2)`.
+Write `project-context.json` terug met `JSON.stringify(data, null, 2)`.
 
 ### FASE 4: Report
 
@@ -223,7 +223,7 @@ CONTEXT REFRESHED (no new commits, stale context updated)
 **Geen project.json:**
 
 ```
-PULL COMPLETE (no project.json — run /core-setup to initialize)
+PULL COMPLETE (no project-context.json or project.json — run /core-setup to initialize)
 
 Commits: {N} new
 Files:   {N} changed

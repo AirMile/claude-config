@@ -108,9 +108,12 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
    Lees `.project/project.json`. Extract:
    - `stack` — framework, language, packages (fallback voor architecture-baseline)
+   - `data.entities` — bestaand data model (voorkomt conflicten)
+
+   Lees `.project/project-context.json` (als bestaat). Extract:
    - `context.structure` — waar bestanden horen (map structuur)
    - `context.patterns` — bestaande code patterns om te volgen
-   - `data.entities` — bestaand data model (voorkomt conflicten)
+   - `architecture` — huidige architectuur diagram en beschrijving
 
    Als project.json niet bestaat → ga door zonder (backwards compatible).
 
@@ -807,24 +810,26 @@ Lees parallel (skip als niet bestaat):
 - `.project/features/{feature-name}/feature.json`
 - `.project/backlog.html`
 - `.project/project.json`
+- `.project/project-context.json`
 
-Muteer alle drie in memory:
+Muteer in memory:
 
 **feature.json**: `status → "DOING"`, `stage → "built"`, `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]` (status: "pending"). Bestaande secties NIET overschrijven.
 
 **Backlog** (zie `shared/BACKLOG.md`): `stage → "built"`, `data.updated` → nu. Status blijft `"DOING"`.
 
-**Context** (zie `shared/DASHBOARD.md` → `context`): identify new scenes (.tscn), scripts (.gd) with class names, signals, resources (.tres). Update `context.structure` (overwrite), `context.patterns` (merge signals, autoloads, conventions), `context.updated`. Skip als geen structurele impact.
+**Context** (in `project-context.json`, zie `shared/DASHBOARD.md` → `context`): identify new scenes (.tscn), scripts (.gd) with class names, signals, resources (.tres). Update `context.structure` (overwrite), `context.patterns` (merge signals, autoloads, conventions), `context.updated`. Skip als geen structurele impact.
 
 **Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`. Als feature niet bestaat: push met `{ name, status: "DOING", stage: "built", summary, created }`.
 
-**Architecture** (**volg diagram conventies uit `shared/DASHBOARD.md`**): update diagram met werkelijke scene tree, signals, autoloads. Gebouwde feature nodes `:::planned` → `:::done`, voeg file reference toe (`Naam<br/>script.gd`), update `architecture.files` met `{ component, src, test }`. Als diagram niet bestaat EN meerdere scenes/signals → genereer nieuw diagram met classDef + subgraphs. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
+**Architecture** (in `project-context.json`, **volg diagram conventies uit `shared/DASHBOARD.md`**): update diagram met werkelijke scene tree, signals, autoloads. Gebouwde feature nodes `:::planned` → `:::done`, voeg file reference toe (`Naam<br/>script.gd`), update `architecture.files` met `{ component, src, test }`. Als diagram niet bestaat EN meerdere scenes/signals → genereer nieuw diagram met classDef + subgraphs. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
 
 Schrijf parallel terug:
 
 - Write `feature.json`
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Write `project.json`
+- Write `project-context.json` (als context/architecture gewijzigd)
 
 ### FASE 5: Begripscheck + Completion
 

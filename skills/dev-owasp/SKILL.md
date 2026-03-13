@@ -45,6 +45,9 @@ Lees `.project/project.json` (als bestaat). Extract:
 
 - `endpoints` — API surface (method, path, auth per route)
 - `data.entities` — data model (entity names, fields, relations)
+
+Lees `.project/project-context.json` (als bestaat). Extract:
+
 - `context.patterns` — auth patterns, middleware setup
 
 **Stel OWASP_CONTEXT samen** (meegeven aan scanner agents in FASE 2):

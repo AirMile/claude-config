@@ -20,7 +20,7 @@ Flow: extract research questions → auto-select technique → execute multi-sou
 
 **Auto-detect concept file:**
 
-1. Check if `.project/project.json` exists with non-empty `concept.content`
+1. Check if `.project/project-concept.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
 2. If found AND no inline input provided:
    - Show concept name and ask confirmation:
      ```yaml
@@ -55,7 +55,7 @@ Scope-specifieke input:
 
 Output-pad volgt scope:
 
-- concept → `.project/project.json` (concept key)
+- concept → `.project/project-concept.md` + update project.json metadata (name, pitch)
 - feature → `.project/features/{naam}/research.md`
 - pagina/UX of los idee → `.project/thinking/{onderwerp}-research.md`
 
@@ -217,7 +217,7 @@ Inclusief Competitive Landscape tabel en/of Technical Feasibility assessment als
 Auto-save zonder extra vragen:
 
 1. Schrijf rapport naar `.project/thinking/{concept-name}-research.md`
-2. Voeg `## Research Findings` sectie toe aan `concept.content` in `.project/project.json`
+2. Voeg `## Research Findings` sectie toe aan `.project/project-concept.md`
 3. Dashboard sync: push naar `concept.thinking` array (zie schema hieronder)
 4. Bevestig:
 
@@ -225,7 +225,7 @@ Auto-save zonder extra vragen:
 RESEARCH SAVED
 
 Report: .project/thinking/{concept-name}-research.md
-Concept: updated with key findings
+Concept: project-concept.md updated with key findings
 Applied techniques: {list}
 
 Wil je ook naar Obsidian opslaan? Zo ja, laat het weten.
@@ -241,7 +241,7 @@ Next steps:
 
 1. Schrijf naar scope-pad (`.project/features/{naam}/research.md` of `.project/thinking/{onderwerp}-research.md`)
 2. Dashboard sync: push naar top-level `thinking` array
-3. Vraag optioneel of key findings ook in `concept.content` verwerkt moeten worden
+3. Vraag optioneel of key findings ook in `project-concept.md` verwerkt moeten worden
 
 **Scope = los idee:**
 

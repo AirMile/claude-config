@@ -56,4 +56,4 @@ Follow COMMAND.md instructions exactly — deviate only on explicit user request
 
 ## Project Context
 
-Lees `.project/project.json` bij sessiestart voor actuele project context (structuur, routing, patterns, features, stack, endpoints, entities). Skills houden dit automatisch bij na elke build/refactor.
+Lees `.project/project.json` bij sessiestart voor actuele project context (stack, features, endpoints, entities). Voor runtime context (architecture, patterns, learnings): `.project/project-context.json`. Voor het volledige concept document: `.project/project-concept.md`. Skills houden dit automatisch bij na elke build/refactor/test.

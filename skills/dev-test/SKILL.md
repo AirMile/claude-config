@@ -53,7 +53,7 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
    - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
    - Session file: `echo '{"feature":"{name}","skill":"test","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
 
-5. **Load stack & project context** — CLAUDE.md stack sectie + `.claude/research/stack-baseline.md` + `.project/project.json` (als beschikbaar). Stel STACK_CONTEXT samen:
+5. **Load stack & project context** — CLAUDE.md stack sectie + `.claude/research/stack-baseline.md` + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Stel STACK_CONTEXT samen:
 
    ```
    STACK CONTEXT:
@@ -421,7 +421,32 @@ Volg `shared/SYNC.md` protocol. Skill-specifieke mutaties:
 
 **backlog:** `status = "DONE"`, verwijder `stage`, `updated` → nu.
 
-**project.json:** Feature status → `"DONE"`. Bij fixes in FASE 4: merge gewijzigde bestanden naar `architecture.files`, update diagram nodes naar `:::done`. Merge nieuwe packages/endpoints/entities als relevant.
+**project.json:** Feature status → `"DONE"`. Merge nieuwe packages/endpoints/entities als relevant.
+
+**project-context.json**: Bij fixes in FASE 4: merge gewijzigde bestanden naar `architecture.files`, update diagram nodes naar `:::done`.
+
+#### Step 3b: Learning Extraction
+
+Extracteer projectbrede learnings uit de voltooide feature. Lees de zojuist geschreven `feature.json` en evalueer:
+
+- `build.decisions[]` → type `pattern` (architecturale keuzes die andere features beïnvloeden)
+- `tests.fixSync[]` en `tests.sessions[].fixes` → type `pitfall` (bugs met root causes)
+- `observations[]` → type `observation` (cross-feature inzichten)
+
+**Filter**: alleen items die relevant zijn buiten deze ene feature. Skip feature-specifieke implementatiedetails.
+
+**Append** naar `project-context.json` → `learnings[]`:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "feature": "{feature-name}",
+  "type": "pattern|pitfall|observation",
+  "summary": "Max 200 chars samenvatting"
+}
+```
+
+Check op duplicaten (zelfde feature + zelfde summary → skip). Geen learnings gevonden → skip stap.
 
 #### Step 4: Scoped commit
 

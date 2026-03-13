@@ -23,9 +23,10 @@ Structured 9-phase debugging: context → intake → investigate → analyze →
 
 - Lees `.project/project.json` → extract:
   - `stack` (framework, language, packages)
-  - `context` (structure, routing, patterns)
   - `endpoints` (method, path, auth)
   - `data.entities` (names, fields, relations)
+- Lees `.project/project-context.json` (als bestaat) → extract:
+  - `context` (structure, routing, patterns)
 
 **Active feature detectie** (optioneel):
 
