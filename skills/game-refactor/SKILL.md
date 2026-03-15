@@ -6,7 +6,7 @@ description: >-
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 1.1.0
   category: game
 ---
 
@@ -123,7 +123,12 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
    - Fallback: grep for file paths matching `scripts/`, `scenes/`, `resources/`, `tests/`
    - Store as `pipeline_files[feature_name]`
 
-5. **Load or generate refactor-patterns.md:**
+5. **Load project conventions** (voor Explore agent context):
+
+   Read `.project/project-context.json` (als bestaat) → extract `context.patterns`.
+   Sla op als `PROJECT_CONVENTIONS` voor injectie in Explore agent prompts (FASE 1).
+
+6. **Load or generate refactor-patterns.md:**
 
    ```
    IF .claude/research/refactor-patterns.md exists:
@@ -211,6 +216,9 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
    Pipeline files:
    {list of all pipeline_files paths for this feature}
 
+   PROJECT CONVENTIONS:
+   {PROJECT_CONVENTIONS from FASE 0 step 5, of "niet beschikbaar"}
+
    Lees ALLE bovenstaande pipeline files. Scan voor:
 
    1. UNIVERSEEL (altijd scannen):
@@ -239,7 +247,7 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
       - Slechte variabele/functienamen (single-letter, misleidend, te generiek)
       - Overbodige comments die obvious code beschrijven
       - "Clever" code die moeilijk te begrijpen is
-      - Inconsistentie met project conventions uit CLAUDE.md
+      - Inconsistentie met PROJECT CONVENTIONS (hierboven) of CLAUDE.md
 
    2. GODOT-SPECIFIEK (altijd scannen):
 
@@ -746,6 +754,25 @@ IMPROVEMENTS APPLIED
 
    **Dashboard** (zie `shared/DASHBOARD.md`): ongewijzigd — er is geen aparte dashboard merge in game-refactor anders dan feature status.
 
+   **Learning Extraction** — extracteer projectbrede learnings:
+
+   Lees de zojuist geschreven `feature.json` refactor sectie en evalueer:
+   - `refactor.decisions[]` met rationale → type `convention` (patronen die project-breed gelden)
+   - `refactor.positiveObservations[]` → type `observation` (indien cross-feature relevant)
+
+   **Append** naar `project-context.json` → `learnings[]`:
+
+   ```json
+   {
+     "date": "YYYY-MM-DD",
+     "feature": "{feature-name}",
+     "type": "convention|observation",
+     "summary": "Max 200 chars"
+   }
+   ```
+
+   Check duplicaten (feature + summary). Geen relevante learnings → skip.
+
    **Context sync (conditioneel)** — alleen als REFACTORED features structurele wijzigingen bevatten:
 
    Trigger als ANY: scripts hernoemd/verplaatst, nieuwe scripts via extractie, scene structure fundamenteel gewijzigd, autoload/singleton patterns gewijzigd.
@@ -763,7 +790,7 @@ IMPROVEMENTS APPLIED
    Schrijf parallel terug:
    - Edit `backlog.html` (keep `<script>` tags intact)
    - Write `project.json`
-   - Write `project-context.json` (als context/architecture gewijzigd)
+   - Write `project-context.json` (als context/architecture/learnings gewijzigd)
 
 3. **Scoped auto-commit** (only this skill's changes):
 

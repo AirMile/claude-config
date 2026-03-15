@@ -4,7 +4,7 @@ description: Define game feature requirements and architecture with structured o
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.1.0
+  version: 2.2.0
   category: game
 ---
 
@@ -122,6 +122,7 @@ De card verhuist naar de DOING kolom met stage `defining`.
      - `data.entities` — bestaand data model
    - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
+     - `learnings[]` — eerdere inzichten uit build/test/refactor (gebruik als input voor architectuurkeuzes)
    - Als project.json niet bestaat → ga door zonder (backwards compatible)
 
 ### FASE 1: Requirements Gathering
@@ -606,18 +607,82 @@ Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md`
 | `design`                             | alleen visuele features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`) |
 | `buildSequence`                      | altijd                                                                             |
 | `testStrategy`                       | altijd                                                                             |
+| `durableDecisions`                   | bij >3 requirements — beslissingen die over alle REQs gelden                       |
 | `research`                           | alleen als research is gedaan                                                      |
+
+**`durableDecisions`** — beslissingen die tijdens de build NIET veranderen:
+
+- Scene tree structuur (root node type, compositie)
+- Resource schema shape (custom Resources, exports)
+- Signal architecture (welke signals, wie emit/ontvangt)
+- State machine aanpak (enum-based, node-based, stateless)
+
+### FASE 4b: Toewijzing
+
+AskUserQuestion:
+
+```yaml
+header: "Toewijzing"
+question: "Wie gaat dit bouwen?"
+options:
+  - label: "Zelf bouwen (Recommended)"
+    description: "Ik bouw dit met /game-build"
+  - label: "Teammate toewijzen"
+    description: "Genereer een task brief"
+multiSelect: false
+```
+
+**Zelf bouwen**: `assignee` blijft `null`. Ga door naar FASE 5.
+
+**Teammate toewijzen**:
+
+1. AskUserQuestion: "Naam van de teammate?" (vrije tekst)
+2. Zet `assignee` in memory (meenemen naar FASE 5 backlog sync)
+3. Genereer task brief in terminal output vanuit feature.json data:
+
+```
+───────────────────────────────────────
+TASK BRIEF — {feature-name}
+Toegewezen aan: {naam}
+───────────────────────────────────────
+
+## {feature-name}
+**Type:** {type} | **Prioriteit:** {phase} | **Status:** DEF
+
+### Beschrijving
+{summary uit feature.json}
+
+### Requirements
+| # | Requirement | Acceptatiecriteria |
+|---|------------|-------------------|
+{elke REQ uit feature.json}
+
+### Bestanden
+{elke file: actie + pad + doel}
+
+### Build Volgorde
+{genummerde stappen uit buildSequence}
+
+### Test Strategie
+{per REQ: testfile + beschrijving}
+
+### Dependencies
+{dependency + status als relevant}
+```
+
+4. Toon bericht: "Kopieer bovenstaande tekst en stuur naar {naam}."
 
 ### FASE 5: Sync
 
 Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
 
-Lees parallel (skip als niet bestaat):
+Lees parallel **direct voor het editen** (skip als niet bestaat) — vertrouw NIET op reads uit eerdere fases (Prettier/linters kunnen bestanden tussentijds wijzigen):
 
 - `.project/backlog.html`
 - `.project/project.json`
+- `.project/project-context.json`
 
-Muteer beide in memory:
+Muteer in memory:
 
 **Backlog** (zie `shared/BACKLOG.md`):
 

@@ -4,7 +4,7 @@ description: Build features with technique mapping (TDD, Implementation First, o
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.1.0
+  version: 2.2.0
   category: game
 ---
 
@@ -773,33 +773,34 @@ func get_log_summary() -> String:
     return summary
 ```
 
-### FASE 4: Codebase Sync
+### FASE 4: Wat hebben we gebouwd?
 
-After build is complete, ensure the user understands what was built.
+**STOP — ga NIET door naar de sync zonder deze fase volledig af te ronden.**
 
-#### Step 1: Architecture Explanation
+Display een visuele separator:
 
-Claude explains the built architecture in plain, beginner-friendly language. No jargon — explain like talking to a student who is new to game development:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WAT HEBBEN WE GEBOUWD?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
-- **Wat doet het?**: wat de feature doet in het spel, in 1-2 simpele zinnen
-- **Hoe ziet het eruit?**: 1-2 ASCII diagrammen die de architectuur visueel maken. Kies het meest relevante type:
-  - **Scene tree**: node hierarchy met types (voor scene-based features)
-  - **Signal flow**: welke nodes signalen uitzenden/ontvangen (voor event-driven features)
-  - **State diagram**: state transitions (voor state machines)
-  - Hou diagrammen compact (max 15 regels per diagram). Gebruik box-drawing characters (┌─┐│└─┘) en pijlen (→ ← ↓ ↑).
+**Stap 1 — Uitleg displayen (verplicht, niet overslaan)**
 
-  ```
-  Example:
-  Player (CharacterBody2D)
-  ├── Sprite2D
-  ├── CollisionShape2D
-  ├── AbilitySystem (Node)
-  │   └── WaterAbility ──signal──→ HUD.update_cooldown()
-  └── HealthComponent ──signal──→ HUD.update_health()
-  ```
+De gebruiker moet begrijpen hoe de feature werkt voor goede beslissingen in test- en refactor-fases. Display de volgende uitleg alsof je het aan een student uitlegt:
 
-- **Hoe werkt het onder de motorkap?**: welke scripts/scenes samenwerken, stap voor stap met concrete voorbeelden ("als de speler X doet, dan roept script A functie B aan, wat Y veroorzaakt")
-- **Waar moet je op letten?**: niet-voor-de-hand-liggende keuzes met uitleg _waarom_
+- **Wat doet het?**: 1-2 zinnen zoals je het aan een vriend zou uitleggen. Beschrijf wat de speler ziet en kan doen — geen technische termen.
+- **Voorbeeld**: 1 concreet gameplay scenario in 2-3 zinnen. "Stel je voor: je drukt op X, je karakter doet Y, je ziet Z op het scherm."
+- **Hoe werkt het?**: 1 ASCII diagram dat het hele verhaal vertelt. Kies het meest relevante type (scene tree, signal flow, of state diagram). Gebruik box-drawing characters (┌─┐│└─┘) en pijlen (→ ← ↓ ↑). Max 15 regels. De gebruiker moet het diagram kunnen lezen zonder uitleg ernaast.
+
+**Stap 2 — Begripscheck (verplicht, niet overslaan)**
+
+**AskUserQuestion** direct na de uitleg:
+
+Vraag: "Snap je hoe de feature werkt?"
+Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
+
+Follow-up loop tot "Ja, helder". Sla uitleg op als `build.explanation` in feature.json (targeted Edit).
 
 ### FASE 4b: Project Sync
 
@@ -831,25 +832,9 @@ Schrijf parallel terug:
 - Write `project.json`
 - Write `project-context.json` (als context/architecture gewijzigd)
 
-### FASE 5: Begripscheck + Completion
+### FASE 5: Completion
 
-#### Step 1: Comprehension Check
-
-Use **AskUserQuestion**:
-
-Vraag: "Snap je hoe de feature werkt?"
-
-Opties:
-
-- "Ja, helder"
-- "Leg het uitgebreider uit" — "Geef een stap-voor-stap uitleg met voorbeelden, alsof ik nieuw ben in gamedev"
-- "Ik heb een vraag"
-
-**Follow-up loop:** If user has questions or picks "Leg het uitgebreider uit", answer with more detail and examples. Repeat AskUserQuestion until user confirms understanding.
-
-Na "Ja, helder": sla uitleg op als `build.explanation` in feature.json (targeted Edit).
-
-#### Step 2: Output summary
+#### Output summary
 
 ```
 BUILD COMPLETE: {feature}

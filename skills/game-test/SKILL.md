@@ -4,7 +4,7 @@ description: Human playtest verification with structured feedback and fix loop. 
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 2.1.0
   category: game
 ---
 
@@ -168,10 +168,26 @@ Now TESTABLE -> TDD fix loop
 
    -> Exit skill
 
-5. **Read playtest checklist:**
+5. **Read playtest checklist + classify items:**
    - Parse `tests.checklist[]` from feature.json
    - Note expected behavior for each item (from `title` field)
    - Count total items
+   - **Classify each item:**
+     - **COVERED**: GUT unit tests from `/game-build` already verify this requirement. Check `tests/test_{feature}.gd` for matching test functions. COVERED items zijn al geverifieerd — skip in playtest.
+     - **MANUAL**: Requires human verification (gameplay feel, visuals, audio, game launch). Alles dat niet COVERED is.
+   - Display classificatie:
+
+   ```
+   CHECKLIST CLASSIFICATIE:
+
+   COVERED ({N} items — skip, al geverifieerd door GUT tests):
+   - Item {X}: {description} → test_{function}()
+
+   MANUAL ({M} items — playtest nodig):
+   - Item {Y}: {description}
+   ```
+
+   Als alle items COVERED → skip playtest, ga naar FASE 6 completion.
 
 6. **Verify playtest scene exists:**
 
@@ -1067,21 +1083,51 @@ Opgenomen in test results.
    Feature ready for integration.
    ```
 
-2. **Parallel sync** (feature.json + backlog):
+2. **Parallel sync** (feature.json + backlog + project.json + project-context.json):
 
    Lees parallel (skip als niet bestaat):
    - `.project/features/{feature-name}/feature.json`
    - `.project/backlog.html`
+   - `.project/project.json`
+   - `.project/project-context.json`
 
-   Muteer beide in memory:
+   Muteer in memory:
 
    **feature.json**: `status` → `"DONE"`, `requirements[].status` → `"PASS"` / `"FAIL"` per item, `tests.checklist[].status` → update per item with evidence. Add/update `tests` sectie: `finalStatus`, `sessions[]` (push `{ date, pass, fail, fixes }`), `fixSync`. Add `observations[]` if user reported out-of-scope issues. NIET andere secties overschrijven.
 
    **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "DONE"`, `data.updated` → huidige datum.
 
+   **project.json**: Feature status → `"DONE"`. Merge nieuwe packages als relevant.
+
+   **project-context.json**: Bij fixes in FASE 3: merge gewijzigde bestanden naar `architecture.files`, update diagram nodes naar `:::done`.
+
+   **Learning Extraction** — extracteer projectbrede learnings uit de voltooide feature:
+
+   Lees de zojuist geschreven `feature.json` en evalueer:
+   - `build.decisions[]` → type `pattern` (architecturale keuzes die andere features beïnvloeden)
+   - `tests.fixSync[]` en `tests.sessions[].fixes` → type `pitfall` (bugs met root causes)
+   - `observations[]` → type `observation` (cross-feature inzichten)
+
+   **Filter**: alleen items die relevant zijn buiten deze ene feature. Skip feature-specifieke implementatiedetails.
+
+   **Append** naar `project-context.json` → `learnings[]`:
+
+   ```json
+   {
+     "date": "YYYY-MM-DD",
+     "feature": "{feature-name}",
+     "type": "pattern|pitfall|observation",
+     "summary": "Max 200 chars samenvatting"
+   }
+   ```
+
+   Check op duplicaten (zelfde feature + zelfde summary → skip). Geen learnings gevonden → skip.
+
    Schrijf parallel terug:
    - Write `feature.json`
    - Edit `backlog.html` (keep `<script>` tags intact)
+   - Write `project.json`
+   - Write `project-context.json` (als context/architecture/learnings gewijzigd)
 
 3. **Scoped auto-commit** (only this skill's changes):
 

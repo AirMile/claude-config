@@ -7,13 +7,50 @@ description: >-
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: game
 ---
 
 # Debug
 
-Structured 8-phase debugging: intake → investigate → analyze → research → fix plans → select → implement → verify.
+Structured 9-phase debugging: context → intake → investigate → analyze → research → fix plans → select → implement → verify.
+
+## FASE 0: Context Loading
+
+**Stack context** (optioneel, skip wat niet bestaat):
+
+- Lees CLAUDE.md `### Stack` sectie
+- Lees `.claude/research/architecture-baseline.md`
+
+**Project context** (optioneel, skip als niet bestaat):
+
+- Lees `.project/project.json` → extract:
+  - `stack` (engine, language, packages)
+  - `data.entities` (names, fields, relations)
+- Lees `.project/project-context.json` (als bestaat) → extract:
+  - `context` (structure, patterns)
+  - `architecture` (diagram, files)
+
+**Active feature detectie** (optioneel):
+
+- Check `.project/session/active-*.json` files
+- Fallback: lees `.project/backlog.html` → zoek meest recente `"DOING"` feature (features met `-ing` stage suffix zijn actief)
+- Als actieve feature gevonden: noteer als context hint voor investigation agents
+
+**Stel DEBUG_CONTEXT samen** (alle info beschikbaar voor inline investigation):
+
+```
+STACK: {engine} ({language}) — {packages}
+ARCHITECTURE: {baseline patterns of "niet beschikbaar"}
+PATTERNS: {context.patterns of "niet beschikbaar"}
+STRUCTURE: {context.structure of "niet beschikbaar"}
+ACTIVE FEATURE: {feature naam + status of "geen"}
+ENTITIES: {data.entities of "niet beschikbaar"}
+```
+
+Als niets beschikbaar → ga door zonder context (backwards compatible).
+
+---
 
 ## FASE 1: Problem Intake
 
@@ -107,6 +144,9 @@ Agent prompt:
 
 ```
 Investigate this Godot bug. Perform 3 passes that build on each other.
+
+DEBUG_CONTEXT:
+{DEBUG_CONTEXT from FASE 0}
 
 PROBLEM:
 {problem summary from FASE 1}
