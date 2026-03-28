@@ -162,6 +162,7 @@
   }
   // ── Status/Stage picker helpers ──
   var STAGES = ["defining", "defined", "building", "built", "testing"];
+  var FRONTEND_STAGES = ["building", "built", "testing"];
   var ALL_STATUSES =
     typeof STATUSES !== "undefined" ? STATUSES : ["TODO", "DOING", "DONE"];
 
@@ -192,9 +193,12 @@
 
   function buildStagePicker(f) {
     if (f.status !== "DOING") return "";
+    var isFE =
+      typeof FRONTEND_TYPES !== "undefined" && FRONTEND_TYPES.includes(f.type);
+    var stages = isFE ? FRONTEND_STAGES : STAGES;
     var html =
       '<div class="detail-field"><div class="detail-label">Stage</div><div class="stage-picker">';
-    STAGES.forEach(function (s) {
+    stages.forEach(function (s) {
       var cls = s === f.stage ? " active" : "";
       html +=
         '<span class="stage-badge stage-' +
@@ -220,8 +224,12 @@
           var newStatus = el.dataset.status;
           if (newStatus === found.item.status) return;
           if (newStatus === "DOING") {
+            var isFE =
+              typeof FRONTEND_TYPES !== "undefined" &&
+              FRONTEND_TYPES.includes(found.item.type);
+            var defaultStage = isFE ? "building" : "defining";
             if (typeof updateStatus !== "undefined")
-              updateStatus(name, "DOING", found.item.stage || "defining");
+              updateStatus(name, "DOING", found.item.stage || defaultStage);
           } else {
             if (typeof updateStatus !== "undefined")
               updateStatus(name, newStatus);

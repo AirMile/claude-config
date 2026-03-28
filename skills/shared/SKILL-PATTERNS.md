@@ -18,14 +18,14 @@ Generate an ASCII [diagram type] showing [what to visualize].
 
 **Diagram types by use case:**
 
-| Use case              | Diagram type         | Example skills            |
-| --------------------- | -------------------- | ------------------------- |
-| Architecture/layers   | Component diagram    | dev-define, frontend-page |
-| Multi-step workflow   | Flowchart            | dev-build, dev-test       |
-| Feature decomposition | Tree                 | dev-plan, game-plan       |
-| State transitions     | State machine        | game-define               |
-| Parallel processes    | Architecture diagram | team-review               |
-| Decision flow         | Decision tree        | thinking-decide           |
+| Use case              | Diagram type         | Example skills               |
+| --------------------- | -------------------- | ---------------------------- |
+| Architecture/layers   | Component diagram    | dev-define, frontend-compose |
+| Multi-step workflow   | Flowchart            | dev-build, dev-test          |
+| Feature decomposition | Tree                 | dev-plan, game-plan          |
+| State transitions     | State machine        | game-define                  |
+| Parallel processes    | Architecture diagram | team-review                  |
+| Decision flow         | Decision tree        | thinking-decide              |
 
 **Placement:** After the phase where the relevant information is gathered, before execution continues.
 

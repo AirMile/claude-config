@@ -127,7 +127,7 @@
             "phase": "P4",
             "description": "Submit handler voor checkout form",
             "dependency": null,
-            "source": "/frontend-page checkout — CheckoutForm [Bestelling plaatsen]"
+            "source": "/frontend-compose checkout — CheckoutForm [Bestelling plaatsen]"
           },
           {
             "name": "coupon-validation",
@@ -136,7 +136,7 @@
             "phase": "P4",
             "description": "Coupon code validatie en korting berekening",
             "dependency": null,
-            "source": "/frontend-page checkout — CouponInput [Toepassen]"
+            "source": "/frontend-compose checkout — CouponInput [Toepassen]"
           }
         ],
         "notes": "Focus op core CRUD flow eerst. Stripe pas na stabiele product/order pipeline."
@@ -163,6 +163,11 @@
               <option value="INTEGRATION">INTEGRATION</option>
               <option value="UI">UI</option>
               <option value="REFACTOR">REFACTOR</option>
+              <option value="PAGE">PAGE</option>
+              <option value="COMPONENT">COMPONENT</option>
+              <option value="THEME">THEME</option>
+              <option value="A11Y">A11Y</option>
+              <option value="PERF">PERF</option>
               <option value="PAGE-GAP">PAGE-GAP</option>
             </select>
           </div>
@@ -296,12 +301,25 @@
         if (fi !== -1) data.features.splice(fi, 1);
       }
 
+      const FRONTEND_TYPES = [
+        "PAGE",
+        "COMPONENT",
+        "THEME",
+        "A11Y",
+        "PERF",
+        "PAGE-GAP",
+      ];
+
       function updateStatus(name, newStatus, newStage) {
         const found = findItem(name);
         if (!found) return;
         found.item.status = newStatus;
         if (newStatus === "DOING") {
-          found.item.stage = newStage || found.item.stage || "defining";
+          const isFrontend = FRONTEND_TYPES.includes(found.item.type);
+          found.item.stage =
+            newStage ||
+            found.item.stage ||
+            (isFrontend ? "building" : "defining");
         } else {
           delete found.item.stage;
           if (newStatus === "DONE") {
@@ -375,16 +393,17 @@
 
       // ─── Next skill helper ────────────────────────────────────
       function getNextSkill(f) {
-        if (f.status === "TODO") return "define";
+        const isFrontend = FRONTEND_TYPES.includes(f.type);
+        if (f.status === "TODO") return isFrontend ? "compose" : "define";
         if (f.status === "DOING") {
           return (
             {
               defining: "define",
-              defined: "build",
-              building: "build",
-              built: "test",
-              testing: "test",
-            }[f.stage] || "define"
+              defined: isFrontend ? "compose" : "build",
+              building: isFrontend ? "compose" : "build",
+              built: isFrontend ? "audit" : "test",
+              testing: isFrontend ? "audit" : "test",
+            }[f.stage] || (isFrontend ? "compose" : "define")
           );
         }
         return null;
@@ -473,8 +492,12 @@
             ? `<span class="stage-badge stage-${f.stage}">${esc(f.stage)}</span>`
             : "";
 
-        const prefix =
-          data.source && data.source.startsWith("/game") ? "game" : "dev";
+        const isFE = FRONTEND_TYPES.includes(f.type);
+        const prefix = isFE
+          ? "frontend"
+          : data.source && data.source.startsWith("/game")
+            ? "game"
+            : "dev";
         const nextVerb = getNextSkill(f);
         const nextCmd = nextVerb ? `/${prefix}-${nextVerb} ${f.name}` : "";
 
@@ -607,7 +630,12 @@
         // Update status for cross-column moves
         if (found.item.status !== newStatus) {
           if (newStatus === "DOING") {
-            updateStatus(dragName, newStatus, found.item.stage || "defining");
+            const isFEDrag = FRONTEND_TYPES.includes(found.item.type);
+            updateStatus(
+              dragName,
+              newStatus,
+              found.item.stage || (isFEDrag ? "building" : "defining"),
+            );
           } else {
             updateStatus(dragName, newStatus);
           }
@@ -979,8 +1007,12 @@
         document.getElementById("detail-body").innerHTML = html;
 
         // Show copy button if there's a next skill
-        const prefix =
-          data.source && data.source.startsWith("/game") ? "game" : "dev";
+        const isFEDetail = FRONTEND_TYPES.includes(f.type);
+        const prefix = isFEDetail
+          ? "frontend"
+          : data.source && data.source.startsWith("/game")
+            ? "game"
+            : "dev";
         const verb = getNextSkill(f);
         const copyBtn = document.getElementById("detail-copy");
         if (f.assignee) {

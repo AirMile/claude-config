@@ -1,10 +1,10 @@
 ---
-name: frontend-page
+name: frontend-compose
 description: >-
-  Compose a page from existing building blocks and new components. Inventories
-  built features, selects what belongs on the page, then generates user stories,
+  Compose a view from existing building blocks and new components. Inventories
+  built features, selects what belongs on the view, then generates user stories,
   ASCII layout, and code. Reuses existing components from the dev pipeline.
-  Use with /frontend-page or /frontend-page [page-name].
+  Use with /frontend-compose or /frontend-compose [page-name].
 argument-hint: "[page-name]"
 disable-model-invocation: true
 metadata:
@@ -13,11 +13,11 @@ metadata:
   category: frontend
 ---
 
-# Page
+# Compose
 
-Compose a page by inventorying existing building blocks (components, hooks, services from the dev pipeline) and combining them with new functionality. Selects what belongs on this page, formulates user stories, designs the layout as ASCII art, generates code that reuses existing components, and optionally hooks up real data.
+Compose a view by inventorying existing building blocks (components, hooks, services from the dev pipeline) and combining them with new functionality. Selects what belongs on this view, formulates user stories, designs the layout as ASCII art, generates code that reuses existing components, and optionally hooks up real data.
 
-**Pipeline:** `/frontend-theme` (optional) → `/frontend-page` → `/frontend-iterate` → quality skills
+**Pipeline:** `/frontend-theme` (optional) → `/frontend-compose` → `/frontend-iterate` → quality skills
 
 ## References
 
@@ -25,6 +25,7 @@ Compose a page by inventorying existing building blocks (components, hooks, serv
 - `../shared/PATTERNS.md` — Component patterns (compound, render props, etc.)
 - `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
+- `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
 
 ---
 
@@ -32,8 +33,8 @@ Compose a page by inventorying existing building blocks (components, hooks, serv
 
 ### 0.1 Argument Check
 
-- **Argument provided** (`/frontend-page dashboard`): use as page name, proceed to 0.2.
-- **No argument** (`/frontend-page`):
+- **Argument provided** (`/frontend-compose dashboard`): use as page name, proceed to 0.2.
+- **No argument** (`/frontend-compose`):
 
 Check `.project/project.json` → `design.pages` for pages with status `DEF` or `IDEA`.
 
@@ -139,6 +140,18 @@ Data layer:
 ```
 
 Proceed to FASE 0.5 (page inventory).
+
+### 0.4 Backlog Stage
+
+Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`.
+
+Find feature matching the page name: `data.features.find(f => f.name === "{kebab-case-page-name}")`.
+
+- **Found + status TODO**: set `status: "DOING"`, `stage: "building"`, `date: "{YYYY-MM-DD}"`. Write back via Edit.
+- **Found + status DOING**: set `stage: "building"`. Write back via Edit.
+- **Not found**: add to `data.features[]`: `{ "name": "{name}", "type": "PAGE", "status": "DOING", "stage": "building", "phase": "P4", "description": "{purpose}", "dependency": null }`. Write back.
+
+Set `data.updated` to today. Keep `<script>` tags intact.
 
 ---
 
@@ -629,7 +642,14 @@ Theme: [Integrated from THEME.md | Tailwind defaults used]
 ════════════════════════════════════════════════════════════════
 ```
 
-### 3.4 Functionality Gap Detection
+### 3.4 Backlog Completion Sync
+
+1. Read `.project/backlog.html` → parse JSON
+2. Find feature matching page name → set `stage: "built"`, `data.updated` to today
+3. Write back via Edit (keep `<script>` tags intact)
+4. Sync to `project.json` `features[]` array: merge feature with `status: "DOING"`, `stage: "built"`
+
+### 3.5 Functionality Gap Detection
 
 Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
 
@@ -655,7 +675,7 @@ Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
    - Cross-reference gap met `data.features`
    - Match? Noteer: "Feature bestaat in backlog: {name} ({status})"
    - Geen match? Voeg toe aan `data.features`:
-     `{ "name": "{feature-naam}", "type": "PAGE-GAP", "status": "TODO", "phase": "P4", "description": "{beschrijving}", "dependency": null, "source": "/frontend-page {page} — {Component} [{element}]" }`
+     `{ "name": "{feature-naam}", "type": "PAGE-GAP", "status": "TODO", "phase": "P4", "description": "{beschrijving}", "dependency": null, "source": "/frontend-compose {page} — {Component} [{element}]" }`
    - Zet `data.updated` naar huidige datum, schrijf JSON terug via Edit tool
 
 4. **Als `.project/backlog.html` NIET bestaat:**
@@ -663,7 +683,7 @@ Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
 
 Gaps verschijnen altijd in het completion report. Toevoegen aan backlog is automatisch maar non-blocking.
 
-### 3.5 Visual Verification
+### 3.6 Visual Verification
 
 Verify the generated page renders correctly in the browser. See `../shared/PLAYWRIGHT.md` for tool details and error recovery.
 
@@ -822,7 +842,7 @@ Update `.project/session/devinfo.json` with handoff data for downstream skills:
 ```json
 {
   "handoff": {
-    "from": "frontend-page",
+    "from": "frontend-compose",
     "to": "frontend-iterate",
     "data": {
       "pageFile": "[page file path]",

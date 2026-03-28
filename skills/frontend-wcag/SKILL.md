@@ -56,6 +56,7 @@ stateDiagram-v2
 - `../shared/RULES.md` — A-series (A001-A203), plus R001, R002, R004, R005, H004-H006
 - `../shared/DEVINFO.md` — Session tracking protocol
 - `../shared/PLAYWRIGHT.md` — Browser automation for live a11y checks (accessibility tree)
+- `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
 
 ---
 
@@ -102,6 +103,18 @@ Ready for: Stack detection
 ```
 
 > **Note:** Rollback wordt afgehandeld door Claude Code's ingebouwde "Rewind" functie.
+
+### 0.3 Backlog Stage (optional)
+
+Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`.
+
+Match scope (file/component/project) against backlog items:
+
+- Items with type `A11Y` and status `TODO`: set `status: "DOING"`, `stage: "testing"`, `date: today`. Write back.
+- Items with type `PAGE` and `stage === "built"`: set `stage: "testing"`. Write back.
+
+Set `data.updated` to today. Keep `<script>` tags intact.
+If no match or no backlog: skip.
 
 ---
 
@@ -406,6 +419,20 @@ options:
 ## FASE 6: Completion
 
 After all fixes are implemented and validated:
+
+### 6.1 Backlog Completion Sync
+
+1. If a backlog item was tagged as "testing" in FASE 0:
+   - Read `.project/backlog.html` → parse JSON
+   - Find the feature → set `status: "DONE"`, remove `stage` field, `data.updated` to today
+   - Write back via Edit (keep `<script>` tags intact)
+   - Sync to `project.json` `features[]`: merge feature with `status: "DONE"`
+
+2. If new accessibility issues were found that don't exist in the backlog:
+   - Add each as: `{ "name": "{issue-kebab}", "type": "A11Y", "status": "TODO", "phase": "P3", "description": "{WCAG criterion}: {issue description}", "dependency": null }`
+   - Report: "{N} new A11Y items added to backlog"
+
+### 6.2 Summary
 
 ```
 A11Y COMPLETE

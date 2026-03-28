@@ -26,6 +26,7 @@ Convert visual input into working code. Accepts screenshots, Figma exports, webs
 - `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
 - `../shared/PLAYWRIGHT.md` — Browser automation, screenshot capture
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
+- `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
 
 ---
 
@@ -103,7 +104,20 @@ options:
 multiSelect: false
 ```
 
-### 0.5 Theme & Project Context
+### 0.5 Backlog Stage (page scope only)
+
+If scope is a full page (not a single component):
+
+1. Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`
+2. Find feature matching page name: `data.features.find(f => f.name === "{kebab-case-page-name}")`
+   - **Found + status TODO**: set `status: "DOING"`, `stage: "building"`, `date: "{YYYY-MM-DD}"`. Write back via Edit.
+   - **Found + status DOING**: set `stage: "building"`. Write back via Edit.
+   - **Not found**: add to `data.features[]`: `{ "name": "{name}", "type": "PAGE", "status": "DOING", "stage": "building", "phase": "P4", "description": "Converted from visual input", "dependency": null }`. Write back.
+3. Set `data.updated` to today. Keep `<script>` tags intact.
+
+If scope is a component: skip this step.
+
+### 0.6 Theme & Project Context
 
 **Theme check:**
 
@@ -384,7 +398,15 @@ Update `.project/session/devinfo.json`:
 }
 ```
 
-### 4.2 Completion Report
+### 4.2 Backlog Completion Sync (page scope only)
+
+If page scope and backlog exists:
+
+1. Read `.project/backlog.html` → parse JSON
+2. Find feature matching page name → set `stage: "built"`, `data.updated` to today
+3. Write back via Edit (keep `<script>` tags intact)
+
+### 4.3 Completion Report
 
 ```
 CONVERT COMPLETE
@@ -401,7 +423,7 @@ Files ([N]):
 
 Next steps:
   1. /frontend-iterate → visual fine-tuning in browser
-  2. /frontend-optimize → performance/SEO audit
+  2. /frontend-audit → performance/SEO audit
 
 ═══════════════════════════════════════════════════════════
 ```

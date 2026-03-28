@@ -285,6 +285,26 @@ body {
   background: color-mix(in srgb, var(--text-muted) 20%, transparent);
   color: var(--text-muted);
 }
+.badge-page {
+  background: color-mix(in srgb, var(--purple) 20%, transparent);
+  color: var(--purple);
+}
+.badge-component {
+  background: color-mix(in srgb, var(--pink) 20%, transparent);
+  color: var(--pink);
+}
+.badge-theme {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+}
+.badge-a11y {
+  background: color-mix(in srgb, var(--done) 20%, transparent);
+  color: var(--done);
+}
+.badge-perf {
+  background: color-mix(in srgb, var(--orange) 20%, transparent);
+  color: var(--orange);
+}
 .badge-page-gap {
   background: color-mix(in srgb, var(--orange) 20%, transparent);
   color: var(--orange);

@@ -28,11 +28,11 @@ dev:
   - dev-test
 
 frontend:
+  - frontend-audit
+  - frontend-compose
   - frontend-convert
-  - frontend-design
   - frontend-iterate
-  - frontend-optimize
-  - frontend-page
+  - frontend-plan
   - frontend-theme
   - frontend-wcag
 

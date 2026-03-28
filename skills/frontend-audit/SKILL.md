@@ -1,8 +1,8 @@
 ---
-name: frontend-optimize
+name: frontend-audit
 description: >-
   Audit and fix performance (Lighthouse, CWV, bundle), SEO (Google), AEO (AI search),
-  and responsive design (multi-viewport) in one unified scan. Use with /frontend-optimize.
+  and responsive design (multi-viewport) in one unified scan. Use with /frontend-audit.
 argument-hint: "[url]"
 disable-model-invocation: true
 metadata:
@@ -11,14 +11,15 @@ metadata:
   category: frontend
 ---
 
-# Optimize
+# Audit
 
 Unified audit & fix for performance, SEO, AEO (AI search optimization), and responsive design. Scan on all axes, get a combined report, fix by priority, verify with before/after comparison.
 
-**Pipeline:** `/frontend-page` → `/frontend-iterate` → `/frontend-optimize`
+**Pipeline:** `/frontend-compose` → `/frontend-iterate` → `/frontend-audit`
 
 ## References
 
+- `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
 - `../shared/RULES.md` — P-series (performance), S-series (SEO), H-series (responsive/HTML)
 - `../shared/DESIGN.md` — Anti-patterns (AI design tells), motion timing, interaction states
 - `../shared/PLAYWRIGHT.md` — CWV measurement, multi-viewport captures, overflow detection
@@ -84,6 +85,18 @@ CSS:        [Tailwind | CSS Modules | styled-components]
 Audits:     [Performance, SEO, AEO, Responsive]
 ═════════════════════════════════════════════════════════════
 ```
+
+### 0.4 Backlog Stage (optional)
+
+Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`.
+
+Filter features with `status === "DOING" && stage === "built"` — these are ready for audit.
+
+Match the target URL/page against backlog items (best-effort: match page name from URL path to feature name).
+
+If match found: set `stage: "testing"`, `data.updated` to today. Write back via Edit (keep `<script>` tags intact).
+
+If no match or no backlog: skip (audit can run on non-backlog pages too).
 
 ---
 
@@ -308,10 +321,19 @@ Resolved: [N]/[total] findings
 ═════════════════════════════════════════════════════════════
 ```
 
-### 4.3 Completion Report
+### 4.3 Backlog Completion Sync
+
+If a backlog item was tagged as "testing" in FASE 0:
+
+1. Read `.project/backlog.html` → parse JSON
+2. Find the feature → set `status: "DONE"`, remove `stage` field, `data.updated` to today
+3. Write back via Edit (keep `<script>` tags intact)
+4. Sync to `project.json` `features[]`: merge feature with `status: "DONE"`
+
+### 4.4 Completion Report
 
 ```
-OPTIMIZE COMPLETE
+AUDIT COMPLETE
 ═════════════════════════════════════════════════════════════
 
 Audits run:    [Performance, SEO, AEO, Responsive]

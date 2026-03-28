@@ -1,9 +1,9 @@
 ---
 name: dev-todo
 description: >-
-  Add new backlog items (features, changes, bugs, refactors) with optional
-  thinking rounds. Use with /dev-todo or /dev-todo [beschrijving] when capturing
-  a new idea for the project backlog.
+  Add new backlog items (features, changes, bugs, refactors, pages, components,
+  a11y, performance) with optional thinking rounds. Use with /dev-todo or
+  /dev-todo [beschrijving] when capturing a new idea for the project backlog.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -19,7 +19,7 @@ Capture new backlog items, optionally flesh them out through 1-2 quick thinking 
 
 ## When to Use
 
-- User has a new feature, change, bug fix, or improvement for an existing product
+- User has a new feature, change, bug fix, improvement, page, component, or frontend task for an existing product
 - User wants to quickly capture an item without full `/dev-plan`
 - User wants to think through an idea before adding to backlog
 
@@ -102,7 +102,7 @@ Formuleer 2-3 vragen specifiek voor DIT idee. Presenteer alle vragen in één As
 
 Na de antwoorden: verwerk de inzichten in een aangescherpte beschrijving van het item. Ga door naar FASE 1b.
 
-### FASE 1b: Priority + Type
+### FASE 1b: Priority + Category
 
 Eén AskUserQuestion call met twee vragen:
 
@@ -118,6 +118,21 @@ options:
 multiSelect: false
 
 # Vraag 2
+header: "Categorie"
+question: "Dev of frontend?"
+options:
+  - label: "Dev (Recommended)", description: "Backend, API, logica, data"
+  - label: "Frontend", description: "Pagina's, componenten, UI, styling"
+multiSelect: false
+```
+
+### FASE 1c: Type
+
+Eén AskUserQuestion call (1 vraag). Opties afhankelijk van gekozen categorie:
+
+**If Dev:**
+
+```yaml
 header: "Type"
 question: "Wat voor type item is dit?"
 options:
@@ -125,6 +140,19 @@ options:
   - label: "CHANGE", description: "Wijziging aan bestaande functionaliteit"
   - label: "BUG", description: "Bug fix of correctie"
   - label: "API", description: "Backend endpoint of service"
+multiSelect: false
+```
+
+**If Frontend:**
+
+```yaml
+header: "Type"
+question: "Wat voor type frontend item is dit?"
+options:
+  - label: "PAGE (Recommended)", description: "Nieuwe pagina of view"
+  - label: "COMPONENT", description: "Herbruikbaar UI component"
+  - label: "A11Y", description: "Accessibility verbetering"
+  - label: "PERF", description: "Performance of SEO optimalisatie"
 multiSelect: false
 ```
 
@@ -159,15 +187,19 @@ multiSelect: false
      # {Item Naam}
 
      ## Beschrijving
+
      {aangescherpte beschrijving}
 
      ## Scope
+
      {antwoord op scope-vraag}
 
      ## Doel
+
      {antwoord op doel-vraag}
 
      ## Aanpak
+
      {antwoord op aanpak-vraag, als gesteld}
      ```
 
@@ -201,7 +233,11 @@ TODO TOEGEVOEGD
   Next steps:
   - /thinking-brainstorm {naam} - Verdiep het idee met variaties
   - /thinking-critique {naam} - Toets het idee kritisch
+  [If type is FEATURE, CHANGE, BUG, or API:]
   - /dev-define {naam} - Begin met requirements en bouwen
+  [If type is PAGE, COMPONENT, THEME, A11Y, or PERF:]
+  - /frontend-compose {naam} - Bouw de pagina/component
+  - /frontend-plan - Definieer meerdere pagina's tegelijk
 
   Tip: wijs toe aan een teammate door assignee toe te voegen in de backlog UI
 ```

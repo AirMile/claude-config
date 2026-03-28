@@ -40,7 +40,11 @@ if (typeof updateStatus !== "undefined") {
     if (!found) return;
     found.item.status = newStatus;
     if (newStatus === "DOING") {
-      found.item.stage = newStage || found.item.stage || "defining";
+      var isFE =
+        typeof FRONTEND_TYPES !== "undefined" &&
+        FRONTEND_TYPES.includes(found.item.type);
+      found.item.stage =
+        newStage || found.item.stage || (isFE ? "building" : "defining");
     } else {
       delete found.item.stage;
       if (newStatus === "DONE") {
@@ -66,7 +70,14 @@ if (typeof updateStatus !== "undefined") {
     if (found.item.status === newStatus) return;
     var oldStatus = found.item.status;
     if (newStatus === "DOING") {
-      updateStatus(name, newStatus, found.item.stage || "defining");
+      var isFE2 =
+        typeof FRONTEND_TYPES !== "undefined" &&
+        FRONTEND_TYPES.includes(found.item.type);
+      updateStatus(
+        name,
+        newStatus,
+        found.item.stage || (isFE2 ? "building" : "defining"),
+      );
     } else {
       updateStatus(name, newStatus);
     }

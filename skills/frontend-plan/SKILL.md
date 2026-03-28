@@ -1,9 +1,9 @@
 ---
-name: frontend-design
+name: frontend-plan
 description: >-
   Design specification management: pages, flows, and design principles.
   Iteratively capture and manage the app's design structure before building.
-  Use with /frontend-design.
+  Use with /frontend-plan.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -11,11 +11,11 @@ metadata:
   category: frontend
 ---
 
-# Design
+# Plan
 
 Beheert de design specificatie van het project: pagina's, user flows, en design principes vastleggen en beheren. Iteratief — roep meerdere keren aan om incrementeel op te bouwen.
 
-**Pipeline:** `/frontend-design` → `/frontend-theme` → `/frontend-page` → `/frontend-iterate` → quality skills
+**Pipeline:** `/frontend-plan` → `/frontend-theme` → `/frontend-compose` → `/frontend-iterate` → quality skills
 
 **Output locatie:** `.project/project.json` → `design` sectie
 
@@ -24,6 +24,7 @@ Beheert de design specificatie van het project: pagina's, user flows, en design 
 - `../shared/DASHBOARD.md` — project.json schema en merge-strategieën
 - `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
+- `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
 
 ---
 
@@ -706,15 +707,40 @@ multiSelect: false
 
 ## Completion
 
+### Backlog Sync
+
+After defining pages, sync them to the backlog:
+
+1. Read `project.json` → get `design.pages[]` array
+2. Read `.project/backlog.html` (if it exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`
+   - **If backlog doesn't exist**: create it from template `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`. Set `data.source` to `"/frontend-plan"`, `data.project` to project directory name.
+3. For each page in `design.pages[]`:
+   - Generate kebab-case name from page name
+   - Check if `data.features.find(f => f.name === name)` exists
+   - **Not found**: add to `data.features[]`:
+     ```json
+     {
+       "name": "{kebab-case-name}",
+       "type": "PAGE",
+       "status": "TODO",
+       "phase": "P3",
+       "description": "{page.purpose}",
+       "dependency": null
+     }
+     ```
+   - **Found**: skip (don't overwrite existing items)
+4. Set `data.updated` to today's date
+5. Write back via Edit (keep `<script>` tags intact)
+
 ### Update DevInfo
 
 Update `.project/session/devinfo.json`:
 
 ```json
 {
-  "currentSkill": { "name": "frontend-design", "phase": "COMPLETE" },
+  "currentSkill": { "name": "frontend-plan", "phase": "COMPLETE" },
   "handoff": {
-    "from": "frontend-design",
+    "from": "frontend-plan",
     "to": "frontend-theme",
     "data": {
       "designLocation": ".project/project.json#design",
@@ -749,10 +775,13 @@ Locatie: .project/project.json (design sectie)
 | Flows     | {M}    | {flow names joined}                |
 | Principes | {P}    | {principle names joined}           |
 
+Backlog: {X} nieuwe PAGE items toegevoegd
+  {lijst van toegevoegde pagina namen}
+
 Next steps:
-  1. /frontend-design   → voeg meer pagina's/flows toe (iteratief)
+  1. /frontend-plan     → voeg meer pagina's/flows toe (iteratief)
   2. /frontend-theme    → design tokens en kleuren op basis van principes
-  3. /frontend-page {x} → bouw een specifieke pagina
+  3. /frontend-compose {x} → bouw een specifieke pagina
 
 ═══════════════════════════════════════════════════════════════
 ```

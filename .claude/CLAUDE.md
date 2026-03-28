@@ -54,7 +54,7 @@ setup-project.sh  Linkt config naar een project's .claude/
 
 ## Pipelines
 
-**Frontend**: theme → compose → build → convert → data → test/a11y/perf/responsive/seo
+**Frontend**: plan → theme → compose/convert → iterate → audit/wcag
 **Dev**: define → plan → build → test → debug → refactor
 **Game**: define → plan → build → test → debug → refactor (Godot 4.x, GDScript, GUT)
 

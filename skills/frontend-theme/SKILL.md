@@ -980,7 +980,7 @@ Bij succesvolle completion:
 {
   "handoff": {
     "from": "frontend-theme",
-    "to": "frontend-page",
+    "to": "frontend-compose",
     "data": {
       "themeLocation": ".project/project.json#theme",
       "preset": "Anthropic Style | Custom",

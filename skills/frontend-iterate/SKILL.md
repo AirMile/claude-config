@@ -169,7 +169,7 @@ User describes an element (e.g., "make the header background darker").
 
   Volgende stappen:
   - /frontend-wcag → accessibility audit
-  - /frontend-optimize → performance optimalisatie
+  - /frontend-audit → performance optimalisatie
   [Als structurele layout-wijzigingen gemaakt (secties verplaatst, grid gewijzigd):]
   - /thinking-brainstorm page:{page} → verken alternatieve layouts
   - /thinking-critique page:{page} → analyseer UX keuzes
