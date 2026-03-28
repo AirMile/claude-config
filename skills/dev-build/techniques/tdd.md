@@ -66,6 +66,8 @@ Tests in bulk testen _denkbeeldig_ gedrag, niet _werkelijk_ gedrag. Je commit je
 
 ### Step 1: Write Test (RED)
 
+Lees 1 bestaand test bestand (bij voorkeur model/service test) voor setup/teardown patronen (before/after hooks, DB lifecycle, import conventies). Gebruik dit als basis voor je test structuur.
+
 Genereer test voor DIT requirement. Volg project test conventies.
 Run test — verwacht FAIL. Als test meteen slaagt — je test bestaand gedrag. Pas de test aan.
 

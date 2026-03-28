@@ -696,11 +696,12 @@ Muteer in memory:
 - **Data entities**: voor elke entity check of `data.entities` al entry heeft met die naam → nee: push met fields/relations → ja: merge nieuwe velden
 - **Stack**: als Godot plugins/assets → check `stack.packages` op naam → nee: push `{ name, version, purpose }`
 - **Features**: check op naam → nee: push `{ name, status: "DOING", stage: "defined", summary, depends: [], created }` → ja: update status naar `"DOING"`, stage naar `"defined"`
-- **Architecture** in `.project/project-context.json`: genereer/update als feature scene tree en/of signals heeft. **Volg diagram conventies uit `shared/DASHBOARD.md`**:
-  - `diagram`: Mermaid `graph TD` met classDef (done/planned/external), subgraphs per domein. Scene tree als nodes, signal flow als edges, state machines als subgraph. Alle features DOING → `:::planned`, bestaande → `:::done`
-  - `description`: functionele beschrijvingen per component (geen filenamen)
-  - `files`: mapping van gebouwde componenten → `{ component, src: [...], test: [...] }`
-  - OVERWRITE. Skip als feature te klein (enkele node zonder signals)
+- **Architecture** in `.project/project-context.json`: genereer/update als feature scene tree en/of signals heeft. **Volg component-first model uit `shared/DASHBOARD.md`**:
+  - `layers`: definieer lagen met `{ name, order }` (bijv. Scenes order 1, Systems order 2, Resources order 3)
+  - `dataFlow`: één-regel samenvatting van de scene/signal flow
+  - `components`: per component `{ name, layer, description, status, connects_to }`. Scene tree als componenten, signal flow als `connects_to`. Alle features DOING → `status: "planned"`, bestaande → `"done"`
+  - Merge strategie: check of component `name` al bestaat → nee: push → ja: merge
+  - Skip als feature te klein (enkele node zonder signals)
 
 Schrijf parallel terug:
 

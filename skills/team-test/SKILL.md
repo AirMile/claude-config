@@ -772,10 +772,10 @@ Use AskUserQuestion:
    - `stack.packages`: merge als packages geïnstalleerd tijdens fix loop
    - `endpoints`: merge als gewijzigd tijdens fixes
    - `data.entities`: merge als gewijzigd tijdens fixes
-   - `architecture` in `.project/project-context.json` — **volg diagram conventies uit `shared/DASHBOARD.md`**:
-     - `architecture.diagram`: feature status → `"DONE"` → verifieer dat nodes `:::done` zijn (dev-build zet dit normaal al, maar check/corrigeer als nodig). Als FASE 5c fixes zijn toegepast → update file references in node labels (`Naam<br/>file.js`), voeg nieuwe nodes toe als componenten zijn toegevoegd
-     - `architecture.files`: merge nieuwe/gewijzigde bestanden uit fix loop (test files uit FASE 3, source fixes uit FASE 5c)
-     - Skip als geen `architecture` sectie bestaat in project-context.json of project.json
+   - `architecture.components` in `.project/project-context.json` — **volg component-first model uit `shared/DASHBOARD.md`**:
+     - Bevestig component status → `"done"`, merge test files uit FASE 3 naar component `test[]`, merge source fixes uit FASE 5c naar `src[]`
+     - Voeg nieuwe componenten toe als die tijdens fixes zijn ontstaan
+     - Skip als geen `architecture.components` bestaat in project-context.json
 
    Schrijf parallel terug:
    - Write `feature.json` (als gewijzigd)
@@ -811,8 +811,6 @@ Use AskUserQuestion:
    ```bash
    rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt
    ```
-
-   **IMPORTANT:** Do NOT add Co-Authored-By footer to pipeline commits.
 
 #### Step 2: Teammate Feedback
 

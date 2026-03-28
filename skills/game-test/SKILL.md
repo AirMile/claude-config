@@ -1099,7 +1099,7 @@ Opgenomen in test results.
 
    **project.json**: Feature status → `"DONE"`. Merge nieuwe packages als relevant.
 
-   **project-context.json**: Bij fixes in FASE 3: merge gewijzigde bestanden naar `architecture.files`, update diagram nodes naar `:::done`.
+   **project-context.json**: Bij fixes in FASE 3: update `architecture.components[]` — merge gewijzigde bestanden naar component `src`/`test`, bevestig `status: "done"`.
 
    **Learning Extraction** — extracteer projectbrede learnings uit de voltooide feature:
 
@@ -1156,8 +1156,6 @@ Opgenomen in test results.
    ```
 
    Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
-
-   **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
 **Output:**
 

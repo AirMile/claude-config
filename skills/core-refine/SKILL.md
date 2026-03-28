@@ -2,8 +2,8 @@
 name: core-refine
 description: >-
   Analyze and refine skills for clarity, correctness, and effectiveness. Detects
-  redundancy, dead paths, ambiguity, and poor structure. Optional test simulation
-  for deeper insights. Use with /core-refine or /core-refine [skill-name].
+  redundancy, dead paths, ambiguity, and poor structure. Optional internal
+  walkthrough for deeper insights. Use with /core-refine or /core-refine [skill-name].
 argument-hint: "[skill-name]"
 disable-model-invocation: true
 metadata:
@@ -14,7 +14,7 @@ metadata:
 
 # Refine
 
-Analyze and refine skills for quality. Two modes: quick (analysis only) or extended (test simulation + analysis).
+Analyze and refine skills for quality. Two modes: quick (analysis only) or extended (internal walkthrough + analysis).
 
 **Trigger**: `/core-refine` or `/core-refine [skill-name]`
 
@@ -65,7 +65,7 @@ Source: [conversation | devinfo.json | both]
 Skill(s) found: [list of detected skills with status]
 Artifacts: [relevant files/outputs if available from devinfo]
 
-This context will be used for test simulation if extended mode is selected.
+This context will be used for the walkthrough if extended mode is selected.
 ```
 
 **If no context detected:** proceed silently to Step 2.
@@ -79,8 +79,8 @@ Use **AskUserQuestion**:
 - header: "Modus"
 - question: "Er is context beschikbaar uit een eerdere skill-uitvoering. Hoe wil je de skill analyseren?"
 - options:
-  - label: "Uitgebreid met test (Recommended)", description: "Test simulatie met de gedetecteerde context als basis — levert de meest bruikbare observaties op"
-  - label: "Quick analyse", description: "Directe analyse zonder test — snel, geschikt voor kleine skills"
+  - label: "Uitgebreid met walkthrough (Recommended)", description: "Interne walkthrough met de gedetecteerde context als basis — levert de meest bruikbare observaties op"
+  - label: "Quick analyse", description: "Directe analyse zonder walkthrough — snel, geschikt voor kleine skills"
 - multiSelect: false
 
 **If no context detected:**
@@ -88,17 +88,17 @@ Use **AskUserQuestion**:
 - header: "Modus"
 - question: "Hoe wil je de skill analyseren?"
 - options:
-  - label: "Quick analyse (Recommended)", description: "Directe analyse zonder test — snel, geschikt voor kleine skills"
-  - label: "Uitgebreid met test", description: "Eerst een dry-run simulatie doorlopen, dan analyse met testdata"
+  - label: "Quick analyse (Recommended)", description: "Directe analyse zonder walkthrough — snel, geschikt voor kleine skills"
+  - label: "Uitgebreid met walkthrough", description: "Eerst een interne walkthrough, dan analyse met bevindingen"
 - multiSelect: false
 
-## Step 3: Test Simulation (only if "Uitgebreid met test")
+## Step 3: Internal Walkthrough (only if "Uitgebreid met walkthrough")
 
 **Skip to Step 4 if quick mode selected.**
 
-### 3.1 Generate Scenario
+### 3.1 Define Scenario
 
-**If context was detected in Step 1.5** — use the real execution as test basis:
+**If context was detected in Step 1.5** — use the real execution as basis:
 
 - Build scenario from the actual skill invocation and its outcomes
 - Reference real artifacts (files created, decisions made, errors encountered)
@@ -109,38 +109,36 @@ Use **AskUserQuestion**:
 - Pick a use case that exercises the skill's main workflow
 - Include at least one edge case or decision point
 
-**Present to user:**
+**Show scenario:**
 
 ```
-TEST SCENARIO
+WALKTHROUGH SCENARIO
 
 Scenario: [description]
-Context: [real: based on prior execution | simulated: fabricated project context]
+Context: [real: based on prior execution | simulated: fabricated]
 [If real: list key artifacts/decisions from the detected context]
-
-I'll simulate executing this skill. You respond as you normally would.
-Ready? Type anything to start.
 ```
 
-### 3.2 Run Simulation
+### 3.2 Trace Through Skill
 
-Execute the skill as written, following its instructions literally:
+Mentally execute the skill step by step against the scenario. For each step:
 
-- At each AskUserQuestion → present it to the user
-- At each output block → show it
-- Follow branching logic exactly
-- Do NOT improvise — if instructions are unclear, note it and make your best guess
+- Follow branching logic exactly as written
+- At each AskUserQuestion → assume a realistic user choice, note the options
+- At each output block → verify it can be populated with available data
+- Flag where instructions are ambiguous, missing, or require improvisation
+- Flag where the flow breaks or produces unexpected results
 
-### 3.3 Collect Observations
+Do NOT interact with the user during the walkthrough — this is an internal analysis.
 
-After simulation completes, document:
+### 3.3 Report Observations
 
 ```
-TEST OBSERVATIONS
+WALKTHROUGH OBSERVATIONS
 
 Flow issues:
 - [where instructions were ambiguous or missing]
-- [where Claude had to improvise beyond what was written]
+- [where Claude would need to improvise beyond what was written]
 
 UX issues:
 - [awkward phrasing, too many modals, unclear options]
@@ -211,7 +209,7 @@ Ratio of actionable, unique instructions to filler.
 - metadata: present and complete?
 - No security violations (XML brackets, reserved words)?
 
-### 4.7 Test Findings (only if test was run)
+### 4.7 Walkthrough Findings (only if walkthrough was run)
 
 Integrate observations from Step 3.3:
 
@@ -232,7 +230,7 @@ ANALYSIS: [skill-name]
 | Structure | X/5 | [one-line] |
 | Claude-Native | X/5 | [one-line] |
 | Frontmatter | X/5 | [one-line] |
-| Test Findings | X/5 | [one-line] (only if test ran)
+| Walkthrough | X/5 | [one-line] (only if walkthrough ran)
 
 Overall: [X/30 or X/35] — [Grade: A/B/C/D/F]
 
@@ -242,9 +240,21 @@ TOP FINDINGS:
 3. [third finding]
 ```
 
-## Step 5: Refactor Plan
+### 4.8 Early Exit
 
-Based on analysis, propose concrete changes.
+If TOP FINDINGS is empty or all dimensions score 4+, the skill needs no refactoring. Show the analysis and stop:
+
+```
+ANALYSIS COMPLETE: [skill-name]
+
+No significant findings — skill is in good shape. No changes proposed.
+```
+
+Skip Steps 5 and 6.
+
+## Step 5: Iterative Refactor Review
+
+Based on analysis, propose concrete changes — presented **one at a time** for individual approval.
 
 **Refactor principles:**
 
@@ -256,26 +266,82 @@ Based on analysis, propose concrete changes.
 - Keep AskUserQuestion integrations (UX, not noise)
 - Don't sacrifice clarity for brevity — if a longer explanation prevents mistakes, keep it
 
-**Enter plan mode:**
+### 5.1 Collect and Classify Changes
 
-1. Use **EnterPlanMode**
-2. Write the refactored SKILL.md to the plan file — full updated content
-3. Include a diff summary at the top:
+Internally compile all proposed changes. Classify each as:
 
-   ```
-   REFACTOR SUMMARY: [skill-name]
+- **Significant** — structural changes, content rewrites, logic modifications, section additions/removals
+- **Minor** — formatting, whitespace, phrasing tweaks, typo fixes, small wording improvements
 
-   Changes:
-   - [change 1: what and why]
-   - [change 2: what and why]
+Order significant changes by impact (highest first). Each change should be self-contained — can be accepted or rejected independently. Flag dependencies between changes: if change B requires change A, note this. If a prerequisite change is skipped, auto-skip dependent changes with explanation.
 
-   Preserved:
-   - [important things intentionally kept]
-   ```
+### 5.2 Present Changes
 
-4. Use **ExitPlanMode** for user approval
+**Significant changes — one by one.** For each, show:
 
-After approval, apply changes with Edit tool.
+```
+CHANGE [n/total]: [short title]
+
+What: [what changes]
+Why: [reason — reference analysis dimension/finding]
+
+--- Before ---
+[relevant section as-is]
+
+--- After ---
+[proposed replacement]
+```
+
+Then use **AskUserQuestion**:
+
+- header: "Change [n]/[total]"
+- question: "[short title]"
+- options:
+  - label: "Accept", description: "Apply this change"
+  - label: "Skip", description: "Keep the current version"
+  - label: "Modify", description: "Adjust this change before applying"
+- multiSelect: false
+
+**If "Modify":** ask in plain text what the user wants differently, revise the change, show the updated preview, and re-ask with the same AskUserQuestion.
+
+**Minor changes — batched.** After all significant changes are reviewed, present minor changes as a group:
+
+```
+MINOR CHANGES ([count]):
+
+1. [short description of minor change]
+2. [short description of minor change]
+...
+```
+
+Use **AskUserQuestion**:
+
+- header: "Minor changes"
+- question: "[count] kleine aanpassingen (formatting, phrasing)"
+- options:
+  - label: "Accept all", description: "Apply all minor changes"
+  - label: "Skip all", description: "Keep current versions"
+  - label: "Review individually", description: "Go through them one by one"
+- multiSelect: false
+
+If "Review individually" → present each minor change using the same significant change flow above.
+
+### 5.3 Summary and Apply
+
+After all changes have been reviewed, show:
+
+```
+REFACTOR SUMMARY: [skill-name]
+
+Accepted: [n]/[total]
+- [change title 1]
+- [change title 2]
+
+Skipped: [n]/[total]
+- [change title 3]
+```
+
+Apply only the accepted changes using the Edit tool.
 
 ## Step 6: Verify
 
@@ -287,7 +353,10 @@ After approval, apply changes with Edit tool.
 ```
 REFINED: [skill-name]
 
-Score: [before]/[max] → estimated [after]/[max]
-Changes applied: [count]
-Key improvements: [summary of what got better]
+Changes applied: [accepted]/[total proposed]
+- [change title 1]
+- [change title 2]
+
+Frontmatter: [valid/issues found]
+Resources: [ok/missing files]
 ```

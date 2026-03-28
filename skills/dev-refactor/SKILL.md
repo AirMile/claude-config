@@ -688,7 +688,7 @@ IMPROVEMENTS APPLIED
    - Extracted components/hooks → add to structure tree
    - `context.patterns` → merge gewijzigde patterns
    - `context.updated` → huidige datum
-   - `architecture.diagram` → regenereer als die bestaat (OVERWRITE, **volg diagram conventies uit `shared/DASHBOARD.md`**: classDef, subgraphs, file references, `architecture.files` bijwerken)
+   - `architecture.components` → update bestaande componenten (status, src, test, connects_to), voeg nieuwe toe als componenten zijn hernoemd/gesplitst. Volg component-first model uit `shared/DASHBOARD.md`.
    - Quality: only project-specific, non-obvious, one line per item
    - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
 
@@ -754,8 +754,6 @@ IMPROVEMENTS APPLIED
    ```
 
    Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
-
-   **IMPORTANT:** Do NOT add Co-Authored-By or Generated with Claude Code footer to pipeline commits.
 
 4. **Show completion:**
 
@@ -830,7 +828,6 @@ This skill must NEVER:
 - Skip test verification in FASE 4
 - Proceed if tests fail without analyzing failure type first (stale test vs regression)
 - Apply improvements without user scope selection
-- Add Co-Authored-By or Generated with Claude Code footer to commits
 - Run Explore agents sequentially when multiple features are in the queue (use parallel)
 - Create disproportionate documentation for clean features
 

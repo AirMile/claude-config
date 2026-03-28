@@ -823,7 +823,7 @@ Muteer in memory:
 
 **Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`. Als feature niet bestaat: push met `{ name, status: "DOING", stage: "built", summary, created }`.
 
-**Architecture** (in `project-context.json`, **volg diagram conventies uit `shared/DASHBOARD.md`**): update diagram met werkelijke scene tree, signals, autoloads. Gebouwde feature nodes `:::planned` → `:::done`, voeg file reference toe (`Naam<br/>script.gd`), update `architecture.files` met `{ component, src, test }`. Als diagram niet bestaat EN meerdere scenes/signals → genereer nieuw diagram met classDef + subgraphs. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
+**Architecture** (in `project-context.json`, **volg component-first model uit `shared/DASHBOARD.md`**): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `src`, `test`, `connects_to` (uit werkelijke signals/dependencies), `feature` (huidige feature naam). Nieuwe componenten: push met alle velden inclusief `feature`. Als `layers`/`components` niet bestaan EN meerdere scenes/signals → genereer initiële architecture met layers + components. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
 
 Schrijf parallel terug:
 
@@ -874,8 +874,6 @@ git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first,
 ```
 
 Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
-
-No Co-Authored-By line.
 
 ## GUT Test Conventions
 

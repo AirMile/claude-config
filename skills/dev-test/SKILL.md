@@ -1,10 +1,10 @@
 ---
 name: dev-test
-description: Hybrid testing verification combining automated browser and CLI tests with manual walkthrough, structured feedback, and fix loop. Use with /dev-test after /dev-build.
+description: Hybrid test verification (automated + manual + fix loops) for built features. Use with /dev-test after /dev-build.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.1.0
+  version: 1.3.0
   category: dev
 ---
 
@@ -49,11 +49,11 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
 3. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`. Geen checklist → exit: run `/dev-build` first.
 
 4. **Tag backlog + capture baseline:**
-   - Backlog: zet `stage: "testing"`, `data.updated` → nu (Edit, keep `<script>` tags intact)
+   - Backlog: zet `stage: "testing"`, feature `updated` → nu (Edit, keep `<script>` tags intact)
    - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
    - Session file: `echo '{"feature":"{name}","skill":"test","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
 
-5. **Load stack & project context** — CLAUDE.md stack sectie + `.claude/research/stack-baseline.md` + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Stel STACK_CONTEXT samen:
+5. **Load stack & project context** — CLAUDE.md stack sectie + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Stel STACK_CONTEXT samen:
 
    ```
    STACK CONTEXT:
@@ -77,7 +77,7 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
 
    {STACK_CONTEXT}
 
-   Lees feature.json (checklist + requirements). Zoek in source code naar:
+   Lees feature.json (checklist + requirements + build sectie). Zoek in source code naar:
    - Validatie regels, API endpoints relevant voor test items
    - Bestaande test files en test patterns
 
@@ -90,19 +90,18 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
      Verwacht: {expected outcome}
      Aanbevolen methode: BROWSER | CLI
      Reden: {waarom}
+     Al gedekt: {wat build tests verifiëren}
+     httpContractTested: true/false (test de build test het HTTP/functie contract?)
+     delta: {extra verificatie nodig bovenop build tests, of "geen"}
    FEATURE_CONTEXT_END
    ```
 
-   **Bij `build` sectie in feature.json**, voeg toe aan Explore prompt:
+7. **Classify and plan test execution:**
 
-   ```
-   Per test item, geef ook aan:
-   - Al gedekt: {wat build tests verifiëren}
-   - httpContractTested: true/false (test de build test het HTTP/functie contract? Kijk naar test files)
-   - delta: {extra verificatie nodig bovenop build tests, of "geen"}
-   ```
+   a) Baseline check: `npm test 2>&1 | tail -20` (of project-specifiek command).
+   Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n})`
 
-7. **Post-build strategie** (alleen als `build` sectie bestaat):
+   b) Detect post-build mode:
 
    ```
    postBuildMode = true
@@ -118,41 +117,30 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
    Baseline: bestaande test suite als pre-check
    ```
 
-8. **Cross-requirement integratie** (alleen bij `postBuildMode`) — Analyseer `requirements[]`, identificeer combinaties waar output van één requirement input is voor een andere. Max 3 scenario's, voeg toe als checklist items met `"integration": true`. Geen logische combinaties → skip.
+   c) Cross-requirement integratie — Analyseer `requirements[]`, identificeer combinaties waar output van één requirement input is voor een andere. Max 3 scenario's, voeg toe als extra test items (niet gepersisteerd naar feature.json checklist). Geen logische combinaties → skip.
 
-9. **Classify test items** — toon na classificatie een ASCII flowchart van de test executie flow (COVERED → skip, AUTO → agent, MANUAL → walkthrough, met fix-loop bij FAILs):
-
-   **Bij `postBuildMode`:**
-
-   a) Baseline check: `npm test 2>&1 | tail -5` (of project-specifiek command).
-   Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n})`
-
-   b) Per item, gebruik Explore agent output:
+   d) Per item, gebruik Explore agent output:
    - `httpContractTested: true` + `delta: "geen"` → **COVERED**
    - `httpContractTested: true` + delta → **AUTO/CLI** of **AUTO/BROWSER** (alleen delta)
-   - `httpContractTested: false` → classificeer op steps/hasUI/isPureAPI
+   - `httpContractTested: false` → classificeer op steps/hasUI/isPureAPI per `references/test-classification.md`
    - Integratie-scenario's → altijd **AUTO** (nooit COVERED)
 
-   > Volledige override tabel: `references/test-classification.md` → "Post-Build Classification Override"
-
-   c) Display classificatie tabel met Type kolom (COVERED/AUTO/MANUAL) + reden.
+   e) Display classificatie tabel met Type kolom (COVERED/AUTO/MANUAL) + reden.
    Samenvattingsregel: `COVERED: {n}  AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}`
 
-   **Zonder `postBuildMode`:** Classificeer als AUTO of MANUAL per `references/test-classification.md`.
+   f) Bij gemixte types (COVERED + AUTO + MANUAL): toon ASCII flowchart van de test executie flow. Bij alleen COVERED + AUTO/CLI: skip flowchart.
 
-   d) User override via AskUserQuestion:
-   - Bij COVERED items: Akkoord (Aanbevolen) | Toch alles testen | Items aanpassen | Alles handmatig
-   - Zonder COVERED: Akkoord (Aanbevolen) | Items aanpassen | Alles handmatig
+   g) Proceed automatically with the recommended classification. No user approval needed — continue directly to step 8 (dev server) or FASE 1.
 
-10. **Dev server** (conditioneel):
+8. **Dev server** (conditioneel):
 
-    ```
-    Alle non-COVERED items AUTO/CLI (in-process testbaar) → skip dev server entirely
-    MANUAL of AUTO/BROWSER items                          → start via /dev-server proces (tunnel nodig)
-    AUTO/CLI met live server vereist                      → start op localhost (zonder tunnel)
-    ```
+   ```
+   Alle non-COVERED items AUTO/CLI (in-process testbaar) → skip dev server entirely
+   MANUAL of AUTO/BROWSER items                          → start via /dev-server proces (tunnel nodig)
+   AUTO/CLI met live server vereist                      → start op localhost (zonder tunnel)
+   ```
 
-    Bij falen → graceful fallback: alle items worden MANUAL, skip FASE 1.
+   Bij falen → graceful fallback: alle items worden MANUAL, skip FASE 1.
 
 ---
 
@@ -162,10 +150,16 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
 
 Launch Agent om non-COVERED AUTO items uit te voeren in apart context window.
 
+**AUTO/CLI aanpak keuze** (agent bepaalt op basis van feature type):
+
+- **Pure API / service feature**: schrijf integration test file (node:test / vitest) met mock dependencies en echte DB (mongodb-memory-server). Test via service layer, niet HTTP.
+- **Feature met running server vereist**: curl commands tegen dev server.
+- **Build/lint verificatie**: directe bash commands.
+
 Agent prompt:
 
 ```
-Test de volgende items automatisch via browser tools en bash commands.
+Test de volgende items automatisch via browser tools, bash commands, of integration tests.
 Feature: {feature-name}
 {IF dev server draait: Dev server: {url}}
 
@@ -180,14 +174,13 @@ ITEMS:
   Methode: {BROWSER of CLI}
 
 INSTRUCTIES:
-1. Voer stappen uit met MCP browser tools of bash commands
-2. Bepaal PASS/FAIL met bewijs en redenering
-3. Browser tool faalt → markeer als TOOL_ERROR
+1. Voer stappen uit met MCP browser tools, bash commands, of schrijf een integration test file
+2. Voor CLI items zonder running server: schrijf een integration test (test/integration/{feature}.integration.test.js) die de service/functie direct test met mock dependencies en echte DB
+3. Bepaal PASS/FAIL met bewijs en redenering
+4. Browser tool faalt → markeer als TOOL_ERROR
 
-{IF postBuildMode:}
 POST-BUILD: baseline al GREEN. Focus op INTEGRATIE, niet unit logica.
 Draai NIET opnieuw npm test.
-{END IF}
 
 RESULTAAT FORMAT:
 AUTOMATED_RESULTS_START
@@ -407,7 +400,7 @@ AskUserQuestion: Nee, alles goed (Aanbevolen) | Ja, ik heb iets opgemerkt.
 
 #### Step 3: 3-File Sync
 
-Volg `shared/SYNC.md` protocol. Skill-specifieke mutaties:
+Skill-specifieke mutaties:
 
 **feature.json:**
 
@@ -419,18 +412,16 @@ Volg `shared/SYNC.md` protocol. Skill-specifieke mutaties:
 - `tests.fixSync` → fix summaries (als fixes toegepast)
 - `observations[]` → toevoegen (indien aanwezig)
 
-**backlog:** `status = "DONE"`, verwijder `stage`, `updated` → nu.
+**backlog:** `status = "DONE"`, verwijder `stage`.
 
-**project.json:** Feature status → `"DONE"`. Merge nieuwe packages/endpoints/entities als relevant.
-
-**project-context.json**: Bij fixes in FASE 4: merge gewijzigde bestanden naar `architecture.files`, update diagram nodes naar `:::done`.
+**project-context.json**: Bij fixes in FASE 4: update `architecture.components[]` — merge gewijzigde bestanden naar component `src`/`test`, bevestig `status: "done"`, voeg test files toe.
 
 #### Step 3b: Learning Extraction
 
 Extracteer projectbrede learnings uit de voltooide feature. Lees de zojuist geschreven `feature.json` en evalueer:
 
 - `build.decisions[]` → type `pattern` (architecturale keuzes die andere features beïnvloeden)
-- `tests.fixSync[]` en `tests.sessions[].fixes` → type `pitfall` (bugs met root causes)
+- `tests.fixSync[]` → type `pitfall` (bugs met root causes)
 - `observations[]` → type `observation` (cross-feature inzichten)
 
 **Filter**: alleen items die relevant zijn buiten deze ene feature. Skip feature-specifieke implementatiedetails.
@@ -452,9 +443,9 @@ Check op duplicaten (zelfde feature + zelfde summary → skip). Geen learnings g
 
 Vergelijk `git status --porcelain | sort` met `.project/session/pre-skill-status.txt`:
 
-- **NEW** (alleen in current) → `git add`
-- **OVERLAP** (in beide) → AskUserQuestion: Include (Aanbevolen) | Skip
-- **PRE-EXISTING** (alleen baseline) → niet stagen
+- **NEW** (alleen in current) → `git add -f` (`.project/` is gitignored, `-f` vereist)
+- **OVERLAP** (in beide, gewijzigd door deze skill) → `git add -f`
+- **PRE-EXISTING** (alleen in baseline, of overlap niet door deze skill gewijzigd) → niet stagen
 
 Baseline niet gevonden → fallback `git add -A`.
 
@@ -468,8 +459,6 @@ Hybrid test verification complete.
 
 Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{name}.json`
 
-Geen Co-Authored-By footer bij pipeline commits.
-
 ---
 
 ## Example Flows
@@ -478,7 +467,7 @@ Geen Co-Authored-By footer bij pipeline commits.
 # Pure API (fast path)
 /dev-test api-routes
 → FASE 0: 6 COVERED + 3 integratie AUTO/CLI → dev server skip
-→ FASE 1: 3 integratie → 3 PASS
+→ FASE 1: 3 integratie → 3 PASS (integration test file geschreven)
 → FASE 2b: Compact → 9/9 PASS
 → FASE 6: commit
 

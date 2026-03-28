@@ -29,7 +29,17 @@ Pull remote changes, analyseer de diff, ververs `.project/` context, en analysee
 
 ### FASE 0: Pre-flight
 
-1. Check git status:
+1. **Clean `.project/` files** (voorkom dat lokale .project/ wijzigingen stash/pull verstoren):
+
+   ```bash
+   git ls-files .project/ | xargs git update-index --no-skip-worktree 2>/dev/null
+   git checkout -- .project/ 2>/dev/null
+   git ls-files .project/ | xargs git update-index --skip-worktree 2>/dev/null
+   ```
+
+   Dit reset `.project/` naar HEAD en maakt ze onzichtbaar voor git. Veilig omdat FASE 3/4 de content altijd regenereert vanuit de broncode.
+
+2. Check git status (`.project/` verschijnt niet meer door skip-worktree):
 
    ```bash
    git status --porcelain
@@ -44,11 +54,11 @@ Pull remote changes, analyseer de diff, ververs `.project/` context, en analysee
      - "Annuleren" — "Stop, ik fix dit zelf"
    - multiSelect: false
 
-   Bij "Stash": `git stash push -m "core-pull auto-stash"`. Na succesvolle pull in FASE 1: `git stash pop`. Bij conflict na pop → meld en laat user resolven.
+   Bij "Stash": `git stash push -u -m "core-pull auto-stash"` (`-u` voor untracked files). Na succesvolle pull in FASE 1: `git stash apply` (NIET `pop`). Bij apply success → `git stash drop`. Bij conflict na apply → meld en laat user resolven. **NOOIT de stash droppen bij conflict** — de stash blijft als vangnet.
    Bij "Commit eerst" → exit met instructie om `/core-commit` te runnen en daarna `/core-pull`.
    Bij "Annuleren" → exit.
 
-2. Check remote:
+3. Check remote:
 
    ```bash
    git remote -v
@@ -57,7 +67,7 @@ Pull remote changes, analyseer de diff, ververs `.project/` context, en analysee
 
    Als geen remote of fetch faalt → exit met error.
 
-3. Check `.project/project-context.json` existence → onthoud als `has_context_json`. Fallback: check `.project/project.json` → onthoud als `has_project_json`.
+4. Check `.project/project-context.json` existence → onthoud als `has_context_json`. Fallback: check `.project/project.json` → onthoud als `has_project_json`.
 
 ### FASE 1: Pull
 
@@ -84,7 +94,13 @@ Als conflicts → toon conflicting files, exit met instructie om conflicts te re
   ALREADY UP TO DATE (no project-context.json or project.json — run /core-setup to initialize)
   ```
 
-Als gestasht in FASE 0: `git stash pop`. Bij conflict → meld en exit.
+**Restore skip-worktree** na pull (ook als already up to date):
+
+```bash
+git ls-files .project/ | xargs git update-index --skip-worktree 2>/dev/null
+```
+
+Als gestasht in FASE 0: `git stash apply`. Bij success → `git stash drop`. Bij conflict → meld en exit (**stash NIET droppen** — blijft als vangnet).
 
 ### FASE 2: Diff Analysis
 
@@ -256,12 +272,12 @@ For each candidate feature, collect: name (kebab-case), author (git name), files
 
 Across all in-scope files, categorize:
 
-| Category     | Match pattern                                                          | Extracts             |
-| ------------ | ---------------------------------------------------------------------- | -------------------- |
-| **Models**   | `**/models/*.{js,ts,py}`, `**/schema*.{js,ts}`, `*.prisma`             | `data.entities`      |
-| **Routes**   | `**/routes/*.{js,ts}`, `app/**/page.*`, `app/**/route.*`, `pages/**/*` | `endpoints`          |
-| **Services** | `**/services/**/*`, `**/lib/**/*`, `**/utils/**/*`                     | `architecture.files` |
-| **Tests**    | `**/test/**/*`, `**/tests/**/*`, `**/*.test.*`, `**/*.spec.*`          | `architecture.files` |
+| Category     | Match pattern                                                          | Extracts                  |
+| ------------ | ---------------------------------------------------------------------- | ------------------------- |
+| **Models**   | `**/models/*.{js,ts,py}`, `**/schema*.{js,ts}`, `*.prisma`             | `data.entities`           |
+| **Routes**   | `**/routes/*.{js,ts}`, `app/**/page.*`, `app/**/route.*`, `pages/**/*` | `endpoints`               |
+| **Services** | `**/services/**/*`, `**/lib/**/*`, `**/utils/**/*`                     | `architecture.components` |
+| **Tests**    | `**/test/**/*`, `**/tests/**/*`, `**/*.test.*`, `**/*.spec.*`          | `architecture.components` |
 
 **4d) Extract entities from models**
 
@@ -307,7 +323,7 @@ For files with status `D` (deleted) in teammate commits, or in `--full` mode for
 
 1. **Entities**: if a model file was deleted, check `data.entities[]` — match on `source` field and remove entries whose source file no longer exists.
 2. **Endpoints**: if a route file was deleted, check `endpoints[]` — remove entries from that route file. In `--full` mode, verify each endpoint's route file still exists.
-3. **Architecture files**: if a source file was deleted, remove it from `architecture.files[].src` or `.test` arrays. Remove component entries with empty `src` arrays.
+3. **Architecture components**: if a source file was deleted, remove it from `architecture.components[].src` or `.test` arrays. Remove component entries with empty `src` arrays.
 4. **Routing**: already handled by FASE 3 (full overwrite of `context.routing`).
 
 **4h) Sync to project files**
@@ -345,11 +361,7 @@ Follow `shared/SYNC.md` protocol. Re-read both files immediately before writing.
 
 **project-context.json mutations:**
 
-- **Architecture files** — merge new components: check on component name → new: push → existing: merge src/test arrays (dedup). Clean stale entries (4g).
-
-- **Architecture diagram** — if new components were added, update the Mermaid diagram following conventions from `shared/DASHBOARD.md` (:::done, :::planned, :::external, subgraphs per layer). Preserve existing structure, add new nodes/edges.
-
-- **Architecture description** — append descriptions for new components in same format as existing entries.
+- **Architecture components** — update `architecture.components[]` following component-first model from `shared/DASHBOARD.md`: check on component name → new: push with layer/status/src/test/connects_to → existing: merge src/test arrays (dedup), update connects_to. Clean stale entries (4g).
 
 **4i) Save sync state**
 

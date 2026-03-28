@@ -1,10 +1,9 @@
 ---
 name: dev-define
-description: Feature requirements en architectuur definiëren met gestructureerde output. Gebruik met /dev-define voor feature specificaties voor de build-fase.
-disable-model-invocation: true
+description: Feature requirements en architectuur definiëren. Gebruik bij /dev-define [feature-name] om een feature te specificeren voor de build-fase.
 metadata:
   author: mileszeilstra
-  version: 2.3.0
+  version: 2.4.0
   category: dev
 ---
 
@@ -33,24 +32,18 @@ FASE 1 van de dev workflow: define → build → test.
    c) **Geen backlog of andere feature gewenst:**
    AskUserQuestion: "Welke feature wil je definiëren?" met 3 suggesties relevant voor het project.
 
-**Tag backlog card als actief** (direct na feature naam bepaling):
-
-Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-Zoek feature op naam → zet `"status": "DOING"`, `"stage": "defining"`, `data.updated` naar nu.
-Schrijf terug via Edit (keep `<script>` tags intact).
-Niet gevonden → skip (feature wordt pas bij FASE 4 aan backlog toegevoegd).
-De card verhuist naar de DOING kolom met stage `defining`.
-
 3. **Project folder + context** (paralleliseer):
    - `mkdir -p .project/features/{feature-name}`
    - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json`
    - Glob + Grep voor bestaande code die de feature-naam importeert
    - Read `.project/project.json` → extract:
      - `stack` — framework, language, packages (fallback als stack-baseline.md niet bestaat)
-     - `concept.pitch` als feature context (korte samenvatting). Fallback: als pitch leeg, lees `.project/project-concept.md` → eerste 2 zinnen
+     - `concept.pitch` of `concept.content` als feature context (korte samenvatting). Fallback: als beide leeg, lees `.project/project-concept.md` → eerste 2 zinnen
      - `features[]` — bestaande features (voorkomt duplicaten/overlap)
      - `endpoints` — bestaande API surface
      - `data.entities` — bestaand data model
+     - `thinking[]` — zoek entries met `title` of `newFeature` matching de feature-naam. Gebruik als extra context bij requirement-formulering.
+   - **Backlog card → DOING + "defining"**: Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data">`. Zoek feature op naam → zet `status: "DOING"`, `stage: "defining"`, `date: "{date}"`. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DOING"`, `stage: "defining"`. Zet `data.updated` naar vandaag. Schrijf terug naar `backlog.html`.
    - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
      - `learnings[]` — eerder geleerde patronen en pitfalls. Gebruik als input bij architectuur-keuzes en requirement-formulering.
@@ -82,23 +75,19 @@ Na de initiële vragen, evalueer of er open branches zijn:
 - Impliciete aannames die niet bevestigd zijn
 - Conflicten tussen antwoorden
 
-**≤3 requirements verwacht**: skip doorvraag, ga naar extraction.
-**>3 requirements verwacht**: stel 1-2 gerichte doorvragen over de belangrijkste open branch. Formuleer als "Wat gebeurt er als...?" of "Hoe gaat dit om met...?"
+**Skip doorvraag** als de feature simpel is (≤5 verwachte REQs) EN er geen open branches zijn.
+**Anders**: stel 1-2 gerichte doorvragen. Formuleer als "Wat gebeurt er als...?" of "Hoe gaat dit om met...?"
 
 Max 2 extra vragen, dan door naar extraction.
 
-#### Requirement Extraction
+#### Requirement Extraction + Checkpoint
 
 Extraheer testbare requirements als tabel:
 
 | ID  | Requirement | Category | Acceptance Criteria |
 | --- | ----------- | -------- | ------------------- |
 
-Bevestig met user via AskUserQuestion: "Akkoord (Recommended)" / "Aanpassen" / "Opnieuw beginnen"
-
-### CHECKPOINT: Requirements Samenvatting
-
-Na de requirements tabel bevestiging, presenteer een compleet overzicht van alle verzamelde input:
+Presenteer direct daarna het volledige overzicht:
 
 | Aspect          | Waarde                       |
 | --------------- | ---------------------------- |
@@ -108,9 +97,9 @@ Na de requirements tabel bevestiging, presenteer een compleet overzicht van alle
 | Output/contract | {samenvatting}               |
 | Requirements    | {N} requirements             |
 
-Vraag via AskUserQuestion: "Klopt dit overzicht voordat we doorgaan naar architectuur?"
+Bevestig met user via AskUserQuestion: "Akkoord met requirements en overzicht?"
 
-- "Ga door (Recommended)" — door naar scope analysis + architectuur
+- "Akkoord (Recommended)" — door naar scope analysis + architectuur
 - "Aanpassen" — terug naar relevante vraag
 
 ### FASE 1b: Scope Analysis & Feature Splitting
@@ -229,38 +218,7 @@ multiSelect: false
 
 1. AskUserQuestion: "Naam van de teammate?" (vrije tekst)
 2. Zet `assignee` in memory (meenemen naar FASE 4 backlog sync)
-3. Genereer task brief in terminal output vanuit feature.json data:
-
-```
-───────────────────────────────────────
-TASK BRIEF — {feature-name}
-Toegewezen aan: {naam}
-───────────────────────────────────────
-
-## {feature-name}
-**Type:** {type} | **Prioriteit:** {phase} | **Status:** DEF
-
-### Beschrijving
-{summary uit feature.json}
-
-### Requirements
-| # | Requirement | Acceptatiecriteria |
-|---|------------|-------------------|
-{elke REQ uit feature.json}
-
-### Bestanden
-{elke file: actie + pad + doel}
-
-### Build Volgorde
-{genummerde stappen uit buildSequence}
-
-### Test Strategie
-{per REQ: testfile + beschrijving}
-
-### Dependencies
-{dependency + status als relevant}
-```
-
+3. Genereer task brief in terminal output vanuit feature.json: header met naam/toewijzing, beschrijving, requirements tabel (ID + beschrijving + acceptatiecriteria), bestanden (actie + pad + doel), build volgorde, test strategie, dependencies.
 4. Toon bericht: "Kopieer bovenstaande tekst en stuur naar {naam}."
 
 ### FASE 4: Sync
@@ -277,7 +235,7 @@ Muteer in memory:
 
 **Backlog** (zie `shared/BACKLOG.md`):
 
-- Zoek feature → zet status `"DOING"`, `stage: "defined"`, datum `"{date}"`, `assignee` (als gezet in FASE 3b). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`.
+- Zoek feature → zet `stage: "defined"`, `assignee` (als gezet in FASE 3b). Card staat al op DOING + "defining" sinds FASE 0. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DOING"`, `stage: "defined"`.
 - Zet `data.updated` naar vandaag.
 
 **Dashboard** (zie `shared/DASHBOARD.md`):
@@ -288,18 +246,20 @@ Muteer in memory:
   - **Endpoints**: check op method+path → nieuw: push met `status: "planned"` → bestaand: skip
   - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
   - **Features**: check op naam → nieuw: push `{ name, status: "DOING", stage: "defined", summary, created }` → bestaand: update status
-  - **Architecture** in `.project/project-context.json`: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg diagram conventies uit `shared/DASHBOARD.md`**:
-    - `diagram`: Mermaid `graph TD` met classDef (done/planned/external), subgraphs per domein, functionele node labels met file reference (`Naam<br/>file.js`). Alle features DOING → `:::planned`, bestaande gebouwde → `:::done`
-    - `description`: start met `## Data Flow` (2-4 regels pipeline), daarna functionele beschrijvingen gegroepeerd per laag (match subgraphs). Bullet-formaat, geen filenamen. Volg conventie uit `shared/DASHBOARD.md`.
-    - `files`: mapping van gebouwde componenten → `{ component, src: [...], test: [...] }`
-    - OVERWRITE (vervangt vorige diagram met bijgewerkte versie)
+  - **Architecture** in `.project/project-context.json`: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg component-first model uit `shared/DASHBOARD.md`**:
+    - `layers`: definieer lagen met `{ name, order }` (bijv. API Laag order 1, Data Laag order 3)
+    - `dataFlow`: één-regel samenvatting van de request flow
+    - `components`: per component `{ name, layer, description, status, connects_to }`. Nieuwe feature componenten → `status: "planned"`. Bestaande gebouwde → `status: "done"`. Externe services → `status: "external"`. `connects_to`: array van component namen waar dit component naar communiceert
+    - Merge strategie: check of component `name` al bestaat → nee: push → ja: merge (overschrijf status, append connects_to met dedup)
+    - Optioneel: genereer Mermaid diagram naar `.project/architecture.mmd` voor visuele context
     - Skip als single-file feature zonder architecturele impact
+  - **Context** in `.project/project-context.json`: update `context.structure` en `context.routing` als de feature nieuwe bestanden of routes toevoegt. **Let op**: structure/routing zijn JSON-escaped strings — bij grote wijzigingen gebruik Write i.p.v. Edit om escaping-problemen te voorkomen.
 
 Schrijf parallel terug:
 
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Edit `project.json` (features, endpoints, data, stack — gebruik Edit voor gerichte wijzigingen, niet Write)
-- Edit `project-context.json` (als architecture gewijzigd)
+- Edit/Write `project-context.json` (als architecture of context gewijzigd — Write bij grote diagram-wijzigingen)
 
 Clean up: `rm -f .project/session/active-{feature-name}.json`
 

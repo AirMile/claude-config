@@ -27,7 +27,9 @@ Check `package.json` dependencies:
 **Vite allowedHosts:** Als Vite project, check of `vite.config` een `server.allowedHosts` heeft die `.trycloudflare.com` toestaat. Zo niet → voeg toe:
 
 ```js
-server: { allowedHosts: ['.trycloudflare.com'] }
+server: {
+  allowedHosts: [".trycloudflare.com"];
+}
 ```
 
 **Port 3000:** Check met `ss -tlnp | grep :3000` en identificeer het project via `/proc/[pid]/cwd`.
@@ -63,10 +65,12 @@ Geen actieve tunnel → start nieuwe:
 
 ```bash
 pkill -f cloudflared 2>/dev/null; sleep 1
-nohup cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflared.log 2>&1 &
-sleep 8
+nohup cloudflared tunnel --url http://localhost:3000 --config /dev/null --metrics 127.0.0.1:0 > /tmp/cloudflared.log 2>&1 &
+sleep 10
 grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | head -1
 ```
+
+> `--config /dev/null` voorkomt dat een named tunnel config (`~/.cloudflared/config.yml`) de quick tunnel breekt. `--metrics 127.0.0.1:0` voorkomt metrics port conflicten.
 
 Rapporteer de tunnel URL.
 
