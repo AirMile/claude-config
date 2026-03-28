@@ -52,6 +52,19 @@ function populateFromProject(projectDir, dashData) {
   if (fs.existsSync(contextJsonFile)) {
     try {
       const ctx = JSON.parse(fs.readFileSync(contextJsonFile, "utf8"));
+
+      // Prefer separate .mmd file for diagram (plain Mermaid, no JSON escaping)
+      const diagramFile = path.join(projectPath, ".project/architecture.mmd");
+      if (fs.existsSync(diagramFile)) {
+        try {
+          const diagram = fs.readFileSync(diagramFile, "utf8").trim();
+          if (diagram) {
+            if (!ctx.architecture) ctx.architecture = {};
+            ctx.architecture.diagram = diagram;
+          }
+        } catch {}
+      }
+
       if (
         ctx.architecture &&
         (!dashData.architecture || !dashData.architecture.diagram)

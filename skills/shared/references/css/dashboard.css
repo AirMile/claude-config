@@ -1183,6 +1183,32 @@ hr.divider {
   height: auto;
 }
 
+.architecture-diagram--hidden {
+  display: none;
+}
+
+.arch-diagram-toggle {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.arch-diagram-toggle:hover {
+  border-color: var(--text-dim);
+  color: var(--text);
+}
+
+.arch-diagram-toggle.active {
+  background: var(--surface-hover);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 /* Diagram Lightbox */
 .diagram-lightbox {
   display: none;
@@ -1244,52 +1270,6 @@ hr.divider {
   filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.3));
 }
 
-.architecture-description {
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--text-muted);
-}
-
-.architecture-description h2 {
-  font-size: 17px;
-  color: var(--accent);
-  margin: 24px 0 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border);
-}
-
-.architecture-description h3 {
-  font-size: 15px;
-  color: var(--text);
-  margin: 20px 0 6px;
-}
-
-.architecture-description p {
-  margin: 0 0 12px;
-}
-
-.architecture-description ul,
-.architecture-description ol {
-  margin: 0 0 12px;
-  padding-left: 20px;
-}
-
-.architecture-description li {
-  margin-bottom: 4px;
-  color: var(--text-muted);
-}
-
-.architecture-description strong {
-  color: var(--text);
-}
-
-.architecture-description code {
-  background: var(--surface-hover);
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 12px;
-}
-
 .architecture-error {
   color: var(--danger);
   font-size: 13px;
@@ -1304,6 +1284,10 @@ hr.divider {
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.arch-toolbar--split {
+  justify-content: space-between;
 }
 
 .arch-toggle {
@@ -1339,16 +1323,320 @@ hr.divider {
   color: var(--accent);
 }
 
-/* Architecture clickable description headers */
-.arch-desc-link {
-  transition: color 0.15s;
+/* ─── Code Cards ─────────────────────────────────── */
+
+.code-cards-dataflow {
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 8px 14px;
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  letter-spacing: 0.3px;
 }
 
-.arch-desc-link:hover {
-  color: var(--accent) !important;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  text-decoration-thickness: 1px;
+.code-cards {
+  margin-top: 4px;
+}
+
+.code-cards-group {
+  margin-bottom: 20px;
+}
+
+.code-cards-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.code-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+
+.code-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.code-card:hover {
+  border-color: var(--text-dim);
+}
+
+.code-card.expanded {
+  border-color: var(--accent);
+}
+
+.code-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.code-card-header:hover {
+  background: var(--surface-hover);
+}
+
+.code-card-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.code-card-status[data-status="done"] {
+  background: var(--done);
+}
+
+.code-card-status[data-status="planned"] {
+  background: transparent;
+  border: 2px dashed var(--purple);
+  box-sizing: border-box;
+}
+
+.code-card-status[data-status="external"] {
+  background: var(--text-dim);
+}
+
+.code-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.code-card-feature {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.code-card-counts {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.code-card-chevron {
+  font-size: 16px;
+  color: var(--text-dim);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.code-card.expanded .code-card-chevron {
+  transform: rotate(90deg);
+}
+
+.code-card-desc {
+  padding: 0 14px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.code-card-detail {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 10px 14px 14px;
+}
+
+.code-card.expanded .code-card-detail {
+  display: block;
+}
+
+.code-card-section {
+  margin-bottom: 10px;
+}
+
+.code-card-section:last-child {
+  margin-bottom: 0;
+}
+
+.code-card-section h4 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin: 0 0 4px;
+}
+
+.code-card-files,
+.code-card-entities,
+.code-card-conn-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.code-card-file {
+  font-size: 11px;
+  font-family: var(--font-mono, "JetBrains Mono", "Fira Code", monospace);
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.code-card-file:hover {
+  border-color: var(--accent);
+}
+
+.code-card-file--test {
+  color: var(--tst-color);
+}
+
+.code-card-file--test:hover {
+  border-color: var(--tst-color);
+}
+
+.code-card-endpoints {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.code-card-endpoint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.code-card-endpoint .badge {
+  font-size: 9px;
+  padding: 1px 5px;
+}
+
+.code-card-entity {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--purple) 15%, transparent);
+  color: var(--purple);
+}
+
+.code-card-connections {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.code-card-conn-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.code-card-conn-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.code-card-conn {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  border: 1px solid var(--border);
+}
+
+.code-card-conn--from {
+  background: color-mix(in srgb, var(--done) 10%, transparent);
+  color: var(--done);
+}
+
+.code-card-conn--from:hover {
+  border-color: var(--done);
+}
+
+.code-card-conn--to {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+
+.code-card-conn--to:hover {
+  border-color: var(--accent);
+}
+
+.code-card-conn--more {
+  background: var(--surface-hover);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.code-card-conn--more:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+.code-card-conn--dead {
+  opacity: 0.4;
+  cursor: default;
+  text-decoration: line-through;
+}
+
+.code-card-dimmed {
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+
+.code-card-connected {
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.code-card-connected--to {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.code-card-connected--from {
+  border-color: var(--done);
+  box-shadow: inset 3px 0 0 var(--done);
+}
+
+.code-card-hidden {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .code-cards-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ─── Styleguide ─────────────────────────────────── */

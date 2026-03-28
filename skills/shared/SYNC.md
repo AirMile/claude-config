@@ -67,11 +67,11 @@ Merge per sectie — check altijd op bestaande entries voor push:
 
 Lees `.project/project-context.json` (of maak aan met `{}`). Merge per sectie:
 
-| Sectie         | Merge logica                                                          |
-| -------------- | --------------------------------------------------------------------- |
-| `context`      | Update structure/routing/patterns individueel (alleen bij impact)     |
-| `architecture` | Volg diagram conventies uit `shared/DASHBOARD.md` (alleen bij impact) |
-| `learnings`    | Check op date+feature → nieuw: push → bestaand: skip (append-only)    |
+| Sectie         | Merge logica                                                                                                                                                                       |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context`      | Update structure/routing/patterns individueel (alleen bij impact)                                                                                                                  |
+| `architecture` | Volg component-first model uit `shared/DASHBOARD.md` (alleen bij impact). Update `components[]` (status, src, test, connects_to). Diagram optioneel → `.project/architecture.mmd`. |
+| `learnings`    | Check op date+feature → nieuw: push → bestaand: skip (append-only)                                                                                                                 |
 
 **project-concept.md** (alleen bij concept-schrijvende skills):
 
@@ -83,6 +83,16 @@ Schrijf het volledige concept document als plain markdown naar `.project/project
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Write `project.json` (of targeted Edit)
 - Write `project-context.json` (als context/architecture/learnings gewijzigd)
+
+### Stap 4: Skip-worktree herstellen
+
+Na het schrijven van `.project/` bestanden, zet skip-worktree op eventuele nieuwe bestanden:
+
+```bash
+git ls-files .project/ | xargs git update-index --skip-worktree 2>/dev/null
+```
+
+Dit voorkomt dat `.project/` wijzigingen in git status verschijnen en pull/stash verstoren.
 
 ### Active Feature Cleanup
 

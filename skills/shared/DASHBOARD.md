@@ -239,27 +239,89 @@ De dashboard server's `populateFromProject()` mergt dit bestand in de unified re
 
 ```json
 {
-  "diagram": "graph TD\n    classDef done fill:#13261c,stroke:#3fb950,stroke-width:1.5px,color:#c9d1d9\n    classDef planned fill:#1b1530,stroke:#8b5cf6,stroke-dasharray:5 5,color:#8b949e\n    classDef external fill:#1c2128,stroke:#30363d,color:#8b949e\n\n    subgraph API[\"API Laag\"]\n        GW[API Gateway<br/>gateway.js]:::done\n        AUTH[Auth Service]:::planned\n    end\n\n    DB[(PostgreSQL)]:::external\n\n    GW --> AUTH\n    GW --> DB",
-  "description": "## Data Flow\n\nRequest → API Gateway → Auth check → App Service → Database.\n\n## API Laag\n\n- **API Gateway** — Routing en rate limiting voor alle endpoints\n\n## Services\n\n- **Auth Service (gepland)** — JWT authenticatie en sessie management\n- **App Service** — Core business logic en data access",
-  "files": [
+  "dataFlow": "Request → API Gateway → Auth check → Service → Database",
+  "layers": [
+    { "name": "API Laag", "order": 1 },
+    { "name": "Services", "order": 2 },
+    { "name": "Data Laag", "order": 3 }
+  ],
+  "components": [
     {
-      "component": "API Gateway",
+      "name": "API Gateway",
+      "layer": "API Laag",
+      "description": "Routing en rate limiting voor alle endpoints",
+      "status": "done",
       "src": ["src/gateway.js", "src/middleware/rateLimit.js"],
-      "test": ["test/gateway.test.js"]
+      "test": ["test/gateway.test.js"],
+      "connects_to": ["Auth Service", "App Service"],
+      "endpoints": ["/api/auth/*", "/api/users/*"],
+      "entities": ["User"]
+    },
+    {
+      "name": "Auth Service",
+      "layer": "Services",
+      "description": "JWT authenticatie en sessie management",
+      "status": "planned",
+      "connects_to": ["PostgreSQL"]
+    },
+    {
+      "name": "PostgreSQL",
+      "layer": "Data Laag",
+      "status": "external"
     }
   ]
 }
 ```
 
-`diagram` = Mermaid diagram syntax (wordt visueel gerenderd met Mermaid.js)
-`description` = markdown met data flow overzicht + functionele beschrijvingen gegroepeerd per laag (geen filenamen)
-`files` = optionele mapping van component → source + test bestanden (collapsible in UI)
+#### Component-first model
 
-#### Diagram conventies
+Het component is de atomaire eenheid. Alle data per component zit in één object — geen fuzzy matching nodig.
 
-Skills die het diagram genereren of updaten MOETEN deze conventies volgen:
+**Component velden:**
 
-**classDef (verplicht als status bekend):**
+| Veld          | Type     | Verplicht | Beschrijving                                            |
+| ------------- | -------- | --------- | ------------------------------------------------------- |
+| `name`        | string   | ja        | Unieke functionele naam                                 |
+| `layer`       | string   | ja        | Laag naam (moet matchen met `layers[].name`)            |
+| `description` | string   | nee       | Korte functionele beschrijving (max 200 chars)          |
+| `status`      | string   | ja        | `done` \| `planned` \| `external`                       |
+| `src`         | string[] | nee       | Source bestanden (relatief aan project root)            |
+| `test`        | string[] | nee       | Test bestanden                                          |
+| `connects_to` | string[] | nee       | Component namen waar dit component naar communiceert    |
+| `endpoints`   | string[] | nee       | Endpoint paths die bij dit component horen              |
+| `entities`    | string[] | nee       | Entity namen die dit component gebruikt                 |
+| `feature`     | string   | nee       | Feature naam die dit component heeft aangemaakt/gebouwd |
+
+**Layer velden:**
+
+| Veld    | Type   | Beschrijving                   |
+| ------- | ------ | ------------------------------ |
+| `name`  | string | Unieke laag naam               |
+| `order` | number | Sorteervolgorde (1 = bovenaan) |
+
+**`dataFlow`** = één-regel samenvatting van de volledige request flow (voor snelle context).
+
+**Status waarden:** `done` = gebouwd en werkend, `planned` = nog niet gebouwd, `external` = externe service/database (niet door ons beheerd).
+
+#### Voordelen t.o.v. oude model
+
+- **Expliciete connections**: `connects_to` array i.p.v. parsen uit Mermaid `-->` pijlen
+- **Expliciete endpoints/entities**: direct per component, niet fuzzy gematcht achteraf
+- **Geen dubbele data**: description, files, status allemaal in één object
+- **Layer als first-class concept**: sortering en groepering op basis van `order`, niet op subgraph parsing
+
+#### Diagram (optioneel)
+
+Het Mermaid diagram is nu **optioneel** — de Code Cards zijn de primaire view. Als een diagram beschikbaar is, toont de UI een "Diagram" toggle knop.
+
+**Preferred**: `.project/architecture.mmd` bestand (plain Mermaid, geen JSON-escaping).
+**Legacy**: Inline `diagram` string in project-context.json.
+
+Skills mogen het diagram nog steeds genereren voor visuele context, maar het is niet meer de bron van waarheid voor connections of status. Die komen uit `components[]`.
+
+#### Diagram conventies (als diagram gegenereerd wordt)
+
+**classDef:**
 
 ```
 classDef done fill:#13261c,stroke:#3fb950,stroke-width:1.5px,color:#c9d1d9
@@ -267,21 +329,25 @@ classDef planned fill:#1b1530,stroke:#8b5cf6,stroke-dasharray:5 5,color:#8b949e
 classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 ```
 
-**Status toewijzing:** `:::done` = gebouwd (feature status BLT/DONE), `:::planned` = nog niet gebouwd (TODO/DEF), `:::external` = externe services/databases.
+**Node labels:** `GW[API Gateway<br/>gateway.js]:::done`
+**Subgraphs:** Groepeer per `layer.name`.
 
-**Subgraphs:** Groepeer gerelateerde nodes in `subgraph Name["Label"] ... end` blokken per domein (bijv. "Data Laag", "Externe Bronnen", "Verwerking").
+#### Skills die architecture schrijven
 
-**Node labels:** Functionele naam + file reference op tweede regel:
+| Skill         | Wat het schrijft                                                                              | Wanneer               |
+| ------------- | --------------------------------------------------------------------------------------------- | --------------------- |
+| `/dev-define` | Initiële `layers` + `components` (status planned, geen src/test) + `dataFlow`                 | Bij feature definitie |
+| `/dev-build`  | Update `components`: status → done, vul `src`, `test`, `connects_to`, `endpoints`, `entities` | Na build              |
+| `/dev-test`   | Update `components`: bevestig status done, voeg test files toe                                | Na test               |
+| `/core-pull`  | Sync volledige `architecture` sectie bij pull                                                 | Bij context sync      |
 
-- Gebouwde nodes: `GW[API Gateway<br/>gateway.js]:::done`
-- Geplande nodes (geen files): `AUTH[Auth Service]:::planned`
-- Externe: `DB[(PostgreSQL)]:::external`
+**Write strategie:**
 
-**Description:** Start met een `## Data Flow` sectie (2-4 regels die de volledige pipeline beschrijven). Daarna functionele beschrijvingen gegroepeerd per laag (match de subgraph indeling van het diagram). Bullet-formaat: `- **Component** — korte functionele beschrijving`. Geplande componenten markeren met `(gepland)`. Geen filenamen — die staan in `files`.
-
-**Files mapping:** Na build, vul `architecture.files` aan met `{ component, src: [...], test: [...] }` per gebouwd component.
-
-**Toggle support:** De dashboard UI heeft een Alles/Gebouwd toggle die `:::planned` nodes filtert. Dit werkt automatisch als de classDef conventies gevolgd worden.
+1. Read `project-context.json`
+2. Voor elk component: check of `name` al bestaat in `components[]`
+   - Zo nee: push nieuw component
+   - Zo ja: merge velden (overschrijf `status`, `src`, `test`; append `connects_to`, `endpoints`, `entities` met dedup)
+3. Write terug
 
 ### theme
 

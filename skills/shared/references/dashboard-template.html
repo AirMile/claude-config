@@ -260,7 +260,7 @@
 
       const TABS = [
         { id: "concept", label: "Concept" },
-        { id: "architecture", label: "Architecture" },
+        { id: "architecture", label: "Components" },
         { id: "design", label: "Design" },
         { id: "theme", label: "Theme" },
         { id: "stack", label: "Stack" },
@@ -703,6 +703,282 @@
         return result.join("\n");
       }
 
+      // ─── Code Cards ────────────────────────────────────
+
+      function buildCodeCards() {
+        const a = data.architecture || {};
+        const components = a.components;
+        if (!components || !components.length) return null;
+
+        const reverseMap = {};
+        components.forEach((c) => {
+          (c.connects_to || []).forEach((target) => {
+            if (!reverseMap[target]) reverseMap[target] = [];
+            reverseMap[target].push(c.name);
+          });
+        });
+
+        return components.map((c) => ({
+          name: c.name,
+          description: c.description || "",
+          feature: c.feature || "",
+          src: c.src || [],
+          test: c.test || [],
+          status: c.status || "done",
+          group: c.layer || "Overig",
+          endpoints: (c.endpoints || []).map((p) => {
+            const parts = p.trim().split(/\s+/);
+            const hasMethod =
+              /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/i.test(parts[0]);
+            return {
+              method: hasMethod ? parts[0].toUpperCase() : "GET",
+              path: hasMethod ? parts.slice(1).join(" ") : p,
+            };
+          }),
+          entities: (c.entities || []).map((e) => ({ name: e })),
+          connections: {
+            to: c.connects_to || [],
+            from: reverseMap[c.name] || [],
+          },
+        }));
+      }
+
+      function toggleCard(card) {
+        const wasExpanded = card.classList.contains("expanded");
+
+        // Single pass: collapse others + clear highlights
+        document.querySelectorAll(".code-card").forEach((c) => {
+          if (c !== card) c.classList.remove("expanded");
+          c.classList.remove(
+            "code-card-dimmed",
+            "code-card-connected",
+            "code-card-connected--to",
+            "code-card-connected--from",
+          );
+        });
+
+        card.classList.toggle("expanded");
+
+        if (!wasExpanded) {
+          const connTo = new Set(
+            (card.dataset.connTo || "").split(",").filter(Boolean),
+          );
+          const connFrom = new Set(
+            (card.dataset.connFrom || "").split(",").filter(Boolean),
+          );
+
+          if (connTo.size || connFrom.size) {
+            document.querySelectorAll(".code-card").forEach((c) => {
+              if (c === card) return;
+              const name = c.dataset.component;
+              if (connTo.has(name)) {
+                c.classList.add(
+                  "code-card-connected",
+                  "code-card-connected--to",
+                );
+              } else if (connFrom.has(name)) {
+                c.classList.add(
+                  "code-card-connected",
+                  "code-card-connected--from",
+                );
+              } else {
+                c.classList.add("code-card-dimmed");
+              }
+            });
+          }
+        }
+      }
+
+      let _archDiagramRendered = false;
+      function toggleArchDiagram() {
+        const el = document.getElementById("arch-diagram");
+        const btn = document.querySelector(".arch-diagram-toggle");
+        if (!el) return;
+        const hidden = el.classList.toggle("architecture-diagram--hidden");
+        if (btn) btn.classList.toggle("active", !hidden);
+        if (!hidden && !_archDiagramRendered) {
+          const a = data.architecture || {};
+          if (a.diagram) {
+            renderMermaidDiagram(a.diagram);
+            _archDiagramRendered = true;
+          }
+        }
+      }
+
+      function highlightCard(chip) {
+        const target = chip.dataset.target;
+        if (!target) return;
+        const card = document.querySelector(
+          `.code-card[data-component="${target}"]`,
+        );
+        if (!card) {
+          chip.classList.add("code-card-conn--dead");
+          chip.title = "Geen card gevonden voor dit component";
+          return;
+        }
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (!card.classList.contains("expanded")) {
+          toggleCard(card);
+        }
+      }
+
+      function openFileInVSCode(filePath, el) {
+        const url =
+          location.pathname.replace(/\/$/, "") +
+          "/open/" +
+          encodeURIComponent(filePath).replace(/%2F/g, "/");
+        openInVSCode(url, el);
+      }
+
+      function applyCodeCardFilter(showAll) {
+        document.querySelectorAll(".code-card").forEach((card) => {
+          card.classList.toggle(
+            "code-card-hidden",
+            !showAll && card.dataset.status === "planned",
+          );
+        });
+        document.querySelectorAll(".code-cards-group").forEach((group) => {
+          const visible = group.querySelectorAll(
+            ".code-card:not(.code-card-hidden)",
+          );
+          group.style.display = visible.length ? "" : "none";
+        });
+      }
+
+      const MAX_CONN_PER_DIR = 4;
+
+      function renderConnChip(name, dir) {
+        return `<span class="code-card-conn code-card-conn--${dir}" data-target="${esc(name.toLowerCase())}" onclick="highlightCard(this)">${esc(name)}</span>`;
+      }
+
+      function renderConnGroup(items, dir, label) {
+        if (!items.length) return "";
+        const visible = items.slice(0, MAX_CONN_PER_DIR);
+        const hidden = items.length - visible.length;
+        return `<div class="code-card-conn-group">
+          <span class="code-card-conn-label">${label}</span>
+          <div class="code-card-conn-chips">
+            ${visible.map((n) => renderConnChip(n, dir)).join("")}
+            ${
+              hidden > 0
+                ? `<span class="code-card-conn code-card-conn--more" onclick="this.nextElementSibling.style.display='contents';this.remove()">+${hidden}</span><span style="display:none">${items
+                    .slice(MAX_CONN_PER_DIR)
+                    .map((n) => renderConnChip(n, dir))
+                    .join("")}</span>`
+                : ""
+            }
+          </div>
+        </div>`;
+      }
+
+      function renderFileChip(path, isTest) {
+        return `<span class="code-card-file${isTest ? " code-card-file--test" : ""}" data-path="${esc(path)}" onclick="openFileInVSCode(this.dataset.path, this)">${esc(path.split("/").pop())}</span>`;
+      }
+
+      function renderCodeCardsGrid(cards) {
+        const grouped = {};
+        cards.forEach((c) => {
+          if (!grouped[c.group]) grouped[c.group] = [];
+          grouped[c.group].push(c);
+        });
+
+        const layers = (data.architecture || {}).layers || [];
+        const layerOrder = {};
+        layers.forEach((l) => (layerOrder[l.name] = l.order || 99));
+
+        const sortedGroups = Object.keys(grouped).sort((a, b) => {
+          if (a === "Overig") return 1;
+          if (b === "Overig") return -1;
+          const oa = layerOrder[a];
+          const ob = layerOrder[b];
+          if (oa !== undefined && ob !== undefined) return oa - ob;
+          if (oa !== undefined) return -1;
+          if (ob !== undefined) return 1;
+          return a.localeCompare(b);
+        });
+
+        return `<div class="code-cards" id="code-cards">${sortedGroups
+          .map(
+            (groupName) => `
+          <div class="code-cards-group">
+            <h3 class="code-cards-group-title">${esc(groupName)}</h3>
+            <div class="code-cards-grid">
+              ${grouped[groupName].map((c) => renderCodeCard(c)).join("")}
+            </div>
+          </div>`,
+          )
+          .join("")}</div>`;
+      }
+
+      function renderCodeCard(c) {
+        const counts = [];
+        if (c.src.length)
+          counts.push(
+            `<span title="${c.src.length} bronbestand${c.src.length > 1 ? "en" : ""}">${c.src.length} src</span>`,
+          );
+        if (c.test.length)
+          counts.push(
+            `<span title="${c.test.length} test${c.test.length > 1 ? "s" : ""}">${c.test.length} tst</span>`,
+          );
+        if (c.endpoints.length)
+          counts.push(
+            `<span title="${c.endpoints.length} endpoint${c.endpoints.length > 1 ? "s" : ""}">${c.endpoints.length} ep</span>`,
+          );
+
+        const conn = c.connections || { to: [], from: [] };
+        const hasConn = conn.to.length || conn.from.length;
+
+        const hasDetail =
+          c.src.length ||
+          c.test.length ||
+          c.endpoints.length ||
+          c.entities.length ||
+          hasConn;
+
+        const connectionsHtml = hasConn
+          ? `<div class="code-card-section"><h4>Verbindingen</h4><div class="code-card-connections">
+              ${renderConnGroup(conn.from, "from", "Ontvangt van")}
+              ${renderConnGroup(conn.to, "to", "Stuurt naar")}
+            </div></div>`
+          : "";
+
+        const filesHtml =
+          c.src.length || c.test.length
+            ? `<div class="code-card-section"><h4>Bestanden</h4><div class="code-card-files">
+              ${c.src.map((f) => renderFileChip(f, false)).join("")}
+              ${c.test.map((f) => renderFileChip(f, true)).join("")}
+            </div></div>`
+            : "";
+
+        const endpointsHtml = c.endpoints.length
+          ? `<div class="code-card-section"><h4>Endpoints</h4><div class="code-card-endpoints">
+              ${c.endpoints.map((ep) => `<div class="code-card-endpoint"><span class="badge badge-${(ep.method || "get").toLowerCase()}">${esc(ep.method || "GET")}</span> ${esc(ep.path)}</div>`).join("")}
+            </div></div>`
+          : "";
+
+        const entitiesHtml = c.entities.length
+          ? `<div class="code-card-section"><h4>Entiteiten</h4><div class="code-card-entities">
+              ${c.entities.map((e) => `<span class="code-card-entity">${esc(e.name)}</span>`).join("")}
+            </div></div>`
+          : "";
+
+        const connToLower = conn.to.map((n) => n.toLowerCase()).join(",");
+        const connFromLower = conn.from.map((n) => n.toLowerCase()).join(",");
+
+        return `
+          <div class="code-card" data-status="${esc(c.status)}" data-component="${esc(c.name.toLowerCase())}" data-conn-to="${esc(connToLower)}" data-conn-from="${esc(connFromLower)}">
+            <div class="code-card-header" onclick="toggleCard(this.closest('.code-card'))">
+              <span class="code-card-status" data-status="${esc(c.status)}"></span>
+              <span class="code-card-name">${esc(c.name)}</span>
+              ${c.feature ? `<span class="code-card-feature">${esc(c.feature)}</span>` : ""}
+              <span class="code-card-counts">${counts.join("")}</span>
+              ${hasDetail ? `<span class="code-card-chevron">&#x203A;</span>` : ""}
+            </div>
+            ${c.description ? `<div class="code-card-desc">${esc(c.description)}</div>` : ""}
+            ${hasDetail ? `<div class="code-card-detail">${connectionsHtml}${filesHtml}${endpointsHtml}${entitiesHtml}</div>` : ""}
+          </div>`;
+      }
+
       function renderMermaidDiagram(diagramSrc) {
         const el = document.getElementById("arch-diagram");
         if (!el || !diagramSrc) return;
@@ -735,116 +1011,120 @@
           ?.classList.add("active");
         const a = data.architecture || {};
         if (a.diagram) renderMermaidDiagram(a.diagram);
+        applyCodeCardFilter(showAll);
       }
 
       function renderArchitecture() {
         const a = data.architecture || {};
         const hasDiagram = a.diagram && a.diagram.trim();
-        const hasDesc = a.description && a.description.trim();
-        const hasFiles = a.files && a.files.length;
+        const cards = buildCodeCards();
+        const hasCards = !!cards;
+        const hasPlanned =
+          hasCards && cards.some((c) => c.status === "planned");
 
-        if (!hasDiagram && !hasDesc) {
+        if (!hasCards && !hasDiagram) {
           return `
-            <div class="section-header"><h2>Architecture</h2></div>
-            <div class="empty-state"><p>Nog geen architectuur gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Wordt gevuld door <code>/dev-define</code> of <code>/dev-build</code></p></div>`;
+            <div class="section-header"><h2>Components</h2></div>
+            <div class="empty-state"><p>Nog geen componenten gedefinieerd.</p>
+            <p style="color:var(--text-dim)">Wordt gevuld door <code>/dev-define</code></p></div>`;
         }
 
-        const hasPlanned = hasDiagram && /:::planned/.test(a.diagram);
-        const hasExternal = hasDiagram && /:::external/.test(a.diagram);
-
-        const toggleHtml =
-          hasDiagram && hasPlanned
-            ? `<div class="arch-toggle">
+        // Toolbar: filter toggle + optional diagram toggle
+        const filterToggle = hasPlanned
+          ? `<div class="arch-toggle">
               <button data-scope="all" class="${_diagramShowAll ? "active" : ""}" onclick="toggleDiagramScope(true)">Alles</button>
               <button data-scope="built" class="${!_diagramShowAll ? "active" : ""}" onclick="toggleDiagramScope(false)">Gebouwd</button>
             </div>`
+          : "";
+
+        const diagramToggle =
+          hasDiagram && hasCards
+            ? `<button class="arch-diagram-toggle" onclick="toggleArchDiagram()">Diagram</button>`
             : "";
 
-        const toolbarHtml = toggleHtml
-          ? `<div class="arch-toolbar">${toggleHtml}</div>`
-          : "";
+        const splitClass =
+          filterToggle && diagramToggle ? " arch-toolbar--split" : "";
+        const toolbarHtml =
+          filterToggle || diagramToggle
+            ? `<div class="arch-toolbar${splitClass}">${filterToggle}${diagramToggle}</div>`
+            : "";
 
+        // Diagram: hidden by default when cards exist
+        const diagramHidden = hasCards;
         const diagramHtml = hasDiagram
-          ? `<div class="architecture-diagram" id="arch-diagram"></div>`
+          ? `<div class="architecture-diagram${diagramHidden ? " architecture-diagram--hidden" : ""}" id="arch-diagram"></div>`
           : "";
 
-        const descHtml = hasDesc
-          ? `<div class="architecture-description">${md(a.description)}</div>`
-          : "";
+        const dataFlowHtml =
+          a.dataFlow && hasCards
+            ? `<div class="code-cards-dataflow">${esc(a.dataFlow)}</div>`
+            : "";
 
-        if (hasDiagram) {
+        let descHtml = "";
+
+        if (hasCards) {
+          descHtml = renderCodeCardsGrid(cards);
+          setTimeout(() => applyCodeCardFilter(_diagramShowAll), 0);
+        } else if (hasDiagram) {
           setTimeout(() => renderMermaidDiagram(a.diagram), 0);
-        }
-
-        // Make description h2 headers clickable if matching files entry
-        if (hasFiles && hasDesc) {
-          setTimeout(() => {
-            const descEl = document.querySelector(".architecture-description");
-            if (!descEl) return;
-            const fileMap = {};
-            a.files.forEach((f) => {
-              fileMap[f.component.toLowerCase()] = f.src?.[0];
-            });
-            descEl.querySelectorAll("h2").forEach((h) => {
-              const name = h.textContent.replace(/\s*\(gepland\)/i, "").trim();
-              const file = fileMap[name.toLowerCase()];
-              if (!file) return;
-              h.style.cursor = "pointer";
-              h.title = "Open " + file + " in VS Code";
-              h.classList.add("arch-desc-link");
-              h.onclick = () => {
-                const url =
-                  location.pathname.replace(/\/$/, "") +
-                  "/open/" +
-                  encodeURIComponent(file).replace(/%2F/g, "/");
-                openInVSCode(url, h);
-              };
-            });
-          }, 0);
         }
 
         return `
           <div class="section-header">
-            <h2>Architecture</h2>
+            <h2>Components</h2>
             <button class="edit-btn icon-btn" onclick="editArchitecture()" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
           ${toolbarHtml}
+          ${dataFlowHtml}
           ${diagramHtml}
           ${descHtml}`;
       }
 
       function editArchitecture() {
         const a = data.architecture || {};
-        const filesJson = a.files ? JSON.stringify(a.files, null, 2) : "";
+        const compJson = a.components
+          ? JSON.stringify(a.components, null, 2)
+          : "";
+        const layersJson = a.layers ? JSON.stringify(a.layers, null, 2) : "";
         openModal(
-          "Architecture bewerken",
+          "Components bewerken",
           `
-          <label>Mermaid Diagram</label>
-          <textarea id="f-arch-diagram" rows="12" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5">${esc(a.diagram || "graph TD\n  A[Client] --> B[Server]\n  B --> C[(Database)]")}</textarea>
-          <label>Beschrijving (Markdown)</label>
-          <textarea id="f-arch-desc" rows="6">${esc(a.description || "")}</textarea>
-          <label>Bestanden (JSON)</label>
-          <textarea id="f-arch-files" rows="6" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"component":"Naam","src":["pad"],"test":["pad"]}]'>${esc(filesJson)}</textarea>
+          <label>Data Flow</label>
+          <input id="f-arch-dataflow" type="text" value="${esc(a.dataFlow || "")}" placeholder="Request → API → Service → Database" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-size:13px" />
+          <label>Layers (JSON)</label>
+          <textarea id="f-arch-layers" rows="4" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"name":"API Laag","order":1}]'>${esc(layersJson)}</textarea>
+          <label>Components (JSON)</label>
+          <textarea id="f-arch-components" rows="16" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"name":"...","layer":"...","status":"done","connects_to":[]}]'>${esc(compJson)}</textarea>
+          <label>Mermaid Diagram (optioneel)</label>
+          <textarea id="f-arch-diagram" rows="6" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5">${esc(a.diagram || "")}</textarea>
         `,
           {
             wide: true,
             onSave() {
               data.architecture = data.architecture || {};
-              data.architecture.diagram =
-                document.getElementById("f-arch-diagram").value;
-              data.architecture.description =
-                document.getElementById("f-arch-desc").value;
-              const fv = document.getElementById("f-arch-files").value.trim();
-              if (fv) {
+              data.architecture.dataFlow = document
+                .getElementById("f-arch-dataflow")
+                .value.trim();
+              const lv = document.getElementById("f-arch-layers").value.trim();
+              if (lv) {
                 try {
-                  data.architecture.files = JSON.parse(fv);
+                  data.architecture.layers = JSON.parse(lv);
                 } catch (e) {
                   /* keep existing */
                 }
-              } else {
-                delete data.architecture.files;
               }
+              const cv = document
+                .getElementById("f-arch-components")
+                .value.trim();
+              if (cv) {
+                try {
+                  data.architecture.components = JSON.parse(cv);
+                } catch (e) {
+                  /* keep existing */
+                }
+              }
+              data.architecture.diagram =
+                document.getElementById("f-arch-diagram").value.trim() || "";
             },
           },
         );
