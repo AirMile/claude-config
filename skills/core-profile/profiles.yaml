@@ -20,7 +20,7 @@ dev:
   - dev-debug
   - dev-doctor
   - dev-define
-  - dev-feature
+  - dev-todo
   - dev-owasp
   - dev-plan
   - dev-refactor

@@ -21,7 +21,7 @@ Pull unassigned TODO items from a GitHub Projects board, pick one, add it to the
 ## Prerequisites
 
 - `gh` CLI authenticated with `read:project` + `project` scopes
-- `.project/backlog.html` exists (created by `/dev-plan` or `/dev-feature`)
+- `.project/backlog.html` exists (created by `/dev-plan` or `/dev-todo`)
 - GitHub Project board URL configured in `.project/github-project.json`
 
 ## Workflow
@@ -44,7 +44,7 @@ Pull unassigned TODO items from a GitHub Projects board, pick one, add it to the
    - **Gevonden** → parse en gebruik.
 
 2. Check of `.project/backlog.html` bestaat:
-   - **Niet gevonden** → meld: "Geen lokale backlog gevonden. Run eerst `/dev-plan` of `/dev-feature` om een backlog aan te maken." Stop.
+   - **Niet gevonden** → meld: "Geen lokale backlog gevonden. Run eerst `/dev-plan` of `/dev-todo` om een backlog aan te maken." Stop.
    - **Gevonden** → ga door.
 
 ### FASE 1: GitHub items ophalen

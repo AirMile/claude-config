@@ -79,7 +79,7 @@ TODO → DOING → DONE
 
 | Status | Betekenis      | Gezet door                         |
 | ------ | -------------- | ---------------------------------- |
-| TODO   | Niet opgepakt  | /dev-plan, /dev-feature            |
+| TODO   | Niet opgepakt  | /dev-plan, /dev-todo               |
 | DOING  | In bewerking   | /dev-define, /dev-build, /dev-test |
 | DONE   | Getest & klaar | /dev-test                          |
 

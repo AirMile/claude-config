@@ -265,6 +265,10 @@ Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
    - `context.patterns`: non-obvious patterns ontdekt tijdens setup (path aliases, env config, etc.)
    - `context.updated`: huidige datum
    - Write `.project/project-context.json`
+6. Set skip-worktree op alle `.project/` bestanden zodat lokale wijzigingen git status/pull niet verstoren:
+   ```bash
+   git ls-files .project/ | xargs git update-index --skip-worktree
+   ```
 
 **Output:**
 
@@ -283,8 +287,6 @@ Packages: {N} packages
 AskUserQuestion (single-select): Commit setup files now, or skip.
 
 If committing: stage relevant files, create commit with conventional commit format (e.g., `build: scaffold [stack] project`).
-
-**IMPORTANT:** Do NOT add Co-Authored-By, Generated with Claude Code footer, or any other AI attribution to commits.
 
 ---
 

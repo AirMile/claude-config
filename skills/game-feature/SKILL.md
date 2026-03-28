@@ -1,27 +1,27 @@
 ---
-name: dev-feature
+name: game-feature
 description: >-
-  Capture and develop new feature ideas for existing products. Combines quick
-  backlog entry with optional light thinking rounds. Use with /dev-feature
-  when you have a new feature idea to add to the backlog.
+  Capture game feature ideas during playtesting or brainstorming. Combines quick
+  backlog entry with optional light thinking rounds. Use with /game-feature
+  when you have a new game feature idea to add to the backlog.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.0.0
-  category: dev
+  version: 1.0.0
+  category: game
 ---
 
 # Feature
 
-Capture new feature ideas, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have a feature idea" and a backlog item ready for `/dev-define`.
+Capture new game feature ideas, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have a game feature idea" and a backlog item ready for `/game-define`.
 
-**Trigger**: `/dev-feature` or `/dev-feature [beschrijving]`
+**Trigger**: `/game-feature` or `/game-feature [beschrijving]`
 
 ## When to Use
 
-- User has a new feature idea for an existing product
-- User wants to quickly capture a feature without full `/dev-plan`
-- User wants to think through a feature idea before adding to backlog
+- User has a new game feature idea during playtesting or brainstorming
+- User wants to quickly capture a game feature without full `/game-plan`
+- User wants to think through a game mechanic idea before adding to backlog
 
 NOT for: concept-level ideation (`/thinking-idea`), iterating on existing features (`/thinking-brainstorm`, `/thinking-critique`).
 
@@ -30,38 +30,38 @@ NOT for: concept-level ideation (`/thinking-idea`), iterating on existing featur
 ### FASE 0: Input + Backlog Check
 
 1. **Beschrijving bepalen:**
-   - Argument meegegeven (`/dev-feature contactformulier toevoegen`) → gebruik als startbeschrijving
-   - Geen argument (`/dev-feature`) → AskUserQuestion:
+   - Argument meegegeven (`/game-feature dash-ability toevoegen`) -> gebruik als startbeschrijving
+   - Geen argument (`/game-feature`) -> AskUserQuestion:
      ```yaml
      header: "Feature"
-     question: "Wat wil je toevoegen?"
+     question: "Wat wil je toevoegen aan het spel?"
      options:
        - label: "Ik typ het hieronder"
-         description: "Beschrijf de feature in eigen woorden"
+         description: "Beschrijf de game feature in eigen woorden"
      multiSelect: false
      ```
 
 2. **Backlog check:**
    - Read `.project/backlog.html`
-   - **Niet gevonden** → maak aan:
+   - **Niet gevonden** -> maak aan:
      1. `mkdir -p .project`
-     2. Read `{skills_path}/shared/references/backlog-template.html` → Write naar `.project/backlog.html`
+     2. Read `{skills_path}/shared/references/backlog-template.html` -> Write naar `.project/backlog.html`
      3. Vervang placeholder JSON in `<script id="backlog-data">` met minimaal data-object:
         ```json
         {
           "project": "{project directory name}",
           "generated": "{YYYY-MM-DD}",
           "updated": "{YYYY-MM-DD}",
-          "source": "/dev-feature",
+          "source": "/game-feature",
           "overview": "",
           "features": [],
           "notes": ""
         }
         ```
-   - **Gevonden** → parse JSON, check duplicaten:
+   - **Gevonden** -> parse JSON, check duplicaten:
      - Genereer kebab-case naam uit beschrijving
      - Zoek `data.features.find(f => f.name === naam)`
-     - Gevonden → toon waarschuwing:
+     - Gevonden -> toon waarschuwing:
 
        ```
        LET OP: Feature "{naam}" bestaat al in de backlog (status: {status}).
@@ -82,9 +82,9 @@ NOT for: concept-level ideation (`/thinking-idea`), iterating on existing featur
        multiSelect: false
        ```
 
-       - "Toch toevoegen" → suffix toevoegen (bijv. `contact-form-2`)
-       - "Feature verdiepen" → suggest `/thinking-brainstorm {naam}` en stop
-       - "Annuleren" → stop
+       - "Toch toevoegen" -> suffix toevoegen (bijv. `dash-ability-2`)
+       - "Feature verdiepen" -> suggest `/thinking-brainstorm {naam}` en stop
+       - "Annuleren" -> stop
 
 ### FASE 1: Uitwerken
 
@@ -109,28 +109,28 @@ multiSelect: false
 
 **Goal:** Het feature-idee aanscherpen door 2-3 gerichte vragen.
 
-Formuleer 2-3 vragen specifiek voor DIT feature-idee. Presenteer alle vragen in één message, elk als een separate AskUserQuestion:
+Formuleer 2-3 vragen specifiek voor DIT game feature-idee. Presenteer alle vragen in een message, elk als een separate AskUserQuestion:
 
 ```yaml
 # Question 1
-header: "Scope"
-question: "{specifieke vraag over de scope van deze feature}"
+header: "Gameplay"
+question: "{specifieke vraag over hoe deze mechanic voelt/werkt voor de speler}"
 options:
   - label: "{concrete optie A} (Recommended)", description: "{wat dit betekent}"
   - label: "{concrete optie B}", description: "{wat dit betekent}"
 multiSelect: false
 
 # Question 2
-header: "Doel"
-question: "{specifieke vraag over het doel of de waarde}"
+header: "Balancing"
+question: "{specifieke vraag over balancing, tuning, of interactie met bestaande mechanics}"
 options:
   - label: "{concrete optie A} (Recommended)", description: "{wat dit betekent}"
   - label: "{concrete optie B}", description: "{wat dit betekent}"
 multiSelect: false
 
 # Question 3 (optional)
-header: "Aanpak"
-question: "{specifieke vraag over implementatie-aanpak}"
+header: "Technisch"
+question: "{specifieke vraag over technische aanpak of Godot-specifieke keuzes}"
 options:
   - label: "{concrete optie A} (Recommended)", description: "{wat dit betekent}"
   - label: "{concrete optie B}", description: "{wat dit betekent}"
@@ -139,11 +139,11 @@ multiSelect: false
 
 **Question rules:**
 
-- Elke vraag = specifiek voor DIT feature-idee, niet generiek
+- Elke vraag = specifiek voor DIT game feature-idee, niet generiek
 - Concrete, clickable opties
 - Recommended option = meest waarschijnlijke keuze
 - Maximum 3 vragen per ronde
-- Focus op scope, doel, en aanpak — niet op implementatiedetails
+- Focus op gameplay feel, balancing, en technische aanpak
 
 Na de antwoorden: verwerk de inzichten in een aangescherpte beschrijving van het feature-idee.
 
@@ -174,22 +174,24 @@ multiSelect: false
 header: "Type"
 question: "Wat voor type item is dit?"
 options:
-  - label: "FEATURE (Recommended)"
-    description: "Nieuwe functionaliteit"
-  - label: "API"
-    description: "Backend endpoint of service"
+  - label: "MECHANIC (Recommended)"
+    description: "Nieuwe gameplay mechanic (ability, movement, combat)"
+  - label: "SYSTEM"
+    description: "Ondersteunend systeem (spawning, scoring, saving)"
+  - label: "CONTENT"
+    description: "Levels, vijanden, items, dialoog"
+  - label: "POLISH"
+    description: "Juice, particles, screen shake, geluid"
   - label: "UI"
-    description: "Visuele component of styling"
-  - label: "REFACTOR"
-    description: "Code quality of architectuur verbetering"
+    description: "HUD, menu's, feedback indicators"
 multiSelect: false
 ```
 
 ### FASE 2: Schrijf naar Backlog + Thinking
 
-1. Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data" type="application/json">...</script>`
+1. Read `.project/backlog.html` -> parse JSON uit `<script id="backlog-data" type="application/json">...</script>`
 
-2. **Genereer naam:** kebab-case uit beschrijving (bijv. "Contactformulier met validatie" → `contact-form`)
+2. **Genereer naam:** kebab-case uit beschrijving (bijv. "Dash ability met cooldown" -> `dash-ability`)
 
 3. **Push naar `data.features[]`:**
 
@@ -219,17 +221,17 @@ multiSelect: false
 
      {aangescherpte beschrijving}
 
-     ## Scope
+     ## Gameplay
 
-     {antwoord op scope-vraag}
+     {antwoord op gameplay-vraag}
 
-     ## Doel
+     ## Balancing
 
-     {antwoord op doel-vraag}
+     {antwoord op balancing-vraag}
 
-     ## Aanpak
+     ## Technisch
 
-     {antwoord op aanpak-vraag, als gesteld}
+     {antwoord op technische vraag, als gesteld}
      ```
 
 7. **Log naar project.json thinking array:**
@@ -243,7 +245,7 @@ multiSelect: false
        "summary": "{beschrijving, max 200 chars}",
        "file": ".project/features/{naam}/thinking.md",
        "newFeature": "{naam}",
-       "source": "/dev-feature"
+       "source": "/game-feature"
      }
      ```
    - Als geen thinking rounds gedaan (snel toevoegen), `file` weglaten
@@ -269,8 +271,8 @@ multiSelect: false
 **Teammate toewijzen**:
 
 1. AskUserQuestion: "Naam van de teammate?" (vrije tekst)
-2. Read `.project/backlog.html` → parse JSON
-3. Zoek de zojuist toegevoegde feature → zet `assignee` op de naam
+2. Read `.project/backlog.html` -> parse JSON
+3. Zoek de zojuist toegevoegde feature -> zet `assignee` op de naam
 4. Write backlog terug (zelfde patroon als FASE 2 stap 5)
 5. Toon task brief in terminal output:
 
@@ -298,14 +300,14 @@ FEATURE TOEGEVOEGD
 
   {naam}                {phase} · {type}
   {beschrijving}
-  Toegewezen aan: {teammate}    ← alleen tonen als assignee gezet
-  Thinking: .project/features/{naam}/thinking.md    ← alleen als thinking rounds gedaan
+  Toegewezen aan: {teammate}    <- alleen tonen als assignee gezet
+  Thinking: .project/features/{naam}/thinking.md    <- alleen als thinking rounds gedaan
 
   Backlog: .project/backlog.html
   Next steps:
   - /thinking-brainstorm {naam} - Verdiep het idee met variaties
   - /thinking-critique {naam} - Toets het idee kritisch
-  - /dev-define {naam} - Begin met requirements en bouwen
+  - /game-define {naam} - Begin met requirements en architectuur
 ```
 
 ## Restrictions

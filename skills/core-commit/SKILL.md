@@ -154,7 +154,6 @@ docs: update API documentation for v2 endpoints
 
 **Niet toestaan:**
 
-- "Co-Authored-By" of "Generated with Claude" footer
 - Emoji's in commit messages
 - Subject langer dan 72 karakters
 
