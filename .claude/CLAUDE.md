@@ -30,15 +30,14 @@ skills/           55+ skills in 8 categorieën
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (elk met SKILL.md)
 agents/           20 sub-agent definities (.md met YAML frontmatter)
-hooks/            format-on-save.cjs (Prettier/gdformat), stop.ps1 (Ralph loop)
-scripts/ralph/    Windows PowerShell agentic TDD loop
+hooks/            format-on-save.cjs (Prettier/gdformat)
 CLAUDE.base.md    Template voor per-project CLAUDE.md generatie
 setup-project.sh  Linkt config naar een project's .claude/
 ```
 
 ## Skill Conventies
 
-- **Naamgeving**: `{category}-{verb}` — lowercase, hyphen. Categorieën: core, dev, frontend, game, project, story, team, thinking
+- **Naamgeving**: `{category}-{verb}` — lowercase, hyphen. Categorieën: core, dev, frontend, game, marketing, project, story, team, thinking
 - **Directory**: elke skill = map met `SKILL.md`, optioneel `references/`, `scripts/`, `techniques/`
 - **Frontmatter**: altijd `disable-model-invocation: true`, metadata met author/version/category
 - **Taal**: instructies Nederlands, technische termen Engels
@@ -67,7 +66,6 @@ State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared
 - **`.project/project.json`**: centraal project dashboard met context (structuur, routing, patterns), features, stack, endpoints, entities, thinking. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md verwijst hiernaar voor runtime context.
 - **Profiles**: `core-profile/profiles.yaml` + `switch-profile.py` togglet skill visibility per profiel
 - **Format-on-save**: hook runt Prettier (web) of gdformat (GDScript) na elke Write/Edit
-- **Ralph loop**: Windows-only PowerShell iteratie voor autonome TDD sessies
 - **Backlog**: `.project/backlog.html` met status TODO → DOING (stages: defining/defined/building/built/testing) → DONE
 - **Build skills**: auto-commit, auto-sync `project.json` context na voltooiing
 

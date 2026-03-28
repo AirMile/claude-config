@@ -9,7 +9,7 @@ disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
-  category: frontend
+  category: marketing
 ---
 
 # Screenshots

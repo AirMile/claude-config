@@ -138,7 +138,7 @@ AskUserQuestion:
   - "Nee, alleen het rapport" — Stop hier met het audit rapport
 - multiSelect: false
 
-If "Nee" → stop. Show report + reference to rerun with `/dev-legacy-owasp` later.
+If "Nee" → stop. Show report.
 
 ---
 
