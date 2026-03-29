@@ -1443,14 +1443,20 @@
           .join("");
 
         const pkgs = (s.packages || [])
-          .map(
-            (p) => `
+          .map((p) => {
+            if (typeof p === "string") {
+              const lastAt = p.lastIndexOf("@");
+              const name = lastAt > 0 ? p.slice(0, lastAt) : p;
+              const version = lastAt > 0 ? p.slice(lastAt + 1) : "";
+              p = { name, version, purpose: "" };
+            }
+            return `
             <tr>
               <td style="font-weight:500;color:var(--text)">${esc(p.name)}</td>
               <td style="font-family:monospace">${esc(p.version)}</td>
               <td>${esc(p.purpose)}</td>
-            </tr>`,
-          )
+            </tr>`;
+          })
           .join("");
 
         return `

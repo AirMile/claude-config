@@ -823,7 +823,7 @@ Muteer in memory:
 
 **Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`. Als feature niet bestaat: push met `{ name, status: "DOING", stage: "built", summary, created }`.
 
-**Architecture** (in `project-context.json`, **volg component-first model uit `shared/DASHBOARD.md`**): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `src`, `test`, `connects_to` (uit werkelijke signals/dependencies), `feature` (huidige feature naam). Nieuwe componenten: push met alle velden inclusief `feature`. Als `layers`/`components` niet bestaan EN meerdere scenes/signals → genereer initiële architecture met layers + components. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
+**Architecture** (in `project-context.json`, **volg component-first model uit `shared/DASHBOARD.md`**): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `description` (korte functionele beschrijving, max 200 chars — wat doet dit component?), `src`, `test`, `connects_to` (uit werkelijke signals/dependencies), `feature` (huidige feature naam). Nieuwe componenten: push met alle velden inclusief `feature`. Als `layers`/`components` niet bestaan EN meerdere scenes/signals → genereer initiële architecture met layers + components. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
 
 Schrijf parallel terug:
 

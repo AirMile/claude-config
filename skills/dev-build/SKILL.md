@@ -229,7 +229,7 @@ Richtlijnen:
 
 **Context**: update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip als geen structurele impact.
 
-**Architecture** (volg component-first model uit `shared/DASHBOARD.md`): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `src`, `test`, `connects_to` (uit werkelijke imports), `endpoints` (bijv. `"POST /api/auth/login"`), `entities` (gebruikte model namen), `feature` (huidige feature naam). Nieuwe componenten die tijdens build zijn ontstaan: push met alle velden inclusief `feature`. Skip als geen structurele impact.
+**Architecture** (volg component-first model uit `shared/DASHBOARD.md`): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `description` (korte functionele beschrijving, max 200 chars — wat doet dit component?), `src`, `test`, `connects_to` (uit werkelijke imports), `endpoints` (bijv. `"POST /api/auth/login"`), `entities` (gebruikte model namen), `feature` (huidige feature naam). Nieuwe componenten die tijdens build zijn ontstaan: push met alle velden inclusief `feature`. Skip als geen structurele impact.
 
 ### FASE 3C: Wat hebben we gebouwd?
 
