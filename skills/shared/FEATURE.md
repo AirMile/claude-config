@@ -37,6 +37,14 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
     "patterns": "Zustand store met Map"
   },
 
+  "clarifications": [
+    {
+      "question": "Wat als max pins bereikt en gebruiker nog een pint?",
+      "answer": "Blokkeren met visuele feedback",
+      "impact": "REQ-001 edge case"
+    }
+  ],
+
   "requirements": [
     {
       "id": "REQ-001",
@@ -55,7 +63,8 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
           "impact": "Hoeveel elementen tegelijk vergelijkbaar"
         }
       ],
-      "edgeCases": ["Wat als max pins bereikt en gebruiker nog een pint?"]
+      "edgeCases": ["Wat als max pins bereikt en gebruiker nog een pint?"],
+      "implicitCoverage": "REQ-002 test also validates this via integration flow"
     }
   ],
 
@@ -169,7 +178,12 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
         "fail": 0,
         "fixes": ["usePinMode toggle fix"]
       }
-    ]
+    ],
+    "verificationCheckpoint": {
+      "gaps": [],
+      "mismatches": [],
+      "adjustments": "none"
+    }
   },
 
   "refactor": {
@@ -222,6 +236,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 - `research` — alleen als stack/architecture research gedaan
 - `requirements[].tuningLevers` — alleen bij mechanica-requirements met getallen/timing
 - `requirements[].edgeCases` — alleen bij requirements met interacties/state changes
+- `clarifications` — alleen als gray-area resolution is uitgevoerd (open branches gevonden)
 
 **Toegevoegd door build:**
 
@@ -239,7 +254,9 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 - `tests.sessions` — per-sessie resultaten
 - `tests.checklist[].status` → PASS/FAIL/skip per item
 - `requirements[].status` → `"PASS"` of `"FAIL"`
+- `requirements[].implicitCoverage` — wanneer requirement gedekt is door een andere test (set door FASE 5d)
 - `observations` — bevindingen, suggesties voor andere features
+- `tests.verificationCheckpoint` — acceptance criteria mapping resultaat (gaps, mismatches, adjustments)
 
 **Toegevoegd door refactor:**
 
@@ -271,13 +288,13 @@ pending → built → PASS
 
 ## Welke skills schrijven naar feature.json
 
-| Skill            | Wat schrijven naar feature.json                                                                     | Wanneer |
-| ---------------- | --------------------------------------------------------------------------------------------------- | ------- |
-| `/dev-define`    | Creates feature.json: header, choices, requirements, files, architecture, buildSequence, tests      | FASE 3  |
-| `/dev-build`     | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status)                | FASE 4C |
-| `/dev-test`      | Enriches: tests (finalStatus/coverage/sessions/checklist status), requirements status, observations | FASE 6  |
-| `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE                      | FASE 5  |
-| `/game-define`   | Creates feature.json (zelfde als dev-define, game-specifieke design velden)                         | FASE 4  |
-| `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements                                     | FASE 5  |
-| `/game-test`     | Enriches: tests, requirements status, observations                                                  | FASE 6  |
-| `/game-refactor` | Enriches: refactor, status → DONE                                                                   | FASE 5  |
+| Skill            | Wat schrijven naar feature.json                                                                                            | Wanneer |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `/dev-define`    | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests             | FASE 3  |
+| `/dev-build`     | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Leest clarifications als constraints | FASE 4C |
+| `/dev-test`      | Enriches: tests (finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | FASE 6  |
+| `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                             | FASE 5  |
+| `/game-define`   | Creates feature.json (zelfde als dev-define + clarifications, game-specifieke design velden)                               | FASE 4  |
+| `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements. Leest clarifications als constraints                      | FASE 5  |
+| `/game-test`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                          | FASE 6  |
+| `/game-refactor` | Enriches: refactor, status → DONE                                                                                          | FASE 5  |

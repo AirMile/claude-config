@@ -326,6 +326,36 @@ Only the compact summary enters the main context for FASE 1.
    | REFACTOR | Code quality, performance, architecture improvements |
    | PAGE-GAP | Ontbrekende functionaliteit gevonden door /frontend-compose |
 
+4. **Score confidence en risk:**
+
+   Ken elke feature twee scores toe:
+
+   | Score | Confidence (hoe duidelijk?)               | Risk (hoe complex?)                                            |
+   | ----- | ----------------------------------------- | -------------------------------------------------------------- |
+   | 1     | Vaag idee, onvoldoende detail             | Triviale wijziging, geen onbekenden                            |
+   | 2     | Globaal duidelijk, details ontbreken      | Bekende techniek, weinig afhankelijkheden                      |
+   | 3     | Redelijk gedefinieerd, enkele open vragen | Gemiddelde complexiteit, enkele onbekenden                     |
+   | 4     | Goed gedefinieerd, minor details open     | Complexe integratie of nieuwe technologie                      |
+   | 5     | Volledig gespecificeerd                   | Hoge complexiteit, veel onbekenden of externe afhankelijkheden |
+
+   **Per feature, noteer kort:**
+   - Confidence score (1-5) + reden (max 1 zin)
+   - Risk score (1-5) + reden (max 1 zin)
+
+   **Heuristieken:**
+   - Features uit een gedetailleerd concept → hogere confidence
+   - Features met externe API/service dependency → hogere risk
+   - Features die al deels bestaan in codebase (update mode) → hogere confidence, lagere risk
+
+   **Extraction quality self-check** (voer uit voor de review, NIET aan user tonen):
+   - Elke feature is 1-3 dagen werk (te groot → splits, te klein → combineer)
+   - Geen overlappende scope tussen features
+   - Dependencies zijn expliciet (feature X heeft feature Y nodig → noteer voor FASE 2)
+   - Confidence/risk scores zijn onderbouwd (score zonder reden → voeg reden toe)
+   - Research findings verwerkt (als FASE 0.5 gedaan: bevindingen in feature beschrijvingen)
+
+   Pas de feature lijst aan op basis van gevonden gaps.
+
 **Output:**
 
 ```
@@ -333,10 +363,10 @@ FEATURES EXTRACTED
 
 Found {count} features:
 
-| # | Feature | Type | Description | Change |
-|---|---------|------|-------------|--------|
-| 1 | {name} | {type} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
-| 2 | {name} | {type} | {one-line description} | {marker or — if unchanged} |
+| # | Feature | Type | Conf | Risk | Description | Change |
+|---|---------|------|------|------|-------------|--------|
+| 1 | {name} | {type} | {1-5} | {1-5} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
+| 2 | {name} | {type} | {1-5} | {1-5} | {one-line description} | {marker or — if unchanged} |
 ...
 
 In update mode, the Change column shows what happened to each feature.
@@ -356,7 +386,7 @@ In create mode, the Change column is omitted.
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 2
-   - "Features aanpassen" → ask what to change (add/remove/edit), apply changes, show updated table, re-ask
+   - "Features aanpassen" → ask what to change (add/remove/edit name/type/description/confidence/risk), apply changes, show updated table, re-ask
    - "Explain question" → explain feature extraction process and options, re-ask
    - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 

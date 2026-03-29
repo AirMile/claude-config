@@ -189,6 +189,24 @@ Now TESTABLE -> TDD fix loop
 
    Als alle items COVERED → skip playtest, ga naar FASE 6 completion.
 
+   **Goal-backward verificatie** — map tests terug naar acceptance criteria:
+
+   Bouw mapping vanuit feature.json `requirements[].acceptance` en geclassificeerde items:
+
+   | REQ   | Acceptance Criterion        | Test Items | Dekking |
+   | ----- | --------------------------- | ---------- | ------- |
+   | REQ-1 | Vijand neemt schade bij hit | Item 1, 3  | ✓       |
+   | REQ-2 | Knockback bij critical hit  | —          | GAP     |
+
+   **GAP**: requirement zonder test items (COVERED of MANUAL).
+   **MISMATCH**: test items die implementation details verifiëren i.p.v. observable gameplay (test title refereert interne functies i.p.v. speler-zichtbaar gedrag).
+
+   Geen gaps, geen mismatches → toon `Acceptance mapping: {n}/{n} REQs gedekt` en ga door.
+
+   Gaps of mismatches → AskUserQuestion:
+   - "Accepteer en ga door (Recommended)" — noteer, proceed
+   - "Test items aanpassen" — voeg items toe voor gaps, herformuleer mismatches
+
 6. **Verify playtest scene exists:**
 
    Scene path: `.project/features/{feature-name}/playtest_scene.tscn`
@@ -985,6 +1003,56 @@ Regressies: {n} | Stabiel: {n}
 
 ---
 
+### FASE 5d: Requirement Verification
+
+**Skip when:** Alle tests FAIL (coverage check zinloos bij catastrofale failures).
+
+Cross-check `feature.json` requirements tegen test resultaten:
+
+1. **Laad requirement → test mapping:**
+   - Per `requirements[]` entry (id, description, status)
+   - Zoek matching `tests.checklist[]` entries via `requirementId`
+
+2. **Bouw coverage matrix:**
+
+   ```
+   REQUIREMENT COVERAGE: {feature-name}
+
+   | REQ       | Beschrijving (kort)        | Tests | Status      |
+   |-----------|----------------------------|-------|-------------|
+   | REQ-001   | {eerste 40 chars}          | 2     | ✓ COVERED   |
+   | REQ-002   | {eerste 40 chars}          | 0     | ✗ GEEN TEST |
+
+   Coverage: {covered}/{total} requirements ({percentage}%)
+   ```
+
+3. **Classificeer per requirement:**
+   - **COVERED**: minstens 1 test met matching `requirementId` EN status `PASS`
+   - **FAIL**: minstens 1 test matching maar status `FAIL`
+   - **GEEN TEST**: geen test in `checklist[]` met matching `requirementId`
+
+4. **Alle requirements COVERED:** toon compact samenvatting, door naar FASE 6.
+
+5. **Bij GEEN TEST of FAIL requirements:**
+
+   Per ongedekt requirement, AskUserQuestion:
+
+   ```yaml
+   header: "REQ niet gedekt: {REQ-ID}"
+   question: "{requirement description} — geen test gevonden. Wat wil je doen?"
+   options:
+     - label: "Test toevoegen (Recommended)", description: "Schrijf een test voor dit requirement"
+     - label: "Gedekt door andere test", description: "Impliciet getest via een andere test"
+     - label: "Accepteren zonder test", description: "Bewust overslaan"
+   multiSelect: false
+   ```
+
+   - **Test toevoegen** → voeg test item toe aan `tests.checklist[]` met `requirementId`, `status: "pending"`. Loop terug naar FASE 1 voor GUT test of FASE 2 (MANUAL) voor alleen dit item.
+   - **Gedekt door andere test** → vraag welke test het dekt. Markeer requirement met `implicitCoverage: "{REQ-ID} test also validates this via {beschrijving}"`. Status → `"PASS"`.
+   - **Accepteren** → markeer als `"skip"` met reden in `observations[]`.
+
+---
+
 ### FASE 6: Completion
 
 **Goal:** Sync user on fixes, capture observations, mark feature as verified and update documentation.
@@ -1093,7 +1161,7 @@ Opgenomen in test results.
 
    Muteer in memory:
 
-   **feature.json**: `status` → `"DONE"`, `requirements[].status` → `"PASS"` / `"FAIL"` per item, `tests.checklist[].status` → update per item with evidence. Add/update `tests` sectie: `finalStatus`, `sessions[]` (push `{ date, pass, fail, fixes }`), `fixSync`. Add `observations[]` if user reported out-of-scope issues. NIET andere secties overschrijven.
+   **feature.json**: `status` → `"DONE"`, `requirements[].status` → `"PASS"` / `"FAIL"` per item, `tests.checklist[].status` → update per item with evidence. Add/update `tests` sectie: `finalStatus`, `sessions[]` (push `{ date, pass, fail, fixes }`), `fixSync`, `verificationCheckpoint` (gaps, mismatches, adjustments). Add `observations[]` if user reported out-of-scope issues. NIET andere secties overschrijven.
 
    **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "DONE"`, `data.updated` → huidige datum.
 
@@ -1167,6 +1235,10 @@ Status: DONE
 Items: {N}/{N} passing
 
 Committed: test({feature}): verified
+
+Next steps:
+  1. /game-refactor → code quality check + learnings extractie
+  2. /game-define {next-feature} → volgende feature oppakken
 ```
 
 ---

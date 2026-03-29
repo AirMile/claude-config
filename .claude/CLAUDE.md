@@ -75,3 +75,4 @@ State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared
 - Shared bestanden niet aanpassen zonder impact op alle skills te overwegen
 - Nieuwe skills: kopieer frontmatter structuur van bestaande skill in dezelfde categorie
 - Test door de skill daadwerkelijk te runnen
+- Dev/game pipeline sync: bij structurele wijzigingen aan dev-pipeline skills (dev-define, dev-build, dev-test, dev-debug, dev-refactor), check of de game-pipeline counterpart (game-\*) dezelfde wijziging nodig heeft. Domein-specifieke content (Godot vs web, GUT vs browser) hoeft niet gesyncroniseerd.

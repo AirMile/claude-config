@@ -1,6 +1,6 @@
 # Session Tracking
 
-Lichtgewicht session state voor cross-skill coördinatie. Skills gebruiken alleen de onderstaande bestanden — geen `devinfo.json`.
+Lichtgewicht session state voor cross-skill coördinatie. Pipeline skills gebruiken de onderstaande bestanden. Frontend pipeline skills gebruiken daarnaast `.project/session/devinfo.json` voor handoff data tussen skills (bijv. `frontend-compose` → `frontend-iterate`).
 
 ---
 

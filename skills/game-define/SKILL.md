@@ -64,7 +64,25 @@ The skill gathers requirements through targeted questions, optionally researches
    - If user picks the backlog feature → use that name, continue to step 3
    - If user picks "Andere feature" → fall through to option (c)
 
-   **c) If no backlog found OR user wants a different feature:**
+   **c) No backlog but concept exists:**
+
+   Check of `.project/project-concept.md` bestaat (of `project.json` → `concept.content` niet leeg).
+   Als concept gevonden:
+   AskUserQuestion:
+
+   ```yaml
+   header: "Concept zonder backlog"
+   question: "Er is een concept maar nog geen backlog. Wil je eerst een backlog genereren?"
+   options:
+     - label: "Ja, eerst /game-plan (Recommended)", description: "Genereer backlog uit concept, dan features definiëren"
+     - label: "Nee, direct definiëren", description: "Definieer een losse feature zonder backlog"
+   multiSelect: false
+   ```
+
+   "Ja" → stop, toon: `Draai /game-plan om je concept om te zetten in een backlog.`
+   "Nee" → ga door naar optie d.
+
+   **d) No backlog, no concept (or user chose direct define):**
 
    Use **AskUserQuestion** tool:
    - header: "Feature Name"
@@ -120,6 +138,18 @@ De card verhuist naar de DOING kolom met stage `defining`.
      - `concept.pitch` als feature context (korte samenvatting). Fallback: als pitch leeg, lees `.project/project-concept.md` → eerste 2 zinnen
      - `features[]` — bestaande features (voorkomt duplicaten/overlap)
      - `data.entities` — bestaand data model
+     - `thinking[]` — twee checks:
+       1. **Naam-match**: entries met `title` of `newFeature` matching de feature-naam → automatisch laden als context
+       2. **Recent (afgelopen 7 dagen)**: entries met `date` binnen 7 dagen, NIET al geladen via naam-match. Als gevonden, toon via AskUserQuestion:
+          ```yaml
+          header: "Recente thinking-output gevonden"
+          question: "Er zijn recente verkenningen/ideeën. Wil je deze als context gebruiken?"
+          options:
+            - label: "Ja, gebruik als context (Recommended)", description: "{N} entries: {titels kort}"
+            - label: "Nee, overslaan", description: "Start zonder thinking-context"
+          multiSelect: false
+          ```
+          "Ja" → lees de gekoppelde `.project/thinking/*.md` bestanden en gebruik als input voor FASE 1 vragen.
    - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
      - `learnings[]` — eerdere inzichten uit build/test/refactor (gebruik als input voor architectuurkeuzes)
@@ -172,6 +202,25 @@ Na de initiële vragen, evalueer of er open branches zijn:
 **>3 requirements verwacht**: stel 1-2 gerichte doorvragen over de belangrijkste open branch. Formuleer als "Wat gebeurt er als...?" of "Hoe gaat dit om met...?"
 
 Max 2 extra vragen, dan door naar extraction.
+
+#### Gray-Area Resolution
+
+**Skip** als doorvraag-check geen open branches heeft gevonden.
+
+**Anders**: voor elke geïdentificeerde open branch (max 3):
+
+1. Formuleer de ambiguïteit als concrete keuze via AskUserQuestion:
+   - Header: de open branch als korte zin
+   - Opties: 2-3 concrete benaderingen + "Niet relevant voor scope"
+   - Eerste optie = Recommended
+
+2. Noteer de keuze als clarification:
+   `{ "question": "{open branch}", "answer": "{gekozen optie}", "impact": "kort welk requirement-gebied dit raakt" }`
+
+**"Niet relevant"** → noteer als scoped-out, niet als requirement.
+**>3 open branches** → verwerk overige inline bij requirement extraction als edge case.
+
+Max 3 AskUserQuestion calls. Dan door naar extraction.
 
 #### Requirement Extraction
 
@@ -607,6 +656,7 @@ Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md`
 | `design`                             | alleen visuele features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`) |
 | `buildSequence`                      | altijd                                                                             |
 | `testStrategy`                       | altijd                                                                             |
+| `clarifications`                     | alleen als gray-area resolution is uitgevoerd                                      |
 | `durableDecisions`                   | bij >3 requirements — beslissingen die over alle REQs gelden                       |
 | `research`                           | alleen als research is gedaan                                                      |
 
@@ -718,6 +768,10 @@ DASHBOARD SYNCED
 
 Data: {N} entities ({new} nieuw)
 Stack: {N} packages ({new} nieuw)
+
+Next steps:
+  1. /game-plan → genereer backlog uit concept (als nog geen backlog)
+  2. /game-build {feature-name} → start implementatie (als backlog al bestaat)
 ```
 
 ## Best Practices

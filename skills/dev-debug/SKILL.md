@@ -264,3 +264,17 @@ Apply selected fixes from chosen strategy. Document each change with file:line r
 2. If no tests: suggest manual verification steps based on the problem type
 3. Show summary of changes made + test results
 4. Ask user to confirm the fix resolves the original problem
+
+**Output:**
+
+```
+DEBUG COMPLETE: {issue}
+========================
+Root cause: {samenvatting}
+Fix: {wat er gewijzigd is}
+Tests: {pass/fail status}
+
+Next steps:
+  1. /dev-test {feature} → herverificatie na fix
+  2. /dev-build {feature} → als rebuild nodig is
+```

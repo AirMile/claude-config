@@ -29,7 +29,24 @@ FASE 1 van de dev workflow: define → build → test.
    - "{name} (Recommended)" / "Andere feature"
    - Backlog gekozen → stap 3. "Andere feature" → optie c.
 
-   c) **Geen backlog of andere feature gewenst:**
+   c) **Geen backlog maar concept aanwezig:**
+   Check of `.project/project-concept.md` bestaat (of `project.json` → `concept.content` niet leeg).
+   Als concept gevonden:
+   AskUserQuestion:
+
+   ```yaml
+   header: "Concept zonder backlog"
+   question: "Er is een concept maar nog geen backlog. Wil je eerst een backlog genereren?"
+   options:
+     - label: "Ja, eerst /dev-plan (Recommended)", description: "Genereer backlog uit concept, dan features definiëren"
+     - label: "Nee, direct definiëren", description: "Definieer een losse feature zonder backlog"
+   multiSelect: false
+   ```
+
+   "Ja" → stop, toon: `Draai /dev-plan om je concept om te zetten in een backlog.`
+   "Nee" → ga door naar optie d.
+
+   d) **Geen backlog, geen concept (of direct definiëren gekozen):**
    AskUserQuestion: "Welke feature wil je definiëren?" met 3 suggesties relevant voor het project.
 
 3. **Project folder + context** (paralleliseer):
@@ -42,7 +59,18 @@ FASE 1 van de dev workflow: define → build → test.
      - `features[]` — bestaande features (voorkomt duplicaten/overlap)
      - `endpoints` — bestaande API surface
      - `data.entities` — bestaand data model
-     - `thinking[]` — zoek entries met `title` of `newFeature` matching de feature-naam. Gebruik als extra context bij requirement-formulering.
+     - `thinking[]` — twee checks:
+     1. **Naam-match**: entries met `title` of `newFeature` matching de feature-naam → automatisch laden als context
+     2. **Recent (afgelopen 7 dagen)**: entries met `date` binnen 7 dagen, NIET al geladen via naam-match. Als gevonden, toon via AskUserQuestion:
+        ```yaml
+        header: "Recente thinking-output gevonden"
+        question: "Er zijn recente verkenningen/ideeën. Wil je deze als context gebruiken?"
+        options:
+          - label: "Ja, gebruik als context (Recommended)", description: "{N} entries: {titels kort}"
+          - label: "Nee, overslaan", description: "Start zonder thinking-context"
+        multiSelect: false
+        ```
+        "Ja" → lees de gekoppelde `.project/thinking/*.md` bestanden en gebruik als input voor FASE 1 vragen.
    - **Backlog card → DOING + "defining"**: Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data">`. Zoek feature op naam → zet `status: "DOING"`, `stage: "defining"`, `date: "{date}"`. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DOING"`, `stage: "defining"`. Zet `data.updated` naar vandaag. Schrijf terug naar `backlog.html`.
    - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
@@ -80,12 +108,41 @@ Na de initiële vragen, evalueer of er open branches zijn:
 
 Max 2 extra vragen, dan door naar extraction.
 
+#### Gray-Area Resolution
+
+**Skip** als doorvraag-check geen open branches heeft gevonden.
+
+**Anders**: voor elke geïdentificeerde open branch (max 3):
+
+1. Formuleer de ambiguïteit als concrete keuze via AskUserQuestion:
+   - Header: de open branch als korte zin
+   - Opties: 2-3 concrete benaderingen + "Niet relevant voor scope"
+   - Eerste optie = Recommended
+
+2. Noteer de keuze als clarification:
+   `{ "question": "{open branch}", "answer": "{gekozen optie}", "impact": "kort welk requirement-gebied dit raakt" }`
+
+**"Niet relevant"** → noteer als scoped-out, niet als requirement.
+**>3 open branches** → verwerk overige inline bij requirement extraction als edge case.
+
+Max 3 AskUserQuestion calls. Dan door naar extraction.
+
 #### Requirement Extraction + Checkpoint
 
 Extraheer testbare requirements als tabel:
 
 | ID  | Requirement | Category | Acceptance Criteria |
 | --- | ----------- | -------- | ------------------- |
+
+**Completeness self-check** (voer uit, NIET aan user tonen):
+
+- Elk requirement heeft testbare acceptance criteria (niet vaag: "werkt goed")
+- Data sources geïdentificeerd (waar komt input/output vandaan?)
+- Error/edge cases benoemd voor requirements met user input of externe data
+- Geen overlap tussen requirements (twee REQs die hetzelfde beschrijven)
+- Scope past bij 1 feature (als >10 REQs → markeer voor FASE 1b)
+
+Fix gevonden gaps inline: voeg ontbrekende acceptance criteria toe, splits overlappende REQs, voeg edge case REQs toe. De requirements tabel hierboven toont het uiteindelijke resultaat inclusief fixes.
 
 Presenteer direct daarna het volledige overzicht:
 
@@ -165,6 +222,7 @@ Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md`
 | `apiContract`                        | alleen bij backend                                                           |
 | `buildSequence`                      | altijd                                                                       |
 | `testStrategy`                       | altijd                                                                       |
+| `clarifications`                     | alleen als gray-area resolution is uitgevoerd                                |
 | `durableDecisions`                   | bij >3 requirements — beslissingen die over alle REQs gelden                 |
 | `research`                           | alleen als research is gedaan                                                |
 
@@ -262,6 +320,20 @@ Schrijf parallel terug:
 - Edit/Write `project-context.json` (als architecture of context gewijzigd — Write bij grote diagram-wijzigingen)
 
 Clean up: `rm -f .project/session/active-{feature-name}.json`
+
+**Output:**
+
+```
+DEFINE COMPLETE: {feature-name}
+
+Requirements: {N} (met acceptance criteria)
+Architecture: {component count} componenten
+Files: feature.json + backlog + dashboard
+
+Next steps:
+  1. /dev-plan → genereer backlog uit concept (als nog geen backlog)
+  2. /dev-build {feature-name} → start implementatie (als backlog al bestaat)
+```
 
 ## Restrictions
 

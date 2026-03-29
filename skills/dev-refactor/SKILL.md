@@ -770,6 +770,10 @@ IMPROVEMENTS APPLIED
    ✗ {name} — rolled back ({reason})
 
    Refactoring complete. Features remain in DONE status.
+
+   Next steps:
+     1. /dev-define {next-feature} → volgende feature uit backlog
+     2. /dev-plan → backlog herzien als scope gewijzigd is
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 

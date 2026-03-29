@@ -130,7 +130,25 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
 
    f) Bij gemixte types (COVERED + AUTO + MANUAL): toon ASCII flowchart van de test executie flow. Bij alleen COVERED + AUTO/CLI: skip flowchart.
 
-   g) Proceed automatically with the recommended classification. No user approval needed — continue directly to step 8 (dev server) or FASE 1.
+   g) Proceed automatically with the recommended classification. No user approval needed — continue directly to step 7h.
+
+   h) **Goal-backward verificatie** — map tests terug naar acceptance criteria:
+
+   Bouw mapping vanuit feature.json `requirements[].acceptance` en geclassificeerde test items:
+
+   | REQ   | Acceptance Criterion        | Test Items | Dekking |
+   | ----- | --------------------------- | ---------- | ------- |
+   | REQ-1 | Element heeft pinned state  | Item 1, 3  | ✓       |
+   | REQ-2 | Pin bar toont gepinde items | —          | GAP     |
+
+   **GAP**: requirement zonder test items.
+   **MISMATCH**: test items die implementation details verifiëren i.p.v. user-facing behavior (test title refereert interne methods, verifieert data structure i.p.v. output).
+
+   Geen gaps, geen mismatches → toon `Acceptance mapping: {n}/{n} REQs gedekt` en ga door naar step 8.
+
+   Gaps of mismatches → AskUserQuestion:
+   - "Accepteer en ga door (Recommended)" — noteer, proceed
+   - "Test items aanpassen" — voeg items toe voor gaps, herformuleer mismatches, classificeer per `references/test-classification.md`
 
 8. **Dev server** (conditioneel):
 
@@ -376,6 +394,56 @@ Regressies: {n} | Stabiel: {n}
 
 ---
 
+### FASE 5d: Requirement Verification
+
+**Skip when:** Alle tests FAIL (coverage check zinloos bij catastrofale failures).
+
+Cross-check `feature.json` requirements tegen test resultaten:
+
+1. **Laad requirement → test mapping:**
+   - Per `requirements[]` entry (id, description, status)
+   - Zoek matching `tests.checklist[]` entries via `requirementId`
+
+2. **Bouw coverage matrix:**
+
+   ```
+   REQUIREMENT COVERAGE: {feature-name}
+
+   | REQ       | Beschrijving (kort)        | Tests | Status      |
+   |-----------|----------------------------|-------|-------------|
+   | REQ-001   | {eerste 40 chars}          | 2     | ✓ COVERED   |
+   | REQ-002   | {eerste 40 chars}          | 0     | ✗ GEEN TEST |
+
+   Coverage: {covered}/{total} requirements ({percentage}%)
+   ```
+
+3. **Classificeer per requirement:**
+   - **COVERED**: minstens 1 test met matching `requirementId` EN status `PASS`
+   - **FAIL**: minstens 1 test matching maar status `FAIL`
+   - **GEEN TEST**: geen test in `checklist[]` met matching `requirementId`
+
+4. **Alle requirements COVERED:** toon compact samenvatting, door naar FASE 6.
+
+5. **Bij GEEN TEST of FAIL requirements:**
+
+   Per ongedekt requirement, AskUserQuestion:
+
+   ```yaml
+   header: "REQ niet gedekt: {REQ-ID}"
+   question: "{requirement description} — geen test gevonden. Wat wil je doen?"
+   options:
+     - label: "Test toevoegen (Recommended)", description: "Schrijf een test voor dit requirement"
+     - label: "Gedekt door andere test", description: "Impliciet getest via een andere test"
+     - label: "Accepteren zonder test", description: "Bewust overslaan"
+   multiSelect: false
+   ```
+
+   - **Test toevoegen** → voeg test item toe aan `tests.checklist[]` met `requirementId`, `status: "pending"`. Loop terug naar FASE 1 (AUTO) of FASE 2 (MANUAL) voor alleen dit item.
+   - **Gedekt door andere test** → vraag welke test het dekt. Markeer requirement met `implicitCoverage: "{REQ-ID} test also validates this via {beschrijving}"`. Status → `"PASS"`.
+   - **Accepteren** → markeer als `"skip"` met reden in `observations[]`.
+
+---
+
 ### FASE 6: Completion
 
 #### Step 1: Fix Sync (skip als geen fixes)
@@ -411,6 +479,7 @@ Skill-specifieke mutaties:
 - `tests.sessions[]` → append `{ "date": "YYYY-MM-DD", "pass": N, "fail": N, "skip": N }`
 - `tests.fixSync` → fix summaries (als fixes toegepast)
 - `observations[]` → toevoegen (indien aanwezig)
+- `tests.verificationCheckpoint` → `{ "gaps": ["REQ-ID"], "mismatches": ["beschrijving"], "adjustments": "none|added|reworded" }`
 
 **backlog:** `status = "DONE"`, verwijder `stage`.
 
@@ -458,6 +527,22 @@ Hybrid test verification complete.
 ```
 
 Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{name}.json`
+
+**Output (conditioneel):**
+
+```
+[Als alle tests PASS:]
+
+Next steps:
+  1. /dev-refactor → code quality check + learnings extractie
+  2. /dev-define {next-feature} → volgende feature oppakken
+
+[Als failures:]
+
+Next steps:
+  1. /dev-debug → root cause analyse van failures
+  2. /dev-build {feature} → rebuild specifieke requirements
+```
 
 ---
 

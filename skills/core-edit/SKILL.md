@@ -93,6 +93,8 @@ Confirm with a short "Klopt dit?" in plain text before proceeding. Only use AskU
 
 - **ASCII diagram**: if the skill has a complex flow, architecture, or decomposition phase — suggest adding an instruction to generate an ASCII diagram at that point. See `shared/SKILL-PATTERNS.md`
 - **Interview checkpoint**: if the skill gathers 3+ inputs before execution — suggest adding a CHECKPOINT between gathering and execution phases (summary table + confirmation). See `shared/SKILL-PATTERNS.md`
+- **Pass paths, not content**: if the skill spawns 2+ sub-agents that read project files — suggest passing a `<reference-paths>` block with categorized paths instead of file contents. See `shared/SKILL-PATTERNS.md`
+- **Git safety gates**: if the skill performs git mutations — suggest adding explicit state re-reads after mutations and safety gates before risky operations. See `shared/SKILL-PATTERNS.md`
 
 Only suggest these if they add genuine value — not every skill needs them.
 

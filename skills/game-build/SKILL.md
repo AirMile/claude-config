@@ -136,7 +136,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DOING" && stage === "defined"` → suggest via **AskUserQuestion**
    2. Fallback: list `.project/features/` met `feature.json`, let user select
 
-   Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`.
+   Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`. Als `clarifications[]` aanwezig: behandel als harde constraints tijdens implementatie (gray-area beslissingen van de user).
 
    Niet gevonden → exit: "Run `/game-define` eerst."
 
@@ -874,6 +874,20 @@ git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first,
 ```
 
 Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+
+**Output:**
+
+```
+BUILD COMPLETE: {feature}
+========================
+Techniques: TDD ({n}), Implementation First ({n}), Implementation Only ({n})
+Tests: {passed}/{total} PASS
+Files created: {count}
+
+Next steps:
+  1. /game-test {feature} → playtest verificatie
+  2. /game-debug → als er onverwachte failures zijn
+```
 
 ## GUT Test Conventions
 

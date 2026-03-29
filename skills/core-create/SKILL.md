@@ -124,6 +124,8 @@ Use **AskUserQuestion** tool:
 - Include AskUserQuestion where user decisions are genuinely needed
 - **ASCII diagram**: if the skill has a complex flow, architecture, or decomposition phase — add an instruction to generate an ASCII diagram at that point (what to diagram + when, not a hardcoded diagram). See `shared/SKILL-PATTERNS.md`
 - **Interview checkpoint**: if the skill gathers 3+ inputs before execution — add a CHECKPOINT between gathering and execution phases. Format: summary table of all collected input + AskUserQuestion confirmation before proceeding. See `shared/SKILL-PATTERNS.md`
+- **Pass paths, not content**: if the skill spawns 2+ sub-agents that read project files — pass a `<reference-paths>` block with categorized paths, not file contents. Agents read only what's relevant. See `shared/SKILL-PATTERNS.md`
+- **Git safety gates**: if the skill performs git mutations — re-read state after every mutation, check state dimensions separately (clean? upstream? unpushed?), enforce safety gates before risky ops. See `shared/SKILL-PATTERNS.md`
 
 **Enter plan mode** before writing the draft:
 
