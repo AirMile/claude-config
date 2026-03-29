@@ -245,7 +245,9 @@
 
       function md(text) {
         if (!text) return "";
-        return marked.parse(text);
+        // Strip YAML frontmatter (---...---) before rendering
+        const stripped = text.replace(/^---\n[\s\S]*?\n---\n?/, "");
+        return marked.parse(stripped);
       }
 
       // ─── State ──────────────────────────────────────────────

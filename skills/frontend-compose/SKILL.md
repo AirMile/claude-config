@@ -555,8 +555,8 @@ IF section is new (not in inventory):
 
 **Rules:**
 
-- Follow `shared/RULES.md` for React/TypeScript coding standards
-- Follow `shared/PATTERNS.md` for component patterns
+- Follow `shared/RULES.md`: React/Next.js Rules, HTML/CSS Rules, Accessibility Rules (A-series)
+- Follow `shared/PATTERNS.md`: Component Patterns, Layout Patterns
 - Use `cn()` for className composition — create `src/lib/utils.ts` if not present
 - TypeScript strict mode with proper interfaces
 - Semantic HTML with aria-labels and keyboard support
@@ -660,7 +660,17 @@ Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
    - Forms zonder submit handler of met placeholder submit
    - Links met `href="#"` of `href="javascript:void(0)"`
 
-2. **Als gaps gevonden, rapporteer in completion:**
+2. **Code quality check** (scan dezelfde bestanden):
+   - Hardcoded kleuren: `#hex`, `rgb()`, `hsl()` in className of style — moet theme tokens gebruiken (H101)
+   - Hardcoded spacing: `p-[16px]`, `gap-[24px]` etc. — moet standaard Tailwind scale gebruiken (R103)
+   - Div-soup: `<div onClick>` zonder `role="button"` of beter: gebruik `<button>` (R001)
+   - Ontbrekende alt text: `<img>` of `<Image>` zonder `alt` prop (R002)
+   - Ontbrekende labels: `<input>`/`<select>` zonder `<label>` of `aria-label` (R004)
+   - Implicit any: functies/parameters zonder type annotation (T002)
+
+   Bij violations: fix direct in de gegenereerde code voordat je doorgaat. Rapporteer gefixte violations in het completion report onder `CODE QUALITY`.
+
+3. **Als gaps gevonden, rapporteer in completion:**
 
    ```
    FUNCTIONALITY GAPS
@@ -668,9 +678,13 @@ Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
    Componenten met ontbrekende functionaliteit:
    - {Component}: [Button "{label}"] → geen handler
    - {Component}: <form> → placeholder submit
+
+   CODE QUALITY (auto-fixed)
+   - {Component}: hardcoded #hex → theme token (H101)
+   - {Component}: <div onClick> → <button> (R001)
    ```
 
-3. **Als `.project/backlog.html` bestaat** (zie `shared/BACKLOG.md`):
+4. **Als `.project/backlog.html` bestaat** (zie `shared/BACKLOG.md`):
    - Parse JSON uit `<script id="backlog-data">` blok
    - Cross-reference gap met `data.features`
    - Match? Noteer: "Feature bestaat in backlog: {name} ({status})"
@@ -678,7 +692,7 @@ Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
      `{ "name": "{feature-naam}", "type": "PAGE-GAP", "status": "TODO", "phase": "P4", "description": "{beschrijving}", "dependency": null, "source": "/frontend-compose {page} — {Component} [{element}]" }`
    - Zet `data.updated` naar huidige datum, schrijf JSON terug via Edit tool
 
-4. **Als `.project/backlog.html` NIET bestaat:**
+5. **Als `.project/backlog.html` NIET bestaat:**
    - Rapporteer gaps alleen in completion report (geen backlog om aan toe te voegen)
 
 Gaps verschijnen altijd in het completion report. Toevoegen aan backlog is automatisch maar non-blocking.
@@ -905,7 +919,7 @@ This skill must **ALWAYS**:
 - Analyze existing page via Explore agent when modifying an existing page
 - Formulate user stories and get validation before layout
 - Show ASCII layout and get approval before generating code
-- Follow `shared/RULES.md` and `shared/PATTERNS.md`
+- Follow `shared/RULES.md` (React/Next.js, HTML/CSS, A-series) and `shared/PATTERNS.md` (Component, Layout)
 - Detect and match the project's framework, UI library, and patterns
 - Update DevInfo for downstream skill handoff
 - Show a completion report with next steps

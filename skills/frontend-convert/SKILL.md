@@ -27,6 +27,7 @@ Convert visual input into working code. Accepts screenshots, Figma exports, webs
 - `../shared/PLAYWRIGHT.md` — Browser automation, screenshot capture
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
 - `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
+- `./examples/` — Before/after conversie voorbeelden (1:1 en inspiratie modus)
 
 ---
 
@@ -243,17 +244,17 @@ Generate the page and components based on the source image.
 
 **Rules:**
 
-- Follow `shared/RULES.md` for React/TypeScript standards
-- Follow `shared/PATTERNS.md` for component patterns
+- Follow `shared/RULES.md`: React/Next.js Rules, HTML/CSS Rules, Accessibility Rules (A-series)
+- Follow `shared/PATTERNS.md`: Component Patterns, Layout Patterns
 - Use `cn()` for className composition — create `src/lib/utils.ts` if not present
 - TypeScript strict mode with proper interfaces
 - Semantic HTML with aria-labels and keyboard support
 - Import existing components — never regenerate what already works
 
-**Mode-specific:**
+**Mode-specific** (zie `./examples/` voor gold standard voorbeelden per modus):
 
-- **1:1 copy:** Match source colors, fonts, spacing as closely as possible. Use arbitrary Tailwind values (`bg-[#FF5733]`, `text-[20px]`) when no standard class matches. Prioritize visual fidelity.
-- **Inspiration:** Use only THEME.md tokens and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values.
+- **1:1 copy:** Match source colors, fonts, spacing as closely as possible. Use arbitrary Tailwind values (`bg-[#FF5733]`, `text-[20px]`) when no standard class matches. Prioritize visual fidelity. Referentie: `./examples/PricingPage-1to1.tsx`
+- **Inspiration:** Use only THEME.md tokens and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Referentie: `./examples/PricingPage-inspiration.tsx`
 
 **Contextual content:** Never use "Lorem ipsum." Infer contextual placeholder text from the source image or describe what real content would go there.
 
@@ -339,6 +340,31 @@ Action: [✓ Acceptable — stop | → Fix and re-check]
 - **Fixable discrepancies AND rounds remaining** → apply targeted edits, increment round, repeat from 3.2
 - **Round 3 reached** → stop loop regardless, report remaining discrepancies
 
+### 3.2b Code Quality Check (eerste ronde only)
+
+Na de eerste visuele verificatie, scan alle gegenereerde bestanden:
+
+**Altijd checken (beide modes):**
+
+- Ontbrekende alt text: `<img>` of `<Image>` zonder `alt` prop (R002)
+- Ontbrekende labels: `<input>`/`<select>` zonder `<label>` of `aria-label` (R004)
+- Div-soup: `<div onClick>` zonder `role="button"` — gebruik `<button>` (R001)
+- Implicit any: functies/parameters zonder type annotation (T002)
+
+**Alleen in inspiratie modus:**
+
+- Arbitrary color values: `bg-[#hex]`, `text-[#hex]`, `border-[#hex]` etc. — moet theme tokens gebruiken (H101)
+- Arbitrary spacing: `p-[16px]`, `gap-[24px]`, `mt-[32px]` etc. — moet standaard Tailwind scale gebruiken (R103)
+- Referentie: vergelijk met `./examples/PricingPage-inspiration.tsx` — geen enkele arbitrary value
+
+Bij violations: neem mee als fixes in stap 3.3 samen met visuele discrepancies. Voeg toe aan het ROUND assessment:
+
+```
+Code quality:  [PASS | [N] violations]
+  [- arbitrary color: bg-[#2D3748] → bg-surface-dark (H101)]
+  [- missing alt: <img> in HeroSection:14 (R002)]
+```
+
 ### 3.3 Fix and Re-check
 
 Apply targeted edits for identified discrepancies. Focus on:
@@ -416,6 +442,7 @@ Source:       [file path | URL | pasted image]
 Mode:         [1:1 copy | Inspiration]
 Framework:    [detected framework]
 Verification: [N] rounds, [High | Medium | Low] match
+Code quality: [PASS | [N] violations fixed]
 
 Files ([N]):
   Page:       [page file path]
@@ -446,7 +473,7 @@ This skill must **ALWAYS**:
 - Resolve visual input before any code generation
 - Confirm mode (1:1 vs inspiration) with user
 - Confirm token mapping with user in inspiration mode
-- Follow `shared/RULES.md` and `shared/PATTERNS.md`
+- Follow `shared/RULES.md` (React/Next.js, HTML/CSS, A-series) and `shared/PATTERNS.md` (Component, Layout)
 - Detect and match the project's framework
 - Run the Playwright verification loop (unless tools unavailable)
 - Update DevInfo for downstream skill handoff
