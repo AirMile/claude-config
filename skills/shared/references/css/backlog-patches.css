@@ -199,3 +199,13 @@ body > header {
   color: var(--text-muted, #8b949e);
   width: 100%;
 }
+.badge-auto {
+  color: var(--accent, #58a6ff) !important;
+  border: 1px solid color-mix(in srgb, var(--accent, #58a6ff) 33%, transparent) !important;
+  background: transparent !important;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}

@@ -60,13 +60,85 @@ Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `t
 
 Niet gevonden → exit: "Run `/dev-define` eerst."
 
+**Timing** (na feature laden):
+
+AskUserQuestion:
+
+```yaml
+header: "Timing"
+question: "Wanneer wil je deze build uitvoeren?"
+options:
+  - label: "Nu (Recommended)"
+  - label: "Over 1 uur"
+  - label: "Over 3 uur"
+  - label: "Over 6 uur"
+  - label: "Specifieke tijd"
+    description: "Bijv. 01:00, 14:30"
+multiSelect: false
+```
+
+"Specifieke tijd" → follow-up AskUserQuestion: "Hoe laat? (HH:MM, CET)"
+
+Bij elke "later" keuze:
+
+1. Bereken sleep seconds:
+   ```bash
+   # "Over X uur":
+   SLEEP_SECONDS=$((X * 3600))
+   # "Specifieke tijd":
+   TARGET=$(TZ="Europe/Amsterdam" date -d "{HH:MM}" +%s)
+   NOW=$(date +%s)
+   SLEEP_SECONDS=$((TARGET - NOW))
+   # Als negatief (tijd al voorbij): gebruik morgen
+   if [ $SLEEP_SECONDS -lt 0 ]; then
+     TARGET=$(TZ="Europe/Amsterdam" date -d "tomorrow {HH:MM}" +%s)
+     SLEEP_SECONDS=$((TARGET - NOW))
+   fi
+   ```
+2. Display: `INGEPLAND: build {feature} om {tijd CET}. Sleep tot dan...`
+3. `Bash: sleep {SLEEP_SECONDS}`
+4. Na wake-up: **AUTO_MODE actief** voor de rest van de skill.
+
+**Auto-mode** (actief bij "later" timing keuze):
+
+Alle AskUserQuestions worden overgeslagen met deze defaults:
+
+| Beslispunt             | Default                                    | Reden                                    |
+| ---------------------- | ------------------------------------------ | ---------------------------------------- |
+| Dependency blocker     | **Stop + exit**                            | Bouwen op incomplete deps is verspilling |
+| Workspace keuze        | **Nee, huidige directory**                 | Standaard veilig                         |
+| Pre-existing regressie | **Doorgaan**                               | Was er al voor deze build                |
+| WAT HEBBEN WE GEBOUWD  | **Schrijf naar feature.json, niet vragen** | Geen gebruiker aanwezig                  |
+
+Bij dependency blocker exit: schrijf resultaat naar `.project/session/auto-result-{feature}.json`:
+
+```json
+{
+  "feature": "{name}",
+  "status": "BLOCKED",
+  "reason": "dependency {dep} not DONE",
+  "timestamp": "{ISO}"
+}
+```
+
+Bij succesvolle afronding: schrijf resultaat:
+
+```json
+{
+  "feature": "{name}",
+  "status": "BUILT",
+  "tests": "{pass}/{total}",
+  "timestamp": "{ISO}"
+}
+```
+
 **Dependency check:**
 
 Skip als geen `depends[]` of leeg.
 
 1. Parse `.project/backlog.html`. Niet gevonden → skip.
 2. Per dependency: status moet `"DONE"` zijn.
-3. Blockers gevonden → **AskUserQuestion**:
+3. Blockers gevonden → **AskUserQuestion** (Auto-mode: stop en exit, schrijf auto-result met status BLOCKED):
    - "Stop — werk eerst {dep} af (Recommended)" / "Toch doorgaan"
    - Stop → exit. Doorgaan → continue.
 
@@ -76,7 +148,7 @@ Alleen tonen als we NIET al in een worktree zitten:
 
 1. Check: `git rev-parse --show-toplevel` vs eerste pad uit `git worktree list --porcelain`
    → Verschillend: al in worktree → skip
-2. AskUserQuestion:
+2. AskUserQuestion (Auto-mode: skip, gebruik huidige directory):
    ```yaml
    header: "Workspace"
    question: "Wil je in een worktree werken voor deze build?"
@@ -202,7 +274,7 @@ Bij regressie:
 
 1. Analyseer of de huidige feature de regressie veroorzaakt (check gedeelde files/imports)
 2. Als JA: fix de regressie voordat je doorgaat. Re-run full suite na fix.
-3. Als NEE (pre-existing failure): waarschuw gebruiker, laat kiezen via AskUserQuestion:
+3. Als NEE (pre-existing failure): waarschuw gebruiker, laat kiezen via AskUserQuestion (Auto-mode: doorgaan, pre-existing):
    - "Fix eerst de regressie (Recommended)" — "Voorkomt dat de regressie doorschuift naar /dev-verify"
    - "Toch doorgaan" — "Regressie was er al voor deze build"
 4. Max 2 fix-pogingen. Daarna: rapporteer als blocker en laat gebruiker beslissen.
@@ -281,7 +353,7 @@ Check op duplicaten (zelfde feature + zelfde summary → skip). Geen learnings g
 
 ### FASE 3C: Wat hebben we gebouwd?
 
-**STOP — ga NIET door naar de commit zonder deze fase volledig af te ronden.**
+**STOP — ga NIET door naar de commit zonder deze fase volledig af te ronden.** (Auto-mode: schrijf uitleg naar `build.explanation` in feature.json, skip begripscheck, ga door naar commit.)
 
 Display een visuele separator:
 

@@ -84,6 +84,20 @@
         var tags = card.querySelector(".card-tags");
         if (tags) tags.after(sub);
       }
+      // Auto badge
+      if (f.auto && f.status !== "DONE") {
+        var autoTag = document.createElement("span");
+        autoTag.className = "badge-auto";
+        autoTag.textContent = "AUTO";
+        var subTags = card.querySelector(".card-sub-tags");
+        if (!subTags) {
+          subTags = document.createElement("div");
+          subTags.className = "card-sub-tags";
+          var tags2 = card.querySelector(".card-tags");
+          if (tags2) tags2.after(subTags);
+        }
+        subTags.appendChild(autoTag);
+      }
       return card;
     };
   }

@@ -325,6 +325,22 @@ Schrijf parallel terug:
 - Edit `project.json` (features, endpoints, data, stack — gebruik Edit voor gerichte wijzigingen, niet Write)
 - Edit/Write `project-context.json` (als architecture of context gewijzigd — Write bij grote diagram-wijzigingen)
 
+**Auto-build markering** (na sync):
+
+AskUserQuestion:
+
+```yaml
+header: "Automatisch bouwen"
+question: "Wil je deze feature markeren voor automatische build?"
+options:
+  - label: "Ja, markeer als auto (Recommended)"
+    description: "Card krijgt AUTO tag — clipboard geeft het juiste commando"
+  - label: "Nee, ik bouw handmatig"
+multiSelect: false
+```
+
+Ja → lees backlog opnieuw, zoek feature, zet `"auto": true`, schrijf terug via Edit.
+
 Clean up: `rm -f .project/session/active-{feature-name}.json`
 
 **Output:**
