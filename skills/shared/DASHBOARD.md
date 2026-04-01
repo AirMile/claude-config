@@ -338,7 +338,7 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 | ------------- | --------------------------------------------------------------------------------------------- | --------------------- |
 | `/dev-define` | Initiële `layers` + `components` (status planned, geen src/test) + `dataFlow`                 | Bij feature definitie |
 | `/dev-build`  | Update `components`: status → done, vul `src`, `test`, `connects_to`, `endpoints`, `entities` | Na build              |
-| `/dev-test`   | Update `components`: bevestig status done, voeg test files toe                                | Na test               |
+| `/dev-verify` | Update `components`: bevestig status done, voeg test files toe                                | Na test               |
 | `/core-pull`  | Sync volledige `architecture` sectie bij pull                                                 | Bij context sync      |
 
 **Write strategie:**
@@ -572,7 +572,7 @@ Alle entries hebben `type`, `date`, `title`, `summary`, `file`, `source`. Extra 
 
 `type` waarden: `pattern` (architecturale keuze), `pitfall` (bug/gotcha), `convention` (project-breed patroon), `observation` (cross-feature inzicht).
 `date` = extractie datum. `feature` = bron-feature. `summary` = max 200 chars.
-Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-test FASE 6, dev-refactor FASE 5).
+Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-verify FASE 6, dev-refactor FASE 5).
 
 **Dit vervangt de dynamische CLAUDE.md secties** (`## Project structuur`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md bevat nu alleen een referentie naar `project.json` voor deze context.
 
@@ -588,7 +588,7 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 | `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-compose`              | Bij detectie/nieuwe deps                 |
 | `data`             | `/dev-define`, `/game-define`                                                             | Bij entity definitie                     |
 | `endpoints`        | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build             |
-| `features`         | `/dev-define`, `/dev-build`, `/dev-test`, `/team-test`, `/game-define`, `/game-build`     | Bij status wijziging (DOING/DONE)        |
+| `features`         | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-test`, `/game-define`, `/game-build`   | Bij status wijziging (DOING/DONE)        |
 | `concept.thinking` | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)      |
 | `thinking`         | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Bij non-concept thinking (append)        |
 
@@ -598,7 +598,7 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 | -------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                    | Bij architectuur definitie / na build                                                  |
 | `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor` | Bij build/refactor (structuur, routing, patterns)                                      |
-| `learnings`    | `/dev-test`, `/dev-refactor`                                                  | Bij feature completion (extractie uit build decisions, test fixes, refactor decisions) |
+| `learnings`    | `/dev-verify`, `/dev-refactor`                                                | Bij feature completion (extractie uit build decisions, test fixes, refactor decisions) |
 
 ### Skill sync overzicht
 
@@ -607,7 +607,7 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 | `/core-setup`       | `stack` (volledig)                                                 | `context` (initieel)                                  | Na project generatie |
 | `/dev-define`       | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING) | `architecture` (write), `learnings` (read)            | FASE 6               |
 | `/dev-build`        | `endpoints`, `stack.packages`, `features` (DOING+built)            | `context`, `architecture` (write), `learnings` (read) | FASE 4C              |
-| `/dev-test`         | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)  | `architecture`, `learnings` (write)                   | FASE 6 completion    |
+| `/dev-verify`       | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)  | `architecture`, `learnings` (write)                   | FASE 6 completion    |
 | `/dev-refactor`     | `stack.packages`, `endpoints`, `data.entities`                     | `context`, `architecture`, `learnings` (write)        | FASE 5 completion    |
 | `/frontend-plan`    | `design` (pages, flows, principles), `features` (batch TODO)       | —                                                     | Bij elke uitvoering  |
 | `/frontend-compose` | `stack.packages`, `design.pages`, `features` (DOING+built)         | —                                                     | Na FASE 4            |

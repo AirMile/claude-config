@@ -9,7 +9,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 ```
 /dev-define   → creates feature.json (header, requirements, files, architecture, choices)
 /dev-build    → enriches (build summary, decisions, syncNotes, packages, tests.checklist)
-/dev-test     → enriches (test results, coverage, observations)
+/dev-verify   → enriches (evaluation, acceptance tests, test results, coverage, observations)
 /dev-refactor → enriches (improvements, positive observations)
 ```
 
@@ -183,7 +183,18 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
       "gaps": [],
       "mismatches": [],
       "adjustments": "none"
-    }
+    },
+    "evaluation": [
+      {
+        "reqId": "REQ-001",
+        "acceptancePass": 3,
+        "acceptanceTotal": 3,
+        "builderPass": 2,
+        "builderTotal": 2,
+        "verdict": "PASS"
+      }
+    ],
+    "acceptanceTestFile": "test/acceptance/pin-mode.acceptance.test.js"
   },
 
   "refactor": {
@@ -247,12 +258,14 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 - `requirements[].syncNote` — plain-language uitleg hoe REQ is gebouwd
 - `requirements[].status` → `"built"`
 
-**Toegevoegd door test:**
+**Toegevoegd door verify:**
 
 - `tests.finalStatus` — VERIFIED, PASSED, of FAILED
 - `tests.coverage` — statement/branch coverage
 - `tests.sessions` — per-sessie resultaten
 - `tests.checklist[].status` → PASS/FAIL/skip per item
+- `tests.evaluation` — per-REQ scoring (acceptancePass, acceptanceTotal, builderPass, builderTotal, verdict)
+- `tests.acceptanceTestFile` — pad naar gegenereerde acceptance test (blijft in codebase)
 - `requirements[].status` → `"PASS"` of `"FAIL"`
 - `requirements[].implicitCoverage` — wanneer requirement gedekt is door een andere test (set door FASE 5d)
 - `observations` — bevindingen, suggesties voor andere features
@@ -288,13 +301,13 @@ pending → built → PASS
 
 ## Welke skills schrijven naar feature.json
 
-| Skill            | Wat schrijven naar feature.json                                                                                            | Wanneer |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `/dev-define`    | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests             | FASE 3  |
-| `/dev-build`     | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Leest clarifications als constraints | FASE 4C |
-| `/dev-test`      | Enriches: tests (finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | FASE 6  |
-| `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                             | FASE 5  |
-| `/game-define`   | Creates feature.json (zelfde als dev-define + clarifications, game-specifieke design velden)                               | FASE 4  |
-| `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements. Leest clarifications als constraints                      | FASE 5  |
-| `/game-test`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                          | FASE 6  |
-| `/game-refactor` | Enriches: refactor, status → DONE                                                                                          | FASE 5  |
+| Skill            | Wat schrijven naar feature.json                                                                                                                          | Wanneer |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `/dev-define`    | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                           | FASE 3  |
+| `/dev-build`     | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Leest clarifications als constraints                               | FASE 4C |
+| `/dev-verify`    | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | FASE 6  |
+| `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | FASE 5  |
+| `/game-define`   | Creates feature.json (zelfde als dev-define + clarifications, game-specifieke design velden)                                                             | FASE 4  |
+| `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements. Leest clarifications als constraints                                                    | FASE 5  |
+| `/game-test`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | FASE 6  |
+| `/game-refactor` | Enriches: refactor, status → DONE                                                                                                                        | FASE 5  |

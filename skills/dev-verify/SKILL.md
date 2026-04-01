@@ -1,36 +1,37 @@
 ---
-name: dev-test
-description: Hybrid test verification (automated + manual + fix loops) for built features. Use with /dev-test after /dev-build.
+name: dev-verify
+description: Adversarial verification — acceptance tests + fix loops. After verify, the code is good. Use with /dev-verify after /dev-build.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.3.0
+  version: 2.0.0
   category: dev
 ---
 
-# Test
+# Verify
 
-Test phase: define → build → **test**
+Verify phase: define → build → **verify**
 
-Hybrid verification: automated (browser/CLI) + manual walkthrough + issue categorization + fix loops.
+Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issues. Na verify is de feature klaar.
 
-**Trigger**: `/dev-test {feature-name}` or `/dev-test {feature-name} {feedback}`
+**Trigger**: `/dev-verify {feature-name}` or `/dev-verify {feature-name} {feedback}`
 
 ## Input Formats
 
 ```
-/dev-test user-registration                              # hybrid: auto + manual
-/dev-test user-registration 1:PASS 2:FAIL no validation  # inline feedback (skips automation)
-/dev-test user-registration Everything works except...    # free text (skips automation)
+/dev-verify user-registration                              # hybrid: auto + manual
+/dev-verify user-registration 1:PASS 2:FAIL no validation  # inline feedback (skips automation)
+/dev-verify user-registration Everything works except...    # free text (skips automation)
 ```
 
 ## Feedback Categorization
 
-| Type           | Example                      | Action                           |
-| -------------- | ---------------------------- | -------------------------------- |
-| **TESTABLE**   | "returns 500 instead of 422" | TDD or Implementation First      |
-| **MEASURABLE** | "response too slow"          | Direct fix                       |
-| **SUBJECTIVE** | "doesn't feel right"         | Ask for specifics, re-categorize |
+| Type           | Example                         | Action                           |
+| -------------- | ------------------------------- | -------------------------------- |
+| **SPEC**       | "toont max 3, spec zegt 'alle'" | Implementation First + test      |
+| **TESTABLE**   | "returns 500 instead of 422"    | TDD or Implementation First      |
+| **MEASURABLE** | "response too slow"             | Direct fix                       |
+| **SUBJECTIVE** | "doesn't feel right"            | Ask for specifics, re-categorize |
 
 > Classification criteria: `references/test-classification.md`
 > Code quality rules: `../shared/RULES.md` (R007-R008)
@@ -49,7 +50,7 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
 3. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`. Geen checklist → exit: run `/dev-build` first.
 
 4. **Tag backlog + capture baseline:**
-   - Backlog: zet `stage: "testing"`, feature `updated` → nu (Edit, keep `<script>` tags intact)
+   - Backlog: zet `stage: "verifying"`, feature `updated` → nu (Edit, keep `<script>` tags intact)
    - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
    - Session file: `echo '{"feature":"{name}","skill":"test","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
 
@@ -69,7 +70,7 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
    Entities: {data.entities of "niet beschikbaar"}
    ```
 
-6. **Gather test data** via Explore agent (zero source file reads in main context):
+6. **Gather test data** via Explore agent op **Sonnet** (`model: "sonnet"`) — zero source file reads in main context:
 
    ```
    Feature: {feature-name}
@@ -80,6 +81,11 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
    Lees feature.json (checklist + requirements + build sectie). Zoek in source code naar:
    - Validatie regels, API endpoints relevant voor test items
    - Bestaande test files en test patterns
+   - Per requirement (id + acceptance criteria): lees de source files die dit REQ implementeren
+     (feature.json files[] waar requirements het REQ-ID bevat).
+     Bepaal welke acceptance test(s) dit criterium zouden verifiëren.
+     Let op: acceptance criteria bevatten vaak meerdere condities in één zin
+     (bijv. "201 bij succes, 400 bij >5, 409 bij duplicate" = 3 tests).
 
    Geef terug als:
    FEATURE_CONTEXT_START
@@ -93,6 +99,9 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
      Al gedekt: {wat build tests verifiëren}
      httpContractTested: true/false (test de build test het HTTP/functie contract?)
      delta: {extra verificatie nodig bovenop build tests, of "geen"}
+     acceptanceTests: [
+       { scenario: "{test beschrijving}", method: "CLI", expected: "{verwacht}" }
+     ]
    FEATURE_CONTEXT_END
    ```
 
@@ -132,23 +141,23 @@ Hybrid verification: automated (browser/CLI) + manual walkthrough + issue catego
 
    g) Proceed automatically with the recommended classification. No user approval needed — continue directly to step 7h.
 
-   h) **Goal-backward verificatie** — map tests terug naar acceptance criteria:
+   h) **Goal-backward verificatie + acceptance test planning:**
 
-   Bouw mapping vanuit feature.json `requirements[].acceptance` en geclassificeerde test items:
+   Map tests terug naar acceptance criteria en plan acceptance tests voor gaps in één stap:
 
-   | REQ   | Acceptance Criterion        | Test Items | Dekking |
-   | ----- | --------------------------- | ---------- | ------- |
-   | REQ-1 | Element heeft pinned state  | Item 1, 3  | ✓       |
-   | REQ-2 | Pin bar toont gepinde items | —          | GAP     |
+   | REQ   | Acceptance Criterion                    | Test Items  | Dekking | Acceptance Tests |
+   | ----- | --------------------------------------- | ----------- | ------- | ---------------- |
+   | REQ-1 | POST 201, 400 bij >5, 409 bij duplicate | unit: model | GAP     | 3 CLI tests      |
+   | REQ-2 | GET retourneert array, seeded defaults  | unit: seed  | GAP     | 2 CLI tests      |
+   | REQ-3 | Modal sluit bij klik buiten             | Item 2      | ✓       | —                |
 
-   **GAP**: requirement zonder test items.
-   **MISMATCH**: test items die implementation details verifiëren i.p.v. user-facing behavior (test title refereert interne methods, verifieert data structure i.p.v. output).
+   **GAP**: requirement waar builder's tests het acceptance criterium niet dekken (test verifieert interne methods/data structures i.p.v. het criterium zelf).
 
-   Geen gaps, geen mismatches → toon `Acceptance mapping: {n}/{n} REQs gedekt` en ga door naar step 8.
+   Per GAP met CLI-testbare acceptance tests (uit Explore agent `acceptanceTests[]`): voeg toe aan AUTO/CLI queue (FASE 1) met `source: "acceptance"` markering.
+   BROWSER en MANUAL gaps → voeg items toe via bestaande classificatie (step 7d).
 
-   Gaps of mismatches → AskUserQuestion:
-   - "Accepteer en ga door (Recommended)" — noteer, proceed
-   - "Test items aanpassen" — voeg items toe voor gaps, herformuleer mismatches, classificeer per `references/test-classification.md`
+   Geen gaps → toon `Acceptance mapping: {n}/{n} REQs gedekt` en ga door naar step 8.
+   CLI gaps gevonden → display: `ACCEPTANCE TESTS: {n} test(s) gepland voor {m} requirements`
 
 8. **Dev server** (conditioneel):
 
@@ -194,10 +203,14 @@ ITEMS:
 INSTRUCTIES:
 1. Voer stappen uit met MCP browser tools, bash commands, of schrijf een integration test file
 2. Voor CLI items zonder running server: schrijf een integration test (test/integration/{feature}.integration.test.js) die de service/functie direct test met mock dependencies en echte DB
-3. Bepaal PASS/FAIL met bewijs en redenering
-4. Browser tool faalt → markeer als TOOL_ERROR
+3. Voor acceptance items (source: "acceptance"): schrijf test in apart bestand (test/acceptance/{feature}.acceptance.test.js).
+   MOET het project's test framework gebruiken (vitest/jest/node:test — check package.json).
+   Dit zorgt dat `npm test` ze oppikt als regression suite bij toekomstige /dev-build runs.
+   Voorbeeld: builder test `expect(countDocuments).toBeCalled` vs acceptance test `POST 6th → expect(res.status).toBe(400)`
+4. Bepaal PASS/FAIL met bewijs en redenering
+5. Browser tool faalt → markeer als TOOL_ERROR
 
-POST-BUILD: baseline al GREEN. Focus op INTEGRATIE, niet unit logica.
+POST-BUILD: baseline al GREEN. Focus op INTEGRATIE en ACCEPTANCE, niet unit logica.
 Draai NIET opnieuw npm test.
 
 RESULTAAT FORMAT:
@@ -219,7 +232,7 @@ Display: `AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}`
 
 ### FASE 1b: Parse Inline Feedback
 
-**Wanneer:** user gaf feedback mee bij `/dev-test {name} {feedback}` (skipt FASE 1 + 2).
+**Wanneer:** user gaf feedback mee bij `/dev-verify {name} {feedback}` (skipt FASE 1 + 2).
 
 Parse naar item/PASS/FAIL/notes. Accepteer `1:PASS 2:FAIL note` en vrije tekst.
 Toon samenvatting, ga naar FASE 3.
@@ -285,17 +298,33 @@ GECOMBINEERDE RESULTATEN: {feature-name}
 Bij AUTO FAILs → AskUserQuestion: Vertrouw auto resultaten (Aanbevolen) | Handmatig controleren.
 Bij SKIPs → AskUserQuestion: Accepteren (Aanbevolen) | Later testen.
 
-Alle PASS → FASE 6. FAILs → FASE 3.
+**Evaluation Score** (alleen tonen als acceptance tests zijn uitgevoerd):
+
+```
+EVALUATION: {feature-name}
+
+| REQ   | Acceptance Tests | Builder Tests | Verdict |
+| ----- | ---------------- | ------------- | ------- |
+| REQ-1 | 3/3 PASS         | 2/2 PASS      | PASS    |
+| REQ-2 | 1/2 PASS         | 1/1 PASS      | FAIL    |
+```
+
+Acceptance test FAIL → issue type **SPEC**. Builder test FAIL → issue type **TESTABLE**.
+Geen acceptance tests uitgevoerd → skip tabel, categoriseer alleen op builder test FAILs.
+
+Alle PASS → FASE 6. FAILs (SPEC of TESTABLE) → FASE 3.
 
 ---
 
 ### FASE 3: Categorize Issues
 
-Per FAIL: categoriseer als TESTABLE/MEASURABLE/SUBJECTIVE (zie tabel hierboven).
+Per FAIL: categoriseer als SPEC/TESTABLE/MEASURABLE/SUBJECTIVE (zie tabel hierboven).
+SPEC → uit acceptance test failures (criterium niet gedekt door implementatie).
 SUBJECTIVE → AskUserQuestion voor verduidelijking, dan re-categoriseer.
 
-Technique mapping voor TESTABLE:
+Technique mapping:
 
+- **SPEC** (acceptance criterium niet gedekt) → **Implementation First** (criterium is duidelijk, fix is concreet) + schrijf/update acceptance test
 - Validatie, business logic, edge cases, race conditions → **TDD**
 - CRUD wiring, config, imports, routing → **Implementation First**
 - Default → TDD
@@ -480,6 +509,8 @@ Skill-specifieke mutaties:
 - `tests.fixSync` → fix summaries (als fixes toegepast)
 - `observations[]` → toevoegen (indien aanwezig)
 - `tests.verificationCheckpoint` → `{ "gaps": ["REQ-ID"], "mismatches": ["beschrijving"], "adjustments": "none|added|reworded" }`
+- `tests.evaluation` → per-REQ scores `[{ reqId, acceptancePass, acceptanceTotal, builderPass, builderTotal, verdict }]`
+- `tests.acceptanceTestFile` → pad naar geschreven acceptance test bestand (persistent in codebase)
 
 **backlog:** `status = "DONE"`, verwijder `stage`.
 
@@ -519,29 +550,29 @@ Vergelijk `git status --porcelain | sort` met `.project/session/pre-skill-status
 Baseline niet gevonden → fallback `git add -A`.
 
 ```bash
-git commit -m "test({feature}): {N} requirements verified ({auto} auto, {manual} manual)
+git commit -m "verify({feature}): {N} requirements verified ({acceptance} acceptance, {auto} auto, {manual} manual)
 
-Hybrid test verification complete.
-- Covered: {covered} | Auto: {auto} | Manual: {manual}
-- Fixed: {list} | Tests added: {count}"
+Adversarial verification complete.
+- Acceptance: {acceptance} | Covered: {covered} | Auto: {auto} | Manual: {manual}
+- Spec fixes: {specFixes} | Other fixes: {otherFixes} | Tests added: {count}"
 ```
 
 Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{name}.json`
 
-**Output (conditioneel):**
+**Output:**
 
 ```
-[Als alle tests PASS:]
+VERIFY COMPLETE: {feature-name}
+
+| Dimensie          | Score               |
+| ----------------- | ------------------- |
+| Acceptance Tests  | {pass}/{total} PASS |
+| Builder Tests     | {pass}/{total} PASS |
+| Spec Issues Fixed | {n}                 |
 
 Next steps:
-  1. /dev-refactor → code quality check + learnings extractie
+  1. /dev-refactor {feature} → optionele code quality polish
   2. /dev-define {next-feature} → volgende feature oppakken
-
-[Als failures:]
-
-Next steps:
-  1. /dev-debug → root cause analyse van failures
-  2. /dev-build {feature} → rebuild specifieke requirements
 ```
 
 ---
@@ -549,19 +580,29 @@ Next steps:
 ## Example Flows
 
 ```
-# Pure API (fast path)
-/dev-test api-routes
-→ FASE 0: 6 COVERED + 3 integratie AUTO/CLI → dev server skip
-→ FASE 1: 3 integratie → 3 PASS (integration test file geschreven)
-→ FASE 2b: Compact → 9/9 PASS
+# Pure API (fast path, geen gaps)
+/dev-verify api-routes
+→ FASE 0: 6 COVERED + 3 integratie AUTO/CLI, acceptance: 0 gaps
+→ FASE 1: 3 integratie → 3 PASS
+→ FASE 2b: Compact → 9/9 PASS, evaluation: alle REQs PASS
 → FASE 6: commit
 
+# API feature met acceptance test gaps
+/dev-verify slider-presets
+→ FASE 0: 6 REQs, builder tests dekken unit logic
+→ FASE 0 step 7i: 8 acceptance tests gepland (HTTP contract gaps)
+→ FASE 1: schrijf acceptance tests + run → 6 PASS, 2 FAIL
+→ FASE 2b: REQ-002, REQ-005 FAIL op acceptance
+→ FASE 3-4: 2 SPEC issues → Implementation First fixes
+→ FASE 5: re-test → all PASS
+→ FASE 6: evaluation + commit (acceptance tests persistent)
+
 # UI feature met fixes
-/dev-test user-registration
-→ FASE 0: 2 COVERED + 1 AUTO/BROWSER + 1 MANUAL → tunnel
-→ FASE 1: AUTO/BROWSER → FAIL
-→ FASE 2: Manual → FAIL
-→ FASE 3-4: TDD + Impl First fixes
+/dev-verify user-registration
+→ FASE 0: 2 COVERED + 1 AUTO/BROWSER + 1 MANUAL + 2 acceptance → tunnel
+→ FASE 1: AUTO/BROWSER → FAIL, acceptance → 1 FAIL
+→ FASE 2: Manual → PASS
+→ FASE 3-4: 1 SPEC + 1 TESTABLE → fixes
 → FASE 5: Re-test → all PASS
-→ FASE 6: Fix sync + commit
+→ FASE 6: Fix sync + evaluation + commit
 ```

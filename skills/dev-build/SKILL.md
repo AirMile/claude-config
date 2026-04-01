@@ -149,7 +149,7 @@ For each requirement in IMPLEMENTATION ORDER:
 
 ### FASE 2b: Regression Gate
 
-Na succesvolle afronding van alle requirements, run de **volledige test suite** met timeout (hangende tests = FAIL):
+Na succesvolle afronding van alle requirements, run de **volledige test suite** met timeout (hangende tests = FAIL). Inclusief acceptance tests uit eerdere `/dev-verify` runs (`test/acceptance/*.test.js`) — deze beschermen tegen spec-regressies.
 
 ```bash
 timeout 300 {stack-aware test command} --test-timeout 30000
@@ -177,7 +177,7 @@ Bij regressie:
 1. Analyseer of de huidige feature de regressie veroorzaakt (check gedeelde files/imports)
 2. Als JA: fix de regressie voordat je doorgaat. Re-run full suite na fix.
 3. Als NEE (pre-existing failure): waarschuw gebruiker, laat kiezen via AskUserQuestion:
-   - "Fix eerst de regressie (Recommended)" — "Voorkomt dat de regressie doorschuift naar /dev-test"
+   - "Fix eerst de regressie (Recommended)" — "Voorkomt dat de regressie doorschuift naar /dev-verify"
    - "Toch doorgaan" — "Regressie was er al voor deze build"
 4. Max 2 fix-pogingen. Daarna: rapporteer als blocker en laat gebruiker beslissen.
 
@@ -298,7 +298,7 @@ Tests: {passed}/{total} PASS
 Files created: {count}
 
 Next steps:
-  1. /dev-test {feature} → hybrid test verificatie
+  1. /dev-verify {feature} → hybrid test verificatie
   2. /dev-debug → als er onverwachte failures zijn
 ```
 

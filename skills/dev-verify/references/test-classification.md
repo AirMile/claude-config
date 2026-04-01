@@ -1,6 +1,6 @@
-# Dev Test — Test Classification Reference
+# Dev Verify — Test Classification Reference
 
-Detailed classification criteria and automation patterns for the dev-test skill.
+Detailed classification criteria and automation patterns for the dev-verify skill.
 Extracted from SKILL.md for progressive disclosure (Anthropic skill spec).
 
 ---
@@ -157,7 +157,7 @@ NOT COVERED (even when build tests exist):
 
 Wanneer `feature.json` een `build` sectie heeft (dev-build is voltooid, tests bestaan al):
 
-**Principe:** dev-build tests verifiëren per-requirement logica (unit niveau). dev-test verifieert geïntegreerd gedrag (E2E). Bestaande test suite draaien is een baseline gate, geen test item.
+**Principe:** dev-build tests verifiëren per-requirement logica (unit niveau). dev-verify schrijft acceptance tests vanuit de spec en verifieert geïntegreerd gedrag (E2E). Bestaande test suite draaien is een baseline gate, geen test item.
 
 **Override regels:**
 

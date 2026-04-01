@@ -136,7 +136,7 @@ Extraheer testbare requirements als tabel:
 
 **Completeness self-check** (voer uit, NIET aan user tonen):
 
-- Elk requirement heeft testbare acceptance criteria (niet vaag: "werkt goed")
+- Elk acceptance criterium is automatisch testbaar: bevat verwachte input → output, status codes, of meetbare condities. Meerdere condities in één criterium zijn OK (bijv. "201 bij succes, 400 bij >5, 409 bij duplicate"). Niet vaag: "werkt goed", "goede performance", "gebruiksvriendelijk".
 - Data sources geïdentificeerd (waar komt input/output vandaan?)
 - Error/edge cases benoemd voor requirements met user input of externe data
 - Geen overlap tussen requirements (twee REQs die hetzelfde beschrijven)

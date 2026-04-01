@@ -24,7 +24,7 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 **NOT for:**
 
-- Testing own code (use `/dev-test`)
+- Testing own code (use `/dev-verify`)
 - Unit-level test writing during build (use `/dev-build`)
 
 ## Input Formats
@@ -318,7 +318,7 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
 
 **Goal:** Classify scenarios into AUTO/MANUAL, generate test data, set up dev server.
 
-> **Classification criteria:** See `../dev-test/references/test-classification.md` for AUTO/BROWSER, AUTO/CLI, and MANUAL criteria with pattern tables.
+> **Classification criteria:** See `../dev-verify/references/test-classification.md` for AUTO/BROWSER, AUTO/CLI, and MANUAL criteria with pattern tables.
 
 1. **Generate test data** (via Explore agent — zero source file reads in main context):
 

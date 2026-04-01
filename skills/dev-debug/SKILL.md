@@ -275,6 +275,6 @@ Fix: {wat er gewijzigd is}
 Tests: {pass/fail status}
 
 Next steps:
-  1. /dev-test {feature} → herverificatie na fix
+  1. /dev-verify {feature} → herverificatie na fix
   2. /dev-build {feature} → als rebuild nodig is
 ```

@@ -77,27 +77,27 @@ Dit reduceert 6+ sequentiële round-trips naar 2. Bestanden zijn onafhankelijk �
 TODO → DOING → DONE
 ```
 
-| Status | Betekenis      | Gezet door                                                                                                |
-| ------ | -------------- | --------------------------------------------------------------------------------------------------------- |
-| TODO   | Niet opgepakt  | /dev-plan, /dev-todo, /frontend-plan                                                                      |
-| DOING  | In bewerking   | /dev-define, /dev-build, /dev-test, /frontend-compose, /frontend-convert, /frontend-audit, /frontend-wcag |
-| DONE   | Getest & klaar | /dev-test, /frontend-audit, /frontend-wcag                                                                |
+| Status | Betekenis      | Gezet door                                                                                                  |
+| ------ | -------------- | ----------------------------------------------------------------------------------------------------------- |
+| TODO   | Niet opgepakt  | /dev-plan, /dev-todo, /frontend-plan                                                                        |
+| DOING  | In bewerking   | /dev-define, /dev-build, /dev-verify, /frontend-compose, /frontend-convert, /frontend-audit, /frontend-wcag |
+| DONE   | Getest & klaar | /dev-verify, /frontend-audit, /frontend-wcag                                                                |
 
 `/dev-refactor` en `/frontend-iterate` zijn optionele kwaliteitsstappen — geen status-gate.
 
 ## Stage (voortgang binnen DOING)
 
 ```
-defining → defined → building → built → testing → [DONE]
+defining → defined → building → built → verifying → [DONE]
 ```
 
-| Stage    | Betekenis          | Gezet door (dev)   | Gezet door (frontend)                         |
-| -------- | ------------------ | ------------------ | --------------------------------------------- |
-| defining | Wordt gedefinieerd | /dev-define FASE 0 | —                                             |
-| defined  | Gedefinieerd       | /dev-define klaar  | —                                             |
-| building | Wordt gebouwd      | /dev-build FASE 0  | /frontend-compose of /frontend-convert FASE 0 |
-| built    | Gebouwd            | /dev-build klaar   | /frontend-compose of /frontend-convert klaar  |
-| testing  | Wordt getest       | /dev-test FASE 0   | /frontend-audit of /frontend-wcag FASE 0      |
+| Stage     | Betekenis          | Gezet door (dev)   | Gezet door (frontend)                         |
+| --------- | ------------------ | ------------------ | --------------------------------------------- |
+| defining  | Wordt gedefinieerd | /dev-define FASE 0 | —                                             |
+| defined   | Gedefinieerd       | /dev-define klaar  | —                                             |
+| building  | Wordt gebouwd      | /dev-build FASE 0  | /frontend-compose of /frontend-convert FASE 0 |
+| built     | Gebouwd            | /dev-build klaar   | /frontend-compose of /frontend-convert klaar  |
+| verifying | Wordt geverifieerd | /dev-verify FASE 0 | /frontend-audit of /frontend-wcag FASE 0      |
 
 Frontend items slaan `defining/defined` over — `/frontend-plan` maakt items aan als TODO, en `/frontend-compose` pakt ze direct op als `building`.
 

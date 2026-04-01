@@ -21,7 +21,7 @@ Generate an ASCII [diagram type] showing [what to visualize].
 | Use case              | Diagram type         | Example skills               |
 | --------------------- | -------------------- | ---------------------------- |
 | Architecture/layers   | Component diagram    | dev-define, frontend-compose |
-| Multi-step workflow   | Flowchart            | dev-build, dev-test          |
+| Multi-step workflow   | Flowchart            | dev-build, dev-verify        |
 | Feature decomposition | Tree                 | dev-plan, game-plan          |
 | State transitions     | State machine        | game-define                  |
 | Parallel processes    | Architecture diagram | team-review                  |

@@ -12,7 +12,7 @@ metadata:
 
 ## Overview
 
-Optional quality step on completed features. Not a status-gate — features are DONE after `/dev-test`. This skill improves code structure, naming, and patterns on already-finished features.
+Optional quality step on completed features. Not a status-gate — features are DONE after `/dev-verify`. This skill improves code structure, naming, and patterns on already-finished features.
 
 Batch-first architecture: analyzes ALL features in parallel via Explore agents, triages clean vs dirty, generates stack-aware refactor patterns via Context7, creates one combined plan with one approval, and applies changes with per-feature rollback.
 
@@ -33,9 +33,9 @@ This rule exists because refactoring external files risks breaking other feature
 
 ## When to Use
 
-- After `/dev-test` completes (features in DONE status)
+- After `/dev-verify` completes (features in DONE status)
 - When `.project/features/{name}/feature.json` exists met `tests` sectie
-- NOT for: fixing bugs (/dev-test), adding features (/dev-define), planning (/dev-define)
+- NOT for: fixing bugs (/dev-verify), adding features (/dev-define), planning (/dev-define)
 
 ## Input
 
@@ -784,7 +784,7 @@ IMPROVEMENTS APPLIED
 ### Context Loading Failures
 
 **No features found** → exit: "Run /dev-define and /dev-build first"
-**No test results for any feature** → exit: "Run /dev-test first"
+**No test results for any feature** → exit: "Run /dev-verify first"
 **Some features missing test results** → remove from queue, warn, continue with rest
 **No files in feature** → skip feature, warn: "No code files found in feature.json for {feature}"
 
