@@ -126,6 +126,9 @@ Use **AskUserQuestion** tool:
 - **Interview checkpoint**: if the skill gathers 3+ inputs before execution — add a CHECKPOINT between gathering and execution phases. Format: summary table of all collected input + AskUserQuestion confirmation before proceeding. See `shared/SKILL-PATTERNS.md`
 - **Pass paths, not content**: if the skill spawns 2+ sub-agents that read project files — pass a `<reference-paths>` block with categorized paths, not file contents. Agents read only what's relevant. See `shared/SKILL-PATTERNS.md`
 - **Git safety gates**: if the skill performs git mutations — re-read state after every mutation, check state dimensions separately (clean? upstream? unpushed?), enforce safety gates before risky ops. See `shared/SKILL-PATTERNS.md`
+- **Next steps**: if the skill is part of a pipeline — add a `Next steps:` block to the completion output pointing to the next skill(s). See `shared/SKILL-PATTERNS.md`
+- **Project bootstrapping**: if the skill expects `.project/` files — check existence in FASE 0, suggest `core-setup` if missing. See `shared/SKILL-PATTERNS.md`
+- **Agent context block**: if the skill spawns agents that need project knowledge — use the standardized `PROJECT_CONTEXT` block. See `shared/SKILL-PATTERNS.md`
 
 **Enter plan mode** before writing the draft:
 

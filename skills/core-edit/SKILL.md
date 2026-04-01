@@ -95,6 +95,9 @@ Confirm with a short "Klopt dit?" in plain text before proceeding. Only use AskU
 - **Interview checkpoint**: if the skill gathers 3+ inputs before execution — suggest adding a CHECKPOINT between gathering and execution phases (summary table + confirmation). See `shared/SKILL-PATTERNS.md`
 - **Pass paths, not content**: if the skill spawns 2+ sub-agents that read project files — suggest passing a `<reference-paths>` block with categorized paths instead of file contents. See `shared/SKILL-PATTERNS.md`
 - **Git safety gates**: if the skill performs git mutations — suggest adding explicit state re-reads after mutations and safety gates before risky operations. See `shared/SKILL-PATTERNS.md`
+- **Next steps**: if the skill is part of a pipeline — suggest adding a `Next steps:` block to the completion output. See `shared/SKILL-PATTERNS.md`
+- **Project bootstrapping**: if the skill expects `.project/` files — suggest checking existence in FASE 0. See `shared/SKILL-PATTERNS.md`
+- **Agent context block**: if the skill spawns agents that need project knowledge — suggest using the standardized `PROJECT_CONTEXT` block. See `shared/SKILL-PATTERNS.md`
 
 Only suggest these if they add genuine value — not every skill needs them.
 

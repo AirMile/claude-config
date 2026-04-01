@@ -182,3 +182,58 @@ After any mutation:
 - Never assume git state based on a previous check — always re-read
 - Detect default branch via `git remote show origin` or `gh repo view --json defaultBranchRef`
 - On unexpected state: stop and inform the user, don't attempt recovery
+
+---
+
+## Agent Context Block
+
+**When:** Een skill spawnt een agent die projectkennis nodig heeft (Explore, Plan, of custom agent).
+
+**How:** Bouw een gestandaardiseerd `PROJECT_CONTEXT` block uit beschikbare bronnen in FASE 0 (context loading). Geef dit block mee aan elke agent die projectkennis nodig heeft.
+
+**Template:**
+
+```markdown
+Stel het volgende block samen uit beschikbare bronnen:
+
+PROJECT_CONTEXT_START
+Stack: {CLAUDE.md ### Stack sectie, of stack-baseline.md samenvatting}
+Structure: {project-context.json → context.structure, of "niet beschikbaar"}
+Patterns: {project-context.json → context.patterns, of "niet beschikbaar"}
+Endpoints: {project.json → endpoints, max 20 entries, of "niet beschikbaar"}
+Entities: {project.json → data.entities, max 10 entries, of "niet beschikbaar"}
+Active feature: {.project/session/active-\*.json inhoud, of "geen"}
+Learnings: {project-context.json → learnings[], laatste 5 entries, of "geen"}
+PROJECT_CONTEXT_END
+```
+
+**Rules:**
+
+- Lees bronbestanden in FASE 0 (context loading) — niet per agent opnieuw
+- Skip secties die niet bestaan (toon "niet beschikbaar")
+- Learnings alleen meegeven als relevant voor de agent's taak
+- Skills mogen extra skill-specifieke secties toevoegen NA het standaard blok
+- Bestaande skills (dev-debug, dev-verify, dev-owasp) hoeven niet direct te migreren — dit is opt-in voor nieuwe skills en toekomstige refactors
+
+---
+
+## Agent Model Selection
+
+**When:** Een skill spawnt agents via de Agent tool en je wilt kosten/snelheid optimaliseren.
+
+**How:** Kies het model op basis van de taak die de agent uitvoert.
+
+**Richtlijn:**
+
+| Agent taak                                   | Model             | Reden                                           |
+| -------------------------------------------- | ----------------- | ----------------------------------------------- |
+| Code lezen, zoeken, context verzamelen       | `model: "sonnet"` | Goedkoper, snel, voldoende voor read-only taken |
+| Code schrijven, complexe fixes, architectuur | `model: "opus"`   | Hogere kwaliteit voor creatief/analytisch werk  |
+| Eenvoudige classificatie, parsing            | `model: "haiku"`  | Snelst en goedkoopst voor simpele taken         |
+
+**Rules:**
+
+- Default = geen model specificatie (erft parent model)
+- Specificeer alleen als kostenbesparing significant is (agent leest veel bestanden of draait vaak)
+- Explore agents zijn bijna altijd Sonnet-geschikt
+- Build/fix agents die code schrijven: gebruik Opus tenzij het een triviale fix is

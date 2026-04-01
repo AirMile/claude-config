@@ -104,6 +104,13 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
         "name": "PinnedElement",
         "definition": "interface PinnedElement { id: string; selector: string; rect: DOMRect }"
       }
+    ],
+    "registries": [
+      {
+        "name": "endpoint registry",
+        "file": "src/routes/index.ts",
+        "pattern": "barrel export"
+      }
     ]
   },
 
@@ -138,6 +145,8 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
       "description": "Valideert dat pin state correct toggled"
     }
   ],
+
+  "testStrategyLocation": "colocated",
 
   "research": "Optioneel. Markdown string met stack/architecture research bevindingen.",
 

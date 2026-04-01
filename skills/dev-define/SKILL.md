@@ -204,6 +204,12 @@ Ontwerp in drie stappen:
    - **Dependency analysis**: REQ→REQ relaties
    - **Build sequence**: genummerde implementatievolgorde. Combineer REQs in dezelfde step als ze dezelfde file raken en geen onderlinge dependencies hebben.
    - **Test strategy**: REQ→testfile→beschrijving tabel
+   - **AI-navigability** (evalueer na design, pas file structure/interfaces aan waar nodig — skip bij ≤3 bestanden zonder nieuw pattern):
+     - _Module exports_: Per nieuw bestand: wat is public, wat is private? Bij >3 bestanden in dezelfde dir: overweeg barrel/index bestand
+     - _Registries_: Meerdere instances van hetzelfde concept (endpoints, commands, entities)? → Centraliseer in één bestand. Noteer in `architecture.registries[]`
+     - _Structuur_: Plat vs genest? Richtlijn: plat tenzij >10 files of duidelijke subcategorieën. Volg bestaande projectconventie
+     - _Test locatie_: Colocated of apart? Documenteer in `testStrategy.location`
+     - _Module boundaries_: Welke modules importeren van welke? Noteer verboden imports bij circulaire risico's
 
 ### FASE 3: Write feature.json
 
@@ -217,11 +223,11 @@ Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md`
 | `choices`                            | altijd (user antwoorden)                                                     |
 | `requirements`                       | altijd (elke REQ met `status: "pending"`)                                    |
 | `files`                              | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`) |
-| `architecture`                       | altijd (`componentTree`, `interfaces`)                                       |
+| `architecture`                       | altijd (`componentTree`, `interfaces`, optioneel `registries[]`)             |
 | `design`                             | alleen visuele features                                                      |
 | `apiContract`                        | alleen bij backend                                                           |
 | `buildSequence`                      | altijd                                                                       |
-| `testStrategy`                       | altijd                                                                       |
+| `testStrategy`                       | altijd (optioneel `location` veld)                                           |
 | `clarifications`                     | alleen als gray-area resolution is uitgevoerd                                |
 | `durableDecisions`                   | bij >3 requirements — beslissingen die over alle REQs gelden                 |
 | `research`                           | alleen als research is gedaan                                                |

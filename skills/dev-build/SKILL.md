@@ -56,7 +56,7 @@ If no feature name provided:
 1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DOING" && stage === "defined"` → suggest via **AskUserQuestion**
 2. Fallback: list `.project/features/` met `feature.json`, let user select
 
-Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`. Als `clarifications[]` aanwezig: behandel als harde constraints tijdens implementatie (gray-area beslissingen van de user).
+Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifiek `registries[]` en `interfaces`). Als `clarifications[]` aanwezig: behandel als harde constraints tijdens implementatie (gray-area beslissingen van de user). Als `architecture.registries[]` aanwezig: gebruik als leidraad — nieuwe instances (endpoints, commands, entities) toevoegen aan het aangegeven registry-bestand, niet verspreiden over losse bestanden.
 
 Niet gevonden → exit: "Run `/dev-define` eerst."
 
@@ -124,12 +124,38 @@ Display technique map als tabel. Proceed automatically — do NOT confirm with t
 
 ### FASE 2: Execute Build
 
-For each requirement in IMPLEMENTATION ORDER:
+For each buildSequence step:
+
+**Parallel build check** (per step met >1 requirement):
+
+1. Check file overlap: vergelijk `files[]` waar `requirements` arrays overlappen tussen REQs in deze step
+2. **Geen overlap** → launch Agent per REQ (max 3 parallel). Elke agent krijgt: technique file content, relevante source files uit feature.json `files[]`, stack context (CLAUDE.md ### Stack), eerdere SYNC notes van deze build
+3. **Wel overlap** → serieel bouwen (onderstaande stappen)
+4. Parse agent resultaten via `BUILD_RESULT_START...BUILD_RESULT_END` markers, update feature.json per REQ
+
+   ```
+   BUILD_RESULT_START
+   REQ: {id}
+   Technique: {TDD | Implementation First | Implementation Only}
+   Status: {GREEN | BLOCKED}
+   Files modified: {lijst}
+   Files created: {lijst}
+   Test output: {PASS | FAIL met details}
+   SYNC: {pattern/concept in file(s) — what, why, depends on}
+   BUILD_RESULT_END
+   ```
+
+Bij steps met 1 requirement of bij overlap, voor elke requirement sequentieel:
 
 1. Load technique: `Read(".claude/skills/dev-build/techniques/{technique}.md")`
 2. **Read existing code**: lees alle bestanden uit feature.json `files[]` die `action: "modify"` hebben, plus 1 bestaand test bestand voor setup/teardown patronen (before/after hooks, DB lifecycle, import conventies).
 3. Execute technique workflow
-4. Stack-aware enforcement: strict types (TS: geen any; JS: validatie op boundaries), async error handling, geen secrets in client code
+4. **Stack-aware enforcement**:
+   - Strict types (TS: geen `any`; JS: validatie op boundaries)
+   - Async error handling
+   - Geen secrets in client code
+   - **Code clarity**: descriptieve namen boven comments. Geen comments die herhalen wat de code al zegt. Wel comments voor: niet-obvioze "waarom" beslissingen, workarounds, en compatibility notes. Volg bestaande project comment-stijl.
+   - **Code rules**: volg `shared/RULES.md` — Algemeen (R007-R008) + stack-specifieke secties. Bij twijfel: MUST_DO regels altijd, SHOULD_DO regels tenzij bewuste afwijking met reden.
 5. **Update feature.json** na elke REQ: zet `requirements[].status` → `"built"` en voeg `technique` + `syncNote` toe. Bij Implementation Only: voeg ook `skipTestReason` toe (`visual-only`, `config-only`, of `prototype`). Dit bewaart voortgang bij context compaction.
 6. Output per requirement:
    ```
@@ -230,6 +256,28 @@ Richtlijnen:
 **Context**: update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip als geen structurele impact.
 
 **Architecture** (volg component-first model uit `shared/DASHBOARD.md`): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `description` (korte functionele beschrijving, max 200 chars — wat doet dit component?), `src`, `test`, `connects_to` (uit werkelijke imports), `endpoints` (bijv. `"POST /api/auth/login"`), `entities` (gebruikte model namen), `feature` (huidige feature naam). Nieuwe componenten die tijdens build zijn ontstaan: push met alle velden inclusief `feature`. Skip als geen structurele impact.
+
+**Learning Extraction** — extracteer projectbrede learnings:
+
+Lees de zojuist geschreven `feature.json` `build.decisions[]` en evalueer:
+
+- Architecturale keuzes die andere features beïnvloeden → type `pattern`
+- Ontdekte pitfalls of workarounds → type `pitfall`
+
+**Filter**: alleen items die relevant zijn buiten deze ene feature. Skip feature-specifieke implementatiedetails.
+
+**Append** naar `project-context.json` → `learnings[]`:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "feature": "{feature-name}",
+  "type": "pattern|pitfall",
+  "summary": "Max 200 chars samenvatting"
+}
+```
+
+Check op duplicaten (zelfde feature + zelfde summary → skip). Geen learnings gevonden → skip.
 
 ### FASE 3C: Wat hebben we gebouwd?
 
