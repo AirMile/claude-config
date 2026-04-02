@@ -62,8 +62,20 @@ Report and enter iterate mode:
 ✓ Iterate mode actief.
   Theme: {loaded from THEME.md | not available}
   Styling: {Tailwind | Non-Tailwind}
-  Plak referenties of beschrijf wijzigingen.
+
+  Controls:
+  Ctrl+Shift+X            toggle inspect aan/uit (linkerhand)
+  Alt+I                   toggle inspect aan/uit
+  Click                   selecteer element → kopieer referentie
+  Shift+Click             pin meerdere elementen
+  Drag                    selecteer regio
+  Ctrl+Z                  unpin laatste element
+  Escape                  wis pins / uit als geen pins
+
+  Plak een referentie of beschrijf wat je wilt wijzigen.
 ```
+
+The controls block is compact enough that experienced users scan past it, but gives new users all the info they need to start.
 
 ## FASE 2: Iterate
 
@@ -137,15 +149,19 @@ User describes an element (e.g., "make the header background darker").
 - One instruction at a time. Multi-select: apply the same instruction across all pinned elements. Different instructions on different elements → sequential.
 - Trust HMR for cosmetic edits. For layout edits, use Smart Verification (see below).
 - New reference pasted → new iteration immediately.
-- **Smart Verification** — after applying an edit, autonomously decide whether to verify with `browser_snapshot`:
+- **Playwright Verification** — after applying an edit, autonomously decide whether to verify with `browser_snapshot`:
 
-  **Auto-verify** (layout/structure edits where the visual result is unpredictable):
+  **Auto-verify** (advanced edits — structural, layout, or responsive changes where the visual result is unpredictable):
   - Flex/grid structure changes (`flex-direction`, `grid-template`, `grid-cols`, `order`, `flex-wrap`)
   - Adding, removing, or reordering DOM elements
   - Width/height changes that cause reflow (`w-full` → `w-1/2`, responsive widths)
   - Multiple breakpoint edits in one pass
   - Position changes (`relative` → `absolute`, `sticky`, `fixed`)
   - Display changes (`hidden` → `block`, `flex` → `grid`)
+  - Conditional rendering changes (ternary swaps, `&&` guards, component replacements)
+  - Responsive class additions/removals across breakpoints (e.g., adding `md:hidden lg:flex`)
+  - Component swaps (replacing one component with another)
+  - Z-index or overflow changes that affect stacking/clipping
 
   **Skip verification** (cosmetic edits where HMR feedback is sufficient):
   - Color, background, border, shadow, opacity
@@ -157,7 +173,7 @@ User describes an element (e.g., "make the header background darker").
   **Verification flow** (when triggered):
   1. `browser_snapshot` → analyze accessibility tree
   2. Check: is the element still present? Is the structure intact? Are sibling elements unaffected?
-  3. Report inline: `✓ Layout verified — [element] intact at [location]` or `⚠ Layout issue — [description of problem]`
+  3. Report inline: `✓ Verified — [element] intact at [location]` or `⚠ Issue — [description of problem]`
   4. On issue: propose fix immediately
 
   No `browser_take_screenshot` (too heavy for iteration speed). No pre-flight (browser already open via dev server + HMR). Snapshot only — fast structural check.

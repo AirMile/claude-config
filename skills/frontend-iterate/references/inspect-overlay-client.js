@@ -830,9 +830,14 @@ if (window.__inspectOverlayActive) {
 
   // --- Event handlers (named for dispose cleanup) ---
   function onKeyDown(e) {
-    if (e.altKey && (e.key === "i" || e.key === "I")) {
+    // Toggle inspect: Alt+I or Ctrl+Shift+X (left-hand friendly)
+    if (
+      (e.altKey && (e.key === "i" || e.key === "I")) ||
+      (e.ctrlKey && e.shiftKey && (e.key === "x" || e.key === "X"))
+    ) {
       e.preventDefault();
       toggleInspect();
+      return;
     }
     if (isDragging && (e.key === "Escape" || (e.ctrlKey && e.key === "z"))) {
       e.preventDefault();
@@ -857,8 +862,12 @@ if (window.__inspectOverlayActive) {
     }
     if (e.key === "Escape" && inspectActive) {
       e.preventDefault();
-      clearPins();
-      showToast("Pins cleared");
+      if (pinnedElements.length > 0) {
+        clearPins();
+        showToast("Pins cleared");
+      } else {
+        toggleInspect();
+      }
     }
   }
 

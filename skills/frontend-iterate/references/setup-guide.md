@@ -55,32 +55,59 @@ If declined: degraded mode — skip babel plugin, overlay works without file:lin
 
 Next.js with Turbopack has no Babel plugin support → always degraded mode (no file:line refs, element-picking via CSS classes/text).
 
-Uses the same `inspect-overlay-client.js` as Vite — no separate React component needed.
+> **Important:** Next.js server components strip `<script>` tags from JSX. The overlay must be loaded via a `"use client"` component that injects the script with `document.createElement`.
 
 ### Install
 
 1. Create `public/_inspect/` directory
 2. Copy `references/inspect-overlay-client.js` → `public/_inspect/client.js`
-3. Add to `.gitignore` (if not already present):
+3. Create `app/inspect-overlay.tsx`:
+
+   ```tsx
+   "use client";
+
+   import { useEffect } from "react";
+
+   export function InspectOverlay() {
+     useEffect(() => {
+       const script = document.createElement("script");
+       script.type = "module";
+       script.src = "/_inspect/client.js";
+       document.body.appendChild(script);
+       return () => {
+         script.remove();
+       };
+     }, []);
+
+     return null;
+   }
+   ```
+
+4. Add to root `layout.tsx`:
+
+   ```tsx
+   import { InspectOverlay } from "./inspect-overlay";
+
+   // inside <body>:
+   {
+     process.env.NODE_ENV === "development" && <InspectOverlay />;
+   }
+   ```
+
+5. Add to `.gitignore` (if not already present):
    ```
    # Inspect overlay (synced from claude-config)
    public/_inspect/
+   app/inspect-overlay.tsx
    ```
-4. Add to root `layout.tsx`, inside `<body>`:
-   <!-- prettier-ignore -->
-   ```tsx
-   {process.env.NODE_ENV === "development" && (
-     <script type="module" src="/_inspect/client.js" />
-   )}
-   ```
-5. HMR picks up the change automatically — no server restart needed
+6. HMR picks up the change automatically — no server restart needed
 
 ## Post-Setup Report
 
 Report overlay status:
 
 - Mode: Full (Babel) or Degraded
-- Controls: Alt+I toggle
+- Controls: Ctrl+Shift+X or Alt+I to toggle
 - Server URL: tunnel URL if cloudflared running, else localhost:3000
 
 Then return to SKILL.md FASE 2 (iterate loop).
@@ -100,5 +127,6 @@ Only on explicit request ("remove the overlay", "cleanup iterate").
 **Next.js:**
 
 1. Delete `public/_inspect/` directory
-2. Remove `<script>` tag from root `layout.tsx`
-3. HMR removes overlay automatically
+2. Delete `app/inspect-overlay.tsx`
+3. Remove `<InspectOverlay />` and its import from root `layout.tsx`
+4. HMR removes overlay automatically
