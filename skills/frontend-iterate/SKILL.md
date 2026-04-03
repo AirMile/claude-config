@@ -12,6 +12,8 @@ metadata:
 
 User clicks elements in browser, copies a reference, pastes in chat. Claude makes targeted edits with live HMR feedback.
 
+**Verwante skills:** `/frontend-theme` · `/frontend-plan` · `/frontend-compose` · `/frontend-convert` · `/frontend-audit` · `/frontend-wcag`
+
 ## References
 
 - `references/inspect-overlay-plugin.ts` — Vite plugin
@@ -55,7 +57,7 @@ Follow the setup guide, then continue to 1.2.
 
 Load project context for informed edits:
 
-- **Theme** (optional): Read `.project/config/THEME.md` if it exists
+- **Theme** (optional): Read `.project/project.json` → `theme` section if it has data
   - Provides design tokens, color palette, typography scale, spacing system
   - Used to validate edits against the design system
   - If not found: no problem, rely on `class:` from clipboard
@@ -66,7 +68,7 @@ Report and enter iterate mode:
 ✓ Iterate mode actief.
   Framework: {Next.js | Vite} ({mode: Full | Degraded})
   Styling: {Tailwind | Non-Tailwind}
-  Theme: {loaded from THEME.md | not available}
+  Theme: {loaded from project.json#theme | not available}
   Dev server: {URL}
 
   Controls:
@@ -145,7 +147,7 @@ User describes an element (e.g., "make the header background darker").
 ### Guidelines
 
 - **`class:` over computed values** — always prefer existing utility classes over hardcoded values.
-- **Theme-aware** — if THEME.md is loaded, use its tokens for new values (e.g., use `text-primary` over `text-blue-500` if the theme defines primary).
+- **Theme-aware** — if theme data is loaded from project.json, use its tokens for new values (e.g., use `text-primary` over `text-blue-500` if the theme defines primary).
 - **Viewport-aware** — scope edits to the captured breakpoint prefix from `@{width}w`. Edit at `@1440w` → modify `xl:` or lower prefixed classes. Only edit unprefixed (base) classes when the user explicitly targets all screen sizes. This prevents desktop edits from breaking mobile.
 - **Responsive conflict check** — after layout edits (flex, grid, width, gap, padding), scan the element's existing classes for other breakpoint variants of the same property. If the edit conflicts (e.g., adding `xl:gap-6` when `md:gap-8` already exists), warn before applying.
 - **Layout-context aware** — use `parent:` line to choose the right edit approach for size/spacing. Don't guess — the layout type determines the tool: flex → gap/flex-basis, grid → col-span/grid-template, block → width/max-width/padding.

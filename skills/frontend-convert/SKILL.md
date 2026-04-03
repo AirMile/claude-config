@@ -15,7 +15,7 @@ metadata:
 
 # Convert
 
-Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's THEME.md tokens. Self-verifies by comparing source image against Playwright screenshot of generated output.
+Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens. Self-verifies by comparing source image against Playwright screenshot of generated output.
 
 **Verwante skills:** `/frontend-theme` · `/frontend-plan` · `/frontend-compose` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
 
@@ -122,12 +122,12 @@ If scope is a component: skip this step.
 
 **Theme check:**
 
-Check if `.project/config/THEME.md` exists.
+Check `.project/project.json` → `theme` section for design tokens.
 
-- **Found + inspiration mode:** Read and store tokens. Mandatory for mapping.
-- **Found + copy mode:** Read as reference. Use for shared utilities (cn(), Tailwind config) but not for color/font values.
-- **Not found + inspiration mode:** Abort with suggestion: `"Inspiration mode vereist THEME.md. Run eerst /frontend-theme of kies 1:1 kopie."`
-- **Not found + copy mode:** Proceed with extracted values from source image.
+- **Theme data found + inspiration mode:** Read and store tokens. Mandatory for mapping.
+- **Theme data found + copy mode:** Read as reference. Use for shared utilities (cn(), Tailwind config) but not for color/font values.
+- **Theme data missing + inspiration mode:** Abort with suggestion: `"Inspiration mode vereist theme tokens. Run eerst /frontend-theme of kies 1:1 kopie."`
+- **Theme data missing + copy mode:** Proceed with extracted values from source image.
 
 ```
 Theme: [Available | Not available]
@@ -159,7 +159,7 @@ PROJECT CONTEXT
 ════════════════════════════════════════════════════════════
 
 Framework:  [detected]
-Theme:      [Available from THEME.md | Not available]
+Theme:      [Available from project.json#theme | Not available]
 Existing:   [N] components found
   Reusable: [component names that match source sections]
 
@@ -174,7 +174,7 @@ Existing:   [N] components found
 
 ### 1.1 Extract and Map
 
-Extract visual properties from the source image and map them to the closest THEME.md tokens:
+Extract visual properties from the source image and map them to the closest project theme tokens:
 
 ```
 TOKEN MAPPING
@@ -254,7 +254,7 @@ Generate the page and components based on the source image.
 **Mode-specific** (zie `./examples/` voor gold standard voorbeelden per modus):
 
 - **1:1 copy:** Match source colors, fonts, spacing as closely as possible. Use arbitrary Tailwind values (`bg-[#FF5733]`, `text-[20px]`) when no standard class matches. Prioritize visual fidelity. Referentie: `./examples/PricingPage-1to1.tsx`
-- **Inspiration:** Use only THEME.md tokens and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Referentie: `./examples/PricingPage-inspiration.tsx`
+- **Inspiration:** Use only project.json#theme tokens and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Referentie: `./examples/PricingPage-inspiration.tsx`
 
 **Contextual content:** Never use "Lorem ipsum." Infer contextual placeholder text from the source image or describe what real content would go there.
 
@@ -273,7 +273,7 @@ Existing components imported:
   ✓ [component path]              (reused)
 
 Mode:  [1:1 copy | Inspiration with theme tokens]
-Theme: [Integrated from THEME.md | Extracted from source]
+Theme: [Integrated from project.json#theme | Extracted from source]
 
 ════════════════════════════════════════════════════════════
 ```
@@ -418,7 +418,7 @@ Update `.project/session/devinfo.json`:
       "verificationRounds": 2,
       "finalMatchQuality": "high",
       "framework": "[detected framework]",
-      "theme": "[THEME.md path or null]"
+      "theme": "[project.json#theme | null]"
     }
   }
 }
@@ -465,7 +465,7 @@ This skill must **NEVER**:
 
 - Generate code without first analyzing the source image
 - Use "Lorem ipsum" — always use contextual content from the source or realistic placeholders
-- Run inspiration mode without THEME.md
+- Run inspiration mode without theme data in project.json
 - Skip the visual verification loop when Playwright is available
 - Regenerate components that already exist in the codebase — import and reuse
 - Exceed 3 verification rounds

@@ -80,13 +80,13 @@ multiSelect: false
 
 ### 0.2b Theme Check (always)
 
-Check if `.project/config/THEME.md` exists (output from `/frontend-theme`).
+Check `.project/project.json` → `theme` section for design tokens (written by `/frontend-theme`).
 
-- **If found**: read and store as context for code generation (colors, typography, spacing, breakpoints).
-- **If not found**: note absence, use Tailwind defaults during code generation.
+- **If theme section has data**: read and store tokens for code generation (colors, typography, spacing, breakpoints).
+- **If theme section missing or empty**: note absence, use Tailwind defaults during code generation.
 
 ```
-Theme: [Available (THEME.md) | Not available — using Tailwind defaults]
+Theme: [Available (project.json#theme) | Not available — using Tailwind defaults]
 ```
 
 ### 0.3 Page Analysis (only if page exists)
@@ -410,7 +410,7 @@ Na requirements validatie, presenteer een compleet overzicht:
 | User stories | {N} stories                                |
 | Secties      | {lijst met NEW/EXISTING markering}         |
 | Hergebruik   | {bestaande componenten/hooks}              |
-| Theme        | {THEME.md beschikbaar / Tailwind defaults} |
+| Theme        | {project.json#theme beschikbaar / Tailwind defaults} |
 
 Vraag via AskUserQuestion: "Klopt dit overzicht voordat we doorgaan naar layout?"
 
@@ -560,7 +560,7 @@ IF section is new (not in inventory):
 - Use `cn()` for className composition — create `src/lib/utils.ts` if not present
 - TypeScript strict mode with proper interfaces
 - Semantic HTML with aria-labels and keyboard support
-- If THEME.md exists, integrate design tokens into Tailwind config extension
+- If project.json#theme has data, integrate design tokens into Tailwind config extension
 - Import and compose existing components — never regenerate what already works
 - Contextual placeholder text (not "Lorem ipsum") when no real data available
 
@@ -568,7 +568,7 @@ IF section is new (not in inventory):
 
 1. **Page file** — main page component that imports existing components + new section components
 2. **New section components** — only for sections not covered by existing components
-3. **Tailwind config extension** — if THEME.md tokens need to be added (only if not already present)
+3. **Tailwind config extension** — if project.json#theme tokens need to be added (only if not already present)
 4. **cn() utility** — `src/lib/utils.ts` if not present
 
 **Code patterns:**
@@ -637,7 +637,7 @@ Existing components imported:
   ✓ src/components/ProductCard.tsx            (reused)
   ✓ src/hooks/useProducts.ts                 (reused)
 
-Theme: [Integrated from THEME.md | Tailwind defaults used]
+Theme: [Integrated from project.json#theme | Tailwind defaults used]
 
 ════════════════════════════════════════════════════════════════
 ```
@@ -761,7 +761,7 @@ After the layout structure is approved, improve the visual quality of the page. 
 
 **Take a fresh screenshot** (or reuse the last one from 3.6 if no changes were made).
 
-**Analyze the screenshot using `shared/DESIGN.md` as checklist** — specifically the typography scale, spacing system, color contrast, and anti-patterns sections. If THEME.md exists, use its tokens as source of truth for values.
+**Analyze the screenshot using `shared/DESIGN.md` as checklist** — specifically the typography scale, spacing system, color contrast, and anti-patterns sections. If project.json#theme has data, use its tokens as source of truth for values.
 
 **Apply improvements directly** — fix spacing, adjust typography scale, improve visual hierarchy. These are non-breaking cosmetic changes only.
 
@@ -919,7 +919,7 @@ Update `.project/session/devinfo.json` with handoff data for downstream skills:
       "components": ["[list of created component files]"],
       "dataConnected": true,
       "framework": "[detected framework]",
-      "theme": "[THEME.md path or null]"
+      "theme": "[project.json#theme | null]"
     }
   }
 }

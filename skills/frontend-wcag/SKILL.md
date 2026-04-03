@@ -12,6 +12,8 @@ metadata:
 
 Audit and fix accessibility issues in web applications. Scans source code for WCAG 2.1 AA violations, optionally validates in-browser via Playwright, and implements prioritized fixes.
 
+**Verwante skills:** `/frontend-theme` · `/frontend-plan` · `/frontend-compose` · `/frontend-convert` · `/frontend-iterate` · `/frontend-audit`
+
 ---
 
 ## State Machine
@@ -500,7 +502,7 @@ RECOVERY: Fix Application
 ```json
 {
   "currentSkill": {
-    "name": "frontend-a11y",
+    "name": "frontend-wcag",
     "phase": "AUDIT"
   },
   "progress": {
@@ -516,7 +518,7 @@ RECOVERY: Fix Application
 ```json
 {
   "handoff": {
-    "from": "frontend-a11y",
+    "from": "frontend-wcag",
     "to": null,
     "data": {
       "fixesApplied": 8,
