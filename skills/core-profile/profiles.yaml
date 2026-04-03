@@ -9,6 +9,7 @@ core:
   - core-md-audit
   - core-md-revise
   - core-pull
+  - core-queue
   - core-refine
   - core-setup
   - project-list
