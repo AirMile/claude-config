@@ -17,7 +17,7 @@ metadata:
 
 Compose a view by inventorying existing building blocks (components, hooks, services from the dev pipeline) and combining them with new functionality. Selects what belongs on this view, formulates user stories, designs the layout as ASCII art, generates code that reuses existing components, and optionally hooks up real data.
 
-**Pipeline:** `/frontend-theme` (optional) → `/frontend-compose` → `/frontend-iterate` → quality skills
+**Verwante skills:** `/frontend-theme` · `/frontend-plan` · `/frontend-convert` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
 
 ## References
 
@@ -697,9 +697,9 @@ Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
 
 Gaps verschijnen altijd in het completion report. Toevoegen aan backlog is automatisch maar non-blocking.
 
-### 3.6 Visual Verification
+### 3.6 Layout Verification
 
-Verify the generated page renders correctly in the browser. See `../shared/PLAYWRIGHT.md` for tool details and error recovery.
+Verify the generated page layout matches the approved ASCII layout from FASE 2. See `../shared/PLAYWRIGHT.md` for tool details and error recovery.
 
 **Pre-flight:** Check Playwright MCP tools available (`browser_navigate`, `browser_take_screenshot`, `browser_close`). If unavailable → skip with message: `"Playwright niet beschikbaar — open de pagina handmatig om te verifiëren."`, proceed to FASE 4.
 
@@ -708,36 +708,92 @@ Verify the generated page renders correctly in the browser. See `../shared/PLAYW
 1. Start dev server if not running (`npm run dev` or `npx next dev` based on framework detected in 3.1) — run in background
 2. `browser_navigate` → `http://localhost:3000/[page-name]` (adjust port to project config)
 3. `browser_wait_for` → `{ time: 3 }` (allow hydration + client render)
-4. `browser_take_screenshot` → visually verify the page
-5. `browser_close`
+4. `browser_take_screenshot` → capture the rendered page
 
-**Analyze screenshot for:**
+**Analyze screenshot against the approved ASCII layout:**
 
 - Page renders without blank screen or error overlay
-- Layout matches the approved ASCII layout from FASE 2
-- Sections are visible and in the correct order
-- No obvious broken styling (missing images are OK with placeholder data)
+- All sections from the ASCII layout are present
+- Sections appear in the correct order
+- Grid structure matches (columns, rows, sidebar placement)
+- Responsive basis is intact (no horizontal overflow, no collapsed grids)
+- Missing images are OK with placeholder data
+
+**If layout issues detected:** Auto-fix structural problems (wrong grid, missing sections, incorrect order) and re-screenshot. Repeat until clean or max 3 attempts.
 
 **Report:**
 
 ```
-VISUAL CHECK
+LAYOUT CHECK
 ════════════════════════════════════════════════════════════════
 
 URL:     http://localhost:3000/[page-name]
-Status:  [✓ Renders correctly | ⚠ Issues detected]
+Status:  [✓ Layout matches | ⚠ Issues fixed]
 
-[If issues detected:]
-Issues:
-  - [description of visual problem]
-  - [description of visual problem]
+Sections verified:
+  ✓ [Section 1] — matches ASCII layout
+  ✓ [Section 2] — matches ASCII layout
+  ...
 
-[Auto-fix issues (missing imports, typos, wrong classes, layout problems)
- and re-check. Repeat until clean or max 3 attempts.
- Only escalate to user if the fix is unclear or subjective.]
+[If issues were fixed:]
+Fixed:
+  - [description of fix]
 
 ════════════════════════════════════════════════════════════════
 ```
+
+**User approval:**
+
+```yaml
+header: "Layout Check"
+question: "De pagina is gegenereerd. Klopt de layout structuur?"
+options:
+  - label: "Ja, layout klopt (Recommended)", description: "Ga door naar UI verbetering"
+  - label: "Aanpassen", description: "Beschrijf wat er anders moet aan de layout"
+multiSelect: false
+```
+
+**If "Aanpassen":** User describes what needs to change. Apply layout fixes, take new screenshot, and ask again. Max 3 rounds — after that, proceed to 3.7.
+
+### 3.7 UI Refinement
+
+After the layout structure is approved, improve the visual quality of the page. This step focuses purely on aesthetics — no new functionality or structural changes.
+
+**Take a fresh screenshot** (or reuse the last one from 3.6 if no changes were made).
+
+**Analyze the screenshot using `shared/DESIGN.md` as checklist** — specifically the typography scale, spacing system, color contrast, and anti-patterns sections. If THEME.md exists, use its tokens as source of truth for values.
+
+**Apply improvements directly** — fix spacing, adjust typography scale, improve visual hierarchy. These are non-breaking cosmetic changes only.
+
+**After applying fixes:** Take a new screenshot to verify improvements.
+
+**Responsive check (optional):**
+
+1. `browser_resize` → `{ width: 375, height: 812 }` (mobile viewport)
+2. `browser_take_screenshot` → check mobile layout
+3. If broken: fix responsive issues (stacking, font sizes, padding), re-screenshot
+4. `browser_resize` → `{ width: 1280, height: 800 }` (restore desktop)
+
+Skip responsive check if the page is explicitly desktop-only or an admin/internal tool.
+
+**Report:**
+
+```
+UI REFINEMENT
+════════════════════════════════════════════════════════════════
+
+Improvements applied:
+  ✓ [description of improvement]
+  ✓ [description of improvement]
+  ...
+
+[If no improvements needed:]
+  ✓ Visual quality already good — no changes needed
+
+════════════════════════════════════════════════════════════════
+```
+
+Max 2 refinement iterations. After that, proceed to FASE 4.
 
 ---
 
@@ -857,7 +913,7 @@ Update `.project/session/devinfo.json` with handoff data for downstream skills:
 {
   "handoff": {
     "from": "frontend-compose",
-    "to": "frontend-iterate",
+    "to": null,
     "data": {
       "pageFile": "[page file path]",
       "components": ["[list of created component files]"],
@@ -893,11 +949,13 @@ Gaps ({N}):
 Next steps:
   1. npm run dev → open http://localhost:3000/[page]
   2. /frontend-iterate → visual refinement in browser
-  3. /frontend-wcag → accessibility audit
+  3. /frontend-theme → design tokens aanpassen/toepassen
+  4. /frontend-audit → performance/SEO audit
+  5. /frontend-wcag → accessibility audit
   [Als gaps die dev-werk nodig hebben:]
-  4. /dev-define {feature} → definieer ontbrekende functionaliteit
+  6. /dev-define {feature} → definieer ontbrekende functionaliteit
   [Als layout/UX complex is:]
-  5. /thinking-brainstorm page:{page-name} → brainstorm over UX/layout
+  7. /thinking-brainstorm page:{page-name} → brainstorm over UX/layout
 
 ═══════════════════════════════════════════════════════════════
 ```

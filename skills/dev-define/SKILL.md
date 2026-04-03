@@ -196,7 +196,7 @@ Ontwerp in drie stappen:
 
 2. **Bestaande code**: Glob + Read de meest relevante bestanden met vergelijkbare patterns. Dit informeert het ontwerp.
 
-3. **Design**: ontwerp op basis van requirements, baseline en bestaande code. Genereer een ASCII diagram van de gekozen architectuur (component layers, data flow, of module relaties — afhankelijk van project type):
+3. **Design**: ontwerp op basis van requirements, baseline en bestaande code. Genereer een feature flow — een compacte `→`-keten van trigger tot output die het pad door de architectuur toont (conditionele paden in `[brackets]`, parallelle paden met `+`). Voorbeeld: `User click → validate input → [cache hit → return] / [cache miss → fetch API + update cache] → render response`. Daarna:
    - **File structuur**: create/modify tabel
    - **Interfaces/Types**: als relevant
    - **Design sketch**: alleen voor visuele features — ASCII wireframe (web/UI) of scene composition (3D/game). Overweeg: responsive breakpoints, loading state, empty state, error state.

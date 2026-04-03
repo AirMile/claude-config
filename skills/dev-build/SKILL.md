@@ -29,6 +29,17 @@ Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), a
 
 ## Process
 
+**Phase checklist** — vink af na elke fase, STOP NIET voor alle fases ✓ zijn:
+
+- [ ] FASE 0: Context Loading
+- [ ] FASE 1: Technique Mapping
+- [ ] FASE 2: Execute Build
+- [ ] FASE 2b: Regression Gate
+- [ ] FASE 3A: Documentation
+- [ ] FASE 3B: Project Sync
+- [ ] FASE 3C: Wat hebben we gebouwd?
+- [ ] FASE 3D: Scoped Commit
+
 ### FASE 0: Context Loading
 
 **Capture git baseline** (eerste actie):
@@ -244,6 +255,8 @@ Bij steps met 1 requirement of bij overlap, voor elke requirement sequentieel:
 - **Already covered**: als een REQ al (deels) werkt door een eerder REQ → schrijf alleen tests, verify GREEN. Output: `RED: N/A (covered by REQ-XXX)`
 
 **On blocker:** log in feature.json `build.blockers[]`, mark BLOCKED, ga door met andere requirements. Suggest `/thinking-decide` voor architecturele blockers.
+
+**⚠️ NIET STOPPEN NA HET CODEREN — er zijn nog 6 fases te gaan (2b → 3D). Check de phase checklist bovenaan en ga door met FASE 2b: Regression Gate.**
 
 ### FASE 2b: Regression Gate
 

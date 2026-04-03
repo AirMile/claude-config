@@ -74,6 +74,28 @@ grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | head -1
 
 Rapporteer de tunnel URL.
 
+## 5. Next.js allowedDevOrigins (alleen Next.js)
+
+Next.js blokkeert cross-origin requests van onbekende origins in dev mode. Zonder de tunnel hostname in `allowedDevOrigins` hydrateren client components niet (pagina blijft hangen op loading state).
+
+> **Belangrijk:** Next.js ondersteunt GEEN wildcard subdomain matching (`.trycloudflare.com` werkt niet). De volledige tunnel hostname is vereist.
+
+Na het verkrijgen van de tunnel URL in stap 4:
+
+1. Extract de hostname uit de tunnel URL (zonder `https://`)
+2. Check of `next.config` al een `allowedDevOrigins` array heeft met deze hostname
+3. Zo niet → voeg de hostname toe aan de `allowedDevOrigins` array (maak de array aan als die niet bestaat)
+4. Herstart de dev server (config wordt alleen bij startup gelezen):
+
+```bash
+fuser -k 3000/tcp 2>/dev/null; sleep 1
+nohup [framework command] > /tmp/devserver.log 2>&1 &
+```
+
+5. Wacht tot server klaar is (max 15s), rapporteer de tunnel URL opnieuw
+
+> Omdat quick tunnels een random hostname krijgen bij elke start, moet deze stap elke keer uitgevoerd worden.
+
 ## Stop
 
 Bij verzoek om te stoppen:

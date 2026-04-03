@@ -54,7 +54,7 @@ setup-project.sh  Linkt config naar een project's .claude/
 
 ## Pipelines
 
-**Frontend**: plan → theme → compose/convert → iterate → audit/wcag
+**Frontend**: plan, theme, compose/convert, iterate, audit/wcag — standalone skills, vrij combineerbaar. Elke skill detecteert beschikbare context (theme, code, design spec) en past zich aan.
 **Dev**: define → plan → build → test → debug → refactor
 **Game**: define → plan → build → test → debug → refactor (Godot 4.x, GDScript, GUT)
 

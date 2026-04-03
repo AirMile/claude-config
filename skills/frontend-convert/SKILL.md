@@ -17,7 +17,7 @@ metadata:
 
 Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's THEME.md tokens. Self-verifies by comparing source image against Playwright screenshot of generated output.
 
-**Pipeline:** `/frontend-theme` (optional) → `/frontend-convert` → `/frontend-iterate` → quality skills
+**Verwante skills:** `/frontend-theme` · `/frontend-plan` · `/frontend-compose` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
 
 ## References
 
@@ -409,7 +409,7 @@ Update `.project/session/devinfo.json`:
 {
   "handoff": {
     "from": "frontend-convert",
-    "to": "frontend-iterate",
+    "to": null,
     "data": {
       "inputType": "screenshot | url | image",
       "mode": "copy | inspiration",
@@ -450,7 +450,9 @@ Files ([N]):
 
 Next steps:
   1. /frontend-iterate → visual fine-tuning in browser
-  2. /frontend-audit → performance/SEO audit
+  2. /frontend-theme → design tokens aanpassen/toepassen
+  3. /frontend-audit → performance/SEO audit
+  4. /frontend-wcag → accessibility audit
 
 ═══════════════════════════════════════════════════════════
 ```

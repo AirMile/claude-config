@@ -37,7 +37,7 @@ Check styling approach:
 Check overlay installed:
 
 - **Vite**: Grep `vite.config` for `inspectOverlay`
-- **Next.js**: Check for `inspect-overlay-client.js` in `public/_inspect/`
+- **Next.js**: Check for `client.js` in `public/_inspect/`
 
 **Not found → install:**
 
@@ -46,6 +46,10 @@ Read("references/setup-guide.md")
 ```
 
 Follow the setup guide, then continue to 1.2.
+
+**Found → verify and continue:** Check that all required files exist (overlay client, component/script injection, layout import). If incomplete, re-run setup for missing parts. Then continue to 1.2.
+
+**Dev server:** Check if the dev server is already running (`lsof -i :<port> -sTCP:LISTEN`). If not, start it. If a port conflict exists, use the existing server.
 
 ### 1.2 Context Loading
 
@@ -60,8 +64,10 @@ Report and enter iterate mode:
 
 ```
 ✓ Iterate mode actief.
-  Theme: {loaded from THEME.md | not available}
+  Framework: {Next.js | Vite} ({mode: Full | Degraded})
   Styling: {Tailwind | Non-Tailwind}
+  Theme: {loaded from THEME.md | not available}
+  Dev server: {URL}
 
   Controls:
   Ctrl+Shift+X            toggle inspect aan/uit (linkerhand)
@@ -74,8 +80,6 @@ Report and enter iterate mode:
 
   Plak een referentie of beschrijf wat je wilt wijzigen.
 ```
-
-The controls block is compact enough that experienced users scan past it, but gives new users all the info they need to start.
 
 ## FASE 2: Iterate
 
@@ -147,28 +151,13 @@ User describes an element (e.g., "make the header background darker").
 - **Layout-context aware** — use `parent:` line to choose the right edit approach for size/spacing. Don't guess — the layout type determines the tool: flex → gap/flex-basis, grid → col-span/grid-template, block → width/max-width/padding.
 - Minimal, targeted edits. No surrounding refactors.
 - One instruction at a time. Multi-select: apply the same instruction across all pinned elements. Different instructions on different elements → sequential.
-- Trust HMR for cosmetic edits. For layout edits, use Smart Verification (see below).
+- Trust HMR for cosmetic edits. For layout edits, verify with `browser_snapshot` (see Playwright Verification below).
 - New reference pasted → new iteration immediately.
 - **Playwright Verification** — after applying an edit, autonomously decide whether to verify with `browser_snapshot`:
 
-  **Auto-verify** (advanced edits — structural, layout, or responsive changes where the visual result is unpredictable):
-  - Flex/grid structure changes (`flex-direction`, `grid-template`, `grid-cols`, `order`, `flex-wrap`)
-  - Adding, removing, or reordering DOM elements
-  - Width/height changes that cause reflow (`w-full` → `w-1/2`, responsive widths)
-  - Multiple breakpoint edits in one pass
-  - Position changes (`relative` → `absolute`, `sticky`, `fixed`)
-  - Display changes (`hidden` → `block`, `flex` → `grid`)
-  - Conditional rendering changes (ternary swaps, `&&` guards, component replacements)
-  - Responsive class additions/removals across breakpoints (e.g., adding `md:hidden lg:flex`)
-  - Component swaps (replacing one component with another)
-  - Z-index or overflow changes that affect stacking/clipping
+  **Auto-verify:** structural edits where the visual result is unpredictable (layout changes, DOM additions/removals, display/position changes, responsive class edits, component swaps).
 
-  **Skip verification** (cosmetic edits where HMR feedback is sufficient):
-  - Color, background, border, shadow, opacity
-  - Font-size, font-weight, letter-spacing, line-height
-  - Padding, margin, gap (unless layout-breaking)
-  - Rounding, text-align, cursor
-  - Text content changes
+  **Skip:** cosmetic edits where HMR feedback suffices (colors, fonts, spacing, text content).
 
   **Verification flow** (when triggered):
   1. `browser_snapshot` → analyze accessibility tree
@@ -184,6 +173,8 @@ User describes an element (e.g., "make the header background darker").
   Iterate sessie afgesloten.
 
   Volgende stappen:
+  - /frontend-theme → design tokens aanpassen/toepassen
+  - /frontend-compose → nieuwe pagina of sectie toevoegen
   - /frontend-wcag → accessibility audit
   - /frontend-audit → performance optimalisatie
   [Als structurele layout-wijzigingen gemaakt (secties verplaatst, grid gewijzigd):]

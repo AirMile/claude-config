@@ -401,8 +401,8 @@
               defining: "define",
               defined: isFrontend ? "compose" : "build",
               building: isFrontend ? "compose" : "build",
-              built: isFrontend ? "audit" : "test",
-              testing: isFrontend ? "audit" : "test",
+              built: isFrontend ? "audit" : "verify",
+              verifying: isFrontend ? "audit" : "verify",
             }[f.stage] || (isFrontend ? "compose" : "define")
           );
         }
@@ -516,6 +516,7 @@
             <span class="badge ${typeClass}">${esc(f.type)}</span>
             ${stageTag}
             ${depTag}
+            ${f.auto && f.status !== "DONE" ? '<span class="badge-auto">AUTO</span>' : ""}
           </div>
           ${extra}
         `;
@@ -990,6 +991,8 @@
         html += `<span class="status-tag" style="color:${STATUS_COLORS[f.status]}">${f.status}</span>`;
         if (f.status === "DOING" && f.stage)
           html += `<span class="stage-badge stage-${f.stage}">${esc(f.stage)}</span>`;
+        if (f.auto && f.status !== "DONE")
+          html += `<span class="badge-auto">AUTO</span>`;
         html += `</div></div>`;
         if (f.dependency) {
           html += `<div class="detail-field"><div class="detail-label">Dependency</div><div class="detail-value">${esc(f.dependency)}</div></div>`;

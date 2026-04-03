@@ -8,8 +8,8 @@
           defining: "define",
           defined: "build",
           building: "build",
-          built: "test",
-          testing: "test",
+          built: "verify",
+          verifying: "verify",
         }[f.stage] || "define"
       );
     }
@@ -42,7 +42,7 @@
             clipBtn.title = "/team-test " + f.name;
           } else if (f.assignee) {
             clipBtn.title =
-              "/" + prefix + "-" + (verb || "test") + " " + f.name;
+              "/" + prefix + "-" + (verb || "verify") + " " + f.name;
           } else {
             clipBtn.title = "/" + prefix + "-" + verb + " " + f.name;
           }
@@ -175,8 +175,8 @@
     });
   }
   // ── Status/Stage picker helpers ──
-  var STAGES = ["defining", "defined", "building", "built", "testing"];
-  var FRONTEND_STAGES = ["building", "built", "testing"];
+  var STAGES = ["defining", "defined", "building", "built", "verifying"];
+  var FRONTEND_STAGES = ["building", "built", "verifying"];
   var ALL_STATUSES =
     typeof STATUSES !== "undefined" ? STATUSES : ["TODO", "DOING", "DONE"];
 

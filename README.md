@@ -1,5 +1,7 @@
 # claude-config
 
+> **改善 (Kaizen)** — _Good enough today, better tomorrow._
+
 Personal Claude Code configuration: skills, agents, hooks, and project scaffolding. Symlinked to `~/.claude/` for global availability across all projects.
 
 ## What this is

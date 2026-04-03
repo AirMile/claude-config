@@ -872,6 +872,116 @@ multiSelect: false
 
 ---
 
+## FASE Y: Website Sync (Create/Update only)
+
+**After post-flight validation, check if existing website code uses the theme.**
+
+Skip this phase entirely for View, Delete, or when no website code exists.
+
+### Y.1 Scan for Website Code
+
+```bash
+# Glob for frontend source files
+# src/**/*.{tsx,jsx,astro,vue}, app/**/*.{tsx,jsx}, *.html
+```
+
+- **No source files found** → skip with: `"Geen website code gevonden — theme opgeslagen."` → proceed to Output Formaat
+- **Source files found** → continue to Y.2
+
+### Y.2 Theme Usage Analysis
+
+Scan the codebase for theme integration:
+
+1. **Tailwind config**: check `tailwind.config` for custom theme extensions matching project.json tokens
+2. **CSS variables**: grep CSS files for `:root` blocks with CSS custom properties
+3. **Component scan**: grep component files for:
+   - Hardcoded color values: `#hex`, `rgb()`, `hsl()`, `bg-[#`, `text-[#`
+   - Theme token usage: `bg-primary`, `text-accent`, `var(--`, theme class references
+   - Hardcoded spacing: `p-[16px]`, `gap-[24px]`, arbitrary Tailwind values
+
+**Tally results:**
+
+```
+WEBSITE SYNC CHECK
+════════════════════════════════════════════════
+Bestanden gescand:     {N}
+Theme integratie:      {Tailwind config | CSS vars | Geen}
+Hardcoded kleuren:     {N} bestanden, {M} waarden
+Theme token gebruik:   {N} bestanden, {M} referenties
+════════════════════════════════════════════════
+```
+
+### Y.3 Sync Decision
+
+**If code already uses theme correctly** (hardcoded count ≤ 3 AND theme tokens present):
+
+```
+✓ Theme in sync — website gebruikt al design tokens.
+```
+
+→ Proceed to Output Formaat.
+
+**If code has hardcoded values** (hardcoded count > 3 OR no theme token usage):
+
+**AskUserQuestion:**
+
+```yaml
+header: "Website Sync"
+question: "Er zijn {N} bestanden met hardcoded kleuren/styling die het theme niet gebruiken. Wil je restylen?"
+options:
+  - label: "Ja, restyle alles (Recommended)", description: "Vervang hardcoded waarden door theme tokens in alle {N} bestanden"
+  - label: "Toon bestanden", description: "Bekijk welke bestanden geraakt worden voordat je beslist"
+  - label: "Nee, alleen theme opslaan", description: "Sla over — handmatig later via /frontend-iterate"
+multiSelect: false
+```
+
+**If "Toon bestanden":** Show file list with hardcoded value count per file, then re-ask with "Ja, restyle alles" / "Selectief kiezen" / "Nee" options.
+
+### Y.4 Restyle Execution (if approved)
+
+**Step 1: Ensure theme infrastructure**
+
+- **Tailwind project:** Generate/update `tailwind.config` → `theme.extend` with tokens from `project.json#theme` (colors, spacing, borderRadius, shadows, typography)
+- **Non-Tailwind:** Generate/update CSS variables file from `theme.cssVars`
+
+**Step 2: Replace hardcoded values**
+
+Per component file, replace hardcoded values with theme tokens:
+
+| Hardcoded              | → Theme Token          |
+| ---------------------- | ---------------------- |
+| `bg-[#3B82F6]`         | `bg-primary`           |
+| `text-[#1a1a2e]`       | `text-foreground`      |
+| `p-[16px]`             | `p-4`                  |
+| `gap-[32px]`           | `gap-8`                |
+| `#hex` in inline style | `var(--color-primary)` |
+
+Map each hardcoded value to the closest theme token by color distance / value match.
+
+**Step 3: Verification**
+
+After restyle, quick scan for remaining hardcoded values. Report count.
+
+### Y.5 Restyle Report
+
+```
+WEBSITE SYNC
+════════════════════════════════════════════════
+Bestanden gescand:    {N}
+Bestanden gerestyled: {M}
+Vervangingen:         {X} hardcoded waarden → theme tokens
+
+Gewijzigde bestanden:
+  ✓ {file} — {N} kleuren gerestyled
+  ✓ {file} — {N} kleuren + spacing
+  ✓ tailwind.config.ts — theme extension toegevoegd/bijgewerkt
+
+Resterend:            {R} hardcoded waarden (handmatige review aanbevolen)
+════════════════════════════════════════════════
+```
+
+---
+
 ## Output Formaat
 
 **Na succesvolle actie:**
@@ -893,6 +1003,13 @@ Locatie: .project/project.json (theme sectie)
 | CSS Vars | {present/missing} |
 
 Theme tokens ready in project.json voor downstream consumption.
+
+Next steps:
+  1. /frontend-compose {page} → bouw een pagina met deze tokens
+  2. /frontend-iterate → visueel verfijnen met theme tokens
+  3. /frontend-convert → converteer een design met deze tokens
+  4. /frontend-audit → check performance en SEO
+  5. /frontend-wcag → accessibility audit
 ```
 
 ---
@@ -980,7 +1097,7 @@ Bij succesvolle completion:
 {
   "handoff": {
     "from": "frontend-theme",
-    "to": "frontend-compose",
+    "to": null,
     "data": {
       "themeLocation": ".project/project.json#theme",
       "preset": "Anthropic Style | Custom",
@@ -1037,6 +1154,8 @@ Dit command moet **NOOIT**:
 - Tokens raden zonder bron (config of user input)
 - Post-flight validation overslaan
 - Andere secties in project.json overschrijven (alleen `theme` muteren)
+- Website code restylen zonder expliciete gebruikersbevestiging
+- Restyle uitvoeren zonder eerst hardcoded waarden te scannen
 
 Dit command moet **ALTIJD**:
 
@@ -1046,5 +1165,6 @@ Dit command moet **ALTIJD**:
 - Diff preview tonen voor wijzigingen
 - Bevestiging vragen voor destructieve acties
 - Post-flight validation uitvoeren
+- Website Sync check uitvoeren na Create/Update (FASE Y)
 - DevInfo updaten bij fase transities
 - JSON integrity check: andere secties ongewijzigd na write

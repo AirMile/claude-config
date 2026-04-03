@@ -416,7 +416,7 @@ body {
   background: color-mix(in srgb, #58a6ff 20%, transparent);
   color: #58a6ff;
 }
-.stage-testing {
+.stage-verifying {
   background: color-mix(in srgb, #8b7cf6 20%, transparent);
   color: #8b7cf6;
 }
@@ -429,7 +429,7 @@ body {
 /* Pulsing dot for active stages (-ing) */
 .stage-defining::after,
 .stage-building::after,
-.stage-testing::after {
+.stage-verifying::after {
   content: "";
   display: inline-block;
   width: 5px;
@@ -445,7 +445,7 @@ body {
 .stage-building::after {
   background: #58a6ff;
 }
-.stage-testing::after {
+.stage-verifying::after {
   background: #8b7cf6;
 }
 @keyframes stage-pulse {

@@ -15,7 +15,7 @@ metadata:
 
 Beheert de design specificatie van het project: pagina's, user flows, en design principes vastleggen en beheren. Iteratief — roep meerdere keren aan om incrementeel op te bouwen.
 
-**Pipeline:** `/frontend-plan` → `/frontend-theme` → `/frontend-compose` → `/frontend-iterate` → quality skills
+**Verwante skills:** `/frontend-theme` · `/frontend-compose` · `/frontend-convert` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
 
 **Output locatie:** `.project/project.json` → `design` sectie
 
@@ -741,7 +741,7 @@ Update `.project/session/devinfo.json`:
   "currentSkill": { "name": "frontend-plan", "phase": "COMPLETE" },
   "handoff": {
     "from": "frontend-plan",
-    "to": "frontend-theme",
+    "to": null,
     "data": {
       "designLocation": ".project/project.json#design",
       "pages": {
