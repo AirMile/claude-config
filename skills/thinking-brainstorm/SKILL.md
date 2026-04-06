@@ -1,6 +1,6 @@
 ---
 name: thinking-brainstorm
-description: Creatively expand ideas through interactive technique application. Generates variations, explores alternatives, pushes boundaries. Use with /thinking-brainstorm after /thinking-idea.
+description: Creatively expand ideas through interactive technique application. Generates variations, explores alternatives, pushes boundaries. Use with /thinking-brainstorm after /thinking-concept.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -10,7 +10,7 @@ metadata:
 
 ## Overview
 
-This skill helps creatively expand and explore ideas through interactive application of brainstorming techniques. It works with any type of concept input - whether from `/thinking-idea`, existing documents, or other sources - and guides you through technique-by-technique exploration with questions and suggestions.
+This skill helps creatively expand and explore ideas through interactive application of brainstorming techniques. It works with any type of concept input - whether from `/thinking-concept`, existing documents, or other sources - and guides you through technique-by-technique exploration with questions and suggestions.
 
 The process is interactive: apply one technique at a time through Q&A, then choose to explore another technique or generate your final refined idea. The output is a clean markdown document of the refined idea, ready to use.
 
@@ -26,7 +26,7 @@ Trigger this skill when:
 Example triggers:
 
 - "/brainstorm" (followed by pasting idea)
-- "/thinking-brainstorm [paste /thinking-idea output]"
+- "/thinking-brainstorm [paste /thinking-concept output]"
 - "Let's brainstorm alternatives for this concept"
 - "Help me explore creative variations"
 
@@ -155,7 +155,7 @@ If the user provided an inline description/argument:
 
 1. Examine the input provided by user
 2. Determine input type:
-   - Output from `/thinking-idea` (structured markdown) → extract directly
+   - Output from `/thinking-concept` (structured markdown) → extract directly
    - Concept document (PRD, design doc, project brief) → extract core idea
    - Raw idea description → use as-is
    - Unclear/vague input → ask clarifying questions
@@ -188,7 +188,7 @@ If the user provided an inline description/argument:
    [concise idea summary]
    ```
 
-**Note:** This step should be quick for `/thinking-idea` output, more thorough for other inputs.
+**Note:** This step should be quick for `/thinking-concept` output, more thorough for other inputs.
 
 **Chat Context flow:**
 
@@ -636,7 +636,7 @@ multiSelect: false
 **Input Parsing:**
 
 - Be flexible - accept various input formats
-- Quick for `/thinking-idea` output, thorough for unclear input
+- Quick for `/thinking-concept` output, thorough for unclear input
 - Don't make assumptions - ask when unclear
 
 **Technique Selection:**

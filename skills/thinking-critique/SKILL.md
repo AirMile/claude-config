@@ -10,7 +10,7 @@ metadata:
 
 ## Overview
 
-This skill helps critically analyze and strengthen ideas through interactive application of analysis techniques. It works with any type of concept input - whether from `/thinking-idea`, existing documents, or other sources - and guides you through technique-by-technique analysis with questions and suggestions.
+This skill helps critically analyze and strengthen ideas through interactive application of analysis techniques. It works with any type of concept input - whether from `/thinking-concept`, existing documents, or other sources - and guides you through technique-by-technique analysis with questions and suggestions.
 
 The process is interactive: apply one technique at a time through Q&A, then choose to explore another technique or generate your final refined idea. The output is a clean markdown document of the refined idea, ready to use.
 
@@ -26,7 +26,7 @@ Trigger this skill when:
 Example triggers:
 
 - "/critique" (followed by pasting idea)
-- "/thinking-critique [paste /thinking-idea output]"
+- "/thinking-critique [paste /thinking-concept output]"
 - "Let's critically analyze this concept"
 - "Help me find weaknesses in this idea"
 - "Test the assumptions in this proposal"
@@ -156,7 +156,7 @@ If the user provided an inline description/argument:
 
 1. Examine the input provided by user
 2. Determine input type:
-   - Output from `/thinking-idea` (structured markdown) → extract directly
+   - Output from `/thinking-concept` (structured markdown) → extract directly
    - Concept document (PRD, design doc, project brief) → extract core idea
    - Raw idea description → use as-is
    - Unclear/vague input → ask clarifying questions
@@ -213,7 +213,7 @@ If the user provided an inline description/argument:
 
 7. Process user selection before proceeding
 
-**Note:** This step should be quick for `/thinking-idea` output, more thorough for other inputs.
+**Note:** This step should be quick for `/thinking-concept` output, more thorough for other inputs.
 
 **Chat Context flow:**
 

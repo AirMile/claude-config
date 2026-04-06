@@ -12,7 +12,7 @@ export function InspectOverlay() {
     const btn = document.createElement("button");
     btn.id = "__inspect-overlay";
     btn.textContent = "\u{1F50D}";
-    btn.title = "Toggle Inspect Mode (Alt+I)";
+    btn.title = "Toggle Inspect Mode (Ctrl/Cmd+Shift+X)";
     btn.setAttribute("aria-label", "Toggle inspect mode");
     btn.style.cssText =
       "position:fixed;bottom:16px;right:16px;z-index:99999;width:44px;height:44px;" +
@@ -72,9 +72,13 @@ export function InspectOverlay() {
       toggleInspect();
     });
 
-    // --- Alt+I shortcut ---
+    // --- Ctrl/Cmd+Shift+X shortcut ---
     function onKeyDown(e: KeyboardEvent) {
-      if (e.altKey && (e.key === "i" || e.key === "I")) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        (e.key === "x" || e.key === "X")
+      ) {
         e.preventDefault();
         toggleInspect();
       }

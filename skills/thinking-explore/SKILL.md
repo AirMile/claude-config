@@ -12,7 +12,7 @@ metadata:
 
 Open-ended investigation before committing to structure. Produces findings, questions, and potential directions — not formatted artifacts.
 
-Use before `/thinking-idea` when requirements are unclear, or independently to investigate a domain.
+Use before `/thinking-concept` when requirements are unclear, or independently to investigate a domain.
 
 ## When to Use
 
@@ -143,7 +143,7 @@ AskUserQuestion:
 header: "Opslaan"
 question: "Wat wil je met de bevindingen doen?"
 options:
-  - label: "Opslaan en door (Recommended)", description: "Sla op en ga naar /thinking-idea of /dev-define"
+  - label: "Opslaan en door (Recommended)", description: "Sla op en ga naar /thinking-concept of /dev-define"
   - label: "Verder verkennen", description: "Terug naar Step 2 voor meer onderzoek"
   - label: "Alleen opslaan", description: "Sla op zonder volgende stap"
 multiSelect: false
@@ -168,7 +168,7 @@ multiSelect: false
 
 ```
 Next steps:
-  - /thinking-idea — Vorm de bevindingen om tot een gestructureerd concept
+  - /thinking-concept — Vorm de bevindingen om tot een gestructureerd concept
   - /thinking-research — Verdiep een specifieke richting met gerichte research
   - /dev-define — Direct naar requirements als het duidelijk genoeg is
 ```

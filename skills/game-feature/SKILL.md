@@ -23,7 +23,7 @@ Capture new game feature ideas, optionally flesh them out through 1-2 quick thin
 - User wants to quickly capture a game feature without full `/game-plan`
 - User wants to think through a game mechanic idea before adding to backlog
 
-NOT for: concept-level ideation (`/thinking-idea`), iterating on existing features (`/thinking-brainstorm`, `/thinking-critique`).
+NOT for: concept-level ideation (`/thinking-concept`), iterating on existing features (`/thinking-brainstorm`, `/thinking-critique`).
 
 ## Workflow
 

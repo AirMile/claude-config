@@ -1,6 +1,6 @@
 ---
-name: thinking-idea
-description: Articulate and develop ideas through guided questions into structured markdown. Use with /thinking-idea when starting with a vague concept that needs development.
+name: thinking-concept
+description: Develop and maintain project concepts through guided questions, structured synthesis, and project sync. Use with /thinking-concept for new ideas or to enrich existing concepts from backlog/codebase.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -8,15 +8,15 @@ metadata:
   category: thinking
 ---
 
-# Idea
+# Concept
 
-Develop ideas from initial concept to structured output through targeted questions and synthesis. Works with any type of idea--creative concepts (games, stories, art), product ideas (apps, services, businesses), or other conceptual work.
+Develop ideas from initial concept to structured output through targeted questions and synthesis. Works with any type of idea--creative concepts (games, stories, art), product ideas (apps, services, businesses), or other conceptual work. Can also sync existing concepts with the current project state (backlog, codebase).
 
 The output is a structured markdown document that can be used as input for `/thinking-brainstorm` or `/thinking-critique`.
 
 ## When to Use
 
-- User starts with `/thinking-idea` (with or without description)
+- User starts with `/thinking-concept` (with or without description)
 - User has a vague concept that needs articulation
 - User wants to develop a game, story, product, app, service, or creative project concept
 
@@ -48,6 +48,7 @@ The output is a structured markdown document that can be used as input for `/thi
      question: "Wat wil je doen?"
      options:
        - label: "Bewerken (Recommended)", description: "Pas het bestaande concept aan"
+       - label: "Sync met project", description: "Verrijk concept met wat er al gebouwd/gepland is"
        - label: "Nieuw concept", description: "Begin opnieuw met een nieuw idee"
        - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
@@ -56,6 +57,8 @@ The output is a structured markdown document that can be used as input for `/thi
      - Load existing concept
      - Ask: "Wat wil je aanpassen aan dit concept?"
      - Proceed to Step 2 with existing content as context
+   - **If "Sync met project":**
+     - Proceed to Step 1c (Project Sync)
    - **If "Nieuw concept":**
      - Ignore existing file (will be overwritten on save)
      - Proceed with normal flow below
@@ -109,6 +112,120 @@ multiSelect: false
 - Scope = feature → schrijf naar `.project/features/{naam}/thinking.md`
 - Scope = pagina/UX → schrijf naar `.project/thinking/{onderwerp}.md`
 - Scope = los idee → schrijf naar `.project/thinking/{onderwerp}.md`
+
+**Step 1c: Project Sync (if "Sync met project" chosen)**
+
+Enrich the existing concept with features/functionality that exist in the project but are not yet described in the concept document.
+
+**1. Gather project state:**
+
+- Read existing concept from `.project/project-concept.md`
+- Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md`)
+- Collect all feature names, descriptions, and types from backlog
+- Read `.project/project.json` → extract `entities` (names, descriptions) and `endpoints` (paths, methods) if present
+- Scan codebase for routes/pages:
+  - Glob `app/**/page.tsx`, `src/pages/**/*.tsx`, `src/routes/**/*.tsx`
+  - Glob `app/**/route.ts`, `src/api/**/*.ts` (API routes)
+
+**2. Detect gaps:**
+
+Compare all sources (backlog features, codebase routes, project.json entities/endpoints) against concept content.
+
+**Match detection:**
+
+- **No** — item name/description has no mention anywhere in the concept document
+- **Partial** — item name appears in the concept but with significantly less detail than the backlog/codebase version (e.g. mentioned in a list but not explained, or described in one sentence while backlog has full requirements)
+- **Yes** (covered) — item is meaningfully described in the concept
+
+Present findings:
+
+```
+PROJECT SYNC ANALYSIS
+
+Concept: {title}
+Backlog features: {count}
+Codebase routes: {count found}
+Entities: {count from project.json}
+Endpoints: {count from project.json}
+
+GAPS DETECTED:
+
+| #  | Source   | Name              | Type    | In Concept |
+| -- | -------- | ----------------- | ------- | ---------- |
+| 1  | Backlog  | {feature-name}    | FEATURE | No         |
+| 2  | Backlog  | {feature-name}    | PAGE    | No         |
+| 3  | Codebase | /api/webhooks     | API     | No         |
+| 4  | Backlog  | {feature-name}    | UI      | Partial    |
+| 5  | Entity   | User              | DATA    | No         |
+| 6  | Endpoint | POST /api/auth    | API     | Partial    |
+| .. | ...      | ...               | ...     | ...        |
+
+ALREADY COVERED:
+- {feature described in both concept and backlog}
+- {feature described in both concept and backlog}
+```
+
+**3. Select gaps to integrate:**
+
+Use AskUserQuestion:
+
+```yaml
+header: "Gaps"
+question: "Welke items wil je aan het concept toevoegen?"
+options:
+  - label: "Alle gaps (Recommended)", description: "Voeg alle {count} ontbrekende items toe"
+  - label: "Selecteer items", description: "Kies per item wat je wil toevoegen"
+  - label: "Geen, alleen bekijken", description: "Sluit sync af zonder wijzigingen"
+multiSelect: false
+```
+
+**If "Selecteer items":** show each gap as a separate AskUserQuestion with multiSelect: true.
+
+**If "Geen":** show the analysis as informational output and end.
+
+**4. Integrate into concept:**
+
+- For each selected gap, draft a section or bullet point that fits naturally into the existing concept structure
+- Show the updated concept as a diff preview (new sections marked)
+- Ask for confirmation before writing:
+
+```yaml
+header: "Concept Update"
+question: "Concept bijwerken met de geselecteerde items?"
+options:
+  - label: "Ja, update concept (Recommended)", description: "Schrijf het bijgewerkte concept"
+  - label: "Aanpassen", description: "Pas de integratie aan voordat je schrijft"
+multiSelect: false
+```
+
+**5. Write updated concept:**
+
+- Write to `.project/project-concept.md`
+- Update project.json metadata (concept.name, concept.pitch) if changed
+- Log to `concept.thinking` array:
+  ```json
+  {
+    "type": "sync",
+    "date": "{today}",
+    "title": "Project sync",
+    "summary": "Added {count} items from backlog/codebase to concept",
+    "file": ".project/thinking/{today}-sync-{slug}.md",
+    "source": "/thinking-concept"
+  }
+  ```
+- Write sync summary to `.project/thinking/{today}-sync-{slug}.md`
+
+```
+CONCEPT SYNCED
+
+Added: {count} items
+Source: {backlog: X, codebase: Y}
+File: .project/project-concept.md
+
+Next steps:
+- /thinking-critique - Analyseer het bijgewerkte concept
+- /thinking-brainstorm - Brainstorm over de nieuwe onderdelen
+```
 
 **Step 1b: Source selection (if no concept found)**
 
@@ -390,7 +507,7 @@ Scope: {feature:{naam} | pagina:{onderwerp}}
      "title": "{concept titel}",
      "summary": "{key insight, max 200 chars}",
      "file": ".project/thinking/{today}-idea-{slug}.md",
-     "source": "/thinking-idea"
+     "source": "/thinking-concept"
    }
    ```
 4. Write `.project/project.json`
@@ -433,7 +550,7 @@ Scope: los idee
      "title": "{concept titel}",
      "summary": "{key insight, max 200 chars}",
      "file": ".project/thinking/{today}-idea-{slug}.md",
-     "source": "/thinking-idea"
+     "source": "/thinking-concept"
    }
    ```
 3. Write `.project/project.json`
@@ -497,7 +614,7 @@ multiSelect: false
      "title": "{concept titel}",
      "summary": "{key insight, max 200 chars}",
      "file": ".project/thinking/{today}-idea-{slug}.md",
-     "source": "/thinking-idea"
+     "source": "/thinking-concept"
    }
    ```
 4. Write `.project/project.json`

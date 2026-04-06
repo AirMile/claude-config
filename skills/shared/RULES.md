@@ -679,7 +679,7 @@ Check voordat styling begint:
 ```
 STYLE PRE-CHECK
 ───────────────
-[ ] THEME.md bestaat
+[ ] project.json#theme populated
 [ ] Required tokens aanwezig
 [ ] No conflicting styles
 ```

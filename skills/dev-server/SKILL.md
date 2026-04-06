@@ -4,7 +4,7 @@ description: Start dev server with Cloudflare Tunnel for external access. Use wi
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 3.0.0
   category: dev
 ---
 
@@ -16,9 +16,18 @@ Start de dev server met Cloudflare Tunnel voor HTTPS-toegang vanaf elk apparaat.
 
 Check `package.json` dependencies:
 
-- `"vite"` → `npx vite --port 3000 --host`
-- `"next"` → `npx next dev --port 3000`
+- `"vite"` → Vite project
+- `"next"` → Next.js project
 - Anders → fout: "Geen ondersteund framework gevonden in package.json"
+
+**Start commands:**
+
+| Framework | Command                                          |
+| --------- | ------------------------------------------------ |
+| Vite      | `node node_modules/.bin/vite --port 3000 --host` |
+| Next.js   | `node node_modules/.bin/next dev -p 3000`        |
+
+> **Belangrijk:** Gebruik altijd `node node_modules/.bin/...` in plaats van `npx`. `npx` wrapper-processen sterven soms stil onder `nohup`, terwijl directe `node` aanroep stabiel is.
 
 ## 2. Pre-flight checks
 
@@ -32,26 +41,60 @@ server: {
 }
 ```
 
-**Port 3000:** Check met `ss -tlnp | grep :3000` en identificeer het project via `/proc/[pid]/cwd`.
+**Port 3000:** Gebruik `curl` om te detecteren of er al een server draait:
 
-- **Zelfde project al actief** → skip naar stap 4
-- **Ander project actief** → meld welk project, kill server + cloudflared, door naar stap 3
-- **Vrij** → door naar stap 3
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000
+```
+
+- **200/3xx** → er draait iets. Check `/tmp/devserver.log` voor het project pad.
+  - **Zelfde project** → skip naar stap 4
+  - **Ander project** → meld welk project, kill alles (stap 2b), door naar stap 3
+- **000 (geen connectie)** → vrij, door naar stap 3
+
+### 2b. Cleanup (wanneer kill nodig is)
+
+Kill in drie lagen om zombie processes te voorkomen:
+
+```bash
+# Laag 1: port-gebaseerd
+fuser -k 3000/tcp 2>/dev/null
+
+# Laag 2: framework processes (gebruik wat van toepassing is)
+# Next.js:
+pkill -f "next dev" 2>/dev/null
+pkill -f "next-router-worker" 2>/dev/null
+# Vite:
+pkill -f "vite" 2>/dev/null
+
+# Laag 3: tunnel
+pkill -f cloudflared 2>/dev/null
+
+sleep 2
+```
+
+> `fuser` en `ss` detecteren Node.js dev servers soms niet omdat de port op een manier gebonden wordt die niet zichtbaar is voor deze tools. Daarom altijd ook `pkill -f` met de framework-specifieke process naam gebruiken.
 
 ## 3. Start dev server
 
 ```bash
-fuser -k 3000/tcp 2>/dev/null; pkill -f cloudflared 2>/dev/null; sleep 1
 nohup [framework command] > /tmp/devserver.log 2>&1 &
+echo $! > /tmp/devserver.pid
 ```
 
-Wacht tot server klaar is (max 15s):
+Wacht tot server klaar is met `curl` (max 20s, eerste compile kan lang duren):
 
 ```bash
-for i in $(seq 1 15); do curl -s http://localhost:3000 > /dev/null 2>&1 && break || sleep 1; done
+for i in $(seq 1 20); do
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000 2>/dev/null)
+  [ "$HTTP_CODE" = "200" ] && echo "ready" && break
+  sleep 1
+done
 ```
 
-Niet klaar na 15s → toon error uit `/tmp/devserver.log` en stop.
+Niet klaar na 20s → toon laatste 20 regels uit `/tmp/devserver.log` en stop.
+
+> **Verificatie:** Gebruik altijd `curl` tegen `127.0.0.1:3000`, nooit `ss` of `lsof`. Deze tools detecteren Node.js dev servers niet betrouwbaar.
 
 ## 4. Start tunnel
 
@@ -74,7 +117,9 @@ grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | head -1
 
 Rapporteer de tunnel URL.
 
-## 5. Next.js allowedDevOrigins (alleen Next.js)
+## 5. Framework-specifieke tunnel config
+
+### Next.js: allowedDevOrigins
 
 Next.js blokkeert cross-origin requests van onbekende origins in dev mode. Zonder de tunnel hostname in `allowedDevOrigins` hydrateren client components niet (pagina blijft hangen op loading state).
 
@@ -84,22 +129,38 @@ Na het verkrijgen van de tunnel URL in stap 4:
 
 1. Extract de hostname uit de tunnel URL (zonder `https://`)
 2. Check of `next.config` al een `allowedDevOrigins` array heeft met deze hostname
-3. Zo niet → voeg de hostname toe aan de `allowedDevOrigins` array (maak de array aan als die niet bestaat)
-4. Herstart de dev server (config wordt alleen bij startup gelezen):
+3. Zo niet → **vervang** de hele `allowedDevOrigins` array met alleen de nieuwe hostname (oude tunnel hostnames zijn toch ongeldig)
+4. **Wacht 5 seconden** — Next.js detecteert config changes en herstart automatisch
+5. Verifieer dat de server nog draait na auto-restart:
 
 ```bash
-fuser -k 3000/tcp 2>/dev/null; sleep 1
-nohup [framework command] > /tmp/devserver.log 2>&1 &
+sleep 5
+for i in $(seq 1 15); do
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000 2>/dev/null)
+  [ "$HTTP_CODE" = "200" ] && echo "ready" && break
+  sleep 1
+done
 ```
 
-5. Wacht tot server klaar is (max 15s), rapporteer de tunnel URL opnieuw
+6. Als de server NIET meer reageert na 15s → handmatig herstarten (zie stap 3)
+7. Verifieer opnieuw met curl-loop, rapporteer tunnel URL
 
 > Omdat quick tunnels een random hostname krijgen bij elke start, moet deze stap elke keer uitgevoerd worden.
+
+### Vite: geen actie nodig
+
+Vite heeft geen origin-restrictie in dev mode. Na stap 4 direct de tunnel URL rapporteren.
 
 ## Stop
 
 Bij verzoek om te stoppen:
 
 ```bash
-fuser -k 3000/tcp 2>/dev/null; pkill -f cloudflared 2>/dev/null
+fuser -k 3000/tcp 2>/dev/null
+# Kill framework processes (gebruik wat van toepassing is)
+pkill -f "next dev" 2>/dev/null
+pkill -f "next-router-worker" 2>/dev/null
+pkill -f "vite" 2>/dev/null
+# Kill tunnel
+pkill -f cloudflared 2>/dev/null
 ```

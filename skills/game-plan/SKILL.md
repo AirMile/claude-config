@@ -1,6 +1,6 @@
 ---
 name: game-plan
-description: Transform idea or brainstorm output into a prioritized game feature backlog. Use with /game-plan after /thinking-idea or /thinking-brainstorm for game project planning.
+description: Transform idea or brainstorm output into a prioritized game feature backlog. Use with /game-plan after /thinking-concept or /thinking-brainstorm for game project planning.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -21,7 +21,7 @@ Transforms structured idea markdown into a prioritized feature backlog ready for
 
 Accepts markdown from:
 
-- `/thinking-idea` output
+- `/thinking-concept` output
 - `/thinking-brainstorm` output
 - Any structured game concept markdown
 
@@ -161,7 +161,7 @@ Accepts markdown from:
    - Ask user to paste concept:
      ```yaml
      header: "Input"
-     question: "Plak de output van /thinking-idea of /thinking-brainstorm"
+     question: "Plak de output van /thinking-concept of /thinking-brainstorm"
      options:
        - label: "Ik plak het hieronder", description: "Typ of plak je idea/brainstorm markdown"
        - label: "Uit bestand laden", description: "Laad van een bestaand .md bestand"

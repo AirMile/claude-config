@@ -87,6 +87,54 @@ vite.config.*, vitest.config.*
 .gitignore
 ```
 
+**`.gitignore` coverage check:**
+Before staging, verify that risky file patterns are covered by `.gitignore`. This prevents accidental commits outside this skill (e.g. manual `git add -A`).
+
+1. Read `.gitignore` (if it exists) and collect all patterns
+2. Check if the following categories are covered — only flag patterns that are **both missing from `.gitignore` AND actually present** as files/directories in the working tree:
+
+   **Secrets & credentials (from blocklist above):**
+
+   ```
+   .env, .env.*, *.key, *.pem, *.pfx, *.p12, *.crt
+   credentials.json, secrets.json, secrets.yml
+   .tfvars, *.tfvars.json
+   **/service-account*.json
+   ```
+
+   **Build output:**
+
+   ```
+   dist/, build/, out/, .next/, .nuxt/, .output/
+   ```
+
+   **Dependencies:**
+
+   ```
+   node_modules/, vendor/, __pycache__/, .venv/, venv/
+   ```
+
+   **IDE/OS artifacts:**
+
+   ```
+   .idea/, .DS_Store, Thumbs.db
+   ```
+
+   **Logs:**
+
+   ```
+   *.log, npm-debug.log*
+   ```
+
+3. If missing patterns are found that match existing files/directories, show them grouped by category and ask via AskUserQuestion:
+   - header: ".gitignore"
+   - question: "Deze patronen ontbreken in .gitignore maar bestaan wel in je working tree:\n\n[list per category]\n\nWil je ze toevoegen?"
+   - options:
+     - "Add all (Recommended)" → append all missing patterns to `.gitignore`
+     - "Let me pick" → show each pattern individually for yes/no
+     - "Skip" → continue without changes
+4. If patterns were added: stage the updated `.gitignore` file (`git add .gitignore`) so it's included in the commit
+
 - Vraag: "Stage all changes?" (met AskUserQuestion)
 - Bij ja: `git add -A`
 

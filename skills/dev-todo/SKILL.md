@@ -4,7 +4,6 @@ description: >-
   Add new backlog items (features, changes, bugs, refactors, pages, components,
   a11y, performance) with optional thinking rounds. Use with /dev-todo or
   /dev-todo [beschrijving] when capturing a new idea for the project backlog.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 3.1.0
@@ -23,7 +22,7 @@ Capture new backlog items, optionally flesh them out through 1-2 quick thinking 
 - User wants to quickly capture an item without full `/dev-plan`
 - User wants to think through an idea before adding to backlog
 
-NOT for: concept-level ideation (`/thinking-idea`), iterating on existing items (`/thinking-brainstorm`, `/thinking-critique`).
+NOT for: concept-level ideation (`/thinking-concept`), iterating on existing items (`/thinking-brainstorm`, `/thinking-critique`).
 
 ## Workflow
 
