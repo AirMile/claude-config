@@ -17,7 +17,7 @@ metadata:
 
 Compose a view by inventorying existing building blocks (components, hooks, services from the dev pipeline) and combining them with new functionality. Selects what belongs on this view, formulates user stories, designs the layout as ASCII art, generates code that reuses existing components, and optionally hooks up real data.
 
-**Verwante skills:** `/frontend-theme` · `/frontend-plan` · `/frontend-convert` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-plan` · `/frontend-convert` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
 
 ## References
 
@@ -80,10 +80,10 @@ multiSelect: false
 
 ### 0.2b Theme Check (always)
 
-Check `.project/project.json` → `theme` section for design tokens (written by `/frontend-theme`).
+Check `.project/project.json` → `theme` section.
 
-- **If theme section has data**: read and store tokens for code generation (colors, typography, spacing, breakpoints).
-- **If theme section missing or empty**: note absence, use Tailwind defaults during code generation.
+- **If theme section populated**: read and store as context for code generation (colors, typography, spacing, cssVars).
+- **If theme section empty or project.json missing**: note absence, use Tailwind defaults during code generation.
 
 ```
 Theme: [Available (project.json#theme) | Not available — using Tailwind defaults]
@@ -118,12 +118,24 @@ Return a structured summary. Focus ONLY on this page and its imports.
 
 ```
 
-Show the results:
+**Visual check (Playwright):**
+
+After the code analysis, take a screenshot of the current page to show the user what it looks like right now.
+
+1. Check Playwright MCP tools available (`browser_navigate`, `browser_take_screenshot`). If unavailable → skip with note: `"Playwright niet beschikbaar — alleen code-analyse uitgevoerd."`, proceed.
+2. Start dev server if not running (`npm run dev` or `npx next dev` based on framework) — run in background
+3. `browser_navigate` → `http://localhost:3000/[page-name]` (adjust port to project config)
+4. `browser_wait_for` → `{ time: 3 }` (allow hydration + client render)
+5. `browser_take_screenshot` → capture current state
+
+Show the screenshot alongside the code analysis:
 
 ```
 
 CURRENT PAGE: {page-name}
 ════════════════════════════════════════════════════════════════
+
+[Screenshot of current page state]
 
 Page file: [path to page file]
 
@@ -139,7 +151,7 @@ Data layer:
 
 ```
 
-Proceed to FASE 0.5 (page inventory).
+This gives the user visual + structural context before deciding what to change. Proceed to FASE 0.5 (page inventory).
 
 ### 0.4 Backlog Stage
 
@@ -159,76 +171,83 @@ Set `data.updated` to today. Keep `<script>` tags intact.
 
 **Condition:** Only execute this phase if the user indicated the page already exists (0.2 → "Ja"). If the page is new, this phase is skipped entirely.
 
-### 0.5.1 Present Current Page Contents
+### 0.5.1 Ask Intent
 
-Show what's currently on the page, based on the page analysis from 0.3:
-
-```
-
-CURRENT PAGE: {page-name}
-════════════════════════════════════════════════════════════════
-
-Components on this page:
-{Component} → [Button1], [Button2], {handler}
-{Component} → [Link1], [FormField], {handler}
-
-Data layer:
-{useHook} → provides {data}
-{service} → calls {endpoint}
-
-════════════════════════════════════════════════════════════════
-
-```
-
-### 0.5.2 Check What to Keep
-
-Present the current components as a multi-select checklist. Everything is pre-selected (kept by default).
+The page analysis and screenshot from 0.3 are already visible to the user. Now ask what they want to do — don't assume removal.
 
 ```yaml
-header: "Behouden"
-question: "Welke onderdelen wil je behouden op deze pagina? (deselecteer wat weg mag)"
+header: "Doel"
+question: "Wat wil je doen met deze pagina?"
 options:
-  - label: "{Component1}", description: "[Button1], [Button2], {handler}"
-  - label: "{Component2}", description: "[Link1], [FormField], {handler}"
-  - label: "{useHook}", description: "provides {data}"
-multiSelect: true
-# All options pre-selected. User deselects what should be removed.
-```
-
-### 0.5.3 Ask What to Add
-
-```yaml
-header: "Toevoegen"
-question: "Wat wil je toevoegen aan deze pagina?"
-options:
-  - label: "Ik beschrijf het (Recommended)", description: "Beschrijf welke functionaliteit erbij moet"
-  - label: "Niks toevoegen", description: "Alleen de geselecteerde onderdelen herschikken/aanpassen"
-  - label: "Opnieuw opbouwen", description: "Alles weggooien, pagina from scratch"
+  - label: "Functionaliteit toevoegen (Recommended)", description: "Nieuwe onderdelen toevoegen aan de bestaande pagina"
+  - label: "Onderdelen vervangen", description: "Bestaande onderdelen vervangen door iets anders"
+  - label: "Herschikken/aanpassen", description: "Bestaande onderdelen reorganiseren of stylen"
+  - label: "Opnieuw opbouwen", description: "Pagina from scratch, bestaande code negeren"
 multiSelect: false
 ```
 
-**If "Ik beschrijf het"**: user describes what to add, proceed to 0.5.4.
+**Handle each intent:**
 
-**If "Niks toevoegen"**: proceed to FASE 1 with only the kept components (useful for removing/reorganizing).
+**If "Functionaliteit toevoegen"**: All existing components are kept. Ask what to add:
 
-**If "Opnieuw opbouwen"**: proceed to FASE 1 with empty inventory (from scratch).
+```yaml
+header: "Toevoegen"
+question: "Beschrijf welke functionaliteit erbij moet."
+options:
+  - label: "Ik typ het", description: "Vrije beschrijving van wat erbij moet"
+multiSelect: false
+```
 
-### 0.5.4 Confirm Changes
+Proceed to 0.5.2 with: kept = all existing, added = user description.
+
+**If "Onderdelen vervangen"**: Ask which components to replace (multi-select, nothing pre-selected):
+
+```yaml
+header: "Vervangen"
+question: "Welke onderdelen wil je vervangen?"
+options:
+  - label: "{Component1}", description: "[Button1], [Button2], {handler}"
+  - label: "{Component2}", description: "[Link1], [FormField], {handler}"
+multiSelect: true
+```
+
+Then ask what should replace them. Proceed to 0.5.2 with: kept = unselected, replaced = selected + replacement description.
+
+**If "Herschikken/aanpassen"**: All existing components are kept. Ask for description of desired changes:
+
+```yaml
+header: "Aanpassingen"
+question: "Beschrijf hoe je de pagina wilt aanpassen (layout, styling, volgorde, etc.)"
+options:
+  - label: "Ik typ het", description: "Vrije beschrijving"
+multiSelect: false
+```
+
+Proceed to 0.5.2 with: kept = all existing, changes = user description.
+
+**If "Opnieuw opbouwen"**: Proceed to FASE 1 with empty inventory (from scratch).
+
+### 0.5.2 Confirm Changes
 
 ```
 PAGINA PLAN: {page-name}
 ════════════════════════════════════════════════════════════════
 
-Blijft:
+Behouden:
   ✓ {Component}    → [Button1], [Button2]
   ✓ {useHook}      → provides {data}
 
-Verwijderen:
-  ✗ {Component}    → was: [OldButton], {handler}
+[If replacing:]
+Vervangen:
+  ↻ {Component}    → was: [OldButton] → wordt: {replacement description}
 
+[If adding:]
 Toevoegen:
   + {description}  → {expected actions}
-  + {description}  → {expected actions}
+
+[If rearranging:]
+Aanpassen:
+  ~ {description of changes}
 
 ════════════════════════════════════════════════════════════════
 ```
@@ -282,9 +301,11 @@ multiSelect: false
 
 **If design data does not exist or page not defined:** Proceed as normal.
 
-### 1.1 Gather Purpose
+**Existing page shortcut:** If FASE 0.5 was executed (page already exists), the purpose is already known from the page analysis (0.3) and the user's intent (0.5). Skip 1.1 and 1.2 — go directly to 1.3 with context from 0.3 (current components, data layer) + 0.5 (intent, additions/replacements/changes).
 
-If not already provided via argument, ask:
+### 1.1 Gather Purpose (new pages only)
+
+Skip this step if the page already exists (FASE 0.5 was executed). If not already provided via argument, ask:
 
 ```yaml
 header: "Beschrijving"
@@ -300,9 +321,9 @@ multiSelect: false
 - "Checkout flow met payment options en order summary"
 - "Settings pagina waar users profiel en notificaties aanpassen"
 
-### 1.2 Clarifying Questions
+### 1.2 Clarifying Questions (new pages only)
 
-Ask 2-3 targeted follow-up questions based on the description + project context. These vary by page type. Examples:
+Skip this step if the page already exists (FASE 0.5 was executed). Ask 2-3 targeted follow-up questions based on the description + project context. These vary by page type. Examples:
 
 **For a dashboard:**
 
@@ -389,7 +410,7 @@ REUSABLE (from inventory / project scan):
 header: "Requirements"
 question: "Kloppen deze user stories en secties?"
 options:
-  - label: "Ja, ga door (Recommended)", description: "Start met ASCII layout"
+  - label: "Ja, ga door (Recommended)", description: "Door naar pagina voorstel met layout"
   - label: "Aanpassen", description: "Ik wil iets wijzigen of toevoegen"
   - label: "Opnieuw", description: "Start requirements opnieuw"
 multiSelect: false
@@ -399,69 +420,89 @@ If "Aanpassen": ask what to change, update stories, re-validate.
 
 ---
 
-## CHECKPOINT: Page Requirements Samenvatting
+## CHECKPOINT: Page Proposal (Requirements + Layout)
 
-Na requirements validatie, presenteer een compleet overzicht:
+Na requirements validatie, genereer meteen een **draft ASCII layout** en presenteer alles samen. De user ziet requirements + layout in één voorstel.
 
-| Aspect       | Waarde                                     |
-| ------------ | ------------------------------------------ |
-| Pagina       | {naam}                                     |
-| Doel         | {beschrijving}                             |
-| User stories | {N} stories                                |
-| Secties      | {lijst met NEW/EXISTING markering}         |
-| Hergebruik   | {bestaande componenten/hooks}              |
-| Theme        | {project.json#theme beschikbaar / Tailwind defaults} |
+**Layout sizing rules** — use proportional row heights in ASCII art to reflect actual visual weight:
 
-Vraag via AskUserQuestion: "Klopt dit overzicht voordat we doorgaan naar layout?"
+| Section type    | Rows | Typical height |
+| --------------- | ---- | -------------- |
+| Nav/Header      | 1-2  | 48-64px        |
+| Hero/Banner     | 4-6  | 400-600px      |
+| Content section | 3-5  | 200-400px      |
+| Cards grid      | 3-4  | 250-350px      |
+| Footer          | 1-2  | 48-80px        |
 
-- "Ga door (Recommended)" — door naar ASCII layout
-- "Aanpassen" — terug naar relevante vraag
-
----
-
-## FASE 2: ASCII Layout
-
-### 2.1 Generate Initial Layout
-
-Generate an ASCII layout from the validated user stories. Use box-drawing characters for clarity.
-
-**Level 1 — Global structure:**
+Annotate each section with estimated height (right-aligned). If a Playwright screenshot of the existing page is available (from 0.3), use its visual proportions as reference for sizing.
 
 ```
-┌─────────────────────────────┐
-│         HEADER              │
-├─────────────────────────────┤
-│         HERO                │
-│   headline + CTA            │
-├────────┬────────┬───────────┤
-│ CARD 1 │ CARD 2 │ CARD 3    │
-├────────┴────────┴───────────┤
-│      TESTIMONIALS           │
-├─────────────────────────────┤
-│         FOOTER              │
-└─────────────────────────────┘
+PAGINA VOORSTEL: {naam}
+═══════════════════════════════════════════════════════════════
+
+| Aspect       | Waarde                                  |
+| ------------ | --------------------------------------- |
+| Pagina       | {naam}                                  |
+| Doel         | {beschrijving}                          |
+| User stories | {N} stories                             |
+| Secties      | {lijst met NEW/EXISTING markering}      |
+| Hergebruik   | {bestaande componenten/hooks}           |
+| Theme        | {theme beschikbaar / Tailwind defaults} |
+
+LAYOUT VOORSTEL:
+┌─────────────────────────────────────┐
+│ NAV                            64px │
+├─────────────────────────────────────┤
+│                                     │
+│           HERO                      │
+│     headline + subtext              │
+│     [GET STARTED]                   │
+│                              ~480px │
+├──────────┬──────────┬───────────────┤
+│ CARD 1   │ CARD 2   │ CARD 3        │
+│ icon     │ icon     │ icon          │
+│ text     │ text     │ text          │
+│                              ~320px │
+├──────────┴──────────┴───────────────┤
+│ FOOTER                         48px │
+└─────────────────────────────────────┘
+
+Sections → Stories:
+1. Nav        → navigation, branding
+2. Hero       → story #1 (headline + CTA)
+3. Cards (3x) → story #2 (feature highlights)
+4. Footer     → navigation, legal
+
+═══════════════════════════════════════════════════════════════
 ```
-
-Map each section to its user story and annotate key elements.
-
-### 2.2 User Review
-
-Present the layout via AskUserQuestion:
 
 ```yaml
-header: "Layout"
-question: "Hoe wil je verder met deze layout?"
+header: "Pagina Voorstel"
+question: "Hoe wil je verder met dit voorstel?"
 options:
   - label: "Goedkeuren (Recommended)", description: "Ga door naar code generatie"
-  - label: "Aanpassen", description: "Beschrijf wat er anders moet"
-  - label: "3 alternatieven", description: "Toon 3 structureel verschillende layouts"
+  - label: "Layout aanpassen", description: "Beschrijf wat er anders moet aan de layout"
+  - label: "Requirements aanpassen", description: "Ik wil user stories wijzigen"
+  - label: "3 layout alternatieven", description: "Toon 3 structureel verschillende layouts"
   - label: "Inzoomen", description: "Meer detail voor een specifieke sectie"
 multiSelect: false
 ```
 
+**If "Goedkeuren":** proceed to FASE 2.5 (finalize) → FASE 3.
+**If "Layout aanpassen":** user describes changes, regenerate layout, re-present.
+**If "Requirements aanpassen":** return to 1.3 to modify stories.
+**If "3 layout alternatieven":** proceed to FASE 2.3.
+**If "Inzoomen":** proceed to FASE 2.4.
+
+---
+
+## FASE 2: Layout Refinement
+
+Steps 2.1-2.2 are handled by the CHECKPOINT above. This phase only executes when the user requests changes, alternatives, or zoom from the CHECKPOINT.
+
 ### 2.3 Alternatives (if requested)
 
-Generate 3 structurally different layouts:
+Generate 3 structurally different layouts. Apply the same **proportional sizing rules** from the CHECKPOINT (row heights, px annotations).
 
 - **Variant A**: e.g., sidebar layout with filters
 - **Variant B**: e.g., full-width stacked sections
@@ -501,7 +542,7 @@ Show level 2 detail for a specific section:
 └─────────────────────────────────────┘
 ```
 
-After zoom, return to 2.2 for review.
+After zoom, return to CHECKPOINT for review.
 
 ### 2.5 Finalize Layout
 
@@ -560,7 +601,7 @@ IF section is new (not in inventory):
 - Use `cn()` for className composition — create `src/lib/utils.ts` if not present
 - TypeScript strict mode with proper interfaces
 - Semantic HTML with aria-labels and keyboard support
-- If project.json#theme has data, integrate design tokens into Tailwind config extension
+- If project.json#theme populated, integrate design tokens into Tailwind config extension
 - Import and compose existing components — never regenerate what already works
 - Contextual placeholder text (not "Lorem ipsum") when no real data available
 
@@ -568,7 +609,7 @@ IF section is new (not in inventory):
 
 1. **Page file** — main page component that imports existing components + new section components
 2. **New section components** — only for sections not covered by existing components
-3. **Tailwind config extension** — if project.json#theme tokens need to be added (only if not already present)
+3. **Tailwind config extension** — if theme tokens need to be added (only if not already present)
 4. **cn() utility** — `src/lib/utils.ts` if not present
 
 **Code patterns:**
@@ -649,53 +690,58 @@ Theme: [Integrated from project.json#theme | Tailwind defaults used]
 3. Write back via Edit (keep `<script>` tags intact)
 4. Sync to `project.json` `features[]` array: merge feature with `status: "DOING"`, `stage: "built"`
 
-### 3.5 Functionality Gap Detection
+### 3.5 Functionality Gap Assessment
 
-Na code generatie, scan alle aangemaakte/gewijzigde component-bestanden:
+Identify gaps **before and during** code generation — don't generate placeholder code and then scan for it.
 
-1. **Scan voor placeholders:**
-   - Lege click handlers: `onClick={() => {}}`, `onClick={handleX}` waar handleX niets doet
-   - TODO comments: `// TODO`, `// FIXME`, `{/* TODO */}`
-   - Placeholder functies: functies die alleen `console.log` doen of leeg zijn
-   - Forms zonder submit handler of met placeholder submit
-   - Links met `href="#"` of `href="javascript:void(0)"`
+**During generation (3.2), for each interactive element:**
 
-2. **Code quality check** (scan dezelfde bestanden):
-   - Hardcoded kleuren: `#hex`, `rgb()`, `hsl()` in className of style — moet theme tokens gebruiken (H101)
-   - Hardcoded spacing: `p-[16px]`, `gap-[24px]` etc. — moet standaard Tailwind scale gebruiken (R103)
-   - Div-soup: `<div onClick>` zonder `role="button"` of beter: gebruik `<button>` (R001)
-   - Ontbrekende alt text: `<img>` of `<Image>` zonder `alt` prop (R002)
-   - Ontbrekende labels: `<input>`/`<select>` zonder `<label>` of `aria-label` (R004)
-   - Implicit any: functies/parameters zonder type annotation (T002)
+```
+CAN I implement this fully?
+  YES (API exists, data available, logic is self-contained)
+    → Generate working implementation
+  NO (needs backend, external service, or complex logic beyond this skill's scope)
+    → Generate the UI element with a clear `// GAP: {reason}` comment
+    → Track in gaps list for reporting
+```
 
-   Bij violations: fix direct in de gegenereerde code voordat je doorgaat. Rapporteer gefixte violations in het completion report onder `CODE QUALITY`.
+**Rules:**
 
-3. **Als gaps gevonden, rapporteer in completion:**
+- NEVER generate empty handlers (`onClick={() => {}}`) or `href="#"` links
+- If a button/form needs backend logic: generate the UI + a typed stub function with `// GAP:` comment explaining what's needed
+- If data is unavailable: use realistic typed mock data with `// GAP: replace with real data from {source}`
 
-   ```
-   FUNCTIONALITY GAPS
+**Code quality (apply during generation, not as post-scan):**
 
-   Componenten met ontbrekende functionaliteit:
-   - {Component}: [Button "{label}"] → geen handler
-   - {Component}: <form> → placeholder submit
+- Use theme tokens, not hardcoded colors (H101)
+- Use Tailwind scale, not arbitrary values (R103)
+- Use semantic HTML: `<button>` not `<div onClick>` (R001)
+- Always include `alt` on images (R002) and `label` on inputs (R004)
+- Type all functions and parameters (T002)
 
-   CODE QUALITY (auto-fixed)
-   - {Component}: hardcoded #hex → theme token (H101)
-   - {Component}: <div onClick> → <button> (R001)
-   ```
+**After generation, collect gaps and report:**
 
-4. **Als `.project/backlog.html` bestaat** (zie `shared/BACKLOG.md`):
-   - Parse JSON uit `<script id="backlog-data">` blok
-   - Cross-reference gap met `data.features`
-   - Match? Noteer: "Feature bestaat in backlog: {name} ({status})"
-   - Geen match? Voeg toe aan `data.features`:
-     `{ "name": "{feature-naam}", "type": "PAGE-GAP", "status": "TODO", "phase": "P4", "description": "{beschrijving}", "dependency": null, "source": "/frontend-compose {page} — {Component} [{element}]" }`
-   - Zet `data.updated` naar huidige datum, schrijf JSON terug via Edit tool
+```
+FUNCTIONALITY GAPS ({N})
 
-5. **Als `.project/backlog.html` NIET bestaat:**
-   - Rapporteer gaps alleen in completion report (geen backlog om aan toe te voegen)
+Components with incomplete functionality:
+  - {Component}: [Button "{label}"] → GAP: needs {API/service/logic}
+  - {Component}: <form> → GAP: needs {endpoint} for submission
 
-Gaps verschijnen altijd in het completion report. Toevoegen aan backlog is automatisch maar non-blocking.
+All generated code compiles and renders — gaps are clearly marked
+for follow-up via /dev-define.
+```
+
+**Backlog sync (if `.project/backlog.html` exists):**
+
+- Parse JSON from `<script id="backlog-data">` block
+- Cross-reference each gap with `data.features`
+- Match found? Note: "Feature exists in backlog: {name} ({status})"
+- No match? Add to `data.features`:
+  `{ "name": "{feature-naam}", "type": "PAGE-GAP", "status": "TODO", "phase": "P4", "description": "{beschrijving}", "dependency": null, "source": "/frontend-compose {page} — {Component} [{element}]" }`
+- Set `data.updated` to today, write back via Edit
+
+If no backlog exists: report gaps in completion report only.
 
 ### 3.6 Layout Verification
 
@@ -705,16 +751,17 @@ Verify the generated page layout matches the approved ASCII layout from FASE 2. 
 
 **Sequence:**
 
-1. Start dev server if not running (`npm run dev` or `npx next dev` based on framework detected in 3.1) — run in background
+1. Reuse dev server if already running from FASE 0.3. If not running, start it (`npm run dev` or `npx next dev` based on framework detected in 3.1) — run in background
 2. `browser_navigate` → `http://localhost:3000/[page-name]` (adjust port to project config)
 3. `browser_wait_for` → `{ time: 3 }` (allow hydration + client render)
 4. `browser_take_screenshot` → capture the rendered page
 
-**Analyze screenshot against the approved ASCII layout:**
+**Analyze screenshot against the approved ASCII layout (including px annotations):**
 
 - Page renders without blank screen or error overlay
 - All sections from the ASCII layout are present
 - Sections appear in the correct order
+- **Section proportions match** — compare visual height ratios against the px annotations from the approved layout (e.g., hero ~480px should be visually dominant over nav ~64px, not similar height)
 - Grid structure matches (columns, rows, sidebar placement)
 - Responsive basis is intact (no horizontal overflow, no collapsed grids)
 - Missing images are OK with placeholder data
@@ -761,7 +808,7 @@ After the layout structure is approved, improve the visual quality of the page. 
 
 **Take a fresh screenshot** (or reuse the last one from 3.6 if no changes were made).
 
-**Analyze the screenshot using `shared/DESIGN.md` as checklist** — specifically the typography scale, spacing system, color contrast, and anti-patterns sections. If project.json#theme has data, use its tokens as source of truth for values.
+**Analyze the screenshot using `shared/DESIGN.md` as checklist** — specifically the typography scale, spacing system, color contrast, and anti-patterns sections. If project.json#theme exists, use its tokens as source of truth for values.
 
 **Apply improvements directly** — fix spacing, adjust typography scale, improve visual hierarchy. These are non-breaking cosmetic changes only.
 
@@ -919,7 +966,7 @@ Update `.project/session/devinfo.json` with handoff data for downstream skills:
       "components": ["[list of created component files]"],
       "dataConnected": true,
       "framework": "[detected framework]",
-      "theme": "[project.json#theme | null]"
+      "theme": "[.project/project.json#theme or null]"
     }
   }
 }
@@ -949,7 +996,7 @@ Gaps ({N}):
 Next steps:
   1. npm run dev → open http://localhost:3000/[page]
   2. /frontend-iterate → visual refinement in browser
-  3. /frontend-theme → design tokens aanpassen/toepassen
+  3. /frontend-tokens → design tokens aanpassen/toepassen
   4. /frontend-audit → performance/SEO audit
   5. /frontend-wcag → accessibility audit
   [Als gaps die dev-werk nodig hebben:]

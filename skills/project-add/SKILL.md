@@ -193,7 +193,7 @@ Show a **numbered list** of all profiles (except "core" and "all") with their un
 **Beschikbare profielen:**
 
 1. **dev** — dev-build, dev-debug, dev-define, dev-plan, dev-refactor, dev-verify
-2. **frontend** — frontend-theme, frontend-compose, frontend-build, frontend-convert
+2. **frontend** — frontend-tokens, frontend-compose, frontend-build, frontend-convert
 3. **game** — game-backlog, game-build, game-define, game-test
 ...
 A. **all** — Alle skills

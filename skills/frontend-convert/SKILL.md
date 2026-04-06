@@ -15,9 +15,9 @@ metadata:
 
 # Convert
 
-Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens. Self-verifies by comparing source image against Playwright screenshot of generated output.
+Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens (from project.json). Self-verifies by comparing source image against Playwright screenshot of generated output.
 
-**Verwante skills:** `/frontend-theme` · `/frontend-plan` · `/frontend-compose` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-plan` · `/frontend-compose` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
 
 ## References
 
@@ -122,12 +122,12 @@ If scope is a component: skip this step.
 
 **Theme check:**
 
-Check `.project/project.json` → `theme` section for design tokens.
+Check `.project/project.json` → `theme` section.
 
-- **Theme data found + inspiration mode:** Read and store tokens. Mandatory for mapping.
-- **Theme data found + copy mode:** Read as reference. Use for shared utilities (cn(), Tailwind config) but not for color/font values.
-- **Theme data missing + inspiration mode:** Abort with suggestion: `"Inspiration mode vereist theme tokens. Run eerst /frontend-theme of kies 1:1 kopie."`
-- **Theme data missing + copy mode:** Proceed with extracted values from source image.
+- **Theme populated + inspiration mode:** Read and store tokens. Mandatory for mapping.
+- **Theme populated + copy mode:** Read as reference. Use for shared utilities (cn(), Tailwind config) but not for color/font values.
+- **No theme + inspiration mode:** Abort with suggestion: `"Inspiration mode vereist een theme. Run eerst /frontend-tokens of kies 1:1 kopie."`
+- **No theme + copy mode:** Proceed with extracted values from source image.
 
 ```
 Theme: [Available | Not available]
@@ -159,7 +159,7 @@ PROJECT CONTEXT
 ════════════════════════════════════════════════════════════
 
 Framework:  [detected]
-Theme:      [Available from project.json#theme | Not available]
+Theme:      [Available (project.json#theme) | Not available]
 Existing:   [N] components found
   Reusable: [component names that match source sections]
 
@@ -174,7 +174,7 @@ Existing:   [N] components found
 
 ### 1.1 Extract and Map
 
-Extract visual properties from the source image and map them to the closest project theme tokens:
+Extract visual properties from the source image and map them to the closest theme tokens (from project.json):
 
 ```
 TOKEN MAPPING
@@ -254,7 +254,7 @@ Generate the page and components based on the source image.
 **Mode-specific** (zie `./examples/` voor gold standard voorbeelden per modus):
 
 - **1:1 copy:** Match source colors, fonts, spacing as closely as possible. Use arbitrary Tailwind values (`bg-[#FF5733]`, `text-[20px]`) when no standard class matches. Prioritize visual fidelity. Referentie: `./examples/PricingPage-1to1.tsx`
-- **Inspiration:** Use only project.json#theme tokens and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Referentie: `./examples/PricingPage-inspiration.tsx`
+- **Inspiration:** Use only theme tokens (from project.json) and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Referentie: `./examples/PricingPage-inspiration.tsx`
 
 **Contextual content:** Never use "Lorem ipsum." Infer contextual placeholder text from the source image or describe what real content would go there.
 
@@ -418,7 +418,7 @@ Update `.project/session/devinfo.json`:
       "verificationRounds": 2,
       "finalMatchQuality": "high",
       "framework": "[detected framework]",
-      "theme": "[project.json#theme | null]"
+      "theme": "[.project/project.json#theme or null]"
     }
   }
 }
@@ -450,7 +450,7 @@ Files ([N]):
 
 Next steps:
   1. /frontend-iterate → visual fine-tuning in browser
-  2. /frontend-theme → design tokens aanpassen/toepassen
+  2. /frontend-tokens → design tokens aanpassen/toepassen
   3. /frontend-audit → performance/SEO audit
   4. /frontend-wcag → accessibility audit
 
@@ -465,7 +465,7 @@ This skill must **NEVER**:
 
 - Generate code without first analyzing the source image
 - Use "Lorem ipsum" — always use contextual content from the source or realistic placeholders
-- Run inspiration mode without theme data in project.json
+- Run inspiration mode without theme (project.json#theme empty)
 - Skip the visual verification loop when Playwright is available
 - Regenerate components that already exist in the codebase — import and reuse
 - Exceed 3 verification rounds

@@ -1,21 +1,20 @@
 ---
-name: frontend-theme
+name: frontend-tokens
 description: >-
-  Design system management — token CRUD, auto-extraction, and theme modes. Use
-  with /frontend-theme to create, update, or manage design tokens and color
-  themes.
+  Design token management — color, typography, spacing, motion, and interaction
+  tokens. Use with /frontend-tokens to create, update, or manage design tokens.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 3.0.0
   category: frontend
 ---
 
-# Theme
+# Tokens
 
-Beheert het project design systeem: design tokens aanmaken, bekijken, updaten, en dark/light mode configuratie.
+Beheert het project design systeem: design tokens aanmaken, bekijken, updaten, en dark/light mode configuratie. Inclusief motion tokens (durations, easings) en interaction tokens (focus ring, hover, active states).
 
-**Keywords**: design tokens, theme, colors, typography, spacing, breakpoints, dark mode, light mode, tailwind, css variables, design system, brand colors, font families
+**Keywords**: design tokens, theme, colors, typography, spacing, breakpoints, dark mode, light mode, tailwind, css variables, design system, brand colors, font families, motion, animation, easing, transitions, interactions, focus ring, hover states
 
 ## Overview
 
@@ -71,6 +70,35 @@ De `theme` sectie in `project.json` volgt dit schema:
     { "token": "rounded-md", "value": "0.375rem", "usage": "description" }
   ],
   "shadows": [{ "token": "shadow-md", "value": "...", "usage": "Cards" }],
+  "motion": {
+    "durations": [
+      {
+        "token": "duration-fast",
+        "value": "200ms",
+        "usage": "Tooltip, hover state"
+      }
+    ],
+    "easings": [
+      {
+        "token": "ease-out",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "usage": "Elements entering"
+      }
+    ]
+  },
+  "interactions": {
+    "focusRing": {
+      "width": "2px",
+      "style": "solid",
+      "color": "var(--color-accent-primary)",
+      "offset": "2px"
+    },
+    "hover": {
+      "transition": "var(--duration-fast) var(--ease-out)",
+      "transform": "none"
+    },
+    "active": { "transform": "scale(0.98)" }
+  },
   "modes": { "light": ":root { css }", "dark": ".dark { css }" },
   "cssVars": ":root { full css vars export }"
 }
@@ -270,6 +298,30 @@ Principles are advisory — use them to inform suggestions (e.g., if "Mobile-fir
 
 **Als theme sectie DATA bevat (niet leeg):**
 
+**Completeness check — voer uit voordat het actiemenu getoond wordt:**
+
+Check welke van de 10 verwachte secties aanwezig zijn in `theme`. Een sectie telt als "aanwezig" als de key bestaat EN niet een leeg object `{}`, leeg array `[]`, of lege string `""` is.
+
+```
+THEME STATUS
+════════════════════════════════════════════════
+  [✓|✗] colors
+  [✓|✗] typography
+  [✓|✗] spacing
+  [✓|✗] breakpoints
+  [✓|✗] borderRadius
+  [✓|✗] shadows
+  [✓|✗] motion
+  [✓|✗] interactions
+  [✓|✗] modes
+  [✓|✗] cssVars
+
+Compleet: {N}/10 secties
+════════════════════════════════════════════════
+```
+
+**Als alle secties aanwezig (N = 10):**
+
 **AskUserQuestion:**
 
 ```yaml
@@ -278,10 +330,23 @@ question: "Wat wil je doen?"
 options:
   - label: "Bekijken", description: "Toon huidige design tokens"
   - label: "Updaten", description: "Wijzig bestaande tokens"
-  - label: "Extraheren", description: "Tokens ophalen uit Tailwind/CSS"
   - label: "Modes", description: "Dark/light mode beheren"
   - label: "Verwijderen", description: "Theme data verwijderen"
-  - label: "Explain question", description: "Leg opties uit"
+multiSelect: false
+```
+
+**Als secties ontbreken (N < 10):**
+
+**AskUserQuestion:**
+
+```yaml
+header: "Theme"
+question: "Wat wil je doen? (⚠ {10-N} secties ontbreken: {missing_list})"
+options:
+  - label: "Aanvullen (Recommended)", description: "Vul ontbrekende secties aan: {missing_list}"
+  - label: "Bekijken", description: "Toon huidige design tokens"
+  - label: "Updaten", description: "Wijzig bestaande tokens"
+  - label: "Modes", description: "Dark/light mode beheren"
 multiSelect: false
 ```
 
@@ -302,6 +367,32 @@ multiSelect: false
 ---
 
 ### FASE 2: Actie Uitvoering
+
+#### Route: Aanvullen (Ontbrekende Secties)
+
+Targets alleen de ontbrekende secties. Voor elke ontbrekende sectie, voer de bijbehorende stap uit de Aanmaken-route uit:
+
+| Ontbrekende Sectie | → Voer Stap Uit                                                          |
+| ------------------ | ------------------------------------------------------------------------ |
+| colors             | Stap 1: Kleuren                                                          |
+| typography         | Stap 2: Typography                                                       |
+| spacing            | Stap 3: Spacing                                                          |
+| breakpoints        | Stap 4: Breakpoints                                                      |
+| modes              | Stap 5: Dark Mode                                                        |
+| motion             | Stap 6: Motion                                                           |
+| interactions       | Stap 7: Interactions                                                     |
+| borderRadius       | Genereer defaults (0.125rem, 0.25rem, 0.375rem, 0.5rem, 0.75rem, 9999px) |
+| shadows            | Genereer defaults (sm, md, lg, xl + glow met accent kleur)               |
+| cssVars            | Auto-genereer uit alle aanwezige token data                              |
+
+Sla al-aanwezige secties over. Na het aanvullen van alle ontbrekende secties:
+
+1. Regenereer `cssVars` om nieuw toegevoegde tokens te bevatten
+2. → Ga naar FASE X: Post-flight Validation
+3. → Ga naar X.6: Theme Infrastructure Sync
+4. → Ga naar FASE Y: Website Sync
+
+---
 
 #### Route: Aanmaken (Nieuwe Theme)
 
@@ -464,11 +555,104 @@ Geef je dark mode kleuren (hex values):
 - `modes` bevat alleen `light` key
 - → Ga naar Stap 6
 
+**Stap 6: Motion**
+
+**AskUserQuestion:**
+
+```yaml
+header: "Motion"
+question: "Motion tokens voor animaties en transities?"
+options:
+  - label: "Defaults (Recommended)", description: "Standaard durations (100/200/300/500ms) + smooth easings"
+  - label: "Custom", description: "Eigen durations en easing curves opgeven"
+  - label: "Geen motion tokens", description: "Sla over (later toe te voegen via Update)"
+  - label: "Explain question", description: "Wat zijn motion tokens"
+multiSelect: false
+```
+
+**Als "Defaults":**
+
+Genereer standaard motion tokens op basis van `shared/DESIGN.md`:
+
+- Durations: `duration-instant` (100ms), `duration-fast` (200ms), `duration-normal` (300ms), `duration-slow` (500ms)
+- Easings: `ease-out` (cubic-bezier(0.25, 1, 0.5, 1)), `ease-in` (cubic-bezier(0.7, 0, 0.84, 0)), `ease-in-out` (cubic-bezier(0.65, 0, 0.35, 1))
+
+Toon als tabel, vraag bevestiging. → Ga naar Stap 7
+
+**Als "Custom":**
+
+```
+Geef je motion preferences:
+
+1. Snelheid voorkeur?
+   → "snappy" (kortere durations: 75/150/200/350ms)
+   → "smooth" (standaard: 100/200/300/500ms)
+   → "relaxed" (langere durations: 150/250/400/600ms)
+
+2. Easing stijl?
+   → "smooth" (ease-out-quart — default)
+   → "snappy" (ease-out-expo — confident, direct)
+   → "custom" (eigen cubic-bezier waarden)
+```
+
+**Als "Geen motion tokens":**
+
+- Sla motion over, `motion` sectie wordt leeg object
+- → Ga naar Stap 7
+
+**Stap 7: Interactions**
+
+**AskUserQuestion:**
+
+```yaml
+header: "Interactions"
+question: "Interaction tokens voor hover, focus en active states?"
+options:
+  - label: "Defaults (Recommended)", description: "Focus ring (2px accent), subtle hover transition, scale active"
+  - label: "Custom", description: "Eigen interaction styles opgeven"
+  - label: "Geen interaction tokens", description: "Sla over (later toe te voegen via Update)"
+  - label: "Explain question", description: "Wat zijn interaction tokens"
+multiSelect: false
+```
+
+**Als "Defaults":**
+
+Genereer standaard interaction tokens:
+
+- Focus ring: `width: 2px`, `style: solid`, `color: var(--color-accent-primary)`, `offset: 2px`
+- Hover: `transition: var(--duration-fast) var(--ease-out)`, `transform: none`
+- Active: `transform: scale(0.98)`
+
+Toon als tabel, vraag bevestiging. → Ga naar Stap 8
+
+**Als "Custom":**
+
+```
+Geef je interaction preferences:
+
+1. Focus ring
+   → Kleur: accent-primary / custom
+   → Breedte: 2px / custom
+   → Offset: 2px / custom
+
+2. Hover effect
+   → Transition speed: instant / fast / normal
+   → Transform: none / translateY(-1px) / scale(1.02)
+
+3. Active/press effect
+   → Transform: scale(0.98) / scale(0.95) / none
+```
+
+**Als "Geen interaction tokens":**
+
+- Sla interactions over, `interactions` sectie wordt leeg object
+- → Ga naar Stap 8
+
 **CHECKPOINT: Design Tokens Samenvatting**
 
 Presenteer alle verzamelde tokens als overzicht voordat ze worden opgeslagen:
 
-**Stap 6: Bevestiging**
+**Stap 8: Bevestiging**
 
 ```
 THEME SAMENVATTING
@@ -483,6 +667,8 @@ THEME SAMENVATTING
 | **Spacing** | {scale} |
 | **Breakpoints** | {list} |
 | **Dark Mode** | {Ja (auto) / Ja (custom) / Nee} |
+| **Motion** | {Defaults / Custom / Geen} |
+| **Interactions** | {Defaults / Custom / Geen} |
 ```
 
 **AskUserQuestion:**
@@ -507,10 +693,12 @@ multiSelect: false
 6. Vul `breakpoints`, `borderRadius`, `shadows`
 7. **Als dark mode gekozen:** Vul `modes` met zowel `light` als `dark` CSS strings
 8. **Als geen dark mode:** Vul `modes` met alleen `light` key
-9. Genereer `cssVars` — volledige CSS variables string (alle tokens als `:root { ... }`)
-10. Read `.project/project.json` (of maak nieuw met leeg schema)
-11. Set `theme` sectie → Write terug als formatted JSON
-12. → Ga naar FASE X: Post-flight Validation
+9. **Als motion gekozen:** Vul `motion` met durations en easings
+10. **Als interactions gekozen:** Vul `interactions` met focusRing, hover, active
+11. Genereer `cssVars` — volledige CSS variables string (alle tokens incl. motion/interaction als `:root { ... }`)
+12. Read `.project/project.json` (of maak nieuw met leeg schema)
+13. Set `theme` sectie → Write terug als formatted JSON
+14. → Ga naar FASE X: Post-flight Validation
 
 ---
 
@@ -550,7 +738,16 @@ HUIDIGE THEME
 | ... | ... |
 ```
 
+3. **Completeness check:** check alle 10 verwachte secties (colors, typography, spacing, breakpoints, borderRadius, shadows, motion, interactions, modes, cssVars). Als secties ontbreken:
+
+```
+⚠ ONTBREKENDE SECTIES: {missing_list}
+  Gebruik "Aanvullen" om ontbrekende secties toe te voegen.
+```
+
 **AskUserQuestion:**
+
+Als alle secties aanwezig:
 
 ```yaml
 header: "Action"
@@ -560,6 +757,19 @@ options:
   - label: "Updaten", description: "Wijzigingen maken"
   - label: "Exporteren", description: "Toon als CSS variables"
   - label: "Visual Preview", description: "Open theme preview in browser"
+multiSelect: false
+```
+
+Als secties ontbreken — voeg "Aanvullen" toe:
+
+```yaml
+header: "Action"
+question: "Wat wil je doen? (⚠ {N} secties ontbreken)"
+options:
+  - label: "Aanvullen (Recommended)", description: "Vul ontbrekende secties aan: {missing_list}"
+  - label: "Klaar", description: "Terug naar conversation"
+  - label: "Updaten", description: "Wijzigingen maken"
+  - label: "Exporteren", description: "Toon als CSS variables"
 multiSelect: false
 ```
 
@@ -595,6 +805,8 @@ options:
   - label: "Typography", description: "Fonts aanpassen"
   - label: "Spacing", description: "Spacing scale aanpassen"
   - label: "Breakpoints", description: "Breakpoints aanpassen"
+  - label: "Motion", description: "Durations en easings aanpassen"
+  - label: "Interactions", description: "Focus ring, hover, active states aanpassen"
   - label: "Alles", description: "Volledige herconfig"
   - label: "Explain question", description: "Toon huidige waarden"
 multiSelect: true
@@ -609,6 +821,8 @@ multiSelect: true
 - Bevestig wijziging
 - Read project.json → update alleen gewijzigde theme subsecties → Write terug
 - → Ga naar FASE X: Post-flight Validation
+- → Ga naar X.6: Theme Infrastructure Sync (update CSS variables / Tailwind config met gewijzigde tokens)
+- → Ga naar FASE Y: Website Sync (scan voor oude token waarden in componenten)
 
 ---
 
@@ -796,6 +1010,8 @@ Sections:
   [✓|✗] breakpoints - [present|missing]
   [✓|✗] borderRadius - [present|missing]
   [✓|✗] shadows - [present|missing]
+  [✓|✗] motion - [present|skipped|missing] (durations, easings)
+  [✓|✗] interactions - [present|skipped|missing] (focusRing, hover, active)
   [✓|✗] modes - [light only|light+dark|missing]
   [✓|✗] cssVars - [present|missing]
 ```
@@ -818,6 +1034,14 @@ Modes:
   [✓|✗] Dark mode .dark CSS present (if configured)
   [✓|✗] Dark mode contrast ratios acceptable (AA minimum)
   [✓|✗] No unfilled placeholders in mode CSS blocks
+Motion (if configured):
+  [✓|✗] Duration values end with 'ms' or 's'
+  [✓|✗] Each duration has token, value, usage
+  [✓|✗] Easing values are valid cubic-bezier or keyword
+Interactions (if configured):
+  [✓|✗] Focus ring has width, color, offset
+  [✓|✗] Hover transition references valid motion tokens
+  [✓|✗] Active transform is valid CSS transform
 ```
 
 **4. Export Validation**
@@ -845,12 +1069,14 @@ Integrity:
 ════════════════════════════════════════════════
 POST-FLIGHT RESULT
 ════════════════════════════════════════════════
-File:      [✓ PASS | ✗ FAIL]
-Content:   [✓ PASS | ✗ FAIL] - {N}/{M} sections
-Values:    [✓ PASS | ⚠ WARNINGS | ✗ FAIL]
-Modes:     [✓ PASS | ⚠ Light only | ✗ FAIL] - {light|light+dark}
-Export:    [✓ PASS | ✗ FAIL]
-Integrity: [✓ PASS | ✗ FAIL]
+File:         [✓ PASS | ✗ FAIL]
+Content:      [✓ PASS | ✗ FAIL] - {N}/{M} sections
+Values:       [✓ PASS | ⚠ WARNINGS | ✗ FAIL]
+Modes:        [✓ PASS | ⚠ Light only | ✗ FAIL] - {light|light+dark}
+Motion:       [✓ PASS | ⚠ Skipped | ✗ FAIL]
+Interactions: [✓ PASS | ⚠ Skipped | ✗ FAIL]
+Export:       [✓ PASS | ✗ FAIL]
+Integrity:    [✓ PASS | ✗ FAIL]
 
 Status: [→ Complete | ⚠ Warnings: {list} | ✗ Recovery needed]
 ════════════════════════════════════════════════
@@ -868,6 +1094,51 @@ options:
   - label: "Handmatig fixen", description: "Bekijk en fix problemen"
   - label: "Negeren", description: "Accepteer output ondanks problemen"
 multiSelect: false
+```
+
+---
+
+### X.6 Theme Infrastructure Sync (Create/Update only)
+
+**Always runs after successful post-flight validation.** Ensures theme tokens are available in the project's styling infrastructure, not just in project.json.
+
+**Bij Updates:** diff de oude token waarden (voor de update) tegen de nieuwe waarden. Gebruik dit diff om:
+
+1. Alleen gewijzigde CSS variables bij te werken in het CSS/config bestand (niet alles opnieuw genereren)
+2. Een lijst van gewijzigde tokens te tonen in de infrastructure sync output
+3. De oude waarden door te geven aan FASE Y zodat die ook op oude hex codes / rgba waarden kan scannen in componenten
+
+**Styling approach detectie:**
+
+1. **Detect styling approach** from `package.json` + CSS files:
+   - `tailwindcss` present → check voor Tailwind 4 CSS-first OF klassieke config (zie stap 2)
+   - Neither → CSS variables project
+
+2. **Tailwind project:**
+   - **Tailwind 4 (CSS-first):** Grep CSS bestanden (globals.css, index.css) voor `@theme inline`. Als gevonden: update de `:root` CSS variables in dat bestand direct — dit IS de Tailwind config in v4
+   - **Tailwind 3 (config-based):** Fallback naar `tailwind.config.{js,ts,mjs}` als er geen `@theme inline` is
+   - Generate/update theme tokens:
+     - `colors`: map color tokens to Tailwind color keys
+     - `spacing`: map custom spacing tokens (skip if standard 4px scale)
+     - `borderRadius`: map radius tokens
+     - `boxShadow`: map shadow tokens
+     - `fontFamily`: map typography families
+   - Write back (preserve existing non-theme extensions)
+
+3. **Non-Tailwind project:**
+   - Generate/update CSS variables file (e.g., `src/styles/theme.css`) from `theme.cssVars`
+   - Check if it's imported in the main CSS entry point — if not, warn
+
+4. **No project detected** (no package.json, no source files):
+   - Skip with: `"Geen project gedetecteerd — theme alleen opgeslagen in project.json."`
+
+```
+THEME INFRASTRUCTURE
+════════════════════════════════════════════════
+Approach: {Tailwind | CSS Variables | Skipped (no project)}
+Config:   {tailwind.config updated | theme.css generated | —}
+Tokens:   {N} color, {M} spacing, {P} typography, {Q} motion, {R} interaction tokens synced
+════════════════════════════════════════════════
 ```
 
 ---
@@ -898,6 +1169,7 @@ Scan the codebase for theme integration:
    - Hardcoded color values: `#hex`, `rgb()`, `hsl()`, `bg-[#`, `text-[#`
    - Theme token usage: `bg-primary`, `text-accent`, `var(--`, theme class references
    - Hardcoded spacing: `p-[16px]`, `gap-[24px]`, arbitrary Tailwind values
+   - **Bij Updates:** ook scannen op OUDE token waarden uit de diff van X.6. Als een kleur veranderde van `#C89B3C` naar `#0AC8B9`, scan dan voor resterende `#C89B3C` referenties in component files en arbitrary Tailwind values (`bg-[#C89B3C]`, `shadow-[...rgba(200,155,60,...)]`, etc.)
 
 **Tally results:**
 
@@ -907,6 +1179,7 @@ WEBSITE SYNC CHECK
 Bestanden gescand:     {N}
 Theme integratie:      {Tailwind config | CSS vars | Geen}
 Hardcoded kleuren:     {N} bestanden, {M} waarden
+Oude waarden gevonden: {N} bestanden, {M} referenties (bij updates)
 Theme token gebruik:   {N} bestanden, {M} referenties
 ════════════════════════════════════════════════
 ```
@@ -930,10 +1203,13 @@ header: "Website Sync"
 question: "Er zijn {N} bestanden met hardcoded kleuren/styling die het theme niet gebruiken. Wil je restylen?"
 options:
   - label: "Ja, restyle alles (Recommended)", description: "Vervang hardcoded waarden door theme tokens in alle {N} bestanden"
+  - label: "Extract als theme", description: "Formaliseer bestaande kleuren/waarden als theme tokens (reverse sync)"
   - label: "Toon bestanden", description: "Bekijk welke bestanden geraakt worden voordat je beslist"
   - label: "Nee, alleen theme opslaan", description: "Sla over — handmatig later via /frontend-iterate"
 multiSelect: false
 ```
+
+**If "Extract als theme":** Run the Extraheren route (FASE 2 → Route: Extraheren) to parse existing hardcoded color/spacing values from component files as theme tokens. After extraction, merge into `project.json#theme` (existing tokens take priority, extracted values fill gaps), re-run Theme Infrastructure Sync (X.6). This formalizes existing design choices rather than overwriting them.
 
 **If "Toon bestanden":** Show file list with hardcoded value count per file, then re-ask with "Ja, restyle alles" / "Selectief kiezen" / "Nee" options.
 
@@ -999,6 +1275,8 @@ Locatie: .project/project.json (theme sectie)
 | Breakpoints | {N} |
 | Border Radius | {N} |
 | Shadows | {N} |
+| Motion | {N} (durations: {n}, easings: {n}) |
+| Interactions | {N} (focusRing, hover, active) |
 | Modes | {light/dark/both} |
 | CSS Vars | {present/missing} |
 
@@ -1061,7 +1339,7 @@ Bij skill start:
 ```json
 {
   "currentSkill": {
-    "name": "frontend-theme",
+    "name": "frontend-tokens",
     "phase": "PREFLIGHT",
     "startedAt": "ISO timestamp"
   }
@@ -1096,7 +1374,7 @@ Bij succesvolle completion:
 ```json
 {
   "handoff": {
-    "from": "frontend-theme",
+    "from": "frontend-tokens",
     "to": null,
     "data": {
       "themeLocation": ".project/project.json#theme",
@@ -1138,7 +1416,7 @@ Andere skills consumeren theme data als volgt:
 
 ## Resources
 
-- `skills/frontend-theme/references/THEME_TEMPLATE.md` - Referentie voor token categorien en naming conventions
+- `skills/frontend-tokens/references/THEME_TEMPLATE.md` - Referentie voor token categorien en naming conventions
 - `skills/shared/DASHBOARD.md` - project.json schema en merge-strategie
 - `skills/shared/VALIDATION.md` - Pre/post-flight validation templates
 - `skills/shared/DEVINFO.md` - Session state tracking

@@ -60,6 +60,8 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
     "colors": [],
     "fonts": { "headings": "", "body": "", "mono": "" },
     "spacing": "",
+    "motion": { "durations": [], "easings": [] },
+    "interactions": { "focusRing": {}, "hover": {}, "active": {} },
     "modes": [],
     "cssVars": ""
   },
@@ -92,7 +94,7 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 | `concept`      | **OVERWRITE**       | `name`+`pitch`+`content` overschrijven, `thinking` is APPEND |
 | `architecture` | **OVERWRITE**       | Diagram + beschrijving volledig overschrijven                |
 | `design`       | **MERGE op `name`** | Pages/flows/principles merge op naam, nooit auto-delete      |
-| `theme`        | **OVERWRITE**       | Volledig overschrijven bij `/frontend-theme`                 |
+| `theme`        | **OVERWRITE**       | Volledig overschrijven bij `/frontend-tokens`                |
 | `stack`        | **MERGE**           | Voeg packages toe, overschrijf geen bestaande                |
 | `data`         | **MERGE**           | Voeg entities/velden/relaties toe per entity                 |
 | `endpoints`    | **MERGE**           | Voeg toe of update status, verwijder niet                    |
@@ -200,7 +202,7 @@ Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar 
       "title": "Initieel idee",
       "summary": "Key insight van de thinking output (max 200 chars)",
       "file": ".project/thinking/2026-02-20-idea-initieel-idee.md",
-      "source": "/thinking-idea"
+      "source": "/thinking-concept"
     }
   ]
 }
@@ -487,7 +489,7 @@ Overige velden = structured tokens per categorie
     "title": "SaaS dashboard voor freelancers",
     "summary": "SaaS dashboard met real-time urenregistratie en factuurintegratie voor ZZP'ers.",
     "file": ".project/thinking/2026-02-20-idea-saas-dashboard.md",
-    "source": "/thinking-idea"
+    "source": "/thinking-concept"
   },
   {
     "type": "brainstorm",
@@ -580,17 +582,17 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 
 ### project.json secties
 
-| Sectie             | Geschreven door                                                                           | Wanneer                                  |
-| ------------------ | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `concept`          | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan        |
-| `design`           | `/frontend-plan`, `/frontend-compose`, `/frontend-theme`                                  | Bij design spec/page build/theme creatie |
-| `theme`            | `/frontend-theme`                                                                         | Na THEME.md generatie                    |
-| `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-compose`              | Bij detectie/nieuwe deps                 |
-| `data`             | `/dev-define`, `/game-define`                                                             | Bij entity definitie                     |
-| `endpoints`        | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build             |
-| `features`         | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-test`, `/game-define`, `/game-build`   | Bij status wijziging (DOING/DONE)        |
-| `concept.thinking` | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)      |
-| `thinking`         | `/thinking-idea`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Bij non-concept thinking (append)        |
+| Sectie             | Geschreven door                                                                              | Wanneer                                  |
+| ------------------ | -------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `concept`          | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan        |
+| `design`           | `/frontend-plan`, `/frontend-compose`, `/frontend-tokens`                                    | Bij design spec/page build/theme creatie |
+| `theme`            | `/frontend-tokens`                                                                           | Na theme create/update                   |
+| `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-compose`                 | Bij detectie/nieuwe deps                 |
+| `data`             | `/dev-define`, `/game-define`                                                                | Bij entity definitie                     |
+| `endpoints`        | `/dev-define`, `/dev-build`                                                                  | Bij API definitie / na build             |
+| `features`         | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-test`, `/game-define`, `/game-build`      | Bij status wijziging (DOING/DONE)        |
+| `concept.thinking` | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)      |
+| `thinking`         | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Bij non-concept thinking (append)        |
 
 ### project-context.json secties
 
@@ -611,7 +613,7 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 | `/dev-refactor`     | `stack.packages`, `endpoints`, `data.entities`                     | `context`, `architecture`, `learnings` (write)        | FASE 5 completion    |
 | `/frontend-plan`    | `design` (pages, flows, principles), `features` (batch TODO)       | —                                                     | Bij elke uitvoering  |
 | `/frontend-compose` | `stack.packages`, `design.pages`, `features` (DOING+built)         | —                                                     | Na FASE 4            |
-| `/frontend-theme`   | `design.principles`                                                | —                                                     | Na completion        |
+| `/frontend-tokens`  | `design.principles`                                                | —                                                     | Na completion        |
 | `/game-define`      | `data.entities`, `stack.packages`, `features` (DOING)              | `architecture` (write)                                | FASE 6               |
 | `/game-build`       | `features` (DOING+built)                                           | `context`, `architecture` (write)                     | FASE 5 completion    |
 | `/team-test`        | `features`, `stack.packages`, `endpoints`, `data.entities`         | `architecture` (write)                                | FASE 7 completion    |

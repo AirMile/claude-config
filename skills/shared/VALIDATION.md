@@ -253,16 +253,18 @@ Na uitputting van retries (3x gefaald of Level 4-5 degradation), kies een escala
 ```markdown
 **Pre-flight:**
 
-- Directory .project/config/ writable
-- No conflicting THEME.md (or user confirmed overwrite)
+- .project/ directory writable
+- project.json exists or can be created
+- Check if theme section already has data (warn on overwrite)
 
 **Post-flight:**
 
-- THEME.md exists and valid markdown
-- Required sections: Colors, Typography, Spacing
+- project.json valid JSON, theme section populated
+- Required subsections: colors, typography, spacing
 - All color values valid hex (#RRGGBB)
 - Font families have fallbacks
-- CSS export syntactically valid
+- cssVars field present and syntactically valid
+- Theme Infrastructure synced (Tailwind config or CSS vars)
 ```
 
 ### Wireframe Skills
@@ -289,8 +291,8 @@ Na uitputting van retries (3x gefaald of Level 4-5 degradation), kies een escala
 ```markdown
 **Pre-flight:**
 
-- THEME.md exists and valid
-- Source wireframe exists
+- project.json → theme section populated (or Tailwind defaults available)
+- Source wireframe or page exists
 - data-component attributes extractable
 
 **Post-flight:**
@@ -383,6 +385,61 @@ options:
   - label: "Negeren"
     description: "Accepteer output ondanks problemen"
 ```
+
+---
+
+## Project State Detection
+
+Standardized pattern for detecting available project context. Use in pre-flight to determine what data is available, enabling skills to work in any order without assuming a fixed pipeline.
+
+### State Snapshot
+
+```
+PROJECT STATE
+════════════════════════════════════════════════
+Theme:      [✓ project.json#theme populated | ✗ empty]
+Design:     [✓ project.json#design — {N} pages, {M} flows | ✗ empty]
+Code:       [✓ {N} source files ({framework}) | ✗ no source files]
+Backlog:    [✓ .project/backlog.html — {N} features | ✗ not found]
+Dev server: [✓ running on {port} | ✗ not detected]
+Session:    [✓ devinfo from {skill} | ✗ new session]
+════════════════════════════════════════════════
+```
+
+### Detection Steps
+
+```markdown
+1. **Theme**: Read `.project/project.json` → check if `theme` section has data (colors, typography, spacing)
+2. **Design**: Read `.project/project.json` → check if `design` section has pages/flows/principles
+3. **Code**: Glob for `src/**/*.{tsx,jsx}`, `app/**/*.{tsx,jsx}`, `*.html` — detect framework from `package.json`
+4. **Backlog**: Check `.project/backlog.html` exists → parse JSON for feature count
+5. **Dev server**: Try `browser_navigate` to localhost (common ports: 3000, 5173, 4321)
+6. **Session**: Read `.project/session/devinfo.json` for handoff data
+```
+
+### Graceful Degradation per State
+
+| Missing State | Impact                                    | Degradation                                        |
+| ------------- | ----------------------------------------- | -------------------------------------------------- |
+| No theme      | Skills use Tailwind defaults              | Suggest `/frontend-tokens` in next steps           |
+| No design     | Skills ask user for page/flow info inline | Suggest `/frontend-plan` in next steps             |
+| No code       | Build/iterate skills cannot run           | Suggest `/frontend-compose` or `/frontend-convert` |
+| No backlog    | Feature tracking skipped                  | Non-blocking, no action needed                     |
+| No dev server | Playwright verification skipped           | Skills offer to start one, or skip visual checks   |
+| No session    | No handoff data from previous skill       | Skills start fresh, ask user for context           |
+
+### Usage in Skills
+
+Skills reference this pattern in their pre-flight:
+
+```markdown
+### 0.X Project State (optional)
+
+Run Project State Detection (see `shared/VALIDATION.md`).
+Show snapshot. Adapt behavior based on available state.
+```
+
+Skills MUST NOT block on missing state unless it's a logical requirement (e.g., iterate needs code to exist). For optional state (theme, design, backlog), degrade gracefully and suggest the relevant skill in next steps.
 
 ---
 

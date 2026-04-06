@@ -34,7 +34,7 @@ frontend:
   - frontend-convert
   - frontend-iterate
   - frontend-plan
-  - frontend-theme
+  - frontend-tokens
   - frontend-wcag
 
 marketing:
@@ -64,7 +64,7 @@ thinking:
   - thinking-critique
   - thinking-decide
   - thinking-explore
-  - thinking-idea
+  - thinking-concept
   - thinking-research
 
 school:

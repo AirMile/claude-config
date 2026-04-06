@@ -174,6 +174,38 @@ Base unit: {spacing-base}
 
 ---
 
+## Interactions
+
+### Focus Ring
+
+| Property | Value                       | Usage                        |
+| -------- | --------------------------- | ---------------------------- |
+| `width`  | 2px                         | Ring thickness               |
+| `style`  | solid                       | Ring style                   |
+| `color`  | var(--color-accent-primary) | Ring color (matches brand)   |
+| `offset` | 2px                         | Gap between element and ring |
+
+> Nooit `outline: none` zonder vervanging. Minimaal 3:1 contrast ratio voor focus ring.
+
+### Hover
+
+| Property     | Value                                | Usage                   |
+| ------------ | ------------------------------------ | ----------------------- |
+| `transition` | var(--duration-fast) var(--ease-out) | Smooth hover transition |
+| `transform`  | none                                 | Optional hover lift     |
+
+Hover alternatieven: `translateY(-1px)` voor subtle lift, `scale(1.02)` voor subtle grow. Kies één per project.
+
+### Active
+
+| Property    | Value       | Usage                      |
+| ----------- | ----------- | -------------------------- |
+| `transform` | scale(0.98) | Press feedback (ingedrukt) |
+
+> Active state moet altijd sneller zijn dan hover transition. Gebruik `duration-instant` voor active feedback.
+
+---
+
 ## Theme Modes
 
 ### Light Mode (Default)

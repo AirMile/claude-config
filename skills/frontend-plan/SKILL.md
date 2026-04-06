@@ -15,7 +15,7 @@ metadata:
 
 Beheert de design specificatie van het project: pagina's, user flows, en design principes vastleggen en beheren. Iteratief — roep meerdere keren aan om incrementeel op te bouwen.
 
-**Verwante skills:** `/frontend-theme` · `/frontend-compose` · `/frontend-convert` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-compose` · `/frontend-convert` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
 
 **Output locatie:** `.project/project.json` → `design` sectie
 
@@ -192,7 +192,7 @@ Design:     [empty | {N} pages, {M} flows, {P} principles]
 
 ## FASE 1: Actie Selectie
 
-Conditional branching based on design section state. Follows the same pattern as `frontend-theme/SKILL.md`.
+Conditional branching based on design section state. Follows the same pattern as `frontend-tokens/SKILL.md`.
 
 ### If design section EMPTY (or project.json missing):
 
@@ -779,9 +779,13 @@ Backlog: {X} nieuwe PAGE items toegevoegd
   {lijst van toegevoegde pagina namen}
 
 Next steps:
-  1. /frontend-plan     → voeg meer pagina's/flows toe (iteratief)
-  2. /frontend-theme    → design tokens en kleuren op basis van principes
-  3. /frontend-compose {x} → bouw een specifieke pagina
+  1. /frontend-plan      → voeg meer pagina's/flows toe (iteratief)
+  2. /frontend-tokens     → design tokens en kleuren op basis van principes
+  3. /frontend-compose {page} → bouw een specifieke pagina
+  4. /frontend-convert   → converteer een design naar code
+  5. /frontend-iterate   → visueel verfijnen van bestaande pagina's
+  6. /frontend-audit     → performance/SEO audit
+  7. /frontend-wcag      → accessibility audit
 
 ═══════════════════════════════════════════════════════════════
 ```
