@@ -17,7 +17,7 @@ metadata:
 
 Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens (from project.json). Self-verifies by comparing source image against Playwright screenshot of generated output.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-plan` · `/frontend-compose` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-plan` · `/frontend-compose` · `/frontend-inspect` · `/frontend-audit` · `/frontend-wcag`
 
 ## References
 
@@ -282,7 +282,7 @@ Theme: [Integrated from project.json#theme | Extracted from source]
 
 ## FASE 3: Visual Verification Loop
 
-Self-verify by comparing the source image against a Playwright screenshot of the generated output. Max 3 rounds.
+Self-verify by comparing the source image against a Playwright screenshot of the generated output. Max 3 rounds. See `../shared/VERIFICATION.md` for the generic loop pattern, round management, and code quality checks.
 
 ### 3.0 Pre-flight
 
@@ -390,7 +390,7 @@ Generated:      [page URL]
 
 [If remaining discrepancies:]
 Remaining:
-  - [discrepancy — recommended fix via /frontend-iterate]
+  - [discrepancy — recommended manual fix]
 
 ════════════════════════════════════════════════════════════
 ```
@@ -449,10 +449,9 @@ Files ([N]):
   Components: [component paths]
 
 Next steps:
-  1. /frontend-iterate → visual fine-tuning in browser
-  2. /frontend-tokens → design tokens aanpassen/toepassen
-  3. /frontend-audit → performance/SEO audit
-  4. /frontend-wcag → accessibility audit
+  1. /frontend-tokens → design tokens aanpassen/toepassen
+  2. /frontend-audit → performance/SEO audit
+  3. /frontend-wcag → accessibility audit
 
 ═══════════════════════════════════════════════════════════
 ```

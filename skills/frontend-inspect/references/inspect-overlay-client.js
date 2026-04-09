@@ -17,6 +17,7 @@ if (window.__inspectOverlayActive) {
       import.meta.hot.data.pinnedElements) ||
     [];
   var MAX_PINS = 20;
+  var lastClickedElement = null;
 
   // --- Region select state ---
   var isDragging = false;
@@ -156,6 +157,31 @@ if (window.__inspectOverlayActive) {
     return el.closest("[class]") || el;
   }
 
+  // --- Build component name for tooltip ---
+  function buildComponentName(el) {
+    var path = el.getAttribute("data-inspector-relative-path");
+    if (path) {
+      // Extract filename without extension, convert kebab-case to PascalCase
+      var filename = path
+        .split("/")
+        .pop()
+        .replace(/\.\w+$/, "");
+      return filename
+        .split(/[-_]/)
+        .map(function (part) {
+          return part.charAt(0).toUpperCase() + part.slice(1);
+        })
+        .join("");
+    }
+    // Degraded mode: tag + first 3 classes
+    var tag = el.tagName.toLowerCase();
+    var cls =
+      el.className && typeof el.className === "string"
+        ? "." + el.className.trim().split(/\s+/).slice(0, 3).join(".")
+        : "";
+    return tag + cls;
+  }
+
   // --- Build reference string ---
   function buildRef(el) {
     var path = el.getAttribute("data-inspector-relative-path");
@@ -174,50 +200,6 @@ if (window.__inspectOverlayActive) {
   }
 
   // --- Style extraction ---
-  function toHex(r, g, b) {
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-  }
-
-  function rgbToHex(rgb) {
-    if (rgb.startsWith("#")) return rgb;
-    var m = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-    if (m) {
-      if (m[4] !== undefined && parseFloat(m[4]) < 1) return rgb;
-      return toHex(+m[1], +m[2], +m[3]);
-    }
-    // color-mix fallback for oklch, lab, lch, color() etc.
-    var span = document.createElement("span");
-    span.style.display = "none";
-    span.style.color = "color-mix(in srgb, " + rgb + " 100%, transparent 0%)";
-    document.body.appendChild(span);
-    var computed = window.getComputedStyle(span).color;
-    document.body.removeChild(span);
-    var cm = computed.match(
-      /color\(srgb\s+([\d.e+-]+)\s+([\d.e+-]+)\s+([\d.e+-]+)(?:\s*\/\s*([\d.e+-]+))?\)/,
-    );
-    if (cm) {
-      if (cm[4] !== undefined && parseFloat(cm[4]) < 1) {
-        return (
-          "rgba(" +
-          Math.round(cm[1] * 255) +
-          ", " +
-          Math.round(cm[2] * 255) +
-          ", " +
-          Math.round(cm[3] * 255) +
-          ", " +
-          cm[4] +
-          ")"
-        );
-      }
-      return toHex(
-        Math.round(cm[1] * 255),
-        Math.round(cm[2] * 255),
-        Math.round(cm[3] * 255),
-      );
-    }
-    return rgb;
-  }
-
   function getCoreStyles(cs) {
     var styles = [
       { prop: "font-family", value: cs.getPropertyValue("font-family") },
@@ -286,54 +268,54 @@ if (window.__inspectOverlayActive) {
     return getCoreStyles(cs).concat(getConditionalStyles(cs));
   }
 
-  // --- Style formatting ---
-  function formatValue(prop, value) {
-    if (
-      prop === "color" ||
-      prop === "background-color" ||
-      prop.indexOf("border") !== -1
-    ) {
-      return value
-        .replace(/rgba?\(\d+,\s*\d+,\s*\d+(?:,\s*[\d.]+)?\)/g, rgbToHex)
-        .replace(/oklch\([^)]+\)|lab\([^)]+\)|lch\([^)]+\)/g, rgbToHex);
-    }
-    if (prop === "font-family") {
-      return value.split(",")[0].trim().replace(/['"]/g, "");
-    }
-    return value;
+  // --- Tooltip debug info (invisible properties only) ---
+  function buildLabelDebug(el) {
+    var cs = window.getComputedStyle(el);
+    var parts = [];
+    var ov = cs.getPropertyValue("overflow");
+    if (ov && ov !== "visible") parts.push("overflow:" + ov);
+    var pos = cs.getPropertyValue("position");
+    if (pos && pos !== "static") parts.push(pos);
+    var zi = cs.getPropertyValue("z-index");
+    if (zi && zi !== "auto") parts.push("z:" + zi);
+    var minW = cs.getPropertyValue("min-width");
+    if (minW && minW !== "0px" && minW !== "auto") parts.push("min-w:" + minW);
+    var maxW = cs.getPropertyValue("max-width");
+    if (maxW && maxW !== "none") parts.push("max-w:" + maxW);
+    var minH = cs.getPropertyValue("min-height");
+    if (minH && minH !== "0px" && minH !== "auto") parts.push("min-h:" + minH);
+    var maxH = cs.getPropertyValue("max-height");
+    if (maxH && maxH !== "none") parts.push("max-h:" + maxH);
+    return parts.join(" \u00B7 ");
   }
 
-  function formatStylesClipboard(styles) {
-    var lines = [];
-    var fontSize, lineHeight, fontFamily;
-    var rest = [];
-    for (var i = 0; i < styles.length; i++) {
-      var s = styles[i];
-      if (s.prop === "font-size") fontSize = s.value;
-      else if (s.prop === "line-height") lineHeight = s.value;
-      else if (s.prop === "font-family")
-        fontFamily = formatValue(s.prop, s.value);
-      else rest.push(s);
+  // --- Tooltip parent context (only for flex/grid/positioned parents) ---
+  function buildLabelParent(el) {
+    var parent = el.parentElement;
+    if (
+      !parent ||
+      parent === document.body ||
+      parent === document.documentElement
+    )
+      return "";
+    var cs = window.getComputedStyle(parent);
+    var display = cs.getPropertyValue("display");
+    var pos = cs.getPropertyValue("position");
+    var isLayout = /flex|grid/.test(display);
+    var isPositioned = pos && pos !== "static";
+    if (!isLayout && !isPositioned) return "";
+    var parts = [];
+    if (isPositioned && pos !== "relative") parts.push(pos);
+    if (/flex/.test(display)) {
+      parts.push("flex " + (cs.getPropertyValue("flex-direction") || "row"));
+    } else if (/grid/.test(display)) {
+      var cols = cs.getPropertyValue("grid-template-columns");
+      var colCount = cols && cols !== "none" ? cols.split(/\s+/).length : 0;
+      parts.push("grid" + (colCount ? " " + colCount + "cols" : ""));
     }
-    if (fontSize) {
-      var lh =
-        lineHeight && fontSize
-          ? parseFloat(lineHeight) / parseFloat(fontSize)
-          : null;
-      var lhStr = lh ? String(Math.round(lh * 10) / 10) : "";
-      lines.push(
-        "  font: " +
-          fontSize +
-          (lhStr ? "/" + lhStr : "") +
-          (fontFamily ? " " + fontFamily : ""),
-      );
-    }
-    for (var j = 0; j < rest.length; j++) {
-      lines.push(
-        "  " + rest[j].prop + ": " + formatValue(rest[j].prop, rest[j].value),
-      );
-    }
-    return lines.join("\n");
+    var gap = cs.getPropertyValue("gap");
+    if (gap && gap !== "normal" && gap !== "0px") parts.push("gap:" + gap);
+    return parts.length ? "\u2191 " + parts.join(" \u00B7 ") : "";
   }
 
   // --- HTML escaping for innerHTML ---
@@ -342,34 +324,16 @@ if (window.__inspectOverlayActive) {
   }
 
   // --- Label line builders ---
-  function buildLabelLine2(styles) {
-    var parts = [];
-    var fontSize, fontFamily, fontWeight, color;
-    for (var i = 0; i < styles.length; i++) {
-      var s = styles[i];
-      if (s.prop === "font-size") fontSize = s.value;
-      else if (s.prop === "font-family")
-        fontFamily = s.value.split(",")[0].trim().replace(/['"]/g, "");
-      else if (s.prop === "font-weight") fontWeight = s.value;
-      else if (s.prop === "color") color = rgbToHex(s.value);
-    }
-    if (fontSize) parts.push(fontSize + (fontFamily ? " " + fontFamily : ""));
-    if (fontWeight && fontWeight !== "400") parts.push(fontWeight);
-    if (color) parts.push(color);
-    return parts.join(" \u00B7 ");
-  }
-
   function buildLabelLine3(el, styles) {
     var parts = [];
     var w = el.offsetWidth;
     var h = el.offsetHeight;
     if (w && h) parts.push(w + "\u00D7" + h);
-    var padding, margin, borderRadius, display, flexDir;
+    var padding, margin, display, flexDir;
     for (var i = 0; i < styles.length; i++) {
       var s = styles[i];
       if (s.prop === "padding") padding = s.value;
       else if (s.prop === "margin") margin = s.value;
-      else if (s.prop === "border-radius") borderRadius = s.value;
       else if (s.prop === "display") display = s.value;
       else if (s.prop === "flex-direction") flexDir = s.value;
     }
@@ -377,16 +341,6 @@ if (window.__inspectOverlayActive) {
     if (padding) spacing.push("p:" + padding.replace(/px/g, ""));
     if (margin) spacing.push("m:" + margin.replace(/px/g, ""));
     if (spacing.length) parts.push(spacing.join(" "));
-    if (borderRadius) {
-      var brStr = borderRadius
-        .split(/\s+/)
-        .map(function (v) {
-          var n = Math.round(parseFloat(v));
-          return n > 9999 ? "full" : String(n);
-        })
-        .join(" ");
-      parts.push("r:" + brStr);
-    }
     if (display && /flex|grid/.test(display)) {
       if (display.indexOf("flex") !== -1) {
         parts.push("flex " + (flexDir || "row"));
@@ -751,72 +705,9 @@ if (window.__inspectOverlayActive) {
     regionCandidates = [];
   }
 
-  // --- Clipboard helpers ---
-  function buildClassName(el) {
-    var cn = el.className;
-    if (cn && typeof cn === "string" && cn.trim()) {
-      return "  class: " + cn.trim();
-    }
-    return null;
-  }
-
-  function buildSize(el) {
-    return (
-      "  size: " +
-      el.offsetWidth +
-      " x " +
-      el.offsetHeight +
-      " @" +
-      window.innerWidth +
-      "w"
-    );
-  }
-
-  function buildParentContext(el) {
-    var parent = el.parentElement;
-    if (
-      !parent ||
-      parent === document.body ||
-      parent === document.documentElement
-    )
-      return null;
-    var cs = window.getComputedStyle(parent);
-    var display = cs.getPropertyValue("display");
-    var parts = [];
-    if (/flex/.test(display)) {
-      parts.push("flex " + (cs.getPropertyValue("flex-direction") || "row"));
-    } else if (/grid/.test(display)) {
-      var cols = cs.getPropertyValue("grid-template-columns");
-      var colCount = cols && cols !== "none" ? cols.split(/\s+/).length : 0;
-      parts.push("grid" + (colCount ? " " + colCount + " cols" : ""));
-    } else {
-      parts.push(display);
-    }
-    var gap = cs.getPropertyValue("gap");
-    if (gap && gap !== "normal" && gap !== "0px") parts.push("gap " + gap);
-    var count = 0;
-    for (var i = 0; i < parent.children.length; i++) {
-      var ch = parent.children[i];
-      if (ch.id && ch.id.indexOf("__inspect") === 0) continue;
-      var ccs = window.getComputedStyle(ch);
-      if (ccs.display !== "none" && ccs.visibility !== "hidden") count++;
-    }
-    if (count > 1) parts.push(count + " children");
-    return "  parent: " + parts.join(", ");
-  }
-
   // --- Clipboard builder ---
   function buildClipboardText(el) {
-    var lines = [buildRef(el)];
-    var cn = buildClassName(el);
-    if (cn) lines.push(cn);
-    lines.push(buildSize(el));
-    var parentCtx = buildParentContext(el);
-    if (parentCtx) lines.push(parentCtx);
-    var styles = extractStyles(el);
-    var styleStr = formatStylesClipboard(styles);
-    if (styleStr) lines.push(styleStr);
-    return lines.join("\n");
+    return buildRef(el);
   }
 
   function formatMultiClipboard(items) {
@@ -954,16 +845,17 @@ if (window.__inspectOverlayActive) {
       }
     }
 
-    var ref = buildRef(el);
     var styles = extractStyles(el);
-    var line1 = escapeHtml(ref);
-    var line2 = escapeHtml(buildLabelLine2(styles));
-    var line3 = escapeHtml(buildLabelLine3(el, styles));
+    var name = escapeHtml(buildComponentName(el));
+    var size = escapeHtml(buildLabelLine3(el, styles));
+    var debug = escapeHtml(buildLabelDebug(el));
+    var parent = escapeHtml(buildLabelParent(el));
 
     var lines = [];
-    if (line1) lines.push('<span style="opacity:0.7">' + line1 + "</span>");
-    if (line2) lines.push("<span>" + line2 + "</span>");
-    if (line3) lines.push('<span style="opacity:0.6">' + line3 + "</span>");
+    if (name) lines.push("<span>" + name + "</span>");
+    if (size) lines.push('<span style="opacity:0.7">' + size + "</span>");
+    if (debug) lines.push('<span style="opacity:0.6">' + debug + "</span>");
+    if (parent) lines.push('<span style="opacity:0.5">' + parent + "</span>");
 
     label.innerHTML = lines.join("\n");
     label.style.display = "block";
@@ -998,16 +890,27 @@ if (window.__inspectOverlayActive) {
 
     // Shift+Click: toggle pin
     if (e.shiftKey) {
+      // If no pins yet but we have a previously clicked element, pin it first
+      if (
+        pinnedElements.length === 0 &&
+        lastClickedElement &&
+        lastClickedElement !== el &&
+        document.contains(lastClickedElement)
+      ) {
+        pinElement(lastClickedElement);
+      }
       if (isPinned(el)) {
         unpinElement(el);
       } else {
         pinElement(el);
       }
+      lastClickedElement = null;
       return;
     }
 
-    // Regular click: clear pins, copy single element
+    // Regular click: clear pins, remember element, copy single element
     clearPins();
+    lastClickedElement = el;
     var ref = buildRef(el);
     var clipText = buildClipboardText(el);
 

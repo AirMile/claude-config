@@ -151,11 +151,11 @@ Report overlay status:
 - Controls: Ctrl+Shift+X (Win/Linux) or Cmd+Shift+X (Mac) to toggle
 - Server URL: tunnel URL if cloudflared running, else localhost:3000
 
-Then return to SKILL.md FASE 2 (iterate loop).
+Setup voltooid. Overlay is actief — gebruiker kan elementen inspecteren en referenties plakken in chat.
 
 ## Teardown
 
-Only on explicit request ("remove the overlay", "cleanup iterate").
+Only on explicit request ("remove the overlay", "cleanup inspect").
 
 **Vite:**
 

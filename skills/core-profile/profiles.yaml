@@ -32,7 +32,7 @@ frontend:
   - frontend-audit
   - frontend-compose
   - frontend-convert
-  - frontend-iterate
+  - frontend-inspect
   - frontend-plan
   - frontend-tokens
   - frontend-wcag

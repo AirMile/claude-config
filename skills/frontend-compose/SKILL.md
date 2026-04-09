@@ -17,7 +17,7 @@ metadata:
 
 Compose a view by inventorying existing building blocks (components, hooks, services from the dev pipeline) and combining them with new functionality. Selects what belongs on this view, formulates user stories, designs the layout as ASCII art, generates code that reuses existing components, and optionally hooks up real data.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-plan` · `/frontend-convert` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-plan` · `/frontend-convert` · `/frontend-inspect` · `/frontend-audit` · `/frontend-wcag`
 
 ## References
 
@@ -66,17 +66,10 @@ multiSelect: false
 
 ### 0.2 Bestaat deze pagina al?
 
-```yaml
-header: "Pagina Status"
-question: "Bestaat de {page-name} pagina al in het project?"
-options:
-  - label: "Ja, pagina bestaat", description: "Ik wil de bestaande pagina aanpassen"
-  - label: "Nee, nieuwe pagina (Recommended)", description: "Pagina moet nog gemaakt worden"
-multiSelect: false
-```
+Auto-detect: glob for the page file in framework-standard locations (see 3.1 framework table). If found → existing page flow. If not found → new page flow. No user prompt needed.
 
-**If "Ja"** → proceed to 0.3 (page analysis).
-**If "Nee"** → proceed to 0.3b (theme check), then skip to FASE 1.
+**Page found** → proceed to 0.3 (page analysis).
+**Page not found** → proceed to 0.2b (theme check), then skip to FASE 1.
 
 ### 0.2b Theme Check (always)
 
@@ -151,56 +144,32 @@ Data layer:
 
 ```
 
-This gives the user visual + structural context before deciding what to change. Proceed to FASE 0.5 (page inventory).
-
-### 0.4 Backlog Stage
-
-Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`.
-
-Find feature matching the page name: `data.features.find(f => f.name === "{kebab-case-page-name}")`.
-
-- **Found + status TODO**: set `status: "DOING"`, `stage: "building"`, `date: "{YYYY-MM-DD}"`. Write back via Edit.
-- **Found + status DOING**: set `stage: "building"`. Write back via Edit.
-- **Not found**: add to `data.features[]`: `{ "name": "{name}", "type": "PAGE", "status": "DOING", "stage": "building", "phase": "P4", "description": "{purpose}", "dependency": null }`. Write back.
-
-Set `data.updated` to today. Keep `<script>` tags intact.
+This gives the user visual + structural context before deciding what to change. Proceed to FASE 0.5 (intent).
 
 ---
 
-## FASE 0.5: Current Page Inventory
+## FASE 0.5: Intent (existing pages only)
 
 **Condition:** Only execute this phase if the user indicated the page already exists (0.2 → "Ja"). If the page is new, this phase is skipped entirely.
 
-### 0.5.1 Ask Intent
-
-The page analysis and screenshot from 0.3 are already visible to the user. Now ask what they want to do — don't assume removal.
+The page analysis and screenshot from 0.3 are already visible to the user. Ask what they want to do in a single prompt:
 
 ```yaml
-header: "Doel"
-question: "Wat wil je doen met deze pagina?"
+header: "Wijziging"
+question: "Wat wil je aanpassen aan deze pagina?"
 options:
-  - label: "Functionaliteit toevoegen (Recommended)", description: "Nieuwe onderdelen toevoegen aan de bestaande pagina"
-  - label: "Onderdelen vervangen", description: "Bestaande onderdelen vervangen door iets anders"
-  - label: "Herschikken/aanpassen", description: "Bestaande onderdelen reorganiseren of stylen"
-  - label: "Opnieuw opbouwen", description: "Pagina from scratch, bestaande code negeren"
+  - label: "Functionaliteit toevoegen (Recommended)", description: "Beschrijf wat erbij moet"
+  - label: "Onderdelen vervangen", description: "Selecteer wat vervangen moet worden"
+  - label: "Herschikken/aanpassen", description: "Layout of styling wijzigen"
+  - label: "Opnieuw opbouwen", description: "Pagina from scratch"
 multiSelect: false
 ```
 
 **Handle each intent:**
 
-**If "Functionaliteit toevoegen"**: All existing components are kept. Ask what to add:
+**If "Functionaliteit toevoegen"**: All existing components are kept. User describes what to add via "Other" text input. Store: kept = all existing, added = user description.
 
-```yaml
-header: "Toevoegen"
-question: "Beschrijf welke functionaliteit erbij moet."
-options:
-  - label: "Ik typ het", description: "Vrije beschrijving van wat erbij moet"
-multiSelect: false
-```
-
-Proceed to 0.5.2 with: kept = all existing, added = user description.
-
-**If "Onderdelen vervangen"**: Ask which components to replace (multi-select, nothing pre-selected):
+**If "Onderdelen vervangen"**: Ask which components to replace (multi-select):
 
 ```yaml
 header: "Vervangen"
@@ -211,63 +180,21 @@ options:
 multiSelect: true
 ```
 
-Then ask what should replace them. Proceed to 0.5.2 with: kept = unselected, replaced = selected + replacement description.
+Then ask what should replace them. Store: kept = unselected, replaced = selected + replacement description.
 
-**If "Herschikken/aanpassen"**: All existing components are kept. Ask for description of desired changes:
-
-```yaml
-header: "Aanpassingen"
-question: "Beschrijf hoe je de pagina wilt aanpassen (layout, styling, volgorde, etc.)"
-options:
-  - label: "Ik typ het", description: "Vrije beschrijving"
-multiSelect: false
-```
-
-Proceed to 0.5.2 with: kept = all existing, changes = user description.
+**If "Herschikken/aanpassen"**: All existing components are kept. User describes changes via "Other" text input. Store: kept = all existing, changes = user description.
 
 **If "Opnieuw opbouwen"**: Proceed to FASE 1 with empty inventory (from scratch).
 
-### 0.5.2 Confirm Changes
-
-```
-PAGINA PLAN: {page-name}
-════════════════════════════════════════════════════════════════
-
-Behouden:
-  ✓ {Component}    → [Button1], [Button2]
-  ✓ {useHook}      → provides {data}
-
-[If replacing:]
-Vervangen:
-  ↻ {Component}    → was: [OldButton] → wordt: {replacement description}
-
-[If adding:]
-Toevoegen:
-  + {description}  → {expected actions}
-
-[If rearranging:]
-Aanpassen:
-  ~ {description of changes}
-
-════════════════════════════════════════════════════════════════
-```
-
-```yaml
-header: "Plan"
-question: "Klopt dit overzicht?"
-options:
-  - label: "Ja, ga door (Recommended)", description: "Start met user stories"
-  - label: "Aanpassen", description: "Ik wil het plan wijzigen"
-multiSelect: false
-```
-
-If "Aanpassen": ask what to change, update plan, re-confirm.
+**No separate confirmation prompt** — the inventory (kept/added/replaced) is shown at the CHECKPOINT together with the layout proposal. User validates everything in one place.
 
 ---
 
 ## FASE 1: Requirements (User Stories)
 
-### 1.0 Design Check
+### 1.0 Design Check (new pages only)
+
+**Skip entirely if page already exists** (FASE 0.5 was executed) — the page analysis from 0.3 provides better context than design spec data.
 
 Check `.project/project.json` → `design.pages` for the requested page name.
 
@@ -300,8 +227,6 @@ multiSelect: false
 **If "Nee":** Proceed as normal (1.1 and further).
 
 **If design data does not exist or page not defined:** Proceed as normal.
-
-**Existing page shortcut:** If FASE 0.5 was executed (page already exists), the purpose is already known from the page analysis (0.3) and the user's intent (0.5). Skip 1.1 and 1.2 — go directly to 1.3 with context from 0.3 (current components, data layer) + 0.5 (intent, additions/replacements/changes).
 
 ### 1.1 Gather Purpose (new pages only)
 
@@ -404,7 +329,9 @@ REUSABLE (from inventory / project scan):
 ════════════════════════════════════════════════════════════════
 ```
 
-### 1.4 Validate Requirements
+### 1.4 Validate Requirements (new pages only)
+
+**Skip for existing pages** — user validates stories + layout together at the CHECKPOINT.
 
 ```yaml
 header: "Requirements"
@@ -422,7 +349,7 @@ If "Aanpassen": ask what to change, update stories, re-validate.
 
 ## CHECKPOINT: Page Proposal (Requirements + Layout)
 
-Na requirements validatie, genereer meteen een **draft ASCII layout** en presenteer alles samen. De user ziet requirements + layout in één voorstel.
+Na story generatie, genereer meteen een **draft ASCII layout** en presenteer alles samen. De user ziet stories + layout + inventory (als bestaande pagina) in één voorstel.
 
 **Layout sizing rules** — use proportional row heights in ASCII art to reflect actual visual weight:
 
@@ -481,18 +408,17 @@ header: "Pagina Voorstel"
 question: "Hoe wil je verder met dit voorstel?"
 options:
   - label: "Goedkeuren (Recommended)", description: "Ga door naar code generatie"
+  - label: "Goedkeuren + data koppelen", description: "Genereer code én koppel aan API routes"
   - label: "Layout aanpassen", description: "Beschrijf wat er anders moet aan de layout"
   - label: "Requirements aanpassen", description: "Ik wil user stories wijzigen"
-  - label: "3 layout alternatieven", description: "Toon 3 structureel verschillende layouts"
-  - label: "Inzoomen", description: "Meer detail voor een specifieke sectie"
 multiSelect: false
 ```
 
-**If "Goedkeuren":** proceed to FASE 2.5 (finalize) → FASE 3.
+**If "Goedkeuren":** proceed to FASE 2.5 (finalize) → FASE 3. Skip FASE 4.
+**If "Goedkeuren + data koppelen":** proceed to FASE 2.5 → FASE 3 → FASE 4 (data hookup).
 **If "Layout aanpassen":** user describes changes, regenerate layout, re-present.
 **If "Requirements aanpassen":** return to 1.3 to modify stories.
-**If "3 layout alternatieven":** proceed to FASE 2.3.
-**If "Inzoomen":** proceed to FASE 2.4.
+**If user selects "Other":** supports "3 layout alternatieven" (→ FASE 2.3) and "Inzoomen" (→ FASE 2.4).
 
 ---
 
@@ -683,13 +609,6 @@ Theme: [Integrated from project.json#theme | Tailwind defaults used]
 ════════════════════════════════════════════════════════════════
 ```
 
-### 3.4 Backlog Completion Sync
-
-1. Read `.project/backlog.html` → parse JSON
-2. Find feature matching page name → set `stage: "built"`, `data.updated` to today
-3. Write back via Edit (keep `<script>` tags intact)
-4. Sync to `project.json` `features[]` array: merge feature with `status: "DOING"`, `stage: "built"`
-
 ### 3.5 Functionality Gap Assessment
 
 Identify gaps **before and during** code generation — don't generate placeholder code and then scan for it.
@@ -745,7 +664,7 @@ If no backlog exists: report gaps in completion report only.
 
 ### 3.6 Layout Verification
 
-Verify the generated page layout matches the approved ASCII layout from FASE 2. See `../shared/PLAYWRIGHT.md` for tool details and error recovery.
+Verify the generated page layout matches the approved ASCII layout from FASE 2. See `../shared/PLAYWRIGHT.md` for tool details and error recovery. See `../shared/VERIFICATION.md` for the generic verification loop pattern.
 
 **Pre-flight:** Check Playwright MCP tools available (`browser_navigate`, `browser_take_screenshot`, `browser_close`). If unavailable → skip with message: `"Playwright niet beschikbaar — open de pagina handmatig om te verifiëren."`, proceed to FASE 4.
 
@@ -800,69 +719,20 @@ options:
 multiSelect: false
 ```
 
-**If "Aanpassen":** User describes what needs to change. Apply layout fixes, take new screenshot, and ask again. Max 3 rounds — after that, proceed to 3.7.
-
-### 3.7 UI Refinement
-
-After the layout structure is approved, improve the visual quality of the page. This step focuses purely on aesthetics — no new functionality or structural changes.
-
-**Take a fresh screenshot** (or reuse the last one from 3.6 if no changes were made).
-
-**Analyze the screenshot using `shared/DESIGN.md` as checklist** — specifically the typography scale, spacing system, color contrast, and anti-patterns sections. If project.json#theme exists, use its tokens as source of truth for values.
-
-**Apply improvements directly** — fix spacing, adjust typography scale, improve visual hierarchy. These are non-breaking cosmetic changes only.
-
-**After applying fixes:** Take a new screenshot to verify improvements.
-
-**Responsive check (optional):**
-
-1. `browser_resize` → `{ width: 375, height: 812 }` (mobile viewport)
-2. `browser_take_screenshot` → check mobile layout
-3. If broken: fix responsive issues (stacking, font sizes, padding), re-screenshot
-4. `browser_resize` → `{ width: 1280, height: 800 }` (restore desktop)
-
-Skip responsive check if the page is explicitly desktop-only or an admin/internal tool.
-
-**Report:**
-
-```
-UI REFINEMENT
-════════════════════════════════════════════════════════════════
-
-Improvements applied:
-  ✓ [description of improvement]
-  ✓ [description of improvement]
-  ...
-
-[If no improvements needed:]
-  ✓ Visual quality already good — no changes needed
-
-════════════════════════════════════════════════════════════════
-```
-
-Max 2 refinement iterations. After that, proceed to FASE 4.
+**If "Aanpassen":** User describes what needs to change. Apply layout fixes, take new screenshot, and ask again. Max 3 rounds — after that, proceed to FASE 4 (if data hookup selected at CHECKPOINT) or Completion.
 
 ---
 
 ## FASE 4: Data Hookup (Optional)
 
+**Only executed when user chose "Goedkeuren + data koppelen" at CHECKPOINT.** Otherwise skip to Completion.
+
 ### 4.1 Detect API Availability
 
 Check `package.json` and glob for API route files to detect available endpoints.
 
-- **API routes found** → offer data hookup
-- **No API routes found** → skip this phase entirely
-
-```yaml
-header: "Data"
-question: "Er zijn API routes gevonden. Wil je de pagina koppelen aan echte data?"
-options:
-  - label: "Ja, koppel data (Recommended)", description: "Service layer + hooks + loading/error states"
-  - label: "Nee, later via /frontend-iterate", description: "Houd placeholder data voor nu"
-multiSelect: false
-```
-
-If "Nee" or no APIs found: skip to completion.
+- **API routes found** → proceed with data hookup
+- **No API routes found** → skip to completion with note: "Geen API routes gevonden — data hookup overgeslagen."
 
 ### 4.2 Generate Data Layer
 
@@ -931,6 +801,17 @@ Pattern: [React Query | SWR | Server Components | Plain fetch]
 
 ## Completion
 
+### Backlog Sync
+
+Combinatie van de voormalige 0.4 (start) en 3.4 (built) stappen — doe alles in één keer bij completion.
+
+1. Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`
+2. Find feature matching page name: `data.features.find(f => f.name === "{kebab-case-page-name}")`
+   - **Found + status TODO**: set `status: "DOING"`, `stage: "built"`, `date: today`
+   - **Found + status DOING**: set `stage: "built"`
+   - **Not found**: add to `data.features[]`: `{ "name": "{name}", "type": "PAGE", "status": "DOING", "stage": "built", "phase": "P4", "description": "{purpose}", "dependency": null }`
+3. Set `data.updated` to today. Write back via Edit (keep `<script>` tags intact)
+
 ### Dashboard Sync
 
 **Goal:** Sync geïnstalleerde packages naar project.json.
@@ -995,10 +876,9 @@ Gaps ({N}):
 
 Next steps:
   1. npm run dev → open http://localhost:3000/[page]
-  2. /frontend-iterate → visual refinement in browser
-  3. /frontend-tokens → design tokens aanpassen/toepassen
-  4. /frontend-audit → performance/SEO audit
-  5. /frontend-wcag → accessibility audit
+  2. /frontend-tokens → design tokens aanpassen/toepassen
+  3. /frontend-audit → performance/SEO audit
+  4. /frontend-wcag → accessibility audit
   [Als gaps die dev-werk nodig hebben:]
   6. /dev-define {feature} → definieer ontbrekende functionaliteit
   [Als layout/UX complex is:]

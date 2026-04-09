@@ -15,7 +15,7 @@ metadata:
 
 Beheert de design specificatie van het project: pagina's, user flows, en design principes vastleggen en beheren. Iteratief — roep meerdere keren aan om incrementeel op te bouwen.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-compose` · `/frontend-convert` · `/frontend-iterate` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-compose` · `/frontend-convert` · `/frontend-inspect` · `/frontend-audit` · `/frontend-wcag`
 
 **Output locatie:** `.project/project.json` → `design` sectie
 
@@ -783,9 +783,8 @@ Next steps:
   2. /frontend-tokens     → design tokens en kleuren op basis van principes
   3. /frontend-compose {page} → bouw een specifieke pagina
   4. /frontend-convert   → converteer een design naar code
-  5. /frontend-iterate   → visueel verfijnen van bestaande pagina's
-  6. /frontend-audit     → performance/SEO audit
-  7. /frontend-wcag      → accessibility audit
+  5. /frontend-audit     → performance/SEO audit
+  6. /frontend-wcag      → accessibility audit
 
 ═══════════════════════════════════════════════════════════════
 ```

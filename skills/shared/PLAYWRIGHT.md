@@ -1,6 +1,6 @@
 # Playwright Browser Automation
 
-Reusable Playwright MCP patterns for visual validation, accessibility checks, and browser-based testing across frontend skills.
+Reusable Playwright MCP patterns for visual validation, accessibility checks, and browser-based testing across frontend skills. For round-based screenshot comparison loops, see `VERIFICATION.md`.
 
 ---
 

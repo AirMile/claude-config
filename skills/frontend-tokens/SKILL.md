@@ -1205,7 +1205,7 @@ options:
   - label: "Ja, restyle alles (Recommended)", description: "Vervang hardcoded waarden door theme tokens in alle {N} bestanden"
   - label: "Extract als theme", description: "Formaliseer bestaande kleuren/waarden als theme tokens (reverse sync)"
   - label: "Toon bestanden", description: "Bekijk welke bestanden geraakt worden voordat je beslist"
-  - label: "Nee, alleen theme opslaan", description: "Sla over — handmatig later via /frontend-iterate"
+  - label: "Nee, alleen theme opslaan", description: "Sla over — handmatig later"
 multiSelect: false
 ```
 
@@ -1284,8 +1284,7 @@ Theme tokens ready in project.json voor downstream consumption.
 
 Next steps:
   1. /frontend-compose {page} → bouw een pagina met deze tokens
-  2. /frontend-iterate → visueel verfijnen met theme tokens
-  3. /frontend-convert → converteer een design met deze tokens
+  2. /frontend-convert → converteer een design met deze tokens
   4. /frontend-audit → check performance en SEO
   5. /frontend-wcag → accessibility audit
 ```

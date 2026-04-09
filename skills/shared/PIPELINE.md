@@ -22,7 +22,7 @@ Standalone: `/dev-doctor` (codebase health), `/dev-owasp` (security audit), `/de
 ## Frontend Pipeline
 
 ```
-/frontend-plan ──→ /frontend-compose ──→ /frontend-audit ──→ [/frontend-iterate]
+/frontend-plan ──→ /frontend-compose ──→ /frontend-audit ──→ [/frontend-inspect]
                    /frontend-convert      /frontend-wcag
 ```
 

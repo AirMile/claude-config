@@ -84,7 +84,7 @@ TODO → DOING → DONE
 | DOING  | In bewerking   | /dev-define, /dev-build, /dev-verify, /frontend-compose, /frontend-convert, /frontend-audit, /frontend-wcag |
 | DONE   | Getest & klaar | /dev-verify, /frontend-audit, /frontend-wcag                                                                |
 
-`/dev-refactor` en `/frontend-iterate` zijn optionele kwaliteitsstappen — geen status-gate.
+`/dev-refactor` is een optionele kwaliteitsstap — geen status-gate.
 
 ## Stage (voortgang binnen DOING)
 
