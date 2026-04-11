@@ -1,20 +1,20 @@
 # claude-config
 
-Persoonlijke Claude Code configuratie: skills, agents, hooks en scripts. Gesymlinkt naar `~/.claude/` zodat alles globaal beschikbaar is.
+Persoonlijke Claude Code configuratie: skills, agents, hooks en scripts. Gekoppeld aan `~/.claude/` via junctions (Windows) of symlinks (Linux) zodat alles globaal beschikbaar is.
 
-**Paden zijn identiek** — `~/.claude/skills/` en `/home/claude/projects/claude-config/skills/` wijzen naar dezelfde bestanden. Commits altijd in deze repo.
+**Paden zijn identiek** — `~/.claude/skills/` en de repo's `skills/` wijzen naar dezelfde bestanden. Commits altijd in deze repo.
 
 ## Platform
 
-Cross-platform: **Linux (VPS)** en **Windows (lokale dev)**.
+Cross-platform: **Windows (primair)** en **Linux (optioneel)**.
 
-|               | Linux (VPS)                            | Windows                                  |
-| ------------- | -------------------------------------- | ---------------------------------------- |
-| Repo          | `/home/claude/projects/claude-config/` | `C:\Projects\claude-config`              |
-| Projects root | `$HOME/projects`                       | `C:\Projects`                            |
-| Symlinks      | `ln -sfn`                              | `mklink /J` (junction)                   |
-| Godot         | n.v.t.                                 | `/c/Godot/Godot_v4.4.1-stable_win64.exe` |
-| Shell         | bash                                   | PowerShell                               |
+|               | Windows                                  | Linux                          |
+| ------------- | ---------------------------------------- | ------------------------------ |
+| Repo          | `C:\Projects\claude-config`              | `$HOME/projects/claude-config` |
+| Projects root | `C:\Projects`                            | `$HOME/projects`               |
+| Koppeling     | `mklink /J` (junction)                   | `ln -sfn` (symlink)            |
+| Godot         | `/c/Godot/Godot_v4.4.1-stable_win64.exe` | n.v.t.                         |
+| Shell         | PowerShell                               | bash                           |
 
 **Regels:**
 
@@ -30,9 +30,9 @@ skills/           55+ skills in 8 categorieën
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (elk met SKILL.md)
 agents/           20 sub-agent definities (.md met YAML frontmatter)
-hooks/            format-on-save.cjs (Prettier/gdformat)
+hooks/            format-on-save.cjs, prompt-timer.cjs
+local/            Portable configs voor ~/.claude/ (templates, niet gejunctiond)
 CLAUDE.base.md    Template voor per-project CLAUDE.md generatie
-setup-project.sh  Linkt config naar een project's .claude/
 ```
 
 ## Skill Conventies

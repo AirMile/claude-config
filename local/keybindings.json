@@ -1,0 +1,11 @@
+{
+  "bindings": [
+    {
+      "context": "Autocomplete",
+      "bindings": {
+        "down": "autocomplete:dismiss",
+        "up": "autocomplete:dismiss"
+      }
+    }
+  ]
+}
