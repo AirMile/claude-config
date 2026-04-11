@@ -11,6 +11,7 @@ core:
   - core-pull
   - core-queue
   - core-refine
+  - core-rewrite
   - core-setup
   - project-list
   - project-add
