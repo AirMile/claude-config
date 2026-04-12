@@ -17,7 +17,6 @@ const JS_FILES = [
   "backlog-brief.js",
   "backlog-sort.js",
   "backlog-drag.js",
-  "backlog-role-guard.js",
   "backlog-github.js",
 ];
 

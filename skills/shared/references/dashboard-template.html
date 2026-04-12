@@ -1781,20 +1781,6 @@
         if (!hasTheme) hiddenTabs.theme = true;
         if (!hasThinking) hiddenTabs.thinking = true;
 
-        // Teammate role: only show concept, design, theme, stack
-        if (window.__role === "teammate") {
-          const allowed = {
-            concept: 1,
-            architecture: 1,
-            design: 1,
-            theme: 1,
-            stack: 1,
-          };
-          TABS.forEach((t) => {
-            if (!allowed[t.id]) hiddenTabs[t.id] = true;
-          });
-        }
-
         const visibleTabs = TABS.filter((t) => !hiddenTabs[t.id]);
         if (hiddenTabs[activeTab]) {
           activeTab = visibleTabs[0].id;
@@ -1827,13 +1813,6 @@
 
         const renderer = renderers[activeTab];
         contentEl.innerHTML = renderer ? renderer() : "";
-
-        // Teammate: hide all edit buttons
-        if (window.__role === "teammate") {
-          contentEl.querySelectorAll(".edit-btn").forEach((b) => {
-            b.style.display = "none";
-          });
-        }
       }
 
       // ─── Init ───────────────────────────────────────────────

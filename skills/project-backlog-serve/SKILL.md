@@ -4,7 +4,7 @@ description: Start, stop of check de lokale backlog/dashboard server op localhos
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 3.0.0
+  version: 3.1.0
   category: project
 ---
 
@@ -88,12 +88,6 @@ Als na 5s niet bereikbaar → toon foutmelding + laatste regels uit de log file.
 
 ### FASE 2: Toon resultaat
 
-Lees de adminToken (de server maakt deze automatisch aan bij eerste start):
-
-```bash
-node -e "console.log(JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.claude/server-auth.json','utf8')).adminToken)"
-```
-
 Scan projecten in de projects root (directories met een `.project/` subdirectory):
 
 _Windows:_
@@ -112,9 +106,6 @@ Toon output:
 
 ```
 Server:  http://localhost:9876
-
-Admin:   http://localhost:9876/auth?token={adminToken}
-         (eenmalig openen voor login — daarna werkt de bookmark)
 
 Projecten:
   - {project-naam} → http://localhost:9876/{project-naam}           (dashboard)

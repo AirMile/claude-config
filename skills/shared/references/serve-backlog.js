@@ -3,12 +3,6 @@
 // Default: ~/projects
 //
 // Routes:
-//   /login                        → login page
-//   /auth?token=...               → admin deeplink
-//   /invite/<token>               → teammate invite link
-//   /logout                       → clear session
-//   /admin/invite                 → create invite (admin)
-//   /admin/invites                → list invites (admin)
 //   /css/{file}.css               → static CSS files
 //   /js/{file}.js                 → static JS files
 //   /                             → index with all projects
@@ -44,15 +38,6 @@ const {
   esc,
 } = require("./lib/templates");
 const backlogPatch = require("./lib/backlog-patches");
-const {
-  loadAuth,
-  getSession,
-  setAuthCookie,
-  clearAuthCookie,
-  createInvite,
-  removeInvite,
-} = require("./lib/auth");
-const { loginPage } = require("./lib/login");
 
 // Async exec helper for GitHub CLI commands
 function ghExec(cmd) {
@@ -67,9 +52,6 @@ function ghExec(cmd) {
     );
   });
 }
-
-// Remembered tunnel URL (auto-detected from incoming non-localhost requests)
-var tunnelUrl = null;
 
 // Theme head injection (for existing backlogs that lack the theme tags)
 const themeHeadTags =
@@ -93,121 +75,7 @@ http
     const url = new URL(req.url, "http://localhost:" + PORT);
     const parts = url.pathname.split("/").filter(Boolean);
 
-    // Track tunnel URL from non-localhost Host headers
-    var host = req.headers.host || "";
-    if (
-      host &&
-      !host.startsWith("localhost") &&
-      !host.startsWith("127.0.0.1")
-    ) {
-      var proto = req.headers["x-forwarded-proto"] || "https";
-      tunnelUrl = proto + "://" + host;
-    }
-
-    // ── Auth routes (no session required) ──
-
-    // Login page
-    if (req.method === "GET" && url.pathname === "/login") {
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(loginPage());
-      return;
-    }
-
-    // Login form submit
-    if (req.method === "POST" && url.pathname === "/login") {
-      var body = "";
-      req.on("data", function (chunk) {
-        body += chunk;
-      });
-      req.on("end", function () {
-        var code = "";
-        // Parse URL-encoded form data
-        if (
-          (req.headers["content-type"] || "").includes(
-            "application/x-www-form-urlencoded",
-          )
-        ) {
-          var params = new URLSearchParams(body);
-          code = (params.get("code") || "").trim();
-        } else {
-          try {
-            code = JSON.parse(body).code || "";
-          } catch {}
-        }
-
-        var auth = loadAuth();
-        // Check admin token
-        if (code === auth.adminToken) {
-          setAuthCookie(res, code);
-          res.writeHead(302, { Location: "/" });
-          res.end();
-          return;
-        }
-        // Check invite codes
-        for (var i = 0; i < auth.invites.length; i++) {
-          if (code === auth.invites[i].token) {
-            setAuthCookie(res, code);
-            var projects = auth.invites[i].projects || [
-              auth.invites[i].project,
-            ];
-            var dest =
-              projects.length === 1 ? "/" + projects[0] + "/backlog" : "/";
-            res.writeHead(302, { Location: dest });
-            res.end();
-            return;
-          }
-        }
-        // Invalid code
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        res.end(loginPage("Ongeldige code"));
-      });
-      return;
-    }
-
-    // Admin deeplink
-    if (req.method === "GET" && url.pathname === "/auth") {
-      var token = url.searchParams.get("token");
-      var auth = loadAuth();
-      if (token && token === auth.adminToken) {
-        setAuthCookie(res, token);
-        res.writeHead(302, { Location: "/" });
-        res.end();
-      } else {
-        res.writeHead(302, { Location: "/login" });
-        res.end();
-      }
-      return;
-    }
-
-    // Invite link
-    if (req.method === "GET" && parts[0] === "invite" && parts[1]) {
-      var inviteToken = parts[1];
-      var auth = loadAuth();
-      for (var i = 0; i < auth.invites.length; i++) {
-        if (auth.invites[i].token === inviteToken) {
-          setAuthCookie(res, inviteToken);
-          var projects = auth.invites[i].projects || [auth.invites[i].project];
-          var dest =
-            projects.length === 1 ? "/" + projects[0] + "/backlog" : "/";
-          res.writeHead(302, { Location: dest });
-          res.end();
-          return;
-        }
-      }
-      res.writeHead(302, { Location: "/login" });
-      res.end();
-      return;
-    }
-
-    // Logout
-    if (req.method === "GET" && url.pathname === "/logout") {
-      clearAuthCookie(res);
-      res.writeHead(302, { Location: "/login" });
-      res.end();
-      return;
-    }
-
-    // ── Static files (no auth required) ──
+    // ── Static files ──
 
     // Static CSS and JS files
     const staticMatch = url.pathname.match(
@@ -232,127 +100,23 @@ http
       }
     }
 
-    // ── Auth middleware (everything below requires a session) ──
-    const session = getSession(req);
-    if (!session) {
-      res.writeHead(302, { Location: "/login" });
-      res.end();
-      return;
-    }
-
-    // Helper: build role injection script for HTML pages
-    function roleScript() {
-      if (session.role === "admin") return "";
-      return (
-        "<script>window.__role=" +
-        JSON.stringify(session.role) +
-        ";window.__userName=" +
-        JSON.stringify(session.name || "") +
-        ";</script>"
-      );
-    }
-
-    // ── Admin API routes ──
-    if (req.method === "POST" && url.pathname === "/admin/invite") {
-      if (session.role !== "admin") {
-        res.writeHead(403, { "Content-Type": "application/json" });
-        res.end('{"error":"Geen toegang"}');
-        return;
-      }
-      var body = "";
-      req.on("data", function (chunk) {
-        body += chunk;
-      });
-      req.on("end", function () {
-        try {
-          var data = JSON.parse(body);
-          if (!data.name || !data.projects || !data.projects.length) {
-            res.writeHead(400, { "Content-Type": "application/json" });
-            res.end('{"error":"name en projects zijn verplicht"}');
-            return;
-          }
-          var token = createInvite(data.name, data.projects);
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(
-            JSON.stringify({
-              ok: true,
-              token: token,
-              inviteUrl: "/invite/" + token,
-            }),
-          );
-        } catch (e) {
-          res.writeHead(500, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: e.message }));
-        }
-      });
-      return;
-    }
-
-    if (req.method === "GET" && url.pathname === "/admin/invites") {
-      if (session.role !== "admin") {
-        res.writeHead(403, { "Content-Type": "application/json" });
-        res.end('{"error":"Geen toegang"}');
-        return;
-      }
-      var auth = loadAuth();
-      var invites = auth.invites.map(function (inv) {
-        return {
-          name: inv.name,
-          projects: inv.projects || [inv.project],
-          inviteUrl: "/invite/" + inv.token,
-          token: inv.token,
-        };
-      });
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(invites));
-      return;
-    }
-
-    if (
-      req.method === "DELETE" &&
-      parts[0] === "admin" &&
-      parts[1] === "invite" &&
-      parts[2]
-    ) {
-      if (session.role !== "admin") {
-        res.writeHead(403, { "Content-Type": "application/json" });
-        res.end('{"error":"Geen toegang"}');
-        return;
-      }
-      removeInvite(parts[2]);
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end('{"ok":true}');
-      return;
-    }
-
     // Index
     if (req.method === "GET" && parts.length === 0) {
       var projects = findProjects();
-      // Teammates: filter to only their projects
-      if (session.role === "teammate" && session.projects) {
-        projects = projects.filter(function (p) {
-          return session.projects.indexOf(p.dir) !== -1;
-        });
-      }
       res.writeHead(200, {
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-cache, no-store",
       });
-      res.end(indexPage(projects, session, tunnelUrl));
+      res.end(indexPage(projects));
       return;
     }
 
-    // Global CLAUDE.md (read/write) — admin only
+    // Global CLAUDE.md (read/write)
     if (
       parts[0] === "global" &&
       parts[1] === "claude-md" &&
       parts.length === 2
     ) {
-      if (session.role !== "admin") {
-        res.writeHead(403);
-        res.end("Geen toegang");
-        return;
-      }
       const globalPath = path.join(
         require("os").homedir(),
         ".claude/CLAUDE.md",
@@ -412,17 +176,6 @@ http
       if (!fs.existsSync(projectPath)) {
         res.writeHead(404);
         res.end("Project niet gevonden: " + esc(projectDir));
-        return;
-      }
-
-      // Teammate: block access to projects outside their list
-      if (
-        session.role === "teammate" &&
-        session.projects &&
-        session.projects.indexOf(projectDir) === -1
-      ) {
-        res.writeHead(403);
-        res.end("Geen toegang tot dit project");
         return;
       }
 
@@ -576,11 +329,6 @@ http
         parts[1] === "backlog" &&
         parts[2] === "create"
       ) {
-        if (session.role !== "admin") {
-          res.writeHead(403);
-          res.end("Geen toegang");
-          return;
-        }
         const file = path.join(projectPath, BACKLOG_PATH);
         if (!fs.existsSync(file)) {
           try {
@@ -621,12 +369,12 @@ http
           if (!html.includes("themes.js")) {
             html = html.replace("</head>", themeHeadTags + "</head>");
           }
-          const nav = getNavBarHtml(projectDir, "backlog", session);
+          const nav = getNavBarHtml(projectDir, "backlog");
           const projectRoot = path.join(PROJECTS_ROOT, projectDir);
           const rootScript = `<script>window.__projectRoot=${JSON.stringify(projectRoot)};</script>`;
           html = html.replace(
             "</body>",
-            roleScript() + rootScript + backlogPatch + nav + "</body>",
+            rootScript + backlogPatch + nav + "</body>",
           );
           res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",
@@ -686,11 +434,6 @@ http
         parts[1] === "create" &&
         parts.length === 2
       ) {
-        if (session.role !== "admin") {
-          res.writeHead(403);
-          res.end("Geen toegang");
-          return;
-        }
         const dashFile = path.join(projectPath, DASHBOARD_PATH);
         if (!fs.existsSync(dashFile)) {
           try {
@@ -813,13 +556,8 @@ http
         return;
       }
 
-      // CLAUDE.md (read/write) — admin only
+      // CLAUDE.md (read/write)
       if (parts[1] === "claude-md" && parts.length === 2) {
-        if (session.role !== "admin") {
-          res.writeHead(403, { "Content-Type": "application/json" });
-          res.end('{"error":"Geen toegang"}');
-          return;
-        }
         const claudePath = path.join(projectPath, ".claude/CLAUDE.md");
 
         if (req.method === "GET") {
@@ -898,18 +636,13 @@ http
         return;
       }
 
-      // GitHub config check — admin only
+      // GitHub config check
       if (
         req.method === "GET" &&
         parts[1] === "github" &&
         parts[2] === "config-check" &&
         parts.length === 3
       ) {
-        if (session.role !== "admin") {
-          res.writeHead(403, { "Content-Type": "application/json" });
-          res.end('{"error":"Geen toegang"}');
-          return;
-        }
         var ghConfigPath = path.join(
           projectPath,
           ".project",
@@ -932,17 +665,12 @@ http
         return;
       }
 
-      // Push backlog item to GitHub as Done — admin only
+      // Push backlog item to GitHub as Done
       if (
         req.method === "POST" &&
         parts[1] === "github" &&
         parts[2] === "push-done"
       ) {
-        if (session.role !== "admin") {
-          res.writeHead(403, { "Content-Type": "application/json" });
-          res.end('{"error":"Geen toegang"}');
-          return;
-        }
         var ghBody = "";
         req.on("data", function (chunk) {
           ghBody += chunk;
@@ -1138,13 +866,8 @@ http
         return;
       }
 
-      // Open file in VS Code — admin only
+      // Open file in VS Code
       if (req.method === "POST" && parts[1] === "open" && parts.length >= 3) {
-        if (session.role !== "admin") {
-          res.writeHead(403, { "Content-Type": "application/json" });
-          res.end('{"error":"Geen toegang"}');
-          return;
-        }
         const relPath = parts.slice(2).join("/");
         if (relPath.includes("..")) {
           res.writeHead(400, { "Content-Type": "application/json" });
@@ -1202,7 +925,7 @@ http
       if (req.method === "GET" && parts.length === 1) {
         touchProject(projectDir);
         try {
-          const html = serveDashboard(projectDir, session);
+          const html = serveDashboard(projectDir);
           res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",
             "Cache-Control": "no-cache, no-store",

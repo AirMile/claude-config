@@ -18,18 +18,13 @@ function esc(str) {
     .replace(/"/g, "&quot;");
 }
 
-function getNavBarHtml(projectDir, activePage, session) {
+function getNavBarHtml(projectDir, activePage) {
   const dashClass = activePage === "dashboard" ? "active" : "";
   const backlogClass = activePage === "backlog" ? "active" : "";
   const projectName = projectDir;
 
-  // Teammates with 1 project: no back link. Multiple projects: show back link.
-  const isTeammate = session && session.role === "teammate";
-  const showBack =
-    !isTeammate || (session.projects && session.projects.length > 1);
-  const backHtml = showBack
-    ? '<a href="/" class="pn-back">&larr; Projects</a><span class="pn-sep">/</span>'
-    : "";
+  const backHtml =
+    '<a href="/" class="pn-back">&larr; Projects</a><span class="pn-sep">/</span>';
 
   return `
 <style>
@@ -56,7 +51,7 @@ function getNavBarHtml(projectDir, activePage, session) {
 </nav>`;
 }
 
-function serveDashboard(projectDir, session) {
+function serveDashboard(projectDir) {
   const dashFile = path.join(PROJECTS_ROOT, projectDir, DASHBOARD_PATH);
   var dashData = createDefaultDashboardData(projectDir);
 
@@ -79,18 +74,7 @@ function serveDashboard(projectDir, session) {
     JSON.stringify(dashData, null, 2) +
     "\n" +
     html.substring(endIdx);
-  const nav = getNavBarHtml(projectDir, "dashboard", session);
-
-  // Inject role variables for teammates (raw JS, no script tags — injected inside existing script block)
-  var roleJs = "";
-  if (session && session.role === "teammate") {
-    roleJs =
-      "window.__role=" +
-      JSON.stringify(session.role) +
-      ";window.__userName=" +
-      JSON.stringify(session.name || "") +
-      ";\n";
-  }
+  const nav = getNavBarHtml(projectDir, "dashboard");
 
   const dashRefresh = `<script>
 (function(){
@@ -107,17 +91,11 @@ function serveDashboard(projectDir, session) {
   };
 })();
 </script>`;
-  // Role JS must be injected BEFORE the init render() call (after mermaid.initialize)
-  html = html.replace(
-    "      });\n      render();\n    </script>",
-    "      });\n" + roleJs + "      render();\n    </script>",
-  );
   html = html.replace("</body>", dashRefresh + nav + "</body>");
   return html;
 }
 
-function indexPage(projects, session, tunnelUrl) {
-  const isAdmin = !session || session.role === "admin";
+function indexPage(projects) {
   const activeProjects = projects.filter(function (p) {
     return p.hasBacklog || p.hasDashboard;
   });
@@ -162,7 +140,7 @@ function indexPage(projects, session, tunnelUrl) {
   };
 
   const activeRows = activeProjects.map(projectCard).join("");
-  const emptyRows = isAdmin ? emptyProjects.map(emptyCard).join("") : "";
+  const emptyRows = emptyProjects.map(emptyCard).join("");
 
   return `<!doctype html>
 <html lang="nl">
@@ -255,133 +233,14 @@ function indexPage(projects, session, tunnelUrl) {
 <body>
   <div class="page-header">
     <h1>Projects</h1>
-    ${isAdmin ? '<div style="display:flex;gap:8px"><button class="config-open-btn" id="invite-open">Invite</button><button class="config-open-btn" id="config-open">Global Config</button></div>' : ""}
+    <div style="display:flex;gap:8px"><button class="config-open-btn" id="config-open">Global Config</button></div>
   </div>
   <div class="projects-list">
     ${activeRows}
   </div>
-  <div class="config-overlay" id="invite-overlay">
-    <div class="config-modal" id="invite-modal"></div>
-  </div>
   <div class="config-overlay" id="config-overlay">
     <div class="config-modal" id="config-modal"></div>
   </div>
-  ${
-    isAdmin
-      ? "<script>var __projectDirs=" +
-        JSON.stringify(
-          activeProjects.map(function (p) {
-            return p.dir;
-          }),
-        ) +
-        ";var __tunnelUrl=" +
-        JSON.stringify(tunnelUrl || null) +
-        ";</script>"
-      : ""
-  }
-  <script>
-  (function() {
-    if (!document.getElementById("invite-open")) return;
-    var overlay = document.getElementById("invite-overlay");
-    var modal = document.getElementById("invite-modal");
-    var invites = null;
-
-    function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-
-    function renderInvites() {
-      var formHtml =
-        '<div class="config-header"><h3>Teammates uitnodigen</h3>' +
-        '<button class="config-btn config-btn-close" id="inv-close">&times;</button></div>' +
-        '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div><label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);display:block;margin-bottom:6px">Naam</label>' +
-        '<input id="inv-name" style="width:100%;max-width:240px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;font-family:inherit;outline:none;transition:border-color 0.15s;color-scheme:dark" placeholder="Jan"></div>' +
-        '<div><label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);display:block;margin-bottom:6px">Projecten</label>' +
-        '<div id="inv-projects" style="display:flex;gap:6px;flex-wrap:wrap">' +
-        (__projectDirs||[]).map(function(d) {
-          return '<label style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;transition:all 0.15s;user-select:none">' +
-            '<input type="checkbox" value="' + esc(d) + '" style="accent-color:var(--accent);margin:0"> ' + esc(d) + '</label>';
-        }).join("") +
-        '</div></div>' +
-        '<div style="padding-top:4px"><button class="config-btn config-btn-save" id="inv-create" style="padding:8px 20px">Invite aanmaken</button></div></div>' +
-        '<div style="height:20px"></div>';
-
-      var listHtml = "";
-      if (invites && invites.length) {
-        listHtml = '<div style="border-top:1px solid var(--border);padding-top:16px">' +
-          '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px">Actieve invites</div>';
-        invites.forEach(function(inv) {
-          var base = __tunnelUrl || location.origin;
-          var url = base + "/invite/" + inv.token;
-          listHtml +=
-            '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;background:var(--bg);border:1px solid var(--border);border-radius:6px">' +
-            '<span style="font-weight:600;font-size:13px;color:var(--text)">' + esc(inv.name) + '</span>' +
-            '<span style="font-size:12px;color:var(--muted)">' + esc(inv.projects.join(", ")) + '</span>' +
-            '<span style="flex:1"></span>' +
-            '<button class="config-btn config-btn-edit inv-copy" data-url="' + esc(url) + '" style="font-size:12px;padding:4px 12px">Kopieer link</button>' +
-            '<button class="config-btn config-btn-close inv-del" data-token="' + esc(inv.token) + '" style="font-size:14px;padding:2px 8px">&times;</button>' +
-            '</div>';
-        });
-        listHtml += '</div>';
-      }
-
-      modal.innerHTML = formHtml + listHtml;
-    }
-
-    function loadInvites() {
-      fetch("/admin/invites").then(function(r){return r.json()}).then(function(data) {
-        invites = data;
-        renderInvites();
-      }).catch(function() { invites = []; renderInvites(); });
-    }
-
-    document.getElementById("invite-open").addEventListener("click", function() {
-      overlay.classList.add("visible");
-      loadInvites();
-    });
-
-    overlay.addEventListener("click", function(e) {
-      if (e.target === overlay) overlay.classList.remove("visible");
-    });
-
-    document.addEventListener("keydown", function(e) {
-      if (e.key === "Escape" && overlay.classList.contains("visible")) overlay.classList.remove("visible");
-    });
-
-    document.addEventListener("click", function(e) {
-      if (e.target.id === "inv-close") overlay.classList.remove("visible");
-
-      if (e.target.id === "inv-create") {
-        var name = document.getElementById("inv-name").value.trim();
-        var checks = document.querySelectorAll("#inv-projects input:checked");
-        var projects = [];
-        checks.forEach(function(c) { projects.push(c.value); });
-        if (!name || !projects.length) return;
-        fetch("/admin/invite", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name:name,projects:projects}) })
-          .then(function(r){return r.json()}).then(function(d) {
-            if (d.ok) {
-              document.getElementById("inv-name").value = "";
-              document.querySelectorAll("#inv-projects input").forEach(function(c){c.checked=false});
-              loadInvites();
-            }
-          });
-      }
-
-      if (e.target.classList.contains("inv-copy")) {
-        var url = e.target.dataset.url;
-        navigator.clipboard.writeText(url).then(function() {
-          e.target.textContent = "Gekopieerd!";
-          setTimeout(function() { e.target.textContent = "Link"; }, 1500);
-        });
-      }
-
-      if (e.target.classList.contains("inv-del")) {
-        var token = e.target.dataset.token;
-        fetch("/admin/invite/" + token, { method:"DELETE" })
-          .then(function(r){return r.json()}).then(function(d) { if(d.ok) loadInvites(); });
-      }
-    });
-  })();
-  </script>
   <script>
   (function() {
     if (!document.getElementById("config-open")) return;
