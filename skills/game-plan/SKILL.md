@@ -55,8 +55,7 @@ Accepts markdown from:
    - Read concept: `.project/project-concept.md` als plain markdown, of fallback `project.json` (`concept.content`)
    - Read `backlog.html`
    - Analyze differences between concept and existing backlog
-   - Check `concept.thinking` entries with date AFTER `backlog.updated` to understand concept evolution
-   - Check `thinking[]` array in `project.json` for entries with `newFeature` field to identify independently-added features (via `/dev-todo`)
+   - Check `data.features[]` in `backlog.html` for entries with `source: "dev-todo"` to identify independently-added features
    - Compare current `concept.content` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
@@ -65,10 +64,6 @@ Accepts markdown from:
 
      Concept: .project/project-concept.md (of fallback: project.json concept.content)
      Backlog: .project/backlog.html
-
-     Concept evolution since last backlog update ({backlog.updated}):
-     {for each concept.thinking entry after backlog.updated:}
-     - [{type}] {date}: {summary} (via {source})
 
      Feature changes detected:
      - NEW: {list of features in concept but not in backlog}

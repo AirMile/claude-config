@@ -577,24 +577,7 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
-**Dashboard sync — concept thinking** (zie `shared/DASHBOARD.md`):
-
-1. Read `.project/project.json` (skip als niet bestaat)
-2. Schrijf volledige markdown naar `.project/thinking/{today}-brainstorm-{slug}.md`
-3. Push naar `concept.thinking` array (initialiseer als `[]` indien nodig):
-   ```json
-   {
-     "type": "brainstorm",
-     "date": "{today}",
-     "title": "{onderwerp van de brainstorm}",
-     "summary": "{key insight, max 200 chars}",
-     "file": ".project/thinking/{today}-brainstorm-{slug}.md",
-     "variants": ["{variant 1}", "{variant 2}", "..."],
-     "chosen": "{gekozen variant}",
-     "source": "/thinking-brainstorm"
-   }
-   ```
-4. Write `.project/project.json`
+**Concept-scope output is geïntegreerd in `project-concept.md`.** De gekozen variant wordt verwerkt in het levende document — geen losse `.project/thinking/*.md` voor concept-scope, geen `concept.thinking[]` append. Update `concept.name` en `concept.pitch` in `project.json` als metadata wijzigt.
 
 **If "Opslaan naar Obsidian":**
 

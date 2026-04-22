@@ -181,17 +181,7 @@ Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar 
   "name": "Project Naam",
   "pitch": "Korte samenvatting van het concept in 1-2 zinnen.",
   "conceptFile": "project-concept.md",
-  "content": "",
-  "thinking": [
-    {
-      "type": "idea",
-      "date": "2026-02-20",
-      "title": "Initieel idee",
-      "summary": "Key insight van de thinking output (max 200 chars)",
-      "file": ".project/thinking/2026-02-20-idea-initieel-idee.md",
-      "source": "/thinking-concept"
-    }
-  ]
+  "content": ""
 }
 ```
 
@@ -199,7 +189,8 @@ Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar 
 `pitch` = 1-2 zinnen samenvatting van het concept (voor lichte context loading door dev skills). Moet altijd gevuld zijn — niet afhankelijk van fallback naar `content`.
 `conceptFile` = verwijzing naar `.project/project-concept.md` (preferred formaat voor nieuwe projecten)
 `content` = legacy inline concept content. Voor nieuwe projecten leeg — volledige content staat in `project-concept.md`.
-`thinking` = concept progressie log (append-only) — toont de stappen van idea → brainstorm → critique voor het concept. Zelfde entry-formaat als main `thinking`, maar specifiek voor concept-scope.
+
+Het concept is een **levend document**. Thinking-skills (`/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-research`) integreren hun concept-scope output rechtstreeks in `project-concept.md` — er is geen geschiedenis-log in `project.json`. `/dev-plan` en `/dev-define` lezen alleen de huidige staat van `project-concept.md` als concept-context.
 
 ### Eén bron van waarheid
 
@@ -482,7 +473,7 @@ Overige velden = structured tokens per categorie
 
 Thinking-skills (`/thinking-decide`, `/thinking-research`, `/thinking-brainstorm`, `/thinking-critique`) schrijven hun volledige output naar `.project/thinking/*.md` (bestandsnaam: `{date}-{type}-{slug}.md`). Die markdown-bestanden zijn de enige bron van waarheid — er bestaat geen top-level `thinking[]` array in `project.json`.
 
-Concept-scope thinking blijft in `concept.thinking[]` (gebruikt door `/dev-plan` voor evolution diff en door de dashboard Concept-tab).
+Concept-scope thinking-output (`/thinking-concept`, `/thinking-brainstorm` concept, `/thinking-critique` concept, `/thinking-research` concept) integreert rechtstreeks in `project-concept.md` — geen historie-log in `project.json`.
 
 Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks via Grep op `.project/thinking/*.md` voor naam-match.
 
@@ -534,16 +525,15 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 
 ### project.json secties
 
-| Sectie             | Geschreven door                                                                              | Wanneer                                  |
-| ------------------ | -------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `concept`          | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan        |
-| `design`           | `/frontend-design`, `/frontend-tokens`                                                       | Bij design spec/page build/theme creatie |
-| `theme`            | `/frontend-tokens`                                                                           | Na theme create/update                   |
-| `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-design`                  | Bij detectie/nieuwe deps                 |
-| `data`             | `/dev-define`, `/game-define`                                                                | Bij entity definitie                     |
-| `endpoints`        | `/dev-define`, `/dev-build`                                                                  | Bij API definitie / na build             |
-| `features`         | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build`    | Bij status wijziging (DOING/DONE)        |
-| `concept.thinking` | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)      |
+| Sectie      | Geschreven door                                                                              | Wanneer                                  |
+| ----------- | -------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `concept`   | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan        |
+| `design`    | `/frontend-design`, `/frontend-tokens`                                                       | Bij design spec/page build/theme creatie |
+| `theme`     | `/frontend-tokens`                                                                           | Na theme create/update                   |
+| `stack`     | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-design`                  | Bij detectie/nieuwe deps                 |
+| `data`      | `/dev-define`, `/game-define`                                                                | Bij entity definitie                     |
+| `endpoints` | `/dev-define`, `/dev-build`                                                                  | Bij API definitie / na build             |
+| `features`  | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build`    | Bij status wijziging (DOING/DONE)        |
 
 ### project-context.json secties
 

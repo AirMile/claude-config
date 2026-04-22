@@ -607,22 +607,7 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
-**Dashboard sync — concept thinking** (zie `shared/DASHBOARD.md`):
-
-1. Read `.project/project.json` (skip als niet bestaat)
-2. Schrijf volledige markdown naar `.project/thinking/{today}-critique-{slug}.md`
-3. Push naar `concept.thinking` array (initialiseer als `[]` indien nodig):
-   ```json
-   {
-     "type": "critique",
-     "date": "{today}",
-     "title": "Critique: {onderwerp}",
-     "summary": "{key insight, max 200 chars}",
-     "file": ".project/thinking/{today}-critique-{slug}.md",
-     "source": "/thinking-critique"
-   }
-   ```
-4. Write `.project/project.json`
+**Concept-scope output is geïntegreerd in `project-concept.md`.** Critique-aanpassingen worden verwerkt in het levende document — geen losse `.project/thinking/*.md` voor concept-scope, geen `concept.thinking[]` append. Update `concept.name` en `concept.pitch` in `project.json` als metadata wijzigt.
 
 **If "Opslaan naar Obsidian":**
 

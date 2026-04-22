@@ -216,10 +216,9 @@ Inclusief Competitive Landscape tabel en/of Technical Feasibility assessment als
 
 Auto-save zonder extra vragen:
 
-1. Schrijf rapport naar `.project/thinking/{concept-name}-research.md`
-2. Voeg `## Research Findings` sectie toe aan `.project/project-concept.md`
-3. Dashboard sync: push naar `concept.thinking` array (zie schema hieronder)
-4. Bevestig:
+1. Schrijf rapport naar `.project/thinking/{concept-name}-research.md` (volledig rapport als user-archief)
+2. Voeg `## Research Findings` sectie toe aan `.project/project-concept.md` (dit is wat dev-plan/dev-define als context zien)
+3. Bevestig:
 
 ```
 RESEARCH SAVED
@@ -254,20 +253,6 @@ De markdown is de bron van waarheid — geen `project.json` `thinking[]` append.
 **Obsidian save flow** (wanneer gevraagd):
 
 Als `obsidian_source_path` bekend: schrijf naast het originele idee. Anders: detecteer categorie, schrijf naar `Ideas/{subfolder}/{title} - Research.md` met frontmatter, en update `Home.md` recent ideas.
-
-**Dashboard sync schema:**
-
-```json
-{
-  "type": "research",
-  "date": "{today}",
-  "title": "Research: {onderwerp}",
-  "content": "{volledige research rapport}",
-  "source": "/thinking-research"
-}
-```
-
-Destination: `concept.thinking` voor concept-scope. Voor feature/pagina/los scopes: geen `project.json` append — de `.md` is de bron van waarheid.
 
 ---
 

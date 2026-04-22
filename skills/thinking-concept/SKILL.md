@@ -202,18 +202,6 @@ multiSelect: false
 
 - Write to `.project/project-concept.md`
 - Update project.json metadata (concept.name, concept.pitch) if changed
-- Log to `concept.thinking` array:
-  ```json
-  {
-    "type": "sync",
-    "date": "{today}",
-    "title": "Project sync",
-    "summary": "Added {count} items from backlog/codebase to concept",
-    "file": ".project/thinking/{today}-sync-{slug}.md",
-    "source": "/thinking-concept"
-  }
-  ```
-- Write sync summary to `.project/thinking/{today}-sync-{slug}.md`
 
 ```
 CONCEPT SYNCED
@@ -602,22 +590,7 @@ multiSelect: false
    - /game-backlog - Omzetten naar feature backlog (voor games)
    ```
 
-**Dashboard sync — concept thinking** (zie `shared/DASHBOARD.md`):
-
-1. Read `.project/project.json` (skip als niet bestaat)
-2. Schrijf volledige markdown naar `.project/thinking/{today}-idea-{slug}.md`
-3. Push naar `concept.thinking` array (initialiseer als `[]` indien nodig):
-   ```json
-   {
-     "type": "idea",
-     "date": "{today}",
-     "title": "{concept titel}",
-     "summary": "{key insight, max 200 chars}",
-     "file": ".project/thinking/{today}-idea-{slug}.md",
-     "source": "/thinking-concept"
-   }
-   ```
-4. Write `.project/project.json`
+**Concept-scope output is geïntegreerd in `project-concept.md`.** Geen losse `.project/thinking/*.md` voor concept-scope en geen `concept.thinking[]` append — het levende document is de bron. Update `concept.name` en `concept.pitch` in `project.json` als metadata wijzigt.
 
 **If "Opslaan naar Obsidian":**
 
