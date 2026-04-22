@@ -40,7 +40,7 @@ Bad: `"Helps with projects."` — too vague, no triggers.
 
 When referencing other skills, ALWAYS use hyphen notation matching the directory name:
 
-- Correct: `/dev-build`, `/game-test`, `/frontend-compose`
+- Correct: `/dev-build`, `/game-verify`, `/frontend-design`
 - Wrong: `/dev:build`, `/game:test`, `/frontend:compose`
 
 The colon notation does NOT match skill directory names and breaks slash command resolution.
@@ -159,9 +159,9 @@ Set target: `.claude/skills/[prefix]-[name]/SKILL.md`
 
 #### Detect Write Target (Junction/Symlink Detection)
 
-Skills may live in a shared library linked via junctions (Windows) or symlinks (Linux/macOS).
+Skills may live in a shared library linked via junctions (Windows) or symlinks (macOS).
 
-**Linux/macOS:**
+**macOS:**
 
 ```bash
 readlink -f .claude/skills/$(ls .claude/skills/ | head -1) 2>/dev/null

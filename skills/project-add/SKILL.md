@@ -10,7 +10,7 @@ metadata:
 
 # Project Add
 
-Voegt een project toe — maak een nieuw project aan of clone een bestaande GitHub repo — met symlinks (Linux) of junctions (Windows) naar de gedeelde claude-config.
+Voegt een project toe — maak een nieuw project aan of clone een bestaande GitHub repo — met symlinks (macOS) of junctions (Windows) naar de gedeelde claude-config.
 
 ## Trigger
 
@@ -24,8 +24,8 @@ Voegt een project toe — maak een nieuw project aan of clone een bestaande GitH
 
 ```bash
 # Detect OS
-if [[ "$(uname -s)" == "Linux" ]]; then
-  PLATFORM="linux"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  PLATFORM="macos"
 else
   PLATFORM="windows"
 fi
@@ -193,8 +193,8 @@ Show a **numbered list** of all profiles (except "core" and "all") with their un
 **Beschikbare profielen:**
 
 1. **dev** — dev-build, dev-debug, dev-define, dev-plan, dev-refactor, dev-verify
-2. **frontend** — frontend-tokens, frontend-compose, frontend-build, frontend-convert
-3. **game** — game-backlog, game-build, game-define, game-test
+2. **frontend** — frontend-tokens, frontend-design, frontend-build, frontend-convert
+3. **game** — game-backlog, game-build, game-define, game-verify
 ...
 A. **all** — Alle skills
 
@@ -211,7 +211,7 @@ Store the selected profile name(s) for FASE 4.
 
 **Whole-directory links (agents, hooks, scripts):**
 
-Linux:
+macOS:
 
 ```bash
 ln -sfn {config_repo}/agents {projects_root}/[naam]/.claude/agents
@@ -523,7 +523,7 @@ GitHub: https://github.com/[owner]/[repo]
 
 Paths zijn configureerbaar per apparaat. Defaults zijn platform-afhankelijk:
 
-| Placeholder       | Linux Default         | Windows Default             | Environment Variable   |
+| Placeholder       | macOS Default         | Windows Default             | Environment Variable   |
 | ----------------- | --------------------- | --------------------------- | ---------------------- |
 | `{projects_root}` | `$HOME/projects`      | `C:\Projects`               | `CLAUDE_PROJECTS_ROOT` |
 | `{config_repo}`   | `$HOME/claude-config` | `C:\Projects\claude-config` | `CLAUDE_CONFIG_REPO`   |
@@ -536,7 +536,7 @@ Paths zijn configureerbaar per apparaat. Defaults zijn platform-afhankelijk:
 
 ## Restrictions
 
-- Supported on Linux (symlinks) and Windows (junctions)
+- Supported on macOS (symlinks) and Windows (junctions)
 - Project naam moet uniek zijn in `{projects_root}`
 - Master config moet bestaan in `{config_repo}`
 - Clone mode vereist `gh` CLI authenticated

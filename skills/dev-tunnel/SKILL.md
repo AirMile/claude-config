@@ -1,6 +1,6 @@
 ---
-name: dev-server
-description: Start dev server with Cloudflare Tunnel for external access. Use with /dev-server to expose local development environment via public URL.
+name: dev-tunnel
+description: Start dev server with Cloudflare Tunnel for external access. Use with /dev-tunnel to expose local development environment via public URL.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -8,7 +8,7 @@ metadata:
   category: dev
 ---
 
-# Dev Server
+# Dev Tunnel
 
 Start de dev server met Cloudflare Tunnel voor HTTPS-toegang vanaf elk apparaat.
 

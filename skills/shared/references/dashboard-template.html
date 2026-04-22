@@ -264,7 +264,7 @@
         { id: "concept", label: "Concept" },
         { id: "architecture", label: "Components" },
         { id: "design", label: "Design" },
-        { id: "theme", label: "Theme" },
+        { id: "theme", label: "Design System" },
         { id: "stack", label: "Stack" },
         { id: "thinking", label: "Thinking" },
         { id: "config", label: "Config" },
@@ -1143,7 +1143,7 @@
           return `
             <div class="section-header"><h2>Design</h2></div>
             <div class="empty-state"><p>Nog geen design spec gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Wordt gevuld door <code>/frontend-plan</code></p></div>`;
+            <p style="color:var(--text-dim)">Wordt gevuld door <code>/frontend-design</code></p></div>`;
         }
 
         const statusOrder = ["IDEA", "DEF", "BLT", "DONE"];
@@ -1225,9 +1225,9 @@
         const hasData = hasColors || families.heading || families.body;
         if (!hasData) {
           return `
-            <div class="section-header"><h2>Theme</h2></div>
-            <div class="empty-state"><p>Nog geen theme gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/frontend-tokens</code></p></div>`;
+            <div class="section-header"><h2>Design System</h2></div>
+            <div class="empty-state"><p>Nog geen design tokens gedefinieerd.</p>
+            <p style="color:var(--text-dim)">Design tokens, modes, CSS variables — beheerd via <code>/frontend-tokens</code></p></div>`;
         }
 
         // ── Colors ──
@@ -1402,7 +1402,7 @@
           : "";
 
         return `
-          <div class="section-header"><h2>Theme</h2></div>
+          <div class="section-header"><h2>Design System</h2></div>
           ${colorsHtml}
           ${specimensHtml}
           ${typeScaleHtml}

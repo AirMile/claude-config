@@ -1,9 +1,9 @@
 ---
-name: core-refine
+name: core-audit
 description: >-
   Analyze and refine skills for clarity, correctness, and effectiveness. Detects
   redundancy, dead paths, ambiguity, and poor structure. Optional internal
-  walkthrough for deeper insights. Use with /core-refine or /core-refine [skill-name].
+  walkthrough for deeper insights. Use with /core-audit or /core-audit [skill-name].
 argument-hint: "[skill-name]"
 disable-model-invocation: true
 metadata:
@@ -12,28 +12,35 @@ metadata:
   category: core
 ---
 
-# Refine
+# Audit
 
-Analyze and refine skills for quality. Two modes: quick (analysis only) or extended (internal walkthrough + analysis).
+Analyze skills for quality. Two modes: quick (analysis only) or extended (internal walkthrough + analysis).
 
-**Trigger**: `/core-refine` or `/core-refine [skill-name]`
+**Trigger**: `/core-audit` or `/core-audit [skill-name]`
 
 ## Step 1: Load Skill
 
-**If name provided** (`/core-refine dev-build`):
+**If name provided** (`/core-audit dev-build`):
 
 1. Load `.claude/skills/[name]/SKILL.md`
 2. If not found → show error with available skills
 
-**If no name** (`/core-refine`):
+**If no name** (`/core-audit`):
 
-1. List all skills:
+1. Scan the conversation above for skill invocations (slash commands like `/dev-build`, `/core-edit`, etc.).
+2. If **exactly one** unique skill was invoked → auto-select that skill and show:
+
+   ```
+   AUTO-DETECTED: [name] (from conversation)
+   ```
+
+3. If zero or multiple distinct skills were invoked → list all skills:
 
    ```bash
    find -L .claude/skills -name "SKILL.md" -type f 2>/dev/null | sed 's|^\.claude/skills/||' | sed 's|/SKILL\.md$||' | sort
    ```
 
-2. Display numbered list, ask user to pick
+   Display numbered list, ask user to pick.
 
 **After loading, show:**
 

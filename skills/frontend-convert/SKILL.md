@@ -17,7 +17,7 @@ metadata:
 
 Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens (from project.json). Self-verifies by comparing source image against Playwright screenshot of generated output.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-plan` · `/frontend-compose` · `/frontend-inspect` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/frontend-tool` · `/frontend-audit` · `/frontend-wcag`
 
 ## References
 

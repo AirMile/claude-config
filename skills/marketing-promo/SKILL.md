@@ -54,7 +54,7 @@ Generate marketing-quality screenshots of a web app using MCP Playwright tools. 
      - label: "localhost:8080", description: "Vue CLI, generic"
    - multiSelect: false
 
-4. Verify the URL is reachable via `browser_navigate`. If it fails → exit with message to start the dev server first (e.g. `/dev-server`).
+4. Verify the URL is reachable via `browser_navigate`. If it fails → exit with message to start the dev server first (e.g. `/dev-tunnel`).
 
 ## FASE 1: Gather Requirements
 
@@ -319,7 +319,7 @@ If credentials were provided in FASE 1:
 ### App not reachable
 
 **Cause:** Dev server not running.
-**Solution:** Start with `/dev-server` or provide a live URL. The skill does not start servers itself.
+**Solution:** Start with `/dev-tunnel` or provide a live URL. The skill does not start servers itself.
 
 ### Login failed
 
@@ -341,7 +341,7 @@ If credentials were provided in FASE 1:
 This skill must NEVER:
 
 - Install npm packages or dependencies
-- Start dev servers (use `/dev-server` for that)
+- Start dev servers (use `/dev-tunnel` for that)
 - Store credentials in files
 - Overwrite existing screenshots without user confirmation
 - Take screenshots without user-approved plan

@@ -33,7 +33,7 @@ Skill bestanden bewerken via het symlink-pad of het repo-pad maakt niet uit — 
 
 ### Cross-platform
 
-Skills moeten werken op zowel Windows als Linux. Platform-specifieke commands (symlinks, paden, shell) altijd voor beide platformen documenteren. Gebruik `{projects_root}` ipv hardcoded paden.
+Skills moeten werken op zowel Windows als macOS. Platform-specifieke commands (symlinks, paden, shell) altijd voor beide platformen documenteren. Gebruik `{projects_root}` ipv hardcoded paden.
 
 ## Context
 

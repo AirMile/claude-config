@@ -212,9 +212,9 @@ python3 .claude/skills/core-profile/switch-profile.py --validate
 
 **Step 3a — Detect link structure:**
 
-Detect if skills directory uses symlinks (Linux) or junctions (Windows):
+Detect if skills directory uses symlinks (macOS) or junctions (Windows):
 
-**Linux:**
+**macOS:**
 
 ```bash
 test -L ".claude/skills/$(ls .claude/skills | head -1)" && echo "linked" || echo "direct"
@@ -234,10 +234,10 @@ powershell -Command "(Get-ChildItem '.claude/skills' -Directory | Select-Object 
 **If linked (symlinks/junctions):**
 
 1. Get shared library path:
-   - Linux: `readlink -f .claude/skills/[any-skill] | xargs dirname`
+   - macOS: `readlink -f .claude/skills/[any-skill] | xargs dirname`
    - Windows: `powershell -Command "Split-Path (Get-Item '.claude/skills/[any-skill]').Target"`
 2. Remove link:
-   - Linux: `unlink .claude/skills/[name]`
+   - macOS: `unlink .claude/skills/[name]`
    - Windows: `cmd //c "rmdir .claude\skills\[name]"`
 3. Remove from shared library:
    ```bash

@@ -1,40 +1,33 @@
 # Order determines numbering for --list. Do not reorder without reason.
 core:
-  - core-capture
+  - core-note
   - core-commit
   - core-create
   - core-delete
   - core-edit
-  - core-explore
-  - core-md-audit
-  - core-md-revise
   - core-pull
-  - core-queue
-  - core-refine
+  - core-audit
   - core-rewrite
   - core-setup
-  - project-list
   - project-add
   - project-remove
 
 dev:
   - dev-build
   - dev-debug
-  - dev-doctor
   - dev-define
   - dev-todo
   - dev-owasp
   - dev-plan
   - dev-refactor
-  - dev-server
+  - dev-tunnel
   - dev-verify
 
 frontend:
   - frontend-audit
-  - frontend-compose
+  - frontend-design
   - frontend-convert
-  - frontend-inspect
-  - frontend-plan
+  - frontend-tool
   - frontend-tokens
   - frontend-wcag
 
@@ -47,24 +40,22 @@ game:
   - game-define
   - game-plan
   - game-refactor
-  - game-test
+  - game-todo
+  - game-verify
 
 project:
   - project-add
-  - project-backlog-serve
-  - project-claim
-  - project-list
+  - project-server
   - project-remove
 
 team:
   - team-review
-  - team-test
+  - team-verify
 
 thinking:
   - thinking-brainstorm
   - thinking-critique
   - thinking-decide
-  - thinking-explore
   - thinking-concept
   - thinking-research
 

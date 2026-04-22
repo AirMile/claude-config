@@ -272,7 +272,7 @@ Example snapshot content:
 
 | Skill                 | Uses Playwright For                         | Primary Data        |
 | --------------------- | ------------------------------------------- | ------------------- |
-| `frontend-compose`    | Design analysis, reflection                 | Accessibility tree  |
+| `frontend-design`    | Design analysis, reflection                 | Accessibility tree  |
 | `frontend-seo`        | Rendered content validation (S003)          | Accessibility tree  |
 | `frontend-a11y`       | Accessibility tree analyse, focus validatie | Accessibility tree  |
 | `frontend-responsive` | Multi-viewport capture + overflow detectie  | Screenshots + tree  |

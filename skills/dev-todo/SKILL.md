@@ -235,8 +235,8 @@ TODO TOEGEVOEGD
   [If type is FEATURE, CHANGE, BUG, or API:]
   - /dev-define {naam} - Begin met requirements en bouwen
   [If type is PAGE, COMPONENT, THEME, A11Y, or PERF:]
-  - /frontend-compose {naam} - Bouw de pagina/component
-  - /frontend-plan - Definieer meerdere pagina's tegelijk
+  - /frontend-design {naam} - Bouw de pagina/component
+  - /frontend-design - Definieer meerdere pagina's tegelijk
 
   Tip: wijs toe aan een teammate door assignee toe te voegen in de backlog UI
 ```

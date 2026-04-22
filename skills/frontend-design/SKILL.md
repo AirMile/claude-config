@@ -1,23 +1,30 @@
 ---
-name: frontend-plan
+name: frontend-design
 description: >-
-  Design specification management: pages, flows, and design principles.
-  Iteratively capture and manage the app's design structure before building.
-  Use with /frontend-plan.
+  Design spec management + Claude Design brief generator. Capture mode beheert
+  pages, flows en design principes in project.json. Brief mode genereert een
+  markdown brief (design spec + block inventory + tokens + patterns) die je in
+  Claude Design plakt als context. Use with /frontend-design.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: frontend
 ---
 
-# Plan
+# Design
 
-Beheert de design specificatie van het project: pagina's, user flows, en design principes vastleggen en beheren. Iteratief — roep meerdere keren aan om incrementeel op te bouwen.
+Twee modi:
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-compose` · `/frontend-convert` · `/frontend-inspect` · `/frontend-audit` · `/frontend-wcag`
+1. **Capture** — beheert de design specificatie van het project (pagina's, user flows, design principes) in `.project/project.json` → `design`. Iteratief aan te roepen.
+2. **Brief** — genereert een markdown brief op basis van de design spec + block inventory uit de dev-pipeline + tokens + patterns. Output plak je in Claude Design als context. Het visuele werk gebeurt daar; de handoff bundle uit Claude Design gaat terug naar Claude Code (`/dev-build`).
 
-**Output locatie:** `.project/project.json` → `design` sectie
+**Verwante skills:** `/frontend-tokens` · `/frontend-convert` · `/frontend-tool` · `/frontend-audit` · `/frontend-wcag`
+
+**Output locaties:**
+
+- Capture mode: `.project/project.json` → `design` sectie
+- Brief mode: `.project/claude-design-brief.md`
 
 ## References
 
@@ -211,14 +218,14 @@ multiSelect: false
 header: "Design"
 question: "Design spec gevonden ({N} pagina's, {M} flows, {P} principes). Wat wil je doen?"
 options:
+  - label: "Brief genereren (Recommended)", description: "Markdown brief voor Claude Design"
   - label: "Bekijken", description: "Toon huidige design spec"
   - label: "Pagina", description: "Pagina toevoegen of bewerken"
   - label: "Flow", description: "User flow toevoegen of bewerken"
-  - label: "Principes", description: "Design principes beheren"
 multiSelect: false
 ```
 
-If user chooses "Other": check for "verwijderen" intent. If confirmed, proceed to Verwijderen route.
+"Other" opties: "Principes" (principes beheren), "Verwijderen" (pagina/flow/principe verwijderen).
 
 ---
 
@@ -629,6 +636,177 @@ Proceed to FASE 3 (Confirm).
 
 ---
 
+### Route: Brief (Claude Design Handoff)
+
+Genereer een markdown brief die je in Claude Design plakt. De brief bundelt alle context die Claude Design nodig heeft om visuals te genereren die passen bij het project (zodat je geen dubbele componenten of inconsistent tokens krijgt).
+
+#### Stap 1: Scope
+
+```yaml
+header: "Brief Scope"
+question: "Waarvoor genereer je de brief?"
+options:
+  - label: "Specifieke pagina (Recommended)", description: "Brief voor één pagina uit design.pages"
+  - label: "Volledige app", description: "Brief voor het hele design (alle pagina's + flows)"
+  - label: "Flow", description: "Brief voor een user flow (meerdere pagina's als reeks)"
+multiSelect: false
+```
+
+**If "Specifieke pagina":** toon `design.pages` met status DEF/IDEA als opties (max 4, rest via Other). User kiest pagina.
+
+**If "Flow":** toon `design.flows` als opties. User kiest flow. Brief bevat alle pagina's in `flow.steps`.
+
+**If "Volledige app":** geen extra keuze nodig.
+
+#### Stap 2: Block Inventory
+
+Spawn een Explore agent om de dev-pipeline blocks te inventariseren. Dit isoleert recursieve import tracing uit de main context.
+
+Agent prompt:
+
+```
+Inventariseer de bestaande frontend building blocks in dit project.
+
+1. Detect framework via package.json (Next.js App Router, Next.js Pages, Vite + React, Remix, Astro).
+2. Scan components directories:
+   - src/components/**/*.{tsx,jsx}
+   - app/components/**/*.{tsx,jsx}
+   - components/**/*.{tsx,jsx}
+   Rapporteer per component: naam, bestandslocatie, exported props (interface), en één regel beschrijving van wat het doet (afgeleid uit naam + JSX).
+3. Scan hooks:
+   - src/hooks/**/*.{ts,tsx}
+   Rapporteer per hook: naam, wat het returnt, welke API/service het aanroept (indien zichtbaar).
+4. Scan services/API clients:
+   - src/services/**/*.{ts,tsx}
+   - src/lib/api/**/*.{ts,tsx}
+   Rapporteer per service: functienaam, endpoint, return type.
+
+Return als gestructureerde lijst. Focus op REUSABILITY — welke bestaande blocks zijn toepasbaar voor nieuwe pagina's?
+```
+
+Agent output wordt de "Block Inventory" sectie in de brief.
+
+**Fallback als framework/dirs niet gevonden:** skip inventory, noteer in brief: `Block inventory: n/a (nog geen componenten gebouwd)`.
+
+#### Stap 3: Tokens + Patterns
+
+1. Read `.project/project.json` → `theme` sectie (als aanwezig). Extract: colors, typography, spacing, cssVars.
+2. Read `shared/PATTERNS.md` → extract patroonnamen en één-regel beschrijvingen (compound components, render props, etc).
+3. Als `theme` ontbreekt: noteer `Tokens: Tailwind defaults (geen theme gedefinieerd)`.
+
+#### Stap 4: Compose Brief
+
+Schrijf `.project/claude-design-brief.md`:
+
+```markdown
+# Claude Design Brief — {scope naam}
+
+_Gegenereerd door /frontend-design · {datum}_
+
+## Project Context
+
+{concept-bron in prioriteitsvolgorde:
+
+1. Als `.project/project-concept.md` bestaat → Read het volledige bestand (preferred)
+2. Anders als `concept.pitch` gevuld is → gebruik `concept.pitch` (1-2 zinnen samenvatting)
+3. Anders als `concept.content` gevuld is → gebruik `concept.content` (legacy inline)
+4. Anders → "Geen concept gedefinieerd"
+   }
+
+## Design Principes
+
+{design.principles[].name + description, bullet list}
+
+## Scope
+
+{Als pagina: single page spec}
+{Als flow: flow + pagina-reeks}
+{Als volledig: alle pagina's}
+
+### Pagina: {name}
+
+- **Doel**: {purpose}
+- **Secties**: {sections joined}
+- **Gerelateerde flows**: {flows joined}
+- **Status**: {status}
+
+{herhaal per pagina indien meerdere}
+
+## Design Tokens
+
+{Als theme gevuld:}
+
+- **Kleuren**: {primary, secondary, accent, bg, text}
+- **Typography**: {font families + scale}
+- **Spacing**: {scale}
+- **CSS vars**: {list}
+
+{Als geen theme:}
+Tailwind defaults — Claude Design mag eigen palet voorstellen (noteer de keuze in de handoff).
+
+## Block Inventory
+
+Bestaande building blocks die hergebruikt moeten worden (GEEN duplicaten genereren):
+
+### Components
+
+- `{ComponentName}` ({path}) — {beschrijving} · props: {interface samenvatting}
+
+### Hooks
+
+- `{useHook}` ({path}) — {wat het returnt} · aanroep: `{API/service}`
+
+### Services
+
+- `{serviceFn}` ({path}) — {endpoint} → {return type}
+
+## Patterns & Conventies
+
+{uit shared/PATTERNS.md, bullet list met pattern naam + eenregel beschrijving}
+
+- TypeScript strict mode
+- Semantic HTML + ARIA
+- `cn()` utility voor className composition
+- Tailwind scale (geen arbitrary values)
+
+## Output Verwachting
+
+Genereer in Claude Design:
+
+1. Visuele layout die de bovenstaande sectie-indeling volgt
+2. Hergebruik van bestaande components waar mogelijk (zie Block Inventory)
+3. Tokens uit de theme sectie (indien gevuld)
+4. Handoff bundle die doorgestuurd kan worden naar Claude Code (`/dev-build`)
+```
+
+#### Stap 5: Write + Show
+
+1. Write bestand naar `.project/claude-design-brief.md`.
+2. Print een samenvatting:
+
+```
+CLAUDE DESIGN BRIEF GEGENEREERD
+════════════════════════════════════════════════
+Bestand:       .project/claude-design-brief.md
+Scope:         {pagina | flow | volledige app}
+Pagina's:      {N}
+Components:    {M} in inventory
+Hooks:         {K}
+Services:      {L}
+Tokens:        [✓ uit theme | ⚠ Tailwind defaults]
+════════════════════════════════════════════════
+
+Next steps:
+  1. Open .project/claude-design-brief.md
+  2. Kopieer inhoud → plak in Claude Design (claude.ai/design)
+  3. Na generatie → "Handoff to Claude Code" button
+  4. /dev-build → implementeer de handoff
+```
+
+Geen FASE 3 confirm nodig voor brief-mode (geen mutatie in project.json). Skip naar Completion.
+
+---
+
 ## FASE 3: Confirm + Loop
 
 Reached after any mutating action. Show what will change:
@@ -713,7 +891,7 @@ After defining pages, sync them to the backlog:
 
 1. Read `project.json` → get `design.pages[]` array
 2. Read `.project/backlog.html` (if it exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`
-   - **If backlog doesn't exist**: create it from template `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`. Set `data.source` to `"/frontend-plan"`, `data.project` to project directory name.
+   - **If backlog doesn't exist**: create it from template `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`. Set `data.source` to `"/frontend-design"`, `data.project` to project directory name.
 3. For each page in `design.pages[]`:
    - Generate kebab-case name from page name
    - Check if `data.features.find(f => f.name === name)` exists
@@ -738,9 +916,9 @@ Update `.project/session/devinfo.json`:
 
 ```json
 {
-  "currentSkill": { "name": "frontend-plan", "phase": "COMPLETE" },
+  "currentSkill": { "name": "frontend-design", "phase": "COMPLETE" },
   "handoff": {
-    "from": "frontend-plan",
+    "from": "frontend-design",
     "to": null,
     "data": {
       "designLocation": ".project/project.json#design",
@@ -779,12 +957,12 @@ Backlog: {X} nieuwe PAGE items toegevoegd
   {lijst van toegevoegde pagina namen}
 
 Next steps:
-  1. /frontend-plan      → voeg meer pagina's/flows toe (iteratief)
-  2. /frontend-tokens     → design tokens en kleuren op basis van principes
-  3. /frontend-compose {page} → bouw een specifieke pagina
-  4. /frontend-convert   → converteer een design naar code
-  5. /frontend-audit     → performance/SEO audit
-  6. /frontend-wcag      → accessibility audit
+  1. /frontend-design       → voeg meer pagina's/flows toe (iteratief)
+  2. /frontend-tokens       → design tokens en kleuren op basis van principes
+  3. /frontend-design       → genereer Claude Design brief (brief-mode)
+  4. /frontend-convert      → converteer een bestaand design naar code
+  5. /frontend-audit        → performance/SEO audit
+  6. /frontend-wcag         → accessibility audit
 
 ═══════════════════════════════════════════════════════════════
 ```

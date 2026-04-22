@@ -2,7 +2,7 @@
 
 > **改善 (Kaizen)** — _Good enough today, better tomorrow._
 
-Personal Claude Code configuration: skills, agents, hooks, and project scaffolding. Linked to `~/.claude/` via junctions (Windows) or symlinks (Linux) for global availability across all projects.
+Personal Claude Code configuration: skills, agents, hooks, and project scaffolding. Linked to `~/.claude/` via junctions (Windows) or symlinks (macOS) for global availability across all projects.
 
 ## What this is
 
@@ -57,7 +57,7 @@ cmd /c mklink /J "%USERPROFILE%\.claude\hooks" "C:\Projects\claude-config\hooks"
 ```
 
 ```bash
-# Linux
+# macOS
 git clone <repo-url> ~/projects/claude-config
 ln -sfn ~/projects/claude-config/skills ~/.claude/skills
 ln -sfn ~/projects/claude-config/agents ~/.claude/agents
@@ -70,7 +70,7 @@ See [`local/README.md`](local/README.md) for portable configs (settings, keybind
 
 ## Cross-platform
 
-Works on both **Windows** (primary) and **Linux**. Skills use `{projects_root}` instead of hardcoded paths. Platform-specific commands are documented for both OS's.
+Works on both **Windows** (primary) and **macOS**. Skills use `{projects_root}` instead of hardcoded paths. Platform-specific commands are documented for both OS's.
 
 ## License
 

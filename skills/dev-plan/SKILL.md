@@ -324,7 +324,7 @@ Only the compact summary enters the main context for FASE 1.
    | INTEGRATION | Third-party services (analytics, payments, auth providers) |
    | UI | Styling, UX improvements, visual components |
    | REFACTOR | Code quality, performance, architecture improvements |
-   | PAGE-GAP | Ontbrekende functionaliteit gevonden door /frontend-compose |
+   | PAGE-GAP | Ontbrekende functionaliteit gevonden door /frontend-design |
 
 4. **Score confidence en risk:**
 

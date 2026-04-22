@@ -76,7 +76,7 @@ multiSelect: false
 
 **KRITIEK: Verwijder links veilig — target moet intact blijven!**
 
-**Linux (symlinks):**
+**macOS (symlinks):**
 
 ```bash
 unlink "{projects_root}/[naam]/.claude/agents"
@@ -136,7 +136,7 @@ Project [naam] verwijderd
 
 ## Configuration
 
-| Placeholder       | Linux default    | Windows default | Env var                |
+| Placeholder       | macOS default    | Windows default | Env var                |
 | ----------------- | ---------------- | --------------- | ---------------------- |
 | `{projects_root}` | `$HOME/projects` | `C:\Projects`   | `CLAUDE_PROJECTS_ROOT` |
 
@@ -157,12 +157,12 @@ Project [naam] verwijderd
 
 **WAAROM unlink/rmdir en niet rm -rf op links:**
 
-- `unlink` (Linux) en `rmdir` (Windows) verwijderen alleen de link pointer
+- `unlink` (macOS) en `rmdir` (Windows) verwijderen alleen de link pointer
 - `rm -rf` of `del /s` volgt de link en verwijdert TARGET bestanden
 - Dit zou de master config vernietigen!
 
 **Recovery:**
 
 - Als project per ongeluk verwijderd: `git clone` + `/project-add`
-- Als links per ongeluk verwijderd: maak opnieuw met `ln -s` (Linux) of `mklink /J` (Windows)
+- Als links per ongeluk verwijderd: maak opnieuw met `ln -s` (macOS) of `mklink /J` (Windows)
 - Als master config beschadigd: restore van backup/git

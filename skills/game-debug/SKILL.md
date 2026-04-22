@@ -277,6 +277,6 @@ Fix: {wat er gewijzigd is}
 Tests: {pass/fail status}
 
 Next steps:
-  1. /game-test {feature} → herverificatie na fix
+  1. /game-verify {feature} → herverificatie na fix
   2. /game-build {feature} → als rebuild nodig is
 ```

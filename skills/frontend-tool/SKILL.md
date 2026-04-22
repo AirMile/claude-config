@@ -1,9 +1,9 @@
 ---
-name: frontend-inspect
+name: frontend-tool
 description: >-
   One-time inspect overlay setup for Vite and Next.js projects. Injects element
   inspector for visual element-picking in browser. Run once per project to
-  install, invoke again to remove. Use with /frontend-inspect.
+  install, invoke again to remove. Use with /frontend-tool.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -11,11 +11,11 @@ metadata:
   category: frontend
 ---
 
-# Inspect
+# Tool
 
 Eenmalige setup van de inspect overlay voor visueel element-picking in de browser. Na installatie werkt de overlay onafhankelijk — geen skill nodig voor iteratie.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-plan` · `/frontend-compose` · `/frontend-convert` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/frontend-convert` · `/frontend-audit` · `/frontend-wcag`
 
 ## References
 

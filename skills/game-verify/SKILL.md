@@ -1,6 +1,6 @@
 ---
-name: game-test
-description: Human playtest verification with structured feedback and fix loop. Use with /game-test after /game-build for manual testing of game features.
+name: game-verify
+description: Human playtest verification with structured feedback and fix loop. Use with /game-verify after /game-build for manual testing of game features.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -8,15 +8,15 @@ metadata:
   category: game
 ---
 
-# Test
+# Verify
 
 ## Overview
 
-This is **FASE 3** of the gamedev workflow: plan -> define -> build -> **test** -> refactor
+This is **FASE 3** of the gamedev workflow: plan -> define -> build -> **verify** -> refactor
 
-The test phase handles human verification of implemented game features through structured playtest feedback, intelligent issue categorization, and iterative fix loops until all items pass.
+The verify phase handles human playtest verification of implemented game features through structured feedback, intelligent issue categorization, and iterative fix loops until all items pass.
 
-**Trigger**: `/game-test` or `/game-test {feature-name}` or `/game-test {feature-name} {feedback}`
+**Trigger**: `/game-verify` or `/game-verify {feature-name}` or `/game-verify {feature-name} {feedback}`
 
 ## When to Use
 
@@ -45,7 +45,7 @@ This skill activates in these scenarios:
 ### Format 1: Inline feedback (recommended)
 
 ```
-/game-test water-ability
+/game-verify water-ability
 1:PASS
 2:PASS
 3:FAIL puddle too small
@@ -55,13 +55,13 @@ This skill activates in these scenarios:
 ### Format 2: Feature name only (shows checklist first)
 
 ```
-/game-test water-ability
+/game-verify water-ability
 ```
 
 ### Format 3: Free text feedback
 
 ```
-/game-test water-ability
+/game-verify water-ability
 Everything works except puddle is too small and there's no sound
 ```
 
@@ -1253,7 +1253,7 @@ Next steps:
 ## Example Session
 
 ```
-User: /game-test water-ability
+User: /game-verify water-ability
 
 Claude: PLAYTEST CHECKLIST: water-ability
 

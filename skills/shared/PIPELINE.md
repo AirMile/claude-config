@@ -17,16 +17,19 @@ Read-only referentie — geen executable skill. Zie BACKLOG.md, FEATURE.md, en S
                                    └── /dev-debug ◄┘
 ```
 
-Standalone: `/dev-doctor` (codebase health), `/dev-owasp` (security audit), `/dev-server` (dev server + tunnel).
+Standalone: `/dev-owasp` (security audit), `/dev-tunnel` (dev server + tunnel).
 
 ## Frontend Pipeline
 
 ```
-/frontend-plan ──→ /frontend-compose ──→ /frontend-audit ──→ [/frontend-inspect]
-                   /frontend-convert      /frontend-wcag
+/frontend-design (capture) ──→ /frontend-design (brief) ──→ Claude Design ──→ handoff → /dev-build
+                                      │
+                                      └─→ /frontend-convert (visual → code)
+                                      └─→ /frontend-audit / /frontend-wcag (post-build checks)
+                                      └─→ [/frontend-tool] (element picker)
 ```
 
-Frontend items slaan `defining/defined` over — plan maakt TODOs, compose pakt direct op als `building`.
+Frontend items slaan `defining/defined` over — design captures pages/flows, brief genereert context voor Claude Design, handoff bundle komt terug naar `/dev-build` als `building`.
 
 ---
 
@@ -41,9 +44,8 @@ Frontend items slaan `defining/defined` over — plan maakt TODOs, compose pakt 
 | dev-verify   | feature.json (built)     | feature.json (verified)     | built          | DONE           |
 | dev-refactor | feature.json (DONE)      | feature.json (DONE + ref)   | DONE           | DONE           |
 | dev-debug    | error / symptom          | fix applied                 | —              | —              |
-| dev-doctor   | —                        | improvement plan            | —              | —              |
 | dev-owasp    | —                        | security report + fixes     | —              | —              |
-| dev-server   | —                        | running server + tunnel URL | —              | —              |
+| dev-tunnel   | —                        | running server + tunnel URL | —              | —              |
 
 ---
 

@@ -39,7 +39,7 @@
           var checkSvg =
             '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.5 3.5 7-7"/></svg>';
           if (f.assignee && f.stage === "built") {
-            clipBtn.title = "/team-test " + f.name;
+            clipBtn.title = "/team-verify " + f.name;
           } else if (f.assignee) {
             clipBtn.title =
               "/" + prefix + "-" + (verb || "verify") + " " + f.name;
@@ -59,7 +59,7 @@
               }, 1500);
             }
             if (f.assignee && f.stage === "built") {
-              var cmd = "/team-test " + f.name;
+              var cmd = "/team-verify " + f.name;
               navigator.clipboard.writeText(cmd).then(function () {
                 showCopied("Gekopieerd: " + cmd);
               });

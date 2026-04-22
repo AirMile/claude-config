@@ -1,20 +1,20 @@
 # claude-config
 
-Persoonlijke Claude Code configuratie: skills, agents, hooks en scripts. Gekoppeld aan `~/.claude/` via junctions (Windows) of symlinks (Linux) zodat alles globaal beschikbaar is.
+Persoonlijke Claude Code configuratie: skills, agents, hooks en scripts. Gekoppeld aan `~/.claude/` via junctions (Windows) of symlinks (macOS) zodat alles globaal beschikbaar is.
 
 **Paden zijn identiek** — `~/.claude/skills/` en de repo's `skills/` wijzen naar dezelfde bestanden. Commits altijd in deze repo.
 
 ## Platform
 
-Cross-platform: **Windows (primair)** en **Linux (optioneel)**.
+Cross-platform: **Windows (primair)** en **macOS (optioneel)**.
 
-|               | Windows                                  | Linux                          |
+|               | Windows                                  | macOS                          |
 | ------------- | ---------------------------------------- | ------------------------------ |
 | Repo          | `C:\Projects\claude-config`              | `$HOME/projects/claude-config` |
 | Projects root | `C:\Projects`                            | `$HOME/projects`               |
 | Koppeling     | `mklink /J` (junction)                   | `ln -sfn` (symlink)            |
 | Godot         | `/c/Godot/Godot_v4.4.1-stable_win64.exe` | n.v.t.                         |
-| Shell         | PowerShell                               | bash                           |
+| Shell         | PowerShell                               | bash/zsh                       |
 
 **Regels:**
 

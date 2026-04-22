@@ -7,7 +7,7 @@
 # Dit lokale bestand wordt NIET gecommit (staat in .gitignore).
 
 paths:
-  linux:
+  macos:
     # Root folder where projects are created
     projects_root: "$HOME/projects"
 

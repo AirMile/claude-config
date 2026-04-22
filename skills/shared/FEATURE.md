@@ -318,5 +318,5 @@ pending → built → PASS
 | `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | FASE 5  |
 | `/game-define`   | Creates feature.json (zelfde als dev-define + clarifications, game-specifieke design velden)                                                             | FASE 4  |
 | `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements. Leest clarifications als constraints                                                    | FASE 5  |
-| `/game-test`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | FASE 6  |
+| `/game-verify`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | FASE 6  |
 | `/game-refactor` | Enriches: refactor, status → DONE                                                                                                                        | FASE 5  |

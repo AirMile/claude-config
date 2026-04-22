@@ -1,6 +1,6 @@
 ---
-name: team-test
-description: Verify teammate code delivery. Checks completeness against task brief (feature.json) or backlog TODO, generates tests inline, maps results to requirements. Use with /team-test after teammate code delivery.
+name: team-verify
+description: Verify teammate code delivery. Checks completeness against task brief (feature.json) or backlog TODO, generates tests inline, maps results to requirements. Use with /team-verify after teammate code delivery.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -8,13 +8,13 @@ metadata:
   category: team
 ---
 
-# Test — Teammate Verification
+# Verify — Teammate Verification
 
 ## Overview
 
 Verify teammate code delivery. Detects available context (feature.json with requirements, backlog TODO with description, or just a branch diff), checks completeness where possible, generates and runs tests, and produces structured feedback.
 
-**Trigger**: `/team-test` or `/team-test {feature-name}` or `/team-test {feature-name} {feedback}`
+**Trigger**: `/team-verify` or `/team-verify {feature-name}` or `/team-verify {feature-name} {feedback}`
 
 ## When to Use
 
@@ -31,13 +31,13 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 ```
 # Auto-detect context (recommended)
-/team-test
+/team-verify
 
 # Specific feature
-/team-test user-registration
+/team-verify user-registration
 
 # Inline feedback (skips automation)
-/team-test user-registration
+/team-verify user-registration
 1:PASS
 2:FAIL no validation error
 3:PASS
@@ -106,7 +106,7 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 7. **Signal active feature** (na feature naam bepaald):
 
    ```bash
-   echo '{"feature":"{feature-name}","skill":"team-test","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+   echo '{"feature":"{feature-name}","skill":"team-verify","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
    ```
 
 8. **Load stack & project context** (voor agent prompts):
@@ -383,7 +383,7 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
 
    If found, verify it's live: `curl -s -o /dev/null -w "%{http_code}" {tunnel_url}`. If HTTP 200 and serves correct project → use it.
 
-   b) No tunnel running — start dev server + tunnel (same process as `/dev-server`):
+   b) No tunnel running — start dev server + tunnel (same process as `/dev-tunnel`):
 
    ```bash
    # Detect framework from package.json and start
@@ -472,7 +472,7 @@ AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}
 
 ### FASE 3b: Parse Inline Feedback
 
-**When:** User provided inline feedback via `/team-test {name} {feedback}` or free text.
+**When:** User provided inline feedback via `/team-verify {name} {feedback}` or free text.
 
 Parse user feedback into structured results (item number, PASS/FAIL, notes). Accept both numbered format and free text. Map to requirements where possible.
 

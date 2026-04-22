@@ -210,7 +210,7 @@ Add hook to `settings.local.json`:
 
 Update `## User Preferences` with language from Phase 1.
 
-Generate CLAUDE.md following the **canonical structure** from `references/claude-md-sections.md`. This is the single source of truth — all pipeline skills (dev-build auto-sync, core-md-audit) expect these section names.
+Generate CLAUDE.md following the **canonical structure** from `references/claude-md-sections.md`. This is the single source of truth — all pipeline skills (dev-build auto-sync) expect these section names.
 
 **Section rules:**
 
@@ -247,9 +247,12 @@ Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
 **Steps:**
 
 1. Maak `.project/project.json` aan met het volledige lege schema uit `shared/DASHBOARD.md`
-2. Vul `concept` sectie:
+2. Vul `concept` sectie (preferred: markdown-file, niet inline):
    - `name`: projectnaam (uit Phase 1/2 user answers)
-   - `content`: korte project beschrijving als markdown (uit user answers — wat het project doet, voor wie, kernfunctionaliteit). Hoeft niet uitgebreid — thinking/plan skills vullen dit later aan.
+   - `pitch`: 1-2 zinnen samenvatting (uit user answers)
+   - `conceptFile`: `"project-concept.md"` — verwijzing naar het markdown-bestand
+   - `content`: lege string `""` — NOOIT ook inline invullen naast `conceptFile`
+   - Maak `.project/project-concept.md` aan met de korte projectbeschrijving als plain markdown (wat het project doet, voor wie, kernfunctionaliteit). Hoeft niet uitgebreid — thinking/plan skills vullen dit later aan.
 3. Vul `stack` sectie volledig (OVERWRITE — core-setup is de eerste skill):
    - `framework`: uit user answers (Phase 2 Q3/Q4)
    - `language`: uit user answers (Phase 2 Q4)
@@ -279,6 +282,21 @@ Project: {name}
 Stack: {framework} / {language}
 Packages: {N} packages
 ```
+
+---
+
+## Phase 7c: Design Tokens (optional, frontend projects only)
+
+**Goal:** Vraag of user design tokens nu wil instellen, zodat `theme` sectie in project.json niet leeg blijft.
+
+**Trigger:** Alleen als `stack.framework` een frontend framework is (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS). Skip anders.
+
+**AskUserQuestion (single-select):**
+
+1. **Later** (Recommended) — theme blijft leeg, user draait `/frontend-tokens` zelf wanneer nodig
+2. **Nu `/frontend-tokens` starten** — exit core-setup, draai tokens skill direct
+
+Geen blocker: default is "Later". Theme-sectie wordt pas gevuld wanneer user expliciet kiest.
 
 ---
 

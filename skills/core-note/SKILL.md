@@ -1,6 +1,6 @@
 ---
-name: core-capture
-description: Quick-capture context from chat or free text to Obsidian. Use with /capture for lightweight saving of decisions, insights, or action items.
+name: core-note
+description: Quick-note context from chat or free text to Obsidian. Use with /core-note for lightweight saving of decisions, insights, or action items.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -8,13 +8,13 @@ metadata:
   category: core
 ---
 
-# Capture
+# Note
 
-Quick-capture workflow to save context from a conversation or free text to Obsidian. Lightweight and focused on saving, not generating.
+Quick-note workflow to save context from a conversation or free text to Obsidian. Lightweight and focused on saving, not generating.
 
 ## When to Use
 
-- User starts with `/capture` (with or without description)
+- User starts with `/core-note` (with or without description)
 - User wants to quickly save a decision, insight, or action item
 - User wants to capture something from the current conversation
 
@@ -34,7 +34,7 @@ options:
 multiSelect: false
 ```
 
-If an inline argument was provided with `/capture`, treat it as free text input and skip this step.
+If an inline argument was provided with `/core-note`, treat it as free text input and skip this step.
 
 ### Step 2: Compose Content
 

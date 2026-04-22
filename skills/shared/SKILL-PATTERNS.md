@@ -20,7 +20,7 @@ Generate an ASCII [diagram type] showing [what to visualize].
 
 | Use case              | Diagram type         | Example skills               |
 | --------------------- | -------------------- | ---------------------------- |
-| Architecture/layers   | Component diagram    | dev-define, frontend-compose |
+| Architecture/layers   | Component diagram    | dev-define, frontend-design |
 | Multi-step workflow   | Flowchart            | dev-build, dev-verify        |
 | Feature decomposition | Tree                 | dev-plan, game-plan          |
 | State transitions     | State machine        | game-define                  |
@@ -135,7 +135,7 @@ Agent instruction: "Read only the files relevant to your analysis from the paths
 
 **Rules:**
 
-- Skills die `.project/` MOGEN aanmaken zonder check: `dev-plan`, `game-plan`, `frontend-plan`, `core-setup`
+- Skills die `.project/` MOGEN aanmaken zonder check: `dev-plan`, `game-plan`, `frontend-design`, `core-setup`
 - Alle andere skills: als `.project/` niet bestaat of leeg is, toon suggestie en stop
 - Doe geen silent `mkdir -p` voor de hele `.project/` structuur — dat is `core-setup`'s taak
 - `mkdir -p .project/features/{name}` en `mkdir -p .project/session` binnen een bestaande `.project/` is wél ok

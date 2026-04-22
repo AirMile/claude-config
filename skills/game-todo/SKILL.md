@@ -1,8 +1,8 @@
 ---
-name: game-feature
+name: game-todo
 description: >-
   Capture game feature ideas during playtesting or brainstorming. Combines quick
-  backlog entry with optional light thinking rounds. Use with /game-feature
+  backlog entry with optional light thinking rounds. Use with /game-todo
   when you have a new game feature idea to add to the backlog.
 disable-model-invocation: true
 metadata:
@@ -11,11 +11,11 @@ metadata:
   category: game
 ---
 
-# Feature
+# Todo
 
 Capture new game feature ideas, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have a game feature idea" and a backlog item ready for `/game-define`.
 
-**Trigger**: `/game-feature` or `/game-feature [beschrijving]`
+**Trigger**: `/game-todo` or `/game-todo [beschrijving]`
 
 ## When to Use
 
@@ -30,8 +30,8 @@ NOT for: concept-level ideation (`/thinking-concept`), iterating on existing fea
 ### FASE 0: Input + Backlog Check
 
 1. **Beschrijving bepalen:**
-   - Argument meegegeven (`/game-feature dash-ability toevoegen`) -> gebruik als startbeschrijving
-   - Geen argument (`/game-feature`) -> AskUserQuestion:
+   - Argument meegegeven (`/game-todo dash-ability toevoegen`) -> gebruik als startbeschrijving
+   - Geen argument (`/game-todo`) -> AskUserQuestion:
      ```yaml
      header: "Feature"
      question: "Wat wil je toevoegen aan het spel?"
@@ -52,7 +52,7 @@ NOT for: concept-level ideation (`/thinking-concept`), iterating on existing fea
           "project": "{project directory name}",
           "generated": "{YYYY-MM-DD}",
           "updated": "{YYYY-MM-DD}",
-          "source": "/game-feature",
+          "source": "/game-todo",
           "overview": "",
           "features": [],
           "notes": ""
@@ -245,7 +245,7 @@ multiSelect: false
        "summary": "{beschrijving, max 200 chars}",
        "file": ".project/features/{naam}/thinking.md",
        "newFeature": "{naam}",
-       "source": "/game-feature"
+       "source": "/game-todo"
      }
      ```
    - Als geen thinking rounds gedaan (snel toevoegen), `file` weglaten

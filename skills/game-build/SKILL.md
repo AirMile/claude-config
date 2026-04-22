@@ -885,7 +885,7 @@ Tests: {passed}/{total} PASS
 Files created: {count}
 
 Next steps:
-  1. /game-test {feature} → playtest verificatie
+  1. /game-verify {feature} → playtest verificatie
   2. /game-debug → als er onverwachte failures zijn
 ```
 

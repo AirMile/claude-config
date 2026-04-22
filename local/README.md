@@ -13,7 +13,7 @@ Copy-Item "C:\Projects\claude-config\local\CLAUDE.md.base" "$env:USERPROFILE\.cl
 ```
 
 ```bash
-# Linux
+# macOS
 cp local/statusline-command.cjs ~/.claude/
 cp local/keybindings.json ~/.claude/
 cp local/settings.json.template ~/.claude/settings.json

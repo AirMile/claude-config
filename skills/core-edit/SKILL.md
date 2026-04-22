@@ -121,7 +121,7 @@ Before modifying files, detect if skills use per-skill junctions to a shared lib
 
 **Step 1 — Check if symlinks/junctions are active:**
 
-**Linux:**
+**macOS:**
 
 ```bash
 test -L ".claude/skills/$(ls .claude/skills | head -1)" && echo "linked" || echo "direct"
@@ -138,7 +138,7 @@ powershell -Command "(Get-ChildItem '.claude/skills' -Directory | Select-Object 
 
 **Step 2 — Get shared library path (only if linked):**
 
-**Linux:**
+**macOS:**
 
 ```bash
 readlink -f .claude/skills/$(ls .claude/skills | head -1) | xargs dirname
@@ -163,11 +163,11 @@ Apply content edits, resource changes, renames, or deletions as appropriate.
 **For rename with symlinks/junctions:**
 
 1. Remove old link:
-   - Linux: `unlink .claude/skills/[old-name]`
+   - macOS: `unlink .claude/skills/[old-name]`
    - Windows: `cmd //c "rmdir .claude\skills\[old-name]"`
 2. Rename directory in shared library
 3. Create new link:
-   - Linux: `ln -s {shared_library}/[new-name] .claude/skills/[new-name]`
+   - macOS: `ln -s {shared_library}/[new-name] .claude/skills/[new-name]`
    - Windows: `cmd //c "mklink /J .claude\skills\[new-name] {shared_library}\[new-name]"`
 4. Update paths in SKILL.md
 5. Verify new link works
@@ -274,7 +274,7 @@ When editing an agent (`agents/*.md`), keep the `description` field short (max ~
 
 Use **AskUserQuestion** for confirmation with "Annuleren" as recommended option (destructive action).
 
-**If per-skill links:** remove link first (`unlink` on Linux, `cmd //c "rmdir"` on Windows), then delete from shared library.
+**If per-skill links:** remove link first (`unlink` on macOS, `cmd //c "rmdir"` on Windows), then delete from shared library.
 
 **Always:** remove skill name from profiles.yaml (Step 4.2).
 

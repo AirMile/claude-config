@@ -129,7 +129,12 @@ Als `.project/project.json` niet bestaat, maak aan met het lege schema uit `shar
 
 ```json
 {
-  "concept": { "name": "", "content": "" },
+  "concept": {
+    "name": "",
+    "pitch": "",
+    "conceptFile": "project-concept.md",
+    "content": ""
+  },
   "theme": {},
   "stack": {
     "framework": "",
@@ -1283,7 +1288,7 @@ Locatie: .project/project.json (theme sectie)
 Theme tokens ready in project.json voor downstream consumption.
 
 Next steps:
-  1. /frontend-compose {page} → bouw een pagina met deze tokens
+  1. /frontend-design {page} → bouw een pagina met deze tokens
   2. /frontend-convert → converteer een design met deze tokens
   4. /frontend-audit → check performance en SEO
   5. /frontend-wcag → accessibility audit
