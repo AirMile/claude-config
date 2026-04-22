@@ -240,14 +240,16 @@ Next steps:
 **Scope = feature of pagina:**
 
 1. Schrijf naar scope-pad (`.project/features/{naam}/research.md` of `.project/thinking/{onderwerp}-research.md`)
-2. Dashboard sync: push naar top-level `thinking` array
-3. Vraag optioneel of key findings ook in `project-concept.md` verwerkt moeten worden
+2. Vraag optioneel of key findings ook in `project-concept.md` verwerkt moeten worden
+
+De markdown is de bron van waarheid — geen `project.json` `thinking[]` append. Skills die research willen consumeren (zoals `/dev-define`) lezen rechtstreeks uit `.project/thinking/*.md` of `.project/features/{naam}/research.md`.
 
 **Scope = los idee:**
 
 1. Schrijf naar `.project/thinking/{onderwerp}-research.md`
-2. Dashboard sync: push naar top-level `thinking` array
-3. Bied Obsidian save aan als optie
+2. Bied Obsidian save aan als optie
+
+De markdown is de bron van waarheid — geen `project.json` `thinking[]` append.
 
 **Obsidian save flow** (wanneer gevraagd):
 
@@ -265,7 +267,7 @@ Als `obsidian_source_path` bekend: schrijf naast het originele idee. Anders: det
 }
 ```
 
-Destination: `concept.thinking` voor concept-scope, `thinking` (top-level) voor alle andere scopes.
+Destination: `concept.thinking` voor concept-scope. Voor feature/pagina/los scopes: geen `project.json` append — de `.md` is de bron van waarheid.
 
 ---
 

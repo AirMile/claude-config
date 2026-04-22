@@ -239,44 +239,15 @@ multiSelect: false
 
 **If scope = feature (uit Step 1a):**
 
-1. Read `.project/project.json` (skip als niet bestaat)
-2. Schrijf volledige analyse naar `.project/features/{naam}/decisions.md` (append als bestand al bestaat)
-3. Push naar `thinking` array:
-   ```json
-   {
-     "type": "decision",
-     "date": "{today}",
-     "title": "{beslissing titel}",
-     "summary": "{key insight van de beslissing, max 200 chars}",
-     "file": ".project/features/{naam}/decisions.md",
-     "featureScope": "{naam}",
-     "options": ["{optie 1}", "{optie 2}", "..."],
-     "chosen": "{gekozen optie}",
-     "rationale": "{waarom deze keuze, 1-2 zinnen}",
-     "source": "/thinking-decide"
-   }
-   ```
-4. Write `.project/project.json`
+1. Schrijf volledige analyse naar `.project/features/{naam}/decisions.md` (append als bestand al bestaat)
+
+De feature-koppeling wordt vastgelegd in `feature.json` → `durableDecisions[]` (zie `Feature scope koppeling` verderop). Geen `project.json` `thinking[]` append nodig.
 
 **If scope = project of los (of geen scope gekozen):**
 
-1. Read `.project/project.json` (skip als niet bestaat)
-2. Schrijf volledige analyse naar `.project/thinking/{today}-decision-{slug}.md`
-3. Push naar `thinking` array:
-   ```json
-   {
-     "type": "decision",
-     "date": "{today}",
-     "title": "{beslissing titel}",
-     "summary": "{key insight van de beslissing, max 200 chars}",
-     "file": ".project/thinking/{today}-decision-{slug}.md",
-     "options": ["{optie 1}", "{optie 2}", "..."],
-     "chosen": "{gekozen optie}",
-     "rationale": "{waarom deze keuze, 1-2 zinnen}",
-     "source": "/thinking-decide"
-   }
-   ```
-4. Write `.project/project.json`
+1. Schrijf volledige analyse naar `.project/thinking/{today}-decision-{slug}.md`
+
+De markdown in `.project/thinking/` is de bron van waarheid. Geen `project.json` `thinking[]` append voor deze scope — skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks uit `.project/thinking/*.md`.
 
 **Feature scope koppeling:** als de beslissing in de context van een actieve feature valt (via Step 1a scope of via `.project/session/active-*.json`), push ook naar `feature.json` → `durableDecisions[]`:
 

@@ -59,18 +59,8 @@ FASE 1 van de dev workflow: define → build → test.
      - `features[]` — bestaande features (voorkomt duplicaten/overlap)
      - `endpoints` — bestaande API surface
      - `data.entities` — bestaand data model
-     - `thinking[]` — twee checks:
-     1. **Naam-match**: entries met `title` of `newFeature` matching de feature-naam → automatisch laden als context
-     2. **Recent (afgelopen 7 dagen)**: entries met `date` binnen 7 dagen, NIET al geladen via naam-match. Als gevonden, toon via AskUserQuestion:
-        ```yaml
-        header: "Recente thinking-output gevonden"
-        question: "Er zijn recente verkenningen/ideeën. Wil je deze als context gebruiken?"
-        options:
-          - label: "Ja, gebruik als context (Recommended)", description: "{N} entries: {titels kort}"
-          - label: "Nee, overslaan", description: "Start zonder thinking-context"
-        multiSelect: false
-        ```
-        "Ja" → lees de gekoppelde `.project/thinking/*.md` bestanden en gebruik als input voor FASE 1 vragen.
+     - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/dev-todo`). Laad die als context.
+   - **Naam-match op thinking markdown**: Grep `.project/thinking/*.md` op feature-naam (bestandsnaam + content). Bij 1+ match: lees de match(es) en gebruik als input voor FASE 1 vragen. De `.md` bestanden zijn bron van waarheid voor thinking-output — geen 7-dagen window meer.
    - **Backlog card → DOING + "defining"**: Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data">`. Zoek feature op naam → zet `status: "DOING"`, `stage: "defining"`, `date: "{date}"`. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DOING"`, `stage: "defining"`. Zet `data.updated` naar vandaag. Schrijf terug naar `backlog.html`.
    - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
@@ -306,7 +296,7 @@ Muteer in memory:
 
 - Update feature in `features` array: status → `"DOING"`, stage → `"defined"`, update summary
 - Merge per entity type (check altijd op bestaande voor push):
-  - **Data entities**: check op naam → nieuw: push met fields/relations → bestaand: merge nieuwe velden
+  - **Data entities** (optioneel — alleen als feature domain entities introduceert): check op naam → nieuw: push met fields/relations → bestaand: merge nieuwe velden. Als feature geen entities heeft (UI-only, refactor, utility): skip deze update, log `Skipped data.entities: no entities`.
   - **Endpoints**: check op method+path → nieuw: push met `status: "planned"` → bestaand: skip
   - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
   - **Features**: check op naam → nieuw: push `{ name, status: "DOING", stage: "defined", summary, created }` → bestaand: update status

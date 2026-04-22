@@ -211,17 +211,25 @@ Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar 
 `name` = korte project naam (voor dashboard header)
 `pitch` = 1-2 zinnen samenvatting van het concept (voor lichte context loading door dev skills). Moet altijd gevuld zijn — niet afhankelijk van fallback naar `content`.
 `conceptFile` = verwijzing naar `.project/project-concept.md` (preferred formaat voor nieuwe projecten)
-`content` = legacy inline concept content. Voor nieuwe projecten leeg — volledige content staat in `project-concept.md`. Bestaande projecten met inline content blijven werken.
+`content` = legacy inline concept content. Voor nieuwe projecten leeg — volledige content staat in `project-concept.md`.
 `thinking` = concept progressie log (append-only) — toont de stappen van idea → brainstorm → critique voor het concept. Zelfde entry-formaat als main `thinking`, maar specifiek voor concept-scope.
+
+### Eén bron van waarheid
+
+**NOOIT beide** `content` en `project-concept.md` tegelijk invullen. Regels bij write:
+
+1. **Nieuw project** (preferred): maak `.project/project-concept.md` aan, zet `concept.conceptFile = "project-concept.md"`, houd `concept.content = ""`.
+2. **Legacy project** (bestaande inline `content`): laat zoals is of migreer eenmalig (verplaats `content` → `.md`, zet `content = ""`).
+3. **Bij concept write**: eerst check of `project-concept.md` bestaat. Zo ja → schrijf naar .md, zet `content = ""`. Zo nee + legacy content → blijf inline schrijven.
 
 ### project-concept.md
 
-Wanneer `concept.conceptFile` is gezet, staat het volledige concept document in `.project/project-concept.md` als plain markdown (niet JSON-escaped). Dit is het preferred formaat voor nieuwe projecten.
+Volledig concept document als plain markdown (niet JSON-escaped).
 
 **Read:** `Read .project/project-concept.md`
 **Write:** Direct markdown schrijven. Update ook `concept.name` en `concept.pitch` in project.json (zodat lichte readers actuele metadata hebben).
 
-**Legacy:** Als `concept.content` in project.json niet leeg is en `project-concept.md` niet bestaat, gebruik de inline content. De dashboard server's `populateFromProject()` handelt beide formaten af.
+Dashboard server's `populateFromProject()` handelt beide formaten af — bestaande legacy projecten blijven werken.
 
 ## project-context.json
 
@@ -353,6 +361,8 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 
 ### theme
 
+**Design system bron van waarheid.** `theme` bevat alle design tokens (colors, typography, spacing, borderRadius, shadows, modes, motion, interactions, cssVars). De dashboard UI rendert dit als "Design System" sectie. Beheer via `/frontend-tokens`.
+
 ```json
 {
   "colors": {
@@ -429,6 +439,8 @@ Overige velden = structured tokens per categorie
 ```
 
 ### data
+
+**Optioneel — alleen data-heavy projecten.** In de praktijk laten simpele projecten (static sites, utilities, games, UI-only components) dit leeg. Skills die schrijven (`/dev-define`, `/dev-verify`, `/dev-refactor`, `/game-define`, `/team-verify`) slaan deze update over als het domein geen expliciete entities introduceert — log dan `Skipped data.entities: no entities`.
 
 ```json
 {
@@ -533,6 +545,15 @@ Alle entries hebben `type`, `date`, `title`, `summary`, `file`, `source`. Extra 
 `summary` = max 200 chars, key insight van de thinking output.
 `file` = pad naar volledige markdown in `.project/thinking/`. Bestandsnaam: `{date}-{type}-{slug}.md`.
 
+**Scope:** het top-level `thinking[]` array bevat alleen:
+
+- `dev-todo` entries met `newFeature` veld (kritiek signaal voor `/dev-plan` independent-feature detectie)
+- Legacy entries van oude runs
+
+Nieuwe thinking-output van `/thinking-decide`, `/thinking-research`, `/thinking-brainstorm` (non-concept scope) en `/thinking-critique` (non-concept scope) schrijft **alleen** naar `.project/thinking/*.md` — geen entry in `project.json` meer. De markdown is de bron van waarheid. Concept-scope thinking blijft in `concept.thinking[]` (gebruikt door `/dev-plan` voor evolution diff en dashboard).
+
+Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks via Grep op `.project/thinking/*.md` voor naam-match.
+
 **Legacy:** oude entries met `content` i.p.v. `summary`+`file` blijven werken. Skills die entries lezen checken op `file` (nieuw) of `content` (legacy).
 
 ### context
@@ -548,7 +569,8 @@ Alle entries hebben `type`, `date`, `title`, `summary`, `file`, `source`. Extra 
   "patterns": [
     "Path alias: @/ → src/",
     "Env setup: copy .env.example → .env",
-    "Sanity preview: Draft mode via /api/preview"
+    "Sanity preview: Draft mode via /api/preview",
+    "Code maturity: student — respecteer lesmateriaal-patronen, geen over-abstractions, duplicatie <10 regels oké"
   ],
   "updated": "2026-02-20"
 }
@@ -585,14 +607,14 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 | Sectie             | Geschreven door                                                                              | Wanneer                                  |
 | ------------------ | -------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `concept`          | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan        |
-| `design`           | `/frontend-plan`, `/frontend-compose`, `/frontend-tokens`                                    | Bij design spec/page build/theme creatie |
+| `design`           | `/frontend-design`, `/frontend-tokens`                                                       | Bij design spec/page build/theme creatie |
 | `theme`            | `/frontend-tokens`                                                                           | Na theme create/update                   |
-| `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-compose`                 | Bij detectie/nieuwe deps                 |
+| `stack`            | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-design`                  | Bij detectie/nieuwe deps                 |
 | `data`             | `/dev-define`, `/game-define`                                                                | Bij entity definitie                     |
 | `endpoints`        | `/dev-define`, `/dev-build`                                                                  | Bij API definitie / na build             |
-| `features`         | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-test`, `/game-define`, `/game-build`      | Bij status wijziging (DOING/DONE)        |
+| `features`         | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build`    | Bij status wijziging (DOING/DONE)        |
 | `concept.thinking` | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)      |
-| `thinking`         | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-decide`        | Bij non-concept thinking (append)        |
+| `thinking`         | `/dev-todo` (entries met `newFeature` veld)                                                  | Bij nieuwe backlog items                 |
 
 ### project-context.json secties
 
@@ -604,20 +626,20 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 
 ### Skill sync overzicht
 
-| Skill               | project.json                                                       | project-context.json                                  | Wanneer              |
-| ------------------- | ------------------------------------------------------------------ | ----------------------------------------------------- | -------------------- |
-| `/core-setup`       | `stack` (volledig)                                                 | `context` (initieel)                                  | Na project generatie |
-| `/dev-define`       | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING) | `architecture` (write), `learnings` (read)            | FASE 6               |
-| `/dev-build`        | `endpoints`, `stack.packages`, `features` (DOING+built)            | `context`, `architecture` (write), `learnings` (read) | FASE 4C              |
-| `/dev-verify`       | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)  | `architecture`, `learnings` (write)                   | FASE 6 completion    |
-| `/dev-refactor`     | `stack.packages`, `endpoints`, `data.entities`                     | `context`, `architecture`, `learnings` (write)        | FASE 5 completion    |
-| `/frontend-plan`    | `design` (pages, flows, principles), `features` (batch TODO)       | —                                                     | Bij elke uitvoering  |
-| `/frontend-compose` | `stack.packages`, `design.pages`, `features` (DOING+built)         | —                                                     | Na FASE 4            |
-| `/frontend-tokens`  | `design.principles`                                                | —                                                     | Na completion        |
-| `/game-define`      | `data.entities`, `stack.packages`, `features` (DOING)              | `architecture` (write)                                | FASE 6               |
-| `/game-build`       | `features` (DOING+built)                                           | `context`, `architecture` (write)                     | FASE 5 completion    |
-| `/team-test`        | `features`, `stack.packages`, `endpoints`, `data.entities`         | `architecture` (write)                                | FASE 7 completion    |
-| `/game-refactor`    | `features` (DONE)                                                  | `context`, `architecture` (write)                     | FASE 5 completion    |
+| Skill              | project.json                                                       | project-context.json                                  | Wanneer              |
+| ------------------ | ------------------------------------------------------------------ | ----------------------------------------------------- | -------------------- |
+| `/core-setup`      | `stack` (volledig)                                                 | `context` (initieel)                                  | Na project generatie |
+| `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING) | `architecture` (write), `learnings` (read)            | FASE 6               |
+| `/dev-build`       | `endpoints`, `stack.packages`, `features` (DOING+built)            | `context`, `architecture` (write), `learnings` (read) | FASE 4C              |
+| `/dev-verify`      | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)  | `architecture`, `learnings` (write)                   | FASE 6 completion    |
+| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`                     | `context`, `architecture`, `learnings` (write)        | FASE 5 completion    |
+| `/frontend-design` | `design` (pages, flows, principles), `features` (batch TODO)       | —                                                     | Bij elke uitvoering  |
+| `/frontend-design` | `stack.packages`, `design.pages`, `features` (DOING+built)         | —                                                     | Na FASE 4            |
+| `/frontend-tokens` | `design.principles`                                                | —                                                     | Na completion        |
+| `/game-define`     | `data.entities`, `stack.packages`, `features` (DOING)              | `architecture` (write)                                | FASE 6               |
+| `/game-build`      | `features` (DOING+built)                                           | `context`, `architecture` (write)                     | FASE 5 completion    |
+| `/team-verify`     | `features`, `stack.packages`, `endpoints`, `data.entities`         | `architecture` (write)                                | FASE 7 completion    |
+| `/game-refactor`   | `features` (DONE)                                                  | `context`, `architecture` (write)                     | FASE 5 completion    |
 
 ## Server
 

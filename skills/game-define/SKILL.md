@@ -138,18 +138,8 @@ De card verhuist naar de DOING kolom met stage `defining`.
      - `concept.pitch` als feature context (korte samenvatting). Fallback: als pitch leeg, lees `.project/project-concept.md` → eerste 2 zinnen
      - `features[]` — bestaande features (voorkomt duplicaten/overlap)
      - `data.entities` — bestaand data model
-     - `thinking[]` — twee checks:
-       1. **Naam-match**: entries met `title` of `newFeature` matching de feature-naam → automatisch laden als context
-       2. **Recent (afgelopen 7 dagen)**: entries met `date` binnen 7 dagen, NIET al geladen via naam-match. Als gevonden, toon via AskUserQuestion:
-          ```yaml
-          header: "Recente thinking-output gevonden"
-          question: "Er zijn recente verkenningen/ideeën. Wil je deze als context gebruiken?"
-          options:
-            - label: "Ja, gebruik als context (Recommended)", description: "{N} entries: {titels kort}"
-            - label: "Nee, overslaan", description: "Start zonder thinking-context"
-          multiSelect: false
-          ```
-          "Ja" → lees de gekoppelde `.project/thinking/*.md` bestanden en gebruik als input voor FASE 1 vragen.
+     - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/dev-todo`). Laad die als context.
+   - **Naam-match op thinking markdown**: Grep `.project/thinking/*.md` op feature-naam (bestandsnaam + content). Bij 1+ match: lees de match(es) en gebruik als input voor FASE 1 vragen. De `.md` bestanden zijn bron van waarheid voor thinking-output — geen 7-dagen window meer.
    - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
      - `learnings[]` — eerdere inzichten uit build/test/refactor (gebruik als input voor architectuurkeuzes)
@@ -743,7 +733,7 @@ Muteer in memory:
 
 **Dashboard** (zie `shared/DASHBOARD.md`):
 
-- **Data entities**: voor elke entity check of `data.entities` al entry heeft met die naam → nee: push met fields/relations → ja: merge nieuwe velden
+- **Data entities** (optioneel — alleen als feature domain entities introduceert): voor elke entity check of `data.entities` al entry heeft met die naam → nee: push met fields/relations → ja: merge nieuwe velden. Als feature geen entities heeft (UI-only scene, pure gameplay, utility): skip, log `Skipped data.entities: no entities`.
 - **Stack**: als Godot plugins/assets → check `stack.packages` op naam → nee: push `{ name, version, purpose }`
 - **Features**: check op naam → nee: push `{ name, status: "DOING", stage: "defined", summary, depends: [], created }` → ja: update status naar `"DOING"`, stage naar `"defined"`
 - **Architecture** in `.project/project-context.json`: genereer/update als feature scene tree en/of signals heeft. **Volg component-first model uit `shared/DASHBOARD.md`**:
