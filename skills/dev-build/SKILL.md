@@ -342,27 +342,7 @@ Richtlijnen:
 
 **Architecture** (volg component-first model uit `shared/DASHBOARD.md`): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `description` (korte functionele beschrijving, max 200 chars — wat doet dit component?), `src`, `test`, `connects_to` (uit werkelijke imports), `endpoints` (bijv. `"POST /api/auth/login"`), `entities` (gebruikte model namen), `feature` (huidige feature naam). Nieuwe componenten die tijdens build zijn ontstaan: push met alle velden inclusief `feature`. Skip als geen structurele impact.
 
-**Learning Extraction** — extracteer projectbrede learnings:
-
-Lees de zojuist geschreven `feature.json` `build.decisions[]` en evalueer:
-
-- Architecturale keuzes die andere features beïnvloeden → type `pattern`
-- Ontdekte pitfalls of workarounds → type `pitfall`
-
-**Filter**: alleen items die relevant zijn buiten deze ene feature. Skip feature-specifieke implementatiedetails.
-
-**Append** naar `project-context.json` → `learnings[]`:
-
-```json
-{
-  "date": "YYYY-MM-DD",
-  "feature": "{feature-name}",
-  "type": "pattern|pitfall",
-  "summary": "Max 200 chars samenvatting"
-}
-```
-
-Check op duplicaten (zelfde feature + zelfde summary → skip). Geen learnings gevonden → skip.
+Learning extraction gebeurt in `/dev-verify` — dat is de natuurlijke plek (features zijn pas "geleerd" na test + fix). Hier alleen `build.decisions[]` in feature.json vastleggen, geen `learnings[]` append.
 
 ### FASE 3C: Wat hebben we gebouwd?
 

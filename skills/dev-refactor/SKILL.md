@@ -122,7 +122,24 @@ Lees `.project/project-context.json` (als bestaat). Extract `context.patterns`.
 
 Als beschikbaar: voeg toe aan Explore agent prompt in FASE 1 onder
 `PROJECT CONVENTIONS:` sectie. Helpt agents onderscheid maken tussen
-"intentioneel project pattern" en "code smell".
+"intentioneel project pattern" en "code smell". Eén van de patterns kan een
+`Code maturity: ...` string zijn (zie `shared/DASHBOARD.md` voorbeelden) die
+de refactor-agressie stuurt — die wordt automatisch meegegeven omdat hij deel
+uitmaakt van `patterns`.
+
+4c. **Build pipeline diff per feature** (optioneel, skip voor codebase-mode):
+
+Voor elke feature met een bekend build-startmoment: bouw een diff-string die agents als focus-hint krijgen.
+
+```bash
+# Bepaal begin van feature-werk
+first_hash=$(git log --since="{feature.build.startedAt}" --pretty=format:"%H" -- {pipeline_files} | tail -1)
+
+# Diff van die commit tot nu, gescoped tot pipeline files
+[ -n "$first_hash" ] && git diff ${first_hash}^..HEAD -- {pipeline_files} > /tmp/diff-{feature}.patch
+```
+
+Opslaan als `pipeline_diff[feature_name]`. Als diff leeg is of `startedAt` ontbreekt: skip — agent ziet dan alleen de volledige files.
 
 5. **Load or generate refactor-patterns.md:**
 
@@ -193,145 +210,192 @@ git status --porcelain | sort > .project/session/pre-skill-status.txt
 echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
-### FASE 1: Parallel Batch Analysis + Triage
+### FASE 1: Parallel Three-Lens Analysis + Triage
 
-**Goal:** Analyze ALL features in parallel, then triage into CLEAN vs HAS_FINDINGS.
+**Goal:** Per feature drie focused Explore agents parallel (reuse / quality / efficiency), dan merge + triage naar CLEAN vs HAS_FINDINGS.
 
-1. **Launch ALL Explore agents IN PARALLEL** (1 per feature, max 10 concurrent):
+**Waarom drie lenses:** één monolithische prompt met 6 categorieën verdunt focus en produceert noise. Drie aparte lenses geven scherpere findings per domein. Geleerd uit `/simplify`-runs — zie plan in `.claude/plans/` (2026-04).
 
-   For each feature, launch a Task agent (Explore) with this prompt:
+**Lens-definities** (zie ook `shared/PATTERNS.md` als aanwezig):
 
-   ```
+- **Reuse lens**: DRY binnen pipeline files, duplicatie met bestaande helpers/utilities in de codebase, inline logica die bestaande lib/stdlib kan gebruiken, extract-opportunities
+- **Quality lens**: security (injection/XSS/deserialization), clarity (nesting, naming, comments), over-engineering, nested conditionals, stringly-typed, dode code, redundante state, copy-paste met variatie, leaky abstractions, RULES.md violations, stack-specific anti-patterns
+- **Efficiency lens**: missed concurrency (Promise.all), N+1, hot-path bloat, memory leaks, unbounded maps, TOCTOU, overly broad ops, no-op recurring updates
+
+Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe security-review bestaat `dev-owasp`).
+
+1. **Bepaal lens-strategie per feature:**
+   - `pipeline_files[feature].length < 4` → **single-lens mode**: één gecombineerde agent met alle drie lenses in de prompt (splitten levert te weinig signaal voor te veel token-overhead)
+   - `length >= 4` → **three-lens mode**: drie agents parallel per feature
+
+   **Concurrency-budget:** max 10 concurrent agents totaal. Als `sum(lens_count_per_feature) > 10`: batch features in groepen. Bijv. 5 features × 3 lenses = 15 → batch 3 features eerst (9 agents), dan de rest.
+
+2. **Launch agents IN PARALLEL** volgens lens-strategie.
+
+   **Universele prompt-header** (elke lens, elke mode krijgt deze):
+
+   ````
    Feature: {feature-name}
    Pipeline files:
-   {list of all pipeline_files paths for this feature}
+   {list of pipeline_files paths}
 
-   Lees ALLE bovenstaande pipeline files. Scan voor:
+   {if pipeline_diff[feature] exists:}
+   FOCUS HINT — deze regels zijn nieuw/gewijzigd in deze feature; scan
+   met voorrang (maar rapporteer issues in andere regels óók):
+   ```diff
+   {pipeline_diff[feature]}
+   ````
 
-   1. UNIVERSEEL (altijd scannen):
+   {/if}
 
-      SECURITY:
-      - Injection: exec(, eval(, new Function, os.system
-      - XSS: .innerHTML =, dangerouslySetInnerHTML, document.write
-      - Deserialization: pickle
-      - GitHub Actions: ${{ github.event. in run: commands
+   PROJECT CONVENTIONS:
+   {context.patterns of "niet beschikbaar — gebruik CLAUDE.md als fallback"}
+   Als een pattern consistent is met project conventions → NIET rapporteren.
+   Let op: een pattern met prefix "Code maturity:" geeft aan hoe agressief je mag refactoren — respecteer de daarin genoemde houding (bv. geen over-abstractions voor student/prototype projecten).
 
-      DRY violations (ALLEEN binnen pipeline files):
-      - Duplicate code blocks (>5 lines identiek)
-      - Vergelijkbare logica patronen (>70% gelijkheid)
-      - Herhaalde conditionals, copy-paste
-      - Extract opportunities (zelfde code in 3+ locaties)
+   DISCIPLINE:
+   - Max 500 woorden output. Kort, scherp, direct.
+   - Geen nitpicks. Alleen issues met duidelijke, concrete fix.
+   - Skip false positives expliciet (noem ze niet eens).
+   - Formaat per finding: `[IMPACT|CATEGORY] file:line — probleem — concrete fix in 1 zin`
+   - Geen "Geen X gevonden" regels voor lege categorieën.
+   - Alleen pipeline files scannen — externe files negeren.
 
-      OVER-ENGINEERING:
-      - Helpers die maar 1x gebruikt worden
-      - >3 indirectie-niveaus voor simpele operaties
-      - Premature optimization (complexe caching voor non-hot paths)
-      - Over-defensive code (try/catch rond code die niet kan falen)
-      - Over-generic types die maar op 1 plek gebruikt worden
+   ```
 
-      CLARITY:
-      - Onnodige nesting (>3 niveaus diep)
-      - Nested ternary operators → prefer switch/if-else
-      - Dense one-liners die readability opofferen voor beknoptheid
-      - Slechte variabele/functienamen (single-letter, misleidend, te generiek)
-      - Overbodige comments die obvious code beschrijven
-      - "Clever" code die moeilijk te begrijpen is
-      - Inconsistentie met project conventions uit CLAUDE.md
-      - Violations van `../shared/RULES.md` — Algemeen + TypeScript secties (R007-R008, T001-T203)
-      - Stringly-typed code: raw strings waar constants, enums (string unions), of branded types al bestaan in de codebase
+   **Lens-specifieke body** — kies één van drie (of alle drie gecombineerd in single-lens mode):
 
-      EFFICIENCY:
-      - N+1 patterns: loops met database/API calls per iteratie
-      - Missed concurrency: onafhankelijke operaties die sequentieel draaien (Promise.all, parallel reads)
-      - Hot-path bloat: blocking werk op startup of per-request/per-render paden
-      - Memory: unbounded data structures, ontbrekende cleanup, event listener leaks
-      - Overly broad operations: hele bestanden lezen als alleen een deel nodig is, alle items laden om er één te filteren
+   **(A) REUSE lens body:**
 
-      BALANCE (NIET rapporteren als finding):
-      - Abstracties die meerdere keren hergebruikt worden
-      - Helper functies die code DRY houden
-      - Expliciete error handling in externe boundaries (API, user input)
-      - Benoemde constanten zelfs als ze maar 1x gebruikt worden (als ze readability verbeteren)
-      - Voorkeur voor explicit boven compact — meer regels is OK als het duidelijker is
+   ```
 
-   2. PROJECT CONVENTIONS (uit project-context.json):
+   LENS: Reuse
 
-      {context.patterns of "niet beschikbaar — gebruik CLAUDE.md als fallback"}
+   Scan voor:
+   - Duplicate code blocks (>5 regels identiek binnen pipeline files)
+   - Vergelijkbare logica patronen (>70% gelijkheid, 3+ locaties)
+   - Inline logica die een bestaande helper/utility/stdlib kan vervangen
+   - Herhaalde conditionals, copy-paste met kleine variatie
 
-      Als een pattern consistent is met project conventions → NIET rapporteren als finding.
+   VOORBEELDEN:
+   ✓ Report: 3 tools met identieke JSON.stringify({text, sources}) wrapping → extract `formatResult()` helper
+   ✓ Report: hand-rolled `lstrip/rstrip + regex` waar `path.basename()` bestaat
+   ✗ Skip: twee functies met 3 vergelijkbare regels (te klein voor abstractie, zeker bij `Code maturity: student`)
+   ✗ Skip: abstractie die maar 2× gebruikt wordt en de call-sites niet duidelijker maakt
 
-   3. STACK-SPECIFIEK (uit refactor-patterns):
+   ```
 
-      {injected patterns per library from refactor-patterns.md}
+   **(B) QUALITY lens body:**
 
-   4. ARCHITECTUUR overzicht:
-      - Welke libraries/frameworks worden gebruikt
-      - Belangrijkste patterns (hooks, API routes, components, etc.)
-      - Libraries die NIET in refactor-patterns.md staan
+   ```
 
-   Geef terug als gestructureerd overzicht:
+   LENS: Quality
+
+   Scan voor:
+   SECURITY:
+   - Injection: exec(, eval(, new Function, os.system
+   - XSS: .innerHTML =, dangerouslySetInnerHTML, document.write
+   - Deserialization: pickle.loads op untrusted data
+   - GitHub Actions: ${{ github.event. in run: commands
+
+   CLARITY & QUALITY:
+   - Nested conditionals 3+ niveaus diep → flatten met early returns / guards / lookup table
+   - Ternary chains (a ? x : b ? y : ...) — gebruik if/else of switch
+   - Dense one-liners die readability offeren
+   - Slechte naming (single-letter, misleidend, te generiek)
+   - Dode code / unused exports
+   - Onnodige comments (WHAT ipv WHY, task-references, narrating)
+   - Redundante state (state die afgeleid kan worden)
+   - Stringly-typed code waar constants/enums bestaan
+   - Over-defensive code (try/catch rond code die niet kan falen)
+   - Helpers die maar 1× gebruikt worden
+   - Leaky abstractions / internal details geëxposed
+   - RULES.md violations — Algemeen + TypeScript secties (R007-R008, T001-T203)
+   - Stack-specific anti-patterns uit refactor-patterns.md
+
+   VOORBEELDEN:
+   ✓ Report: `msg.constructor.name === "HumanMessage"` i.p.v. `isHumanMessage(msg)` typeguard
+   ✓ Report: dode exported functie zonder callers (leeg body met TODO-comment)
+   ✓ Report: 4-niveau nested if/else waar early-returns het vlak maken
+   ✗ Skip: comment die een niet-obvious invariant uitlegt (WHY is waardevol)
+   ✗ Skip: expliciete intermediate variabele i.p.v. inline expression (clarity > compact)
+
+   ```
+
+   **(C) EFFICIENCY lens body:**
+
+   ```
+
+   LENS: Efficiency
+
+   Scan voor:
+   - Missed concurrency: onafhankelijke awaits sequentieel i.p.v. Promise.all
+   - N+1: loops met DB/API calls per iteratie
+   - Hot-path bloat: blocking werk op startup of per-request/per-render
+   - Memory leaks: unbounded Maps/arrays, ontbrekende cleanup, event listener leaks
+   - Recurring no-op updates in polling/intervals/event handlers
+   - Unnecessary existence checks (TOCTOU: pre-check file/resource voor je 'm gebruikt)
+   - Overly broad: hele files lezen als stuk volstaat, alle items laden om er één te filteren
+   - Redundante computations / repeated file reads
+
+   VOORBEELDEN:
+   ✓ Report: `for (const c of chars) await loadBackstory(c)` → `Promise.all(chars.map(loadBackstory))`
+   ✓ Report: `userStore` Map die per-user groeit zonder TTL/LRU
+   ✓ Report: `similaritySearch(q, 8).filter(...).slice(0, 3)` → filter-callback arg van de store
+   ✗ Skip: O(n) loop over 5-item array (micro-optimization zonder impact)
+   ✗ Skip: JSON.stringify in een niet-hot-path debug log
+
+   ```
+
+   **Single-lens mode** (feature met <4 files): voeg alle drie bodies samen onder één agent, behoud DISCIPLINE-regels. Eén output-blok met alle findings.
+
+   ```
+
+3. **Output format** (elke lens-agent retourneert):
+
+   ```
    ANALYSIS_START
-
-   FEATURE: {feature-name}
+   FEATURE: {name}
+   LENS: reuse | quality | efficiency | combined
    STATUS: CLEAN | HAS_FINDINGS
+   ARCHITECTURE: libs={list} | patterns={list} | uncovered={list or "-"}
 
-   ARCHITECTURE:
-   Libraries: {lijst van libraries/frameworks}
-   Patterns: {lijst van architectuurpatronen}
-   Uncovered libraries: {libraries niet in refactor-patterns.md}
+   FINDINGS:
+   - [HIGH|SEC] path/to/file.js:42 — probleem-omschrijving — concrete fix
+   - [MED|DRY] a.js:10 ↔ b.js:55 — probleem — fix
+   - [LOW|CLARITY] c.js:120 — probleem — fix
 
-   SECURITY_FINDINGS:
-   - {file:line} {pattern} — {beschrijving} — Before: {code snippet}
-   (of "Geen security issues gevonden")
+   SKIPPED (balance):
+   - path:line — korte rationale waarom bewust niet gerapporteerd
 
-   DRY_FINDINGS:
-   - {file:line} ↔ {file:line} {type} — {beschrijving} — Code: {snippet}
-   (of "Geen DRY violations gevonden")
-
-   OVERENGINEERING_FINDINGS:
-   - {file:line} {type} — {beschrijving} — Code: {snippet}
-   (of "Geen over-engineering gevonden")
-
-   STACK_SPECIFIC_FINDINGS:
-   - {file:line} {library} {pattern} — {beschrijving} — Code: {snippet}
-   (of "Geen stack-specifieke issues gevonden")
-
-   CLARITY_FINDINGS:
-   - {file:line} {type} — {beschrijving} — Code: {snippet}
-   (of "Geen clarity issues gevonden")
-
-   EFFICIENCY_FINDINGS:
-   - {file:line} {type} — {beschrijving} — Code: {snippet}
-   (of "Geen efficiency issues gevonden")
-
-   BALANCE_SKIPPED:
-   - {file:line} {type} — {reden waarom dit NIET als finding is opgenomen}
-   (optioneel — alleen als er items bewust gefilterd zijn)
-
-   POSITIVE_OBSERVATIONS:
-   - {wat al goed is in de codebase}
-
+   POSITIVES:
+   - observation
    ANALYSIS_END
    ```
 
-   **Parsing agent results:**
+   **Impact-tags:** `HIGH` (security, breaking bug, memory leak), `MED` (DRY, efficiency, clarity op hot-path), `LOW` (cosmetisch, micro-clarity).
+   **Category-tags:** `SEC`, `DRY`, `EFF`, `CLARITY`, `OVERENG`, `STACK`.
 
-   For each completed Explore agent:
-   1. If TaskOutput contains `ANALYSIS_START` → parse directly
-   2. If truncated (no `ANALYSIS_START` visible):
-      - Use **Grep** to find `ANALYSIS_START` in the output file
-      - Use **Read** with line offset to extract the structured block
-   3. Extract STATUS field: `CLEAN` or `HAS_FINDINGS`
+4. **Merge lens-outputs per feature:**
 
-2. **Triage results:**
+   Voor three-lens features: combineer de drie FINDINGS-lijsten tot één lijst. Dedup op `file:line + fix` (zelfde issue door meerdere lenses gespot → 1 entry, categorie-tags mergen).
 
-   Classify each feature:
-   - **CLEAN**: STATUS = CLEAN (0 findings across all categories)
-   - **HAS_FINDINGS**: STATUS = HAS_FINDINGS (1+ findings)
+   STATUS per feature = `CLEAN` als alle drie lenses `CLEAN`, anders `HAS_FINDINGS`.
 
-   CLEAN features → **early-exit**, skip FASE 2-4 entirely.
+5. **Parsing agent results:**
 
-3. **If ALL features are CLEAN** → jump directly to FASE 5 (batch completion, no user approval needed).
+   Per agent:
+   1. Zoek `ANALYSIS_START..ANALYSIS_END` in TaskOutput
+   2. Als truncated: Grep in output-file, Read met offset
+   3. Extract STATUS + FINDINGS + SKIPPED
+
+6. **Triage:**
+   - **CLEAN**: STATUS = CLEAN (0 findings merged)
+   - **HAS_FINDINGS**: 1+ findings merged
+
+   CLEAN features → **early-exit**, skip FASE 2-4.
+
+7. **If ALL features CLEAN** → jump direct naar FASE 5 (geen approval).
 
 **Output:**
 
@@ -466,7 +530,7 @@ Refactor patterns updated: {yes/no}
 
 ### FASE 3: Combined Plan + Single Approval
 
-**Goal:** One plan combining ALL findings from ALL affected features, one user approval.
+**Goal:** One plan combining ALL findings from ALL affected features, one user approval (tenzij `--quick` pad).
 
 **Steps:**
 
@@ -474,19 +538,43 @@ Refactor patterns updated: {yes/no}
 
    Combine all findings from all HAS_FINDINGS features:
    - **Cross-feature deduplication**: same pattern in multiple files → 1 plan item with multiple locations
-   - Each improvement gets impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW
-   - Sort: HIGH first (security), then MED (performance, DRY, efficiency), then LOW (clarity, quality, simplification)
+   - Each improvement gets impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW (mapped van `[IMPACT|CATEGORY]` tags uit FASE 1 findings)
+   - Sort: HIGH first (security, breaking bug, memory leak), then MED (performance, DRY, efficiency), then LOW (clarity, quality, simplification)
    - **Only pipeline files** may be included
    - Group by feature for clarity
 
-2. **Present improvements with before/after code:**
+2. **Aggregate SKIPPED (balance) entries** from all lens-agents per feature.
+
+   Dedup op `file:line + rationale`. Deze lijst toont de user wat de skill bewust **niet** wil fixen — zodat ze kunnen overriden ("fix die toch wel").
+
+3. **Evaluate `--quick` auto-apply pad:**
+
+   **Trigger:**
+   - Expliciet: `/dev-refactor --quick {feature}` in gebruikersinput
+   - Auto-detect: ALL van deze condities tegelijk waar:
+     - Queue bevat precies 1 feature
+     - 0 HIGH-findings (geen SEC, geen breaking-risk)
+     - ≤ 5 total findings (na dedup)
+     - Geen uncovered libraries in ARCHITECTURE-blok
+     - Geen `Code maturity: library` pattern in `context.patterns` — library-projecten krijgen altijd approval
+
+   **Gedrag bij quick-pad:**
+   - Skip de AskUserQuestion in stap 5
+   - Toon het plan + SKIPPED-lijst als informatieve output
+   - Spring direct naar FASE 4 met scope = "Alles toepassen"
+   - FASE 5 commit-message prefixt `refactor(quick)` i.p.v. `refactor(batch)`/`refactor({feature})`
+   - Toon "revert"-hint in de completion-output: `Revert: /rewind <hash>` met saved_hash uit FASE 4
+
+   Bij elke expliciete `--quick` die niet aan auto-condities voldoet: **vallen terug** op normale approval-flow + warn in output waarom (bv. "--quick genegeerd: 2 HIGH findings gevonden").
+
+4. **Present improvements with before/after code:**
 
    ```
    REFACTOR PLAN ({N} features, {M} improvements)
 
-   🔴 HIGH: [X] improvements (security)
-   🟡 MED: [Y] improvements (performance, DRY, efficiency, error handling)
-   🟢 LOW: [Z] improvements (code quality, simplification)
+   🔴 HIGH: [X] improvements (security, breaking risk)
+   🟡 MED: [Y] improvements (performance, DRY, efficiency)
+   🟢 LOW: [Z] improvements (clarity, simplification)
 
    ── {feature-1} ──
 
@@ -503,6 +591,11 @@ Refactor patterns updated: {yes/no}
    3. 🟡 {file}:{line} — {issue} → {fix}
       ...
 
+   ── Bewust niet gefixt ──
+   - {file:line} {pattern} — {korte rationale}
+   - {file:line} {pattern} — {korte rationale}
+   (skip deze sectie als 0 SKIPPED entries)
+
    ──────────────────
 
    Files to be modified: [count]
@@ -510,9 +603,13 @@ Refactor patterns updated: {yes/no}
    - {file2} ([M] changes) — {feature}
 
    Per-feature rollback: YES (feature A succeeds, B fails → only B rolled back)
+
+   {if quick-pad active:}
+   ⚡ QUICK MODE — approval wordt overgeslagen, directe apply.
+      Revert achteraf via /rewind.
    ```
 
-3. **Ask for scope (1 AskUserQuestion for all features):**
+5. **Ask for scope** (skip deze stap in quick-mode):
 
    Use **AskUserQuestion** tool:
    - header: "Scope"
@@ -520,8 +617,9 @@ Refactor patterns updated: {yes/no}
    - options:
      - label: "Alles toepassen (Recommended)", description: "Alle {M} verbeteringen in {N} features"
      - label: "Alleen HIGH + MED", description: "{X+Y} verbeteringen, skip LOW"
-     - label: "Alleen HIGH", description: "{X} verbeteringen, alleen security"
+     - label: "Alleen HIGH", description: "{X} verbeteringen, alleen security/breaking"
      - label: "Per feature kiezen", description: "Selecteer per feature welke verbeteringen je wilt"
+     - label: "Ook Bewust-niet-gefixt erbij", description: "Voeg de {K} SKIPPED items toe aan de plan"
    - multiSelect: false
 
    **If "Per feature kiezen"** → show per-feature AskUserQuestion with multiSelect:
@@ -530,9 +628,11 @@ Refactor patterns updated: {yes/no}
    - options: one per feature with finding count
    - multiSelect: true
 
+   **If "Ook Bewust-niet-gefixt erbij"** → toon SKIPPED-lijst in tweede AskUserQuestion (multiSelect) zodat user specifiek kan kiezen welke alsnog mee moeten, en promoteer die naar improvements.
+
    Only approved features proceed to FASE 4. Non-selected features get CLEAN status.
 
-   The user can also type "Annuleren" via the built-in "Other" option → EXIT with "Refactor geannuleerd door gebruiker"
+   De user kan ook "Annuleren" via de ingebouwde "Other" optie → EXIT met "Refactor geannuleerd door gebruiker".
 
 ---
 
@@ -692,29 +792,12 @@ IMPROVEMENTS APPLIED
    - Quality: only project-specific, non-obvious, one line per item
    - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
 
-   **Learning Extraction** — extracteer projectbrede learnings:
-
-   Lees de zojuist geschreven `feature.json` refactor sectie en evalueer:
-   - `refactor.decisions[]` met rationale → type `convention` (patronen die project-breed gelden)
-   - `refactor.positiveObservations[]` → type `observation` (indien cross-feature relevant)
-
-   **Append** naar `project-context.json` → `learnings[]`:
-
-   ```json
-   {
-     "date": "YYYY-MM-DD",
-     "feature": "{feature-name}",
-     "type": "convention|observation",
-     "summary": "Max 200 chars"
-   }
-   ```
-
-   Check duplicaten (feature + summary). Geen relevante learnings → skip.
+   Learning extraction gebeurt alleen in `/dev-verify`. Refactor-inzichten worden hier vastgelegd in `feature.json.refactor` — geen `learnings[]` append.
 
    Schrijf parallel terug:
    - Edit `backlog.html` (keep `<script>` tags intact)
    - Write `project.json` (stack, features, endpoints, data)
-   - Write `project-context.json` (context, architecture, learnings — maak aan als niet bestaat)
+   - Write `project-context.json` (context, architecture — maak aan als niet bestaat)
 
 3. **Scoped auto-commit** (only this skill's changes):
 

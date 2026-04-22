@@ -618,28 +618,28 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 
 ### project-context.json secties
 
-| Sectie         | Geschreven door                                                               | Wanneer                                                                                |
-| -------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                    | Bij architectuur definitie / na build                                                  |
-| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor` | Bij build/refactor (structuur, routing, patterns)                                      |
-| `learnings`    | `/dev-verify`, `/dev-refactor`                                                | Bij feature completion (extractie uit build decisions, test fixes, refactor decisions) |
+| Sectie         | Geschreven door                                                               | Wanneer                                                                          |
+| -------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                    | Bij architectuur definitie / na build                                            |
+| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor` | Bij build/refactor (structuur, routing, patterns)                                |
+| `learnings`    | `/dev-verify`, `/game-verify`                                                 | Bij feature completion (extractie uit build decisions, test fixes, observations) |
 
 ### Skill sync overzicht
 
-| Skill              | project.json                                                       | project-context.json                                  | Wanneer              |
-| ------------------ | ------------------------------------------------------------------ | ----------------------------------------------------- | -------------------- |
-| `/core-setup`      | `stack` (volledig)                                                 | `context` (initieel)                                  | Na project generatie |
-| `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING) | `architecture` (write), `learnings` (read)            | FASE 6               |
-| `/dev-build`       | `endpoints`, `stack.packages`, `features` (DOING+built)            | `context`, `architecture` (write), `learnings` (read) | FASE 4C              |
-| `/dev-verify`      | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)  | `architecture`, `learnings` (write)                   | FASE 6 completion    |
-| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`                     | `context`, `architecture`, `learnings` (write)        | FASE 5 completion    |
-| `/frontend-design` | `design` (pages, flows, principles), `features` (batch TODO)       | —                                                     | Bij elke uitvoering  |
-| `/frontend-design` | `stack.packages`, `design.pages`, `features` (DOING+built)         | —                                                     | Na FASE 4            |
-| `/frontend-tokens` | `design.principles`                                                | —                                                     | Na completion        |
-| `/game-define`     | `data.entities`, `stack.packages`, `features` (DOING)              | `architecture` (write)                                | FASE 6               |
-| `/game-build`      | `features` (DOING+built)                                           | `context`, `architecture` (write)                     | FASE 5 completion    |
-| `/team-verify`     | `features`, `stack.packages`, `endpoints`, `data.entities`         | `architecture` (write)                                | FASE 7 completion    |
-| `/game-refactor`   | `features` (DONE)                                                  | `context`, `architecture` (write)                     | FASE 5 completion    |
+| Skill              | project.json                                                       | project-context.json                       | Wanneer              |
+| ------------------ | ------------------------------------------------------------------ | ------------------------------------------ | -------------------- |
+| `/core-setup`      | `stack` (volledig)                                                 | `context` (initieel)                       | Na project generatie |
+| `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING) | `architecture` (write), `learnings` (read) | FASE 6               |
+| `/dev-build`       | `endpoints`, `stack.packages`, `features` (DOING+built)            | `context`, `architecture` (write)          | FASE 4C              |
+| `/dev-verify`      | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)  | `architecture`, `learnings` (write)        | FASE 6 completion    |
+| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`                     | `context`, `architecture` (write)          | FASE 5 completion    |
+| `/frontend-design` | `design` (pages, flows, principles), `features` (batch TODO)       | —                                          | Bij elke uitvoering  |
+| `/frontend-design` | `stack.packages`, `design.pages`, `features` (DOING+built)         | —                                          | Na FASE 4            |
+| `/frontend-tokens` | `design.principles`                                                | —                                          | Na completion        |
+| `/game-define`     | `data.entities`, `stack.packages`, `features` (DOING)              | `architecture` (write)                     | FASE 6               |
+| `/game-build`      | `features` (DOING+built)                                           | `context`, `architecture` (write)          | FASE 5 completion    |
+| `/team-verify`     | `features`, `stack.packages`, `endpoints`, `data.entities`         | `architecture` (write)                     | FASE 7 completion    |
+| `/game-refactor`   | `features` (DONE)                                                  | `context`, `architecture` (write)          | FASE 5 completion    |
 
 ## Server
 

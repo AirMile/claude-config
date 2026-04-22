@@ -2,7 +2,7 @@
 name: game-refactor
 description: >-
   Batch refactor code quality for Godot projects after testing with parallel
-  analysis and GDScript-aware patterns. Use with /game-refactor after /game-test.
+  analysis and GDScript-aware patterns. Use with /game-refactor after /game-verify.
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
@@ -14,7 +14,7 @@ metadata:
 
 ## Overview
 
-Optional quality step on completed features. Not a status-gate — features are DONE after `/game-test`. This skill improves code structure, naming, and patterns on already-finished features.
+Optional quality step on completed features. Not a status-gate — features are DONE after `/game-verify`. This skill improves code structure, naming, and patterns on already-finished features.
 
 Batch-first architecture: analyzes ALL features in parallel via Explore agents, triages clean vs dirty, generates GDScript-aware refactor patterns via Context7, creates one combined plan with one approval, and applies changes with per-feature rollback.
 
@@ -36,9 +36,9 @@ This rule exists because refactoring external files risks breaking other feature
 
 ## When to Use
 
-- After `/game-test` completes (features in DONE status)
+- After `/game-verify` completes (features in DONE status)
 - When `.project/features/{name}/feature.json` exists with `tests` section
-- NOT for: fixing bugs (/game-test), adding features (/game-define), planning (/game-plan)
+- NOT for: fixing bugs (/game-verify), adding features (/game-define), planning (/game-plan)
 
 ## Input
 
@@ -754,24 +754,7 @@ IMPROVEMENTS APPLIED
 
    **Dashboard** (zie `shared/DASHBOARD.md`): ongewijzigd — er is geen aparte dashboard merge in game-refactor anders dan feature status.
 
-   **Learning Extraction** — extracteer projectbrede learnings:
-
-   Lees de zojuist geschreven `feature.json` refactor sectie en evalueer:
-   - `refactor.decisions[]` met rationale → type `convention` (patronen die project-breed gelden)
-   - `refactor.positiveObservations[]` → type `observation` (indien cross-feature relevant)
-
-   **Append** naar `project-context.json` → `learnings[]`:
-
-   ```json
-   {
-     "date": "YYYY-MM-DD",
-     "feature": "{feature-name}",
-     "type": "convention|observation",
-     "summary": "Max 200 chars"
-   }
-   ```
-
-   Check duplicaten (feature + summary). Geen relevante learnings → skip.
+   Learning extraction gebeurt alleen in `/game-verify`. Refactor-inzichten worden hier vastgelegd in `feature.json.refactor` — geen `learnings[]` append.
 
    **Context sync (conditioneel)** — alleen als REFACTORED features structurele wijzigingen bevatten:
 
@@ -860,7 +843,7 @@ IMPROVEMENTS APPLIED
 ### Context Loading Failures
 
 **No features found** — exit: "Run /game-define and /game-build first"
-**No test results for any feature** — exit: "Run /game-test first"
+**No test results for any feature** — exit: "Run /game-verify first"
 **Some features missing test results** — remove from queue, warn, continue with rest
 **Feature.json missing files[]** — skip feature, warn: "No code files found in feature.json for {feature}"
 
