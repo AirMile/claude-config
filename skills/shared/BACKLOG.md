@@ -29,6 +29,7 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
       "stage": "defining|defined|building|built|testing|null",
       "phase": "P1|P2|P3|P4",
       "description": "Beschrijving",
+      "source": "concept|dev-todo",
       "dependency": "andere-feature|null",
       "assignee": "naam|null",
       "date": "2026-01-15|null",

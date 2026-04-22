@@ -28,7 +28,6 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 | `data`         | Entities, velden, relaties                             |
 | `endpoints`    | Method, path, auth, status, beschrijving               |
 | `features`     | Naam, status, summary, depends, created                |
-| `thinking`     | Chronologisch log van ideeën en beslissingen           |
 | `context`      | Project structuur, routing, patterns (runtime context) |
 
 ## Dashboard schrijven
@@ -77,7 +76,6 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
   "data": { "entities": [] },
   "endpoints": [],
   "features": [],
-  "thinking": [],
   "context": {
     "structure": "",
     "routing": [],
@@ -99,7 +97,6 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 | `data`         | **MERGE**           | Voeg entities/velden/relaties toe per entity                 |
 | `endpoints`    | **MERGE**           | Voeg toe of update status, verwijder niet                    |
 | `features`     | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet               |
-| `thinking`     | **APPEND**          | Altijd toevoegen, nooit overschrijven of verwijderen         |
 | `context`      | **MERGE per key**   | Update structure/routing/patterns individueel                |
 
 ### Stack merge
@@ -160,16 +157,6 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
    - Zo ja: update status/stage (bijv. "DOING" stage "defined" -> "built"), update summary als gewijzigd
 3. Write project.json
 ```
-
-### Thinking append
-
-```
-1. Read project.json
-2. Push nieuw thinking entry naar thinking array
-3. Write project.json
-```
-
-Nooit bestaande entries wijzigen of verwijderen — append-only log.
 
 ### Context merge
 
@@ -491,70 +478,13 @@ Overige velden = structured tokens per categorie
 **Status waarden:** `TODO` | `DOING` | `DONE`
 **Stage waarden (alleen bij DOING):** `defining` | `defined` | `building` | `built` | `testing`
 
-### thinking
+### thinking-output
 
-```json
-[
-  {
-    "type": "idea",
-    "date": "2026-02-20",
-    "title": "SaaS dashboard voor freelancers",
-    "summary": "SaaS dashboard met real-time urenregistratie en factuurintegratie voor ZZP'ers.",
-    "file": ".project/thinking/2026-02-20-idea-saas-dashboard.md",
-    "source": "/thinking-concept"
-  },
-  {
-    "type": "brainstorm",
-    "date": "2026-02-20",
-    "title": "Auth strategie",
-    "summary": "JWT stateless gekozen voor schaalbaarheid en toekomstige mobile app support.",
-    "file": ".project/thinking/2026-02-20-brainstorm-auth-strategie.md",
-    "variants": ["JWT stateless", "Session cookies", "OAuth-only"],
-    "chosen": "JWT stateless",
-    "source": "/thinking-brainstorm"
-  },
-  {
-    "type": "critique",
-    "date": "2026-02-20",
-    "title": "Concept review: dashboard MVP",
-    "summary": "MVP scope te breed: factuurmodule uitstellen, focus op urenregistratie + rapportage.",
-    "file": ".project/thinking/2026-02-20-critique-dashboard-mvp.md",
-    "source": "/thinking-critique"
-  },
-  {
-    "type": "decision",
-    "date": "2026-02-20",
-    "title": "JWT vs Session auth",
-    "summary": "JWT gekozen: stateless API nodig voor mobile app later, acceptabele trade-off op revocation.",
-    "file": ".project/thinking/2026-02-20-decision-jwt-vs-session.md",
-    "options": ["JWT", "Session cookies", "OAuth-only"],
-    "chosen": "JWT",
-    "rationale": "Stateless API nodig voor mobile app later",
-    "source": "/thinking-decide"
-  }
-]
-```
+Thinking-skills (`/thinking-decide`, `/thinking-research`, `/thinking-brainstorm`, `/thinking-critique`) schrijven hun volledige output naar `.project/thinking/*.md` (bestandsnaam: `{date}-{type}-{slug}.md`). Die markdown-bestanden zijn de enige bron van waarheid — er bestaat geen top-level `thinking[]` array in `project.json`.
 
-**Type waarden:** `idea` | `brainstorm` | `critique` | `decision`
-
-Alle entries hebben `type`, `date`, `title`, `summary`, `file`, `source`. Extra velden per type:
-
-- `brainstorm`: `variants` (alle opties), `chosen` (gekozen optie)
-- `decision`: `options`, `chosen`, `rationale`
-
-`summary` = max 200 chars, key insight van de thinking output.
-`file` = pad naar volledige markdown in `.project/thinking/`. Bestandsnaam: `{date}-{type}-{slug}.md`.
-
-**Scope:** het top-level `thinking[]` array bevat alleen:
-
-- `dev-todo` entries met `newFeature` veld (kritiek signaal voor `/dev-plan` independent-feature detectie)
-- Legacy entries van oude runs
-
-Nieuwe thinking-output van `/thinking-decide`, `/thinking-research`, `/thinking-brainstorm` (non-concept scope) en `/thinking-critique` (non-concept scope) schrijft **alleen** naar `.project/thinking/*.md` — geen entry in `project.json` meer. De markdown is de bron van waarheid. Concept-scope thinking blijft in `concept.thinking[]` (gebruikt door `/dev-plan` voor evolution diff en dashboard).
+Concept-scope thinking blijft in `concept.thinking[]` (gebruikt door `/dev-plan` voor evolution diff en door de dashboard Concept-tab).
 
 Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks via Grep op `.project/thinking/*.md` voor naam-match.
-
-**Legacy:** oude entries met `content` i.p.v. `summary`+`file` blijven werken. Skills die entries lezen checken op `file` (nieuw) of `content` (legacy).
 
 ### context
 
@@ -614,7 +544,6 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 | `endpoints`        | `/dev-define`, `/dev-build`                                                                  | Bij API definitie / na build             |
 | `features`         | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build`    | Bij status wijziging (DOING/DONE)        |
 | `concept.thinking` | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`                            | Bij concept-scope thinking (append)      |
-| `thinking`         | `/dev-todo` (entries met `newFeature` veld)                                                  | Bij nieuwe backlog items                 |
 
 ### project-context.json secties
 

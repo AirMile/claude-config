@@ -170,9 +170,12 @@ multiSelect: false
      "status": "TODO",
      "phase": "{gekozen priority}",
      "description": "{beschrijving — aangescherpt als thinking rounds gedaan}",
+     "source": "dev-todo",
      "dependency": null
    }
    ```
+
+   Het `source: "dev-todo"` veld signaleert aan `/dev-plan` dat deze feature handmatig is toegevoegd (INDEPENDENT) en nooit overschreven mag worden bij backlog-rebuild.
 
 4. **Update metadata:** zet `data.updated` naar huidige datum (`YYYY-MM-DD`)
 
@@ -201,23 +204,6 @@ multiSelect: false
 
      {antwoord op aanpak-vraag, als gesteld}
      ```
-
-7. **Log naar project.json thinking array:**
-   - Read `.project/project.json` (of maak `{}` als niet bestaat)
-   - Append naar `thinking` array (initialiseer als `[]` indien nodig):
-     ```json
-     {
-       "type": "todo",
-       "date": "{today}",
-       "title": "{item naam}",
-       "summary": "{beschrijving, max 200 chars}",
-       "file": ".project/features/{naam}/thinking.md",
-       "newFeature": "{naam}",
-       "source": "/dev-todo"
-     }
-     ```
-   - Als geen thinking rounds gedaan (snel toevoegen), `file` weglaten
-   - Write `.project/project.json`
 
 ### FASE 3: Output
 

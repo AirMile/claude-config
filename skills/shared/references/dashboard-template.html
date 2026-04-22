@@ -266,7 +266,6 @@
         { id: "design", label: "Design" },
         { id: "theme", label: "Design System" },
         { id: "stack", label: "Stack" },
-        { id: "thinking", label: "Thinking" },
         { id: "config", label: "Config" },
       ];
 
@@ -309,7 +308,6 @@
         },
         data: { entities: [] },
         endpoints: [],
-        thinking: [],
       };
 
       // Ensure all sections exist
@@ -1479,89 +1477,6 @@
           }`;
       }
 
-      function showThinking(idx) {
-        const e = (data.thinking || [])[idx];
-        if (!e) return;
-        let meta = "";
-        if (e.type === "brainstorm" || e.type === "decision") {
-          if (e.chosen) meta += `<strong>Gekozen:</strong> ${esc(e.chosen)}`;
-          const options = e.variants || e.options || [];
-          if (options.length)
-            meta += `${e.chosen ? " · " : ""}<strong>Opties:</strong> ${options.map((o) => esc(o)).join(", ")}`;
-        }
-        if (e.type === "decision" && e.rationale) {
-          meta += `<br><strong>Rationale:</strong> ${esc(e.rationale)}`;
-        }
-        openModal(
-          e.title || "Untitled",
-          `
-          ${meta ? `<div class="thinking-meta" style="margin-bottom:12px">${meta}</div>` : ""}
-          <div class="thinking-content">${md(e.content || "")}</div>
-          ${e.source ? `<div class="thinking-source" style="margin-top:12px">${esc(e.source)}</div>` : ""}
-        `,
-          { readOnly: true, wide: true },
-        );
-      }
-
-      function renderThinking() {
-        const entries = data.thinking || [];
-        if (entries.length === 0) {
-          return `
-            <div class="section-header">
-              <h2>Thinking</h2>
-            </div>
-            <div class="empty-state"><p>Nog geen thinking entries.</p>
-            <p style="color:var(--text-dim)">Wordt gevuld door /thinking-concept, /thinking-brainstorm, /thinking-critique en /thinking-decide</p></div>`;
-        }
-
-        // Reverse chronological (newest first)
-        const sorted = [...entries]
-          .map((e, i) => ({ ...e, _idx: i }))
-          .reverse();
-
-        const cards = sorted
-          .map((e) => {
-            let meta = "";
-            if (e.type === "brainstorm" || e.type === "decision") {
-              if (e.chosen) {
-                meta += `<strong>Gekozen:</strong> ${esc(e.chosen)}`;
-              }
-              const options = e.variants || e.options || [];
-              if (options.length) {
-                meta += `${e.chosen ? " · " : ""}<strong>Opties:</strong> ${options.map((o) => esc(o)).join(", ")}`;
-              }
-            }
-            if (e.type === "decision" && e.rationale) {
-              meta += `<br><strong>Rationale:</strong> ${esc(e.rationale)}`;
-            }
-
-            // Truncate content for display, show full on click
-            const content = e.content || "";
-            const truncated =
-              content.length > 300 ? content.slice(0, 300) + "..." : content;
-            const needsExpand = content.length > 300;
-
-            return `
-          <div class="thinking-entry" data-type="${esc(e.type || "idea")}" style="cursor:pointer" onclick="showThinking(${e._idx})">
-            <div class="thinking-header">
-              <span class="thinking-type-badge" data-type="${esc(e.type || "idea")}">${esc(e.type || "idea")}</span>
-              <span class="thinking-title">${esc(e.title || "Untitled")}</span>
-              <span class="thinking-date">${esc(e.date || "")}</span>
-            </div>
-            ${meta ? `<div class="thinking-meta">${meta}</div>` : ""}
-            <div class="thinking-content">${md(truncated)}${needsExpand ? ' <span style="color:var(--accent)">[meer]</span>' : ""}</div>
-            <div class="thinking-source">${esc(e.source || "")}</div>
-          </div>`;
-          })
-          .join("");
-
-        return `
-          <div class="section-header">
-            <h2>Thinking</h2>
-          </div>
-          ${cards}`;
-      }
-
       // ─── Edit Modals ───────────────────────────────────────
 
       function editConcept() {
@@ -1727,7 +1642,6 @@
         stack: renderStack,
         design: renderDesignContent,
         theme: renderTheme,
-        thinking: renderThinking,
         config: renderConfig,
       };
 
@@ -1761,7 +1675,6 @@
         // Hide tabs for empty optional sections
         const d = data.design || {};
         const th = data.theme || {};
-        const tk = data.thinking || [];
         const hasDesign =
           (d.pages && d.pages.length) ||
           (d.flows && d.flows.length) ||
@@ -1775,11 +1688,9 @@
             th.typography.sizes &&
             th.typography.sizes.length) ||
           th.cssVars;
-        const hasThinking = tk.length > 0;
         const hiddenTabs = {};
         if (!hasDesign) hiddenTabs.design = true;
         if (!hasTheme) hiddenTabs.theme = true;
-        if (!hasThinking) hiddenTabs.thinking = true;
 
         const visibleTabs = TABS.filter((t) => !hiddenTabs[t.id]);
         if (hiddenTabs[activeTab]) {
