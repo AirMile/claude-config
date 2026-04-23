@@ -2,7 +2,7 @@
 
 > **改善 (Kaizen)** — _Good enough today, better tomorrow._
 
-Personal Claude Code configuration: skills, agents, hooks, and project scaffolding. Linked to `~/.claude/` via junctions (Windows) or symlinks (macOS) for global availability across all projects.
+A personal, versioned Claude Code setup used to structure and measure how AI tooling affects my day-to-day development workflow. Skills, agents, hooks, and project scaffolding linked to `~/.claude/` via junctions (Windows) or symlinks (macOS) for global availability across all projects.
 
 ## What this is
 
