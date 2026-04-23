@@ -4,7 +4,7 @@ description: Batch refactor code quality after testing with parallel analysis, d
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 2.1.0
   category: dev
 ---
 
@@ -219,7 +219,7 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
 **Lens-definities** (zie ook `shared/PATTERNS.md` als aanwezig):
 
 - **Reuse lens**: DRY binnen pipeline files, duplicatie met bestaande helpers/utilities in de codebase, inline logica die bestaande lib/stdlib kan gebruiken, extract-opportunities
-- **Quality lens**: security (injection/XSS/deserialization), clarity (nesting, naming, comments), over-engineering, nested conditionals, stringly-typed, dode code, redundante state, copy-paste met variatie, leaky abstractions, RULES.md violations, stack-specific anti-patterns
+- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dode code, redundante state, leaky abstractions, RULES.md violations, stack-specific anti-patterns
 - **Efficiency lens**: missed concurrency (Promise.all), N+1, hot-path bloat, memory leaks, unbounded maps, TOCTOU, overly broad ops, no-op recurring updates
 
 Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe security-review bestaat `dev-owasp`).
@@ -229,6 +229,8 @@ Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe s
    - `length >= 4` → **three-lens mode**: drie agents parallel per feature
 
    **Concurrency-budget:** max 10 concurrent agents totaal. Als `sum(lens_count_per_feature) > 10`: batch features in groepen. Bijv. 5 features × 3 lenses = 15 → batch 3 features eerst (9 agents), dan de rest.
+
+   **Model-default:** alle lens-agents draaien op Sonnet. Haiku-switch voor Reuse-lens is een toekomstige optimalisatie — niet activeren zonder A/B-meting op finding-kwaliteit.
 
 2. **Launch agents IN PARALLEL** volgens lens-strategie.
 
@@ -299,26 +301,36 @@ Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe s
    - GitHub Actions: ${{ github.event. in run: commands
 
    CLARITY & QUALITY:
-   - Nested conditionals 3+ niveaus diep → flatten met early returns / guards / lookup table
-   - Ternary chains (a ? x : b ? y : ...) — gebruik if/else of switch
-   - Dense one-liners die readability offeren
-   - Slechte naming (single-letter, misleidend, te generiek)
+   - Control-flow smells: nested 3+ niveaus, ternary chains (a ? x : b ? y), dense one-liners → early returns / if-else / guards / lookup table
+   - Names encode units/ownership/lifetime: `timeoutMs` niet `t`, `rawHtml` vs `safeHtml`, `userIdOwned` niet `id`. Primitives zonder unit in naam = smell.
    - Dode code / unused exports
    - Onnodige comments (WHAT ipv WHY, task-references, narrating)
    - Redundante state (state die afgeleid kan worden)
    - Stringly-typed code waar constants/enums bestaan
-   - Over-defensive code (try/catch rond code die niet kan falen)
-   - Helpers die maar 1× gebruikt worden
+   - Error-handling smells: over-defensive try/catch rond code die niet kan falen, OF silent swallowing (catch {}, `?? ""` dat missing data verbergt, unwrap zonder trace)
    - Leaky abstractions / internal details geëxposed
    - RULES.md violations — Algemeen + TypeScript secties (R007-R008, T001-T203)
    - Stack-specific anti-patterns uit refactor-patterns.md
+
+   COLD-READER (kan een nieuwe lezer dit begrijpen zonder 3 files open te zetten?):
+   - Locality of behavior: non-triviale regel vereist >2 file-jumps om intent te snappen → relocate of rename inline
+   - God-object params: functie neemt Request/Context/Session maar leest <3 velden → destructure of expliciete primitieve params
+   - Mixed abstraction levels: SQL + business-rule + HTTP-header mangling in één functie → splits policy van mechanism
+   - Shallow abstractions: helper waarvan signature even complex is als body, 1 caller, geen naming-win → inline
+   - Cognitive overload: >5 mutable locals+flags+loop-indices live in deepste blok → splits functie of bundel state in record
+   - Cross-file decision-duplication: dezelfde enum/switch-ladder in 3+ plaatsen → 1 source of truth (NB: overlap met Reuse-lens → dedup bij merge in FASE 1 stap 4)
 
    VOORBEELDEN:
    ✓ Report: `msg.constructor.name === "HumanMessage"` i.p.v. `isHumanMessage(msg)` typeguard
    ✓ Report: dode exported functie zonder callers (leeg body met TODO-comment)
    ✓ Report: 4-niveau nested if/else waar early-returns het vlak maken
+   ✓ Report: `function charge(ctx)` leest alleen `ctx.userId` + `ctx.amount` → `charge(userId, amount)`
+   ✓ Report: `const t = 5000` → `const timeoutMs = 5000`
+   ✓ Report: 7 mutable locals in één loop-body, lezer verliest overzicht → extract state-record of splits loop
    ✗ Skip: comment die een niet-obvious invariant uitlegt (WHY is waardevol)
-   ✗ Skip: expliciete intermediate variabele i.p.v. inline expression (clarity > compact)
+   ✗ Skip: expliciete intermediate variabele i.p.v. inline expression (clarity > compact, naming als documentatie)
+   ✗ Skip: thin adapter aan framework-seam (middleware, Express handler) — shallowness IS de taak
+   ✗ Skip: context-param waar framework-contract het vereist (middleware signature)
 
    ```
 
@@ -935,5 +947,5 @@ This skill must ALWAYS:
 - Group edits by file: read file → apply ALL edits for that file → next file
 - Run full test suite after applying changes per feature
 - Analyze test failures before rollback (distinguish stale tests from regressions)
-- Apply balance filter: skip findings where the "fix" reduces readability
+- Apply balance filter: skip findings where the "fix" reduces readability for a cold reader (someone seeing the code for the first time)
 - Check CLAUDE.md and `.project/project.json` context for project-specific conventions during analysis
