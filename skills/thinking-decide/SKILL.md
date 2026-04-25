@@ -66,6 +66,33 @@ NOT for: trivial choices, code formatting, simple bug fixes.
 
 - If "Aanpassen": ask user for revised decision statement, then proceed.
 
+### Step 1.5: Past Decision Check (if .project exists)
+
+Voorkomt dat een eerder afgewezen of reeds genomen beslissing opnieuw wordt geanalyseerd zonder dat de vorige context in beeld is.
+
+1. Glob `.project/features/*/feature.json` — flatten alle `durableDecisions[]` arrays.
+2. Glob `.project/thinking/*-decision-*.md` — extract `THINK:` regel + chosen optie + constraint uit elke file (eerste ~30 regels volstaan).
+3. Fuzzy match tegen huidige decision statement: keyword-overlap op decision titel, chosen optie, of constraint (≥2 substantieve termen overlap).
+4. Bij ≥1 match, AskUserQuestion:
+
+   ```yaml
+   header: "Eerder besloten?"
+   question: "Eerder besloten: {decision title} → koos {chosen} (constraint: {constraint}). Is dit dezelfde context?"
+   options:
+     - label: "Dezelfde context (Recommended)", description: "Hergebruik eerdere beslissing, skip nieuwe analyse"
+     - label: "Constraint is anders", description: "Noteer nieuwe constraint, ga door met analyse"
+     - label: "Niet relevant", description: "Andere beslissing, ga door met analyse"
+   multiSelect: false
+   ```
+
+   - **Dezelfde context** → toon eerdere analyse (markdown content of durableDecisions entry). Vraag "nog iets toe te voegen?" Zo nee: stop skill met verwijzing naar bron-bestand.
+   - **Constraint is anders** → vraag nieuwe constraint, noteer als startpunt voor Step 2. Door naar Step 1a.
+   - **Niet relevant** → door naar Step 1a.
+
+5. Bij 0 matches: stille no-op, door naar Step 1a.
+
+Bij ≥2 matches: toon alleen de top 2 meest-relevant (hoogste keyword-overlap), niet alle.
+
 ### Step 1a: Scope Detection (if .project exists)
 
 Na de beslissing vastgesteld, check voor project-context:
@@ -200,6 +227,12 @@ AANNAMES
 - [assumption 2] (validated/unvalidated)
 - [assumption 3] (validated/unvalidated)
 
+CONSTRAINT
+[De forcerende beperking die deze keuze triggert — niet opinie, niet voorkeur.
+ Bv. "externe API geeft max 10 req/s", "mobile bundle moet <200KB", "team
+ heeft geen Rust ervaring". Als er geen echte constraint is, is dit waarschijnlijk
+ geen beslissing die analyse verdient.]
+
 ALTERNATIEVEN
 1. [approach] — [key trade-off]
 2. [approach] — [key trade-off]
@@ -215,6 +248,12 @@ AANBEVELING: [choice]
 - Trade-offs: [what we accept]
 - Confidence: [High/Medium/Low]
 - Check: [unvalidated assumption that matters most]
+
+REJECTED ALTERNATIVES
+- [Optie X] — Afgewezen omdat [concrete reden, gekoppeld aan constraint].
+- [Optie Y] — Afgewezen omdat [reden].
+[Voorkomt dat afgewezen opties later als zombie-voorstellen terugkomen.
+ Skip "status quo" hier als die al in de constraint-uitleg verklaard is.]
 ```
 
 Use AskUserQuestion:
@@ -255,7 +294,11 @@ De markdown in `.project/thinking/` is de bron van waarheid. Geen `project.json`
 {
   "decision": "{beslissing titel}",
   "chosen": "{gekozen optie}",
+  "constraint": "{forcerende beperking, 1 zin}",
   "rationale": "{waarom, 1-2 zinnen}",
+  "rejected": [
+    { "option": "{optie naam}", "reason": "{korte reden}" }
+  ],
   "date": "{today}"
 }
 ```

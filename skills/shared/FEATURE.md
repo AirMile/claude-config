@@ -237,6 +237,20 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
     "pendingImprovements": []
   },
 
+  "durableDecisions": [
+    {
+      "decision": "State management voor pin-mode",
+      "chosen": "Local hook met Map",
+      "constraint": "PinBar moet 50+ elementen vloeiend renderen",
+      "rationale": "Context zou hele tree re-renderen op elke pin-toggle",
+      "rejected": [
+        { "option": "Zustand global store", "reason": "Overkill voor 1 component" },
+        { "option": "React context", "reason": "Re-render storm bij high-frequency toggles" }
+      ],
+      "date": "2026-02-20"
+    }
+  ],
+
   "observations": [
     "Inspector z-index conflict bij overlapping modals — suggest: /dev-define z-index-system"
   ]
@@ -280,6 +294,10 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 - `observations` — bevindingen, suggesties voor andere features
 - `tests.verificationCheckpoint` — acceptance criteria mapping resultaat (gaps, mismatches, adjustments)
 
+**Toegevoegd door thinking-decide** (cross-phase, kan op elk moment):
+
+- `durableDecisions[]` — feature-scoped beslissingen met `decision`, `chosen`, `constraint` (forcerende beperking), `rationale`, `rejected[]` (`{option, reason}`), `date`. Append-only — nieuwe entries worden toegevoegd, oude blijven staan. `constraint` en `rejected[]` zijn optioneel maar sterk aanbevolen voor non-trivial beslissingen; ze voorkomen dat afgewezen opties later als zombie-voorstellen terugkomen.
+
 **Toegevoegd door refactor:**
 
 - `refactor.status` — CLEAN, REFACTORED, of ROLLED_BACK
@@ -316,6 +334,7 @@ pending → built → PASS
 | `/dev-build`     | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Leest clarifications als constraints                               | FASE 4C |
 | `/dev-verify`    | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | FASE 6  |
 | `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | FASE 5  |
+| `/thinking-decide` | Append: `durableDecisions[]` met decision, chosen, constraint, rationale, rejected[], date (alleen bij feature-scope)                                  | Step 3  |
 | `/game-define`   | Creates feature.json (zelfde als dev-define + clarifications, game-specifieke design velden)                                                             | FASE 4  |
 | `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements. Leest clarifications als constraints                                                    | FASE 5  |
 | `/game-verify`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | FASE 6  |

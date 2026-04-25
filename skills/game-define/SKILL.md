@@ -144,8 +144,22 @@ De card verhuist naar de DOING kolom met stage `defining`.
      - `context.patterns` — bestaande code patterns
      - `learnings[]` — eerdere inzichten uit build/test/refactor (gebruik als input voor architectuurkeuzes)
    - Als project.json niet bestaat → ga door zonder (backwards compatible)
+   - **Past decisions scan** (twee bronnen, beide scope):
+     - Feature-scope: Glob `.project/features/*/feature.json` → flatten alle `durableDecisions[]`. Tag elke entry met `[feature-X]`.
+     - Project-scope: Glob `.project/thinking/*-decision-*.md` → lees eerste ~30 regels per file, extract `THINK:` regel (titel), `AANBEVELING:` regel (chosen), en `CONSTRAINT` sectie. Tag elke entry met `[project]`.
+     - Merge beide bronnen. Filter relevant via keyword-overlap tussen huidige feature-naam/concept en elke decision's titel, chosen, of constraint (≥2 substantieve termen). Houd top 3 meest-relevante.
 
 ### FASE 1: Requirements Gathering
+
+**Surface relevant past decisions** (alleen bij ≥1 match uit FASE 0 scan, anders skip stilzwijgend):
+
+```
+EERDER BESLOTEN (mogelijk relevant)
+- [project] {decision} → koos {chosen} (constraint: {constraint})
+- [feature-X] {decision} → koos {chosen} (constraint: {constraint})
+```
+
+Toon vóór de eerste AskUserQuestion. Geen actie-vraag — alleen context zodat vraag-1 antwoorden niet conflicteren met eerder besloten richtingen. Als een huidige antwoord-optie direct conflicteert, noem dat kort in de optie-description ("Wijkt af van {feature-X} decision").
 
 Ask 5 targeted questions using AskUserQuestion:
 
