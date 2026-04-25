@@ -503,22 +503,27 @@ Cross-check `feature.json` requirements tegen test resultaten:
    ```
    REQUIREMENT COVERAGE: {feature-name}
 
-   | REQ       | Beschrijving (kort)        | Tests | Status      |
-   |-----------|----------------------------|-------|-------------|
-   | REQ-001   | {eerste 40 chars}          | 2     | ✓ COVERED   |
-   | REQ-002   | {eerste 40 chars}          | 0     | ✗ GEEN TEST |
+   | REQ       | Beschrijving (kort)        | Tests | Status        |
+   |-----------|----------------------------|-------|---------------|
+   | REQ-001   | {eerste 40 chars}          | 2     | ✓ COVERED     |
+   | REQ-002   | {eerste 40 chars}          | 0     | ✗ GEEN TEST   |
+   | REQ-003   | {eerste 40 chars}          | 1     | ⊘ BLOCKED     |
+   | REQ-004   | {eerste 40 chars}          | 0     | ? UNCLEAR     |
 
    Coverage: {covered}/{total} requirements ({percentage}%)
+   Non-testable: BLOCKED={n} UNCLEAR={n} (heropenen nodig)
    ```
 
 3. **Classificeer per requirement:**
    - **COVERED**: minstens 1 test met matching `requirementId` EN status `PASS`
    - **FAIL**: minstens 1 test matching maar status `FAIL`
-   - **GEEN TEST**: geen test in `checklist[]` met matching `requirementId`
+   - **BLOCKED**: test bestaat niet of faalt door externe dependency (service down, ontbrekende API key, missing fixture)
+   - **UNCLEAR**: geen test mogelijk omdat acceptance criteria te vaag is (bv. "voelt snel", "werkt goed") — niet-deterministisch
+   - **GEEN TEST**: geen test in `checklist[]` met matching `requirementId` (geen legitieme reden)
 
 4. **Alle requirements COVERED:** toon compact samenvatting, door naar FASE 6.
 
-5. **Bij GEEN TEST of FAIL requirements:**
+5. **Bij GEEN TEST, FAIL, BLOCKED of UNCLEAR requirements:**
 
    Per ongedekt requirement, AskUserQuestion (Auto-mode: test toevoegen):
 
@@ -528,13 +533,15 @@ Cross-check `feature.json` requirements tegen test resultaten:
    options:
      - label: "Test toevoegen (Recommended)", description: "Schrijf een test voor dit requirement"
      - label: "Gedekt door andere test", description: "Impliciet getest via een andere test"
-     - label: "Accepteren zonder test", description: "Bewust overslaan"
+     - label: "Blocked door dependency", description: "Externe service/fixture ontbreekt — niet testbaar nu"
+     - label: "Criteria te vaag", description: "Acceptance criteria mist concreetheid — heropen /dev-define"
    multiSelect: false
    ```
 
    - **Test toevoegen** → voeg test item toe aan `tests.checklist[]` met `requirementId`, `status: "pending"`. Loop terug naar FASE 1 (AUTO) of FASE 2 (MANUAL) voor alleen dit item.
    - **Gedekt door andere test** → vraag welke test het dekt. Markeer requirement met `implicitCoverage: "{REQ-ID} test also validates this via {beschrijving}"`. Status → `"PASS"`.
-   - **Accepteren** → markeer als `"skip"` met reden in `observations[]`.
+   - **Blocked door dependency** → vraag welke dependency. Status → `"BLOCKED"`, voeg toe aan `requirements[].evidence = "blocked by: {reason}"`. Niet mergen-blokkerend; signaal voor heropenen na dependency-fix.
+   - **Criteria te vaag** → vraag wat vaag is. Status → `"UNCLEAR"`, voeg toe aan `requirements[].evidence = "needs clarification: {what's vague}"`. Signaal voor `/dev-define` heropen om concrete acceptance te formuleren.
 
 ---
 
@@ -567,9 +574,9 @@ Skill-specifieke mutaties:
 **feature.json:**
 
 - `status` → `"DONE"`
-- `requirements[].status` → `"PASS"` / `"FAIL"` per REQ
+- `requirements[].status` → `"PASS"` / `"FAIL"` / `"BLOCKED"` / `"UNCLEAR"` per REQ (BLOCKED/UNCLEAR includeren `evidence` string)
 - `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item
-- `tests.finalStatus` → `"PASSED"` of `"FAILED"`
+- `tests.finalStatus` → `"PASSED"` (alle requirements PASS) / `"FAILED"` (≥1 FAIL) / `"PARTIAL"` (≥1 BLOCKED of UNCLEAR, 0 FAIL). PARTIAL signaleert incomplete verificatie; feature `status` blijft `"DONE"`.
 - `tests.sessions[]` → append `{ "date": "YYYY-MM-DD", "pass": N, "fail": N, "skip": N }`
 - `tests.fixSync` → fix summaries (als fixes toegepast)
 - `observations[]` → toevoegen (indien aanwezig)

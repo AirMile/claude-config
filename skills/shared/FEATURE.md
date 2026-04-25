@@ -283,7 +283,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 
 **Toegevoegd door verify:**
 
-- `tests.finalStatus` — VERIFIED, PASSED, of FAILED
+- `tests.finalStatus` — `PASSED` (alle requirements PASS), `FAILED` (≥1 FAIL), of `PARTIAL` (≥1 BLOCKED of UNCLEAR, 0 FAIL). PARTIAL = build draait, maar verificatie incompleet — heropenen na dependency-fix of clarification. Feature `status` blijft `"DONE"` om de pipeline niet te blokkeren; het signaal voor incomplete verificatie zit in `finalStatus`.
 - `tests.coverage` — statement/branch coverage
 - `tests.sessions` — per-sessie resultaten
 - `tests.checklist[].status` → PASS/FAIL/skip per item
@@ -312,7 +312,13 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 ```
 pending → built → PASS
                 → FAIL
+                → BLOCKED   (externe dependency ontbreekt)
+                → UNCLEAR   (acceptance criteria te vaag om te testen)
 ```
+
+- `BLOCKED` — test kon niet draaien door externe afhankelijkheid (service down, ontbrekende API key, missing fixture). Signaal voor heropenen: fix dependency, dan opnieuw verifiëren.
+- `UNCLEAR` — acceptance criteria is te vaag om deterministisch te testen ("voelt snel", "werkt goed"). Signaal voor `/dev-define` heropenen om concrete criteria te formuleren.
+- `FAIL` blijft default voor ontbrekende tests zonder een van bovenstaande legitieme redenen — geen ontsnappingsroute voor vergeten tests.
 
 ## Refactor status waarden
 
