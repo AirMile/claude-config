@@ -64,6 +64,22 @@ Lees `.project/project.json` en `.project/project-context.json`. Gebruik voor:
 - Code patterns om te volgen
 - Learnings uit eerdere features
 
+**Pitfall load** (uit `learnings[]` in `project-context.json`):
+
+Filter `learnings[]` strikt: `type === "pitfall"` AND `source === "extracted"`. Sorteer op `date` desc, neem max 5 meest recente. Als leeg na filter → skip volledig (geen header, geen lege sectie).
+
+Bij ≥1 hit: toon kort als context (geen constraint):
+
+```
+Eerdere pitfalls in dit project (context, geen constraint):
+- {date} / {feature}: {summary}
+- ...
+
+Bij overlap met deze build: voorkom herhaling. Bij twijfel: ga uit van root cause, niet van pattern-match.
+```
+
+Bewaar de gefilterde lijst voor FASE 1 (Technique Mapping).
+
 **Load feature:**
 
 If no feature name provided:
@@ -208,6 +224,8 @@ Assign per requirement:
 - **TDD**: validation rules, business logic, calculations, complex conditions, testable math
 - **Implementation First**: CRUD, middleware, config, wiring
 - **Implementation Only**: pure styling/layout, visual/particle effects, static content, env config, prototype code — alleen wanneer automated tests geen waarde toevoegen. Verplichte reden: `visual-only`, `config-only`, of `prototype`
+
+**Pitfall overlap check**: voor elke requirement, vergelijk met de pitfall-lijst uit FASE 0. Bij duidelijke thematische overlap (zelfde domein, zelfde type bug-risico) → log expliciet welke pitfall geraakt wordt en hoe deze build het voorkomt. Geen forcing — alleen markeren waar relevant.
 
 Display technique map als tabel. Proceed automatically — do NOT confirm with the user.
 

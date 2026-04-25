@@ -129,6 +129,21 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    - `context.structure` — waar bestanden horen (map structuur)
    - `context.patterns` — bestaande code patterns om te volgen
    - `architecture` — huidige architectuur diagram en beschrijving
+   - `learnings[]` — pitfall load (zie hieronder)
+
+   **Pitfall load**: filter `learnings[]` strikt op `type === "pitfall"` AND `source === "extracted"`. Sorteer op `date` desc, neem max 5 meest recente. Als leeg na filter → skip volledig (geen header, geen lege sectie).
+
+   Bij ≥1 hit: toon kort als context (geen constraint):
+
+   ```
+   Eerdere pitfalls in dit project (context, geen constraint):
+   - {date} / {feature}: {summary}
+   - ...
+
+   Bij overlap met deze build: voorkom herhaling. Bij twijfel: ga uit van root cause, niet van pattern-match.
+   ```
+
+   Bewaar de gefilterde lijst voor FASE 1 (Technique Mapping).
 
    Als project.json niet bestaat → ga door zonder (backwards compatible).
 
@@ -266,6 +281,8 @@ Per requirement, assign a technique: **TDD**, **Implementation First**, or **Imp
 - Verplichte reden: `visual-only`, `config-only`, of `prototype`
 
 See `techniques/implementation-first.md` for the full Implementation First process.
+
+**Pitfall overlap check**: voor elke requirement, vergelijk met de pitfall-lijst uit FASE 0. Bij duidelijke thematische overlap (zelfde domein, zelfde type bug-risico) → log expliciet welke pitfall geraakt wordt en hoe deze build het voorkomt. Geen forcing — alleen markeren waar relevant.
 
 #### Assignment
 
