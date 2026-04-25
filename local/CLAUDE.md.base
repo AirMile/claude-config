@@ -38,3 +38,9 @@ Skills moeten werken op zowel Windows als macOS. Platform-specifieke commands (s
 ## Context
 
 Look for project-local config files first (e.g., inside the current project directory) before checking global/root paths. Stack baselines, feature files, and skill configs live within the project structure.
+
+## Memory Routing
+
+**Skill-first**: als feedback specifiek het gedrag van een bestaande skill betreft, edit `skills/<skill-name>/SKILL.md` in plaats van een feedback memory te schrijven. Memory is voor cross-skill of skill-onafhankelijke patronen.
+
+Voorbeeld: "core-commit moet conventional scope verplichten" → edit `skills/core-commit/SKILL.md`, niet `memory/feedback_*.md`. "Wees beknopter in al je antwoorden" → wel memory, want skill-onafhankelijk.

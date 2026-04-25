@@ -4,7 +4,7 @@ description: Interactive project setup wizard — configures environment, genera
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.2.0
+  version: 1.3.0
   category: core
 ---
 
@@ -55,6 +55,7 @@ For multi-select questions: select the combination Claude considers most appropr
    - **Merge**: behoud bestaande bestanden, voeg ontbrekende config toe
    - **Replace**: overschrijf bestaande configs met verse setup
    - **Audit**: scan het project en stel verbeteringen voor zonder volledige setup
+   - **Resync**: vergelijk CLAUDE.md getemplate secties met laatste `CLAUDE.base.md` en update alleen die secties
 
    **Audit mode** (skip Phase 2-4, ga direct naar audit):
    1. Scan voor ontbrekende essentials: formatter config, `.env.example`, `.gitignore`, type checking, testing framework
@@ -62,6 +63,22 @@ For multi-select questions: select the combination Claude considers most appropr
    3. Check CLAUDE.md: bestaat? heeft canonical sections? is `### Stack` up-to-date?
    4. Presenteer bevindingen als checklist met AskUserQuestion (multi-select): welke fixes toepassen?
    5. Voer geselecteerde fixes uit, dan door naar Phase 5+ (Claude config, CLAUDE.md, research)
+
+   **Resync mode** (skip Phase 2-7, focus alleen op CLAUDE.md template-secties):
+   1. **Detect**: lees project `CLAUDE.md` en root `CLAUDE.base.md`. Parse alle sectie-blokken gemarkeerd door `<!-- claude-config:section:<id> start --> ... <!-- claude-config:section:<id> end -->`.
+   2. **Diff per sectie**:
+      - **Missing**: marker bestaat in base, niet in project → kandidaat om toe te voegen
+      - **Drift**: marker bestaat in beide maar inhoud verschilt → kandidaat om te updaten
+      - **Match**: identiek → skip
+      - **Local-only**: marker in project niet in base → laat staan, behandel als project-customization
+      - **Buiten markers**: alle inhoud zonder marker (User Preferences, Project, Project Context, custom edits) blijft ongewijzigd
+   3. **Strategy per sectie** — AskUserQuestion (multi-select) met de drift/missing secties als opties:
+      - Default checked: **alleen missing secties** (veilig — voegt toe, overschrijft niets)
+      - Default unchecked: **alle drift secties** (vereist expliciete opt-in — drift kan bewuste user-edit zijn)
+      - Per drift-sectie: toon inline diff (project ↔ base) zodat user geïnformeerd kan kiezen
+      - Per gekozen sectie: vervang inhoud tussen markers met base-versie
+   4. **Apply**: schrijf alleen geselecteerde wijzigingen. Placeholder-substituties (`{{PROJECT_NAME}}` etc.) zitten buiten markers en blijven onaangeroerd.
+   5. **Rapport**: ASCII tabel sectie | status (added/updated/kept-local/skipped) | bron-versie. Daarna stop — geen Phase 2-9.
 
 3. **MCP servers** — Check installed via `claude mcp list`. Install missing (user scope):
 
