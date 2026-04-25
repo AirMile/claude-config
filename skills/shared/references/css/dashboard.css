@@ -1608,6 +1608,20 @@ hr.divider {
   text-decoration: line-through;
 }
 
+.code-card-conn-type {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 2px;
+  background: var(--surface-hover);
+  color: var(--text-dim);
+  vertical-align: middle;
+}
+
 .code-card-dimmed {
   opacity: 0.35;
   transition: opacity 0.2s;

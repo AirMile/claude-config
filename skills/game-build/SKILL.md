@@ -827,7 +827,7 @@ Muteer in memory:
 
 **Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`. Als feature niet bestaat: push met `{ name, status: "DOING", stage: "built", summary, created }`.
 
-**Architecture** (in `project-context.json`, **volg component-first model uit `shared/DASHBOARD.md`**): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `description` (korte functionele beschrijving, max 200 chars — wat doet dit component?), `src`, `test`, `connects_to` (uit werkelijke signals/dependencies), `feature` (huidige feature naam). Nieuwe componenten: push met alle velden inclusief `feature`. Als `layers`/`components` niet bestaan EN meerdere scenes/signals → genereer initiële architecture met layers + components. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
+**Architecture** (in `project-context.json`, **volg component-first model uit `shared/DASHBOARD.md`**): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `description` (korte functionele beschrijving, max 200 chars — wat doet dit component?), `src`, `test`, `connects_to` (typed edges `{ to, type }` — `calls` voor signal emits/method calls, `reads`/`writes` voor autoload/state IO, `depends_on` voor scene-tree parent of resource references), `feature` (huidige feature naam). Nieuwe componenten: push met alle velden inclusief `feature`. Als `layers`/`components` niet bestaan EN meerdere scenes/signals → genereer initiële architecture met layers + components. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
 
 Schrijf parallel terug:
 
@@ -903,15 +903,16 @@ Next steps:
 
 Just-In-Time `Read()` deze tijdens specifieke fases — niet vooraf laden.
 
-| File | Wanneer laden |
-|---|---|
+| File                            | Wanneer laden                                                             |
+| ------------------------------- | ------------------------------------------------------------------------- |
 | `references/gut-conventions.md` | FASE 2 — bij genereren van test files (file structure, assertions, mocks) |
-| `references/gut-commands.md` | FASE 3, 3a, 3b — bij draaien van GUT tests |
-| `references/troubleshooting.md` | FASE 3 — bij test failures of build blockers |
+| `references/gut-commands.md`    | FASE 3, 3a, 3b — bij draaien van GUT tests                                |
+| `references/troubleshooting.md` | FASE 3 — bij test failures of build blockers                              |
 
 ## Path Resolution
 
 `{godot_executable}` in commands wordt opgelost via `paths.yaml`:
+
 - macOS: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Windows: `C:\Godot\Godot_v4.4.1-stable_win64.exe`
 

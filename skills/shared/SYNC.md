@@ -67,11 +67,11 @@ Merge per sectie — check altijd op bestaande entries voor push:
 
 Lees `.project/project-context.json` (of maak aan met `{}`). Merge per sectie:
 
-| Sectie         | Merge logica                                                                                                                                                                       |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `context`      | Update structure/routing/patterns individueel (alleen bij impact)                                                                                                                  |
-| `architecture` | Volg component-first model uit `shared/DASHBOARD.md` (alleen bij impact). Update `components[]` (status, src, test, connects_to). Diagram optioneel → `.project/architecture.mmd`. |
-| `learnings`    | Check op date+feature → nieuw: push → bestaand: skip (append-only)                                                                                                                 |
+| Sectie         | Merge logica                                                                                                                                                                                                                       |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context`      | Update structure/routing/patterns individueel (alleen bij impact)                                                                                                                                                                  |
+| `architecture` | Volg component-first model uit `shared/DASHBOARD.md` (alleen bij impact). Update `components[]` (status, src, test). Merge `connects_to[]` op `to+type` combinatie (typed edges). Diagram optioneel → `.project/architecture.mmd`. |
+| `learnings`    | Check op date+feature → nieuw: push met verplicht `source` veld → bestaand: skip (append-only)                                                                                                                                     |
 
 **project-concept.md** (alleen bij concept-schrijvende skills):
 

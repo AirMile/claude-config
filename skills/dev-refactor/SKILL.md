@@ -800,7 +800,7 @@ IMPROVEMENTS APPLIED
    - Extracted components/hooks → add to structure tree
    - `context.patterns` → merge gewijzigde patterns
    - `context.updated` → huidige datum
-   - `architecture.components` → update bestaande componenten (status, src, test, connects_to), voeg nieuwe toe als componenten zijn hernoemd/gesplitst. Volg component-first model uit `shared/DASHBOARD.md`.
+   - `architecture.components` → update bestaande componenten (status, src, test, `connects_to[]` als typed edges `{ to, type }` — zie `shared/DASHBOARD.md` Edge waarden), voeg nieuwe toe als componenten zijn hernoemd/gesplitst. Volg component-first model uit `shared/DASHBOARD.md`.
    - Quality: only project-specific, non-obvious, one line per item
    - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
 

@@ -83,7 +83,6 @@ EERDER BESLOTEN (mogelijk relevant)
 
 Toon vóór de eerste AskUserQuestion. Geen actie-vraag — alleen context zodat vraag-1 antwoorden niet conflicteren met eerder besloten richtingen. Als een huidige antwoord-optie direct conflicteert, noem dat kort in de optie-description ("Wijkt af van {feature-X} decision").
 
-
 3-5 vragen via AskUserQuestion, afgestemd op stack en projecttype.
 
 **Must-cover categorieën** (altijd dekken, formulering adaptief per stack):
@@ -318,8 +317,8 @@ Muteer in memory:
   - **Architecture** in `.project/project-context.json`: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg component-first model uit `shared/DASHBOARD.md`**:
     - `layers`: definieer lagen met `{ name, order }` (bijv. API Laag order 1, Data Laag order 3)
     - `dataFlow`: één-regel samenvatting van de request flow
-    - `components`: per component `{ name, layer, description, status, connects_to }`. Nieuwe feature componenten → `status: "planned"`. Bestaande gebouwde → `status: "done"`. Externe services → `status: "external"`. `connects_to`: array van component namen waar dit component naar communiceert
-    - Merge strategie: check of component `name` al bestaat → nee: push → ja: merge (overschrijf status, append connects_to met dedup)
+    - `components`: per component `{ name, layer, description, status, connects_to }`. Nieuwe feature componenten → `status: "planned"`. Bestaande gebouwde → `status: "done"`. Externe services → `status: "external"`. `connects_to`: array van typed edges `{ to, type }` waar `type` een van `calls` | `reads` | `writes` | `depends_on` is (zie `shared/DASHBOARD.md` Edge velden voor mapping)
+    - Merge strategie: check of component `name` al bestaat → nee: push → ja: merge (overschrijf status, merge `connects_to[]` met dedup op `to+type` combinatie)
     - Optioneel: genereer Mermaid diagram naar `.project/architecture.mmd` voor visuele context
     - Skip als single-file feature zonder architecturele impact
   - **Context** in `.project/project-context.json`: update `context.structure` en `context.routing` als de feature nieuwe bestanden of routes toevoegt. **Let op**: structure/routing zijn JSON-escaped strings — bij grote wijzigingen gebruik Write i.p.v. Edit om escaping-problemen te voorkomen.

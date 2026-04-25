@@ -1178,10 +1178,10 @@ Opgenomen in test results.
 
    **Learning Extraction** — extracteer projectbrede learnings uit de voltooide feature:
 
-   Lees de zojuist geschreven `feature.json` en evalueer:
-   - `build.decisions[]` → type `pattern` (architecturale keuzes die andere features beïnvloeden)
-   - `tests.fixSync[]` en `tests.sessions[].fixes` → type `pitfall` (bugs met root causes)
-   - `observations[]` → type `observation` (cross-feature inzichten)
+   Lees de zojuist geschreven `feature.json` en evalueer (verplichte source-tag per bron):
+   - `build.decisions[]` → type `pattern`, source `extracted` (architecturale keuzes die andere features beïnvloeden)
+   - `tests.fixSync[]` en `tests.sessions[].fixes` → type `pitfall`, source `extracted` (bugs met root causes)
+   - `observations[]` → type `observation`, source `inferred` (cross-feature inzichten)
 
    **Filter**: alleen items die relevant zijn buiten deze ene feature. Skip feature-specifieke implementatiedetails.
 
@@ -1192,6 +1192,7 @@ Opgenomen in test results.
      "date": "YYYY-MM-DD",
      "feature": "{feature-name}",
      "type": "pattern|pitfall|observation",
+     "source": "extracted|inferred",
      "summary": "Max 200 chars samenvatting"
    }
    ```
@@ -1390,6 +1391,7 @@ This skill must ALWAYS:
 ## Path Resolution
 
 `{godot_executable}` in commands wordt opgelost via `paths.yaml`:
+
 - macOS: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Windows: `C:\Godot\Godot_v4.4.1-stable_win64.exe`
 

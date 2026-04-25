@@ -361,7 +361,7 @@ Follow `shared/SYNC.md` protocol. Re-read both files immediately before writing.
 
 **project-context.json mutations:**
 
-- **Architecture components** — update `architecture.components[]` following component-first model from `shared/DASHBOARD.md`: check on component name → new: push with layer/status/src/test/connects_to → existing: merge src/test arrays (dedup), update connects_to. Clean stale entries (4g).
+- **Architecture components** — update `architecture.components[]` following component-first model from `shared/DASHBOARD.md`: check on component name → new: push with layer/status/src/test and `connects_to[]` as typed edges `{ to, type }` (`calls` | `reads` | `writes` | `depends_on`) → existing: merge src/test arrays (dedup), merge `connects_to[]` on `to+type` combination. Clean stale entries (4g).
 
 **4i) Save sync state**
 

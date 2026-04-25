@@ -640,9 +640,9 @@
 
         const reverseMap = {};
         components.forEach((c) => {
-          (c.connects_to || []).forEach((target) => {
-            if (!reverseMap[target]) reverseMap[target] = [];
-            reverseMap[target].push(c.name);
+          (c.connects_to || []).forEach((edge) => {
+            if (!reverseMap[edge.to]) reverseMap[edge.to] = [];
+            reverseMap[edge.to].push({ name: c.name, type: edge.type });
           });
         });
 
@@ -665,7 +665,10 @@
           }),
           entities: (c.entities || []).map((e) => ({ name: e })),
           connections: {
-            to: c.connects_to || [],
+            to: (c.connects_to || []).map((e) => ({
+              name: e.to,
+              type: e.type,
+            })),
             from: reverseMap[c.name] || [],
           },
         }));
@@ -775,8 +778,11 @@
 
       const MAX_CONN_PER_DIR = 4;
 
-      function renderConnChip(name, dir) {
-        return `<span class="code-card-conn code-card-conn--${dir}" data-target="${esc(name.toLowerCase())}" onclick="highlightCard(this)">${esc(name)}</span>`;
+      function renderConnChip(item, dir) {
+        const typeBadge = item.type
+          ? `<span class="code-card-conn-type">${esc(item.type)}</span>`
+          : "";
+        return `<span class="code-card-conn code-card-conn--${dir}" data-target="${esc(item.name.toLowerCase())}" onclick="highlightCard(this)">${esc(item.name)}${typeBadge}</span>`;
       }
 
       function renderConnGroup(items, dir, label) {
@@ -890,8 +896,10 @@
             </div></div>`
           : "";
 
-        const connToLower = conn.to.map((n) => n.toLowerCase()).join(",");
-        const connFromLower = conn.from.map((n) => n.toLowerCase()).join(",");
+        const connToLower = conn.to.map((e) => e.name.toLowerCase()).join(",");
+        const connFromLower = conn.from
+          .map((e) => e.name.toLowerCase())
+          .join(",");
 
         return `
           <div class="code-card" data-status="${esc(c.status)}" data-component="${esc(c.name.toLowerCase())}" data-conn-to="${esc(connToLower)}" data-conn-from="${esc(connFromLower)}">
@@ -1022,7 +1030,7 @@
           <label>Layers (JSON)</label>
           <textarea id="f-arch-layers" rows="4" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"name":"API Laag","order":1}]'>${esc(layersJson)}</textarea>
           <label>Components (JSON)</label>
-          <textarea id="f-arch-components" rows="16" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"name":"...","layer":"...","status":"done","connects_to":[]}]'>${esc(compJson)}</textarea>
+          <textarea id="f-arch-components" rows="16" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"name":"...","layer":"...","status":"done","connects_to":[{"to":"OtherComponent","type":"calls"}]}]'>${esc(compJson)}</textarea>
           <label>Mermaid Diagram (optioneel)</label>
           <textarea id="f-arch-diagram" rows="6" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5">${esc(a.diagram || "")}</textarea>
         `,

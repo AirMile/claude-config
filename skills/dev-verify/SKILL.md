@@ -590,11 +590,11 @@ Skill-specifieke mutaties:
 
 #### Step 3b: Learning Extraction
 
-Extracteer projectbrede learnings uit de voltooide feature. Lees de zojuist geschreven `feature.json` en evalueer:
+Extracteer projectbrede learnings uit de voltooide feature. Lees de zojuist geschreven `feature.json` en evalueer (verplichte source-tag per bron):
 
-- `build.decisions[]` → type `pattern` (architecturale keuzes die andere features beïnvloeden)
-- `tests.fixSync[]` → type `pitfall` (bugs met root causes)
-- `observations[]` → type `observation` (cross-feature inzichten)
+- `build.decisions[]` → type `pattern`, source `extracted` (architecturale keuzes die andere features beïnvloeden)
+- `tests.fixSync[]` → type `pitfall`, source `extracted` (bugs met root causes)
+- `observations[]` → type `observation`, source `inferred` (cross-feature inzichten)
 
 **Filter**: alleen items die relevant zijn buiten deze ene feature. Skip feature-specifieke implementatiedetails.
 
@@ -605,6 +605,7 @@ Extracteer projectbrede learnings uit de voltooide feature. Lees de zojuist gesc
   "date": "YYYY-MM-DD",
   "feature": "{feature-name}",
   "type": "pattern|pitfall|observation",
+  "source": "extracted|inferred",
   "summary": "Max 200 chars samenvatting"
 }
 ```

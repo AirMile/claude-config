@@ -241,7 +241,10 @@ De dashboard server's `populateFromProject()` mergt dit bestand in de unified re
       "status": "done",
       "src": ["src/gateway.js", "src/middleware/rateLimit.js"],
       "test": ["test/gateway.test.js"],
-      "connects_to": ["Auth Service", "App Service"],
+      "connects_to": [
+        { "to": "Auth Service", "type": "calls" },
+        { "to": "App Service", "type": "calls" }
+      ],
       "endpoints": ["/api/auth/*", "/api/users/*"],
       "entities": ["User"]
     },
@@ -250,7 +253,7 @@ De dashboard server's `populateFromProject()` mergt dit bestand in de unified re
       "layer": "Services",
       "description": "JWT authenticatie en sessie management",
       "status": "planned",
-      "connects_to": ["PostgreSQL"]
+      "connects_to": [{ "to": "PostgreSQL", "type": "writes" }]
     },
     {
       "name": "PostgreSQL",
@@ -275,10 +278,26 @@ Het component is de atomaire eenheid. Alle data per component zit in één objec
 | `status`      | string   | ja        | `done` \| `planned` \| `external`                       |
 | `src`         | string[] | nee       | Source bestanden (relatief aan project root)            |
 | `test`        | string[] | nee       | Test bestanden                                          |
-| `connects_to` | string[] | nee       | Component namen waar dit component naar communiceert    |
+| `connects_to` | edge[]   | nee       | Typed edges naar andere components (zie hieronder)      |
 | `endpoints`   | string[] | nee       | Endpoint paths die bij dit component horen              |
 | `entities`    | string[] | nee       | Entity namen die dit component gebruikt                 |
 | `feature`     | string   | nee       | Feature naam die dit component heeft aangemaakt/gebouwd |
+
+**Edge velden (`connects_to[]`):**
+
+| Veld   | Type   | Verplicht | Beschrijving                     |
+| ------ | ------ | --------- | -------------------------------- |
+| `to`   | string | ja        | Naam van het doel-component      |
+| `type` | string | ja        | Edge type: zie waarden hieronder |
+
+**Edge type waarden:**
+
+- `calls` — RPC/HTTP/function-call (mockable in tests)
+- `reads` — leest state/data (read-only afhankelijkheid)
+- `writes` — schrijft state/data (migratie-impact bij wijziging)
+- `depends_on` — bibliotheek/configuratie (geen runtime-IO)
+
+Kies het type op basis van de werkelijke interactie. Bij meerdere relaties tussen dezelfde components: meerdere edge entries (bijv. zowel `reads` als `writes` naar dezelfde DB).
 
 **Layer velden:**
 
@@ -334,7 +353,7 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 1. Read `project-context.json`
 2. Voor elk component: check of `name` al bestaat in `components[]`
    - Zo nee: push nieuw component
-   - Zo ja: merge velden (overschrijf `status`, `src`, `test`; append `connects_to`, `endpoints`, `entities` met dedup)
+   - Zo ja: merge velden (overschrijf `status`, `src`, `test`; merge `endpoints`, `entities` met dedup; merge `connects_to[]` met dedup op `to+type` combinatie)
 3. Write terug
 
 ### theme
@@ -510,14 +529,25 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
     "date": "2026-03-12",
     "feature": "auth-login",
     "type": "pattern",
+    "source": "extracted",
     "summary": "JWT refresh via httpOnly cookie rotation i.p.v. DB-stored tokens"
   }
 ]
 ```
 
 `type` waarden: `pattern` (architecturale keuze), `pitfall` (bug/gotcha), `convention` (project-breed patroon), `observation` (cross-feature inzicht).
+`source` waarden: `extracted` (directe observatie van code-output of test-resultaat) | `inferred` (cross-feature patroonherkenning of LLM-inferentie).
 `date` = extractie datum. `feature` = bron-feature. `summary` = max 200 chars.
-Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-verify FASE 6, dev-refactor FASE 5).
+
+**Source mapping** (in dev-verify / game-verify):
+
+| Bron in feature.json | learning.type | learning.source |
+| -------------------- | ------------- | --------------- |
+| `build.decisions[]`  | `pattern`     | `extracted`     |
+| `tests.fixSync[]`    | `pitfall`     | `extracted`     |
+| `observations[]`     | `observation` | `inferred`      |
+
+Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-verify FASE 6, dev-refactor FASE 5). `source` is verplicht bij nieuwe writes.
 
 **Dit vervangt de dynamische CLAUDE.md secties** (`## Project structuur`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md bevat nu alleen een referentie naar `project.json` voor deze context.
 

@@ -753,7 +753,7 @@ Muteer in memory:
 - **Architecture** in `.project/project-context.json`: genereer/update als feature scene tree en/of signals heeft. **Volg component-first model uit `shared/DASHBOARD.md`**:
   - `layers`: definieer lagen met `{ name, order }` (bijv. Scenes order 1, Systems order 2, Resources order 3)
   - `dataFlow`: één-regel samenvatting van de scene/signal flow
-  - `components`: per component `{ name, layer, description, status, connects_to }`. Scene tree als componenten, signal flow als `connects_to`. Alle features DOING → `status: "planned"`, bestaande → `"done"`
+  - `components`: per component `{ name, layer, description, status, connects_to }`. Scene tree als componenten. `connects_to[]` als typed edges `{ to, type }` (`calls` voor signal emits/method calls, `reads`/`writes` voor shared state of autoloads, `depends_on` voor scene-tree parent of resource references). Alle features DOING → `status: "planned"`, bestaande → `"done"`
   - Merge strategie: check of component `name` al bestaat → nee: push → ja: merge
   - Skip als feature te klein (enkele node zonder signals)
 
