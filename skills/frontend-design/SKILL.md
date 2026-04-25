@@ -73,6 +73,19 @@ De `design` sectie in `project.json` volgt dit schema:
 
 ---
 
+## Verboden keuzes (anti-slop)
+
+NOOIT gebruiken zonder expliciete reden van de gebruiker. Deze keuzes signaleren AI-gegenereerd werk en convergeren naar generieke output:
+
+- **Fonts**: Inter, Roboto, Arial, system-ui, Space Grotesk
+- **Kleurenschema's**: paarse gradiënten op witte achtergrond, tech-startup blauw (#3B82F6 / Tailwind default), generieke "AI purple"
+- **Layouts**: 3-kolom features-grid met emoji icons, hero-with-gradient-mesh, centered-narrow-column blog template
+- **Component clichés**: floating glass cards, "trusted by" logo bar, gradient text op heading, blur-orb backgrounds, generic "modern SaaS" hero
+
+In plaats daarvan: kies een context-specifieke richting met intentie. Varieer tussen runs — twee opeenvolgende design sessies mogen niet convergeren naar dezelfde fonts/kleuren.
+
+---
+
 ## State Machine
 
 ```
