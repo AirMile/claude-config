@@ -14,6 +14,9 @@ paths:
     # Location of the claude-config repository
     config_repo: "$HOME/claude-config"
 
+    # Godot editor executable (gebruikt door /game-build, /game-verify)
+    godot_executable: "/Applications/Godot.app/Contents/MacOS/Godot"
+
   windows:
     # Root folder where projects are created
     projects_root: "C:\\Projects"
@@ -21,8 +24,11 @@ paths:
     # Location of the claude-config repository
     config_repo: "C:\\Projects\\claude-config"
 
+    # Godot editor executable (gebruikt door /game-build, /game-verify)
+    godot_executable: "C:\\Godot\\Godot_v4.4.1-stable_win64.exe"
+
 # Resolution order (eerste match wint):
-# 1. Environment variable (CLAUDE_PROJECTS_ROOT, CLAUDE_CONFIG_REPO)
+# 1. Environment variable (CLAUDE_PROJECTS_ROOT, CLAUDE_CONFIG_REPO, CLAUDE_GODOT_EXECUTABLE)
 # 2. Lokaal: .claude/paths.local.yaml (per project, per apparaat)
 # 3. Gedeeld: resources/paths.yaml (dit bestand, defaults)
 #

@@ -4,7 +4,7 @@ description: Build features with technique mapping (TDD, Implementation First, o
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.3.0
+  version: 2.4.0
   category: game
 ---
 
@@ -353,7 +353,7 @@ func test_req003_{snake_case_description}() -> void:
 1. Create `tests/test_{feature}.gd` with all test stubs
 2. Run GUT tests to verify structure:
    ```bash
-   "/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/test_{feature}.gd
+   "{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/test_{feature}.gd
    ```
 3. All tests should be PENDING (yellow)
 
@@ -614,7 +614,7 @@ Files created:
 Na succesvolle afronding van alle tracks, run de **volledige GUT test suite** (niet alleen de huidige feature):
 
 ```bash
-"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit
+"{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit
 ```
 
 Parse output met dezelfde regels als alle test runs (zie Test Output Parsing).
@@ -1042,3 +1042,11 @@ If implementation is blocked:
 
 **Cause:** Scene structure doesn't match what the verification test expects.
 **Solution:** Check node names and paths in the verification test match the actual scene tree. Use `print_tree_pretty()` to debug scene structure.
+
+## Path Resolution
+
+`{godot_executable}` in commands wordt opgelost via `paths.yaml`:
+- macOS: `/Applications/Godot.app/Contents/MacOS/Godot`
+- Windows: `C:\Godot\Godot_v4.4.1-stable_win64.exe`
+
+Override: env var `CLAUDE_GODOT_EXECUTABLE` of `.claude/paths.local.yaml`. Canonical defaults staan in [skills/project-add/paths.yaml](skills/project-add/paths.yaml).

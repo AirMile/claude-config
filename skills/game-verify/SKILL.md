@@ -4,7 +4,7 @@ description: Human playtest verification with structured feedback and fix loop. 
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.1.0
+  version: 2.2.0
   category: game
 ---
 
@@ -241,7 +241,7 @@ Twee checks vóór playtest:
 Run de volledige GUT test suite om te verifiëren dat alle features nog werken:
 
 ```bash
-"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit
+"{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit
 ```
 
 Parse output (zelfde regels als game-build: PASS 1 regel, FAIL max 10 regels).
@@ -272,7 +272,7 @@ Als GUT niet beschikbaar of geen test bestanden → skip met: `BASELINE: overges
 Herrun de integration test scene als aanvullende check:
 
 ```bash
-"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s res://tests/scenes/test_{feature}_runtime.tscn
+"{godot_executable}" --headless --path . -s res://tests/scenes/test_{feature}_runtime.tscn
 ```
 
 Parse output voor `FINAL:PASS` of `FINAL:FAIL`.
@@ -774,7 +774,7 @@ Use research findings to inform the fix implementation below.
 3. **Run test (expect FAIL):**
 
    ```bash
-   "/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/test_{feature}_{item}.gd
+   "{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/test_{feature}_{item}.gd
    ```
 
    **If test PASSES (unexpected):**
@@ -1386,3 +1386,11 @@ This skill must ALWAYS:
 - Generate re-test checklist with only fixed items
 - Loop until all items pass
 - Update documentation on completion
+
+## Path Resolution
+
+`{godot_executable}` in commands wordt opgelost via `paths.yaml`:
+- macOS: `/Applications/Godot.app/Contents/MacOS/Godot`
+- Windows: `C:\Godot\Godot_v4.4.1-stable_win64.exe`
+
+Override: env var `CLAUDE_GODOT_EXECUTABLE` of `.claude/paths.local.yaml`. Canonical defaults staan in [skills/project-add/paths.yaml](skills/project-add/paths.yaml).
