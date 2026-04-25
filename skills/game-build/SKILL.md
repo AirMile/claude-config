@@ -4,7 +4,7 @@ description: Build features with technique mapping (TDD, Implementation First, o
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.4.0
+  version: 2.5.1
   category: game
 ---
 
@@ -289,36 +289,9 @@ Proceed automatically — do NOT confirm with the user. The decision logic above
 
 > **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
 
-#### Step 0: GUT Research (Just-in-Time)
+#### Step 0: Load GUT patterns
 
-Before generating tests, research GUT patterns relevant to this feature:
-
-```
-Launching godot-test-researcher...
-```
-
-```
-Task(subagent_type="godot-test-researcher", prompt="
-Feature: {feature-name}
-
-Requirements to test:
-{TDD requirements list from technique mapping}
-
-Classes being tested:
-{from architecture section}
-
-Research GUT patterns. Return COMPACT summary (max 50 lines):
-- Key assertions (1 line each)
-- 1 code pattern example (max 10 lines)
-- Gotchas/warnings (1 line each)
-
-DO NOT return full documentation.
-")
-```
-
-**Expected output: ~30-50 lines of actionable patterns.**
-
-Use research findings to inform test generation below.
+Read `references/gut-conventions.md` voor test file structure, assertions en mock patronen. Geen sub-agent nodig — patronen zijn lokaal beschikbaar.
 
 #### Step 1: Generate Test Stubs
 
@@ -926,122 +899,15 @@ Next steps:
 
 > **Todo**: markeer FASE 6 → `completed`. Alle 10 fases moeten nu `completed` zijn.
 
-## GUT Test Conventions
+## References
 
-### Test File Structure
+Just-In-Time `Read()` deze tijdens specifieke fases — niet vooraf laden.
 
-```gdscript
-extends GutTest
-## Tests for {ClassName}
-## Requirements: REQ-001, REQ-002, ...
-
-var _sut: ClassName  # System Under Test
-
-func before_each() -> void:
-    _sut = ClassName.new()
-    add_child(_sut) if _sut is Node else null
-    await get_tree().process_frame
-
-func after_each() -> void:
-    if _sut and is_instance_valid(_sut):
-        _sut.queue_free() if _sut is Node else _sut.free()
-
-# REQ-001: {requirement}
-func test_req001_{description}() -> void:
-    # Arrange
-    var expected := 20
-
-    # Act
-    var result := _sut.calculate_damage()
-
-    # Assert
-    assert_eq(result, expected, "Damage should be 20")
-```
-
-### Assertion Methods
-
-```gdscript
-assert_eq(got, expected, message)      # Equality
-assert_ne(got, expected, message)      # Not equal
-assert_true(condition, message)        # Boolean true
-assert_false(condition, message)       # Boolean false
-assert_null(value, message)            # Is null
-assert_not_null(value, message)        # Not null
-assert_has(array, value, message)      # Contains
-assert_signal_emitted(obj, signal)     # Signal was emitted
-pending(message)                       # Mark as pending
-```
-
-### Mock Objects
-
-```gdscript
-# Simple mock
-var mock_target := double(Target).new()
-stub(mock_target, "take_damage").to_do_nothing()
-
-# Verify calls
-assert_called(mock_target, "take_damage")
-assert_call_count(mock_target, "take_damage", 1)
-```
-
-## GUT Commands Reference
-
-```bash
-# Run all tests
-"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit
-
-# Run with verbose output
-"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -glog=3
-
-# Run specific test file
-"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/test_{feature}.gd
-
-# Run tests matching name pattern
-"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gunit_test_name={pattern}
-```
-
-## Error Handling
-
-### Test Failures During TDD
-
-If a test fails unexpectedly during GREEN phase:
-
-1. Log the failure with full error message
-2. Analyze the error
-3. Fix the implementation
-4. Re-run test
-5. Continue only when PASS
-
-### Build Blockers
-
-If implementation is blocked:
-
-1. Log the blocker in feature.json build.blockers
-2. Mark affected tests as BLOCKED
-3. Continue with other tests
-4. Report blockers at completion
-
-## Troubleshooting
-
-### Error: GUT tests not found or not running
-
-**Cause:** GUT (Godot Unit Test) framework not installed or configured.
-**Solution:** Verify `addons/gut/` exists in the project. Check `res://tests/` directory structure. Run tests manually with `godot --headless -s addons/gut/gut_cmdln.gd` to verify setup.
-
-### Error: Scene tree errors during test
-
-**Cause:** Node references breaking due to scene structure changes.
-**Solution:** Check that `@onready` references match current scene tree. Use `has_node()` before accessing nodes. Review the test scene (`playtest_scene.tscn`) for missing dependencies.
-
-### Error: Signal connections not working in tests
-
-**Cause:** Signals may not be connected in the test scene context.
-**Solution:** Ensure signals are connected in `_ready()` or via the editor. The debug_listener.gd captures signals -- check its output for missed connections.
-
-### Error: Implementation First verification test fails
-
-**Cause:** Scene structure doesn't match what the verification test expects.
-**Solution:** Check node names and paths in the verification test match the actual scene tree. Use `print_tree_pretty()` to debug scene structure.
+| File | Wanneer laden |
+|---|---|
+| `references/gut-conventions.md` | FASE 2 — bij genereren van test files (file structure, assertions, mocks) |
+| `references/gut-commands.md` | FASE 3, 3a, 3b — bij draaien van GUT tests |
+| `references/troubleshooting.md` | FASE 3 — bij test failures of build blockers |
 
 ## Path Resolution
 
