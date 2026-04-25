@@ -4,7 +4,7 @@ description: Build features with technique mapping (TDD, Implementation First, o
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 2.2.0
+  version: 2.3.0
   category: game
 ---
 
@@ -82,7 +82,22 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 ## Process
 
+**Fase tracking** — eerste actie van de skill: roep `TodoWrite` aan met deze 10 items (status `pending`), daarna markeer per fase `in_progress` aan begin en `completed` aan einde. Bij context compaction blijft TodoWrite-state zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: Load Context
+2. FASE 1: Technique Mapping
+3. FASE 2: Generate Tests (TDD Requirements)
+4. FASE 3: Build Cycle
+5. FASE 3a: Full Regression Gate
+6. FASE 3b: Integration Tests + Playtest
+7. FASE 4: Wat hebben we gebouwd?
+8. FASE 4b: Project Sync
+9. FASE 5: Completion
+10. FASE 6: Scoped Commit
+
 ### FASE 0: Load Context
+
+> **Todo**: roep `TodoWrite` aan met de 10 fase-items (zie boven). Markeer FASE 0 → `in_progress`.
 
 1. **If no feature name provided — check backlog:**
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
@@ -211,11 +226,15 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 ```bash
 mkdir -p .project/session
+# Cleanup stale session state from previous crashed runs (>1 dag oud)
+find .project/session -maxdepth 1 \( -name "active-*.json" -o -name "pre-skill-*.txt" \) -mtime +1 -delete 2>/dev/null
 git status --porcelain | sort > .project/session/pre-skill-status.txt
 echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
 ### FASE 1: Technique Mapping
+
+> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
 
 Per requirement, assign a technique: **TDD**, **Implementation First**, or **Implementation Only**.
 
@@ -267,6 +286,8 @@ IMPLEMENTATION ONLY:
 Proceed automatically — do NOT confirm with the user. The decision logic above is deterministic enough to auto-assign. Display the mapping for visibility, then continue to the next phase.
 
 ### FASE 2: Generate Tests (TDD Requirements)
+
+> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
 
 #### Step 0: GUT Research (Just-in-Time)
 
@@ -348,6 +369,8 @@ Ready for TDD cycle.
 ```
 
 ### FASE 3: Build Cycle
+
+> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
 
 Two tracks run based on technique mapping from FASE 1.
 
@@ -584,6 +607,8 @@ Files created:
 
 ### FASE 3a: Full Regression Gate
 
+> **Todo**: markeer FASE 3 → `completed`, FASE 3a → `in_progress`.
+
 **Goal:** Verify that the new feature hasn't broken existing features.
 
 Na succesvolle afronding van alle tracks, run de **volledige GUT test suite** (niet alleen de huidige feature):
@@ -626,6 +651,8 @@ REGRESSION CHECK: overgeslagen (geen eerdere features met tests)
 ```
 
 ### FASE 3b: Integration Tests + Playtest (PARALLEL)
+
+> **Todo**: markeer FASE 3a → `completed`, FASE 3b → `in_progress`.
 
 These two tasks have NO dependencies on each other - run them in parallel.
 
@@ -775,6 +802,8 @@ func get_log_summary() -> String:
 
 ### FASE 4: Wat hebben we gebouwd?
 
+> **Todo**: markeer FASE 3b → `completed`, FASE 4 → `in_progress`.
+
 **STOP — ga NIET door naar de sync zonder deze fase volledig af te ronden.**
 
 Display een visuele separator:
@@ -803,6 +832,8 @@ Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
 Follow-up loop tot "Ja, helder". Sla uitleg op als `build.explanation` in feature.json (targeted Edit).
 
 ### FASE 4b: Project Sync
+
+> **Todo**: markeer FASE 4 → `completed`, FASE 4b → `in_progress`.
 
 Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
 
@@ -834,6 +865,8 @@ Schrijf parallel terug:
 
 ### FASE 5: Completion
 
+> **Todo**: markeer FASE 4b → `completed`, FASE 5 → `in_progress`.
+
 #### Output summary
 
 ```
@@ -852,6 +885,8 @@ Created files:
 ```
 
 ### FASE 6: Scoped Commit
+
+> **Todo**: markeer FASE 5 → `completed`, FASE 6 → `in_progress`.
 
 **Scoped auto-commit** (only this skill's changes):
 
@@ -888,6 +923,8 @@ Next steps:
   1. /game-verify {feature} → playtest verificatie
   2. /game-debug → als er onverwachte failures zijn
 ```
+
+> **Todo**: markeer FASE 6 → `completed`. Alle 10 fases moeten nu `completed` zijn.
 
 ## GUT Test Conventions
 

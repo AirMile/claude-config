@@ -4,7 +4,7 @@ description: Build features with TDD or implementation-first per requirement. Us
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.5.1
+  version: 1.6.1
   category: dev
 ---
 
@@ -29,23 +29,27 @@ Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), a
 
 ## Process
 
-**Phase checklist** — vink af na elke fase, STOP NIET voor alle fases ✓ zijn:
+**Fase tracking** — eerste actie van de skill: roep `TodoWrite` aan met deze 8 items (status `pending`), daarna markeer per fase `in_progress` aan begin en `completed` aan einde. Bij context compaction blijft TodoWrite-state zichtbaar — geen risico op vergeten fases.
 
-- [ ] FASE 0: Context Loading
-- [ ] FASE 1: Technique Mapping
-- [ ] FASE 2: Execute Build
-- [ ] FASE 2b: Regression Gate
-- [ ] FASE 3A: Documentation
-- [ ] FASE 3B: Project Sync
-- [ ] FASE 3C: Wat hebben we gebouwd?
-- [ ] FASE 3D: Scoped Commit
+1. FASE 0: Context Loading
+2. FASE 1: Technique Mapping
+3. FASE 2: Execute Build
+4. FASE 2b: Regression Gate
+5. FASE 3A: Documentation
+6. FASE 3B: Project Sync
+7. FASE 3C: Wat hebben we gebouwd?
+8. FASE 3D: Scoped Commit
 
 ### FASE 0: Context Loading
+
+> **Todo**: roep `TodoWrite` aan met de 8 fase-items (zie boven). Markeer FASE 0 → `in_progress`.
 
 **Capture git baseline** (eerste actie):
 
 ```bash
 mkdir -p .project/session
+# Cleanup stale session state from previous crashed runs (>1 dag oud)
+find .project/session -maxdepth 1 \( -name "active-*.json" -o -name "pre-skill-*.txt" \) -mtime +1 -delete 2>/dev/null
 git rev-parse HEAD > .project/session/pre-skill-sha.txt
 ```
 
@@ -197,6 +201,8 @@ IMPLEMENTATION ORDER:
 
 ### FASE 1: Technique Mapping
 
+> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+
 Assign per requirement:
 
 - **TDD**: validation rules, business logic, calculations, complex conditions, testable math
@@ -206,6 +212,8 @@ Assign per requirement:
 Display technique map als tabel. Proceed automatically — do NOT confirm with the user.
 
 ### FASE 2: Execute Build
+
+> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
 
 For each buildSequence step:
 
@@ -256,9 +264,11 @@ Bij steps met 1 requirement of bij overlap, voor elke requirement sequentieel:
 
 **On blocker:** log in feature.json `build.blockers[]`, mark BLOCKED, ga door met andere requirements. Suggest `/thinking-decide` voor architecturele blockers.
 
-**⚠️ NIET STOPPEN NA HET CODEREN — er zijn nog 6 fases te gaan (2b → 3D). Check de phase checklist bovenaan en ga door met FASE 2b: Regression Gate.**
+**⚠️ Check TodoWrite — er zijn nog 6 fases open (2b → 3D). Ga door met FASE 2b: Regression Gate.**
 
 ### FASE 2b: Regression Gate
+
+> **Todo**: markeer FASE 2 → `completed`, FASE 2b → `in_progress`.
 
 Na succesvolle afronding van alle requirements, run de **volledige test suite** met timeout (hangende tests = FAIL). Inclusief acceptance tests uit eerdere `/dev-verify` runs (`test/acceptance/*.test.js`) — deze beschermen tegen spec-regressies.
 
@@ -300,6 +310,8 @@ REGRESSION CHECK: overgeslagen ({reden})
 
 ### FASE 3A: Documentation
 
+> **Todo**: markeer FASE 2b → `completed`, FASE 3A → `in_progress`.
+
 **Build summary** — display:
 
 ```
@@ -311,6 +323,8 @@ Files created: {count}
 ```
 
 ### FASE 3B: Project Sync
+
+> **Todo**: markeer FASE 3A → `completed`, FASE 3B → `in_progress`.
 
 Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties:
 
@@ -346,6 +360,8 @@ Learning extraction gebeurt in `/dev-verify` — dat is de natuurlijke plek (fea
 
 ### FASE 3C: Wat hebben we gebouwd?
 
+> **Todo**: markeer FASE 3B → `completed`, FASE 3C → `in_progress`.
+
 **STOP — ga NIET door naar de commit zonder deze fase volledig af te ronden.** (Auto-mode: schrijf uitleg naar `build.explanation` in feature.json, skip begripscheck, ga door naar commit.)
 
 Display een visuele separator:
@@ -376,6 +392,8 @@ Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
 Follow-up loop tot "Ja, helder". Sla uitleg op als `build.explanation` in feature.json (targeted Edit).
 
 ### FASE 3D: Scoped Commit
+
+> **Todo**: markeer FASE 3C → `completed`, FASE 3D → `in_progress`.
 
 **Strategie**: stage alleen files die door deze build zijn aangemaakt of gewijzigd. Laat pre-existing dirty files met rust.
 
@@ -414,6 +432,8 @@ Next steps:
   1. /dev-verify {feature} → hybrid test verificatie
   2. /dev-debug → als er onverwachte failures zijn
 ```
+
+> **Todo**: markeer FASE 3D → `completed`. Alle 8 fases moeten nu `completed` zijn.
 
 ## Test Output Parsing
 
