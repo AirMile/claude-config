@@ -1874,3 +1874,107 @@ hr.divider {
   color: var(--text-dim);
   text-align: center;
 }
+
+/* Learnings tab */
+.learnings-group {
+  margin-bottom: 24px;
+  padding-left: 12px;
+  border-left: 3px solid var(--border);
+}
+
+.learnings-group--pattern {
+  border-left-color: var(--accent);
+}
+
+.learnings-group--pitfall {
+  border-left-color: var(--danger);
+}
+
+.learnings-group--observation {
+  border-left-color: var(--text-dim);
+}
+
+.learnings-group h3 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.learnings-group-desc {
+  font-weight: 400;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-dim);
+}
+
+.learnings-count {
+  margin-left: auto;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.learnings-row {
+  display: grid;
+  grid-template-columns: auto 90px auto 1fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.learnings-row:last-child {
+  border-bottom: none;
+}
+
+.learnings-date {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.learnings-feature {
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.learnings-feature:hover {
+  text-decoration: underline;
+}
+
+.learnings-summary {
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.badge-source {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 2px;
+  font-family: var(--font-mono, monospace);
+}
+
+.badge-source--extracted {
+  background: color-mix(in srgb, var(--done) 18%, transparent);
+  color: var(--done);
+}
+
+.badge-source--inferred {
+  background: color-mix(in srgb, var(--orange) 18%, transparent);
+  color: var(--orange);
+}

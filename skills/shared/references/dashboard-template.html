@@ -265,6 +265,7 @@
         { id: "design", label: "Design" },
         { id: "theme", label: "Design System" },
         { id: "stack", label: "Stack" },
+        { id: "learnings", label: "Learnings" },
         { id: "config", label: "Config" },
       ];
 
@@ -1572,12 +1573,64 @@
 
       // ─── Render ─────────────────────────────────────────────
 
+      function renderLearnings() {
+        const all = (data.learnings || [])
+          .slice()
+          .sort((a, b) => (a.date < b.date ? 1 : -1));
+        const groups = [
+          { type: "pattern", label: "Patterns", desc: "Architecturale keuzes" },
+          { type: "pitfall", label: "Pitfalls", desc: "Bewezen bugs" },
+          {
+            type: "observation",
+            label: "Observations",
+            desc: "Cross-feature inferenties",
+          },
+        ];
+
+        const sections = groups
+          .map((g) => {
+            const items = all.filter((l) => l.type === g.type);
+            if (!items.length) return "";
+            const rows = items
+              .map((l) => {
+                const src = l.source || "extracted";
+                return `<div class="learnings-row">
+                  <span class="badge-source badge-source--${esc(src)}">${esc(src)}</span>
+                  <span class="learnings-date">${esc(l.date || "")}</span>
+                  <span class="learnings-feature" onclick="navigateToFeature('${esc(l.feature || "")}')">${esc(l.feature || "—")}</span>
+                  <span class="learnings-summary">${esc(l.summary || "")}</span>
+                </div>`;
+              })
+              .join("");
+            return `<div class="learnings-group learnings-group--${g.type}">
+              <h3>${g.label} <span class="learnings-group-desc">${g.desc}</span> <span class="learnings-count">${items.length}</span></h3>
+              ${rows}
+            </div>`;
+          })
+          .join("");
+
+        return `
+          <div class="section-header">
+            <h2>Learnings</h2>
+          </div>
+          ${sections || `<div class="empty-state"><p>Nog geen learnings vastgelegd.</p><p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-verify</code> of <code>/game-verify</code></p></div>`}
+        `;
+      }
+
+      function navigateToFeature(name) {
+        if (!name) return;
+        const project = window.location.pathname.split("/").filter(Boolean)[0];
+        if (!project) return;
+        window.location.href = `/${project}/feature/${encodeURIComponent(name)}`;
+      }
+
       const renderers = {
         concept: renderConcept,
         architecture: renderArchitecture,
         stack: renderStack,
         design: renderDesignContent,
         theme: renderTheme,
+        learnings: renderLearnings,
         config: renderConfig,
       };
 
@@ -1624,9 +1677,11 @@
             th.typography.sizes &&
             th.typography.sizes.length) ||
           th.cssVars;
+        const hasLearnings = (data.learnings || []).length > 0;
         const hiddenTabs = {};
         if (!hasDesign) hiddenTabs.design = true;
         if (!hasTheme) hiddenTabs.theme = true;
+        if (!hasLearnings) hiddenTabs.learnings = true;
 
         const visibleTabs = TABS.filter((t) => !hiddenTabs[t.id]);
         if (hiddenTabs[activeTab]) {
