@@ -2,6 +2,7 @@
 core:
   - core-note
   - core-commit
+  - core-changelog
   - core-create
   - core-delete
   - core-edit
