@@ -7,6 +7,7 @@ core:
   - core-edit
   - core-pull
   - core-audit
+  - core-promote-learnings
   - core-rewrite
   - core-setup
   - project-add
