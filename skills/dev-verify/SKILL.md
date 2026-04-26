@@ -42,84 +42,19 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 
 1. **Read backlog** — `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` (zie `shared/BACKLOG.md`). Filter `status === "DOING" && stage === "built"`. Geen feature name → suggest via AskUserQuestion.
 
-2. **Timing** (na feature laden):
-
-   AskUserQuestion:
-
-   ```yaml
-   header: "Timing"
-   question: "Wanneer wil je deze verify uitvoeren?"
-   options:
-     - label: "Nu (Recommended)"
-     - label: "Over 1 uur"
-     - label: "Over 3 uur"
-     - label: "Over 6 uur"
-     - label: "Specifieke tijd"
-       description: "Bijv. 01:00, 14:30"
-   multiSelect: false
-   ```
-
-   "Specifieke tijd" → follow-up AskUserQuestion: "Hoe laat? (HH:MM, CET)"
-
-   Bij elke "later" keuze:
-   1. Bereken sleep seconds:
-      ```bash
-      # "Over X uur":
-      SLEEP_SECONDS=$((X * 3600))
-      # "Specifieke tijd":
-      TARGET=$(TZ="Europe/Amsterdam" date -d "{HH:MM}" +%s)
-      NOW=$(date +%s)
-      SLEEP_SECONDS=$((TARGET - NOW))
-      if [ $SLEEP_SECONDS -lt 0 ]; then
-        TARGET=$(TZ="Europe/Amsterdam" date -d "tomorrow {HH:MM}" +%s)
-        SLEEP_SECONDS=$((TARGET - NOW))
-      fi
-      ```
-   2. Display: `INGEPLAND: verify {feature} om {tijd CET}. Sleep tot dan...`
-   3. `Bash: sleep {SLEEP_SECONDS}`
-   4. Na wake-up: **AUTO_MODE actief** voor de rest van de skill.
-
-   **Auto-mode** (actief bij "later" timing keuze):
-
-   Alle AskUserQuestions worden overgeslagen met deze defaults:
-
-   | Beslispunt              | Default                             | Reden                     |
-   | ----------------------- | ----------------------------------- | ------------------------- |
-   | MANUAL test items       | **Skip, markeer MANUAL_PENDING**    | Geen mens achter browser  |
-   | AUTO FAILs vertrouwen   | **Ja**                              | Evidence-based resultaten |
-   | SKIPs accepteren        | **Accepteren**                      | Al geclassificeerd        |
-   | Fix research (Context7) | **Direct fixen**                    | Sneller, adequaat         |
-   | Test slaagt al          | **Overslaan**                       | Al groen                  |
-   | Re-test loop fails      | **Max 3 pogingen, dan stoppen**     | Voorkom oneindige loop    |
-   | Regression fixes        | **Fixen**                           | Standaard aanbeveling     |
-   | Ongedekte requirements  | **Test toevoegen**                  | Maximaliseer coverage     |
-   | Fix sync helder?        | **Skip, schrijf naar feature.json** | Geen gebruiker            |
-   | Observaties             | **Nee**                             | Geen user input mogelijk  |
-
-   **MANUAL_PENDING afhandeling:**
-   - MANUAL items krijgen status `MANUAL_PENDING` in `tests.checklist[]`
-   - Feature gaat NIET naar DONE — blijft op `stage: "built"`
-   - `tests.manualPending: ["Item N: {title}", ...]` in feature.json
-   - Backlog status blijft DOING
-
-   Auto-result naar `.project/session/auto-result-{feature}.json`:
-   - Volledige PASS: `{"feature": "{name}", "status": "VERIFIED", "pass": N, "total": N, "timestamp": "{ISO}"}`
-   - Met MANUAL_PENDING: `{"feature": "{name}", "status": "PARTIAL", "autoPass": N, "manualPending": N, "timestamp": "{ISO}"}`
-   - Blocker: `{"feature": "{name}", "status": "BLOCKED", "reason": "...", "timestamp": "{ISO}"}`
-
-3. **Parse input:**
+2. **Parse input:**
    - Feature name only → proceed to classification
    - Feature name + inline feedback → skip to FASE 1b
    - Feature name + free text → skip to FASE 1b
 
-4. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`. Geen checklist → exit: run `/dev-build` first.
+3. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`. Geen checklist → exit: run `/dev-build` first.
 
-5. **Tag backlog + capture baseline:**
+4. **Tag backlog + capture baseline:**
    - Backlog: zet `stage: "verifying"`, feature `updated` → nu (Edit, keep `<script>` tags intact)
    - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
    - Session file: `echo '{"feature":"{name}","skill":"test","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
 
-6. **Load stack & project context** — CLAUDE.md stack sectie + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Stel STACK_CONTEXT samen:
+5. **Load stack & project context** — CLAUDE.md stack sectie + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Stel STACK_CONTEXT samen:
 
    ```
    STACK CONTEXT:
@@ -135,7 +70,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    Entities: {data.entities of "niet beschikbaar"}
    ```
 
-7. **Gather test data** via Explore agent op **Sonnet** (`model: "sonnet"`) — zero source file reads in main context:
+6. **Gather test data** via Explore agent op **Sonnet** (`model: "sonnet"`) — zero source file reads in main context:
 
    ```
    Feature: {feature-name}
@@ -170,7 +105,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    FEATURE_CONTEXT_END
    ```
 
-8. **Classify and plan test execution:**
+7. **Classify and plan test execution:**
 
    a) Baseline check: `npm test 2>&1 | tail -20` (of project-specifiek command).
    Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n})`
@@ -224,7 +159,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    Geen gaps → toon `Acceptance mapping: {n}/{n} REQs gedekt` en ga door naar step 8.
    CLI gaps gevonden → display: `ACCEPTANCE TESTS: {n} test(s) gepland voor {m} requirements`
 
-9. **Dev server** (conditioneel):
+8. **Dev server** (conditioneel):
 
    ```
    Alle non-COVERED items AUTO/CLI (in-process testbaar) → skip dev server entirely
@@ -327,7 +262,7 @@ VERWACHT:
 → {expected outcome}
 ```
 
-AskUserQuestion per item (Auto-mode: skip MANUAL items, markeer als MANUAL_PENDING): Pass (Aanbevolen) | Fail | Skip.
+AskUserQuestion per item: Pass (Aanbevolen) | Fail | Skip.
 
 - Fail → vraag kort wat er mis ging
 - Skip → noteer reden
@@ -360,8 +295,8 @@ GECOMBINEERDE RESULTATEN: {feature-name}
 |---|----- |------|-----------|
 ```
 
-Bij AUTO FAILs → AskUserQuestion (Auto-mode: vertrouwen): Vertrouw auto resultaten (Aanbevolen) | Handmatig controleren.
-Bij SKIPs → AskUserQuestion (Auto-mode: accepteren): Accepteren (Aanbevolen) | Later testen.
+Bij AUTO FAILs → AskUserQuestion: Vertrouw auto resultaten (Aanbevolen) | Handmatig controleren.
+Bij SKIPs → AskUserQuestion: Accepteren (Aanbevolen) | Later testen.
 
 **Evaluation Score** (alleen tonen als acceptance tests zijn uitgevoerd):
 
@@ -406,7 +341,7 @@ Display technique map:
 
 #### TDD Fix
 
-Complexe issues → AskUserQuestion (Auto-mode: direct fixen): Research via Context7 (Aanbevolen) | Direct fixen.
+Complexe issues → AskUserQuestion: Research via Context7 (Aanbevolen) | Direct fixen.
 
 TDD: test → red → fix → green. Max 3 pogingen, daarna vraag user.
 
@@ -417,7 +352,7 @@ RED: FAIL ({wat})  GREEN: PASS
 SYNC: Root cause: {file:line}. Fix: {aanpak}. Impact: {scope}.
 ```
 
-Test slaagt al → AskUserQuestion (Auto-mode: overslaan): Overslaan (Aanbevolen) | Test aanpassen | Handmatig checken.
+Test slaagt al → AskUserQuestion: Overslaan (Aanbevolen) | Test aanpassen | Handmatig checken.
 
 #### Implementation First Fix
 
@@ -456,7 +391,7 @@ Display re-test resultaten.
 
 Alles pass → FASE 5c.
 
-Items falen nog → AskUserQuestion (Auto-mode: max 3 pogingen, dan stoppen): Meer details (Aanbevolen) | Andere aanpak | Accepteren | Zelf fixen.
+Items falen nog → AskUserQuestion: Meer details (Aanbevolen) | Andere aanpak | Accepteren | Zelf fixen.
 Loop terug naar FASE 3. AUTO items → re-run in FASE 5A. MANUAL items → re-test in FASE 5B.
 
 ---
@@ -484,7 +419,7 @@ Regressies: {n} | Stabiel: {n}
 
 **Geen regressies:** Door naar FASE 6.
 
-**Regressies:** Toon en bied keuze via AskUserQuestion (Auto-mode: fixen): Fixen (Aanbevolen) | Accepteren. Bij fixen → terug naar FASE 4 voor alleen de regressie-items. Herhaal FASE 5c NIET na regressie-fix (max 1 pass).
+**Regressies:** Toon en bied keuze via AskUserQuestion: Fixen (Aanbevolen) | Accepteren. Bij fixen → terug naar FASE 4 voor alleen de regressie-items. Herhaal FASE 5c NIET na regressie-fix (max 1 pass).
 
 ---
 
@@ -525,7 +460,7 @@ Cross-check `feature.json` requirements tegen test resultaten:
 
 5. **Bij GEEN TEST, FAIL, BLOCKED of UNCLEAR requirements:**
 
-   Per ongedekt requirement, AskUserQuestion (Auto-mode: test toevoegen):
+   Per ongedekt requirement, AskUserQuestion:
 
    ```yaml
    header: "REQ niet gedekt: {REQ-ID}"
@@ -558,13 +493,13 @@ Fix {N}: {title}
 - Watch out: {alleen als relevant}
 ```
 
-AskUserQuestion (Auto-mode: skip, schrijf naar feature.json): Ja, helder (Aanbevolen) | Leg meer uit | Ik heb een vraag. Loop tot helder.
+AskUserQuestion: Ja, helder (Aanbevolen) | Leg meer uit | Ik heb een vraag. Loop tot helder.
 
 Sla fix sync op voor `feature.json` (tests.fixSync).
 
 #### Step 2: Observaties
 
-AskUserQuestion (Auto-mode: nee): Nee, alles goed (Aanbevolen) | Ja, ik heb iets opgemerkt.
+AskUserQuestion: Nee, alles goed (Aanbevolen) | Ja, ik heb iets opgemerkt.
 "Ja" → vraag beschrijving, noteer voor feature.json (observations[]).
 
 #### Step 3: 3-File Sync
