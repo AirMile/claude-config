@@ -535,7 +535,7 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
 ]
 ```
 
-`type` waarden: `pattern` (architecturale keuze), `pitfall` (bug/gotcha), `convention` (project-breed patroon), `observation` (cross-feature inzicht).
+`type` waarden: `pattern` (architecturale keuze), `pitfall` (bug/gotcha), `observation` (cross-feature inzicht).
 `source` waarden: `extracted` (directe observatie van code-output of test-resultaat) | `inferred` (cross-feature patroonherkenning of LLM-inferentie).
 `date` = extractie datum. `feature` = bron-feature. `summary` = max 200 chars.
 
