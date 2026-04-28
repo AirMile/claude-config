@@ -4,6 +4,8 @@ description: >-
   Batch refactor code quality for Godot projects after testing with parallel
   analysis and GDScript-aware patterns. Use with /game-refactor after /game-verify.
 disable-model-invocation: true
+reads: [feature.build, feature.tests, backlog.stage]
+writes: [feature.refactor, backlog.stage]
 metadata:
   author: mileszeilstra
   version: 1.1.0
@@ -106,7 +108,13 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
    - Commit message: `refactor(codebase): {summary}`
    - Skip FASE 5 feature.json/backlog updates — alleen commit + rapport
 
-3. **Load feature.json for every feature in queue:**
+3. **Worktree switch** (single-mode only):
+
+   Als `feature_queue.length == 1` en niet in codebase-mode: voer de procedure in `shared/WORKTREE.md` uit met de feature-name. Switcht automatisch naar `worktree-{feature-name}` als die bestaat. Bij FAIL: stop met de melding uit WORKTREE.md.
+
+   Batch-mode (queue > 1) of codebase-mode: skip — blijf op main, refactor over al-gemergede code.
+
+4. **Load feature.json for every feature in queue:**
 
    For each feature, read `feature.json`. Extract:
    - `requirements[]` for requirements and architecture
@@ -116,19 +124,30 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
    Validate feature.json exists with `tests` section for each feature. If any missing — remove from queue and warn.
 
-4. **Build pipeline files list per feature:**
+5. **Build pipeline files list per feature:**
 
    For each feature, extract all code file paths from `feature.json` → `files[]`:
    - Primary: parse `files[].path` from feature.json
    - Fallback: grep for file paths matching `scripts/`, `scenes/`, `resources/`, `tests/`
    - Store as `pipeline_files[feature_name]`
 
-5. **Load project conventions** (voor Explore agent context):
+6. **Load project conventions + learnings** (voor Explore agent context):
 
    Read `.project/project-context.json` (als bestaat) → extract `context.patterns`.
    Sla op als `PROJECT_CONVENTIONS` voor injectie in Explore agent prompts (FASE 1).
 
-6. **Load or generate refactor-patterns.md:**
+   **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+
+   ```
+   scopes: [component]
+   pitfall-prefix: true
+   global-memory: true
+   current-feature: <feature-name als feature-mode, anders "none">
+   ```
+
+   Sla op als `KNOWN_PITFALLS` voor injectie in Explore agent prompts (FASE 1) — voorkomt herintroductie van bekende Godot/GDScript bugs en helpt agents onderscheid maken tussen "intentioneel project pattern" en "code smell".
+
+7. **Load or generate refactor-patterns.md:**
 
    ```
    IF .claude/research/refactor-patterns.md exists:
@@ -750,7 +769,11 @@ IMPROVEMENTS APPLIED
 
    Muteer in memory:
 
-   **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet `data.updated` naar huidige datum.
+   **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet per feature het `refactor` veld:
+   - CLEAN of REFACTORED → `f.refactor = "REFACTORED"` (rendert ✓ badge in DONE-kolom)
+   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"` (rendert ⚠ badge)
+
+   Zet `data.updated` naar huidige datum.
 
    **Dashboard** (zie `shared/DASHBOARD.md`): ongewijzigd — er is geen aparte dashboard merge in game-refactor anders dan feature status.
 
@@ -834,6 +857,16 @@ IMPROVEMENTS APPLIED
      1. /game-define {next-feature} → volgende feature uit backlog
      2. /game-plan → backlog herzien als scope gewijzigd is
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+
+   **Worktree integration hint** — voeg één extra regel toe aan het completion-blok als beide voorwaarden waar zijn:
+   1. Single-mode (queue.length == 1, niet codebase-mode)
+   2. Huidige branch matcht `worktree-*` pattern (`git branch --show-current`)
+
+   Append:
+
+   ```
+   💡 Run /core-merge {feature-name} om te integreren naar main/develop
    ```
 
 ---

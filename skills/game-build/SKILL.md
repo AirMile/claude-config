@@ -2,6 +2,8 @@
 name: game-build
 description: Build features with technique mapping (TDD, Implementation First, or Implementation Only) for Godot 4.x. Use with /game-build after /game-define.
 disable-model-invocation: true
+reads: [feature.requirements, backlog.stage]
+writes: [feature.requirements, feature.build, backlog.stage]
 metadata:
   author: mileszeilstra
   version: 2.5.1
@@ -101,7 +103,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 1. **If no feature name provided — check backlog:**
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
-   - Filter defined features: `data.features.filter(f => f.status === "DOING" && f.stage === "defined")`
+   - Filter defined features: `data.features.filter(f => f.status === "DEFINED")`
    - Eerste defined feature is de suggested next feature
    - Use **AskUserQuestion** with backlog-suggested feature:
      ```
@@ -129,21 +131,21 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    - `context.structure` — waar bestanden horen (map structuur)
    - `context.patterns` — bestaande code patterns om te volgen
    - `architecture` — huidige architectuur diagram en beschrijving
-   - `learnings[]` — pitfall load (zie hieronder)
 
-   **Pitfall load**: filter `learnings[]` strikt op `type === "pitfall"` AND `source === "extracted"`. Sorteer op `date` desc, neem max 5 meest recente. Als leeg na filter → skip volledig (geen header, geen lege sectie).
+   **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
 
-   Bij ≥1 hit: toon kort als context (geen constraint):
+   Configuratie:
 
    ```
-   Eerdere pitfalls in dit project (context, geen constraint):
-   - {date} / {feature}: {summary}
-   - ...
-
-   Bij overlap met deze build: voorkom herhaling. Bij twijfel: ga uit van root cause, niet van pattern-match.
+   scopes: [component]
+   pitfall-prefix: true
+   global-memory: true
+   current-feature: <feature-name>
    ```
 
-   Bewaar de gefilterde lijst voor FASE 1 (Technique Mapping).
+   Toon de geladen output. Pitfall-prefix sectie + component-scoped patterns geven context voor de build (geen constraint — bij twijfel ga uit van root cause, niet pattern-match).
+
+   Bewaar de geladen learnings voor FASE 1 (Technique Mapping).
 
    Als project.json niet bestaat → ga door zonder (backwards compatible).
 
@@ -163,7 +165,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 4. **Load feature.json:**
 
    If no feature name provided:
-   1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DOING" && stage === "defined"` → suggest via **AskUserQuestion**
+   1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion**
    2. Fallback: list `.project/features/` met `feature.json`, let user select
 
    Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`. Als `clarifications[]` aanwezig: behandel als harde constraints tijdens implementatie (gray-area beslissingen van de user).
@@ -197,12 +199,14 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
       ```
    3. Ja → `EnterWorktree(name: "{feature-name}")`
 
+   > **Branch-naming**: `EnterWorktree` maakt branch `worktree-{feature-name}` (NIET `{feature-name}`). Vervolgskills (`game-verify`, `game-debug`, `game-refactor` single-mode) detecteren deze worktree automatisch via `shared/WORKTREE.md` en switchen erin. Voor merge/cleanup gebruik je `/core-merge` of handmatig `git worktree remove --force` + `git branch -D worktree-{feature-name}`.
+
    **Tag backlog card als actief** (direct na feature laden):
 
    Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-   Zoek feature op naam → zet `"stage": "building"`, `data.updated` naar nu.
+   Zoek feature op naam → zet `"status": "DOING"`, `"stage": "building"`, `data.updated` naar nu (overgang DEFINED → DOING bij build-start).
    Schrijf terug via Edit (keep `<script>` tags intact).
-   De card blijft in DOING kolom, stage gaat naar `building`.
+   De card verhuist naar DOING-kolom met stage `building`.
 
 5. **Read implementation order:**
 
@@ -912,6 +916,15 @@ Files created: {count}
 Next steps:
   1. /game-verify {feature} → playtest verificatie
   2. /game-debug → als er onverwachte failures zijn
+```
+
+**Worktree reminder** — voeg één extra blok toe aan de output als de huidige branch matcht `worktree-*` pattern (`git branch --show-current`):
+
+```
+💡 Worktree actief: {worktree_path}
+   Volgende skills (/game-verify, /game-refactor, /game-debug) starten in een NIEUWE chat —
+   ze detecteren deze worktree automatisch en switchen erin.
+   Voor merge/cleanup: /core-merge {feature}
 ```
 
 > **Todo**: markeer FASE 6 → `completed`. Alle 10 fases moeten nu `completed` zijn.

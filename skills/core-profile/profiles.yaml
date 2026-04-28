@@ -7,6 +7,8 @@ core:
   - core-delete
   - core-edit
   - core-export
+  - core-merge
+  - core-onboard
   - core-pull
   - core-audit
   - core-promote-learnings

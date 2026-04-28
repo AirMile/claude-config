@@ -4,6 +4,8 @@ description: >-
   Design token management — color, typography, spacing, motion, and interaction
   tokens. Use with /frontend-tokens to create, update, or manage design tokens.
 disable-model-invocation: true
+reads: [devinfo.handoff]
+writes: [devinfo.handoff]
 metadata:
   author: mileszeilstra
   version: 3.0.0

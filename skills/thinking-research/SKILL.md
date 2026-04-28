@@ -4,7 +4,7 @@ description: Multi-source research on concepts and ideas. Combines web search, d
 disable-model-invocation: true
 metadata:
   author: mileszeilstra
-  version: 1.1.0
+  version: 1.3.0
   category: thinking
 ---
 
@@ -67,20 +67,44 @@ Search Obsidian met het inline argument. Bij match in `Ideas/`: vraag of dit als
 
 Accepteer input van gebruiker (thinking output, document, beschrijving, of chat context). Bij onduidelijkheid: stel 2-3 gerichte vragen. Bevestig het concept samengevat voordat je doorgaat.
 
-### Step 2: Extract Research Questions
+### Step 2: Extract Research Foundation
 
-Formuleer 3-5 concrete, specifieke research vragen uit het concept:
+Extract eerst vier categorieën uit het concept, distilleer dan research vragen.
 
-- Prioriteer op impact op haalbaarheid
-- Elke vraag moet beantwoordbaar zijn via web search, documentatie, of codebase analyse
-- Specifiek voor DIT concept, niet generiek
+**2a. Extract foundation (4 categorieën, kort, één regel per item):**
+
+- **Assumptions** — wat nemen we voor waar aan dat we mogelijk moeten valideren?
+- **Knowledge gaps** — wat weten we simpelweg niet? (markt, concurrenten, prijzen, gebruikersgedrag)
+- **Decisions** — welke keuzes moeten we maken en welke info hebben we daarvoor nodig? (tech stack, pricing, doelgroep)
+- **Risks** — wat kan dit concept laten falen? (technisch, juridisch, schaalbaarheid, adoptie)
+
+**2b. Distilleer 3-5 research vragen** met de hoogste impact op haalbaarheid. Vragen kunnen uit elke categorie komen — meestal een mix. Elke vraag moet beantwoordbaar zijn via web search, documentatie, of codebase analyse en specifiek voor DIT concept.
+
+**2c. Bewaar assumptions** apart (ook degene die niet in research vragen terechtkomen) — die worden in Step 5/7 gemarkeerd als Validated / Invalidated / Still Open.
 
 Presenteer:
 
 ```
-RESEARCH QUESTIONS
+RESEARCH FOUNDATION
 
 Concept: {concept title}
+
+Assumptions:
+- {assumption 1}
+- {assumption 2}
+
+Knowledge Gaps:
+- {gap 1}
+- {gap 2}
+
+Decisions Needed:
+- {decision 1}
+
+Risks:
+- {risk 1}
+- {risk 2}
+
+RESEARCH QUESTIONS (gedistilleerd uit bovenstaande)
 
 1. {specific research question — highest priority}
 2. {specific research question}
@@ -156,6 +180,18 @@ SYNTHESIS — {Technique Name}
 ### Q2: {research question}
 ...
 
+### Assumption Tracking
+- {assumption}: **Validated** — {evidence + source}
+- {assumption}: **Invalidated** — {evidence + source}
+- {assumption}: **Still Open** — {what's needed to validate}
+
+### Decision Tracking
+- {decision}: **Ready** — {recommended option + rationale}
+- {decision}: **Blocked** — {what's still needed}
+
+### Risk Tracking
+- {risk}: **Severity High/Med/Low** — {mitigation OR "still open"}
+
 ### New Insights
 - {unexpected finding or new angle discovered}
 ```
@@ -164,16 +200,40 @@ Ga door naar Step 6.
 
 ### Step 6: Next Action
 
-Als alle vragen beantwoord of geen relevante technieken over: ga direct naar Step 7.
+Bouw eerst een open-items overzicht op basis van Step 5 tracking:
 
-Anders: toon applied techniques, answered ratio, en vraag via AskUserQuestion:
+```
+Open items overview:
+- Unanswered questions: {n}
+- Still-Open assumptions: {n}
+- Blocked decisions: {n}
+- Unaddressed High/Med risks: {n}
+
+Total open items: {sum}
+```
+
+**Beslislogica:**
+
+- **Total = 0** of geen relevante technieken over \u2192 ga direct naar Step 7
+- **Total > 0** \u2192 toon AskUserQuestion. Bepaal de aanbevolen techniek door:
+  1. Selecteer het meest urgente type open item in volgorde: **High-severity risks > Blocked decisions > Still-Open assumptions > Unanswered questions**
+  2. Match het type met de `Addresses:` mapping uit `references/research-techniques.md`
+  3. Eerste optie blijft "Genereer rapport (Recommended)" zodat de gebruiker altijd kan afsluiten
+
+Toon de redenering kort v\u00f3\u00f3r de vraag:
+
+```
+Recommendation: {Technique} \u2014 addresses {N} open {item type}(s)
+```
+
+Vraag via AskUserQuestion:
 
 ```yaml
 header: "Volgende Stap"
 question: "Hoe wil je verder?"
 options:
   - label: "Genereer rapport (Recommended)", description: "Cre\u00eber het eindresultaat met alle bevindingen"
-  - label: "{Technique}", description: "{rationale \u2014 addresses unanswered question X}"
+  - label: "{Technique}", description: "{rationale \u2014 addresses {N} open {item type}}"
 multiSelect: false
 ```
 
@@ -194,6 +254,36 @@ Genereer een gestructureerd markdown rapport:
 
 {findings with evidence and source references}
 **Implication:** {what this means for the concept}
+
+## Assumptions
+
+**Validated:**
+
+- {assumption} — {evidence}
+
+**Invalidated:**
+
+- {assumption} — {evidence, what to reconsider}
+
+**Still Open:**
+
+- {assumption} — {what's needed to validate}
+
+## Decisions
+
+**Ready to decide:**
+
+- {decision} — {info gathered, recommended option, rationale}
+
+**Still blocked:**
+
+- {decision} — {what's still needed before you can choose}
+
+## Risk Assessment
+
+| Risk   | Severity     | Likelihood   | Mitigation                     |
+| ------ | ------------ | ------------ | ------------------------------ |
+| {risk} | High/Med/Low | High/Med/Low | {strategy or "needs research"} |
 
 ## Recommendations
 

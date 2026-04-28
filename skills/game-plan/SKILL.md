@@ -287,6 +287,17 @@ Research results remain in conversation context for FASE 1. No files are written
 
 **Goal:** Identify distinct game features from the concept.
 
+**Learnings load** (vóór analyse) via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+
+```
+scopes: [architectural]
+pitfall-prefix: true
+global-memory: true
+current-feature: none
+```
+
+Toon de geladen output. Architectural patterns (autoloads, state-management, scene compositie) sturen feature decomposition. Pitfall-prefix voorkomt herhaling van structurele Godot/GDScript bugs in nieuwe features.
+
 1. **Analyze:**
    - What are the core mechanics?
    - What systems need to be built?

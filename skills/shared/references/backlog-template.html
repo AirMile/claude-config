@@ -260,9 +260,10 @@
       let data = JSON.parse(fileRaw);
       if (!data.features) data.features = [];
 
-      const STATUSES = ["TODO", "DOING", "DONE"];
+      const STATUSES = ["TODO", "DEFINED", "DOING", "DONE"];
       const STATUS_COLORS = {
         TODO: "var(--todo)",
+        DEFINED: "var(--defined)",
         DOING: "var(--doing)",
         DONE: "var(--done)",
       };
@@ -315,11 +316,10 @@
         if (!found) return;
         found.item.status = newStatus;
         if (newStatus === "DOING") {
-          const isFrontend = FRONTEND_TYPES.includes(found.item.type);
-          found.item.stage =
-            newStage ||
-            found.item.stage ||
-            (isFrontend ? "building" : "defining");
+          found.item.stage = newStage || found.item.stage || "building";
+        } else if (newStatus === "TODO") {
+          if (newStage) found.item.stage = newStage;
+          else delete found.item.stage;
         } else {
           delete found.item.stage;
           if (newStatus === "DONE") {
@@ -395,15 +395,15 @@
       function getNextSkill(f) {
         const isFrontend = FRONTEND_TYPES.includes(f.type);
         if (f.status === "TODO") return isFrontend ? "compose" : "define";
+        if (f.status === "DEFINED") return isFrontend ? "compose" : "build";
         if (f.status === "DOING") {
           return (
             {
-              defining: "define",
-              defined: isFrontend ? "compose" : "build",
               building: isFrontend ? "compose" : "build",
               built: isFrontend ? "audit" : "verify",
               verifying: isFrontend ? "audit" : "verify",
-            }[f.stage] || (isFrontend ? "compose" : "define")
+              testing: isFrontend ? "audit" : "verify",
+            }[f.stage] || (isFrontend ? "compose" : "build")
           );
         }
         return null;
@@ -488,9 +488,17 @@
         if (f.assignee)
           extra += `<div class="card-assignee"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg> ${esc(f.assignee)}</div>`;
         const stageTag =
-          f.status === "DOING" && f.stage
+          (f.status === "DOING" || f.status === "TODO") && f.stage
             ? `<span class="stage-badge stage-${f.stage}">${esc(f.stage)}</span>`
             : "";
+        let refactorTag = "";
+        if (f.status === "DONE" && f.refactor) {
+          if (f.refactor === "ROLLED_BACK") {
+            refactorTag = `<span class="refactor-badge refactor-rollback" title="Refactor rolled back">⚠</span>`;
+          } else {
+            refactorTag = `<span class="refactor-badge refactor-done" title="Refactored">✓</span>`;
+          }
+        }
 
         const isFE = FRONTEND_TYPES.includes(f.type);
         const prefix = isFE
@@ -515,6 +523,7 @@
             <span class="phase-tag ${phaseClass}">${phaseLabel}</span>
             <span class="badge ${typeClass}">${esc(f.type)}</span>
             ${stageTag}
+            ${refactorTag}
             ${depTag}
             ${f.auto && f.status !== "DONE" ? '<span class="badge-auto">AUTO</span>' : ""}
           </div>
@@ -631,11 +640,12 @@
         // Update status for cross-column moves
         if (found.item.status !== newStatus) {
           if (newStatus === "DOING") {
-            const isFEDrag = FRONTEND_TYPES.includes(found.item.type);
             updateStatus(
               dragName,
               newStatus,
-              found.item.stage || (isFEDrag ? "building" : "defining"),
+              found.item.stage && found.item.stage !== "defining"
+                ? found.item.stage
+                : "building",
             );
           } else {
             updateStatus(dragName, newStatus);

@@ -2,6 +2,8 @@
 name: game-verify
 description: Human playtest verification with structured feedback and fix loop. Use with /game-verify after /game-build for manual testing of game features.
 disable-model-invocation: true
+reads: [feature.requirements, feature.build, backlog.stage]
+writes: [feature.tests, backlog.stage]
 metadata:
   author: mileszeilstra
   version: 2.2.0
@@ -146,13 +148,15 @@ Now TESTABLE -> TDD fix loop
    - If feature name + feedback -> parse feedback immediately
    - If "recent" -> find most recently modified feature.json with `tests.checklist`
 
-3. **Locate playtest checklist:**
+3. **Worktree switch** — voer de procedure in `shared/WORKTREE.md` uit met de feature-name. Switcht automatisch naar `worktree-{feature-name}` als die bestaat. Bij FAIL (in andere worktree dan de feature): stop met de melding uit WORKTREE.md.
+
+4. **Locate playtest checklist:**
 
    ```
    .project/features/{feature-name}/feature.json → tests.checklist[]
    ```
 
-4. **Validate feature.json exists with tests.checklist:**
+5. **Validate feature.json exists with tests.checklist:**
 
    **If not found:**
 
@@ -168,7 +172,7 @@ Now TESTABLE -> TDD fix loop
 
    -> Exit skill
 
-5. **Read playtest checklist + classify items:**
+6. **Read playtest checklist + classify items:**
    - Parse `tests.checklist[]` from feature.json
    - Note expected behavior for each item (from `title` field)
    - Count total items
@@ -207,7 +211,7 @@ Now TESTABLE -> TDD fix loop
    - "Accepteer en ga door (Recommended)" — noteer, proceed
    - "Test items aanpassen" — voeg items toe voor gaps, herformuleer mismatches
 
-6. **Verify playtest scene exists:**
+7. **Verify playtest scene exists:**
 
    Scene path: `.project/features/{feature-name}/playtest_scene.tscn`
 
@@ -1247,6 +1251,17 @@ Committed: test({feature}): verified
 Next steps:
   1. /game-refactor → code quality check + learnings extractie
   2. /game-define {next-feature} → volgende feature oppakken
+```
+
+**Worktree integration hint** — voeg één extra regel toe als beide voorwaarden waar zijn:
+
+1. Huidige branch matcht `worktree-*` pattern (`git branch --show-current`)
+2. Feature is na deze run op `status: "DONE"` in backlog
+
+Append:
+
+```
+💡 Feature klaar — run /core-merge {feature-name} om te integreren naar main/develop
 ```
 
 ---

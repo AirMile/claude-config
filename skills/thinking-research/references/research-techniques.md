@@ -4,6 +4,8 @@
 
 **When to use:** Understand what already exists, who the competitors are, and how the concept differentiates.
 
+**Addresses:** Knowledge Gaps, Decisions
+
 **Sources:** WebSearch (primary), Context7 (for technical alternatives)
 
 **Approach:**
@@ -25,6 +27,8 @@
 ## 2. Technical Feasibility
 
 **When to use:** Validate technology choices, implementation constraints, or technical unknowns.
+
+**Addresses:** Risks, Decisions
 
 **Sources:** Context7 (primary), WebSearch (for benchmarks, case studies)
 
@@ -54,6 +58,8 @@
 
 **When to use:** Understand current best practices, latest developments, and emerging trends.
 
+**Addresses:** Knowledge Gaps, Decisions
+
 **Sources:** WebSearch (primary), Context7 (for framework-specific best practices)
 
 **Approach:**
@@ -75,6 +81,8 @@
 
 **When to use:** Validate assumptions about user behavior, market demand, or effectiveness with data.
 
+**Addresses:** Assumptions
+
 **Sources:** WebSearch (primary)
 
 **Approach:**
@@ -95,6 +103,8 @@
 ## 5. Audience & Market
 
 **When to use:** Understand the target audience, their needs, behaviors, and market opportunity.
+
+**Addresses:** Knowledge Gaps, Assumptions
 
 **Sources:** WebSearch (primary)
 

@@ -18,17 +18,18 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 
 **Secties:**
 
-| Sectie         | Beschrijving                                           |
-| -------------- | ------------------------------------------------------ |
-| `concept`      | Project naam + volledige concept (markdown)            |
-| `architecture` | Mermaid diagram + beschrijving van de architectuur     |
-| `design`       | Pagina's, user flows, design principes                 |
-| `theme`        | Kleuren, fonts, spacing, CSS vars                      |
-| `stack`        | Framework, taal, DB, hosting, packages                 |
-| `data`         | Entities, velden, relaties                             |
-| `endpoints`    | Method, path, auth, status, beschrijving               |
-| `features`     | Naam, status, summary, depends, created                |
-| `context`      | Project structuur, routing, patterns (runtime context) |
+| Sectie              | Beschrijving                                           |
+| ------------------- | ------------------------------------------------------ |
+| `concept`           | Project naam + volledige concept (markdown)            |
+| `architecture`      | Mermaid diagram + beschrijving van de architectuur     |
+| `design`            | Pagina's, user flows, design principes                 |
+| `theme`             | Kleuren, fonts, spacing, CSS vars                      |
+| `stack`             | Framework, taal, DB, hosting, packages                 |
+| `data`              | Entities, velden, relaties                             |
+| `endpoints`         | Method, path, auth, status, beschrijving               |
+| `features`          | Naam, status, summary, depends, created                |
+| `context`           | Project structuur, routing, patterns (runtime context) |
+| `optimization_runs` | Append-only log van dev-optimize / game-optimize runs  |
 
 ## Dashboard schrijven
 
@@ -81,23 +82,25 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
     "routing": [],
     "patterns": [],
     "updated": ""
-  }
+  },
+  "optimization_runs": []
 }
 ```
 
 ## Merge-strategie per sectie
 
-| Sectie         | Strategie           | Toelichting                                                  |
-| -------------- | ------------------- | ------------------------------------------------------------ |
-| `concept`      | **OVERWRITE**       | `name`+`pitch`+`content` overschrijven, `thinking` is APPEND |
-| `architecture` | **OVERWRITE**       | Diagram + beschrijving volledig overschrijven                |
-| `design`       | **MERGE op `name`** | Pages/flows/principles merge op naam, nooit auto-delete      |
-| `theme`        | **OVERWRITE**       | Volledig overschrijven bij `/frontend-tokens`                |
-| `stack`        | **MERGE**           | Voeg packages toe, overschrijf geen bestaande                |
-| `data`         | **MERGE**           | Voeg entities/velden/relaties toe per entity                 |
-| `endpoints`    | **MERGE**           | Voeg toe of update status, verwijder niet                    |
-| `features`     | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet               |
-| `context`      | **MERGE per key**   | Update structure/routing/patterns individueel                |
+| Sectie              | Strategie           | Toelichting                                                  |
+| ------------------- | ------------------- | ------------------------------------------------------------ |
+| `concept`           | **OVERWRITE**       | `name`+`pitch`+`content` overschrijven, `thinking` is APPEND |
+| `architecture`      | **OVERWRITE**       | Diagram + beschrijving volledig overschrijven                |
+| `design`            | **MERGE op `name`** | Pages/flows/principles merge op naam, nooit auto-delete      |
+| `theme`             | **OVERWRITE**       | Volledig overschrijven bij `/frontend-tokens`                |
+| `stack`             | **MERGE**           | Voeg packages toe, overschrijf geen bestaande                |
+| `data`              | **MERGE**           | Voeg entities/velden/relaties toe per entity                 |
+| `endpoints`         | **MERGE**           | Voeg toe of update status, verwijder niet                    |
+| `features`          | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet               |
+| `context`           | **MERGE per key**   | Update structure/routing/patterns individueel                |
+| `optimization_runs` | **APPEND**          | Append-only log, dedup op `run_id`. Nooit verwijderen.       |
 
 ### Stack merge
 
@@ -488,6 +491,60 @@ Overige velden = structured tokens per categorie
 **Status waarden:** `TODO` | `DOING` | `DONE`
 **Stage waarden (alleen bij DOING):** `defining` | `defined` | `building` | `built` | `testing`
 
+### optimization_runs
+
+Append-only log van `/dev-optimize` en `/game-optimize` runs. Eén entry per voltooide run. Werkt als historie voor het dashboard — niet voor live state (die zit in `.project/optimize/{run-id}/`).
+
+```json
+[
+  {
+    "run_id": "20260426-153022",
+    "skill": "dev-optimize",
+    "metric": "bundle_size_kb",
+    "direction": "minimize",
+    "baseline": 420.5,
+    "final": 312.1,
+    "improvement_pct": 25.8,
+    "rounds": 4,
+    "experiments_kept": 6,
+    "experiments_discarded": 14,
+    "winner_branch": "optimize/20260426-153022/winner",
+    "stopped_reason": "stall",
+    "date": "2026-04-26T15:30:22Z"
+  }
+]
+```
+
+**Veld-waarden:**
+
+| Veld                    | Type     | Beschrijving                                                                                                                                       |
+| ----------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `run_id`                | string   | Timestamp-ID `YYYYMMDD-HHMMSS` (uniek per run)                                                                                                     |
+| `skill`                 | string   | `dev-optimize` of `game-optimize`                                                                                                                  |
+| `metric`                | string   | `bundle_size_kb`, `lighthouse`, `coverage`, `latency_p95_ms`, `fps`, `frame_time_ms`, `memory_mb`, `ai_winrate_pct`, `pathfinding_ms`, of `custom` |
+| `direction`             | string   | `minimize` of `maximize`                                                                                                                           |
+| `baseline`              | number   | Score voor optimize-run                                                                                                                            |
+| `final`                 | number   | Beste behaalde score                                                                                                                               |
+| `improvement_pct`       | number   | Percentage verbetering t.o.v. baseline (positief = beter)                                                                                          |
+| `rounds`                | int      | Aantal voltooide rondes                                                                                                                            |
+| `experiments_kept`      | int      | Aantal subagent-branches die verbetering opleverden                                                                                                |
+| `experiments_discarded` | int      | Aantal subagent-branches die werden weggegooid                                                                                                     |
+| `winner_branch`         | string   | Volledige branch-naam van de winnende experimenten                                                                                                 |
+| `stopped_reason`        | string   | `stall`, `wallclock`, `user`, `no_improvement`                                                                                                     |
+| `date`                  | ISO date | Voltooiingsdatum                                                                                                                                   |
+
+**Append-strategie:**
+
+```
+1. Read project.json
+2. Initialiseer optimization_runs = [] als veld niet bestaat
+3. Check of run_id al bestaat — zo ja: skip (idempotent)
+4. Push nieuwe entry naar einde van array
+5. Write project.json
+```
+
+Geen verwijdering, geen update — alleen append. Voor live status van een lopende run: zie `.project/optimize/{run-id}/spec.json` + `tree.json`.
+
 ### thinking-output
 
 Thinking-skills (`/thinking-decide`, `/thinking-research`, `/thinking-brainstorm`, `/thinking-critique`) schrijven hun volledige output naar `.project/thinking/*.md` (bestandsnaam: `{date}-{type}-{slug}.md`). Die markdown-bestanden zijn de enige bron van waarheid — er bestaat geen top-level `thinking[]` array in `project.json`.
@@ -531,15 +588,24 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
     "type": "pattern",
     "source": "extracted",
     "summary": "JWT refresh via httpOnly cookie rotation i.p.v. DB-stored tokens"
+  },
+  {
+    "date": "2026-04-28",
+    "feature": "payments",
+    "type": "pattern",
+    "source": "synced",
+    "author": "Alice",
+    "summary": "Stripe webhooks via idempotency keys per request"
   }
 ]
 ```
 
 `type` waarden: `pattern` (architecturale keuze), `pitfall` (bug/gotcha), `observation` (cross-feature inzicht).
-`source` waarden: `extracted` (directe observatie van code-output of test-resultaat) | `inferred` (cross-feature patroonherkenning of LLM-inferentie).
-`date` = extractie datum. `feature` = bron-feature. `summary` = max 200 chars.
+`source` waarden: `extracted` (directe observatie van code-output of test-resultaat) | `inferred` (cross-feature patroonherkenning of LLM-inferentie) | `synced` (geëxtraheerd uit teammate code of mature codebase via core-pull / core-onboard).
+`date` = extractie datum. `feature` = bron-feature (kebab-case). Voor `synced` learnings zonder gestructureerde feature: gebruik primary directory (`auth`, `payments`). `summary` = max 200 chars.
+`author` = optioneel, alleen bij `source === "synced"`. Spiegelt `features[].author`.
 
-**Source mapping** (in dev-verify / game-verify):
+**Source mapping** (eigen werk, in dev-verify / game-verify):
 
 | Bron in feature.json | learning.type | learning.source |
 | -------------------- | ------------- | --------------- |
@@ -547,7 +613,19 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
 | `tests.fixSync[]`    | `pitfall`     | `extracted`     |
 | `observations[]`     | `observation` | `inferred`      |
 
-Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-verify FASE 6, dev-refactor FASE 5). `source` is verplicht bij nieuwe writes.
+**Source mapping** (teammate / mature codebase, in core-pull / core-onboard):
+
+| Bron                                             | learning.type              | learning.source |
+| ------------------------------------------------ | -------------------------- | --------------- |
+| Fix-commits met body (≥10 woorden + cause-clue)  | `pitfall`                  | `synced`        |
+| TODO/FIXME/HACK comments (≥10 woorden)           | `pitfall`                  | `synced`        |
+| Nieuwe abstraction-dirs (repository/middleware)  | `pattern`                  | `synced`        |
+| Nieuwe wrapper-deps in package.json              | `pattern`                  | `synced`        |
+| LLM-inferred patterns (signal-triggered/onboard) | `pattern` of `observation` | `synced`        |
+
+Zie [skills/shared/LEARNING-EXTRACTION.md](skills/shared/LEARNING-EXTRACTION.md) voor heuristieken en filters.
+
+Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-verify FASE 6, dev-refactor FASE 5). `core-pull` (incremental) en `core-onboard` (eenmalig) extracten learnings uit teammate/legacy code. `source` is verplicht bij nieuwe writes.
 
 **Dit vervangt de dynamische CLAUDE.md secties** (`## Project structuur`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md bevat nu alleen een referentie naar `project.json` voor deze context.
 
@@ -555,40 +633,45 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 
 ### project.json secties
 
-| Sectie      | Geschreven door                                                                              | Wanneer                                  |
-| ----------- | -------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `concept`   | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan        |
-| `design`    | `/frontend-design`, `/frontend-tokens`                                                       | Bij design spec/page build/theme creatie |
-| `theme`     | `/frontend-tokens`                                                                           | Na theme create/update                   |
-| `stack`     | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-design`                  | Bij detectie/nieuwe deps                 |
-| `data`      | `/dev-define`, `/game-define`                                                                | Bij entity definitie                     |
-| `endpoints` | `/dev-define`, `/dev-build`                                                                  | Bij API definitie / na build             |
-| `features`  | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build`    | Bij status wijziging (DOING/DONE)        |
+| Sectie              | Geschreven door                                                                              | Wanneer                                  |
+| ------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `concept`           | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan        |
+| `design`            | `/frontend-design`, `/frontend-tokens`                                                       | Bij design spec/page build/theme creatie |
+| `theme`             | `/frontend-tokens`                                                                           | Na theme create/update                   |
+| `stack`             | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-design`                  | Bij detectie/nieuwe deps                 |
+| `data`              | `/dev-define`, `/game-define`                                                                | Bij entity definitie                     |
+| `endpoints`         | `/dev-define`, `/dev-build`                                                                  | Bij API definitie / na build             |
+| `features`          | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build`    | Bij status wijziging (DOING/DONE)        |
+| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                            | Bij run completion (FASE 6)              |
 
 ### project-context.json secties
 
-| Sectie         | Geschreven door                                                               | Wanneer                                                                          |
-| -------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                    | Bij architectuur definitie / na build                                            |
-| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor` | Bij build/refactor (structuur, routing, patterns)                                |
-| `learnings`    | `/dev-verify`, `/game-verify`                                                 | Bij feature completion (extractie uit build decisions, test fixes, observations) |
+| Sectie         | Geschreven door                                                               | Wanneer                                                                  |
+| -------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                    | Bij architectuur definitie / na build                                    |
+| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor` | Bij build/refactor (structuur, routing, patterns)                        |
+| `learnings`    | `/dev-verify`, `/game-verify`, `/core-pull`, `/core-onboard`                  | Feature completion (extracted/inferred) of teammate/legacy code (synced) |
 
 ### Skill sync overzicht
 
-| Skill              | project.json                                                       | project-context.json                       | Wanneer              |
-| ------------------ | ------------------------------------------------------------------ | ------------------------------------------ | -------------------- |
-| `/core-setup`      | `stack` (volledig)                                                 | `context` (initieel)                       | Na project generatie |
-| `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING) | `architecture` (write), `learnings` (read) | FASE 6               |
-| `/dev-build`       | `endpoints`, `stack.packages`, `features` (DOING+built)            | `context`, `architecture` (write)          | FASE 4C              |
-| `/dev-verify`      | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)  | `architecture`, `learnings` (write)        | FASE 6 completion    |
-| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`                     | `context`, `architecture` (write)          | FASE 5 completion    |
-| `/frontend-design` | `design` (pages, flows, principles), `features` (batch TODO)       | —                                          | Bij elke uitvoering  |
-| `/frontend-design` | `stack.packages`, `design.pages`, `features` (DOING+built)         | —                                          | Na FASE 4            |
-| `/frontend-tokens` | `design.principles`                                                | —                                          | Na completion        |
-| `/game-define`     | `data.entities`, `stack.packages`, `features` (DOING)              | `architecture` (write)                     | FASE 6               |
-| `/game-build`      | `features` (DOING+built)                                           | `context`, `architecture` (write)          | FASE 5 completion    |
-| `/team-verify`     | `features`, `stack.packages`, `endpoints`, `data.entities`         | `architecture` (write)                     | FASE 7 completion    |
-| `/game-refactor`   | `features` (DONE)                                                  | `context`, `architecture` (write)          | FASE 5 completion    |
+| Skill              | project.json                                                        | project-context.json                                              | Wanneer              |
+| ------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------- |
+| `/core-setup`      | `stack` (volledig)                                                  | `context` (initieel)                                              | Na project generatie |
+| `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING)  | `architecture` (write), `learnings` (read)                        | FASE 6               |
+| `/dev-build`       | `endpoints`, `stack.packages`, `features` (DOING+built)             | `context`, `architecture` (write)                                 | FASE 4C              |
+| `/dev-verify`      | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)   | `architecture`, `learnings` (write)                               | FASE 6 completion    |
+| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`                      | `context`, `architecture` (write)                                 | FASE 5 completion    |
+| `/frontend-design` | `design` (pages, flows, principles), `features` (batch TODO)        | —                                                                 | Bij elke uitvoering  |
+| `/frontend-design` | `stack.packages`, `design.pages`, `features` (DOING+built)          | —                                                                 | Na FASE 4            |
+| `/frontend-tokens` | `design.principles`                                                 | —                                                                 | Na completion        |
+| `/game-define`     | `data.entities`, `stack.packages`, `features` (DOING)               | `architecture` (write)                                            | FASE 6               |
+| `/game-build`      | `features` (DOING+built)                                            | `context`, `architecture` (write)                                 | FASE 5 completion    |
+| `/team-verify`     | `features`, `stack.packages`, `endpoints`, `data.entities`          | `architecture` (write)                                            | FASE 7 completion    |
+| `/game-refactor`   | `features` (DONE)                                                   | `context`, `architecture` (write)                                 | FASE 5 completion    |
+| `/dev-optimize`    | `optimization_runs` (append)                                        | —                                                                 | FASE 6 completion    |
+| `/game-optimize`   | `optimization_runs` (append)                                        | —                                                                 | FASE 6 completion    |
+| `/core-pull`       | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull             |
+| `/core-onboard`    | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | Eenmalig bij join    |
 
 ## Server
 

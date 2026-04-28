@@ -2,6 +2,8 @@
 name: dev-refactor
 description: Batch refactor code quality after testing with parallel analysis, dynamic stack-aware patterns, and early-exit for clean features. Use with /dev-refactor to improve code structure, naming, and patterns.
 disable-model-invocation: true
+reads: [feature.build, feature.tests, backlog.stage]
+writes: [feature.refactor, backlog.stage]
 metadata:
   author: mileszeilstra
   version: 2.1.0
@@ -104,25 +106,40 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
    - Commit message: `refactor(codebase): {summary}`
    - Skip FASE 5 feature.json/backlog updates — alleen commit + rapport
 
-3. **Load ALL feature docs for every feature in queue:**
+3. **Worktree switch** (single-mode only):
+
+   Als `feature_queue.length == 1` en niet in codebase-mode: voer de procedure in `shared/WORKTREE.md` uit met de feature-name. Switcht automatisch naar `worktree-{feature-name}` als die bestaat. Bij FAIL: stop met de melding uit WORKTREE.md.
+
+   Batch-mode (queue > 1) of codebase-mode: skip — blijf op main, refactor over al-gemergede code.
+
+4. **Load ALL feature docs for every feature in queue:**
 
    For each feature, read `feature.json` — bevat requirements, architecture, files, build, tests secties.
 
    Validate `tests` sectie exists in `feature.json` for each feature. If missing → remove from queue and warn.
 
-4. **Build pipeline files list per feature:**
+5. **Build pipeline files list per feature:**
 
    For each feature, extract all code file paths from `feature.json`:
    - Parse `files[]` array (each entry has `path`, `type`, `action`)
    - Store as `pipeline_files[feature_name]`
 
-4b. **Load project conventions** (optioneel):
+4b. **Load project conventions + learnings** (optioneel):
 
 Lees `.project/project-context.json` (als bestaat). Extract `context.patterns`.
 
+**Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+
+```
+scopes: [component]
+pitfall-prefix: true
+global-memory: true
+current-feature: <feature-name als feature-mode, anders "none">
+```
+
 Als beschikbaar: voeg toe aan Explore agent prompt in FASE 1 onder
-`PROJECT CONVENTIONS:` sectie. Helpt agents onderscheid maken tussen
-"intentioneel project pattern" en "code smell". Eén van de patterns kan een
+`PROJECT CONVENTIONS:` sectie (patterns) en `KNOWN PITFALLS:` sectie (pitfall-prefix + component-scoped). Helpt agents onderscheid maken tussen
+"intentioneel project pattern" en "code smell", en voorkomt herintroductie van bekende bugs. Eén van de patterns kan een
 `Code maturity: ...` string zijn (zie `shared/DASHBOARD.md` voorbeelden) die
 de refactor-agressie stuurt — die wordt automatisch meegegeven omdat hij deel
 uitmaakt van `patterns`.
@@ -782,13 +799,17 @@ IMPROVEMENTS APPLIED
 
    Muteer in memory:
 
-   **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet `data.updated` naar huidige datum.
+   **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet per feature het `refactor` veld:
+   - CLEAN of REFACTORED → `f.refactor = "REFACTORED"` (rendert ✓ badge in DONE-kolom)
+   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"` (rendert ⚠ badge)
+
+   Zet `data.updated` naar huidige datum.
 
    **Dashboard** (zie `shared/DASHBOARD.md`):
    - Als packages gewijzigd (toegevoegd/verwijderd): merge naar `stack.packages`
    - Als endpoints gewijzigd: merge naar `endpoints`
    - Als data entities gewijzigd: merge naar `data.entities`
-   - `features` array: status blijft `"DONE"` (ongewijzigd voor alle varianten)
+   - `features` array: status blijft `"DONE"`; zet `refactor` veld analoog aan backlog
 
    **Context sync (conditioneel, schrijf naar `project-context.json`)** — alleen als REFACTORED features structurele wijzigingen bevatten:
 
@@ -870,6 +891,16 @@ IMPROVEMENTS APPLIED
      1. /dev-define {next-feature} → volgende feature uit backlog
      2. /dev-plan → backlog herzien als scope gewijzigd is
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+
+   **Worktree integration hint** — voeg één extra regel toe aan het completion-blok als beide voorwaarden waar zijn:
+   1. Single-mode (queue.length == 1, niet codebase-mode)
+   2. Huidige branch matcht `worktree-*` pattern (`git branch --show-current`)
+
+   Append:
+
+   ```
+   💡 Run /core-merge {feature-name} om te integreren naar main/develop
    ```
 
 ---

@@ -4,6 +4,54 @@ Lichtgewicht session state voor cross-skill coördinatie. Pipeline skills gebrui
 
 ---
 
+## Skill Handoff Contract (frontmatter)
+
+Pipeline-skills die gedeelde state aanraken declareren dit expliciet via `reads:` en `writes:` in de YAML frontmatter. Doel: per-skill zichtbaar maken welke gedeelde velden worden gelezen/geschreven, zodat afhankelijkheden tussen pipeline-fases controleerbaar zijn zonder de SKILL.md tekst te lezen.
+
+### Namespaces
+
+| Prefix          | Bestand                                             | Gebruik                     |
+| --------------- | --------------------------------------------------- | --------------------------- |
+| `feature.*`     | `.project/features/{name}/feature.json` (top-level) | dev-pipeline, game-pipeline |
+| `backlog.stage` | `.project/backlog.html` (feature stage transitions) | dev-pipeline, game-pipeline |
+| `devinfo.*`     | `.project/session/devinfo.json` (top-level key)     | frontend-pipeline           |
+
+### Granulariteit
+
+Alleen top-level secties — geen sub-paths zoals `feature.build.decisions`. Schema-evolutie van sub-velden mag de frontmatter niet raken.
+
+### Voorbeeld
+
+```yaml
+---
+name: dev-build
+description: ...
+disable-model-invocation: true
+reads: [feature.requirements, backlog.stage]
+writes: [feature.requirements, feature.build, backlog.stage]
+metadata:
+  author: mileszeilstra
+  version: 1.6.1
+  category: dev
+---
+```
+
+### Wanneer toepassen
+
+- Skill leest of schrijft `feature.json` / `devinfo.json` / `backlog.stage` → declareer.
+- Skill werkt alleen met eigen artifacts (bijv. `optimize/{run-id}/`) → laat weg.
+- Lege lijsten weglaten i.p.v. `reads: []` schrijven.
+
+### Impliciete signalen (niet declareren)
+
+Sommige bestanden worden door élke pipeline-skill aangeraakt als runtime-lifecycle, niet als handoff. Die staan **niet** in `reads:`/`writes:`:
+
+- `.project/session/active-{name}.json` — runtime-signaal voor het backlog-dashboard, geschreven bij skill start en opgeruimd bij einde. Geen volgende skill leest dit voor beslissingen.
+- `.project/session/pre-skill-sha.txt` / `pre-skill-status.txt` — git-baseline voor scoped commits, lokaal aan één skill-run.
+- `devinfo.currentSkill` (`{name, phase, startedAt}`) — runtime-progressie binnen één frontend-skill (PREFLIGHT → COMPLETE), niet gelezen door volgende skills voor besluitvorming.
+
+---
+
 ## Active Feature Signal
 
 Wanneer een dev/game skill een feature verwerkt, schrijf een signaalbestand zodat het backlog dashboard de actieve feature kan highlighten.

@@ -2,6 +2,8 @@
 name: dev-build
 description: Build features with TDD or implementation-first per requirement. Use with /dev-build or /dev-build [feature-name] after /dev-define.
 disable-model-invocation: true
+reads: [feature.requirements, backlog.stage]
+writes: [feature.requirements, feature.build, backlog.stage]
 metadata:
   author: mileszeilstra
   version: 1.6.1
@@ -64,21 +66,20 @@ Lees `.project/project.json` en `.project/project-context.json`. Gebruik voor:
 - Code patterns om te volgen
 - Learnings uit eerdere features
 
-**Pitfall load** (uit `learnings[]` in `project-context.json`):
+**Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
 
-Filter `learnings[]` strikt: `type === "pitfall"` AND `source === "extracted"`. Sorteer op `date` desc, neem max 5 meest recente. Als leeg na filter → skip volledig (geen header, geen lege sectie).
-
-Bij ≥1 hit: toon kort als context (geen constraint):
+Configuratie:
 
 ```
-Eerdere pitfalls in dit project (context, geen constraint):
-- {date} / {feature}: {summary}
-- ...
-
-Bij overlap met deze build: voorkom herhaling. Bij twijfel: ga uit van root cause, niet van pattern-match.
+scopes: [component]
+pitfall-prefix: true
+global-memory: true
+current-feature: <feature-name>
 ```
 
-Bewaar de gefilterde lijst voor FASE 1 (Technique Mapping).
+Toon de geladen output. Pitfall-prefix sectie + component-scoped patterns geven context voor de build (geen constraint — bij twijfel ga uit van root cause, niet pattern-match).
+
+Bewaar de geladen learnings voor FASE 1 (Technique Mapping).
 
 **Load feature:**
 
@@ -119,6 +120,8 @@ Alleen tonen als we NIET al in een worktree zitten:
    multiSelect: false
    ```
 3. Ja → `EnterWorktree(name: "{feature-name}")`
+
+> **Branch-naming**: `EnterWorktree` maakt branch `worktree-{feature-name}` (NIET `{feature-name}`). Vervolgskills (`dev-verify`, `dev-debug`, `dev-refactor` single-mode) detecteren deze worktree automatisch via `shared/WORKTREE.md` en switchen erin. Voor merge/cleanup gebruik je `/core-merge` of handmatig `git worktree remove --force` + `git branch -D worktree-{feature-name}`.
 
 **Tag backlog card als actief** (direct na feature laden):
 
@@ -377,6 +380,15 @@ Files created: {count}
 Next steps:
   1. /dev-verify {feature} → hybrid test verificatie
   2. /dev-debug → als er onverwachte failures zijn
+```
+
+**Worktree reminder** — voeg één extra blok toe aan de output als de huidige branch matcht `worktree-*` pattern (`git branch --show-current`):
+
+```
+💡 Worktree actief: {worktree_path}
+   Volgende skills (/dev-verify, /dev-refactor, /dev-debug) starten in een NIEUWE chat —
+   ze detecteren deze worktree automatisch en switchen erin.
+   Voor merge/cleanup: /core-merge {feature}
 ```
 
 > **Todo**: markeer FASE 3D → `completed`. Alle 8 fases moeten nu `completed` zijn.

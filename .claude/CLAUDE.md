@@ -40,6 +40,7 @@ CLAUDE.base.md    Template voor per-project CLAUDE.md generatie
 - **Naamgeving**: `{category}-{verb}` — lowercase, hyphen. Categorieën: core, dev, frontend, game, marketing, project, story, team, thinking
 - **Directory**: elke skill = map met `SKILL.md`, optioneel `references/`, `scripts/`, `techniques/`
 - **Frontmatter**: altijd `disable-model-invocation: true`, metadata met author/version/category
+- **Pipeline-handoff**: skills die gedeelde state aanraken declareren `reads:` / `writes:` in frontmatter — zie `shared/DEVINFO.md` voor namespaces. Valideren met `python3 scripts/check-handoff.py`.
 - **Taal**: instructies Nederlands, technische termen Engels
 - **Fases**: FASE 0 = pre-flight validatie → uitvoering → laatste fase = rapport (ASCII tabel)
 - **AskUserQuestion**: eerste optie = recommended, multiSelect default true

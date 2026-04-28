@@ -101,6 +101,17 @@ Na de beslissing vastgesteld, check voor project-context:
 2. Check of `.project/backlog.html` bestaat
 3. Check of `.project/features/` mappen bevat
 
+**Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+
+```
+scopes: [architectural]
+pitfall-prefix: true
+global-memory: true
+current-feature: <feature-name als feature-specifiek scope, anders "none">
+```
+
+Architectural patterns (eigen project) en globale `MEMORY.md` (cross-project patterns) sturen de afweging — beslissingen die conflicteren met bewezen patterns krijgen een lagere confidence-rating. Pitfall-prefix maakt eerdere bugs zichtbaar zodat opties die ze herhalen worden afgewezen.
+
 Als scope-context gevonden:
 
 ```yaml
@@ -296,9 +307,7 @@ De markdown in `.project/thinking/` is de bron van waarheid. Geen `project.json`
   "chosen": "{gekozen optie}",
   "constraint": "{forcerende beperking, 1 zin}",
   "rationale": "{waarom, 1-2 zinnen}",
-  "rejected": [
-    { "option": "{optie naam}", "reason": "{korte reden}" }
-  ],
+  "rejected": [{ "option": "{optie naam}", "reason": "{korte reden}" }],
   "date": "{today}"
 }
 ```

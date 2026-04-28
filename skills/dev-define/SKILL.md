@@ -1,6 +1,7 @@
 ---
 name: dev-define
 description: Feature requirements en architectuur definiëren. Gebruik bij /dev-define [feature-name] om een feature te specificeren voor de build-fase.
+writes: [feature.requirements, backlog.stage]
 metadata:
   author: mileszeilstra
   version: 2.4.0
@@ -61,10 +62,17 @@ FASE 1 van de dev workflow: define → build → test.
      - `data.entities` — bestaand data model
      - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/dev-todo`). Laad die als context.
    - **Naam-match op thinking markdown**: Grep `.project/thinking/*.md` op feature-naam (bestandsnaam + content). Bij 1+ match: lees de match(es) en gebruik als input voor FASE 1 vragen. De `.md` bestanden zijn bron van waarheid voor thinking-output — geen 7-dagen window meer.
-   - **Backlog card → DOING + "defining"**: Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data">`. Zoek feature op naam → zet `status: "DOING"`, `stage: "defining"`, `date: "{date}"`. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DOING"`, `stage: "defining"`. Zet `data.updated` naar vandaag. Schrijf terug naar `backlog.html`.
+   - **Backlog card → TODO + "defining"**: Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data">`. Zoek feature op naam → behoud `status: "TODO"`, zet `stage: "defining"`, `date: "{date}"` (status blijft TODO want defining is een actieve dialoog binnen de TODO-kolom; pulserende stage-badge maakt 'm zichtbaar). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "TODO"`, `stage: "defining"`. Zet `data.updated` naar vandaag. Schrijf terug naar `backlog.html`.
    - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
-     - `learnings[]` — eerder geleerde patronen en pitfalls. Gebruik als input bij architectuur-keuzes en requirement-formulering.
+   - **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+     ```
+     scopes: [component, architectural]
+     pitfall-prefix: true
+     global-memory: true
+     current-feature: <feature-name>
+     ```
+     Toon de geladen output vóór FASE 1 vragen. Component-scoped patterns en architectural patterns geven richting bij architectuur-keuzes en requirement-formulering. Pitfall-prefix voorkomt herhaling van eerdere bugs.
    - Read `.claude/research/stack-baseline.md` (conventie/patterns detail — als niet beschikbaar, gebruik `project.json.stack` als basis)
    - **Past decisions scan** (twee bronnen, beide scope):
      - Feature-scope: Glob `.project/features/*/feature.json` → flatten alle `durableDecisions[]`. Tag elke entry met `[feature-X]`.
@@ -219,22 +227,22 @@ Ontwerp in drie stappen:
 
 Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md` voor volledig schema):
 
-| Veld                                 | Conditie                                                                     |
-| ------------------------------------ | ---------------------------------------------------------------------------- |
-| `name`, `created`, `status`, `stage` | altijd (status = `"DOING"`, stage = `"defined"`)                             |
-| `summary`                            | altijd                                                                       |
-| `depends`                            | altijd (lege array als geen)                                                 |
-| `choices`                            | altijd (user antwoorden)                                                     |
-| `requirements`                       | altijd (elke REQ met `status: "pending"`)                                    |
-| `files`                              | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`) |
-| `architecture`                       | altijd (`componentTree`, `interfaces`, optioneel `registries[]`)             |
-| `design`                             | alleen visuele features                                                      |
-| `apiContract`                        | alleen bij backend                                                           |
-| `buildSequence`                      | altijd                                                                       |
-| `testStrategy`                       | altijd (optioneel `location` veld)                                           |
-| `clarifications`                     | alleen als gray-area resolution is uitgevoerd                                |
-| `durableDecisions`                   | bij >3 requirements — beslissingen die over alle REQs gelden                 |
-| `research`                           | alleen als research is gedaan                                                |
+| Veld                        | Conditie                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| `name`, `created`, `status` | altijd (status = `"DEFINED"`, geen stage — wacht op `/dev-build`)            |
+| `summary`                   | altijd                                                                       |
+| `depends`                   | altijd (lege array als geen)                                                 |
+| `choices`                   | altijd (user antwoorden)                                                     |
+| `requirements`              | altijd (elke REQ met `status: "pending"`)                                    |
+| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`) |
+| `architecture`              | altijd (`componentTree`, `interfaces`, optioneel `registries[]`)             |
+| `design`                    | alleen visuele features                                                      |
+| `apiContract`               | alleen bij backend                                                           |
+| `buildSequence`             | altijd                                                                       |
+| `testStrategy`              | altijd (optioneel `location` veld)                                           |
+| `clarifications`            | alleen als gray-area resolution is uitgevoerd                                |
+| `durableDecisions`          | bij >3 requirements — beslissingen die over alle REQs gelden                 |
+| `research`                  | alleen als research is gedaan                                                |
 
 **`durableDecisions`** — beslissingen die tijdens de build NIET veranderen:
 
@@ -303,17 +311,17 @@ Muteer in memory:
 
 **Backlog** (zie `shared/BACKLOG.md`):
 
-- Zoek feature → zet `stage: "defined"`, `assignee` (als gezet in FASE 3b). Card staat al op DOING + "defining" sinds FASE 0. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DOING"`, `stage: "defined"`.
+- Zoek feature → zet `status: "DEFINED"`, verwijder `stage` (geen stage in DEFINED-kolom), zet `assignee` (als gezet in FASE 3b). Card staat al op TODO + stage `"defining"` sinds FASE 0. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DEFINED"`.
 - Zet `data.updated` naar vandaag.
 
 **Dashboard** (zie `shared/DASHBOARD.md`):
 
-- Update feature in `features` array: status → `"DOING"`, stage → `"defined"`, update summary
+- Update feature in `features` array: status → `"DEFINED"` (verwijder `stage`), update summary
 - Merge per entity type (check altijd op bestaande voor push):
   - **Data entities** (optioneel — alleen als feature domain entities introduceert): check op naam → nieuw: push met fields/relations → bestaand: merge nieuwe velden. Als feature geen entities heeft (UI-only, refactor, utility): skip deze update, log `Skipped data.entities: no entities`.
   - **Endpoints**: check op method+path → nieuw: push met `status: "planned"` → bestaand: skip
   - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
-  - **Features**: check op naam → nieuw: push `{ name, status: "DOING", stage: "defined", summary, created }` → bestaand: update status
+  - **Features**: check op naam → nieuw: push `{ name, status: "DEFINED", summary, created }` → bestaand: update status
   - **Architecture** in `.project/project-context.json`: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg component-first model uit `shared/DASHBOARD.md`**:
     - `layers`: definieer lagen met `{ name, order }` (bijv. API Laag order 1, Data Laag order 3)
     - `dataFlow`: één-regel samenvatting van de request flow

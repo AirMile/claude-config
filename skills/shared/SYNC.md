@@ -71,7 +71,7 @@ Lees `.project/project-context.json` (of maak aan met `{}`). Merge per sectie:
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `context`      | Update structure/routing/patterns individueel (alleen bij impact)                                                                                                                                                                  |
 | `architecture` | Volg component-first model uit `shared/DASHBOARD.md` (alleen bij impact). Update `components[]` (status, src, test). Merge `connects_to[]` op `to+type` combinatie (typed edges). Diagram optioneel → `.project/architecture.mmd`. |
-| `learnings`    | Check op date+feature → nieuw: push met verplicht `source` veld → bestaand: skip (append-only)                                                                                                                                     |
+| `learnings`    | Dedup-key: `(type, normalized_summary, author ?? null)`. Normalize summary = lowercase + strip leestekens. Nieuw: push met verplicht `source` veld → bestaand: skip (append-only). `author` alleen bij `source === "synced"`.      |
 
 **project-concept.md** (alleen bij concept-schrijvende skills):
 

@@ -1,29 +1,34 @@
 ---
 name: core-pull
 description: >-
-  Pull git changes, analyze diff, sync .project context, and deep-analyze
-  teammate code (features, entities, endpoints, architecture). Detects deleted
-  code and cleans stale context. Use with /core-pull or /core-pull --full.
+  Pull git changes, analyze diff, sync .project context, deep-analyze teammate
+  code (features, entities, endpoints, architecture), and extract synced
+  learnings (pitfalls/patterns) from teammate commits. Use with /core-pull
+  or /core-pull --no-learn. For first-time onboarding to a mature repo:
+  use /core-onboard instead.
 disable-model-invocation: true
-argument-hint: "[remote/branch] [--full]"
+argument-hint: "[remote/branch] [--no-learn]"
 metadata:
   author: mileszeilstra
-  version: 3.0.0
+  version: 4.0.0
   category: core
 ---
 
 # Pull
 
-Pull remote changes, analyseer de diff, ververs `.project/` context, en analyseer teammate code voor features, entities, endpoints en architectuur.
+Pull remote changes, analyseer de diff, ververs `.project/` context, analyseer teammate code voor features, entities, endpoints en architectuur, en extract synced learnings uit teammate commits.
 
-**Trigger**: `/core-pull`, `/core-pull [remote/branch]`, of `/core-pull --full`
+**Trigger**: `/core-pull`, `/core-pull [remote/branch]`, of `/core-pull --no-learn`
 
-**`--full` flag**: Analyze ALL code in the project, not just recent teammate commits. Use when joining an existing project (e.g., internship) or when context is severely outdated. Ignores lastSync and author filter — treats every file as in-scope.
+**`--no-learn` flag**: Skip FASE 4j (learning extraction). Gebruik als je alleen context/architecture wilt syncen zonder learnings te genereren.
+
+**First-time onboarding (vervangt oude `--full` flag)**: gebruik `/core-onboard` voor volledig codebase scan + LLM learnings extractie wanneer je een mature repo binnenstapt.
 
 ## References
 
 - `shared/SYNC.md` — merge protocol (read-modify-write per section)
 - `shared/DASHBOARD.md` — project.json + project-context.json schema
+- `shared/LEARNING-EXTRACTION.md` — heuristieken voor MVP signalen en LLM extractie (FASE 4j)
 
 ## Process
 
@@ -68,6 +73,29 @@ Pull remote changes, analyseer de diff, ververs `.project/` context, en analysee
    Als geen remote of fetch faalt → exit met error.
 
 4. Check `.project/project-context.json` existence → onthoud als `has_context_json`. Fallback: check `.project/project.json` → onthoud als `has_project_json`.
+
+5. **Onboard-nudge** (eenmalig per project, voor fresh codebases):
+
+   ```bash
+   total_commits=$(git rev-list --count HEAD 2>/dev/null || echo 0)
+   ```
+
+   Bepaal `learnings_empty`:
+   - Als `has_context_json` = false → `learnings_empty = true`
+   - Anders: lees `.project/project-context.json` → `learnings_empty = (learnings.length === 0)`
+
+   Bepaal `dismissed`: check `.project/session/onboard-dismissed` bestaat.
+
+   Bij `learnings_empty && total_commits > 50 && !dismissed` → **AskUserQuestion**:
+   - header: "Onboard?"
+   - question: "Dit lijkt een nieuwe codebase voor je ({N} commits, geen learnings). `/core-onboard` bouwt base memory uit conventies, patterns en pitfalls van bestaande code. Nu runnen?"
+   - options:
+     - "Ja, run /core-onboard nu (Recommended)" — exit core-pull met instructie aan user om `/core-onboard` te starten
+     - "Nee, alleen pull" — ga door met FASE 1
+     - "Niet meer vragen voor dit project" — schrijf `.project/session/onboard-dismissed` (lege marker file), ga door met FASE 1
+   - multiSelect: false
+
+   Bij "Ja": exit met message `RUN /core-onboard FOR BASE MEMORY (then re-run /core-pull for incremental updates)`. Geen pull/sync.
 
 ### FASE 1: Pull
 
@@ -160,7 +188,7 @@ needs_patterns  = config_files.length > 0 OF force_full_scan
 
 **2e) Detect teammate commits**
 
-Determine if teammate analysis is needed. Skip this step if `--full` flag is set (FASE 4 handles full scan).
+Determine if teammate analysis is needed.
 
 ```bash
 GIT_USER=$(git config user.name)
@@ -180,7 +208,7 @@ Also get merge commits to detect feature branches:
 git log HEAD --merges --since="$SINCE" --format="%H|%an|%s"
 ```
 
-Store as `has_teammate_commits = true/false`. If zero teammate commits and no `--full` flag → skip FASE 4.
+Store as `has_teammate_commits = true/false`. If zero teammate commits → skip FASE 4 (geen teammate enrichment nodig). Voor volledige codebase scan: gebruik `/core-onboard`.
 
 ### FASE 3: Context Sync
 
@@ -219,7 +247,7 @@ Route formaat: `"/path" → Description` (arrow notation).
 
 Overwrite `context.routing` volledig.
 
-**Important:** if FASE 4 will also run (`has_teammate_commits` or `--full`), retain the parsed route file contents in memory. FASE 4e reuses this data for endpoint extraction instead of re-reading the same files.
+**Important:** if FASE 4 will also run (`has_teammate_commits`), retain the parsed route file contents in memory. FASE 4e reuses this data for endpoint extraction instead of re-reading the same files.
 
 **3c) Pattern auto-detect** (alleen als `needs_patterns`)
 
@@ -246,22 +274,19 @@ Write `project-context.json` terug met `JSON.stringify(data, null, 2)`.
 
 ### FASE 4: Teammate Deep Analysis
 
-Skip entirely if `has_teammate_commits = false` AND no `--full` flag. This fase enriches project.json and project-context.json with context from code you didn't write.
+Skip entirely if `has_teammate_commits = false`. This fase enriches project.json and project-context.json with context from code you didn't write. Voor een volledige codebase scan (eerste keer joinen): gebruik `/core-onboard`.
 
 **4a) Determine scope**
 
-- **Normal mode** (`has_teammate_commits = true`): analyze only files changed by teammate commits.
-  For each teammate commit, get changed files:
-  ```bash
-  git diff-tree --no-commit-id -r --name-status $COMMIT_HASH
-  ```
-- **Full mode** (`--full` flag): analyze ALL source files in the project via Glob. Ignore author filter and lastSync. Use this when joining an existing project.
+Analyze only files changed by teammate commits. For each teammate commit, get changed files:
+
+```bash
+git diff-tree --no-commit-id -r --name-status $COMMIT_HASH
+```
 
 **4b) Group commits into candidate features**
 
-Skip in `--full` mode (no commit grouping needed — scan everything).
-
-In normal mode, group teammate commits into features using these heuristics (priority order):
+Group teammate commits into features using these heuristics (priority order):
 
 1. **Merge commit message** — if matches `Merge.*feature/(.+)` or `Merge.*branch '(.+)'` → feature name from branch. Associate all commits between this merge and the previous merge with this feature.
 2. **Fallback** — group remaining (unmatched) commits by primary affected directory (e.g., commits touching `src/services/auth/` → component `auth`)
@@ -319,10 +344,10 @@ Output: `{ component, src: [...], test: [...] }`
 
 **4g) Detect deleted code → clean stale context**
 
-For files with status `D` (deleted) in teammate commits, or in `--full` mode for files referenced in context but no longer existing:
+For files with status `D` (deleted) in teammate commits:
 
 1. **Entities**: if a model file was deleted, check `data.entities[]` — match on `source` field and remove entries whose source file no longer exists.
-2. **Endpoints**: if a route file was deleted, check `endpoints[]` — remove entries from that route file. In `--full` mode, verify each endpoint's route file still exists.
+2. **Endpoints**: if a route file was deleted, check `endpoints[]` — remove entries from that route file.
 3. **Architecture components**: if a source file was deleted, remove it from `architecture.components[].src` or `.test` arrays. Remove component entries with empty `src` arrays.
 4. **Routing**: already handled by FASE 3 (full overwrite of `context.routing`).
 
@@ -332,7 +357,7 @@ Follow `shared/SYNC.md` protocol. Re-read both files immediately before writing.
 
 **project.json mutations:**
 
-- **Features** — for each candidate feature (normal mode only):
+- **Features** — for each candidate feature:
   Check if exists by name. If new → push:
 
   ```json
@@ -370,6 +395,67 @@ Write `.project/session/sync-state.json`:
 ```json
 { "lastSync": "2026-03-13T00:00:00Z" }
 ```
+
+**4j) Learning extraction**
+
+Skip volledig als `--no-learn` flag gezet. Heuristieken: zie [shared/LEARNING-EXTRACTION.md](../shared/LEARNING-EXTRACTION.md).
+
+**4j.1) MVP — fix-commit pitfalls**
+
+```bash
+git log $PRE_REF..HEAD --grep='^fix\|^bugfix' --format='%H|%an|%s%n%b' --no-merges
+```
+
+Per commit: filter author ≠ self. Body ≥10 woorden OF bevat root-cause keyword (`because|waardoor|caused|door|root cause|reason|reden|oorzaak`). Skip kale `fix: typo`. Output `{ type: "pitfall", source: "synced", author, feature: <primary-dir>, summary: <subject zonder prefix> — <body sample> }`.
+
+**4j.2) MVP — TODO/FIXME comments**
+
+Voor elke teammate-changed file (uit FASE 4a):
+
+```bash
+grep -nE '(TODO|FIXME|HACK|XXX|NOTE):' <file>
+git blame --porcelain -L <line>,<line> <file>
+```
+
+Filter: ≥10 woorden body, bevat werkwoord-clue (`breaks|fails|causes|veroorzaakt|kapot|werkt niet|moet|should|hangs|blocks|crashes|leaks`). Skip generic patterns (`TODO: implement`, `FIXME: fix this`). Author uit `git blame` ≠ self. Output `{ type: "pitfall", source: "synced", author, feature: <dir-segment>, summary: <comment body, ≤200 chars> }`.
+
+**4j.3) MVP — nieuwe abstraction-dirs**
+
+Vergelijk component lijst uit FASE 4f tegen bestaande `architecture.components[]`. Voor nieuwe entries: match directory keyword tegen mapping table in `LEARNING-EXTRACTION.md`. Output `{ type: "pattern", source: "synced", author, feature: <dir>, summary: "<Pattern label> geïntroduceerd in <path> (<N> files)" }`.
+
+**4j.4) MVP — wrapper-deps**
+
+Hergebruik package.json diff uit FASE 4h. Voor elke nieuwe dep: lookup in wrapper mapping table (zod, pino, axios, prisma, etc). Geen match → skip. Output `{ type: "pattern", source: "synced", author, feature: "stack", summary: "<Pattern label>" }`.
+
+**4j.5) Signal-detectie + LLM-extractie**
+
+Bepaal signal:
+
+```
+1. Group teammate-changed files per top-level component-directory (eerste 2 segmenten)
+2. Trigger als: één directory ≥10 files (status A/M), OF nieuwe top-level directory (alle status A)
+3. Geen trigger → skip 4j.5
+```
+
+Bij trigger: roep `learning-extractor` agent aan via Agent tool:
+
+- `subagent_type: "learning-extractor"`
+- prompt bevat: `mode: "pull-signal"`, `files: [<getriggerde paden>]`, `existing_learnings: <huidige learnings[]>`, `cap: 5`
+
+Parse JSON output. Voor elke entry: zet `source: "synced"`, `author: null` (codebase-wide), `feature: <triggered dir>`. Append aan extractie-resultaten.
+
+**4j.6) Dedup en sync**
+
+Lees `project-context.json` (re-read direct vóór write per SYNC.md). Voor elke nieuwe entry uit 4j.1-4j.5:
+
+- Compute dedup-key: `(type, normalize(summary), author ?? null)`. Normalize = lowercase + strip leestekens.
+- Check tegen bestaande `learnings[]`: match → skip.
+- Match tegen andere entries in deze run: match → skip (intra-run dedup).
+- Cap totaal nieuwe entries per run op **20**. Bij overschrijding: prefereer pitfalls boven patterns boven observations, daarna meest recente datum.
+
+Voeg overlevende entries toe aan `learnings[]`. Schrijf `project-context.json` terug.
+
+Track counts voor FASE 5 rapport: `{ patterns: P, pitfalls: Q, observations: R, by_authors: [...] }`.
 
 ### FASE 5: Report
 
@@ -409,28 +495,7 @@ Teammate sync:
   Endpoints:    {N} total ({X} new, {Y} removed)
   Architecture: {N} components ({X} new)
   Packages:     {N} total ({X} new)
-
-Updated: {date}
-```
-
-**Full scan (`--full`):**
-
-```
-FULL SYNC COMPLETE
-
-Branch: {branch}
-Mode:   full project scan
-
-Context:
-  Structure:    refreshed ({N} dirs)
-  Routing:      {N} routes
-  Patterns:     {N} auto, {M} manual
-
-Deep analysis:
-  Entities:     {N} total
-  Endpoints:    {N} total
-  Architecture: {N} components
-  Packages:     {N} total
+  Learnings:    {N} synced ({P} patterns, {Q} pitfalls) by {authors} | skipped (--no-learn)
 
 Updated: {date}
 ```

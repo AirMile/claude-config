@@ -286,6 +286,17 @@ Only the compact summary enters the main context for FASE 1.
 
 **Goal:** Identify distinct web features from the concept.
 
+**Learnings load** (vóór analyse) via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+
+```
+scopes: [architectural]
+pitfall-prefix: true
+global-memory: true
+current-feature: none
+```
+
+Toon de geladen output. Architectural patterns sturen de feature decomposition (welke abstracties bestaan al, welke conventies volgen). Pitfall-prefix voorkomt herhaling van structurele bugs in nieuwe features.
+
 1. **Analyze:**
    - What are the core pages/routes?
    - What components need to be built?

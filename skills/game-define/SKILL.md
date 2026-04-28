@@ -2,6 +2,7 @@
 name: game-define
 description: Define game feature requirements and architecture with structured output. Use with /game-define to create detailed game feature specifications before building.
 disable-model-invocation: true
+writes: [feature.requirements, backlog.stage]
 metadata:
   author: mileszeilstra
   version: 2.2.0
@@ -99,10 +100,10 @@ The skill gathers requirements through targeted questions, optionally researches
 **Tag backlog card als actief** (direct na feature naam bepaling):
 
 Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-Zoek feature op naam → zet `"status": "DOING"`, `"stage": "defining"`, `data.updated` naar nu.
+Zoek feature op naam → behoud `"status": "TODO"`, zet `"stage": "defining"`, `data.updated` naar nu.
 Schrijf terug via Edit (keep `<script>` tags intact).
 Niet gevonden → skip (feature wordt pas bij FASE 5 aan backlog toegevoegd).
-De card verhuist naar de DOING kolom met stage `defining`.
+De card blijft in TODO maar krijgt een pulserende `defining` stage-badge.
 
 3. **Create project folder + signal active feature:**
 
@@ -142,7 +143,14 @@ De card verhuist naar de DOING kolom met stage `defining`.
    - **Naam-match op thinking markdown**: Grep `.project/thinking/*.md` op feature-naam (bestandsnaam + content). Bij 1+ match: lees de match(es) en gebruik als input voor FASE 1 vragen. De `.md` bestanden zijn bron van waarheid voor thinking-output — geen 7-dagen window meer.
    - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
-     - `learnings[]` — eerdere inzichten uit build/test/refactor (gebruik als input voor architectuurkeuzes)
+   - **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+     ```
+     scopes: [component, architectural]
+     pitfall-prefix: true
+     global-memory: true
+     current-feature: <feature-name>
+     ```
+     Toon de geladen output vóór FASE 1 vragen. Component-scoped patterns en architectural patterns geven richting bij architectuur-keuzes en requirement-formulering. Pitfall-prefix voorkomt herhaling van eerdere bugs.
    - Als project.json niet bestaat → ga door zonder (backwards compatible)
    - **Past decisions scan** (twee bronnen, beide scope):
      - Feature-scope: Glob `.project/features/*/feature.json` → flatten alle `durableDecisions[]`. Tag elke entry met `[feature-X]`.
@@ -648,21 +656,21 @@ IMPLEMENTATION ORDER:
 
 Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md` voor volledig schema):
 
-| Veld                                 | Conditie                                                                           |
-| ------------------------------------ | ---------------------------------------------------------------------------------- |
-| `name`, `created`, `status`, `stage` | altijd (status = `"DOING"`, stage = `"defined"`)                                   |
-| `summary`                            | altijd                                                                             |
-| `depends`                            | altijd (lege array als geen)                                                       |
-| `choices`                            | altijd (user antwoorden)                                                           |
-| `requirements`                       | altijd (elke REQ met `status: "pending"`)                                          |
-| `files`                              | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`)       |
-| `architecture`                       | altijd (`componentTree`, `interfaces`)                                             |
-| `design`                             | alleen visuele features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`) |
-| `buildSequence`                      | altijd                                                                             |
-| `testStrategy`                       | altijd                                                                             |
-| `clarifications`                     | alleen als gray-area resolution is uitgevoerd                                      |
-| `durableDecisions`                   | bij >3 requirements — beslissingen die over alle REQs gelden                       |
-| `research`                           | alleen als research is gedaan                                                      |
+| Veld                        | Conditie                                                                           |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `name`, `created`, `status` | altijd (status = `"DEFINED"`, geen stage — wacht op `/game-build`)                 |
+| `summary`                   | altijd                                                                             |
+| `depends`                   | altijd (lege array als geen)                                                       |
+| `choices`                   | altijd (user antwoorden)                                                           |
+| `requirements`              | altijd (elke REQ met `status: "pending"`)                                          |
+| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`)       |
+| `architecture`              | altijd (`componentTree`, `interfaces`)                                             |
+| `design`                    | alleen visuele features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`) |
+| `buildSequence`             | altijd                                                                             |
+| `testStrategy`              | altijd                                                                             |
+| `clarifications`            | alleen als gray-area resolution is uitgevoerd                                      |
+| `durableDecisions`          | bij >3 requirements — beslissingen die over alle REQs gelden                       |
+| `research`                  | alleen als research is gedaan                                                      |
 
 **`durableDecisions`** — beslissingen die tijdens de build NIET veranderen:
 
@@ -741,15 +749,15 @@ Muteer in memory:
 **Backlog** (zie `shared/BACKLOG.md`):
 
 - Zoek feature: `data.features.find(f => f.name === "{feature-name}")`
-- Gevonden → zet `.status = "DOING"`, `.stage = "defined"` en `.date = "{current date}"`
-- Niet gevonden → voeg toe: `{ "name": "{feature}", "type": "FEATURE", "status": "DOING", "stage": "defined", "phase": "P4", "description": "{from feature.json summary}", "dependency": null, "source": "/game-define" }`
+- Gevonden → zet `.status = "DEFINED"`, verwijder `.stage` (geen stage in DEFINED-kolom) en zet `.date = "{current date}"`
+- Niet gevonden → voeg toe: `{ "name": "{feature}", "type": "FEATURE", "status": "DEFINED", "phase": "P4", "description": "{from feature.json summary}", "dependency": null, "source": "/game-define" }`
 - Zet `data.updated` naar huidige datum
 
 **Dashboard** (zie `shared/DASHBOARD.md`):
 
 - **Data entities** (optioneel — alleen als feature domain entities introduceert): voor elke entity check of `data.entities` al entry heeft met die naam → nee: push met fields/relations → ja: merge nieuwe velden. Als feature geen entities heeft (UI-only scene, pure gameplay, utility): skip, log `Skipped data.entities: no entities`.
 - **Stack**: als Godot plugins/assets → check `stack.packages` op naam → nee: push `{ name, version, purpose }`
-- **Features**: check op naam → nee: push `{ name, status: "DOING", stage: "defined", summary, depends: [], created }` → ja: update status naar `"DOING"`, stage naar `"defined"`
+- **Features**: check op naam → nee: push `{ name, status: "DEFINED", summary, depends: [], created }` → ja: update status naar `"DEFINED"`, verwijder `stage`
 - **Architecture** in `.project/project-context.json`: genereer/update als feature scene tree en/of signals heeft. **Volg component-first model uit `shared/DASHBOARD.md`**:
   - `layers`: definieer lagen met `{ name, order }` (bijv. Scenes order 1, Systems order 2, Resources order 3)
   - `dataFlow`: één-regel samenvatting van de scene/signal flow

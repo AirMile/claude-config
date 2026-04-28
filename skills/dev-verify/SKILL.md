@@ -2,6 +2,8 @@
 name: dev-verify
 description: Adversarial verification — acceptance tests + fix loops. After verify, the code is good. Use with /dev-verify after /dev-build.
 disable-model-invocation: true
+reads: [feature.requirements, feature.build, backlog.stage]
+writes: [feature.tests, backlog.stage]
 metadata:
   author: mileszeilstra
   version: 2.0.0
@@ -49,12 +51,14 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 
 3. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`. Geen checklist → exit: run `/dev-build` first.
 
-4. **Tag backlog + capture baseline:**
+4. **Worktree switch** — voer de procedure in `shared/WORKTREE.md` uit met de feature-name. Switcht automatisch naar `worktree-{feature-name}` als die bestaat. Bij FAIL (in andere worktree dan de feature): stop met de melding uit WORKTREE.md.
+
+5. **Tag backlog + capture baseline:**
    - Backlog: zet `stage: "verifying"`, feature `updated` → nu (Edit, keep `<script>` tags intact)
    - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
    - Session file: `echo '{"feature":"{name}","skill":"test","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
 
-5. **Load stack & project context** — CLAUDE.md stack sectie + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Stel STACK_CONTEXT samen:
+6. **Load stack & project context** — CLAUDE.md stack sectie + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Stel STACK_CONTEXT samen:
 
    ```
    STACK CONTEXT:
@@ -70,7 +74,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    Entities: {data.entities of "niet beschikbaar"}
    ```
 
-6. **Gather test data** via Explore agent op **Sonnet** (`model: "sonnet"`) — zero source file reads in main context:
+7. **Gather test data** via Explore agent op **Sonnet** (`model: "sonnet"`) — zero source file reads in main context:
 
    ```
    Feature: {feature-name}
@@ -105,7 +109,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    FEATURE_CONTEXT_END
    ```
 
-7. **Classify and plan test execution:**
+8. **Classify and plan test execution:**
 
    a) Baseline check: `npm test 2>&1 | tail -20` (of project-specifiek command).
    Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n})`
@@ -159,7 +163,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    Geen gaps → toon `Acceptance mapping: {n}/{n} REQs gedekt` en ga door naar step 8.
    CLI gaps gevonden → display: `ACCEPTANCE TESTS: {n} test(s) gepland voor {m} requirements`
 
-8. **Dev server** (conditioneel):
+9. **Dev server** (conditioneel):
 
    ```
    Alle non-COVERED items AUTO/CLI (in-process testbaar) → skip dev server entirely
@@ -581,6 +585,17 @@ VERIFY COMPLETE: {feature-name}
 Next steps:
   1. /dev-refactor {feature} → optionele code quality polish
   2. /dev-define {next-feature} → volgende feature oppakken
+```
+
+**Worktree integration hint** — voeg één extra regel toe als beide voorwaarden waar zijn:
+
+1. Huidige branch matcht `worktree-*` pattern (`git branch --show-current`)
+2. Feature is na deze run op `status: "DONE"` in backlog
+
+Append:
+
+```
+💡 Feature klaar — run /core-merge {feature-name} om te integreren naar main/develop
 ```
 
 ---

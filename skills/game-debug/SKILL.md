@@ -37,6 +37,26 @@ Structured 9-phase debugging: context → intake → investigate → analyze →
 - Fallback: lees `.project/backlog.html` → zoek meest recente `"DOING"` feature (features met `-ing` stage suffix zijn actief)
 - Als actieve feature gevonden: noteer als context hint voor investigation agents
 
+**Worktree switch** (alleen als active feature gedetecteerd):
+
+Als active feature gevonden in vorige stap, voer steps 1-3 uit `shared/WORKTREE.md` (compute expected_path, check registered).
+
+- Worktree bestaat én pwd == main_root → AskUserQuestion:
+  - header: "Worktree"
+  - question: "Active feature '{name}' heeft worktree {short_path}. Hoe debuggen?"
+  - options:
+    - "Switch naar worktree (Recommended)" → `EnterWorktree(path: expected_path)`
+    - "Standalone op huidige branch" → skip switch
+- Worktree bestaat én pwd in andere worktree dan expected → AskUserQuestion (debug is ad-hoc, geen hard fail):
+  - header: "Worktree"
+  - question: "Je zit in worktree {pwd_short}, active feature is '{name}' (worktree {expected_short}). Hoe verder?"
+  - options:
+    - "Hier blijven debuggen (Recommended)" → skip switch, debug op huidige worktree
+    - "Switch naar feature-worktree" → `ExitWorktree(action: "keep")` + `EnterWorktree(path: expected_path)`
+    - "Switch naar main" → `ExitWorktree(action: "keep")` (alleen als pwd in een door deze session aangemaakte worktree zit; anders skip)
+- pwd == expected_path → already there, skip switch
+- Geen active feature of geen worktree → skip switch, debug draait standalone
+
 **Stel DEBUG_CONTEXT samen** (alle info beschikbaar voor inline investigation):
 
 ```

@@ -6,6 +6,8 @@ description: >-
   markdown brief (design spec + block inventory + tokens + patterns) die je in
   Claude Design plakt als context. Use with /frontend-design.
 disable-model-invocation: true
+reads: [devinfo.handoff]
+writes: [devinfo.handoff]
 metadata:
   author: mileszeilstra
   version: 2.0.0
@@ -184,6 +186,19 @@ Read `.project/project.json` and check if `design` section has data.
 ```
 Design: [empty — guided setup beschikbaar | {N} pagina's, {M} flows, {P} principes]
 ```
+
+### 0.4 Learnings Load
+
+**Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+
+```
+scopes: [component]
+pitfall-prefix: true
+global-memory: true
+current-feature: <page-name als capture/iterate-mode op 1 pagina, anders "none">
+```
+
+UI/UX patterns en pitfalls uit eerdere designs sturen consistente keuzes (component naming, layout patterns, accessibility gotchas). Skip stilzwijgend als geen learnings beschikbaar.
 
 **On failure:** AskUserQuestion:
 

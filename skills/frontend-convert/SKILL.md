@@ -7,6 +7,7 @@ description: >-
   comparison loop. Use with /frontend-convert.
 argument-hint: "[file-path|url]"
 disable-model-invocation: true
+writes: [devinfo.handoff]
 metadata:
   author: mileszeilstra
   version: 1.0.0

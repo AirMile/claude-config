@@ -13,6 +13,7 @@
   --danger: #f85149;
   --danger-bg: #f8514922;
   --todo: #8b949e;
+  --defined: #d29922;
   --doing: #58a6ff;
   --done: #3fb950;
   /* legacy aliases (used by dashboard for design page badges) */
@@ -406,8 +407,7 @@ body {
   letter-spacing: 0.3px;
   white-space: nowrap;
 }
-.stage-defining,
-.stage-defined {
+.stage-defining {
   background: color-mix(in srgb, #39d4e0 20%, transparent);
   color: #39d4e0;
 }
@@ -416,7 +416,8 @@ body {
   background: color-mix(in srgb, #58a6ff 20%, transparent);
   color: #58a6ff;
 }
-.stage-verifying {
+.stage-verifying,
+.stage-testing {
   background: color-mix(in srgb, #8b7cf6 20%, transparent);
   color: #8b7cf6;
 }
@@ -429,7 +430,8 @@ body {
 /* Pulsing dot for active stages (-ing) */
 .stage-defining::after,
 .stage-building::after,
-.stage-verifying::after {
+.stage-verifying::after,
+.stage-testing::after {
   content: "";
   display: inline-block;
   width: 5px;
@@ -445,7 +447,8 @@ body {
 .stage-building::after {
   background: #58a6ff;
 }
-.stage-verifying::after {
+.stage-verifying::after,
+.stage-testing::after {
   background: #8b7cf6;
 }
 @keyframes stage-pulse {
@@ -456,6 +459,24 @@ body {
   50% {
     opacity: 0.3;
   }
+}
+
+/* Refactor badges in DONE column */
+.refactor-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.refactor-done {
+  background: color-mix(in srgb, var(--done) 18%, transparent);
+  color: var(--done);
+}
+.refactor-rollback {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--danger);
 }
 
 .empty {

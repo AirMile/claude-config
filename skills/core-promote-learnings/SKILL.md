@@ -63,9 +63,9 @@ find {projects_root} -maxdepth 3 -name "project-context.json" -path "*/.project/
 Voor elk gevonden bestand:
 
 1. Read `{projectPath}/.project/project-context.json`
-2. Extract `learnings[]` (skip als leeg of ontbreekt)
+2. Extract `learnings[]` (skip als leeg of ontbreekt). Inclusief entries met `source: "synced"` (uit `core-pull` / `core-onboard`).
 3. Bepaal projectnaam: laatste segment van `{projectPath}` (bijv. `my-app`)
-4. Voeg per learning toe aan aggregatie: `{ project, date, feature, type, source, summary }`
+4. Voeg per learning toe aan aggregatie: `{ project, date, feature, type, source, author?, summary }`. `author` alleen aanwezig bij synced learnings.
 
 **Log**: `Scanned: {n} projects, {m} learnings total, {k} projects with learnings`
 
@@ -112,6 +112,7 @@ jaccard(A, B) = |A ∩ B| / |A ∪ B|
 **Filter clusters**:
 
 - Alleen clusters met ≥ 3 verschillende `project` waarden behouden
+- Voor clusters die volledig uit `source: "synced"` learnings bestaan: extra eis ≥ 2 verschillende `author` waarden (voorkomt dat één enthousiaste TODO-schrijver globale memory beïnvloedt). Mixed clusters (synced + extracted/inferred) hebben deze extra eis niet.
 - Skip cluster als `existingPromoted` set al een match bevat (genormaliseerde summary)
 - Sorteer op `cluster.size` desc
 
@@ -136,10 +137,12 @@ Type: {type}
 Suggested summary: {generatedSummary}
 
 Voorkomt in {n} projecten:
-- {project-a}: "{originele summary uit project-a}"
-- {project-b}: "{originele summary uit project-b}"
+- {project-a}{ (synced from {author})}: "{originele summary uit project-a}"
+- {project-b}{ (synced from {author})}: "{originele summary uit project-b}"
 - {project-c}: "{originele summary uit project-c}"
 ```
+
+`(synced from {author})` suffix wordt alleen getoond bij entries met `source: "synced"` en gevuld `author` veld. Helpt bij review om te zien of een cluster door één of meerdere mensen wordt gedragen.
 
 **AskUserQuestion**:
 
@@ -234,3 +237,5 @@ Markeer FASE 5 → `completed`.
 - Jaccard-drempel `0.5` is empirisch; pas aan als clustering te ruim of te krap blijkt.
 - De skill is read-only voor projecten — schrijft alleen naar `~/.claude/memory/MEMORY.md`.
 - Re-run is veilig: dedup tegen bestaande globale memory voorkomt dubbele promoties.
+- **Synced learnings** (afkomstig van `/core-pull` / `/core-onboard`) clusteren mee met eigen learnings. `author` is GEEN cluster-key — anders zou hetzelfde inzicht over verschillende mensen onnodig splitsen. Wel weergegeven in cluster preview (FASE 3) zodat je kunt zien wie het origineel bijdroeg.
+- **Synced-only clusters** vereisen ≥2 verschillende authors (FASE 2 filter). Dit voorkomt dat één enthousiaste TODO-schrijver met 3+ projecten z'n eigen pet topics naar globale memory pusht.

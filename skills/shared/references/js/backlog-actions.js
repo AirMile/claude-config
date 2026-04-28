@@ -2,15 +2,15 @@
 (function () {
   function getNextVerb(f) {
     if (f.status === "TODO") return "define";
+    if (f.status === "DEFINED") return "build";
     if (f.status === "DOING") {
       return (
         {
-          defining: "define",
-          defined: "build",
           building: "build",
           built: "verify",
           verifying: "verify",
-        }[f.stage] || "define"
+          testing: "verify",
+        }[f.stage] || "build"
       );
     }
     return null;
@@ -175,10 +175,12 @@
     });
   }
   // ── Status/Stage picker helpers ──
-  var STAGES = ["defining", "defined", "building", "built", "verifying"];
-  var FRONTEND_STAGES = ["building", "built", "verifying"];
+  var STAGES = ["building", "built", "verifying"];
+  var FRONTEND_STAGES = ["building", "built", "verifying", "testing"];
   var ALL_STATUSES =
-    typeof STATUSES !== "undefined" ? STATUSES : ["TODO", "DOING", "DONE"];
+    typeof STATUSES !== "undefined"
+      ? STATUSES
+      : ["TODO", "DEFINED", "DOING", "DONE"];
 
   function buildStatusPicker(f, name) {
     var html =
@@ -238,12 +240,14 @@
           var newStatus = el.dataset.status;
           if (newStatus === found.item.status) return;
           if (newStatus === "DOING") {
-            var isFE =
-              typeof FRONTEND_TYPES !== "undefined" &&
-              FRONTEND_TYPES.includes(found.item.type);
-            var defaultStage = isFE ? "building" : "defining";
             if (typeof updateStatus !== "undefined")
-              updateStatus(name, "DOING", found.item.stage || defaultStage);
+              updateStatus(
+                name,
+                "DOING",
+                found.item.stage && found.item.stage !== "defining"
+                  ? found.item.stage
+                  : "building",
+              );
           } else {
             if (typeof updateStatus !== "undefined")
               updateStatus(name, newStatus);
