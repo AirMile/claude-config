@@ -2,8 +2,8 @@
 name: dev-build
 description: Build features with TDD or implementation-first per requirement. Use with /dev-build or /dev-build [feature-name] after /dev-define.
 disable-model-invocation: true
-reads: [feature.requirements, backlog.stage]
-writes: [feature.requirements, feature.build, backlog.stage]
+reads: [feature.requirements]
+writes: [feature.requirements, feature.build, backlog.status]
 metadata:
   author: mileszeilstra
   version: 1.6.1
@@ -125,7 +125,7 @@ Alleen tonen als we NIET al in een worktree zitten:
 
 **Tag backlog card als actief** (direct na feature laden):
 
-Lees `.project/backlog.html` (als bestaat), zoek feature op naam → zet `"status": "DOING"`, `"stage": "building"`, `data.updated` naar nu (overgang DEFINED → DOING bij build-start). Schrijf terug via Edit.
+Lees `.project/backlog.html` (als bestaat), zoek feature op naam → zet `"status": "DOING"`, verwijder `transition` (als aanwezig), `data.updated` naar nu (overgang DEFINED → DOING bij build-start). Schrijf terug via Edit.
 
 **Signal active feature** (na backlog update):
 
@@ -277,7 +277,7 @@ Files created: {count}
 
 Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties:
 
-**feature.json**: `status → "DOING"`, `stage → "built"`, `files[]` → merge met actuele bestanden. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]`. Bestaande secties NIET overschrijven. Note: `requirements[]` is al enriched in FASE 2 stap 4.
+**feature.json**: `status → "DOING"`, `files[]` → merge met actuele bestanden. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]`. Bestaande secties NIET overschrijven. Note: `requirements[]` is al enriched in FASE 2 stap 4.
 
 **tests.checklist[]** — per requirement minimaal 1 test item:
 
@@ -299,11 +299,13 @@ Richtlijnen:
 - Expected = observable resultaat (response body, status code, zichtbaar effect)
 - Voeg GEEN "run npm test" items toe — unit tests zijn al gedekt door de build
 
-**Backlog**: `stage → "built"`, `data.updated` → nu. Status blijft `"DOING"`.
+**Backlog**: `data.updated` → nu. Status blijft `"DOING"`.
 
 **Context**: update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip als geen structurele impact.
 
 **Architecture** (volg component-first model uit `shared/DASHBOARD.md`): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `description` (korte functionele beschrijving, max 200 chars — wat doet dit component?), `src`, `test`, `connects_to` (typed edges `{ to, type }` uit werkelijke imports en runtime IO — `calls` voor function/HTTP calls, `reads`/`writes` voor DB of state IO, `depends_on` voor pure library/config dependencies), `endpoints` (bijv. `"POST /api/auth/login"`), `entities` (gebruikte model namen), `feature` (huidige feature naam). Nieuwe componenten die tijdens build zijn ontstaan: push met alle velden inclusief `feature`. Skip als geen structurele impact.
+
+**Routes** (`architecture.routes[]`): bevestig routes die tijdens build daadwerkelijk geïmplementeerd zijn — controleer `auth` veld klopt met de werkelijke middleware/guard (`"public" | "user" | "admin"`), update `purpose` als de pagina nu beter beschreven kan worden. Nieuwe routes die tijdens build zijn ontstaan: push `{ path, purpose, auth, feature }`. Endpoints in `endpoints[]` met daadwerkelijke auth-check: migreer `auth: false` → `"public"` en `auth: true` → `"user"` (of `"admin"` bij role-check).
 
 Learning extraction gebeurt in `/dev-verify` — dat is de natuurlijke plek (features zijn pas "geleerd" na test + fix). Hier alleen `build.decisions[]` in feature.json vastleggen, geen `learnings[]` append.
 

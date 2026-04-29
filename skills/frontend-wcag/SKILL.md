@@ -12,7 +12,7 @@ metadata:
 
 Audit and fix accessibility issues in web applications. Scans source code for WCAG 2.1 AA violations, optionally validates in-browser via Playwright, and implements prioritized fixes.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/frontend-convert` · `/frontend-tool` · `/frontend-audit`
+**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/frontend-convert` · `/frontend-install` · `/frontend-audit`
 
 ---
 

@@ -246,6 +246,70 @@ python3 {config_repo}/skills/core-profile/switch-profile.py \
 
 **Kopieer templates:**
 
+**Schrijf initiële projectbestanden:**
+
+macOS:
+
+```bash
+cat > "{projects_root}/[naam]/.project/project.json" << 'ENDJSON'
+{
+  "concept": { "name": "[naam]", "pitch": "", "content": "" },
+  "localUrl": "http://localhost:3000",
+  "theme": {
+    "colors": { "main": [], "accent": [], "semantic": [] },
+    "typography": { "families": { "heading": "", "body": "", "mono": "" }, "sizes": [] },
+    "spacing": { "base": "", "scale": [] },
+    "breakpoints": [],
+    "borderRadius": [],
+    "shadows": [],
+    "modes": {},
+    "cssVars": ""
+  },
+  "stack": { "framework": "", "language": "", "styling": "", "db": "", "auth": "", "hosting": "", "packages": [] },
+  "data": { "entities": [] },
+  "endpoints": [],
+  "features": [],
+  "thinking": []
+}
+ENDJSON
+
+cat > "{projects_root}/[naam]/.project/project-context.json" << 'ENDJSON'
+{
+  "architecture": { "routes": [], "components": [], "endpoints": [], "entities": [], "diagram": "", "dataFlow": "" },
+  "context": { "structure": "", "routing": [], "patterns": [] },
+  "learnings": []
+}
+ENDJSON
+```
+
+Windows (PowerShell):
+
+```powershell
+$projectJson = '{
+  "concept": { "name": "[naam]", "pitch": "", "content": "" },
+  "localUrl": "http://localhost:3000",
+  "theme": {
+    "colors": { "main": [], "accent": [], "semantic": [] },
+    "typography": { "families": { "heading": "", "body": "", "mono": "" }, "sizes": [] },
+    "spacing": { "base": "", "scale": [] },
+    "breakpoints": [], "borderRadius": [], "shadows": [], "modes": {}, "cssVars": ""
+  },
+  "stack": { "framework": "", "language": "", "styling": "", "db": "", "auth": "", "hosting": "", "packages": [] },
+  "data": { "entities": [] },
+  "endpoints": [], "features": [], "thinking": []
+}'
+Set-Content -Path "{projects_root}\[naam]\.project\project.json" -Value $projectJson -Encoding UTF8
+
+$ctxJson = '{
+  "architecture": { "routes": [], "components": [], "endpoints": [], "entities": [], "diagram": "", "dataFlow": "" },
+  "context": { "structure": "", "routing": [], "patterns": [] },
+  "learnings": []
+}'
+Set-Content -Path "{projects_root}\[naam]\.project\project-context.json" -Value $ctxJson -Encoding UTF8
+```
+
+**Vervang `[naam]` letterlijk met de werkelijke projectnaam in beide bestanden.**
+
 ```bash
 # settings.local.json met default permissions
 echo '{"permissions": {"allow": []}}' > {projects_root}/[naam]/.claude/settings.local.json

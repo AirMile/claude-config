@@ -15,7 +15,7 @@ metadata:
 
 Unified audit & fix for performance, SEO, AEO (AI search optimization), and responsive design. Scan on all axes, get a combined report, fix by priority, verify with before/after comparison.
 
-**Verwante skills:** `/frontend-design` · `/frontend-tokens` · `/frontend-convert` · `/frontend-tool` · `/frontend-wcag`
+**Verwante skills:** `/frontend-design` · `/frontend-tokens` · `/frontend-convert` · `/frontend-install` · `/frontend-wcag`
 
 ## References
 

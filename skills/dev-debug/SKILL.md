@@ -31,7 +31,7 @@ Structured 9-phase debugging: context → intake → investigate → analyze →
 **Active feature detectie** (optioneel):
 
 - Check `.project/session/active-*.json` files
-- Fallback: lees `.project/backlog.html` → zoek meest recente `"DOING"` feature (features met `-ing` stage suffix zijn actief)
+- Fallback: lees `.project/backlog.html` → zoek meest recente feature met `status === "DOING"`
 - Als actieve feature gevonden: noteer als context hint voor investigation agents
 
 **Worktree switch** (alleen als active feature gedetecteerd):

@@ -339,3 +339,9 @@ Useful commands:
   {test command}          → run tests
   {build command}         → production build
 ```
+
+**Next steps** (toon als één-regel suggesties, niet als actie):
+
+- `/frontend-install [module]` — voeg libraries of dev tools toe aan dit project (Tailwind, Vitest, Playwright, Biome, etc.)
+- `/frontend-tokens` — stel design tokens in als dat nog niet gedaan is
+- `/dev-define [feature]` — start de dev-pipeline voor de eerste feature

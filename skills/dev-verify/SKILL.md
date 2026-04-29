@@ -2,8 +2,8 @@
 name: dev-verify
 description: Adversarial verification — acceptance tests + fix loops. After verify, the code is good. Use with /dev-verify after /dev-build.
 disable-model-invocation: true
-reads: [feature.requirements, feature.build, backlog.stage]
-writes: [feature.tests, backlog.stage]
+reads: [feature.requirements, feature.build]
+writes: [feature.tests, backlog.status]
 metadata:
   author: mileszeilstra
   version: 2.0.0
@@ -42,7 +42,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 
 ### FASE 0: Load Context and Classify
 
-1. **Read backlog** — `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` (zie `shared/BACKLOG.md`). Filter `status === "DOING" && stage === "built"`. Geen feature name → suggest via AskUserQuestion.
+1. **Read backlog** — `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` (zie `shared/BACKLOG.md`). Filter `status === "DOING"`. Geen feature name → suggest via AskUserQuestion.
 
 2. **Parse input:**
    - Feature name only → proceed to classification
@@ -54,7 +54,6 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 4. **Worktree switch** — voer de procedure in `shared/WORKTREE.md` uit met de feature-name. Switcht automatisch naar `worktree-{feature-name}` als die bestaat. Bij FAIL (in andere worktree dan de feature): stop met de melding uit WORKTREE.md.
 
 5. **Tag backlog + capture baseline:**
-   - Backlog: zet `stage: "verifying"`, feature `updated` → nu (Edit, keep `<script>` tags intact)
    - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
    - Session file: `echo '{"feature":"{name}","skill":"test","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
 
@@ -523,7 +522,7 @@ Skill-specifieke mutaties:
 - `tests.evaluation` → per-REQ scores `[{ reqId, acceptancePass, acceptanceTotal, builderPass, builderTotal, verdict }]`
 - `tests.acceptanceTestFile` → pad naar geschreven acceptance test bestand (persistent in codebase)
 
-**backlog:** `status = "DONE"`, verwijder `stage`.
+**backlog:** `status = "DONE"`, verwijder `stage`, verwijder `transition` (als aanwezig).
 
 **project-context.json**: Bij fixes in FASE 4: update `architecture.components[]` — merge gewijzigde bestanden naar component `src`/`test`, bevestig `status: "done"`, voeg test files toe.
 

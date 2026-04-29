@@ -2,8 +2,8 @@
 name: dev-refactor
 description: Batch refactor code quality after testing with parallel analysis, dynamic stack-aware patterns, and early-exit for clean features. Use with /dev-refactor to improve code structure, naming, and patterns.
 disable-model-invocation: true
-reads: [feature.build, feature.tests, backlog.stage]
-writes: [feature.refactor, backlog.stage]
+reads: [feature.build, feature.tests, backlog.status]
+writes: [feature.refactor, backlog.status]
 metadata:
   author: mileszeilstra
   version: 2.1.0
@@ -73,9 +73,10 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
 1. **Read backlog for pipeline status:**
 
    Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
-   - Filter DONE features: `data.features.filter(f => f.status === "DONE")`
+   - Filter DONE features: `data.features.filter(f => f.status === "DONE" && !f.shipped)`
    - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` sectie
    - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
+   - Filter small-items: `data.features.filter(f => f.status === "DONE" && !f.shipped && !fs.existsSync('.project/features/' + f.name + '/feature.json'))` — items zonder pipeline (CHANGE/BUG/PAGE/COMPONENT/etc)
 
 2. **Determine feature queue:**
 
@@ -89,15 +90,29 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
      - question: "Wat wil je refactoren?"
      - options:
        - label: "Nog niet gerefactorde features (Recommended)", description: "{N} features: {feature1}, {feature2}, ..."
+       - label: "Kleine items check (CHANGE/BUG/etc)", description: "{K} kleine items zonder pipeline: {item1}, {item2}, ... — lichte conventie-check, mark als shipped na approval"
        - label: "Alle DONE features", description: "Alle {M} DONE features, inclusief eerder gerefactorde"
        - label: "Hele codebase", description: "Scan alle source files, niet feature-gebonden"
      - multiSelect: false
-   - If "Nog niet gerefactorde features" → feature queue = unrefactored DONE features
-   - If "Alle DONE features" → feature queue = all DONE features
+   - If "Nog niet gerefactorde features" → feature queue = unrefactored DONE features, mode = `feature`
+   - If "Kleine items check" → **small-items mode** (see below), mode = `small-items`
+   - If "Alle DONE features" → feature queue = all DONE features, mode = `feature`
    - If "Hele codebase" → **codebase mode** (see below)
    - If 0 unrefactored features: toon "Alle features zijn al gerefactord" in de optie beschrijving
+   - If 0 small-items: toon "Geen kleine items wachten op check" in de optie beschrijving
 
-   **c) "recent"**: find most recently modified `feature.json` with `tests` sectie, queue = `[that feature]`
+   **c) "recent"**: find most recently modified `feature.json` with `tests` sectie, queue = `[that feature]`, mode = `feature`
+
+   **Small-items mode** (`--small-items` of via keuze):
+   - Item queue = alle `data.features` met `status === "DONE" && !shipped && !feature.json`
+   - Voor elk item: bepaal scope via git log — zoek commits met item-naam in commit message: `git log --oneline --grep="{item.name}" -- {src/}`
+   - Als geen commits gevonden: log waarschuwing "Geen commits gevonden voor {name} — skip of handmatig controleren", skip het item
+   - Scope files = alle files gewijzigd in die commits: `git diff {first_hash}^..{last_hash} --name-only`
+   - Scope rule voor small-items: **alleen files uit de commit-scope mogen geïnspecteerd worden** (geen pipeline files lijst, maar commit-diff scope)
+   - FASE 1 voor small-items: één lichte Quality-lens Explore agent per item (niet Reuse/Efficiency — die zijn feature-pipeline specifiek). Input: commit-diff + `shared/RULES.md` + `shared/PATTERNS.md` + stack-baseline
+   - FASE 3 voor small-items: gecombineerde approval voor alle items die de check passeren: "X items: CLEAN. Mark als shipped?" (één AskUserQuestion, default = Ja)
+   - FASE 4 voor small-items: skip — geen code-edits bij lichte check (alleen code-edits als Quality-lens HIGH findings heeft, dan normaal apply flow)
+   - FASE 5 voor small-items: schrijf `shipped = true`, `shippedAt`, append naar `project.json.recentChanges[]`
 
    **Codebase mode** ("Hele codebase"):
    - Pipeline files = alle source bestanden uit project (detecteer `src/` of equivalent uit `project-context.json` `context.structure`, of CLAUDE.md)
@@ -799,9 +814,17 @@ IMPROVEMENTS APPLIED
 
    Muteer in memory:
 
-   **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet per feature het `refactor` veld:
-   - CLEAN of REFACTORED → `f.refactor = "REFACTORED"` (rendert ✓ badge in DONE-kolom)
-   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"` (rendert ⚠ badge)
+   **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet per feature het `refactor` veld én — bij success — het `shipped` veld:
+   - CLEAN of REFACTORED → `f.refactor = "REFACTORED"`, `f.shipped = true`, `f.shippedAt = <ISO-date>`, `f.shippedSha = <git-sha>` (zie hieronder), verwijder `transition` (als aanwezig)
+   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"`, verwijder `transition` (als aanwezig) (shipped blijft false — item blijft in "Wacht op refactor" zone)
+
+   **Git sha voor shippedSha:**
+
+   ```bash
+   git rev-parse HEAD
+   ```
+
+   Gebruik de HEAD sha na de auto-commit van FASE 5.3.
 
    Zet `data.updated` naar huidige datum.
 
@@ -809,7 +832,8 @@ IMPROVEMENTS APPLIED
    - Als packages gewijzigd (toegevoegd/verwijderd): merge naar `stack.packages`
    - Als endpoints gewijzigd: merge naar `endpoints`
    - Als data entities gewijzigd: merge naar `data.entities`
-   - `features` array: status blijft `"DONE"`; zet `refactor` veld analoog aan backlog
+   - `features` array: status blijft `"DONE"`; zet `refactor` veld analoog aan backlog; zet ook `shipped`, `shippedAt`, `shippedSha` voor CLEAN/REFACTORED features
+   - **Small-items mode**: voeg shipped items toe aan `recentChanges[]` array (maak aan als niet bestaat): `{ name, type, description, shipped: true, shippedAt }`
 
    **Context sync (conditioneel, schrijf naar `project-context.json`)** — alleen als REFACTORED features structurele wijzigingen bevatten:
 

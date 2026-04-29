@@ -21,7 +21,7 @@ Twee modi:
 1. **Capture** — beheert de design specificatie van het project (pagina's, user flows, design principes) in `.project/project.json` → `design`. Iteratief aan te roepen.
 2. **Brief** — genereert een markdown brief op basis van de design spec + block inventory uit de dev-pipeline + tokens + patterns. Output plak je in Claude Design als context. Het visuele werk gebeurt daar; de handoff bundle uit Claude Design gaat terug naar Claude Code (`/dev-build`).
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-convert` · `/frontend-tool` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-convert` · `/frontend-install` · `/frontend-audit` · `/frontend-wcag`
 
 **Output locaties:**
 
