@@ -1,36 +1,17 @@
-/* Backlog UI patches — extracted from lib/backlog-patches.js */
+/* Backlog UI patches — project-overrides loaded via lib/backlog-patches.js */
 
-body > header {
-  display: none !important;
-}
+/* Hide legacy/unused elements */
 .promote-btn {
   display: none !important;
 }
 #detail-promote {
   display: none !important;
 }
-.stats {
+.copy-cmd-btn {
   display: none !important;
 }
-.board {
-  min-height: calc(100vh - 48px) !important;
-}
-.column-header {
-  padding: 10px 12px !important;
-}
-.edit-btn,
-.delete-btn,
-.detail-btn,
-.add-btn,
-.column-header .count {
-  display: none !important;
-}
-.card-actions button {
-  width: 20px !important;
-  height: 20px !important;
-  border-radius: 3px !important;
-  font-size: 10px !important;
-}
+
+/* Detail modal action buttons */
 .detail-actions {
   justify-content: flex-start !important;
 }
@@ -63,6 +44,8 @@ body > header {
   color: #fff !important;
   border-color: var(--accent) !important;
 }
+
+/* Phase badges */
 .phase-tag {
   background: transparent !important;
   border: 1px solid !important;
@@ -83,6 +66,8 @@ body > header {
   color: var(--p4) !important;
   border-color: color-mix(in srgb, var(--p4) 33%, transparent) !important;
 }
+
+/* Status tag (in modals) */
 .status-tag {
   font-size: 10px;
   padding: 1px 6px;
@@ -102,60 +87,20 @@ body > header {
   background: currentColor;
   flex-shrink: 0;
 }
-.copy-cmd-btn {
-  display: none !important;
-}
-.card-menu {
-  display: none !important;
-}
-.card-clip {
-  background: none !important;
-  border: none !important;
-  color: var(--text-dim) !important;
-  cursor: pointer;
-  padding: 2px !important;
-  opacity: 0;
-  transition: opacity 0.15s !important;
-  flex-shrink: 0;
-}
-.card:hover .card-clip {
-  opacity: 1;
-}
-.card-clip:hover {
+
+/* Auto badge */
+.badge-auto {
   color: var(--accent, #58a6ff) !important;
+  border: 1px solid color-mix(in srgb, var(--accent, #58a6ff) 33%, transparent) !important;
+  background: transparent !important;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
-.card-clip.copied {
-  color: var(--done, #3fb950) !important;
-  opacity: 1;
-}
-.card-gh-done {
-  background: none !important;
-  border: none !important;
-  color: var(--done, #3fb950) !important;
-  padding: 2px !important;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s !important;
-  flex-shrink: 0;
-}
-.card:hover .card-gh-done {
-  opacity: 1;
-}
-.card-gh-done:hover {
-  color: #58a6ff !important;
-}
-.card-gh-done.copied {
-  color: var(--done, #3fb950) !important;
-  opacity: 1;
-}
-@keyframes gh-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.gh-spin {
-  animation: gh-spin 0.8s linear infinite;
-}
+
+/* GitHub integration chips */
 .card-gh-link {
   font-size: 10px;
   color: var(--text-dim);
@@ -168,6 +113,7 @@ body > header {
 .card-gh-link:hover {
   color: var(--accent, #58a6ff);
 }
+
 .gh-bulk-btn {
   background: none !important;
   border: 1px solid var(--border) !important;
@@ -179,7 +125,6 @@ body > header {
   display: inline-flex !important;
   align-items: center !important;
   gap: 4px !important;
-  margin-left: 8px;
   transition: all 0.15s !important;
   vertical-align: middle;
 }
@@ -191,21 +136,12 @@ body > header {
   opacity: 0.7;
   cursor: default;
 }
-.card-assignee {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--text-muted, #8b949e);
-  width: 100%;
+
+@keyframes gh-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
-.badge-auto {
-  color: var(--accent, #58a6ff) !important;
-  border: 1px solid color-mix(in srgb, var(--accent, #58a6ff) 33%, transparent) !important;
-  background: transparent !important;
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+.gh-spin {
+  animation: gh-spin 0.8s linear infinite;
 }

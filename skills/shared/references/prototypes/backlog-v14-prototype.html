@@ -1,0 +1,1197 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Backlog v14 — Prototype</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --surface-2: #1c2333;
+        --border: #30363d;
+        --border-soft: #21262d;
+        --text: #e6edf3;
+        --text-muted: #8b949e;
+        --text-dim: #6e7681;
+        --accent: #58a6ff;
+        --todo: #8b949e;
+        --defined: #d29922;
+        --doing: #58a6ff;
+        --done: #3fb950;
+        --danger: #f85149;
+        --pink: #f778ba;
+        --purple: #d2a8ff;
+        --cyan: #39d4e0;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 32px 36px 64px;
+      }
+      header {
+        padding-left: calc(170px + 28px);
+        margin-bottom: 20px;
+      }
+      header h1 {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+        margin-bottom: 4px;
+      }
+      header p {
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .top-nav {
+        position: relative;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin: 0 0 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .top-nav::before {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: calc(-1 * (170px + 28px));
+        width: calc(170px + 28px);
+        height: 1px;
+        background: var(--border);
+      }
+      .top-nav a {
+        text-decoration: none;
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 8px 0;
+        border-bottom: 2px solid transparent;
+      }
+      .top-nav a.active {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+      }
+      .top-nav .nav-spacer {
+        flex: 1;
+      }
+      .nav-search {
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+      }
+      .nav-search:hover {
+        color: var(--text);
+        background: var(--surface);
+      }
+      .layout {
+        display: flex;
+        gap: 28px;
+        align-items: flex-start;
+      }
+      .board-area {
+        flex: 1;
+        min-width: 0;
+      }
+      .sidebar {
+        position: sticky;
+        top: 16px;
+        width: 170px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .side-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        text-decoration: none;
+        color: var(--text-muted);
+        font-size: 12px;
+        border-left: 2px solid transparent;
+        transition:
+          background 0.12s,
+          color 0.12s;
+      }
+      .side-item:hover {
+        background: var(--surface);
+        color: var(--text);
+      }
+      .side-item.active {
+        background: var(--surface);
+        color: var(--text);
+        font-weight: 600;
+      }
+      .side-item .label {
+        flex: 1;
+      }
+      .side-item .count {
+        font-size: 11px;
+        color: var(--text-dim);
+        font-variant-numeric: tabular-nums;
+      }
+      .side-item.todo {
+        border-left-color: var(--todo);
+      }
+      .side-item.defined {
+        border-left-color: var(--defined);
+      }
+      .side-item.doing {
+        border-left-color: var(--doing);
+      }
+      .side-item.done {
+        border-left-color: var(--done);
+      }
+      #board {
+        flex: 1;
+        min-width: 0;
+      }
+      .group {
+        margin-bottom: 18px;
+      }
+      .group-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        background: var(--surface);
+        border-left: 4px solid transparent;
+        border-radius: 4px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .group-header h2 {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .group-header .spacer {
+        flex: 1;
+      }
+      .group-header .count {
+        font-size: 12px;
+        color: var(--text-dim);
+        font-variant-numeric: tabular-nums;
+      }
+      .group-header.todo {
+        border-left-color: var(--todo);
+      }
+      .group-header.defined {
+        border-left-color: var(--defined);
+      }
+      .group-header.doing {
+        border-left-color: var(--doing);
+      }
+      .group-header.done {
+        border-left-color: var(--done);
+      }
+      .group-body {
+        overflow: hidden;
+        transition: max-height 0.2s ease;
+      }
+      .group.collapsed .group-body {
+        max-height: 0 !important;
+      }
+      .group-hint {
+        font-size: 10px;
+        font-weight: 400;
+        color: var(--text-dim);
+        margin-left: 6px;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      .sub-divider {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 0 4px 12px;
+        color: var(--text-dim);
+        font-size: 11px;
+        cursor: pointer;
+      }
+      .chevron {
+        width: 9px;
+        height: 9px;
+        transition: transform 0.15s ease;
+      }
+      .sub-divider.collapsed .chevron {
+        transform: rotate(-90deg);
+      }
+      .sub-group {
+        overflow: hidden;
+        transition: max-height 0.2s ease;
+      }
+      .sub-group.collapsed {
+        max-height: 0;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      .row:hover {
+        background: var(--surface);
+      }
+      .copy-btn {
+        opacity: 0;
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text-dim);
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1.4;
+        padding: 2px 8px;
+        flex-shrink: 0;
+        transition: opacity 0.1s;
+      }
+      .row:hover .copy-btn {
+        opacity: 1;
+      }
+      .copy-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .section-copy-btn {
+        background: color-mix(in srgb, var(--done) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--done) 35%, transparent);
+        border-radius: 12px;
+        color: var(--done);
+        cursor: pointer;
+        font-size: 11px;
+        font-family: ui-monospace, monospace;
+        line-height: 1.4;
+        padding: 2px 10px;
+        flex-shrink: 0;
+      }
+      .group-header:hover .section-copy-btn {
+        background: color-mix(in srgb, var(--done) 20%, transparent);
+        border-color: var(--done);
+      }
+
+      /* File list in modal */
+      .fm-files {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-top: 6px;
+      }
+      .fm-file-wrap {
+        margin-bottom: 2px;
+      }
+      .fm-file-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 5px 8px;
+        border-radius: 4px;
+        background: var(--surface-2);
+        font-size: 11px;
+      }
+      .fm-action {
+        font-family: ui-monospace, monospace;
+        font-weight: 700;
+        width: 14px;
+        text-align: center;
+      }
+      .fm-action.added {
+        color: var(--done);
+      }
+      .fm-action.modified {
+        color: var(--defined);
+      }
+      .fm-action.deleted {
+        color: var(--danger);
+      }
+      .fm-path {
+        font-family: ui-monospace, monospace;
+        color: var(--accent);
+        min-width: 180px;
+      }
+      .fm-purpose {
+        color: var(--text-muted);
+        flex: 1;
+      }
+      .fm-snippet-btn {
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text-dim);
+        cursor: pointer;
+        font-family: ui-monospace, monospace;
+        font-size: 10px;
+        padding: 1px 5px;
+      }
+      .fm-snippet-btn:hover,
+      .fm-snippet-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .fm-snippet-body {
+        margin-top: 4px;
+      }
+      .fm-snippet-pre {
+        background: var(--bg);
+        border: 1px solid var(--border-soft);
+        border-radius: 6px;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        line-height: 1.6;
+        overflow-x: auto;
+        padding: 12px 14px;
+        tab-size: 2;
+        white-space: pre;
+      }
+      #toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 14px;
+        font-size: 12px;
+        color: var(--text);
+        z-index: 100;
+        transition: opacity 0.3s;
+        pointer-events: none;
+        opacity: 0;
+      }
+      #toast.show {
+        opacity: 1;
+      }
+      .row-icon {
+        font-size: 11px;
+        color: var(--text-dim);
+        width: 14px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .row-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text);
+        min-width: 170px;
+        flex-shrink: 0;
+      }
+      .row-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 7px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 500;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        flex-shrink: 0;
+      }
+      .badge.type-feature {
+        background: color-mix(in srgb, var(--accent) 18%, transparent);
+        color: var(--accent);
+      }
+      .badge.type-api {
+        background: color-mix(in srgb, var(--cyan) 18%, transparent);
+        color: var(--cyan);
+      }
+      .badge.type-integration {
+        background: color-mix(in srgb, var(--pink) 18%, transparent);
+        color: var(--pink);
+      }
+      .badge.type-ui {
+        background: color-mix(in srgb, var(--defined) 18%, transparent);
+        color: var(--defined);
+      }
+      .badge.type-refactor {
+        background: var(--surface-2);
+        color: var(--text-dim);
+      }
+      .badge.type-page-gap {
+        background: color-mix(in srgb, var(--purple) 18%, transparent);
+        color: var(--purple);
+      }
+      .badge.danger {
+        background: color-mix(in srgb, var(--danger) 18%, transparent);
+        color: var(--danger);
+      }
+      .badge.blocked {
+        background: var(--surface-2);
+        color: var(--text-dim);
+      }
+
+      /* Modal */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 60px;
+        z-index: 50;
+      }
+      .modal-backdrop.visible {
+        display: flex;
+      }
+      .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        max-width: 640px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 20px 24px;
+      }
+      .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .modal-header h2 {
+        font-size: 16px;
+        font-weight: 600;
+        flex: 1;
+      }
+      .modal .close {
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0 4px;
+      }
+      .modal-meta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .modal-section {
+        margin-bottom: 14px;
+      }
+      .modal-section h3 {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+      }
+      .modal-section p {
+        font-size: 13px;
+        color: var(--text);
+      }
+      .modal-section code {
+        background: var(--surface-2);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>E-commerce Dashboard</h1>
+        <p>
+          Dashboard voor product management, orders, analytics en klantenbeheer.
+          Next.js + Prisma + Stripe.
+        </p>
+      </header>
+
+      <div class="layout">
+        <aside class="sidebar" id="sidebar"></aside>
+        <div class="board-area">
+          <nav class="top-nav">
+            <a href="/prototypes/backlog-v14-prototype.html" class="active"
+              >Backlog</a
+            >
+            <a href="/prototypes/dashboard-v3-prototype.html">Dashboard</a>
+            <span class="nav-spacer"></span>
+            <button class="nav-search" title="Zoeken">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <circle cx="6.5" cy="6.5" r="4.5" />
+                <path d="M11 11l3 3" />
+              </svg>
+            </button>
+          </nav>
+          <div id="board"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modal-backdrop">
+      <div class="modal" id="modal" onclick="event.stopPropagation()"></div>
+    </div>
+
+    <script>
+      const NOW = Date.now();
+      function daysAgo(n) {
+        return new Date(NOW - n * 86400000).toISOString();
+      }
+
+      const FEATURES = [
+        {
+          name: "order-overview",
+          type: "FEATURE",
+          phase: "P2",
+          status: "TODO",
+          description: "Orderlijst met statusfilters en zoekfunctie",
+        },
+        {
+          name: "stripe-integration",
+          type: "INTEGRATION",
+          phase: "P2",
+          status: "TODO",
+          description: "Stripe checkout en webhook afhandeling",
+        },
+        {
+          name: "analytics-dashboard",
+          type: "INTEGRATION",
+          phase: "P3",
+          status: "TODO",
+          description: "Revenue grafieken, top producten, conversie",
+        },
+        {
+          name: "dark-mode",
+          type: "UI",
+          phase: "P3",
+          status: "TODO",
+          description: "Toggle met systeemvoorkeur detectie",
+        },
+        {
+          name: "performance-optimization",
+          type: "REFACTOR",
+          phase: "P3",
+          status: "TODO",
+          description: "Image optimalisatie, lazy loading, bundle splitting",
+        },
+        {
+          name: "order-processing",
+          type: "PAGE-GAP",
+          phase: "P4",
+          status: "TODO",
+          description: "checkout · CheckoutForm [Place order]",
+        },
+        {
+          name: "coupon-validation",
+          type: "PAGE-GAP",
+          phase: "P4",
+          status: "TODO",
+          description: "checkout · CouponInput [Apply]",
+        },
+        {
+          name: "product-list",
+          type: "FEATURE",
+          phase: "P1",
+          status: "DEFINED",
+          description: "Producttabel met zoeken, filters en paginering",
+          requirements: 8,
+          depends: "dashboard-layout",
+        },
+        {
+          name: "product-detail",
+          type: "FEATURE",
+          phase: "P2",
+          status: "DEFINED",
+          description: "Product-editpagina met rich text editor",
+          requirements: 5,
+          depends: "api-products",
+        },
+        {
+          name: "dashboard-layout",
+          type: "FEATURE",
+          phase: "P1",
+          status: "DOING",
+          stage: "built",
+          description: "Sidebar nav, header met user menu, content area",
+          tests: "12/14",
+          files: [
+            {
+              path: "src/components/layout/NavBar.tsx",
+              action: "ADDED",
+              purpose: "Sticky top nav met user menu",
+              snippet: `export function NavBar() {
+  const { data: session } = useSession();
+  return (
+    <nav className="sticky top-0 z-50 border-b bg-white">
+      <div className="flex h-14 items-center px-6">
+        <Logo />
+        <div className="ml-auto flex items-center gap-3">
+          <UserMenu session={session} />
+        </div>
+      </div>
+    </nav>
+  );
+}`,
+            },
+            {
+              path: "src/components/layout/Sidebar.tsx",
+              action: "ADDED",
+              purpose: "Collapsible sidebar met nav-links",
+            },
+            {
+              path: "src/app/(dashboard)/layout.tsx",
+              action: "ADDED",
+              purpose: "Wrapper layout voor dashboard routes",
+            },
+          ],
+        },
+        {
+          name: "api-products",
+          type: "API",
+          phase: "P2",
+          status: "DOING",
+          stage: "defining",
+          description: "CRUD endpoints voor producten met image upload",
+          subStage: "FASE 2 (requirements)",
+          files: [
+            {
+              path: "src/app/api/products/route.ts",
+              action: "ADDED",
+              purpose: "GET /products + POST endpoint",
+              snippet: `export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const page = Number(searchParams.get("page") ?? 1);
+  const products = await prisma.product.findMany({
+    skip: (page - 1) * 20,
+    take: 20,
+    orderBy: { createdAt: "desc" },
+  });
+  return Response.json({ products });
+}`,
+            },
+            {
+              path: "src/app/api/products/[id]/route.ts",
+              action: "ADDED",
+              purpose: "GET / PUT / DELETE per product",
+            },
+          ],
+        },
+        {
+          name: "routing",
+          type: "FEATURE",
+          phase: "P1",
+          status: "DONE",
+          date: "16 Feb",
+          refactor: "REFACTORED",
+          shipped: true,
+          shippedAt: daysAgo(12),
+          description: "Next.js app router setup met pagina structuur",
+        },
+        {
+          name: "auth-pages",
+          type: "FEATURE",
+          phase: "P1",
+          status: "DONE",
+          date: "17 Feb",
+          refactor: "ROLLED_BACK",
+          description: "Login, registratie en wachtwoord-reset flows",
+          failureAnalysis:
+            "Refactor extracted shared validation helper, but JWT tests regressed because token expiry semantics changed. Rolled back.",
+          files: [
+            {
+              path: "src/app/(auth)/login/page.tsx",
+              action: "ADDED",
+              purpose: "Login form met NextAuth credentials",
+              snippet: `"use client";
+export default function LoginPage() {
+  const router = useRouter();
+  async function onSubmit(data) {
+    const res = await signIn("credentials", {
+      ...data,
+      redirect: false,
+    });
+    if (res?.ok) router.push("/dashboard");
+  }
+  return <LoginForm onSubmit={onSubmit} />;
+}`,
+            },
+            {
+              path: "src/app/(auth)/register/page.tsx",
+              action: "ADDED",
+              purpose: "Registratie form",
+            },
+            {
+              path: "src/app/(auth)/reset-password/page.tsx",
+              action: "ADDED",
+              purpose: "Wachtwoord-reset flow",
+            },
+          ],
+        },
+        {
+          name: "api-auth",
+          type: "API",
+          phase: "P1",
+          status: "DONE",
+          date: "17 Feb",
+          refactor: null,
+          description: "JWT authenticatie endpoints met refresh tokens",
+          files: [
+            {
+              path: "src/app/api/auth/[...nextauth]/route.ts",
+              action: "ADDED",
+              purpose: "NextAuth config met credentials provider",
+              snippet: `export const authOptions = {
+  providers: [
+    Credentials({
+      async authorize(credentials) {
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
+        if (!user) return null;
+        const ok = await bcrypt.compare(credentials.password, user.password);
+        return ok ? user : null;
+      },
+    }),
+  ],
+  session: { strategy: "jwt" },
+  callbacks: { jwt, session },
+};`,
+            },
+            {
+              path: "src/lib/auth.ts",
+              action: "ADDED",
+              purpose: "getServerSession wrapper + auth helpers",
+            },
+          ],
+        },
+      ];
+
+      const TYPE_ICONS = {
+        FEATURE: "◆",
+        API: "⬡",
+        INTEGRATION: "⇄",
+        UI: "◻",
+        REFACTOR: "↺",
+        "PAGE-GAP": "▤",
+      };
+
+      const PHASE_TIPS = {
+        P1: "Must — kernfunctionaliteit",
+        P2: "Should — belangrijk maar niet kritiek",
+        P3: "Could — leuke toevoeging",
+        P4: "Maybe — nog niet zeker",
+      };
+
+      function esc(s) {
+        return String(s == null ? "" : s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function renderRow(f, opts) {
+        opts = opts || {};
+        const copyValue = opts.copyText !== undefined ? opts.copyText : f.name;
+        const typeBadge = `<span class="badge type-${f.type.toLowerCase()}">${f.type === "PAGE-GAP" ? "Gap" : f.type === "FEATURE" ? "Feature" : f.type === "INTEGRATION" ? "Integration" : f.type === "API" ? "API" : f.type === "UI" ? "UI" : f.type === "REFACTOR" ? "Refactor" : f.type}</span>`;
+        const extra = [];
+        if (f.depends) {
+          extra.push(
+            `<span class="badge blocked">⏸ waiting on ${esc(f.depends)}</span>`,
+          );
+        }
+        if (f.requirements) {
+          extra.push(
+            `<span style="font-size:11px;color:var(--text-dim)">${f.requirements} reqs</span>`,
+          );
+        }
+        if (f.stage) {
+          extra.push(
+            `<span class="badge" style="background:var(--surface-2)">${esc(f.stage)}</span>`,
+          );
+        }
+        if (f.refactor === "ROLLED_BACK") {
+          extra.push(
+            `<span class="badge danger" title="Refactor rolled back">rolled back</span>`,
+          );
+        } else if (f.status === "DONE" && !f.refactor) {
+          extra.push(
+            `<span class="badge" style="opacity:.7">niet gerefactored</span>`,
+          );
+        }
+        return `
+          <div class="row" onclick="openModal('${esc(f.name)}')" onmouseenter="setHovered('${esc(copyValue)}')" onmouseleave="setHovered(null)">
+            <button class="copy-btn" onclick="event.stopPropagation();copyText('${esc(copyValue)}')" title="Kopieer (C)">⎘</button>
+            <span class="row-name">${esc(f.name)}</span>
+            ${typeBadge}
+            ${extra.join(" ")}
+            <span class="row-desc">${esc(f.description)}</span>
+          </div>`;
+      }
+
+      function renderWaitingRow(f) {
+        return renderRow(f, { copyText: "/dev-refactor " + f.name });
+      }
+
+      function groupByPhase(items) {
+        const map = new Map();
+        items.forEach((f) => {
+          const p = f.phase || "P?";
+          if (!map.has(p)) map.set(p, []);
+          map.get(p).push(f);
+        });
+        return Array.from(map.entries())
+          .sort()
+          .map(([phase, items]) => ({ phase, items }));
+      }
+
+      function renderSubGroup(label, items, renderFn) {
+        renderFn = renderFn || renderRow;
+        const id = "sub-" + Math.random().toString(36).slice(2, 9);
+        return `
+          <div class="sub-divider" onclick="toggleSub(this)" data-target="${id}" title="${PHASE_TIPS[label] || ""}">
+            <svg class="chevron" viewBox="0 0 16 16" fill="currentColor"><path d="M12.78 5.22a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06 0L3.22 6.28a.75.75 0 011.06-1.06L8 8.94l3.72-3.72a.75.75 0 011.06 0z"/></svg>
+            <span>${label}</span>
+            <span style="color:var(--text-dim)">${items.length}</span>
+          </div>
+          <div class="sub-group" id="${id}">
+            ${items.map(renderFn).join("")}
+          </div>`;
+      }
+
+      function renderPhaseSection(items, renderFn) {
+        renderFn = renderFn || renderRow;
+        const groups = groupByPhase(items);
+        if (groups.length === 0) return "";
+        if (groups.length === 1) return groups[0].items.map(renderFn).join("");
+        return groups
+          .map((g) => renderSubGroup(g.phase, g.items, renderFn))
+          .join("");
+      }
+
+      function section(label, cls, count, body, tip, opts) {
+        opts = opts || {};
+        const collapsed = opts.collapsed ? " collapsed" : "";
+        const hint = opts.hint
+          ? `<span class="group-hint">${opts.hint}</span>`
+          : "";
+        const copyBtn = opts.copyText
+          ? `<button class="section-copy-btn" onclick="event.stopPropagation();copyText('${esc(opts.copyText)}')" title="Batch kopieer">⎘ ${esc(opts.copyText)}</button>`
+          : "";
+        const content =
+          body ||
+          `<div style="padding:14px 12px;color:var(--text-dim);font-size:11px">—</div>`;
+        return `
+          <section class="group${collapsed}" id="${cls}-section" data-group="${cls}">
+            <div class="group-header ${cls}" onclick="toggleGroup(this)">
+              <h2 title="${tip || ""}">${label}${hint}</h2>
+              ${copyBtn}
+              <span class="spacer"></span>
+              <span class="count">${count}</span>
+            </div>
+            <div class="group-body">${content}</div>
+          </section>`;
+      }
+
+      function renderBoard() {
+        const todo = FEATURES.filter((f) => f.status === "TODO");
+        const defined = FEATURES.filter((f) => f.status === "DEFINED");
+        const doing = FEATURES.filter((f) => f.status === "DOING");
+        const waiting = FEATURES.filter(
+          (f) => f.status === "DONE" && !f.shipped,
+        );
+
+        const board = document.getElementById("board");
+        board.innerHTML = `
+          ${section("To define", "todo", todo.length, renderPhaseSection(todo), "Captured ideas, not yet defined.")}
+          ${section("To build", "defined", defined.length, renderPhaseSection(defined), "Requirements specified, ready to build.")}
+          ${section("To test", "doing", doing.length, renderPhaseSection(doing), "Claude is actively working on this.")}
+          ${waiting.length ? section("To refactor", "done", waiting.length, renderPhaseSection(waiting, renderWaitingRow), "Run /dev-refactor to promote to Dashboard.", { collapsed: true, hint: " · run /dev-refactor", copyText: "/dev-refactor" }) : ""}
+        `;
+
+        const sidebarItems = [
+          { id: "todo", label: "To define", count: todo.length },
+          { id: "defined", label: "To build", count: defined.length },
+          { id: "doing", label: "To test", count: doing.length },
+        ];
+        if (waiting.length)
+          sidebarItems.push({
+            id: "done",
+            label: "To refactor",
+            count: waiting.length,
+          });
+        renderSidebar(sidebarItems);
+        setupSidebarObserver();
+      }
+
+      function renderSidebar(items) {
+        document.getElementById("sidebar").innerHTML = items
+          .map(
+            (i) => `
+          <a class="side-item ${i.id}" data-target="${i.id}-section" href="#${i.id}-section" onclick="jumpToSection(event, '${i.id}-section')">
+            <span class="label">${i.label}</span>
+            <span class="count">${i.count}</span>
+          </a>`,
+          )
+          .join("");
+      }
+
+      let sidebarLockedUntil = 0;
+      function jumpToSection(e, id) {
+        e.preventDefault();
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.classList.contains("collapsed")) {
+          toggleGroup(el.querySelector(".group-header"));
+        }
+        document
+          .querySelectorAll(".side-item")
+          .forEach((i) =>
+            i.classList.toggle("active", i.dataset.target === id),
+          );
+        sidebarLockedUntil = Date.now() + 800;
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function setupSidebarObserver() {
+        const sections = document.querySelectorAll(".group");
+        const items = document.querySelectorAll(".side-item");
+        const visible = new Set();
+        const obs = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((e) => {
+              const id = e.target.id;
+              if (e.isIntersecting) visible.add(id);
+              else visible.delete(id);
+            });
+            if (Date.now() < sidebarLockedUntil) return;
+            let topId = null;
+            let topY = Infinity;
+            for (const id of visible) {
+              const el = document.getElementById(id);
+              if (!el) continue;
+              const y = el.getBoundingClientRect().top;
+              if (y < topY) {
+                topY = y;
+                topId = id;
+              }
+            }
+            items.forEach((i) =>
+              i.classList.toggle("active", i.dataset.target === topId),
+            );
+          },
+          { rootMargin: "-80px 0px -55% 0px", threshold: 0 },
+        );
+        sections.forEach((s) => obs.observe(s));
+      }
+
+      function toggleSub(el) {
+        el.classList.toggle("collapsed");
+        const target = document.getElementById(el.dataset.target);
+        if (target) target.classList.toggle("collapsed");
+      }
+
+      function toggleGroup(headerEl) {
+        const group = headerEl.closest(".group");
+        const body = group.querySelector(".group-body");
+        if (!group.classList.contains("collapsed")) {
+          body.style.maxHeight = body.scrollHeight + "px";
+          requestAnimationFrame(() => {
+            group.classList.add("collapsed");
+            body.style.maxHeight = "0";
+          });
+        } else {
+          group.classList.remove("collapsed");
+          body.style.maxHeight = body.scrollHeight + "px";
+          body.addEventListener("transitionend", function clear() {
+            body.style.maxHeight = "";
+            body.removeEventListener("transitionend", clear);
+          });
+        }
+      }
+
+      function openModal(name) {
+        const f = FEATURES.find((x) => x.name === name);
+        if (!f) return;
+        const icon = TYPE_ICONS[f.type] || "·";
+
+        let refactorBlock = "";
+        if (f.status === "DONE") {
+          if (f.refactor === "ROLLED_BACK") {
+            refactorBlock = `
+              <div class="modal-section">
+                <h3>Refactor — rolled back</h3>
+                <p>${esc(f.failureAnalysis || "")}</p>
+              </div>`;
+          } else if (f.refactor === "REFACTORED") {
+            refactorBlock = `
+              <div class="modal-section">
+                <h3>Refactor</h3>
+                <p>✓ Quality pass complete${f.shipped ? " — gepromoot naar Dashboard" : ""}.</p>
+              </div>`;
+          } else {
+            refactorBlock = `
+              <div class="modal-section">
+                <h3>Refactor</h3>
+                <p>Nog niet gedraaid. <code>/dev-refactor ${esc(f.name)}</code> analyseert en stelt verbeteringen voor.</p>
+              </div>`;
+          }
+        }
+
+        let filesHtml = "";
+        if (f.files && f.files.length) {
+          const actionIcon = { ADDED: "+", MODIFIED: "~", DELETED: "−" };
+          filesHtml = `
+            <div class="modal-section">
+              <h3>Files (${f.files.length})</h3>
+              <div class="fm-files">
+                ${f.files
+                  .map(
+                    (file) => `
+                  <div class="fm-file-wrap">
+                    <div class="fm-file-row">
+                      <span class="fm-action ${file.action.toLowerCase()}">${actionIcon[file.action] || "·"}</span>
+                      <span class="fm-path">${esc(file.path)}</span>
+                      <span class="fm-purpose">${esc(file.purpose || "")}</span>
+                      ${file.snippet ? `<button class="fm-snippet-btn" onclick="toggleSnippet(this)" title="Code tonen">{ }</button>` : ""}
+                    </div>
+                    ${file.snippet ? `<div class="fm-snippet-body" style="display:none"><pre class="fm-snippet-pre"><code>${esc(file.snippet)}</code></pre></div>` : ""}
+                  </div>`,
+                  )
+                  .join("")}
+              </div>
+            </div>`;
+        }
+
+        const modal = document.getElementById("modal");
+        modal.innerHTML = `
+          <div class="modal-header">
+            <span style="font-size:16px">${icon}</span>
+            <h2>${esc(f.name)}</h2>
+            <button class="close" onclick="closeModal()">×</button>
+          </div>
+          <div class="modal-meta">
+            <span class="badge type-${f.type.toLowerCase()}">${f.type}</span>
+            <span class="badge">${f.phase}</span>
+            <span style="font-size:11px;color:var(--text-dim);margin-left:4px">${esc(f.status)}${f.stage ? " · " + f.stage : ""}</span>
+          </div>
+          <div class="modal-section">
+            <h3>Description</h3>
+            <p>${esc(f.description)}</p>
+          </div>
+          ${f.requirements ? `<div class="modal-section"><h3>Requirements</h3><p>${f.requirements} requirements${f.depends ? `, depends on <code>${esc(f.depends)}</code>` : ""}</p></div>` : ""}
+          ${f.tests ? `<div class="modal-section"><h3>Build status</h3><p>Tests: ${esc(f.tests)} passing</p></div>` : ""}
+          ${filesHtml}
+          ${refactorBlock}
+        `;
+        document.getElementById("modal-backdrop").classList.add("visible");
+      }
+
+      function closeModal() {
+        document.getElementById("modal-backdrop").classList.remove("visible");
+      }
+
+      document
+        .getElementById("modal-backdrop")
+        .addEventListener("click", closeModal);
+
+      let hoveredItem = null;
+      function setHovered(name) {
+        hoveredItem = name;
+      }
+
+      let _toastTimer;
+      function toast(msg) {
+        let t = document.getElementById("toast");
+        if (!t) {
+          t = document.createElement("div");
+          t.id = "toast";
+          document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.classList.add("show");
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
+      }
+
+      function copyText(text) {
+        navigator.clipboard.writeText(text).catch(() => {});
+        toast("Gekopieerd: " + text);
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeModal();
+          return;
+        }
+        if (e.key === "c" && !e.metaKey && !e.ctrlKey && hoveredItem) {
+          const tag = document.activeElement.tagName;
+          if (tag !== "INPUT" && tag !== "TEXTAREA") copyText(hoveredItem);
+        }
+      });
+
+      function toggleSnippet(btn) {
+        const row = btn.closest(".fm-file-row");
+        const body = row.nextElementSibling;
+        if (!body || !body.classList.contains("fm-snippet-body")) return;
+        const open = body.style.display !== "none";
+        body.style.display = open ? "none" : "block";
+        btn.textContent = open ? "{ }" : "{ … }";
+        btn.classList.toggle("active", !open);
+      }
+
+      function pinSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        const board = document.getElementById("board");
+        const layout = document.querySelector(".layout");
+        if (!sidebar || !board || !layout) return;
+        const offset =
+          board.getBoundingClientRect().top -
+          layout.getBoundingClientRect().top;
+        sidebar.style.paddingTop = offset + "px";
+        sidebar.style.top = offset + 16 + "px";
+      }
+
+      renderBoard();
+      pinSidebar();
+      window.addEventListener("resize", pinSidebar);
+    </script>
+  </body>
+</html>

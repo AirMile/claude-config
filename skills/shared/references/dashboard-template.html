@@ -126,7 +126,56 @@
             "light": ":root {\n  --bg: #ffffff;\n  --text: #1a1a2e;\n}",
             "dark": ".dark {\n  --bg: #0d1117;\n  --text: #e6edf3;\n}"
           },
-          "cssVars": ":root {\n  --color-dark: #1a1a2e;\n  --color-light: #f5f5f7;\n  --color-accent-primary: #3B82F6;\n  --color-success: #10B981;\n  --font-heading: Inter, sans-serif;\n  --font-body: Inter, sans-serif;\n  --spacing-base: 4px;\n}"
+          "cssVars": ":root {\n  --color-dark: #1a1a2e;\n  --color-light: #f5f5f7;\n  --color-accent-primary: #3B82F6;\n  --color-success: #10B981;\n  --font-heading: Inter, sans-serif;\n  --font-body: Inter, sans-serif;\n  --spacing-base: 4px;\n}",
+          "motion": {
+            "durations": [
+              {
+                "token": "duration-instant",
+                "value": "100ms",
+                "usage": "Micro interactions"
+              },
+              {
+                "token": "duration-fast",
+                "value": "200ms",
+                "usage": "Hover, tooltip"
+              },
+              {
+                "token": "duration-normal",
+                "value": "300ms",
+                "usage": "Panels, modals"
+              },
+              {
+                "token": "duration-slow",
+                "value": "500ms",
+                "usage": "Page transitions"
+              }
+            ],
+            "easings": [
+              {
+                "token": "ease-out",
+                "value": "cubic-bezier(0, 0, 0.2, 1)",
+                "usage": "Elements entering"
+              },
+              {
+                "token": "ease-in-out",
+                "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+                "usage": "Moving elements"
+              }
+            ]
+          },
+          "interactions": {
+            "focusRing": {
+              "width": "2px",
+              "style": "solid",
+              "color": "var(--color-accent-primary)",
+              "offset": "2px"
+            },
+            "hover": {
+              "transition": "var(--duration-fast) var(--ease-out)",
+              "transform": "none"
+            },
+            "active": { "transform": "scale(0.98)" }
+          }
         },
         "stack": {
           "framework": "Next.js 14",
@@ -222,6 +271,27 @@
       </div>
     </div>
 
+    <!-- Feature detail modal -->
+    <div
+      class="modal-overlay"
+      id="feature-modal"
+      onclick="if (event.target === this) closeFeatureModal();"
+    >
+      <div class="modal feature-modal-inner">
+        <div class="feature-modal-header">
+          <h3 id="feature-modal-title"></h3>
+          <button
+            class="modal-close"
+            onclick="closeFeatureModal()"
+            title="Sluiten"
+          >
+            ✕
+          </button>
+        </div>
+        <div id="feature-modal-body" class="feature-modal-body"></div>
+      </div>
+    </div>
+
     <script>
       // ─── Markdown ─────────────────────────────────────────
       function slugify(text) {
@@ -252,20 +322,21 @@
       // ─── State ──────────────────────────────────────────────
       const raw = document.getElementById("dashboard-data").textContent;
       let data = JSON.parse(raw);
-      let activeTab = localStorage.getItem("dashboard-tab") || "concept";
-      // Migrate old tab names
-      if (activeTab === "diagram") activeTab = "architecture";
-      if (activeTab === "features") activeTab = "concept";
-      if (activeTab === "config") activeTab = "concept";
       let modalContext = null;
 
+      function getDashSearch() {
+        return (document.getElementById("dash-search")?.value || "")
+          .toLowerCase()
+          .trim();
+      }
+
       const TABS = [
-        { id: "concept", label: "Concept" },
-        { id: "architecture", label: "Components" },
-        { id: "design", label: "Design" },
+        { id: "features", label: "Features" },
+        { id: "architecture", label: "Architecture" },
+        { id: "learnings", label: "Knowledge" },
         { id: "theme", label: "Design System" },
         { id: "stack", label: "Stack" },
-        { id: "learnings", label: "Learnings" },
+        { id: "concept", label: "Concept" },
         { id: "config", label: "Config" },
       ];
 
@@ -566,7 +637,7 @@
           return `
             <div class="section-header">
               <h2>Concept</h2>
-              <button class="edit-btn" onclick="editConcept()">+ Toevoegen</button>
+              <button class="edit-btn edit-btn--accent" onclick="editConcept()">+ Toevoegen</button>
             </div>
             <div class="empty-state"><p>Nog geen concept gedefinieerd.</p>
             <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-plan</code> of <code>/game-plan</code></p></div>`;
@@ -574,7 +645,7 @@
         return `
           <div class="section-header">
             <h2>Concept</h2>
-            <button class="edit-btn icon-btn" onclick="editConcept()" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+            <button class="header-icon-btn" onclick="editConcept()" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
           <div class="concept-content">${md(c.content)}</div>`;
       }
@@ -836,7 +907,7 @@
           .map(
             (groupName) => `
           <div class="code-cards-group">
-            <h3 class="code-cards-group-title">${esc(groupName)}</h3>
+            ${groupName === "Overig" ? "" : `<h3 class="code-cards-group-title">${esc(groupName)}</h3>`}
             <div class="code-cards-grid">
               ${grouped[groupName].map((c) => renderCodeCard(c)).join("")}
             </div>
@@ -961,7 +1032,7 @@
 
         if (!hasCards && !hasDiagram) {
           return `
-            <div class="section-header"><h2>Components</h2></div>
+            <div class="section-header"><h2>Architecture</h2></div>
             <div class="empty-state"><p>Nog geen componenten gedefinieerd.</p>
             <p style="color:var(--text-dim)">Wordt gevuld door <code>/dev-define</code></p></div>`;
         }
@@ -999,19 +1070,149 @@
 
         let descHtml = "";
 
-        if (hasCards) {
-          descHtml = renderCodeCardsGrid(cards);
-          setTimeout(() => applyCodeCardFilter(_diagramShowAll), 0);
-        } else if (hasDiagram) {
+        if (hasDiagram) {
           setTimeout(() => renderMermaidDiagram(a.diagram), 0);
         }
 
+        // Sub-sections: Routes, Components flat, API, Entities
+        function archSubSection(label, count, bodyHtml) {
+          if (!count) return "";
+          const id = "arch-sub-" + label.toLowerCase().replace(/\s+/g, "-");
+          return `
+            <div class="arch-subsection">
+              <div class="arch-subsection-header" onclick="(function(el){
+                var body=el.nextElementSibling;
+                var open=el.classList.toggle('collapsed');
+                body.style.display=open?'none':'';
+              })(this)">
+                <span class="arch-subsection-label">${esc(label)}</span>
+              </div>
+              <div class="arch-subsection-body">${bodyHtml}</div>
+            </div>`;
+        }
+
+        const routes = a.routes || [];
+        const localUrl = data.localUrl || "http://localhost:3000";
+        const normalizeAuth = (v) => {
+          if (v === true) return "user";
+          if (v === false || v == null) return "public";
+          return v;
+        };
+        const routesHtml = routes.length
+          ? routes
+              .map((r) => {
+                const auth = normalizeAuth(r.auth);
+                const badge =
+                  auth !== "public"
+                    ? `<span class="route-auth-badge route-auth-badge--${auth}">${auth}</span>`
+                    : "";
+                const path = r.path || r.name || "";
+                const protectedCls =
+                  auth === "admin"
+                    ? " arch-row--admin"
+                    : auth !== "public"
+                      ? " arch-row--protected"
+                      : "";
+                return `
+            <div class="arch-row arch-row--route${protectedCls}">
+              <a class="arch-row-path" href="${esc(localUrl)}${esc(path)}" target="_blank" rel="noopener">${esc(path)}</a>
+              <span class="arch-row-meta">${esc(r.purpose || r.description || "")}</span>
+              <span class="arch-row-badge-slot">${badge}</span>
+            </div>`;
+              })
+              .join("")
+          : "";
+
+        const components = a.components || [];
+        const componentsHtml = components.length
+          ? components
+              .map(
+                (c) => `
+            <div class="arch-row">
+              <span class="arch-row-name">${esc(c.name)}</span>
+              ${c.layer ? `<span class="arch-badge-layer">${esc(c.layer)}</span>` : ""}
+              <span class="arch-row-meta">${esc(c.description || "")}</span>
+            </div>`,
+              )
+              .join("")
+          : "";
+
+        const endpoints = data.endpoints || [];
+        const methodColor = {
+          GET: "var(--done)",
+          POST: "var(--accent)",
+          PUT: "var(--defined)",
+          PATCH: "var(--defined)",
+          DELETE: "var(--danger)",
+        };
+        const apiHtml = endpoints.length
+          ? endpoints
+              .map((e) => {
+                const auth = normalizeAuth(e.auth);
+                const badge =
+                  auth !== "public"
+                    ? `<span class="route-auth-badge route-auth-badge--${auth}">${auth}</span>`
+                    : "";
+                const protectedCls =
+                  auth !== "public" ? " arch-row--protected" : "";
+                return `
+            <div class="arch-row${protectedCls}">
+              <span style="font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10px;font-weight:700;width:46px;flex-shrink:0;color:${methodColor[e.method] || "var(--text-dim)"}">${esc(e.method || "")}</span>
+              <span class="arch-row-path">${esc(e.path || "")}</span>
+              <span class="arch-row-meta">${esc(e.description || "")}</span>
+              ${badge}
+            </div>`;
+              })
+              .join("")
+          : "";
+
+        const entities =
+          data.data && data.data.entities ? data.data.entities : [];
+        const entitiesHtml = entities.length
+          ? entities
+              .map(
+                (e) => `
+            <div class="arch-row">
+              <span class="arch-row-name">${esc(e.name)}</span>
+              <span class="arch-row-meta" style="font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10px">${(e.fields || []).map((f) => esc(f.name + (f.type ? ":" + f.type : ""))).join(", ")}</span>
+            </div>`,
+              )
+              .join("")
+          : "";
+
+        const designFlows = (data.design || {}).flows || [];
+        const flowsArchHtml = designFlows.length
+          ? designFlows
+              .map(
+                (f, i) => `
+            <div class="flow-card" id="arch-flow-${i}">
+              <div class="flow-header" onclick="document.getElementById('arch-flow-${i}').classList.toggle('flow-open')">
+                <svg class="flow-chevron" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="flow-name">${esc(f.name)}</span>
+                ${f.description || f.notes ? `<span class="flow-desc-inline">${esc(f.description || f.notes || "")}</span>` : ""}
+              </div>
+              <div class="flow-body">
+                ${f.steps && f.steps.length ? `<ol class="flow-steps">${f.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` : ""}
+              </div>
+            </div>`,
+              )
+              .join("")
+          : "";
+
+        const subSectionsHtml = [
+          archSubSection("Routes", routes.length, routesHtml),
+          archSubSection("Components", components.length, componentsHtml),
+          archSubSection("API", endpoints.length, apiHtml),
+          archSubSection("Entities", entities.length, entitiesHtml),
+          archSubSection("Flows", designFlows.length, flowsArchHtml),
+        ].join("");
+
         return `
           <div class="section-header">
-            <h2>Components</h2>
-            <button class="edit-btn icon-btn" onclick="editArchitecture()" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+            <h2>Architecture</h2>
           </div>
           ${toolbarHtml}
+          ${subSectionsHtml}
           ${dataFlowHtml}
           ${diagramHtml}
           ${descHtml}`;
@@ -1065,88 +1266,6 @@
             },
           },
         );
-      }
-
-      function renderDesignContent() {
-        const d = data.design || {};
-        const pages = d.pages || [];
-        const flows = d.flows || [];
-        const principles = d.principles || [];
-        const hasData = pages.length || flows.length || principles.length;
-
-        if (!hasData) {
-          return `
-            <div class="section-header"><h2>Design</h2></div>
-            <div class="empty-state"><p>Nog geen design spec gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Wordt gevuld door <code>/frontend-design</code></p></div>`;
-        }
-
-        const statusOrder = ["IDEA", "DEF", "BLT", "DONE"];
-
-        const pagesHtml = pages.length
-          ? `<h3 style="margin:24px 0 12px;font-size:14px;color:var(--text-dim)">Pagina's (${pages.length})</h3>
-          ${pages
-            .map(
-              (p) => `
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:8px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                <span class="feature-badge" data-status="${esc(p.status || "DEF")}">${esc(p.status || "DEF")}</span>
-                <span style="font-weight:600;font-size:14px">${esc(p.name)}</span>
-              </div>
-              <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">${esc(p.purpose || "")}</div>
-              ${
-                p.sections && p.sections.length
-                  ? `<div style="display:flex;flex-wrap:wrap;gap:4px">${p.sections.map((s) => `<span style="font-size:11px;padding:2px 8px;border-radius:3px;background:var(--surface-hover);color:var(--text-dim)">${esc(s)}</span>`).join("")}</div>`
-                  : ""
-              }
-              ${
-                p.flows && p.flows.length
-                  ? `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">Flows: ${p.flows.map((f) => esc(f)).join(", ")}</div>`
-                  : ""
-              }
-              ${p.notes ? `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">${esc(p.notes)}</div>` : ""}
-            </div>`,
-            )
-            .join("")}`
-          : "";
-
-        const flowsHtml = flows.length
-          ? `<h3 style="margin:24px 0 12px;font-size:14px;color:var(--text-dim)">User Flows (${flows.length})</h3>
-          ${flows
-            .map(
-              (f) => `
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:8px">
-              <div style="font-weight:600;font-size:14px;margin-bottom:8px">${esc(f.name)}</div>
-              <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
-                ${f.steps.map((s, i) => `<span style="font-size:11px;padding:2px 8px;border-radius:3px;background:var(--surface-hover);color:var(--text)">${esc(s)}</span>${i < f.steps.length - 1 ? '<span style="color:var(--text-dim);font-size:12px;margin:0 2px">\u2192</span>' : ""}`).join("")}
-              </div>
-              ${f.notes ? `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">${esc(f.notes)}</div>` : ""}
-            </div>`,
-            )
-            .join("")}`
-          : "";
-
-        const principlesHtml = principles.length
-          ? `<h3 style="margin:24px 0 12px;font-size:14px;color:var(--text-dim)">Design Principes (${principles.length})</h3>
-          <table class="data-table">
-            <thead><tr><th>Principe</th><th>Beschrijving</th></tr></thead>
-            <tbody>${principles
-              .map(
-                (p) => `
-              <tr>
-                <td style="font-weight:500;color:var(--text);white-space:nowrap">${esc(p.name)}</td>
-                <td>${esc(p.description)}</td>
-              </tr>`,
-              )
-              .join("")}</tbody>
-          </table>`
-          : "";
-
-        return `
-          <div class="section-header"><h2>Design</h2></div>
-          ${pagesHtml}
-          ${flowsHtml}
-          ${principlesHtml}`;
       }
 
       function renderTheme() {
@@ -1215,63 +1334,6 @@
           </div>`
           : "";
 
-        // ── Type Scale ──
-        const sizes = typo.sizes || [];
-        const typeScaleHtml = sizes.length
-          ? `
-          <div class="sg-section">
-            <div class="sg-section-title">Type Scale</div>
-            <div class="sg-type-scale">${sizes
-              .map(
-                (s) => `
-              <div class="sg-type-row">
-                <div class="sg-type-label">${esc(s.token)}<br>${esc(s.size)}</div>
-                <div class="sg-type-preview" style="font-size:${esc(s.size)};line-height:${esc(s.lineHeight)};font-family:${esc(families.body || "inherit")}">The quick brown fox jumps</div>
-              </div>`,
-              )
-              .join("")}</div>
-          </div>`
-          : "";
-
-        // ── Spacing ──
-        const sp = t.spacing || {};
-        const spScale = sp.scale || [];
-        const spacingHtml = spScale.length
-          ? `
-          <div class="sg-section">
-            <div class="sg-section-title">Spacing${sp.base ? ` — base: ${esc(sp.base)}` : ""}</div>
-            <div class="sg-spacing-scale">${spScale
-              .map(
-                (s) => `
-              <div class="sg-spacing-row">
-                <div class="sg-spacing-label">${esc(s.token)}</div>
-                <div class="sg-spacing-bar" style="width:${esc(s.value)}"></div>
-                <div class="sg-spacing-value">${esc(s.value)}</div>
-              </div>`,
-              )
-              .join("")}</div>
-          </div>`
-          : "";
-
-        // ── Breakpoints ──
-        const bps = t.breakpoints || [];
-        const bpHtml = bps.length
-          ? `
-          <div class="sg-section">
-            <div class="sg-section-title">Breakpoints</div>
-            <div class="sg-spacing-scale">${bps
-              .map(
-                (b) => `
-              <div class="sg-spacing-row">
-                <div class="sg-spacing-label">${esc(b.token)}</div>
-                <div class="sg-spacing-bar" style="width:min(${esc(b.value)}, 100%);opacity:0.4"></div>
-                <div class="sg-spacing-value">${esc(b.value)}${b.target ? ` — ${esc(b.target)}` : ""}</div>
-              </div>`,
-              )
-              .join("")}</div>
-          </div>`
-          : "";
-
         // ── Border Radius ──
         const radii = t.borderRadius || [];
         const radiusHtml = radii.length
@@ -1290,21 +1352,99 @@
           </div>`
           : "";
 
-        // ── Shadows ──
-        const shdws = t.shadows || [];
-        const shadowsHtml = shdws.length
+        // ── Motion ──
+        const motion = t.motion || {};
+        const durations = motion.durations || [];
+        const easings = motion.easings || [];
+        const maxMs =
+          durations.reduce(
+            (m, d) => Math.max(m, parseInt(d.value) || 0),
+            500,
+          ) || 500;
+        const motionHtml =
+          durations.length || easings.length
+            ? `
+          <div class="sg-section">
+            <div class="sg-section-title">Motion</div>
+            ${
+              durations.length
+                ? `<div class="sg-motion-sub">Durations</div>
+              <div class="sg-spacing-scale">
+                ${durations
+                  .map(
+                    (d) => `
+                <div class="sg-spacing-row">
+                  <div class="sg-spacing-label">${esc(d.token)}</div>
+                  <div class="sg-duration-bar" style="width:${Math.round(((parseInt(d.value) || 0) / maxMs) * 100)}%"></div>
+                  <div class="sg-spacing-value">${esc(d.value)}${d.usage ? ` — ${esc(d.usage)}` : ""}</div>
+                </div>`,
+                  )
+                  .join("")}
+              </div>`
+                : ""
+            }
+            ${
+              easings.length
+                ? `<div class="sg-motion-sub" style="margin-top:12px">Easings</div>
+              <div class="sg-easing-list">
+                ${easings
+                  .map(
+                    (e) => `
+                <div class="sg-easing-row">
+                  <span class="sg-easing-token">${esc(e.token)}</span>
+                  <span class="sg-easing-value">${esc(e.value)}${e.usage ? ` <span class="sg-easing-usage">— ${esc(e.usage)}</span>` : ""}</span>
+                </div>`,
+                  )
+                  .join("")}
+              </div>`
+                : ""
+            }
+          </div>`
+            : "";
+
+        // ── Interactions ──
+        const ixn = t.interactions || {};
+        const ixnEntries = [
+          ixn.focusRing && {
+            label: "Focus Ring",
+            parts: [
+              ixn.focusRing.width && `width: ${ixn.focusRing.width}`,
+              ixn.focusRing.style && `style: ${ixn.focusRing.style}`,
+              ixn.focusRing.offset && `offset: ${ixn.focusRing.offset}`,
+              ixn.focusRing.color && `color: ${ixn.focusRing.color}`,
+            ].filter(Boolean),
+          },
+          ixn.hover && {
+            label: "Hover",
+            parts: [
+              ixn.hover.transition && `transition: ${ixn.hover.transition}`,
+              ixn.hover.transform &&
+                ixn.hover.transform !== "none" &&
+                `transform: ${ixn.hover.transform}`,
+            ].filter(Boolean),
+          },
+          ixn.active && {
+            label: "Active",
+            parts: [
+              ixn.active.transform && `transform: ${ixn.active.transform}`,
+            ].filter(Boolean),
+          },
+        ].filter((e) => e && e.parts.length);
+        const interactionsHtml = ixnEntries.length
           ? `
           <div class="sg-section">
-            <div class="sg-section-title">Shadows</div>
-            <div class="sg-shadow-grid">${shdws
-              .map(
-                (s) => `
-              <div class="sg-shadow-item">
-                <div class="sg-shadow-box" style="box-shadow:${esc(s.value)}"></div>
-                <div class="sg-shadow-label">${esc(s.token)}</div>
+            <div class="sg-section-title">Interactions</div>
+            <div class="sg-interaction-list">
+              ${ixnEntries
+                .map(
+                  (e) => `
+              <div class="sg-interaction-row">
+                <span class="sg-interaction-label">${esc(e.label)}</span>
+                <span class="sg-interaction-value">${e.parts.map((p) => `<code>${esc(p)}</code>`).join("")}</span>
               </div>`,
-              )
-              .join("")}</div>
+                )
+                .join("")}
+            </div>
           </div>`
           : "";
 
@@ -1340,11 +1480,9 @@
           <div class="section-header"><h2>Design System</h2></div>
           ${colorsHtml}
           ${specimensHtml}
-          ${typeScaleHtml}
-          ${spacingHtml}
-          ${bpHtml}
           ${radiusHtml}
-          ${shadowsHtml}
+          ${motionHtml}
+          ${interactionsHtml}
           ${modesHtml}
           ${cssHtml}`;
       }
@@ -1399,7 +1537,7 @@
         return `
           <div class="section-header">
             <h2>Stack</h2>
-            <button class="edit-btn icon-btn" onclick="showResearch()" style="background:rgba(88,166,255,0.1);color:var(--accent);border-color:rgba(88,166,255,0.2)" title="Research"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+            <button class="header-icon-btn" onclick="showResearch()" title="Research"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
           </div>
           <div class="grid-3">${cards}</div>
           ${
@@ -1489,8 +1627,8 @@
             .then((r) => r.json())
             .then((d) => {
               configCache = d.content || "";
-              const el = document.querySelector(".content");
-              if (el && activeTab === "config") el.innerHTML = renderConfig();
+              const el = document.getElementById("config");
+              if (el) el.innerHTML = renderConfig();
             })
             .catch(() => {
               configCache = "";
@@ -1503,7 +1641,7 @@
             <div class="section-header">
               <h2>CLAUDE.md</h2>
               <div style="display:flex;gap:8px">
-                <button id="config-save" class="edit-btn" style="background:rgba(88,166,255,0.1);color:var(--accent);border-color:rgba(88,166,255,0.2)">Opslaan</button>
+                <button id="config-save" class="edit-btn edit-btn--accent">Opslaan</button>
                 <button id="config-cancel" class="edit-btn">Annuleren</button>
               </div>
             </div>
@@ -1512,17 +1650,19 @@
 
         if (!configCache) {
           return `
-            <div class="section-header"><h2>CLAUDE.md</h2></div>
-            <div style="padding:40px;text-align:center;color:var(--text-dim)">
+            <div class="section-header">
+              <h2>CLAUDE.md</h2>
+              <button id="config-create" class="edit-btn edit-btn--accent">+ Aanmaken</button>
+            </div>
+            <div class="empty-state">
               <p>Geen .claude/CLAUDE.md gevonden</p>
-              <button id="config-create" class="edit-btn" style="margin-top:16px;padding:8px 20px;background:rgba(88,166,255,0.1);color:var(--accent);border-color:rgba(88,166,255,0.2)">Aanmaken</button>
             </div>`;
         }
 
         return `
           <div class="section-header">
             <h2>CLAUDE.md</h2>
-            <button id="config-edit" class="edit-btn icon-btn" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+            <button id="config-edit" class="header-icon-btn" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
           <div class="research-content">${md(configCache)}</div>`;
       }
@@ -1573,6 +1713,293 @@
 
       // ─── Render ─────────────────────────────────────────────
 
+      const TYPE_ICONS = {
+        FEATURE: "◆",
+        API: "⬡",
+        INTEGRATION: "⟳",
+        UI: "▣",
+        REFACTOR: "↺",
+        PAGE: "▤",
+        COMPONENT: "⬡",
+        THEME: "◐",
+        A11Y: "♿",
+        PERF: "⚡",
+        CHANGE: "~",
+        BUG: "✕",
+      };
+
+      const featureDetailCache = {};
+
+      function buildFeatureDetailHtml(detail) {
+        let html = "";
+
+        const files = detail.files || [];
+        if (files.length) {
+          const icons = { create: "+", modify: "~", delete: "−" };
+          const colors = {
+            create: "var(--done)",
+            modify: "var(--accent)",
+            delete: "var(--danger)",
+          };
+          html += `<div class="fm-section"><h4>Files (${files.length})</h4><div class="fm-files">`;
+          files.forEach((f) => {
+            const from = f.lineFrom || null;
+            const to = f.lineTo || null;
+            const rangeAttr =
+              from && to ? ` data-from="${from}" data-to="${to}"` : "";
+            html += `<div class="fm-file" data-path="${esc(f.path)}"${rangeAttr}>
+              <div class="fm-file-row" onclick="toggleSnippet(this)" style="cursor:pointer">
+                <span class="fm-file-action" style="color:${colors[f.action] || "var(--text-dim)"}">${icons[f.action] || "·"}</span>
+                <span class="fm-file-path">${esc(f.path)}</span>
+              </div>
+              <div class="fm-snippet" style="display:none"></div>
+            </div>`;
+          });
+          html += `</div></div>`;
+        }
+
+        const reqs = detail.requirements || [];
+        if (reqs.length) {
+          const hasStatus = reqs.some(
+            (r) => r.status && r.status !== "pending",
+          );
+          const rows = reqs
+            .map((r) => {
+              const statusCls =
+                r.status === "PASS"
+                  ? " fm-req-status--pass"
+                  : r.status === "FAIL"
+                    ? " fm-req-status--fail"
+                    : "";
+              return `<div class="fm-req-row">
+                <span class="fm-req-id">${esc(r.id)}</span>
+                <div class="fm-req-body">
+                  <span class="fm-req-desc">${esc(r.description)}</span>
+                  ${r.technique ? `<span class="fm-req-tech">${esc(r.technique)}</span>` : ""}
+                </div>
+                ${r.category ? `<span class="fm-req-cat">${esc(r.category)}</span>` : ""}
+                ${hasStatus && r.status && r.status !== "pending" ? `<span class="fm-req-status${statusCls}">${esc(r.status.toUpperCase())}</span>` : ""}
+              </div>`;
+            })
+            .join("");
+          html += `<div class="fm-section"><h4>Requirements (${reqs.length})</h4><div class="fm-reqs">${rows}</div></div>`;
+        }
+
+        if (detail.build) {
+          const b = detail.build;
+          const testsMeta = `<span class="fm-build-kv"><span class="fm-build-key">Tests</span><span class="fm-build-val">${b.testsPass || 0}/${b.testsTotal || 0}</span></span>`;
+          html += `<div class="fm-section"><div class="fm-build-meta">${testsMeta}</div>`;
+          if (b.decisions && b.decisions.length)
+            html += `<ul class="fm-decisions">${b.decisions.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>`;
+          if (b.explanation)
+            html += `<p class="fm-explanation">${esc(b.explanation)}</p>`;
+          html += `</div>`;
+        }
+
+        const arch = detail.architecture || {};
+        if (arch.componentTree || (arch.interfaces && arch.interfaces.length)) {
+          html += `<div class="fm-section"><h4>Architectuur</h4>`;
+          if (arch.componentTree)
+            html += `<pre class="fm-tree">${esc(arch.componentTree)}</pre>`;
+          if (arch.interfaces && arch.interfaces.length) {
+            html += `<div class="fm-interfaces">`;
+            arch.interfaces.forEach((i) => {
+              html += `<div class="fm-interface"><span class="fm-iface-name">${esc(i.name)}</span><code class="fm-iface-def">${esc(i.definition)}</code></div>`;
+            });
+            html += `</div>`;
+          }
+          html += `</div>`;
+        }
+
+        const ref = detail.refactor || {};
+        if (ref.status) {
+          const badge =
+            ref.status === "ROLLED_BACK"
+              ? `<span class="refactor-badge refactor-rollback">⚠ ${esc(ref.status)}</span>`
+              : `<span class="refactor-badge refactor-done">✓ ${esc(ref.status)}</span>`;
+          html += `<div class="fm-section fm-refactor-row">${badge}`;
+          if (ref.improvements) {
+            const cats = Object.entries(ref.improvements).filter(
+              ([, v]) => v && (Array.isArray(v) ? v.length : true),
+            );
+            if (cats.length)
+              html += `<span class="fm-ref-cats">${cats.map(([k]) => esc(k)).join(" · ")}</span>`;
+          }
+          html += `</div>`;
+        }
+
+        return html;
+      }
+
+      async function openFeatureModal(name) {
+        const modal = document.getElementById("feature-modal");
+        const title = document.getElementById("feature-modal-title");
+        const body = document.getElementById("feature-modal-body");
+        if (!modal) return;
+
+        title.textContent = name;
+        body.innerHTML = '<div class="fm-loading">Laden…</div>';
+        modal.classList.add("active");
+
+        let detail = featureDetailCache[name];
+        if (!detail) {
+          try {
+            const base = location.pathname
+              .replace(/\/dashboard\/?$/, "")
+              .replace(/\/+$/, "");
+            const res = await fetch(
+              base + "/feature/" + encodeURIComponent(name),
+            );
+            if (res.ok) {
+              detail = await res.json();
+              featureDetailCache[name] = detail;
+            }
+          } catch {}
+        }
+
+        body.innerHTML = detail
+          ? buildFeatureDetailHtml(detail)
+          : '<p style="color:var(--text-dim)">Geen feature.json gevonden.</p>';
+      }
+
+      async function toggleDashFeature(summaryEl, name) {
+        const rowEl = summaryEl.closest(".feat-row");
+        if (!rowEl) return;
+        const expandEl = rowEl.querySelector(".feat-expand");
+        const isOpen = rowEl.classList.contains("expanded");
+        if (isOpen) {
+          rowEl.classList.remove("expanded");
+          expandEl.style.display = "none";
+          return;
+        }
+        rowEl.classList.add("expanded");
+        expandEl.style.display = "block";
+        if (expandEl.dataset.loaded) return;
+
+        expandEl.innerHTML =
+          '<div style="padding:12px 0 4px;color:var(--text-dim);font-size:12px">Laden…</div>';
+        let detail = featureDetailCache[name];
+        if (!detail) {
+          try {
+            const base = location.pathname
+              .replace(/\/dashboard\/?$/, "")
+              .replace(/\/+$/, "");
+            const res = await fetch(
+              base + "/feature/" + encodeURIComponent(name),
+            );
+            if (res.ok) {
+              detail = await res.json();
+              featureDetailCache[name] = detail;
+            }
+          } catch {}
+        }
+        if (
+          detail &&
+          (detail.summary ||
+            detail.files ||
+            detail.requirements ||
+            detail.build)
+        ) {
+          expandEl.innerHTML = buildFeatureDetailHtml(detail);
+          expandEl.dataset.loaded = "1";
+        } else {
+          expandEl.innerHTML =
+            '<div style="padding:8px 0;color:var(--text-dim);font-size:12px">Geen detail beschikbaar.</div>';
+          expandEl.dataset.loaded = "1";
+        }
+      }
+
+      async function toggleSnippet(rowEl) {
+        const fileEl = rowEl.closest(".fm-file");
+        const snippetEl = fileEl.querySelector(".fm-snippet");
+        if (!snippetEl) return;
+
+        if (snippetEl.style.display !== "none") {
+          snippetEl.style.display = "none";
+          rowEl.classList.remove("active");
+          return;
+        }
+
+        const path = fileEl.dataset.path;
+        const from = fileEl.dataset.from;
+        const to = fileEl.dataset.to;
+
+        if (!snippetEl.dataset.loaded) {
+          snippetEl.innerHTML =
+            '<span style="color:var(--text-dim);font-size:11px">Laden…</span>';
+          snippetEl.style.display = "block";
+          try {
+            const base = location.pathname
+              .replace(/\/dashboard\/?$/, "")
+              .replace(/\/+$/, "");
+            let url = base + "/file?path=" + encodeURIComponent(path);
+            if (from) url += "&from=" + from;
+            if (to) url += "&to=" + to;
+            const res = await fetch(url);
+            if (res.ok) {
+              const d = await res.json();
+              const driftWarning =
+                d.sha &&
+                fileEl.dataset.shippedSha &&
+                d.sha !== fileEl.dataset.shippedSha
+                  ? `<div class="fm-drift-warning">⚠ Bestand gewijzigd na shipped</div>`
+                  : "";
+              snippetEl.innerHTML =
+                driftWarning +
+                `<pre class="fm-code"><code>${esc(d.content)}</code></pre>`;
+              snippetEl.dataset.loaded = "1";
+            } else {
+              snippetEl.innerHTML =
+                '<span style="color:var(--danger);font-size:11px">Kan bestand niet laden</span>';
+            }
+          } catch {
+            snippetEl.innerHTML =
+              '<span style="color:var(--danger);font-size:11px">Server niet bereikbaar</span>';
+          }
+        } else {
+          snippetEl.style.display = "block";
+        }
+        rowEl.classList.add("active");
+      }
+
+      function closeFeatureModal() {
+        const modal = document.getElementById("feature-modal");
+        if (modal) modal.classList.remove("active");
+      }
+
+      function renderFeatures() {
+        let shipped = (data.features || []).filter((f) => f.shipped);
+
+        if (!shipped.length) {
+          return `
+            <div class="section-header"><h2>Features</h2></div>
+            <div class="empty-state">
+              <p>Nog geen shipped features.</p>
+              <p style="color:var(--text-dim)">Run <code>/dev-refactor</code> om features te promoten naar het dashboard.</p>
+            </div>`;
+        }
+
+        const rowsHtml = shipped
+          .map((f) => {
+            const dateStr = f.shippedAt || f.date || "";
+            return `
+            <div class="feat-row">
+              <div class="feat-row-summary" onclick="toggleDashFeature(this,'${esc(f.name)}')">
+                <span class="feat-name">${esc(f.name)}</span>
+                ${f.description ? `<span class="feat-desc">${esc(f.description)}</span>` : ""}
+                <span class="feat-type">${esc(f.type || "FEATURE")}</span>
+                ${dateStr ? `<span class="feat-date">${esc(dateStr)}</span>` : ""}
+              </div>
+              <div class="feat-expand" style="display:none"></div>
+            </div>`;
+          })
+          .join("");
+
+        return `
+          <div class="section-header"><h2>Features</h2></div>
+          <div class="feat-list">${rowsHtml}</div>`;
+      }
+
       function renderLearnings() {
         const all = (data.learnings || [])
           .slice()
@@ -1587,15 +2014,13 @@
           },
         ];
 
-        const sections = groups
+        const learningsSections = groups
           .map((g) => {
             const items = all.filter((l) => l.type === g.type);
             if (!items.length) return "";
             const rows = items
               .map((l) => {
-                const src = l.source || "extracted";
                 return `<div class="learnings-row">
-                  <span class="badge-source badge-source--${esc(src)}">${esc(src)}</span>
                   <span class="learnings-date">${esc(l.date || "")}</span>
                   <span class="learnings-feature" onclick="navigateToFeature('${esc(l.feature || "")}')">${esc(l.feature || "—")}</span>
                   <span class="learnings-summary">${esc(l.summary || "")}</span>
@@ -1603,17 +2028,42 @@
               })
               .join("");
             return `<div class="learnings-group learnings-group--${g.type}">
-              <h3>${g.label} <span class="learnings-group-desc">${g.desc}</span> <span class="learnings-count">${items.length}</span></h3>
+              <h3>${g.label} <span class="learnings-group-desc">${g.desc}</span></h3>
               ${rows}
             </div>`;
           })
           .join("");
 
+        // Principles vanuit data.design
+        const d = data.design || {};
+        const principles = d.principles || [];
+
+        const principlesSection = principles.length
+          ? `<div class="learnings-group learnings-group--principles">
+              <h3>Principles</h3>
+              ${principles
+                .map(
+                  (p) => `
+              <div class="learnings-row" style="display:flex;align-items:baseline;gap:16px">
+                <span class="learnings-summary" style="font-weight:500;color:var(--text);white-space:nowrap;flex-shrink:0">${esc(p.name)}</span>
+                <span class="learnings-summary" style="flex:1">${esc(p.description || "")}</span>
+              </div>`,
+                )
+                .join("")}
+            </div>`
+          : "";
+
+        const hasContent = learningsSections || principlesSection;
+
         return `
           <div class="section-header">
-            <h2>Learnings</h2>
+            <h2>Knowledge</h2>
           </div>
-          ${sections || `<div class="empty-state"><p>Nog geen learnings vastgelegd.</p><p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-verify</code> of <code>/game-verify</code></p></div>`}
+          ${
+            hasContent
+              ? `${learningsSections}${principlesSection}`
+              : `<div class="empty-state"><p>Nog geen knowledge vastgelegd.</p><p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-verify</code> of <code>/game-verify</code></p></div>`
+          }
         `;
       }
 
@@ -1625,32 +2075,237 @@
       }
 
       const renderers = {
+        features: renderFeatures,
         concept: renderConcept,
         architecture: renderArchitecture,
         stack: renderStack,
-        design: renderDesignContent,
         theme: renderTheme,
         learnings: renderLearnings,
         config: renderConfig,
       };
 
-      function render() {
-        // Header
-        let headerEl = document.querySelector("header");
-        if (!headerEl) {
-          headerEl = document.createElement("header");
-          document.body.prepend(headerEl);
+      function renderSearchResults(q) {
+        const results = [];
+
+        const hit = (text) => (text || "").toLowerCase().includes(q);
+
+        (data.features || [])
+          .filter((f) => f.shipped)
+          .forEach((f) => {
+            if (hit(f.name) || hit(f.description))
+              results.push({
+                section: "Features",
+                anchor: "#features",
+                type: f.type || "FEATURE",
+                name: f.name,
+                desc: f.description || "",
+              });
+          });
+
+        const arch = data.architecture || {};
+        (arch.components || []).forEach((c) => {
+          if (hit(c.name) || hit(c.description))
+            results.push({
+              section: "Architecture",
+              anchor: "#architecture",
+              type: "component",
+              name: c.name,
+              desc: c.description || "",
+            });
+        });
+        (arch.routes || []).forEach((r) => {
+          const label = r.path || r.name || "";
+          if (hit(label) || hit(r.description))
+            results.push({
+              section: "Architecture",
+              anchor: "#architecture",
+              type: "route",
+              name: label,
+              desc: r.description || "",
+            });
+        });
+        (arch.endpoints || []).forEach((e) => {
+          const label = e.method ? `${e.method} ${e.path}` : e.path || "";
+          if (hit(label) || hit(e.description))
+            results.push({
+              section: "Architecture",
+              anchor: "#architecture",
+              type: "endpoint",
+              name: label,
+              desc: e.description || "",
+            });
+        });
+        (arch.entities || []).forEach((e) => {
+          if (hit(e.name) || hit(e.description))
+            results.push({
+              section: "Architecture",
+              anchor: "#architecture",
+              type: "entity",
+              name: e.name,
+              desc: e.description || "",
+            });
+        });
+
+        const stack = data.stack || {};
+        ["framework", "language", "styling", "db", "auth", "hosting"].forEach(
+          (k) => {
+            if (stack[k] && hit(stack[k]))
+              results.push({
+                section: "Stack",
+                anchor: "#stack",
+                type: k,
+                name: stack[k],
+                desc: "",
+              });
+          },
+        );
+        (stack.packages || []).forEach((p) => {
+          const name = p.name || (typeof p === "string" ? p : "");
+          if (hit(name) || hit(p.description))
+            results.push({
+              section: "Stack",
+              anchor: "#stack",
+              type: "package",
+              name,
+              desc: p.description || "",
+            });
+        });
+
+        (data.learnings || []).forEach((l) => {
+          if (hit(l.summary) || hit(l.feature))
+            results.push({
+              section: "Knowledge",
+              anchor: "#learnings",
+              type: l.type || "learning",
+              name: l.summary || "",
+              desc: l.feature || "",
+            });
+        });
+
+        const design = data.design || {};
+        (design.flows || []).forEach((f) => {
+          if (hit(f.name) || hit(f.description))
+            results.push({
+              section: "Knowledge",
+              anchor: "#learnings",
+              type: "flow",
+              name: f.name,
+              desc: f.description || "",
+            });
+        });
+        (design.principles || []).forEach((p) => {
+          if (hit(p.name) || hit(p.description))
+            results.push({
+              section: "Knowledge",
+              anchor: "#learnings",
+              type: "principle",
+              name: p.name,
+              desc: p.description || "",
+            });
+        });
+
+        const theme = data.theme || {};
+        const themeColors = theme.colors || {};
+        ["main", "accent", "semantic"].forEach((group) => {
+          (themeColors[group] || []).forEach((c) => {
+            if (hit(c.token) || hit(c.value) || hit(c.usage))
+              results.push({
+                section: "Design System",
+                anchor: "#theme",
+                type: "color",
+                name: c.token,
+                desc: c.value + (c.usage ? " — " + c.usage : ""),
+              });
+          });
+        });
+        const families = (theme.typography || {}).families || {};
+        ["heading", "body", "mono"].forEach((role) => {
+          if (families[role] && hit(families[role]))
+            results.push({
+              section: "Design System",
+              anchor: "#theme",
+              type: "font",
+              name: families[role],
+              desc: role,
+            });
+        });
+        ((theme.typography || {}).sizes || []).forEach((s) => {
+          if (hit(s.token) || hit(s.size))
+            results.push({
+              section: "Design System",
+              anchor: "#theme",
+              type: "type",
+              name: s.token,
+              desc: s.size,
+            });
+        });
+        [
+          { key: "spacing", items: (theme.spacing || {}).scale || [] },
+          { key: "breakpoint", items: theme.breakpoints || [] },
+          { key: "radius", items: theme.borderRadius || [] },
+          { key: "shadow", items: theme.shadows || [] },
+        ].forEach(({ key, items }) => {
+          items.forEach((item) => {
+            if (
+              hit(item.token) ||
+              hit(item.value) ||
+              hit(item.usage) ||
+              hit(item.target)
+            )
+              results.push({
+                section: "Design System",
+                anchor: "#theme",
+                type: key,
+                name: item.token,
+                desc:
+                  item.value +
+                  (item.usage || item.target
+                    ? " — " + (item.usage || item.target)
+                    : ""),
+              });
+          });
+        });
+
+        if (!results.length) {
+          return `<div class="sr-empty">Geen resultaten voor <strong>${esc(q)}</strong></div>`;
         }
-        const projectName = data.concept.name || "Dashboard";
+
+        const groups = {};
+        results.forEach((r) => {
+          if (!groups[r.section]) groups[r.section] = [];
+          groups[r.section].push(r);
+        });
+
+        return `<div class="sr-results">${Object.entries(groups)
+          .map(
+            ([section, items]) => `
+          <div class="sr-section">
+            <div class="sr-section-label">${esc(section)}</div>
+            ${items
+              .map(
+                (item) => `
+              <a href="${item.anchor}" class="sr-item" onclick="setTimeout(()=>{document.getElementById('dash-search').value='';render();},80)">
+                <span class="sr-badge">${esc(item.type)}</span>
+                <span class="sr-name">${esc(item.name)}</span>
+                ${item.desc ? `<span class="sr-desc">${esc(item.desc)}</span>` : ""}
+              </a>`,
+              )
+              .join("")}
+          </div>`,
+          )
+          .join("")}</div>`;
+      }
+
+      function render() {
+        const projectName = data.concept.name || data.name || "Dashboard";
         document.title = projectName + " — Dashboard";
-        headerEl.innerHTML = "";
 
         // Layout
         let layoutEl = document.querySelector(".layout");
         if (!layoutEl) {
           layoutEl = document.createElement("div");
           layoutEl.className = "layout";
-          headerEl.after(layoutEl);
+          document.body.appendChild(layoutEl);
         }
 
         // Sidebar
@@ -1661,13 +2316,9 @@
           layoutEl.prepend(sidebarEl);
         }
 
-        // Hide tabs for empty optional sections
+        // Determine which sections to show (skip empty optional ones)
         const d = data.design || {};
         const th = data.theme || {};
-        const hasDesign =
-          (d.pages && d.pages.length) ||
-          (d.flows && d.flows.length) ||
-          (d.principles && d.principles.length);
         const tc = th.colors && !Array.isArray(th.colors) ? th.colors : {};
         const hasTheme =
           (tc.main && tc.main.length) ||
@@ -1677,35 +2328,45 @@
             th.typography.sizes &&
             th.typography.sizes.length) ||
           th.cssVars;
-        const hasLearnings = (data.learnings || []).length > 0;
-        const hiddenTabs = {};
-        if (!hasDesign) hiddenTabs.design = true;
-        if (!hasTheme) hiddenTabs.theme = true;
-        if (!hasLearnings) hiddenTabs.learnings = true;
+        const hasLearnings =
+          (data.learnings || []).length > 0 ||
+          (d.flows && d.flows.length) ||
+          (d.principles && d.principles.length);
+        const a = data.architecture || {};
+        const hasArchitecture =
+          (a.routes && a.routes.length) ||
+          (a.components && a.components.length) ||
+          (a.endpoints && a.endpoints.length) ||
+          (a.entities && a.entities.length) ||
+          (a.diagram && a.diagram.trim());
+        const hasStack = !!(
+          data.stack &&
+          (data.stack.framework || data.stack.language)
+        );
+        const hasConcept = !!(
+          data.concept &&
+          (data.concept.name || data.concept.content)
+        );
+        const hasFeatures = (data.features || []).length > 0;
+        const hiddenSections = {};
+        if (!hasTheme) hiddenSections.theme = true;
+        if (!hasLearnings) hiddenSections.learnings = true;
+        if (!hasArchitecture) hiddenSections.architecture = true;
+        if (!hasStack) hiddenSections.stack = true;
+        if (!hasConcept) hiddenSections.concept = true;
+        if (!hasFeatures) hiddenSections.features = true;
 
-        const visibleTabs = TABS.filter((t) => !hiddenTabs[t.id]);
-        if (hiddenTabs[activeTab]) {
-          activeTab = visibleTabs[0].id;
-        }
+        const visibleTabs = TABS.filter((t) => !hiddenSections[t.id]);
 
+        // Sidebar: anchor links (no tab switching)
         sidebarEl.innerHTML = visibleTabs
           .map(
             (t) =>
-              `<a href="#${t.id}" class="${activeTab === t.id ? "active" : ""}" data-tab="${t.id}">${esc(t.label)}</a>`,
+              `<a href="#${t.id}" data-section="${t.id}">${esc(t.label)}</a>`,
           )
           .join("");
 
-        // Wire tab clicks
-        sidebarEl.querySelectorAll("[data-tab]").forEach((a) => {
-          a.addEventListener("click", (e) => {
-            e.preventDefault();
-            activeTab = a.dataset.tab;
-            localStorage.setItem("dashboard-tab", activeTab);
-            render();
-          });
-        });
-
-        // Content
+        // Content: all sections simultaneously
         let contentEl = layoutEl.querySelector(".content");
         if (!contentEl) {
           contentEl = document.createElement("main");
@@ -1713,8 +2374,98 @@
           layoutEl.appendChild(contentEl);
         }
 
-        const renderer = renderers[activeTab];
-        contentEl.innerHTML = renderer ? renderer() : "";
+        // Toolbar — created once at top of content (preserves search focus)
+        if (!contentEl.querySelector(".content-toolbar")) {
+          const toolbar = document.createElement("div");
+          toolbar.className = "content-toolbar";
+          toolbar.innerHTML = `<input id="dash-search" class="content-toolbar-search" placeholder="Zoeken..." oninput="render()" />`;
+          contentEl.appendChild(toolbar);
+        }
+
+        // Sections: replace on each render
+        let sectionsEl = contentEl.querySelector(".dash-sections");
+        if (!sectionsEl) {
+          sectionsEl = document.createElement("div");
+          sectionsEl.className = "dash-sections";
+          contentEl.appendChild(sectionsEl);
+        }
+        const q = getDashSearch();
+        if (q) {
+          sectionsEl.innerHTML = renderSearchResults(q);
+        } else {
+          sectionsEl.innerHTML = visibleTabs
+            .map(
+              (t) =>
+                `<section id="${t.id}" class="dash-section">${renderers[t.id] ? renderers[t.id]() : ""}</section>`,
+            )
+            .join("");
+        }
+
+        sectionsEl.onclick = (e) => {
+          if (e.target.closest("button, a, input, select, textarea")) return;
+          const learningsH3 = e.target.closest(".learnings-group > h3");
+          if (learningsH3) {
+            learningsH3.parentElement.classList.toggle("collapsed");
+            return;
+          }
+          const sgTitle = e.target.closest(".sg-section > .sg-section-title");
+          if (sgTitle) {
+            sgTitle.parentElement.classList.toggle("collapsed");
+            return;
+          }
+          const sectionHeader = e.target.closest(
+            ".dash-section > .section-header",
+          );
+          if (sectionHeader) {
+            sectionHeader.parentElement.classList.toggle("collapsed");
+            return;
+          }
+        };
+
+        // Sidebar active state: pick section closest to top of viewport
+        let _dashClickFrozen = false;
+        let _dashClickTimer = null;
+        function setDashActive(id) {
+          sidebarEl.querySelectorAll("a[data-section]").forEach((a) => {
+            a.classList.toggle("active", a.dataset.section === id);
+          });
+        }
+        function updateDashSidebarActive() {
+          if (_dashClickFrozen) return;
+          const sections = Array.from(
+            contentEl.querySelectorAll(".dash-section[id]"),
+          );
+          if (!sections.length) return;
+          // Find section whose top is closest to 60px (just below sticky header)
+          let best = sections[0];
+          let bestDist = Infinity;
+          sections.forEach((s) => {
+            const top = s.getBoundingClientRect().top;
+            const dist = Math.abs(top - 60);
+            if (dist < bestDist) {
+              bestDist = dist;
+              best = s;
+            }
+          });
+          setDashActive(best.id);
+        }
+        // On click: freeze scroll-based updates for 800ms so click wins
+        sidebarEl.querySelectorAll("a[data-section]").forEach((a) => {
+          a.addEventListener("click", () => {
+            _dashClickFrozen = true;
+            setDashActive(a.dataset.section);
+            clearTimeout(_dashClickTimer);
+            _dashClickTimer = setTimeout(() => {
+              _dashClickFrozen = false;
+            }, 800);
+          });
+        });
+        window.removeEventListener("scroll", window._dashSidebarScroll);
+        window._dashSidebarScroll = updateDashSidebarActive;
+        window.addEventListener("scroll", updateDashSidebarActive, {
+          passive: true,
+        });
+        updateDashSidebarActive();
       }
 
       // ─── Init ───────────────────────────────────────────────
@@ -1735,6 +2486,25 @@
         },
       });
       render();
+    </script>
+    <button
+      id="back-to-top"
+      onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
+      title="Naar boven"
+    >
+      ↑
+    </button>
+    <script>
+      (function () {
+        const btn = document.getElementById("back-to-top");
+        window.addEventListener(
+          "scroll",
+          () => {
+            btn.classList.toggle("visible", window.scrollY > 300);
+          },
+          { passive: true },
+        );
+      })();
     </script>
   </body>
 </html>

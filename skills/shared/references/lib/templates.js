@@ -29,7 +29,6 @@ function getNavBarHtml(projectDir, activePage) {
   return `
 <style>
   body { padding-top: 48px !important; }
-  body > header { display:none !important; }
   #project-nav { position:fixed; top:0; left:0; right:0; height:48px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; z-index:9999; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; padding:0 20px; }
   #project-nav a { text-decoration:none; transition:all 0.15s; }
   #project-nav .pn-back { color:var(--text-muted); }

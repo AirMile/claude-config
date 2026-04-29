@@ -23,6 +23,7 @@ const {
   PORT,
   BACKLOG_PATH,
   DASHBOARD_PATH,
+  TEMPLATE_PATH,
 } = require("./lib/config");
 const {
   findProjects,
@@ -96,6 +97,20 @@ http
           "Cache-Control": "no-cache",
         });
         res.end(fs.readFileSync(staticFile, "utf8"));
+        return;
+      }
+    }
+
+    // Prototype HTML files
+    const protoMatch = url.pathname.match(/^\/prototypes\/([\w-]+\.html)$/);
+    if (req.method === "GET" && protoMatch) {
+      const protoFile = path.join(__dirname, "prototypes", protoMatch[1]);
+      if (fs.existsSync(protoFile)) {
+        res.writeHead(200, {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache",
+        });
+        res.end(fs.readFileSync(protoFile, "utf8"));
         return;
       }
     }
@@ -344,7 +359,7 @@ http
         return;
       }
 
-      // Serve backlog
+      // Serve backlog — auto-migration: data persists in .project/backlog.html, layout always from template
       if (
         req.method === "GET" &&
         parts[1] === "backlog" &&
@@ -352,22 +367,69 @@ http
       ) {
         touchProject(projectDir);
         const file = path.join(projectPath, BACKLOG_PATH);
-        if (!fs.existsSync(file)) {
+
+        // Extract data from existing backlog file
+        var backlogData = null;
+        if (fs.existsSync(file)) {
+          try {
+            const existingHtml = fs.readFileSync(file, "utf8");
+            const dataMatch = existingHtml.match(
+              /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
+            );
+            if (dataMatch) backlogData = dataMatch[1].trim();
+          } catch {}
+        }
+
+        // If no existing file, create one to initialize the data store
+        if (!backlogData) {
           try {
             createBacklog(projectDir);
+            const existingHtml = fs.readFileSync(file, "utf8");
+            const dataMatch = existingHtml.match(
+              /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
+            );
+            if (dataMatch) backlogData = dataMatch[1].trim();
           } catch (e) {
             res.writeHead(500);
             res.end("Create error: " + e.message);
             return;
           }
         }
+
         try {
-          var html = fs.readFileSync(file, "utf8");
-          // Strip legacy elements from old backlogs
-          html = html.replace(/<a[^>]*class="back-btn"[^>]*>[^<]*<\/a>/g, "");
-          // Inject theme system into <head>
-          if (!html.includes("themes.js")) {
-            html = html.replace("</head>", themeHeadTags + "</head>");
+          var html = fs.readFileSync(TEMPLATE_PATH, "utf8");
+          if (backlogData) {
+            // Enrich backlog data with project name/overview from project.json if missing
+            try {
+              var parsedData = JSON.parse(backlogData);
+              if (!parsedData.project || !parsedData.overview) {
+                var projFile = path.join(
+                  PROJECTS_ROOT,
+                  projectDir,
+                  DASHBOARD_PATH,
+                );
+                if (fs.existsSync(projFile)) {
+                  var projJson = JSON.parse(fs.readFileSync(projFile, "utf8"));
+                  if (!parsedData.project)
+                    parsedData.project = projJson.name || projectDir;
+                  if (!parsedData.overview)
+                    parsedData.overview =
+                      projJson.subtitle || projJson.concept || "";
+                } else if (!parsedData.project) {
+                  parsedData.project = projectDir;
+                }
+                backlogData = JSON.stringify(parsedData, null, 2);
+              }
+            } catch {}
+            var startTag = '<script id="backlog-data" type="application/json">';
+            var startIdx = html.indexOf(startTag) + startTag.length;
+            var endIdx = html.indexOf("</script>", startIdx);
+            html =
+              html.substring(0, startIdx) +
+              "\n" +
+              backlogData +
+              "\n" +
+              html.substring(endIdx);
           }
           const nav = getNavBarHtml(projectDir, "backlog");
           const projectRoot = path.join(PROJECTS_ROOT, projectDir);
@@ -633,6 +695,116 @@ http
 
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result, null, 2));
+        return;
+      }
+
+      // File snippet endpoint: GET /{project}/file?path=<rel>&from=<n>&to=<m>
+      if (req.method === "GET" && parts[1] === "file" && parts.length === 2) {
+        var fileUrl = new URL(req.url, "http://localhost");
+        var relPath = fileUrl.searchParams.get("path");
+        var fromLine = parseInt(fileUrl.searchParams.get("from"), 10) || null;
+        var toLine = parseInt(fileUrl.searchParams.get("to"), 10) || null;
+
+        if (!relPath) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "path parameter verplicht" }));
+          return;
+        }
+
+        // Security: prevent path traversal
+        var resolvedPath = path.resolve(projectPath, relPath);
+        var projectSep = projectPath.endsWith(path.sep)
+          ? projectPath
+          : projectPath + path.sep;
+        if (
+          !resolvedPath.startsWith(projectSep) &&
+          resolvedPath !== projectPath
+        ) {
+          res.writeHead(403, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Toegang geweigerd" }));
+          return;
+        }
+
+        // Extension allowlist — no binaries
+        var ALLOWED_EXTS = [
+          ".ts",
+          ".tsx",
+          ".js",
+          ".jsx",
+          ".mjs",
+          ".cjs",
+          ".gd",
+          ".py",
+          ".rb",
+          ".go",
+          ".rs",
+          ".css",
+          ".scss",
+          ".sass",
+          ".less",
+          ".html",
+          ".json",
+          ".md",
+          ".txt",
+          ".yaml",
+          ".yml",
+          ".toml",
+          ".env.example",
+        ];
+        var fileExt = path.extname(resolvedPath).toLowerCase();
+        if (!ALLOWED_EXTS.includes(fileExt)) {
+          res.writeHead(403, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Bestandstype niet toegestaan" }));
+          return;
+        }
+
+        if (!fs.existsSync(resolvedPath)) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Bestand niet gevonden" }));
+          return;
+        }
+
+        try {
+          var fileContent = fs.readFileSync(resolvedPath, "utf8");
+          var lines = fileContent.split("\n");
+          var totalLines = lines.length;
+
+          var fromIdx = fromLine ? Math.max(1, fromLine) : 1;
+          var toIdx = toLine ? Math.min(totalLines, toLine) : totalLines;
+          var excerpt = lines.slice(fromIdx - 1, toIdx).join("\n");
+
+          // Get git blob sha for drift detection
+          var sha = null;
+          try {
+            var cp = require("child_process");
+            sha = cp
+              .execSync(
+                'git -C "' +
+                  projectPath +
+                  '" hash-object "' +
+                  resolvedPath +
+                  '"',
+                { timeout: 2000 },
+              )
+              .toString()
+              .trim();
+          } catch (_) {}
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              path: relPath,
+              from: fromIdx,
+              to: toIdx,
+              content: excerpt,
+              totalLines,
+              sha,
+            }),
+          );
+        } catch (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err.message }));
+        }
         return;
       }
 

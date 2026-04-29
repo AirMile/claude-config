@@ -1,0 +1,1461 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard v3 — Prototype</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --surface-2: #1c2333;
+        --border: #30363d;
+        --border-soft: #21262d;
+        --text: #e6edf3;
+        --text-muted: #8b949e;
+        --text-dim: #6e7681;
+        --accent: #58a6ff;
+        --todo: #8b949e;
+        --defined: #d29922;
+        --doing: #58a6ff;
+        --done: #3fb950;
+        --danger: #f85149;
+        --pink: #f778ba;
+        --purple: #d2a8ff;
+        --cyan: #39d4e0;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 32px 36px 64px;
+      }
+      header {
+        padding-left: calc(170px + 28px);
+        margin-bottom: 20px;
+      }
+      header h1 {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      header p {
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .top-nav {
+        position: relative;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin: 0 0 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .top-nav::before {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: calc(-1 * (170px + 28px));
+        width: calc(170px + 28px);
+        height: 1px;
+        background: var(--border);
+      }
+      .top-nav a {
+        text-decoration: none;
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 8px 0;
+        border-bottom: 2px solid transparent;
+      }
+      .top-nav a.active {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+      }
+      .top-nav .nav-spacer {
+        flex: 1;
+      }
+      .nav-search {
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+      }
+      .nav-search:hover {
+        color: var(--text);
+        background: var(--surface);
+      }
+      .layout {
+        display: flex;
+        gap: 28px;
+        align-items: flex-start;
+      }
+      .board-area {
+        flex: 1;
+        min-width: 0;
+      }
+      .sidebar {
+        position: sticky;
+        top: 16px;
+        width: 170px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .side-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        text-decoration: none;
+        color: var(--text-muted);
+        font-size: 12px;
+        border-left: 2px solid transparent;
+      }
+      .side-item:hover {
+        background: var(--surface);
+        color: var(--text);
+      }
+      .side-item.active {
+        background: var(--surface);
+        color: var(--text);
+        font-weight: 600;
+      }
+      .side-item .label {
+        flex: 1;
+      }
+      .side-item .count {
+        font-size: 11px;
+        color: var(--text-dim);
+        font-variant-numeric: tabular-nums;
+      }
+      .side-item.features {
+        border-left-color: var(--accent);
+      }
+      .side-item.design {
+        border-left-color: var(--pink);
+      }
+      .side-item.architecture {
+        border-left-color: var(--cyan);
+      }
+      .side-item.knowledge {
+        border-left-color: var(--purple);
+      }
+      .side-item.theme {
+        border-left-color: var(--defined);
+      }
+      .side-item.stack {
+        border-left-color: var(--done);
+      }
+      #board {
+        flex: 1;
+        min-width: 0;
+      }
+      .group {
+        margin-bottom: 18px;
+      }
+      .group-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        background: var(--surface);
+        border-left: 4px solid transparent;
+        border-radius: 4px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .group-header h2 {
+        font-size: 13px;
+        font-weight: 600;
+        flex: 1;
+      }
+      .group-header .count {
+        font-size: 12px;
+        color: var(--text-dim);
+        font-variant-numeric: tabular-nums;
+      }
+      .group-header .group-tip {
+        font-size: 11px;
+        color: var(--text-dim);
+        font-style: italic;
+      }
+      .group-header.features {
+        border-left-color: var(--accent);
+      }
+      .group-header.design {
+        border-left-color: var(--pink);
+      }
+      .group-header.architecture {
+        border-left-color: var(--cyan);
+      }
+      .group-header.knowledge {
+        border-left-color: var(--purple);
+      }
+      .group-header.theme {
+        border-left-color: var(--defined);
+      }
+      .group-header.stack {
+        border-left-color: var(--done);
+      }
+      .group-body {
+        overflow: hidden;
+        transition: max-height 0.2s ease;
+        padding: 8px 4px;
+      }
+      .group.collapsed .group-body {
+        max-height: 0 !important;
+        padding: 0;
+      }
+
+      /* Shipped feature rows */
+      .sf-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      .sf-row:hover {
+        background: var(--surface-2);
+      }
+      .sf-icon {
+        font-size: 12px;
+        color: var(--accent);
+        width: 16px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .sf-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text);
+        min-width: 130px;
+        flex-shrink: 0;
+      }
+      .sf-type {
+        font-size: 10px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        min-width: 70px;
+        flex-shrink: 0;
+      }
+      .sf-summary {
+        font-size: 11px;
+        color: var(--text-muted);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .sf-meta {
+        font-size: 10px;
+        color: var(--text-dim);
+        white-space: nowrap;
+      }
+
+      .rc-section {
+        margin-top: 8px;
+      }
+      .rc-header {
+        margin-bottom: 6px;
+        padding: 0 8px;
+      }
+      .rc-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .rc-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+      .rc-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 8px;
+        border-radius: 4px;
+      }
+      .rc-row:hover {
+        background: var(--surface-2);
+      }
+      .rc-icon {
+        font-size: 11px;
+        color: var(--text-dim);
+        width: 14px;
+        text-align: center;
+      }
+      .rc-name {
+        font-size: 11px;
+        font-weight: 500;
+        min-width: 130px;
+      }
+      .rc-type {
+        font-size: 10px;
+        color: var(--text-dim);
+        min-width: 60px;
+      }
+      .rc-desc {
+        font-size: 11px;
+        color: var(--text-muted);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .rc-date {
+        font-size: 10px;
+        color: var(--text-dim);
+      }
+
+      .sub-divider {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 0 4px 8px;
+        color: var(--text-dim);
+        font-size: 11px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .sub-divider .chevron {
+        width: 9px;
+        height: 9px;
+        transition: transform 0.15s;
+        flex-shrink: 0;
+      }
+      .sub-divider.collapsed .chevron {
+        transform: rotate(-90deg);
+      }
+      .sub-group {
+        overflow: hidden;
+        transition: max-height 0.2s ease;
+      }
+      .sub-group.collapsed {
+        max-height: 0;
+      }
+
+      .empty-state {
+        padding: 20px;
+        text-align: center;
+        color: var(--text-dim);
+        font-size: 12px;
+      }
+      .empty-state code {
+        background: var(--surface-2);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-family: ui-monospace, monospace;
+        color: var(--accent);
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 12px;
+        border-radius: 4px;
+      }
+      .row:hover {
+        background: var(--surface-2);
+      }
+      .row-name {
+        font-size: 12px;
+        min-width: 150px;
+      }
+      .row-meta {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .badge {
+        display: inline-flex;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 500;
+        background: var(--surface-2);
+        color: var(--text-muted);
+      }
+      .badge.done {
+        background: color-mix(in srgb, var(--done) 18%, transparent);
+        color: var(--done);
+      }
+      .badge.layer {
+        background: color-mix(in srgb, var(--cyan) 18%, transparent);
+        color: var(--cyan);
+      }
+
+      /* Modal */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 60px;
+        z-index: 50;
+      }
+      .modal-backdrop.visible {
+        display: flex;
+      }
+      .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        max-width: 720px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 20px 24px;
+      }
+      .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .modal-header h2 {
+        font-size: 16px;
+        font-weight: 600;
+        flex: 1;
+      }
+      .modal .close {
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        font-size: 20px;
+        cursor: pointer;
+      }
+      .modal-meta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .modal-section {
+        margin-bottom: 14px;
+      }
+      .modal-section h3 {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+      }
+      .modal-section p {
+        font-size: 13px;
+      }
+
+      /* File list in modal */
+      .fm-files {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-top: 6px;
+      }
+      .fm-file-wrap {
+        margin-bottom: 2px;
+      }
+      .fm-file-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 5px 8px;
+        border-radius: 4px;
+        background: var(--surface-2);
+        font-size: 11px;
+      }
+      .fm-action {
+        font-family: ui-monospace, monospace;
+        font-weight: 700;
+        width: 14px;
+        text-align: center;
+      }
+      .fm-action.added {
+        color: var(--done);
+      }
+      .fm-action.modified {
+        color: var(--defined);
+      }
+      .fm-action.deleted {
+        color: var(--danger);
+      }
+      .fm-path {
+        font-family: ui-monospace, monospace;
+        color: var(--accent);
+        min-width: 180px;
+      }
+      .fm-purpose {
+        color: var(--text-muted);
+        flex: 1;
+      }
+      .fm-snippet-btn {
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text-dim);
+        cursor: pointer;
+        font-family: ui-monospace, monospace;
+        font-size: 10px;
+        padding: 1px 5px;
+      }
+      .fm-snippet-btn:hover,
+      .fm-snippet-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .fm-snippet-body {
+        margin-top: 4px;
+      }
+      .fm-snippet-pre {
+        background: var(--bg);
+        border: 1px solid var(--border-soft);
+        border-radius: 6px;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        line-height: 1.6;
+        overflow-x: auto;
+        padding: 12px 14px;
+        tab-size: 2;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>E-commerce Dashboard</h1>
+        <p>
+          Internal admin voor productcatalogus, orders, analytics en
+          klantbeheer.
+        </p>
+      </header>
+      <div class="layout">
+        <aside class="sidebar" id="sidebar"></aside>
+        <div class="board-area">
+          <nav class="top-nav">
+            <a href="/prototypes/backlog-v14-prototype.html">Backlog</a>
+            <a href="/prototypes/dashboard-v3-prototype.html" class="active"
+              >Dashboard</a
+            >
+            <span class="nav-spacer"></span>
+            <button class="nav-search" title="Zoeken">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <circle cx="6.5" cy="6.5" r="4.5" />
+                <path d="M11 11l3 3" />
+              </svg>
+            </button>
+          </nav>
+          <div id="board"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modal-backdrop">
+      <div class="modal" id="modal" onclick="event.stopPropagation()"></div>
+    </div>
+
+    <script>
+      const NOW = Date.now();
+      function daysAgo(n) {
+        return new Date(NOW - n * 86400000).toISOString();
+      }
+      function relTime(iso) {
+        if (!iso) return "";
+        const d = Math.floor((NOW - new Date(iso).getTime()) / 86400000);
+        if (d === 0) return "today";
+        if (d === 1) return "1d ago";
+        if (d < 30) return d + "d ago";
+        if (d < 365) return Math.floor(d / 30) + "mo ago";
+        return Math.floor(d / 365) + "y ago";
+      }
+
+      const TYPE_ICONS = {
+        FEATURE: "◆",
+        API: "⬡",
+        INTEGRATION: "⇄",
+        UI: "◻",
+        REFACTOR: "↺",
+        BUG: "✕",
+        CHANGE: "✎",
+        PAGE: "▤",
+        COMPONENT: "⬡",
+      };
+
+      const SHIPPED_FEATURES = [
+        {
+          name: "routing",
+          type: "FEATURE",
+          summary:
+            "App router geconfigureerd met nested layouts, loading/error states en type-safe route helpers.",
+          refactor: "REFACTORED",
+          shippedAt: daysAgo(12),
+          files: [
+            {
+              path: "src/app/layout.tsx",
+              action: "ADDED",
+              purpose: "Root layout met nav + auth context",
+              snippet: `import { Inter } from "next/font/google";
+      import { SessionProvider } from "@/components/auth/SessionProvider";
+      import { NavBar } from "@/components/layout/NavBar";
+
+      const inter = Inter({ subsets: ["latin"] });
+
+      export default function RootLayout({ children }: { children: React.ReactNode }) {
+        return (
+          <html lang="nl">
+            <body className={inter.className}>
+              <SessionProvider>
+                <NavBar />
+                <main className="container mx-auto px-4 py-6">{children}</main>
+              </SessionProvider>
+            </body>
+          </html>
+        );
+      }`,
+            },
+            {
+              path: "src/app/page.tsx",
+              action: "ADDED",
+              purpose: "Dashboard startpagina",
+              snippet: `import { redirect } from "next/navigation";
+      import { getServerSession } from "next-auth";
+      import { authOptions } from "@/lib/auth";
+
+      export default async function HomePage() {
+        const session = await getServerSession(authOptions);
+        if (!session) redirect("/login");
+        redirect("/dashboard");
+      }`,
+            },
+            {
+              path: "src/lib/routes.ts",
+              action: "ADDED",
+              purpose: "Type-safe route helpers",
+              snippet: `export const routes = {
+        dashboard: () => "/dashboard",
+        products: {
+          list: () => "/products",
+          detail: (id: string) => \`/products/\${id}\`,
+          edit: (id: string) => \`/products/\${id}/edit\`,
+        },
+        orders: {
+          list: () => "/orders",
+          detail: (id: string) => \`/orders/\${id}\`,
+        },
+      } as const;`,
+            },
+          ],
+        },
+      ];
+
+      const RECENT_CHANGES = [
+        {
+          name: "fix-token-expiry",
+          type: "BUG",
+          summary:
+            "JWT refresh token expiry was 7d in dev, 1h in prod — unified to 7d via env var.",
+          shippedAt: daysAgo(5),
+        },
+        {
+          name: "add-loading-skeletons",
+          type: "CHANGE",
+          summary:
+            "Skeleton loaders toegevoegd aan product list en order table.",
+          shippedAt: daysAgo(8),
+        },
+      ];
+
+      const COMPONENTS = {
+        layout: [
+          {
+            name: "NavBar",
+            description:
+              "Sticky top nav met user menu en actieve route highlight",
+          },
+          {
+            name: "PageShell",
+            description: "Container met sidebar + main content slot",
+          },
+        ],
+        auth: [
+          {
+            name: "SessionProvider",
+            description: "NextAuth SessionProvider wrapper",
+          },
+          {
+            name: "ProtectedRoute",
+            description: "Redirect naar /login als geen sessie",
+          },
+        ],
+        feature: [
+          {
+            name: "ProductTable",
+            description: "Sortable + filterable product list met paginering",
+          },
+          {
+            name: "OrderStatusBadge",
+            description: "Status chip: pending / shipped / cancelled",
+          },
+          {
+            name: "KpiCard",
+            description: "Stat card met trend indicator",
+          },
+        ],
+        shared: [
+          {
+            name: "DataTable",
+            description: "Generieke gesorteerde tabel met kolom-config",
+          },
+          {
+            name: "EmptyState",
+            description: "Lege lijst placeholder met CTA",
+          },
+        ],
+      };
+
+      const PAGES = [
+        {
+          name: "/dashboard",
+          purpose: "KPI-overzicht: revenue, orders, conversie",
+        },
+        { name: "/products", purpose: "Productcatalogus met zoek + filters" },
+        { name: "/products/:id", purpose: "Product-editpagina met rich text" },
+        { name: "/orders", purpose: "Orderlijst met statusfilters" },
+        { name: "/orders/:id", purpose: "Orderdetail met timeline" },
+        { name: "/login", purpose: "Inlogpagina" },
+      ];
+
+      const FLOWS = [
+        {
+          name: "Product aanmaken",
+          steps: ["Klik + nieuw", "Formulier invullen", "Opslaan → detail"],
+          description: "3 stappen, geen tussenopslag",
+        },
+        {
+          name: "Order verwerken",
+          steps: ["Selecteer order", "Update status", "Bevestig met reden"],
+          description: "Inline actie zonder aparte pagina",
+        },
+        {
+          name: "Checkout",
+          steps: ["Cart", "Betaling (Stripe)", "Bevestigingsmail"],
+          description: "Klant-flow, niet admin",
+        },
+      ];
+
+      const PRINCIPLES = [
+        {
+          name: "Admin-first",
+          description:
+            "Optimaliseer voor power users — dichte tabellen boven kaarten",
+        },
+        {
+          name: "Expliciete acties",
+          description: "Geen auto-save; elk opslaan is een bewuste handeling",
+        },
+        {
+          name: "Status altijd zichtbaar",
+          description:
+            "Order- en productstatus altijd in beeld, nooit verborgen in hover",
+        },
+      ];
+
+      const DECISIONS = [
+        {
+          title: "JWT in httpOnly cookie",
+          date: daysAgo(58),
+          rationale: "Beschermt tegen XSS — token nooit in localStorage",
+        },
+        {
+          title: "Prisma als ORM",
+          date: daysAgo(72),
+          rationale: "Type-safe queries + automatische migraties",
+        },
+        {
+          title: "Server Components voor datalijsten",
+          date: daysAgo(40),
+          rationale:
+            "Geen client-side hydration voor tabellen → snellere first load",
+        },
+      ];
+
+      const THINKING_NOTES = [
+        {
+          title: "Multi-currency buiten scope MVP",
+          date: daysAgo(30),
+          body: "Stripe multi-currency vereist currency-per-product opslag en wisselkoers-sync. Uitgesteld naar v2.",
+        },
+        {
+          title: "Realtime orders via SSE vs WebSocket",
+          date: daysAgo(18),
+          body: "SSE eenvoudiger voor unidirectionele push (server → client). WebSocket alleen als reactieve updates nodig zijn.",
+        },
+      ];
+
+      const LEARNINGS = [
+        {
+          title: "Next.js RSC hydration boundary",
+          date: daysAgo(14),
+          body: "Client components in RSC context vereisen expliciete 'use client'. Props van Server → Client moeten serialiseerbaar zijn.",
+        },
+        {
+          title: "Prisma N+1 in nested includes",
+          date: daysAgo(22),
+          body: "Gebruik select in plaats van include bij grote nested relaties. findMany + select is 3× sneller in testdata.",
+        },
+      ];
+
+      const API_ROUTES = [
+        {
+          method: "GET",
+          route: "/api/products",
+          purpose: "Product list met paginering + filters",
+        },
+        {
+          method: "POST",
+          route: "/api/products",
+          purpose: "Nieuw product aanmaken",
+        },
+        {
+          method: "PUT",
+          route: "/api/products/:id",
+          purpose: "Product updaten",
+        },
+        {
+          method: "DELETE",
+          route: "/api/products/:id",
+          purpose: "Product verwijderen",
+        },
+        {
+          method: "GET",
+          route: "/api/orders",
+          purpose: "Orderoverzicht met statusfilter",
+        },
+        {
+          method: "PUT",
+          route: "/api/orders/:id/status",
+          purpose: "Order status updaten",
+        },
+        {
+          method: "ALL",
+          route: "/api/auth/[...nextauth]",
+          purpose: "NextAuth OAuth + credentials",
+        },
+      ];
+
+      const ENTITIES = [
+        {
+          name: "User",
+          fields: "id · email · password · role · createdAt",
+        },
+        {
+          name: "Product",
+          fields:
+            "id · name · description · price · stock · images[] · category",
+        },
+        {
+          name: "Order",
+          fields: "id · userId · status · total · items[] · createdAt",
+        },
+        {
+          name: "OrderItem",
+          fields: "id · orderId · productId · quantity · unitPrice",
+        },
+      ];
+
+      const PACKAGES = [
+        { name: "next", version: "14.1", purpose: "Framework" },
+        { name: "@prisma/client", version: "5.10", purpose: "ORM" },
+        { name: "next-auth", version: "5.0", purpose: "Authentication" },
+        { name: "stripe", version: "14.18", purpose: "Payments" },
+      ];
+
+      const THEME = {
+        colors: {
+          brand: [
+            { hex: "#3B82F6", label: "blue-500", use: "primary actions" },
+            { hex: "#8B5CF6", label: "violet-500", use: "accents" },
+          ],
+          semantic: [
+            { hex: "#10B981", label: "emerald-500", use: "success" },
+            { hex: "#F59E0B", label: "amber-500", use: "warning" },
+            { hex: "#EF4444", label: "red-500", use: "danger / error" },
+          ],
+          neutral: [
+            { hex: "#F8FAFC", label: "slate-50", use: "page bg (light)" },
+            { hex: "#64748B", label: "slate-500", use: "muted text" },
+            { hex: "#0F172A", label: "slate-950", use: "page bg (dark)" },
+          ],
+        },
+        type: [
+          {
+            token: "text-xs",
+            size: "12px / 16px",
+            use: "badges, captions, meta",
+          },
+          {
+            token: "text-sm",
+            size: "14px / 20px",
+            use: "table content, labels",
+          },
+          {
+            token: "text-base",
+            size: "16px / 24px",
+            use: "body, descriptions",
+          },
+          { token: "text-lg", size: "18px / 28px", use: "section headings" },
+          { token: "text-xl", size: "20px / 28px", use: "page titles" },
+          { token: "font-mono", size: "ui-monospace", use: "paths, code, IDs" },
+        ],
+        spacing: [
+          { token: "p-1", value: "4px", use: "badge padding, icon gap" },
+          { token: "p-2", value: "8px", use: "row padding" },
+          { token: "p-3", value: "12px", use: "card / cell padding" },
+          { token: "p-4", value: "16px", use: "section inner gap" },
+          { token: "p-6", value: "24px", use: "panel padding" },
+          { token: "p-9", value: "36px", use: "page edge padding" },
+        ],
+      };
+
+      function esc(s) {
+        return String(s == null ? "" : s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function group(id, label, cls, count, body, tip) {
+        return `
+                <section class="group" id="${id}-section" data-group="${id}">
+                  <div class="group-header ${cls}" onclick="toggleGroup(this)">
+                    <h2 style="flex:1">${label}</h2>
+                    ${tip ? `<span class="group-tip">${tip}</span>` : ""}
+                  </div>
+                  <div class="group-body">${body}</div>
+                </section>`;
+      }
+
+      function subSection(label, count, body) {
+        const id = "sub-" + Math.random().toString(36).slice(2, 8);
+        return `
+                <div class="sub-divider" onclick="toggleSub(this)" data-target="${id}">
+                  <svg class="chevron" viewBox="0 0 16 16" fill="currentColor"><path d="M12.78 5.22a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06 0L3.22 6.28a.75.75 0 011.06-1.06L8 8.94l3.72-3.72a.75.75 0 011.06 0z"/></svg>
+                  <span>${label}</span>
+                  <span style="color:var(--text-dim);margin-left:2px">${count}</span>
+                </div>
+                <div class="sub-group" id="${id}">${body}</div>`;
+      }
+
+      function renderFeatures() {
+        const features = SHIPPED_FEATURES;
+        const changes = RECENT_CHANGES;
+        if (!features.length && !changes.length) {
+          return `
+                  <div class="empty-state">
+                    <p>Nog geen shipped features.</p>
+                    <p style="margin-top:6px">Run <code>/dev-refactor</code> om features te promoten naar het Dashboard.</p>
+                  </div>`;
+        }
+
+        let cardsHtml = features
+          .map((f) => {
+            const icon = TYPE_ICONS[f.type] || "◆";
+            const dateStr = f.shippedAt ? relTime(f.shippedAt) : "";
+            const fileCount = f.files ? `${f.files.length} files` : "";
+            return `
+                  <div class="sf-row" onclick="openFeatureModal('${esc(f.name)}')">
+                    <span class="sf-icon">${icon}</span>
+                    <span class="sf-name">${esc(f.name)}</span>
+                    <span class="sf-type">${f.type}</span>
+                    <span class="sf-summary">${esc(f.summary || "")}</span>
+                    <span class="sf-meta">${[fileCount, dateStr].filter(Boolean).join(" · ")}</span>
+                  </div>`;
+          })
+          .join("");
+
+        let changesHtml = "";
+        if (changes.length) {
+          changesHtml = `
+                  <div class="rc-section">
+                    <div class="rc-header"><span class="rc-label">Recent changes</span></div>
+                    <div class="rc-rows">
+                      ${changes
+                        .sort((a, b) => (a.shippedAt < b.shippedAt ? 1 : -1))
+                        .map(
+                          (c) => `
+                        <div class="rc-row">
+                          <span class="rc-icon">${TYPE_ICONS[c.type] || "✎"}</span>
+                          <span class="rc-name">${esc(c.name)}</span>
+                          <span class="rc-type">${c.type}</span>
+                          <span class="rc-desc">${esc(c.summary || "")}</span>
+                          <span class="rc-date">${relTime(c.shippedAt)}</span>
+                        </div>`,
+                        )
+                        .join("")}
+                    </div>
+                  </div>`;
+        }
+        return cardsHtml + changesHtml;
+      }
+
+      function renderArchitecture() {
+        const methodColor = {
+          GET: "var(--done)",
+          POST: "var(--accent)",
+          PUT: "var(--defined)",
+          DELETE: "var(--danger)",
+          ALL: "var(--text-dim)",
+        };
+
+        const pagesHtml = PAGES.map(
+          (p) => `
+                <div class="row">
+                  <span class="row-name" style="font-family:ui-monospace,monospace;font-size:11px;color:var(--accent)">${esc(p.name)}</span>
+                  <span class="row-meta" style="flex:1">${esc(p.purpose)}</span>
+                </div>`,
+        ).join("");
+
+        const allComponents = Object.entries(COMPONENTS).flatMap(
+          ([layer, items]) =>
+            items.map(
+              (c) => `
+                <div class="row">
+                  <span class="row-name">${esc(c.name)}</span>
+                  <span class="badge layer">${layer}</span>
+                  <span class="row-meta" style="flex:1">${esc(c.description)}</span>
+                </div>`,
+            ),
+        );
+
+        const apiHtml = API_ROUTES.map(
+          (r) => `
+                <div class="row">
+                  <span style="font-family:ui-monospace,monospace;font-size:10px;font-weight:700;width:46px;flex-shrink:0;color:${methodColor[r.method] || "var(--text-dim)"}">${r.method}</span>
+                  <span class="row-name" style="font-family:ui-monospace,monospace;font-size:11px;color:var(--accent)">${esc(r.route)}</span>
+                  <span class="row-meta" style="flex:1">${esc(r.purpose)}</span>
+                </div>`,
+        ).join("");
+
+        const entitiesHtml = ENTITIES.map(
+          (e) => `
+                <div class="row">
+                  <span class="row-name">${esc(e.name)}</span>
+                  <span class="row-meta" style="flex:1;font-family:ui-monospace,monospace;font-size:10px">${esc(e.fields)}</span>
+                </div>`,
+        ).join("");
+
+        return (
+          subSection("Routes", PAGES.length, pagesHtml) +
+          subSection(
+            "Components",
+            Object.values(COMPONENTS).flat().length,
+            allComponents.join(""),
+          ) +
+          subSection("API", API_ROUTES.length, apiHtml) +
+          subSection("Entities", ENTITIES.length, entitiesHtml)
+        );
+      }
+
+      function renderDesign() {
+        const pagesHtml = PAGES.map(
+          (p) => `
+                <div class="row">
+                  <span class="row-name" style="font-family:ui-monospace,monospace;font-size:11px;color:var(--accent)">${esc(p.name)}</span>
+                  <span class="row-meta" style="flex:1">${esc(p.purpose)}</span>
+                </div>`,
+        ).join("");
+        const flowsHtml = FLOWS.map(
+          (f) => `
+                <div class="row">
+                  <span class="row-name">${esc(f.name)}</span>
+                  <span class="row-meta" style="flex:1">${esc(f.description)} · ${f.steps.length} stappen</span>
+                </div>`,
+        ).join("");
+        const principlesHtml = PRINCIPLES.map(
+          (p) => `
+                <div class="row">
+                  <span class="row-name">${esc(p.name)}</span>
+                  <span class="row-meta" style="flex:1">${esc(p.description)}</span>
+                </div>`,
+        ).join("");
+        return (
+          subSection("Pages", PAGES.length, pagesHtml) +
+          subSection("Flows", FLOWS.length, flowsHtml) +
+          subSection("Principles", PRINCIPLES.length, principlesHtml)
+        );
+      }
+
+      function renderKnowledge() {
+        const decisionsHtml = DECISIONS.map(
+          (d) => `
+                <div class="row">
+                  <span class="row-name">${esc(d.title)}</span>
+                  <span class="row-meta" style="flex:1">${relTime(d.date)} · ${esc(d.rationale)}</span>
+                </div>`,
+        ).join("");
+        const thinkingHtml = THINKING_NOTES.map(
+          (t) => `
+                <div class="row" style="flex-direction:column;align-items:flex-start;gap:3px">
+                  <div style="display:flex;align-items:center;gap:8px;width:100%">
+                    <span class="row-name">${esc(t.title)}</span>
+                    <span style="font-size:10px;color:var(--text-dim);margin-left:auto">${relTime(t.date)}</span>
+                  </div>
+                  <span style="font-size:11px;color:var(--text-dim);line-height:1.5">${esc(t.body)}</span>
+                </div>`,
+        ).join("");
+        const learningsHtml = LEARNINGS.map(
+          (l) => `
+                <div class="row" style="flex-direction:column;align-items:flex-start;gap:3px">
+                  <div style="display:flex;align-items:center;gap:8px;width:100%">
+                    <span class="row-name">${esc(l.title)}</span>
+                    <span style="font-size:10px;color:var(--text-dim);margin-left:auto">${relTime(l.date)}</span>
+                  </div>
+                  <span style="font-size:11px;color:var(--text-dim);line-height:1.5">${esc(l.body)}</span>
+                </div>`,
+        ).join("");
+        const flowsHtml = FLOWS.map(
+          (f) => `
+                <div class="row">
+                  <span class="row-name">${esc(f.name)}</span>
+                  <span class="row-meta" style="flex:1">${esc(f.description)} · ${f.steps.length} stappen</span>
+                </div>`,
+        ).join("");
+        const principlesHtml = PRINCIPLES.map(
+          (p) => `
+                <div class="row">
+                  <span class="row-name">${esc(p.name)}</span>
+                  <span class="row-meta" style="flex:1">${esc(p.description)}</span>
+                </div>`,
+        ).join("");
+        return (
+          subSection("Beslissingen", DECISIONS.length, decisionsHtml) +
+          subSection("Thinking", THINKING_NOTES.length, thinkingHtml) +
+          subSection("Learnings", LEARNINGS.length, learningsHtml) +
+          subSection("Flows", FLOWS.length, flowsHtml) +
+          subSection("Principles", PRINCIPLES.length, principlesHtml)
+        );
+      }
+
+      function renderTheme() {
+        const sw = (hex) =>
+          `<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${hex};flex-shrink:0"></span>`;
+        const allColors = [
+          ...THEME.colors.brand,
+          ...THEME.colors.semantic,
+          ...THEME.colors.neutral,
+        ];
+        const colorsHtml = allColors
+          .map(
+            (c) => `
+                <div class="row" style="gap:10px">
+                  ${sw(c.hex)}
+                  <span class="row-name" style="font-family:ui-monospace,monospace;font-size:11px;color:var(--accent)">${esc(c.hex)}</span>
+                  <span style="font-size:10px;color:var(--text-dim);min-width:90px">${esc(c.label)}</span>
+                  <span class="row-meta">${esc(c.use)}</span>
+                </div>`,
+          )
+          .join("");
+        const typeHtml = THEME.type
+          .map(
+            (t) => `
+                <div class="row">
+                  <span class="row-name" style="font-family:ui-monospace,monospace;font-size:11px">${esc(t.token)}</span>
+                  <span class="badge">${esc(t.size)}</span>
+                  <span class="row-meta" style="flex:1">${esc(t.use)}</span>
+                </div>`,
+          )
+          .join("");
+        const spacingHtml = THEME.spacing
+          .map(
+            (s) => `
+                <div class="row">
+                  <span style="display:inline-block;height:6px;background:var(--accent);border-radius:2px;width:${s.value};min-width:4px;flex-shrink:0"></span>
+                  <span class="row-name" style="font-family:ui-monospace,monospace;font-size:11px">${esc(s.token)}</span>
+                  <span class="badge">${s.value}</span>
+                  <span class="row-meta" style="flex:1">${esc(s.use)}</span>
+                </div>`,
+          )
+          .join("");
+        return (
+          subSection("Kleuren", allColors.length, colorsHtml) +
+          subSection("Type", THEME.type.length, typeHtml) +
+          subSection("Spacing", THEME.spacing.length, spacingHtml)
+        );
+      }
+
+      function renderStack() {
+        return PACKAGES.map(
+          (p) => `
+                <div class="row">
+                  <span class="row-name" style="font-family:ui-monospace,monospace">${esc(p.name)}</span>
+                  <span class="badge">v${p.version}</span>
+                  <span class="row-meta">${esc(p.purpose)}</span>
+                </div>`,
+        ).join("");
+      }
+
+      function renderBoard() {
+        const featuresCount = SHIPPED_FEATURES.length + RECENT_CHANGES.length;
+        document.getElementById("board").innerHTML = `
+                ${group("features", "Features", "features", featuresCount, renderFeatures(), `${SHIPPED_FEATURES.length} shipped · ${RECENT_CHANGES.length} changes`)}
+                ${group("architecture", "Architecture", "architecture", PAGES.length + Object.values(COMPONENTS).flat().length + API_ROUTES.length + ENTITIES.length, renderArchitecture(), "routes · components · api · entities")}
+                ${group("knowledge", "Knowledge", "knowledge", DECISIONS.length + THINKING_NOTES.length + LEARNINGS.length + FLOWS.length + PRINCIPLES.length, renderKnowledge(), "decisions · thinking · learnings · flows · principles")}
+                ${group("theme", "Design system", "theme", THEME.colors.brand.length + THEME.colors.semantic.length + THEME.colors.neutral.length + THEME.type.length + THEME.spacing.length, renderTheme(), "colors · type · spacing")}
+                ${group("stack", "Stack", "stack", PACKAGES.length, renderStack(), "key packages")}
+              `;
+        renderSidebar([
+          { id: "features", label: "Features", count: featuresCount },
+          {
+            id: "architecture",
+            label: "Architecture",
+            count:
+              PAGES.length +
+              Object.values(COMPONENTS).flat().length +
+              API_ROUTES.length +
+              ENTITIES.length,
+          },
+          {
+            id: "knowledge",
+            label: "Knowledge",
+            count:
+              DECISIONS.length +
+              THINKING_NOTES.length +
+              LEARNINGS.length +
+              FLOWS.length +
+              PRINCIPLES.length,
+          },
+          {
+            id: "theme",
+            label: "Design system",
+            count:
+              THEME.colors.brand.length +
+              THEME.colors.semantic.length +
+              THEME.colors.neutral.length +
+              THEME.type.length +
+              THEME.spacing.length,
+          },
+          { id: "stack", label: "Stack", count: PACKAGES.length },
+        ]);
+        setupSidebarObserver();
+      }
+
+      function renderSidebar(items) {
+        document.getElementById("sidebar").innerHTML = items
+          .map(
+            (i) => `
+                <a class="side-item ${i.id}" data-target="${i.id}-section" href="#${i.id}-section" onclick="jumpToSection(event, '${i.id}-section')">
+                  <span class="label">${i.label}</span>
+                  <span class="count">${i.count}</span>
+                </a>`,
+          )
+          .join("");
+      }
+
+      let sidebarLockedUntil = 0;
+      function jumpToSection(e, id) {
+        e.preventDefault();
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.classList.contains("collapsed"))
+          toggleGroup(el.querySelector(".group-header"));
+        document
+          .querySelectorAll(".side-item")
+          .forEach((i) =>
+            i.classList.toggle("active", i.dataset.target === id),
+          );
+        sidebarLockedUntil = Date.now() + 800;
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function setupSidebarObserver() {
+        const sections = document.querySelectorAll(".group");
+        const items = document.querySelectorAll(".side-item");
+        const visible = new Set();
+        const obs = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((e) => {
+              const id = e.target.id;
+              if (e.isIntersecting) visible.add(id);
+              else visible.delete(id);
+            });
+            if (Date.now() < sidebarLockedUntil) return;
+            let topId = null;
+            let topY = Infinity;
+            for (const id of visible) {
+              const el = document.getElementById(id);
+              if (!el) continue;
+              const y = el.getBoundingClientRect().top;
+              if (y < topY) {
+                topY = y;
+                topId = id;
+              }
+            }
+            items.forEach((i) =>
+              i.classList.toggle("active", i.dataset.target === topId),
+            );
+          },
+          { rootMargin: "-80px 0px -55% 0px", threshold: 0 },
+        );
+        sections.forEach((s) => obs.observe(s));
+      }
+
+      function toggleGroup(headerEl) {
+        const group = headerEl.closest(".group");
+        const body = group.querySelector(".group-body");
+        if (!group.classList.contains("collapsed")) {
+          body.style.maxHeight = body.scrollHeight + "px";
+          requestAnimationFrame(() => {
+            group.classList.add("collapsed");
+            body.style.maxHeight = "0";
+          });
+        } else {
+          group.classList.remove("collapsed");
+          body.style.maxHeight = body.scrollHeight + "px";
+          body.addEventListener("transitionend", function clear() {
+            body.style.maxHeight = "";
+            body.removeEventListener("transitionend", clear);
+          });
+        }
+      }
+
+      function toggleSnippet(btn) {
+        const row = btn.closest(".fm-file-row");
+        const body = row.nextElementSibling;
+        if (!body || !body.classList.contains("fm-snippet-body")) return;
+        const open = body.style.display !== "none";
+        body.style.display = open ? "none" : "block";
+        btn.textContent = open ? "{ }" : "{ … }";
+        btn.classList.toggle("active", !open);
+      }
+
+      function openFeatureModal(name) {
+        const f = SHIPPED_FEATURES.find((x) => x.name === name);
+        if (!f) return;
+        const icon = TYPE_ICONS[f.type] || "◆";
+
+        let filesHtml = "";
+        if (f.files && f.files.length) {
+          const actionIcon = { ADDED: "+", MODIFIED: "~", DELETED: "−" };
+          filesHtml = `
+                  <div class="modal-section">
+                    <h3>Files (${f.files.length})</h3>
+                    <div class="fm-files">
+                      ${f.files
+                        .map(
+                          (file) => `
+                        <div class="fm-file-wrap">
+                          <div class="fm-file-row">
+                            <span class="fm-action ${file.action.toLowerCase()}">${actionIcon[file.action] || "·"}</span>
+                            <span class="fm-path">${esc(file.path)}</span>
+                            <span class="fm-purpose">${esc(file.purpose || "")}</span>
+                            ${file.snippet ? `<button class="fm-snippet-btn" onclick="toggleSnippet(this)" title="Code tonen">{ }</button>` : ""}
+                          </div>
+                          ${file.snippet ? `<div class="fm-snippet-body" style="display:none"><pre class="fm-snippet-pre"><code>${esc(file.snippet)}</code></pre></div>` : ""}
+                        </div>`,
+                        )
+                        .join("")}
+                    </div>
+                  </div>`;
+        }
+
+        const modal = document.getElementById("modal");
+        modal.innerHTML = `
+                <div class="modal-header">
+                  <span style="font-size:18px">${icon}</span>
+                  <h2>${esc(f.name)}</h2>
+                  <button class="close" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-meta">
+                  <span class="badge">${f.type}</span>
+                  ${f.shippedAt ? `<span style="font-size:11px;color:var(--text-dim)">Shipped ${relTime(f.shippedAt)}</span>` : ""}
+                </div>
+                <div class="modal-section">
+                  <h3>Summary</h3>
+                  <p>${esc(f.summary || "")}</p>
+                </div>
+                ${filesHtml}
+              `;
+        document.getElementById("modal-backdrop").classList.add("visible");
+      }
+
+      function closeModal() {
+        document.getElementById("modal-backdrop").classList.remove("visible");
+      }
+
+      document
+        .getElementById("modal-backdrop")
+        .addEventListener("click", closeModal);
+
+      function toggleSub(el) {
+        el.classList.toggle("collapsed");
+        const target = document.getElementById(el.dataset.target);
+        if (!target) return;
+        if (el.classList.contains("collapsed")) {
+          target.style.maxHeight = "0";
+        } else {
+          target.style.maxHeight = target.scrollHeight + "px";
+          target.addEventListener("transitionend", function clear() {
+            target.style.maxHeight = "";
+            target.removeEventListener("transitionend", clear);
+          });
+        }
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeModal();
+      });
+
+      function pinSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        const board = document.getElementById("board");
+        const layout = document.querySelector(".layout");
+        if (!sidebar || !board || !layout) return;
+        const offset =
+          board.getBoundingClientRect().top -
+          layout.getBoundingClientRect().top;
+        sidebar.style.paddingTop = offset + "px";
+        sidebar.style.top = offset + 16 + "px";
+      }
+
+      renderBoard();
+      pinSidebar();
+      window.addEventListener("resize", pinSidebar);
+    </script>
+  </body>
+</html>

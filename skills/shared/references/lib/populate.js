@@ -49,6 +49,33 @@ function populateFromProject(projectDir, dashData) {
     projectPath,
     ".project/project-context.json",
   );
+  if (
+    !fs.existsSync(contextJsonFile) &&
+    fs.existsSync(path.join(projectPath, ".project"))
+  ) {
+    try {
+      fs.writeFileSync(
+        contextJsonFile,
+        JSON.stringify(
+          {
+            architecture: {
+              routes: [],
+              components: [],
+              endpoints: [],
+              entities: [],
+              diagram: "",
+              dataFlow: "",
+            },
+            context: { structure: "", routing: [], patterns: [] },
+            learnings: [],
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+    } catch {}
+  }
   if (fs.existsSync(contextJsonFile)) {
     try {
       const ctx = JSON.parse(fs.readFileSync(contextJsonFile, "utf8"));

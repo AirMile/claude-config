@@ -3,16 +3,7 @@
   function getNextVerb(f) {
     if (f.status === "TODO") return "define";
     if (f.status === "DEFINED") return "build";
-    if (f.status === "DOING") {
-      return (
-        {
-          building: "build",
-          built: "verify",
-          verifying: "verify",
-          testing: "verify",
-        }[f.stage] || "build"
-      );
-    }
+    if (f.status === "DOING") return "verify";
     return null;
   }
   var prefix =
@@ -30,7 +21,7 @@
       // Add clipboard button (visible on hover)
       if (actions && !actions.querySelector(".card-clip")) {
         var verb = getNextVerb(f);
-        var showClip = verb || (f.assignee && f.status !== "DONE");
+        var showClip = verb || f.assignee;
         if (showClip) {
           var clipBtn = document.createElement("button");
           clipBtn.className = "card-clip";
@@ -38,14 +29,8 @@
             '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
           var checkSvg =
             '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.5 3.5 7-7"/></svg>';
-          if (f.assignee && f.stage === "built") {
-            clipBtn.title = "/team-verify " + f.name;
-          } else if (f.assignee) {
-            clipBtn.title =
-              "/" + prefix + "-" + (verb || "verify") + " " + f.name;
-          } else {
-            clipBtn.title = "/" + prefix + "-" + verb + " " + f.name;
-          }
+          clipBtn.title =
+            "/" + prefix + "-" + (verb || "verify") + " " + f.name;
           clipBtn.innerHTML = clipSvg;
           clipBtn.addEventListener("click", function (e) {
             e.stopPropagation();
@@ -58,12 +43,7 @@
                 clipBtn.innerHTML = clipSvg;
               }, 1500);
             }
-            if (f.assignee && f.stage === "built") {
-              var cmd = "/team-verify " + f.name;
-              navigator.clipboard.writeText(cmd).then(function () {
-                showCopied("Gekopieerd: " + cmd);
-              });
-            } else if (verb) {
+            if (verb) {
               var cmd = "/" + prefix + "-" + verb + " " + f.name;
               navigator.clipboard.writeText(cmd).then(function () {
                 showCopied("Gekopieerd: " + cmd);
@@ -73,14 +53,12 @@
           actions.appendChild(clipBtn);
         }
       }
-      // Move stage badge + card-dep into shared sub-tags row
-      var stage = card.querySelector(".stage-badge");
+      // Move card-dep into sub-tags row
       var dep = card.querySelector(".card-dep");
-      if (stage || dep) {
+      if (dep) {
         var sub = document.createElement("div");
         sub.className = "card-sub-tags";
-        if (stage) sub.appendChild(stage);
-        if (dep) sub.appendChild(dep);
+        sub.appendChild(dep);
         var tags = card.querySelector(".card-tags");
         if (tags) tags.after(sub);
       }
@@ -123,11 +101,11 @@
   if (detailActions) {
     detailActions.querySelectorAll("button").forEach(function (b) {
       if (b.id === "detail-edit" || b.textContent.match(/bewerk/i)) {
-        b.innerHTML = "\u270E Bewerk";
+        b.innerHTML = "✎ Bewerk";
         b.title = "Bewerken";
       }
       if (b.id === "detail-delete" || b.textContent.match(/verwijder/i)) {
-        b.innerHTML = "\u2715 Verwijder";
+        b.innerHTML = "✕ Verwijder";
         b.title = "Verwijderen";
         b.className = "btn-danger";
       }
@@ -174,15 +152,13 @@
       }
     });
   }
-  // ── Status/Stage picker helpers ──
-  var STAGES = ["building", "built", "verifying"];
-  var FRONTEND_STAGES = ["building", "built", "verifying", "testing"];
+  // ── Status picker helpers ──
   var ALL_STATUSES =
     typeof STATUSES !== "undefined"
       ? STATUSES
       : ["TODO", "DEFINED", "DOING", "DONE"];
 
-  function buildStatusPicker(f, name) {
+  function buildStatusPicker(f) {
     var html =
       '<div class="detail-field"><div class="detail-label">Status</div><div class="status-picker">';
     ALL_STATUSES.forEach(function (s) {
@@ -207,29 +183,6 @@
     return html;
   }
 
-  function buildStagePicker(f) {
-    if (f.status !== "DOING") return "";
-    var isFE =
-      typeof FRONTEND_TYPES !== "undefined" && FRONTEND_TYPES.includes(f.type);
-    var stages = isFE ? FRONTEND_STAGES : STAGES;
-    var html =
-      '<div class="detail-field"><div class="detail-label">Stage</div><div class="stage-picker">';
-    stages.forEach(function (s) {
-      var cls = s === f.stage ? " active" : "";
-      html +=
-        '<span class="stage-badge stage-' +
-        s +
-        cls +
-        '" data-stage="' +
-        s +
-        '">' +
-        s +
-        "</span>";
-    });
-    html += "</div></div>";
-    return html;
-  }
-
   function bindPickers(name) {
     document
       .querySelectorAll(".status-picker .status-opt")
@@ -239,39 +192,11 @@
           if (!found) return;
           var newStatus = el.dataset.status;
           if (newStatus === found.item.status) return;
-          if (newStatus === "DOING") {
-            if (typeof updateStatus !== "undefined")
-              updateStatus(
-                name,
-                "DOING",
-                found.item.stage && found.item.stage !== "defining"
-                  ? found.item.stage
-                  : "building",
-              );
-          } else {
-            if (typeof updateStatus !== "undefined")
-              updateStatus(name, newStatus);
-          }
+          if (typeof updateStatus !== "undefined")
+            updateStatus(name, newStatus);
           if (typeof syncJSON !== "undefined") syncJSON();
           if (typeof render !== "undefined") render();
           if (typeof toast !== "undefined") toast(name + ": → " + newStatus);
-          // Re-open modal to refresh
-          if (typeof window.openDetailModal !== "undefined")
-            window.openDetailModal(name);
-        });
-      });
-    document
-      .querySelectorAll(".stage-picker .stage-badge")
-      .forEach(function (el) {
-        el.addEventListener("click", function () {
-          var found = typeof findItem !== "undefined" ? findItem(name) : null;
-          if (!found) return;
-          var newStage = el.dataset.stage;
-          if (newStage === found.item.stage) return;
-          found.item.stage = newStage;
-          if (typeof syncJSON !== "undefined") syncJSON();
-          if (typeof render !== "undefined") render();
-          if (typeof toast !== "undefined") toast(name + ": " + newStage);
           if (typeof window.openDetailModal !== "undefined")
             window.openDetailModal(name);
         });
@@ -306,13 +231,11 @@
         bb.dataset.feature = found.item.name;
         bb.style.display = found.item.status !== "DONE" ? "" : "none";
       }
-      // Add status/stage pickers
+      // Add status picker
       var body = document.getElementById("detail-body");
-      var existing = body.querySelector(".status-picker, .stage-picker");
+      var existing = body.querySelector(".status-picker");
       if (!existing) {
-        var pickerHtml =
-          buildStatusPicker(found.item, name) + buildStagePicker(found.item);
-        body.insertAdjacentHTML("beforeend", pickerHtml);
+        body.insertAdjacentHTML("beforeend", buildStatusPicker(found.item));
         bindPickers(name);
       }
     };
@@ -324,7 +247,7 @@
     document.querySelectorAll(".card-dep").forEach(function (el) {
       if (el.dataset.patched) return;
       el.dataset.patched = "1";
-      el.innerHTML = el.innerHTML.replace(/\u2192\s*/, lockSvg + " ");
+      el.innerHTML = el.innerHTML.replace(/→\s*/, lockSvg + " ");
     });
   }
   var origRenderDeps = window.render;

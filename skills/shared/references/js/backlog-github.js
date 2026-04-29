@@ -97,27 +97,14 @@
       });
   }
 
-  // Add bulk push button to DONE column header
+  // Add bulk push button to DONE section header (list-view layout)
   function addBulkButton() {
     if (document.querySelector(".gh-bulk-btn")) return;
-    var columns = document.querySelectorAll(".column");
-    var doneCol = null;
-    columns.forEach(function (col) {
-      var header = col.querySelector(".column-header");
-      if (
-        header &&
-        header.textContent.trim().toUpperCase().indexOf("DONE") !== -1
-      ) {
-        doneCol = col;
-      }
-    });
-    if (!doneCol) return;
+    var header = document.querySelector(".group-header[data-status='DONE']");
+    if (!header) return;
 
     var unpushed = getUnpushedNames();
     if (unpushed.length === 0) return;
-
-    var header = doneCol.querySelector(".column-header");
-    if (!header) return;
 
     var bulkBtn = document.createElement("button");
     bulkBtn.className = "gh-bulk-btn";

@@ -108,18 +108,7 @@
     // Update status for cross-column moves
     if (found.item.status !== newStatus) {
       if (typeof updateStatus !== "undefined") {
-        if (newStatus === "DOING") {
-          var isFE =
-            typeof FRONTEND_TYPES !== "undefined" &&
-            FRONTEND_TYPES.includes(found.item.type);
-          updateStatus(
-            _dragName,
-            newStatus,
-            found.item.stage || (isFE ? "building" : "defining"),
-          );
-        } else {
-          updateStatus(_dragName, newStatus);
-        }
+        updateStatus(_dragName, newStatus);
       }
     }
   };

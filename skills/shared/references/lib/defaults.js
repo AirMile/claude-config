@@ -6,6 +6,7 @@ function createDefaultDashboardData(projectName) {
       name: projectName || "",
       content: "",
     },
+    localUrl: "http://localhost:3000",
     theme: {
       colors: { main: [], accent: [], semantic: [] },
       typography: { families: { heading: "", body: "", mono: "" }, sizes: [] },
