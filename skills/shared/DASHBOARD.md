@@ -6,9 +6,8 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 **Template:** `{skills_path}/shared/references/dashboard-template.html`
 **Server:** `{skills_path}/shared/references/serve-backlog.js` (poort 9876)
 
-**UI tabs:** Concept | Architecture | Design | Theme | Stack | Thinking
-`stack`, `data`, `endpoints` en `theme` zijn subtabs in de UI, maar blijven aparte secties in project.json.
-`features` heeft geen eigen tab — feature detail is zichtbaar via de backlog detail modal (fetcht `feature.json`).
+**UI secties (single-scroll):** Concept | Components | Stack | Config (CLAUDE.md)
+Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar links zijn anchor-links die naar de betreffende sectie scrollen. `stack`, `data`, `endpoints` en `theme` blijven aparte secties in project.json; de dashboard-secties zijn projectspecifiek geconfigureerd via de `visibleTabs` array in het template.
 
 ## Dashboard lezen
 
@@ -464,7 +463,7 @@ Overige velden = structured tokens per categorie
   {
     "method": "POST",
     "path": "/api/auth/login",
-    "auth": false,
+    "auth": "public",
     "status": "done",
     "description": "JWT login met email/password"
   }
@@ -473,23 +472,74 @@ Overige velden = structured tokens per categorie
 
 **Status waarden:** `planned` | `building` | `done`
 
+**Auth waarden:** `"public"` | `"user"` | `"admin"` (enum). Backwards-compat: `false` → `"public"`, `true` → `"user"`. Het dashboard rendert protected routes/endpoints met een 🔒 icoon en role-badge.
+
+### localUrl
+
+Top-level string in `project.json` voor de lokale dev-URL (default `"http://localhost:3000"`). Routes in `architecture.routes[]` worden gerenderd als klikbare links die openen op `${localUrl}${path}` in een nieuw tabblad. Manual override per project.
+
+### architecture.routes (project-context.json)
+
+```json
+[
+  {
+    "path": "/dashboard",
+    "purpose": "Home — overzichtskaarten en recente activiteit",
+    "auth": "user",
+    "feature": "dashboard-layout"
+  }
+]
+```
+
+| Veld      | Type   | Verplicht | Beschrijving                                             |
+| --------- | ------ | --------- | -------------------------------------------------------- |
+| `path`    | string | ja        | Route path (bv. `/dashboard`)                            |
+| `purpose` | string | nee       | Korte beschrijving van de pagina                         |
+| `auth`    | enum   | nee       | `"public"` \| `"user"` \| `"admin"` (default `"public"`) |
+| `feature` | string | nee       | Feature die de route introduceerde (kebab-case)          |
+
+Geschreven door `/dev-define` (initieel) en `/dev-build` (bevestigd na implementatie). Merge op `path` — bestaand record updaten i.p.v. dupliceren.
+
 ### features
 
 ```json
 [
   {
     "name": "pin-mode",
-    "status": "DOING",
-    "stage": "defined",
+    "type": "FEATURE",
+    "status": "DONE",
     "summary": "Shift+Click multi-select voor inspect overlay",
     "depends": ["clipboard-redesign"],
-    "created": "2026-02-20"
+    "created": "2026-02-20",
+    "refactor": "REFACTORED",
+    "shipped": true,
+    "shippedAt": "2026-02-24",
+    "shippedSha": "a1b2c3d4e5f6..."
   }
 ]
 ```
 
-**Status waarden:** `TODO` | `DOING` | `DONE`
+**Status waarden:** `TODO` | `DEFINED` | `DOING` | `DONE`
 **Stage waarden (alleen bij DOING):** `defining` | `defined` | `building` | `built` | `testing`
+**`shipped`**: alleen `true` na `/dev-refactor` (CLEAN of REFACTORED). Dashboard toont alleen `features[]` met `shipped: true`.
+
+### recentChanges
+
+Kleine shipped items (type CHANGE/BUG/PAGE/COMPONENT/etc) die geen volledige feature-pipeline doorlopen hebben. Worden gepromoot via `/dev-refactor --small-items` na een lichte conventie-check.
+
+```json
+[
+  {
+    "name": "fix-button-spacing",
+    "type": "CHANGE",
+    "description": "Button padding inconsistent op mobile",
+    "shipped": true,
+    "shippedAt": "2026-02-25"
+  }
+]
+```
+
+Dashboard toont `recentChanges[]` als een compacte strip onder de features-grid.
 
 ### optimization_runs
 
@@ -679,7 +729,7 @@ De server draait op `http://localhost:9876` en serveert zowel backlogs als dashb
 
 - `http://localhost:9876/` — overzicht alle projecten
 - `http://localhost:9876/{project}` — project dashboard (hoofdpagina)
-- `http://localhost:9876/{project}/backlog` — backlog kanban
+- `http://localhost:9876/{project}/backlog` — backlog (single-scroll list view)
 - `http://localhost:9876/{project}/feature/{name}` — feature detail (unified feature.json)
 
 De feature detail endpoint leest `feature.json` (zie `shared/FEATURE.md` voor schema).

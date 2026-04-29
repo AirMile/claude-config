@@ -30,9 +30,9 @@ dev:
 
 frontend:
   - frontend-audit
-  - frontend-design
   - frontend-convert
-  - frontend-tool
+  - frontend-design
+  - frontend-install
   - frontend-tokens
   - frontend-wcag
 

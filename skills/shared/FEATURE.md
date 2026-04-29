@@ -244,8 +244,14 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
       "constraint": "PinBar moet 50+ elementen vloeiend renderen",
       "rationale": "Context zou hele tree re-renderen op elke pin-toggle",
       "rejected": [
-        { "option": "Zustand global store", "reason": "Overkill voor 1 component" },
-        { "option": "React context", "reason": "Re-render storm bij high-frequency toggles" }
+        {
+          "option": "Zustand global store",
+          "reason": "Overkill voor 1 component"
+        },
+        {
+          "option": "React context",
+          "reason": "Re-render storm bij high-frequency toggles"
+        }
       ],
       "date": "2026-02-20"
     }
@@ -306,6 +312,9 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 - `refactor.positiveObservations`
 - `refactor.failureAnalysis` — alleen bij ROLLED_BACK
 - `refactor.pendingImprovements` — alleen bij ROLLED_BACK
+- `shipped` — `true` als refactor CLEAN of REFACTORED was; feature is nu gepromoot naar Dashboard
+- `shippedAt` — ISO-datumstring (moment van promotion)
+- `shippedSha` — git blob sha van het refactor-commit (voor "as-shipped" snapshot detectie in Dashboard modal)
 
 ## Requirement status flow
 
@@ -334,14 +343,14 @@ pending → built → PASS
 
 ## Welke skills schrijven naar feature.json
 
-| Skill            | Wat schrijven naar feature.json                                                                                                                          | Wanneer |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `/dev-define`    | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                           | FASE 3  |
-| `/dev-build`     | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Leest clarifications als constraints                               | FASE 4C |
-| `/dev-verify`    | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | FASE 6  |
-| `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | FASE 5  |
-| `/thinking-decide` | Append: `durableDecisions[]` met decision, chosen, constraint, rationale, rejected[], date (alleen bij feature-scope)                                  | Step 3  |
-| `/game-define`   | Creates feature.json (zelfde als dev-define + clarifications, game-specifieke design velden)                                                             | FASE 4  |
-| `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements. Leest clarifications als constraints                                                    | FASE 5  |
+| Skill              | Wat schrijven naar feature.json                                                                                                                          | Wanneer |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `/dev-define`      | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                           | FASE 3  |
+| `/dev-build`       | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Leest clarifications als constraints                               | FASE 4C |
+| `/dev-verify`      | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | FASE 6  |
+| `/dev-refactor`    | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | FASE 5  |
+| `/thinking-decide` | Append: `durableDecisions[]` met decision, chosen, constraint, rationale, rejected[], date (alleen bij feature-scope)                                    | Step 3  |
+| `/game-define`     | Creates feature.json (zelfde als dev-define + clarifications, game-specifieke design velden)                                                             | FASE 4  |
+| `/game-build`      | Enriches: build, tests.checklist (playtest items), requirements. Leest clarifications als constraints                                                    | FASE 5  |
 | `/game-verify`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | FASE 6  |
-| `/game-refactor` | Enriches: refactor, status → DONE                                                                                                                        | FASE 5  |
+| `/game-refactor`   | Enriches: refactor, status → DONE                                                                                                                        | FASE 5  |

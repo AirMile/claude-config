@@ -1,6 +1,6 @@
 # Backlog: HTML+JSON Format
 
-De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills die de backlog lezen of schrijven gebruiken dezelfde aanpak.
+De backlog is een interactieve HTML list view met embedded JSON data. Alle skills die de backlog lezen of schrijven gebruiken dezelfde aanpak.
 
 **Bestand:** `.project/backlog.html`
 **Template:** `{skills_path}/shared/references/backlog-template.html`
@@ -26,7 +26,6 @@ De backlog is een interactieve HTML kanban met embedded JSON data. Alle skills d
       "name": "feature-naam",
       "type": "FEATURE|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|THEME|A11Y|PERF|PAGE-GAP",
       "status": "TODO|DEFINED|DOING|DONE",
-      "stage": "defining|building|built|verifying|testing|null",
       "phase": "P1|P2|P3|P4",
       "description": "Beschrijving",
       "source": "concept|dev-todo",
@@ -87,29 +86,35 @@ TODO → DEFINED → DOING → DONE
 | DOING   | Claude bouwt of verifieert          | /dev-build, /dev-verify, /frontend-convert, /frontend-audit, /frontend-wcag |
 | DONE    | Klaar (refactor optioneel)          | /dev-verify, /frontend-audit, /frontend-wcag                                |
 
-`/dev-refactor` is een optionele kwaliteitsstap — geen status-gate. Schrijft `f.refactor` veld op DONE-features (zie Refactor-badges hieronder).
+`/dev-refactor` is de **promotion-trigger**: na een geslaagde refactor (CLEAN of REFACTORED) zet het `f.shipped = true` op het backlog-item. Shipped items verdwijnen uit de backlog-weergave en verhuizen naar het Dashboard.
 
-## Stage (voortgang-badge binnen kolom)
+**`f.shipped` veld:**
+
+| Waarde              | Betekenis                                                                    |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `false` / ontbreekt | Wacht op refactor of conventie-check — zichtbaar in "Wacht op refactor" zone |
+| `true`              | Gepromoot naar Dashboard — niet meer zichtbaar in backlog                    |
+
+Naast `shipped` schrijft `/dev-refactor` ook `f.shippedAt` (ISO-datumstring) en `f.shippedSha` (git blob sha van het refactor-commit) voor "as-shipped" snapshot detectie in het Dashboard.
+
+## Pipeline
 
 ```
-defining (TODO) → [DEFINED] → building → built → verifying|testing → [DONE]
+TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped
 ```
 
-| Stage     | Betekenis          | Kolom | Gezet door (dev)   | Gezet door (frontend)                        |
-| --------- | ------------------ | ----- | ------------------ | -------------------------------------------- |
-| defining  | Wordt gedefinieerd | TODO  | /dev-define FASE 0 | —                                            |
-| building  | Wordt gebouwd      | DOING | /dev-build FASE 0  | /frontend-design of /frontend-convert FASE 0 |
-| built     | Gebouwd            | DOING | /dev-build klaar   | /frontend-design of /frontend-convert klaar  |
-| verifying | Wordt geverifieerd | DOING | /dev-verify FASE 0 | /frontend-audit of /frontend-wcag FASE 0     |
-| testing   | Wordt getest       | DOING | /game-verify       | /frontend-wcag                               |
+| Status    | Sectie naam | Gezet door               |
+| --------- | ----------- | ------------------------ |
+| `TODO`    | To define   | /dev-todo, /dev-plan     |
+| `DEFINED` | To build    | /dev-define (afsluiting) |
+| `DOING`   | To verify   | /dev-build (afsluiting)  |
+| `DONE`    | To refactor | /dev-verify (afsluiting) |
 
-Frontend items slaan `defining` en de DEFINED-kolom over — `/frontend-design` (capture-mode) maakt items aan als TODO, en `/frontend-convert` pakt ze direct op als `DOING + building`.
+De UI is een single-scroll list view: elke status is een eigen sectie met een gekleurde linker border. Binnen elke sectie zijn features gegroepeerd per fase (P1/P2/P3/P4). Klik op een rij om inline details te zien, klik op ⋮ voor acties (status wijzigen, kopieer commando, bewerk, verwijder). Er is geen `stage`-veld — `status` volstaat.
 
-`defined` als stage is **vervallen** — vervangen door eigen status `DEFINED`. `stage` is persistent — blijft staan tussen skill-invocaties. Wordt verwijderd bij overgang naar `DEFINED` (uit `defining`) en `DONE` (uit `verifying`/`testing`).
+## Refactor-badges ("To refactor" sectie)
 
-## Refactor-badges (DONE-kolom)
-
-DONE-cards tonen een badge die `/dev-refactor`'s uitkomst reflecteert:
+Items met `status === "DONE"` worden getoond in de **"To refactor"** sectie van de backlog. Ze tonen een badge die `/dev-refactor`'s uitkomst reflecteert:
 
 | `f.refactor` waarde | Badge  | Betekenis                                                                        |
 | ------------------- | ------ | -------------------------------------------------------------------------------- |
@@ -117,7 +122,7 @@ DONE-cards tonen een badge die `/dev-refactor`'s uitkomst reflecteert:
 | `"REFACTORED"`      | ✓      | Refactor voltooid (CLEAN-analyse en REFACTORED beide hieronder gerekend)         |
 | `"ROLLED_BACK"`     | ⚠      | Refactor geprobeerd, teruggedraaid (zie `feature.json.refactor.failureAnalysis`) |
 
-`/dev-refactor` schrijft dit veld op zowel `feature.json` als de backlog-feature in dezelfde sync.
+`/dev-refactor` schrijft dit veld op zowel `feature.json` als de backlog-feature in dezelfde sync. Bij CLEAN of REFACTORED volgt ook `f.shipped = true` en verhuist het item naar het Dashboard.
 
 ## Features filteren
 
@@ -128,8 +133,10 @@ Volgende TODO feature:    data.features.find(f => f.status === "TODO")
 Alle DEFINED features:    data.features.filter(f => f.status === "DEFINED")
 Alle DOING features:      data.features.filter(f => f.status === "DOING")
 Defined (klaar voor build): data.features.filter(f => f.status === "DEFINED")
-Built (klaar voor test/audit): data.features.filter(f => f.status === "DOING" && f.stage === "built")
+Actief (DOING):            data.features.filter(f => f.status === "DOING")
 Alle DONE features:       data.features.filter(f => f.status === "DONE")
 DONE niet-gerefactord:    data.features.filter(f => f.status === "DONE" && !f.refactor)
+Wacht op refactor:        data.features.filter(f => f.status === "DONE" && !f.shipped)
+Shipped (naar dashboard): data.features.filter(f => f.shipped === true)
 P1 features:              data.features.filter(f => f.phase === "P1")
 ```

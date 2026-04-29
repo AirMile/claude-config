@@ -67,7 +67,7 @@ State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared
 - **`.project/project.json`**: centraal project dashboard met context (structuur, routing, patterns), features, stack, endpoints, entities, thinking. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md verwijst hiernaar voor runtime context.
 - **Profiles**: `core-profile/profiles.yaml` + `switch-profile.py` togglet skill visibility per profiel
 - **Format-on-save**: hook runt Prettier (web) of gdformat (GDScript) na elke Write/Edit
-- **Backlog**: `.project/backlog.html` met status TODO → DOING (stages: defining/defined/building/built/testing) → DONE
+- **Backlog**: `.project/backlog.html` met status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped
 - **Build skills**: auto-commit, auto-sync `project.json` context na voltooiing
 
 ## Regels bij Wijzigingen

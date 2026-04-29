@@ -26,7 +26,7 @@ Standalone: `/dev-owasp` (security audit), `/dev-tunnel` (dev server + tunnel).
                                       │
                                       └─→ /frontend-convert (visual → code)
                                       └─→ /frontend-audit / /frontend-wcag (post-build checks)
-                                      └─→ [/frontend-tool] (element picker)
+                                      └─→ [/frontend-install] (tools + libraries, incl. element picker)
 ```
 
 Frontend items slaan `defining/defined` over — design captures pages/flows, brief genereert context voor Claude Design, handoff bundle komt terug naar `/dev-build` als `building`.

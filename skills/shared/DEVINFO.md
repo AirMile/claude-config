@@ -10,11 +10,11 @@ Pipeline-skills die gedeelde state aanraken declareren dit expliciet via `reads:
 
 ### Namespaces
 
-| Prefix          | Bestand                                             | Gebruik                     |
-| --------------- | --------------------------------------------------- | --------------------------- |
-| `feature.*`     | `.project/features/{name}/feature.json` (top-level) | dev-pipeline, game-pipeline |
-| `backlog.stage` | `.project/backlog.html` (feature stage transitions) | dev-pipeline, game-pipeline |
-| `devinfo.*`     | `.project/session/devinfo.json` (top-level key)     | frontend-pipeline           |
+| Prefix           | Bestand                                              | Gebruik                     |
+| ---------------- | ---------------------------------------------------- | --------------------------- |
+| `feature.*`      | `.project/features/{name}/feature.json` (top-level)  | dev-pipeline, game-pipeline |
+| `backlog.status` | `.project/backlog.html` (feature status transitions) | dev-pipeline, game-pipeline |
+| `devinfo.*`      | `.project/session/devinfo.json` (top-level key)      | frontend-pipeline           |
 
 ### Granulariteit
 
@@ -27,8 +27,8 @@ Alleen top-level secties — geen sub-paths zoals `feature.build.decisions`. Sch
 name: dev-build
 description: ...
 disable-model-invocation: true
-reads: [feature.requirements, backlog.stage]
-writes: [feature.requirements, feature.build, backlog.stage]
+reads: [feature.requirements, backlog.status]
+writes: [feature.requirements, feature.build, backlog.status]
 metadata:
   author: mileszeilstra
   version: 1.6.1
@@ -38,7 +38,7 @@ metadata:
 
 ### Wanneer toepassen
 
-- Skill leest of schrijft `feature.json` / `devinfo.json` / `backlog.stage` → declareer.
+- Skill leest of schrijft `feature.json` / `devinfo.json` / `backlog.status` → declareer.
 - Skill werkt alleen met eigen artifacts (bijv. `optimize/{run-id}/`) → laat weg.
 - Lege lijsten weglaten i.p.v. `reads: []` schrijven.
 
