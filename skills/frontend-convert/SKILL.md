@@ -3,7 +3,7 @@ name: frontend-convert
 description: >-
   Convert visual input (screenshots, Figma exports, URLs, inspiration images)
   into working pages or components. Two modes: 1:1 faithful copy or
-  inspiration-based using project theme tokens. Self-verifies with Playwright
+  inspiration-based using project theme tokens. Self-verifies with Playwright CLI
   comparison loop. Use with /frontend-convert.
 argument-hint: "[file-path|url]"
 disable-model-invocation: true
@@ -16,7 +16,7 @@ metadata:
 
 # Convert
 
-Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens (from project.json). Self-verifies by comparing source image against Playwright screenshot of generated output.
+Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens (from project.json). Self-verifies by comparing source image against Playwright CLI screenshot of generated output.
 
 **Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/frontend-install` · `/frontend-audit` · `/frontend-wcag`
 
@@ -25,7 +25,7 @@ Convert visual input into working code. Accepts screenshots, Figma exports, webs
 - `../shared/RULES.md` — React/TypeScript coding rules
 - `../shared/PATTERNS.md` — Component patterns (compound, render props, etc.)
 - `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
-- `../shared/PLAYWRIGHT.md` — Browser automation, screenshot capture
+- `../shared/PLAYWRIGHT.md` — Playwright CLI, screenshot capture
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
 - `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
 - `./examples/` — Before/after conversie voorbeelden (1:1 en inspiratie modus)
@@ -38,12 +38,12 @@ Convert visual input into working code. Accepts screenshots, Figma exports, webs
 
 Determine the input type from the argument or conversation:
 
-| Input                                             | Detection                                  | Action                                                     |
-| ------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
-| File path (`/home/...`, `C:\...`, `.png`, `.jpg`) | Contains path separator or image extension | Read file with Read tool (multimodal)                      |
-| URL (`http://`, `https://`, `figma.com`)          | Starts with protocol or known domain       | Playwright: `browser_navigate` → `browser_take_screenshot` |
-| Image in chat                                     | No path/URL, image data present            | Analyze directly from conversation                         |
-| None                                              | No argument, no image                      | Ask user (see below)                                       |
+| Input                                             | Detection                                  | Action                                                         |
+| ------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------- |
+| File path (`/home/...`, `C:\...`, `.png`, `.jpg`) | Contains path separator or image extension | Read file with Read tool (multimodal)                          |
+| URL (`http://`, `https://`, `figma.com`)          | Starts with protocol or known domain       | CLI: `playwright-cli open [url]` → `playwright-cli screenshot` |
+| Image in chat                                     | No path/URL, image data present            | Analyze directly from conversation                             |
+| None                                              | No argument, no image                      | Ask user (see below)                                           |
 
 **No input provided:**
 
@@ -57,7 +57,15 @@ options:
 multiSelect: false
 ```
 
-**For URLs:** Navigate with Playwright, wait 3 seconds for render, take full-page screenshot. This captured screenshot becomes the source image for all subsequent phases.
+**For URLs:** Navigate with Playwright CLI, wait 3 seconds for render, take full-page screenshot. This captured screenshot becomes the source image for all subsequent phases.
+
+```
+playwright-cli open [url]
+playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"
+playwright-cli screenshot --full-page --filename=.project/source-capture.png
+playwright-cli close
+Read .project/source-capture.png
+```
 
 Store the resolved source image reference as `$SOURCE_IMAGE` for the verification loop.
 
@@ -283,17 +291,17 @@ Theme: [Integrated from project.json#theme | Extracted from source]
 
 ## FASE 3: Visual Verification Loop
 
-Self-verify by comparing the source image against a Playwright screenshot of the generated output. Max 3 rounds. See `../shared/VERIFICATION.md` for the generic loop pattern, round management, and code quality checks.
+Self-verify by comparing the source image against a Playwright CLI screenshot of the generated output. Max 3 rounds. See `../shared/VERIFICATION.md` for the generic loop pattern, round management, and code quality checks.
 
 ### 3.0 Pre-flight
 
-Check Playwright MCP tools available (`browser_navigate`, `browser_take_screenshot`, `browser_close`). If unavailable: skip with message `"Playwright niet beschikbaar — open de pagina handmatig om te verifiëren."`, proceed to FASE 4.
+Check Playwright CLI beschikbaar: `playwright-cli --version`. If unavailable: skip with message `"Playwright CLI niet beschikbaar — open de pagina handmatig om te verifiëren."`, proceed to FASE 4.
 
 ### 3.1 Dev Server
 
 Detect or start dev server:
 
-1. Check if dev server already running on expected port (try `browser_navigate`)
+1. Check if dev server already running on expected port (try `playwright-cli open http://localhost:[port]`)
 2. If not running: start in background (`npm run dev` / `npx next dev` based on framework)
 3. Wait for server ready
 
@@ -306,9 +314,10 @@ VERIFICATION ROUND [N]/3
 
 **Sequence:**
 
-1. `browser_navigate` → `http://localhost:[port]/[page-path]`
-2. `browser_wait_for` → `{ time: 3 }` (allow hydration)
-3. `browser_take_screenshot` → capture generated page
+1. `playwright-cli goto http://localhost:[port]/[page-path]`
+2. `playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"` (allow hydration)
+3. `playwright-cli screenshot --filename=.project/verify-round-[N].png`
+4. `Read .project/verify-round-[N].png` → capture generated page
 
 **Compare source image vs generated screenshot. Analyze:**
 
@@ -396,7 +405,7 @@ Remaining:
 ════════════════════════════════════════════════════════════
 ```
 
-Close browser: `browser_close`
+Close browser: `playwright-cli close`
 
 ---
 

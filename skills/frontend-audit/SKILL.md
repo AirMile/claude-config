@@ -22,7 +22,7 @@ Unified audit & fix for performance, SEO, AEO (AI search optimization), and resp
 - `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
 - `../shared/RULES.md` — P-series (performance), S-series (SEO), H-series (responsive/HTML)
 - `../shared/DESIGN.md` — Anti-patterns (AI design tells), motion timing, interaction states
-- `../shared/PLAYWRIGHT.md` — CWV measurement, multi-viewport captures, overflow detection
+- `../shared/PLAYWRIGHT.md` — Playwright CLI: CWV measurement, multi-viewport captures, overflow detection
 - `../shared/PATTERNS.md` — Code splitting, memoization patterns
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
 
@@ -114,7 +114,7 @@ npx lighthouse {url} --output json --chrome-flags="--headless --no-sandbox" --on
 
 Extract: Performance score, LCP, CLS, INP, FCP, TTFB, opportunities.
 
-**Fallback**: Playwright CWV via PerformanceObserver (see `PLAYWRIGHT.md`).
+**Fallback**: Playwright CLI CWV via PerformanceObserver (see `PLAYWRIGHT.md` → Use Cases: Performance Measurement).
 
 **Bundle analysis** (if build script available):
 
@@ -126,7 +126,7 @@ Extract: Performance score, LCP, CLS, INP, FCP, TTFB, opportunities.
 
 Per route, check:
 
-**Critical:** Page titles (S001), meta descriptions (S002), rendering (S003 — Playwright validate SSR), robots config (S004).
+**Critical:** Page titles (S001), meta descriptions (S002), rendering (S003 — Playwright CLI validate SSR via snapshot), robots config (S004).
 
 **Important:** Open Graph (S101), canonical URLs (S102), sitemap (S103), robots.txt (S104), heading hierarchy (H002/H003), image alt text (R002).
 
@@ -166,9 +166,17 @@ Optimize for AI answer engines (ChatGPT Search, Perplexity, Google AI Overviews,
 
 ### 1.4 Responsive Scan
 
-Capture on 6 viewports (320, 375, 768, 1024, 1440, 1920) using Playwright:
+Capture on 6 viewports (320, 375, 768, 1024, 1440, 1920) using Playwright CLI (see `PLAYWRIGHT.md` → Use Cases: Responsive Validation):
 
-Per viewport: `browser_resize` → `browser_wait_for` (settle) → `browser_take_screenshot` → `browser_snapshot` → `browser_evaluate` (overflow detection).
+```
+playwright-cli open [url]
+Per viewport: playwright-cli resize [vp] 900
+             → playwright-cli run-code "async page => { await page.waitForTimeout(1000); }"
+             → playwright-cli screenshot --filename=.project/screenshots/vp[vp].png
+             → playwright-cli snapshot --filename=.project/snapshots/vp[vp].yml  (alleen bij findings)
+             → playwright-cli eval "[overflow-script]"
+playwright-cli close
+```
 
 Analyze: horizontal overflow, touch targets < 44px, truncated text, layout breaks, font size < 16px on mobile, missing viewport meta.
 

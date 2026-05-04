@@ -2,7 +2,7 @@
 name: marketing-promo
 argument-hint: "[url]"
 description: >-
-  Generate marketing-quality screenshots of a web app via MCP Playwright tools.
+  Generate marketing-quality screenshots of a web app via Playwright CLI.
   Use with /frontend-screenshots [url] for Product Hunt, social media, landing
   pages, or documentation. Analyzes codebase to discover routes and features.
 disable-model-invocation: true
@@ -14,7 +14,7 @@ metadata:
 
 # Screenshots
 
-Generate marketing-quality screenshots of a web app using MCP Playwright tools. Analyzes the codebase to discover routes and features, plans screenshots with the user, and captures them at HiDPI resolution.
+Generate marketing-quality screenshots of a web app using Playwright CLI. Analyzes the codebase to discover routes and features, plans screenshots with the user, and captures them at HiDPI resolution.
 
 **Trigger**: `/frontend-screenshots` or `/frontend-screenshots [url]`
 
@@ -54,7 +54,7 @@ Generate marketing-quality screenshots of a web app using MCP Playwright tools. 
      - label: "localhost:8080", description: "Vue CLI, generic"
    - multiSelect: false
 
-4. Verify the URL is reachable via `browser_navigate`. If it fails → exit with message to start the dev server first (e.g. `/dev-tunnel`).
+4. Verify the URL is reachable via `playwright-cli open [url]`. If it fails → exit with message to start the dev server first (e.g. `/dev-tunnel`).
 
 ## FASE 1: Gather Requirements
 
@@ -191,14 +191,14 @@ mkdir -p .project/screenshots
 
 ## FASE 4: Capture Screenshots
 
-### Primary Method: HiDPI via browser_run_code
+### Primary Method: HiDPI via playwright-cli run-code
 
-Use `browser_run_code` to create a dedicated browser context with `deviceScaleFactor: 2` for true retina-quality screenshots (2880x1800px output from 1440x900 viewport).
+Use `playwright-cli run-code` met `deviceScaleFactor: 2` voor true retina-quality screenshots (2880x1800px output van 1440x900 viewport).
 
 **Template per screenshot:**
 
-```javascript
-async (page) => {
+```bash
+playwright-cli run-code "async page => {
   const browser = page.context().browser();
   const ctx = await browser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -208,54 +208,37 @@ async (page) => {
 
   // AUTH_BLOCK (only if auth needed, only for first screenshot)
   // await p.goto('{login_url}');
-  // await p.locator('input[type="email"], input[name="email"]').first().fill('{email}');
-  // await p.locator('input[type="password"]').first().fill('{password}');
-  // await p.locator('button[type="submit"]').first().click();
+  // await p.locator('input[type=\"email\"], input[name=\"email\"]').first().fill('{email}');
+  // await p.locator('input[type=\"password\"]').first().fill('{password}');
+  // await p.locator('button[type=\"submit\"]').first().click();
   // await p.waitForLoadState('networkidle');
 
-  await p.goto("{url}");
-  await p.waitForLoadState("networkidle");
+  await p.goto('{url}');
+  await p.waitForLoadState('networkidle');
 
   // ACTIONS_BLOCK (if needed: click tabs, open modals, scroll)
   // await p.click('{selector}');
   // await p.waitForTimeout(500);
 
-  await p.screenshot({
-    path: ".project/screenshots/{filename}",
-    fullPage: false,
-  });
-
+  await p.screenshot({ path: '.project/screenshots/{filename}', fullPage: false });
   await ctx.close();
-  return "Captured: {filename}";
-};
+  return 'Captured: {filename}';
+}"
 ```
 
 **For dark mode variants** (if requested):
 
-After capturing the light mode screenshot, re-run with dark color scheme:
-
-```javascript
-async (page) => {
+```bash
+playwright-cli run-code "async page => {
   const browser = page.context().browser();
   const ctx = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 2,
-    colorScheme: "dark",
+    colorScheme: 'dark',
   });
   // ... same navigation + screenshot with '-dark' suffix
-};
+}"
 ```
-
-### Fallback Method: Standard MCP Tools
-
-If `browser_run_code` fails (e.g., `browser()` returns null in connected mode):
-
-1. `browser_resize` to width: 1440, height: 900
-2. `browser_navigate` to URL
-3. `browser_wait_for` with appropriate text or time
-4. `browser_take_screenshot` with filename
-
-Note: fallback produces viewport-resolution screenshots (1440x900), not HiDPI.
 
 ### Execution Flow
 
@@ -324,17 +307,17 @@ If credentials were provided in FASE 1:
 ### Login failed
 
 **Cause:** Smart login patterns don't match the app's login form.
-**Solution:** Use `browser_snapshot` to inspect the login page, then manually identify selectors. Retry with correct selectors via `browser_run_code`.
+**Solution:** Use `playwright-cli snapshot` to inspect the login page, then manually identify selectors. Retry with correct selectors via `playwright-cli run-code`.
 
-### browser_run_code fails
+### run-code fails
 
-**Cause:** MCP Playwright may not expose `browser()` in all connection modes.
-**Solution:** Automatic fallback to standard MCP tools (browser_resize + browser_take_screenshot). Screenshots will be viewport resolution instead of HiDPI.
+**Cause:** Syntax error in het JavaScript argument (quotes escaping).
+**Solution:** Schrijf het script naar een tijdelijk bestand en gebruik `playwright-cli run-code --filename=script.js`.
 
 ### Screenshot is blank or incomplete
 
 **Cause:** Page not fully loaded before screenshot.
-**Solution:** Increase wait time. Use `browser_wait_for` with specific text that indicates the page is ready, or add `page.waitForTimeout(2000)` before capture.
+**Solution:** Verhoog wait time via `page.waitForTimeout(2000)` in het run-code script, of gebruik `page.waitForLoadState('networkidle')` voor capture.
 
 ## Restrictions
 
@@ -350,7 +333,7 @@ This skill must ALWAYS:
 
 - Verify the app URL is reachable before starting
 - Present the screenshot plan for user approval
-- Try HiDPI (2x retina) via browser_run_code first
-- Fall back gracefully to standard tools if HiDPI fails
+- Capture HiDPI (2x retina) via `playwright-cli run-code` met `deviceScaleFactor: 2`
+- Gebruik `--filename` flag voor alle screenshots (pad naar `.project/screenshots/`)
 - Report actual dimensions in the summary
 - Clean up browser contexts after use

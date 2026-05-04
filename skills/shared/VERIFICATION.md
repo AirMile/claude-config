@@ -1,19 +1,20 @@
 # Visual Verification
 
-Shared screenshot-compare-fix loop pattern. Used by `frontend-convert` (FASE 3) and `frontend-design` (FASE 3.6). See `PLAYWRIGHT.md` for tool details and error recovery.
+Shared screenshot-compare-fix loop pattern. Used by `frontend-convert` (FASE 3) and `frontend-design` (FASE 3.6). See `PLAYWRIGHT.md` for CLI details and error recovery.
 
 ---
 
 ## Verification Loop
 
 ```
-1. browser_navigate → page URL
-2. browser_wait_for → { time: 3 } (hydration)
-3. browser_take_screenshot → capture rendered output
-4. Compare against reference (source image, ASCII layout, or design spec)
-5. Assess: acceptable | fixable | max rounds reached
-6. If fixable + rounds remaining → edit code, go to 1
-7. If acceptable OR max rounds → exit loop, report
+1. playwright-cli goto [page URL]
+2. playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"
+3. playwright-cli screenshot --filename=verify-round-[N].png
+4. Read verify-round-[N].png
+5. Compare against reference (source image, ASCII layout, or design spec)
+6. Assess: acceptable | fixable | max rounds reached
+7. If fixable + rounds remaining → edit code, go to 1
+8. If acceptable OR max rounds → exit loop, report
 ```
 
 **Always exit after max rounds** — report remaining discrepancies, never block.
@@ -78,10 +79,10 @@ Report violations alongside visual discrepancies. Fix in the same round.
 
 After main verification, if page is not desktop-only:
 
-1. `browser_resize` → `{ width: 375, height: 812 }` (mobile)
-2. `browser_take_screenshot` → check mobile layout
+1. `playwright-cli resize 375 812` (mobile)
+2. `playwright-cli screenshot --filename=verify-mobile.png` + `Read verify-mobile.png`
 3. If broken: fix responsive issues, re-screenshot
-4. `browser_resize` → `{ width: 1280, height: 800 }` (restore desktop)
+4. `playwright-cli resize 1280 800` (restore desktop)
 
 Skip for admin/internal tools or explicitly desktop-only pages.
 
@@ -89,9 +90,10 @@ Skip for admin/internal tools or explicitly desktop-only pages.
 
 ## Error Handling
 
-| Failure                      | Action                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------- |
-| Playwright tools unavailable | Skip visual verification, message: "Open de pagina handmatig om te verifiëren." |
-| Dev server won't start       | Offer to continue without visual check                                          |
-| Navigation fails             | Retry once → skip verification → document reason                                |
-| Screenshot fails             | Degrade to `browser_snapshot` (accessibility tree only)                         |
+| Failure                | Action                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| CLI unavailable        | Skip visual verification, message: "Open de pagina handmatig om te verifiëren." |
+| Dev server won't start | Offer to continue without visual check                                          |
+| Navigation fails       | Retry once → skip verification → document reason                                |
+| Screenshot fails       | Degrade to `playwright-cli snapshot` (accessibility tree only)                  |
+| file:// blocked        | Start `python3 -m http.server [port]`, gebruik `http://localhost:[port]/...`    |

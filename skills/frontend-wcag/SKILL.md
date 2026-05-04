@@ -57,7 +57,7 @@ stateDiagram-v2
 - `../shared/VALIDATION.md` — Pre-flight/post-flight patterns
 - `../shared/RULES.md` — A-series (A001-A203), plus R001, R002, R004, R005, H004-H006
 - `../shared/DEVINFO.md` — Session tracking protocol
-- `../shared/PLAYWRIGHT.md` — Browser automation for live a11y checks (accessibility tree)
+- `../shared/PLAYWRIGHT.md` — Playwright CLI voor live a11y checks (accessibility tree)
 - `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
 
 ---
@@ -231,17 +231,17 @@ options:
 **If yes:**
 
 ```
-LIVE CHECK (Playwright)
+LIVE CHECK (Playwright CLI)
 ═══════════════════════════════════════════════════
 
 Dev server: [http://localhost:3000]
 
 Per route/page:
-1. browser_navigate → [url]
-2. browser_snapshot → (analyze accessibility tree)
-3. browser_close
+1. playwright-cli open [url]
+2. playwright-cli snapshot
+3. playwright-cli close
 
-Parse returned snapshot for:
+Parse snapshot voor:
 [ ] All interactive elements have accessible names
 [ ] Heading hierarchy correct (H002/H003)
 [ ] Form inputs have labels
@@ -255,9 +255,9 @@ Parse returned snapshot for:
 Fall back to static analysis with warning:
 
 ```
-Warning: Playwright unavailable - using static analysis only
+Warning: Playwright CLI unavailable - using static analysis only
   Live checks skipped: focus order, rendered ARIA tree
-  Recommendation: Run with Playwright for browser-level validation
+  Install: npm install -g @playwright/cli@latest
 ```
 
 ---
@@ -470,14 +470,15 @@ RECOVERY: Stack Detection
 3. Use generic HTML a11y patterns
 ```
 
-### Playwright Failure
+### Playwright CLI Failure
 
 ```
-RECOVERY: Playwright Unavailable
-─────────────────────────────────
+RECOVERY: Playwright CLI Unavailable
+──────────────────────────────────────
 1. Fall back to static analysis
 2. Warn user about reduced coverage
 3. Continue with source-level checks
+Install: npm install -g @playwright/cli@latest
 ```
 
 ### Implementation Failure

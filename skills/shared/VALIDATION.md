@@ -413,20 +413,20 @@ Session:    [✓ devinfo from {skill} | ✗ new session]
 2. **Design**: Read `.project/project.json` → check if `design` section has pages/flows/principles
 3. **Code**: Glob for `src/**/*.{tsx,jsx}`, `app/**/*.{tsx,jsx}`, `*.html` — detect framework from `package.json`
 4. **Backlog**: Check `.project/backlog.html` exists → parse JSON for feature count
-5. **Dev server**: Try `browser_navigate` to localhost (common ports: 3000, 5173, 4321)
+5. **Dev server**: Try `playwright-cli open http://localhost:[port]` (common ports: 3000, 5173, 4321)
 6. **Session**: Read `.project/session/devinfo.json` for handoff data
 ```
 
 ### Graceful Degradation per State
 
-| Missing State | Impact                                    | Degradation                                        |
-| ------------- | ----------------------------------------- | -------------------------------------------------- |
-| No theme      | Skills use Tailwind defaults              | Suggest `/frontend-tokens` in next steps           |
-| No design     | Skills ask user for page/flow info inline | Suggest `/frontend-design` in next steps             |
+| Missing State | Impact                                    | Degradation                                       |
+| ------------- | ----------------------------------------- | ------------------------------------------------- |
+| No theme      | Skills use Tailwind defaults              | Suggest `/frontend-tokens` in next steps          |
+| No design     | Skills ask user for page/flow info inline | Suggest `/frontend-design` in next steps          |
 | No code       | Build/iterate skills cannot run           | Suggest `/frontend-design` or `/frontend-convert` |
-| No backlog    | Feature tracking skipped                  | Non-blocking, no action needed                     |
-| No dev server | Playwright verification skipped           | Skills offer to start one, or skip visual checks   |
-| No session    | No handoff data from previous skill       | Skills start fresh, ask user for context           |
+| No backlog    | Feature tracking skipped                  | Non-blocking, no action needed                    |
+| No dev server | Playwright verification skipped           | Skills offer to start one, or skip visual checks  |
+| No session    | No handoff data from previous skill       | Skills start fresh, ask user for context          |
 
 ### Usage in Skills
 

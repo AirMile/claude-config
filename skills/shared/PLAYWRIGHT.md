@@ -1,20 +1,30 @@
 # Playwright Browser Automation
 
-Reusable Playwright MCP patterns for visual validation, accessibility checks, and browser-based testing across frontend skills. For round-based screenshot comparison loops, see `VERIFICATION.md`.
+Reusable Playwright CLI patterns voor visual validation, accessibility checks, en browser-based testing across frontend skills. For round-based screenshot comparison loops, see `VERIFICATION.md`.
+
+**CLI:** `playwright-cli` (global via `@playwright/cli`). Check: `playwright-cli --version`.
 
 ---
 
 ## Overview
 
-| Tool                      | Purpose                    | Returns                     |
-| ------------------------- | -------------------------- | --------------------------- |
-| `browser_navigate`        | Open URL in browser        | Page loaded state           |
-| `browser_wait_for`        | Wait for content/time      | Sync point                  |
-| `browser_snapshot`        | Capture accessibility tree | **Tree structure (direct)** |
-| `browser_take_screenshot` | Capture visual state       | **Image data (direct)**     |
-| `browser_close`           | Clean up browser session   | -                           |
+| MCP (oud)                          | CLI command                                                                                 | Output                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `browser_navigate`                 | `playwright-cli goto [url]`                                                                 | Auto-snapshot link                  |
+| `browser_wait_for { time }`        | `playwright-cli run-code "async page => { await page.waitForTimeout(N); }"`                 | —                                   |
+| `browser_wait_for { text }`        | `playwright-cli run-code "async page => { await page.waitForSelector(':text(\"...\")'); }"` | —                                   |
+| `browser_snapshot`                 | `playwright-cli snapshot --filename=[path]`                                                 | YAML op disk, alleen link in stdout |
+| `browser_snapshot` (inline)        | `playwright-cli snapshot`                                                                   | Volledige tree inline in stdout     |
+| `browser_take_screenshot`          | `playwright-cli screenshot --filename=[path]`                                               | PNG op disk, link in stdout         |
+| `browser_take_screenshot fullPage` | `playwright-cli screenshot --full-page --filename=[path]`                                   | PNG (volledige hoogte) op disk      |
+| `browser_close`                    | `playwright-cli close`                                                                      | —                                   |
+| `browser_resize`                   | `playwright-cli resize [width] [height]`                                                    | Auto-snapshot link                  |
+| `browser_evaluate`                 | `playwright-cli eval "[js expression]"`                                                     | JSON result inline                  |
+| `browser_run_code`                 | `playwright-cli run-code "async page => { ... }"`                                           | Return value inline                 |
 
-> **Ephemeral Pattern**: All Playwright tools return data directly to the agent. Analyze in conversation - no file storage needed.
+> **Snapshot strategie**: `--filename` → tree op disk, alleen link terug (token-efficient, voor batch). Zonder flag → tree inline (voor directe analyse van 1-2 routes).
+
+> **Belangrijk**: `file://` protocol is geblokkeerd. Altijd HTTP vereist — start dev server voor lokale bestanden.
 
 ---
 
@@ -22,82 +32,79 @@ Reusable Playwright MCP patterns for visual validation, accessibility checks, an
 
 ### Basic Analysis Sequence
 
-For static page validation:
+Voor statische pagina-validatie:
 
 ```
 PLAYWRIGHT SEQUENCE
 ───────────────────
-1. browser_navigate → [url]
-2. browser_snapshot → (analyze accessibility tree)
-3. browser_take_screenshot → (view visual state)
-4. browser_close
-5. Bash: pkill -f "chrome.*(playwright|mcp-chrome)" 2>/dev/null || true
+1. playwright-cli open [url]
+2. playwright-cli snapshot --filename=snapshot.yml
+3. Read snapshot.yml                  ← alleen als tree-analyse nodig
+4. playwright-cli screenshot --filename=page.png
+5. Read page.png                      ← alleen als visuele check nodig
+6. playwright-cli close
 ```
 
 ### Dynamic Content Sequence
 
-For client-rendered content (SPA, React, Vue):
+Voor client-rendered content (SPA, React, Vue):
 
 ```
 PLAYWRIGHT SEQUENCE (Dynamic)
 ─────────────────────────────
-1. browser_navigate → [url]
-2. browser_wait_for → { text: "[expected content]" }
-3. browser_snapshot → (analyze accessibility tree)
-4. browser_take_screenshot → (view visual state)
-5. browser_close
-6. Bash: pkill -f "chrome.*(playwright|mcp-chrome)" 2>/dev/null || true
+1. playwright-cli open [url]
+2. playwright-cli run-code "async page => { await page.waitForSelector(':text(\"[expected]\")'); }"
+3. playwright-cli snapshot --filename=snapshot.yml
+4. Read snapshot.yml
+5. playwright-cli close
 ```
 
 ### Timed Wait Sequence
 
-For animations or transitions:
+Voor animaties of transities:
 
 ```
 PLAYWRIGHT SEQUENCE (Timed)
 ───────────────────────────
-1. browser_navigate → [url]
-2. browser_wait_for → { time: 2 }
-3. browser_take_screenshot → (view visual state)
-4. browser_close
-5. Bash: pkill -f "chrome.*(playwright|mcp-chrome)" 2>/dev/null || true
+1. playwright-cli open [url]
+2. playwright-cli run-code "async page => { await page.waitForTimeout(2000); }"
+3. playwright-cli screenshot --filename=page.png
+4. playwright-cli close
 ```
 
 ---
 
 ## Pre-flight Validation
 
-Before any Playwright operations, verify availability:
+Voor elke Playwright-operatie, verifieer beschikbaarheid:
 
 ```
-PRE-FLIGHT: Playwright
-──────────────────────
-[ ] Playwright MCP tools available
-    → browser_navigate: [✓|✗]
-    → browser_snapshot: [✓|✗]
-    → browser_take_screenshot: [✓|✗]
-    → browser_close: [✓|✗]
-[ ] URL accessible (file:// or http://)
+PRE-FLIGHT: Playwright CLI
+──────────────────────────
+[ ] playwright-cli beschikbaar: playwright-cli --version
+    → version: [x.x.x | ERROR]
+[ ] Dev server draait op verwachte URL
+    (file:// is geblokkeerd — HTTP vereist)
 ```
 
 ### Availability Check
 
 ```
-Playwright: [✓ Available | ✗ Unavailable]
-  Tools: [4/4 | N/4] available
-  Status: [Ready | Degraded | Unavailable]
+Playwright CLI: [✓ Available | ✗ Unavailable]
+  Version: [x.x.x | not found]
+  Status: [Ready | Unavailable]
 ```
 
 ### On Unavailable
 
 ```yaml
 header: "Playwright Unavailable"
-question: "Playwright tools niet beschikbaar. Hoe doorgaan?"
+question: "Playwright CLI niet beschikbaar. Hoe doorgaan?"
 options:
   - label: "Doorgaan zonder visuals (Recommended)"
     description: "Skip browser checks, continue workflow"
-  - label: "Installeer browser"
-    description: "Run: browser_install"
+  - label: "Installeer CLI"
+    description: "Run: npm install -g @playwright/cli@latest"
   - label: "Annuleren"
     description: "Stop workflow"
 ```
@@ -108,12 +115,12 @@ options:
 
 ### Navigation Failures
 
-| Error              | Cause              | Recovery                                         |
-| ------------------ | ------------------ | ------------------------------------------------ |
-| URL not found      | Invalid path       | Use absolute path with `file:///` prefix         |
-| Timeout            | Page doesn't load  | Increase wait time, retry once                   |
-| Protocol error     | Wrong URL scheme   | Ensure `file://` for local, `http://` for server |
-| Connection refused | Server not running | Start dev server, retry                          |
+| Error              | Cause                    | Recovery                                           |
+| ------------------ | ------------------------ | -------------------------------------------------- |
+| URL not found      | Invalid path             | Controleer URL, start dev server indien nodig      |
+| Timeout            | Pagina laadt niet        | Verhoog waitForTimeout, retry once                 |
+| file:// blocked    | Protocol niet toegestaan | Gebruik `python3 -m http.server` voor lokale files |
+| Connection refused | Server draait niet       | Start dev server, retry                            |
 
 ### Graceful Degradation
 
@@ -134,7 +141,7 @@ Full Analysis
 Snapshot Only
     ↓ (snapshot fails)
 Skip Browser Validation (warn user)
-    ↓ (tools unavailable)
+    ↓ (CLI unavailable)
 Manual Instructions:
   "Open [url] in browser to verify manually"
 ```
@@ -143,55 +150,34 @@ Manual Instructions:
 
 ## Use Cases by Skill
 
-### Wireframe: Visual Design Validation
+### Wireframe / Design: Visual Validation
 
 ```
-Purpose: Analyze wireframe designs for reflection
-Data needed: Accessibility tree for structure analysis
-Sequence: navigate → snapshot → screenshot → close
-Agent analyzes: Layout, headings, interactive elements
+Purpose: Analyze rendered design for reflection
+Sequence: open → screenshot → Read → close
+Agent analyzes: Layout, sections, spacing, color
 ```
 
 ### SEO: Rendered Content Validation (S003)
 
 ```
-Purpose: Verify client-rendered content is visible to crawlers
-Data needed: Accessibility tree to detect rendered content
-Sequence: navigate → wait_for (content) → snapshot → close
+Purpose: Verify client-rendered content visible to crawlers
+Sequence: open → run-code (wait for content) → snapshot → Read → close
 Agent checks: Title, H1, meta tags in accessibility tree
 Critical: Detects SPA content invisible to search engines
 ```
 
-### Validate: Browser-Based Accessibility
+### A11y: Browser-Based Accessibility
 
 ```
 Purpose: Check accessibility rules requiring DOM inspection
-Data needed: Accessibility tree for element analysis
-Sequence: navigate → snapshot → close
+Sequence: open → snapshot → Read → close
 Agent checks: H1 count (H002), interactive elements (H006)
 ```
 
 ---
 
 ## Integration Examples
-
-### Example: Local HTML File
-
-```
-FILE ANALYSIS
-─────────────
-URL: file:///C:/Projects/app/output/wireframe.html
-
-1. browser_navigate → file:///[absolute-path]/wireframe.html
-2. browser_snapshot → (parse accessibility tree for structure)
-3. browser_take_screenshot → (view visual result)
-4. browser_close
-
-Agent analyzes snapshot for:
-- Heading hierarchy
-- Interactive elements
-- Content structure
-```
 
 ### Example: Development Server (SPA)
 
@@ -200,15 +186,11 @@ DEV SERVER ANALYSIS
 ───────────────────
 URL: http://localhost:3000/dashboard
 
-1. browser_navigate → http://localhost:3000/dashboard
-2. browser_wait_for → { text: "Dashboard" }
-3. browser_snapshot → (verify content rendered)
-4. browser_close
-
-Agent checks:
-- Content visible in accessibility tree (not just source)
-- H1 present after hydration
-- Meta tags rendered (if dynamic)
+1. playwright-cli open http://localhost:3000/dashboard
+2. playwright-cli run-code "async page => { await page.waitForSelector(':text(\"Dashboard\")'); }"
+3. playwright-cli snapshot --filename=.project/snapshots/dashboard.yml
+4. Read .project/snapshots/dashboard.yml
+5. playwright-cli close
 ```
 
 ### Example: Accessibility Snapshot Analysis
@@ -216,22 +198,22 @@ Agent checks:
 ```
 ACCESSIBILITY ANALYSIS
 ──────────────────────
-1. browser_navigate → [url]
-2. browser_snapshot → (returns accessibility tree)
+1. playwright-cli open [url]
+2. playwright-cli snapshot    ← inline tree voor directe analyse
 
-Agent parses returned snapshot for:
+Parse snapshot voor:
 - heading: H1 count (H002 rule)
 - button: Interactive element count
 - link: Navigation elements
 - textbox: Form fields
 
-Example snapshot content:
-  - heading "Dashboard Overview" [level=1]
-  - navigation "Main Nav"
-    - link "Home"
-    - link "Settings"
-  - button "Create New"
-  - textbox "Search"
+Example output:
+  - heading "Dashboard Overview" [level=1] [ref=e3]
+  - navigation "Main Nav" [ref=e4]
+    - link "Home" [ref=e5]
+    - link "Settings" [ref=e6]
+  - button "Create New" [ref=e7]
+  - textbox "Search" [ref=e8]
 ```
 
 ---
@@ -240,43 +222,53 @@ Example snapshot content:
 
 ### URL Handling
 
-- **Local files**: Always use absolute paths with `file:///` prefix
-- **Windows paths**: Convert backslashes: `C:\path` → `file:///C:/path`
-- **Dev servers**: Verify server running before analysis
-- **Storybook**: Use iframe URL for cleaner analysis
+- **Dev servers**: Altijd HTTP — `file://` is geblokkeerd
+- **Lokale bestanden**: `python3 -m http.server [port]` → `http://localhost:[port]/file.html`
+- **Storybook**: Gebruik iframe URL voor schonere analyse
 
-### Wait Strategies
+### Snapshot Strategie
 
-| Content Type    | Wait Strategy          |
-| --------------- | ---------------------- |
-| Static HTML     | No wait needed         |
-| SSR/SSG         | Short wait (500ms)     |
-| Client-rendered | Wait for text/element  |
-| Animations      | Timed wait (1-2s)      |
-| Heavy content   | Wait for specific text |
+| Scenario                            | Aanpak                                                  |
+| ----------------------------------- | ------------------------------------------------------- |
+| Directe tree-analyse (1-2 routes)   | `playwright-cli snapshot` (inline)                      |
+| Batch (6+ viewports/routes)         | `playwright-cli snapshot --filename=X.yml` + Read later |
+| Tree niet nodig (alleen screenshot) | Geen snapshot-call                                      |
+
+### Wait Strategie
+
+| Content Type    | Wait Aanpak                                                                  |
+| --------------- | ---------------------------------------------------------------------------- |
+| Static HTML     | Geen wait nodig                                                              |
+| SSR/SSG         | `run-code "async page => { await page.waitForTimeout(500); }"`               |
+| Client-rendered | `run-code "async page => { await page.waitForSelector(':text(\"...\")'); }"` |
+| Animaties       | `run-code "async page => { await page.waitForTimeout(2000); }"`              |
+| networkidle     | `run-code "async page => { await page.waitForLoadState('networkidle'); }"`   |
 
 ### Resource Cleanup
 
-- **Always** call `browser_close` after analysis — ook bij errors
-- **Handle errors** with try/finally pattern: als een stap faalt, sla door naar `browser_close`
-- **Na `browser_close`**: kill orphaned Chrome processen met:
-  ```bash
-  pkill -f "chrome.*(playwright|mcp-chrome)" 2>/dev/null || true
-  ```
-- Deze bash cleanup is **verplicht** als laatste stap van elke Playwright-sequentie
-- Chrome processen overleven `browser_close` en eten CPU/RAM als ze niet gekilld worden
+- **Altijd** `playwright-cli close` na sessie — ook bij errors
+- **Bij hangende processen**: `playwright-cli kill-all`
+- **Geen orphaned Chrome** — CLI daemon sluit netjes, geen `pkill` nodig
+
+### Named Sessions (multi-sessie / auth)
+
+```bash
+playwright-cli -s=mysession open [url] --persistent
+playwright-cli -s=mysession fill e5 "user@example.com"
+playwright-cli -s=mysession screenshot --filename=result.png
+playwright-cli -s=mysession close
+```
 
 ---
 
 ## Cross-Skill References
 
-| Skill                 | Uses Playwright For                         | Primary Data        |
-| --------------------- | ------------------------------------------- | ------------------- |
-| `frontend-design`    | Design analysis, reflection                 | Accessibility tree  |
-| `frontend-seo`        | Rendered content validation (S003)          | Accessibility tree  |
-| `frontend-a11y`       | Accessibility tree analyse, focus validatie | Accessibility tree  |
-| `frontend-responsive` | Multi-viewport capture + overflow detectie  | Screenshots + tree  |
-| `frontend-perf`       | CWV measurement via PerformanceObserver     | Performance metrics |
+| Skill              | Uses Playwright For                    | Snapshot strategie  |
+| ------------------ | -------------------------------------- | ------------------- |
+| `frontend-wcag`    | A11y tree analyse, focus validatie     | Inline (1-2 routes) |
+| `frontend-convert` | Screenshot capture + verification loop | Screenshot only     |
+| `frontend-audit`   | Multi-viewport, CWV, SEO render check  | --filename (batch)  |
+| `marketing-promo`  | HiDPI screenshots, dark mode variants  | run-code newContext |
 
 ---
 
@@ -291,22 +283,23 @@ RESPONSIVE CAPTURE SEQUENCE
 ────────────────────────────
 Viewports: 320, 375, 768, 1024, 1440, 1920
 
+playwright-cli open [url]
+
 Per viewport:
-1. browser_resize → { width: [vp], height: 900 }
-2. browser_wait_for → { time: 1 }
-3. browser_take_screenshot → (visual state at viewport)
-4. browser_snapshot → (accessibility tree — check verdwijnende elementen)
-5. browser_evaluate → overflow check (see below)
+1. playwright-cli resize [vp] 900
+2. playwright-cli run-code "async page => { await page.waitForTimeout(1000); }"
+3. playwright-cli screenshot --filename=.project/screenshots/vp[vp].png
+4. playwright-cli snapshot --filename=.project/snapshots/vp[vp].yml  ← alleen als tree nodig
+5. playwright-cli eval "() => ({ hasOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth, overflowElements: Array.from(document.querySelectorAll('*')).filter(el => { const rect = el.getBoundingClientRect(); return rect.right > document.documentElement.clientWidth; }).map(el => ({ tag: el.tagName, class: el.className, width: el.getBoundingClientRect().width })).slice(0, 10) })"
 
 After all viewports:
-6. browser_close
-7. Bash: pkill -f "chrome.*(playwright|mcp-chrome)" 2>/dev/null || true
+playwright-cli close
 ```
 
-### Overflow Detection
+### Overflow Detection Script
 
 ```javascript
-// browser_evaluate: check horizontal overflow
+// playwright-cli eval "..."
 () => ({
   hasOverflow:
     document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -344,7 +337,7 @@ After all viewports:
 ### Core Web Vitals via PerformanceObserver
 
 ```javascript
-// browser_evaluate: measure CWV
+// playwright-cli eval "..."
 () =>
   new Promise((resolve) => {
     const metrics = {};
@@ -387,3 +380,43 @@ After all viewports:
 | INP    | ≤ 200ms | ≤ 500ms           | > 500ms |
 | FCP    | ≤ 1.8s  | ≤ 3.0s            | > 3.0s  |
 | TTFB   | ≤ 800ms | ≤ 1.8s            | > 1.8s  |
+
+---
+
+## Use Cases: HiDPI Screenshots
+
+### 2× Retina via run-code
+
+```javascript
+// playwright-cli run-code "async page => { ... }"
+async (page) => {
+  const browser = page.context().browser();
+  const ctx = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 2,
+  });
+  const p = await ctx.newPage();
+  await p.goto("{url}");
+  await p.waitForLoadState("networkidle");
+  await p.screenshot({
+    path: ".project/screenshots/{filename}",
+    fullPage: false,
+  });
+  await ctx.close();
+  return "Captured: {filename}";
+};
+```
+
+### Dark Mode Variant
+
+```javascript
+async (page) => {
+  const browser = page.context().browser();
+  const ctx = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 2,
+    colorScheme: "dark",
+  });
+  // ... zelfde navigatie + screenshot met '-dark' suffix
+};
+```
