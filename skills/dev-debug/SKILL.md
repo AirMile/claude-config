@@ -34,7 +34,10 @@ Structured 11-phase debugging: context → intake → investigate → analyze �
 
 - Check `.project/session/active-*.json` files
 - Fallback: lees `.project/backlog.html` → zoek meest recente feature met `status === "DOING"`
-- Als actieve feature gevonden: noteer als context hint voor investigation agents
+- Als actieve feature gevonden:
+  - Noteer als context hint voor investigation agents
+  - Lees `.project/features/{feature-name}/feature.json` (als bestaat) → extract `requirements[]` (id + description + status)
+  - Noteer als FEATURE_REQUIREMENTS voor gebruik in FASE 3 (spec-vs-impl onderscheid)
 
 **Worktree switch** (alleen als active feature gedetecteerd):
 
@@ -56,6 +59,12 @@ Als active feature gevonden in vorige stap, voer steps 1-3 uit `shared/WORKTREE.
 - pwd == expected_path → already there, skip switch
 - Geen active feature of geen worktree → skip switch, debug draait standalone
 
+**Git baseline** (voor scoped commit in FASE 10):
+
+```bash
+mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-debug-status.txt
+```
+
 **Load learnings via shared/LEARNINGS-LOAD.md:**
 
 - scopes: [component]
@@ -72,6 +81,7 @@ STACK: {framework} ({language}) — {packages}
 PATTERNS: {context.patterns of "niet beschikbaar"}
 STRUCTURE: {context.structure of "niet beschikbaar"}
 ACTIVE FEATURE: {feature naam + status of "geen"}
+REQUIREMENTS: {requirements ids + descriptions, of "niet beschikbaar"}
 ENDPOINTS: {endpoints of "niet beschikbaar"}
 ENTITIES: {data.entities of "niet beschikbaar"}
 KNOWN PITFALLS: {LEARNINGS_CONTEXT output, of "geen"}
@@ -167,7 +177,13 @@ If "Nee" → ask for corrections, update summary, re-confirm.
 
 ## FASE 2: Codebase Investigation (Explore agent)
 
-Spawn one Explore agent (`subagent_type="Explore"`, thoroughness: "very thorough") to investigate in an isolated context. This keeps source file reads and git output out of the main session — critical because FASE 3-8 still need context space for root cause analysis, fix planning, and implementation.
+Spawn one Explore agent (`subagent_type="Explore"`) to investigate in an isolated context. This keeps source file reads and git output out of the main session — critical because FASE 3-8 still need context space for root cause analysis, fix planning, and implementation.
+
+**Thoroughness op basis van problem type (FASE 1):**
+
+- Runtime Error met stack trace → `"medium"` (locatie al bekend, focus op call stack en context)
+- Runtime Error zonder stack trace → `"very thorough"`
+- Logic Bug / Performance Issue / Integration Issue → `"very thorough"` (oorzaak onduidelijk, brede scan)
 
 Agent prompt:
 
@@ -197,6 +213,8 @@ PASS 3 — CHANGE ANALYSIS (use files from Pass 1+2):
 - git log --oneline -10 -- {affected files}
 - git blame {error location}
 - Was this working before? What changed?
+- Check KNOWN PITFALLS in DEBUG_CONTEXT: als een pitfall matcht op symptoom of locatie,
+  vermeld dit als sterke hypothese — voeg toe als "Pitfall match: {summary}" in return format
 
 RETURN FORMAT:
 INVESTIGATION_START
@@ -208,6 +226,7 @@ Data flow: {input source → processing → output}
 External factors: {APIs, DB, env vars involved}
 Recent changes: {relevant commits with dates}
 Regression risk: {yes/no — was this area recently modified?}
+Pitfall match: {matching pitfall summary, of "geen"}
 INVESTIGATION_END
 ```
 
@@ -219,19 +238,24 @@ Parse the agent's `INVESTIGATION_START...END` block — only the compact finding
 
 Analyze:
 
+**Pitfall match shortcut**: als `Pitfall match` in INVESTIGATION_END aanwezig en niet "geen" → voeg die hypothese bovenaan toe met confidence "high" als startpunt. Evalueer alsnog tegen evidence — als evidence tegenspreekt, degradeer naar "medium" en ga door met stap 2.
+
 1. Combine findings from all 3 investigation passes
 2. Identify patterns and correlations
 3. Form hypotheses about root cause
 4. Evaluate each hypothesis against evidence
 5. Test one hypothesis at a time — never combine multiple fixes in a single verification step
 6. Determine most likely root cause
-7. Identify knowledge gaps for FASE 4
+7. Check FEATURE_REQUIREMENTS (uit FASE 0): matcht de root cause aan een requirement die verkeerd geïmplementeerd is? Zo ja, markeer als **spec-issue** — in FASE 6 is fix-thorough aanbevolen (minimal lost het symptoom, niet de spec-afwijking).
+8. Identify knowledge gaps for FASE 4
 
-Present findings + hypothesis + confidence (high/medium/low) + research topics needed.
+Present findings + hypothesis + confidence (high/medium/low) + spec-issue markering (ja/nee) + research topics needed.
 
 ---
 
 ## FASE 4: Context7 Research
+
+**Skip als**: root cause is puur interne logica (geen externe library API's of third-party dependencies betrokken in affected files) → ga direct naar FASE 5.
 
 1. `mcp__context7__resolve-library-id` for relevant libraries
 2. `mcp__context7__query-docs` for:
@@ -254,7 +278,8 @@ Launch 3 agents in parallel:
 | fix-defensive | "Preventief"         | Safeguards, validation, prevent recurrence |
 
 Each receives: root cause analysis + research findings + affected files.
-Each returns: specific changes with file:line refs, risk (low/medium/high), scope, trade-offs.
+Each returns: specific changes with file:line refs, risk (low/medium/high), scope, trade-offs,
+AND: `Reproduction test assertion: {wat moet de test asserten om de bug te bewijzen}`
 
 ---
 
@@ -357,6 +382,8 @@ Apply selected fixes from chosen strategy. Document each change with file:line r
 
 ### Step 2: Regression suite
 
+**Skip als**: geen test suite aanwezig (geen `test` script in package.json, geen `vitest.config.*` of `jest.config.*`) → ga naar Step 3.
+
 Run de full test suite (of minimaal: alle tests in directories die geraakte files importeren).
 
 ```bash
@@ -398,7 +425,29 @@ Per resolved bug, evalueer of root cause + fix cross-feature waarde heeft. Filte
 
 Geen relevante pitfall → skip step zonder waarschuwing.
 
-### Step 2: Output
+### Step 2: Scoped Commit
+
+Vergelijk `git status --porcelain | sort` met `.project/session/pre-debug-status.txt`:
+
+- **NEW** (alleen in current) → `git add -f` (`.project/` is gitignored, `-f` vereist)
+- **OVERLAP** (in beide, gewijzigd door deze debug-run) → `git add`
+- **PRE-EXISTING** (alleen in baseline) → niet stagen
+
+Baseline niet gevonden → fallback: vraag user welke files gerelateerd zijn aan de fix.
+
+```bash
+git commit -m "fix({feature}): {issue summary uit FASE 1}
+
+Root cause: {samenvatting uit FASE 3}
+Reproduction test: {pad, of 'skipped: {reden}'}
+Learning: {pitfall summary, of 'geen'}"
+```
+
+`{feature}` = active feature naam uit FASE 0, of weglaten als standalone debug.
+
+Clean up: `rm -f .project/session/pre-debug-status.txt`
+
+### Step 3: Output
 
 ```
 DEBUG COMPLETE: {issue}

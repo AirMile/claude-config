@@ -1,19 +1,21 @@
 ---
 name: game-debug
 description: >-
-  Systematic debugging for Godot projects with inline investigation,
+  Systematic debugging for Godot projects with reproduction-test-first workflow,
   root cause analysis, and 3 fix strategies. Use for runtime errors, physics
   bugs, signal issues, or scene tree problems.
 disable-model-invocation: true
+reads: [project-context.learnings, feature.requirements]
+writes: [project-context.learnings]
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 3.0.0
   category: game
 ---
 
 # Debug
 
-Structured 9-phase debugging: context → intake → investigate → analyze → research → fix plans → select → implement → verify.
+Structured 11-phase debugging: context → intake → investigate → analyze → research → fix plans → select → reproduction test → implement → verify → completion.
 
 ## FASE 0: Context Loading
 
@@ -35,7 +37,10 @@ Structured 9-phase debugging: context → intake → investigate → analyze →
 
 - Check `.project/session/active-*.json` files
 - Fallback: lees `.project/backlog.html` → zoek meest recente `"DOING"` feature (features met `-ing` stage suffix zijn actief)
-- Als actieve feature gevonden: noteer als context hint voor investigation agents
+- Als actieve feature gevonden:
+  - Noteer als context hint voor investigation agents
+  - Lees `.project/features/{feature-name}/feature.json` (als bestaat) → extract `requirements[]` (id + description + status)
+  - Noteer als FEATURE_REQUIREMENTS voor gebruik in FASE 3 (spec-vs-impl onderscheid)
 
 **Worktree switch** (alleen als active feature gedetecteerd):
 
@@ -57,6 +62,21 @@ Als active feature gevonden in vorige stap, voer steps 1-3 uit `shared/WORKTREE.
 - pwd == expected_path → already there, skip switch
 - Geen active feature of geen worktree → skip switch, debug draait standalone
 
+**Git baseline** (voor scoped commit in FASE 10):
+
+```bash
+mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-debug-status.txt
+```
+
+**Load learnings via shared/LEARNINGS-LOAD.md:**
+
+- scopes: [component]
+- pitfall-prefix: true
+- global-memory: true
+- current-feature: {active feature naam, of "none"}
+
+Render LEARNINGS_CONTEXT block. Skip stilletjes als geen `project-context.json` of geen `~/.claude/memory/MEMORY.md`.
+
 **Stel DEBUG_CONTEXT samen** (alle info beschikbaar voor inline investigation):
 
 ```
@@ -65,7 +85,9 @@ ARCHITECTURE: {baseline patterns of "niet beschikbaar"}
 PATTERNS: {context.patterns of "niet beschikbaar"}
 STRUCTURE: {context.structure of "niet beschikbaar"}
 ACTIVE FEATURE: {feature naam + status of "geen"}
+REQUIREMENTS: {requirements ids + descriptions, of "niet beschikbaar"}
 ENTITIES: {data.entities of "niet beschikbaar"}
+KNOWN PITFALLS: {LEARNINGS_CONTEXT output, of "geen"}
 ```
 
 Als niets beschikbaar → ga door zonder context (backwards compatible).
@@ -158,7 +180,13 @@ If "Nee" → ask for corrections, update summary, re-confirm.
 
 ## FASE 2: Codebase Investigation (Explore agent)
 
-Spawn one Explore agent (`subagent_type="Explore"`, thoroughness: "very thorough") to investigate in an isolated context. This keeps source file reads and git output out of the main session.
+Spawn one Explore agent (`subagent_type="Explore"`) to investigate in an isolated context. This keeps source file reads and git output out of the main session.
+
+**Thoroughness op basis van problem type (FASE 1):**
+
+- Runtime Error met stack trace → `"medium"` (locatie al bekend via Godot console)
+- Runtime Error zonder stack trace → `"very thorough"`
+- Logic Bug / Performance Issue / Scene-Signal Issue → `"very thorough"` (oorzaak onduidelijk, brede scan)
 
 Agent prompt:
 
@@ -188,6 +216,8 @@ PASS 3 — CHANGE ANALYSIS (use files from Pass 1+2):
 - git log --oneline -10 -- {affected files}
 - git blame {error location}
 - Was this working before? What changed?
+- Check KNOWN PITFALLS in DEBUG_CONTEXT: als een pitfall matcht op symptoom of locatie,
+  vermeld dit als sterke hypothese — voeg toe als "Pitfall match: {summary}" in return format
 
 RETURN FORMAT:
 INVESTIGATION_START
@@ -198,6 +228,7 @@ Scene tree: {relevant node hierarchy}
 Signal flow: {signal chain involved}
 Recent changes: {relevant commits with dates}
 Regression risk: {yes/no — was this area recently modified?}
+Pitfall match: {matching pitfall summary, of "geen"}
 INVESTIGATION_END
 ```
 
@@ -209,19 +240,24 @@ Parse the agent's `INVESTIGATION_START...END` block — only the compact finding
 
 Analyze:
 
+**Pitfall match shortcut**: als `Pitfall match` in INVESTIGATION_END aanwezig en niet "geen" → voeg die hypothese bovenaan toe met confidence "high" als startpunt. Evalueer alsnog tegen evidence — als evidence tegenspreekt, degradeer naar "medium" en ga door met stap 2.
+
 1. Combine findings from all 3 investigation passes
 2. Identify patterns and correlations
 3. Form hypotheses about root cause
 4. Evaluate each hypothesis against evidence
 5. Test one hypothesis at a time — never combine multiple fixes in a single verification step
 6. Determine most likely root cause
-7. Identify knowledge gaps for FASE 4
+7. Check FEATURE_REQUIREMENTS (uit FASE 0): matcht de root cause aan een requirement die verkeerd geïmplementeerd is? Zo ja, markeer als **spec-issue** — in FASE 6 is fix-thorough aanbevolen (minimal lost het symptoom, niet de spec-afwijking).
+8. Identify knowledge gaps for FASE 4
 
-Present findings + hypothesis + confidence (high/medium/low) + research topics needed.
+Present findings + hypothesis + confidence (high/medium/low) + spec-issue markering (ja/nee) + research topics needed.
 
 ---
 
 ## FASE 4: Context7 Research
+
+**Skip als**: root cause is puur interne GDScript logica (geen Godot engine API's of add-on libraries betrokken) → ga direct naar FASE 5.
 
 1. `mcp__context7__resolve-library-id` for Godot-related libraries
 2. `mcp__context7__query-docs` for:
@@ -244,7 +280,8 @@ Launch 3 agents in parallel:
 | fix-defensive | "Preventief"         | Safeguards, null checks, signal validation |
 
 Each receives: root cause analysis + research findings + affected files.
-Each returns: specific changes with file:line refs, risk (low/medium/high), scope, trade-offs.
+Each returns: specific changes with file:line refs, risk (low/medium/high), scope, trade-offs,
+AND: `Reproduction test assertion: {wat moet de GUT test asserten om de bug te bewijzen}`
 
 ---
 
@@ -274,29 +311,155 @@ AskUserQuestion (multiSelect: true):
 
 ---
 
-## FASE 7: Implementatie
+## FASE 7: Reproduction Test
 
-Apply selected fixes from chosen strategy. Document each change with file:line references.
+**Doel**: bewijs de bug met een falende GUT test voor de fix. Maakt root cause concreet, voorkomt regressies, geeft objectief bewijs dat fix werkt.
+
+### Step 1: Testbaarheid bepalen
+
+Default voor Runtime Error / Logic Bug: skip de vraag, ga direct naar Step 2.
+
+Voor Performance Issue / Scene-Signal Issue, AskUserQuestion:
+
+- header: "Reproduction Test"
+- question: "Is deze bug testbaar in een geautomatiseerde GUT test?"
+- options:
+  - "Ja, schrijf reproduction test (Aanbevolen)" — Standaard pad voor assertable bugs
+  - "Nee, skip — Visueel / Rendering" — Geen assertion op game output mogelijk
+  - "Nee, skip — Performance zonder FPS threshold" — Geen concrete meetwaarde definieerbaar
+  - "Nee, skip — Productie-only state" — Niet reproduceerbaar in test omgeving
+
+"Skip" gekozen → noteer `reproductionTest: { skipped: true, reason: "{reden}" }` en ga naar FASE 8.
+
+### Step 2: Schrijf falende GUT test
+
+- Locatie: `tests/regression/test_{slug}.gd`
+- Class: `extends GutTest`
+- Functienaam: `func test_{slug}_regression():`
+- Assert: het **verwachte** gedrag (niet het buggy gedrag), gebruik assertion suggestie uit FASE 5
+- Setup: reproduceer de minimale scene/node state die de bug triggerde
+
+### Step 3: Run de test
+
+```bash
+godot --headless --path . -s addons/gut/gut_cmdln.gd -gtest=tests/regression/test_{slug}.gd
+```
+
+**Verwacht: FAIL voor de juiste reden** — match tegen FASE 3 root cause:
+
+| Resultaat                                    | Reden                                                    | Actie                    |
+| -------------------------------------------- | -------------------------------------------------------- | ------------------------ |
+| FAIL met assert mismatch matching root cause | Bug correct gereproduceerd                               | ✓ Door naar FASE 8       |
+| FAIL door parse/setup error                  | Test zelf is kapot                                       | Fix de test, run opnieuw |
+| PASS onverwacht                              | Bug niet correct gereproduceerd of root cause klopt niet | Terug naar FASE 3        |
+
+### Step 4: Bevestig
+
+```
+REPRODUCTION TEST: {bestand}:{functie}
+Expected fail reason: {root cause uit FASE 3}
+Actual fail: {error output, max 5 regels}
+Status: ✓ Bug reproduced
+```
 
 ---
 
-## FASE 8: Verificatie
+## FASE 8: Implementatie
 
-1. Run GUT tests if test suite exists
-2. If no tests: suggest manual verification steps based on the problem type
-3. Show summary of changes made + test results
-4. Ask user to confirm the fix resolves the original problem
+Apply selected fixes from chosen strategy. Document each change with file:line references.
 
-**Output:**
+**Bij reproduction test geschreven (FASE 7)**: implementatie heeft als concrete success-criterium dat de reproduction test moet slagen. Niet meer code wijzigen dan nodig om die test groen te krijgen + de oorspronkelijke fix-plan scope.
+
+---
+
+## FASE 9: Verificatie
+
+### Step 1: Reproduction test (skip als FASE 7 geskipt)
+
+```bash
+godot --headless --path . -s addons/gut/gut_cmdln.gd -gtest=tests/regression/test_{slug}.gd
+```
+
+- PASS → fix bewijsbaar werkt voor de gereproduceerde bug
+- FAIL → fix incompleet, terug naar FASE 8 (max 3 iteraties, daarna AskUserQuestion: Andere strategie | Meer research | Accepteren als incompleet)
+
+### Step 2: Full GUT suite
+
+**Skip als**: GUT add-on niet aanwezig (`addons/gut/` bestaat niet) → ga naar Step 3.
+
+```bash
+godot --headless --path . -s addons/gut/gut_cmdln.gd
+```
+
+- Nieuwe failures → AskUserQuestion: Fix regressie (Aanbevolen) | Accepteren (markeer als known) | Rollback fix
+- Geen failures → door naar Step 3
+
+### Step 3: Manual verification (alleen bij FASE 7 skip)
+
+Suggest Godot-specifieke verificatiestappen gebaseerd op problem type (play scene, inspector check, Profiler snapshot, etc.).
+Vraag user te bevestigen dat de fix het oorspronkelijke probleem oplost.
+
+---
+
+## FASE 10: Completion
+
+### Step 1: Learning Extraction
+
+Per resolved bug, evalueer of root cause + fix cross-feature waarde heeft. Filter:
+
+- **Wel extracten**: race conditions, signal timing issues, physics layer mismatches, null reference patterns, scene lifecycle bugs, GDScript gotchas
+- **Niet extracten**: typo fixes, eenmalige config waardes, project-specifieke node paden, merge conflicts
+
+**Append** naar `project-context.json` → `learnings[]`:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "feature": "{active feature uit FASE 0, of directory primary segment van fix locatie}",
+  "type": "pitfall",
+  "source": "extracted",
+  "summary": "{root cause + waar de fix zat, max 200 chars}"
+}
+```
+
+**Dedup** (per `shared/LEARNING-EXTRACTION.md`): tokenize summary → check tegen bestaande `learnings[]` met zelfde `(type, normalize(summary), author)` tuple. Match → skip.
+
+Geen relevante pitfall → skip step zonder waarschuwing.
+
+### Step 2: Scoped Commit
+
+Vergelijk `git status --porcelain | sort` met `.project/session/pre-debug-status.txt`:
+
+- **NEW** (alleen in current) → `git add -f` (`.project/` is gitignored, `-f` vereist)
+- **OVERLAP** (in beide, gewijzigd door deze debug-run) → `git add`
+- **PRE-EXISTING** (alleen in baseline) → niet stagen
+
+Baseline niet gevonden → fallback: vraag user welke files gerelateerd zijn aan de fix.
+
+```bash
+git commit -m "fix({feature}): {issue summary uit FASE 1}
+
+Root cause: {samenvatting uit FASE 3}
+Reproduction test: {pad, of 'skipped: {reden}'}
+Learning: {pitfall summary, of 'geen'}"
+```
+
+`{feature}` = active feature naam uit FASE 0, of weglaten als standalone debug.
+
+Clean up: `rm -f .project/session/pre-debug-status.txt`
+
+### Step 3: Output
 
 ```
 DEBUG COMPLETE: {issue}
 ========================
-Root cause: {samenvatting}
-Fix: {wat er gewijzigd is}
-Tests: {pass/fail status}
+Root cause: {samenvatting uit FASE 3}
+Fix: {wat er gewijzigd is, file:line refs}
+Reproduction test: {pad, of "skipped: {reden}"}
+Regression: {N tests, X PASS, Y FAIL}
+Learning: {pitfall summary toegevoegd, of "geen extractie"}
 
 Next steps:
-  1. /game-verify {feature} → herverificatie na fix
+  1. /game-verify {feature} → herverificatie als feature actief
   2. /game-build {feature} → als rebuild nodig is
 ```
