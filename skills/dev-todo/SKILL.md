@@ -155,6 +155,23 @@ options:
 multiSelect: false
 ```
 
+### FASE 1d: Dependencies
+
+```yaml
+header: "Dependencies"
+question: "Zijn er features die eerst af moeten zijn?"
+options:
+  - label: "Nee (Recommended)"
+    description: "Geen afhankelijkheden"
+  - label: "Ja, ik noem ze"
+    description: "Geef de namen op als komma-gescheiden lijst"
+multiSelect: false
+```
+
+**"Nee"** → `dependencies: []`
+
+**"Ja"** → AskUserQuestion (vrije tekst): "Welke features? (komma-gescheiden, bijv. user-auth, api-setup)" → parse naar array → `dependencies: ["naam1", "naam2"]`
+
 ### FASE 2: Schrijf naar Backlog + Thinking
 
 1. Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data" type="application/json">...</script>`
@@ -171,7 +188,7 @@ multiSelect: false
      "phase": "{gekozen priority}",
      "description": "{beschrijving — aangescherpt als thinking rounds gedaan}",
      "source": "dev-todo",
-     "dependency": null
+     "dependencies": []
    }
    ```
 

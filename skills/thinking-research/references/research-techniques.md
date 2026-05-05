@@ -123,3 +123,55 @@
 - Pain points validated with external data
 - Market size and growth data
 - Audience-concept fit assessment
+
+## 6. Trend Analysis
+
+**When to use:** Track momentum, surface weak signals, and identify platform-specific sentiment divergence for a concept, topic, or market.
+
+**Addresses:** Knowledge Gaps, Decisions
+
+**Sources:** WebSearch (primary)
+
+**Mental models (operationele lens — gebruik deze actief tijdens analyse):**
+
+- Signal Detection: wat valt op, waarom en voor wie?
+- Triangulation: klopt dit signaal op meerdere platforms/bronnen?
+- Counter-Intuitive: waar breekt de consensus? Wat zie je NIET trending dat je zou verwachten?
+- MECE: zijn alle relevante platform/brontypen gedekt?
+
+**Platform DNA (gebruik als interpretatiegids):**
+
+| Platform     | Karakter                                        |
+| ------------ | ----------------------------------------------- |
+| Twitter/X    | Vroege adoptie, emotioneel, snelle cycli        |
+| Reddit       | Kritisch, gedetailleerd, nichegemeenschappen    |
+| LinkedIn     | Professioneel, lagging indicator, B2B sentiment |
+| Hacker News  | Tech/startup, sceptisch, anti-hype              |
+| Product Hunt | Launch-moment buzz, vroege adopters             |
+
+Temperatuurverschil = analytisch signaal: trending op Twitter maar niet op LinkedIn → emotioneel/consument issue zonder zakelijke traction (of nog niet doorgesijpeld).
+
+**Rank-trajectory vocabulaire:**
+
+- `acute_rise`: verschijnt en stijgt snel → time-sensitive window
+- `plateau`: hoog maar stabiel → mainstream, commodity-risk
+- `zombie`: blijft hangen zonder groei → uitgestorven momentum, vermijd
+- `comeback`: was weg, keert terug → nieuwe trigger, onderzoek de aanleiding
+
+**Approach:**
+
+- Welke platforms/communities noemen dit en in welke toon?
+- Wat zijn de temperatuurverschillen per platform?
+- Wat is het trajectory (acute_rise / plateau / zombie / comeback)?
+- Welke zwakke signalen zijn er die de mainstream bronnen nog niet dekken?
+- Waar breekt de consensus — wat is het echte conflict?
+
+**Anti-hallucinatie:** "stabiel hoog" is GEEN stijging. Definieer trajectory altijd relatief aan een tijdvenster, niet als absolute claim.
+
+**Output structure:**
+
+- Trend velocity per platform (stijgend/stabiel/dalend + karakter)
+- Temperatuurverschillen geïnterpreteerd (wat zegt het verschil?)
+- Trajectory assessment met vocabulaire
+- Zwakke signalen (bronnen die mainstream niet dekken)
+- Sentiment-conflict: "waar klapt de consensus?"

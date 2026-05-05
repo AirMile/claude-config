@@ -2,15 +2,16 @@
 name: frontend-design
 description: >-
   Design spec management + Claude Design brief generator. Capture mode beheert
-  pages, flows en design principes in project.json. Brief mode genereert een
-  markdown brief (design spec + block inventory + tokens + patterns) die je in
-  Claude Design plakt als context. Use with /frontend-design.
+  pages, flows en design principes in project.json — inclusief screenshot-import
+  (single/multi) en checkpoint-restore. Brief mode genereert een markdown brief
+  (design spec + block inventory + tokens + patterns) die je in Claude Design
+  plakt als context. Use with /frontend-design.
 disable-model-invocation: true
 reads: [devinfo.handoff]
 writes: [devinfo.handoff]
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 2.2.0
   category: frontend
 ---
 
@@ -103,6 +104,7 @@ ACTION_SELECT → PAGINA (populated)
 ACTION_SELECT → FLOW (populated)
 ACTION_SELECT → PRINCIPES (populated)
 ACTION_SELECT → VERWIJDEREN (populated)
+ACTION_SELECT → HERSTELLEN (populated, history exists)
 
 AANMAKEN → CONFIRM
 IMPORTEREN → CONFIRM
@@ -112,6 +114,8 @@ PAGINA → CONFIRM
 FLOW → CONFIRM
 PRINCIPES → CONFIRM
 VERWIJDEREN → CONFIRM
+HERSTELLEN → POSTFLIGHT ("Ja" — skip X.0)
+HERSTELLEN → [*] ("Annuleren")
 
 CONFIRM → POSTFLIGHT ("Ja")
 CONFIRM → ACTION_SELECT ("Aanpassen" — loop back)
@@ -253,7 +257,7 @@ options:
 multiSelect: false
 ```
 
-"Other" opties: "Principes" (principes beheren), "Verwijderen" (pagina/flow/principe verwijderen).
+"Other" opties: "Principes" (principes beheren), "Verwijderen" (pagina/flow/principe verwijderen), "Herstellen" (terug naar eerdere design staat — alleen tonen als `.project/session/design-history.json` bestaat en niet leeg is).
 
 ---
 
@@ -471,7 +475,76 @@ Proceed to FASE 3 (Confirm).
 
 ---
 
-### Route: Importeren (Extract from Codebase)
+### Route: Importeren (Extract from Codebase or Screenshot)
+
+#### Stap 0: Input Selectie
+
+```yaml
+header: "Importeren"
+question: "Wat is je input?"
+options:
+  - label: "Codebase (Recommended)", description: "Scan framework bestanden voor pagina's en flows"
+  - label: "Screenshot", description: "Analyseer een screenshot van een bestaand design"
+multiSelect: false
+```
+
+**Als "Screenshot":** ga naar Stap 0b. **Als "Codebase":** ga naar Stap 1.
+
+#### Stap 0b: Screenshot Analyse
+
+1. **Detecteer input-methode:**
+   - Als er **meerdere afbeeldingen** in de conversatie zitten → meld aantal en ga direct naar analyse:
+     ```
+     ℹ {N} screenshots gedetecteerd — elke afbeelding wordt als aparte pagina geanalyseerd.
+     ```
+   - Als er **één afbeelding** in de conversatie zit → gebruik die direct.
+   - Als er **geen afbeelding** in de conversatie zit:
+
+     ```yaml
+     header: "Screenshot"
+     question: "Voeg een screenshot toe aan je volgende bericht, of geef een bestandspad op."
+     options:
+       - label: "Ik voeg hem toe (Recommended)", description: "Sleep of gebruik de bijlage-knop in VSCode"
+       - label: "Bestandspad", description: "Geef een absoluut of relatief pad op"
+     multiSelect: false
+     ```
+
+     - "Ik voeg hem toe": wacht op het volgende bericht en gebruik de meegestuurde afbeelding(en).
+     - "Bestandspad": lees de afbeelding via Read tool op het opgegeven pad.
+
+2. **Analyseer visueel (Claude Vision):**
+
+   Per afbeelding afzonderlijk:
+   - Detecteer paginatype (landing, dashboard, form, checkout, settings, etc.)
+   - Identificeer zichtbare secties (hero, nav, sidebar, content-area, footer, cards, etc.)
+   - Leid doel af uit de lay-out en zichtbare content
+
+   Bij meerdere afbeeldingen: spawn N agents parallel (één per afbeelding), merge resultaten, toon voortgang:
+
+   ```
+   Afbeelding 1/{N}: [paginatype] — {M} secties gedetecteerd
+   Afbeelding 2/{N}: [paginatype] — {M} secties gedetecteerd
+   ...
+   ```
+
+3. **Genereer page object per afbeelding:**
+
+   ```json
+   {
+     "name": "{slug van paginatype}",
+     "purpose": "{afgeleid uit screenshot — 1-2 zinnen}",
+     "status": "IDEA",
+     "sections": ["{sectie1}", "{sectie2}"],
+     "flows": [],
+     "notes": "Geïmporteerd via screenshot"
+   }
+   ```
+
+   Dedupliceer op `name`: als twee screenshots hetzelfde paginatype detecteren, suffix de tweede met `-2`.
+
+4. Ga naar Stap 4: Present and Confirm (tabel toont alle geïmporteerde page objects als rijen).
+
+---
 
 #### Stap 1: Scan
 
@@ -661,6 +734,58 @@ multiSelect: false
 ```
 
 Proceed to FASE 3 (Confirm).
+
+---
+
+### Route: Herstellen (Restore Checkpoint)
+
+#### Stap 1: Checkpoints laden
+
+Lees `.project/session/design-history.json`.
+
+- Als het bestand niet bestaat of leeg is → toon melding en stop:
+  ```
+  ℹ Geen checkpoints beschikbaar. Wijzigingen worden pas opgeslagen na de eerste write.
+  ```
+
+#### Stap 2: Checkpoint kiezen
+
+Toon de 4 recentste checkpoints als opties:
+
+```yaml
+header: "Herstellen"
+question: "Naar welk checkpoint wil je terug?"
+options:
+  - label: "{HH:mm DD-MM}", description: "{trigger} — {N} pagina's, {M} flows"
+  # max 4 entries
+multiSelect: false
+```
+
+#### Stap 3: Diff tonen
+
+```
+RESTORE PREVIEW
+════════════════════════════════════════════════
+Huidig:   {N} pagina's, {M} flows, {P} principes
+Restore:  {N} pagina's, {M} flows, {P} principes
+
+Verdwijnen: {pagina/flow namen die weg zijn in checkpoint}
+Verschijnen: {pagina/flow namen die nieuw zijn in checkpoint}
+════════════════════════════════════════════════
+```
+
+#### Stap 4: Confirm + Write
+
+```yaml
+header: "Herstellen"
+question: "Weet je zeker dat je wilt herstellen naar dit checkpoint?"
+options:
+  - label: "Nee, annuleren (Recommended)", description: "Behoud huidige staat"
+  - label: "Ja, herstellen", description: "Overschrijf huidige design spec"
+multiSelect: false
+```
+
+Bij "Ja": schrijf `snapshot` uit het gekozen checkpoint terug naar `project.json → design`. Ga direct naar FASE X.1 (Write) + FASE X.2 (Validate) — sla X.0 over.
 
 ---
 
@@ -868,6 +993,23 @@ If "Annuleren": exit cleanly, no changes written.
 
 ## FASE X: Post-flight Validation
 
+### X.0 Checkpoint Save (vóór write)
+
+Sla de huidige `design` sectie op als checkpoint in `.project/session/design-history.json` vóórdat er geschreven wordt. Wordt overgeslagen bij Herstellen-restores (zie Herstellen Stap 4).
+
+1. Gebruik de huidige `design` staat uit FASE 0.3 (al in geheugen — geen nieuwe read nodig). Skip als leeg.
+2. Lees `.project/session/design-history.json` (maak aan als niet bestaat: `[]`).
+3. Prepend nieuw entry:
+   ```json
+   {
+     "timestamp": "{ISO 8601}",
+     "trigger": "{actie-beschrijving, bijv. 'Pagina checkout toegevoegd'}",
+     "snapshot": { "pages": [...], "flows": [...], "principles": [...] }
+   }
+   ```
+4. Houd max 10 entries: drop oudste als `length > 10`.
+5. Schrijf terug naar `.project/session/design-history.json`.
+
 ### X.1 Write to project.json
 
 Follow the Read/Write Protocol defined above. Only mutate the `design` section.
@@ -931,7 +1073,7 @@ After defining pages, sync them to the backlog:
        "status": "TODO",
        "phase": "P3",
        "description": "{page.purpose}",
-       "dependency": null
+       "dependencies": []
      }
      ```
    - **Found**: skip (don't overwrite existing items)
@@ -975,6 +1117,15 @@ DESIGN SPEC [AANGEMAAKT|BIJGEWERKT]
 
 Locatie: .project/project.json (design sectie)
 
+[Alleen tonen als design-history.json bestaat en niet leeg is:]
+WIJZIGINGEN DEZE SESSIE
+─────────────────────────────────────────────────
++ {naam}  (nieuw pagina/flow/principe)
+~ {naam}  (gewijzigd — veld: {purpose|sections|steps|...})
+- {naam}  (verwijderd)
+[Als geen wijzigingen: dit blok weglaten]
+─────────────────────────────────────────────────
+
 | Categorie | Aantal | Details                            |
 |-----------|--------|------------------------------------|
 | Pagina's  | {N}    | {status breakdown: 2 DEF, 1 BLT}  |
@@ -1014,6 +1165,7 @@ This skill must **ALWAYS**:
 - Show current values when editing existing items
 - Show change preview before confirming (FASE 3)
 - Confirm before destructive actions with "Nee" as recommended option
+- Save checkpoint (X.0) before every mutating write — except restores
 - Run post-flight validation (FASE X) after any write
 - Cross-reference flow steps against defined pages
 - Update DevInfo at completion

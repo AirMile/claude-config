@@ -165,6 +165,8 @@ Bied aan om dieper in te gaan als bevindingen onverwachte hoeken onthullen.
 - Kwantitatieve data waar beschikbaar
 - Altijd bronnen citeren
 
+**Bij Trend Analysis techniek:** Gebruik de mentale modellen uit de techniek als operationele bril tijdens uitvoering, niet als nabespreking. Noteer temperatuurverschillen expliciet per bron en label elk signaal met trajectory-vocabulaire (acute_rise / plateau / zombie / comeback).
+
 ### Step 5: Synthesize Findings
 
 Map bevindingen naar de research vragen uit Step 2:
@@ -286,6 +288,8 @@ Genereer een gestructureerd markdown rapport:
 | {risk} | High/Med/Low | High/Med/Low | {strategy or "needs research"} |
 
 ## Recommendations
+
+Recommendations zijn altijd actor-specifiek (bijv. "voor een B2B SaaS brand", "voor een solo creator"). Geen generieke "blijf monitoren"-adviezen — elke aanbeveling bevat een concrete actie of beslissing.
 
 1. {actionable recommendation}
 

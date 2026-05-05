@@ -38,6 +38,8 @@ frontend:
 
 marketing:
   - marketing-promo
+  - marketing-research
+  - marketing-content
 
 game:
   - game-build

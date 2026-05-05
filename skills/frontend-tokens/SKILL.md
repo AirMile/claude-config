@@ -26,8 +26,8 @@ Dit command beheert de `theme` sectie in `.project/project.json` die design toke
 
 **Referenties:**
 
-- `THEME_TEMPLATE.md` — Token categorieën en naming conventions
-- `../shared/DESIGN.md` — Anti-patterns, OKLCH kleuradvies, typography, motion, interaction states
+- `skills/frontend-tokens/references/THEME_TEMPLATE.md` — Token categorieën en naming conventions
+- `skills/shared/DESIGN.md` — Anti-patterns, OKLCH kleuradvies, typography, motion, interaction states
 
 ## When to Use
 
@@ -692,7 +692,7 @@ multiSelect: false
 
 **Als "Ja":**
 
-1. Raadpleeg `THEME_TEMPLATE.md` voor token categorien en naming conventions
+1. Raadpleeg `skills/frontend-tokens/references/THEME_TEMPLATE.md` voor token categorien en naming conventions
 2. Bouw het theme JSON object volgens het schema (zie "Theme JSON Schema" hierboven)
 3. Vul `colors` (main, accent, semantic) met structured token objects
 4. Vul `typography` met families en sizes
@@ -706,6 +706,8 @@ multiSelect: false
 12. Read `.project/project.json` (of maak nieuw met leeg schema)
 13. Set `theme` sectie → Write terug als formatted JSON
 14. → Ga naar FASE X: Post-flight Validation
+15. → Ga naar X.6: Theme Infrastructure Sync
+16. → Ga naar FASE Y: Website Sync
 
 ---
 
@@ -877,6 +879,8 @@ multiSelect: false
 4. Vraag bevestiging (zelfde als Aanmaken Stap 6)
 5. Write naar project.json theme sectie
 6. → Ga naar FASE X: Post-flight Validation
+7. → Ga naar X.6: Theme Infrastructure Sync
+8. → Ga naar FASE Y: Website Sync
 
 ---
 
@@ -919,6 +923,7 @@ multiSelect: false
 - Vraag bevestiging
 - Update project.json → theme.modes met dark key
 - → Ga naar FASE X: Post-flight Validation
+- → Ga naar X.6: Theme Infrastructure Sync
 
 #### Mode Comparison
 
@@ -987,6 +992,7 @@ multiSelect: false
 1. Read `.project/project.json`
 2. Set `theme` sectie naar leeg object `{}`
 3. Write terug
+4. → Ga naar Output Formaat (toon "THEME VERWIJDERD")
 
 ---
 
@@ -1222,12 +1228,7 @@ multiSelect: false
 
 ### Y.4 Restyle Execution (if approved)
 
-**Step 1: Ensure theme infrastructure**
-
-- **Tailwind project:** Generate/update `tailwind.config` → `theme.extend` with tokens from `project.json#theme` (colors, spacing, borderRadius, shadows, typography)
-- **Non-Tailwind:** Generate/update CSS variables file from `theme.cssVars`
-
-**Step 2: Replace hardcoded values**
+**Step 1: Replace hardcoded values**
 
 Per component file, replace hardcoded values with theme tokens:
 
@@ -1241,7 +1242,7 @@ Per component file, replace hardcoded values with theme tokens:
 
 Map each hardcoded value to the closest theme token by color distance / value match.
 
-**Step 3: Verification**
+**Step 2: Verification**
 
 After restyle, quick scan for remaining hardcoded values. Report count.
 
@@ -1292,6 +1293,7 @@ Theme tokens ready in project.json voor downstream consumption.
 Next steps:
   1. /frontend-design {page} → bouw een pagina met deze tokens
   2. /frontend-convert → converteer een design met deze tokens
+  3. /frontend-tokens → bekijk of update tokens later
   4. /frontend-check → check performance en SEO
   5. /frontend-wcag → accessibility audit
 ```

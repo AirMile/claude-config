@@ -750,7 +750,7 @@ Muteer in memory:
 
 - Zoek feature: `data.features.find(f => f.name === "{feature-name}")`
 - Gevonden → zet `.status = "DEFINED"`, verwijder `.stage` (geen stage in DEFINED-kolom) en zet `.date = "{current date}"`
-- Niet gevonden → voeg toe: `{ "name": "{feature}", "type": "FEATURE", "status": "DEFINED", "phase": "P4", "description": "{from feature.json summary}", "dependency": null, "source": "/game-define" }`
+- Niet gevonden → voeg toe: `{ "name": "{feature}", "type": "FEATURE", "status": "DEFINED", "phase": "P4", "description": "{from feature.json summary}", "dependencies": [], "source": "/game-define" }`
 - Zet `data.updated` naar huidige datum
 
 **Dashboard** (zie `shared/DASHBOARD.md`):

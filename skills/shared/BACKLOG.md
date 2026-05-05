@@ -25,11 +25,12 @@ De backlog is een interactieve HTML list view met embedded JSON data. Alle skill
     {
       "name": "feature-naam",
       "type": "FEATURE|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|THEME|A11Y|PERF|PAGE-GAP",
-      "status": "TODO|DEFINED|DOING|DONE",
+      "status": "TODO|DEFINED|DOING|DONE|CANCELLED",
       "phase": "P1|P2|P3|P4",
       "description": "Beschrijving",
       "source": "concept|dev-todo",
-      "dependency": "andere-feature|null",
+      "dependencies": ["andere-feature"],
+      "risk": "1-5|null",
       "assignee": "naam|null",
       "date": "2026-01-15|null",
       "auto": "true|null",
@@ -79,12 +80,13 @@ Dit reduceert 6+ sequentiële round-trips naar 2. Bestanden zijn onafhankelijk �
 TODO → DEFINED → DOING → DONE
 ```
 
-| Status  | Betekenis                           | Gezet door                                                                  |
-| ------- | ----------------------------------- | --------------------------------------------------------------------------- |
-| TODO    | Idee, nog niet (klaar) gedefinieerd | /dev-plan, /dev-todo, /dev-define start, /frontend-design                   |
-| DEFINED | Gedefinieerd, wacht op build-go     | /dev-define klaar, /game-define klaar                                       |
-| DOING   | Claude bouwt of verifieert          | /dev-build, /dev-verify, /frontend-convert, /frontend-check, /frontend-wcag |
-| DONE    | Klaar (refactor optioneel)          | /dev-verify, /frontend-check, /frontend-wcag                                |
+| Status    | Betekenis                           | Gezet door                                                                  |
+| --------- | ----------------------------------- | --------------------------------------------------------------------------- |
+| TODO      | Idee, nog niet (klaar) gedefinieerd | /dev-plan, /dev-todo, /dev-define start, /frontend-design                   |
+| DEFINED   | Gedefinieerd, wacht op build-go     | /dev-define klaar, /game-define klaar                                       |
+| DOING     | Claude bouwt of verifieert          | /dev-build, /dev-verify, /frontend-convert, /frontend-check, /frontend-wcag |
+| DONE      | Klaar (refactor optioneel)          | /dev-verify, /frontend-check, /frontend-wcag                                |
+| CANCELLED | Definitief afgeblazen, gearchiveerd | Handmatig via backlog UI (○ knop)                                           |
 
 `/dev-refactor` is de **promotion-trigger**: na een geslaagde refactor (CLEAN of REFACTORED) zet het `f.shipped = true` op het backlog-item. Shipped items verdwijnen uit de backlog-weergave en verhuizen naar het Dashboard.
 
@@ -101,14 +103,17 @@ Naast `shipped` schrijft `/dev-refactor` ook `f.shippedAt` (ISO-datumstring) en 
 
 ```
 TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped
+                                                                    ↓ (handmatig)
+                                                                CANCELLED (Gearchiveerd)
 ```
 
-| Status    | Sectie naam | Gezet door               |
-| --------- | ----------- | ------------------------ |
-| `TODO`    | To define   | /dev-todo, /dev-plan     |
-| `DEFINED` | To build    | /dev-define (afsluiting) |
-| `DOING`   | To verify   | /dev-build (afsluiting)  |
-| `DONE`    | To refactor | /dev-verify (afsluiting) |
+| Status      | Sectie naam  | Gezet door                             |
+| ----------- | ------------ | -------------------------------------- |
+| `TODO`      | To define    | /dev-todo, /dev-plan                   |
+| `DEFINED`   | To build     | /dev-define (afsluiting)               |
+| `DOING`     | To verify    | /dev-build (afsluiting)                |
+| `DONE`      | To refactor  | /dev-verify (afsluiting)               |
+| `CANCELLED` | Gearchiveerd | Handmatig via UI (○ knop), herstelbaar |
 
 De UI is een single-scroll list view: elke status is een eigen sectie met een gekleurde linker border. Binnen elke sectie zijn features gegroepeerd per fase (P1/P2/P3/P4). Klik op een rij om inline details te zien, klik op ⋮ voor acties (status wijzigen, kopieer commando, bewerk, verwijder). Er is geen `stage`-veld — `status` volstaat.
 
@@ -129,14 +134,17 @@ Items met `status === "DONE"` worden getoond in de **"To refactor"** sectie van 
 Voorbeelden van veelvoorkomende queries op het JSON object:
 
 ```
-Volgende TODO feature:    data.features.find(f => f.status === "TODO")
-Alle DEFINED features:    data.features.filter(f => f.status === "DEFINED")
-Alle DOING features:      data.features.filter(f => f.status === "DOING")
+Volgende TODO feature:      data.features.find(f => f.status === "TODO")
+Alle DEFINED features:      data.features.filter(f => f.status === "DEFINED")
+Alle DOING features:        data.features.filter(f => f.status === "DOING")
 Defined (klaar voor build): data.features.filter(f => f.status === "DEFINED")
-Actief (DOING):            data.features.filter(f => f.status === "DOING")
-Alle DONE features:       data.features.filter(f => f.status === "DONE")
-DONE niet-gerefactord:    data.features.filter(f => f.status === "DONE" && !f.refactor)
-Wacht op refactor:        data.features.filter(f => f.status === "DONE" && !f.shipped)
-Shipped (naar dashboard): data.features.filter(f => f.shipped === true)
-P1 features:              data.features.filter(f => f.phase === "P1")
+Actief (DOING):             data.features.filter(f => f.status === "DOING")
+Alle DONE features:         data.features.filter(f => f.status === "DONE")
+DONE niet-gerefactord:      data.features.filter(f => f.status === "DONE" && !f.refactor)
+Wacht op refactor:          data.features.filter(f => f.status === "DONE" && !f.shipped)
+Shipped (naar dashboard):   data.features.filter(f => f.shipped === true)
+P1 features:                data.features.filter(f => f.phase === "P1")
+Geblokkeerd:                data.features.filter(f => (f.dependencies||[]).some(d => { const x=data.features.find(g=>g.name===d); return !x||x.status!=="DONE"; }))
+Hoog risico (TODO/DEFINED): data.features.filter(f => f.risk >= 4 && (f.status === "TODO" || f.status === "DEFINED"))
+Gearchiveerd:               data.features.filter(f => f.status === "CANCELLED")
 ```

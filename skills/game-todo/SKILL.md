@@ -202,7 +202,7 @@ multiSelect: false
      "status": "TODO",
      "phase": "{gekozen priority}",
      "description": "{beschrijving — aangescherpt als thinking rounds gedaan}",
-     "dependency": null
+     "dependencies": []
    }
    ```
 

@@ -536,7 +536,7 @@ After all fixes are implemented and validated:
    - Sync to `project.json` `features[]`: merge feature with `status: "DONE"`
 
 2. If new accessibility issues were found that don't exist in the backlog:
-   - Add each as: `{ "name": "{issue-kebab}", "type": "A11Y", "status": "TODO", "phase": "P3", "description": "{WCAG criterion}: {issue description}", "dependency": null }`
+   - Add each as: `{ "name": "{issue-kebab}", "type": "A11Y", "status": "TODO", "phase": "P3", "description": "{WCAG criterion}: {issue description}", "dependencies": [] }`
    - Report: "{N} new A11Y items added to backlog"
 
 ### 6.2 Summary

@@ -3,7 +3,7 @@ name: marketing-promo
 argument-hint: "[url]"
 description: >-
   Generate marketing-quality screenshots of a web app via Playwright CLI.
-  Use with /frontend-screenshots [url] for Product Hunt, social media, landing
+  Use with /marketing-promo [url] for Product Hunt, social media, landing
   pages, or documentation. Analyzes codebase to discover routes and features.
 disable-model-invocation: true
 metadata:
@@ -16,7 +16,7 @@ metadata:
 
 Generate marketing-quality screenshots of a web app using Playwright CLI. Analyzes the codebase to discover routes and features, plans screenshots with the user, and captures them at HiDPI resolution.
 
-**Trigger**: `/frontend-screenshots` or `/frontend-screenshots [url]`
+**Trigger**: `/marketing-promo` or `/marketing-promo [url]`
 
 ## FASE 0: Determine App URL
 
@@ -128,6 +128,12 @@ If "Ja, ik geef credentials" → follow-up **AskUserQuestion**:
 - multiSelect: false
 
 ## FASE 2: Analyze Codebase for Features
+
+**Research context check:** Zoek naar `.project/thinking/*-marketing-research.md`. Als
+gevonden: laad de Doelgroep en Aanbevelingen secties. Gebruik de aanbevolen kanalen en
+doelgroep als context bij feature-prioritering in stap 3 — features die aansluiten bij
+de onderzoekscontext krijgen voorrang in het screenshot-plan. Dit is een zachte hint,
+geen blokkerende stap.
 
 Discover routes and screenshottable features inline using Glob, Grep, and Read.
 

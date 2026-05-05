@@ -25,7 +25,7 @@
             "status": "DONE",
             "phase": "P1",
             "description": "Next.js app router setup met pagina structuur",
-            "dependency": null,
+            "dependencies": [],
             "date": "2026-02-16"
           },
           {
@@ -34,7 +34,7 @@
             "status": "DONE",
             "phase": "P1",
             "description": "Login, registratie en wachtwoord reset flows",
-            "dependency": "routing",
+            "dependencies": ["routing"],
             "date": "2026-02-17"
           },
           {
@@ -43,7 +43,7 @@
             "status": "DONE",
             "phase": "P1",
             "description": "JWT authenticatie endpoints met refresh tokens",
-            "dependency": "auth-pages"
+            "dependencies": ["auth-pages"]
           },
           {
             "name": "dashboard-layout",
@@ -51,7 +51,7 @@
             "status": "DOING",
             "phase": "P1",
             "description": "Sidebar navigatie, header met user menu, content area",
-            "dependency": "auth-pages"
+            "dependencies": ["auth-pages"]
           },
           {
             "name": "product-list",
@@ -59,7 +59,7 @@
             "status": "DOING",
             "phase": "P1",
             "description": "Tabel met producten, zoeken, filteren en paginatie",
-            "dependency": "dashboard-layout"
+            "dependencies": ["dashboard-layout"]
           },
           {
             "name": "api-products",
@@ -67,7 +67,8 @@
             "status": "TODO",
             "phase": "P2",
             "description": "CRUD endpoints voor producten met image upload",
-            "dependency": "product-list"
+            "dependencies": ["product-list"],
+            "risk": 3
           },
           {
             "name": "product-detail",
@@ -75,7 +76,7 @@
             "status": "DOING",
             "phase": "P2",
             "description": "Product bewerk pagina met rich text editor",
-            "dependency": "api-products"
+            "dependencies": ["api-products"]
           },
           {
             "name": "order-overview",
@@ -83,7 +84,8 @@
             "status": "TODO",
             "phase": "P2",
             "description": "Order lijst met status filters en zoeken",
-            "dependency": "dashboard-layout"
+            "dependencies": ["dashboard-layout"],
+            "risk": 2
           },
           {
             "name": "stripe-integration",
@@ -91,7 +93,8 @@
             "status": "TODO",
             "phase": "P2",
             "description": "Stripe checkout en webhook verwerking",
-            "dependency": "api-products"
+            "dependencies": ["api-products", "order-overview"],
+            "risk": 5
           },
           {
             "name": "analytics-dashboard",
@@ -99,7 +102,8 @@
             "status": "TODO",
             "phase": "P3",
             "description": "Revenue grafieken, top producten, conversie metrics",
-            "dependency": "order-overview"
+            "dependencies": ["order-overview"],
+            "risk": 4
           },
           {
             "name": "dark-mode",
@@ -107,7 +111,8 @@
             "status": "TODO",
             "phase": "P3",
             "description": "Dark/light mode toggle met system preference detectie",
-            "dependency": null
+            "dependencies": [],
+            "risk": 1
           },
           {
             "name": "performance-optimization",
@@ -115,7 +120,8 @@
             "status": "TODO",
             "phase": "P3",
             "description": "Image optimization, lazy loading, bundle splitting",
-            "dependency": null
+            "dependencies": [],
+            "risk": 2
           },
           {
             "name": "order-processing",
@@ -123,16 +129,16 @@
             "status": "TODO",
             "phase": "P4",
             "description": "Submit handler voor checkout form",
-            "dependency": null,
+            "dependencies": [],
             "source": "/frontend-design checkout — CheckoutForm [Bestelling plaatsen]"
           },
           {
             "name": "coupon-validation",
             "type": "PAGE-GAP",
-            "status": "TODO",
+            "status": "CANCELLED",
             "phase": "P4",
             "description": "Coupon code validatie en korting berekening",
-            "dependency": null,
+            "dependencies": [],
             "source": "/frontend-design checkout — CouponInput [Toepassen]"
           }
         ],
@@ -197,8 +203,10 @@
           </div>
         </div>
 
-        <label for="field-dep">Dependency (optioneel)</label>
-        <input type="text" id="field-dep" placeholder="feature-naam" />
+        <label for="field-dep"
+          >Dependencies (komma-gescheiden, optioneel)</label
+        >
+        <input type="text" id="field-dep" placeholder="feature-a, feature-b" />
 
         <label for="field-assignee">Toewijzen aan (optioneel)</label>
         <input type="text" id="field-assignee" placeholder="naam teammate" />
@@ -240,11 +248,13 @@
       if (!data.features) data.features = [];
 
       const STATUSES = ["TODO", "DEFINED", "DOING", "DONE"];
+      const ARCHIVED_STATUSES = ["CANCELLED"];
       const STATUS_LABELS = {
         TODO: "To define",
         DEFINED: "To build",
         DOING: "To verify",
         DONE: "To refactor",
+        CANCELLED: "Gearchiveerd",
       };
       const TRANSITION_LABELS = {
         TODO: "defining",
@@ -257,6 +267,7 @@
         DEFINED: "var(--defined)",
         DOING: "var(--doing)",
         DONE: "var(--done)",
+        CANCELLED: "var(--text-dim)",
       };
       const PHASE_CLASSES = {
         P1: "phase-p1",
@@ -425,12 +436,19 @@
         // Build sidebar
         const sidebar = document.getElementById("sidebar");
         if (sidebar) {
-          sidebar.innerHTML = STATUSES.map((status) => {
+          let sidebarHtml = STATUSES.map((status) => {
             const count = data.features.filter(
               (f) => f.status === status && !f.shipped,
             ).length;
             return `<a href="#${status.toLowerCase()}-section" class="sb-${status.toLowerCase()}" data-status="${status}">${esc(STATUS_LABELS[status] || status)}</a>`;
           }).join("");
+          const cancelledCount = data.features.filter(
+            (f) => f.status === "CANCELLED",
+          ).length;
+          if (cancelledCount > 0) {
+            sidebarHtml += `<a href="#cancelled-section" class="sb-cancelled" data-status="CANCELLED" style="opacity:0.45;font-size:11px">${esc(STATUS_LABELS.CANCELLED)} (${cancelledCount})</a>`;
+          }
+          sidebar.innerHTML = sidebarHtml;
         }
 
         // Build board
@@ -462,7 +480,22 @@
           const header = document.createElement("div");
           header.className = "group-header";
           header.dataset.status = status;
-          header.innerHTML = `<h2>${esc(STATUS_LABELS[status] || status)}</h2>`;
+          if (status === "DEFINED") {
+            const blockedCount = items.filter((f) => {
+              const deps = f.dependencies || [];
+              return deps.some((dep) => {
+                const found = findItem(dep);
+                return !found || found.item.status !== "DONE";
+              });
+            }).length;
+            const blockedSuffix =
+              blockedCount > 0
+                ? ` <span class="header-blocked-count">(${blockedCount} geblokkeerd)</span>`
+                : "";
+            header.innerHTML = `<h2>${esc(STATUS_LABELS[status] || status)}${blockedSuffix}</h2>`;
+          } else {
+            header.innerHTML = `<h2>${esc(STATUS_LABELS[status] || status)}</h2>`;
+          }
 
           header.addEventListener("click", () => {
             section.classList.toggle("collapsed");
@@ -507,6 +540,33 @@
           board.appendChild(section);
         });
 
+        // Archived (CANCELLED) section — collapsed by default
+        const cancelledItems = data.features.filter(
+          (f) => f.status === "CANCELLED",
+        );
+        if (cancelledItems.length > 0) {
+          const archSection = document.createElement("section");
+          archSection.className = "group group--archived collapsed";
+          archSection.id = "cancelled-section";
+
+          const archHeader = document.createElement("div");
+          archHeader.className = "group-header";
+          archHeader.dataset.status = "CANCELLED";
+          archHeader.innerHTML = `<h2>${esc(STATUS_LABELS.CANCELLED)} (${cancelledItems.length})</h2>`;
+          archHeader.addEventListener("click", () => {
+            archSection.classList.toggle("collapsed");
+          });
+          archSection.appendChild(archHeader);
+
+          const archBody = document.createElement("div");
+          archBody.className = "group-body";
+          cancelledItems.forEach((f) => {
+            archBody.appendChild(renderRow(f));
+          });
+          archSection.appendChild(archBody);
+          board.appendChild(archSection);
+        }
+
         updateSidebarActive();
       }
 
@@ -517,12 +577,24 @@
         const subLabel = SUB_TYPE_LABELS[f.type] || null;
 
         let metaHtml = "";
-        if (f.dependency) {
-          const depFound = findItem(f.dependency);
-          const depResolved = depFound && depFound.item.status === "DONE";
-          if (!depResolved) {
-            metaHtml += `<span class="dep-icon" title="Afhankelijk van ${esc(f.dependency)}">⊸ ${esc(f.dependency)}</span>`;
+        const deps = f.dependencies || [];
+        if (deps.length > 0) {
+          const unresolvedDeps = deps.filter((dep) => {
+            const found = findItem(dep);
+            return !found || found.item.status !== "DONE";
+          });
+          if (unresolvedDeps.length > 0) {
+            metaHtml += `<span class="dep-blocked" title="Geblokkeerd door ${unresolvedDeps.join(", ")}">⊘ geblokkeerd</span>`;
+            unresolvedDeps.forEach((dep) => {
+              metaHtml += `<span class="dep-icon" title="Wacht op ${esc(dep)}">⊸ ${esc(dep)}</span>`;
+            });
           }
+        }
+        if (f.risk && (f.status === "TODO" || f.status === "DEFINED")) {
+          const riskLabel = f.risk <= 2 ? "laag" : f.risk <= 3 ? "med" : "hoog";
+          const riskClass =
+            f.risk <= 2 ? "risk-low" : f.risk <= 3 ? "risk-med" : "risk-high";
+          metaHtml += `<span class="risk-badge ${riskClass}" title="Complexiteit ${f.risk}/5">${riskLabel}</span>`;
         }
         if (f.auto && f.status !== "DONE") {
           metaHtml += `<span class="auto-badge">AUTO</span>`;
@@ -561,8 +633,10 @@
 
         const editDeleteHtml =
           f.status === "TODO" || f.status === "DEFINED"
-            ? `<button class="row-edit-btn" title="Bewerken">✎</button><button class="row-delete-btn" title="Verwijderen">✕</button>`
-            : "";
+            ? `<button class="row-edit-btn" title="Bewerken">✎</button><button class="row-cancel-btn" title="Archiveren">○</button><button class="row-delete-btn" title="Verwijderen">✕</button>`
+            : f.status === "CANCELLED"
+              ? `<button class="row-restore-btn" title="Herstellen naar TODO">↩</button><button class="row-delete-btn" title="Definitief verwijderen">✕</button>`
+              : "";
 
         row.innerHTML = `<div class="row-summary">
           ${actionBtnHtml}
@@ -578,6 +652,8 @@
         const summary = row.querySelector(".row-summary");
         const editBtn = row.querySelector(".row-edit-btn");
         const deleteBtn = row.querySelector(".row-delete-btn");
+        const cancelBtn = row.querySelector(".row-cancel-btn");
+        const restoreBtn = row.querySelector(".row-restore-btn");
         let copyBtn = null;
 
         if (isActive) {
@@ -619,6 +695,28 @@
             e.stopPropagation();
             openDeleteModal(f.name);
           });
+        if (cancelBtn)
+          cancelBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const found = findItem(f.name);
+            if (found) {
+              found.item.status = "CANCELLED";
+              syncJSON();
+              render();
+              toast(f.name + " gearchiveerd");
+            }
+          });
+        if (restoreBtn)
+          restoreBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const found = findItem(f.name);
+            if (found) {
+              found.item.status = "TODO";
+              syncJSON();
+              render();
+              toast(f.name + " hersteld naar TODO");
+            }
+          });
 
         summary.addEventListener("click", (e) => {
           if (copyBtn && (e.target === copyBtn || copyBtn.contains(e.target)))
@@ -630,7 +728,17 @@
             (e.target === deleteBtn || deleteBtn.contains(e.target))
           )
             return;
-          if (f.status === "TODO") return;
+          if (
+            cancelBtn &&
+            (e.target === cancelBtn || cancelBtn.contains(e.target))
+          )
+            return;
+          if (
+            restoreBtn &&
+            (e.target === restoreBtn || restoreBtn.contains(e.target))
+          )
+            return;
+          if (f.status === "TODO" || f.status === "CANCELLED") return;
           toggleRowExpand(row, f.name);
         });
 
@@ -680,8 +788,8 @@
           const status = f.status || "TODO";
 
           if (status === "TODO" || !detail) {
-            if (f.dependency) {
-              html += `<div class="expand-section"><div class="expand-label">Dependency</div><div class="expand-deps"><span class="expand-dep">${esc(f.dependency)}</span></div></div>`;
+            if (f.dependencies && f.dependencies.length > 0) {
+              html += `<div class="expand-section"><div class="expand-label">Dependencies</div><div class="expand-deps">${f.dependencies.map((d) => `<span class="expand-dep">${esc(d)}</span>`).join("")}</div></div>`;
             }
             if (f.assignee) {
               html += `<div class="expand-section"><div class="expand-label">Toegewezen aan</div><div class="expand-summary">${esc(f.assignee)}</div></div>`;
@@ -693,8 +801,8 @@
               html += `<div class="expand-section"><div class="expand-label">Datum</div><div class="expand-summary">${esc(f.date)}</div></div>`;
             }
           } else if (status === "DEFINED") {
-            if (f.dependency) {
-              html += `<div class="expand-section"><div class="expand-label">Dependency</div><div class="expand-deps"><span class="expand-dep">${esc(f.dependency)}</span></div></div>`;
+            if (f.dependencies && f.dependencies.length > 0) {
+              html += `<div class="expand-section"><div class="expand-label">Dependencies</div><div class="expand-deps">${f.dependencies.map((d) => `<span class="expand-dep">${esc(d)}</span>`).join("")}</div></div>`;
             }
             const reqs = detail.requirements || [];
             if (reqs.length) {
@@ -833,8 +941,9 @@
           found.item.description || "";
         document.getElementById("field-type").value = found.item.type;
         document.getElementById("field-phase").value = found.item.phase || "P1";
-        document.getElementById("field-dep").value =
-          found.item.dependency || "";
+        document.getElementById("field-dep").value = (
+          found.item.dependencies || []
+        ).join(", ");
         document.getElementById("field-assignee").value =
           found.item.assignee || "";
         document.getElementById("field-name").disabled = false;
@@ -854,7 +963,12 @@
         const desc = document.getElementById("field-desc").value.trim();
         const type = document.getElementById("field-type").value;
         const phase = document.getElementById("field-phase").value;
-        const dep = document.getElementById("field-dep").value.trim() || null;
+        const deps = document
+          .getElementById("field-dep")
+          .value.trim()
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
         const assignee =
           document.getElementById("field-assignee").value.trim() || null;
         if (!name) return;
@@ -866,7 +980,7 @@
           found.item.description = desc;
           found.item.type = type;
           found.item.phase = phase;
-          found.item.dependency = dep;
+          found.item.dependencies = deps;
           found.item.assignee = assignee;
           toast(name + " bijgewerkt");
         } else {
@@ -876,7 +990,7 @@
             status: addToStatus || "TODO",
             phase,
             description: desc,
-            dependency: dep,
+            dependencies: deps,
             assignee,
           });
           toast(name + " toegevoegd");

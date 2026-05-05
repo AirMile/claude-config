@@ -81,6 +81,19 @@ FASE 1 van de dev workflow: define → build → test.
 
 ### FASE 1: Requirements Gathering
 
+**Risk-check (alleen als `feature.risk >= 4`):**
+
+Als de geladen backlog-feature een `risk`-score van 4 of 5 heeft, toon deze waarschuwing vóór de eerste vraag:
+
+```
+⚠ HOOG RISICO — Complexiteit {risk}/5
+
+Deze feature heeft een hoge complexiteitsscore. Overweeg vóór de definitie:
+- Splits de feature op in kleinere onderdelen
+- Verifieer dat dependencies beschikbaar zijn
+- Bespreek scope met de gebruiker als onderdelen onduidelijk zijn
+```
+
 **Surface relevant past decisions** (alleen bij ≥1 match uit FASE 0 scan, anders skip stilzwijgend):
 
 ```

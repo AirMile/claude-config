@@ -1070,3 +1070,114 @@ body {
   background: var(--surface-hover);
   color: var(--text);
 }
+
+/* ── Dependency blocked badge ── */
+
+.dep-blocked {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+/* ── Blocked count in section header ── */
+
+.header-blocked-count {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.7;
+  color: var(--danger);
+}
+
+/* ── Risk badge ── */
+
+.risk-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.risk-low {
+  background: color-mix(in srgb, var(--done) 12%, transparent);
+  color: var(--done);
+  border: 1px solid color-mix(in srgb, var(--done) 25%, transparent);
+}
+
+.risk-med {
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
+  color: var(--orange);
+  border: 1px solid color-mix(in srgb, var(--orange) 25%, transparent);
+}
+
+.risk-high {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+}
+
+/* ── Cancel / restore buttons ── */
+
+.row-cancel-btn,
+.row-restore-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.12s;
+  line-height: 1;
+  opacity: 0;
+}
+
+.row-summary:hover .row-cancel-btn,
+.row-summary:hover .row-restore-btn {
+  opacity: 1;
+}
+
+.row-cancel-btn:hover {
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.row-restore-btn:hover {
+  background: color-mix(in srgb, var(--done) 12%, transparent);
+  border-color: var(--done);
+  color: var(--done);
+}
+
+/* ── Archived (CANCELLED) section ── */
+
+.group--archived .group-header h2 {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.group--archived .group-header {
+  border-left-color: var(--text-dim);
+  opacity: 0.6;
+}
+
+.group--archived .row-name {
+  color: var(--text-dim);
+}
+
+.group--archived .row-desc {
+  color: var(--text-dim);
+  opacity: 0.6;
+}

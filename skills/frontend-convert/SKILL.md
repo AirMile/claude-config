@@ -2,15 +2,16 @@
 name: frontend-convert
 description: >-
   Convert visual input (screenshots, Figma exports, URLs, inspiration images)
-  into working pages or components. Two modes: 1:1 faithful copy or
-  inspiration-based using project theme tokens. Self-verifies with Playwright CLI
+  into working pages or components. Three modes: 1:1 faithful copy,
+  inspiration-based using project theme tokens, or patch (surgical Edit on
+  existing component — only changed sections). Self-verifies with Playwright CLI
   comparison loop. Use with /frontend-convert.
 argument-hint: "[file-path|url]"
 disable-model-invocation: true
 writes: [devinfo.handoff]
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: frontend
 ---
 
@@ -111,8 +112,71 @@ options:
   - label: "Volledige pagina (Recommended)", description: "Pagina-bestand + sectie-componenten"
   - label: "Eén component", description: "Alleen dit component genereren"
   - label: "Meerdere losse componenten", description: "Elk visueel blok als apart component"
+  - label: "Bestaand component bijwerken", description: "Patch op basis van nieuwe screenshot — alleen gewijzigde secties"
 multiSelect: false
 ```
+
+Bij "Bestaand component bijwerken": sla FASE 0.5 over en ga naar FASE 0.4b.
+
+### 0.4b Patch Detection
+
+Alleen bij scope = patch.
+
+#### Stap 1: Component locatie
+
+Als het componentpad niet al bekend is (bijv. via argument of via bestandsselectie in VSCode):
+
+```yaml
+header: "Component"
+question: "Welk bestand wil je bijwerken?"
+options:
+  - label: "Ik typ het pad", description: "Relatief of absoluut pad naar het .tsx/.jsx bestand"
+multiSelect: false
+```
+
+Lees het bestand via Read tool. Als het bestand niet bestaat: stop met melding en val terug naar scope "Eén component".
+
+#### Stap 2: Before-screenshot
+
+Render het huidige component via Playwright (als dev server beschikbaar):
+
+```
+playwright-cli goto http://localhost:[port]/[page met dit component]
+playwright-cli run-code "async page => { await page.waitForTimeout(2000); }"
+playwright-cli screenshot --filename=.project/patch-before.png
+```
+
+Als Playwright niet beschikbaar: sla before-screenshot over en ga direct naar stap 3 zonder visuele diff.
+
+#### Stap 3: Visual diff
+
+Vergelijk `$SOURCE_IMAGE` (nieuw) met `patch-before.png` (huidig):
+
+```
+PATCH ANALYSE
+════════════════════════════════════════════════════════════
+Gewijzigd:
+  [Sectie/element dat visueel veranderd is — beschrijving]
+  [Sectie/element 2 — indien van toepassing]
+
+Ongewijzigd:
+  [Secties die identiek zijn — worden niet aangeraakt]
+════════════════════════════════════════════════════════════
+```
+
+#### Stap 4: Confirm
+
+```yaml
+header: "Patch Scope"
+question: "Klopt deze analyse van wat er gewijzigd is?"
+options:
+  - label: "Ja, ga door (Recommended)", description: "Patch alleen de gewijzigde secties"
+  - label: "Aanpassen", description: "Ik wil de scope wijzigen"
+  - label: "Toch volledig herschrijven", description: "Val terug naar normale generatie"
+multiSelect: false
+```
+
+Sla op als `$PATCH_SECTIONS`. Als "Toch volledig herschrijven": herstel scope naar "Eén component" en ga door met normale FASE 0.5.
 
 ### 0.5 Backlog Stage (page scope only)
 
@@ -122,7 +186,7 @@ If scope is a full page (not a single component):
 2. Find feature matching page name: `data.features.find(f => f.name === "{kebab-case-page-name}")`
    - **Found + status TODO**: set `status: "DOING"`, `stage: "building"`, `date: "{YYYY-MM-DD}"`. Write back via Edit.
    - **Found + status DOING**: set `stage: "building"`. Write back via Edit.
-   - **Not found**: add to `data.features[]`: `{ "name": "{name}", "type": "PAGE", "status": "DOING", "stage": "building", "phase": "P4", "description": "Converted from visual input", "dependency": null }`. Write back.
+   - **Not found**: add to `data.features[]`: `{ "name": "{name}", "type": "PAGE", "status": "DOING", "stage": "building", "phase": "P4", "description": "Converted from visual input", "dependencies": [] }`. Write back.
 3. Set `data.updated` to today. Keep `<script>` tags intact.
 
 If scope is a component: skip this step.
@@ -225,6 +289,25 @@ If "Aanpassen": ask which mappings to change, update, re-confirm.
 ---
 
 ## FASE 2: Code Generation
+
+### 2.0 Patch Guard (scope = patch only)
+
+Als `$SCOPE` ≠ patch: sla deze sectie over en ga direct naar 2.1.
+
+Per sectie in `$PATCH_SECTIONS`:
+
+1. Lees de betreffende regels in het bestaande componentbestand (Read tool).
+2. Genereer alleen de gewijzigde JSX/klassen/structuur op basis van `$SOURCE_IMAGE`.
+3. Pas toe via **Edit tool** — nooit Write. Zoek de exacte string, vervang alleen dat blok.
+4. Toon per edit een korte samenvatting:
+   ```
+   PATCH: [sectie-naam]
+   ─────────────────────────
+   Bestand: [pad:regel]
+   Wijziging: [beschrijving — bijv. "CTA tekst + variant gewijzigd"]
+   ```
+
+Na alle edits: ga naar FASE 3 (verificatie) met de nieuwe screenshot als target. Sla 2.1 en 2.2 over.
 
 ### 2.1 Plan Output Structure
 

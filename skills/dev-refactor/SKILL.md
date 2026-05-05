@@ -109,10 +109,13 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
    - Als geen commits gevonden: log waarschuwing "Geen commits gevonden voor {name} — skip of handmatig controleren", skip het item
    - Scope files = alle files gewijzigd in die commits: `git diff {first_hash}^..{last_hash} --name-only`
    - Scope rule voor small-items: **alleen files uit de commit-scope mogen geïnspecteerd worden** (geen pipeline files lijst, maar commit-diff scope)
-   - FASE 1 voor small-items: één lichte Quality-lens Explore agent per item (niet Reuse/Efficiency — die zijn feature-pipeline specifiek). Input: commit-diff + `shared/RULES.md` + `shared/PATTERNS.md` + stack-baseline
-   - FASE 3 voor small-items: gecombineerde approval voor alle items die de check passeren: "X items: CLEAN. Mark als shipped?" (één AskUserQuestion, default = Ja)
-   - FASE 4 voor small-items: skip — geen code-edits bij lichte check (alleen code-edits als Quality-lens HIGH findings heeft, dan normaal apply flow)
-   - FASE 5 voor small-items: schrijf `shipped = true`, `shippedAt`, append naar `project.json.recentChanges[]`
+
+   **Small-items FASE-routing** (sla FASE 0 stap 3-5 over, spring direct naar FASE 1):
+   - FASE 1: één lichte Quality-lens Explore agent per item (niet Reuse/Efficiency — die zijn feature-pipeline specifiek). Input: commit-diff + `shared/RULES.md` + `shared/PATTERNS.md` + stack-baseline
+   - FASE 2: skip
+   - FASE 3: gecombineerde approval voor alle items die de check passeren: "X items: CLEAN. Mark als shipped?" (één AskUserQuestion, default = Ja)
+   - FASE 4: skip — geen code-edits bij lichte check (alleen code-edits als Quality-lens HIGH findings heeft, dan normaal apply flow)
+   - FASE 5: schrijf `shipped = true`, `shippedAt`, append naar `project.json.recentChanges[]`
 
    **Codebase mode** ("Hele codebase"):
    - Pipeline files = alle source bestanden uit project (detecteer `src/` of equivalent uit `project-context.json` `context.structure`, of CLAUDE.md)
@@ -139,7 +142,7 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
    - Parse `files[]` array (each entry has `path`, `type`, `action`)
    - Store as `pipeline_files[feature_name]`
 
-4b. **Load project conventions + learnings** (optioneel):
+6. **Load project conventions + learnings** (optioneel):
 
 Lees `.project/project-context.json` (als bestaat). Extract `context.patterns`.
 
@@ -159,7 +162,7 @@ Als beschikbaar: voeg toe aan Explore agent prompt in FASE 1 onder
 de refactor-agressie stuurt — die wordt automatisch meegegeven omdat hij deel
 uitmaakt van `patterns`.
 
-4c. **Build pipeline diff per feature** (optioneel, skip voor codebase-mode):
+7. **Build pipeline diff per feature** (optioneel, skip voor codebase-mode):
 
 Voor elke feature met een bekend build-startmoment: bouw een diff-string die agents als focus-hint krijgen.
 
@@ -173,7 +176,7 @@ first_hash=$(git log --since="{feature.build.startedAt}" --pretty=format:"%H" --
 
 Opslaan als `pipeline_diff[feature_name]`. Als diff leeg is of `startedAt` ontbreekt: skip — agent ziet dan alleen de volledige files.
 
-5. **Load or generate refactor-patterns.md:**
+8. **Load or generate refactor-patterns.md:**
 
    ```
    IF .claude/research/refactor-patterns.md exists:
@@ -234,7 +237,7 @@ Features:
 
 ---
 
-**Capture git baseline** (for scoped commit at end of skill):
+9. **Capture git baseline** (for scoped commit at end of skill):
 
 ```bash
 mkdir -p .project/session
@@ -805,6 +808,34 @@ IMPROVEMENTS APPLIED
 
    Bestaande secties NIET overschrijven.
 
+1b. **Learning extraction** — voor features met status REFACTORED of CLEAN:
+
+Lees de zojuist geschreven `feature.json.refactor` per feature:
+
+- REFACTORED: evalueer `decisions[]` → type `pattern`, source `extracted`; en `positiveObservations[]` → type `observation`, source `inferred`
+- CLEAN: evalueer `positiveObservations[]` → type `observation`, source `inferred`
+- ROLLED_BACK: overslaan (`failureAnalysis` is narratief proza, niet atomair)
+
+**Filter**: alleen items die relevant zijn buiten deze feature. Skip lokale refactor-logistiek ("moved helper to utils.js"). Richtlijn: als een decision of observation ook zinvol is voor een ander project of feature → extracteer; anders skip.
+
+**Schema:**
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "feature": "{feature-name}",
+  "type": "pattern|observation",
+  "source": "extracted|inferred",
+  "summary": "Max 200 chars"
+}
+```
+
+Geen `pitfall` type — refactor ontdekt geen bugs.
+
+**Dedup** via Jaccard(0.55) — zelfde logica als dev-verify Step 3b. Geen learnings gevonden → skip stilletjes.
+
+Append naar `project-context.json` → `learnings[]` (wordt geschreven in stap 2 parallel sync).
+
 2. **Parallel sync** (backlog + dashboard + conditionele context sync) — volg `shared/SYNC.md` 3-File Sync Pattern, skill-specifieke mutaties hieronder:
 
    Lees parallel (skip als niet bestaat):
@@ -848,33 +879,6 @@ IMPROVEMENTS APPLIED
    - `architecture.components` → update bestaande componenten (status, src, test, `connects_to[]` als typed edges `{ to, type }` — zie `shared/DASHBOARD.md` Edge waarden), voeg nieuwe toe als componenten zijn hernoemd/gesplitst. Volg component-first model uit `shared/DASHBOARD.md`.
    - Quality: only project-specific, non-obvious, one line per item
    - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
-
-   **1b. Learning extraction** (na stap 1, vóór parallel sync) — voor features met status REFACTORED of CLEAN:
-
-   Lees de zojuist geschreven `feature.json.refactor` per feature:
-   - REFACTORED: evalueer `decisions[]` → type `pattern`, source `extracted`; en `positiveObservations[]` → type `observation`, source `inferred`
-   - CLEAN: evalueer `positiveObservations[]` → type `observation`, source `inferred`
-   - ROLLED_BACK: overslaan (`failureAnalysis` is narratief proza, niet atomair)
-
-   **Filter**: alleen items die relevant zijn buiten deze feature. Skip lokale refactor-logistiek ("moved helper to utils.js"). Richtlijn: als een decision of observation ook zinvol is voor een ander project of feature → extracteer; anders skip.
-
-   **Schema:**
-
-   ```json
-   {
-     "date": "YYYY-MM-DD",
-     "feature": "{feature-name}",
-     "type": "pattern|observation",
-     "source": "extracted|inferred",
-     "summary": "Max 200 chars"
-   }
-   ```
-
-   Geen `pitfall` type — refactor ontdekt geen bugs.
-
-   **Dedup** via Jaccard(0.55) — zelfde logica als dev-verify Step 3b. Geen learnings gevonden → skip stilletjes.
-
-   Append naar `project-context.json` → `learnings[]`.
 
    Schrijf parallel terug:
    - Edit `backlog.html` (keep `<script>` tags intact)

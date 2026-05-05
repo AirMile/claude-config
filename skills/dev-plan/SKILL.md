@@ -543,7 +543,8 @@ P4:
          "status": "TODO",
          "phase": "P1|P2|P3|P4",
          "description": "{description}",
-         "dependency": "{other-feature}|null"
+         "dependencies": ["{other-feature}"],
+         "risk": "{1-5 uit FASE 1 risk-score}"
        }
      ],
      "notes": "{Any notes or considerations}"

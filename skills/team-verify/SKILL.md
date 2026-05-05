@@ -78,8 +78,8 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 5. **Parse user input:**
    - Feature name only → proceed to FASE 0.5
-   - Feature name + inline feedback → skip to FASE 3b (direct feedback, no automation)
-   - Feature name + free text → skip to FASE 3b
+   - Feature name + inline feedback → parse into structured results (item number, PASS/FAIL, notes); map to requirements where possible; show summary; skip directly to FASE 5
+   - Feature name + free text → same as inline feedback above
 
 6. **Output:**
 
@@ -470,16 +470,6 @@ AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}
 
 ---
 
-### FASE 3b: Parse Inline Feedback
-
-**When:** User provided inline feedback via `/team-verify {name} {feedback}` or free text.
-
-Parse user feedback into structured results (item number, PASS/FAIL, notes). Accept both numbered format and free text. Map to requirements where possible.
-
-After parsing, show summary and proceed to FASE 5 (skip FASE 3 + 4).
-
----
-
 ### FASE 4: Manual Test Execution (interactive)
 
 **When:** There are MANUAL items (originally classified or reclassified from TOOL_ERROR fallback).
@@ -777,12 +767,6 @@ Use AskUserQuestion:
      - Voeg nieuwe componenten toe als die tijdens fixes zijn ontstaan
      - Skip als geen `architecture.components` bestaat in project-context.json
 
-   Schrijf parallel terug:
-   - Write `feature.json` (als gewijzigd)
-   - Edit `backlog.html` (keep `<script>` tags intact)
-   - Write `project.json` (als gewijzigd — stack, features, endpoints, data)
-   - Write `project-context.json` (als architecture gewijzigd)
-
 4. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from FASE 0:
@@ -880,16 +864,4 @@ Use AskUserQuestion:
 
 ## Mode Comparison
 
-| Aspect              | BRIEF_REVIEW     | TODO_REVIEW            | BRANCH_ONLY     |
-| ------------------- | ---------------- | ---------------------- | --------------- |
-| Context source      | feature.json     | backlog description    | git diff only   |
-| Completeness check  | ✓ (requirements) | ✓ (parsed expects)     | ✗               |
-| Inline research     | ✓                | ✓                      | ✓               |
-| Scenario generation | ✓ (req-mapped)   | ✓ (expectation-mapped) | ✓ (diff-only)   |
-| Classification      | ✓ (AUTO/MANUAL)  | ✓ (AUTO/MANUAL)        | ✓ (AUTO/MANUAL) |
-| Task agent testing  | ✓                | ✓                      | ✓               |
-| Manual walkthrough  | ✓ (guided)       | ✓ (guided)             | ✓ (guided)      |
-| Coverage tracking   | ✓ (requirements) | ✓ (expectations)       | ✗               |
-| Fix or feedback     | ✓ (keuze)        | ✓ (keuze)              | ✓ (keuze)       |
-| Feature.json update | ✓                | ✗                      | ✗               |
-| Teammate feedback   | ✓                | ✓                      | ✗               |
+Zie FASE 0 stap 4 voor de mode-definitietabel (BRIEF_REVIEW / TODO_REVIEW / BRANCH_ONLY). De gedragsonderscheiden per fase staan inline bij elke fase die een `Skip if:` of modusvereiste benoemt.
