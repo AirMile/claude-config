@@ -3,7 +3,7 @@ name: dev-refactor
 description: Batch refactor code quality after testing with parallel analysis, dynamic stack-aware patterns, and early-exit for clean features. Use with /dev-refactor to improve code structure, naming, and patterns.
 disable-model-invocation: true
 reads: [feature.build, feature.tests, backlog.status]
-writes: [feature.refactor, backlog.status]
+writes: [feature.refactor, backlog.status, learnings]
 metadata:
   author: mileszeilstra
   version: 2.1.0
@@ -849,7 +849,32 @@ IMPROVEMENTS APPLIED
    - Quality: only project-specific, non-obvious, one line per item
    - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
 
-   Learning extraction gebeurt alleen in `/dev-verify`. Refactor-inzichten worden hier vastgelegd in `feature.json.refactor` — geen `learnings[]` append.
+   **1b. Learning extraction** (na stap 1, vóór parallel sync) — voor features met status REFACTORED of CLEAN:
+
+   Lees de zojuist geschreven `feature.json.refactor` per feature:
+   - REFACTORED: evalueer `decisions[]` → type `pattern`, source `extracted`; en `positiveObservations[]` → type `observation`, source `inferred`
+   - CLEAN: evalueer `positiveObservations[]` → type `observation`, source `inferred`
+   - ROLLED_BACK: overslaan (`failureAnalysis` is narratief proza, niet atomair)
+
+   **Filter**: alleen items die relevant zijn buiten deze feature. Skip lokale refactor-logistiek ("moved helper to utils.js"). Richtlijn: als een decision of observation ook zinvol is voor een ander project of feature → extracteer; anders skip.
+
+   **Schema:**
+
+   ```json
+   {
+     "date": "YYYY-MM-DD",
+     "feature": "{feature-name}",
+     "type": "pattern|observation",
+     "source": "extracted|inferred",
+     "summary": "Max 200 chars"
+   }
+   ```
+
+   Geen `pitfall` type — refactor ontdekt geen bugs.
+
+   **Dedup** via Jaccard(0.55) — zelfde logica als dev-verify Step 3b. Geen learnings gevonden → skip stilletjes.
+
+   Append naar `project-context.json` → `learnings[]`.
 
    Schrijf parallel terug:
    - Edit `backlog.html` (keep `<script>` tags intact)

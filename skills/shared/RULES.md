@@ -436,6 +436,14 @@ elements.forEach((el, i) => {
 </div>;
 ```
 
+### SHOULD_DO (High) — vervolg
+
+| ID   | Rule                                           | Check                                                                           |
+| ---- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
+| A007 | Tab-volgorde logisch door de hele pagina       | `playwright-cli press Tab` loop → volgorde volgt DOM / visuele flow             |
+| A008 | Alle interactieve elementen bereikbaar via Tab | Geen `tabindex=-1` op bereikbare buttons/links zonder programmatisch focus mgmt |
+| A009 | Geen keyboard focus trap buiten modals         | `playwright-cli press Tab` loop → focus eindigt op body of cycling, niet hangen |
+
 ### AVOID (Medium)
 
 | ID   | Pattern                                     | Alternative                         |
@@ -446,15 +454,55 @@ elements.forEach((el, i) => {
 
 ---
 
+## Error State Rules (E-series)
+
+> **Scope:** Validatie van hoe de app reageert op fout-scenarios — 404, offline, slow connection. Getest via `/frontend-check` scope "Error states".
+
+### MUST_DO (Critical)
+
+| ID   | Rule                       | Check                                                                                |
+| ---- | -------------------------- | ------------------------------------------------------------------------------------ |
+| E001 | Custom 404-pagina aanwezig | `playwright-cli goto /niet-bestaande-route` → app-404 rendert (niet browser-default) |
+| E002 | Offline UI aanwezig        | `page.context().setOffline(true)` → custom offline state rendert                     |
+
+### SHOULD_DO (High)
+
+| ID   | Rule                                    | Rationale                               |
+| ---- | --------------------------------------- | --------------------------------------- |
+| E101 | Loading skeleton bij slow connection    | `route()` throttle → skeleton zichtbaar |
+| E102 | Error-pagina met navigatie terug naar / | Gebruiker kan altijd terugnavigeren     |
+
+---
+
+## Flow Rules (F-series)
+
+> **Scope:** Validatie van navigatie-journeys gedefinieerd in `design.flows[]`. Getest via `/frontend-check` scope "Flow".
+
+### MUST_DO (Critical)
+
+| ID   | Rule                                         | Check                                                                    |
+| ---- | -------------------------------------------- | ------------------------------------------------------------------------ |
+| F001 | Flow navigeert zonder errors door alle staps | Elke step in `design.flows[].steps` laadt zonder 404/runtime error/crash |
+
+### SHOULD_DO (High)
+
+| ID   | Rule                                        | Check                                                             |
+| ---- | ------------------------------------------- | ----------------------------------------------------------------- |
+| F002 | Alle flow-pages gemapped in context.routing | Elke page-name in `steps[]` heeft een overeenkomend route in JSON |
+
+---
+
 ## Performance Rules (frontend-specifiek)
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                           | Check                                                          |
-| ---- | ------------------------------ | -------------------------------------------------------------- |
-| P001 | Lighthouse score >= 90 per cat | `npx lighthouse` output alle categorieën ≥ 90                  |
-| P002 | Geen render-blocking resources | Geen sync `<script>` of `<link>` in `<head>` die FCP blokkeren |
-| P003 | Images geoptimaliseerd         | WebP/AVIF, width/height attributen, lazy loading               |
+| ID   | Rule                           | Check                                                                      |
+| ---- | ------------------------------ | -------------------------------------------------------------------------- |
+| P001 | Lighthouse score >= 90 per cat | `npx lighthouse` output alle categorieën ≥ 90                              |
+| P002 | Geen render-blocking resources | Geen sync `<script>` of `<link>` in `<head>` die FCP blokkeren             |
+| P003 | Images geoptimaliseerd         | WebP/AVIF, width/height attributen, lazy loading                           |
+| P004 | Geen JS runtime errors op load | `playwright-cli console error` → geen uncaught exceptions of import-fouten |
+| P005 | Geen failed kritieke requests  | `playwright-cli requests` → geen 4xx/5xx op same-origin/API endpoints      |
 
 #### Voorbeelden
 
@@ -498,15 +546,17 @@ elements.forEach((el, i) => {
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                                  | Rationale              |
-| ---- | ------------------------------------- | ---------------------- |
-| P101 | CLS < 0.1                             | Visual stability       |
-| P102 | LCP < 2.5s                            | Perceived load speed   |
-| P103 | INP < 200ms                           | Input responsiveness   |
-| P104 | Bundle < 200KB/route (gzipped)        | Load performance       |
-| P105 | Code splitting per route              | Alleen laden wat nodig |
-| P106 | Font loading strategy (swap/optional) | Geen FOIT              |
-| P107 | Third-party scripts async/defer       | Geen main thread block |
+| ID   | Rule                                  | Rationale                                          |
+| ---- | ------------------------------------- | -------------------------------------------------- |
+| P101 | CLS < 0.1                             | Visual stability                                   |
+| P102 | LCP < 2.5s                            | Perceived load speed                               |
+| P103 | INP < 200ms                           | Input responsiveness                               |
+| P104 | Bundle < 200KB/route (gzipped)        | Load performance                                   |
+| P105 | Code splitting per route              | Alleen laden wat nodig                             |
+| P106 | Font loading strategy (swap/optional) | Geen FOIT                                          |
+| P107 | Third-party scripts async/defer       | Geen main thread block                             |
+| P108 | Payloads < 500KB per resource         | `playwright-cli requests` → compression/splitting  |
+| P109 | Static assets met cache headers       | `response-headers <i>` → `cache-control` of `etag` |
 
 ### AVOID (Medium)
 
@@ -741,6 +791,9 @@ A11Y CHECK
 [ ] A003 - Modals/dialogs trappen focus
 [ ] A005 - Focus indicators zichtbaar
 [ ] A006 - ARIA states gesynchroniseerd
+[ ] A007 - Tab-volgorde logisch (full keyboard test — /frontend-wcag)
+[ ] A008 - Alle interactieve elementen bereikbaar via Tab
+[ ] A009 - Geen keyboard focus trap buiten modals
 [ ] R001 - Semantic elements gebruikt
 [ ] R004 - Form labels aanwezig
 [ ] H004 - Tekst contrast voldoende
@@ -803,7 +856,7 @@ DATA CHECK
 CRITICAL (blocks merge):
 - Alle MUST_DO violations
 - Security issues (R008)
-- Accessibility blockers (R001, R002, R004, R005, H004, H006, A001-A006)
+- Accessibility blockers (R001, R002, R004, R005, H004, H006, A001-A006, A009)
 
 HIGH (requires review):
 - Alle SHOULD_DO violations

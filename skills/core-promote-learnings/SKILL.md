@@ -85,8 +85,17 @@ Skip vroeg als minder dan 3 projecten met learnings → niet genoeg basis voor c
    de het een en of maar dus dat die deze dit met via voor bij naar van uit op
    in te is zijn was waren wordt worden werd geworden niet geen ook al alle
    alleen wel dan toen toch nog
+   the a an and or but so that this these those with for at by from into
+   to is are was were be been being have has had do does did will would could
+   should may might shall not no also all only then when though still just
    ```
 5. Filter tokens met length < 3
+   5b. Suffix-normalisering (alleen tokens met length > 5):
+   - eindigt op `tion` of `sion` → verwijder laatste 3 chars (`condition` → `condit`)
+   - eindigt op `ing` → verwijder laatste 3 chars (`caching` → `cach`)
+   - eindigt op `ed` → verwijder laatste 2 chars (`failed` → `fail`)
+   - eindigt op `s` maar NIET op `ss` → verwijder laatste char (`requests` → `request`)
+   - eindigt op `er` en length > 6 → verwijder laatste 2 chars (`handler` → `handl`)
 6. Resultaat: `tokenSet` (uniek)
 
 **Cluster algoritme** (alleen binnen zelfde `type` — pattern blijft pattern, etc.):
@@ -98,7 +107,7 @@ for each entry e:
   cluster = [e]
   for each other entry o (different project, same type):
     sim = jaccard(e.tokenSet, o.tokenSet)
-    if sim >= 0.5:
+    if sim >= 0.40:
       cluster.push(o)
   if cluster.size >= 2: clusters.push(cluster)
 ```
@@ -234,7 +243,7 @@ Markeer FASE 5 → `completed`.
 ## Notes
 
 - Drempel `≥ 3 projecten` is bewust strikt: 2 projecten kan toeval zijn, 3+ is een echt patroon.
-- Jaccard-drempel `0.5` is empirisch; pas aan als clustering te ruim of te krap blijkt.
+- Jaccard-drempel `0.40` is empirisch (verlaagd van 0.5 na toevoeging suffix-normalisering + Engelse stopwoorden — equivalente precisie met betere tokens); pas aan als clustering te ruim of te krap blijkt.
 - De skill is read-only voor projecten — schrijft alleen naar `~/.claude/memory/MEMORY.md`.
 - Re-run is veilig: dedup tegen bestaande globale memory voorkomt dubbele promoties.
 - **Synced learnings** (afkomstig van `/core-pull` / `/core-onboard`) clusteren mee met eigen learnings. `author` is GEEN cluster-key — anders zou hetzelfde inzicht over verschillende mensen onnodig splitsen. Wel weergegeven in cluster preview (FASE 3) zodat je kunt zien wie het origineel bijdroeg.

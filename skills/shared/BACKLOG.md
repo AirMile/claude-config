@@ -83,8 +83,8 @@ TODO → DEFINED → DOING → DONE
 | ------- | ----------------------------------- | --------------------------------------------------------------------------- |
 | TODO    | Idee, nog niet (klaar) gedefinieerd | /dev-plan, /dev-todo, /dev-define start, /frontend-design                   |
 | DEFINED | Gedefinieerd, wacht op build-go     | /dev-define klaar, /game-define klaar                                       |
-| DOING   | Claude bouwt of verifieert          | /dev-build, /dev-verify, /frontend-convert, /frontend-audit, /frontend-wcag |
-| DONE    | Klaar (refactor optioneel)          | /dev-verify, /frontend-audit, /frontend-wcag                                |
+| DOING   | Claude bouwt of verifieert          | /dev-build, /dev-verify, /frontend-convert, /frontend-check, /frontend-wcag |
+| DONE    | Klaar (refactor optioneel)          | /dev-verify, /frontend-check, /frontend-wcag                                |
 
 `/dev-refactor` is de **promotion-trigger**: na een geslaagde refactor (CLEAN of REFACTORED) zet het `f.shipped = true` op het backlog-item. Shipped items verdwijnen uit de backlog-weergave en verhuizen naar het Dashboard.
 

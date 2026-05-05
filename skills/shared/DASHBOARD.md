@@ -144,6 +144,8 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
    - Zo nee: push nieuwe page
    - Zo ja: update purpose, status, sections, flows, notes
 3. Idem voor flows (merge op name, update steps/notes)
+   Flow object shape: `{ "name": string, "steps": [page-name, ...], "notes": string }`
+   Steps zijn page-namen uit `design.pages[].name` — orphan steps zijn toegestaan maar genereren een waarschuwing.
 4. Idem voor principles (merge op name, update description)
 5. Nooit auto-delete — alleen via expliciete verwijder-actie
 6. Write project.json
@@ -700,7 +702,7 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 | -------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                    | Bij architectuur definitie / na build                                    |
 | `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor` | Bij build/refactor (structuur, routing, patterns)                        |
-| `learnings`    | `/dev-verify`, `/game-verify`, `/core-pull`, `/core-onboard`                  | Feature completion (extracted/inferred) of teammate/legacy code (synced) |
+| `learnings`    | `/dev-verify`, `/dev-refactor`, `/game-verify`, `/core-pull`, `/core-onboard` | Feature completion (extracted/inferred) of teammate/legacy code (synced) |
 
 ### Skill sync overzicht
 
@@ -710,7 +712,7 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 | `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING)  | `architecture` (write), `learnings` (read)                        | FASE 6               |
 | `/dev-build`       | `endpoints`, `stack.packages`, `features` (DOING+built)             | `context`, `architecture` (write)                                 | FASE 4C              |
 | `/dev-verify`      | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)   | `architecture`, `learnings` (write)                               | FASE 6 completion    |
-| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`                      | `context`, `architecture` (write)                                 | FASE 5 completion    |
+| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`                      | `context`, `architecture`, `learnings` (write)                    | FASE 5 completion    |
 | `/frontend-design` | `design` (pages, flows, principles), `features` (batch TODO)        | —                                                                 | Bij elke uitvoering  |
 | `/frontend-design` | `stack.packages`, `design.pages`, `features` (DOING+built)          | —                                                                 | Na FASE 4            |
 | `/frontend-tokens` | `design.principles`                                                 | —                                                                 | Na completion        |

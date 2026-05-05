@@ -207,8 +207,17 @@ Identiek aan `core-promote-learnings` FASE 2 tokenisatie. Gebruikt voor:
    de het een en of maar dus dat die deze dit met via voor bij naar van uit op
    in te is zijn was waren wordt worden werd geworden niet geen ook al alle
    alleen wel dan toen toch nog
+   the a an and or but so that this these those with for at by from into
+   to is are was were be been being have has had do does did will would could
+   should may might shall not no also all only then when though still just
    ```
 5. Filter tokens met length < 3
+   5b. Suffix-normalisering (tokens met length > 5):
+   - eindigt op `tion` of `sion` → verwijder laatste 3 chars (`condition` → `condit`)
+   - eindigt op `ing` → verwijder laatste 3 chars (`caching` → `cach`)
+   - eindigt op `ed` → verwijder laatste 2 chars (`failed` → `fail`)
+   - eindigt op `s` maar NIET op `ss` → verwijder laatste char (`requests` → `request`)
+   - eindigt op `er` en length > 6 → verwijder laatste 2 chars (`handler` → `handl`)
 6. Resultaat: `tokenSet` (uniek)
 
 **Dedup-key** voor `learnings[]`: `(type, normalize(summary), author ?? null)`.

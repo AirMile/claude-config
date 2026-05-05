@@ -18,7 +18,7 @@ metadata:
 
 Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens (from project.json). Self-verifies by comparing source image against Playwright CLI screenshot of generated output.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/frontend-install` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/frontend-install` · `/frontend-check` · `/frontend-wcag`
 
 ## References
 
@@ -318,6 +318,8 @@ VERIFICATION ROUND [N]/3
 2. `playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"` (allow hydration)
 3. `playwright-cli screenshot --filename=.project/verify-round-[N].png`
 4. `Read .project/verify-round-[N].png` → capture generated page
+5. `playwright-cli console error` → check for runtime JS errors (zie `../shared/PLAYWRIGHT.md` → Console Error Inspection)
+   → Filter output tegen PLAYWRIGHT.md → Default Ignore Patterns vóór rapportage; alleen niet-gefilterde regels worden findings.
 
 **Compare source image vs generated screenshot. Analyze:**
 
@@ -327,6 +329,7 @@ VERIFICATION ROUND [N]/3
 - Typography (heading sizes, weight, alignment)
 - Component rendering (all sections visible, no blank areas, no error overlays)
 - Missing elements (anything in source not present in output)
+- **Runtime errors** (van stap 5 — JS errors duiden op gebroken hydration of missende imports, ook als visueel niets opvalt; rapporteer als **P004** findings — zie RULES.md)
 
 **Assessment:**
 
@@ -334,15 +337,22 @@ VERIFICATION ROUND [N]/3
 ROUND [N] ASSESSMENT
 ═════════════════════════
 Match quality: [High | Medium | Low]
+Runtime errors (P004): [None | [N] errors — see below]
 
 Discrepancies:
   [1. specific issue — file:line — suggested fix]
   [2. specific issue — file:line — suggested fix]
   [3. specific issue — file:line — suggested fix]
 
+JS errors (uit console):
+  [- TypeError: foo is undefined at HeroSection:14]
+  [- Failed to load module: ./Icon — verify import path]
+
 Action: [✓ Acceptable — stop | → Fix and re-check]
 ═════════════════════════
 ```
+
+Runtime errors zijn altijd fixable in deze fase — los op vóór visuele discrepancies (een component dat crasht kan visuele issues veroorzaken die elders niet bestaan).
 
 **Decision logic:**
 
@@ -460,7 +470,7 @@ Files ([N]):
 
 Next steps:
   1. /frontend-tokens → design tokens aanpassen/toepassen
-  2. /frontend-audit → performance/SEO audit
+  2. /frontend-check → performance/SEO audit
   3. /frontend-wcag → accessibility audit
 
 ═══════════════════════════════════════════════════════════

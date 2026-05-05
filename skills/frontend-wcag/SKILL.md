@@ -12,7 +12,7 @@ metadata:
 
 Audit and fix accessibility issues in web applications. Scans source code for WCAG 2.1 AA violations, optionally validates in-browser via Playwright, and implements prioritized fixes.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/frontend-convert` · `/frontend-install` · `/frontend-audit`
+**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/frontend-convert` · `/frontend-install` · `/frontend-check`
 
 ---
 
@@ -94,12 +94,26 @@ options:
 If invoked with argument (`/a11y src/components/Dialog.tsx`), use that as scope.
 Otherwise, default to project-wide scan.
 
+**Multi-route live check (optioneel):** als `.project/project.json → context.routing` routes bevat, bied dan aan om de live check over alle routes te draaien:
+
+```yaml
+header: "Live scope"
+question: "context.routing bevat {N} routes. Wil je de live check over alle routes draaien?"
+options:
+  - label: "Ja, alle routes (Recommended)", description: "Live check per route uit context.routing"
+  - label: "Nee, alleen entry URL", description: "Sneller — alleen de hoofdpagina"
+multiSelect: false
+```
+
+Als "Alle routes": sla de routing-lijst op als `live_routes`. Als "Entry URL" of geen routing: `live_routes = [target URL]`.
+
 **Output:**
 
 ```
 PRE-FLIGHT COMPLETE
 ───────────────────
 Scope: [Project-wide | File: path | Component: name]
+Live routes: [{N} routes uit context.routing | entry URL alleen]
 Git: [Clean | Dirty - uncommitted changes]
 Ready for: Stack detection
 ```
@@ -235,11 +249,15 @@ LIVE CHECK (Playwright CLI)
 ═══════════════════════════════════════════════════
 
 Dev server: [http://localhost:3000]
+Routes:     [live_routes uit FASE 0.2 — 1 of meerdere]
 
-Per route/page:
+Per route in live_routes:
 1. playwright-cli open [url]
 2. playwright-cli snapshot
-3. playwright-cli close
+3. playwright-cli console warning   ← a11y warnings van React/lib's (zie PLAYWRIGHT.md → Console Inspection)
+   → Filter output tegen PLAYWRIGHT.md → Default Ignore Patterns vóór rapportage; alleen niet-gefilterde regels worden findings.
+4. playwright-cli close
+5. Log: [route] → [N] findings
 
 Parse snapshot voor:
 [ ] All interactive elements have accessible names
@@ -247,7 +265,90 @@ Parse snapshot voor:
 [ ] Form inputs have labels
 [ ] No orphaned ARIA roles
 
+Parse console output voor:
+[ ] React a11y warnings (bv. "Each child in a list should have a unique key", "associated label")
+[ ] axe-core / @axe-core/react warnings (als geïnstalleerd in target project)
+[ ] Library-specific a11y notices (Radix, Headless UI announce missing props)
+
 ═══════════════════════════════════════════════════
+```
+
+**Focus Management Test** (alleen als statische scan modal/dialog-component gevonden heeft):
+
+```
+FOCUS MANAGEMENT TEST (per modal/dialog)
+────────────────────────────────────────
+Precondition: statische scan identificeerde modal-trigger in vorige fase.
+Skip met "no dialogs detected" als geen trigger gevonden.
+
+Per dialog:
+1. playwright-cli snapshot                   ← ophalen van refs
+2. playwright-cli click [trigger-ref]        ← modal openen
+3. playwright-cli snapshot                   ← post-open check
+   → A003: is focus binnen modal-bounds? (eerste focusseerbaar element)
+4. playwright-cli press Tab                  ← herhaal 5×
+   playwright-cli press Tab
+   playwright-cli press Tab
+   playwright-cli press Tab
+   playwright-cli press Tab
+   playwright-cli snapshot                   ← post-tab check
+   → A003: blijft focus binnen modal? (geen escape naar pagina achter modal)
+5. playwright-cli press Escape               ← modal sluiten
+6. playwright-cli snapshot                   ← post-close check
+   → A004: is focus terug op de trigger die modal opende?
+
+Output per dialog:
+  A003 Focus trap: [PASS | FAIL — focus escape naar [element] na N tabs]
+  A004 Focus restoration: [PASS | FAIL — focus op [element] i.p.v. trigger]
+```
+
+**Full Keyboard Test** (per route — alleen als "Volledige keyboard check" gekozen):
+
+```yaml
+header: "Keyboard test"
+question: "Wil je ook een full-page keyboard navigation test draaien?"
+options:
+  - label: "Nee, alleen modal focus test (Recommended)", description: "Sneller — test alleen modals"
+  - label: "Ja, volledige keyboard check", description: "Tab door hele pagina — duurt langer"
+multiSelect: false
+```
+
+Als "Ja, volledige keyboard check":
+
+````
+FULL KEYBOARD TEST (per route)
+──────────────────────────────
+1. playwright-cli goto [url]
+2. playwright-cli press Tab                   ← eerste tab → eerste focusable element
+3. playwright-cli snapshot                    ← log focused element
+4. Loop tot focus terug op body OF max 50 tabs:
+   - playwright-cli press Tab
+   - playwright-cli snapshot
+   - log: [step N] focus op [element-name | ref]
+5. Na elke Tab-stap, run het detectie-eval voor A007:
+   ```js
+   // playwright-cli eval (na elke press Tab)
+   () => {
+     const el = document.activeElement;
+     const rect = el.getBoundingClientRect();
+     return { top: rect.top, tag: el.tagName, ref: el.getAttribute("data-ref") };
+   }
+````
+
+Vergelijk de `top`-volgorde over alle stappen: FAIL als ≥2 opeenvolgende stappen een vertical-jump hebben van meer dan 50% van `window.innerHeight`.
+
+6. Analyseer de focus-volgorde:
+   → A009 (CRITICAL): focus trap buiten modal — focus blijft hangen zonder Escape-uitweg
+   → A007 (HIGH): tab-volgorde onlogisch — FAIL als ≥2 opeenvolgende stappen een `top`-sprong > viewport-hoogte/2 hebben
+   → A008 (HIGH): interactieve elementen niet bereikt — button/link met tabindex=-1 zonder reden
+
+Output:
+Totaal tabs: [N]
+Interactieve elementen bereikt: [N]/[total]
+A009 Focus trap: [PASS | FAIL — focus op [element] na N tabs, geen escape]
+A007 Tab order: [PASS | FAIL — sprong van [el1] → [el2] slaat [N] secties over]
+A008 Unreachable: [PASS | FAIL — [N] elementen niet bereikt: [list]]
+
 ```
 
 **On Playwright unavailable:**
@@ -255,9 +356,11 @@ Parse snapshot voor:
 Fall back to static analysis with warning:
 
 ```
+
 Warning: Playwright CLI unavailable - using static analysis only
-  Live checks skipped: focus order, rendered ARIA tree
-  Install: npm install -g @playwright/cli@latest
+Live checks skipped: focus order, rendered ARIA tree
+Install: npm install -g @playwright/cli@latest
+
 ```
 
 ---
@@ -267,6 +370,7 @@ Warning: Playwright CLI unavailable - using static analysis only
 Present findings grouped by severity:
 
 ```
+
 A11Y AUDIT REPORT
 ─────────────────
 
@@ -295,7 +399,8 @@ PASSING ([count])
 ✓ Form labels present
 ✓ Focus indicators visible
 ✓ No focus traps detected
-```
+
+````
 
 Use **AskUserQuestion**:
 
@@ -312,7 +417,7 @@ options:
   - label: "Laat mij kiezen"
     description: "Ik selecteer specifieke issues"
 multiSelect: false
-```
+````
 
 ---
 

@@ -106,6 +106,27 @@ If "Ja, ik geef credentials" → follow-up **AskUserQuestion**:
   - label: "Ja, beide thema's", description: "Light + dark variant per screenshot"
 - multiSelect: false
 
+**Question 5: Social Cards**
+
+- header: "Social Cards"
+- question: "Wil je ook social media preview cards genereren?"
+- options:
+  - label: "Nee (Recommended)", description: "Alleen feature screenshots"
+  - label: "OG (Facebook/LinkedIn)", description: "Open Graph preview — 1200×630"
+  - label: "Twitter card", description: "summary_large_image — 1200×600"
+  - label: "Beide formaten", description: "OG + Twitter card varianten"
+- multiSelect: false
+
+**Question 6: Mobiele screenshots**
+
+- header: "Mobiele screenshots"
+- question: "Wil je ook mobiele viewport screenshots?"
+- options:
+  - label: "Nee (Recommended)", description: "Alleen desktop 1440×900"
+  - label: "Ja, iPhone portrait", description: "390×844 @3x — App Store en Product Hunt mobile"
+  - label: "Beide", description: "Desktop + mobile per feature"
+- multiSelect: false
+
 ## FASE 2: Analyze Codebase for Features
 
 Discover routes and screenshottable features inline using Glob, Grep, and Read.
@@ -195,7 +216,28 @@ mkdir -p .project/screenshots
 
 Use `playwright-cli run-code` met `deviceScaleFactor: 2` voor true retina-quality screenshots (2880x1800px output van 1440x900 viewport).
 
-**Template per screenshot:**
+### 4.0 Auth Setup (alleen als credentials zijn opgegeven)
+
+Login één keer, save state, herbruik voor alle volgende screenshots (incl. dark variants). Zie `../shared/PLAYWRIGHT.md` → Use Cases: Auth State Persistence.
+
+```bash
+# 1. Open login page + grab refs
+playwright-cli open {login_url}
+playwright-cli snapshot                            # noteer refs voor email/password/submit
+
+# 2. Vul in via direct interactions
+playwright-cli fill [email-ref] "{email}"
+playwright-cli fill [password-ref] "{password}"
+playwright-cli click [submit-ref]
+playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
+
+# 3. Save storage state (cookies + localStorage)
+playwright-cli state-save .project/auth-state.json
+```
+
+Bij login-failure (smart-pattern matching mislukt): val terug op handmatige selectors via `playwright-cli snapshot` om refs te identificeren, dan retry stap 2.
+
+### 4.1 Screenshot Template
 
 ```bash
 playwright-cli run-code "async page => {
@@ -203,15 +245,10 @@ playwright-cli run-code "async page => {
   const ctx = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 2,
+    // STORAGE_STATE (alleen als auth gebruikt):
+    // storageState: '.project/auth-state.json',
   });
   const p = await ctx.newPage();
-
-  // AUTH_BLOCK (only if auth needed, only for first screenshot)
-  // await p.goto('{login_url}');
-  // await p.locator('input[type=\"email\"], input[name=\"email\"]').first().fill('{email}');
-  // await p.locator('input[type=\"password\"]').first().fill('{password}');
-  // await p.locator('button[type=\"submit\"]').first().click();
-  // await p.waitForLoadState('networkidle');
 
   await p.goto('{url}');
   await p.waitForLoadState('networkidle');
@@ -226,7 +263,7 @@ playwright-cli run-code "async page => {
 }"
 ```
 
-**For dark mode variants** (if requested):
+**For dark mode variants** (if requested) — voeg `colorScheme: 'dark'` toe aan `newContext`. `storageState` blijft hetzelfde, dus auth wordt automatisch hergebruikt.
 
 ```bash
 playwright-cli run-code "async page => {
@@ -235,34 +272,129 @@ playwright-cli run-code "async page => {
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 2,
     colorScheme: 'dark',
+    // storageState: '.project/auth-state.json',  (als auth)
   });
-  // ... same navigation + screenshot with '-dark' suffix
+  // ... same navigation + screenshot met '-dark' suffix
 }"
 ```
 
+**For mobile variants** (if requested in FASE 1) — iPhone 14 portrait, native 3x scale:
+
+```bash
+playwright-cli run-code "async page => {
+  const browser = page.context().browser();
+  const ctx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 3,
+    // storageState: '.project/auth-state.json',  (als auth)
+  });
+  const p = await ctx.newPage();
+
+  await p.goto('{url}');
+  await p.waitForLoadState('networkidle');
+
+  await p.screenshot({ path: '.project/screenshots/{filename}-mobile.png', fullPage: false });
+  await ctx.close();
+  return 'Captured: {filename}-mobile.png';
+}"
+```
+
+**For mobile + dark mode** (als beide gekozen) — zelfde mobile viewport met `colorScheme: 'dark'`:
+
+```bash
+playwright-cli run-code "async page => {
+  const browser = page.context().browser();
+  const ctx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 3,
+    colorScheme: 'dark',
+    // storageState: '.project/auth-state.json',  (als auth)
+  });
+  const p = await ctx.newPage();
+
+  await p.goto('{url}');
+  await p.waitForLoadState('networkidle');
+
+  await p.screenshot({ path: '.project/screenshots/{filename}-mobile-dark.png', fullPage: false });
+  await ctx.close();
+  return 'Captured: {filename}-mobile-dark.png';
+}"
+```
+
+### 4.2 Social Card Capture (alleen als gekozen in FASE 1)
+
+Per geselecteerde feature/route, in volgorde van precedence:
+
+**Strategie A — Meta-extractie (preferred):**
+
+```
+playwright-cli goto {url}
+playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
+playwright-cli eval "() => ({
+  ogImage: document.querySelector('meta[property=\"og:image\"]')?.content,
+  ogTitle: document.querySelector('meta[property=\"og:title\"]')?.content,
+  twitterCard: document.querySelector('meta[name=\"twitter:card\"]')?.content,
+  twitterImage: document.querySelector('meta[name=\"twitter:image\"]')?.content,
+})"
+```
+
+Als `ogImage` URL beschikbaar:
+
+```js
+// playwright-cli run-code
+async (page) => {
+  const res = await fetch("{ogImage}");
+  const buf = Buffer.from(await res.arrayBuffer());
+  require("fs").writeFileSync(
+    ".project/screenshots/og-{feature-slug}.png",
+    buf,
+  );
+  return `Saved: og-{feature-slug}.png (${buf.length} bytes)`;
+};
+```
+
+Validatie: `file .project/screenshots/og-{feature}.png` → dimensies 1200×630.
+
+**Strategie B — Page-render mock (fallback, als geen OG image of URL niet bereikbaar):**
+
+```js
+// playwright-cli run-code
+async (page) => {
+  const browser = page.context().browser();
+  const ctx = await browser.newContext({
+    viewport: { width: 1200, height: 630 }, // of 1200×600 voor Twitter
+    deviceScaleFactor: 2,
+  });
+  const p = await ctx.newPage();
+  await p.goto("{url}");
+  await p.waitForLoadState("networkidle");
+  await p.screenshot({ path: ".project/screenshots/og-{feature-slug}.png" });
+  await ctx.close();
+};
+```
+
+Twitter-variant: hetzelfde met `viewport: { width: 1200, height: 600 }` en `-tw-` filename suffix.
+
+**Findings (rapportage, geen blokkerende fix):**
+
+- OG meta tags ontbreken op feature (geen og:image, og:title)
+- OG image dimensies kloppen niet — verwacht 1200×630
+- Twitter card type ontbreekt (`meta[name="twitter:card"]` niet aanwezig)
+
 ### Execution Flow
 
-For each planned screenshot:
-
-1. Log: `Capturing {n}/{total}: {feature name}...`
-2. Handle auth on first page if needed (login flow)
-3. Navigate to target URL
-4. Wait for content to load (networkidle)
-5. Execute pre-screenshot actions if needed (open modal, select tab, scroll)
-6. Capture screenshot
-7. If dark mode requested → capture dark variant
-8. Log: `Saved: {filename}`
-
-### Auth Handling
-
-If credentials were provided in FASE 1:
-
-- Login on the FIRST screenshot only
-- Use cookie persistence within the browser context for subsequent pages
-- Smart login: try common form patterns:
-  - Email: `input[type="email"]`, `input[name="email"]`, `input[id="email"]`
-  - Password: `input[type="password"]`
-  - Submit: `button[type="submit"]`, `button:has-text("Sign in")`, `button:has-text("Log in")`
+1. Als credentials opgegeven → run 4.0 (login + state-save) één keer.
+2. Per screenshot:
+   - Log: `Capturing {n}/{total}: {feature name}...`
+   - Run template uit 4.1 (met `storageState` als auth, anders zonder)
+   - Wait for content to load (networkidle in template)
+   - Execute pre-screenshot actions if needed (open modal, select tab, scroll)
+   - Capture screenshot
+   - If dark mode requested → capture dark variant (suffix `-dark`)
+   - If mobile requested → capture mobile variant (390×844 @3x, suffix `-mobile`)
+   - If both dark AND mobile → capture mobile-dark variant (suffix `-mobile-dark`)
+   - Log: `Saved: {filename}`
+3. Als social cards gekozen → per feature: run 4.2 (eerst meta-extractie, fallback naar render mock)
 
 ## FASE 5: Verify and Summarize
 
@@ -290,12 +422,35 @@ If credentials were provided in FASE 1:
    ...
 
    Totaal: {n} screenshots in .project/screenshots/
-   Kwaliteit: {HiDPI 2x retina | Standaard viewport}
+   Desktop: HiDPI 2x retina — 2880×1800 output
+   Mobiel:  {n} mobile shots — 1170×2532 output (390×844 @3x)  ← alleen als gekozen
    Doel: {purpose from FASE 1}
    ```
 
-4. If purpose is "Product Hunt" → mention recommended image sizes (1270x760)
-5. If purpose is "Social media" → suggest cropping for platform-specific ratios
+4. Als social cards gegenereerd → toon social card summary:
+
+   ```
+   SOCIAL CARDS
+   | Feature    | OG image                | Twitter image           | Source          |
+   |------------|-------------------------|-------------------------|-----------------|
+   | homepage   | og-homepage.png (1200×630) | tw-homepage.png (1200×600) | meta-extracted |
+   | dashboard  | og-dashboard.png        | —                       | page-render     |
+
+   Findings:
+   - [feature]: OG meta tags ontbreken (og:image, og:title)
+   - [feature]: OG image dimensies [actual] — verwacht 1200×630
+   ```
+
+5. If purpose is "Product Hunt" → mention recommended image sizes (1270x760)
+6. If purpose is "Social media" → suggest cropping for platform-specific ratios
+
+7. Cleanup auth state (alleen als 4.0 is gedraaid):
+
+   ```bash
+   rm -f .project/auth-state.json
+   ```
+
+   State bevat session tokens — altijd opruimen aan einde van de run.
 
 ## Error Handling
 
@@ -307,7 +462,12 @@ If credentials were provided in FASE 1:
 ### Login failed
 
 **Cause:** Smart login patterns don't match the app's login form.
-**Solution:** Use `playwright-cli snapshot` to inspect the login page, then manually identify selectors. Retry with correct selectors via `playwright-cli run-code`.
+**Solution:** `playwright-cli snapshot` op de login-pagina → identificeer refs voor email/password/submit handmatig → retry FASE 4.0 met correcte refs. Bij blijvende failure: gebruik `run-code` met expliciete CSS-selectors als fallback voor de login + state-save stap.
+
+### State file expired / invalid
+
+**Cause:** `auth-state.json` bevat verlopen cookies (sessie geëxpireerd tussen runs).
+**Solution:** Verwijder `.project/auth-state.json` en run FASE 4.0 opnieuw. State wordt sowieso opgeruimd in FASE 5 — bij hergebruik tussen sessies altijd opnieuw aanmaken.
 
 ### run-code fails
 
@@ -325,7 +485,8 @@ This skill must NEVER:
 
 - Install npm packages or dependencies
 - Start dev servers (use `/dev-tunnel` for that)
-- Store credentials in files
+- Store raw credentials (email/password) in files — alleen post-login storage state via `state-save` is toegestaan
+- Commit `.project/auth-state.json` — moet gitignored zijn
 - Overwrite existing screenshots without user confirmation
 - Take screenshots without user-approved plan
 
@@ -337,3 +498,4 @@ This skill must ALWAYS:
 - Gebruik `--filename` flag voor alle screenshots (pad naar `.project/screenshots/`)
 - Report actual dimensions in the summary
 - Clean up browser contexts after use
+- Verwijder `.project/auth-state.json` aan het einde van FASE 5 als auth gebruikt is

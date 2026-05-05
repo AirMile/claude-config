@@ -8,19 +8,22 @@ Reusable Playwright CLI patterns voor visual validation, accessibility checks, e
 
 ## Overview
 
-| MCP (oud)                          | CLI command                                                                                 | Output                              |
-| ---------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `browser_navigate`                 | `playwright-cli goto [url]`                                                                 | Auto-snapshot link                  |
-| `browser_wait_for { time }`        | `playwright-cli run-code "async page => { await page.waitForTimeout(N); }"`                 | —                                   |
-| `browser_wait_for { text }`        | `playwright-cli run-code "async page => { await page.waitForSelector(':text(\"...\")'); }"` | —                                   |
-| `browser_snapshot`                 | `playwright-cli snapshot --filename=[path]`                                                 | YAML op disk, alleen link in stdout |
-| `browser_snapshot` (inline)        | `playwright-cli snapshot`                                                                   | Volledige tree inline in stdout     |
-| `browser_take_screenshot`          | `playwright-cli screenshot --filename=[path]`                                               | PNG op disk, link in stdout         |
-| `browser_take_screenshot fullPage` | `playwright-cli screenshot --full-page --filename=[path]`                                   | PNG (volledige hoogte) op disk      |
-| `browser_close`                    | `playwright-cli close`                                                                      | —                                   |
-| `browser_resize`                   | `playwright-cli resize [width] [height]`                                                    | Auto-snapshot link                  |
-| `browser_evaluate`                 | `playwright-cli eval "[js expression]"`                                                     | JSON result inline                  |
-| `browser_run_code`                 | `playwright-cli run-code "async page => { ... }"`                                           | Return value inline                 |
+| MCP (oud)                          | CLI command                                                                                 | Output                               |
+| ---------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `browser_navigate`                 | `playwright-cli goto [url]`                                                                 | Auto-snapshot link                   |
+| `browser_wait_for { time }`        | `playwright-cli run-code "async page => { await page.waitForTimeout(N); }"`                 | —                                    |
+| `browser_wait_for { text }`        | `playwright-cli run-code "async page => { await page.waitForSelector(':text(\"...\")'); }"` | —                                    |
+| `browser_snapshot`                 | `playwright-cli snapshot --filename=[path]`                                                 | YAML op disk, alleen link in stdout  |
+| `browser_snapshot` (inline)        | `playwright-cli snapshot`                                                                   | Volledige tree inline in stdout      |
+| `browser_take_screenshot`          | `playwright-cli screenshot --filename=[path]`                                               | PNG op disk, link in stdout          |
+| `browser_take_screenshot fullPage` | `playwright-cli screenshot --full-page --filename=[path]`                                   | PNG (volledige hoogte) op disk       |
+| `browser_close`                    | `playwright-cli close`                                                                      | —                                    |
+| `browser_resize`                   | `playwright-cli resize [width] [height]`                                                    | Auto-snapshot link                   |
+| `browser_evaluate`                 | `playwright-cli eval "[js expression]"`                                                     | JSON result inline                   |
+| `browser_run_code`                 | `playwright-cli run-code "async page => { ... }"`                                           | Return value inline                  |
+| —                                  | `playwright-cli state-save [path]` / `state-load [path]`                                    | Storage state (cookies + LS) op disk |
+| —                                  | `playwright-cli console [error\|warning\|info]`                                             | Console messages inline              |
+| —                                  | `playwright-cli requests` / `request <i>` / `response-headers <i>`                          | Network requests sinds page load     |
 
 > **Snapshot strategie**: `--filename` → tree op disk, alleen link terug (token-efficient, voor batch). Zonder flag → tree inline (voor directe analyse van 1-2 routes).
 
@@ -263,12 +266,12 @@ playwright-cli -s=mysession close
 
 ## Cross-Skill References
 
-| Skill              | Uses Playwright For                    | Snapshot strategie  |
-| ------------------ | -------------------------------------- | ------------------- |
-| `frontend-wcag`    | A11y tree analyse, focus validatie     | Inline (1-2 routes) |
-| `frontend-convert` | Screenshot capture + verification loop | Screenshot only     |
-| `frontend-audit`   | Multi-viewport, CWV, SEO render check  | --filename (batch)  |
-| `marketing-promo`  | HiDPI screenshots, dark mode variants  | run-code newContext |
+| Skill              | Uses Playwright For                                | Snapshot strategie  |
+| ------------------ | -------------------------------------------------- | ------------------- |
+| `frontend-wcag`    | A11y tree analyse, focus validatie                 | Inline (1-2 routes) |
+| `frontend-convert` | Screenshot capture + verification loop             | Screenshot only     |
+| `frontend-check`   | Multi-viewport, CWV, SEO render check, smoke, flow | --filename (batch)  |
+| `marketing-promo`  | HiDPI screenshots, dark mode variants              | run-code newContext |
 
 ---
 
@@ -420,3 +423,119 @@ async (page) => {
   // ... zelfde navigatie + screenshot met '-dark' suffix
 };
 ```
+
+---
+
+## Use Cases: Auth State Persistence
+
+Voor flows die meerdere screenshots/checks doen op pagina's achter een login. Login één keer, sla state op, herlaad voor elke volgende context. Vermijdt herhaalde login-flow per call.
+
+### Sequence
+
+```
+AUTH STATE FLOW
+───────────────
+1. Eerste sessie — login + state-save:
+   playwright-cli open [login-url]
+   playwright-cli snapshot                              ← refs ophalen
+   playwright-cli fill [email-ref] "[email]"
+   playwright-cli fill [password-ref] "[password]"
+   playwright-cli click [submit-ref]
+   playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
+   playwright-cli state-save .project/auth-state.json   ← cookies + localStorage op disk
+
+2. Volgende sessies — state-load:
+   playwright-cli state-load .project/auth-state.json
+   playwright-cli goto [authed-url]
+   ...
+
+3. Of via run-code newContext (HiDPI/dark variants):
+   newContext({ storageState: '.project/auth-state.json', deviceScaleFactor: 2, ... })
+
+4. Cleanup aan einde flow:
+   rm .project/auth-state.json    ← geen credentials op disk laten
+```
+
+### Constraints
+
+- **State file lifecycle**: altijd opruimen aan einde van skill-run (state bevat session tokens).
+- **Locatie**: `.project/auth-state.json` (gitignored). Niet committen.
+- **Validity**: state expireert wanneer cookies aflopen — bij failure: re-login + state-save.
+
+---
+
+## Use Cases: Console Error Inspection
+
+Voor het detecteren van client-side JS errors die niet zichtbaar zijn in screenshot of snapshot. Een pagina kan visueel correct zijn maar runtime crashen — `console error` vangt dat.
+
+### Sequence
+
+```
+CONSOLE INSPECTION
+──────────────────
+1. playwright-cli goto [url]
+2. playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
+3. playwright-cli console error                ← alleen errors (geen warnings/info)
+4. Parse output → indien errors: noteer als finding
+```
+
+### Filter Strategie
+
+| Min-level | Use case                                                    |
+| --------- | ----------------------------------------------------------- |
+| `error`   | Default voor audit/verification — alleen blokkerende issues |
+| `warning` | A11y libs (React/axe) — pakt missing-aria-label warnings op |
+| `info`    | Debugging — zelden nuttig in skills, veel ruis              |
+
+### Noise Mitigation
+
+Veel apps loggen non-critical warnings in dev-mode (HMR, deprecation notices). Voor stabiele detectie:
+
+- Filter op `error` level standaard
+- Filter console-output tegen onderstaande patronen; alles wat overblijft is een echte finding
+- Bij twijfel: noteer count + voorbeeld, laat user beslissen
+
+**Default Ignore Patterns (regex, case-insensitive)**
+
+```
+^\[HMR\]                           # Webpack/Vite HMR reconnect
+^\[Fast Refresh\]                  # Next.js Fast Refresh
+Download the React DevTools        # React DevTools nag
+Download the Apollo DevTools       # Apollo DevTools nag
+DevTools failed to load source map # Source map dev-warning
+\[vite\] connect(ed|ing)          # Vite HMR socket
+React Router (Future|v7)           # React Router future-flag warnings
+```
+
+---
+
+## Use Cases: Network Inspection
+
+Voor het auditen van failed requests, payload-grootte, missing cache headers, en het valideren of content-API's daadwerkelijk content terugstuurden (vs fallback).
+
+### Sequence
+
+```
+NETWORK INSPECTION
+──────────────────
+1. playwright-cli goto [url]
+2. playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
+3. playwright-cli requests                     ← lijst alle requests, genummerd
+4. Per relevant index:
+   playwright-cli response-headers [idx]       ← cache, content-type, status
+   playwright-cli response-body [idx]          ← inhoud (text inline, binary → file)
+```
+
+### Audit Patterns
+
+| Pattern                | Detectie                                                                  |
+| ---------------------- | ------------------------------------------------------------------------- |
+| Failed requests        | `requests` → filter status 4xx/5xx                                        |
+| Large payloads         | `requests` → filter size > 500KB                                          |
+| Missing cache headers  | `response-headers <i>` → check `cache-control`, `etag` op static assets   |
+| Render-blocking        | `requests` order + timing — long-running CSS/JS vóór LCP                  |
+| Content endpoint check | `request <i>` op kritieke API → 200 + body bevat verwachte content (S003) |
+
+### Token Efficiency
+
+`requests` (zonder index) returnt een gecomprimeerde lijst. Pas bij `request <i>` / `response-body <i>` haal je full content op — alleen doen voor relevante indexes.

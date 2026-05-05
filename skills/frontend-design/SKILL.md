@@ -21,7 +21,7 @@ Twee modi:
 1. **Capture** — beheert de design specificatie van het project (pagina's, user flows, design principes) in `.project/project.json` → `design`. Iteratief aan te roepen.
 2. **Brief** — genereert een markdown brief op basis van de design spec + block inventory uit de dev-pipeline + tokens + patterns. Output plak je in Claude Design als context. Het visuele werk gebeurt daar; de handoff bundle uit Claude Design gaat terug naar Claude Code (`/dev-build`).
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-convert` · `/frontend-install` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-convert` · `/frontend-install` · `/frontend-check` · `/frontend-wcag`
 
 **Output locaties:**
 
@@ -989,7 +989,7 @@ Next steps:
   2. /frontend-tokens       → design tokens en kleuren op basis van principes
   3. /frontend-design       → genereer Claude Design brief (brief-mode)
   4. /frontend-convert      → converteer een bestaand design naar code
-  5. /frontend-audit        → performance/SEO audit
+  5. /frontend-check        → performance/SEO audit (als flows gedefinieerd: ook scope Flow beschikbaar)
   6. /frontend-wcag         → accessibility audit
 
 ═══════════════════════════════════════════════════════════════

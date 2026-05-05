@@ -548,7 +548,15 @@ Extracteer projectbrede learnings uit de voltooide feature. Lees de zojuist gesc
 }
 ```
 
-Check op duplicaten (zelfde feature + zelfde summary → skip). Geen learnings gevonden → skip stap.
+**Dedup** voor elke candidate learning:
+
+1. Exact shortcut: zelfde feature + zelfde summary → skip (geen Jaccard nodig)
+2. Tokeniseer candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer
+3. Voor elke bestaande learning in `learnings[]` met hetzelfde `type`:
+   - `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip candidate
+4. Overleeft beide checks → append
+
+Geen learnings gevonden → skip stap.
 
 #### Step 4: Scoped commit
 

@@ -18,7 +18,7 @@ metadata:
 
 Incrementele installer voor frontend tooling en libraries in **bestaande** projecten. Begint altijd met de inspect overlay vraag, daarna needs-driven met optionele research-fallback.
 
-**Verwante skills:** `/core-setup` (one-shot project init) · `/frontend-tokens` · `/frontend-design` · `/frontend-convert` · `/frontend-audit` · `/frontend-wcag`
+**Verwante skills:** `/core-setup` (one-shot project init) · `/frontend-tokens` · `/frontend-design` · `/frontend-convert` · `/frontend-check` · `/frontend-wcag`
 
 ## References
 
@@ -257,7 +257,7 @@ Verify:
 
 1. `/frontend-tokens` → design tokens setup als styling toegevoegd is
 2. `/frontend-design` → mock-driven UI design met nieuwe stack
-3. `/frontend-audit` → kwaliteitscheck na meerdere installs
+3. `/frontend-check` → kwaliteitscheck na meerdere installs
 
 ---
 

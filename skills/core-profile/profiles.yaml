@@ -29,7 +29,7 @@ dev:
   - dev-verify
 
 frontend:
-  - frontend-audit
+  - frontend-check
   - frontend-convert
   - frontend-design
   - frontend-install

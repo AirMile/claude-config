@@ -16,16 +16,39 @@ Elke skill specificeert één of meer scopes. Geen wildcards — expliciet kieze
 
 ### Scope: `component`
 
-Filter learnings die matchen op de huidige feature/component naam (kebab-case substring match op `feature` veld).
+Filter learnings die matchen op de huidige feature/component naam. Twee stappen, gecombineerd.
+
+**Stap 1 — substring match op `feature` veld:**
 
 ```
-matches = learnings.filter(l =>
+substrMatches = learnings.filter(l =>
   l.feature.toLowerCase().includes(currentFeature.toLowerCase()) OR
   currentFeature.toLowerCase().includes(l.feature.toLowerCase())
 )
 ```
 
-Sorteer desc op `date`. Cap op 10 entries.
+**Stap 2 — summary-keyword match (fallback):**
+
+```
+featureTokens = currentFeature.split(/[-\s]/).filter(t => t.length >= 3)
+
+keywordMatches = learnings
+  .filter(l => l NOT in substrMatches)
+  .filter(l => featureTokens.some(t => l.summary.toLowerCase().includes(t)))
+  .slice(0, 5)
+```
+
+`featureTokens`: split op `-` en spatie, filter tokens < 3 chars. Voorbeelden: `"auth-login"` → `["auth", "login"]`, `"jwt-refresh"` → `["jwt", "refresh"]`, `"db-migration"` → `["migration"]` (db < 3 → skip).
+
+**Combineer:**
+
+```
+matches = [...substrMatches, ...keywordMatches]
+  .sort desc op date
+  .slice(0, 10)
+```
+
+Sorteer desc op `date`. Cap op 10 entries totaal.
 
 **Use case**: feature-specifieke patterns en pitfalls die direct relevant zijn voor de huidige werkfeature.
 

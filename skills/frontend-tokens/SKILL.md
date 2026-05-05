@@ -1292,7 +1292,7 @@ Theme tokens ready in project.json voor downstream consumption.
 Next steps:
   1. /frontend-design {page} → bouw een pagina met deze tokens
   2. /frontend-convert → converteer een design met deze tokens
-  4. /frontend-audit → check performance en SEO
+  4. /frontend-check → check performance en SEO
   5. /frontend-wcag → accessibility audit
 ```
 

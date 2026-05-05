@@ -448,9 +448,9 @@ Parse JSON output. Voor elke entry: zet `source: "synced"`, `author: null` (code
 
 Lees `project-context.json` (re-read direct vóór write per SYNC.md). Voor elke nieuwe entry uit 4j.1-4j.5:
 
-- Compute dedup-key: `(type, normalize(summary), author ?? null)`. Normalize = lowercase + strip leestekens.
-- Check tegen bestaande `learnings[]`: match → skip.
-- Match tegen andere entries in deze run: match → skip (intra-run dedup).
+- Exact dedup-key: `(type, normalize(summary), author ?? null)`. Normalize = lowercase + strip leestekens. Match → skip.
+- Jaccard dedup (tweede laag): tokeniseer candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer. Voor elke bestaande learning in `learnings[]` met hetzelfde `type`: `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip.
+- Intra-run Jaccard: zelfde check maar dan tegen andere entries in deze run (zelfde `type`, Jaccard ≥ 0.55) → skip.
 - Cap totaal nieuwe entries per run op **20**. Bij overschrijding: prefereer pitfalls boven patterns boven observations, daarna meest recente datum.
 
 Voeg overlevende entries toe aan `learnings[]`. Schrijf `project-context.json` terug.
