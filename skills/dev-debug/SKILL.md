@@ -1,16 +1,18 @@
 ---
 name: dev-debug
-description: Systematic debugging with inline investigation, root cause analysis, and 3 fix strategies. Use for runtime errors, build failures, unexpected behavior, or test failures.
+description: Systematic debugging with reproduction-test-first workflow, root cause analysis, and 3 fix strategies. Use for runtime errors, build failures, unexpected behavior, or test failures.
 disable-model-invocation: true
+reads: [project-context.learnings, feature.requirements]
+writes: [project-context.learnings]
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 3.0.0
   category: dev
 ---
 
 # Debug
 
-Structured 9-phase debugging: context → intake → investigate → analyze → research → fix plans → select → implement → verify.
+Structured 11-phase debugging: context → intake → investigate → analyze → research → fix plans → select → reproduction test → implement → verify → completion.
 
 ## FASE 0: Context Loading
 
@@ -54,6 +56,15 @@ Als active feature gevonden in vorige stap, voer steps 1-3 uit `shared/WORKTREE.
 - pwd == expected_path → already there, skip switch
 - Geen active feature of geen worktree → skip switch, debug draait standalone
 
+**Load learnings via shared/LEARNINGS-LOAD.md:**
+
+- scopes: [component]
+- pitfall-prefix: true
+- global-memory: true
+- current-feature: {active feature naam, of "none"}
+
+Render LEARNINGS_CONTEXT block. Skip stilletjes als geen `project-context.json` of geen `~/.claude/memory/MEMORY.md`.
+
 **Stel DEBUG_CONTEXT samen** (alle info beschikbaar voor inline investigation):
 
 ```
@@ -63,6 +74,7 @@ STRUCTURE: {context.structure of "niet beschikbaar"}
 ACTIVE FEATURE: {feature naam + status of "geen"}
 ENDPOINTS: {endpoints of "niet beschikbaar"}
 ENTITIES: {data.entities of "niet beschikbaar"}
+KNOWN PITFALLS: {LEARNINGS_CONTEXT output, of "geen"}
 ```
 
 Als niets beschikbaar → ga door zonder context (backwards compatible).
@@ -272,29 +284,132 @@ AskUserQuestion (multiSelect: true):
 
 ---
 
-## FASE 7: Implementatie
+## FASE 7: Reproduction Test
 
-Apply selected fixes from chosen strategy. Document each change with file:line references.
+**Doel**: bewijs de bug met een falende test voor de fix. Maakt root cause concreet, voorkomt regressies, geeft objectief bewijs dat fix werkt.
+
+### Step 1: Testbaarheid bepalen
+
+Default voor Runtime Error / Logic Bug: skip de vraag, ga direct naar Step 2.
+
+Voor Performance Issue / Integration Issue / niet-runtime bugs, AskUserQuestion:
+
+- header: "Reproduction Test"
+- question: "Is deze bug testbaar in een geautomatiseerde test?"
+- options:
+  - "Ja, schrijf reproduction test (Aanbevolen)" — Standaard pad voor assertable bugs
+  - "Nee, skip — UI visual / CSS" — Layout, rendering, geen assertion mogelijk
+  - "Nee, skip — Performance zonder threshold" — Geen concrete meetwaarde definieerbaar
+  - "Nee, skip — Productie-only data" — Niet reproduceerbaar in test omgeving
+
+"Skip" gekozen → noteer `reproductionTest: { skipped: true, reason: "{reden}" }` en ga naar FASE 8.
+
+### Step 2: Schrijf falende test
+
+- Locatie: `test/regression/{slug}.test.{ext}` of voeg toe aan bestaand test bestand met `// REGRESSION: {issue}` marker
+- Framework: detecteer uit package.json (vitest/jest/node:test) of project conventie
+- Assert: het **verwachte** gedrag (niet het buggy gedrag)
+- Bevat de input/setup die de bug triggerde (uit FASE 1 details + FASE 2 investigation)
+
+### Step 3: Run de test
+
+```bash
+{npm test command} -- {test file pattern}
+```
+
+**Verwacht: FAIL voor de juiste reden** — match tegen FASE 3 root cause:
+
+| Resultaat                                    | Reden                                                    | Actie                    |
+| -------------------------------------------- | -------------------------------------------------------- | ------------------------ |
+| FAIL met assert mismatch matching root cause | Bug correct gereproduceerd                               | ✓ Door naar FASE 8       |
+| FAIL door compile/setup error                | Test zelf is kapot                                       | Fix de test, run opnieuw |
+| PASS onverwacht                              | Bug niet correct gereproduceerd of root cause klopt niet | Terug naar FASE 3        |
+
+### Step 4: Bevestig
+
+```
+REPRODUCTION TEST: {bestand}:{lijn}
+Expected fail reason: {root cause uit FASE 3}
+Actual fail: {error output, max 5 regels}
+Status: ✓ Bug reproduced
+```
 
 ---
 
-## FASE 8: Verificatie
+## FASE 8: Implementatie
 
-1. Run relevant tests (if test suite exists)
-2. If no tests: suggest manual verification steps based on the problem type
-3. Show summary of changes made + test results
-4. Ask user to confirm the fix resolves the original problem
+Apply selected fixes from chosen strategy. Document each change with file:line references.
 
-**Output:**
+**Bij reproduction test geschreven (FASE 7)**: implementatie heeft als concrete success-criterium dat de reproduction test moet slagen. Niet meer code wijzigen dan nodig om die test groen te krijgen + de oorspronkelijke fix-plan scope.
+
+---
+
+## FASE 9: Verificatie
+
+### Step 1: Reproduction test (skip als FASE 7 geskipt)
+
+```bash
+{npm test command} -- {reproduction test file}
+```
+
+- PASS → fix bewijsbaar werkt voor de gereproduceerde bug
+- FAIL → fix incompleet, terug naar FASE 8 (max 3 iteraties, daarna AskUserQuestion: Andere strategie | Meer research | Accepteren als incompleet)
+
+### Step 2: Regression suite
+
+Run de full test suite (of minimaal: alle tests in directories die geraakte files importeren).
+
+```bash
+{npm test command}
+```
+
+- Nieuwe failures → AskUserQuestion: Fix regressie (Aanbevolen) | Accepteren (markeer als known) | Rollback fix
+- Geen failures → door naar Step 3
+
+### Step 3: Manual verification (alleen bij FASE 7 skip)
+
+Suggest manual verification steps gebaseerd op het problem type uit FASE 1.
+Vraag user te bevestigen dat de fix het oorspronkelijke probleem oplost.
+
+---
+
+## FASE 10: Completion
+
+### Step 1: Learning Extraction
+
+Per resolved bug, evalueer of root cause + fix cross-feature waarde heeft. Filter:
+
+- **Wel extracten**: race conditions, validation gaps, API contract mismatches, dep-version bugs, framework gotchas, async/timing issues
+- **Niet extracten**: typo fixes, eenmalige config waardes, project-specifieke wiring, merge conflicts
+
+**Append** naar `project-context.json` → `learnings[]`:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "feature": "{active feature uit FASE 0, of directory primary segment van fix locatie}",
+  "type": "pitfall",
+  "source": "extracted",
+  "summary": "{root cause + waar de fix zat, max 200 chars}"
+}
+```
+
+**Dedup** (per `shared/LEARNING-EXTRACTION.md`): tokenize summary → check tegen bestaande `learnings[]` met zelfde `(type, normalize(summary), author)` tuple. Match → skip.
+
+Geen relevante pitfall → skip step zonder waarschuwing.
+
+### Step 2: Output
 
 ```
 DEBUG COMPLETE: {issue}
 ========================
-Root cause: {samenvatting}
-Fix: {wat er gewijzigd is}
-Tests: {pass/fail status}
+Root cause: {samenvatting uit FASE 3}
+Fix: {wat er gewijzigd is, file:line refs}
+Reproduction test: {pad, of "skipped: {reden}"}
+Regression: {N tests, X PASS, Y FAIL}
+Learning: {pitfall summary toegevoegd, of "geen extractie"}
 
 Next steps:
-  1. /dev-verify {feature} → herverificatie na fix
+  1. /dev-verify {feature} → herverificatie als feature actief
   2. /dev-build {feature} → als rebuild nodig is
 ```
