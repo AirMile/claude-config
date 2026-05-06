@@ -1,8 +1,6 @@
 # Order determines numbering for --list. Do not reorder without reason.
 core:
-  - core-note
   - core-commit
-  - core-changelog
   - core-create
   - core-delete
   - core-edit
@@ -11,7 +9,6 @@ core:
   - core-onboard
   - core-pull
   - core-audit
-  - core-promote-learnings
   - core-rewrite
   - core-setup
   - project-add
