@@ -6,7 +6,7 @@ reads: [feature.requirements, feature.build]
 writes: [feature.tests, backlog.status]
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 2.2.0
   category: dev
 ---
 
@@ -84,11 +84,11 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    Lees feature.json (checklist + requirements + build sectie). Zoek in source code naar:
    - Validatie regels, API endpoints relevant voor test items
    - Bestaande test files en test patterns
-   - Per requirement (id + acceptance criteria): lees de source files die dit REQ implementeren
+   - Per requirement (id + acceptance scenarios) — **skip requirements met `deltaOp === "REMOVED"`**: lees de source files die dit REQ implementeren
      (feature.json files[] waar requirements het REQ-ID bevat).
-     Bepaal welke acceptance test(s) dit criterium zouden verifiëren.
-     Let op: acceptance criteria bevatten vaak meerdere condities in één zin
-     (bijv. "201 bij succes, 400 bij >5, 409 bij duplicate" = 3 tests).
+     Bepaal welke acceptance test(s) elk scenario zouden verifiëren.
+     Formaat: `acceptance: [{ when, then }]` — elk object = één test scenario.
+     (bijv. "201 bij succes, 400 bij >5, 409 bij duplicate" = 3 scenario's).
 
    Geef terug als:
    FEATURE_CONTEXT_START
@@ -433,7 +433,7 @@ Regressies: {n} | Stabiel: {n}
 Cross-check `feature.json` requirements tegen test resultaten:
 
 1. **Laad requirement → test mapping:**
-   - Per `requirements[]` entry (id, description, status)
+   - Per `requirements[]` entry (id, description, status) — **skip entries met `deltaOp === "REMOVED"`**
    - Zoek matching `tests.checklist[]` entries via `requirementId`
 
 2. **Bouw coverage matrix:**

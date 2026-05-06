@@ -6,7 +6,7 @@ reads: [feature.build, feature.tests, backlog.status]
 writes: [feature.refactor, backlog.status, learnings]
 metadata:
   author: mileszeilstra
-  version: 2.1.0
+  version: 2.2.0
   category: dev
 ---
 
@@ -923,6 +923,20 @@ Append naar `project-context.json` → `learnings[]` (wordt geschreven in stap 2
    ```
 
    Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+
+3b. **Feature archivering** (alleen features met `feature.json`, niet kleine items zonder pipeline):
+
+Voor elke CLEAN of REFACTORED feature waarvan `.project/features/{name}/feature.json` bestaat:
+
+```bash
+mkdir -p .project/features/archive
+mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
+```
+
+- `{shippedAt-date}` = de datum uit het zojuist geschreven `shippedAt` veld (YYYY-MM-DD formaat)
+- Meerdere features in één run → elk naar eigen archive-dir
+- ROLLED_BACK features: niet archiveren (blijven in `.project/features/`)
+- Skip als feature-dir al niet bestaat (idempotent)
 
 4. **Show completion:**
 

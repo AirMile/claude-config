@@ -70,17 +70,21 @@ Volledige kleurschalen voor gedetailleerd design werk. Vermijd pure gray (chroma
 
 ### Font Sizes
 
-| Token       | Size            | Line Height | Usage                |
-| ----------- | --------------- | ----------- | -------------------- |
-| `text-xs`   | 0.75rem (12px)  | 1rem        | Captions, labels     |
-| `text-sm`   | 0.875rem (14px) | 1.25rem     | Small text, metadata |
-| `text-base` | 1rem (16px)     | 1.5rem      | Body text            |
-| `text-lg`   | 1.125rem (18px) | 1.75rem     | Lead paragraphs      |
-| `text-xl`   | 1.25rem (20px)  | 1.75rem     | H4, subheadings      |
-| `text-2xl`  | 1.5rem (24px)   | 2rem        | H3                   |
-| `text-3xl`  | 1.875rem (30px) | 2.25rem     | H2                   |
-| `text-4xl`  | 2.25rem (36px)  | 2.5rem      | H1                   |
-| `text-5xl`  | 3rem (48px)     | 1           | Display headings     |
+Gebruik semantische namen — stabiel bij resize, directe design→code mapping.
+
+| Token             | Size            | Line Height | Usage                     |
+| ----------------- | --------------- | ----------- | ------------------------- |
+| `text-display`    | 3rem (48px)     | 1.1         | Hero headings             |
+| `text-title-l`    | 2.25rem (36px)  | 1.2         | Page titles               |
+| `text-title-m`    | 1.875rem (30px) | 1.25        | Section titles            |
+| `text-title-s`    | 1.5rem (24px)   | 1.3         | Card titles               |
+| `text-headline-l` | 1.25rem (20px)  | 1.4         | Subsection headers        |
+| `text-headline-m` | 1.125rem (18px) | 1.4         | List headers              |
+| `text-headline-s` | 1rem (16px)     | 1.5         | Bold emphasis             |
+| `text-body-l`     | 1rem (16px)     | 1.6         | Large body (leesbaarheid) |
+| `text-body-m`     | 0.875rem (14px) | 1.5         | Standard body             |
+| `text-body-s`     | 0.75rem (12px)  | 1.4         | Captions, labels          |
+| `text-code`       | 0.875rem (14px) | 1.6         | Code blocks               |
 
 ### Font Weights
 

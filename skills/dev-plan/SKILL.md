@@ -315,6 +315,7 @@ Toon de geladen output. Architectural patterns sturen de feature decomposition (
    - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
    - INDEPENDENT features (added via `/dev-todo`): always preserve unchanged — they are not concept-derived
    - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
+   - CANCELLED features zijn protected: behoud als `status: "CANCELLED"`, sluit uit van planning en build-order — behandel als niet-beschikbaar
    - Present the merged feature list with change markers for clarity
 
 2. **Extract features:**
@@ -420,6 +421,15 @@ In create mode, the Change column is omitted.
 3. **Detect circular dependencies:**
    - If found, suggest how to break the cycle
    - Ask user for resolution if unclear
+
+4. **Detect broken dependencies (CANCELLED):**
+   - Als een feature afhankelijk is van een feature met `status: "CANCELLED"`, markeer als gebroken:
+     ```
+     ⚠ GEBROKEN DEPENDENCY: {feature-A} → {feature-B} (CANCELLED)
+     Opties: (1) verwijder deze dependency, (2) herstel {feature-B} via backlog UI
+     ```
+   - Presenteer gebroken dependencies vóór de dependency-tabel
+   - Vraag gebruiker om resolutie voordat je verder gaat met FASE 3
 
 **Output:**
 

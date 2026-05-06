@@ -11,7 +11,7 @@ disable-model-invocation: true
 writes: [devinfo.handoff]
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 2.5.1
   category: frontend
 ---
 
@@ -81,9 +81,23 @@ SOURCE ANALYSIS
 Type:       [Full page | Section/component | Multiple components]
 Sections:   [enumerated list of visual sections top-to-bottom]
 Layout:     [single column | multi-column | grid | sidebar + content | etc.]
+Responsive: [single viewport | mobile + desktop | mobile + tablet + desktop | unknown]
+Sizing:     [per key element: fixed (explicit px/rem) | fill (flex:1 / width:100%) | hug (fit-content/auto)]
 Key colors: [dominant colors as hex, max 5]
+Dark mode:  [light only | dark only | both visible | unknown]
 Typography: [heading style, body style — approximate]
 Components: [identifiable UI patterns: cards, nav, hero, form, table, etc.]
+Variants:   [component naam → gedetecteerde variant-assen: size=sm/md/lg, state=default/hover/disabled, type=primary/ghost]
+            [of: geen varianten detecteerbaar]
+States:     [geen aparte state-frames | loading | error | empty | success]
+            Detecteer alleen frames/artboards die expliciet een non-default state tonen. Sla op als $STATES.
+Properties: [design properties met directe CSS-mapping — noteer alleen wat zichtbaar aanwezig is:
+              fill → background-color/color: [waarde(n)]
+              stroke → border: [waarde(n)]
+              corner-radius → border-radius: [waarde(n)]
+              shadow → box-shadow: [waarde(n)]
+              opacity → opacity: [waarde(n)]
+              rotation → transform: rotate([waarde(n)])]
 
 ════════════════════════════════════════════════════════════
 ```
@@ -327,6 +341,15 @@ Strategy per section:
   [Section 2] → [new component | reuse existing]
   ...
 
+{Als $VARIANTS niet leeg:}
+Variant components:
+  [ComponentName] → cva ([variant-assen: type × size])
+  [ComponentName] → cva ([variant-assen: state])
+
+{Als $STATES niet leeg:}
+State components:
+  [ComponentName] → loading: skeleton | error: ErrorBoundary | empty: EmptyState
+
 ════════════════════════════════════════════════════════════
 ```
 
@@ -343,12 +366,69 @@ Generate the page and components based on the source image.
 - Semantic HTML with aria-labels and keyboard support
 - Import existing components — never regenerate what already works
 
+**Component states:**
+
+Als `$STATES` niet leeg: genereer state-varianten naast de happy path.
+
+- **Loading**: gebruik een skeleton die de happy path layout spiegelt — zelfde grid/flex structuur, placeholder blokken op tekstposities. Geen generieke spinner tenzij de source dat expliciet toont.
+- **Error**: toon foutmelding met retry-actie als dat logisch is voor de context. Gebruik `error`-semantische kleur als het theme die definieert.
+- **Empty**: contextual lege staat — infereer uit de sectienaam wat er zou staan (bijv. "Nog geen projecten" voor een projectenlijst).
+
+Alle states volgen dezelfde `dark:` en responsive logica als de happy path.
+
 **Mode-specific** (zie `./examples/` voor gold standard voorbeelden per modus):
 
 - **1:1 copy:** Match source colors, fonts, spacing as closely as possible. Use arbitrary Tailwind values (`bg-[#FF5733]`, `text-[20px]`) when no standard class matches. Prioritize visual fidelity. Referentie: `./examples/PricingPage-1to1.tsx`
 - **Inspiration:** Use only theme tokens (from project.json) and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Referentie: `./examples/PricingPage-inspiration.tsx`
 
+**Dark mode classes:**
+
+Check `theme.modes.dark` in `project.json`. Als aanwezig (`$HAS_DARK_MODE = true`): voeg `dark:` Tailwind prefix toe aan alle background-, text-color-, en border-classes.
+
+- `bg-white dark:bg-[var(--color-dark)]` of via theme alias: `bg-background dark:bg-background`
+- `text-gray-900 dark:text-[var(--color-light)]`
+- `border-gray-200 dark:border-[var(--color-mid-gray)]`
+
+Als `theme.modes.dark` ontbreekt: geen `dark:` classes — niet toevoegen op goed geluk.
+
+**Responsive layout:**
+
+Als `$RESPONSIVE_VIEWPORTS` meerdere viewports toont: gebruik Tailwind responsive prefixes systematisch (mobile-first).
+
+- Geen prefix = mobile/default
+- `md:` = tablet (768px+)
+- `lg:` = desktop (1024px+)
+
+Voorbeelden: `flex-col md:flex-row`, `hidden md:block`, `px-4 md:px-8 lg:px-16`, `text-sm lg:text-base`
+
+Als single viewport: genereer voor die viewport. Voeg `{/* TODO: responsive — alleen [mobile|desktop] frame beschikbaar */}` toe bovenaan het component.
+
 **Contextual content:** Never use "Lorem ipsum." Infer contextual placeholder text from the source image or describe what real content would go there.
+
+**Variant-aware components:**
+
+Als `$VARIANTS` niet leeg is: gebruik `cva` (class-variance-authority) voor elk component met ≥2 gedetecteerde varianten. Check eerst of `cva` beschikbaar is in `package.json`; installeer niet automatisch — voeg toe aan Generation Summary als missing dependency.
+
+Structuur:
+
+```typescript
+import { cva, type VariantProps } from "class-variance-authority";
+
+const buttonVariants = cva("base-classes-hier", {
+  variants: {
+    variant: { primary: "...", ghost: "...", destructive: "..." },
+    size: { sm: "...", md: "...", lg: "..." },
+  },
+  defaultVariants: { variant: "primary", size: "md" },
+});
+
+interface ButtonProps
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {}
+```
+
+Zonder gedetecteerde varianten (`$VARIANTS` leeg): genereer normaal zonder `cva`.
 
 ### 2.3 Generation Summary
 
@@ -364,8 +444,15 @@ Files created:
 Existing components imported:
   ✓ [component path]              (reused)
 
-Mode:  [1:1 copy | Inspiration with theme tokens]
-Theme: [Integrated from project.json#theme | Extracted from source]
+{Als cva gebruikt maar niet aanwezig in package.json:}
+Dependencies:
+  ⚠ cva niet gevonden in package.json — installeer: npm install class-variance-authority
+
+Mode:       [1:1 copy | Inspiration with theme tokens]
+Theme:      [Integrated from project.json#theme | Extracted from source]
+Dark mode:  [✓ dark: classes toegepast | — geen dark mode in theme]
+Responsive: [✓ responsive prefixes toegepast | — single viewport (TODO comment geplaatst)]
+States:     [✓ state components gegenereerd: [loading|error|empty] | — geen state frames gedetecteerd]
 
 ════════════════════════════════════════════════════════════
 ```

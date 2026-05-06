@@ -192,7 +192,7 @@ Gedraag van `learning-extractor` agent verschilt per skill:
 
 ## Dedup Tokenizer
 
-Identiek aan `core-promote-learnings` FASE 2 tokenisatie. Gebruikt voor:
+Tokenisatie algoritme. Gebruikt voor:
 
 - Pre-write dedup binnen één skill run
 - Cross-run dedup tegen bestaande `learnings[]`

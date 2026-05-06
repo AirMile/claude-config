@@ -3,10 +3,10 @@ name: game-build
 description: Build features with technique mapping (TDD, Implementation First, or Implementation Only) for Godot 4.x. Use with /game-build after /game-define.
 disable-model-invocation: true
 reads: [feature.requirements, backlog.stage]
-writes: [feature.requirements, feature.build, backlog.stage]
+writes: [feature.requirements, feature.build, backlog.stage, learnings]
 metadata:
   author: mileszeilstra
-  version: 2.5.1
+  version: 2.7.0
   category: game
 ---
 
@@ -164,8 +164,24 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 4. **Load feature.json:**
 
+   **Ready queue** (alleen als geen feature-naam via CLI opgegeven):
+
+   Parse `.project/backlog.html`. Bereken per DEFINED feature of alle `dependencies[]` `status === "DONE"` hebben (of dep-lijst leeg is). Toon vóór de feature-selectie:
+
+   ```
+   Ready om te bouwen:
+     ✓ jump-mechanic     P1  (geen deps)
+     ✓ enemy-ai          P2  deps: [pathfinding ✓]
+
+   Geblokkeerd:
+     ✗ boss-fight        P1  wacht op: [enemy-ai — DOING]
+   ```
+
+   - Toon "Geblokkeerd" sectie alleen als er geblokkeerde features zijn
+   - Als geen DEFINED features bestaan → "Geen features klaar om te bouwen." → exit
+
    If no feature name provided:
-   1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion**
+   1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion** (ready features bovenaan)
    2. Fallback: list `.project/features/` met `feature.json`, let user select
 
    Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`. Als `clarifications[]` aanwezig: behandel als harde constraints tijdens implementatie (gray-area beslissingen van de user).
@@ -251,9 +267,24 @@ git status --porcelain | sort > .project/session/pre-skill-status.txt
 echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
+**Risk-check (alleen als backlog feature `risk >= 4`):**
+
+Als de geladen backlog-feature een `risk`-score van 4 of 5 heeft, toon deze waarschuwing vóór FASE 1:
+
+```
+⚠ HOOG RISICO — Complexiteit {risk}/5
+
+Overweeg vóór de bouw:
+- Zijn alle dependencies beschikbaar (status DONE)?
+- Is de feature-definitie volledig (alle REQs helder)?
+- Bouw in kleine stappen — commit na elke werkende REQ
+```
+
 ### FASE 1: Technique Mapping
 
 > **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+
+**REMOVED filter**: Requirements met `deltaOp === "REMOVED"` overslaan — geen technique toewijzen, niet tonen in technique map tabel.
 
 Per requirement, assign a technique: **TDD**, **Implementation First**, or **Implementation Only**.
 
@@ -849,6 +880,23 @@ Muteer in memory:
 **Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`. Als feature niet bestaat: push met `{ name, status: "DOING", stage: "built", summary, created }`.
 
 **Architecture** (in `project-context.json`, **volg component-first model uit `shared/DASHBOARD.md`**): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `description` (korte functionele beschrijving, max 200 chars — wat doet dit component?), `src`, `test`, `connects_to` (typed edges `{ to, type }` — `calls` voor signal emits/method calls, `reads`/`writes` voor autoload/state IO, `depends_on` voor scene-tree parent of resource references), `feature` (huidige feature naam). Nieuwe componenten: push met alle velden inclusief `feature`. Als `layers`/`components` niet bestaan EN meerdere scenes/signals → genereer initiële architecture met layers + components. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
+
+**Learning extraction** (na feature.json sync): schrijf naar `project-context.json learnings[]` (append-only, identiek formaat als `game-verify`/`game-refactor`):
+
+- `build.decisions[]` → `type: "pattern"` (architecturale keuze gemaakt)
+- `build.blockers[]` waar de blocker opgelost is (niet meer BLOCKED aan einde build) → `type: "pitfall"`
+
+```json
+{
+  "date": "...",
+  "feature": "{naam}",
+  "type": "pattern|pitfall",
+  "source": "extracted",
+  "summary": "..."
+}
+```
+
+Alleen schrijven als er decisions of opgeloste blockers aanwezig zijn — geen lege entries.
 
 Schrijf parallel terug:
 

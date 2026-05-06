@@ -90,7 +90,7 @@ matches = learnings
 
 ## Globale memory altijd geladen
 
-Read `~/.claude/memory/MEMORY.md` (als bestaat). Format zoals geschreven door [core-promote-learnings](../core-promote-learnings/SKILL.md) FASE 4:
+Read `~/.claude/memory/MEMORY.md` (als bestaat). Verwacht formaat:
 
 ```markdown
 ## Patterns

@@ -8,7 +8,7 @@ reads: [feature.build, feature.tests, backlog.stage]
 writes: [feature.refactor, backlog.stage]
 metadata:
   author: mileszeilstra
-  version: 1.1.0
+  version: 1.3.0
   category: game
 ---
 
@@ -754,8 +754,8 @@ IMPROVEMENTS APPLIED
       ```
 
    3. Update top-level `status`:
-      - CLEAN/REFACTORED: `"DONE"`
-      - ROLLED_BACK: keep `"DONE"` (refactor.status documenteert de rollback)
+      - CLEAN/REFACTORED: `"DONE"`, `"shipped": true`, `"shippedAt": <ISO-date>`, `"shippedSha": <git-sha na auto-commit>`
+      - ROLLED_BACK: keep `"DONE"` (refactor.status documenteert de rollback), geen shipped-velden
    4. Write feature.json back (do NOT overwrite other sections)
 
    Als N > 1 features: lees alle feature.json parallel, muteer elk in memory, schrijf alle parallel terug.
@@ -770,8 +770,8 @@ IMPROVEMENTS APPLIED
    Muteer in memory:
 
    **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet per feature het `refactor` veld:
-   - CLEAN of REFACTORED → `f.refactor = "REFACTORED"` (rendert ✓ badge in DONE-kolom)
-   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"` (rendert ⚠ badge)
+   - CLEAN of REFACTORED → `f.refactor = "REFACTORED"`, `f.shipped = true`, `f.shippedAt = <ISO-date>`, `f.shippedSha = <git-sha>`, verwijder `transition` (als aanwezig) (rendert ✓ badge in DONE-kolom)
+   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"`, verwijder `transition` (als aanwezig) (rendert ⚠ badge)
 
    Zet `data.updated` naar huidige datum.
 
@@ -836,6 +836,20 @@ IMPROVEMENTS APPLIED
    ```
 
    Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+
+3b. **Feature archivering** (alleen features met `feature.json`, niet kleine items zonder pipeline):
+
+Voor elke CLEAN of REFACTORED feature waarvan `.project/features/{name}/feature.json` bestaat:
+
+```bash
+mkdir -p .project/features/archive
+mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
+```
+
+- `{shippedAt-date}` = datum uit het zojuist geschreven `shippedAt` veld (YYYY-MM-DD formaat)
+- Meerdere features in één run → elk naar eigen archive-dir
+- ROLLED_BACK features: niet archiveren
+- Skip als feature-dir al niet bestaat (idempotent)
 
 4. **Show completion:**
 

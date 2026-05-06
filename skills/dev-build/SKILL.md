@@ -3,10 +3,10 @@ name: dev-build
 description: Build features with TDD or implementation-first per requirement. Use with /dev-build or /dev-build [feature-name] after /dev-define.
 disable-model-invocation: true
 reads: [feature.requirements]
-writes: [feature.requirements, feature.build, backlog.status]
+writes: [feature.requirements, feature.build, backlog.status, learnings]
 metadata:
   author: mileszeilstra
-  version: 1.6.1
+  version: 1.8.0
   category: dev
 ---
 
@@ -83,9 +83,26 @@ Bewaar de geladen learnings voor FASE 1 (Technique Mapping).
 
 **Load feature:**
 
+Ready queue (alleen als geen feature-naam via CLI opgegeven):
+
+Parse `.project/backlog.html`. Bereken per DEFINED feature of alle `dependencies[]` `status === "DONE"` hebben (of dep-lijst leeg is). Toon vóór de feature-selectie:
+
+```
+Ready om te bouwen:
+  ✓ auth-login        P1  (geen deps)
+  ✓ user-profile      P2  deps: [auth-login ✓]
+
+Geblokkeerd:
+  ✗ payment-flow      P1  wacht op: [stripe-integration — DOING]
+  ✗ checkout          P2  wacht op: [payment-flow ✗, cart — TODO]
+```
+
+- Toon "Geblokkeerd" sectie alleen als er geblokkeerde features zijn
+- Als geen DEFINED features bestaan → "Geen features klaar om te bouwen." → exit
+
 If no feature name provided:
 
-1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion**
+1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion** (ready features bovenaan)
 2. Fallback: list `.project/features/` met `feature.json`, let user select
 
 Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifiek `registries[]` en `interfaces`). Als `clarifications[]` aanwezig: behandel als harde constraints tijdens implementatie (gray-area beslissingen van de user). Als `architecture.registries[]` aanwezig: gebruik als leidraad — nieuwe instances (endpoints, commands, entities) toevoegen aan het aangegeven registry-bestand, niet verspreiden over losse bestanden.
@@ -146,9 +163,43 @@ IMPLEMENTATION ORDER:
 (from buildSequence, sorted by step)
 ```
 
+**Risk-check (alleen als backlog feature `risk >= 4`):**
+
+Als de geladen backlog-feature een `risk`-score van 4 of 5 heeft, toon deze waarschuwing vóór FASE 1:
+
+```
+⚠ HOOG RISICO — Complexiteit {risk}/5
+
+Overweeg vóór de bouw:
+- Zijn alle dependencies beschikbaar (status DONE)?
+- Is de feature-definitie volledig (alle REQs helder)?
+- Bouw in kleine stappen — commit na elke werkende REQ
+```
+
+**Dependency-check (alleen als `feature.dependencies[]` niet leeg is):**
+
+Lees `feature.dependencies[]` uit het backlog JSON-object (al geladen in FASE 0).
+Filter items waarbij de overeenkomstige feature in de backlog NIET `status: "DONE"` heeft.
+
+Als count > 0, toon:
+
+```
+⚠ ONOPGELOSTE DEPENDENCIES
+
+Deze feature wacht op:
+- {dep-name} (status: {status})
+- ...
+
+Ga door als je zeker weet dat dit geen blocker is.
+```
+
+Geen harde stop — dit is een signaal, geen blokkade.
+
 ### FASE 1: Technique Mapping
 
 > **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+
+**REMOVED filter**: Requirements met `deltaOp === "REMOVED"` overslaan — geen technique toewijzen, niet tonen in technique map tabel.
 
 Assign per requirement:
 
@@ -165,6 +216,8 @@ Display technique map als tabel. Proceed automatically — do NOT confirm with t
 > **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
 
 For each buildSequence step:
+
+**REMOVED filter per step**: filter `step.requirements` → verwijder IDs waarvan `feature.json.requirements[id].deltaOp === "REMOVED"`. Als step leeg na filter → skip step, ga door naar volgende.
 
 **Parallel build check** (per step met >1 requirement):
 
@@ -307,7 +360,22 @@ Richtlijnen:
 
 **Routes** (`architecture.routes[]`): bevestig routes die tijdens build daadwerkelijk geïmplementeerd zijn — controleer `auth` veld klopt met de werkelijke middleware/guard (`"public" | "user" | "admin"`), update `purpose` als de pagina nu beter beschreven kan worden. Nieuwe routes die tijdens build zijn ontstaan: push `{ path, purpose, auth, feature }`. Endpoints in `endpoints[]` met daadwerkelijke auth-check: migreer `auth: false` → `"public"` en `auth: true` → `"user"` (of `"admin"` bij role-check).
 
-Learning extraction gebeurt in `/dev-verify` — dat is de natuurlijke plek (features zijn pas "geleerd" na test + fix). Hier alleen `build.decisions[]` in feature.json vastleggen, geen `learnings[]` append.
+**Learning extraction** (na feature.json sync): schrijf naar `project-context.json learnings[]` (append-only, identiek formaat als `dev-verify`/`dev-refactor`):
+
+- `build.decisions[]` → `type: "pattern"` (architecturale keuze gemaakt)
+- `build.blockers[]` waar de blocker opgelost is (niet meer BLOCKED aan einde build) → `type: "pitfall"`
+
+```json
+{
+  "date": "...",
+  "feature": "{naam}",
+  "type": "pattern|pitfall",
+  "source": "extracted",
+  "summary": "..."
+}
+```
+
+Alleen schrijven als er decisions of opgeloste blockers aanwezig zijn — geen lege entries.
 
 ### FASE 3C: Wat hebben we gebouwd?
 

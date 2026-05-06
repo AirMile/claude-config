@@ -10,7 +10,7 @@ reads: [backlog.status]
 writes: [backlog.status]
 metadata:
   author: mileszeilstra
-  version: 2.0.0
+  version: 2.2.1
   category: frontend
 ---
 
@@ -58,7 +58,7 @@ If "Snelle smoke check" → set scope = [Smoke] en skip FASE 0.2.
 header: "Scope"
 question: "Welke checks wil je draaien?"
 options:
-  - label: "Alles (Recommended)", description: "Performance + SEO + AEO + Responsive + Darkmode + Error states + Smoke + Flow"
+  - label: "Alles (Recommended)", description: "Performance + SEO + AEO + Responsive + Darkmode + Error states + Smoke + Flow + Token Architecture + Dark mode compliance + Responsive coverage"
   - label: "Ik kies zelf", description: "Selecteer specifieke checks"
 multiSelect: false
 ```
@@ -77,6 +77,9 @@ options:
   - label: "Error states", description: "404, offline, slow-3G UI rendering"
   - label: "Smoke", description: "Snelle multi-route health check (200 + render + geen errors)"
   - label: "Flow", description: "Execute design.flows[] uit project.json (navigatie-journeys)"
+  - label: "Token Architecture", description: "Audit design token gebruik — semantic var() refs, hardcoded kleuren"
+  - label: "Dark mode compliance", description: "Statische code audit — dark: classes aanwezig waar dark mode geconfigureerd is"
+  - label: "Responsive coverage", description: "Statische code audit — responsive prefixes aanwezig bij multi-viewport componenten"
 multiSelect: true
 ```
 
@@ -404,7 +407,115 @@ Step 2 [page-name] → [url]  ✗ FAIL — runtime error: "Cannot read propertie
 
 **Constraint v1:** flow voert alleen navigatie uit (geen click-interacties binnen pages). Interactie-stappen vereisen `design.flows[].steps` verrijking met action-data — buiten scope v1.
 
-### 1.9 Finding Format (all checks)
+### 1.9 Token Architecture Scan
+
+Alleen als "Token Architecture" geselecteerd is. Statische code-analyse — geen Playwright vereist.
+
+**Stap 1: Project.json check**
+
+```bash
+# Read .project/project.json → check theme.colors.semantic[]
+```
+
+Als `project.json` ontbreekt of `theme` leeg is: stop scan met melding `"Geen design tokens gevonden in project.json — Token Architecture scan niet uitvoerbaar. Run /frontend-tokens eerst."` Als `theme.colors.semantic[]` aanwezig: sla op als `$SEMANTIC_TOKENS`.
+
+**Stap 2: CSS files scannen op semantic raw hex**
+
+Grep CSS files (`.css`, `.scss`, globals, theme.css) voor semantic token-namen met raw hex waarden:
+
+```bash
+# Voor elke token in $SEMANTIC_TOKENS:
+# grep -n "--color-{token}:\s*#\|--color-{token}:\s*oklch\|--color-{token}:\s*rgb"
+```
+
+- **T001 (HIGH)**: semantic CSS variabele heeft raw hex i.p.v. `var()` referentie
+  `"--color-{token}: {raw-waarde} — gebruik var(--color-{nearest-primitive})"`
+
+**Stap 3: Component files scannen op hardcoded kleuren**
+
+Grep `src/**/*.{tsx,jsx,astro,vue}` voor hardcoded kleurwaarden die token systeem bypassen:
+
+- Arbitraire Tailwind: `bg-[#hex]`, `text-[#hex]`, `border-[#hex]`
+- Inline styles: `style={{ color: '#hex', background: '#hex' }}`
+
+- **T101 (MEDIUM)**: hardcoded kleurwaarde in component
+  `"{file}:{line} — {patroon}: gebruik var(--color-{nearest-token}) of theme class"`
+  Alleen rapporteren als `project.json` een gevuld theme heeft.
+
+**Token Architecture Check Output:**
+
+```
+TOKEN ARCHITECTURE
+  Token source:     [.project/project.json (N semantic tokens)]
+  CSS compliance:   [N/M semantic tokens use var() refs | N violations]
+  Hardcoded colors: [N components with hardcoded values | clean]
+  Findings: [N] (H:[N] M:[N])
+```
+
+---
+
+### 1.10 Dark Mode Compliance Scan
+
+Check `theme.modes.dark` in `.project/project.json`. Als ontbreekt: skip met melding `"Dark mode niet geconfigureerd — scan niet van toepassing."`.
+
+Scan alle `.tsx`, `.jsx`, `.vue` component files:
+
+1. Grep op Tailwind kleurclasses: `bg-[a-z]`, `text-[a-z]`, `border-[a-z]`
+   (Exclude: `bg-transparent`, `bg-inherit`, `text-inherit`, `text-current`, `border-transparent`)
+2. Check per kleurclass of een `dark:` tegenhanger aanwezig is op hetzelfde element
+3. Scan ook op inline `style={{ color: ..., background: ... }}` waarden
+
+**Skip** als component uitsluitend CSS vars gebruikt (`var(--color-*)`, `var(--background)`, etc.) — die zijn al dark-mode-aware via het theme.
+
+**Findings:**
+
+- DC001 (MEDIUM): kleurclass zonder `dark:` tegenhanger
+  → `{component}: {className} — verwacht dark:{alternatief}`
+- DC002 (LOW): component bevat kleurclasses, geen enkele `dark:` prefix aanwezig
+  → `{component}: 0 dark: classes gevonden (N kleurclasses zonder dark variant)`
+
+**Dark Mode Compliance Check Output:**
+
+```
+DARK MODE COMPLIANCE
+  Dark mode configured: [yes | no — scan overgeslagen]
+  Components checked:   [N]
+  Missing dark: classes:[N components | clean]
+  Findings: [N] (M:[N] L:[N])
+```
+
+---
+
+### 1.11 Responsive Coverage Scan
+
+Check of project multi-viewport context heeft: `theme.breakpoints` in project.json OF `tailwind.config` definieert custom screens. Als ontbreekt: skip met melding `"Geen multi-viewport context — scan niet van toepassing."`.
+
+Scan alle `.tsx`, `.jsx`, `.vue` component files:
+
+1. Grep op layout-classes zonder responsive prefix: `flex`, `grid`, `hidden`, `block`, `w-full`, `columns-`, `gap-[0-9]`, `p-[0-9]`, `px-[0-9]`, `py-[0-9]`
+2. Check of het component ≥1 responsive prefix gebruikt (`sm:`, `md:`, `lg:`, `xl:`, `2xl:`)
+3. Flag layout-zware components (≥5 layout-classes) zonder enige responsive variant
+
+**Findings:**
+
+- RC001 (MEDIUM): layout-classes aanwezig maar geen responsive prefixes
+  → `{component}: {N} layout-classes, 0 responsive prefixes — kandidaat voor responsive aanpassing`
+- RC002 (LOW): spacing/typography zonder responsive variant in layout-zwaar component
+  → `{component}: {className} — overweeg md: of lg: variant voor leesbaarheid`
+
+**Responsive Coverage Check Output:**
+
+```
+RESPONSIVE COVERAGE
+  Multi-viewport context:[yes | no — scan overgeslagen]
+  Components checked:    [N]
+  Missing responsive:    [N components | clean]
+  Findings: [N] (M:[N] L:[N])
+```
+
+---
+
+### 1.12 Finding Format (all checks)
 
 ```
 FINDING: [ID]
@@ -474,6 +585,24 @@ FLOW
   Failing: [list — flow-name: broke at step N]
   Findings: [N]
 
+TOKEN ARCHITECTURE
+  Token source:     [project.json theme (N semantic tokens) | niet beschikbaar]
+  CSS compliance:   [N/N semantic tokens correct | N violations]
+  Hardcoded colors: [N components | clean]
+  Findings: [N] (H:[N] M:[N])
+
+DARK MODE COMPLIANCE
+  Dark mode configured: [yes | no — scan overgeslagen]
+  Components checked:   [N]
+  Missing dark: classes:[N components | clean]
+  Findings: [N] (M:[N] L:[N])
+
+RESPONSIVE COVERAGE
+  Multi-viewport context:[yes | no — scan overgeslagen]
+  Components checked:    [N]
+  Missing responsive:    [N components | clean]
+  Findings: [N] (M:[N] L:[N])
+
 COMBINED PRIORITIES (top 10):
   1. [finding] — [check] — [impact]
   2. [finding] — [check] — [impact]
@@ -512,8 +641,11 @@ Implement fixes in priority order, grouped by audit category.
 5. **Responsive**: overflow + touch targets (breaks usability)
 6. **Performance**: CLS → LCP → INP → bundle (CWV impact)
 7. **Darkmode** (D001): visuele volledigheid, geen regressie in kleur/contrast
-8. **SEO**: titles → descriptions → sitemap → robots → structured data
-9. **AEO**: semantic HTML → FAQ schema → bot access → E-E-A-T
+8. **Dark mode compliance** (DC001): ontbrekende dark: classes in components
+9. **Responsive coverage** (RC001): ontbrekende responsive prefixes in layout-components
+10. **SEO**: titles → descriptions → sitemap → robots → structured data
+11. **AEO**: semantic HTML → FAQ schema → bot access → E-E-A-T
+12. **Token Architecture** (T001/T101): refactor semantic raw hex naar var() referenties, vervang hardcoded component kleuren door token classes
 
 ### Context7 Research
 
@@ -579,6 +711,10 @@ AEO:
 Responsive:
   Overflow: [before] → [after]
   Touch violations: [before] → [after]
+
+Token Architecture:
+  CSS compliance: [before] → [after]
+  Hardcoded colors: [before] → [after]
 
 Resolved: [N]/[total] findings
 

@@ -11,7 +11,7 @@ reads: [devinfo.handoff]
 writes: [devinfo.handoff]
 metadata:
   author: mileszeilstra
-  version: 2.2.0
+  version: 2.4.0
   category: frontend
 ---
 
@@ -844,6 +844,9 @@ Agent output wordt de "Block Inventory" sectie in de brief.
 #### Stap 3: Tokens + Patterns
 
 1. Read `.project/project.json` → `theme` sectie (als aanwezig). Extract: colors, typography, spacing, cssVars.
+   Voor typography: extraheer de semantische type scale namen (`text-display`, `text-title-*`, `text-headline-*`, `text-body-*`, `text-code`) uit `theme.typography.sizes[].token` als aanwezig. Sla op als `$TYPE_SCALE`.
+   Voor dark mode: check `theme.modes.dark` in project.json. Sla op als `$HAS_DARK_MODE` (true/false).
+   Voor motion: check `theme.motion` in project.json. Sla op als `$MOTION_TOKENS` (true/false).
 2. Read `shared/PATTERNS.md` → extract patroonnamen en één-regel beschrijvingen (compound components, render props, etc).
 3. Als `theme` ontbreekt: noteer `Tokens: Tailwind defaults (geen theme gedefinieerd)`.
 
@@ -890,9 +893,21 @@ _Gegenereerd door /frontend-design · {datum}_
 {Als theme gevuld:}
 
 - **Kleuren**: {primary, secondary, accent, bg, text}
-- **Typography**: {font families + scale}
+- **Typography**: {font families}
+  {Als $TYPE_SCALE gevuld:}
+  Semantische scale: `text-display`, `text-title-l/m/s`, `text-headline-l/m/s`, `text-body-l/m/s`, `text-code`
+  {Als $TYPE_SCALE leeg:}
+  Geen semantische scale gedefinieerd — gebruik Tailwind text-scale of stel eigen semantische groepen voor in het design.
 - **Spacing**: {scale}
 - **CSS vars**: {list}
+
+{Als $HAS_DARK_MODE:}
+
+- **Dark mode**: `.dark` class op root element activeert dark mode — ontwerp voor beide varianten. Toon key screens in light én dark naast elkaar.
+
+{Als $MOTION_TOKENS:}
+
+- **Motion**: `duration-instant` (100ms) voor buttons/toggles · `duration-fast` (200ms) voor tooltips/hovers · `duration-normal` (300ms) voor menus/accordions · `duration-slow` (500ms) voor modals/drawers. Easing: `ease-out` (enter), `ease-in` (exit), `ease-in-out` (toggle). Specificeer per interactief element welke token van toepassing is.
 
 {Als geen theme:}
 Tailwind defaults — Claude Design mag eigen palet voorstellen (noteer de keuze in de handoff).
@@ -921,6 +936,7 @@ Bestaande building blocks die hergebruikt moeten worden (GEEN duplicaten generer
 - Semantic HTML + ARIA
 - `cn()` utility voor className composition
 - Tailwind scale (geen arbitrary values)
+- Sizing vocabulary: `fill` (flex: 1 / width: 100%), `hug` (fit-content/auto), `fixed` (expliciete px/rem waarde) — gebruik deze termen in commentaar bij layout-elementen
 
 ## Output Verwachting
 

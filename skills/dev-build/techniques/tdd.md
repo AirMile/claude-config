@@ -68,7 +68,7 @@ Tests in bulk testen _denkbeeldig_ gedrag, niet _werkelijk_ gedrag. Je commit je
 
 Lees 1 bestaand test bestand (bij voorkeur model/service test) voor setup/teardown patronen (before/after hooks, DB lifecycle, import conventies). Gebruik dit als basis voor je test structuur.
 
-Genereer test voor DIT requirement. Volg project test conventies.
+Genereer test voor DIT requirement. Als requirement `acceptance[]` heeft: gebruik `when` als test-beschrijving (`it("when {when}, {then}", ...)`) en `then` als verwacht resultaat in de assert. Geen `acceptance[]` → volg project test conventies.
 Run test — verwacht FAIL. Als test meteen slaagt — je test bestaand gedrag. Pas de test aan.
 
 ### Step 2: Implement (GREEN)

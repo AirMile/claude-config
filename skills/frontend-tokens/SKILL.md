@@ -8,7 +8,7 @@ reads: [devinfo.handoff]
 writes: [devinfo.handoff]
 metadata:
   author: mileszeilstra
-  version: 3.0.0
+  version: 3.2.1
   category: frontend
 ---
 
@@ -59,7 +59,26 @@ De `theme` sectie in `project.json` volgt dit schema:
       "body": "Font, fallback",
       "mono": "Font, fallback"
     },
-    "sizes": [{ "token": "text-base", "size": "1rem", "lineHeight": "1.5rem" }]
+    "sizes": [
+      {
+        "token": "text-display",
+        "size": "3rem",
+        "lineHeight": "1.1",
+        "usage": "Hero headings"
+      },
+      {
+        "token": "text-title-l",
+        "size": "2rem",
+        "lineHeight": "1.2",
+        "usage": "Page titles"
+      },
+      {
+        "token": "text-body-m",
+        "size": "1rem",
+        "lineHeight": "1.5",
+        "usage": "Body text"
+      }
+    ]
   },
   "spacing": {
     "base": "4px",
@@ -436,6 +455,27 @@ Op basis van de beschrijving genereert Claude een contextbewust kleurenpalet:
 
 Toon het gegenereerde palet als tabel, vraag bevestiging. → Ga naar Stap 2
 
+**Token Layer Toelichting (na kleurbevestiging)**
+
+De gegenereerde kleuren volgen een drielaags structuur:
+
+- **Primitives** (`main` en `accent` groepen): directe hex/OKLCH waarden.
+  CSS output: `--color-dark: #1a1a2e`, `--color-accent-primary: #3B82F6`
+- **Semantics** (`semantic` groep): verwijzen via `var()` naar een primitive.
+  CSS output: `--color-success: var(--color-accent-primary)` (niet: `--color-success: #10B981`)
+  Reden: als `accent-primary` wijzigt, updaten semantic tokens automatisch mee.
+
+Houd deze structuur aan bij het opbouwen van `cssVars` in Stap 8.
+
+**Kleurformaat**
+
+Detecteer Tailwind versie uit `package.json` vóór kleurengeneratie:
+
+- `"tailwindcss": "^4.*"` → gebruik **OKLCH** (`oklch(L C H)`, bijv. `oklch(0.15 0.02 260)`)
+- Tailwind 3 of geen Tailwind → gebruik **hex** (`#RRGGBB`)
+
+OKLCH voordeel: L-component direct aanpasbaar voor dark mode (zelfde C/H = zelfde kleur, alleen helderheid wisselt). Hex heeft dit niet.
+
 **Als "Handmatig invoeren":**
 
 ```
@@ -535,6 +575,7 @@ multiSelect: false
 - Inverteer background/foreground: `dark` <> `light`
 - Pas `mid-gray` en `light-gray` aan voor dark context
 - Behoud accent kleuren maar verhoog lightness (~10-15%) voor leesbaarheid op donkere achtergrond
+- **Als OKLCH kleuren:** pas uitsluitend de L-component aan (bijv. `oklch(0.15 0.02 260)` → `oklch(0.90 0.02 260)` voor background-inversion); C en H blijven gelijk voor kleurconsistentie
 - Genereer `.dark` CSS block naast `:root`
 - Toon preview (zelfde als Mode Comparison)
 
@@ -695,7 +736,9 @@ multiSelect: false
 1. Raadpleeg `skills/frontend-tokens/references/THEME_TEMPLATE.md` voor token categorien en naming conventions
 2. Bouw het theme JSON object volgens het schema (zie "Theme JSON Schema" hierboven)
 3. Vul `colors` (main, accent, semantic) met structured token objects
-4. Vul `typography` met families en sizes
+4. Vul `typography` met families en sizes. Gebruik semantische namen voor `sizes`:
+   `text-display` (grootste heading), `text-title-l/m/s`, `text-headline-l/m/s`, `text-body-l/m/s`, `text-code`
+   i.p.v. size-based namen als `text-xs/sm/base/lg`. Wijs elke naam een concrete rem-waarde toe passend bij het project.
 5. Vul `spacing` met base en scale
 6. Vul `breakpoints`, `borderRadius`, `shadows`
 7. **Als dark mode gekozen:** Vul `modes` met zowel `light` als `dark` CSS strings
@@ -1033,9 +1076,11 @@ Sections:
 
 ```
 Colors:
-  [✓|✗] All hex codes valid (#RRGGBB format)
+  [✓|✗] All color values valid (#RRGGBB hex or oklch(L C H) format)
   [✓|✗] No empty values
   [✓|✗] Each color has token, value, usage
+  [✓|⚠] Semantic tokens use var() refs — not raw hex (warning only: existing setups may have raw values)
+  [✓|⚠] Semantic completeness — success, warning, error, info gedefinieerd en onderling distinct (⚠ als één ontbreekt of als twee dezelfde primitive ref gebruiken)
 Typography:
   [✓|✗] Font families have fallbacks
   [✓|✗] Sizes have token, size, lineHeight
@@ -1129,6 +1174,7 @@ multiSelect: false
 
 2. **Tailwind project:**
    - **Tailwind 4 (CSS-first):** Grep CSS bestanden (globals.css, index.css) voor `@theme inline`. Als gevonden: update de `:root` CSS variables in dat bestand direct — dit IS de Tailwind config in v4
+     - Volg dezelfde twee-blokken volgorde: primitives eerst, semantics met var() refs daarna
    - **Tailwind 3 (config-based):** Fallback naar `tailwind.config.{js,ts,mjs}` als er geen `@theme inline` is
    - Generate/update theme tokens:
      - `colors`: map color tokens to Tailwind color keys
@@ -1140,6 +1186,13 @@ multiSelect: false
 
 3. **Non-Tailwind project:**
    - Generate/update CSS variables file (e.g., `src/styles/theme.css`) from `theme.cssVars`
+   - CSS output moet twee opeenvolgende blokken bevatten binnen `:root { ... }`:
+     1. **Primitives** (main + accent kleuren, spacing, typography, motion): directe waarden
+        `--color-dark: #1a1a2e;`
+        `--color-accent-primary: #3B82F6;`
+     2. **Semantics** (semantic kleuren): var() verwijzingen naar primitives
+        `--color-success: var(--color-accent-primary);`
+   - Genereer semantics als `var(--color-{meest-passende-primitive})` — match op kleurgroep of gebruikersbedoeling
    - Check if it's imported in the main CSS entry point — if not, warn
 
 4. **No project detected** (no package.json, no source files):

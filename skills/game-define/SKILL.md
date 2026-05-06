@@ -5,7 +5,7 @@ disable-model-invocation: true
 writes: [feature.requirements, backlog.stage]
 metadata:
   author: mileszeilstra
-  version: 2.2.0
+  version: 2.3.0
   category: game
 ---
 
@@ -38,7 +38,7 @@ The skill gathers requirements through targeted questions, optionally researches
 
 1. **If name provided** (`/game-define abilities`):
    - Use provided name as feature name
-   - Continue to step 3
+   - Continue to step 2b
 
 2. **If no name** (`/game-define`):
 
@@ -105,6 +105,13 @@ Schrijf terug via Edit (keep `<script>` tags intact).
 Niet gevonden → skip (feature wordt pas bij FASE 5 aan backlog toegevoegd).
 De card blijft in TODO maar krijgt een pulserende `defining` stage-badge.
 
+2b. **Feature existence check** (na naam-bepaling, vóór context-load):
+
+Check: `.project/features/{feature-name}/feature.json` bestaat?
+
+- **Niet gevonden** → ga door naar stap 3 (gewone flow).
+- **Gevonden** → ga naar FASE 0b (update-mode).
+
 3. **Create project folder + signal active feature:**
 
    ```bash
@@ -157,7 +164,62 @@ De card blijft in TODO maar krijgt een pulserende `defining` stage-badge.
      - Project-scope: Glob `.project/thinking/*-decision-*.md` → lees eerste ~30 regels per file, extract `THINK:` regel (titel), `AANBEVELING:` regel (chosen), en `CONSTRAINT` sectie. Tag elke entry met `[project]`.
      - Merge beide bronnen. Filter relevant via keyword-overlap tussen huidige feature-naam/concept en elke decision's titel, chosen, of constraint (≥2 substantieve termen). Houd top 3 meest-relevante.
 
+### FASE 0b: Update-mode (alleen als feature.json al bestaat)
+
+1. Lees `.project/features/{feature-name}/feature.json`.
+
+2. Toon bestaande requirements samenvatting:
+
+   | ID      | Beschrijving (eerste 60 chars) | Status  |
+   | ------- | ------------------------------ | ------- |
+   | REQ-001 | {beschrijving}                 | pending |
+
+3. AskUserQuestion: "Feature **{name}** bestaat al met {N} requirements. Wat wil je aanpassen?"
+
+   ```yaml
+   header: "Update-mode"
+   options:
+     - label: "Requirements toevoegen (Recommended)", description: "Nieuwe requirements, doorgenummerd vanaf REQ-{N+1}"
+     - label: "Requirements wijzigen", description: "Bestaande requirements herformuleren of acceptance aanpassen"
+     - label: "Requirements verwijderen", description: "Requirements uit scope halen (soft-delete)"
+     - label: "Meerdere van bovenstaande", description: "Combinatie van toevoegen, wijzigen en/of verwijderen"
+   multiSelect: false
+   ```
+
+4. Verwerk delta op basis van keuze:
+   - **Toevoegen**: Doorloop FASE 1 Requirements Gathering voor alleen de nieuwe requirements. Nummer door vanaf `REQ-{N+1}`.
+   - **Wijzigen**: Vraag welke REQ-IDs. Per REQ: toon huidige beschrijving + acceptance, vraag nieuwe versie. Gebruik formaat `[{ when, then }]` per scenario.
+   - **Verwijderen**: Vraag welke REQ-IDs. Markeer met `deltaOp: "REMOVED"` — verwijder niet fysiek uit de array. Ook: verwijder het REQ-ID uit alle `buildSequence[].requirements[]` arrays; als een step daarna leeg is → verwijder de step.
+   - **Meerdere**: Combineer bovenstaande flows in één ronde.
+
+5. Sla `deltaOp` op per requirement:
+   - Ongewijzigd: `"deltaOp": "UNCHANGED"`
+   - Nieuw: `"deltaOp": "ADDED"`
+   - Gewijzigd: `"deltaOp": "MODIFIED"` + `"previousDescription": "{oorspronkelijke tekst}"`
+   - Verwijderd: `"deltaOp": "REMOVED"` (blijft in array, wordt niet gebouwd of getest)
+
+6. **Status-reset**: als feature `status` was `"DOING"` → zet terug naar `"DEFINED"` in `feature.json` en backlog.
+
+7. Skip FASE 1b (feature splitting) tenzij het aantal requirements na update boven 6 stijgt én er duidelijke clusters zijn.
+
+8. Ga naar FASE 2 voor alleen ADDED en MODIFIED requirements. Bij FASE 5 write: **merge** delta naar bestaand `feature.json` — overschrijf niet volledig. Bewaar bestaande `build`, `tests` en UNCHANGED requirements intact. `buildSequence`: verwijder stappen die leeg zijn na REMOVED-filtering; voeg nieuwe stappen toe voor ADDED requirements (uit FASE 2 architectuur output); bestaande stappen voor UNCHANGED requirements ongewijzigd laten.
+
+---
+
 ### FASE 1: Requirements Gathering
+
+**Risk-check (alleen als `feature.risk >= 4`):**
+
+Als de geladen backlog-feature een `risk`-score van 4 of 5 heeft, toon deze waarschuwing vóór de eerste vraag:
+
+```
+⚠ HOOG RISICO — Complexiteit {risk}/5
+
+Deze feature heeft een hoge complexiteitsscore. Overweeg vóór de definitie:
+- Splits de feature op in kleinere onderdelen
+- Verifieer dat dependencies beschikbaar zijn
+- Bespreek scope als onderdelen onduidelijk zijn
+```
 
 **Surface relevant past decisions** (alleen bij ≥1 match uit FASE 0 scan, anders skip stilzwijgend):
 
@@ -241,13 +303,15 @@ After questions, extract testable requirements:
 - Each requirement gets an ID (REQ-001, REQ-002, etc.)
 - Categorize by type (core, scene, script, signal)
 - Determine test type for each
-- Define acceptance criteria per requirement (concrete, verifiable conditions)
+- Define acceptance scenarios per requirement als `{ when, then }` paren (concrete, verifiable)
 
-Show requirements table with acceptance criteria:
+Show requirements table with acceptance scenarios:
 
-| ID      | Requirement   | Category   | Test Type | Acceptance Criteria    |
-| ------- | ------------- | ---------- | --------- | ---------------------- |
-| REQ-001 | {description} | {category} | {type}    | {verifiable condition} |
+| ID      | Requirement   | Category   | Test Type | Acceptance                              |
+| ------- | ------------- | ---------- | --------- | --------------------------------------- |
+| REQ-001 | {description} | {category} | {type}    | WHEN {trigger} → THEN {verwacht result} |
+
+Meerdere scenario's per requirement → meerdere rijen met hetzelfde REQ-ID, of bullets.
 
 #### Tuning Levers & Edge Cases (mechanica-requirements)
 

@@ -6,7 +6,7 @@ reads: [feature.requirements, feature.build, backlog.stage]
 writes: [feature.tests, backlog.stage]
 metadata:
   author: mileszeilstra
-  version: 2.2.0
+  version: 2.3.0
   category: game
 ---
 
@@ -195,12 +195,14 @@ Now TESTABLE -> TDD fix loop
 
    **Goal-backward verificatie** — map tests terug naar acceptance criteria:
 
-   Bouw mapping vanuit feature.json `requirements[].acceptance` en geclassificeerde items:
+   Filter: requirements met `deltaOp === "REMOVED"` overslaan — niet opnemen in de mapping.
 
-   | REQ   | Acceptance Criterion        | Test Items | Dekking |
-   | ----- | --------------------------- | ---------- | ------- |
-   | REQ-1 | Vijand neemt schade bij hit | Item 1, 3  | ✓       |
-   | REQ-2 | Knockback bij critical hit  | —          | GAP     |
+   Bouw mapping vanuit feature.json `requirements[].acceptance` (`[{ when, then }]` objecten) en geclassificeerde items. Elk `{ when, then }` scenario = één rij:
+
+   | REQ   | When                       | Then (verwacht)           | Test Items | Dekking |
+   | ----- | -------------------------- | ------------------------- | ---------- | ------- |
+   | REQ-1 | vijand geraakt door aanval | vijand neemt schade       | Item 1, 3  | ✓       |
+   | REQ-2 | critical hit geregistreerd | knockback wordt toegepast | —          | GAP     |
 
    **GAP**: requirement zonder test items (COVERED of MANUAL).
    **MISMATCH**: test items die implementation details verifiëren i.p.v. observable gameplay (test title refereert interne functies i.p.v. speler-zichtbaar gedrag).
@@ -1014,7 +1016,7 @@ Regressies: {n} | Stabiel: {n}
 Cross-check `feature.json` requirements tegen test resultaten:
 
 1. **Laad requirement → test mapping:**
-   - Per `requirements[]` entry (id, description, status)
+   - Per `requirements[]` entry (id, description, status) — **skip entries met `deltaOp === "REMOVED"`**
    - Zoek matching `tests.checklist[]` entries via `requirementId`
 
 2. **Bouw coverage matrix:**

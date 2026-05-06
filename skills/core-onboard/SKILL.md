@@ -241,7 +241,7 @@ Updated: {date}
 
 **Suggestie aan user**:
 
-> Base memory is opgebouwd. Run `/core-promote-learnings` om patterns die ook in andere projecten voorkomen te promoten naar globale memory (`~/.claude/memory/MEMORY.md`).
+> Base memory is opgebouwd.
 
 Markeer FASE 6 → `completed`.
 

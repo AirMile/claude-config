@@ -4,7 +4,7 @@ description: Feature requirements en architectuur definiëren. Gebruik bij /dev-
 writes: [feature.requirements, backlog.status]
 metadata:
   author: mileszeilstra
-  version: 2.4.0
+  version: 2.5.0
   category: dev
 ---
 
@@ -18,7 +18,7 @@ FASE 1 van de dev workflow: define → build → test.
 
 ### FASE 0: Feature Name & Context
 
-1. **If name provided** (`/dev-define auth`): gebruik als feature name, ga naar stap 3.
+1. **If name provided** (`/dev-define auth`): gebruik als feature name, ga naar stap 2b.
 
 2. **If no name** (`/dev-define`):
 
@@ -50,6 +50,13 @@ FASE 1 van de dev workflow: define → build → test.
    d) **Geen backlog, geen concept (of direct definiëren gekozen):**
    AskUserQuestion: "Welke feature wil je definiëren?" met 3 suggesties relevant voor het project.
 
+2b. **Feature existence check** (na naam-bepaling, vóór context-load):
+
+Check: `.project/features/{feature-name}/feature.json` bestaat?
+
+- **Niet gevonden** → ga door naar stap 3 (gewone flow).
+- **Gevonden** → ga naar FASE 0b (update-mode).
+
 3. **Project folder + context** (paralleliseer):
    - `mkdir -p .project/features/{feature-name}`
    - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json`
@@ -78,6 +85,50 @@ FASE 1 van de dev workflow: define → build → test.
      - Feature-scope: Glob `.project/features/*/feature.json` → flatten alle `durableDecisions[]`. Tag elke entry met `[feature-X]`.
      - Project-scope: Glob `.project/thinking/*-decision-*.md` → lees eerste ~30 regels per file, extract `THINK:` regel (titel), `AANBEVELING:` regel (chosen), en `CONSTRAINT` sectie. Tag elke entry met `[project]`.
      - Merge beide bronnen. Filter relevant via keyword-overlap tussen huidige feature-naam/concept en elke decision's titel, chosen, of constraint (≥2 substantieve termen). Houd top 3 meest-relevante.
+
+### FASE 0b: Update-mode (alleen als feature.json al bestaat)
+
+1. Lees `.project/features/{feature-name}/feature.json`.
+
+2. Toon bestaande requirements samenvatting:
+
+   | ID      | Beschrijving (eerste 60 chars) | Status  |
+   | ------- | ------------------------------ | ------- |
+   | REQ-001 | {beschrijving}                 | pending |
+
+3. AskUserQuestion: "Feature **{name}** bestaat al met {N} requirements. Wat wil je aanpassen?"
+
+   ```yaml
+   header: "Update-mode"
+   options:
+     - label: "Requirements toevoegen (Recommended)", description: "Nieuwe requirements via FASE 1 flow, doorgenummerd vanaf REQ-{N+1}"
+     - label: "Requirements wijzigen", description: "Bestaande requirements herformuleren of acceptance aanpassen"
+     - label: "Requirements verwijderen", description: "Requirements uit scope halen (soft-delete)"
+     - label: "Meerdere van bovenstaande", description: "Combinatie van toevoegen, wijzigen en/of verwijderen"
+   multiSelect: false
+   ```
+
+4. Verwerk delta op basis van keuze:
+   - **Toevoegen**: Doorloop FASE 1 Requirements Gathering voor alleen de nieuwe requirements. Nummer door vanaf `REQ-{N+1}`.
+   - **Wijzigen**: Vraag welke REQ-IDs. Per REQ: toon huidige beschrijving + acceptance, vraag nieuwe versie. Gebruik formaat `[{ when, then }]` per scenario.
+   - **Verwijderen**: Vraag welke REQ-IDs. Markeer met `deltaOp: "REMOVED"` — verwijder niet fysiek uit de array. Ook: verwijder het REQ-ID uit alle `buildSequence[].requirements[]` arrays; als een step daarna leeg is → verwijder de step.
+   - **Meerdere**: Combineer bovenstaande flows in één ronde.
+
+5. Sla `deltaOp` op per requirement:
+   - Ongewijzigd: `"deltaOp": "UNCHANGED"`
+   - Nieuw: `"deltaOp": "ADDED"`
+   - Gewijzigd: `"deltaOp": "MODIFIED"` + `"previousDescription": "{oorspronkelijke tekst}"`
+   - Verwijderd: `"deltaOp": "REMOVED"` (blijft in array, wordt niet gebouwd of getest)
+
+6. **Status-reset**: als feature `status` was `"DOING"` → zet terug naar `"DEFINED"` in `feature.json` en backlog.
+
+7. Skip FASE 1b (feature splitting) tenzij het aantal requirements na update boven 6 stijgt én er duidelijke clusters zijn.
+
+8. Ga naar FASE 2 voor alleen ADDED en MODIFIED requirements. UNCHANGED requirements hoeven geen herarchitectuur, tenzij MODIFIED requirements architecturale impact hebben (vraag user).
+
+9. Bij FASE 3 write: **merge** delta naar bestaand `feature.json` — overschrijf niet volledig. Bewaar bestaande `build`, `tests`, `research` en UNCHANGED requirements intact. `buildSequence`: verwijder stappen die leeg zijn na REMOVED-filtering; voeg nieuwe stappen toe voor ADDED requirements (uit FASE 2 architectuur output); bestaande stappen voor UNCHANGED requirements ongewijzigd laten.
+
+---
 
 ### FASE 1: Requirements Gathering
 
@@ -156,12 +207,15 @@ Max 3 AskUserQuestion calls. Dan door naar extraction.
 
 Extraheer testbare requirements als tabel:
 
-| ID  | Requirement | Category | Acceptance Criteria |
-| --- | ----------- | -------- | ------------------- |
+| ID      | Requirement    | Category    | Acceptance                                      |
+| ------- | -------------- | ----------- | ----------------------------------------------- |
+| REQ-001 | {beschrijving} | {categorie} | WHEN {trigger} → THEN {observeerbaar resultaat} |
+
+Schrijf elk acceptance-scenario als een apart `{ when, then }` object. Meerdere condities → meerdere objecten (niet samenvoegen in één zin).
 
 **Completeness self-check** (voer uit, NIET aan user tonen):
 
-- Elk acceptance criterium is automatisch testbaar: bevat verwachte input → output, status codes, of meetbare condities. Meerdere condities in één criterium zijn OK (bijv. "201 bij succes, 400 bij >5, 409 bij duplicate"). Niet vaag: "werkt goed", "goede performance", "gebruiksvriendelijk".
+- Elk `when` is een concrete trigger (actie, input, toestand). Elk `then` is een observeerbaar resultaat (status code, UI-element, returnwaarde, state change). Niet vaag: "werkt goed", "goede performance", "gebruiksvriendelijk".
 - Data sources geïdentificeerd (waar komt input/output vandaan?)
 - Error/edge cases benoemd voor requirements met user input of externe data
 - Geen overlap tussen requirements (twee REQs die hetzelfde beschrijven)
@@ -246,7 +300,7 @@ Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md`
 | `summary`                   | altijd                                                                       |
 | `depends`                   | altijd (lege array als geen)                                                 |
 | `choices`                   | altijd (user antwoorden)                                                     |
-| `requirements`              | altijd (elke REQ met `status: "pending"`)                                    |
+| `requirements`              | altijd (elke REQ met `status: "pending"`, `acceptance: [{when, then}]`)      |
 | `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`) |
 | `architecture`              | altijd (`componentTree`, `interfaces`, optioneel `registries[]`)             |
 | `design`                    | alleen visuele features                                                      |
@@ -325,6 +379,7 @@ Muteer in memory:
 **Backlog** (zie `shared/BACKLOG.md`):
 
 - Zoek feature → zet `status: "DEFINED"`, verwijder `transition` (als aanwezig), zet `assignee` (als gezet in FASE 3b). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DEFINED"`.
+- **Dependencies**: Als tijdens FASE 1 of FASE 2 externe feature-afhankelijkheden zijn geïdentificeerd (andere features die eerst DONE moeten zijn), merge die naar `dependencies[]`. Verwijder nooit bestaande waarden — alleen toevoegen. Als niets nieuws gevonden: laat het veld ongewijzigd.
 - Zet `data.updated` naar vandaag.
 
 **Dashboard** (zie `shared/DASHBOARD.md`):
