@@ -4,7 +4,6 @@ description: >-
   Capture game feature ideas during playtesting or brainstorming. Combines quick
   backlog entry with optional light thinking rounds. Use with /game-todo
   when you have a new game feature idea to add to the backlog.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0

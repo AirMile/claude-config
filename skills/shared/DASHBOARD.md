@@ -6,6 +6,8 @@ Het project dashboard is een interactieve UI die project metadata toont en bewer
 **Template:** `{skills_path}/shared/references/dashboard-template.html`
 **Server:** `{skills_path}/shared/references/serve-backlog.js` (poort 9876)
 
+**API endpoint `/{project}/feature/{name}`:** mergt drie bronnen — `feature.json` (als aanwezig), backlog-feature object (type/status/audit.\*), en `design.{pages|components}[name]` (voor PAGE/COMPONENT). Path A frontend cards (geen feature.json) worden volledig opgebouwd uit backlog + design spec.
+
 **UI secties (single-scroll):** Concept | Components | Stack | Config (CLAUDE.md)
 Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar links zijn anchor-links die naar de betreffende sectie scrollen. `stack`, `data`, `endpoints` en `theme` blijven aparte secties in project.json; de dashboard-secties zijn projectspecifiek geconfigureerd via de `visibleTabs` array in het template.
 
@@ -53,7 +55,8 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
   "design": {
     "pages": [],
     "flows": [],
-    "principles": []
+    "principles": [],
+    "components": []
   },
   "theme": {
     "colors": [],
@@ -88,18 +91,18 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
 
 ## Merge-strategie per sectie
 
-| Sectie              | Strategie           | Toelichting                                                  |
-| ------------------- | ------------------- | ------------------------------------------------------------ |
-| `concept`           | **OVERWRITE**       | `name`+`pitch`+`content` overschrijven, `thinking` is APPEND |
-| `architecture`      | **OVERWRITE**       | Diagram + beschrijving volledig overschrijven                |
-| `design`            | **MERGE op `name`** | Pages/flows/principles merge op naam, nooit auto-delete      |
-| `theme`             | **OVERWRITE**       | Volledig overschrijven bij `/frontend-tokens`                |
-| `stack`             | **MERGE**           | Voeg packages toe, overschrijf geen bestaande                |
-| `data`              | **MERGE**           | Voeg entities/velden/relaties toe per entity                 |
-| `endpoints`         | **MERGE**           | Voeg toe of update status, verwijder niet                    |
-| `features`          | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet               |
-| `context`           | **MERGE per key**   | Update structure/routing/patterns individueel                |
-| `optimization_runs` | **APPEND**          | Append-only log, dedup op `run_id`. Nooit verwijderen.       |
+| Sectie              | Strategie           | Toelichting                                                        |
+| ------------------- | ------------------- | ------------------------------------------------------------------ |
+| `concept`           | **OVERWRITE**       | `name`+`pitch`+`content` overschrijven, `thinking` is APPEND       |
+| `architecture`      | **OVERWRITE**       | Diagram + beschrijving volledig overschrijven                      |
+| `design`            | **MERGE op `name`** | Pages/flows/principles/components merge op naam, nooit auto-delete |
+| `theme`             | **OVERWRITE**       | Volledig overschrijven bij `/frontend-tokens`                      |
+| `stack`             | **MERGE**           | Voeg packages toe, overschrijf geen bestaande                      |
+| `data`              | **MERGE**           | Voeg entities/velden/relaties toe per entity                       |
+| `endpoints`         | **MERGE**           | Voeg toe of update status, verwijder niet                          |
+| `features`          | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet                     |
+| `context`           | **MERGE per key**   | Update structure/routing/patterns individueel                      |
+| `optimization_runs` | **APPEND**          | Append-only log, dedup op `run_id`. Nooit verwijderen.             |
 
 ### Stack merge
 
@@ -147,9 +150,54 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
    Flow object shape: `{ "name": string, "steps": [page-name, ...], "notes": string }`
    Steps zijn page-namen uit `design.pages[].name` — orphan steps zijn toegestaan maar genereren een waarschuwing.
 4. Idem voor principles (merge op name, update description)
-5. Nooit auto-delete — alleen via expliciete verwijder-actie
-6. Write project.json
+5. Idem voor components (merge op name, update purpose/status/scope/appliesTo/variants/sizes/states/props/slots/notes)
+   Component object shape: zie `design` schema hieronder.
+   `usedIn[]` is auto-onderhouden door Build/convert post-pass — niet handmatig overschrijven.
+6. Nooit auto-delete — alleen via expliciete verwijder-actie
+7. Write project.json
 ```
+
+### design schema
+
+`design.components[]` object shape:
+
+```json
+{
+  "name": "Button",
+  "purpose": "Primaire actie-trigger met icon-support",
+  "status": "DEF",
+  "scope": "atomic",
+  "appliesTo": "all",
+  "variants": ["primary", "ghost", "destructive"],
+  "sizes": ["sm", "md", "lg"],
+  "states": ["default", "hover", "disabled", "loading"],
+  "props": ["label", "icon?", "onClick", "disabled?"],
+  "slots": [],
+  "usedIn": [],
+  "gaps": [],
+  "notes": ""
+}
+```
+
+**Status:** `IDEA` | `DEF` | `BLT` | `DONE`
+
+**scope:**
+
+| Waarde    | Betekenis                                                   | Voorbeeld               |
+| --------- | ----------------------------------------------------------- | ----------------------- |
+| `atomic`  | Klein herbruikbaar element                                  | Button, Input, Avatar   |
+| `section` | Composiet binnen één page                                   | StatCard, ProductCard   |
+| `layout`  | Multi-page wrapper, leeft in `app/layout.tsx` of equivalent | NavBar, Footer, Sidebar |
+
+**appliesTo:**
+
+- `"all"` — geldt voor alle pages (default voor `layout`)
+- `["dashboard", "settings"]` — alleen specifieke pages
+- `"route-group:authenticated"` — voor Next.js route-groups
+
+**usedIn:** auto-onderhouden door Build/convert post-pass — lijst van pages die deze component importeren. Nooit handmatig overschrijven.
+
+**gaps:** auto-onderhouden door `frontend-design` Capture/Build en `frontend-convert` — lijst van handler-props zonder gekoppeld FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only voor user; bijwerken via gap-discovery flow.
 
 ### Features merge
 
@@ -653,7 +701,7 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
 ```
 
 `type` waarden: `pattern` (architecturale keuze), `pitfall` (bug/gotcha), `observation` (cross-feature inzicht).
-`source` waarden: `extracted` (directe observatie van code-output of test-resultaat) | `inferred` (cross-feature patroonherkenning of LLM-inferentie) | `synced` (geëxtraheerd uit teammate code of mature codebase via core-pull / core-onboard).
+`source` waarden: `extracted` (directe observatie van code-output of test-resultaat) | `inferred` (cross-feature patroonherkenning of LLM-inferentie) | `synced` (geëxtraheerd uit teammate code of mature codebase via core-pull / core-setup --mode=mature).
 `date` = extractie datum. `feature` = bron-feature (kebab-case). Voor `synced` learnings zonder gestructureerde feature: gebruik primary directory (`auth`, `payments`). `summary` = max 200 chars.
 `author` = optioneel, alleen bij `source === "synced"`. Spiegelt `features[].author`.
 
@@ -665,7 +713,7 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
 | `tests.fixSync[]`    | `pitfall`     | `extracted`     |
 | `observations[]`     | `observation` | `inferred`      |
 
-**Source mapping** (teammate / mature codebase, in core-pull / core-onboard):
+**Source mapping** (teammate / mature codebase, in core-pull / core-setup --mode=mature):
 
 | Bron                                             | learning.type              | learning.source |
 | ------------------------------------------------ | -------------------------- | --------------- |
@@ -677,7 +725,7 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
 
 Zie [skills/shared/LEARNING-EXTRACTION.md](skills/shared/LEARNING-EXTRACTION.md) voor heuristieken en filters.
 
-Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-verify FASE 6, dev-refactor FASE 5). `core-pull` (incremental) en `core-onboard` (eenmalig) extracten learnings uit teammate/legacy code. `source` is verplicht bij nieuwe writes.
+Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-verify FASE 6, dev-refactor FASE 5). `core-pull` (incremental) en `core-setup --mode=mature` (eenmalig) extracten learnings uit teammate/legacy code. `source` is verplicht bij nieuwe writes.
 
 **Dit vervangt de dynamische CLAUDE.md secties** (`## Project structuur`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md bevat nu alleen een referentie naar `project.json` voor deze context.
 
@@ -698,32 +746,32 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 
 ### project-context.json secties
 
-| Sectie         | Geschreven door                                                               | Wanneer                                                                  |
-| -------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                    | Bij architectuur definitie / na build                                    |
-| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor` | Bij build/refactor (structuur, routing, patterns)                        |
-| `learnings`    | `/dev-verify`, `/dev-refactor`, `/game-verify`, `/core-pull`, `/core-onboard` | Feature completion (extracted/inferred) of teammate/legacy code (synced) |
+| Sectie         | Geschreven door                                                                           | Wanneer                                                                  |
+| -------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                                | Bij architectuur definitie / na build                                    |
+| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`             | Bij build/refactor (structuur, routing, patterns)                        |
+| `learnings`    | `/dev-verify`, `/dev-refactor`, `/game-verify`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred) of teammate/legacy code (synced) |
 
 ### Skill sync overzicht
 
-| Skill              | project.json                                                        | project-context.json                                              | Wanneer              |
-| ------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------- |
-| `/core-setup`      | `stack` (volledig)                                                  | `context` (initieel)                                              | Na project generatie |
-| `/dev-define`      | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING)  | `architecture` (write), `learnings` (read)                        | FASE 6               |
-| `/dev-build`       | `endpoints`, `stack.packages`, `features` (DOING+built)             | `context`, `architecture` (write)                                 | FASE 4C              |
-| `/dev-verify`      | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)   | `architecture`, `learnings` (write)                               | FASE 6 completion    |
-| `/dev-refactor`    | `stack.packages`, `endpoints`, `data.entities`                      | `context`, `architecture`, `learnings` (write)                    | FASE 5 completion    |
-| `/frontend-design` | `design` (pages, flows, principles), `features` (batch TODO)        | —                                                                 | Bij elke uitvoering  |
-| `/frontend-design` | `stack.packages`, `design.pages`, `features` (DOING+built)          | —                                                                 | Na FASE 4            |
-| `/frontend-tokens` | `design.principles`                                                 | —                                                                 | Na completion        |
-| `/game-define`     | `data.entities`, `stack.packages`, `features` (DOING)               | `architecture` (write)                                            | FASE 6               |
-| `/game-build`      | `features` (DOING+built)                                            | `context`, `architecture` (write)                                 | FASE 5 completion    |
-| `/team-verify`     | `features`, `stack.packages`, `endpoints`, `data.entities`          | `architecture` (write)                                            | FASE 7 completion    |
-| `/game-refactor`   | `features` (DONE)                                                   | `context`, `architecture` (write)                                 | FASE 5 completion    |
-| `/dev-optimize`    | `optimization_runs` (append)                                        | —                                                                 | FASE 6 completion    |
-| `/game-optimize`   | `optimization_runs` (append)                                        | —                                                                 | FASE 6 completion    |
-| `/core-pull`       | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull             |
-| `/core-onboard`    | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | Eenmalig bij join    |
+| Skill                       | project.json                                                        | project-context.json                                              | Wanneer              |
+| --------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------- |
+| `/core-setup`               | `stack` (volledig)                                                  | `context` (initieel)                                              | Na project generatie |
+| `/dev-define`               | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING)  | `architecture` (write), `learnings` (read)                        | FASE 6               |
+| `/dev-build`                | `endpoints`, `stack.packages`, `features` (DOING+built)             | `context`, `architecture` (write)                                 | FASE 4C              |
+| `/dev-verify`               | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)   | `architecture`, `learnings` (write)                               | FASE 6 completion    |
+| `/dev-refactor`             | `stack.packages`, `endpoints`, `data.entities`                      | `context`, `architecture`, `learnings` (write)                    | FASE 5 completion    |
+| `/frontend-design`          | `design` (pages, flows, principles), `features` (batch TODO)        | —                                                                 | Bij elke uitvoering  |
+| `/frontend-design`          | `stack.packages`, `design.pages`, `features` (DOING+built)          | —                                                                 | Na FASE 4            |
+| `/frontend-tokens`          | `design.principles`                                                 | —                                                                 | Na completion        |
+| `/game-define`              | `data.entities`, `stack.packages`, `features` (DOING)               | `architecture` (write)                                            | FASE 6               |
+| `/game-build`               | `features` (DOING+built)                                            | `context`, `architecture` (write)                                 | FASE 5 completion    |
+| `/team-verify`              | `features`, `stack.packages`, `endpoints`, `data.entities`          | `architecture` (write)                                            | FASE 7 completion    |
+| `/game-refactor`            | `features` (DONE)                                                   | `context`, `architecture` (write)                                 | FASE 5 completion    |
+| `/dev-optimize`             | `optimization_runs` (append)                                        | —                                                                 | FASE 6 completion    |
+| `/game-optimize`            | `optimization_runs` (append)                                        | —                                                                 | FASE 6 completion    |
+| `/core-pull`                | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull             |
+| `/core-setup --mode=mature` | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | Eenmalig bij join    |
 
 ## Server
 
@@ -739,5 +787,6 @@ De feature detail endpoint leest `feature.json` (zie `shared/FEATURE.md` voor sc
 Start de server:
 
 ```bash
+# Respecteert $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
 curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node {skills_path}/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
 ```

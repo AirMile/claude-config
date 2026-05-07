@@ -1,7 +1,6 @@
 ---
 name: dev-debug
 description: Systematic debugging with reproduction-test-first workflow, root cause analysis, and 3 fix strategies. Use for runtime errors, build failures, unexpected behavior, or test failures.
-disable-model-invocation: true
 reads: [project-context.learnings, feature.requirements]
 writes: [project-context.learnings]
 metadata:
@@ -269,7 +268,7 @@ Focus: dependency issues → version docs/migration guides, pattern misuse → c
 
 ## FASE 5: Fix Plan Generation
 
-Launch 3 agents in parallel:
+Launch 3 agents in parallel (zie `shared/SKILL-PATTERNS.md#parallel-dispatch` voor dispatch-criteria en prompt-template):
 
 | Agent         | Philosophy           | Focus                                      |
 | ------------- | -------------------- | ------------------------------------------ |
@@ -301,11 +300,19 @@ AskUserQuestion:
 
 ### Step 2: Fixes selecteren
 
-AskUserQuestion (multiSelect: true):
+**Fixes Selecteren:**
 
-- header: "Fixes Selecteren"
-- question: "Welke fixes wil je toepassen uit de [gekozen] strategie?"
-- options: generated from agent output — each fix with file:line + description, plus "Alle fixes toepassen"
+```
+Voorgestelde fixes ({M} totaal):
+
+1. {file:line} — {description}
+2. {file:line} — {description}
+...
+```
+
+Vraag: "Welke fixes wil je toepassen? Geef nummers (bv. `1, 3` of `alle`)."
+
+Parse → fix-set.
 
 ---
 
@@ -323,11 +330,52 @@ Voor Performance Issue / Integration Issue / niet-runtime bugs, AskUserQuestion:
 - question: "Is deze bug testbaar in een geautomatiseerde test?"
 - options:
   - "Ja, schrijf reproduction test (Aanbevolen)" — Standaard pad voor assertable bugs
-  - "Nee, skip — UI visual / CSS" — Layout, rendering, geen assertion mogelijk
+  - "Playwright visual baseline — UI visual / CSS" — toHaveScreenshot() baseline als reproduction test (runner vereist)
   - "Nee, skip — Performance zonder threshold" — Geen concrete meetwaarde definieerbaar
   - "Nee, skip — Productie-only data" — Niet reproduceerbaar in test omgeving
 
-"Skip" gekozen → noteer `reproductionTest: { skipped: true, reason: "{reden}" }` en ga naar FASE 8.
+**"Playwright visual baseline" gekozen:**
+
+Check runner beschikbaar: `npx playwright --version 2>/dev/null`.
+
+- **Beschikbaar**: ga door naar Step 2b (Playwright UI reproduction).
+- **Niet beschikbaar**: draai `/core-setup playwright` om daemon + runner te installeren. Daarna Step 2b.
+- **Installatie mislukt**: val terug op skip, noteer `reproductionTest: { skipped: true, reason: "runner niet beschikbaar" }`, ga naar FASE 8.
+
+**"Skip" gekozen (performance of productie-data):** noteer `reproductionTest: { skipped: true, reason: "{reden}" }` en ga naar FASE 8.
+
+### Step 2b: Playwright UI reproduction (alleen bij "visual baseline" keuze in Step 1)
+
+Locatie: `test/regression/{slug}.spec.ts`
+Framework: `@playwright/test` — on-the-fly spec (zie `shared/PLAYWRIGHT.md → Runner Mode`).
+
+```typescript
+// test/regression/{slug}.spec.ts
+import { test, expect } from "@playwright/test";
+
+test("{issue slug} — visual regression", async ({ page }) => {
+  await page.goto("{url-waar-bug-optreedt}");
+  await page.waitForLoadState("networkidle");
+  // Eerste run: legt buggy staat vast als baseline
+  // Na fix: --update-snapshots om nieuwe correcte staat als baseline in te stellen
+  await expect(page).toHaveScreenshot("{slug}-regression.png", {
+    maxDiffPixelRatio: 0.02,
+  });
+  // Optioneel: aria-snapshot voor structurele UI-regressies
+  await expect(
+    page.locator("{selector-van-gebroken-component}"),
+  ).toMatchAriaSnapshot();
+});
+```
+
+Draai met `--update-snapshots` om buggy staat als baseline vast te leggen:
+`npx playwright test test/regression/{slug}.spec.ts --config=.project/playwright-runs/playwright.config.ts --update-snapshots`
+
+Na fix (FASE 8): draai zonder `--update-snapshots` → PASS als fix de render niet verslechtert t.o.v. het correcte beeld. Update baseline expliciet na gewenste visuele verbetering.
+
+Noteer: `reproductionTest: { file: "test/regression/{slug}.spec.ts", type: "visual-baseline", tool: "playwright-runner" }`
+
+Sla het step-3 run-commando op als: `npx playwright test test/regression/{slug}.spec.ts --config=.project/playwright-runs/playwright.config.ts`
 
 ### Step 2: Schrijf falende test
 

@@ -5,7 +5,6 @@ description: >-
   Generate marketing-quality screenshots of a web app via Playwright CLI.
   Use with /marketing-promo [url] for Product Hunt, social media, landing
   pages, or documentation. Analyzes codebase to discover routes and features.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0

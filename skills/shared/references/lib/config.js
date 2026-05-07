@@ -3,7 +3,9 @@
 const path = require("path");
 
 const PROJECTS_ROOT = path.resolve(
-  process.argv[2] || path.join(require("os").homedir(), "projects"),
+  process.argv[2] ||
+    process.env.CLAUDE_PROJECTS_ROOT ||
+    path.join(require("os").homedir(), "projects"),
 );
 const PORT = parseInt(process.env.BACKLOG_PORT || "9876", 10);
 const BACKLOG_PATH = ".project/backlog.html";

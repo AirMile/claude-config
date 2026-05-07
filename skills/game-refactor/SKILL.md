@@ -3,7 +3,6 @@ name: game-refactor
 description: >-
   Batch refactor code quality for Godot projects after testing with parallel
   analysis and GDScript-aware patterns. Use with /game-refactor after /game-verify.
-disable-model-invocation: true
 reads: [feature.build, feature.tests, backlog.stage]
 writes: [feature.refactor, backlog.stage]
 metadata:

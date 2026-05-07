@@ -21,10 +21,11 @@ Coding standards met severity categorieën voor validation.
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                               | Rationale   | Check                                     |
-| ---- | ---------------------------------- | ----------- | ----------------------------------------- |
-| R007 | Alle async functies handlen errors | Reliability | try/catch of .catch() op promises         |
-| R008 | Geen secrets in client code        | Security    | Geen API keys, tokens in frontend bundles |
+| ID   | Rule                                           | Rationale   | Check                                                     |
+| ---- | ---------------------------------------------- | ----------- | --------------------------------------------------------- |
+| R007 | Alle async functies handlen errors             | Reliability | try/catch of .catch() op promises                         |
+| R008 | Geen secrets in client code                    | Security    | Geen API keys, tokens in frontend bundles                 |
+| R009 | Voltooiing-claims onderbouwen met verse output | Reliability | Run test/command opnieuw, lees output, refereer expliciet |
 
 #### Voorbeelden
 
@@ -62,6 +63,24 @@ fetch(`https://api.example.com/data?key=${API_KEY}`);
 const API_KEY = process.env.API_KEY;
 fetch(`https://api.example.com/data?key=${API_KEY}`);
 ```
+
+**R009** Evidence Before Claims
+
+Voor elke claim van "klaar", "werkt", "fixed", "passed", "ready":
+
+1. **Identify**: welk commando/test/screenshot bewijst de claim?
+2. **Execute**: run het vers — geen cached/eerdere output gebruiken
+3. **Read**: volledige output, exit code, foutentelling
+4. **Claim only after**: refereer expliciet aan de output ("3/3 tests passed in run X")
+
+Anti-patterns:
+
+- `"Should work"` / `"probably fine"` / `"looks good"` zonder verificatie
+- `"Done!"` / `"Great!"` voordat exit code gelezen is
+- Hergebruiken van eerdere passing output na nieuwe edits
+- Geparafraseerde claim ("ziet er goed uit") zonder onderliggend bewijs
+
+Geldt ook voor delegatie: voor je een subagent-rapport accepteert, controleer dat het rapport zelf bewijs bevat (commando + output), niet alleen "succeeded".
 
 ---
 
@@ -791,7 +810,7 @@ A11Y CHECK
 [ ] A003 - Modals/dialogs trappen focus
 [ ] A005 - Focus indicators zichtbaar
 [ ] A006 - ARIA states gesynchroniseerd
-[ ] A007 - Tab-volgorde logisch (full keyboard test — /frontend-wcag)
+[ ] A007 - Tab-volgorde logisch (full keyboard test — /frontend-check --scope=a11y)
 [ ] A008 - Alle interactieve elementen bereikbaar via Tab
 [ ] A009 - Geen keyboard focus trap buiten modals
 [ ] R001 - Semantic elements gebruikt
@@ -923,3 +942,36 @@ Status: [PASS ≥90% | REVIEW 70-89% | FAIL <70%]
 | H004 | Calculate required contrast, suggest colors |
 | A004 | Explain focus restoration pattern           |
 | A006 | Explain ARIA state sync pattern             |
+
+---
+
+## Pipelines (twee gescheiden tracks)
+
+**Frontend pipeline (uiterlijk):**
+
+```
+Path A — Build met Claude Code:
+/frontend-design (Build) → /frontend-check
+
+Path B — Brief voor Claude Design / Figma:
+/frontend-design (Brief) → [extern design] → /frontend-convert → /frontend-check
+```
+
+- Werkt standalone — geen dev-pipeline vereist
+- Past in: design-system werk, static sites, portfolio's, alles zonder business-logic features
+- Output: code direct naar repo (Build) of markdown handoff (Brief)
+- PAGE/COMPONENT TODO's leven uitsluitend op de **Frontend track** in de backlog
+- `/frontend-check` PASS is terminaal voor frontend cards — geen refactor-stap
+- Cross-pipeline koppeling loopt uitsluitend via `feature.json#frontend.linkedEntities[]` en `dependencies[]`
+
+**Dev pipeline (functionaliteit):**
+`/dev-define → /dev-plan → /dev-build → /dev-verify → /dev-refactor`
+
+- Werkt standalone — geen frontend-design vereist
+- Past in: features met logic/state/tests, ook backend-only
+- `/dev-build` leest `design.pages[]/design.components[]` als visuele spec-bron indien aanwezig
+- FEATURE/API/UI/etc. TODO's leven uitsluitend op de **Dev track** in de backlog
+
+**Cross-pipeline koppeling:**
+
+Een card is óf frontend (PAGE/COMPONENT) óf dev — nooit beide. Voor pages/components met handler-props zonder implementatie: gap-discovery (`/frontend-design`, `/frontend-convert`) suggereert een apart FEATURE-todo op de Dev track. De relatie wordt bijgehouden via `feature.json#frontend.linkedEntities[]`.

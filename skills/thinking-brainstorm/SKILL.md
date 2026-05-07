@@ -1,7 +1,6 @@
 ---
 name: thinking-brainstorm
 description: Creatively expand ideas through interactive technique application. Generates variations, explores alternatives, pushes boundaries. Use with /thinking-brainstorm after /thinking-concept.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -63,7 +62,6 @@ Example triggers:
      options:
        - label: "Ja, brainstorm hierop (Recommended)", description: "Gebruik concept uit project.json"
        - label: "Ander concept", description: "Ik wil een ander concept plakken"
-       - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
    - If "Ja": proceed with loaded concept

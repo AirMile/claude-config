@@ -4,7 +4,6 @@ description: >-
   Systematic debugging for Godot projects with reproduction-test-first workflow,
   root cause analysis, and 3 fix strategies. Use for runtime errors, physics
   bugs, signal issues, or scene tree problems.
-disable-model-invocation: true
 reads: [project-context.learnings, feature.requirements]
 writes: [project-context.learnings]
 metadata:
@@ -303,11 +302,19 @@ AskUserQuestion:
 
 ### Step 2: Fixes selecteren
 
-AskUserQuestion (multiSelect: true):
+**Fixes Selecteren:**
 
-- header: "Fixes Selecteren"
-- question: "Welke fixes wil je toepassen uit de [gekozen] strategie?"
-- options: generated from agent output — each fix with file:line + description, plus "Alle fixes toepassen"
+```
+Voorgestelde fixes ({M} totaal):
+
+1. {file:line} — {description}
+2. {file:line} — {description}
+...
+```
+
+Vraag: "Welke fixes wil je toepassen? Geef nummers (bv. `1, 3` of `alle`)."
+
+Parse → fix-set.
 
 ---
 

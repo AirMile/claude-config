@@ -1,7 +1,6 @@
 ---
 name: dev-owasp
 description: Complete OWASP Top 10:2025 security audit with parallel agents. Use with /dev-owasp to scan for security vulnerabilities in web applications.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 2.0.0
@@ -64,7 +63,7 @@ Als project.json niet bestaat → ga door zonder (backwards compatible).
 
 ## FASE 2: Parallel Scan
 
-Launch 10 scanner agents in parallel via Task tool:
+Launch 10 scanner agents in parallel via Task tool (zie `shared/SKILL-PATTERNS.md#parallel-dispatch` voor dispatch-criteria en integratie-stappen):
 
 | Agent             | Category                    | Risk     |
 | ----------------- | --------------------------- | -------- |

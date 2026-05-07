@@ -6,7 +6,12 @@
 
 ## Detection
 
-- Already installed: `components.json` aanwezig in project root OR `components/ui/` directory bestaat
+| State                          | Conditie                                   |
+| ------------------------------ | ------------------------------------------ |
+| `already-installed-configured` | `components.json` aanwezig in project root |
+| `not-installed`                | `components.json` niet aanwezig            |
+
+shadcn-ui installeert geen NPM package — de CLI copieert componenten. Geen `installed-not-configured` toestand: als `components.json` er is, is shadcn geïnitialiseerd.
 
 ## Install (via Context7)
 

@@ -4,7 +4,11 @@
 
 ## Detection
 
-- Already installed: `vitest` in devDependencies OR `vitest.config.*` exists
+| State                          | Conditie                                                     |
+| ------------------------------ | ------------------------------------------------------------ |
+| `already-installed-configured` | `vitest` in devDependencies EN `vitest.config.*` aanwezig    |
+| `installed-not-configured`     | `vitest` in devDependencies MAAR `vitest.config.*` ontbreekt |
+| `not-installed`                | `vitest` niet in devDependencies                             |
 
 ## Install (via Context7)
 

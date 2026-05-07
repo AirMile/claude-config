@@ -1,7 +1,6 @@
 ---
 name: team-review
 description: Code review for feature branches with bug detection, CLAUDE.md compliance, git history analysis, confidence scoring, and optional PR integration. Inline analysis with optional Context7 best-practice research.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 3.0.0

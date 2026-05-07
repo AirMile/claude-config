@@ -1,6 +1,6 @@
 # Learning Extraction Heuristieken
 
-Gedeelde regels voor het extraheren van learnings uit teammate code en mature codebases. Gebruikt door `/core-pull` (incremental, signal-triggered) en `/core-onboard` (eenmalig, full scan).
+Gedeelde regels voor het extraheren van learnings uit teammate code en mature codebases. Gebruikt door `/core-pull` (incremental, signal-triggered) en `/core-setup --mode=mature` (eenmalig, full scan).
 
 > **Output schema**: alle extracties produceren entries voor `project-context.json.learnings[]` met `source: "synced"` en optioneel `author`. Zie [shared/DASHBOARD.md](DASHBOARD.md) `learnings` sectie.
 
@@ -67,7 +67,7 @@ grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' {scope}
 
 ### 3. Patterns uit nieuwe abstraction-dirs
 
-**Detectie:** vergelijk component lijst (uit `core-pull` FASE 4f / `core-onboard` FASE 2) tegen bestaande `architecture.components[]` in `project-context.json`.
+**Detectie:** vergelijk component lijst (uit `core-pull` FASE 4f / `core-setup --mode=mature` FASE 2) tegen bestaande `architecture.components[]` in `project-context.json`.
 
 **Mapping table:**
 
@@ -170,7 +170,7 @@ Gedraag van `learning-extractor` agent verschilt per skill:
 - **Output**: 0-5 patterns/pitfalls
 - **Cap**: max 5 entries
 
-### `core-onboard` (eenmalig, mature codebase)
+### `core-setup --mode=mature` (eenmalig, mature codebase)
 
 - **Input**: representative files per component (5-10 per component, gekozen op basis van: file size > 50 LOC, niet test-files, niet generated)
 - **Scope**: naming conventions + error handling style + response shapes + architectuur patterns

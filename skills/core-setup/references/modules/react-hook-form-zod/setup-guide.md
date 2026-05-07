@@ -4,8 +4,13 @@
 
 ## Detection
 
-- Already installed: `react-hook-form` AND `zod` in dependencies
-- Bridge: `@hookform/resolvers` voor zod resolver
+| State           | Conditie                                        |
+| --------------- | ----------------------------------------------- |
+| `installed`     | `react-hook-form` EN `zod` in dependencies      |
+| `not-installed` | `react-hook-form` of `zod` niet in dependencies |
+
+Geen apart configuratiebestand — `installed` geldt als `already-installed-configured` voor FASE 5 stap 0.
+Bridge package `@hookform/resolvers` is optioneel; aanwezigheid verandert state niet.
 
 ## Install (via Context7)
 

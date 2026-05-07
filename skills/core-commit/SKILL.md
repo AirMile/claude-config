@@ -1,7 +1,6 @@
 ---
 name: core-commit
 description: Analyze staged git changes and generate conventional commit messages. Use with /core-commit. Detects rebase/merge state, validates changes, follows project conventions.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -79,7 +78,7 @@ Als `.gitignore` wijzigingen ertoe leiden dat bestanden uit tracking moeten (`gi
 Als staged changes een van deze bestanden verwijderen of uit tracking halen, toon een expliciete waarschuwing en vraag bevestiging:
 
 ```
-.claude/CLAUDE.md
+CLAUDE.md
 .github/**
 package.json, package-lock.json
 tsconfig.json

@@ -1,7 +1,6 @@
 ---
 name: game-verify
 description: Human playtest verification with structured feedback and fix loop. Use with /game-verify after /game-build for manual testing of game features.
-disable-model-invocation: true
 reads: [feature.requirements, feature.build, backlog.stage]
 writes: [feature.tests, backlog.stage]
 metadata:
@@ -66,6 +65,8 @@ This skill activates in these scenarios:
 /game-verify water-ability
 Everything works except puddle is too small and there's no sound
 ```
+
+> Code quality rules: `../shared/RULES.md` (R009)
 
 ## Feedback Categorization
 
@@ -516,17 +517,20 @@ Failed: 2 items
    ...
    ```
 
-3. **Ask user for problem details:**
+3. **Toon checklist en vraag welke items niet werkten:**
 
-   Use AskUserQuestion tool:
-   - header: "Probleem Details"
-   - question: "Welke items werkten niet? (selecteer alles dat van toepassing is)"
-   - options: (dynamically generated from checklist items)
-     - label: "Item 1: {description}", description: "Dit werkte niet"
-     - label: "Item 2: {description}", description: "Dit werkte niet"
-     - label: "Item 3: {description}", description: "Dit werkte niet"
-     - label: "Anders", description: "Ik beschrijf het probleem zelf"
-   - multiSelect: true
+   ```
+   Checklist items ({N} totaal):
+
+   1. [Visuals] {item-1}
+   2. [Controls] {item-2}
+   3. [Audio] {item-3}
+   ...
+   ```
+
+   Vraag: "Welke items werkten niet? Geef nummers (bv. `1, 3, 5`) of `geen` als alles werkte."
+
+   Parse → failure-set, ga door naar Step 4 voor specifics per geselecteerd item.
 
 4. **For each selected problem, ask specifics:**
 

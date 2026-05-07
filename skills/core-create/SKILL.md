@@ -4,7 +4,6 @@ description: >-
   Create new Claude Code skills interactively with optional resource bundling.
   Use with /core-create. Handles SKILL.md generation, frontmatter, references,
   and scripts.
-disable-model-invocation: true
 argument-hint: "[name]"
 metadata:
   author: mileszeilstra
@@ -129,6 +128,7 @@ Use **AskUserQuestion** tool:
 - **Next steps**: if the skill is part of a pipeline — add a `Next steps:` block to the completion output pointing to the next skill(s). See `shared/SKILL-PATTERNS.md`
 - **Project bootstrapping**: if the skill expects `.project/` files — check existence in FASE 0, suggest `core-setup` if missing. See `shared/SKILL-PATTERNS.md`
 - **Agent context block**: if the skill spawns agents that need project knowledge — use the standardized `PROJECT_CONTEXT` block. See `shared/SKILL-PATTERNS.md`
+- **Dynamic multi-select**: if the skill needs the user to pick from a runtime-generated list (feature lists, agent output, file scans) — choose between holistic comparison (→ plain-text list + free-form parse) or independent picks (→ modal with cap=7, split per category). See `shared/SKILL-PATTERNS.md` § Modal Option Cap and § Numbered List Selection.
 
 **Enter plan mode** before writing the draft:
 

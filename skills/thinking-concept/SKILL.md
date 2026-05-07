@@ -1,7 +1,6 @@
 ---
 name: thinking-concept
 description: Develop and maintain project concepts through guided questions, structured synthesis, and project sync. Use with /thinking-concept for new ideas or to enrich existing concepts from backlog/codebase.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.1.0
@@ -50,7 +49,6 @@ The output is a structured markdown document that can be used as input for `/thi
        - label: "Bewerken (Recommended)", description: "Pas het bestaande concept aan"
        - label: "Sync met project", description: "Verrijk concept met wat er al gebouwd/gepland is"
        - label: "Nieuw concept", description: "Begin opnieuw met een nieuw idee"
-       - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
    - **If "Bewerken":**
@@ -179,7 +177,19 @@ options:
 multiSelect: false
 ```
 
-**If "Selecteer items":** show each gap as a separate AskUserQuestion with multiSelect: true.
+**If "Selecteer items":** toon de gaps als genummerde lijst:
+
+```
+Gaps ({N} totaal):
+
+1. {gap-1}: {context}
+2. {gap-2}: {context}
+...
+```
+
+Vraag: "Welke gaps wil je toevoegen? Geef nummers (bv. `1, 3, 5`) of `alle`."
+
+Parse → selected-set, integreer alleen die items.
 
 **If "Geen":** show the analysis as informational output and end.
 

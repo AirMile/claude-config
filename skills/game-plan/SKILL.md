@@ -1,7 +1,6 @@
 ---
 name: game-plan
 description: Transform idea or brainstorm output into a prioritized game feature backlog. Use with /game-plan after /thinking-concept or /thinking-brainstorm for game project planning.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.1.0
@@ -82,10 +81,9 @@ Accepts markdown from:
      header: "Backlog Update"
      question: "Er bestaat al een backlog. Wat wil je doen?"
      options:
-       - label: "Update backlog (Recommended)", description: "Voeg nieuwe features toe, behoud handmatige wijzigingen"
+       - label: "Update backlog (Recommended)", description: "Voeg nieuwe features toe, behoud DOING/DONE features en handmatige wijzigingen"
        - label: "Nieuwe backlog", description: "Begin opnieuw, negeer oude backlog"
        - label: "Annuleren", description: "Bekijk eerst de verschillen, doe niets"
-       - label: "Explain question", description: "Leg de opties uit"
      multiSelect: false
      ```
    - **If "Update backlog":**
@@ -123,7 +121,6 @@ Accepts markdown from:
      options:
        - label: "Ja, genereer backlog (Recommended)", description: "Gebruik project concept"
        - label: "Ander concept", description: "Ik wil een ander concept gebruiken"
-       - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
    - If "Ja": proceed with loaded concept to FASE 1
@@ -148,7 +145,6 @@ Accepts markdown from:
      options:
        - label: "Concept plakken", description: "Plak een nieuw concept om backlog te updaten"
        - label: "Backlog bekijken", description: "Open de bestaande backlog"
-       - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
 
@@ -194,9 +190,7 @@ options:
   - label: "Nee, direct extraheren (Recommended)"
     description: "Ga door naar feature extractie"
   - label: "Ja, research doen"
-    description: "Codebase, Context7, en/of web research"
-  - label: "Explain question"
-    description: "Leg uit wat research toevoegt"
+    description: "Analyseer codebase, framework docs (Context7), en web examples voor betere feature extractie"
 multiSelect: false
 ```
 
@@ -204,7 +198,6 @@ multiSelect: false
 
 - "Nee" → skip to FASE 1
 - "Ja" → proceed to FASE 0.5
-- "Explain question" → explain that research can analyze existing codebase, check framework docs, and find web examples to inform better feature extraction. Re-ask.
 
 ### FASE 0.5: Research (Optional)
 
@@ -356,13 +349,11 @@ In create mode, the Change column is omitted.
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Features zijn correct, ga door naar dependencies"
      - label: "Features aanpassen", description: "Toevoegen, verwijderen, of naam/type/beschrijving wijzigen"
-     - label: "Explain question", description: "Leg de opties uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 2
    - "Features aanpassen" → ask what to change (add/remove/edit), apply changes, show updated table, re-ask
-   - "Explain question" → explain feature extraction process and options, re-ask
    - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms features are correct.**
@@ -443,13 +434,11 @@ player-movement (base)
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Dependencies zijn correct, ga door naar prioriteit"
      - label: "Dependencies aanpassen", description: "Toevoegen, verwijderen of volgorde wijzigen"
-     - label: "Explain question", description: "Leg de dependency-analyse uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 3
    - "Dependencies aanpassen" → ask what to change (add/remove/reorder), update graph, show updated table, re-ask
-   - "Explain question" → explain dependency analysis and implications, re-ask
    - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms dependencies are correct.**
@@ -458,14 +447,19 @@ player-movement (base)
 
 **Goal:** Prioriteiten toekennen (P1–P4).
 
-1. **Use AskUserQuestion for P1 scope:**
-   - header: "P1"
-   - question: "Wat is minimaal nodig voor een speelbaar prototype?"
-   - options: (dynamically generated from features)
-     - label: "{feature-1}", description: "{description}"
-     - label: "{feature-2}", description: "{description}"
-     - ... (all features)
-   - multiSelect: true
+1. **Show feature list as numbered plain text:**
+
+   ```
+   Features ({N} totaal):
+
+   1. {feature-1}: {description}
+   2. {feature-2}: {description}
+   ...
+   ```
+
+   Vraag: "Welke features zijn P1 (minimaal nodig voor een speelbaar prototype)? Geef nummers (bv. `1, 3, 5` of `1-4` of `alles behalve 2, 7`)."
+
+   Parse free-form input → P1-set. Gebruiker kan ook "alles" of "geen" zeggen.
 
 2. **Auto-assign remaining features using heuristics:**
    - P2: Features that directly extend P1 functionality OR are prerequisites for important P3 features
@@ -553,6 +547,7 @@ P4:
 4. **Start backlog server** (als niet al draaiend):
 
    ```bash
+   # Respecteert $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
    curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node ~/.claude/skills/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
    ```
 

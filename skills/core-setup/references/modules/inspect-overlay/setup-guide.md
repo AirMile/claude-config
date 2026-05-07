@@ -1,6 +1,13 @@
 # Inspect Overlay — Setup Guide
 
-Read this file only when the overlay is not yet installed in the project.
+## Detection
+
+| State                          | Conditie                                                                                  |
+| ------------------------------ | ----------------------------------------------------------------------------------------- |
+| `already-installed-configured` | Vite: `inspectOverlay` in `vite.config.*` · Next.js: `public/_inspect/client.js` aanwezig |
+| `not-installed`                | Geen van bovenstaande                                                                     |
+
+Geen `installed-not-configured` toestand: inspect-overlay is een dev-only inject zonder NPM package. `installed` impliceert `configured`.
 
 ## Pre-flight (continued)
 

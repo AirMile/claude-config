@@ -1,48 +1,56 @@
 ---
 name: core-audit
 description: >-
-  Analyze and refine skills for clarity, correctness, and effectiveness. Detects
-  redundancy, dead paths, ambiguity, and poor structure. Optional internal
-  walkthrough for deeper insights. Use with /core-audit or /core-audit [skill-name].
-argument-hint: "[skill-name]"
-disable-model-invocation: true
+  Analyze and refine a skill that was invoked earlier in this conversation.
+  Detects redundancy, dead paths, ambiguity, and poor structure. Optional
+  internal walkthrough for deeper insights. Use with /core-audit — auto-selects
+  the skill from chat context, hard-blocks if none was used.
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 2.0.0
   category: core
 ---
 
 # Audit
 
-Analyze skills for quality. Two modes: quick (analysis only) or extended (internal walkthrough + analysis).
+Analyze a skill from the current conversation for quality. Two modes: quick (analysis only) or extended (internal walkthrough + analysis). Refactor proposals are presented as a plan via plan mode for single-shot approval.
 
-**Trigger**: `/core-audit` or `/core-audit [skill-name]`
+**Trigger**: `/core-audit`
 
-## Step 1: Load Skill
+## Step 1: Load Skill from Chat
 
-**If name provided** (`/core-audit dev-build`):
+Scan the conversation above for unique skill invocations (slash commands like `/dev-build`, `/core-edit`, etc., or skill names referenced in `<command-name>` tags).
 
-1. Load `.claude/skills/[name]/SKILL.md`
-2. If not found → show error with available skills
+**Resolution rules:**
 
-**If no name** (`/core-audit`):
+- **Zero skills detected** → HARD BLOCK. Show:
 
-1. Scan the conversation above for skill invocations (slash commands like `/dev-build`, `/core-edit`, etc.).
-2. If **exactly one** unique skill was invoked → auto-select that skill and show:
+  ```
+  ERROR: no skill invocations found in this conversation.
 
-   ```
-   AUTO-DETECTED: [name] (from conversation)
-   ```
+  /core-audit only audits skills that were used earlier in the chat.
+  Invoke a skill first, then run /core-audit.
+  ```
 
-3. If zero or multiple distinct skills were invoked → list all skills:
+  Stop here. Do not prompt the user, do not list available skills, do not ask for a name.
 
-   ```bash
-   find -L .claude/skills -name "SKILL.md" -type f 2>/dev/null | sed 's|^\.claude/skills/||' | sed 's|/SKILL\.md$||' | sort
-   ```
+- **Exactly one unique skill** → auto-select. Show:
 
-   Display numbered list, ask user to pick.
+  ```
+  AUTO-SELECTED: [name] (only skill in conversation)
+  ```
 
-**After loading, show:**
+  Proceed to load.
+
+- **Two or more unique skills** → use **AskUserQuestion**:
+  - header: "Skill"
+  - question: "Welke skill uit deze conversation wil je auditen?"
+  - options: one per detected skill, in order of most-recent invocation first; the first option gets "(Recommended)" appended to its label
+  - multiSelect: false
+
+  Do NOT add a "list all skills" or "other" option — only the skills used in this chat are eligible.
+
+**After resolution, load** `.claude/skills/[name]/SKILL.md` and show:
 
 ```
 LOADED: [name]
@@ -54,16 +62,16 @@ Sections: [count] | Has resources: [yes/no]
 
 Scan for prior skill execution that can inform testing:
 
-1. **Conversation context** — check if the target skill (or a skill from the same pipeline) was invoked earlier in this conversation (e.g., a `/dev-build` invocation when refining `dev-build`)
+1. **Conversation context** — the invocation that triggered the auto-select / modal already qualifies as conversation context; capture decisions, files mentioned, and outputs from that invocation
 2. **devinfo.json** — read `.project/session/devinfo.json` if it exists; check `executionPlan` for completed skills matching the target or its pipeline
 
 **Detection signals:**
 
-- Target skill name appears in conversation as a slash command invocation
+- Target skill appears in conversation as a slash command invocation (always true for this skill now)
 - devinfo.json `executionPlan` contains the target skill with status "completed"
 - devinfo.json `executionPlan` contains a skill from the same pipeline (e.g., `dev-define` when refining `dev-build`)
 
-**If context detected, show:**
+**If devinfo adds context, show:**
 
 ```
 CONTEXT DETECTED
@@ -75,13 +83,13 @@ Artifacts: [relevant files/outputs if available from devinfo]
 This context will be used for the walkthrough if extended mode is selected.
 ```
 
-**If no context detected:** proceed silently to Step 2.
+**If only conversation context (no devinfo):** proceed silently to Step 2.
 
 ## Step 2: Choose Mode
 
 Use **AskUserQuestion**:
 
-**If context was detected in Step 1.5:**
+**If devinfo context was detected in Step 1.5:**
 
 - header: "Modus"
 - question: "Er is context beschikbaar uit een eerdere skill-uitvoering. Hoe wil je de skill analyseren?"
@@ -90,7 +98,7 @@ Use **AskUserQuestion**:
   - label: "Quick analyse", description: "Directe analyse zonder walkthrough — snel, geschikt voor kleine skills"
 - multiSelect: false
 
-**If no context detected:**
+**If only conversation context:**
 
 - header: "Modus"
 - question: "Hoe wil je de skill analyseren?"
@@ -105,16 +113,13 @@ Use **AskUserQuestion**:
 
 ### 3.1 Define Scenario
 
-**If context was detected in Step 1.5** — use the real execution as basis:
+**If devinfo context was detected** — use the real execution as basis:
 
 - Build scenario from the actual skill invocation and its outcomes
 - Reference real artifacts (files created, decisions made, errors encountered)
 - If devinfo.json has handoff data or file tracking, incorporate those specifics
 
-**If no context detected** — fabricate a realistic scenario:
-
-- Pick a use case that exercises the skill's main workflow
-- Include at least one edge case or decision point
+**Otherwise** — use the conversation invocation that triggered the audit as the scenario, supplementing with realistic edge cases where the conversation lacks detail.
 
 **Show scenario:**
 
@@ -122,8 +127,8 @@ Use **AskUserQuestion**:
 WALKTHROUGH SCENARIO
 
 Scenario: [description]
-Context: [real: based on prior execution | simulated: fabricated]
-[If real: list key artifacts/decisions from the detected context]
+Context: [real: based on prior execution | conversation: derived from chat | mixed]
+[List key artifacts/decisions from the detected context]
 ```
 
 ### 3.2 Trace Through Skill
@@ -259,9 +264,9 @@ No significant findings — skill is in good shape. No changes proposed.
 
 Skip Steps 5 and 6.
 
-## Step 5: Iterative Refactor Review
+## Step 5: Plan Mode Refactor
 
-Based on analysis, propose concrete changes — presented **one at a time** for individual approval.
+Compile all proposed changes into a single plan and present it via plan mode. The user's `opusplan` model uses Opus inside plan mode, which produces stronger refactor plans than inline Sonnet.
 
 **Refactor principles:**
 
@@ -273,82 +278,36 @@ Based on analysis, propose concrete changes — presented **one at a time** for 
 - Keep AskUserQuestion integrations (UX, not noise)
 - Don't sacrifice clarity for brevity — if a longer explanation prevents mistakes, keep it
 
-### 5.1 Collect and Classify Changes
+### 5.1 Compile Changes
 
-Internally compile all proposed changes. Classify each as:
+Internally collect every proposed change. Classify each as:
 
 - **Significant** — structural changes, content rewrites, logic modifications, section additions/removals
 - **Minor** — formatting, whitespace, phrasing tweaks, typo fixes, small wording improvements
 
-Order significant changes by impact (highest first). Each change should be self-contained — can be accepted or rejected independently. Flag dependencies between changes: if change B requires change A, note this. If a prerequisite change is skipped, auto-skip dependent changes with explanation.
+Order significant changes by impact (highest first). Note dependencies (B requires A).
 
-### 5.2 Present Changes
+### 5.2 Build Plan
 
-**Significant changes — one by one.** For each, show:
+Use the **EnterPlanMode** tool to switch to plan mode, then write the plan to the plan file with this structure:
 
-```
-CHANGE [n/total]: [short title]
+1. **Context** — short paragraph: what was audited, key findings that drive the changes, why the refactor matters
+2. **Significant changes** — for each, in order of impact:
+   - Title
+   - What changes
+   - Why (reference analysis dimension/finding)
+   - `--- Before ---` block with the relevant section
+   - `--- After ---` block with the proposed replacement
+3. **Minor changes** — flat numbered list with one-line description per change
+4. **Verification** — list the checks from Step 6 (re-read SKILL.md, frontmatter validation, resource references)
 
-What: [what changes]
-Why: [reason — reference analysis dimension/finding]
+Then use **ExitPlanMode** to request approval.
 
---- Before ---
-[relevant section as-is]
+### 5.3 Apply
 
---- After ---
-[proposed replacement]
-```
+After plan approval, apply all changes from the plan using the Edit tool. Skip any change the user rejected during plan review.
 
-Then use **AskUserQuestion**:
-
-- header: "Change [n]/[total]"
-- question: "[short title]"
-- options:
-  - label: "Accept", description: "Apply this change"
-  - label: "Skip", description: "Keep the current version"
-  - label: "Modify", description: "Adjust this change before applying"
-- multiSelect: false
-
-**If "Modify":** ask in plain text what the user wants differently, revise the change, show the updated preview, and re-ask with the same AskUserQuestion.
-
-**Minor changes — batched.** After all significant changes are reviewed, present minor changes as a group:
-
-```
-MINOR CHANGES ([count]):
-
-1. [short description of minor change]
-2. [short description of minor change]
-...
-```
-
-Use **AskUserQuestion**:
-
-- header: "Minor changes"
-- question: "[count] kleine aanpassingen (formatting, phrasing)"
-- options:
-  - label: "Accept all", description: "Apply all minor changes"
-  - label: "Skip all", description: "Keep current versions"
-  - label: "Review individually", description: "Go through them one by one"
-- multiSelect: false
-
-If "Review individually" → present each minor change using the same significant change flow above.
-
-### 5.3 Summary and Apply
-
-After all changes have been reviewed, show:
-
-```
-REFACTOR SUMMARY: [skill-name]
-
-Accepted: [n]/[total]
-- [change title 1]
-- [change title 2]
-
-Skipped: [n]/[total]
-- [change title 3]
-```
-
-Apply only the accepted changes using the Edit tool.
+If the user rejects the entire plan, stop without modifying the skill.
 
 ## Step 6: Verify
 
@@ -360,7 +319,7 @@ Apply only the accepted changes using the Edit tool.
 ```
 REFINED: [skill-name]
 
-Changes applied: [accepted]/[total proposed]
+Changes applied: [n]
 - [change title 1]
 - [change title 2]
 

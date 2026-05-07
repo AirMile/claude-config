@@ -3,7 +3,6 @@ name: core-edit
 description: >-
   Edit existing Claude Code skills with rename, delete, and resource management.
   Use with /core-edit to modify skill content, frontmatter, or resources.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -98,6 +97,7 @@ Confirm with a short "Klopt dit?" in plain text before proceeding. Only use AskU
 - **Next steps**: if the skill is part of a pipeline — suggest adding a `Next steps:` block to the completion output. See `shared/SKILL-PATTERNS.md`
 - **Project bootstrapping**: if the skill expects `.project/` files — suggest checking existence in FASE 0. See `shared/SKILL-PATTERNS.md`
 - **Agent context block**: if the skill spawns agents that need project knowledge — suggest using the standardized `PROJECT_CONTEXT` block. See `shared/SKILL-PATTERNS.md`
+- **Dynamic multi-select**: if the skill uses AskUserQuestion (multi-select) with dynamic options (count depends on runtime context, feature lists, or agent output) — check if the user needs holistic comparison (→ plain-text list + free-form parse) or independent picks (→ modal with cap=7, split per category). See `shared/SKILL-PATTERNS.md` § Modal Option Cap.
 
 Only suggest these if they add genuine value — not every skill needs them.
 
@@ -255,7 +255,6 @@ metadata:
   category: core # core|dev|frontend|game|project|story|team|thinking
 
 # OPTIONAL — Claude Code specific
-disable-model-invocation: true
 argument-hint: [hint]
 ---
 ```

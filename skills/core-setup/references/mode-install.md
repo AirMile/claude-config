@@ -1,24 +1,6 @@
----
-name: frontend-install
-description: >-
-  Incremental installer for frontend tools and libraries in existing projects.
-  Needs-driven flow with curated tier-1 modules and Context7 + WebSearch
-  research fallback for the long tail. Always asks about the inspect overlay
-  unless a specific module is passed as argument. Use with /frontend-install
-  or /frontend-install [module] to jump directly to a tier-1 module.
-disable-model-invocation: true
-argument-hint: "[module]"
-metadata:
-  author: mileszeilstra
-  version: 2.1.0
-  category: frontend
----
-
-# Install
+# Install mode
 
 Incrementele installer voor frontend tooling en libraries in **bestaande** projecten. Begint altijd met de inspect overlay vraag, daarna needs-driven met optionele research-fallback.
-
-**Verwante skills:** `/core-setup` (one-shot project init) · `/frontend-tokens` · `/frontend-design` · `/frontend-convert` · `/frontend-check` · `/frontend-wcag`
 
 ## References
 
@@ -44,7 +26,7 @@ Alles buiten deze set wordt afgehandeld via `references/research-flow.md`.
 
 ### 0.0 Argument Detection
 
-Als de skill is aangeroepen met een argument (bv. `/frontend-install tailwind`):
+Als de skill is aangeroepen met een argument (bv. `/core-setup tailwind`):
 
 1. Match argument (case-insensitive) tegen tier-1 module namen:
    `inspect-overlay`, `tailwind`, `shadcn-ui`, `vitest`, `playwright`, `biome`, `eslint-prettier`, `zustand`, `tanstack-query`, `react-hook-form-zod`
@@ -77,7 +59,26 @@ Sla framework + package manager op voor latere fases.
 
 ### 0.3 Flow Diagram
 
-Genereer een ASCII flowchart die het pad door deze skill toont op basis van het gedetecteerde framework. Toon FASE 1 → FASE 2 → loop tot FASE 6.
+Genereer een ASCII flowchart die het pad door deze mode toont op basis van het gedetecteerde framework. Toon FASE 1 → FASE 2 → loop tot FASE 6.
+
+### 0.4 Stack-keys mapping
+
+Bij elke succesvolle install schrijft FASE 5 stap 5b de module-keuze naar `project.json`:
+
+| Module              | project.json key                        |
+| ------------------- | --------------------------------------- |
+| tailwind            | `stack.styling = "tailwind"`            |
+| shadcn-ui           | `stack.componentLibrary = "shadcn-ui"`  |
+| vitest              | `stack.testing.unit = "vitest"`         |
+| playwright          | `stack.testing.e2e = "playwright"`      |
+| biome               | `stack.linting = "biome"`               |
+| eslint-prettier     | `stack.linting = "eslint-prettier"`     |
+| zustand             | `stack.state.client = "zustand"`        |
+| tanstack-query      | `stack.state.server = "tanstack-query"` |
+| react-hook-form-zod | `stack.forms = "react-hook-form-zod"`   |
+| inspect-overlay     | (geen — dev-only tool)                  |
+
+`stack.packages[]` wordt **afgeleid uit `package.json`** na de install — niet uit een hardcoded lijst (zie FASE 5 stap 5a). Dit werkt automatisch correct voor elke library, inclusief research-mode en multi-package installs (shadcn-ui, eslint+prettier).
 
 ---
 
@@ -149,18 +150,47 @@ Bij **Nee** → FASE 6.
 
 ---
 
+## Pre-FASE 3: Stack snapshot
+
+Lees `.project/project.json#stack` (als het bestand bestaat). Cache het object voor gebruik in FASE 3 categorie-prompts.
+
+Skip silent als `project.json` ontbreekt — render dan de standaard categorie-prompt zonder slot-status.
+
+---
+
 ## FASE 3: Categorie-keuze
+
+Render de prompt op basis van de gecachte stack-snapshot:
+
+| Situatie            | Label-formaat                              |
+| ------------------- | ------------------------------------------ |
+| Slot gevuld         | `"{Categorie}: {waarde} ✓ — wijzig?"`      |
+| Slot leeg           | `"{Categorie}: (leeg) — kies optie"`       |
+| Geen `project.json` | `"{Categorie} — {standaard omschrijving}"` |
+
+Categorie ↔ stack-key mapping:
+
+| Categorie            | stack-key(s)                                             |
+| -------------------- | -------------------------------------------------------- |
+| Styling              | `stack.styling`                                          |
+| UI components        | `stack.componentLibrary`                                 |
+| Testing              | `stack.testing.unit` + `stack.testing.e2e` (toon beide)  |
+| Linting & formatting | `stack.linting`                                          |
+| State management     | `stack.state.client` + `stack.state.server` (toon beide) |
+| Forms & validation   | `stack.forms`                                            |
+
+Categorieën zonder mapping (Routing, Animation, Icons, Auth, i18n, Analytics, Dev tools, Other) tonen altijd de standaard omschrijving, ongeacht snapshot.
 
 ```yaml
 header: "Categorie"
 question: "Wat wil je toevoegen?"
 options:
-  - label: "Styling", description: "Tailwind, CSS-in-JS, etc."
-  - label: "UI components", description: "shadcn-ui, Radix, headless libs"
-  - label: "Testing", description: "Unit (Vitest), e2e (Playwright)"
-  - label: "Linting & formatting", description: "Biome of ESLint+Prettier"
-  - label: "State management", description: "Client state, server state"
-  - label: "Forms & validation", description: "Form libs + schema validators"
+  - label: "Styling [context-aware]", description: "Tailwind, CSS-in-JS, etc."
+  - label: "UI components [context-aware]", description: "shadcn-ui, Radix, headless libs"
+  - label: "Testing [context-aware]", description: "Unit (Vitest), e2e (Playwright)"
+  - label: "Linting & formatting [context-aware]", description: "Biome of ESLint+Prettier"
+  - label: "State management [context-aware]", description: "Client state, server state"
+  - label: "Forms & validation [context-aware]", description: "Form libs + schema validators"
   - label: "Routing", description: "File-based of declarative routers"
   - label: "Animation", description: "Motion libraries"
   - label: "Icons", description: "Icon packs"
@@ -171,6 +201,8 @@ options:
   - label: "Other (research)", description: "Free-form library naam → research"
 multiSelect: false
 ```
+
+`[context-aware]` labels worden vervangen door het juiste formaat uit bovenstaande tabel. Geen hardcoded YAML-permutaties — de instructie boven de YAML beschrijft het renderingsgedrag.
 
 ---
 
@@ -217,6 +249,16 @@ Volg het research-protocol:
 
 ## FASE 5: Install + Verify
 
+0. **State check** — raadpleeg de "Detection" sectie van de setup-guide (al geladen in FASE 4 Pad A). Bepaal tri-state:
+
+   | State                          | Actie                              |
+   | ------------------------------ | ---------------------------------- |
+   | `already-installed-configured` | skip stap 1+2, ga door naar stap 3 |
+   | `installed-not-configured`     | skip stap 1, begin bij stap 2      |
+   | `not-installed`                | normale flow (stap 1+2+3+...)      |
+
+   Research-mode (Pad B): altijd `not-installed` aannemen (geen setup-guide beschikbaar).
+
 1. **Install** — voer install command uit met gedetecteerde package manager:
    - npm: `npm install {pkg}`
    - pnpm: `pnpm add {pkg}`
@@ -231,7 +273,71 @@ Volg het research-protocol:
    - Run `tsc --noEmit` of build command
    - Bij failure: rapporteer maar continue
 
-5. **Loop** — terug naar FASE 2.
+5. **Sync project context** — skip silent als `.project/project.json` ontbreekt.
+
+   Volg `shared/SYNC.md` protocol (re-read project.json direct vóór write):
+
+   a. Lees `package.json#dependencies` + `package.json#devDependencies` na de install.
+   Voor elke entry: append `{ name, version, purpose }` naar `stack.packages[]`
+   (`purpose: "devDependency"` voor devDeps, `"dependency"` voor deps).
+   Skip als entry met dezelfde `name` al bestaat (idempotent).
+   Modules zonder NPM-install (inspect-overlay) voegen niets toe aan package.json →
+   diff is leeg → no-op, geen speciale uitzondering nodig.
+
+   b. Voor tier-1 modules: schrijf de specifieke `stack.{key}` uit de FASE 0.4 mapping-tabel.
+   - Waarde al gelijk → skip (idempotent).
+   - Andere waarde aanwezig:
+
+     ```yaml
+     header: "Stack conflict"
+     question: "stack.{key} is al ingesteld op '{bestaande waarde}'. Overschrijven?"
+     options:
+       - label: "Ja, overschrijf naar '{nieuwe waarde}'"
+         description: "Update stack context naar nieuwe keuze"
+       - label: "Nee, behoud '{bestaande waarde}'"
+         description: "Packages geïnstalleerd, key ongewijzigd"
+     multiSelect: false
+     ```
+
+   c. Voor research-mode (Pad B): vraag of de library in een bekende stack-slot hoort.
+
+   ```yaml
+   header: "Stack slot"
+   question: >
+     '{library}' geïnstalleerd. In welke stack-categorie hoort dit?
+     (overslaan = alleen in stack.packages[])
+   options:
+     - label: "Skip (Recommended)"
+       description: "Geen stack.{key} update — packages[] is genoeg"
+     - label: "Styling"
+       description: "stack.styling = '{library}'"
+     - label: "UI components"
+       description: "stack.componentLibrary = '{library}'"
+     - label: "State (client)"
+       description: "stack.state.client = '{library}'"
+     - label: "State (server)"
+       description: "stack.state.server = '{library}'"
+     - label: "Forms"
+       description: "stack.forms = '{library}'"
+     - label: "Linting"
+       description: "stack.linting = '{library}'"
+     - label: "Testing (unit)"
+       description: "stack.testing.unit = '{library}'"
+     - label: "Testing (e2e)"
+       description: "stack.testing.e2e = '{library}'"
+   multiSelect: false
+   ```
+
+   Bij gekozen slot: hergebruik conflict-detectie uit stap 5b (waarde gelijk → skip; andere waarde aanwezig → AskUserQuestion overschrijven).
+
+   d. Als `CLAUDE.md` bestaat én een `### Stack` sectie heeft:
+   - Call `references/claude-md-sync.md` met:
+     - `mode: "mature"`
+     - `generate-if-missing: false`
+     - `stack-overwrite: "ask"`
+     - `inferred-stack:` stack-object na stap a+b
+
+6. **Loop** — terug naar FASE 2.
 
 ---
 
@@ -251,6 +357,9 @@ INSTALL COMPLETE
 
 Verify:
   {build/typecheck output samenvatting}
+
+Project context: {N} velden bijgewerkt in project.json / n.v.t.
+CLAUDE.md:       {M} secties bijgewerkt / al compleet / n.v.t.
 ```
 
 **Next steps:**
@@ -263,17 +372,18 @@ Verify:
 
 ## Restrictions
 
-This skill must **NEVER**:
+This mode must **NEVER**:
 
 - Edit project source code beyond install configuration
 - Skip the inspect overlay question in FASE 1 **tenzij** een argument meegegeven is (FASE 0.0)
 - Continue to FASE 5 zonder duidelijke user keuze
 - Install dependencies zonder package manager match (bv. `npm install` in een pnpm project)
 
-This skill must **ALWAYS**:
+This mode must **ALWAYS**:
 
 - Detect framework + package manager in FASE 0 (altijd, ook bij argument shortcut)
 - Check argument in FASE 0.0 voor inspect overlay vraag
 - Loop terug naar FASE 2 na elke install (incrementeel model)
-- Detecteer al-geïnstalleerd state per module voor idempotentie
+- Detecteer tri-state per module in FASE 5 stap 0 (already-configured / installed-not-configured / not-installed)
+- Derive `stack.packages[]` uit `package.json` na install — nooit uit hardcoded lijsten
 - Gebruik research-flow voor alles buiten tier-1 set

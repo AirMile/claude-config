@@ -6,8 +6,11 @@
 
 ## Detection
 
-- Already installed: `eslint` in devDependencies AND `prettier` in devDependencies
-- Config bestaat: `eslint.config.{js,mjs}` of `.eslintrc.*` + `.prettierrc.*`
+| State                          | Conditie                                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------------------- |
+| `already-installed-configured` | `eslint` EN `prettier` in devDependencies EN `eslint.config.*` of `.eslintrc.*` aanwezig |
+| `installed-not-configured`     | `eslint` EN `prettier` in devDependencies MAAR configfile ontbreekt                      |
+| `not-installed`                | `eslint` of `prettier` niet in devDependencies                                           |
 
 ## Install (via Context7)
 

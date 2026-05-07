@@ -1,7 +1,6 @@
 ---
 name: dev-plan
 description: Transform idea or brainstorm output into a prioritized web feature plan with optional codebase/Context7/web research. Use with /dev-plan after /thinking-concept or /thinking-brainstorm to create implementation roadmaps.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -55,7 +54,7 @@ Accepts markdown from:
    - Read concept: `.project/project-concept.md` als plain markdown, of fallback `project.json` (`concept.content`)
    - Read `backlog.html`
    - Analyze differences between concept and existing backlog
-   - Check `data.features[]` in `backlog.html` for entries with `source: "dev-todo"` to identify independently-added features
+   - Check `data.features[]` in `backlog.html` for entries with `source: "dev-todo"` or `source: "/core-setup"` or `source: "/dev-define"` or `source: "/dev-build"` to identify independently-added features
    - Compare current `concept.content` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
@@ -68,7 +67,7 @@ Accepts markdown from:
      Feature changes detected:
      - NEW: {list of features in concept but not in backlog}
      - MODIFIED: {list of features in both but with changed description/scope}
-     - INDEPENDENT: {list of features in backlog added via /dev-todo, not from concept}
+     - INDEPENDENT: {list of features in backlog added via /dev-todo, /core-setup, /dev-define, /dev-build, or /dev-verify — not from concept}
      - REMOVED: {list of features in backlog, not in concept, AND not independently added}
      - UNCHANGED: {count} features
 
@@ -82,10 +81,9 @@ Accepts markdown from:
      header: "Backlog Update"
      question: "Er bestaat al een backlog. Wat wil je doen?"
      options:
-       - label: "Update backlog (Recommended)", description: "Voeg nieuwe features toe, behoud handmatige wijzigingen"
+       - label: "Update backlog (Recommended)", description: "Voeg nieuwe features toe, behoud DOING/DONE features en handmatige wijzigingen"
        - label: "Nieuwe backlog", description: "Begin opnieuw, negeer oude backlog"
        - label: "Annuleren", description: "Bekijk eerst de verschillen, doe niets"
-       - label: "Explain question", description: "Leg de opties uit"
      multiSelect: false
      ```
    - **If "Update backlog":**
@@ -95,7 +93,7 @@ Accepts markdown from:
        - **New features**: add as TODO with auto-assigned priority (user reviews in FASE 3)
        - **Removed TODO features**: mark as deprecated (don't delete)
        - **Removed DOING/DONE features**: show warning and ask user whether to keep or deprecate — these represent in-progress work that may still be relevant
-       - **INDEPENDENT features** (added via `/dev-todo`): always preserve unchanged — these are not derived from concept. Keep status, stage, priority, assignee, date, and description intact. Never deprecate or remove.
+       - **INDEPENDENT features** (added via `/dev-todo`, `/core-setup`, `/dev-define`, `/dev-build`, or `/dev-verify`): always preserve unchanged — these are not derived from concept. Keep status, stage, priority, assignee, date, and description intact. Never deprecate or remove.
      - Continue to FASE 1 with update mode
    - **If "Nieuwe backlog":**
      - Use concept as input, ignore existing backlog
@@ -123,7 +121,6 @@ Accepts markdown from:
      options:
        - label: "Ja, genereer backlog (Recommended)", description: "Gebruik project concept"
        - label: "Ander concept", description: "Ik wil een ander concept gebruiken"
-       - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
    - If "Ja": proceed with loaded concept to FASE 1
@@ -148,7 +145,6 @@ Accepts markdown from:
      options:
        - label: "Concept plakken", description: "Plak een nieuw concept om backlog te updaten"
        - label: "Backlog bekijken", description: "Open de bestaande backlog"
-       - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
 
@@ -194,9 +190,7 @@ options:
   - label: "Nee, direct extraheren (Recommended)"
     description: "Ga door naar feature extractie"
   - label: "Ja, research doen"
-    description: "Codebase, Context7, en/of web research"
-  - label: "Explain question"
-    description: "Leg uit wat research toevoegt"
+    description: "Analyseer codebase, framework docs (Context7), en web examples voor betere feature extractie"
 multiSelect: false
 ```
 
@@ -204,7 +198,6 @@ multiSelect: false
 
 - "Nee" → skip to FASE 1
 - "Ja" → proceed to FASE 0.5
-- "Explain question" → explain that research can analyze existing codebase, check framework docs, and find web examples to inform better feature extraction. Re-ask.
 
 ### FASE 0.5: Research (Optional)
 
@@ -313,7 +306,7 @@ Toon de geladen output. Architectural patterns sturen de feature decomposition (
    **If in update mode (from FASE 0 Scenario A):**
    - Start from existing backlog features as baseline — do NOT extract from scratch
    - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
-   - INDEPENDENT features (added via `/dev-todo`): always preserve unchanged — they are not concept-derived
+   - INDEPENDENT features (added via `/dev-todo`, `/core-setup`, `/dev-define`, `/dev-build`, or `/dev-verify`): always preserve unchanged — they are not concept-derived
    - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
    - CANCELLED features zijn protected: behoud als `status: "CANCELLED"`, sluit uit van planning en build-order — behandel als niet-beschikbaar
    - Present the merged feature list with change markers for clarity
@@ -326,39 +319,39 @@ Toon de geladen output. Architectural patterns sturen de feature decomposition (
 3. **Categorize by type:**
    | Type | Description |
    |------|-------------|
-   | FEATURE | Core functionality (auth, pages, core components) |
+   | FEATURE | Core functionality (auth, data processing, core behavior) |
    | API | Backend endpoints, data fetching, services |
    | INTEGRATION | Third-party services (analytics, payments, auth providers) |
    | UI | Styling, UX improvements, visual components |
    | REFACTOR | Code quality, performance, architecture improvements |
+   | PAGE | Frontend page/route (doorloopt design → convert → check pipeline) |
+   | COMPONENT | Herbruikbaar UI-component (doorloopt zelfde pipeline als PAGE) |
    | PAGE-GAP | Ontbrekende functionaliteit gevonden door /frontend-design |
 
-4. **Score confidence en risk:**
+4. **Score risk:**
 
-   Ken elke feature twee scores toe:
+   Ken elke feature een risk-score toe:
 
-   | Score | Confidence (hoe duidelijk?)               | Risk (hoe complex?)                                            |
-   | ----- | ----------------------------------------- | -------------------------------------------------------------- |
-   | 1     | Vaag idee, onvoldoende detail             | Triviale wijziging, geen onbekenden                            |
-   | 2     | Globaal duidelijk, details ontbreken      | Bekende techniek, weinig afhankelijkheden                      |
-   | 3     | Redelijk gedefinieerd, enkele open vragen | Gemiddelde complexiteit, enkele onbekenden                     |
-   | 4     | Goed gedefinieerd, minor details open     | Complexe integratie of nieuwe technologie                      |
-   | 5     | Volledig gespecificeerd                   | Hoge complexiteit, veel onbekenden of externe afhankelijkheden |
+   | Score | Risk (hoe complex?)                                            |
+   | ----- | -------------------------------------------------------------- |
+   | 1     | Triviale wijziging, geen onbekenden                            |
+   | 2     | Bekende techniek, weinig afhankelijkheden                      |
+   | 3     | Gemiddelde complexiteit, enkele onbekenden                     |
+   | 4     | Complexe integratie of nieuwe technologie                      |
+   | 5     | Hoge complexiteit, veel onbekenden of externe afhankelijkheden |
 
    **Per feature, noteer kort:**
-   - Confidence score (1-5) + reden (max 1 zin)
    - Risk score (1-5) + reden (max 1 zin)
 
    **Heuristieken:**
-   - Features uit een gedetailleerd concept → hogere confidence
    - Features met externe API/service dependency → hogere risk
-   - Features die al deels bestaan in codebase (update mode) → hogere confidence, lagere risk
+   - Features die al deels bestaan in codebase (update mode) → lagere risk
 
    **Extraction quality self-check** (voer uit voor de review, NIET aan user tonen):
    - Elke feature is 1-3 dagen werk (te groot → splits, te klein → combineer)
    - Geen overlappende scope tussen features
    - Dependencies zijn expliciet (feature X heeft feature Y nodig → noteer voor FASE 2)
-   - Confidence/risk scores zijn onderbouwd (score zonder reden → voeg reden toe)
+   - Risk scores zijn onderbouwd (score zonder reden → voeg reden toe)
    - Research findings verwerkt (als FASE 0.5 gedaan: bevindingen in feature beschrijvingen)
 
    Pas de feature lijst aan op basis van gevonden gaps.
@@ -370,17 +363,73 @@ FEATURES EXTRACTED
 
 Found {count} features:
 
-| # | Feature | Type | Conf | Risk | Description | Change |
-|---|---------|------|------|------|-------------|--------|
-| 1 | {name} | {type} | {1-5} | {1-5} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
-| 2 | {name} | {type} | {1-5} | {1-5} | {one-line description} | {marker or — if unchanged} |
+| # | Feature | Type | Risk | Description | Change |
+|---|---------|------|------|-------------|--------|
+| 1 | {name} | {type} | {1-5} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
+| 2 | {name} | {type} | {1-5} | {one-line description} | {marker or — if unchanged} |
 ...
 
 In update mode, the Change column shows what happened to each feature.
 In create mode, the Change column is omitted.
 ```
 
-4. **Review with user:**
+4. **Reuse-Discovery (optioneel — alleen bij ≥2 PAGE/FEATURE features met gedeelde UI-patterns):**
+
+   **Wanneer overslaan:** geen frontend-project, minder dan 2 PAGE/FEATURE features, of alle UI patterns zijn al in `design.components[]` (indien beschikbaar).
+
+   **Doel:** cross-page UI-patterns detecteren die als gedeeld component gebouwd kunnen worden. Threshold = 2+ pages moeten het pattern delen (speculatief voorstel).
+
+   **Stap 1 — Pattern scan:**
+
+   Groepeer geëxtraheerde features op UI-patronen in hun descriptions. Match op:
+   - Lijst/tabel-patronen: "list with filters", "table with search", "paginated list"
+   - Card-patronen: "card grid", "product card", "statistics card"
+   - Form-patronen: "form with validation", "multi-step form", "inline editing"
+   - Modal/dialog-patronen: "confirm dialog", "detail modal", "edit popup"
+   - Navigation-patronen: "sidebar nav", "breadcrumb", "tab navigation"
+
+   Groepen met 2+ matches = kandidaat COMPONENT.
+
+   **Stap 2 — Dedup:**
+   - Check `project.json#design.components[]` (als beschikbaar) — al in spec? → skip.
+   - Check `project-context.json#components[]` (als beschikbaar) — al gebouwd? → skip.
+
+   **Stap 3 — Voorstel:** (alleen als ≥1 kandidaat na dedup)
+
+   AskUserQuestion:
+
+   ```yaml
+   header: "Gedeelde UI-patronen gevonden"
+   question: "Deze features delen UI-patronen die als herbruikbare component gebouwd kunnen worden. Welke wil je als COMPONENT-todo toevoegen?"
+   options:
+     - label: "{naam} — gebruikt in: {page1}, {page2}", description: "Maak COMPONENT-todo (scope: atomic)"
+     - label: "..." (één per kandidaat)
+     - label: "Overslaan", description: "Geen COMPONENT-todos toevoegen"
+   multiSelect: true
+   ```
+
+   **Stap 4 — Verwerking:**
+
+   Per geaccepteerd voorstel — voeg toe aan de feature-lijst (wordt meegenomen naar FASE 4 backlog generatie):
+
+   ```json
+   {
+     "name": "{kebab-case naam}",
+     "type": "COMPONENT",
+     "status": "TODO",
+     "phase": "P3",
+     "description": "Component gedetecteerd als gedeeld pattern in: {page1}, {page2}",
+     "source": "/dev-plan",
+     "scope": "atomic",
+     "dependencies": []
+   }
+   ```
+
+   Ook: append de kebab-case naam naar de `dependencies[]` van **elke PAGE/FEATURE feature die het pattern triggerde** (in-memory — wordt meegeschreven in FASE 4 backlog generatie). Zo blokkeert `/dev-build` van die page features totdat het component DONE is.
+
+   "Overslaan" → geen COMPONENT-features aan lijst toevoegen.
+
+5. **Review with user:**
 
    Use AskUserQuestion:
    - header: "Feature Review"
@@ -388,13 +437,11 @@ In create mode, the Change column is omitted.
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Features zijn correct, ga door naar dependencies"
      - label: "Features aanpassen", description: "Toevoegen, verwijderen, of naam/type/beschrijving wijzigen"
-     - label: "Explain question", description: "Leg de opties uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 2
-   - "Features aanpassen" → ask what to change (add/remove/edit name/type/description/confidence/risk), apply changes, show updated table, re-ask
-   - "Explain question" → explain feature extraction process and options, re-ask
+   - "Features aanpassen" → ask what to change (add/remove/edit name/type/description/risk), apply changes, show updated table, re-ask
    - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms features are correct.**
@@ -460,13 +507,11 @@ routing (base)
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Dependencies zijn correct, ga door naar prioriteit"
      - label: "Dependencies aanpassen", description: "Toevoegen, verwijderen of volgorde wijzigen"
-     - label: "Explain question", description: "Leg de dependency-analyse uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 3
    - "Dependencies aanpassen" → ask what to change (add/remove/reorder), update graph, show updated table, re-ask
-   - "Explain question" → explain dependency analysis and implications, re-ask
    - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms dependencies are correct.**
@@ -475,14 +520,19 @@ routing (base)
 
 **Goal:** Prioriteiten toekennen (P1–P3).
 
-1. **Use AskUserQuestion for P1 scope:**
-   - header: "P1"
-   - question: "Wat is minimaal nodig voor een werkend prototype?"
-   - options: (dynamically generated from features)
-     - label: "{feature-1}", description: "{description}"
-     - label: "{feature-2}", description: "{description}"
-     - ... (all features)
-   - multiSelect: true
+1. **Show feature list as numbered plain text:**
+
+   ```
+   Features ({N} totaal):
+
+   1. {feature-1}: {description}
+   2. {feature-2}: {description}
+   ...
+   ```
+
+   Vraag: "Welke features zijn P1 (minimaal nodig voor een werkend prototype)? Geef nummers (bv. `1, 3, 5` of `1-4` of `alles behalve 2, 7`)."
+
+   Parse free-form input → P1-set. Gebruiker kan ook "alles" of "geen" zeggen.
 
 2. **Auto-assign remaining features using heuristics:**
    - P2: Features that directly extend P1 functionality OR are prerequisites for important P3 features
@@ -493,17 +543,15 @@ routing (base)
 
    Show proposed prioritization table, then use AskUserQuestion:
    - header: "Priority Review"
-   - question: "Klopt deze prioritering? Je kunt features verplaatsen tussen P1/P2/P3/P4."
+   - question: "Klopt deze prioritering? P1 = must-have, P2 = extends P1, P3 = nice-to-have, P4 = later. Je kunt features verplaatsen."
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Prioriteiten zijn correct, genereer backlog"
      - label: "Features verplaatsen", description: "Een of meer features naar een andere prioriteit"
-     - label: "Explain question", description: "Leg P1/P2/P3/P4 uit"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 4
    - "Features verplaatsen" → ask which features and target priority, update table, re-ask
-   - "Explain question" → explain P1 / P2 / P3 / P4 criteria, re-ask
    - "Other" → parse user's freeform input, apply changes, re-ask
 
    **Loop until user confirms prioritization is correct.**
@@ -576,6 +624,7 @@ P4:
 4. **Start backlog server** (als niet al draaiend):
 
    ```bash
+   # Respecteert $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
    curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node ~/.claude/skills/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
    ```
 

@@ -7,11 +7,10 @@ description: >-
   existing component — only changed sections). Self-verifies with Playwright CLI
   comparison loop. Use with /frontend-convert.
 argument-hint: "[file-path|url]"
-disable-model-invocation: true
 writes: [devinfo.handoff]
 metadata:
   author: mileszeilstra
-  version: 2.5.1
+  version: 2.6.0
   category: frontend
 ---
 
@@ -19,13 +18,14 @@ metadata:
 
 Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens (from project.json). Self-verifies by comparing source image against Playwright CLI screenshot of generated output.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/frontend-install` · `/frontend-check` · `/frontend-wcag`
+**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/core-setup` · `/frontend-check`
 
 ## References
 
 - `../shared/RULES.md` — React/TypeScript coding rules
 - `../shared/PATTERNS.md` — Component patterns (compound, render props, etc.)
 - `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
+- `../shared/CODEGEN.md` — Block inventory, token mapping, output structure, a11y scaffold, cva pattern (gedeeld met frontend-design Build route)
 - `../shared/PLAYWRIGHT.md` — Playwright CLI, screenshot capture
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
 - `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
@@ -34,6 +34,37 @@ Convert visual input into working code. Accepts screenshots, Figma exports, webs
 ---
 
 ## FASE 0: Pre-flight
+
+### 0.0 Handoff Detection (auto)
+
+Read `.project/session/devinfo.json` → check `handoff.source`.
+
+**Als `handoff.source === "build-incomplete"`:**
+
+Check `handoff.timestamp` — als ouder dan 24u: toon `"Handoff is {N}u oud — mogelijk niet meer relevant"` bij de prompt.
+
+```yaml
+header: "Handoff van Build gedetecteerd"
+question: "Build van '{handoff.target}' is incompleet ({handoff.failedChecks}). Verder met patch op die files?"
+options:
+  - label: "Ja, patch (Recommended)", description: "Scope = patch, files uit handoff geladen, before-screenshot uit handoff.buildScreenshot"
+  - label: "Nieuwe screenshot", description: "Negeer handoff, ga normaal door met FASE 0.1"
+  - label: "Annuleren", description: "Stop, handoff blijft staan voor latere run"
+multiSelect: false
+```
+
+**Bij "Ja, patch":**
+
+1. Vraag user om de target-screenshot (de visie waar Build niet helemaal bij kon): `"Plak de gewenste eindstand als screenshot"`
+2. Sla op als `$SOURCE_IMAGE`, `$SCOPE = "patch"`, `$PATCH_FILE = handoff.files[0]`
+3. `$BEFORE_SCREENSHOT = handoff.buildScreenshot` (als null: sla before-screenshot stap 0.4b Stap 2 over)
+4. Spring naar **0.4b Stap 3** (Visual diff) — sla 0.1 t/m 0.4b Stap 2 over
+
+Handoff wordt opgeruimd in FASE 4 na success (`devinfo.handoff = null`).
+
+**Als `handoff` leeg/absent of `handoff.source !== "build-incomplete"`:** Sla 0.0 over, ga naar 0.1.
+
+---
 
 ### 0.1 Visual Input Resolution
 
@@ -491,7 +522,56 @@ VERIFICATION ROUND [N]/3
 5. `playwright-cli console error` → check for runtime JS errors (zie `../shared/PLAYWRIGHT.md` → Console Error Inspection)
    → Filter output tegen PLAYWRIGHT.md → Default Ignore Patterns vóór rapportage; alleen niet-gefilterde regels worden findings.
 
-**Compare source image vs generated screenshot. Analyze:**
+**Runner verificatie (ronde 1 only — baseline aanmaken of vergelijken):**
+
+Check runner beschikbaar: `npx playwright --version 2>/dev/null`.
+
+Als beschikbaar → genereer on-the-fly spec (zie `shared/PLAYWRIGHT.md → Runner Mode`):
+
+```typescript
+// .project/playwright-runs/convert-{slug}-r1.spec.ts  (tijdelijk)
+import { test, expect } from "@playwright/test";
+
+test("visual baseline — {slug}", async ({ page }) => {
+  await page.goto("{url}");
+  await page.waitForLoadState("networkidle");
+  // Pixel-diff: eerste run maakt baseline aan, volgende runs vergelijken
+  await expect(page).toHaveScreenshot("convert-{slug}.png", {
+    mask: [
+      page.locator('[data-testid="timestamp"]'),
+      page.locator(".skeleton"),
+    ],
+    maxDiffPixelRatio: 0.03,
+  });
+  // Structurele equivalentie: semantic HTML van output vs verwacht
+  await expect(page.locator("main")).toMatchAriaSnapshot();
+});
+```
+
+Als `$HAS_DARK_MODE = true`: voeg dark-variant toe:
+
+```typescript
+test("visual baseline dark — {slug}", async ({ browser }) => {
+  const ctx = await browser.newContext({ colorScheme: "dark" });
+  const page = await ctx.newPage();
+  await page.goto("{url}");
+  await page.waitForLoadState("networkidle");
+  await expect(page).toHaveScreenshot("convert-{slug}-dark.png", {
+    maxDiffPixelRatio: 0.03,
+  });
+  await ctx.close();
+});
+```
+
+Eerste run: `npx playwright test ... --update-snapshots` (baseline aanmaken in `.project/playwright-runs/__screenshots__/`).
+Volgende rondes (2, 3): baseline al aanwezig → run zonder `--update-snapshots` → FAIL bij pixel-regressie of aria-structuurwijziging.
+
+Runner FAIL = discrepantie gevonden → behandel als fix-target naast Vision-bevindingen.
+Runner niet beschikbaar → skip runner, ga door met Vision-only sanity-check.
+
+**Vision-vergelijking (sanity-check — altijd draaien, ook als runner beschikbaar):**
+
+Compare source image vs generated screenshot. Analyze:
 
 - Layout structure (sections in correct order, proportions roughly match)
 - Spacing (gaps between sections, padding within sections)
@@ -614,6 +694,10 @@ Update `.project/session/devinfo.json`:
 }
 ```
 
+**Handoff cleanup** (als sessie startte via FASE 0.0 handoff): zet `devinfo.handoff = null`.
+
+**TokenDrift cleanup** (als page scope): lees `devinfo.tokenDrift.affectedFeatures` → verwijder de huidige page-naam als die erin staat → als lijst leeg: `tokenDrift.resolved = true`. Write terug.
+
 ### 4.2 Backlog Completion Sync (page scope only)
 
 If page scope and backlog exists:
@@ -622,7 +706,11 @@ If page scope and backlog exists:
 2. Find feature matching page name → set `stage: "built"`, `data.updated` to today
 3. Write back via Edit (keep `<script>` tags intact)
 
-### 4.3 Completion Report
+### 4.3 Gap-Discovery
+
+Scan alle gegenereerde/bijgewerkte component-files (`.tsx`, `.svelte`, `.vue`) voor stub-handlers: `() => {}`, `/* TODO */`, `// implement`, `console.log` als enige body. Volg het [Protocol: Gap-Discovery](../frontend-design/SKILL.md#protocol-gap-discovery) — Trigger C (Build post code-gen). Als geen gaps: stap overslaan.
+
+### 4.4 Completion Report
 
 ```
 CONVERT COMPLETE
@@ -633,18 +721,28 @@ Mode:         [1:1 copy | Inspiration]
 Framework:    [detected framework]
 Verification: [N] rounds, [High | Medium | Low] match
 Code quality: [PASS | [N] violations fixed]
+Gaps:         [N linked | M created | K pending | "geen"]
 
 Files ([N]):
   Page:       [page file path]
   Components: [component paths]
 
-Next steps:
-  1. /frontend-tokens → design tokens aanpassen/toepassen
-  2. /frontend-check → performance/SEO audit
-  3. /frontend-wcag → accessibility audit
-
 ═══════════════════════════════════════════════════════════
 ```
+
+Vraag na report:
+
+```yaml
+header: "Doorgaan met audit?"
+question: "/frontend-check {page-name} controleert A11Y, tokens en responsive gedrag."
+options:
+  - label: "Ja, audit nu (Recommended)", description: "frontend-check inline uitvoeren"
+  - label: "Later", description: "Status blijft DOING — /frontend-check {page-name} staat klaar in de backlog"
+multiSelect: false
+```
+
+Bij "Ja": lees `frontend-check/SKILL.md` en voer FASE 0–4 inline uit voor `{page-name}`.
+Bij "Later": eindig — backlog toont DOING-status met next-step `/frontend-check {page-name}`.
 
 ---
 

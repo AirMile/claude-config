@@ -3,12 +3,11 @@ name: frontend-tokens
 description: >-
   Design token management — color, typography, spacing, motion, and interaction
   tokens. Use with /frontend-tokens to create, update, or manage design tokens.
-disable-model-invocation: true
 reads: [devinfo.handoff]
-writes: [devinfo.handoff]
+writes: [devinfo.handoff, devinfo.tokenDrift]
 metadata:
   author: mileszeilstra
-  version: 3.2.1
+  version: 3.3.0
   category: frontend
 ---
 
@@ -433,7 +432,7 @@ options:
   - label: "Genereer voor mij (Recommended)", description: "Beschrijf wat je bouwt, Claude kiest passende kleuren"
   - label: "Handmatig invoeren", description: "Ik geef hex values op"
   - label: "Extraheren uit config", description: "Haal uit Tailwind/CSS"
-  - label: "Explain question", description: "Wat zijn design tokens?"
+  - label: "Explain question", description: "Leg uit wat design tokens zijn"
 multiSelect: false
 ```
 
@@ -504,7 +503,6 @@ options:
   - label: "System fonts (Recommended)", description: "system-ui, sans-serif"
   - label: "Custom fonts", description: "Eigen font families opgeven"
   - label: "Extraheren", description: "Haal uit bestaande CSS"
-  - label: "Explain question", description: "Waarom fonts belangrijk zijn"
 multiSelect: false
 ```
 
@@ -536,7 +534,7 @@ options:
   - label: "4px base (Recommended)", description: "4, 8, 12, 16, 20, 24, 32, 48, 64"
   - label: "8px base", description: "8, 16, 24, 32, 40, 48, 64, 80, 96"
   - label: "Custom", description: "Eigen spacing scale"
-  - label: "Explain question", description: "Wat is een spacing scale"
+  - label: "Explain question", description: "Leg uit wat een spacing scale is"
 multiSelect: false
 ```
 
@@ -551,7 +549,7 @@ options:
   - label: "Tailwind defaults (Recommended)", description: "sm:640, md:768, lg:1024, xl:1280"
   - label: "Bootstrap style", description: "sm:576, md:768, lg:992, xl:1200"
   - label: "Custom", description: "Eigen breakpoints"
-  - label: "Explain question", description: "Hoe breakpoints werken"
+  - label: "Explain question", description: "Leg uit hoe breakpoints werken"
 multiSelect: false
 ```
 
@@ -566,7 +564,6 @@ options:
   - label: "Ja, auto-generate (Recommended)", description: "Genereer dark kleuren automatisch op basis van je light palette"
   - label: "Ja, handmatig", description: "Zelf dark mode kleuren opgeven"
   - label: "Nee, alleen light mode", description: "Sla dark mode over (later toe te voegen via Modes)"
-  - label: "Explain question", description: "Waarom dark mode belangrijk is"
 multiSelect: false
 ```
 
@@ -614,7 +611,7 @@ options:
   - label: "Defaults (Recommended)", description: "Standaard durations (100/200/300/500ms) + smooth easings"
   - label: "Custom", description: "Eigen durations en easing curves opgeven"
   - label: "Geen motion tokens", description: "Sla over (later toe te voegen via Update)"
-  - label: "Explain question", description: "Wat zijn motion tokens"
+  - label: "Explain question", description: "Leg uit wat motion tokens zijn"
 multiSelect: false
 ```
 
@@ -659,7 +656,7 @@ options:
   - label: "Defaults (Recommended)", description: "Focus ring (2px accent), subtle hover transition, scale active"
   - label: "Custom", description: "Eigen interaction styles opgeven"
   - label: "Geen interaction tokens", description: "Sla over (later toe te voegen via Update)"
-  - label: "Explain question", description: "Wat zijn interaction tokens"
+  - label: "Explain question", description: "Leg uit wat interaction tokens zijn"
 multiSelect: false
 ```
 
@@ -845,6 +842,78 @@ Generating preview page...
 
 ---
 
+#### Token Drift Check (shared helper)
+
+Gebruik vóór elke Write op `theme.colors`, `theme.typography`, of `theme.spacing` waarbij een **bestaande key** een andere waarde krijgt (niet puur additief).
+
+**Additief = geen drift-risk** (geen check nodig):
+
+- Nieuwe key toevoegen aan `colors` (bv. `colors.brand-accent`)
+- Nieuwe size toevoegen aan `typography.sizes`
+
+**Drift-risk = bestaande key wijzigt** (run drift check):
+
+- `colors.primary` waarde wijzigt of wordt verwijderd/hernoemd
+- `typography.fontFamily` wijzigt
+- `spacing` schaal significant wijzigt
+
+**Drift-check stappen:**
+
+1. Lees `backlog.html` → filter op `type === "PAGE" && (status === "DOING" || status === "DONE")`
+2. Als geen affected pages → skip (geen prompt)
+3. Bij ≥1 affected page: toon:
+
+```
+TOKEN DRIFT WARNING
+
+Wijziging:  {token-pad}  {oude waarde} → {nieuwe waarde}
+Affected:   {N} PAGE-features (DOING/DONE)
+            - {page-naam}  ({status}, gebouwd {datum})
+            - ...
+
+Pages die bg-{token} / text-{token} gebruiken kunnen visueel breken.
+```
+
+```yaml
+header: "Token drift gedetecteerd"
+question: "Hoe verder?"
+options:
+  - label: "Doorgaan + log drift (Recommended)", description: "Tokens schrijven, drift gelogd in devinfo.tokenDrift voor latere re-render"
+  - label: "Eerst pages bijwerken", description: "Stop nu — draai /frontend-convert {page} patch op affected pages"
+  - label: "Annuleren", description: "Geen wijziging schrijven"
+multiSelect: false
+```
+
+**Bij "Doorgaan + log drift"**: schrijf naar `devinfo.tokenDrift`:
+
+```json
+{
+  "tokenDrift": {
+    "changedAt": "{ISO-timestamp}",
+    "changes": [
+      {
+        "path": "{token-pad}",
+        "from": "{oude waarde}",
+        "to": "{nieuwe waarde}"
+      }
+    ],
+    "affectedFeatures": ["{page-naam-1}", "{page-naam-2}"],
+    "resolved": false
+  }
+}
+```
+
+Toon na write:
+
+```
+Aanbevolen vervolg per affected page:
+  /frontend-convert {page} patch    (re-render met nieuwe tokens)
+```
+
+**Bij "Eerst pages bijwerken"** of **"Annuleren"**: stop zonder Write.
+
+---
+
 #### Route: Updaten
 
 **AskUserQuestion:**
@@ -860,7 +929,6 @@ options:
   - label: "Motion", description: "Durations en easings aanpassen"
   - label: "Interactions", description: "Focus ring, hover, active states aanpassen"
   - label: "Alles", description: "Volledige herconfig"
-  - label: "Explain question", description: "Toon huidige waarden"
 multiSelect: true
 ```
 
@@ -870,6 +938,7 @@ multiSelect: true
 - Toon huidige waarden
 - Vraag nieuwe waarden (zelfde flow als Aanmaken)
 - Toon diff preview
+- **Drift check** (zie "Token Drift Check" hierboven) voor colors/typography/spacing-wijzigingen
 - Bevestig wijziging
 - Read project.json → update alleen gewijzigde theme subsecties → Write terug
 - → Ga naar FASE X: Post-flight Validation
@@ -910,7 +979,6 @@ options:
   - label: "Alle bronnen (Recommended)", description: "Combineer alle gevonden tokens"
   - label: "Alleen Tailwind", description: "Alleen uit tailwind config"
   - label: "Alleen CSS", description: "Alleen :root variables"
-  - label: "Explain question", description: "Verschil tussen bronnen"
 multiSelect: false
 ```
 
@@ -919,11 +987,12 @@ multiSelect: false
 1. Parse geselecteerde bronnen
 2. Map naar theme JSON structuur (zie schema hierboven)
 3. Toon preview van geextraheerde tokens
-4. Vraag bevestiging (zelfde als Aanmaken Stap 6)
-5. Write naar project.json theme sectie
-6. → Ga naar FASE X: Post-flight Validation
-7. → Ga naar X.6: Theme Infrastructure Sync
-8. → Ga naar FASE Y: Website Sync
+4. **Drift check** (zie "Token Drift Check" hierboven) — als extractie bestaande `colors`/`typography`/`spacing` keys overschrijft
+5. Vraag bevestiging (zelfde als Aanmaken Stap 6)
+6. Write naar project.json theme sectie
+7. → Ga naar FASE X: Post-flight Validation
+8. → Ga naar X.6: Theme Infrastructure Sync
+9. → Ga naar FASE Y: Website Sync
 
 ---
 
@@ -939,7 +1008,7 @@ options:
   - label: "Light mode toevoegen", description: "Voeg light variant toe"
   - label: "Mode verwijderen", description: "Verwijder een bestaande mode"
   - label: "Mode switchen", description: "Wissel default mode"
-  - label: "Explain question", description: "Hoe modes werken"
+  - label: "Explain question", description: "Leg uit hoe modes werken"
 multiSelect: false
 ```
 
@@ -1348,7 +1417,7 @@ Next steps:
   2. /frontend-convert → converteer een design met deze tokens
   3. /frontend-tokens → bekijk of update tokens later
   4. /frontend-check → check performance en SEO
-  5. /frontend-wcag → accessibility audit
+  5. /frontend-check --scope=a11y → accessibility audit
 ```
 
 ---

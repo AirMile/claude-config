@@ -1,7 +1,6 @@
 ---
 name: dev-optimize
 description: Optimaliseer een meetbare metric (bundle size, Lighthouse, coverage, latency) via parallelle subagent-experimenten in git worktrees. Gebruik met /dev-optimize voor performance-, kwaliteit- of bundle-verbeteringen waar je een score kunt definiëren. Standalone — niet gekoppeld aan een feature in de pipeline.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 0.1.0

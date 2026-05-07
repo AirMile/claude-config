@@ -106,8 +106,8 @@ question: "Playwright CLI niet beschikbaar. Hoe doorgaan?"
 options:
   - label: "Doorgaan zonder visuals (Recommended)"
     description: "Skip browser checks, continue workflow"
-  - label: "Installeer CLI"
-    description: "Run: npm install -g @playwright/cli@latest"
+  - label: "Installeer via /core-setup"
+    description: "Run /core-setup playwright — installeert daemon + runner + config"
   - label: "Annuleren"
     description: "Stop workflow"
 ```
@@ -268,7 +268,7 @@ playwright-cli -s=mysession close
 
 | Skill              | Uses Playwright For                                | Snapshot strategie  |
 | ------------------ | -------------------------------------------------- | ------------------- |
-| `frontend-wcag`    | A11y tree analyse, focus validatie                 | Inline (1-2 routes) |
+| `frontend-check`   | A11y tree analyse, focus validatie (--scope=a11y)  | Inline (1-2 routes) |
 | `frontend-convert` | Screenshot capture + verification loop             | Screenshot only     |
 | `frontend-check`   | Multi-viewport, CWV, SEO render check, smoke, flow | --filename (batch)  |
 | `marketing-promo`  | HiDPI screenshots, dark mode variants              | run-code newContext |
@@ -539,3 +539,241 @@ NETWORK INSPECTION
 ### Token Efficiency
 
 `requests` (zonder index) returnt een gecomprimeerde lijst. Pas bij `request <i>` / `response-body <i>` haal je full content op — alleen doen voor relevante indexes.
+
+---
+
+## Daemon vs Runner — Beslisboom
+
+```
+Wat heb je nodig?
+│
+├── Snel iets inspecteren, screenshot/snapshot maken, console/network kijken,
+│   multi-viewport scans uitvoeren, ad-hoc validatie?
+│   → DAEMON (playwright-cli)   — geen test-files, directe output
+│
+└── Een van deze vijf features?
+    │
+    ├── Pixel-baseline visual regression  →  toHaveScreenshot()
+    ├── A11y-tree assertion met fail bij regressie  →  toMatchAriaSnapshot()
+    ├── Debug-timeline na failure  →  --trace on + show-trace
+    ├── First-class browser assertions  →  expect(page).toHaveURL() / toHaveText() etc.
+    └── Persistente acceptance/regression specs  →  .spec.ts bestand
+    → RUNNER (@playwright/test)   — zie sectie hieronder
+```
+
+---
+
+## Runner Mode (@playwright/test)
+
+Gebruik de runner **alleen** voor de vijf features hierboven. Daemon blijft default.
+
+### Pre-flight
+
+```bash
+# Check runner beschikbaar
+npx playwright --version 2>/dev/null || echo "niet beschikbaar"
+
+# Als niet beschikbaar: installeer lokaal (dev dependency)
+npm install --save-dev @playwright/test
+npx playwright install chromium --with-deps
+```
+
+### On-the-fly Spec Pattern
+
+Skills genereren een tijdelijke spec — geen permanente `tests/`-conventie in het project.
+
+**1. Genereer config (eenmalig per skill-run)**
+
+```typescript
+// .project/playwright-runs/playwright.config.ts  (tijdelijk, gitignored)
+import { defineConfig } from "@playwright/test";
+export default defineConfig({
+  testDir: ".", // spec staat naast config
+  snapshotDir: "./__screenshots__", // baselines in .project/playwright-runs/__screenshots__/
+  use: {
+    baseURL: "http://localhost:3000", // aanpassen aan actieve dev server
+    trace: "retain-on-failure", // trace altijd bij failure
+  },
+  reporter: [["json", { outputFile: "./results.json" }]],
+});
+```
+
+**2. Genereer spec**
+
+```typescript
+// .project/playwright-runs/{skill}-{slug}.spec.ts  (tijdelijk, gitignored)
+import { test, expect } from "@playwright/test";
+
+test("{beschrijving}", async ({ page }) => {
+  await page.goto("{pad}");
+  await page.waitForLoadState("networkidle");
+
+  // Visual regression (eerste run maakt baseline aan):
+  await expect(page).toHaveScreenshot("{naam}.png", {
+    mask: [page.locator("{dynamisch-element}")], // mask time/date/ads
+    maxDiffPixelRatio: 0.02, // 2% tolerantie voor anti-aliasing
+  });
+
+  // A11y-tree assertion:
+  await expect(page.locator("main")).toMatchAriaSnapshot(`
+    - heading "{verwachte titel}" [level=1]
+    - navigation
+    - main
+  `);
+});
+```
+
+**3. Draai de runner**
+
+```bash
+# Eerste run — maak baselines aan:
+npx playwright test .project/playwright-runs/{spec}.spec.ts \
+  --config=.project/playwright-runs/playwright.config.ts \
+  --update-snapshots
+
+# Volgende runs — vergelijk met baselines:
+npx playwright test .project/playwright-runs/{spec}.spec.ts \
+  --config=.project/playwright-runs/playwright.config.ts
+
+# Bij failure — open trace:
+npx playwright show-trace .project/playwright-runs/test-results/*/trace.zip
+```
+
+**4. Parseer resultaat**
+
+```bash
+# results.json bevat: passed/failed/timedOut counts + per-test details
+cat .project/playwright-runs/results.json | python3 -c "
+import json, sys
+r = json.load(sys.stdin)
+suites = r.get('suites', [])
+for s in suites:
+  for spec in s.get('specs', []):
+    status = 'PASS' if all(t['status'] == 'passed' for t in spec['tests']) else 'FAIL'
+    print(f'{status}: {spec[\"title\"]}')
+"
+```
+
+**5. Cleanup**
+
+```bash
+# Bij success: verwijder spec + config, bewaar baselines
+rm -f .project/playwright-runs/{spec}.spec.ts
+rm -f .project/playwright-runs/playwright.config.ts
+rm -rf .project/playwright-runs/test-results/   # playwright output dir
+
+# Bij failure: bewaar alles voor debugging
+# Baselines blijven altijd: .project/playwright-runs/__screenshots__/
+```
+
+### Baseline Management
+
+| Situatie                         | Actie                                               |
+| -------------------------------- | --------------------------------------------------- |
+| Eerste run (geen baseline)       | `--update-snapshots` → maakt baseline aan           |
+| Bewuste stijlwijziging           | `--update-snapshots` → update baseline              |
+| Onverwacht verschil              | Bekijk diff in `test-results/` of via `show-report` |
+| Dynamische content (datums, ads) | Mask via `{ mask: [page.locator('...')] }`          |
+
+### Trace Debuggen
+
+```bash
+# Trace wordt automatisch opgeslagen bij failure (retain-on-failure in config)
+# Vind trace-bestand:
+ls .project/playwright-runs/test-results/*/trace.zip
+
+# Open interactieve viewer:
+npx playwright show-trace .project/playwright-runs/test-results/{slug}/trace.zip
+```
+
+---
+
+## Use Cases: Emulatie Snippets
+
+Combineer deze opties in `browser.newContext({ ... })` (daemon via `run-code`) of in `playwright.config.ts` `use:` (runner).
+
+### prefers-reduced-motion
+
+```javascript
+// Daemon: playwright-cli run-code "async page => { ... }"
+async (page) => {
+  const ctx = await page.context().browser().newContext({
+    reducedMotion: "reduce", // 'no-preference' om expliciet te resetten
+  });
+  const p = await ctx.newPage();
+  await p.goto("{url}");
+  await p.screenshot({
+    path: ".project/screenshots/{naam}-reduced-motion.png",
+  });
+  await ctx.close();
+};
+```
+
+```typescript
+// Runner: playwright.config.ts use-blok
+use: {
+  reducedMotion: "reduce";
+}
+```
+
+### forcedColors (High Contrast Mode)
+
+```javascript
+// Daemon
+async (page) => {
+  const ctx = await page.context().browser().newContext({
+    forcedColors: "active", // simuleert Windows High Contrast Mode
+  });
+  const p = await ctx.newPage();
+  await p.goto("{url}");
+  await p.screenshot({ path: ".project/screenshots/{naam}-high-contrast.png" });
+  await ctx.close();
+};
+```
+
+### Geolocation
+
+```javascript
+// Daemon
+async (page) => {
+  const ctx = await page
+    .context()
+    .browser()
+    .newContext({
+      geolocation: { latitude: 52.3702, longitude: 4.8952 }, // Amsterdam
+      permissions: ["geolocation"],
+    });
+  const p = await ctx.newPage();
+  await p.goto("{url}");
+  await ctx.close();
+};
+```
+
+### HiDPI + colorScheme (referentie)
+
+Voor HiDPI 2× retina en dark/light mode snippets: zie **Use Cases: HiDPI Screenshots** hierboven — die patronen zijn identiek, gebruik `newContext({ deviceScaleFactor: 2, colorScheme: 'dark' })`.
+
+### Combinaties
+
+```javascript
+// HiDPI + dark + reduced motion + auth — alles samen
+async (page) => {
+  const ctx = await page
+    .context()
+    .browser()
+    .newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: 2,
+      colorScheme: "dark",
+      reducedMotion: "reduce",
+      storageState: ".project/auth-state.json", // alleen als auth gebruikt
+    });
+  const p = await ctx.newPage();
+  await p.goto("{url}");
+  await p.waitForLoadState("networkidle");
+  await p.screenshot({
+    path: ".project/screenshots/{naam}-dark-hidpi-a11y.png",
+  });
+  await ctx.close();
+};
+```

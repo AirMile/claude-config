@@ -117,12 +117,12 @@ Het generieke leespatroon, backlog-update formaat, merge-logica en schrijfpatroo
 
 Frontend skills volgen hetzelfde sync protocol met dezelfde stages als dev skills (`building/built/testing`). Verschil: frontend items gebruiken geen `feature.json` — status wordt alleen in backlog + `project.json` `features[]` bijgehouden.
 
-| Skill               | Backlog mutatie                      | project.json mutatie                              |
-| ------------------- | ------------------------------------ | ------------------------------------------------- |
-| `/frontend-design`  | Maakt batch PAGE TODOs               | `design` (pages, flows, principles), `features[]` |
-| `/frontend-design`  | DOING + `building` → `built`         | `stack.packages`, `design.pages`, `features[]`    |
-| `/frontend-convert` | DOING + `building` → `built`         | `features[]`                                      |
-| `/frontend-check`   | `testing` → DONE                     | `features[]`                                      |
-| `/frontend-wcag`    | `testing` → DONE + nieuwe A11Y TODOs | `features[]`                                      |
+| Skill               | Backlog mutatie                                  | project.json mutatie                              |
+| ------------------- | ------------------------------------------------ | ------------------------------------------------- |
+| `/frontend-design`  | Maakt batch PAGE TODOs                           | `design` (pages, flows, principles), `features[]` |
+| `/frontend-design`  | DOING + `building` → `built`                     | `stack.packages`, `design.pages`, `features[]`    |
+| `/frontend-convert` | DOING + `building` → `built`                     | `features[]`                                      |
+| `/frontend-check`   | `testing` → DONE                                 | `features[]`                                      |
+| `/frontend-check`   | A11Y scope: `testing` → DONE + nieuwe A11Y TODOs | `features[]`                                      |
 
 Frontend items slaan `defining/defined` over — `/frontend-design` (capture-mode) maakt items aan als TODO, en `/dev-build` pakt ze direct op als `building` na Claude Design handoff.

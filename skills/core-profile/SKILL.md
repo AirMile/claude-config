@@ -1,7 +1,6 @@
 ---
 name: core-profile
 description: Switch between skill profiles to show or hide groups of skills. Use with /core-profile to activate different skill sets for different workflows.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0

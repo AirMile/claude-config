@@ -178,6 +178,6 @@ Load learnings via shared/LEARNINGS-LOAD.md:
 
 ## Implementatie-noot
 
-Dit is een **read-only** protocol. Geen mutaties aan `learnings[]` — dat blijft de verantwoordelijkheid van schrijver-skills (`dev-verify`, `dev-refactor` (FASE 5), `core-pull`, `core-onboard`).
+Dit is een **read-only** protocol. Geen mutaties aan `learnings[]` — dat blijft de verantwoordelijkheid van schrijver-skills (`dev-verify`, `dev-refactor` (FASE 5), `core-pull`, `core-setup --mode=mature`).
 
 Skill kan inline lezen + filteren (geen aparte tool nodig), of als de skill een agent gebruikt: agent prompt bevat al gefilterde learnings (niet de hele lijst).

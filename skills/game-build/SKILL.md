@@ -1,7 +1,6 @@
 ---
 name: game-build
 description: Build features with technique mapping (TDD, Implementation First, or Implementation Only) for Godot 4.x. Use with /game-build after /game-define.
-disable-model-invocation: true
 reads: [feature.requirements, backlog.stage]
 writes: [feature.requirements, feature.build, backlog.stage, learnings]
 metadata:
@@ -930,6 +929,23 @@ Created files:
 
 > **Todo**: markeer FASE 5 → `completed`, FASE 6 → `in_progress`.
 
+**Stap 0: Pre-commit gdlint check** (GDScript):
+
+- Check of `gdlint` beschikbaar is: `command -v gdlint`
+- Niet beschikbaar → skip stilzwijgend
+- Geen `.gd` bestanden gewijzigd → skip
+
+Bij beschikbaar: run op gewijzigde `.gd` bestanden van deze build:
+
+```bash
+timeout 60 gdlint $(git diff --name-only $(cat .project/session/pre-skill-status.txt) 2>/dev/null | grep '\.gd$') 2>&1
+```
+
+- **PASS** → toon `DIAGNOSTICS: PASS`, door naar commit-flow
+- **FAIL** → toon errors (max 30 regels) + AskUserQuestion:
+  - `"Fix eerst (Recommended)"` — stop FASE 6, geen commit
+  - `"Toch committen"` — door; voeg `[diagnostics-warnings]` toe aan commit message
+
 **Scoped auto-commit** (only this skill's changes):
 
 Compare current git status with baseline from FASE 0:
@@ -986,6 +1002,8 @@ Just-In-Time `Read()` deze tijdens specifieke fases — niet vooraf laden.
 | `references/gut-conventions.md` | FASE 2 — bij genereren van test files (file structure, assertions, mocks) |
 | `references/gut-commands.md`    | FASE 3, 3a, 3b — bij draaien van GUT tests                                |
 | `references/troubleshooting.md` | FASE 3 — bij test failures of build blockers                              |
+
+> Completion claims vereisen verse output (R009 — zie `../shared/RULES.md`)
 
 ## Path Resolution
 

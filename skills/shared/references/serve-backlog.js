@@ -9,7 +9,8 @@
 //   /{project}                    → dashboard (main page)
 //   /{project}/save               → save dashboard (project.json)
 //   /{project}/create             → create empty project.json
-//   /{project}/feature/:name       → feature detail (JSON)
+//   /{project}/feature/:name       → feature detail (JSON, merged: feature.json + backlog + design spec)
+//   /{project}/asset?path=<rel>   → binary asset (whitelist: .project/snapshots|screenshots/)
 //   /{project}/backlog            → backlog kanban
 //   /{project}/backlog/save       → save backlog changes to disk
 //   /{project}/backlog/create     → create new backlog
@@ -620,7 +621,7 @@ http
 
       // CLAUDE.md (read/write)
       if (parts[1] === "claude-md" && parts.length === 2) {
-        const claudePath = path.join(projectPath, ".claude/CLAUDE.md");
+        const claudePath = path.join(projectPath, "CLAUDE.md");
 
         if (req.method === "GET") {
           let content = "";
@@ -654,7 +655,7 @@ http
         }
       }
 
-      // Feature detail (feature.json)
+      // Feature detail (feature.json) — merged with backlog metadata + design spec
       if (
         req.method === "GET" &&
         parts[1] === "feature" &&
@@ -662,11 +663,6 @@ http
         parts.length === 3
       ) {
         const featureName = parts[2];
-        const featurePath = path.join(
-          projectPath,
-          ".project/features",
-          featureName,
-        );
 
         if (featureName.includes("..")) {
           res.writeHead(400);
@@ -674,27 +670,127 @@ http
           return;
         }
 
-        if (!fs.existsSync(featurePath)) {
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Feature niet gevonden" }));
-          return;
-        }
-
-        var result;
-
+        // Read feature.json (optional — Path A frontend cards may not have it)
+        const featurePath = path.join(
+          projectPath,
+          ".project/features",
+          featureName,
+        );
         const featureJson = path.join(featurePath, "feature.json");
+        let result = null;
         if (fs.existsSync(featureJson)) {
           try {
             result = JSON.parse(fs.readFileSync(featureJson, "utf8"));
           } catch {
             result = { name: featureName };
           }
-        } else {
-          result = { name: featureName };
+        }
+
+        // Merge backlog metadata (type, status, phase, audit.*)
+        const backlogFile = path.join(projectPath, BACKLOG_PATH);
+        if (fs.existsSync(backlogFile)) {
+          try {
+            const backlogHtml = fs.readFileSync(backlogFile, "utf8");
+            const jsonMatch = backlogHtml.match(
+              /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
+            );
+            if (jsonMatch) {
+              const backlogData = JSON.parse(jsonMatch[1]);
+              const f = (backlogData.features || []).find(
+                (x) => x.name === featureName,
+              );
+              if (f) {
+                if (!result) result = { name: featureName };
+                if (!result.type) result.type = f.type;
+                if (!result.status) result.status = f.status;
+                if (!result.phase) result.phase = f.phase;
+                if (!result.description) result.description = f.description;
+                result.shipped = f.shipped;
+                if (f.shippedAt) result.shippedAt = f.shippedAt;
+                if (f.shippedSha) result.shippedSha = f.shippedSha;
+                if (f.audit)
+                  result.audit = { ...f.audit, ...(result.audit || {}) };
+              }
+            }
+          } catch {}
+        }
+
+        // Merge design spec for PAGE/COMPONENT
+        if (result && (result.type === "PAGE" || result.type === "COMPONENT")) {
+          const dashFile = path.join(projectPath, DASHBOARD_PATH);
+          if (fs.existsSync(dashFile)) {
+            try {
+              const proj = JSON.parse(fs.readFileSync(dashFile, "utf8"));
+              const designKey = result.type === "PAGE" ? "pages" : "components";
+              const specList = (proj.design || {})[designKey];
+              if (Array.isArray(specList)) {
+                const spec = specList.find((x) => x.name === featureName);
+                if (spec) result.design = spec;
+              }
+            } catch {}
+          }
+          // Demo-page link for atomic/section COMPONENTs
+          if (result.type === "COMPONENT") {
+            const scope = result.design && result.design.scope;
+            if (scope === "atomic" || scope === "section") {
+              const demoRel = `app/_dev/components/${featureName}/page.tsx`;
+              if (fs.existsSync(path.join(projectPath, demoRel))) {
+                result.demoPath = demoRel;
+              }
+            }
+          }
+        }
+
+        if (!result) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Feature niet gevonden" }));
+          return;
         }
 
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result, null, 2));
+        return;
+      }
+
+      // Static asset endpoint: GET /{project}/asset?path=<rel>
+      // Whitelist: .project/snapshots/* and .project/screenshots/*
+      if (req.method === "GET" && parts[1] === "asset" && parts.length === 2) {
+        const assetUrl = new URL(req.url, "http://localhost");
+        const rel = assetUrl.searchParams.get("path");
+        if (!rel || rel.includes("..")) {
+          res.writeHead(400);
+          res.end("Ongeldig pad");
+          return;
+        }
+        if (!/^\.project\/(snapshots|screenshots)\//.test(rel)) {
+          res.writeHead(403);
+          res.end("Pad niet toegestaan");
+          return;
+        }
+        const absAsset = path.join(projectPath, rel);
+        if (!fs.existsSync(absAsset)) {
+          res.writeHead(404);
+          res.end("Niet gevonden");
+          return;
+        }
+        const ext = path.extname(absAsset).toLowerCase();
+        const mime = {
+          ".png": "image/png",
+          ".jpg": "image/jpeg",
+          ".jpeg": "image/jpeg",
+          ".webp": "image/webp",
+          ".svg": "image/svg+xml",
+        }[ext];
+        if (!mime) {
+          res.writeHead(415);
+          res.end("Ongeldig type");
+          return;
+        }
+        res.writeHead(200, {
+          "Content-Type": mime,
+          "Cache-Control": "max-age=300",
+        });
+        res.end(fs.readFileSync(absAsset));
         return;
       }
 
@@ -1054,38 +1150,98 @@ http
         }
         try {
           const { execSync } = require("child_process");
-          // Find VS Code remote CLI and IPC socket
-          const codeCliGlob = require("child_process")
-            .execSync(
+          const candidates = [];
+
+          // 1. Linux/Codespaces remote-CLI
+          try {
+            const cli = execSync(
               "ls -t /home/claude/.vscode-server/cli/servers/*/server/bin/remote-cli/code 2>/dev/null | head -1",
               { encoding: "utf8" },
-            )
-            .trim();
-          const ipcSock = require("child_process")
-            .execSync(
+            ).trim();
+            const sock = execSync(
               "ls -t /run/user/$(id -u)/vscode-ipc-*.sock 2>/dev/null | head -1",
               { encoding: "utf8" },
-            )
-            .trim();
-          if (!codeCliGlob || !ipcSock) {
+            ).trim();
+            if (cli && sock)
+              candidates.push({ cli, env: { VSCODE_IPC_HOOK_CLI: sock } });
+          } catch {}
+
+          // 2. macOS bundle
+          if (process.platform === "darwin") {
+            for (const p of [
+              "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
+              "/Applications/Visual Studio Code - Insiders.app/Contents/Resources/app/bin/code",
+            ]) {
+              if (fs.existsSync(p)) candidates.push({ cli: p, env: {} });
+            }
+          }
+
+          // 3. PATH fallback
+          try {
+            const onPath = execSync("command -v code 2>/dev/null", {
+              encoding: "utf8",
+            }).trim();
+            if (onPath) candidates.push({ cli: onPath, env: {} });
+          } catch {}
+
+          if (!candidates.length) {
             res.writeHead(500, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "VS Code CLI niet beschikbaar" }));
+            res.end(JSON.stringify({ error: "VS Code CLI niet gevonden" }));
             return;
           }
-          execSync(
-            'VSCODE_IPC_HOOK_CLI="' +
-              ipcSock +
-              '" "' +
-              codeCliGlob +
-              '" "' +
-              filePath +
-              '"',
-            {
-              timeout: 5000,
-            },
-          );
+
+          const { cli, env } = candidates[0];
+          execSync(`"${cli}" "${projectPath}" --goto "${filePath}"`, {
+            timeout: 5000,
+            env: { ...process.env, ...env },
+          });
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: true, file: relPath }));
+        } catch (e) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+        return;
+      }
+
+      // Diff preview for a file
+      if (req.method === "GET" && parts[1] === "diff" && parts.length >= 3) {
+        const relPath = parts.slice(2).join("/");
+        if (relPath.includes("..")) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Ongeldig pad" }));
+          return;
+        }
+        const isGit = fs.existsSync(path.join(projectPath, ".git"));
+        if (!isGit) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, git: false }));
+          return;
+        }
+        try {
+          const { execSync } = require("child_process");
+          const run = (cmd) =>
+            execSync(cmd, {
+              cwd: projectPath,
+              encoding: "utf8",
+              maxBuffer: 5 * 1024 * 1024,
+            }).trim();
+          const working = run(`git diff --no-color HEAD -- "${relPath}"`);
+          const recent = run(
+            `git log -n 3 -p --no-color --follow --pretty=format:"%H%x09%s%x09%ar" -- "${relPath}"`,
+          );
+          const tracked = (() => {
+            try {
+              run(`git ls-files --error-unmatch -- "${relPath}"`);
+              return true;
+            } catch {
+              return false;
+            }
+          })();
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({ ok: true, git: true, tracked, working, recent }),
+          );
         } catch (e) {
           res.writeHead(500, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: e.message }));

@@ -6,7 +6,6 @@ description: >-
   platform. Grounded in trend trajectories, sentiment conflicts, and audience
   language from /marketing-research output. Use with /marketing-content [topic]
   for social posts, email subjects, ad headlines, or landing page sections.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0

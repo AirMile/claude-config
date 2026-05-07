@@ -1,7 +1,6 @@
 ---
 name: dev-refactor
 description: Batch refactor code quality after testing with parallel analysis, dynamic stack-aware patterns, and early-exit for clean features. Use with /dev-refactor to improve code structure, naming, and patterns.
-disable-model-invocation: true
 reads: [feature.build, feature.tests, backlog.status]
 writes: [feature.refactor, backlog.status, learnings]
 metadata:
@@ -85,6 +84,20 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
    - Feature queue = `[auth]` (regardless of refactor status)
 
    **b) No feature name** (`/dev-refactor`):
+
+   **b0) UI-queue detectie (eerst checken):**
+   - `queued = data.features.filter(f => f.transition === "refactoring" && f.status === "DONE" && !f.shipped)`
+   - Als `queued.length > 0`:
+     - **AskUserQuestion**:
+       - header: "Queue"
+       - question: "{N} features zijn via de backlog-UI gemarkeerd voor refactor: {names}. Gebruiken als queue?"
+       - options:
+         - label: "Ja, gebruik queue (Recommended)", description: "{names}" → `feature_queue = queued`, `mode = "feature"`, spring naar **stap 3** (worktree-switch)
+         - label: "Nee, kies andere scope" → ga door naar b1 hieronder
+       - multiSelect: false
+   - Als `queued.length == 0` → ga direct door naar b1 hieronder.
+
+   **b1) Scope-selectie** (als geen UI-queue of user koos "andere scope"):
    - Present scope selection via **AskUserQuestion**:
      - header: "Scope"
      - question: "Wat wil je refactoren?"
@@ -267,7 +280,7 @@ Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe s
 
    **Model-default:** alle lens-agents draaien op Sonnet. Haiku-switch voor Reuse-lens is een toekomstige optimalisatie — niet activeren zonder A/B-meting op finding-kwaliteit.
 
-2. **Launch agents IN PARALLEL** volgens lens-strategie.
+2. **Launch agents IN PARALLEL** volgens lens-strategie (zie `shared/SKILL-PATTERNS.md#parallel-dispatch` voor dispatch-criteria en integratie-stappen).
 
    **Universele prompt-header** (elke lens, elke mode krijgt deze):
 
@@ -344,7 +357,7 @@ Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe s
    - Stringly-typed code waar constants/enums bestaan
    - Error-handling smells: over-defensive try/catch rond code die niet kan falen, OF silent swallowing (catch {}, `?? ""` dat missing data verbergt, unwrap zonder trace)
    - Leaky abstractions / internal details geëxposed
-   - RULES.md violations — Algemeen + TypeScript secties (R007-R008, T001-T203)
+   - RULES.md violations — Algemeen + TypeScript secties (R007-R009, T001-T203)
    - Stack-specific anti-patterns uit refactor-patterns.md
 
    COLD-READER (kan een nieuwe lezer dit begrijpen zonder 3 files open te zetten?):
@@ -669,11 +682,19 @@ Refactor patterns updated: {yes/no}
      - label: "Ook Bewust-niet-gefixt erbij", description: "Voeg de {K} SKIPPED items toe aan de plan"
    - multiSelect: false
 
-   **If "Per feature kiezen"** → show per-feature AskUserQuestion with multiSelect:
-   - header: "Features"
-   - question: "Welke features wil je refactoren?"
-   - options: one per feature with finding count
-   - multiSelect: true
+   **If "Per feature kiezen":**
+
+   ```
+   Features met findings:
+
+   1. {feature-1}: {N} findings ({HIGH}/{MED}/{LOW})
+   2. {feature-2}: {N} findings ({HIGH}/{MED}/{LOW})
+   ...
+   ```
+
+   Vraag: "Welke features wil je refactoren? Geef nummers (bv. `1, 3` of `alles`)."
+
+   Parse → approved-set. Lege input of "geen" → alle features krijgen CLEAN status.
 
    **If "Ook Bewust-niet-gefixt erbij"** → toon SKIPPED-lijst in tweede AskUserQuestion (multiSelect) zodat user specifiek kan kiezen welke alsnog mee moeten, en promoteer die naar improvements.
 

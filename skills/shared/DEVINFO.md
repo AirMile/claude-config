@@ -116,3 +116,53 @@ Bestanden die NIET in deze diff staan EN al dirty waren → pre-existing, niet s
 ```bash
 rm -f .project/session/pre-skill-sha.txt .project/session/active-FEATURE_NAME.json
 ```
+
+---
+
+## Frontend Pipeline Schemas
+
+### `devinfo.handoff` — Build Incomplete
+
+Geschreven door `frontend-design` (Build route) wanneer user "Open in convert" kiest na smoke-failure. Gelezen door `frontend-convert` FASE 0.0.
+
+```json
+{
+  "handoff": {
+    "source": "build-incomplete",
+    "target": "dashboard",
+    "files": [
+      "app/dashboard/page.tsx",
+      "app/dashboard/_components/StatCard.tsx"
+    ],
+    "failedChecks": ["section-collapse", "axe-critical"],
+    "reason": "smoke-fail",
+    "buildScreenshot": ".project/smoke-render-dashboard.png",
+    "timestamp": "2026-05-07T14:23:00Z"
+  }
+}
+```
+
+`source` waarden: `"build-incomplete"` (van Build-route failure). Overige `source`-waarden zijn van `frontend-convert` zelf (zie FASE 4.1).
+
+**Cleanup:** `frontend-convert` FASE 4.1 na success → zet `devinfo.handoff = null`. Als handoff ouder dan 24u: `frontend-convert` FASE 0.0 toont staleness-warning.
+
+---
+
+### `devinfo.tokenDrift` — Token Drift Log
+
+Geschreven door `frontend-tokens` (Updaten/Extraheren route) wanneer bestaande token-keys een andere waarde krijgen terwijl DOING/DONE PAGE-features bestaan. Gelezen en opgeruimd door `frontend-design` (Stap 5) en `frontend-convert` (FASE 4.1).
+
+```json
+{
+  "tokenDrift": {
+    "changedAt": "2026-05-07T15:00:00Z",
+    "changes": [
+      { "path": "colors.primary", "from": "#2563eb", "to": "#dc2626" }
+    ],
+    "affectedFeatures": ["dashboard", "settings", "billing"],
+    "resolved": false
+  }
+}
+```
+
+**Cleanup:** na elke succesvolle Build of convert-run op een feature in `affectedFeatures`, wordt die feature uit de lijst verwijderd. Als lijst leeg → `resolved: true`.

@@ -9,6 +9,14 @@
     <link rel="stylesheet" href="/css/backlog.css" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
+    />
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
+    ></script>
   </head>
   <body>
     <script id="backlog-data" type="application/json">
@@ -157,6 +165,7 @@
             placeholder="Zoeken..."
             oninput="render()"
           />
+          <div class="type-pills" id="type-pills"></div>
         </nav>
         <div id="board"></div>
       </main>
@@ -246,22 +255,42 @@
       const fileRaw = document.getElementById("backlog-data").textContent;
       let data = JSON.parse(fileRaw);
       if (!data.features) data.features = [];
+      let _trackFilter = "ALL"; // "ALL" | "FRONTEND" | "DEV"
 
       const STATUSES = ["TODO", "DEFINED", "DOING", "DONE"];
       const ARCHIVED_STATUSES = ["CANCELLED"];
-      const STATUS_LABELS = {
+
+      const STATUS_LABELS_FRONTEND = {
+        TODO: "To design",
+        DEFINED: "To convert",
+        DOING: "To audit",
+        DONE: "Shipped",
+        CANCELLED: "Gearchiveerd",
+      };
+      const STATUS_LABELS_DEV = {
         TODO: "To define",
         DEFINED: "To build",
         DOING: "To verify",
         DONE: "To refactor",
         CANCELLED: "Gearchiveerd",
       };
-      const TRANSITION_LABELS = {
+
+      const TRANSITION_LABELS_FRONTEND = {
+        TODO: "designing",
+        DEFINED: "converting",
+        DOING: "auditing",
+        DONE: "shipping",
+      };
+      const TRANSITION_LABELS_DEV = {
         TODO: "defining",
         DEFINED: "building",
         DOING: "verifying",
         DONE: "refactoring",
       };
+
+      function isFrontendTrackType(type) {
+        return FRONTEND_PIPELINE_TYPES.includes(type || "FEATURE");
+      }
       const STATUS_COLORS = {
         TODO: "var(--todo)",
         DEFINED: "var(--defined)",
@@ -320,6 +349,8 @@
         "PERF",
         "PAGE-GAP",
       ];
+      const FRONTEND_PIPELINE_TYPES = ["PAGE", "COMPONENT"];
+      const FRONTEND_ONESHOT_TYPES = ["THEME", "A11Y", "PERF"];
 
       // ─── Helpers ────────────────────────────────────────────────────
       function esc(str) {
@@ -417,11 +448,213 @@
           });
       }
 
+      async function toggleFileDiffRow(row) {
+        const panel = row.nextElementSibling?.classList.contains("bk-file-diff")
+          ? row.nextElementSibling
+          : row.closest(".fm-file")?.querySelector(".fm-file-diff");
+        if (!panel) return;
+        const open = row.getAttribute("aria-expanded") === "true";
+        if (open) {
+          panel.hidden = true;
+          row.setAttribute("aria-expanded", "false");
+          return;
+        }
+        row.setAttribute("aria-expanded", "true");
+        panel.hidden = false;
+        if (!panel.dataset.loaded) {
+          panel.innerHTML = '<div class="bk-diff-loading">Laden…</div>';
+          const basePath = location.pathname.replace(
+            /\/(backlog|dashboard)\/?$/,
+            "",
+          );
+          const url =
+            basePath +
+            "/diff/" +
+            encodeURIComponent(row.dataset.path).replace(/%2F/g, "/");
+          try {
+            const r = await fetch(url);
+            const d = await r.json();
+            panel.innerHTML = renderDiff(d, row.dataset.path);
+            panel.dataset.loaded = "1";
+          } catch (e) {
+            panel.innerHTML = `<div class="bk-diff-error">Kon diff niet laden: ${esc(e.message)}</div>`;
+          }
+        }
+      }
+
+      function renderDiff(d, filePath = "") {
+        if (!d.git)
+          return '<div class="bk-diff-empty">Geen git-repo — diff niet beschikbaar.</div>';
+        if (!d.tracked && !d.working)
+          return '<div class="bk-diff-empty">Bestand nog niet getrackt door git.</div>';
+        const hasWorking = !!d.working;
+        const hasRecent = !!d.recent;
+        const showLabels = hasWorking && hasRecent;
+        const sections = [];
+        if (hasWorking) {
+          const label = showLabels
+            ? '<div class="bk-diff-label">Uncommitted</div>'
+            : "";
+          sections.push(
+            `<div class="bk-diff-section">${label}${formatDiff(d.working, filePath)}</div>`,
+          );
+        }
+        if (hasRecent) {
+          const label = showLabels
+            ? '<div class="bk-diff-label">Recente commits</div>'
+            : "";
+          sections.push(
+            `<div class="bk-diff-section">${label}${formatGitLog(d.recent, filePath)}</div>`,
+          );
+        }
+        if (!sections.length)
+          return '<div class="bk-diff-empty">Geen wijzigingen gevonden.</div>';
+        return sections.join("");
+      }
+
+      function formatDiff(text, filePath = "") {
+        const ext = (filePath.split(".").pop() || "").toLowerCase();
+        const langMap = {
+          ts: "typescript",
+          tsx: "typescript",
+          js: "javascript",
+          jsx: "javascript",
+          css: "css",
+          json: "json",
+          html: "xml",
+          md: "markdown",
+          py: "python",
+          rs: "rust",
+          go: "go",
+          sh: "bash",
+        };
+        const lang = langMap[ext] || null;
+        function hl(s) {
+          if (lang && typeof hljs !== "undefined") {
+            try {
+              return hljs.highlight(s, { language: lang }).value;
+            } catch {}
+          }
+          return esc(s);
+        }
+        const SKIP = [
+          "diff --git ",
+          "index ",
+          "new file mode",
+          "deleted file mode",
+          "similarity index",
+          "rename from",
+          "rename to",
+          "Binary files",
+          "--- ",
+          "+++ ",
+          "\\ No newline",
+        ];
+        const lines = text.split("\n");
+        let oldLn = 0,
+          newLn = 0;
+        const rows = [];
+        for (const line of lines) {
+          if (SKIP.some((p) => line.startsWith(p))) continue;
+          if (line.startsWith("@@")) {
+            const m = line.match(
+              /@@\s+-(\d+)(?:,\d+)?\s+\+(\d+)(?:,\d+)?\s+@@/,
+            );
+            if (m) {
+              oldLn = parseInt(m[1], 10);
+              newLn = parseInt(m[2], 10);
+            }
+            const ctx = line.replace(/^@@.*?@@\s*/, "").trim();
+            rows.push(
+              `<div class="bk-diff-hunk"><span class="bk-diff-gutter"></span><span class="bk-diff-text">${ctx ? "… " + esc(ctx) : "…"}</span></div>`,
+            );
+            continue;
+          }
+          let cls = "",
+            l = "",
+            r = "";
+          if (line.startsWith("+")) {
+            cls = "bk-diff-add";
+            r = newLn++;
+          } else if (line.startsWith("-")) {
+            cls = "bk-diff-del";
+            l = oldLn++;
+          } else {
+            l = oldLn++;
+            r = newLn++;
+          }
+          const content = line.length ? line.slice(1) : "";
+          rows.push(
+            `<div class="bk-diff-row ${cls}"><span class="bk-diff-gutter">${l || ""}<span class="sep">·</span>${r || ""}</span><span class="bk-diff-text">${hl(content)}</span></div>`,
+          );
+        }
+        return `<div class="bk-diff">${rows.join("")}</div>`;
+      }
+
+      function formatGitLog(text, filePath = "") {
+        const lines = text.split("\n");
+        const out = [];
+        let buf = [];
+        const flush = () => {
+          if (buf.length) out.push(formatDiff(buf.join("\n"), filePath));
+          buf = [];
+        };
+        for (const line of lines) {
+          if (
+            line.includes("\t") &&
+            !line.startsWith(" ") &&
+            !line.match(/^[+\-@]/)
+          ) {
+            flush();
+          } else {
+            buf.push(line);
+          }
+        }
+        flush();
+        return out.join("");
+      }
+
       function getNextSkill(f) {
-        const isFrontend = FRONTEND_TYPES.includes(f.type);
-        if (f.status === "TODO") return isFrontend ? "compose" : "define";
-        if (f.status === "DEFINED") return isFrontend ? "compose" : "build";
-        if (f.status === "DOING") return isFrontend ? "audit" : "verify";
+        const isGame = data.source && data.source.startsWith("/game");
+        const devPrefix = isGame ? "game" : "dev";
+
+        // PAGE-GAP en non-frontend → dev/game-pipeline
+        if (!FRONTEND_TYPES.includes(f.type) || f.type === "PAGE-GAP") {
+          if (f.status === "TODO")
+            return { cmd: `/${devPrefix}-define ${f.name}` };
+          if (f.status === "DEFINED")
+            return { cmd: `/${devPrefix}-build ${f.name}` };
+          if (f.status === "DOING")
+            return { cmd: `/${devPrefix}-verify ${f.name}` };
+          if (f.status === "DONE")
+            return { cmd: `/${devPrefix}-refactor ${f.name}` };
+          return null;
+        }
+
+        // PAGE/COMPONENT mini-pipeline: design → convert → check
+        if (FRONTEND_PIPELINE_TYPES.includes(f.type)) {
+          if (f.status === "TODO") return { cmd: `/frontend-design ${f.name}` };
+          if (f.status === "DEFINED")
+            return { cmd: `/frontend-convert ${f.name}` };
+          if (f.status === "DOING") return { cmd: `/frontend-check ${f.name}` };
+          return null; // DONE: geen knop
+        }
+
+        // One-shot: THEME/A11Y/PERF — alleen TODO
+        if (f.status !== "TODO") return null;
+        switch (f.type) {
+          case "THEME":
+            return { cmd: `/frontend-tokens` };
+          case "A11Y":
+            return { cmd: `/frontend-check --scope=a11y ${f.name}` };
+          case "PERF":
+            return { cmd: `/frontend-check ${f.name}` };
+        }
+        return null;
+      }
+
+      function getBatchSkill(status) {
+        if (status === "DONE") return "refactor";
         return null;
       }
 
@@ -433,82 +666,144 @@
         if (title) title.textContent = data.project || "Backlog";
         if (subtitle) subtitle.textContent = data.overview || "";
 
-        // Build sidebar
-        const sidebar = document.getElementById("sidebar");
-        if (sidebar) {
-          let sidebarHtml = STATUSES.map((status) => {
-            const count = data.features.filter(
-              (f) => f.status === status && !f.shipped,
-            ).length;
-            return `<a href="#${status.toLowerCase()}-section" class="sb-${status.toLowerCase()}" data-status="${status}">${esc(STATUS_LABELS[status] || status)}</a>`;
-          }).join("");
-          const cancelledCount = data.features.filter(
-            (f) => f.status === "CANCELLED",
-          ).length;
-          if (cancelledCount > 0) {
-            sidebarHtml += `<a href="#cancelled-section" class="sb-cancelled" data-status="CANCELLED" style="opacity:0.45;font-size:11px">${esc(STATUS_LABELS.CANCELLED)} (${cancelledCount})</a>`;
-          }
-          sidebar.innerHTML = sidebarHtml;
-        }
-
         // Build board
         const board = document.getElementById("board");
         if (!board) return;
         board.innerHTML = "";
 
+        const active = data.features.filter((f) => !f.shipped);
+        const hasFrontend = active.some((f) => isFrontendTrackType(f.type));
+        const hasDev = active.some((f) => !isFrontendTrackType(f.type));
+        const dualTrack = hasFrontend && hasDev;
+
+        // Build track filter pills
+        const pillsContainer = document.getElementById("type-pills");
+        if (pillsContainer) {
+          if (dualTrack) {
+            pillsContainer.innerHTML =
+              `<button class="type-pill${_trackFilter === "ALL" ? " active" : ""}" onclick="_trackFilter='ALL';render()">All</button>` +
+              `<button class="type-pill${_trackFilter === "FRONTEND" ? " active" : ""}" onclick="_trackFilter='FRONTEND';render()">Frontend</button>` +
+              `<button class="type-pill${_trackFilter === "DEV" ? " active" : ""}" onclick="_trackFilter='DEV';render()">Dev</button>`;
+          } else {
+            pillsContainer.innerHTML = "";
+          }
+        }
+
         const searchTerm = (
           document.getElementById("search-input")?.value || ""
         ).toLowerCase();
 
-        STATUSES.forEach((status) => {
-          let items = data.features.filter(
-            (f) => f.status === status && !f.shipped,
-          );
+        let sidebarHtml = "";
 
-          if (searchTerm) {
-            items = items.filter(
+        // ─── renderTrack ──────────────────────────────────────────────
+        function renderTrack(trackId, trackLabel, typeFilter, statusDefs) {
+          if (_trackFilter !== "ALL" && _trackFilter !== trackId) return;
+
+          const trackEl = document.createElement("section");
+          trackEl.className = `track track--${trackId.toLowerCase()}`;
+          trackEl.id = `track-${trackId.toLowerCase()}`;
+
+          if (dualTrack) {
+            const trackHeader = document.createElement("div");
+            trackHeader.className = "track-header";
+            trackHeader.innerHTML = `<span class="track-label">${esc(trackLabel)}</span>`;
+            trackEl.appendChild(trackHeader);
+          }
+
+          let hasSections = false;
+          let sbGroup = "";
+
+          statusDefs.forEach(({ status, label, transitionLabels }) => {
+            let items = data.features.filter(
               (f) =>
-                f.name.toLowerCase().includes(searchTerm) ||
-                (f.description || "").toLowerCase().includes(searchTerm),
+                f.status === status &&
+                !f.shipped &&
+                typeFilter(f.type) &&
+                (status === "TODO" || !FRONTEND_ONESHOT_TYPES.includes(f.type)),
             );
-          }
 
-          const section = document.createElement("section");
-          section.className = "group";
-          section.id = status.toLowerCase() + "-section";
+            if (searchTerm) {
+              items = items.filter(
+                (f) =>
+                  f.name.toLowerCase().includes(searchTerm) ||
+                  (f.description || "").toLowerCase().includes(searchTerm),
+              );
+            }
 
-          const header = document.createElement("div");
-          header.className = "group-header";
-          header.dataset.status = status;
-          if (status === "DEFINED") {
-            const blockedCount = items.filter((f) => {
-              const deps = f.dependencies || [];
-              return deps.some((dep) => {
-                const found = findItem(dep);
-                return !found || found.item.status !== "DONE";
-              });
-            }).length;
-            const blockedSuffix =
-              blockedCount > 0
-                ? ` <span class="header-blocked-count">(${blockedCount} geblokkeerd)</span>`
-                : "";
-            header.innerHTML = `<h2>${esc(STATUS_LABELS[status] || status)}${blockedSuffix}</h2>`;
-          } else {
-            header.innerHTML = `<h2>${esc(STATUS_LABELS[status] || status)}</h2>`;
-          }
+            if (items.length === 0) return;
 
-          header.addEventListener("click", () => {
-            section.classList.toggle("collapsed");
-          });
+            const sectionId = `${trackId.toLowerCase()}-${status.toLowerCase()}-section`;
 
-          section.appendChild(header);
+            const section = document.createElement("section");
+            section.className = "group";
+            section.id = sectionId;
+            section.dataset.status = status;
 
-          const body = document.createElement("div");
-          body.className = "group-body";
+            const header = document.createElement("div");
+            header.className = "group-header";
+            header.dataset.status = status;
 
-          if (items.length === 0) {
-            body.innerHTML = '<div class="empty">Geen items</div>';
-          } else {
+            let blockedSuffix = "";
+            if (status === "DEFINED") {
+              const blockedCount = items.filter((f) => {
+                const deps = f.dependencies || [];
+                return deps.some((dep) => {
+                  const found = findItem(dep);
+                  return !found || found.item.status !== "DONE";
+                });
+              }).length;
+              blockedSuffix =
+                blockedCount > 0
+                  ? ` <span class="header-blocked-count">(${blockedCount} geblokkeerd)</span>`
+                  : "";
+            }
+
+            const batchVerb = trackId === "DEV" ? getBatchSkill(status) : null;
+            const copyPrefix =
+              data.source && data.source.startsWith("/game") ? "game" : "dev";
+            const batchBtnHtml = batchVerb
+              ? `<button class="group-batch-btn" data-cmd="/${copyPrefix}-${batchVerb}" title="Kopieer /${copyPrefix}-${batchVerb}" aria-label="Kopieer /${copyPrefix}-${batchVerb}">
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
+                  <span>batch (${items.length})</span>
+                 </button>`
+              : "";
+
+            header.innerHTML = `<h2>${esc(label)}${blockedSuffix}</h2>${batchBtnHtml}`;
+
+            header.addEventListener("click", (e) => {
+              const batchBtn = e.target.closest(".group-batch-btn");
+              if (batchBtn) {
+                e.stopPropagation();
+                const cmd = batchBtn.dataset.cmd;
+                navigator.clipboard.writeText(cmd).then(() => {
+                  const targets = data.features.filter(
+                    (f) =>
+                      f.status === status &&
+                      !f.shipped &&
+                      !f.refactor &&
+                      typeFilter(f.type),
+                  );
+                  targets.forEach((f) => {
+                    f.transition = transitionLabels[status] || "active";
+                  });
+                  if (targets.length) {
+                    syncJSON();
+                    render();
+                  }
+                  toast(
+                    `Gekopieerd: ${cmd}${targets.length ? ` — ${targets.length} gemarkeerd` : ""}`,
+                  );
+                });
+                return;
+              }
+              section.classList.toggle("collapsed");
+            });
+
+            section.appendChild(header);
+
+            const body = document.createElement("div");
+            body.className = "group-body";
+
             const phaseOrder = ["P1", "P2", "P3", "P4", "—"];
             const phases = [...new Set(items.map((f) => f.phase || "—"))].sort(
               (a, b) => phaseOrder.indexOf(a) - phaseOrder.indexOf(b),
@@ -534,11 +829,72 @@
 
               body.appendChild(phaseGroup);
             });
-          }
 
-          section.appendChild(body);
-          board.appendChild(section);
-        });
+            section.appendChild(body);
+            trackEl.appendChild(section);
+            hasSections = true;
+
+            sbGroup += `<a href="#${sectionId}" class="sb-${status.toLowerCase()}" data-status="${status}">${esc(label)}</a>`;
+          });
+
+          if (!hasSections) return;
+
+          board.appendChild(trackEl);
+
+          if (dualTrack) {
+            sidebarHtml += `<div class="sb-track-group sb-track--${trackId.toLowerCase()}"><div class="sb-track-label">${esc(trackLabel)}</div>${sbGroup}</div>`;
+          } else {
+            sidebarHtml += sbGroup;
+          }
+        }
+
+        // ─── Frontend track ───────────────────────────────────────────
+        renderTrack(
+          "FRONTEND",
+          "Frontend",
+          (type) => isFrontendTrackType(type),
+          [
+            {
+              status: "TODO",
+              label: "To design",
+              transitionLabels: TRANSITION_LABELS_FRONTEND,
+            },
+            {
+              status: "DEFINED",
+              label: "To convert",
+              transitionLabels: TRANSITION_LABELS_FRONTEND,
+            },
+            {
+              status: "DOING",
+              label: "To audit",
+              transitionLabels: TRANSITION_LABELS_FRONTEND,
+            },
+          ],
+        );
+
+        // ─── Dev track ────────────────────────────────────────────────
+        renderTrack("DEV", "Dev", (type) => !isFrontendTrackType(type), [
+          {
+            status: "TODO",
+            label: "To define",
+            transitionLabels: TRANSITION_LABELS_DEV,
+          },
+          {
+            status: "DEFINED",
+            label: "To build",
+            transitionLabels: TRANSITION_LABELS_DEV,
+          },
+          {
+            status: "DOING",
+            label: "To verify",
+            transitionLabels: TRANSITION_LABELS_DEV,
+          },
+          {
+            status: "DONE",
+            label: "To refactor",
+            transitionLabels: TRANSITION_LABELS_DEV,
+          },
+        ]);
 
         // Archived (CANCELLED) section — collapsed by default
         const cancelledItems = data.features.filter(
@@ -552,7 +908,7 @@
           const archHeader = document.createElement("div");
           archHeader.className = "group-header";
           archHeader.dataset.status = "CANCELLED";
-          archHeader.innerHTML = `<h2>${esc(STATUS_LABELS.CANCELLED)} (${cancelledItems.length})</h2>`;
+          archHeader.innerHTML = `<h2>${esc("Gearchiveerd")} (${cancelledItems.length})</h2>`;
           archHeader.addEventListener("click", () => {
             archSection.classList.toggle("collapsed");
           });
@@ -565,9 +921,29 @@
           });
           archSection.appendChild(archBody);
           board.appendChild(archSection);
+
+          sidebarHtml += `<a href="#cancelled-section" class="sb-cancelled" data-status="CANCELLED" style="opacity:0.45;font-size:11px">${esc("Gearchiveerd")} (${cancelledItems.length})</a>`;
         }
 
+        // Build sidebar
+        const sidebar = document.getElementById("sidebar");
+        if (sidebar) sidebar.innerHTML = sidebarHtml;
+
         updateSidebarActive();
+        requestAnimationFrame(updateSidebarVisibility);
+      }
+
+      function updateSidebarVisibility() {
+        const layoutEl = document.querySelector(".layout");
+        const sidebarEl = document.getElementById("sidebar");
+        if (!layoutEl || !sidebarEl) return;
+        const linkCount = sidebarEl.querySelectorAll("a").length;
+        const fitsViewport =
+          document.documentElement.scrollHeight <= window.innerHeight + 1;
+        layoutEl.classList.toggle(
+          "layout--no-sidebar",
+          linkCount <= 1 || fitsViewport,
+        );
       }
 
       // ─── Row rendering ───────────────────────────────────────────────
@@ -578,26 +954,25 @@
 
         let metaHtml = "";
         const deps = f.dependencies || [];
-        if (deps.length > 0) {
-          const unresolvedDeps = deps.filter((dep) => {
-            const found = findItem(dep);
-            return !found || found.item.status !== "DONE";
+        const unresolvedDeps = deps.filter((dep) => {
+          const found = findItem(dep);
+          return !found || found.item.status !== "DONE";
+        });
+        const isBlocked = unresolvedDeps.length > 0;
+        if (isBlocked) {
+          metaHtml += `<span class="dep-blocked-label">blocked by</span>`;
+          unresolvedDeps.forEach((dep) => {
+            metaHtml += `<span class="dep-icon" title="Wacht op ${esc(dep)}">${esc(dep)}</span>`;
           });
-          if (unresolvedDeps.length > 0) {
-            metaHtml += `<span class="dep-blocked" title="Geblokkeerd door ${unresolvedDeps.join(", ")}">⊘ geblokkeerd</span>`;
-            unresolvedDeps.forEach((dep) => {
-              metaHtml += `<span class="dep-icon" title="Wacht op ${esc(dep)}">⊸ ${esc(dep)}</span>`;
-            });
-          }
-        }
-        if (f.risk && (f.status === "TODO" || f.status === "DEFINED")) {
-          const riskLabel = f.risk <= 2 ? "laag" : f.risk <= 3 ? "med" : "hoog";
-          const riskClass =
-            f.risk <= 2 ? "risk-low" : f.risk <= 3 ? "risk-med" : "risk-high";
-          metaHtml += `<span class="risk-badge ${riskClass}" title="Complexiteit ${f.risk}/5">${riskLabel}</span>`;
         }
         if (f.auto && f.status !== "DONE") {
           metaHtml += `<span class="auto-badge">AUTO</span>`;
+        }
+        const pendingGaps = Array.isArray(f.gaps)
+          ? f.gaps.filter((g) => g.status === "pending").length
+          : 0;
+        if (pendingGaps > 0) {
+          metaHtml += `<span class="gap-badge" title="${pendingGaps} ongekoppelde handler${pendingGaps > 1 ? "s" : ""} — run /frontend-design ${f.name} om te koppelen">⚠ ${pendingGaps} gap${pendingGaps > 1 ? "s" : ""}</span>`;
         }
         if (f.status === "DONE" && f.refactor) {
           if (f.refactor === "ROLLED_BACK") {
@@ -611,32 +986,50 @@
           metaHtml += `<a class="card-gh-link" href="${esc(f.github_issue)}" target="_blank" rel="noopener" title="${esc(f.github_issue)}">#${ghNum ? ghNum[1] : "?"}</a>`;
         }
 
+        if (f.shipped && f.transition) delete f.transition;
+
         const row = document.createElement("div");
         const isActive = !!f.transition;
-        row.className = "row" + (isActive ? " row--active" : "");
+        row.className =
+          "row" +
+          (isBlocked ? " row--blocked" : "") +
+          (isActive ? " row--active" : "");
         row.dataset.name = f.name;
 
-        const copyVerb = getNextSkill(f);
-        const copyPrefix =
-          data.source && data.source.startsWith("/game") ? "game" : "dev";
-        const copyCmd = copyVerb
-          ? `/${copyPrefix}-${copyVerb} ${f.name}`
-          : null;
+        const next = getNextSkill(f);
+        const copyCmd = next ? next.cmd : null;
+        const copyTitle = copyCmd || f.name;
 
         const actionBtnHtml = isActive
           ? `<button class="row-annuleer-btn" title="Annuleer">
               <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 2l12 12M14 2L2 14"/></svg>
              </button>`
-          : `<button class="row-copy-btn ${typeInfo.cls}" title="${copyCmd || f.name}" data-cmd="${copyCmd || ""}">
+          : `<button class="row-copy-btn ${typeInfo.cls}" title="${copyTitle}" data-cmd="${copyCmd || ""}">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
              </button>`;
 
-        const editDeleteHtml =
-          f.status === "TODO" || f.status === "DEFINED"
-            ? `<button class="row-edit-btn" title="Bewerken">✎</button><button class="row-cancel-btn" title="Archiveren">○</button><button class="row-delete-btn" title="Verwijderen">✕</button>`
-            : f.status === "CANCELLED"
-              ? `<button class="row-restore-btn" title="Herstellen naar TODO">↩</button><button class="row-delete-btn" title="Definitief verwijderen">✕</button>`
-              : "";
+        const menuItemsHtml = (() => {
+          if (f.status === "TODO" || f.status === "DEFINED") {
+            return (
+              `<button class="row-menu-item row-edit-btn">✎ Bewerken</button>` +
+              `<button class="row-menu-item row-cancel-btn">○ Archiveren</button>` +
+              `<button class="row-menu-item row-delete-btn row-menu-item--danger">✕ Verwijderen</button>`
+            );
+          }
+          if (f.status === "CANCELLED") {
+            return (
+              `<button class="row-menu-item row-restore-btn">↩ Herstellen</button>` +
+              `<button class="row-menu-item row-delete-btn row-menu-item--danger">✕ Definitief verwijderen</button>`
+            );
+          }
+          return "";
+        })();
+        const editDeleteHtml = menuItemsHtml
+          ? `<div class="row-menu-wrap">
+               <button class="row-menu-btn" title="Acties" aria-haspopup="menu" aria-expanded="false">⋯</button>
+               <div class="row-menu" role="menu" hidden>${menuItemsHtml}</div>
+             </div>`
+          : "";
 
         row.innerHTML = `<div class="row-summary">
           ${actionBtnHtml}
@@ -644,8 +1037,10 @@
           ${isActive ? `<span class="row-transition-label">${esc(f.transition)}</span>` : ""}
           ${subLabel ? `<span class="row-sub-tag">${subLabel}</span>` : ""}
           ${f.description ? `<span class="row-desc">${esc(f.description)}</span>` : ""}
-          <div class="row-meta">${metaHtml}</div>
-          ${editDeleteHtml}
+          <div class="row-actions-group">
+            <div class="row-meta">${metaHtml}</div>
+            ${editDeleteHtml}
+          </div>
         </div>
         <div class="row-expand"></div>`;
 
@@ -676,7 +1071,10 @@
             navigator.clipboard.writeText(cmd).then(() => {
               const found = findItem(f.name);
               if (found) {
-                found.item.transition = TRANSITION_LABELS[f.status] || "active";
+                const tlabels = isFrontendTrackType(f.type)
+                  ? TRANSITION_LABELS_FRONTEND
+                  : TRANSITION_LABELS_DEV;
+                found.item.transition = tlabels[f.status] || "active";
                 syncJSON();
                 render();
               }
@@ -718,26 +1116,32 @@
             }
           });
 
+        const menuBtn = row.querySelector(".row-menu-btn");
+        const menu = row.querySelector(".row-menu");
+        if (menuBtn && menu) {
+          menuBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            document
+              .querySelectorAll(".row-menu:not([hidden])")
+              .forEach((m) => m !== menu && (m.hidden = true));
+            menu.hidden = !menu.hidden;
+            menuBtn.setAttribute("aria-expanded", String(!menu.hidden));
+          });
+          menu.addEventListener("click", (e) => {
+            e.stopPropagation();
+            setTimeout(() => {
+              menu.hidden = true;
+              menuBtn.setAttribute("aria-expanded", "false");
+            }, 0);
+          });
+        }
+
         summary.addEventListener("click", (e) => {
           if (copyBtn && (e.target === copyBtn || copyBtn.contains(e.target)))
             return;
-          if (editBtn && (e.target === editBtn || editBtn.contains(e.target)))
+          if (menuBtn && (e.target === menuBtn || menuBtn.contains(e.target)))
             return;
-          if (
-            deleteBtn &&
-            (e.target === deleteBtn || deleteBtn.contains(e.target))
-          )
-            return;
-          if (
-            cancelBtn &&
-            (e.target === cancelBtn || cancelBtn.contains(e.target))
-          )
-            return;
-          if (
-            restoreBtn &&
-            (e.target === restoreBtn || restoreBtn.contains(e.target))
-          )
-            return;
+          if (menu && menu.contains(e.target)) return;
           if (f.status === "TODO" || f.status === "CANCELLED") return;
           toggleRowExpand(row, f.name);
         });
@@ -839,17 +1243,23 @@
                 modify: "var(--accent)",
                 delete: "var(--danger)",
               };
-              const basePath = location.pathname.replace(/\/backlog\/?$/, "");
+              const basePath = location.pathname.replace(
+                /\/(backlog|dashboard)\/?$/,
+                "",
+              );
               html += `<div class="expand-section"><div class="bk-section-label">Files (${files.length})</div><div class="bk-files">`;
               files.forEach((fFile) => {
                 const openUrl =
                   basePath +
                   "/open/" +
                   encodeURIComponent(fFile.path).replace(/%2F/g, "/");
-                html += `<div class="bk-file-row">
+                html += `<div class="bk-file-row" data-path="${esc(fFile.path)}" role="button" tabindex="0" aria-expanded="false">
                   <span class="bk-file-action" style="color:${colors[fFile.action] || "var(--text-dim)"}">${icons[fFile.action] || "·"}</span>
-                  <a class="bk-file-path" href="#" onclick="openInVSCode('${openUrl}',this);return false">${esc(fFile.path)}</a>
-                </div>`;
+                  <span class="bk-file-chevron">▸</span>
+                  <span class="bk-file-path">${esc(fFile.path)}</span>
+                  <button class="bk-file-open-btn" data-open-url="${openUrl}" title="Open in VS Code" aria-label="Open ${esc(fFile.path)} in VS Code">↗</button>
+                </div>
+                <div class="bk-file-diff" hidden></div>`;
               });
               html += `</div></div>`;
             }
@@ -869,6 +1279,31 @@
                   ? `<span class="refactor-badge refactor-rollback">⚠ ${esc(ref.status)}</span>`
                   : `<span class="refactor-badge refactor-done">✓ ${esc(ref.status)}</span>`;
               html += `<div class="expand-section">${badge}</div>`;
+            }
+            const doneFiles = detail.files || [];
+            if (doneFiles.length) {
+              const icons = { create: "+", modify: "~", delete: "−" };
+              const colors = {
+                create: "var(--done)",
+                modify: "var(--accent)",
+                delete: "var(--danger)",
+              };
+              const basePath = location.pathname.replace(/\/backlog\/?$/, "");
+              html += `<div class="expand-section"><div class="bk-section-label">Files (${doneFiles.length})</div><div class="bk-files">`;
+              doneFiles.forEach((fFile) => {
+                const openUrl =
+                  basePath +
+                  "/open/" +
+                  encodeURIComponent(fFile.path).replace(/%2F/g, "/");
+                html += `<div class="bk-file-row" data-path="${esc(fFile.path)}" role="button" tabindex="0" aria-expanded="false">
+                  <span class="bk-file-action" style="color:${colors[fFile.action] || "var(--text-dim)"}">${icons[fFile.action] || "·"}</span>
+                  <span class="bk-file-chevron">▸</span>
+                  <span class="bk-file-path">${esc(fFile.path)}</span>
+                  <button class="bk-file-open-btn" data-open-url="${openUrl}" title="Open in VS Code" aria-label="Open ${esc(fFile.path)} in VS Code">↗</button>
+                </div>
+                <div class="bk-file-diff" hidden></div>`;
+              });
+              html += `</div></div>`;
             }
           }
 
@@ -895,12 +1330,15 @@
         sections.forEach((s) => {
           const rect = s.getBoundingClientRect();
           if (rect.top <= 140) {
-            activeStatus = s.id.replace("-section", "").toUpperCase();
+            activeStatus =
+              s.dataset.status || s.id.replace("-section", "").toUpperCase();
           }
         });
 
         if (!activeStatus && sections.length) {
-          activeStatus = sections[0].id.replace("-section", "").toUpperCase();
+          activeStatus =
+            sections[0].dataset.status ||
+            sections[0].id.replace("-section", "").toUpperCase();
         }
 
         links.forEach((link) => {
@@ -1059,6 +1497,48 @@
       });
 
       // ─── Init ───────────────────────────────────────────────────────
+      let _sidebarResizeT;
+      window.addEventListener("resize", () => {
+        clearTimeout(_sidebarResizeT);
+        _sidebarResizeT = setTimeout(updateSidebarVisibility, 150);
+      });
+      document.addEventListener("click", () => {
+        document
+          .querySelectorAll(".row-menu:not([hidden])")
+          .forEach((m) => (m.hidden = true));
+        document
+          .querySelectorAll('.row-menu-btn[aria-expanded="true"]')
+          .forEach((b) => b.setAttribute("aria-expanded", "false"));
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape")
+          document
+            .querySelectorAll(".row-menu:not([hidden])")
+            .forEach((m) => (m.hidden = true));
+      });
+      document.addEventListener("click", (e) => {
+        const openBtn = e.target.closest(".bk-file-open-btn");
+        if (openBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          openInVSCode(openBtn.dataset.openUrl, openBtn);
+          return;
+        }
+        const row = e.target.closest(".bk-file-row");
+        if (row) {
+          e.preventDefault();
+          toggleFileDiffRow(row);
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          const row = document.activeElement?.closest?.(".bk-file-row");
+          if (row && document.activeElement === row) {
+            e.preventDefault();
+            toggleFileDiffRow(row);
+          }
+        }
+      });
       render();
     </script>
     <button

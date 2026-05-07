@@ -5,8 +5,7 @@ description: >-
   code (features, entities, endpoints, architecture), and extract synced
   learnings (pitfalls/patterns) from teammate commits. Use with /core-pull
   or /core-pull --no-learn. For first-time onboarding to a mature repo:
-  use /core-onboard instead.
-disable-model-invocation: true
+  use /core-setup instead.
 argument-hint: "[remote/branch] [--no-learn]"
 metadata:
   author: mileszeilstra
@@ -22,7 +21,7 @@ Pull remote changes, analyseer de diff, ververs `.project/` context, analyseer t
 
 **`--no-learn` flag**: Skip FASE 4j (learning extraction). Gebruik als je alleen context/architecture wilt syncen zonder learnings te genereren.
 
-**First-time onboarding (vervangt oude `--full` flag)**: gebruik `/core-onboard` voor volledig codebase scan + LLM learnings extractie wanneer je een mature repo binnenstapt.
+**First-time onboarding (vervangt oude `--full` flag)**: gebruik `/core-setup` voor volledig codebase scan + LLM learnings extractie wanneer je een mature repo binnenstapt.
 
 ## References
 
@@ -88,14 +87,14 @@ Pull remote changes, analyseer de diff, ververs `.project/` context, analyseer t
 
    Bij `learnings_empty && total_commits > 50 && !dismissed` → **AskUserQuestion**:
    - header: "Onboard?"
-   - question: "Dit lijkt een nieuwe codebase voor je ({N} commits, geen learnings). `/core-onboard` bouwt base memory uit conventies, patterns en pitfalls van bestaande code. Nu runnen?"
+   - question: "Dit lijkt een nieuwe codebase voor je ({N} commits, geen learnings). `/core-setup` bouwt base memory uit conventies, patterns en pitfalls van bestaande code. Nu runnen?"
    - options:
-     - "Ja, run /core-onboard nu (Recommended)" — exit core-pull met instructie aan user om `/core-onboard` te starten
+     - "Ja, run /core-setup (Recommended)" — exit core-pull met instructie aan user om `/core-setup` te starten
      - "Nee, alleen pull" — ga door met FASE 1
      - "Niet meer vragen voor dit project" — schrijf `.project/session/onboard-dismissed` (lege marker file), ga door met FASE 1
    - multiSelect: false
 
-   Bij "Ja": exit met message `RUN /core-onboard FOR BASE MEMORY (then re-run /core-pull for incremental updates)`. Geen pull/sync.
+   Bij "Ja": exit met message `RUN /core-setup FOR BASE MEMORY (then re-run /core-pull for incremental updates)`. Geen pull/sync.
 
 ### FASE 1: Pull
 
@@ -208,7 +207,7 @@ Also get merge commits to detect feature branches:
 git log HEAD --merges --since="$SINCE" --format="%H|%an|%s"
 ```
 
-Store as `has_teammate_commits = true/false`. If zero teammate commits → skip FASE 4 (geen teammate enrichment nodig). Voor volledige codebase scan: gebruik `/core-onboard`.
+Store as `has_teammate_commits = true/false`. If zero teammate commits → skip FASE 4 (geen teammate enrichment nodig). Voor volledige codebase scan: gebruik `/core-setup`.
 
 ### FASE 3: Context Sync
 
@@ -274,7 +273,7 @@ Write `project-context.json` terug met `JSON.stringify(data, null, 2)`.
 
 ### FASE 4: Teammate Deep Analysis
 
-Skip entirely if `has_teammate_commits = false`. This fase enriches project.json and project-context.json with context from code you didn't write. Voor een volledige codebase scan (eerste keer joinen): gebruik `/core-onboard`.
+Skip entirely if `has_teammate_commits = false`. This fase enriches project.json and project-context.json with context from code you didn't write. Voor een volledige codebase scan (eerste keer joinen): gebruik `/core-setup`.
 
 **4a) Determine scope**
 

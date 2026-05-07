@@ -6,7 +6,11 @@
 
 ## Detection
 
-- Already installed: `@biomejs/biome` in devDependencies OR `biome.json` exists
+| State                          | Conditie                                                               |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| `already-installed-configured` | `@biomejs/biome` in devDependencies EN `biome.json` aanwezig           |
+| `installed-not-configured`     | `@biomejs/biome` in devDependencies MAAR `biome.json` ontbreekt        |
+| `not-installed`                | `@biomejs/biome` niet in devDependencies EN `biome.json` niet aanwezig |
 
 ## Install (via Context7)
 

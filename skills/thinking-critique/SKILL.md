@@ -1,7 +1,6 @@
 ---
 name: thinking-critique
 description: Critically analyze ideas through structured techniques from multiple perspectives. Use with /thinking-critique to stress-test concepts before committing to implementation.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -64,7 +63,6 @@ Example triggers:
      options:
        - label: "Ja, analyseer dit (Recommended)", description: "Gebruik concept uit project.json"
        - label: "Ander concept", description: "Ik wil een ander concept plakken"
-       - label: "Explain question", description: "Leg uit wat dit betekent"
      multiSelect: false
      ```
    - If "Ja": proceed with loaded concept

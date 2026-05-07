@@ -259,6 +259,23 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 
   "observations": [
     "Inspector z-index conflict bij overlapping modals — suggest: /dev-define z-index-system"
+  ],
+
+  "suggestionsLog": [
+    {
+      "skill": "dev-plan",
+      "type": "COMPONENT",
+      "name": "Modal",
+      "status": "accepted",
+      "at": "2026-05-07T14:00:00Z"
+    },
+    {
+      "skill": "dev-build",
+      "type": "COMPONENT",
+      "name": "EmptyState",
+      "status": "rejected",
+      "at": "2026-05-07T15:30:00Z"
+    }
   ]
 }
 ```
@@ -299,6 +316,14 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 - `requirements[].implicitCoverage` — wanneer requirement gedekt is door een andere test (set door FASE 5d)
 - `observations` — bevindingen, suggesties voor andere features
 - `tests.verificationCheckpoint` — acceptance criteria mapping resultaat (gaps, mismatches, adjustments)
+
+**Toegevoegd door reuse-discovery (dev-define, dev-plan, dev-build, dev-verify):**
+
+- `suggestionsLog[]` — bijgehouden door alle vier pipeline-skills die COMPONENT/PAGE-todos suggereren, én door `frontend-design`/`frontend-convert` voor gap-discovery (direction-flag `frontend→dev`). Append-only. Schema: `{ skill, type, name, status: "accepted"|"rejected", at, direction? }`. Dedup-sleutel: `(name, skill)`. Een voorstel dat eenmaal afgewezen is (`status: "rejected"`) wordt door dezelfde skill niet opnieuw voorgesteld, ook al is de trigger hetzelfde. Een nieuwe trigger vanuit een andere skill mag wél opnieuw voorstellen (andere detectie-bron) — zie dedupe-logica in de afzonderlijke skill-docs.
+
+**Toegevoegd door gap-discovery (frontend-design, frontend-convert):**
+
+- `frontend.linkedEntities[]` — cross-pipeline traceability: welke visual entities (components, pages) koppelen hun handler-props aan deze feature. Schema per item: `{ type: "component"|"page", name, prop }`. Wordt gelezen door `dev-build` om stub-handlers te vervangen door echte implementatie na build.
 
 **Toegevoegd door thinking-decide** (cross-phase, kan op elk moment):
 

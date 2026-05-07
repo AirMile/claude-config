@@ -1,7 +1,6 @@
 ---
 name: project-add
 description: Add project (new or clone existing) with symlinks/junctions to shared claude-config. Use with /project-add to register a new project in the multi-project setup.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -412,7 +411,7 @@ Options:
 
 - Lees CLAUDE.base.md van `{config_repo}`
 - Volg normale /core-setup flow
-- Schrijf naar `{projects_root}/[naam]/.claude/CLAUDE.md`
+- Schrijf naar `{projects_root}/[naam]/CLAUDE.md`
 
 ### FASE 8: GitHub Publish
 

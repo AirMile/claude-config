@@ -6,7 +6,6 @@ description: >-
   platform sentiment, messaging opportunities, and campaign timing windows.
   Use with /marketing-research [topic] for product launches, content strategy,
   or competitive positioning.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0

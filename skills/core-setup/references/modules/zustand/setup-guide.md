@@ -4,7 +4,12 @@
 
 ## Detection
 
-- Already installed: `zustand` in dependencies
+| State           | Conditie                       |
+| --------------- | ------------------------------ |
+| `installed`     | `zustand` in dependencies      |
+| `not-installed` | `zustand` niet in dependencies |
+
+Geen apart configuratiebestand — `installed` geldt als `already-installed-configured` voor FASE 5 stap 0.
 
 ## Install (via Context7)
 

@@ -1,7 +1,6 @@
 ---
 name: project-server
 description: Start, stop of check de lokale backlog/dashboard server op localhost:9876. Serveert alle project-backlogs en dashboards via één Node.js server.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 3.1.0
@@ -23,10 +22,11 @@ Detecteer platform:
 - **Windows**: `$PSVersionTable` bestaat → PowerShell
 - **macOS**: bash
 
-Projects root:
+Projects root (eerste match wint):
 
-- **Windows**: `C:\Projects`
-- **macOS**: `$HOME/projects`
+- Env var `CLAUDE_PROJECTS_ROOT` (override voor afwijkende locaties)
+- **Windows fallback**: `C:\Projects`
+- **macOS fallback**: `$HOME/projects`
 
 Server-script pad: `~/.claude/skills/shared/references/serve-backlog.js`
 
@@ -73,13 +73,15 @@ Bevestig resultaat. Als geen server draaide → meld dat.
 _Windows:_
 
 ```powershell
-Start-Process -WindowStyle Hidden -FilePath node -ArgumentList "$env:USERPROFILE\.claude\skills\shared\references\serve-backlog.js","C:\Projects" -RedirectStandardOutput "$env:TEMP\backlog-server.log" -RedirectStandardError "$env:TEMP\backlog-server.err"
+$root = if ($env:CLAUDE_PROJECTS_ROOT) { $env:CLAUDE_PROJECTS_ROOT } else { "C:\Projects" }
+Start-Process -WindowStyle Hidden -FilePath node -ArgumentList "$env:USERPROFILE\.claude\skills\shared\references\serve-backlog.js","$root" -RedirectStandardOutput "$env:TEMP\backlog-server.log" -RedirectStandardError "$env:TEMP\backlog-server.err"
 ```
 
 _macOS:_
 
 ```bash
-nohup node ~/.claude/skills/shared/references/serve-backlog.js "$HOME/projects" > /tmp/backlog-server.log 2>&1 &
+root="${CLAUDE_PROJECTS_ROOT:-$HOME/projects}"
+nohup node ~/.claude/skills/shared/references/serve-backlog.js "$root" > /tmp/backlog-server.log 2>&1 &
 ```
 
 Wacht max 5 seconden op readiness (gebruik de FASE 0 check in een loop).
@@ -93,13 +95,15 @@ Scan projecten in de projects root (directories met een `.project/` subdirectory
 _Windows:_
 
 ```powershell
-Get-ChildItem -Path C:\Projects -Directory | Where-Object { Test-Path "$($_.FullName)\.project" } | Select-Object -ExpandProperty Name
+$root = if ($env:CLAUDE_PROJECTS_ROOT) { $env:CLAUDE_PROJECTS_ROOT } else { "C:\Projects" }
+Get-ChildItem -Path $root -Directory | Where-Object { Test-Path "$($_.FullName)\.project" } | Select-Object -ExpandProperty Name
 ```
 
 _macOS:_
 
 ```bash
-for d in "$HOME/projects"/*/; do [ -d "$d/.project" ] && basename "$d"; done
+root="${CLAUDE_PROJECTS_ROOT:-$HOME/projects}"
+for d in "$root"/*/; do [ -d "$d/.project" ] && basename "$d"; done
 ```
 
 Toon output:
@@ -125,7 +129,7 @@ Bepaal welke URL gekopieerd wordt (context-aware):
 **Windows (PowerShell):**
 
 ```powershell
-$root = "C:\Projects"
+$root = if ($env:CLAUDE_PROJECTS_ROOT) { $env:CLAUDE_PROJECTS_ROOT } else { "C:\Projects" }
 $cwd = (Get-Location).Path
 $url = "http://localhost:9876"
 if ($cwd -like "$root\*") {
@@ -140,7 +144,7 @@ $url
 **macOS (bash):**
 
 ```bash
-root="$HOME/projects"
+root="${CLAUDE_PROJECTS_ROOT:-$HOME/projects}"
 cwd="$PWD"
 url="http://localhost:9876"
 if [[ "$cwd" == "$root"/* ]]; then

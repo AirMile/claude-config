@@ -10,6 +10,14 @@
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
+    />
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
+    ></script>
   </head>
   <body>
     <script id="dashboard-data" type="application/json">
@@ -1655,7 +1663,7 @@
               <button id="config-create" class="edit-btn edit-btn--accent">+ Aanmaken</button>
             </div>
             <div class="empty-state">
-              <p>Geen .claude/CLAUDE.md gevonden</p>
+              <p>Geen CLAUDE.md gevonden</p>
             </div>`;
         }
 
@@ -1731,8 +1739,104 @@
       const featureDetailCache = {};
 
       function buildFeatureDetailHtml(detail) {
-        let html = "";
+        const isFrontend =
+          detail.type === "PAGE" || detail.type === "COMPONENT";
+        return isFrontend
+          ? buildFrontendDetailHtml(detail)
+          : buildDevDetailHtml(detail);
+      }
 
+      function buildFrontendDetailHtml(detail) {
+        let html = "";
+        const base = location.pathname.replace(/\/(backlog|dashboard)\/?$/, "");
+
+        // Screenshot + smoke status
+        if (detail.audit && detail.audit.buildScreenshot) {
+          const cacheBuster = encodeURIComponent(
+            detail.audit.lastRun || detail.shippedAt || "",
+          );
+          const src =
+            base +
+            "/asset?path=" +
+            encodeURIComponent(detail.audit.buildScreenshot) +
+            (cacheBuster ? "&v=" + cacheBuster : "");
+          const s = detail.audit.buildSmokeStatus;
+          const smokeBadge =
+            s === "PASS"
+              ? `<span class="fm-smoke-badge fm-smoke--pass">Smoke PASS</span>`
+              : s === "FAIL"
+                ? `<span class="fm-smoke-badge fm-smoke--fail">Smoke FAIL</span>`
+                : "";
+          html += `<div class="fm-section fm-screenshot-section">
+            ${smokeBadge}
+            <img src="${src}" alt="Smoke render — ${esc(detail.name || "")}" loading="lazy" class="fm-screenshot-img" onclick="this.classList.toggle('fm-screenshot-zoom')" onerror="this.outerHTML='<div class=\\'fm-screenshot-missing\\'>Screenshot niet gevonden</div>'">
+          </div>`;
+        }
+
+        // Audit block (one-liner format)
+        if (detail.audit && detail.audit.lastRun) {
+          const a = detail.audit;
+          const f = a.findings || {};
+          const scopes = Array.isArray(a.scopes) ? a.scopes.join(" · ") : "";
+          const c = f.critical != null ? parseInt(f.critical, 10) : null;
+          const w = f.warnings != null ? parseInt(f.warnings, 10) : null;
+          const p = f.passed != null ? parseInt(f.passed, 10) : null;
+          const findingsHtml = [
+            p != null ? `<span class="fm-finding--passed">✓${p}</span>` : "",
+            w != null ? `<span class="fm-finding--warning">⚠${w}</span>` : "",
+            c != null ? `<span class="fm-finding--critical">✗${c}</span>` : "",
+          ]
+            .filter(Boolean)
+            .join("");
+          html += `<div class="fm-section fm-audit-block">
+            <div class="fm-audit-line">
+              <span class="fm-audit-tag">AUDIT</span>
+              <span class="fm-audit-sep">·</span>
+              <span class="fm-audit-date">${esc(a.lastRun)}</span>
+              ${scopes ? `<span class="fm-audit-sep">·</span><span class="fm-audit-scopes">${esc(scopes)}</span>` : ""}
+              ${findingsHtml ? `<span class="fm-audit-sep">·</span><span class="fm-findings-inline">${findingsHtml}</span>` : ""}
+            </div>
+          </div>`;
+        }
+
+        // Design spec
+        const spec = detail.design;
+        if (spec) {
+          const isComp = detail.type === "COMPONENT";
+          let specHtml = `<h4>${esc(spec.name || detail.name || "")}`;
+          if (isComp && spec.scope)
+            specHtml += ` <span class="fm-scope-badge">${esc(spec.scope)}</span>`;
+          specHtml += `</h4>`;
+          if (spec.purpose)
+            specHtml += `<p class="fm-spec-purpose">${esc(spec.purpose)}</p>`;
+          if (isComp) {
+            const matrix = [
+              spec.variants && spec.variants.length
+                ? ["Variants", spec.variants]
+                : null,
+              spec.sizes && spec.sizes.length ? ["Sizes", spec.sizes] : null,
+              spec.states && spec.states.length
+                ? ["States", spec.states]
+                : null,
+            ].filter(Boolean);
+            matrix.forEach(([label, vals]) => {
+              specHtml += `<div class="fm-spec-row"><span class="fm-spec-label">${label}</span><span class="fm-spec-vals">${vals.map(esc).join(" · ")}</span></div>`;
+            });
+            if (spec.props && spec.props.length)
+              specHtml += `<div class="fm-spec-row"><span class="fm-spec-label">Props</span><span class="fm-spec-vals">${spec.props.map(esc).join(", ")}</span></div>`;
+            if (spec.usedIn && spec.usedIn.length)
+              specHtml += `<div class="fm-spec-row"><span class="fm-spec-label">Used in</span><span class="fm-spec-vals">${spec.usedIn.map((p) => `<span class="fm-spec-link" onclick="navigateToFeature('${esc(p)}')">${esc(p)}</span>`).join(", ")}</span></div>`;
+          } else {
+            if (spec.uses && spec.uses.length)
+              specHtml += `<div class="fm-spec-row"><span class="fm-spec-label">Uses</span><span class="fm-spec-vals">${spec.uses.map((c) => `<span class="fm-spec-link" onclick="navigateToFeature('${esc(c)}')">${esc(c)}</span>`).join(", ")}</span></div>`;
+          }
+          if (detail.type === "COMPONENT" && detail.demoPath) {
+            specHtml += `<div class="fm-spec-row"><span class="fm-spec-label">Demo</span><span class="fm-spec-vals"><span class="fm-spec-link" onclick="window.open('${base}/file?path=${encodeURIComponent(detail.demoPath)}','_blank')">${esc(detail.demoPath)}</span></span></div>`;
+          }
+          html += `<div class="fm-section fm-spec-block">${specHtml}</div>`;
+        }
+
+        // Files (reused)
         const files = detail.files || [];
         if (files.length) {
           const icons = { create: "+", modify: "~", delete: "−" };
@@ -1743,16 +1847,69 @@
           };
           html += `<div class="fm-section"><h4>Files (${files.length})</h4><div class="fm-files">`;
           files.forEach((f) => {
-            const from = f.lineFrom || null;
-            const to = f.lineTo || null;
-            const rangeAttr =
-              from && to ? ` data-from="${from}" data-to="${to}"` : "";
-            html += `<div class="fm-file" data-path="${esc(f.path)}"${rangeAttr}>
-              <div class="fm-file-row" onclick="toggleSnippet(this)" style="cursor:pointer">
+            const openUrl =
+              base + "/open/" + encodeURIComponent(f.path).replace(/%2F/g, "/");
+            html += `<div class="fm-file" data-path="${esc(f.path)}">
+              <div class="fm-file-row" role="button" tabindex="0" aria-expanded="false" data-path="${esc(f.path)}">
                 <span class="fm-file-action" style="color:${colors[f.action] || "var(--text-dim)"}">${icons[f.action] || "·"}</span>
+                <span class="bk-file-chevron">▸</span>
                 <span class="fm-file-path">${esc(f.path)}</span>
+                <button class="bk-file-open-btn" data-open-url="${openUrl}" title="Open in VS Code" aria-label="Open ${esc(f.path)} in VS Code">↗</button>
               </div>
-              <div class="fm-snippet" style="display:none"></div>
+              <div class="fm-file-diff" hidden></div>
+            </div>`;
+          });
+          html += `</div></div>`;
+        }
+
+        // Gaps (pending handler gaps from gap-discovery)
+        const gaps = (spec && spec.gaps) || [];
+        const pendingGaps = gaps.filter((g) => g.status === "pending");
+        if (pendingGaps.length) {
+          const rows = pendingGaps
+            .map(
+              (g) => `<div class="fm-gap-row">
+            <span class="fm-gap-prop">${esc(g.prop || "")}</span>
+            <span class="fm-gap-ctx">${esc(g.context || "")}</span>
+            <span class="fm-gap-status">pending</span>
+          </div>`,
+            )
+            .join("");
+          html += `<div class="fm-section fm-gaps-block"><h4>Handler Gaps (${pendingGaps.length})</h4>${rows}</div>`;
+        }
+
+        return html;
+      }
+
+      function buildDevDetailHtml(detail) {
+        let html = "";
+
+        const files = detail.files || [];
+        if (files.length) {
+          const icons = { create: "+", modify: "~", delete: "−" };
+          const colors = {
+            create: "var(--done)",
+            modify: "var(--accent)",
+            delete: "var(--danger)",
+          };
+          const basePath = location.pathname.replace(
+            /\/(backlog|dashboard)\/?$/,
+            "",
+          );
+          html += `<div class="fm-section"><h4>Files (${files.length})</h4><div class="fm-files">`;
+          files.forEach((f) => {
+            const openUrl =
+              basePath +
+              "/open/" +
+              encodeURIComponent(f.path).replace(/%2F/g, "/");
+            html += `<div class="fm-file" data-path="${esc(f.path)}">
+              <div class="fm-file-row" role="button" tabindex="0" aria-expanded="false" data-path="${esc(f.path)}">
+                <span class="fm-file-action" style="color:${colors[f.action] || "var(--text-dim)"}">${icons[f.action] || "·"}</span>
+                <span class="bk-file-chevron">▸</span>
+                <span class="fm-file-path">${esc(f.path)}</span>
+                <button class="bk-file-open-btn" data-open-url="${openUrl}" title="Open in VS Code" aria-label="Open ${esc(f.path)} in VS Code">↗</button>
+              </div>
+              <div class="fm-file-diff" hidden></div>
             </div>`;
           });
           html += `</div></div>`;
@@ -1909,57 +2066,170 @@
         }
       }
 
-      async function toggleSnippet(rowEl) {
-        const fileEl = rowEl.closest(".fm-file");
-        const snippetEl = fileEl.querySelector(".fm-snippet");
-        if (!snippetEl) return;
-
-        if (snippetEl.style.display !== "none") {
-          snippetEl.style.display = "none";
-          rowEl.classList.remove("active");
+      async function toggleFileDiffRow(row) {
+        const panel = row.nextElementSibling?.classList.contains("bk-file-diff")
+          ? row.nextElementSibling
+          : row.closest(".fm-file")?.querySelector(".fm-file-diff");
+        if (!panel) return;
+        const open = row.getAttribute("aria-expanded") === "true";
+        if (open) {
+          panel.hidden = true;
+          row.setAttribute("aria-expanded", "false");
           return;
         }
-
-        const path = fileEl.dataset.path;
-        const from = fileEl.dataset.from;
-        const to = fileEl.dataset.to;
-
-        if (!snippetEl.dataset.loaded) {
-          snippetEl.innerHTML =
-            '<span style="color:var(--text-dim);font-size:11px">Laden…</span>';
-          snippetEl.style.display = "block";
+        row.setAttribute("aria-expanded", "true");
+        panel.hidden = false;
+        if (!panel.dataset.loaded) {
+          panel.innerHTML = '<div class="bk-diff-loading">Laden…</div>';
+          const basePath = location.pathname.replace(
+            /\/(backlog|dashboard)\/?$/,
+            "",
+          );
+          const url =
+            basePath +
+            "/diff/" +
+            encodeURIComponent(row.dataset.path).replace(/%2F/g, "/");
           try {
-            const base = location.pathname
-              .replace(/\/dashboard\/?$/, "")
-              .replace(/\/+$/, "");
-            let url = base + "/file?path=" + encodeURIComponent(path);
-            if (from) url += "&from=" + from;
-            if (to) url += "&to=" + to;
-            const res = await fetch(url);
-            if (res.ok) {
-              const d = await res.json();
-              const driftWarning =
-                d.sha &&
-                fileEl.dataset.shippedSha &&
-                d.sha !== fileEl.dataset.shippedSha
-                  ? `<div class="fm-drift-warning">⚠ Bestand gewijzigd na shipped</div>`
-                  : "";
-              snippetEl.innerHTML =
-                driftWarning +
-                `<pre class="fm-code"><code>${esc(d.content)}</code></pre>`;
-              snippetEl.dataset.loaded = "1";
-            } else {
-              snippetEl.innerHTML =
-                '<span style="color:var(--danger);font-size:11px">Kan bestand niet laden</span>';
-            }
-          } catch {
-            snippetEl.innerHTML =
-              '<span style="color:var(--danger);font-size:11px">Server niet bereikbaar</span>';
+            const r = await fetch(url);
+            const d = await r.json();
+            panel.innerHTML = renderDiff(d, row.dataset.path);
+            panel.dataset.loaded = "1";
+          } catch (e) {
+            panel.innerHTML = `<div class="bk-diff-error">Kon diff niet laden: ${esc(String(e))}</div>`;
           }
-        } else {
-          snippetEl.style.display = "block";
         }
-        rowEl.classList.add("active");
+      }
+
+      function renderDiff(d, filePath = "") {
+        if (!d.git)
+          return '<div class="bk-diff-empty">Geen git-repo — diff niet beschikbaar.</div>';
+        if (!d.tracked && !d.working)
+          return '<div class="bk-diff-empty">Bestand nog niet getrackt door git.</div>';
+        const hasWorking = !!d.working;
+        const hasRecent = !!d.recent;
+        const showLabels = hasWorking && hasRecent;
+        const sections = [];
+        if (hasWorking) {
+          const label = showLabels
+            ? '<div class="bk-diff-label">Uncommitted</div>'
+            : "";
+          sections.push(
+            `<div class="bk-diff-section">${label}${formatDiff(d.working, filePath)}</div>`,
+          );
+        }
+        if (hasRecent) {
+          const label = showLabels
+            ? '<div class="bk-diff-label">Recente commits</div>'
+            : "";
+          sections.push(
+            `<div class="bk-diff-section">${label}${formatGitLog(d.recent, filePath)}</div>`,
+          );
+        }
+        if (!sections.length)
+          return '<div class="bk-diff-empty">Geen wijzigingen gevonden.</div>';
+        return sections.join("");
+      }
+
+      function formatDiff(text, filePath = "") {
+        const ext = (filePath.split(".").pop() || "").toLowerCase();
+        const langMap = {
+          ts: "typescript",
+          tsx: "typescript",
+          js: "javascript",
+          jsx: "javascript",
+          css: "css",
+          json: "json",
+          html: "xml",
+          md: "markdown",
+          py: "python",
+          rs: "rust",
+          go: "go",
+          sh: "bash",
+        };
+        const lang = langMap[ext] || null;
+        function hl(s) {
+          if (lang && typeof hljs !== "undefined") {
+            try {
+              return hljs.highlight(s, { language: lang }).value;
+            } catch {}
+          }
+          return esc(s);
+        }
+        const SKIP = [
+          "diff --git ",
+          "index ",
+          "new file mode",
+          "deleted file mode",
+          "similarity index",
+          "rename from",
+          "rename to",
+          "Binary files",
+          "--- ",
+          "+++ ",
+          "\\ No newline",
+        ];
+        const lines = text.split("\n");
+        let oldLn = 0,
+          newLn = 0;
+        const rows = [];
+        for (const line of lines) {
+          if (SKIP.some((p) => line.startsWith(p))) continue;
+          if (line.startsWith("@@")) {
+            const m = line.match(
+              /@@\s+-(\d+)(?:,\d+)?\s+\+(\d+)(?:,\d+)?\s+@@/,
+            );
+            if (m) {
+              oldLn = parseInt(m[1], 10);
+              newLn = parseInt(m[2], 10);
+            }
+            const ctx = line.replace(/^@@.*?@@\s*/, "").trim();
+            rows.push(
+              `<div class="bk-diff-hunk"><span class="bk-diff-gutter"></span><span class="bk-diff-text">${ctx ? "… " + esc(ctx) : "…"}</span></div>`,
+            );
+            continue;
+          }
+          let cls = "",
+            l = "",
+            r = "";
+          if (line.startsWith("+")) {
+            cls = "bk-diff-add";
+            r = newLn++;
+          } else if (line.startsWith("-")) {
+            cls = "bk-diff-del";
+            l = oldLn++;
+          } else {
+            l = oldLn++;
+            r = newLn++;
+          }
+          const content = line.length ? line.slice(1) : "";
+          rows.push(
+            `<div class="bk-diff-row ${cls}"><span class="bk-diff-gutter">${l || ""}<span class="sep">·</span>${r || ""}</span><span class="bk-diff-text">${hl(content)}</span></div>`,
+          );
+        }
+        return `<div class="bk-diff">${rows.join("")}</div>`;
+      }
+
+      function formatGitLog(text, filePath = "") {
+        const lines = text.split("\n");
+        const out = [];
+        let buf = [];
+        const flush = () => {
+          if (buf.length) out.push(formatDiff(buf.join("\n"), filePath));
+          buf = [];
+        };
+        for (const line of lines) {
+          if (
+            line.includes("\t") &&
+            !line.startsWith(" ") &&
+            !line.match(/^[+\-@]/)
+          ) {
+            flush();
+          } else {
+            buf.push(line);
+          }
+        }
+        flush();
+        return out.join("");
       }
 
       function closeFeatureModal() {
@@ -1979,12 +2249,28 @@
             </div>`;
         }
 
+        const FRONTEND_TYPES = ["PAGE", "COMPONENT"];
+        const project = window.location.pathname.split("/").filter(Boolean)[0];
         const rowsHtml = shipped
           .map((f) => {
             const dateStr = f.shippedAt || f.date || "";
+            const isFrontend = FRONTEND_TYPES.includes(f.type);
+            const screenshotPath = f.audit && f.audit.buildScreenshot;
+            const thumbCb = encodeURIComponent(
+              (f.audit && f.audit.lastRun) || f.shippedAt || "",
+            );
+            const thumbHtml = isFrontend
+              ? screenshotPath
+                ? `<img class="feat-thumb" src="/${project}/asset?path=${encodeURIComponent(screenshotPath)}${thumbCb ? "&v=" + thumbCb : ""}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'feat-thumb feat-thumb--placeholder\\' title=\\'Geen smoke-render beschikbaar\\'>⊟</div>'">`
+                : `<div class="feat-thumb feat-thumb--placeholder" title="Geen smoke-render beschikbaar">⊟</div>`
+              : "";
+            const rowClass = isFrontend
+              ? "feat-row feat-row--frontend"
+              : "feat-row";
             return `
-            <div class="feat-row">
+            <div class="${rowClass}">
               <div class="feat-row-summary" onclick="toggleDashFeature(this,'${esc(f.name)}')">
+                ${thumbHtml}
                 <span class="feat-name">${esc(f.name)}</span>
                 ${f.description ? `<span class="feat-desc">${esc(f.description)}</span>` : ""}
                 <span class="feat-type">${esc(f.type || "FEATURE")}</span>
@@ -1995,8 +2281,45 @@
           })
           .join("");
 
+        const counts = shipped.reduce((acc, f) => {
+          const t = f.type || "FEATURE";
+          acc[t] = (acc[t] || 0) + 1;
+          return acc;
+        }, {});
+        const findingsOpen = shipped.reduce((sum, f) => {
+          const c = parseInt(
+            (f.audit && f.audit.findings && f.audit.findings.critical) || 0,
+            10,
+          );
+          const w = parseInt(
+            (f.audit && f.audit.findings && f.audit.findings.warnings) || 0,
+            10,
+          );
+          return sum + c + w;
+        }, 0);
+        const typeOrder = [
+          "PAGE",
+          "COMPONENT",
+          "FEATURE",
+          "API",
+          "INTEGRATION",
+          "BUG",
+          "CHANGE",
+          "REFACTOR",
+        ];
+        const countsHtml = typeOrder
+          .filter((t) => counts[t])
+          .map((t) => `<span class="feat-count">${counts[t]} ${t}</span>`)
+          .join('<span class="feat-count-sep">·</span>');
+        const findingsHtml = findingsOpen
+          ? `<span class="feat-count-sep">·</span><span class="feat-count feat-count--findings">${findingsOpen} findings open</span>`
+          : "";
+
         return `
-          <div class="section-header"><h2>Features</h2></div>
+          <div class="section-header">
+            <h2>Features</h2>
+            ${countsHtml ? `<div class="feat-metrics">${countsHtml}${findingsHtml}</div>` : ""}
+          </div>
           <div class="feat-list">${rowsHtml}</div>`;
       }
 
@@ -2466,6 +2789,20 @@
           passive: true,
         });
         updateDashSidebarActive();
+        requestAnimationFrame(updateSidebarVisibility);
+      }
+
+      function updateSidebarVisibility() {
+        const layoutEl = document.querySelector(".layout");
+        const sidebarEl = layoutEl ? layoutEl.querySelector(".sidebar") : null;
+        if (!layoutEl || !sidebarEl) return;
+        const linkCount = sidebarEl.querySelectorAll("a").length;
+        const fitsViewport =
+          document.documentElement.scrollHeight <= window.innerHeight + 1;
+        layoutEl.classList.toggle(
+          "layout--no-sidebar",
+          linkCount <= 1 || fitsViewport,
+        );
       }
 
       // ─── Init ───────────────────────────────────────────────
@@ -2484,6 +2821,37 @@
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
         },
+      });
+      let _sidebarResizeT;
+      window.addEventListener("resize", () => {
+        clearTimeout(_sidebarResizeT);
+        _sidebarResizeT = setTimeout(updateSidebarVisibility, 150);
+      });
+      document.addEventListener("click", (e) => {
+        const openBtn = e.target.closest(".bk-file-open-btn");
+        if (openBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          openInVSCode(openBtn.dataset.openUrl, openBtn);
+          return;
+        }
+        const row = e.target.closest(".fm-file-row[data-path]");
+        if (row) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleFileDiffRow(row);
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          const row = document.activeElement?.closest?.(
+            ".fm-file-row[data-path]",
+          );
+          if (row && document.activeElement === row) {
+            e.preventDefault();
+            toggleFileDiffRow(row);
+          }
+        }
       });
       render();
     </script>

@@ -1,7 +1,6 @@
 ---
 name: game-define
 description: Define game feature requirements and architecture with structured output. Use with /game-define to create detailed game feature specifications before building.
-disable-model-invocation: true
 writes: [feature.requirements, backlog.stage]
 metadata:
   author: mileszeilstra
@@ -158,7 +157,10 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
      current-feature: <feature-name>
      ```
      Toon de geladen output vóór FASE 1 vragen. Component-scoped patterns en architectural patterns geven richting bij architectuur-keuzes en requirement-formulering. Pitfall-prefix voorkomt herhaling van eerdere bugs.
-   - Als project.json niet bestaat → ga door zonder (backwards compatible)
+   - **Onboarding check** (evalueer direct na project.json read):
+     - `project.json` niet aanwezig → toon: `⚠️ Geen project.json gevonden. Overweeg eerst /core-setup te draaien voor betere codebase-context.` Ga door zonder (non-blocking).
+     - Aanwezig maar leeg (geen `context`, `stack`, én `features`) → toon: `ℹ️ project.json bestaat maar mist codebase-context. /core-setup kan dit aanvullen.`
+     - Aanwezig met content → stil doorgaan.
    - **Past decisions scan** (twee bronnen, beide scope):
      - Feature-scope: Glob `.project/features/*/feature.json` → flatten alle `durableDecisions[]`. Tag elke entry met `[feature-X]`.
      - Project-scope: Glob `.project/thinking/*-decision-*.md` → lees eerste ~30 regels per file, extract `THINK:` regel (titel), `AANBEVELING:` regel (chosen), en `CONSTRAINT` sectie. Tag elke entry met `[project]`.
@@ -834,6 +836,10 @@ Schrijf parallel terug:
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Write `project.json` (stack, features, data)
 - Write `project-context.json` (als architecture gewijzigd)
+
+**Auto-build markering** (na sync):
+
+Lees backlog opnieuw, zoek feature, zet `"auto": true`, schrijf terug via Edit. Geen user-prompt — altijd auto markeren zodat de card een AUTO-badge krijgt en het clipboard het juiste `/game-build`-commando geeft.
 
 Clean up: `rm -f .project/session/active-{feature-name}.json`
 

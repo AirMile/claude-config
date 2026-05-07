@@ -18,14 +18,14 @@ Generate an ASCII [diagram type] showing [what to visualize].
 
 **Diagram types by use case:**
 
-| Use case              | Diagram type         | Example skills               |
-| --------------------- | -------------------- | ---------------------------- |
+| Use case              | Diagram type         | Example skills              |
+| --------------------- | -------------------- | --------------------------- |
 | Architecture/layers   | Component diagram    | dev-define, frontend-design |
-| Multi-step workflow   | Flowchart            | dev-build, dev-verify        |
-| Feature decomposition | Tree                 | dev-plan, game-plan          |
-| State transitions     | State machine        | game-define                  |
-| Parallel processes    | Architecture diagram | team-review                  |
-| Decision flow         | Decision tree        | thinking-decide              |
+| Multi-step workflow   | Flowchart            | dev-build, dev-verify       |
+| Feature decomposition | Tree                 | dev-plan, game-plan         |
+| State transitions     | State machine        | game-define                 |
+| Parallel processes    | Architecture diagram | team-review                 |
+| Decision flow         | Decision tree        | thinking-decide             |
 
 **Placement:** After the phase where the relevant information is gathered, before execution continues.
 
@@ -127,6 +127,70 @@ Agent instruction: "Read only the files relevant to your analysis from the paths
 
 ---
 
+## Parallel Dispatch
+
+**When:** 3+ onafhankelijke problemen/onderzoeken bestaan die parallel opgelost kunnen worden via de Agent tool.
+
+**Parallel dispatch** wanneer:
+
+- 3+ onafhankelijke problemen/onderzoeken bestaan
+- Geen gedeelde state of file-conflicts tussen agents
+- Elke agent kan zelfstandig zijn taak voltooien zonder output van een andere agent
+
+**Sequentieel houden** wanneer:
+
+- Agents schrijven naar dezelfde files (conflictrisico)
+- Output van agent A is input voor agent B
+- < 3 problemen (overhead niet waard)
+- Problemen hangen af van gedeelde database/service-state
+
+**Decision Flow:**
+
+```
+problemen geïdentificeerd
+  ↓
+overlap in files of state?
+  ja → sequentieel
+  nee ↓
+< 3 problemen?
+  ja → sequentieel
+  nee ↓
+parallel dispatch (één message, meerdere Agent tool-calls)
+```
+
+**Agent Prompt Template:**
+
+Elke parallel agent krijgt een zelfstandige, complete prompt:
+
+```
+**Scope**: [één probleemdomein, expliciet afgegrensd]
+**Doel**: [één duidelijke output — gefixte bug, scan-rapport, refactor-diff]
+**Context**: [alle benodigde info inline — geen verwijzing naar sessiehistorie]
+  - Relevante file paths
+  - Reproducieerbare symptomen / foutmelding
+  - Stack/framework info
+**Constraints**:
+  - Wijzig NIET: [lijst van files/modules buiten scope]
+  - Schrijf NIET naar [gedeelde state-files] — alleen lezen
+**Output-eis**: Eindig met bewijs van voltooiing (commando + output, zie R009)
+```
+
+Regels:
+
+- Elk agent-prompt is volledig zelfstandig — neem aan dat de agent geen sessiehistorie heeft
+- Scope expliciet begrenzen zodat agents niet dezelfde files aanraken
+- Output-eis altijd meegeven zodat resultaten verifieerbaar zijn
+
+**Integratie** (na alle agents klaar):
+
+1. Lees rapport per agent
+2. Detecteer conflicts: zelfde file of symbol gewijzigd door meerdere agents?
+3. Bij conflict: kies één, herzien ander in aparte pass
+4. Run gedeelde validation (tests, type-check, lint) op de samenvoeging
+5. Claim voltooiing conform R009
+
+---
+
 ## Project Bootstrapping
 
 **When:** Een skill verwacht `.project/` bestanden (backlog.html, project.json, features/) maar de folder bestaat niet of is leeg.
@@ -217,6 +281,30 @@ PROJECT_CONTEXT_END
 
 ---
 
+## Description Format
+
+**When:** Bij schrijven of reviewen van SKILL.md frontmatter `description`.
+
+**Rule:** Description moet beginnen met triggervoorwaarden, niet met een workflow-samenvatting.
+
+| Goed (✓)                                                                  | Slecht (✗)                                                  |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `Use when implementation done and acceptance tests must verify spec`      | `Adversarial verification — tests + fix loops`              |
+| `Use with /dev-debug when feature has reported bugs to root-cause`        | `Debug methodology with systematic root-cause analysis`     |
+| `Use with /thinking-brainstorm to expand idea via interactive techniques` | `Creatively expand ideas through interactive technique app` |
+
+**Why:** Workflow-summaries laten Claude denken dat het de skill al kent, dus skipt de rest van de SKILL.md. Triggervoorwaarden maken duidelijk _wanneer_ de skill gekozen wordt, niet _wat_ hij doet.
+
+**Format:**
+
+```
+Use {when|with} <trigger>. <korte aanvulling>. Use with /<command-name>[, optional /<predecessor>].
+```
+
+**Bestaande skills:** geen bulk-refactor — pattern toepassen bij de volgende edit aan een skill (incremental adoption).
+
+---
+
 ## Agent Model Selection
 
 **When:** Een skill spawnt agents via de Agent tool en je wilt kosten/snelheid optimaliseren.
@@ -237,3 +325,75 @@ PROJECT_CONTEXT_END
 - Specificeer alleen als kostenbesparing significant is (agent leest veel bestanden of draait vaak)
 - Explore agents zijn bijna altijd Sonnet-geschikt
 - Build/fix agents die code schrijven: gebruik Opus tenzij het een triviale fix is
+
+---
+
+## Modal Option Cap
+
+**When:** A skill uses AskUserQuestion (multi-select) where the number of options is dynamic — depends on runtime context, scan results, stack, or user input. Applies to options generated from feature lists, agent outputs, file scans, or other unbounded sources.
+
+**How:** Enforce a hard cap of 7 options per modal. When more options exist, split into sequential category modals — one per logical group, in order of impact.
+
+**When NOT to use a modal — use plain-text list + free-form parse instead:**
+
+- The user needs to see ALL options simultaneously to make a coherent choice (e.g., prioritization, scope selection from holistic view)
+- The option count is unbounded and runtime-dependent without natural categorization
+- The choice involves comparing items against each other rather than picking from independent categories
+
+In these cases: present a numbered plain-text list and ask for free-form input (e.g., `1, 3, 5` / `1-4` / `alles behalve 2`). Reference: `dev-todo`, `game-todo`, `core-profile`, `project-add`.
+
+Use `AskUserQuestion` only for the cancel/exit route (e.g., "Doorgaan met selectie" / "Annuleren").
+
+**Rules:**
+
+- **Cap**: max 7 options per modal
+- **When more options are available**: split into sequential category modals, skip empty categories
+- **Never truncate silently**: prefer an extra modal over dropping options
+
+**Category examples by domain:**
+
+| Skill domain        | Category split                                    |
+| ------------------- | ------------------------------------------------- |
+| Tech stack          | Core framework → Build/dev tooling                |
+| Library suggestions | Styling/UI → Testing → State/Data → Utilities     |
+| Debug fixes         | By component/layer (UI, logic, data, performance) |
+| Audit findings      | Core files → Config → Claude config → CLAUDE.md   |
+
+**Modals with fixed/small option sets (≤7 options) are not subject to this rule.**
+
+---
+
+## Numbered List Selection
+
+**When:** A skill presents a numbered plain-text list and asks the user to pick items via free-form input (the alternative to `AskUserQuestion` for holistic-choice scenarios — see § Modal Option Cap).
+
+**How:** Standardize the syntax and edge cases so users get consistent behaviour across skills.
+
+**Canonical syntax (accept all of these):**
+
+| User input              | Interpretation           |
+| ----------------------- | ------------------------ |
+| `1, 3, 5`               | Items 1, 3, 5            |
+| `1-4`                   | Items 1 through 4        |
+| `1, 3-5, 8`             | Mixed list + range       |
+| `alle` / `alles` / `*`  | All items                |
+| `geen` / `none` / empty | No items                 |
+| `alles behalve 2, 7`    | All items except 2 and 7 |
+
+**Edge case rules:**
+
+- Out-of-range numbers (e.g., `8` in a list of 7): show what was unparseable and re-ask the same question — do not silently drop
+- Duplicate numbers: dedupe silently
+- Whitespace and case: ignore
+- Mixed separators (`,` and `;`): accept both
+- If the user types a sentence instead ("alleen de eerste drie"): interpret if obvious, otherwise re-ask with the syntax examples
+
+**Prompt template:**
+
+> Vraag: "{question}? Geef nummers (bv. `1, 3, 5` of `1-4` of `alles behalve 2`)."
+
+**Rules:**
+
+- Always show the syntax hint inline with the question — don't expect the user to remember
+- Empty input always means "geen", never "alle" (safer default)
+- Echo the parsed selection back before destructive action (e.g., "Geselecteerd: items 1, 3, 5 — doorgaan?")

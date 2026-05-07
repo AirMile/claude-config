@@ -118,10 +118,11 @@ multiSelect: false
 
 # Vraag 2
 header: "Categorie"
-question: "Dev of frontend?"
+question: "Welke categorie past het beste?"
 options:
-  - label: "Dev (Recommended)", description: "Backend, API, logica, data"
-  - label: "Frontend", description: "Pagina's, componenten, UI, styling"
+  - label: "Dev (Recommended)", description: "Backend, API, logica, data, bugs, refactor"
+  - label: "Frontend", description: "Pagina's en componenten"
+  - label: "Design & Quality", description: "Tokens, accessibility, performance, ontbrekende pagina-functionaliteit"
 multiSelect: false
 ```
 
@@ -146,12 +147,37 @@ multiSelect: false
 
 ```yaml
 header: "Type"
-question: "Wat voor type frontend item is dit?"
+question: "Frontend creatie loopt via /frontend-design Capture (frontend-track). Welke entity?"
 options:
-  - label: "PAGE (Recommended)", description: "Nieuwe pagina of view"
-  - label: "COMPONENT", description: "Herbruikbaar UI component"
-  - label: "A11Y", description: "Accessibility verbetering"
-  - label: "PERF", description: "Performance of SEO optimalisatie"
+  - label: "PAGE → /frontend-design (Recommended)", description: "Opent geen backlog-entry — kopieer commando hieronder"
+  - label: "COMPONENT → /frontend-design", description: "Opent geen backlog-entry — kopieer commando hieronder"
+  - label: "Toch PAGE-GAP (Dev-track)", description: "Ontbrekende functionaliteit op bestaande pagina — wordt gecategoriseerd als Dev-track item"
+multiSelect: false
+```
+
+Bij keuze **PAGE** of **COMPONENT**: toon copy-cmd en eindig zonder backlog-write:
+
+```
+PAGE/COMPONENT creatie loopt via /frontend-design Capture (frontend-track).
+
+Kopieer en run:
+  /frontend-design {ingevoerde naam}
+
+Na Capture verschijnt het item op de Frontend-track.
+```
+
+Bij keuze **Toch PAGE-GAP**: route door naar de **Design & Quality** flow hieronder — gebruiker kiest PAGE-GAP als type en krijgt een Dev-track backlog-entry.
+
+**If Design & Quality:**
+
+```yaml
+header: "Type"
+question: "Wat voor type design/quality item is dit?"
+options:
+  - label: "THEME (Recommended)", description: "Design tokens — kleuren, typografie, spacing via /frontend-tokens"
+  - label: "A11Y", description: "Accessibility verbetering via /frontend-check --scope=a11y"
+  - label: "PERF", description: "Performance of SEO optimalisatie via /frontend-check"
+  - label: "PAGE-GAP", description: "Ontbrekende functionaliteit op een bestaande pagina"
 multiSelect: false
 ```
 
@@ -237,9 +263,17 @@ TODO TOEGEVOEGD
   - /thinking-critique {naam} - Toets het idee kritisch
   [If type is FEATURE, CHANGE, BUG, or API:]
   - /dev-define {naam} - Begin met requirements en bouwen
-  [If type is PAGE, COMPONENT, THEME, A11Y, or PERF:]
+  [If type is PAGE or COMPONENT:]
   - /frontend-design {naam} - Bouw de pagina/component
   - /frontend-design - Definieer meerdere pagina's tegelijk
+  [If type is THEME:]
+  - /frontend-tokens - Stel design tokens in (kleur, typografie, spacing)
+  [If type is A11Y:]
+  - /frontend-check --scope=a11y {naam} - Voer accessibility audit uit
+  [If type is PERF:]
+  - /frontend-check {naam} - Voer performance en SEO audit uit
+  [If type is PAGE-GAP:]
+  - /dev-define {naam} - Definieer de ontbrekende functionaliteit
 
   Tip: wijs toe aan een teammate door assignee toe te voegen in de backlog UI
 ```

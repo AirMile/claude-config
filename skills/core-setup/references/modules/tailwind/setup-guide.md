@@ -4,7 +4,11 @@
 
 ## Detection
 
-- Already installed: `tailwindcss` in `package.json` dependencies OR `tailwind.config.{js,ts}` exists
+| State                          | Conditie                                                            |
+| ------------------------------ | ------------------------------------------------------------------- |
+| `already-installed-configured` | `tailwindcss` in dependencies EN `tailwind.config.{js,ts}` aanwezig |
+| `installed-not-configured`     | `tailwindcss` in dependencies MAAR `tailwind.config.*` ontbreekt    |
+| `not-installed`                | `tailwindcss` niet in dependencies                                  |
 
 ## Install (via Context7)
 

@@ -7,7 +7,6 @@ description: >
   optional practice phases. Tracks progress in Obsidian.
   Use with /school-learn [topic, URL, or file path].
 argument-hint: "[topic, URL, or file path]"
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.0.0

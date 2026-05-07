@@ -1,12 +1,11 @@
 ---
 name: dev-verify
 description: Adversarial verification — acceptance tests + fix loops. After verify, the code is good. Use with /dev-verify after /dev-build.
-disable-model-invocation: true
 reads: [feature.requirements, feature.build]
 writes: [feature.tests, backlog.status]
 metadata:
   author: mileszeilstra
-  version: 2.2.0
+  version: 2.2.1
   category: dev
 ---
 
@@ -26,17 +25,9 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 /dev-verify user-registration Everything works except...    # free text (skips automation)
 ```
 
-## Feedback Categorization
-
-| Type           | Example                         | Action                           |
-| -------------- | ------------------------------- | -------------------------------- |
-| **SPEC**       | "toont max 3, spec zegt 'alle'" | Implementation First + test      |
-| **TESTABLE**   | "returns 500 instead of 422"    | TDD or Implementation First      |
-| **MEASURABLE** | "response too slow"             | Direct fix                       |
-| **SUBJECTIVE** | "doesn't feel right"            | Ask for specifics, re-categorize |
-
+> Feedback categorisatie tabel: zie FASE 3.
 > Classification criteria: `references/test-classification.md`
-> Code quality rules: `../shared/RULES.md` (R007-R008)
+> Code quality rules: `../shared/RULES.md` (R007-R009)
 
 ## Workflow
 
@@ -51,11 +42,13 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 
 3. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`. Geen checklist → exit: run `/dev-build` first.
 
+   **COMPONENT detectie** (na feature.json load): check of `feature.type === "COMPONENT"` of backlog-item type COMPONENT is. Als ja: stel `IS_COMPONENT_VERIFY = true`. Zoek demo-page: check of `app/_dev/components/{name}/page.tsx` bestaat. Niet gevonden → exit: `"Demo-page niet gevonden. Run /dev-build {feature} opnieuw — dit genereert app/_dev/components/{name}/page.tsx."`. Dev server navigeert naar `/_dev/components/{name}` i.p.v. de gewone feature-route.
+
 4. **Worktree switch** — voer de procedure in `shared/WORKTREE.md` uit met de feature-name. Switcht automatisch naar `worktree-{feature-name}` als die bestaat. Bij FAIL (in andere worktree dan de feature): stop met de melding uit WORKTREE.md.
 
 5. **Tag backlog + capture baseline:**
    - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
-   - Session file: `echo '{"feature":"{name}","skill":"test","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
+   - Session file: `echo '{"feature":"{name}","skill":"verify","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
 
 6. **Load stack & project context** — CLAUDE.md stack sectie + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Stel STACK_CONTEXT samen:
 
@@ -119,13 +112,29 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    postBuildMode = true
    hasUI = feature.json heeft "design" veld OF files[] bevat frontend bestanden (.tsx, .vue, .svelte)
    isPureAPI = feature.json heeft "apiContract" EN NIET hasUI
+   isComponent = IS_COMPONENT_VERIFY === true
+   ```
+
+   **COMPONENT extra check** (alleen als `isComponent = true`): voeg verplicht test-item toe:
+
+   ```json
+   {
+     "id": "COMP-MATRIX",
+     "title": "Variant matrix zichtbaar op demo-page",
+     "steps": [
+       "Navigeer naar /_dev/components/{name}",
+       "Controleer aanwezigheid van alle variants × sizes × states cards"
+     ],
+     "expected": "Alle {variants × sizes × states} combinaties zijn zichtbaar zonder errors",
+     "type": "AUTO/BROWSER"
+   }
    ```
 
    Display:
 
    ```
    POST-BUILD DETECTIE: {testsTotal} bestaande tests ({tdd} TDD, {implFirst} impl-first)
-   Strategie: {hasUI → "E2E browser verificatie" | isPureAPI → "API integratie" | else → "Integratie verificatie"}
+   Strategie: {isComponent → "COMPONENT demo-page verificatie (/_dev/components/{name})" | hasUI → "E2E browser verificatie" | isPureAPI → "API integratie" | else → "Integratie verificatie"}
    Baseline: bestaande test suite als pre-check
    ```
 
@@ -142,7 +151,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 
    f) Bij gemixte types (COVERED + AUTO + MANUAL): toon ASCII flowchart van de test executie flow. Bij alleen COVERED + AUTO/CLI: skip flowchart.
 
-   g) Proceed automatically with the recommended classification. No user approval needed — continue directly to step 7h.
+   g) Proceed automatically with the recommended classification. No user approval needed — continue directly to step 8h.
 
    h) **Goal-backward verificatie + acceptance test planning:**
 
@@ -159,7 +168,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    Per GAP met CLI-testbare acceptance tests (uit Explore agent `acceptanceTests[]`): voeg toe aan AUTO/CLI queue (FASE 1) met `source: "acceptance"` markering.
    BROWSER en MANUAL gaps → voeg items toe via bestaande classificatie (step 7d).
 
-   Geen gaps → toon `Acceptance mapping: {n}/{n} REQs gedekt` en ga door naar step 8.
+   Geen gaps → toon `Acceptance mapping: {n}/{n} REQs gedekt` en ga door naar FASE 1.
    CLI gaps gevonden → display: `ACCEPTANCE TESTS: {n} test(s) gepland voor {m} requirements`
 
 9. **Dev server** (conditioneel):
@@ -176,7 +185,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 
 ### FASE 1: Automated Testing
 
-**Skip** als alle AUTO items COVERED zijn.
+**Skip** als er geen AUTO items zijn (alle non-COVERED items zijn MANUAL, of alles is COVERED).
 
 Launch Agent om non-COVERED AUTO items uit te voeren in apart context window.
 
@@ -204,14 +213,22 @@ ITEMS:
   Methode: {BROWSER of CLI}
 
 INSTRUCTIES:
-1. Voer stappen uit met MCP browser tools, bash commands, of schrijf een integration test file
+1. Voer stappen uit via bash commands, Playwright runner specs, of schrijf een integration test file
 2. Voor CLI items zonder running server: schrijf een integration test (test/integration/{feature}.integration.test.js) die de service/functie direct test met mock dependencies en echte DB
 3. Voor acceptance items (source: "acceptance"): schrijf test in apart bestand (test/acceptance/{feature}.acceptance.test.js).
    MOET het project's test framework gebruiken (vitest/jest/node:test — check package.json).
    Dit zorgt dat `npm test` ze oppikt als regression suite bij toekomstige /dev-build runs.
    Voorbeeld: builder test `expect(countDocuments).toBeCalled` vs acceptance test `POST 6th → expect(res.status).toBe(400)`
-4. Bepaal PASS/FAIL met bewijs en redenering
-5. Browser tool faalt → markeer als TOOL_ERROR
+4. Voor BROWSER items: schrijf een Playwright runner spec in test/acceptance/{feature}.spec.ts (GEEN MCP browser tools).
+   Gebruik het on-the-fly spec pattern: zie shared/PLAYWRIGHT.md → Runner Mode.
+   Runner beschikbaar check: `npx playwright --version 2>/dev/null`.
+   Beschikbaar → schrijf spec met `expect(page)` assertions. Bij a11y-criteria: gebruik `toMatchAriaSnapshot()`.
+   Bij visuele criteria ("voelt snel", "ziet er goed uit"): gebruik `toHaveScreenshot()` — eerste run maakt baseline.
+   Draai: `npx playwright test test/acceptance/{feature}.spec.ts --reporter=json`
+   Runner niet beschikbaar → draai `/core-setup playwright` om daemon + runner te installeren, dan opnieuw.
+   Bij persistente failure → markeer als TOOL_ERROR en noteer: "runner spec gegenereerd maar kon niet draaien"
+5. Bepaal PASS/FAIL met bewijs en redenering
+6. TOOL_ERROR (runner faalt of CLI errors) → markeer als TOOL_ERROR
 
 POST-BUILD: baseline al GREEN. Focus op INTEGRATIE en ACCEPTANCE, niet unit logica.
 Draai NIET opnieuw npm test.
@@ -263,6 +280,14 @@ TESTDATA:
 
 VERWACHT:
 → {expected outcome}
+```
+
+**Codegen-tip voor herhaalbare flows** (toon eenmalig boven eerste MANUAL item als flow ≥3 stappen heeft):
+
+```
+💡 Voor flows met ≥3 stappen: run `npx playwright codegen {url}` in een terminal om
+   je interacties op te nemen als Playwright spec. Lever die op aan /dev-verify voor
+   automatische BROWSER-verificatie bij toekomstige runs.
 ```
 
 AskUserQuestion per item: Pass (Aanbevolen) | Fail | Skip.
@@ -469,17 +494,23 @@ Cross-check `feature.json` requirements tegen test resultaten:
    header: "REQ niet gedekt: {REQ-ID}"
    question: "{requirement description} — geen test gevonden. Wat wil je doen?"
    options:
-     - label: "Test toevoegen (Recommended)", description: "Schrijf een test voor dit requirement"
+     - label: "Test toevoegen (Recommended)", description: "Schrijf een test — CLI/acceptance, Playwright runner spec voor BROWSER, of visual baseline via toHaveScreenshot"
      - label: "Gedekt door andere test", description: "Impliciet getest via een andere test"
      - label: "Blocked door dependency", description: "Externe service/fixture ontbreekt — niet testbaar nu"
-     - label: "Criteria te vaag", description: "Acceptance criteria mist concreetheid — heropen /dev-define"
+     - label: "Criteria te vaag", description: "Acceptance criteria mist concreetheid — heropen /dev-define of zet om naar visual baseline"
    multiSelect: false
    ```
 
-   - **Test toevoegen** → voeg test item toe aan `tests.checklist[]` met `requirementId`, `status: "pending"`. Loop terug naar FASE 1 (AUTO) of FASE 2 (MANUAL) voor alleen dit item.
+   - **Test toevoegen** → voeg test item toe aan `tests.checklist[]` met `requirementId`, `status: "pending"`. Loop terug naar FASE 1 (AUTO) of FASE 2 (MANUAL) voor alleen dit item. Kies automatisch de juiste methode:
+     - Functioneel criterium → CLI/acceptance test (vitest/jest)
+     - Browser-gedrag / user flow → Playwright runner spec in `test/acceptance/{feature}.spec.ts`
+     - Visueel criterium ("voelt snel", "ziet er goed uit", "geen layout-shift") → `toHaveScreenshot()` baseline via runner
+     - A11y-criterium → `toMatchAriaSnapshot()` via runner
    - **Gedekt door andere test** → vraag welke test het dekt. Markeer requirement met `implicitCoverage: "{REQ-ID} test also validates this via {beschrijving}"`. Status → `"PASS"`.
    - **Blocked door dependency** → vraag welke dependency. Status → `"BLOCKED"`, voeg toe aan `requirements[].evidence = "blocked by: {reason}"`. Niet mergen-blokkerend; signaal voor heropenen na dependency-fix.
-   - **Criteria te vaag** → vraag wat vaag is. Status → `"UNCLEAR"`, voeg toe aan `requirements[].evidence = "needs clarification: {what's vague}"`. Signaal voor `/dev-define` heropen om concrete acceptance te formuleren.
+   - **Criteria te vaag** → twee paden:
+     - Kan worden geconcretiseerd met een visual baseline → schrijf `toHaveScreenshot()` runner spec, status → `"PASS"` na baseline.
+     - Kan niet worden geconcretiseerd → vraag wat vaag is. Status → `"UNCLEAR"`, voeg toe aan `requirements[].evidence = "needs clarification: {what's vague}"`. Signaal voor `/dev-define` heropen om concrete acceptance te formuleren.
 
 ---
 
@@ -502,6 +533,8 @@ Sla fix sync op voor `feature.json` (tests.fixSync).
 
 #### Step 2: Observaties
 
+**Skip wanneer:** deze sessie geen MANUAL items had (pure automode — user heeft niets zelf gecontroleerd, dus kan niets opgemerkt hebben).
+
 AskUserQuestion: Nee, alles goed (Aanbevolen) | Ja, ik heb iets opgemerkt.
 "Ja" → vraag beschrijving, noteer voor feature.json (observations[]).
 
@@ -522,9 +555,76 @@ Skill-specifieke mutaties:
 - `tests.evaluation` → per-REQ scores `[{ reqId, acceptancePass, acceptanceTotal, builderPass, builderTotal, verdict }]`
 - `tests.acceptanceTestFile` → pad naar geschreven acceptance test bestand (persistent in codebase)
 
-**backlog:** `status = "DONE"`, verwijder `stage`, verwijder `transition` (als aanwezig).
+**PAGE-seeding (safety net — frontend projects only):**
+
+Voer uit **vóór** de backlog-mutatie. Trigger alleen als **alle** condities waar zijn:
+
+1. `project.json#stack.framework` is een frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS)
+2. FASE 4 heeft fixes toegepast (er zijn `tests.fixSync` entries deze sessie)
+3. Er bestaan nieuwe page-files die niet in `feature.json#files[]` stonden vóór deze sessie — detecteer via diff t.o.v. `pre-skill-status.txt` baseline. Paden die matchen: `app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`, of componentnamen die eindigen op `Page`, `Screen`, `View`
+4. Na idempotency-filter (`data.features.find(f => f.name === <kebab-naam>)`) blijven ≥1 kandidaten over
+
+Als alle condities waar zijn → AskUserQuestion:
+
+```yaml
+header: "Pages tijdens fix gedetecteerd"
+question: "FASE 4 heeft {N} nieuwe page-files toegevoegd. Wil je ze als PAGE-todos op de backlog?"
+options:
+  - label: "Ja, alle (Recommended)"
+    description: "Maak voor elke page een PAGE-todo zodat ze design → check doorlopen"
+  - label: "Selectie"
+    description: "Kies welke pages een aparte todo krijgen"
+  - label: "Nee"
+    description: "Geen extra todos — pages zijn dekkend in fix-sync"
+multiSelect: false
+```
+
+Per geselecteerde page → push naar `data.features[]`:
+
+```json
+{
+  "name": "{kebab-case page name}",
+  "type": "PAGE",
+  "status": "TODO",
+  "phase": "P3",
+  "description": "Page introduced via fix in {parentFeature}. Routes: {route-pattern}",
+  "source": "/dev-verify",
+  "dependencies": ["{parentFeature}"],
+  "parentFeature": "{parentFeature}",
+  "auto": true
+}
+```
+
+Update `data.updated`. Edit backlog-JSON terug in `backlog.html`.
+
+**backlog:** parse JSON uit `<script id="backlog-data">` (zie `shared/BACKLOG.md`). Match op `feature.name` (niet `id` — het backlog-formaat gebruikt `name` als unieke key). Set `status = "DONE"`, verwijder `stage` en `transition` (als aanwezig). **Verificatie**: na schrijven, parse opnieuw en controleer dat de status "DONE" is. Bij geen match op name: log een warning en stop — silent no-op is een bug.
 
 **project-context.json**: Bij fixes in FASE 4: update `architecture.components[]` — merge gewijzigde bestanden naar component `src`/`test`, bevestig `status: "done"`, voeg test files toe.
+
+**COMPONENT design sync** (alleen als `IS_COMPONENT_VERIFY = true`):
+
+Update `project.json#design.components[]` — zoek op naam, zet `status: "DONE"`. Niet gevonden → voeg toe met status `"DONE"`. Update `project-context.json#components[]` inventory: voeg test-paden toe aan bestaand inventory-item (merge, niet overschrijven).
+
+**Reuse-Discovery** (frontend projects only — skip als `IS_COMPONENT_VERIFY = true`, skip als geen BROWSER-tests gedraaid):
+
+Na succesvolle verificatie van een PAGE-feature waarbij BROWSER-tests gerund zijn: scan de test-resultaten en screencap-context op visuele patronen die in meerdere pages of features herhalen. Detecteer herhalende layout-blokken (stat cards, listtabellen, hero-sectie, etc.) met vergelijkbare structuur.
+
+**Dedup**: check `project.json#design.components[]` en `project-context.json#components[]`. Check `feature.json#suggestionsLog[]` — eerder rejected van `dev-verify`? → skip.
+
+Gevonden kandidaten (max 2 per run, om verify niet te vertragen) → AskUserQuestion:
+
+```yaml
+header: "Herhalende UI-patronen"
+question: "Visuele verificatie toont patronen die als gedeeld component herbruikbaar zijn. COMPONENT-todos aanmaken?"
+options:
+  - label: "{naam} — {korte visuele beschrijving}", description: "Maak COMPONENT-todo"
+  - label: "..." (één per kandidaat)
+  - label: "Overslaan", description: "Geen COMPONENT-todos toevoegen"
+multiSelect: true
+```
+
+Per geaccepteerd: append backlog + `design.components[]` (status: IDEA) + `feature.json#suggestionsLog[]` (accepted).
+Per afgewezen: log in `suggestionsLog[]` (rejected, skill: "dev-verify").
 
 #### Step 3b: Learning Extraction
 
@@ -560,13 +660,33 @@ Geen learnings gevonden → skip stap.
 
 #### Step 4: Scoped commit
 
+**Pre-commit diagnostics** (stack-aware, identiek aan dev-build):
+
+- Lees `package.json` → check `scripts` op keys matching `typecheck|type-check|tsc|lint`
+- Python project (geen package.json): check op `mypy.ini` of `[tool.mypy]` in `pyproject.toml`
+- Geen match gevonden → skip stilzwijgend
+
+Bij match: run gevonden script(s) (meerdere matches → parallel) via Bash tool met `timeout: 60000`
+
+- **PASS** → toon `DIAGNOSTICS: PASS`, door naar git status compare
+- **FAIL** → toon errors (max 30 regels) + AskUserQuestion:
+  - `"Fix eerst (Recommended)"` — stop Step 4, geen commit; user fixt en herstart skill
+  - `"Toch committen"` — door; voeg `[diagnostics-warnings]` toe aan commit message
+
 Vergelijk `git status --porcelain | sort` met `.project/session/pre-skill-status.txt`:
 
-- **NEW** (alleen in current) → `git add -f` (`.project/` is gitignored, `-f` vereist)
+- **NEW** (alleen in current) → `git add -f` (subdirs als `.project/features/` en `.project/sessions/` zijn gitignored — `-f` vereist voor session-bestanden die hieronder vallen)
 - **OVERLAP** (in beide, gewijzigd door deze skill) → `git add -f`
 - **PRE-EXISTING** (alleen in baseline, of overlap niet door deze skill gewijzigd) → niet stagen
 
 Baseline niet gevonden → fallback `git add -A`.
+
+**Variabelen** (telling per FASE 0 classificatie):
+
+- `{acceptance}` = aantal acceptance tests geschreven in FASE 1 (source: "acceptance")
+- `{auto}` = aantal items met type AUTO (CLI of BROWSER) — exclusief COVERED
+- `{manual}` = aantal items met type MANUAL
+- `{covered}` = aantal items met type COVERED (build tests dekken het contract)
 
 ```bash
 git commit -m "verify({feature}): {N} requirements verified ({acceptance} acceptance, {auto} auto, {manual} manual)
@@ -620,7 +740,7 @@ Append:
 # API feature met acceptance test gaps
 /dev-verify slider-presets
 → FASE 0: 6 REQs, builder tests dekken unit logic
-→ FASE 0 step 7i: 8 acceptance tests gepland (HTTP contract gaps)
+→ FASE 0 step 8h: 8 acceptance tests gepland (HTTP contract gaps)
 → FASE 1: schrijf acceptance tests + run → 6 PASS, 2 FAIL
 → FASE 2b: REQ-002, REQ-005 FAIL op acceptance
 → FASE 3-4: 2 SPEC issues → Implementation First fixes

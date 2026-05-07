@@ -2,15 +2,15 @@
 name: frontend-check
 description: >-
   Check and fix performance (Lighthouse, CWV, bundle), SEO (Google), AEO (AI search),
-  responsive design (multi-viewport), darkmode, error states, smoke, and user flows
-  in one unified hub. Use with /frontend-check.
-argument-hint: "[url]"
-disable-model-invocation: true
-reads: [backlog.status]
+  accessibility (WCAG 2.1 AA), responsive design (multi-viewport), darkmode, error states,
+  smoke, and user flows in one unified hub. Use with /frontend-check.
+argument-hint: "[url | source-path | feature-name] [--scope=performance|seo|aeo|responsive|a11y|...]"
+reads:
+  [backlog.status, feature.requirements, feature.files, feature.architecture]
 writes: [backlog.status]
 metadata:
   author: mileszeilstra
-  version: 2.2.1
+  version: 2.3.0
   category: frontend
 ---
 
@@ -18,12 +18,12 @@ metadata:
 
 Unified check & fix hub for performance, SEO, AEO (AI search optimization), responsive design, darkmode, error states, smoke, and user flows. Scan on all axes, get a combined report, fix by priority, verify with before/after comparison.
 
-**Verwante skills:** `/frontend-design` · `/frontend-tokens` · `/frontend-convert` · `/frontend-install` · `/frontend-wcag`
+**Verwante skills:** `/frontend-design` · `/frontend-tokens` · `/frontend-convert` · `/core-setup`
 
 ## References
 
 - `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
-- `../shared/RULES.md` — P-series (performance), S-series (SEO), H-series (responsive/HTML)
+- `../shared/RULES.md` — Algemeen (R009), P-series (performance), S-series (SEO), A-series (accessibility), H-series (responsive/HTML)
 - `../shared/DESIGN.md` — Anti-patterns (AI design tells), motion timing, interaction states
 - `../shared/PLAYWRIGHT.md` — Playwright CLI: CWV measurement, multi-viewport captures, overflow detection
 - `../shared/PATTERNS.md` — Code splitting, memoization patterns
@@ -35,9 +35,28 @@ Unified check & fix hub for performance, SEO, AEO (AI search optimization), resp
 
 ### 0.1 Target Selection
 
-If `$1` provided → use as target URL.
+Detecteer input-type via vaste volgorde:
 
-If no argument:
+**1. URL** — `$1` start met `http://` of `https://` → `targetType = "url"`, `urlTarget = $1`
+
+**2. Feature-name** — `$1` heeft geen pad-separator (`/` of `\`) én geen extensie, én komt voor in `.project/backlog.html#data.features[].name`:
+
+- Lees `.project/features/{$1}/feature.json`
+- Als niet gevonden → fallback naar stap 3 (source-path)
+- `targetType = "feature"`, `featureName = $1`
+- Bouw targets:
+  - `routeTargets = feature.json#architecture.routes[].path` — resolven naar volledige URLs via dev-server base (lees uit `project.json#devServer` of default `http://localhost:3000`)
+  - `fileTargets = feature.json#files[].path` — component/page bestanden voor statische scopes
+- Toon bevestiging:
+  ```
+  FEATURE TARGET: {featureName}
+  Routes: {N} ({route-lijst})
+  Files:  {N} ({file-lijst})
+  ```
+
+**3. Source-path** — `$1` heeft pad-separator of extensie, geen http-prefix → `targetType = "path"`, `fileTargets = [$1]`
+
+**4. Geen argument** → AskUserQuestion:
 
 ```yaml
 header: "Target"
@@ -45,20 +64,46 @@ question: "Wat wil je checken?"
 options:
   - label: "Draaiende dev server (Recommended)", description: "Lighthouse + captures op dev server"
   - label: "Specifieke URL", description: "Geef een URL op"
+  - label: "Feature", description: "Audit een specifieke feature — auto-scope op files[] + routes[]"
   - label: "Production build", description: "Eerst builden, dan analyseren"
   - label: "Snelle smoke check", description: "Alleen health check — alle routes in < 2 min"
 multiSelect: false
 ```
 
-If "Snelle smoke check" → set scope = [Smoke] en skip FASE 0.2.
+- "Snelle smoke check" → `scope = [Smoke]`, skip FASE 0.2
+- "Feature" → AskUserQuestion (vrije tekst): "Welke feature? (kebab-case naam)" → feature-target flow van stap 2
 
 ### 0.2 Scope Selection
+
+**Auto-scope** — als `targetType` bekend is, detecteer de optimale scope en bevestig eerst:
+
+| Target-type             | Auto-scope                                                                                               |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `url`                   | Performance + SEO + AEO + Responsive + Darkmode                                                          |
+| `path` (component)      | A11Y + Token Architecture + Dark mode compliance                                                         |
+| `feature` met routes    | Performance + SEO + AEO + Responsive + Darkmode + A11Y (over routes) + Token Architecture (over files[]) |
+| `feature` zonder routes | A11Y + Token Architecture + Dark mode compliance (over files[])                                          |
+
+Als `targetType` is `url`, `path`, of `feature` → toon auto-scope bevestiging:
+
+```yaml
+header: "Scope"
+question: "Auto-scope: {detected-scopes}. Doorgaan of aanpassen?"
+options:
+  - label: "Ga door (Recommended)"
+    description: "Gebruik gedetecteerde scope"
+  - label: "Aanpassen"
+    description: "Kies handmatig welke checks"
+multiSelect: false
+```
+
+"Aanpassen" of geen arg (handmatig target) → volledige scope-selectie:
 
 ```yaml
 header: "Scope"
 question: "Welke checks wil je draaien?"
 options:
-  - label: "Alles (Recommended)", description: "Performance + SEO + AEO + Responsive + Darkmode + Error states + Smoke + Flow + Token Architecture + Dark mode compliance + Responsive coverage"
+  - label: "Alles (Recommended)", description: "Performance + SEO + AEO + A11Y + Responsive + Darkmode + Error states + Smoke + Flow + Token Architecture + Dark mode compliance + Responsive coverage"
   - label: "Ik kies zelf", description: "Selecteer specifieke checks"
 multiSelect: false
 ```
@@ -72,6 +117,7 @@ options:
   - label: "Performance", description: "Lighthouse, CWV, bundle sizes"
   - label: "SEO", description: "Google search optimization"
   - label: "AEO", description: "AI search optimization (ChatGPT, Perplexity, Gemini)"
+  - label: "A11Y", description: "Accessibility audit (WCAG 2.1 AA) — statische scan + optioneel Playwright"
   - label: "Responsive", description: "Multi-viewport layout audit"
   - label: "Darkmode", description: "Light + dark vergelijking, contrast, missende variants"
   - label: "Error states", description: "404, offline, slow-3G UI rendering"
@@ -112,11 +158,9 @@ Audits:     [Performance, SEO, AEO, Responsive]
 
 Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`.
 
-Filter features with `status === "DOING" && stage === "built"` — these are ready for audit.
+**Als `targetType === "feature"`**: direct matchen op `featureName` (geen URL-matching). Zoek `data.features.find(f => f.name === featureName)` → zet `stage: "testing"`, `data.updated` to today. Write back.
 
-Match the target URL/page against backlog items (best-effort: match page name from URL path to feature name).
-
-If match found: set `stage: "testing"`, `data.updated` to today. Write back via Edit (keep `<script>` tags intact).
+**Alle andere target-types**: filter features with `status === "DOING" && stage === "built"`. Match target URL/page against backlog items (best-effort: match page name from URL path to feature name). If match found: set `stage: "testing"`, `data.updated` to today. Write back via Edit (keep `<script>` tags intact).
 
 If no match or no backlog: skip (audit can run on non-backlog pages too).
 
@@ -160,7 +204,7 @@ Auth state wordt hergebruikt voor alle volgende checks. **Cleanup** `.project/au
 **Lighthouse** (primary, if available):
 
 ```bash
-npx lighthouse {url} --output json --chrome-flags="--headless --no-sandbox" --only-categories=performance,best-practices
+npx lighthouse {url} --output json --chrome-flags="--headless --no-sandbox" --only-categories=performance,accessibility,best-practices
 ```
 
 Extract: Performance score, LCP, CLS, INP, FCP, TTFB, opportunities.
@@ -215,31 +259,240 @@ Optimize for AI answer engines (ChatGPT Search, Perplexity, Google AI Overviews,
 
 **Crawlability:**
 
-- A001: AI bot access — check robots.txt for ChatGPT-User, PerplexityBot, Google-Extended, Anthropic
-- A002: Structured content — semantic HTML (article, section, aside, nav) vs div soup
-- A003: Clear content hierarchy — H1 → H2 → H3 with logical grouping
+- AE001: AI bot access — check robots.txt for ChatGPT-User, PerplexityBot, Google-Extended, Anthropic
+- AE002: Structured content — semantic HTML (article, section, aside, nav) vs div soup
+- AE003: Clear content hierarchy — H1 → H2 → H3 with logical grouping
 
 **Answerability:**
 
-- A101: FAQ sections — question-answer pairs that AI can extract
-- A102: FAQ Schema (FAQPage JSON-LD) — structured data for Q&A
-- A103: HowTo Schema — step-by-step instructions as JSON-LD
-- A104: Concise definitions — key terms defined in first paragraph or summary
-- A105: TL;DR / summary sections — scannable summaries at top of content
+- AE101: FAQ sections — question-answer pairs that AI can extract
+- AE102: FAQ Schema (FAQPage JSON-LD) — structured data for Q&A
+- AE103: HowTo Schema — step-by-step instructions as JSON-LD
+- AE104: Concise definitions — key terms defined in first paragraph or summary
+- AE105: TL;DR / summary sections — scannable summaries at top of content
 
 **Citations:**
 
-- A201: Author/source attribution — bylines, credentials, publication dates
-- A202: Data citations — sources for statistics, claims, quotes
-- A203: About page / E-E-A-T signals — expertise, experience, authority, trust
+- AE201: Author/source attribution — bylines, credentials, publication dates
+- AE202: Data citations — sources for statistics, claims, quotes
+- AE203: About page / E-E-A-T signals — expertise, experience, authority, trust
 
 **Freshness:**
 
-- A301: Last-modified headers / dateModified in schema
-- A302: Content timestamps visible on page
-- A303: Changelog / update history for evergreen content
+- AE301: Last-modified headers / dateModified in schema
+- AE302: Content timestamps visible on page
+- AE303: Changelog / update history for evergreen content
 
-### 1.4 Responsive Scan
+### 1.4 A11Y Scan (Accessibility — WCAG 2.1 AA)
+
+Alleen als scope "A11Y" geselecteerd is. Als argument een source-path was → gebruik als scan scope. Anders: project-wide scan.
+
+**Stack detection (snel):** detecteer framework, component library, bestaande a11y setup (eslint-plugin-jsx-a11y, axe-core, @testing-library).
+
+**Multi-route live check (optioneel):** als `.project/project.json → context.routing` routes bevat, bied dan aan om de live check over alle routes te draaien:
+
+```yaml
+header: "Live scope"
+question: "context.routing bevat {N} routes. Wil je de live check over alle routes draaien?"
+options:
+  - label: "Ja, alle routes (Recommended)", description: "Live check per route uit context.routing"
+  - label: "Nee, alleen entry URL", description: "Sneller — alleen de hoofdpagina"
+multiSelect: false
+```
+
+Als "Alle routes": sla routing-lijst op als `a11y_live_routes`. Als "Entry URL" of geen routing: `a11y_live_routes = [target URL]`.
+
+#### Static Analysis (always runs)
+
+Scan source files (scope of project-wide) georganiseerd naar prioriteit:
+
+**Critical (MUST_DO):**
+
+| Rule ID | What to scan                                                                                   |
+| ------- | ---------------------------------------------------------------------------------------------- |
+| A001    | Icon-only buttons without aria-label, images-as-buttons without alt                            |
+| A002    | div/span with onClick without role + tabIndex + onKeyDown                                      |
+| A003    | Dialog/modal components without focus trap (check for `<dialog>`, FocusTrap, or equivalent)    |
+| A004    | Dialog onClose without focus restoration to trigger                                            |
+| A005    | CSS `:focus { outline: none }` or Tailwind `outline-none` without `focus-visible:` replacement |
+| A006    | aria-expanded/aria-selected/aria-pressed not synchronized with component state                 |
+| R001    | Non-semantic interactive elements (div-as-button, div-as-link)                                 |
+| R004    | Form inputs without associated labels (`<label>` with htmlFor or wrapping)                     |
+| R005    | Interactive elements missing keyboard handlers                                                 |
+
+**High (SHOULD_DO):**
+
+| Rule ID | What to scan                                                     |
+| ------- | ---------------------------------------------------------------- |
+| A101    | Form error messages not linked via aria-describedby              |
+| A102    | Required fields without aria-required                            |
+| A103    | Dynamic error display without aria-live                          |
+| A104    | Loading states without aria-busy                                 |
+| H004    | Hardcoded color values where contrast is questionable            |
+| H006    | Small click targets (check className patterns for narrow sizing) |
+
+**Medium (AVOID):**
+
+| Rule ID | What to scan                                                                     |
+| ------- | -------------------------------------------------------------------------------- |
+| A201    | tabindex > 0 usage                                                               |
+| A202    | aria-label on non-interactive elements (div, span, p)                            |
+| A203    | `:focus { outline: none }` or `outline-none` without `focus-visible` replacement |
+
+#### Live Check (Playwright — optional)
+
+```yaml
+header: "Live Check"
+question: "Wil je ook een browser-based check uitvoeren? (vereist draaiende dev server)"
+options:
+  - label: "Ja, met Playwright (Recommended)"
+    description: "Check accessibility tree, focus order, ARIA in browser"
+  - label: "Nee, alleen static analysis"
+    description: "Sneller, maar minder compleet"
+```
+
+Als ja:
+
+```
+LIVE CHECK (Playwright CLI)
+═══════════════════════════════════════════════════
+
+Dev server: [http://localhost:3000]
+Routes:     [a11y_live_routes — 1 of meerdere]
+
+Per route in a11y_live_routes:
+1. playwright-cli open [url]
+2. playwright-cli snapshot
+3. playwright-cli console warning
+   → Filter output tegen PLAYWRIGHT.md → Default Ignore Patterns vóór rapportage
+4. playwright-cli close
+5. Log: [route] → [N] findings
+
+Parse snapshot voor:
+[ ] All interactive elements have accessible names
+[ ] Heading hierarchy correct (H002/H003)
+[ ] Form inputs have labels
+[ ] No orphaned ARIA roles
+
+Parse console output voor:
+[ ] React a11y warnings
+[ ] axe-core / @axe-core/react warnings (als geïnstalleerd)
+[ ] Library-specific a11y notices (Radix, Headless UI)
+
+═══════════════════════════════════════════════════
+```
+
+**Emulatie passes (C4 — daemon):** draai per route twee extra contexts voor motion en contrast.
+
+```
+EMULATIE PASSES (Playwright CLI)
+────────────────────────────────
+Per route in a11y_live_routes:
+
+  prefers-reduced-motion:
+  1. playwright-cli run-code "const ctx = await browser.newContext({ reducedMotion: 'reduce' }); const p = await ctx.newPage(); await p.goto('{url}'); await p.waitForLoadState('networkidle');"
+  2. playwright-cli snapshot
+     → Controleer: geen auto-play animaties, geen oneindige CSS-transitions zichtbaar in tree
+  3. playwright-cli screenshot .project/playwright-runs/a11y-{route-slug}-reduced-motion.png
+
+  forced-colors (Windows High Contrast):
+  1. playwright-cli run-code "const ctx = await browser.newContext({ forcedColors: 'active' }); const p = await ctx.newPage(); await p.goto('{url}'); await p.waitForLoadState('networkidle');"
+  2. playwright-cli screenshot .project/playwright-runs/a11y-{route-slug}-forced-colors.png
+     → Visueel: iconen/borders zichtbaar? Geen white-on-white of black-on-black?
+```
+
+**Aria-snapshot runner-pad (C3):** maak een baseline van de accessibility tree per route. Faalt bij regressie in volgende runs.
+
+Genereer `.project/playwright-runs/a11y-check-{slug}.spec.ts`:
+
+```typescript
+import { test, expect } from "@playwright/test";
+
+const routes = { a11y_live_routes };
+
+for (const route of routes) {
+  test(`aria-snapshot — ${route}`, async ({ page }) => {
+    await page.goto(route);
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("main")).toMatchAriaSnapshot();
+  });
+}
+```
+
+Genereer `.project/playwright-runs/playwright.config.ts` (zie `shared/PLAYWRIGHT.md → Runner Mode`).
+
+Eerste run: `npx playwright test .project/playwright-runs/a11y-check-{slug}.spec.ts --update-snapshots`
+→ Baseline aangemaakt in `.project/playwright-runs/__screenshots__/`
+
+Volgende runs: zonder `--update-snapshots` → FAIL bij structurele a11y-regressie (verdwenen landmarks, gewijzigde heading-hiërarchie).
+
+Bij FAIL: `npx playwright show-trace .project/playwright-runs/test-results/aria-snapshot-*/trace.zip`
+
+**Focus Management Test** (alleen als statische scan modal/dialog gevonden heeft):
+
+```
+FOCUS MANAGEMENT TEST (per modal/dialog)
+────────────────────────────────────────
+Per dialog:
+1. playwright-cli snapshot
+2. playwright-cli click [trigger-ref]
+3. playwright-cli snapshot
+   → A003: is focus binnen modal-bounds?
+4. playwright-cli press Tab (×5)
+   playwright-cli snapshot
+   → A003: blijft focus binnen modal?
+5. playwright-cli press Escape
+6. playwright-cli snapshot
+   → A004: is focus terug op de trigger?
+
+Output per dialog:
+  A003 Focus trap: [PASS | FAIL — focus escape naar [element] na N tabs]
+  A004 Focus restoration: [PASS | FAIL — focus op [element] i.p.v. trigger]
+```
+
+**Full Keyboard Test** (optioneel, op verzoek):
+
+```yaml
+header: "Keyboard test"
+question: "Wil je ook een full-page keyboard navigation test draaien?"
+options:
+  - label: "Nee, alleen modal focus test (Recommended)", description: "Sneller — test alleen modals"
+  - label: "Ja, volledige keyboard check", description: "Tab door hele pagina — duurt langer"
+multiSelect: false
+```
+
+**A11Y Scan Output:**
+
+```
+A11Y SCAN
+  Framework:        [name]
+  Scope:            [Project-wide | File: path | Component: name]
+  Files scanned:    [N]
+  Score:            [X/Y checks passed]
+  CRITICAL:         [N] (A001, A002, R004, ...)
+  HIGH:             [N]
+  MEDIUM:           [N]
+  Findings: [N] (C:[N] H:[N] M:[N])
+```
+
+#### Fix-instructies per rule
+
+**A001** — Icon-only button: `<button aria-label="Close">...</button>`. Image: `<img alt="description" />`.
+**A002** — div-as-button: vervang door `<button>`, of voeg `role="button"`, `tabIndex={0}`, `onKeyDown` (Enter/Space) toe.
+**A003** — Focus trap: gebruik native `<dialog>`, `FocusTrap` uit Headless UI/Radix, of implementeer tab-cycling.
+**A004** — Focus restoration: sla trigger-ref op vóór open (`triggerRef.current.focus()` bij close).
+**A005** — Focus indicator: vervang `outline-none` door `focus-visible:ring-2` of equivalent.
+**A006** — ARIA state sync: bind `aria-expanded`, `aria-selected`, `aria-pressed` aan component state.
+**R001** — Semantic elements: vervang `<div onClick>` door `<button>`, `<a href>` door `<Link>`.
+**R004** — Form labels: voeg `<label htmlFor="id">` toe of gebruik wrapping label.
+**R005** — Keyboard handlers: voeg `onKeyDown` toe voor Enter/Space op custom interactive elements.
+**A101** — Error linkage: voeg `aria-describedby="error-id"` toe op input.
+**A102** — Required: voeg `aria-required="true"` toe op verplichte inputs.
+**A103** — Live region: wrap dynamische errors in `<div aria-live="polite">`.
+**A104** — Loading: voeg `aria-busy="true"` toe op laadcontainers.
+**A201** — tabindex: vervang `tabIndex={N}` (N > 0) door logische DOM-volgorde.
+
+### 1.5 Responsive Scan
 
 Capture on 6 viewports (320, 375, 768, 1024, 1440, 1920) using Playwright CLI (see `PLAYWRIGHT.md` → Use Cases: Responsive Validation):
 
@@ -255,7 +508,7 @@ playwright-cli close
 
 Analyze: horizontal overflow, touch targets < 44px, truncated text, layout breaks, font size < 16px on mobile, missing viewport meta.
 
-### 1.5 Darkmode Scan
+### 1.6 Darkmode Scan
 
 Capture light + dark op de primaire route via `colorScheme`:
 
@@ -298,7 +551,7 @@ Findings:
 - **D101 (HIGH)**: hardcoded color values die niet switchen (re-use H004 patroon — scan source)
 - **D102 (HIGH)**: contrast in dark mode onder WCAG 4.5:1 threshold
 
-### 1.6 Error States Scan
+### 1.7 Error States Scan
 
 Test hoe de app reageert op fout-scenarios:
 
@@ -333,7 +586,7 @@ Findings:
 - **E101 (HIGH)**: geen loading skeleton bij slow connection — FOUC of leeg scherm
 - **E102 (HIGH)**: error-pagina zonder navigatie terug naar home
 
-### 1.7 Smoke Scan
+### 1.8 Smoke Scan
 
 Lichtgewicht health check over alle routes. Lees routes in volgorde van precedence:
 
@@ -373,7 +626,7 @@ Route               Status   Errors   Req fails
 Routes: [N] total, [M] failing
 ```
 
-### 1.8 Flow Scan
+### 1.9 Flow Scan
 
 Lees `.project/project.json → design.flows[]`. Per flow:
 
@@ -405,9 +658,38 @@ Step 2 [page-name] → [url]  ✗ FAIL — runtime error: "Cannot read propertie
 → STOPPED (first fail)
 ```
 
-**Constraint v1:** flow voert alleen navigatie uit (geen click-interacties binnen pages). Interactie-stappen vereisen `design.flows[].steps` verrijking met action-data — buiten scope v1.
+**Codegen-optie voor flows met interactie:**
 
-### 1.9 Token Architecture Scan
+Als flow-stappen interactie vereisen (klik, fill, etc.) die verder gaan dan navigatie:
+
+```yaml
+header: "Flow interacties"
+question: "Flow '{name}' kan interactie-stappen hebben. Hoe aanpakken?"
+options:
+  - label: "Genereer spec via codegen (Recommended)"
+    description: "npx playwright codegen {url} — navigeer de flow zelf, Playwright legt op als spec in .project/playwright-runs/flow-{name}.spec.ts"
+  - label: "Alleen navigatie (v1)"
+    description: "Voer alleen goto-stappen uit — klikken en fills worden overgeslagen"
+  - label: "Handmatig lopen"
+    description: "Ik loop de flow zelf en geef feedback via FASE 2 manual walkthrough"
+multiSelect: false
+```
+
+Als "codegen gekozen": instrueer user om `npx playwright codegen {base_url}` in een aparte terminal te draaien en de flow te navigeren. Sla gegenereerde spec op als `.project/playwright-runs/flow-{name}.spec.ts`. Draai daarna via runner: `npx playwright test .project/playwright-runs/flow-{name}.spec.ts --config=.project/playwright-runs/playwright.config.ts --trace on`.
+
+**Trace bij Flow-failure (F001):**
+
+Als runner-spec gedraaid: trace automatisch beschikbaar. Voeg toe aan F001-finding:
+
+```
+Trace: npx playwright show-trace .project/playwright-runs/test-results/flow-{name}-*/trace.zip
+```
+
+Als daemon-only: voeg in rapport toe: `"Herhaal met codegen → runner voor interactieve debug-timeline"`.
+
+**Constraint v1:** flow voert alleen navigatie uit (geen click-interacties binnen pages) tenzij codegen-optie gekozen. Interactie-stappen vereisen `design.flows[].steps` verrijking met action-data voor volledig script zonder codegen.
+
+### 1.10 Token Architecture Scan
 
 Alleen als "Token Architecture" geselecteerd is. Statische code-analyse — geen Playwright vereist.
 
@@ -454,7 +736,7 @@ TOKEN ARCHITECTURE
 
 ---
 
-### 1.10 Dark Mode Compliance Scan
+### 1.11 Dark Mode Compliance Scan
 
 Check `theme.modes.dark` in `.project/project.json`. Als ontbreekt: skip met melding `"Dark mode niet geconfigureerd — scan niet van toepassing."`.
 
@@ -486,7 +768,7 @@ DARK MODE COMPLIANCE
 
 ---
 
-### 1.11 Responsive Coverage Scan
+### 1.12 Responsive Coverage Scan
 
 Check of project multi-viewport context heeft: `theme.breakpoints` in project.json OF `tailwind.config` definieert custom screens. Als ontbreekt: skip met melding `"Geen multi-viewport context — scan niet van toepassing."`.
 
@@ -515,12 +797,12 @@ RESPONSIVE COVERAGE
 
 ---
 
-### 1.12 Finding Format (all checks)
+### 1.13 Finding Format (all checks)
 
 ```
 FINDING: [ID]
 ─────────────
-Check:    [Performance | SEO | AEO | Responsive | Darkmode | Error states | Smoke | Flow]
+Check:    [Performance | SEO | AEO | A11Y | Responsive | Darkmode | Error states | Smoke | Flow]
 Severity: [CRITICAL | HIGH | MEDIUM]
 Rule:     [P001 | S001 | D001 | E001 | F001 | etc.]
 Impact:   [CWV metric | search visibility | AI citability | viewport | UX]
@@ -557,6 +839,13 @@ AEO
   Structured content: [semantic | div-heavy]
   FAQ/HowTo schema: [present | missing]
   E-E-A-T signals: [strong | weak | missing]
+  Findings: [N] (C:[N] H:[N] M:[N])
+
+A11Y
+  Lighthouse a11y: [score]/100
+  Files scanned:  [N]
+  Critical:       [A001, A002, R004, ...]
+  Focus traps:    [PASS | FAIL — N dialogs]
   Findings: [N] (C:[N] H:[N] M:[N])
 
 RESPONSIVE
@@ -645,7 +934,8 @@ Implement fixes in priority order, grouped by audit category.
 9. **Responsive coverage** (RC001): ontbrekende responsive prefixes in layout-components
 10. **SEO**: titles → descriptions → sitemap → robots → structured data
 11. **AEO**: semantic HTML → FAQ schema → bot access → E-E-A-T
-12. **Token Architecture** (T001/T101): refactor semantic raw hex naar var() referenties, vervang hardcoded component kleuren door token classes
+12. **A11Y** (A001-A203): accessible names → semantic elements → keyboard handlers → focus management → ARIA states → form errors → live regions
+13. **Token Architecture** (T001/T101): refactor semantic raw hex naar var() referenties, vervang hardcoded component kleuren door token classes
 
 ### Context7 Research
 
@@ -660,7 +950,7 @@ Before framework-specific fixes, use Context7 for current API patterns:
 ```
 FIX: [Finding ID]
 ═════════════════════════════════════════════════════════════
-Audit:  [Performance | SEO | AEO | Responsive | Darkmode | Error states | Smoke | Flow]
+Audit:  [Performance | SEO | AEO | A11Y | Responsive | Darkmode | Error states | Smoke | Flow]
 Issue:  [description]
 File:   [path]
 
@@ -682,6 +972,7 @@ Re-run the selected audits to measure improvement:
 - Lighthouse re-run (if performance selected)
 - Re-capture viewports (if responsive selected)
 - Re-check SEO/AEO findings
+- Re-run A11Y static analysis (if a11y selected)
 - Re-capture light + dark (if darkmode selected)
 - Re-trigger 404/offline/slow-3G (if error-states selected)
 - Re-run smoke loop over alle routes (if smoke selected)
@@ -727,8 +1018,17 @@ If a backlog item was tagged as "testing" in FASE 0:
 
 1. Read `.project/backlog.html` → parse JSON
 2. Find the feature → set `status: "DONE"`, remove `stage` field, `data.updated` to today
-3. Write back via Edit (keep `<script>` tags intact)
-4. Sync to `project.json` `features[]`: merge feature with `status: "DONE"`
+3. **Als `f.type === "PAGE" || f.type === "COMPONENT"` (frontend track)**: zet ook `f.shipped = true` en `f.shippedAt = "{YYYY-MM-DD}"` (terminaal — geen refactor-stap voor frontend cards). Als de audit-fixes een git-commit triggerden: zet ook `f.shippedSha = "{audit-commit-sha}"`. Bij een clean PASS zonder commit: laat `shippedSha` weg.
+4. **Als `targetType === "feature"`**: voeg ook `audit` veld toe aan de feature:
+   ```json
+   {
+     "lastRun": "{YYYY-MM-DD}",
+     "scopes": ["{scope-lijst}"],
+     "findings": { "critical": N, "warnings": N, "passed": N }
+   }
+   ```
+5. Write back via Edit (keep `<script>` tags intact)
+6. Sync to `project.json` `features[]`: merge feature with `status: "DONE"` (en `shipped: true` voor PAGE/COMPONENT)
 
 ### 4.4 Completion Report
 

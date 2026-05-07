@@ -1,7 +1,6 @@
 ---
 name: team-verify
 description: Verify teammate code delivery. Checks completeness against task brief (feature.json) or backlog TODO, generates tests inline, maps results to requirements. Use with /team-verify after teammate code delivery.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 2.0.0

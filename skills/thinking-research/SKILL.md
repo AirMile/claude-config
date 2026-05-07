@@ -1,7 +1,6 @@
 ---
 name: thinking-research
 description: Multi-source research on concepts and ideas. Combines web search, documentation lookup, and codebase analysis into structured findings. Use with /thinking-research after /thinking-concept, /thinking-brainstorm, or /thinking-critique.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.3.0

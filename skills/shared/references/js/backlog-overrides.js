@@ -32,14 +32,6 @@ if (typeof STATUS_COLORS !== "undefined") {
 document.documentElement.style.setProperty("--doing", "#58a6ff");
 document.documentElement.style.setProperty("--defined", "#d29922");
 
-// Next skill helper: status-only routing
-window.getNextSkill = function (f) {
-  if (f.status === "TODO") return "define";
-  if (f.status === "DEFINED") return "build";
-  if (f.status === "DOING") return "verify";
-  return null;
-};
-
 // Override updateStatus: no stage logic
 if (typeof updateStatus !== "undefined") {
   window.updateStatus = function (name, newStatus) {

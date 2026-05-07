@@ -1,10 +1,10 @@
 ---
 name: dev-define
-description: Feature requirements en architectuur definiëren. Gebruik bij /dev-define [feature-name] om een feature te specificeren voor de build-fase.
+description: Feature requirements en architectuur definiëren. Gebruik bij /dev-define [feature-name] vóór de build-fase — definieert requirements, acceptance criteria en architectuur op basis van een backlog-item of een nieuwe naam. Werkt ook voor PAGE- en COMPONENT-features uit de backlog (puur functionele pipeline, los van /frontend-design).
 writes: [feature.requirements, backlog.status]
 metadata:
   author: mileszeilstra
-  version: 2.5.0
+  version: 2.6.0
   category: dev
 ---
 
@@ -60,7 +60,7 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
 3. **Project folder + context** (paralleliseer):
    - `mkdir -p .project/features/{feature-name}`
    - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json`
-   - Glob + Grep voor bestaande code die de feature-naam importeert
+   - Glob + Grep voor bestaande code die de feature-naam importeert. Bij 0 matches: stilzwijgend doorgaan. Bij ≥1 match: vermeld kort welke bestanden de naam al refereren.
    - Read `.project/project.json` → extract:
      - `stack` — framework, language, packages (fallback als stack-baseline.md niet bestaat)
      - `concept.pitch` of `concept.content` als feature context (korte samenvatting). Fallback: als beide leeg, lees `.project/project-concept.md` → eerste 2 zinnen
@@ -68,18 +68,36 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
      - `endpoints` — bestaande API surface
      - `data.entities` — bestaand data model
      - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/dev-todo`). Laad die als context.
+     - `design.components[]` — bestaande component-specs (gebruikt voor reuse-discovery in FASE 1)
+     - `design.pages[]` — bestaande page-specs (gebruikt voor reuse-discovery context)
+   - **Onboarding check** (evalueer direct na project.json read):
+     - `project.json` niet aanwezig → toon: `⚠️ Geen project.json gevonden. Overweeg eerst /core-setup te draaien voor betere codebase-context.`
+     - Aanwezig maar leeg (geen `context`, `stack`, én `features`) → toon: `ℹ️ project.json bestaat maar mist codebase-context. /core-setup kan dit aanvullen.`
+     - Aanwezig met content → stil doorgaan.
+     - Niet-blocking — skill gaat altijd verder.
    - **Naam-match op thinking markdown**: Grep `.project/thinking/*.md` op feature-naam (bestandsnaam + content). Bij 1+ match: lees de match(es) en gebruik als input voor FASE 1 vragen. De `.md` bestanden zijn bron van waarheid voor thinking-output — geen 7-dagen window meer.
    - **Backlog card → TODO**: Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data">`. Zoek feature op naam → behoud `status: "TODO"`, zet `date: "{date}"`. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "TODO"`. Zet `data.updated` naar vandaag. Schrijf terug naar `backlog.html`.
    - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
    - **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+
      ```
      scopes: [component, architectural]
      pitfall-prefix: true
      global-memory: true
      current-feature: <feature-name>
      ```
-     Toon de geladen output vóór FASE 1 vragen. Component-scoped patterns en architectural patterns geven richting bij architectuur-keuzes en requirement-formulering. Pitfall-prefix voorkomt herhaling van eerdere bugs.
+
+     **Verplichte output bij ≥1 match** — toon als aparte chat-block vóór FASE 1 vragen (niet samengevoegd met past-decisions output):
+
+     ```
+     RELEVANTE LEARNINGS
+     - [pattern] {summary} (uit feature {feature})
+     - [pitfall] {summary} (uit feature {feature})
+     ```
+
+     Geen matches → toon niets, ga stil door.
+
    - Read `.claude/research/stack-baseline.md` (conventie/patterns detail — als niet beschikbaar, gebruik `project.json.stack` als basis)
    - **Past decisions scan** (twee bronnen, beide scope):
      - Feature-scope: Glob `.project/features/*/feature.json` → flatten alle `durableDecisions[]`. Tag elke entry met `[feature-X]`.
@@ -126,7 +144,19 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
 
 8. Ga naar FASE 2 voor alleen ADDED en MODIFIED requirements. UNCHANGED requirements hoeven geen herarchitectuur, tenzij MODIFIED requirements architecturale impact hebben (vraag user).
 
-9. Bij FASE 3 write: **merge** delta naar bestaand `feature.json` — overschrijf niet volledig. Bewaar bestaande `build`, `tests`, `research` en UNCHANGED requirements intact. `buildSequence`: verwijder stappen die leeg zijn na REMOVED-filtering; voeg nieuwe stappen toe voor ADDED requirements (uit FASE 2 architectuur output); bestaande stappen voor UNCHANGED requirements ongewijzigd laten.
+9. Bij FASE 3 write: **merge** delta naar bestaand `feature.json` — overschrijf niet volledig. Bewaar bestaande `architecture`, `apiContract`, `design`, `testStrategy`, `durableDecisions`, `research` en UNCHANGED requirements intact (tenzij MODIFIED requirements architecturale impact hebben — vraag user). `buildSequence`: verwijder stappen die leeg zijn na REMOVED-filtering; voeg nieuwe stappen toe voor ADDED requirements (uit FASE 2 architectuur output); bestaande stappen voor UNCHANGED requirements ongewijzigd laten.
+
+---
+
+### FASE 0c: Enter Plan Mode (denkfase markering)
+
+Vóór FASE 1 start: roep **`EnterPlanMode`** aan om plan mode te activeren. Dit hint aan model-routers (zoals `opusplan`) dat de denkzware fasen 1 + 2 starten — die kunnen dan een sterker model inschakelen.
+
+Na de call krijg je via system-reminder het pad naar de plan file (bv. `/Users/.../plans/{slug}.md`). Noteer dit pad — dat is de bestemming voor alle FASE 2 design-writes.
+
+**Skip als al in plan mode** (geen dubbele EnterPlanMode call). Lees in dat geval het bestaande plan-file-pad uit de actieve plan-mode system-reminder.
+
+`AskUserQuestion` calls in FASE 1 + 2 blijven werken in plan mode. Schrijfacties (file writes, mkdir) zijn niet toegestaan tot ExitPlanMode aan het einde van FASE 2 — alle FASE 0 setup-writes zijn op dit punt al gedaan. Uitzondering: de plan file zelf mag wél tijdens plan mode geschreven/aangepast worden — dat is het kanaal naar de user-review. Alle andere file writes (feature.json, .project/\* updates) wachten tot na ExitPlanMode.
 
 ---
 
@@ -205,13 +235,7 @@ Max 3 AskUserQuestion calls. Dan door naar extraction.
 
 #### Requirement Extraction + Checkpoint
 
-Extraheer testbare requirements als tabel:
-
-| ID      | Requirement    | Category    | Acceptance                                      |
-| ------- | -------------- | ----------- | ----------------------------------------------- |
-| REQ-001 | {beschrijving} | {categorie} | WHEN {trigger} → THEN {observeerbaar resultaat} |
-
-Schrijf elk acceptance-scenario als een apart `{ when, then }` object. Meerdere condities → meerdere objecten (niet samenvoegen in één zin).
+Extraheer testbare requirements **intern** (geen tabel-output naar chat). Schrijf elk acceptance-scenario als een apart `{ when, then }` object. Meerdere condities → meerdere objecten (niet samenvoegen in één zin).
 
 **Completeness self-check** (voer uit, NIET aan user tonen):
 
@@ -221,26 +245,98 @@ Schrijf elk acceptance-scenario als een apart `{ when, then }` object. Meerdere 
 - Geen overlap tussen requirements (twee REQs die hetzelfde beschrijven)
 - Scope past bij 1 feature (als >10 REQs → markeer voor FASE 1b)
 
-Fix gevonden gaps inline: voeg ontbrekende acceptance criteria toe, splits overlappende REQs, voeg edge case REQs toe. De requirements tabel hierboven toont het uiteindelijke resultaat inclusief fixes.
+Fix gevonden gaps intern: voeg ontbrekende acceptance criteria toe, splits overlappende REQs, voeg edge case REQs toe.
 
-Presenteer direct daarna het volledige overzicht:
+**Korte chat-checkpoint** — toon alleen een beknopte numbered list (REQ-ID + 1-regel beschrijving, zonder category en zonder acceptance) zodat user kan bevestigen dat de scope klopt vóór architectuur-werk:
 
-| Aspect          | Waarde                       |
-| --------------- | ---------------------------- |
-| Feature         | {naam}                       |
-| Core function   | {samenvatting user antwoord} |
-| Data/state      | {samenvatting}               |
-| Output/contract | {samenvatting}               |
-| Requirements    | {N} requirements             |
+```
+REQ-001 — {1-regel beschrijving}
+REQ-002 — {1-regel beschrijving}
+...
+({N} requirements; volledige acceptance + overzicht volgt in plan file)
+```
 
-Bevestig met user via AskUserQuestion: "Akkoord met requirements en overzicht?"
+Bevestig met user via AskUserQuestion: "Klopt deze scope?"
 
-- "Akkoord (Recommended)" — door naar scope analysis + architectuur
+- "Ja, ga door (Recommended)" — door naar scope analysis + architectuur
 - "Aanpassen" — terug naar relevante vraag
+
+De volledige requirements-tabel met acceptance criteria en de feature-overzicht-tabel worden alleen in de plan file geschreven (in FASE 2), niet inline in de chat.
+
+#### Reuse-Discovery (optioneel — skip voor COMPONENT-features zelf)
+
+**Wanneer uitvoeren:** alleen als de huidige feature type NIET `COMPONENT` is, én het een frontend-project is (stack.framework aanwezig).
+
+**Doel:** requirements-tekst scannen op UI-elementen die mogelijk als gedeeld component gebouwd kunnen worden, maar nog niet in `design.components[]` of `project-context.json#components[]` staan.
+
+**Stap 1 — Scan requirements op UI-element namen:**
+
+Zoek in alle requirement-descriptions naar zelfstandige naamwoorden die typische UI-elementen aanduiden: Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton. Pas ook project-specifieke naam-prefixen toe als ze al in de codebase voorkomen (bv. "ConfirmModal" als "Modal" variëert).
+
+**Stap 2 — Dedup:**
+
+1. Check `project.json#design.components[]` → heeft component al `name` die matcht? → skip.
+2. Check `project-context.json#components[]` → al gebouwd in inventory? → skip.
+3. Check `feature.json#suggestionsLog[]` → eerder voorstel met dezelfde `name` en `status: "rejected"` van **dezelfde skill** (`dev-define`)? → skip. Afgewezen door andere skill → mag opnieuw voorgesteld worden (andere detectie-bron).
+
+**Stap 3 — Voorstel:** (alleen als ≥1 kandidaat na dedup)
+
+AskUserQuestion:
+
+```yaml
+header: "Potentiële componenten gevonden"
+question: "De requirements noemen UI-elementen die als gedeelde components gebouwd kunnen worden. Welke wil je als COMPONENT-todo toevoegen?"
+options:
+  - label: "{naam} (atomic) — {korte context uit requirement}", description: "Maak COMPONENT-todo voor {naam}"
+  - label: "..." (één per kandidaat)
+  - label: "Overslaan", description: "Geen COMPONENT-todos toevoegen"
+multiSelect: true
+```
+
+**Stap 4 — Verwerking:**
+
+Per geaccepteerd voorstel (in-memory, meegenomen naar FASE 4 sync):
+
+1. Append aan `project.json#design.components[]`:
+   ```json
+   {
+     "name": "{naam}",
+     "purpose": "Infereer uit requirements-context",
+     "status": "IDEA",
+     "scope": "atomic"
+   }
+   ```
+2. Append aan `backlog.html#data.features[]`:
+   ```json
+   {
+     "name": "{kebab-case naam}",
+     "type": "COMPONENT",
+     "status": "TODO",
+     "phase": "P3",
+     "description": "Component gedetecteerd in requirements van {feature-name}",
+     "source": "/dev-define",
+     "scope": "atomic",
+     "dependencies": []
+   }
+   ```
+3. Log in `feature.json#suggestionsLog[]`: `{ skill: "dev-define", type: "COMPONENT", name, status: "accepted", at: ISO }`
+4. Append de kebab-case naam naar de **huidige feature's `dependencies[]`** (in-memory — wordt meegeschreven naar feature.json in FASE 3).
+
+Per afgewezen voorstel: log `{ skill: "dev-define", type: "COMPONENT", name, status: "rejected", at: ISO }`.
+
+"Overslaan" → log alle kandidaten als rejected voor deze skill. Geen backlog-items aangemaakt.
+
+---
 
 ### FASE 1b: Scope Analysis & Feature Splitting
 
-**≤6 requirements**: toon totaal + "SINGLE — ga door". Skip cluster-analyse.
+**≤6 requirements**: toon ALTIJD één regel inline aan de gebruiker:
+
+```
+Scope: {N} requirements — SINGLE feature
+```
+
+Geen AskUserQuestion, geen extra uitleg. Daarna direct door naar FASE 2. Skip cluster-analyse.
 
 **7-10 requirements**: cluster op afhankelijkheden. ≥2 clusters met ≤2 cross-deps → RECOMMEND SPLIT.
 
@@ -261,9 +357,13 @@ Bevestig met user via AskUserQuestion: "Akkoord met requirements en overzicht?"
 
 ### FASE 2: Architecture
 
+**Output-regel voor deze hele fase**: schrijf het volledige architectuur-ontwerp **direct naar de plan file** (Write/Edit, gebruik het pad uit de FASE 0c system-reminder). **Toon geen design-tabellen, file-structuren, interfaces, build sequence of test strategy inline in de chat** — alleen een korte progress-marker (bv. `Architectuur ontworpen: N componenten, M files, K build steps. Plan file bijgewerkt.`).
+
+**Uitzondering**: bij visuele features mag de ASCII-wireframe wél inline in een AskUserQuestion description verschijnen — anders kan user niet beoordelen vóór de finale plan-file write.
+
 Ontwerp in drie stappen:
 
-1. **Baseline check**:
+1. **Baseline check** (intern):
    - Doorzoek `stack-baseline.md` op patronen relevant voor deze feature
    - **Pattern gevonden** → gebruik als basis voor design, skip research
    - **Pattern niet gevonden** → inline research:
@@ -273,51 +373,56 @@ Ontwerp in drie stappen:
        Na research: update `stack-baseline.md` met nieuwe patronen (append, niet overschrijven)
    - **Geen baseline file** → altijd research uitvoeren. Baseline NIET aanmaken (dat is /core-setup)
 
-2. **Bestaande code**: Glob + Read de meest relevante bestanden met vergelijkbare patterns. Dit informeert het ontwerp.
+2. **Bestaande code** (intern): Glob + Read de meest relevante bestanden met vergelijkbare patterns. Dit informeert het ontwerp.
 
-3. **Design**: ontwerp op basis van requirements, baseline en bestaande code. Genereer een feature flow — een compacte `→`-keten van trigger tot output die het pad door de architectuur toont (conditionele paden in `[brackets]`, parallelle paden met `+`). Voorbeeld: `User click → validate input → [cache hit → return] / [cache miss → fetch API + update cache] → render response`. Daarna:
-   - **File structuur**: create/modify tabel
-   - **Interfaces/Types**: als relevant
-   - **Design sketch**: alleen voor visuele features — ASCII wireframe (web/UI) of scene composition (3D/game). Overweeg: responsive breakpoints, loading state, empty state, error state.
-     Bij visuele features: bevestig wireframe met user via AskUserQuestion: "Klopt dit visuele ontwerp?" — "Ja (Recommended)" / "Aanpassen"
-   - **Dependency analysis**: REQ→REQ relaties
+3. **Design** → schrijf naar plan file: feature flow, file structuur, interfaces/types, design sketch (alleen visueel), dependency analysis, build sequence, test strategy, AI-navigability beslissingen.
+   - **Feature flow**: compacte `→`-keten van trigger tot output (conditionele paden in `[brackets]`, parallelle paden met `+`). Voorbeeld: `User click → validate input → [cache hit → return] / [cache miss → fetch API + update cache] → render response`.
+   - **File structuur**: create/modify tabel.
+   - **Interfaces/Types**: als relevant.
+   - **Design sketch**: alleen voor visuele features — ASCII wireframe (web/UI) of scene composition (3D/game). Overweeg: responsive breakpoints, loading state, empty state, error state. Bevestig wireframe inline via AskUserQuestion (zie uitzondering bovenaan): "Klopt dit visuele ontwerp?" — "Ja (Recommended)" / "Aanpassen".
+   - **Dependency analysis**: REQ→REQ relaties.
    - **Build sequence**: genummerde implementatievolgorde. Combineer REQs in dezelfde step als ze dezelfde file raken en geen onderlinge dependencies hebben.
-   - **Test strategy**: REQ→testfile→beschrijving tabel
+   - **Test strategy**: REQ→testfile→beschrijving tabel.
    - **AI-navigability** (evalueer na design, pas file structure/interfaces aan waar nodig — skip bij ≤3 bestanden zonder nieuw pattern):
-     - _Module exports_: Per nieuw bestand: wat is public, wat is private? Bij >3 bestanden in dezelfde dir: overweeg barrel/index bestand
-     - _Registries_: Meerdere instances van hetzelfde concept (endpoints, commands, entities)? → Centraliseer in één bestand. Noteer in `architecture.registries[]`
-     - _Structuur_: Plat vs genest? Richtlijn: plat tenzij >10 files of duidelijke subcategorieën. Volg bestaande projectconventie
-     - _Test locatie_: Colocated of apart? Documenteer in `testStrategy.location`
-     - _Module boundaries_: Welke modules importeren van welke? Noteer verboden imports bij circulaire risico's
+     - _Module exports_: Per nieuw bestand: wat is public, wat is private? Bij >3 bestanden in dezelfde dir: overweeg barrel/index bestand.
+     - _Registries_: Meerdere instances van hetzelfde concept (endpoints, commands, entities)? → Centraliseer in één bestand. Noteer in `architecture.registries[]`.
+     - _Structuur_: Plat vs genest? Richtlijn: plat tenzij >10 files of duidelijke subcategorieën. Volg bestaande projectconventie.
+     - _Test locatie_: Colocated of apart? Documenteer in `testStrategy.location`.
+     - _Module boundaries_: Welke modules importeren van welke? Noteer verboden imports bij circulaire risico's.
+
+**Einde denkfase**: roep **`ExitPlanMode`** aan. Na approval gaat de skill verder met FASE 3 (feature.json schrijven) in normale mode.
+
+**Skip als de skill al gestart was in plan mode** (gebruiker heeft zelf `/plan-mode` gedaan vóór `/dev-define` — laat ze in plan mode).
 
 ### FASE 3: Write feature.json
 
 Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md` voor volledig schema):
 
-| Veld                        | Conditie                                                                     |
-| --------------------------- | ---------------------------------------------------------------------------- |
-| `name`, `created`, `status` | altijd (status = `"DEFINED"`, geen stage — wacht op `/dev-build`)            |
-| `summary`                   | altijd                                                                       |
-| `depends`                   | altijd (lege array als geen)                                                 |
-| `choices`                   | altijd (user antwoorden)                                                     |
-| `requirements`              | altijd (elke REQ met `status: "pending"`, `acceptance: [{when, then}]`)      |
-| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`) |
-| `architecture`              | altijd (`componentTree`, `interfaces`, optioneel `registries[]`)             |
-| `design`                    | alleen visuele features                                                      |
-| `apiContract`               | alleen bij backend                                                           |
-| `buildSequence`             | altijd                                                                       |
-| `testStrategy`              | altijd (optioneel `location` veld)                                           |
-| `clarifications`            | alleen als gray-area resolution is uitgevoerd                                |
-| `durableDecisions`          | bij >3 requirements — beslissingen die over alle REQs gelden                 |
-| `research`                  | alleen als research is gedaan                                                |
+| Veld                        | Conditie                                                                                                              |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `name`, `created`, `status` | altijd (status = `"DEFINED"`, geen stage — wacht op `/dev-build`)                                                     |
+| `summary`                   | altijd                                                                                                                |
+| `depends`                   | altijd (lege array als geen)                                                                                          |
+| `choices`                   | altijd (user antwoorden)                                                                                              |
+| `requirements`              | altijd (elke REQ met `status: "pending"`, `acceptance: [{when, then}]`)                                               |
+| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`)                                          |
+| `architecture`              | altijd (`componentTree`, `interfaces`, optioneel `registries[]`)                                                      |
+| `design`                    | alleen visuele features                                                                                               |
+| `apiContract`               | alleen bij backend                                                                                                    |
+| `buildSequence`             | altijd                                                                                                                |
+| `testStrategy`              | altijd (optioneel `location` veld)                                                                                    |
+| `clarifications`            | alleen opnemen als gray-area resolution minimaal 1 antwoord heeft opgeleverd — anders veld WEGLATEN (geen lege array) |
+| `durableDecisions`          | bij >3 requirements — beslissingen die over alle REQs gelden                                                          |
+| `research`                  | alleen als research is gedaan                                                                                         |
 
 **`durableDecisions`** — beslissingen die tijdens de build NIET veranderen:
 
-- Route structuren / URL patronen
-- Database schema shape
+- Persistentie-strategie (welke storage API, welk formaat)
+- ID-generatie en idempotency-contract
 - Key data models en hun relaties
-- Auth/authz aanpak
 - Externe service boundaries
+- Route structuren / URL patronen (bij routing-features)
+- Auth/authz aanpak (bij auth-features)
 
 Alleen opnemen als er daadwerkelijk cross-requirement beslissingen zijn. Bij simpele features (≤3 REQs) overslaan.
 
@@ -387,18 +492,58 @@ Muteer in memory:
 - Update feature in `features` array: status → `"DEFINED"`, update summary
 - Merge per entity type (check altijd op bestaande voor push):
   - **Data entities** (optioneel — alleen als feature domain entities introduceert): check op naam → nieuw: push met fields/relations → bestaand: merge nieuwe velden. Als feature geen entities heeft (UI-only, refactor, utility): skip deze update, log `Skipped data.entities: no entities`.
-  - **Endpoints**: check op method+path → nieuw: push met `status: "planned"`, `auth: "public" | "user" | "admin"` (default `"public"`, gebruik `"user"` als JWT/session vereist, `"admin"` als role-check vereist) → bestaand: skip
-  - **Routes** in `.project/project-context.json` → `architecture.routes[]`: voor elke nieuwe pagina-route in deze feature → check op `path` → nieuw: push `{ path, purpose, auth: "public" | "user" | "admin", feature: "<feature-name>" }` → bestaand: update `purpose` als gewijzigd. `auth` semantiek identiek aan endpoints. Skip voor non-frontend features (pure API/utility).
+  - **Endpoints**: check op method+path → nieuw: push met `status: "planned"`, `auth: "public" | "user" | "admin"` (default `"public"`, gebruik `"user"` als JWT/session vereist, `"admin"` als role-check vereist; laat `auth` veld weg bij projecten zonder auth) → bestaand: skip
+  - **Routes** in `.project/project-context.json` → `architecture.routes[]`: voor elke nieuwe pagina-route in deze feature → check op `path` → nieuw: push `{ path, purpose, feature: "<feature-name>" }` + `auth` veld alleen als project auth heeft → bestaand: update `purpose` als gewijzigd. Skip voor non-frontend features (pure API/utility).
   - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
   - **Features**: check op naam → nieuw: push `{ name, status: "DEFINED", summary, created }` → bestaand: update status
   - **Architecture** in `.project/project-context.json`: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg component-first model uit `shared/DASHBOARD.md`**:
-    - `layers`: definieer lagen met `{ name, order }` (bijv. API Laag order 1, Data Laag order 3)
+    - `layers`: optioneel — definieer lagen met `{ name, order }` als project expliciete layer-naming gebruikt (bijv. API Laag order 1, Data Laag order 3). Skip als project dit niet hanteert.
     - `dataFlow`: één-regel samenvatting van de request flow
     - `components`: per component `{ name, layer, description, status, connects_to }`. Nieuwe feature componenten → `status: "planned"`. Bestaande gebouwde → `status: "done"`. Externe services → `status: "external"`. `connects_to`: array van typed edges `{ to, type }` waar `type` een van `calls` | `reads` | `writes` | `depends_on` is (zie `shared/DASHBOARD.md` Edge velden voor mapping)
     - Merge strategie: check of component `name` al bestaat → nee: push → ja: merge (overschrijf status, merge `connects_to[]` met dedup op `to+type` combinatie)
     - Optioneel: genereer Mermaid diagram naar `.project/architecture.mmd` voor visuele context
     - Skip als single-file feature zonder architecturele impact
   - **Context** in `.project/project-context.json`: update `context.structure` en `context.routing` als de feature nieuwe bestanden of routes toevoegt. **Let op**: structure/routing zijn JSON-escaped strings — bij grote wijzigingen gebruik Write i.p.v. Edit om escaping-problemen te voorkomen.
+
+**PAGE-seeding** (frontend projects only — skip voor pure API/backend/game features):
+
+Detecteer nieuwe pages uit de in-memory data:
+
+- `feature.json#architecture.routes[]` — paden die matchen op `app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`, of path-patronen van de gekozen stack
+- `feature.json#files[]` — componenten waarvan de naam eindigt op `Page`, `Screen`, of `View`
+
+Idempotency: voor elke gedetecteerde page → check `data.features.find(f => f.name === <kebab-case naam>)` — sla over als al bestaat.
+
+Als er ≥1 nieuwe pages zijn → AskUserQuestion:
+
+```yaml
+header: "Pages gedetecteerd"
+question: "Deze feature introduceert {N} nieuwe pages. Wil je ze als losse PAGE-tasks toevoegen aan de backlog zodat ze de design → convert → check mini-pipeline doorlopen?"
+options:
+  - label: "Ja, alle (Recommended)"
+    description: "Voeg een PAGE-todo toe per page"
+  - label: "Selectie"
+    description: "Kies welke pages een aparte todo krijgen"
+  - label: "Nee"
+    description: "Geen extra todos — pages zijn al onderdeel van deze feature"
+multiSelect: false
+```
+
+Per geselecteerde page → voeg toe aan `data.features[]` (in-memory, wordt meegenomen in de schrijffase):
+
+```json
+{
+  "name": "{kebab-case page naam}",
+  "type": "PAGE",
+  "status": "TODO",
+  "phase": "P3",
+  "description": "Page introduced by feature {parentFeature}. Route: {route-pattern}",
+  "source": "/dev-define",
+  "dependencies": ["{parentFeature}"],
+  "parentFeature": "{parentFeature}",
+  "auto": true
+}
+```
 
 Schrijf parallel terug:
 
@@ -408,19 +553,7 @@ Schrijf parallel terug:
 
 **Auto-build markering** (na sync):
 
-AskUserQuestion:
-
-```yaml
-header: "Automatisch bouwen"
-question: "Wil je deze feature markeren voor automatische build?"
-options:
-  - label: "Ja, markeer als auto (Recommended)"
-    description: "Card krijgt AUTO tag — clipboard geeft het juiste commando"
-  - label: "Nee, ik bouw handmatig"
-multiSelect: false
-```
-
-Ja → lees backlog opnieuw, zoek feature, zet `"auto": true`, schrijf terug via Edit.
+Lees backlog opnieuw, zoek feature, zet `"auto": true`, schrijf terug via Edit. Geen user-prompt — altijd auto markeren zodat de card een AUTO-badge krijgt en het clipboard het juiste `/dev-build`-commando geeft.
 
 Clean up: `rm -f .project/session/active-{feature-name}.json`
 
@@ -433,13 +566,14 @@ Requirements: {N} (met acceptance criteria)
 Architecture: {component count} componenten
 Files: feature.json + backlog + dashboard
 
-Next steps:
-  1. /dev-plan → genereer backlog uit concept (als nog geen backlog)
-  2. /dev-build {feature-name} → start implementatie (als backlog al bestaat)
+Next: /dev-build {feature-name}
 ```
+
+Laat de `Next`-regel weg als de feature géén backlog-item was én geen concept aanwezig is — wijs dan kort op het ontbreken van een backlog.
 
 ## Restrictions
 
 - Schrijf GEEN implementatiecode (dat is /dev-build)
 - Sla requirements extractie niet over
 - Ga niet verder zonder user-bevestiging bij checkpoints
+- Skip de `EnterPlanMode`/`ExitPlanMode` calls niet — die zijn nodig voor model-routers (zoals `opusplan`) om denkfasen onder een sterker model te draaien

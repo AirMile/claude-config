@@ -6,7 +6,6 @@ core:
   - core-edit
   - core-export
   - core-merge
-  - core-onboard
   - core-pull
   - core-audit
   - core-rewrite
@@ -29,9 +28,7 @@ frontend:
   - frontend-check
   - frontend-convert
   - frontend-design
-  - frontend-install
   - frontend-tokens
-  - frontend-wcag
 
 marketing:
   - marketing-promo

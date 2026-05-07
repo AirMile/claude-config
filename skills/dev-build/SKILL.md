@@ -1,7 +1,6 @@
 ---
 name: dev-build
-description: Build features with TDD or implementation-first per requirement. Use with /dev-build or /dev-build [feature-name] after /dev-define.
-disable-model-invocation: true
+description: Build features with TDD or implementation-first per requirement. Use with /dev-build or /dev-build [feature-name] after /dev-define. Voor PAGE/COMPONENT-features leest dev-build design.pages[]/design.components[] als visuele spec-bron indien aanwezig.
 reads: [feature.requirements]
 writes: [feature.requirements, feature.build, backlog.status, learnings]
 metadata:
@@ -31,28 +30,36 @@ Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), a
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TodoWrite` aan met deze 8 items (status `pending`), daarna markeer per fase `in_progress` aan begin en `completed` aan einde. Bij context compaction blijft TodoWrite-state zichtbaar — geen risico op vergeten fases.
+**Fase tracking** — eerste actie van de skill: roep `TodoWrite` aan met deze 6 items (status `pending`), daarna markeer per fase `in_progress` aan begin en `completed` aan einde. Bij context compaction blijft TodoWrite-state zichtbaar — geen risico op vergeten fases.
 
 1. FASE 0: Context Loading
 2. FASE 1: Technique Mapping
 3. FASE 2: Execute Build
 4. FASE 2b: Regression Gate
-5. FASE 3A: Documentation
-6. FASE 3B: Project Sync
-7. FASE 3C: Wat hebben we gebouwd?
-8. FASE 3D: Scoped Commit
+5. FASE 3A: Project Sync
+6. FASE 3B: Scoped Commit
 
 ### FASE 0: Context Loading
 
-> **Todo**: roep `TodoWrite` aan met de 8 fase-items (zie boven). Markeer FASE 0 → `in_progress`.
+> **Todo**: roep `TodoWrite` aan met de 6 fase-items (zie boven). Markeer FASE 0 → `in_progress`.
 
 **Capture git baseline** (eerste actie):
 
+Bepaal eerst de repo root. Als CWD geen git-repo is, zoek de repo via de feature-locatie:
+
 ```bash
-mkdir -p .project/session
-# Cleanup stale session state from previous crashed runs (>1 dag oud)
-find .project/session -maxdepth 1 \( -name "active-*.json" -o -name "pre-skill-*.txt" \) -mtime +1 -delete 2>/dev/null
-git rev-parse HEAD > .project/session/pre-skill-sha.txt
+REPO=$(git rev-parse --show-toplevel 2>/dev/null) || \
+  REPO=$(cd "$(dirname "$(find . -maxdepth 6 -name 'feature.json' -path '*/.project/features/*' | head -1)")/../../.." && pwd)
+```
+
+Geen repo gevonden → exit: "Geen git-repo gedetecteerd; /dev-build vereist een tracked project."
+
+Bewaar `$REPO` — alle latere git-commando's gebruiken `git -C "$REPO" ...`.
+
+```bash
+mkdir -p "$REPO/.project/session"
+find "$REPO/.project/session" -maxdepth 1 \( -name "active-*.json" -o -name "pre-skill-*.txt" \) -mtime +1 -delete 2>/dev/null
+git -C "$REPO" rev-parse HEAD > "$REPO/.project/session/pre-skill-sha.txt"
 ```
 
 **Detect stack:** lees CLAUDE.md `### Stack` sectie + `.claude/research/stack-baseline.md` (als beschikbaar). Fallback: `project.json.stack`.
@@ -80,6 +87,22 @@ current-feature: <feature-name>
 Toon de geladen output. Pitfall-prefix sectie + component-scoped patterns geven context voor de build (geen constraint — bij twijfel ga uit van root cause, niet pattern-match).
 
 Bewaar de geladen learnings voor FASE 1 (Technique Mapping).
+
+**COMPONENT Build Detection** (na feature.json load):
+
+Als `feature.type === "COMPONENT"` (of backlog-item type is COMPONENT):
+
+1. Bepaal `COMPONENT_SCOPE`:
+   - Check `feature.json#architecture.scope` of top-level `scope` veld
+   - Fallback: check `project.json#design.components[]` — match op naam → lees `scope`
+   - Fallback: vraag user via AskUserQuestion: `"Wat is de scope van dit component?"` (atomic/section/layout)
+
+2. Bepaal `COMPONENT_OUTPUT_PATH` op basis van scope en framework (zie FASE 2):
+   - `atomic` → `src/components/ui/{Name}.tsx`
+   - `section` → `src/components/{Name}.tsx`
+   - `layout` → `src/components/{Name}.tsx` (+ auto-patch `app/layout.tsx` na build)
+
+3. Sla op als `IS_COMPONENT_BUILD = true`, `COMPONENT_SCOPE`, `COMPONENT_OUTPUT_PATH`.
 
 **Load feature:**
 
@@ -119,7 +142,7 @@ Skip als geen `depends[]` of leeg.
    - "Stop — werk eerst {dep} af (Recommended)" / "Toch doorgaan"
    - Stop → exit. Doorgaan → continue.
 
-**Workspace setup** (optioneel):
+**Workspace setup:**
 
 Alleen tonen als we NIET al in een worktree zitten:
 
@@ -142,7 +165,7 @@ Alleen tonen als we NIET al in een worktree zitten:
 
 **Tag backlog card als actief** (direct na feature laden):
 
-Lees `.project/backlog.html` (als bestaat), zoek feature op naam → zet `"status": "DOING"`, verwijder `transition` (als aanwezig), `data.updated` naar nu (overgang DEFINED → DOING bij build-start). Schrijf terug via Edit.
+Lees `.project/backlog.html` (als bestaat), zoek feature op naam → zet `"status": "DOING"`, verwijder `transition` veld als het aanwezig is (niet verplicht), `updated` naar huidige datum (overgang DEFINED → DOING bij build-start). Schrijf terug via Edit.
 
 **Signal active feature** (na backlog update):
 
@@ -176,25 +199,6 @@ Overweeg vóór de bouw:
 - Bouw in kleine stappen — commit na elke werkende REQ
 ```
 
-**Dependency-check (alleen als `feature.dependencies[]` niet leeg is):**
-
-Lees `feature.dependencies[]` uit het backlog JSON-object (al geladen in FASE 0).
-Filter items waarbij de overeenkomstige feature in de backlog NIET `status: "DONE"` heeft.
-
-Als count > 0, toon:
-
-```
-⚠ ONOPGELOSTE DEPENDENCIES
-
-Deze feature wacht op:
-- {dep-name} (status: {status})
-- ...
-
-Ga door als je zeker weet dat dit geen blocker is.
-```
-
-Geen harde stop — dit is een signaal, geen blokkade.
-
 ### FASE 1: Technique Mapping
 
 > **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
@@ -214,6 +218,115 @@ Display technique map als tabel. Proceed automatically — do NOT confirm with t
 ### FASE 2: Execute Build
 
 > **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+
+**COMPONENT output-pad routing** (alleen als `IS_COMPONENT_BUILD = true`):
+
+Overschrijf `feature.json files[]` paden met de definitieve output-paden op basis van `COMPONENT_SCOPE`:
+
+| Scope     | Hoofd-component bestand        | Demo-page                             |
+| --------- | ------------------------------ | ------------------------------------- |
+| `atomic`  | `src/components/ui/{Name}.tsx` | `app/_dev/components/{name}/page.tsx` |
+| `section` | `src/components/{Name}.tsx`    | `app/_dev/components/{name}/page.tsx` |
+| `layout`  | `src/components/{Name}.tsx`    | `app/_dev/components/{name}/page.tsx` |
+
+Genereer de demo-page naast het component-bestand. De demo-page toont een variant-matrix van alle `variants × sizes × states`:
+
+```tsx
+// app/_dev/components/{name}/page.tsx (gitignored via _dev/)
+export default function {Name}Demo() {
+  return (
+    <main aria-label="{Name} demo">
+      {variants.map(v => sizes.map(s => states.map(state => (
+        <{Name} key={`${v}-${s}-${state}`} variant={v} size={s} {...stateProps[state]}>
+          {v}/{s}/{state}
+        </{Name}>
+      ))))}
+    </main>
+  );
+}
+```
+
+Voeg `app/_dev/` toe aan `.gitignore` als het er nog niet in staat (check eerst):
+
+```bash
+grep -q "_dev/" .gitignore 2>/dev/null || echo "app/_dev/" >> .gitignore
+```
+
+**Variant visual spec (G1 — alleen als component >1 variant heeft):**
+
+Conditie: `feature.json.requirements` bevat `cva(...)` met meer dan één variant-sleutel of meer dan één waarde per sleutel. Skip voor 1-variant components.
+
+**Pre-flight (Playwright runner)**: Check `package.json` op `@playwright/test` devDep. Bij ontbreken:
+
+```yaml
+header: "Playwright runner"
+question: "Variant visual specs vereisen @playwright/test. Hoe verder?"
+options:
+  - label: "Run /core-setup playwright (Recommended)"
+    description: "Installeert daemon + runner + base config"
+  - label: "Skip variant specs"
+    description: "Sla deze stap over, ga door met build"
+multiSelect: false
+```
+
+Bij **Skip** → spring naar "Layout auto-patch" sectie hieronder.
+
+Genereer `.project/playwright-runs/component-{name}.spec.ts`:
+
+```typescript
+import { test, expect } from "@playwright/test";
+
+const variants = { variants_array }; // bijv. ['default', 'destructive', 'outline']
+const sizes = { sizes_array }; // bijv. ['sm', 'md', 'lg'] — [] als geen size-variant
+
+test.beforeEach(async ({ page }) => {
+  await page.goto("http://localhost:3000/_dev/components/{name}");
+  await page.waitForLoadState("networkidle");
+});
+
+for (const variant of variants) {
+  for (const size of sizes.length ? sizes : [null]) {
+    const label = size ? `${variant}-${size}` : variant;
+    test(`{name} — ${label}`, async ({ page }) => {
+      const selector = size
+        ? `[data-variant="${variant}"][data-size="${size}"]`
+        : `[data-variant="${variant}"]`;
+      await expect(page.locator(selector).first()).toHaveScreenshot(
+        `{name}-${label}.png`,
+        { maxDiffPixelRatio: 0.02 },
+      );
+    });
+  }
+}
+```
+
+Genereer `.project/playwright-runs/playwright.config.ts` (zie `shared/PLAYWRIGHT.md → Runner Mode`).
+
+Eerste run (baseline aanmaken):
+`npx playwright test .project/playwright-runs/component-{name}.spec.ts --update-snapshots`
+
+Volgende runs (regressie check):
+`npx playwright test .project/playwright-runs/component-{name}.spec.ts`
+→ FAIL = visuele regressie in een specifieke variant/size combinatie.
+
+Toon na eerste succesvolle run:
+
+```
+VARIANT VISUAL SPEC
+  Component:  {Name}
+  Variants:   {N} ({variant-namen})
+  Sizes:      {M} ({size-namen}) / n.v.t.
+  Spec:       .project/playwright-runs/component-{name}.spec.ts
+  Baselines:  .project/playwright-runs/__screenshots__/ ({N×M} PNG's)
+```
+
+**Layout auto-patch** (alleen als `COMPONENT_SCOPE === "layout"`):
+
+Na het genereren van het component-bestand: voeg import + render toe aan `app/layout.tsx` (of framework-equivalent). Conflict-detectie: check of de component-naam al geïmporteerd is. Bij conflict → toon diff en vraag user via AskUserQuestion: "Patchen (Recommended)" | "Handmatig toepassen". Geen conflict → patch direct. Toon:
+
+```
+AUTO-PATCH layout.tsx: import {Name} van "{pad}" toegevoegd + <{Name} /> in render.
+```
 
 For each buildSequence step:
 
@@ -240,19 +353,19 @@ For each buildSequence step:
 
 Bij steps met 1 requirement of bij overlap, voor elke requirement sequentieel:
 
-1. Load technique: `Read(".claude/skills/dev-build/techniques/{technique}.md")`
+1. Load technique:
+   - **TDD** → `Read(".claude/skills/dev-build/techniques/tdd.md")`
+   - **Implementation First** → `Read(".claude/skills/dev-build/techniques/implementation-first.md")`
+   - **Implementation Only** → geen file laden (techniek = geen tests; `skipTestReason` verplicht invullen)
 2. **Read existing code**: lees alle bestanden uit feature.json `files[]` die `action: "modify"` hebben, plus 1 bestaand test bestand voor setup/teardown patronen (before/after hooks, DB lifecycle, import conventies).
 3. Execute technique workflow
 4. **Stack-aware enforcement**:
-   - Strict types (TS: geen `any`; JS: validatie op boundaries)
-   - Async error handling
-   - Geen secrets in client code
-   - **Code clarity**: descriptieve namen boven comments. Geen comments die herhalen wat de code al zegt. Wel comments voor: niet-obvioze "waarom" beslissingen, workarounds, en compatibility notes. Volg bestaande project comment-stijl.
-   - **Code rules**: volg `shared/RULES.md` — Algemeen (R007-R008) + stack-specifieke secties. Bij twijfel: MUST_DO regels altijd, SHOULD_DO regels tenzij bewuste afwijking met reden.
+   - **Code clarity**: descriptieve namen boven comments. Wel comments voor: niet-obvioze "waarom" beslissingen, workarounds, compatibility notes. Volg bestaande project comment-stijl.
+   - **Code rules**: volg `shared/RULES.md` — Algemeen (R007-R009) + stack-specifieke secties. Bij twijfel: MUST_DO regels altijd, SHOULD_DO regels tenzij bewuste afwijking met reden.
 5. **Update feature.json** na elke REQ: zet `requirements[].status` → `"built"` en voeg `technique` + `syncNote` toe. Bij Implementation Only: voeg ook `skipTestReason` toe (`visual-only`, `config-only`, of `prototype`). Dit bewaart voortgang bij context compaction.
 6. Output per requirement:
    ```
-   [REQ-XXX] {description}
+   REQ-XXX: {description}
    Technique: {TDD | Implementation First | Implementation Only}
    {technique-specific output}
    SYNC: {pattern/concept} in {file(s)} — {what, why, what depends on it}
@@ -266,17 +379,13 @@ Bij steps met 1 requirement of bij overlap, voor elke requirement sequentieel:
 
 **On blocker:** log in feature.json `build.blockers[]`, mark BLOCKED, ga door met andere requirements. Suggest `/thinking-decide` voor architecturele blockers.
 
-**⚠️ Check TodoWrite — er zijn nog 6 fases open (2b → 3D). Ga door met FASE 2b: Regression Gate.**
-
 ### FASE 2b: Regression Gate
 
 > **Todo**: markeer FASE 2 → `completed`, FASE 2b → `in_progress`.
 
 Na succesvolle afronding van alle requirements, run de **volledige test suite** met timeout (hangende tests = FAIL). Inclusief acceptance tests uit eerdere `/dev-verify` runs (`test/acceptance/*.test.js`) — deze beschermen tegen spec-regressies.
 
-```bash
-timeout 300 {stack-aware test command} --test-timeout 30000
-```
+Gebruik de Bash tool met `timeout: 300000` parameter (milliseconden) — niet het shell `timeout` commando (werkt niet op macOS).
 
 **PASS:** Alle tests slagen → door naar FASE 3A.
 
@@ -310,23 +419,9 @@ Bij regressie:
 REGRESSION CHECK: overgeslagen ({reden})
 ```
 
-### FASE 3A: Documentation
+### FASE 3A: Project Sync
 
 > **Todo**: markeer FASE 2b → `completed`, FASE 3A → `in_progress`.
-
-**Build summary** — display:
-
-```
-BUILD COMPLETE: {feature}
-========================
-Techniques: TDD ({n}), Implementation First ({n}), Implementation Only ({n})
-Tests: {passed}/{total} PASS
-Files created: {count}
-```
-
-### FASE 3B: Project Sync
-
-> **Todo**: markeer FASE 3A → `completed`, FASE 3B → `in_progress`.
 
 Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties:
 
@@ -360,6 +455,62 @@ Richtlijnen:
 
 **Routes** (`architecture.routes[]`): bevestig routes die tijdens build daadwerkelijk geïmplementeerd zijn — controleer `auth` veld klopt met de werkelijke middleware/guard (`"public" | "user" | "admin"`), update `purpose` als de pagina nu beter beschreven kan worden. Nieuwe routes die tijdens build zijn ontstaan: push `{ path, purpose, auth, feature }`. Endpoints in `endpoints[]` met daadwerkelijke auth-check: migreer `auth: false` → `"public"` en `auth: true` → `"user"` (of `"admin"` bij role-check).
 
+**PAGE-seeding** (safety net — frontend projects only):
+
+Als tijdens build nieuwe page-routes zijn ontstaan die **niet al in `/dev-define` zijn geseedd** (check `data.features.find(f => f.source === "/dev-define" && f.parentFeature === "{feature-name}")`), detecteer ze via dezelfde patronen als dev-define en vraag de user:
+
+```yaml
+header: "Nieuwe pages gebouwd"
+question: "Tijdens build zijn {N} pages gebouwd die nog geen eigen backlog-todo hebben. Toevoegen voor de design → convert → check pipeline?"
+options:
+  - label: "Ja (Recommended)"
+    description: "Voeg PAGE-todo toe per nieuw gebouwde page"
+  - label: "Nee"
+    description: "Overslaan"
+multiSelect: false
+```
+
+Per bevestigde page → voeg toe aan `data.features[]` met `source: "/dev-build"`, `parentFeature: "{feature-name}"`, `phase: "P3"`, `status: "TODO"`, `type: "PAGE"`, `auto: true`.
+
+**COMPONENT design sync** (alleen als `IS_COMPONENT_BUILD = true`):
+
+Na succesvolle build: update `project.json#design.components[]` — zoek op naam, zet `status: "BLT"`. Niet gevonden → voeg toe met status `"BLT"`, scope `COMPONENT_SCOPE`. Update ook `project-context.json#components[]` inventory: check op naam → nieuw: push `{ name, src: COMPONENT_OUTPUT_PATH, exports: ["{Name}"], variants, sizes }` → bestaand: update `src`.
+
+**Sub-component Reuse-Discovery** (frontend projects only — skip voor non-frontend):
+
+Na generatie van alle requirement-code: scan de gegenereerde bestanden op herhalende, uitbreid-bare sub-patterns die als los component herbruikbaar zouden zijn buiten deze feature. Detecteer:
+
+- Inline JSX-blocks die dezelfde structuur herhalen (≥2x in hetzelfde bestand of ≥1x in meerdere bestanden van deze feature)
+- Stuk code dat een duidelijke visuele of functionele eenheid vormt met eigen props en rendering
+
+**Dedup**: check `project.json#design.components[]` en `project-context.json#components[]` op naam-overlap. Check `feature.json#suggestionsLog[]` — eerder rejected van `dev-build`? → skip. Van andere skill? → mag voorgesteld worden.
+
+Gevonden kandidaten → AskUserQuestion:
+
+```yaml
+header: "Sub-components gevonden"
+question: "Tijdens code-generatie zijn herbruikbare sub-patterns ontstaan. Promoten als COMPONENT-todo?"
+options:
+  - label: "{naam} — {korte beschrijving}", description: "Maak COMPONENT-todo (scope: atomic/section)"
+  - label: "..." (één per kandidaat)
+  - label: "Overslaan", description: "Inline laten"
+multiSelect: true
+```
+
+Per geaccepteerd: append backlog + `design.components[]` (status: IDEA) + `feature.json#suggestionsLog[]` (accepted).
+Per afgewezen: log in `suggestionsLog[]` (rejected).
+
+**PAGE-suggesties via COMPONENT-links** (alleen als `IS_COMPONENT_BUILD = true`):
+
+Als het gebouwde component linkt naar routes (via `<Link href="...">` of `router.push(...)`) die niet in `project.json#design.pages[]` of `backlog.html` bestaan: toon suggestie:
+
+```
+Onbekende route gevonden: {route}
+Wil je een PAGE-todo toevoegen voor {route}?
+```
+
+AskUserQuestion: "Ja, PAGE-todo toevoegen (Recommended)" | "Overslaan". Per geaccepteerde route → voeg PAGE-todo toe aan backlog.
+
 **Learning extraction** (na feature.json sync): schrijf naar `project-context.json learnings[]` (append-only, identiek formaat als `dev-verify`/`dev-refactor`):
 
 - `build.decisions[]` → `type: "pattern"` (architecturale keuze gemaakt)
@@ -377,66 +528,46 @@ Richtlijnen:
 
 Alleen schrijven als er decisions of opgeloste blockers aanwezig zijn — geen lege entries.
 
-### FASE 3C: Wat hebben we gebouwd?
+### FASE 3B: Scoped Commit
 
-> **Todo**: markeer FASE 3B → `completed`, FASE 3C → `in_progress`.
-
-**STOP — ga NIET door naar de commit zonder deze fase volledig af te ronden.**
-
-Display een visuele separator:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-WAT HEBBEN WE GEBOUWD?
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**Stap 1 — Uitleg displayen (verplicht, niet overslaan)**
-
-De gebruiker moet begrijpen hoe de feature werkt voor goede beslissingen in test- en refactor-fases. Display de volgende uitleg alsof je het aan een student uitlegt:
-
-- **Wat doet het?**: 1-2 zinnen zoals je het aan een vriend zou uitleggen. Beschrijf wat de gebruiker ziet en kan doen — geen technische termen.
-- **Voorbeeld**: 1 concreet scenario in 2-3 zinnen. UI feature: "Stel je voor: je klikt op X, vult Y in, ziet Z." Backend/API feature: "Er komt een verzoek binnen met X, het systeem doet Y, en stuurt Z terug."
-- **Hoe werkt het?**: 1 ASCII diagram dat het hele verhaal vertelt. Gebruik blokjes en pijlen met korte labels. De gebruiker moet het diagram kunnen lezen zonder uitleg ernaast. Voorbeeld: `[Gebruiker klikt "Opslaan"] → [Formulier checkt invoer] → [Server slaat op] → [✓ Bevestiging]`
-
-**Stap 2 — Begripscheck (verplicht, niet overslaan)**
-
-**BELANGRIJK**: Display **minimaal 15 lege regels** (`\n`) na de uitleg, VÓÓR de AskUserQuestion. Dit is nodig zodat de modal-popup de uitleg niet overlapt en de gebruiker alle tekst kan lezen.
-
-**AskUserQuestion** na de witruimte:
-
-Vraag: "Snap je hoe de feature werkt?"
-Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
-
-Follow-up loop tot "Ja, helder". Sla uitleg op als `build.explanation` in feature.json (targeted Edit).
-
-### FASE 3D: Scoped Commit
-
-> **Todo**: markeer FASE 3C → `completed`, FASE 3D → `in_progress`.
+> **Todo**: markeer FASE 3A → `completed`, FASE 3B → `in_progress`.
 
 **Strategie**: stage alleen files die door deze build zijn aangemaakt of gewijzigd. Laat pre-existing dirty files met rust.
 
+**Stap 0: Pre-commit diagnostics** (stack-aware):
+
+- Lees `package.json` → check `scripts` op keys die matchen op `typecheck|type-check|tsc|lint`
+- Python project (geen package.json): check op aanwezigheid van `mypy.ini` of `[tool.mypy]` in `pyproject.toml`
+- Geen match gevonden → skip stilzwijgend
+
+Bij match: run gevonden script(s) (meerdere matches → parallel) via Bash tool met `timeout: 60000`:
+
+- **PASS** → toon `DIAGNOSTICS: PASS`, door naar git status
+- **FAIL** → toon errors (max 30 regels) + AskUserQuestion:
+  - `"Fix eerst (Recommended)"` — stop FASE 3C, geen commit; user fixt errors en herstart de skill
+  - `"Toch committen"` — door naar git add + commit; voeg `[diagnostics-warnings]` toe aan commit message
+
 ```bash
-git status --porcelain
+git -C "$REPO" status --porcelain
 ```
 
 Categoriseer elke file:
 
-1. **Check baseline**: vergelijk met de SHA uit `.project/session/pre-skill-sha.txt`:
+1. **Check baseline**: vergelijk met de SHA uit `$REPO/.project/session/pre-skill-sha.txt`:
    ```bash
-   git diff --name-only $(cat .project/session/pre-skill-sha.txt) HEAD 2>/dev/null
+   git -C "$REPO" diff --name-only $(cat "$REPO/.project/session/pre-skill-sha.txt") HEAD 2>/dev/null
    ```
-   Als diff leeg is (geen mid-build commits): gebruik `git diff --name-only $(cat .project/session/pre-skill-sha.txt)` (zonder HEAD) voor unstaged changes, plus `git ls-files --others --exclude-standard` voor nieuwe bestanden.
+   Als diff leeg is (geen mid-build commits): gebruik `git -C "$REPO" diff --name-only $(cat "$REPO/.project/session/pre-skill-sha.txt")` (zonder HEAD) voor unstaged changes, plus `git -C "$REPO" ls-files --others --exclude-standard` voor nieuwe bestanden.
    Bestanden die NIET door deze build zijn gewijzigd EN al dirty waren → PRE-EXISTING, niet stagen.
 2. **Nieuwe/gewijzigde bestanden van deze feature** (bestanden uit `feature.json files[]`, test files, feature.json zelf) → `git add`.
 3. **Untracked bestanden** die niet bij de feature horen → niet stagen.
 4. **.project/ bestanden** (project.json, backlog.html, project-context.json) → probeer toe te voegen. Als skip-worktree of sparse-checkout dit blokkeert: accepteer en ga door (deze bestanden zijn lokaal bijgewerkt maar worden niet gecommit).
 
 ```bash
-git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
+git -C "$REPO" commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
 ```
 
-Clean up: `rm -f .project/session/pre-skill-sha.txt .project/session/active-{feature-name}.json`
+Clean up: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/active-{feature-name}.json"`
 
 **Output:**
 
@@ -445,14 +576,14 @@ BUILD COMPLETE: {feature}
 ========================
 Techniques: TDD ({n}), Implementation First ({n}), Implementation Only ({n})
 Tests: {passed}/{total} PASS
-Files created: {count}
+Files created: {count} | modified: {count}
 
 Next steps:
   1. /dev-verify {feature} → hybrid test verificatie
   2. /dev-debug → als er onverwachte failures zijn
 ```
 
-**Worktree reminder** — voeg één extra blok toe aan de output als de huidige branch matcht `worktree-*` pattern (`git branch --show-current`):
+**Worktree reminder** — voeg één extra blok toe aan de output als de huidige branch matcht `worktree-*` pattern (`git -C "$REPO" branch --show-current`):
 
 ```
 💡 Worktree actief: {worktree_path}
@@ -461,7 +592,7 @@ Next steps:
    Voor merge/cleanup: /core-merge {feature}
 ```
 
-> **Todo**: markeer FASE 3D → `completed`. Alle 8 fases moeten nu `completed` zijn.
+> **Todo**: markeer FASE 3B → `completed`. Alle 6 fases moeten nu `completed` zijn.
 
 ## Test Output Parsing
 

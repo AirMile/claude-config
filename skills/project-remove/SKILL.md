@@ -1,7 +1,6 @@
 ---
 name: project-remove
 description: Remove project with safe symlink/junction cleanup. Use with /project-remove to unregister a project and clean up links.
-disable-model-invocation: true
 metadata:
   author: mileszeilstra
   version: 1.1.0
