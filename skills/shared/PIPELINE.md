@@ -17,7 +17,7 @@ Read-only referentie — geen executable skill. Zie BACKLOG.md, FEATURE.md, en S
                                    └── /dev-debug ◄┘
 ```
 
-Standalone: `/dev-owasp` (security audit), `/dev-tunnel` (dev server + tunnel).
+Standalone (dev): `/dev-owasp` (security audit).
 
 ## Frontend Pipeline
 
@@ -45,7 +45,6 @@ Frontend items slaan `defining/defined` over — design captures pages/flows, br
 | dev-refactor | feature.json (DONE)      | feature.json (DONE + ref)   | DONE           | DONE           |
 | dev-debug    | error / symptom          | fix applied                 | —              | —              |
 | dev-owasp    | —                        | security report + fixes     | —              | —              |
-| dev-tunnel   | —                        | running server + tunnel URL | —              | —              |
 
 ---
 
@@ -68,3 +67,17 @@ defining → defined → building → built → verifying → [DONE]
 ```
 pending → built → PASS / FAIL
 ```
+
+---
+
+## Project Utilities
+
+Niet pipeline-stappen, maar project-aware utilities. Standalone aanroepbaar.
+
+| Skill           | Doel                                              |
+| --------------- | ------------------------------------------------- |
+| project-add     | Project registreren + symlinks naar claude-config |
+| project-backlog | Lokale backlog/dashboard server (localhost:9876)  |
+| project-pull    | Git pull + `.project/` sync + learning extractie  |
+| project-remove  | Project deregistreren + cleanup                   |
+| project-tunnel  | Dev server + Cloudflare Tunnel                    |

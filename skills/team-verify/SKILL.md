@@ -405,7 +405,7 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
 
    If found, verify it's live: `curl -s -o /dev/null -w "%{http_code}" {tunnel_url}`. If HTTP 200 and serves correct project → use it.
 
-   b) No tunnel running — start dev server + tunnel (same process as `/dev-tunnel`):
+   b) No tunnel running — start dev server + tunnel (same process as `/project-tunnel`):
 
    ```bash
    # Detect framework from package.json and start

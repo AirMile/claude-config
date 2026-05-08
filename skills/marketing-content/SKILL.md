@@ -19,7 +19,7 @@ is traceerbaar naar een specifiek signaal — geen generieke output.
 
 **Trigger**: `/marketing-content` of `/marketing-content [onderwerp]`
 
-Tweede stap in de marketing pipeline: `/marketing-research` → **`/marketing-content`** → `/marketing-promo`
+Tweede stap in de marketing pipeline: `/marketing-research` → **`/marketing-content`** → `/marketing-screenshots`
 
 ## FASE 0: Input & Context
 
@@ -149,7 +149,7 @@ Toon next steps:
 
 ```
 Next steps:
-- /marketing-promo    — screenshots + visuals voor launch
+- /marketing-screenshots — screenshots + visuals voor launch
 - /marketing-research — nieuwe research ronde voor ander onderwerp
 ```
 

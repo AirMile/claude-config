@@ -1,19 +1,22 @@
 ---
-name: project-server
-description: Start, stop of check de lokale backlog/dashboard server op localhost:9876. Serveert alle project-backlogs en dashboards via één Node.js server.
+name: project-backlog
+description: >-
+  Start, stop, or check the local backlog/dashboard server on localhost:9876.
+  Use with /project-backlog to serve kanban backlogs and dashboards across
+  all projects via a single Node.js server.
 metadata:
   author: mileszeilstra
   version: 3.1.0
   category: project
 ---
 
-# Server
+# Backlog
 
 Start, stop of check de lokale backlog/dashboard server. Serveert alle project-backlogs en dashboards op `http://localhost:9876`.
 
 ## Trigger
 
-`/project-server` — optioneel argument: `stop`
+`/project-backlog` — optioneel argument: `stop`
 
 ## Platform
 

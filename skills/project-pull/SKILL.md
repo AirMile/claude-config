@@ -1,23 +1,23 @@
 ---
-name: core-pull
+name: project-pull
 description: >-
   Pull git changes, analyze diff, sync .project context, deep-analyze teammate
   code (features, entities, endpoints, architecture), and extract synced
-  learnings (pitfalls/patterns) from teammate commits. Use with /core-pull
-  or /core-pull --no-learn. For first-time onboarding to a mature repo:
+  learnings (pitfalls/patterns) from teammate commits. Use with /project-pull
+  or /project-pull --no-learn. For first-time onboarding to a mature repo:
   use /core-setup instead.
 argument-hint: "[remote/branch] [--no-learn]"
 metadata:
   author: mileszeilstra
   version: 4.0.0
-  category: core
+  category: project
 ---
 
 # Pull
 
 Pull remote changes, analyseer de diff, ververs `.project/` context, analyseer teammate code voor features, entities, endpoints en architectuur, en extract synced learnings uit teammate commits.
 
-**Trigger**: `/core-pull`, `/core-pull [remote/branch]`, of `/core-pull --no-learn`
+**Trigger**: `/project-pull`, `/project-pull [remote/branch]`, of `/project-pull --no-learn`
 
 **`--no-learn` flag**: Skip FASE 4j (learning extraction). Gebruik als je alleen context/architecture wilt syncen zonder learnings te genereren.
 
@@ -58,8 +58,8 @@ Pull remote changes, analyseer de diff, ververs `.project/` context, analyseer t
      - "Annuleren" — "Stop, ik fix dit zelf"
    - multiSelect: false
 
-   Bij "Stash": `git stash push -u -m "core-pull auto-stash"` (`-u` voor untracked files). Na succesvolle pull in FASE 1: `git stash apply` (NIET `pop`). Bij apply success → `git stash drop`. Bij conflict na apply → meld en laat user resolven. **NOOIT de stash droppen bij conflict** — de stash blijft als vangnet.
-   Bij "Commit eerst" → exit met instructie om `/core-commit` te runnen en daarna `/core-pull`.
+   Bij "Stash": `git stash push -u -m "project-pull auto-stash"` (`-u` voor untracked files). Na succesvolle pull in FASE 1: `git stash apply` (NIET `pop`). Bij apply success → `git stash drop`. Bij conflict na apply → meld en laat user resolven. **NOOIT de stash droppen bij conflict** — de stash blijft als vangnet.
+   Bij "Commit eerst" → exit met instructie om `/core-commit` te runnen en daarna `/project-pull`.
    Bij "Annuleren" → exit.
 
 3. Check remote:
@@ -89,12 +89,12 @@ Pull remote changes, analyseer de diff, ververs `.project/` context, analyseer t
    - header: "Onboard?"
    - question: "Dit lijkt een nieuwe codebase voor je ({N} commits, geen learnings). `/core-setup` bouwt base memory uit conventies, patterns en pitfalls van bestaande code. Nu runnen?"
    - options:
-     - "Ja, run /core-setup (Recommended)" — exit core-pull met instructie aan user om `/core-setup` te starten
+     - "Ja, run /core-setup (Recommended)" — exit project-pull met instructie aan user om `/core-setup` te starten
      - "Nee, alleen pull" — ga door met FASE 1
      - "Niet meer vragen voor dit project" — schrijf `.project/session/onboard-dismissed` (lege marker file), ga door met FASE 1
    - multiSelect: false
 
-   Bij "Ja": exit met message `RUN /core-setup FOR BASE MEMORY (then re-run /core-pull for incremental updates)`. Geen pull/sync.
+   Bij "Ja": exit met message `RUN /core-setup FOR BASE MEMORY (then re-run /project-pull for incremental updates)`. Geen pull/sync.
 
 ### FASE 1: Pull
 
@@ -110,7 +110,7 @@ Pull:
 git pull --rebase
 ```
 
-Als conflicts → toon conflicting files, exit met instructie om conflicts te resolven en daarna `/core-pull` opnieuw te runnen.
+Als conflicts → toon conflicting files, exit met instructie om conflicts te resolven en daarna `/project-pull` opnieuw te runnen.
 
 **Bepaal of we doorgaan:**
 

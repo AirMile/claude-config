@@ -6,7 +6,6 @@ core:
   - core-edit
   - core-export
   - core-merge
-  - core-pull
   - core-audit
   - core-rewrite
   - core-setup
@@ -18,10 +17,10 @@ dev:
   - dev-debug
   - dev-define
   - dev-todo
+  - dev-optimize
   - dev-owasp
   - dev-plan
   - dev-refactor
-  - dev-tunnel
   - dev-verify
 
 frontend:
@@ -31,7 +30,7 @@ frontend:
   - frontend-tokens
 
 marketing:
-  - marketing-promo
+  - marketing-screenshots
   - marketing-research
   - marketing-content
 
@@ -39,6 +38,7 @@ game:
   - game-build
   - game-debug
   - game-define
+  - game-optimize
   - game-plan
   - game-refactor
   - game-todo
@@ -46,8 +46,10 @@ game:
 
 project:
   - project-add
-  - project-server
+  - project-backlog
+  - project-pull
   - project-remove
+  - project-tunnel
 
 team:
   - team-review

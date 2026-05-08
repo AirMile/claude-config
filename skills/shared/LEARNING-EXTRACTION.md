@@ -1,6 +1,6 @@
 # Learning Extraction Heuristieken
 
-Gedeelde regels voor het extraheren van learnings uit teammate code en mature codebases. Gebruikt door `/core-pull` (incremental, signal-triggered) en `/core-setup --mode=mature` (eenmalig, full scan).
+Gedeelde regels voor het extraheren van learnings uit teammate code en mature codebases. Gebruikt door `/project-pull` (incremental, signal-triggered) en `/core-setup --mode=mature` (eenmalig, full scan).
 
 > **Output schema**: alle extracties produceren entries voor `project-context.json.learnings[]` met `source: "synced"` en optioneel `author`. Zie [shared/DASHBOARD.md](DASHBOARD.md) `learnings` sectie.
 
@@ -67,7 +67,7 @@ grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' {scope}
 
 ### 3. Patterns uit nieuwe abstraction-dirs
 
-**Detectie:** vergelijk component lijst (uit `core-pull` FASE 4f / `core-setup --mode=mature` FASE 2) tegen bestaande `architecture.components[]` in `project-context.json`.
+**Detectie:** vergelijk component lijst (uit `project-pull` FASE 4f / `core-setup --mode=mature` FASE 2) tegen bestaande `architecture.components[]` in `project-context.json`.
 
 **Mapping table:**
 
@@ -140,7 +140,7 @@ Geen match → skip (geen pattern emit).
 
 ---
 
-## Signal-detectie (alleen `core-pull`)
+## Signal-detectie (alleen `project-pull`)
 
 Bepaalt of de LLM-subagent moet worden aangeroepen. **Conventie-vrij**: geen commit-titel parsing, alleen file-system en git diff.
 
@@ -163,7 +163,7 @@ Skip volledig als `--no-learn` flag gezet.
 
 Gedraag van `learning-extractor` agent verschilt per skill:
 
-### `core-pull` (signal-triggered)
+### `project-pull` (signal-triggered)
 
 - **Input**: lijst paden van getriggerde files
 - **Scope**: alleen die files lezen, geen wider scan

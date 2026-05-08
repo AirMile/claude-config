@@ -393,12 +393,12 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 
 #### Skills die architecture schrijven
 
-| Skill         | Wat het schrijft                                                                              | Wanneer               |
-| ------------- | --------------------------------------------------------------------------------------------- | --------------------- |
-| `/dev-define` | Initiële `layers` + `components` (status planned, geen src/test) + `dataFlow`                 | Bij feature definitie |
-| `/dev-build`  | Update `components`: status → done, vul `src`, `test`, `connects_to`, `endpoints`, `entities` | Na build              |
-| `/dev-verify` | Update `components`: bevestig status done, voeg test files toe                                | Na test               |
-| `/core-pull`  | Sync volledige `architecture` sectie bij pull                                                 | Bij context sync      |
+| Skill           | Wat het schrijft                                                                              | Wanneer               |
+| --------------- | --------------------------------------------------------------------------------------------- | --------------------- |
+| `/dev-define`   | Initiële `layers` + `components` (status planned, geen src/test) + `dataFlow`                 | Bij feature definitie |
+| `/dev-build`    | Update `components`: status → done, vul `src`, `test`, `connects_to`, `endpoints`, `entities` | Na build              |
+| `/dev-verify`   | Update `components`: bevestig status done, voeg test files toe                                | Na test               |
+| `/project-pull` | Sync volledige `architecture` sectie bij pull                                                 | Bij context sync      |
 
 **Write strategie:**
 
@@ -701,7 +701,7 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
 ```
 
 `type` waarden: `pattern` (architecturale keuze), `pitfall` (bug/gotcha), `observation` (cross-feature inzicht).
-`source` waarden: `extracted` (directe observatie van code-output of test-resultaat) | `inferred` (cross-feature patroonherkenning of LLM-inferentie) | `synced` (geëxtraheerd uit teammate code of mature codebase via core-pull / core-setup --mode=mature).
+`source` waarden: `extracted` (directe observatie van code-output of test-resultaat) | `inferred` (cross-feature patroonherkenning of LLM-inferentie) | `synced` (geëxtraheerd uit teammate code of mature codebase via project-pull / core-setup --mode=mature).
 `date` = extractie datum. `feature` = bron-feature (kebab-case). Voor `synced` learnings zonder gestructureerde feature: gebruik primary directory (`auth`, `payments`). `summary` = max 200 chars.
 `author` = optioneel, alleen bij `source === "synced"`. Spiegelt `features[].author`.
 
@@ -713,7 +713,7 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
 | `tests.fixSync[]`    | `pitfall`     | `extracted`     |
 | `observations[]`     | `observation` | `inferred`      |
 
-**Source mapping** (teammate / mature codebase, in core-pull / core-setup --mode=mature):
+**Source mapping** (teammate / mature codebase, in project-pull / core-setup --mode=mature):
 
 | Bron                                             | learning.type              | learning.source |
 | ------------------------------------------------ | -------------------------- | --------------- |
@@ -725,7 +725,7 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
 
 Zie [skills/shared/LEARNING-EXTRACTION.md](skills/shared/LEARNING-EXTRACTION.md) voor heuristieken en filters.
 
-Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-verify FASE 6, dev-refactor FASE 5). `core-pull` (incremental) en `core-setup --mode=mature` (eenmalig) extracten learnings uit teammate/legacy code. `source` is verplicht bij nieuwe writes.
+Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-verify FASE 6, dev-refactor FASE 5). `project-pull` (incremental) en `core-setup --mode=mature` (eenmalig) extracten learnings uit teammate/legacy code. `source` is verplicht bij nieuwe writes.
 
 **Dit vervangt de dynamische CLAUDE.md secties** (`## Project structuur`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md bevat nu alleen een referentie naar `project.json` voor deze context.
 
@@ -746,11 +746,11 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 
 ### project-context.json secties
 
-| Sectie         | Geschreven door                                                                           | Wanneer                                                                  |
-| -------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                                | Bij architectuur definitie / na build                                    |
-| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`             | Bij build/refactor (structuur, routing, patterns)                        |
-| `learnings`    | `/dev-verify`, `/dev-refactor`, `/game-verify`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred) of teammate/legacy code (synced) |
+| Sectie         | Geschreven door                                                                              | Wanneer                                                                  |
+| -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                                   | Bij architectuur definitie / na build                                    |
+| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`                | Bij build/refactor (structuur, routing, patterns)                        |
+| `learnings`    | `/dev-verify`, `/dev-refactor`, `/game-verify`, `/project-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred) of teammate/legacy code (synced) |
 
 ### Skill sync overzicht
 
@@ -770,7 +770,7 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 | `/game-refactor`            | `features` (DONE)                                                   | `context`, `architecture` (write)                                 | FASE 5 completion    |
 | `/dev-optimize`             | `optimization_runs` (append)                                        | —                                                                 | FASE 6 completion    |
 | `/game-optimize`            | `optimization_runs` (append)                                        | —                                                                 | FASE 6 completion    |
-| `/core-pull`                | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull             |
+| `/project-pull`             | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull             |
 | `/core-setup --mode=mature` | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | Eenmalig bij join    |
 
 ## Server

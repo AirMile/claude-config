@@ -1,9 +1,9 @@
 ---
-name: marketing-promo
+name: marketing-screenshots
 argument-hint: "[url]"
 description: >-
   Generate marketing-quality screenshots of a web app via Playwright CLI.
-  Use with /marketing-promo [url] for Product Hunt, social media, landing
+  Use with /marketing-screenshots [url] for Product Hunt, social media, landing
   pages, or documentation. Analyzes codebase to discover routes and features.
 metadata:
   author: mileszeilstra
@@ -15,7 +15,7 @@ metadata:
 
 Generate marketing-quality screenshots of a web app using Playwright CLI. Analyzes the codebase to discover routes and features, plans screenshots with the user, and captures them at HiDPI resolution.
 
-**Trigger**: `/marketing-promo` or `/marketing-promo [url]`
+**Trigger**: `/marketing-screenshots` or `/marketing-screenshots [url]`
 
 ## Process
 
@@ -66,7 +66,7 @@ Generate marketing-quality screenshots of a web app using Playwright CLI. Analyz
      - label: "localhost:8080", description: "Vue CLI, generic"
    - multiSelect: false
 
-4. Verify the URL is reachable via `playwright-cli open [url]`. If it fails → exit with message to start the dev server first (e.g. `/dev-tunnel`).
+4. Verify the URL is reachable via `playwright-cli open [url]`. If it fails → exit with message to start the dev server first (e.g. `/project-tunnel`).
 
 ## FASE 1: Gather Requirements
 
@@ -487,7 +487,7 @@ Twitter-variant: hetzelfde met `viewport: { width: 1200, height: 600 }` en `-tw-
 ### App not reachable
 
 **Cause:** Dev server not running.
-**Solution:** Start with `/dev-tunnel` or provide a live URL. The skill does not start servers itself.
+**Solution:** Start with `/project-tunnel` or provide a live URL. The skill does not start servers itself.
 
 ### Login failed
 
@@ -514,7 +514,7 @@ Twitter-variant: hetzelfde met `viewport: { width: 1200, height: 600 }` en `-tw-
 This skill must NEVER:
 
 - Install npm packages or dependencies
-- Start dev servers (use `/dev-tunnel` for that)
+- Start dev servers (use `/project-tunnel` for that)
 - Store raw credentials (email/password) in files — alleen post-login storage state via `state-save` is toegestaan
 - Commit `.project/auth-state.json` — moet gitignored zijn
 - Overwrite existing screenshots without user confirmation

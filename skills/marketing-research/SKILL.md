@@ -235,7 +235,7 @@ Toon next steps:
 Next steps:
 - /marketing-content  — tekstvarianten schrijven op basis van deze signalen
 - /thinking-decide    — beslissing nemen op basis van deze inzichten
-- /marketing-promo    — marketing screenshots voor launch
+- /marketing-screenshots — marketing screenshots voor launch
 - /dev-plan           — feature backlog op basis van marktinzichten
 ```
 

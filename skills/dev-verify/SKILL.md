@@ -192,7 +192,7 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 
    ```
    Alle non-COVERED items AUTO/CLI (in-process testbaar) → skip dev server entirely
-   MANUAL of AUTO/BROWSER items                          → start via /dev-tunnel proces (tunnel nodig)
+   MANUAL of AUTO/BROWSER items                          → start via /project-tunnel proces (tunnel nodig)
    AUTO/CLI met live server vereist                      → start op localhost (zonder tunnel)
    ```
 
