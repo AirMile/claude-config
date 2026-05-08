@@ -46,6 +46,12 @@ CLAUDE.base.md    Template voor per-project CLAUDE.md generatie
 - **AskUserQuestion**: eerste optie = recommended, multiSelect default true
 - **Shared infra** (`skills/shared/*`): read-only single source of truth — refereer, niet dupliceren
 
+## Task Tracking
+
+Multi-fase skills met 5+ fases gebruiken het `TaskCreate`/`TaskUpdate` patroon voor compaction-resilience. **Wel toepassen op**: build, verify, refactor, debug, optimize, multi-stage setup. **Niet toepassen op**: korte CLI-utilities, denk-skills, CRUD skills.
+
+Volledig patroon: zie `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
+
 ## Agent Conventies
 
 - Frontmatter: name, description, model (`sonnet` default), color

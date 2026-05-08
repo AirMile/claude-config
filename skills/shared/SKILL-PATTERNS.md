@@ -206,6 +206,58 @@ Regels:
 
 ---
 
+## Task Tracking
+
+**When:** Skill heeft 5+ fases en risico op context compaction (verify, debug, refactor, build, optimize, multi-stage setup).
+
+**How:** Combineer vier marker-types: seed-blok bovenaan, FASE 0 bootstrap-marker, inline transitiemarkers per fase-overgang, completion-marker bij laatste fase.
+
+**Seed-blok** — direct onder `## Process` of `## Workflow`, vóór eerste fase:
+
+```markdown
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze N items
+(status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten
+aan begin en `completed` aan einde. Bij context compaction blijft de task list
+zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: ...
+2. FASE 1: ...
+   ...
+   N. FASE LAST: ...
+```
+
+**FASE 0 marker** — direct onder de eerste fase-header:
+
+```markdown
+> **Todo**: roep `TaskCreate` aan met de N fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+```
+
+**Inline transitiemarker** — direct onder elke volgende fase-header:
+
+```markdown
+> **Todo**: markeer FASE PREV → `completed`, FASE CURRENT → `in_progress`.
+```
+
+**Completion marker** — aan het einde van de laatste fase:
+
+```markdown
+> **Todo**: markeer FASE LAST → `completed`.
+```
+
+**Conventies:**
+
+- Hoofdletter `Markeer` alleen in FASE 0 bootstrap-marker (eenmalig per skill)
+- Lowercase `markeer` in alle inline + completion markers
+- Statussen altijd in backticks: `pending`, `in_progress`, `completed`
+- Skills met "Step" of "Phase" in plaats van "FASE" houden hun eigen woord aan
+- Seed-count = aantal headers = aantal markers (FASE 0 marker + N-1 transities + 1 completion = N totaal)
+
+**Skip voor:** korte CLI-utilities (<5 fases), interactieve denk-skills, backlog/CRUD skills.
+
+**Reference:** `dev-build/SKILL.md` (regel 33+) heeft het volledige patroon.
+
+---
+
 ## Git Safety Gates
 
 **When:** A skill performs git mutations (commit, push, checkout, merge, rebase).

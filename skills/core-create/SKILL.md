@@ -129,6 +129,7 @@ Use **AskUserQuestion** tool:
 - **Project bootstrapping**: if the skill expects `.project/` files — check existence in FASE 0, suggest `core-setup` if missing. See `shared/SKILL-PATTERNS.md`
 - **Agent context block**: if the skill spawns agents that need project knowledge — use the standardized `PROJECT_CONTEXT` block. See `shared/SKILL-PATTERNS.md`
 - **Dynamic multi-select**: if the skill needs the user to pick from a runtime-generated list (feature lists, agent output, file scans) — choose between holistic comparison (→ plain-text list + free-form parse) or independent picks (→ modal with cap=7, split per category). See `shared/SKILL-PATTERNS.md` § Modal Option Cap and § Numbered List Selection.
+- **Task tracking**: if the skill has 5+ fases and risk of context compaction (verify, debug, refactor, build, multi-stage setup) — add a seed-blok (`TaskCreate` with all phases at start of `## Process`) + inline transitiemarkers (`> **Todo**: markeer FASE X → completed, FASE Y → in_progress.`) at each phase header. Reference: `dev-build/SKILL.md` for full pattern. See `shared/SKILL-PATTERNS.md` § Task Tracking.
 
 **Enter plan mode** before writing the draft:
 
