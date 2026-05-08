@@ -1,11 +1,11 @@
 ---
 name: core-setup
 description: >-
-  Project setup hub — detecteert automatisch of het een greenfield of mature
-  project is en kiest de juiste flow. Greenfield: interactieve wizard
-  (stack, CLAUDE.md, dashboard init). Mature: volledige codebase scan + LLM
-  learnings + CLAUDE.md sync. Ook Audit, Resync en Install modes. Install mode:
-  incrementeel tools/libraries toevoegen via `/core-setup [module]` (tailwind,
+  Project setup hub — auto-detects whether a project is greenfield or mature
+  and routes to the matching flow. Greenfield: interactive wizard (stack,
+  CLAUDE.md, dashboard init). Mature: full codebase scan + LLM learnings +
+  CLAUDE.md sync. Also Audit, Resync, and Install modes. Install mode:
+  incrementally add tools/libraries via `/core-setup [module]` (tailwind,
   playwright, vitest, shadcn-ui, biome, zustand, etc.). Use with /core-setup.
 argument-hint: "[--mode=greenfield|mature|audit|resync|install] [module] [--no-llm]"
 metadata:
@@ -27,9 +27,9 @@ For every AskUserQuestion where the choice involves **technical decisions** (not
 - **Label**: "Let Claude decide"
 - **Description**: "Claude picks the best option based on your project context and best practices"
 
-**Exclude from**: language selection, project description, project name, project type.
+**Exclude from**: language selection, project description, project name, project type, commit.
 
-**Include in**: all other modals (tech stack, suggestions, web standards, git init, permissions, exclusions, commit).
+**Include in**: all other modals (tech stack, suggestions, web standards, git init, permissions, exclusions).
 
 **When selected**: kies de beste optie op basis van project context en best practices. Toon:
 
@@ -45,19 +45,19 @@ Voor dynamic multi-select modals (Audit fixes, Resync drift, Tech stack, Suggest
 
 ## Phase 0: Detect Mode
 
-0. **Module arg check** — als `$1` aanwezig is en géén `--mode=` prefix heeft: match (case-insensitive) tegen tier-1 modules:
+1. **Module arg check** — als `$1` aanwezig is en géén `--mode=` prefix heeft: match (case-insensitive) tegen tier-1 modules:
    `inspect-overlay`, `tailwind`, `shadcn-ui`, `vitest`, `playwright`, `biome`, `eslint-prettier`, `zustand`, `tanstack-query`, `react-hook-form-zod`
-   - **Match** → laad `references/mode-install.md` met `direct_module=$1`. Skip stap 1-3.
-   - **Geen match** → sla `$1` op als `direct_research`, laad `references/mode-install.md` met research-pad. Skip stap 1-3.
+   - **Match** → laad `references/mode-install.md` met `direct_module=$1`. Skip stap 2-4.
+   - **Geen match** → sla `$1` op als `direct_research`, laad `references/mode-install.md` met research-pad. Skip stap 2-4.
 
-1. **Check `--mode` flag** — als meegegeven, sla stap 2 over en laad direct de bijbehorende reference:
+2. **Check `--mode` flag** — als meegegeven, sla stap 3 over en laad direct de bijbehorende reference:
    - `--mode=greenfield` → `references/mode-greenfield.md`
    - `--mode=mature` → `references/mode-mature.md` (geef `--no-llm` flag door indien aanwezig)
    - `--mode=audit` → `references/mode-audit.md`
    - `--mode=resync` → `references/mode-resync.md`
    - `--mode=install` → `references/mode-install.md`
 
-2. **Detect bestaand project** — run detectie:
+3. **Detect bestaand project** — run detectie:
 
    ```bash
    python3 .claude/skills/core-setup/scripts/detect-existing.py --path .
@@ -66,34 +66,21 @@ Voor dynamic multi-select modals (Audit fixes, Resync drift, Tech stack, Suggest
 
    Gebruik `detect-mode.py` output als primaire classificatie. `detect-existing.py` controleert aanwezigheid van bestaande config files.
 
-3. **Kies mode** op basis van resultaten:
+4. **Kies mode** op basis van resultaten:
 
-   | detect-mode output | Bestaande configs? | Actie                                                             |
-   | ------------------ | ------------------ | ----------------------------------------------------------------- |
-   | `greenfield`       | nee                | Laad `mode-greenfield.md` direct                                  |
-   | `greenfield`       | ja                 | AskUserQuestion: Greenfield wizard / Mature scan / Audit / Resync |
-   | `mature`           | n.v.t.             | Laad `mode-mature.md` direct                                      |
-   | `ambiguous`        | n.v.t.             | AskUserQuestion: Greenfield wizard / Mature scan / Audit          |
+   | detect-mode output | Bestaande configs? | Actie                                                             | User-facing one-liner                             |
+   | ------------------ | ------------------ | ----------------------------------------------------------------- | ------------------------------------------------- |
+   | `greenfield`       | nee                | Laad `mode-greenfield.md` direct                                  | `Nieuw project — start setup wizard.`             |
+   | `greenfield`       | ja                 | AskUserQuestion: Greenfield wizard / Mature scan / Audit / Resync | `Bestaand project gedetecteerd — kies hieronder.` |
+   | `mature`           | n.v.t.             | Laad `mode-mature.md` direct                                      | `Bestaand project — scan codebase.`               |
+   | `ambiguous`        | n.v.t.             | AskUserQuestion: Greenfield wizard / Mature scan / Audit          | `Project state onduidelijk — kies hieronder.`     |
+
+   **Rapportage-regel:** toon alleen de one-liner uit de tabel hierboven aan de user. Geen filenames (`mode-greenfield.md`), geen script-output, geen interne classificatie-termen. Detectie-details horen in een eventuele debug-mode, niet in de happy path.
 
    **AskUserQuestion bij ambiguous / bestaande configs** (single-select):
    - **Greenfield wizard** — "Nieuw project, ik wil stack en standards instellen" → `mode-greenfield.md`
-   - **Mature scan (Recommended bij bestaand project)** — "Bestaand project, scan de codebase en bouw base memory op" → `mode-mature.md`
+   - **Mature scan (Recommended bij bestaand project)** — "Bestaand project, scan de codebase en bouw base memory op (incl. Module Gap-modal voor lege tier-1 slots)" → `mode-mature.md`
    - **Audit** — "Check wat er mist, geen volledige setup" → `mode-audit.md`
-   - **Resync** — "Alleen CLAUDE.md template-secties updaten" → `mode-resync.md`
-   - **Tool toevoegen** — "Voeg een library of tool toe aan een bestaand project" → `mode-install.md`
+   - **Resync** _(alleen bij `greenfield + bestaande configs`, niet bij `ambiguous`)_ — "Alleen CLAUDE.md template-secties updaten" → `mode-resync.md`
 
-4. **Laad de gekozen reference** en volg de instructies daarin volledig.
-
----
-
-## Modes (referenced)
-
-| Mode         | Reference                       | Wanneer                                                         |
-| ------------ | ------------------------------- | --------------------------------------------------------------- |
-| `greenfield` | `references/mode-greenfield.md` | Nieuw project zonder bestaande code                             |
-| `mature`     | `references/mode-mature.md`     | Bestaand project joinen — scan + LLM learnings                  |
-| `audit`      | `references/mode-audit.md`      | Checklist-scan, geen mutaties zonder opt-in                     |
-| `resync`     | `references/mode-resync.md`     | Alleen CLAUDE.md template-secties hersyncen                     |
-| `install`    | `references/mode-install.md`    | Incrementeel tools/libraries toevoegen — `/core-setup [module]` |
-
-**`--no-llm`**: alleen van toepassing in mature mode — skip LLM extractie, alleen MVP signalen.
+5. **Laad de gekozen reference.**

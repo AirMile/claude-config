@@ -1,6 +1,6 @@
 # Mature Mode
 
-Eenmalige scan van een bestaande codebase met optionele Module Gap-aanvulling. Bouwt base memory op door volledige codebase scan + LLM-extractie van conventies en patterns. Aangevuld met CLAUDE.md-completeness check en Claude-config init.
+Eenmalige scan van een bestaande codebase met vroege Module Gap-modal en optionele auto dev-tool installs. Bouwt base memory op door volledige codebase scan + LLM-extractie van conventies en patterns. Aangevuld met CLAUDE.md-completeness check en Claude-config init.
 
 **`--no-llm` flag**: Skip FASE 4 (LLM extractie). Alleen MVP signalen (TODO/FIXME, fix-commits, abstraction-dirs, wrapper-deps). Sneller maar mist naming/error/response-shape patterns.
 
@@ -10,25 +10,27 @@ Zie `shared/SYNC.md`, `shared/DASHBOARD.md`, en `shared/LEARNING-EXTRACTION.md` 
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 13 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 15 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
 
 1. FASE 0: Pre-flight
 2. FASE 0.5: Project Status Snapshot
-3. FASE 1: Full structure scan
-4. FASE 2: Full route/entity/endpoint/component scan
-5. FASE 3: MVP learnings
-6. FASE 4: LLM learnings via subagent
-7. FASE 4.5: Context fabricate + confirm
-8. FASE 5: Sync
-9. FASE 5.5: CLAUDE.md compleetheids-check
-10. FASE 5.6: Claude-config init
-11. FASE 5.7: Setup Task Seeding
-12. FASE 5.8: Module Gap
-13. FASE 6: Report
+3. FASE 0.6: Module Gap Ask
+4. FASE 1: Full structure scan
+5. FASE 2: Full route/entity/endpoint/component scan
+6. FASE 3: MVP learnings
+7. FASE 4: LLM learnings via subagent
+8. FASE 4.5: Context fabricate + confirm
+9. FASE 5: Sync
+10. FASE 5.5: CLAUDE.md compleetheids-check
+11. FASE 5.6: Claude-config init
+12. FASE 5.65: Auto Dev Tools
+13. FASE 5.7: Setup Task Seeding
+14. FASE 5.8: Module Gap Install
+15. FASE 6: Report
 
 ## FASE 0: Pre-flight
 
-> **Todo**: roep `TaskCreate` aan met de 13 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: roep `TaskCreate` aan met de 15 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Detect git repo**:
 
@@ -50,7 +52,7 @@ Zie `shared/SYNC.md`, `shared/DASHBOARD.md`, en `shared/LEARNING-EXTRACTION.md` 
    - question: "`.project/project-context.json` heeft al {N} learnings. Mature mode voegt ALLEEN nieuwe entries toe (dedup op summary), maar is bedoeld als first-time scan. Doorgaan?"
    - options:
      - "Doorgaan (Recommended)" — "Volledige scan, dedup tegen bestaande learnings"
-     - "Annuleren" — "Liever incrementele pull via `/core-pull`"
+     - "Annuleren" — "Liever incrementele pull via `/project-pull`"
    - multiSelect: false
 
    Bij annuleren → exit.
@@ -91,21 +93,88 @@ Learnings:    {existing_learning_count}
 Last sync:    {sync-state.json#lastSync of "nooit"}
 ```
 
-Geen modal hier — alleen visibility. FASE 5.8 hieronder gebruikt deze snapshot voor de Module Gap-modal.
+Geen modal hier — alleen visibility. FASE 0.6 hieronder gebruikt deze snapshot direct voor de Module Gap-modal.
 
-Onthoud de lege slots als `gap_slots[]` voor gebruik in FASE 5.8.
+Onthoud de lege slots als `gap_slots[]` voor gebruik in FASE 0.6.
 
 Markeer FASE 0.5 → `completed`.
 
+### FASE 0.6: Module Gap Ask
+
+> **Todo**: markeer FASE 0.5 → `completed`, FASE 0.6 → `in_progress`.
+
+**Trigger:** ten minste één relevant slot in `gap_slots[]` (uit FASE 0.5) is leeg. Anders: sla `gap_choices = []` op en markeer FASE 0.6 → `completed` zonder modal.
+
+**Slot-relevantie** per framework:
+
+| Framework                        | Relevante slots                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------ |
+| React/Vue/Svelte (frontend SPA)  | styling, componentLibrary, testing.unit, testing.e2e, linting, state.client, state.server, forms |
+| Next.js/Nuxt/Astro/Remix         | als boven                                                                                        |
+| Backend (Express/Fastify/Django) | testing.unit, linting                                                                            |
+| Game/CLI/Desktop/Mobile          | testing.unit, linting                                                                            |
+
+Filter `gap_slots[]`:
+
+- Slot al gevuld in `project.json#stack` → skip
+- Slot niet-relevant voor framework → skip
+- Tier-1 module al geïnstalleerd in `package.json` maar niet in stack-slot → skip stilletjes (FASE 5 sync vult dit alsnog op)
+
+**Multi-select modal** (volg Modal Option Cap uit SKILL.md; ≤7 slots = één modal, >7 = split per categorie-groep):
+
+```yaml
+header: "Module gaps"
+question: "Deze tier-1 categorieën zijn nog niet ingevuld. Wat wil je toevoegen? (leeg laten = niets installeren)"
+options:
+  # Per leeg relevant slot één optie met de Recommended tier-1 module:
+  - label: "Styling: Tailwind (Recommended)"
+    description: "Utility-first CSS framework"
+  - label: "UI components: shadcn-ui (Recommended)"
+    description: "Copy-paste componenten op Tailwind + Radix"
+  - label: "Testing (unit): Vitest (Recommended)"
+    description: "Fast Vite-native unit tester"
+  - label: "Testing (e2e): Playwright (Recommended)"
+    description: "End-to-end browser testing"
+  - label: "Linting: Biome (Recommended)"
+    description: "Lint + format in één tool"
+  - label: "State (client): Zustand (Recommended)"
+    description: "Minimale client state"
+  - label: "State (server): TanStack Query (Recommended)"
+    description: "Server state + caching"
+  - label: "Forms: react-hook-form + zod (Recommended)"
+    description: "Form validatie met schema"
+multiSelect: true
+```
+
+Toon alleen de opties voor lege relevante slots — niet alle 8 altijd.
+
+Sla user-keuze op in `gap_choices[]` (lijst van module-namen). **Geen install hier** — alleen capture.
+
+**Persisteer naar disk** (overleven context compaction):
+
+```bash
+mkdir -p .project/session
+echo '{"gapChoices":<JSON-array>}' > .project/session/onboard-state.json
+```
+
+Toon mini-confirm:
+
+```
+Module Gap keuze opgeslagen: {gap_choices.join(", ") | "geen"}
+Install volgt op FASE 5.8 (na sync + learnings).
+```
+
+Markeer FASE 0.6 → `completed`.
+
 ### FASE 1: Full structure scan
 
-> **Todo**: markeer FASE 0.5 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: markeer FASE 0.6 → `completed`, FASE 1 → `in_progress`.
 
 Glob de project root voor file tree. Bouw een compacte structure string:
 
 - Exclude: `node_modules`, `.git`, `.project`, `dist`, `build`, `.next`, `vendor`, `__pycache__`, `.godot`
 - Eén-regel comment per directory die het doel beschrijft (genereer uit dir naam + readme indien aanwezig)
-- Format: identiek aan `core-pull` FASE 3a / `DASHBOARD.md` `context.structure` schema
+- Format: identiek aan `project-pull` FASE 3a / `DASHBOARD.md` `context.structure` schema
 
 Overwrite `context.structure` volledig.
 
@@ -113,11 +182,11 @@ Overwrite `context.structure` volledig.
 
 > **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
 
-Hergebruik logica uit `core-pull` FASE 4d/e/f, maar op ALLE source files (niet alleen teammate-changed):
+Hergebruik logica uit `project-pull` FASE 4d/e/f, maar op ALLE source files (niet alleen teammate-changed):
 
 **2a) Stack detectie** uit bestaande `project.json.stack.framework` of, als ontbreekt, uit `package.json` dependencies / `requirements.txt` / `project.godot`. Schrijf naar `stack.framework`.
 
-**2b) Routes** — Glob alle route files volgens stack mapping (`core-pull` FASE 3b tabel). Extract route patterns. Overwrite `context.routing`.
+**2b) Routes** — Glob alle route files volgens stack mapping (`project-pull` FASE 3b tabel). Extract route patterns. Overwrite `context.routing`.
 
 **2c) Entities** — Glob model files (Mongoose/Prisma/Sequelize/Django/GDScript). Extract entities met source field. Merge naar `data.entities[]`.
 
@@ -253,7 +322,7 @@ Voor elke nieuwe entry uit FASE 3 + FASE 4:
 - `project-context.json`: update `context.structure`, `context.routing`, `context.patterns`, `architecture.components`, append `learnings[]`
 - `context.updated` → vandaag
 
-Skip-worktree herstel zoals in `core-pull` FASE 0.
+Skip-worktree herstel zoals in `project-pull` FASE 0.
 
 **5c) Save sync state**
 
@@ -261,7 +330,7 @@ Skip-worktree herstel zoals in `core-pull` FASE 0.
 echo '{"lastSync":"<ISO timestamp>"}' > .project/session/sync-state.json
 ```
 
-Maakt latere `/core-pull` runs incremental vanaf nu.
+Maakt latere `/project-pull` runs incremental vanaf nu.
 
 ### FASE 5.5: CLAUDE.md compleetheids-check
 
@@ -308,9 +377,55 @@ Geen interactieve permission-wizard in mature mode — defaults zijn veilig, use
 
 Als beide al bestaan: skip deze fase volledig, toon "Claude config: al aanwezig — overgeslagen".
 
+### FASE 5.65: Auto Dev Tools
+
+> **Todo**: markeer FASE 5.6 → `completed`, FASE 5.65 → `in_progress`.
+
+Mirror van greenfield Phase 5b — detect dev-tools die auto-install krijgen op een nieuw project, maar nu opt-in op mature.
+
+**Detect:**
+
+- `stack.framework` bevat "React" + "Vite" of is "Next.js"
+- `@anthropic-ai/inspect-overlay` ontbreekt in zowel `dependencies` als `devDependencies` van `package.json`
+
+Beide condities waar → toon AskUserQuestion (single-select, met "Let Claude decide"):
+
+```yaml
+header: "Inspect overlay"
+question: "Een nieuw {framework}-project krijgt @anthropic-ai/inspect-overlay automatisch. Dit project heeft het niet. Installeren?"
+options:
+  - label: "Installeer (Recommended)"
+    description: "Mirror van greenfield default — zelfde DX als nieuw project"
+  - label: "Skip"
+    description: "Niet installeren"
+multiSelect: false
+```
+
+**Bij "Installeer" of "Let Claude decide":**
+
+```
+Read("references/modules/inspect-overlay/setup-guide.md")
+```
+
+Volg setup-guide volledig. Voor Vite: Babel-mode. Voor Next.js: full Babel mode (waarschuw user dat Turbopack uitgeschakeld wordt).
+
+**Sync naar project.json:**
+
+- Lees nieuwe `package.json#devDependencies["@anthropic-ai/inspect-overlay"]` versie
+- Append aan `project.json#stack.packages[]`: `{ name: "@anthropic-ai/inspect-overlay", version: "<gelezen>", purpose: "Dev overlay (inspect mode)" }`
+- Skip als entry met dezelfde `name` al bestaat (idempotent bij retry)
+
+Voeg `inspect-overlay` toe aan `installed_in_session[]`.
+
+**Conditie niet getriggerd of "Skip":** geen actie.
+
+Niet uitbreiden naar andere libraries — tier-1 modules met stack-slot lopen via FASE 0.6/5.8. FASE 5.65 is uitsluitend voor dev-tools zonder stack-slot.
+
+Markeer FASE 5.65 → `completed`.
+
 ### FASE 5.7: Setup Task Seeding (frontend projects only)
 
-> **Todo**: markeer FASE 5.6 → `completed`, FASE 5.7 → `in_progress`.
+> **Todo**: markeer FASE 5.65 → `completed`, FASE 5.7 → `in_progress`.
 
 **Trigger**: `stack.framework` uit FASE 2a is een frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS). Anders skip volledig.
 
@@ -337,68 +452,31 @@ Geen interactieve modal — toon alleen `Setup-task toegevoegd aan backlog` in s
 
 Markeer FASE 5.7 → `completed`.
 
-### FASE 5.8: Module Gap
+### FASE 5.8: Module Gap Install
 
 > **Todo**: markeer FASE 5.7 → `completed`, FASE 5.8 → `in_progress`.
 
-**Trigger:** ten minste één relevant slot in `gap_slots[]` (uit FASE 0.5) is leeg. Anders skip volledig naar FASE 6.
+**Lees `gap_choices[]` terug:** open `.project/session/onboard-state.json`, parse `gapChoices`. Bestand niet aanwezig of leeg array → behandel als `gap_choices = []`.
 
-**Slot-relevantie** per framework:
+**Trigger:** `gap_choices[]` is niet leeg. Anders skip volledig naar FASE 6.
 
-| Framework                        | Relevante slots                                                                                  |
-| -------------------------------- | ------------------------------------------------------------------------------------------------ |
-| React/Vue/Svelte (frontend SPA)  | styling, componentLibrary, testing.unit, testing.e2e, linting, state.client, state.server, forms |
-| Next.js/Nuxt/Astro/Remix         | als boven                                                                                        |
-| Backend (Express/Fastify/Django) | testing.unit, linting                                                                            |
-| Game/CLI/Desktop/Mobile          | testing.unit, linting                                                                            |
-
-Filter `gap_slots[]`:
-
-- Slot al gevuld in `project.json#stack` → skip
-- Slot niet-relevant voor framework → skip
-- Tier-1 module al geïnstalleerd in `package.json` maar niet in stack-slot → skip stilletjes (FASE 5 sync vult dit alsnog op)
-
-**Multi-select modal** (volg Modal Option Cap uit SKILL.md; ≤7 slots = één modal, >7 = split per categorie-groep):
-
-```yaml
-header: "Module gaps"
-question: "Deze tier-1 categorieën zijn nog niet ingevuld. Wat wil je toevoegen?"
-options:
-  # Per leeg relevant slot één optie met de Recommended tier-1 module:
-  - label: "Styling: Tailwind (Recommended)"
-    description: "Utility-first CSS framework"
-  - label: "UI components: shadcn-ui (Recommended)"
-    description: "Copy-paste componenten op Tailwind + Radix"
-  - label: "Testing (unit): Vitest (Recommended)"
-    description: "Fast Vite-native unit tester"
-  - label: "Testing (e2e): Playwright (Recommended)"
-    description: "End-to-end browser testing"
-  - label: "Linting: Biome (Recommended)"
-    description: "Lint + format in één tool"
-  - label: "State (client): Zustand (Recommended)"
-    description: "Minimale client state"
-  - label: "State (server): TanStack Query (Recommended)"
-    description: "Server state + caching"
-  - label: "Forms: react-hook-form + zod (Recommended)"
-    description: "Form validatie met schema"
-  - label: "Skip alles"
-    description: "Geen modules nu — door naar rapport"
-multiSelect: true
-```
-
-Toon alleen de opties voor lege relevante slots — niet alle 8 altijd.
-
-**Per gekozen module:**
+**Eén keer:**
 
 ```
 Read("references/mode-install.md")
 ```
 
-Volg `mode-install.md` FASE 5 stap 0-5 (state check → install → configure → verify → sync project context). Hergebruik volledig — geen stappen kopiëren.
+**Per module in `gap_choices[]`:** volg uitsluitend `mode-install.md` **FASE 5** stap 0-5 (state check → install → configure → verify → sync project context). **Skip de TaskCreate van 7 items bovenaan mode-install.md** — die hoort bij standalone install mode. Werk de stappen inline binnen dit mature TaskCreate-item; voeg geen nieuwe TaskList toe en muteer geen mature todos.
 
-Onthoud geïnstalleerde modules als `installed_in_session[]` voor gebruik in FASE 6 rapport.
+Mocht mode-install.md verwijzen naar zijn eigen FASE 0/1/2/3/4/6/7 — overslaan. Die zijn voor standalone install runs.
 
-Eén pass standaard. Geen automatische loop — als user later meer wil toevoegen draaien ze opnieuw `/core-setup`.
+Onthoud geïnstalleerde modules als `installed_in_session[]` voor gebruik in FASE 6 rapport. Eén pass — geen automatische herhaling.
+
+**Cleanup:**
+
+```bash
+rm -f .project/session/onboard-state.json
+```
 
 **Niet in scope:**
 
@@ -428,7 +506,7 @@ Markeer FASE 5.8 → `completed`.
 
 | Conditie                              | Bullet                                          |
 | ------------------------------------- | ----------------------------------------------- |
-| (geen — altijd)                       | `/core-pull`                                    |
+| (geen — altijd)                       | `/project-pull`                                 |
 | `concept.pitch` leeg                  | `/thinking-concept`                             |
 | `features[]` leeg                     | `/dev-define`                                   |
 | frontend stack && `needsTheme = true` | `/frontend-tokens`                              |
@@ -465,7 +543,7 @@ Updated: {date}
 {if installed_in_session[] niet leeg}  Modules toegevoegd: {installed_in_session[]}
 
 Next steps:
-  • /core-pull              — incremental updates (sync state staat aan)
+  • /project-pull              — incremental updates (sync state staat aan)
 {if concept.pitch leeg}  • /thinking-concept   — vul concept pitch aan
 {if features[] leeg}     • /dev-define         — definieer de eerste feature
 {if frontend && needsTheme}  • /frontend-tokens — design tokens (color, typography, spacing)
@@ -488,7 +566,7 @@ Markeer FASE 6 → `completed`.
 
 ## Notes
 
-- Bewust eenmalig: na een succesvolle mature run worden incrementele changes door `/core-pull` opgepakt.
+- Bewust eenmalig: na een succesvolle mature run worden incrementele changes door `/project-pull` opgepakt.
 - LLM extraction kost ~25-50K tokens via Sonnet subagent. Zonder `--no-llm` flag is dit default-on.
 - Geen author voor LLM-inferred learnings: pattern is codebase-wide observatie.
 - Author === git user → skip (eigen werk in eigen project — geen "synced" learning).

@@ -4,6 +4,30 @@ Interactieve wizard voor nieuwe projecten. User beantwoordt vragen over stack en
 
 **CRITICAL: One question per response.** Never combine multiple questions in one message.
 
+**Plain-text question format** — wrap elke plain-text vraag in dit visueel-distinct blok zodat de user direct ziet dat input gevraagd wordt. Niet toepassen op AskUserQuestion modals — die hebben hun eigen UI.
+
+```
+---
+
+### ▸ Vraag — {korte titel}
+
+{Vraag tekst, eventueel met genummerde opties op nieuwe regels}
+
+→ Claude raadt aan: {advies + 1 zin reden}
+
+{input-hint, bijv. "Welke wil je toevoegen? (bijv. `1,3` of `geen`)"}
+
+---
+```
+
+**Regels:**
+
+- `→ Claude raadt aan:` regel is verplicht bij selection-style vragen (Project name, Tech stack, Suggestions). Skip alleen bij free-form (Project description).
+- `→ Tip:` regel is optioneel bij free-form vragen voor scope/context-sturing. Geen aanbeveling, alleen guardrail.
+- Niet toevoegen aan AskUserQuestion modals — die hebben hun eigen "Let Claude decide" optie.
+
+Toepasbaar op: Project description, Project name, Tech stack, Suggestions (per categorie).
+
 ---
 
 ## Process
@@ -46,24 +70,84 @@ Interactieve wizard voor nieuwe projecten. User beantwoordt vragen over stack en
 
 Ask sequentially, one question per response:
 
-1. **Project description** — Ask in plain text: "Beschrijf kort wat je project doet en voor wie het bedoeld is."
-2. **Project name** — AskUserQuestion (single-select):
-   - "Generate name (Recommended)" — suggest 2-3 short, kebab-case names based on the description
-   - "I'll type my own" — user provides via "Other"
+1. **Project description** — Toon dit blok aan de user en wacht op antwoord:
+
+   ```
+   ---
+
+   ### ▸ Vraag — Project description
+
+   Beschrijf kort wat je project doet en voor wie het bedoeld is.
+
+   → Tip: 1-3 zinnen is genoeg — uitbreiden kan later via /thinking-concept.
+
+   ---
+   ```
+
+2. **Project name** — Stel 2-3 kebab-case namen voor op basis van Phase 2.1 beschrijving en toon dit blok:
+
+   ```
+   ---
+
+   ### ▸ Vraag — Project name
+
+   1. {suggestie-1}
+   2. {suggestie-2}
+   3. {suggestie-3}
+
+   → Claude raadt aan: 1 — {korte reden}
+
+   Kies een nummer of typ je eigen.
+
+   ---
+   ```
+
 3. **Project type** — AskUserQuestion (single-select):
    - Web Frontend, Web Backend, Fullstack, Game, Mobile, Desktop, CLI
-4. **Tech stack** — AskUserQuestion (multi-select):
-   - Offer relevant frameworks/tools based on project type
-5. **Suggestions** — AskUserQuestion (multi-select):
-   - Offer complementary libraries based on chosen stack
-   - If more than 7 options (see "Modal Option Cap" in main SKILL.md), split per category.
-     Combineer korte categorieën in één AskUserQuestion call (1-4 questions ondersteund):
-     - **Call 1 — Styling/UI** (eigen call): Tailwind, shadcn/ui, CSS Modules, styled-components, etc.
-     - **Call 2 — Testing + Utilities** (gecombineerd):
-       - Testing: Vitest, Jest, Playwright, Cypress, etc.
-       - Utilities: TypeScript, ESLint, Prettier, Zod, Husky, etc.
-     - **Call 3 — State/Data** (alleen tonen als relevant voor de stack): Zustand, Redux, TanStack Query, SWR, etc.
-     - **Call 4 — Forms** (alleen tonen voor React/Vue/Svelte stack): react-hook-form + zod (tier-1, recommended), Formik, VeeValidate (Vue), Felte (Svelte)
+4. **Tech stack** — Plain text genummerde lijst (**single-select**: één primaire stack/framework combinatie). Toon relevante volledige stacks op basis van project type in dit blok:
+
+   ```
+   ---
+
+   ### ▸ Vraag — Tech stack
+
+   1. {stack-combinatie 1, bijv. "Tauri + React + TypeScript"} — {korte beschrijving}
+   2. {stack-combinatie 2} — {korte beschrijving}
+   ...
+
+   → Claude raadt aan: {nummer} — {1 zin reden op basis van project type/beschrijving}
+
+   Welke wil je gebruiken? (kies een nummer)
+
+   ---
+   ```
+
+   **Belangrijk:** Tech stack is een keuze tussen mutually-exclusive stacks (je gebruikt niet Tauri én Electron). Daarom single-select. Multi-select libraries komen in de volgende vraag (Suggestions).
+
+5. **Suggestions** — Plain text genummerde lijst per categorie (multi-select via free-form parse). Toon complementaire libraries op basis van gekozen stack. Splits per categorie als er meer dan 7 opties zijn:
+   - **Styling/UI**: Tailwind, shadcn/ui, CSS Modules, styled-components, etc.
+   - **Testing + Utilities**: Vitest, Jest, Cypress, TypeScript, ESLint, Prettier, Zod, Husky, etc. (Playwright NIET aanbieden — skills draaien al `npx playwright` direct; alleen via `/core-setup playwright` als de user expliciet een eigen E2E suite wil)
+   - **State/Data** (alleen relevant voor de stack): Zustand, Redux, TanStack Query, SWR, etc.
+   - **Forms** (alleen voor React/Vue/Svelte stack): react-hook-form + zod (tier-1, recommended), Formik, VeeValidate (Vue), Felte (Svelte)
+
+   Per categorie één vraag tegelijk in dit format:
+
+   ```
+   ---
+
+   ### ▸ Vraag — Suggestions: {categorie}
+
+   1. {library 1}
+   2. {library 2}
+   ...
+
+   → Claude raadt aan: {nummers} — {1 zin reden op basis van stack/project context}
+
+   Welke wil je toevoegen? (bijv. `1,3` of `geen`)
+
+   ---
+   ```
+
 6. **Web standards** (skip for game/CLI/desktop) — Three single-select questions:
    - Data fetching strategy (if React/Vue + externe API/backend): plain fetch, SWR, TanStack Query
      **Skip** als het project geen externe data sources heeft (bijv. localStorage-only, in-memory state, static content)
@@ -74,23 +158,20 @@ Ask sequentially, one question per response:
 
 ## CHECKPOINT: Interview Samenvatting
 
-Presenteer alle verzamelde informatie uit Phase 1-2 als gestructureerde tabel:
+Toon een ASCII tree van alle gemaakte keuzes — alleen wat de user heeft gekozen voor stack, libraries, state/forms, web standards. **Niet** de toekomstige fases tonen (de TaskCreate todo-lijst doet dat al). Voorbeeld:
 
-| Aspect        | Waarde                            |
-| ------------- | --------------------------------- |
-| Taal          | {gekozen taal}                    |
-| Projectnaam   | {naam}                            |
-| Type          | {project type}                    |
-| Stack         | {gekozen frameworks/tools}        |
-| Suggesties    | {complementaire libraries}        |
-| Web standards | {data fetching, a11y, responsive} |
+```
+streaky (Web Frontend)
+├── Stack:        React + Vite · TypeScript · Tailwind
+├── Libraries:    shadcn/ui · Vitest · Biome
+├── State/Forms:  Zustand · react-hook-form + zod
+└── Standards:    WCAG 2.1 AA · Mobile-first · TanStack Query
+```
 
 Vraag via AskUserQuestion: "Klopt dit overzicht? Wil je iets aanpassen?"
 
 - "Ga door met setup (Recommended)" — door naar Phase 3
 - "Aanpassen" — terug naar relevante vraag
-
-Na bevestiging: toon een ASCII flowchart van de initialisatiepaden op basis van de gekozen stack (welke configs, welke pipeline skills, welke hooks worden geconfigureerd).
 
 ## Phase 3: Generate Project
 
@@ -119,11 +200,17 @@ Install dependencies and run build to verify setup compiles. Non-blocking: conti
 
 ### Documentation Generators
 
-AskUserQuestion (multi-select) — show generators relevant to project type:
+Claude picks defaults based on Phase 2.3 project type + Phase 2.4 stack. No user confirmation — write silently into CLAUDE.md. Add stack-specific extras if obvious from chosen stack.
 
-- **Web**: components, routes, state, design-tokens, api-calls
-- **Backend**: api, components, erd, events, middleware, auth-flow, routes
-- **Game**: scenes, game-classes, state-machines, behavior-trees, prefabs
+| Project type | Default generators                                                   |
+| ------------ | -------------------------------------------------------------------- |
+| Web Frontend | components, routes, state, design-tokens                             |
+| Web Backend  | api, routes, middleware, auth-flow (auth-flow only if auth in stack) |
+| Fullstack    | components, routes, state, api, middleware                           |
+| Game         | scenes, game-classes, state-machines                                 |
+| Mobile       | components, routes, state                                            |
+| Desktop      | components, routes, state                                            |
+| CLI          | (none — omit section from CLAUDE.md)                                 |
 
 ### Permissions
 
@@ -131,11 +218,30 @@ AskUserQuestion (single-select) — permission preset:
 
 - **Full access (Recommended)**: read + edit + create files, bash (npm/npx/node), git, tests
 - **Restrictive**: read-only files, tests only
-- **Custom**: follow-up questions per category
 
-Then AskUserQuestion (multi-select) — directory exclusions:
+Voor maatwerk: de user kan `.claude/settings.local.json` direct bewerken na de setup (template hieronder).
 
-- none, node_modules, vendor, dist, build, .env
+Daarna plain text — directory exclusions:
+
+```
+---
+
+### ▸ Vraag — Directory exclusions
+
+Welke mappen wil je uitsluiten van Claude's schrijftoegang?
+
+1. node_modules
+2. vendor
+3. dist
+4. build
+5. .env
+
+→ Claude raadt aan: {nummers} — {1 zin reden op basis van stack/project type}
+
+Welke wil je uitsluiten? (bijv. `1,3` of `geen`)
+
+---
+```
 
 Write `.claude/settings.local.json` with `permissions.allow` and `permissions.deny` arrays:
 
@@ -226,7 +332,7 @@ Installeer dev-tools die framework-conditional zijn en geen user-input nodig heb
 
 **Auto-mode aannames** (geen modals tonen):
 
-- **Vite-pad**: greenfield gebruikt `@vitejs/plugin-react` (Babel) — geen SWC-switch nodig. Volg setup-guide stappen 1-6 onder `## Setup — Vite` → `### Install & Configure`.
+- **Vite-pad**: pin **`@vitejs/plugin-react@^5`** in `package.json` (NIET v6 — die gebruikt OXC i.p.v. Babel waardoor de overlay in degraded mode valt zonder file:line refs). Volg setup-guide `## Setup — Vite` → `### Plugin Selection` (auto, geen modal) en daarna `### Install & Configure` stappen 1-6.
 - **Next.js-pad**: kies Babel full mode automatisch. Volg setup-guide `### Babel Plugin (Full Mode)` accept-pad én `### Install` stappen 1-6.
 
 **Skip de "Restart dev server" stap** — in greenfield draait er nog geen dev server.
@@ -364,18 +470,9 @@ Skip Phase 7c volledig als `needsTheme = false`.
 5. Zet `data.updated` naar huidige datum (`YYYY-MM-DD`)
 6. Edit het JSON-blok terug in `backlog.html` (script-tags intact)
 
-**Stap 3 — Vraag user:**
+**Stap 3 — Auto-execute:**
 
-```yaml
-header: "Setup task"
-question: "Setup-task toegevoegd aan backlog. Wil je nu starten?"
-options:
-  - label: "Later (Recommended)", description: "Ga verder met /dev-plan of /thinking-concept"
-  - label: "Nu /frontend-tokens", description: "Stel design tokens in — kleur, typografie, spacing"
-multiSelect: false
-```
-
-Als "Nu /frontend-tokens" → exit core-setup, draai `/frontend-tokens` direct.
+Geen prompt. Skill chaining is silent: na het seeden van `setup-design-tokens` exit core-setup en draai `/frontend-tokens` direct. Meld het in Phase 9 Summary onder "Volgende skill draaiend".
 
 ---
 
@@ -415,7 +512,42 @@ Dev tools:
 
 Voor Next.js Babel full mode, voeg ook toe: `Note: Turbopack uitgeschakeld (Babel full mode voor exacte file:line refs).`
 
-**Next steps** — pas suggesties aan op basis van project type uit Phase 2.3 (Web/Backend/Fullstack/Game/Mobile/Desktop/CLI). Toon in deze volgorde:
+### Smart Backlog Server Prompt (conditional)
+
+**Stap 1 — Detect todos:** Lees `.project/backlog.html` (als die bestaat) en parse `data.features`. Tel items met status `TODO` of `DEFINED`.
+
+| Conditie                              | Actie                                      |
+| ------------------------------------- | ------------------------------------------ |
+| Geen `backlog.html` of 0 todos        | Skip backlog prompt — geen modal           |
+| ≥1 todo (bijv. `setup-design-tokens`) | Toon AskUserQuestion modal (zie hieronder) |
+
+**Stap 2 — Modal (alleen bij ≥1 todo):**
+
+AskUserQuestion (single-select):
+
+- "Start backlog server (Recommended)" — `/project-backlog start` op `http://localhost:9876`. Toon `{N} todo(s) in backlog: {lijst van eerste 3 names}`.
+- "Skip" — later handmatig starten met `/project-backlog`
+
+Bewaar het resultaat als `backlog_started` (true/false) voor smart next steps.
+
+### Smart Next Steps
+
+Pas suggesties aan op basis van project type (Phase 2.3) **én** `backlog_started`. Volgorde:
+
+**Als `backlog_started = true`:**
+
+```
+Bekijk je backlog:        http://localhost:9876
+Eerste todo aanpakken:    {top todo name} → {bijbehorende skill}
+```
+
+Daarna alleen relevante vervolgskills (geen herhaling van todos die al in de backlog staan):
+
+- Web/Backend/Fullstack/Mobile/Desktop/CLI: `/dev-define [nieuwe feature]` → `/dev-build [feature]`
+- Game: `/game-define [feature]` → `/game-build [feature]`
+- Concept uitbouwen: `/thinking-concept`, `/thinking-brainstorm`
+
+**Als `backlog_started = false` of geen todos in backlog:**
 
 **1. Concept verkennen (optioneel, aanbevolen voor greenfield):**
 
@@ -433,10 +565,16 @@ Voor Next.js Babel full mode, voeg ook toe: `Note: Turbopack uitgeschakeld (Babe
 - Web/Backend/etc: `/dev-define [feature]` → `/dev-build [feature]`
 - Game: `/game-define [feature]` → `/game-build [feature]`
 
+**Als er todos zijn maar backlog niet gestart:** voeg bovenaan toe:
+
+```
+Tip: er staan {N} todo(s) klaar in .project/backlog.html.
+Start later met /project-backlog om ze visueel af te vinken.
+```
+
 **Aanvullend voor frontend/fullstack** (skip voor game/CLI/desktop/backend-only):
 
 - `/core-setup [module]` — voeg libraries toe (Tailwind, Vitest, Playwright, Biome, etc.)
-- `/frontend-tokens` — design tokens instellen (alleen tonen als Phase 7c "Later" koos en `theme` sectie in `project.json` nog leeg is)
 - `/frontend-design [feature]` — visuele design spec voor een feature
 
 > **Todo**: markeer Phase 9 → `completed`.

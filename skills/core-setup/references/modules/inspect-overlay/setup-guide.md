@@ -13,38 +13,35 @@ Geen `installed-not-configured` toestand: inspect-overlay is een dev-only inject
 
 ### Dev Server Status
 
-Check if port 3000 is in use. Track for restart after setup.
+Bepaal de dev server poort framework-aware:
+
+- **Vite**: lees `vite.config.*` voor `server.port`; fallback `5173`
+- **Next.js**: lees `package.json` scripts voor `--port` flag; fallback `3000`
+
+Check of die poort in use is. Track voor restart na setup.
 
 ### Pre-flight Output
 
-Report framework, plugin mode (Vite), overlay status, and dev server status.
+Report framework, plugin mode (Vite), overlay status, dev server status, en de gedetecteerde poort.
 
 ## Setup — Vite
 
-### SWC to Babel Switch (conditional)
+### Plugin Selection (kritiek voor full mode)
 
-Only if `@vitejs/plugin-react-swc` detected.
+`@react-dev-inspector/babel-plugin` werkt alleen via Babel. Moderne `@vitejs/plugin-react` (v6+) gebruikt standaard **OXC** als transformer en negeert Babel-plugins → automatisch degraded mode. Daarom: voor full mode pin je op een Babel-compatibele versie.
 
-Ask user:
+| Gevonden in `package.json`            | Actie (auto, geen modal)                                                            |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
+| `@vitejs/plugin-react-swc`            | Uninstall, install `@vitejs/plugin-react@^5`, update `vite.config` import           |
+| `@vitejs/plugin-react@^6` (of hoger)  | Downgrade naar `@vitejs/plugin-react@^5` (laatste Babel-versie) om OXC te vermijden |
+| `@vitejs/plugin-react@^5` of geen v6+ | Houden zoals het is — al Babel-compatible                                           |
+| Geen react plugin                     | Install `@vitejs/plugin-react@^5`                                                   |
 
-```yaml
-header: "Plugin"
-question: "De inspect overlay vereist Babel voor data-attributen. Wil je switchen van SWC naar Babel?"
-options:
-  - label: "Ja, switch (Recommended)"
-    description: "Vervangt plugin-react-swc met plugin-react. Dev builds iets trager, geen impact op production."
-  - label: "Nee, zonder data-attributen"
-    description: "Overlay werkt zonder exacte bestandsreferenties. Claude zoekt via tekst/classes."
-multiSelect: false
-```
-
-If accepted: uninstall `@vitejs/plugin-react-swc`, install `@vitejs/plugin-react`, update vite.config import.
-
-If declined: degraded mode — skip babel plugin, overlay works without file:line refs.
+In greenfield: forceer altijd `@vitejs/plugin-react@^5` als pin. Geen modal — degraded mode is geen acceptabele default.
 
 ### Install & Configure
 
-1. Install `@react-dev-inspector/babel-plugin` (Babel mode only)
+1. Install `@react-dev-inspector/babel-plugin`
 2. Copy `references/inspect-overlay-plugin.ts` → project root as `inspect-overlay.vite.ts`
 3. Copy `references/inspect-overlay-client.js` → project root
 4. Add to `.gitignore` (if not already present):
@@ -55,8 +52,12 @@ If declined: degraded mode — skip babel plugin, overlay works without file:lin
    ```
 5. Update `vite.config.ts`:
    - Add `inspectOverlay()` to plugins array
-   - Add babel plugin to `react()` config (Babel mode only)
+   - Add babel plugin to `react()` config: `react({ babel: { plugins: ['@react-dev-inspector/babel-plugin'] } })`
 6. Restart dev server if running
+
+### Verify Full Mode
+
+Na install: check dat `package.json` toont `"@vitejs/plugin-react": "^5.x.x"` (geen v6+) en dat `vite.config` de babel plugin doorgeeft. Bij twijfel: start dev server, open een component in de overlay en bevestig dat file:line refs worden getoond. Geen file:line → ergens nog OXC actief, check plugin-versie.
 
 ## Setup — Next.js
 
@@ -156,7 +157,7 @@ Report overlay status:
 
 - Mode: Full (Babel) or Degraded
 - Controls: Ctrl+Shift+X (Win/Linux) or Cmd+Shift+X (Mac) to toggle
-- Server URL: tunnel URL if cloudflared running, else localhost:3000
+- Server URL: tunnel URL if cloudflared running, else `localhost:<detected-port>` (5173 voor Vite default, 3000 voor Next.js default)
 
 Setup voltooid. Overlay is actief — gebruiker kan elementen inspecteren en referenties plakken in chat.
 
