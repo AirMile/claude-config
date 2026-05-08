@@ -1,6 +1,11 @@
 ---
 name: dev-define
-description: Feature requirements en architectuur definiëren. Gebruik bij /dev-define [feature-name] vóór de build-fase — definieert requirements, acceptance criteria en architectuur op basis van een backlog-item of een nieuwe naam. Werkt ook voor PAGE- en COMPONENT-features uit de backlog (puur functionele pipeline, los van /frontend-design).
+description: >-
+  Define feature requirements and architecture before the build phase. Use
+  with /dev-define [feature-name] to produce requirements, acceptance criteria,
+  and architecture from a backlog item or a fresh name. Also handles PAGE and
+  COMPONENT features from the backlog (functional pipeline, independent of
+  /frontend-design).
 writes: [feature.requirements, backlog.status]
 metadata:
   author: mileszeilstra

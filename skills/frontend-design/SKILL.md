@@ -1,12 +1,12 @@
 ---
 name: frontend-design
 description: >-
-  Design spec management voor pages én components — Claude Design brief generator + in-Claude-Code
-  code generator voor PAGE en COMPONENT features. Capture mode beheert pages, flows, design principes
-  en components in project.json — inclusief screenshot-import (single/multi) en checkpoint-restore.
-  Brief mode genereert markdown briefs voor Claude Design (page of component). Build mode genereert
-  werkende code voor PAGE/COMPONENT features met status DEF zonder visueel referentiemateriaal.
-  Werkt standalone — geen dev-pipeline nodig. Use with /frontend-design [naam] of /frontend-design.
+  Design spec management for pages and components — Claude Design brief generator + in-Claude-Code
+  code generator for PAGE and COMPONENT features. Capture mode manages pages, flows, design principles
+  and components in project.json — including screenshot-import (single/multi) and checkpoint-restore.
+  Brief mode generates markdown briefs for Claude Design (page or component). Build mode generates
+  working code for PAGE/COMPONENT features with status DEF without visual reference material.
+  Works standalone — no dev-pipeline needed. Use with /frontend-design [name] or /frontend-design.
 reads: [devinfo.handoff, backlog.status, feature.requirements, feature.files]
 writes: [devinfo.handoff, devinfo.tokenDrift]
 metadata:
