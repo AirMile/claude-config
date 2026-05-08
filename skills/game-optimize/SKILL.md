@@ -36,7 +36,7 @@ Update bij voltooiing: `.project/project.json` → push naar `optimization_runs[
 
 ## Process
 
-**Fase tracking** — eerste actie: roep `TodoWrite` aan met deze 7 items (status `pending`):
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 7 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
 
 1. FASE 0: Pre-flight
 2. FASE 1: Define Metric
@@ -48,7 +48,7 @@ Update bij voltooiing: `.project/project.json` → push naar `optimization_runs[
 
 ### FASE 0: Pre-flight
 
-> **Todo**: markeer FASE 0 → `in_progress`.
+> **Todo**: roep `TaskCreate` aan met de 7 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 **Capture git baseline:**
 

@@ -22,7 +22,21 @@ Alles buiten deze set wordt afgehandeld via `references/research-flow.md`.
 
 ---
 
+## Process
+
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 7 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: Pre-flight
+2. FASE 1: Inspect Overlay
+3. FASE 2: Verdere Installs
+4. FASE 3: Categorie-keuze
+5. FASE 4: Optie-keuze
+6. FASE 5: Install + Verify
+7. FASE 6: Rapport
+
 ## FASE 0: Pre-flight
+
+> **Todo**: roep `TaskCreate` aan met de 7 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 ### 0.0 Argument Detection
 
@@ -84,6 +98,8 @@ Bij elke succesvolle install schrijft FASE 5 stap 5b de module-keuze naar `proje
 
 ## FASE 1: Inspect Overlay (altijd)
 
+> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+
 ### 1.1 Overlay Status
 
 Check of overlay al geïnstalleerd is:
@@ -137,6 +153,8 @@ Bij **Skip** → direct door naar FASE 2.
 
 ## FASE 2: Verdere Installs?
 
+> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+
 ```yaml
 header: "Doorgaan?"
 question: "Wil je nog iets anders toevoegen aan dit project?"
@@ -159,6 +177,8 @@ Skip silent als `project.json` ontbreekt — render dan de standaard categorie-p
 ---
 
 ## FASE 3: Categorie-keuze
+
+> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
 
 Render de prompt op basis van de gecachte stack-snapshot:
 
@@ -208,6 +228,8 @@ multiSelect: false
 
 ## FASE 4: Optie-keuze
 
+> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+
 ### Pad A — Tier-1 module beschikbaar voor categorie
 
 Toon de tier-1 modules voor deze categorie + "Andere library (research)":
@@ -248,6 +270,8 @@ Volg het research-protocol:
 ---
 
 ## FASE 5: Install + Verify
+
+> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
 
 0. **State check** — raadpleeg de "Detection" sectie van de setup-guide (al geladen in FASE 4 Pad A). Bepaal tri-state:
 
@@ -343,6 +367,8 @@ Volg het research-protocol:
 
 ## FASE 6: Rapport
 
+> **Todo**: markeer FASE 5 → `completed`, FASE 6 → `in_progress`.
+
 ASCII tabel met sessie-resultaat:
 
 ```
@@ -367,6 +393,8 @@ CLAUDE.md:       {M} secties bijgewerkt / al compleet / n.v.t.
 1. `/frontend-tokens` → design tokens setup als styling toegevoegd is
 2. `/frontend-design` → mock-driven UI design met nieuwe stack
 3. `/frontend-check` → kwaliteitscheck na meerdere installs
+
+> **Todo**: markeer FASE 6 → `completed`.
 
 ---
 

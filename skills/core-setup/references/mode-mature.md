@@ -1,6 +1,6 @@
 # Mature Mode
 
-Eenmalige scan van een bestaande codebase. Bouwt base memory op door volledige codebase scan + LLM-extractie van conventies en patterns. Aangevuld met CLAUDE.md-completeness check en Claude-config init.
+Eenmalige scan van een bestaande codebase met optionele Module Gap-aanvulling. Bouwt base memory op door volledige codebase scan + LLM-extractie van conventies en patterns. Aangevuld met CLAUDE.md-completeness check en Claude-config init.
 
 **`--no-llm` flag**: Skip FASE 4 (LLM extractie). Alleen MVP signalen (TODO/FIXME, fix-commits, abstraction-dirs, wrapper-deps). Sneller maar mist naming/error/response-shape patterns.
 
@@ -8,9 +8,27 @@ Zie `shared/SYNC.md`, `shared/DASHBOARD.md`, en `shared/LEARNING-EXTRACTION.md` 
 
 ---
 
+## Process
+
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 13 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: Pre-flight
+2. FASE 0.5: Project Status Snapshot
+3. FASE 1: Full structure scan
+4. FASE 2: Full route/entity/endpoint/component scan
+5. FASE 3: MVP learnings
+6. FASE 4: LLM learnings via subagent
+7. FASE 4.5: Context fabricate + confirm
+8. FASE 5: Sync
+9. FASE 5.5: CLAUDE.md compleetheids-check
+10. FASE 5.6: Claude-config init
+11. FASE 5.7: Setup Task Seeding
+12. FASE 5.8: Module Gap
+13. FASE 6: Report
+
 ## FASE 0: Pre-flight
 
-> **Todo**: roep `TodoWrite` aan met de fase-items. Markeer FASE 0 → `in_progress`.
+> **Todo**: roep `TaskCreate` aan met de 13 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Detect git repo**:
 
@@ -39,9 +57,49 @@ Zie `shared/SYNC.md`, `shared/DASHBOARD.md`, en `shared/LEARNING-EXTRACTION.md` 
 
 4. **Read `git config user.name`** → `GIT_USER` (voor author filter en self-skip).
 
+### FASE 0.5: Project Status Snapshot
+
+> **Todo**: markeer FASE 0 → `completed`, FASE 0.5 → `in_progress`.
+
+Lees `.project/project.json` als die bestaat, anders skip volledig.
+
+Bouw een compacte status-tabel uit `stack.framework`, `stack.styling`, `stack.testing`, `stack.linting`, `stack.state`, `stack.forms`, en `stack.componentLibrary`. Per slot:
+
+- Gevuld → "✓ {waarde}"
+- Leeg → "— (leeg)"
+- Niet relevant voor stack → niet tonen (forms voor backend overslaan etc.)
+
+Output format:
+
+```
+PROJECT STATUS
+
+Framework:    {framework}
+Language:     {language}
+
+Stack slots:
+  Styling           ✓ {waarde} | — (leeg)
+  UI components     ✓ {waarde} | — (leeg)
+  Testing (unit)    ✓ {waarde} | — (leeg)
+  Testing (e2e)     ✓ {waarde} | — (leeg)
+  Linting           ✓ {waarde} | — (leeg)
+  State (client)    ✓ {waarde} | — (leeg)
+  State (server)    ✓ {waarde} | — (leeg)
+  Forms             ✓ {waarde} | — (leeg)
+
+Learnings:    {existing_learning_count}
+Last sync:    {sync-state.json#lastSync of "nooit"}
+```
+
+Geen modal hier — alleen visibility. FASE 5.8 hieronder gebruikt deze snapshot voor de Module Gap-modal.
+
+Onthoud de lege slots als `gap_slots[]` voor gebruik in FASE 5.8.
+
+Markeer FASE 0.5 → `completed`.
+
 ### FASE 1: Full structure scan
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: markeer FASE 0.5 → `completed`, FASE 1 → `in_progress`.
 
 Glob de project root voor file tree. Bouw een compacte structure string:
 
@@ -279,11 +337,81 @@ Geen interactieve modal — toon alleen `Setup-task toegevoegd aan backlog` in s
 
 Markeer FASE 5.7 → `completed`.
 
+### FASE 5.8: Module Gap
+
+> **Todo**: markeer FASE 5.7 → `completed`, FASE 5.8 → `in_progress`.
+
+**Trigger:** ten minste één relevant slot in `gap_slots[]` (uit FASE 0.5) is leeg. Anders skip volledig naar FASE 6.
+
+**Slot-relevantie** per framework:
+
+| Framework                        | Relevante slots                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------ |
+| React/Vue/Svelte (frontend SPA)  | styling, componentLibrary, testing.unit, testing.e2e, linting, state.client, state.server, forms |
+| Next.js/Nuxt/Astro/Remix         | als boven                                                                                        |
+| Backend (Express/Fastify/Django) | testing.unit, linting                                                                            |
+| Game/CLI/Desktop/Mobile          | testing.unit, linting                                                                            |
+
+Filter `gap_slots[]`:
+
+- Slot al gevuld in `project.json#stack` → skip
+- Slot niet-relevant voor framework → skip
+- Tier-1 module al geïnstalleerd in `package.json` maar niet in stack-slot → skip stilletjes (FASE 5 sync vult dit alsnog op)
+
+**Multi-select modal** (volg Modal Option Cap uit SKILL.md; ≤7 slots = één modal, >7 = split per categorie-groep):
+
+```yaml
+header: "Module gaps"
+question: "Deze tier-1 categorieën zijn nog niet ingevuld. Wat wil je toevoegen?"
+options:
+  # Per leeg relevant slot één optie met de Recommended tier-1 module:
+  - label: "Styling: Tailwind (Recommended)"
+    description: "Utility-first CSS framework"
+  - label: "UI components: shadcn-ui (Recommended)"
+    description: "Copy-paste componenten op Tailwind + Radix"
+  - label: "Testing (unit): Vitest (Recommended)"
+    description: "Fast Vite-native unit tester"
+  - label: "Testing (e2e): Playwright (Recommended)"
+    description: "End-to-end browser testing"
+  - label: "Linting: Biome (Recommended)"
+    description: "Lint + format in één tool"
+  - label: "State (client): Zustand (Recommended)"
+    description: "Minimale client state"
+  - label: "State (server): TanStack Query (Recommended)"
+    description: "Server state + caching"
+  - label: "Forms: react-hook-form + zod (Recommended)"
+    description: "Form validatie met schema"
+  - label: "Skip alles"
+    description: "Geen modules nu — door naar rapport"
+multiSelect: true
+```
+
+Toon alleen de opties voor lege relevante slots — niet alle 8 altijd.
+
+**Per gekozen module:**
+
+```
+Read("references/mode-install.md")
+```
+
+Volg `mode-install.md` FASE 5 stap 0-5 (state check → install → configure → verify → sync project context). Hergebruik volledig — geen stappen kopiëren.
+
+Onthoud geïnstalleerde modules als `installed_in_session[]` voor gebruik in FASE 6 rapport.
+
+Eén pass standaard. Geen automatische loop — als user later meer wil toevoegen draaien ze opnieuw `/core-setup`.
+
+**Niet in scope:**
+
+- Research-mode libraries (Pad B) — user die niet-tier-1 wil moet `/core-setup [free-text]` gebruiken
+- Categorieën zonder stack-slot (Routing, Animation, Icons, Auth, i18n, Analytics)
+
+Markeer FASE 5.8 → `completed`.
+
 ---
 
 ### FASE 6: Report
 
-> **Todo**: markeer FASE 5.7 → `completed`, FASE 6 → `in_progress`.
+> **Todo**: markeer FASE 5.8 → `completed`, FASE 6 → `in_progress`.
 
 **Render-regels** voor het rapport hieronder:
 
@@ -298,12 +426,13 @@ Markeer FASE 5.7 → `completed`.
 - Undefined operand bij `&&` → `false`; bij `||` → wordt overgeslagen
 - `<naam>` zonder operator → boolean variabele berekend in eerder FASE (bijv. `needsTheme` uit FASE 5.7)
 
-| Conditie                              | Bullet              |
-| ------------------------------------- | ------------------- |
-| (geen — altijd)                       | `/core-pull`        |
-| `concept.pitch` leeg                  | `/thinking-concept` |
-| `features[]` leeg                     | `/dev-define`       |
-| frontend stack && `needsTheme = true` | `/frontend-tokens`  |
+| Conditie                              | Bullet                                          |
+| ------------------------------------- | ----------------------------------------------- |
+| (geen — altijd)                       | `/core-pull`                                    |
+| `concept.pitch` leeg                  | `/thinking-concept`                             |
+| `features[]` leeg                     | `/dev-define`                                   |
+| frontend stack && `needsTheme = true` | `/frontend-tokens`                              |
+| `installed_in_session[]` niet leeg    | toon "Modules toegevoegd: {list}" onder Updated |
 
 ```
 ONBOARD COMPLETE
@@ -333,6 +462,7 @@ CLAUDE.md:     {gegenereerd | {N} secties toegevoegd | al compleet}
 Claude config: {settings.local.json + hook aangemaakt | al aanwezig}
 
 Updated: {date}
+{if installed_in_session[] niet leeg}  Modules toegevoegd: {installed_in_session[]}
 
 Next steps:
   • /core-pull              — incremental updates (sync state staat aan)
@@ -342,6 +472,8 @@ Next steps:
 ```
 
 Markeer FASE 6 → `completed`.
+
+> **Todo**: markeer FASE 6 → `completed`.
 
 ---
 

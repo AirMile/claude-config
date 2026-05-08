@@ -31,7 +31,24 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 
 ## Workflow
 
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 12 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: Load Context and Classify
+2. FASE 1: Automated Testing
+3. FASE 1b: Parse Inline Feedback
+4. FASE 2: Manual Walkthrough
+5. FASE 2b: Combined Results
+6. FASE 3: Categorize Issues
+7. FASE 4: Fix Loop
+8. FASE 5: Re-test
+9. FASE 5b: Re-test Loop
+10. FASE 5c: Regression Check
+11. FASE 5d: Requirement Verification
+12. FASE 6: Completion
+
 ### FASE 0: Load Context and Classify
+
+> **Todo**: roep `TaskCreate` aan met de 12 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Read backlog** — `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` (zie `shared/BACKLOG.md`). Filter `status === "DOING"`. Geen feature name → suggest via AskUserQuestion.
 
@@ -185,6 +202,8 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 
 ### FASE 1: Automated Testing
 
+> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+
 **Skip** als er geen AUTO items zijn (alle non-COVERED items zijn MANUAL, of alles is COVERED).
 
 Launch Agent om non-COVERED AUTO items uit te voeren in apart context window.
@@ -252,6 +271,8 @@ Display: `AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}`
 
 ### FASE 1b: Parse Inline Feedback
 
+> **Todo**: markeer FASE 1 → `completed`, FASE 1b → `in_progress`.
+
 **Wanneer:** user gaf feedback mee bij `/dev-verify {name} {feedback}` (skipt FASE 1 + 2).
 
 Parse naar item/PASS/FAIL/notes. Accepteer `1:PASS 2:FAIL note` en vrije tekst.
@@ -262,6 +283,8 @@ Onduidelijke feedback → AskUserQuestion: Opnieuw invoeren (Aanbevolen) | Per i
 ---
 
 ### FASE 2: Manual Walkthrough
+
+> **Todo**: markeer FASE 1b → `completed`, FASE 2 → `in_progress`.
 
 **Wanneer:** er zijn MANUAL items.
 
@@ -298,6 +321,8 @@ AskUserQuestion per item: Pass (Aanbevolen) | Fail | Skip.
 ---
 
 ### FASE 2b: Combined Results
+
+> **Todo**: markeer FASE 2 → `completed`, FASE 2b → `in_progress`.
 
 Merge COVERED + automated + manual resultaten.
 
@@ -346,6 +371,8 @@ Alle PASS → FASE 6. FAILs (SPEC of TESTABLE) → FASE 3.
 
 ### FASE 3: Categorize Issues
 
+> **Todo**: markeer FASE 2b → `completed`, FASE 3 → `in_progress`.
+
 Per FAIL: categoriseer als SPEC/TESTABLE/MEASURABLE/SUBJECTIVE (zie tabel hierboven).
 SPEC → uit acceptance test failures (criterium niet gedekt door implementatie).
 SUBJECTIVE → AskUserQuestion voor verduidelijking, dan re-categoriseer.
@@ -366,6 +393,8 @@ Display technique map:
 ---
 
 ### FASE 4: Fix Loop
+
+> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
 
 #### TDD Fix
 
@@ -407,6 +436,8 @@ SYNC: Root cause: {file:line}. Fix: {aanpak}. Impact: {scope}.
 
 ### FASE 5: Re-test
 
+> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+
 Re-test ALLEEN gefixte items.
 
 **Phase A: Auto** — fixed AUTO items via Agent (zelfde aanpak als FASE 1, markers `RETEST_RESULTS_START`/`RETEST_RESULTS_END`). TOOL_ERROR → Phase B.
@@ -417,6 +448,8 @@ Display re-test resultaten.
 
 ### FASE 5b: Re-test Loop
 
+> **Todo**: markeer FASE 5 → `completed`, FASE 5b → `in_progress`.
+
 Alles pass → FASE 5c.
 
 Items falen nog → AskUserQuestion: Meer details (Aanbevolen) | Andere aanpak | Accepteren | Zelf fixen.
@@ -425,6 +458,8 @@ Loop terug naar FASE 3. AUTO items → re-run in FASE 5A. MANUAL items → re-te
 ---
 
 ### FASE 5c: Regression Check
+
+> **Todo**: markeer FASE 5b → `completed`, FASE 5c → `in_progress`.
 
 **Skip when:**
 
@@ -452,6 +487,8 @@ Regressies: {n} | Stabiel: {n}
 ---
 
 ### FASE 5d: Requirement Verification
+
+> **Todo**: markeer FASE 5c → `completed`, FASE 5d → `in_progress`.
 
 **Skip when:** Alle tests FAIL (coverage check zinloos bij catastrofale failures).
 
@@ -515,6 +552,8 @@ Cross-check `feature.json` requirements tegen test resultaten:
 ---
 
 ### FASE 6: Completion
+
+> **Todo**: markeer FASE 5d → `completed`, FASE 6 → `in_progress`.
 
 #### Step 1: Fix Sync (skip als geen fixes)
 
@@ -756,3 +795,5 @@ Append:
 → FASE 5: Re-test → all PASS
 → FASE 6: Fix sync + evaluation + commit
 ```
+
+> **Todo**: markeer FASE 6 → `completed`.

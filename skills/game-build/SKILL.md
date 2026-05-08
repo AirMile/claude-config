@@ -83,7 +83,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TodoWrite` aan met deze 10 items (status `pending`), daarna markeer per fase `in_progress` aan begin en `completed` aan einde. Bij context compaction blijft TodoWrite-state zichtbaar — geen risico op vergeten fases.
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 10 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
 
 1. FASE 0: Load Context
 2. FASE 1: Technique Mapping
@@ -98,7 +98,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 ### FASE 0: Load Context
 
-> **Todo**: roep `TodoWrite` aan met de 10 fase-items (zie boven). Markeer FASE 0 → `in_progress`.
+> **Todo**: roep `TaskCreate` aan met de 10 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **If no feature name provided — check backlog:**
    - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)

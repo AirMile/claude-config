@@ -121,7 +121,22 @@ Now TESTABLE -> TDD fix loop
 
 ## Workflow
 
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 10 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: Load Context
+2. FASE 1: Parse Feedback
+3. FASE 1b: Debug Analysis
+4. FASE 2: Categorize Issues
+5. FASE 3: Fix Loop
+6. FASE 4: Generate Re-test Checklist
+7. FASE 5: Re-test Loop
+8. FASE 5c: Regression Check
+9. FASE 5d: Requirement Verification
+10. FASE 6: Completion
+
 ### FASE 0: Load Context
+
+> **Todo**: roep `TaskCreate` aan met de 10 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 **Goal:** Load playtest checklist from build phase and prepare for feedback.
 
@@ -420,6 +435,8 @@ echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}"}'
 
 ### FASE 1: Parse Feedback
 
+> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+
 **Goal:** Extract PASS/FAIL status and notes from user feedback.
 
 **Steps:**
@@ -488,6 +505,8 @@ Failed: 2 items
 ---
 
 ### FASE 1b: Debug Analysis
+
+> **Todo**: markeer FASE 1 → `completed`, FASE 1b → `in_progress`.
 
 **Goal:** Combine debug output with user feedback for accurate issue identification.
 
@@ -608,6 +627,8 @@ Root causes identified: {count}
 
 ### FASE 2: Categorize Issues
 
+> **Todo**: markeer FASE 1b → `completed`, FASE 2 → `in_progress`.
+
 **Goal:** Determine fix approach for each failed item.
 
 **Steps:**
@@ -689,6 +710,8 @@ FAILED: 2 items (3, 4)
 ---
 
 ### FASE 3: Fix Loop
+
+> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
 
 **Goal:** Fix all issues using appropriate method for each type.
 
@@ -890,6 +913,8 @@ Files modified: 2
 
 ### FASE 4: Generate Re-test Checklist
 
+> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+
 **Goal:** Create minimal checklist for only the fixed items.
 
 **Steps:**
@@ -935,6 +960,8 @@ Provide feedback when ready.
 ---
 
 ### FASE 5: Re-test Loop
+
+> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
 
 **Goal:** Process re-test feedback and loop until all pass.
 
@@ -984,6 +1011,8 @@ Provide feedback when ready.
 
 ### FASE 5c: Regression Check
 
+> **Todo**: markeer FASE 5 → `completed`, FASE 5c → `in_progress`.
+
 **Skip when:**
 
 - Geen TDD fixes toegepast in FASE 3 (alleen MEASURABLE fixes → lage kans op side effects)
@@ -1014,6 +1043,8 @@ Regressies: {n} | Stabiel: {n}
 ---
 
 ### FASE 5d: Requirement Verification
+
+> **Todo**: markeer FASE 5c → `completed`, FASE 5d → `in_progress`.
 
 **Skip when:** Alle tests FAIL (coverage check zinloos bij catastrofale failures).
 
@@ -1071,6 +1102,8 @@ Cross-check `feature.json` requirements tegen test resultaten:
 ---
 
 ### FASE 6: Completion
+
+> **Todo**: markeer FASE 5d → `completed`, FASE 6 → `in_progress`.
 
 **Goal:** Sync user on fixes, capture observations, mark feature as verified and update documentation.
 
@@ -1424,3 +1457,5 @@ This skill must ALWAYS:
 - Windows: `C:\Godot\Godot_v4.4.1-stable_win64.exe`
 
 Override: env var `CLAUDE_GODOT_EXECUTABLE` of `.claude/paths.local.yaml`. Canonical defaults staan in [skills/project-add/paths.yaml](skills/project-add/paths.yaml).
+
+> **Todo**: markeer FASE 6 → `completed`.

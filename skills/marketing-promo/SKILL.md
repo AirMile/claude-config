@@ -17,7 +17,20 @@ Generate marketing-quality screenshots of a web app using Playwright CLI. Analyz
 
 **Trigger**: `/marketing-promo` or `/marketing-promo [url]`
 
+## Process
+
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 6 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: Determine App URL
+2. FASE 1: Gather Requirements
+3. FASE 2: Analyze Codebase for Features
+4. FASE 3: Plan Screenshots with User
+5. FASE 4: Capture Screenshots
+6. FASE 5: Verify and Summarize
+
 ## FASE 0: Determine App URL
+
+> **Todo**: roep `TaskCreate` aan met de 6 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 **If `$1` provided** → use as the app URL.
 
@@ -56,6 +69,8 @@ Generate marketing-quality screenshots of a web app using Playwright CLI. Analyz
 4. Verify the URL is reachable via `playwright-cli open [url]`. If it fails → exit with message to start the dev server first (e.g. `/dev-tunnel`).
 
 ## FASE 1: Gather Requirements
+
+> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
 
 Use **AskUserQuestion** for each:
 
@@ -128,6 +143,8 @@ If "Ja, ik geef credentials" → follow-up **AskUserQuestion**:
 
 ## FASE 2: Analyze Codebase for Features
 
+> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+
 **Research context check:** Zoek naar `.project/thinking/*-marketing-research.md`. Als
 gevonden: laad de Doelgroep en Aanbevelingen secties. Gebruik de aanbevolen kanalen en
 doelgroep als context bij feature-prioritering in stap 3 — features die aansluiten bij
@@ -167,6 +184,8 @@ THEME_SUPPORT: {yes/no}
 Parse the structured output from the agent.
 
 ## FASE 3: Plan Screenshots with User
+
+> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
 
 Display discovered features:
 
@@ -216,6 +235,8 @@ mkdir -p .project/screenshots
 ````
 
 ## FASE 4: Capture Screenshots
+
+> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
 
 ### Primary Method: HiDPI via playwright-cli run-code
 
@@ -403,6 +424,8 @@ Twitter-variant: hetzelfde met `viewport: { width: 1200, height: 600 }` en `-tw-
 
 ## FASE 5: Verify and Summarize
 
+> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+
 1. List generated files:
 
    ```bash
@@ -448,6 +471,8 @@ Twitter-variant: hetzelfde met `viewport: { width: 1200, height: 600 }` en `-tw-
 
 5. If purpose is "Product Hunt" → mention recommended image sizes (1270x760)
 6. If purpose is "Social media" → suggest cropping for platform-specific ratios
+
+> **Todo**: markeer FASE 5 → `completed`.
 
 7. Cleanup auth state (alleen als 4.0 is gedraaid):
 

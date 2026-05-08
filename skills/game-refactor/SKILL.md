@@ -69,7 +69,18 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 ## Workflow
 
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 6 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: Batch Context Loading + Refactor Patterns
+2. FASE 1: Parallel Batch Analysis + Triage
+3. FASE 2: Aggregated Research Decision
+4. FASE 3: Combined Plan + Single Approval
+5. FASE 4: Apply + Test Per Feature
+6. FASE 5: Batch Completion
+
 ### FASE 0: Batch Context Loading + Refactor Patterns
+
+> **Todo**: roep `TaskCreate` aan met de 6 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Read backlog for pipeline status:**
 
@@ -222,6 +233,8 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
 ```
 
 ### FASE 1: Parallel Batch Analysis + Triage
+
+> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
 
 **Goal:** Analyze ALL features in parallel, then triage into CLEAN vs HAS_FINDINGS.
 
@@ -419,6 +432,8 @@ Summary: {clean_count} clean, {findings_count} with findings
 
 ### FASE 2: Aggregated Research Decision
 
+> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+
 **Goal:** One research decision for all affected features combined (not per-feature).
 
 **Steps:**
@@ -520,6 +535,8 @@ Refactor patterns updated: {yes/no}
 
 ### FASE 3: Combined Plan + Single Approval
 
+> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+
 **Goal:** One plan combining ALL findings from ALL affected features, one user approval.
 
 **Steps:**
@@ -591,6 +608,8 @@ Refactor patterns updated: {yes/no}
 ---
 
 ### FASE 4: Apply + Test Per Feature
+
+> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
 
 **Goal:** Apply approved improvements and test, with per-feature rollback isolation.
 
@@ -692,6 +711,8 @@ IMPROVEMENTS APPLIED
 ---
 
 ### FASE 5: Batch Completion
+
+> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
 
 **Goal:** Proportional documentation, single backlog update, single commit.
 
@@ -881,6 +902,8 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
    ```
    💡 Run /core-merge {feature-name} om te integreren naar main/develop
    ```
+
+> **Todo**: markeer FASE 5 → `completed`.
 
 ---
 

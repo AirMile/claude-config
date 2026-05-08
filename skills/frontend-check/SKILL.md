@@ -31,7 +31,19 @@ Unified check & fix hub for performance, SEO, AEO (AI search optimization), resp
 
 ---
 
+## Process
+
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 5 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: Pre-flight
+2. FASE 1: Scan
+3. FASE 2: Report
+4. FASE 3: Fix
+5. FASE 4: Re-audit & Completion
+
 ## FASE 0: Pre-flight
+
+> **Todo**: roep `TaskCreate` aan met de 5 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 ### 0.1 Target Selection
 
@@ -169,6 +181,8 @@ If no match or no backlog: skip (audit can run on non-backlog pages too).
 ---
 
 ## FASE 1: Scan
+
+> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
 
 Run all selected checks. Each produces findings with severity + category.
 
@@ -815,6 +829,8 @@ Fix:      [suggestion]
 
 ## FASE 2: Report
 
+> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+
 Combined report across all audit axes:
 
 ```
@@ -919,6 +935,8 @@ multiSelect: false
 
 ## FASE 3: Fix
 
+> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+
 Implement fixes in priority order, grouped by audit category.
 
 ### Fix Order
@@ -964,6 +982,8 @@ Expected: [metric improvement]
 ---
 
 ## FASE 4: Re-audit & Completion
+
+> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
 
 ### 4.1 Re-scan
 
@@ -1049,6 +1069,8 @@ Next steps:
 
 ═════════════════════════════════════════════════════════════
 ```
+
+> **Todo**: markeer FASE 4 → `completed`.
 
 ---
 

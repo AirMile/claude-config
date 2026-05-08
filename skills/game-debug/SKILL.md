@@ -16,7 +16,25 @@ metadata:
 
 Structured 11-phase debugging: context → intake → investigate → analyze → research → fix plans → select → reproduction test → implement → verify → completion.
 
+## Process
+
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 11 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: Context Loading
+2. FASE 1: Problem Intake
+3. FASE 2: Codebase Investigation
+4. FASE 3: Root Cause Analysis
+5. FASE 4: Context7 Research
+6. FASE 5: Fix Plan Generation
+7. FASE 6: Plan Selection
+8. FASE 7: Reproduction Test
+9. FASE 8: Implementatie
+10. FASE 9: Verificatie
+11. FASE 10: Completion
+
 ## FASE 0: Context Loading
+
+> **Todo**: roep `TaskCreate` aan met de 11 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 **Stack context** (optioneel, skip wat niet bestaat):
 
@@ -94,6 +112,8 @@ Als niets beschikbaar → ga door zonder context (backwards compatible).
 ---
 
 ## FASE 1: Problem Intake
+
+> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
 
 ### Step 1: Classify
 
@@ -179,6 +199,8 @@ If "Nee" → ask for corrections, update summary, re-confirm.
 
 ## FASE 2: Codebase Investigation (Explore agent)
 
+> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+
 Spawn one Explore agent (`subagent_type="Explore"`) to investigate in an isolated context. This keeps source file reads and git output out of the main session.
 
 **Thoroughness op basis van problem type (FASE 1):**
@@ -237,6 +259,8 @@ Parse the agent's `INVESTIGATION_START...END` block — only the compact finding
 
 ## FASE 3: Root Cause Analysis
 
+> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+
 Analyze:
 
 **Pitfall match shortcut**: als `Pitfall match` in INVESTIGATION_END aanwezig en niet "geen" → voeg die hypothese bovenaan toe met confidence "high" als startpunt. Evalueer alsnog tegen evidence — als evidence tegenspreekt, degradeer naar "medium" en ga door met stap 2.
@@ -256,6 +280,8 @@ Present findings + hypothesis + confidence (high/medium/low) + spec-issue marker
 
 ## FASE 4: Context7 Research
 
+> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+
 **Skip als**: root cause is puur interne GDScript logica (geen Godot engine API's of add-on libraries betrokken) → ga direct naar FASE 5.
 
 1. `mcp__context7__resolve-library-id` for Godot-related libraries
@@ -269,6 +295,8 @@ Focus: signal patterns → correct usage, scene tree lifecycle → proper node m
 ---
 
 ## FASE 5: Fix Plan Generation
+
+> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
 
 Launch 3 agents in parallel:
 
@@ -285,6 +313,8 @@ AND: `Reproduction test assertion: {wat moet de GUT test asserten om de bug te b
 ---
 
 ## FASE 6: Plan Selection
+
+> **Todo**: markeer FASE 5 → `completed`, FASE 6 → `in_progress`.
 
 Present all 3 options with approach, changes count, risk level, and trade-offs.
 Include recommendation based on context.
@@ -319,6 +349,8 @@ Parse → fix-set.
 ---
 
 ## FASE 7: Reproduction Test
+
+> **Todo**: markeer FASE 6 → `completed`, FASE 7 → `in_progress`.
 
 **Doel**: bewijs de bug met een falende GUT test voor de fix. Maakt root cause concreet, voorkomt regressies, geeft objectief bewijs dat fix werkt.
 
@@ -373,6 +405,8 @@ Status: ✓ Bug reproduced
 
 ## FASE 8: Implementatie
 
+> **Todo**: markeer FASE 7 → `completed`, FASE 8 → `in_progress`.
+
 Apply selected fixes from chosen strategy. Document each change with file:line references.
 
 **Bij reproduction test geschreven (FASE 7)**: implementatie heeft als concrete success-criterium dat de reproduction test moet slagen. Niet meer code wijzigen dan nodig om die test groen te krijgen + de oorspronkelijke fix-plan scope.
@@ -380,6 +414,8 @@ Apply selected fixes from chosen strategy. Document each change with file:line r
 ---
 
 ## FASE 9: Verificatie
+
+> **Todo**: markeer FASE 8 → `completed`, FASE 9 → `in_progress`.
 
 ### Step 1: Reproduction test (skip als FASE 7 geskipt)
 
@@ -409,6 +445,8 @@ Vraag user te bevestigen dat de fix het oorspronkelijke probleem oplost.
 ---
 
 ## FASE 10: Completion
+
+> **Todo**: markeer FASE 9 → `completed`, FASE 10 → `in_progress`.
 
 ### Step 1: Learning Extraction
 
@@ -470,3 +508,5 @@ Next steps:
   1. /game-verify {feature} → herverificatie als feature actief
   2. /game-build {feature} → als rebuild nodig is
 ```
+
+> **Todo**: markeer FASE 10 → `completed`.

@@ -27,7 +27,19 @@ Not for:
 
 ## Workflow
 
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 7 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. Step 1: Detection & Setup
+2. Step 2: Mode Selection
+3. Step 3: Gather Context
+4. Step 4: Inline Review Analysis
+5. Step 5: Confidence Scoring & Filtering
+6. Step 6: Generate Feedback
+7. Step 7: Output & PR Integration
+
 ### Step 1: Detection & Setup
+
+> **Todo**: roep `TaskCreate` aan met de 7 fase-items (zie boven). Markeer Step 1 → `in_progress` via `TaskUpdate`.
 
 1. Get current branch: `git branch --show-current`
 2. Validate not on main/master/develop — if so, stop with error message
@@ -43,6 +55,8 @@ Not for:
 
 ### Step 2: Mode Selection
 
+> **Todo**: markeer Step 1 → `completed`, Step 2 → `in_progress`.
+
 Use AskUserQuestion with 2 options:
 
 - **Quick review** — Inline analysis (compliance, bugs, history). Fast, focused on issues.
@@ -50,11 +64,15 @@ Use AskUserQuestion with 2 options:
 
 ### Step 3: Gather Context
 
+> **Todo**: markeer Step 2 → `completed`, Step 3 → `in_progress`.
+
 1. Read CLAUDE.md (global `~/.claude/CLAUDE.md` + project-level `CLAUDE.md` files)
 2. Identify languages/frameworks in the changed files
 3. Prepare git blame for changed files: for each changed file, run `git blame <merge-base>..HEAD -- <file>`
 
 ### Step 4: Inline Review Analysis
+
+> **Todo**: markeer Step 3 → `completed`, Step 4 → `in_progress`.
 
 Perform 3 analysis passes on the diff. All passes use the same diff and context — no agents needed. Toon een ASCII diagram van de parallelle review architectuur (3 passes → merge → filter → output).
 
@@ -114,6 +132,8 @@ Call Context7 inline for the detected languages/frameworks:
 
 ### Step 5: Confidence Scoring & Filtering
 
+> **Todo**: markeer Step 4 → `completed`, Step 5 → `in_progress`.
+
 Apply filtering across all passes:
 
 **Filter threshold: 70+** — only include findings with confidence >= 70.
@@ -140,6 +160,8 @@ Discard findings that match false positive criteria:
 **Zero-findings self-check:** Als alle passes samen 0 findings rapporteren bij diff >50 regels → heroverweeg: "Ben ik optimistisch? Zou een kritische reviewer dit laten passeren?" Doorloop de diff nogmaals met focus op gemiste issues.
 
 ### Step 6: Generate Feedback
+
+> **Todo**: markeer Step 5 → `completed`, Step 6 → `in_progress`.
 
 Format output as:
 
@@ -186,10 +208,14 @@ If no issues found above threshold, say so clearly and focus on positives.
 
 ### Step 7: Output & PR Integration
 
+> **Todo**: markeer Step 6 → `completed`, Step 7 → `in_progress`.
+
 - **If open PR exists**: use AskUserQuestion — "Wil je dit als PR comment posten?"
   - Yes: post via `gh pr comment <number> --body "..."`
   - No: show locally only
 - **If no PR**: show locally only
+
+> **Todo**: markeer Step 7 → `completed`.
 
 ---
 

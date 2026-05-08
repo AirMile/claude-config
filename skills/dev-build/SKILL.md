@@ -30,7 +30,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), a
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TodoWrite` aan met deze 6 items (status `pending`), daarna markeer per fase `in_progress` aan begin en `completed` aan einde. Bij context compaction blijft TodoWrite-state zichtbaar — geen risico op vergeten fases.
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 6 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
 
 1. FASE 0: Context Loading
 2. FASE 1: Technique Mapping
@@ -41,7 +41,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), a
 
 ### FASE 0: Context Loading
 
-> **Todo**: roep `TodoWrite` aan met de 6 fase-items (zie boven). Markeer FASE 0 → `in_progress`.
+> **Todo**: roep `TaskCreate` aan met de 6 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 **Capture git baseline** (eerste actie):
 

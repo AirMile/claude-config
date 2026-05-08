@@ -6,7 +6,26 @@ Interactieve wizard voor nieuwe projecten. User beantwoordt vragen over stack en
 
 ---
 
+## Process
+
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 12 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. Phase 1: Detect & Configure
+2. Phase 2: Collect Project Info
+3. Phase 3: Generate Project
+4. Phase 4: Install & Verify
+5. Phase 5: Configure Claude
+6. Phase 5b: Auto Dev Tools
+7. Phase 6: Update CLAUDE.md
+8. Phase 7: Stack Research
+9. Phase 7b: Dashboard Init
+10. Phase 7c: Setup Task Seeding
+11. Phase 8: Commit
+12. Phase 9: Summary
+
 ## Phase 1: Detect & Configure
+
+> **Todo**: roep `TaskCreate` aan met de 12 fase-items (zie boven). Markeer Phase 1 → `in_progress` via `TaskUpdate`.
 
 1. **Language selection** — AskUserQuestion (single-select):
    - Options: English, Nederlands, Deutsch, Français, Español
@@ -23,9 +42,11 @@ Interactieve wizard voor nieuwe projecten. User beantwoordt vragen over stack en
 
 ## Phase 2: Collect Project Info
 
+> **Todo**: markeer Phase 1 → `completed`, Phase 2 → `in_progress`.
+
 Ask sequentially, one question per response:
 
-1. **Project description** — AskUserQuestion with 2-3 example categories as options. User types their own via "Other".
+1. **Project description** — Ask in plain text: "Beschrijf kort wat je project doet en voor wie het bedoeld is."
 2. **Project name** — AskUserQuestion (single-select):
    - "Generate name (Recommended)" — suggest 2-3 short, kebab-case names based on the description
    - "I'll type my own" — user provides via "Other"
@@ -35,13 +56,17 @@ Ask sequentially, one question per response:
    - Offer relevant frameworks/tools based on project type
 5. **Suggestions** — AskUserQuestion (multi-select):
    - Offer complementary libraries based on chosen stack
-   - If more than 7 options (see "Modal Option Cap" in main SKILL.md), split per category:
-     - **Styling/UI** — Tailwind, shadcn/ui, CSS Modules, styled-components, etc.
-     - **Testing** — Vitest, Jest, Playwright, Cypress, etc.
-     - **State/Data** — Zustand, Redux, TanStack Query, SWR, etc.
-     - **Utilities** — TypeScript, ESLint, Prettier, Zod, Husky, etc.
+   - If more than 7 options (see "Modal Option Cap" in main SKILL.md), split per category.
+     Combineer korte categorieën in één AskUserQuestion call (1-4 questions ondersteund):
+     - **Call 1 — Styling/UI** (eigen call): Tailwind, shadcn/ui, CSS Modules, styled-components, etc.
+     - **Call 2 — Testing + Utilities** (gecombineerd):
+       - Testing: Vitest, Jest, Playwright, Cypress, etc.
+       - Utilities: TypeScript, ESLint, Prettier, Zod, Husky, etc.
+     - **Call 3 — State/Data** (alleen tonen als relevant voor de stack): Zustand, Redux, TanStack Query, SWR, etc.
+     - **Call 4 — Forms** (alleen tonen voor React/Vue/Svelte stack): react-hook-form + zod (tier-1, recommended), Formik, VeeValidate (Vue), Felte (Svelte)
 6. **Web standards** (skip for game/CLI/desktop) — Three single-select questions:
-   - Data fetching strategy (if React/Vue): plain fetch, SWR, TanStack Query
+   - Data fetching strategy (if React/Vue + externe API/backend): plain fetch, SWR, TanStack Query
+     **Skip** als het project geen externe data sources heeft (bijv. localStorage-only, in-memory state, static content)
    - Accessibility: WCAG 2.1 AA, WCAG 2.1 A, Minimal
    - Responsive: Mobile-first, Desktop-first, Fixed width
 
@@ -69,6 +94,8 @@ Na bevestiging: toon een ASCII flowchart van de initialisatiepaden op basis van 
 
 ## Phase 3: Generate Project
 
+> **Todo**: markeer Phase 2 → `completed`, Phase 3 → `in_progress`.
+
 1. **Fetch latest versions** via `npm view` / `pip show` / `cargo search` or equivalent for the stack's package manager.
 
 2. **Generate project files** appropriate for the chosen stack. Include package manifest, framework config, linting/formatting config, `.env.example` (only relevant vars), and `.gitignore`.
@@ -80,11 +107,15 @@ Na bevestiging: toon een ASCII flowchart van de initialisatiepaden op basis van 
 
 ## Phase 4: Install & Verify
 
+> **Todo**: markeer Phase 3 → `completed`, Phase 4 → `in_progress`.
+
 Install dependencies and run build to verify setup compiles. Non-blocking: continue setup even if install/build fails.
 
 ---
 
 ## Phase 5: Configure Claude
+
+> **Todo**: markeer Phase 4 → `completed`, Phase 5 → `in_progress`.
 
 ### Documentation Generators
 
@@ -119,10 +150,23 @@ Write `.claude/settings.local.json` with `permissions.allow` and `permissions.de
 
 ### Code Formatter (PostToolUse Hook)
 
-Auto-format after every Write/Edit. Create `.claude/hooks/format-on-save.cjs`:
+Auto-format after every Write/Edit.
 
-- Node.js script that reads stdin JSON, extracts file path, checks extension, runs formatter
-- Use `.cjs` to avoid ES Module issues
+**Step 1 — Check bestaande hook:**
+
+```bash
+ls -la .claude/hooks/format-on-save.cjs 2>/dev/null
+```
+
+Als het bestand al bestaat (via symlink naar globale claude-config of project-lokaal): lees het en check of het de project-stack ondersteunt (bijv. Biome via `biome.json` detectie). Zo ja, skip aanmaken — referenceer alleen in `settings.local.json`.
+
+**Step 2 — Alleen aanmaken als geen bestaande hook:**
+
+Maak `.claude/hooks/format-on-save.cjs` aan met:
+
+- Node.js script dat stdin JSON leest, file path extraheert, extension checkt, formatter aanroept
+- Gebruik `.cjs` om ES Module issues te vermijden
+- BELANGRIJK: schrijf NIET naar `.claude/hooks/` als die map een symlink is naar een gedeelde repo (check via `readlink .claude/hooks`)
 
 Formatter selection per stack:
 
@@ -138,10 +182,14 @@ Formatter selection per stack:
 | C/C++                                   | clang-format  | `clang-format -i`         |
 | Dart/Flutter                            | dart format   | `dart format`             |
 
-Add hook to `settings.local.json`:
+Voeg de hook toe aan `settings.local.json` — in dezelfde file als `permissions` (niet apart schrijven):
 
 ```json
 {
+  "permissions": {
+    "allow": ["..."],
+    "deny": ["..."]
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -160,7 +208,38 @@ Add hook to `settings.local.json`:
 
 ---
 
+## Phase 5b: Auto Dev Tools
+
+> **Todo**: markeer Phase 5 → `completed`, Phase 5b → `in_progress`.
+
+Installeer dev-tools die framework-conditional zijn en geen user-input nodig hebben. Geen modal, geen confirmation — auto-install bij match, silent skip bij mismatch.
+
+### inspect-overlay
+
+**Trigger:** `stack.framework` ∈ `{React+Vite, Next.js}`. Bepaal dit uit Phase 2.4 stack-keuze.
+
+| Stack uit Phase 2.4                                                               | Actie                                                                  |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| React + Vite                                                                      | Install via `setup-guide.md#Setup — Vite`                              |
+| Next.js                                                                           | Install via `setup-guide.md#Setup — Next.js` (Babel full mode default) |
+| Alle andere (incl. Vue, Svelte, Astro, Nuxt, game, CLI, backend, mobile, desktop) | Skip silent — geen output                                              |
+
+**Auto-mode aannames** (geen modals tonen):
+
+- **Vite-pad**: greenfield gebruikt `@vitejs/plugin-react` (Babel) — geen SWC-switch nodig. Volg setup-guide stappen 1-6 onder `## Setup — Vite` → `### Install & Configure`.
+- **Next.js-pad**: kies Babel full mode automatisch. Volg setup-guide `### Babel Plugin (Full Mode)` accept-pad én `### Install` stappen 1-6.
+
+**Skip de "Restart dev server" stap** — in greenfield draait er nog geen dev server.
+
+**Track voor Phase 9 Summary** of de overlay is geïnstalleerd (ja/nee + framework).
+
+**Geen project.json update nodig** — inspect-overlay is dev-only, geen `stack.*` key.
+
+---
+
 ## Phase 6: Update CLAUDE.md
+
+> **Todo**: markeer Phase 5b → `completed`, Phase 6 → `in_progress`.
 
 Update `## User Preferences` with language from Phase 1.
 
@@ -179,14 +258,17 @@ Generate CLAUDE.md following the **canonical structure** from `references/claude
 
 ## Phase 7: Stack Research
 
+> **Todo**: markeer Phase 6 → `completed`, Phase 7 → `in_progress`.
+
 Generate `.claude/research/stack-baseline.md` — reusable framework conventions that avoid duplicate Context7 queries in other skills.
 
-**Run as Explore agent** (`subagent_type="Explore"`) for context isolation — Context7 queries for multiple stack technologies produce substantial output that shouldn't stay in the main session.
+**Run as general-purpose agent** (`subagent_type="general-purpose"`) for context isolation — Context7 queries for multiple stack technologies produce substantial output that shouldn't stay in the main session. The agent needs Write access; Explore is read-only and won't work.
 
-1. For each major technology in the stack, query Context7 (`resolve-library-id` → `query-docs`)
-2. Distill per technology: conventions (5-10), patterns (5-10), idioms (3-5), testing (3-5), pitfalls (3-5)
-3. Write directly to `.claude/research/stack-baseline.md` — no script needed
-4. Include Context7 library IDs table at the bottom for follow-up queries
+1. Maak eerst de map aan: `mkdir -p .claude/research`
+2. Voor elke major technologie in de stack, query Context7 (`resolve-library-id` → `query-docs`)
+3. Distilleer per technologie: conventions (5-10), patterns (5-10), idioms (3-5), testing (3-5), pitfalls (3-5)
+4. Schrijf het resultaat direct naar `.claude/research/stack-baseline.md`
+5. Voeg een Context7 library IDs tabel onderaan toe voor follow-up queries
 
 **Game projects:** Also generate `.claude/research/architecture-baseline.md` with scene tree patterns, node types, signals, state machines.
 
@@ -194,13 +276,15 @@ Generate `.claude/research/stack-baseline.md` — reusable framework conventions
 
 ## Phase 7b: Dashboard Init
 
+> **Todo**: markeer Phase 7 → `completed`, Phase 7b → `in_progress`.
+
 **Goal:** Maak `.project/project.json` aan als het eerste dashboard bestand voor dit project. core-setup is de eerste skill die draait — alle latere skills bouwen hierop voort.
 
-Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
+Zie `{skills_root}/shared/DASHBOARD.md` voor het volledige schema en merge-strategieën (te vinden via `find ~/.claude -name DASHBOARD.md` of in de claude-config repo).
 
 **Steps:**
 
-1. Maak `.project/project.json` aan met het volledige lege schema uit `shared/DASHBOARD.md`
+1. Check eerst of `.project/project.json` al bestaat (bijv. uit een initiële commit). Zo ja: lees + merge i.p.v. overschrijven. Zo nee: maak aan met het volledige lege schema uit `shared/DASHBOARD.md`
 2. Vul `concept` sectie (preferred: markdown-file, niet inline):
    - `name`: projectnaam (uit Phase 1/2 user answers)
    - `pitch`: 1-2 zinnen samenvatting (uit user answers)
@@ -224,8 +308,10 @@ Zie `shared/DASHBOARD.md` voor het volledige schema en merge-strategieën.
    - Write `.project/project-context.json`
 6. Set skip-worktree op alle `.project/` bestanden zodat lokale wijzigingen git status/pull niet verstoren:
    ```bash
+   git add --sparse .project/
    git ls-files .project/ | xargs git update-index --skip-worktree
    ```
+   Eerst staging is verplicht — `update-index --skip-worktree` werkt alleen op bestanden die in de index staan.
 
 **Output:**
 
@@ -240,6 +326,8 @@ Packages: {N} packages
 ---
 
 ## Phase 7c: Setup Task Seeding (frontend projects only)
+
+> **Todo**: markeer Phase 7b → `completed`, Phase 7c → `in_progress`.
 
 **Goal:** Seed aanbevolen setup-tasks naar de backlog zodat de user een duidelijk vervolgpad heeft.
 
@@ -293,6 +381,8 @@ Als "Nu /frontend-tokens" → exit core-setup, draai `/frontend-tokens` direct.
 
 ## Phase 8: Commit (optional)
 
+> **Todo**: markeer Phase 7c → `completed`, Phase 8 → `in_progress`.
+
 AskUserQuestion (single-select): Commit setup files now, or skip.
 
 If committing: stage relevant files, create commit with conventional commit format (e.g., `build: scaffold [stack] project`).
@@ -300,6 +390,8 @@ If committing: stage relevant files, create commit with conventional commit form
 ---
 
 ## Phase 9: Summary
+
+> **Todo**: markeer Phase 8 → `completed`, Phase 9 → `in_progress`.
 
 Show a concise summary of what was set up:
 
@@ -313,6 +405,15 @@ Useful commands:
   {test command}          → run tests
   {build command}         → production build
 ```
+
+**Als Phase 5b inspect-overlay heeft geïnstalleerd**, voeg toe na het code block:
+
+```
+Dev tools:
+  Inspect overlay         → Cmd+Shift+X (Mac) / Ctrl+Shift+X (Win/Linux) om te togglen
+```
+
+Voor Next.js Babel full mode, voeg ook toe: `Note: Turbopack uitgeschakeld (Babel full mode voor exacte file:line refs).`
 
 **Next steps** — pas suggesties aan op basis van project type uit Phase 2.3 (Web/Backend/Fullstack/Game/Mobile/Desktop/CLI). Toon in deze volgorde:
 
@@ -337,3 +438,5 @@ Useful commands:
 - `/core-setup [module]` — voeg libraries toe (Tailwind, Vitest, Playwright, Biome, etc.)
 - `/frontend-tokens` — design tokens instellen (alleen tonen als Phase 7c "Later" koos en `theme` sectie in `project.json` nog leeg is)
 - `/frontend-design [feature]` — visuele design spec voor een feature
+
+> **Todo**: markeer Phase 9 → `completed`.

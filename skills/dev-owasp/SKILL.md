@@ -11,7 +11,19 @@ metadata:
 
 Full OWASP Top 10:2025 scan: scope → 10 parallel scanners → aggregated report → 3 fix strategies → implement.
 
+## Process
+
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 5 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. FASE 1: Scope
+2. FASE 2: Parallel Scan
+3. FASE 3: Aggregation & Report
+4. FASE 4: Fix Plans
+5. FASE 5: Selection & Implementation
+
 ## FASE 1: Scope
+
+> **Todo**: roep `TaskCreate` aan met de 5 fase-items (zie boven). Markeer FASE 1 → `in_progress` via `TaskUpdate`.
 
 ### Step 1: Detect tech stack
 
@@ -63,6 +75,8 @@ Als project.json niet bestaat → ga door zonder (backwards compatible).
 
 ## FASE 2: Parallel Scan
 
+> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+
 Launch 10 scanner agents in parallel via Task tool (zie `shared/SKILL-PATTERNS.md#parallel-dispatch` voor dispatch-criteria en integratie-stappen):
 
 | Agent             | Category                    | Risk     |
@@ -92,6 +106,8 @@ Run all 10 in background. Collect results when all complete.
 ---
 
 ## FASE 3: Aggregation & Report
+
+> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
 
 Analyze:
 
@@ -143,6 +159,8 @@ If "Nee" → stop. Show report.
 
 ## FASE 4: Fix Plans
 
+> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+
 Launch 3 fix agents in parallel via Task tool:
 
 | Agent               | Philosophy             | Scope                               |
@@ -157,19 +175,30 @@ Each receives: aggregated scan results with all findings, severity counts, file 
 
 ## FASE 5: Selection & Implementation
 
+> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+
 ### Step 1: Present options
 
 Show all 3 plans side by side:
 
 ```
+
+
+### Step 1: Present options
+
+Show all 3 plans side by side:
+
+```
+
 FIX STRATEGIES
-|          | Minimal       | Pragmatic   | Extensive   |
+| | Minimal | Pragmatic | Extensive |
 | -------- | ------------- | ----------- | ----------- |
-| Fixes    | [N]           | [N]         | [N]         |
-| Files    | [N]           | [N]         | [N]         |
-| Effort   | [est]         | [est]       | [est]       |
-| Risk     | Low           | Medium      | Medium-High |
-| Coverage | CRITICAL only | CRIT + HIGH | All         |
+| Fixes | [N] | [N] | [N] |
+| Files | [N] | [N] | [N] |
+| Effort | [est] | [est] | [est] |
+| Risk | Low | Medium | Medium-High |
+| Coverage | CRITICAL only | CRIT + HIGH | All |
+
 ```
 
 ### Step 2: Select strategy
@@ -191,18 +220,21 @@ Apply selected fix plan. Per fix: show file:line, apply change, verify syntax.
 ### Step 4: Summary
 
 ```
+
 OWASP AUDIT COMPLETE
 Score: [before] → estimated [after]
 Strategy: [chosen]
 Fixes applied: [N]
 Files modified: [N]
 Remaining items: [N] (deferred)
+
 ```
 
----
+> **Todo**: markeer FASE 5 → `completed`.
 
 ## Best Practices
 
 ### Language
 
 Follow the Language Policy in CLAUDE.md.
+```

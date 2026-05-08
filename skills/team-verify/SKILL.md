@@ -44,7 +44,24 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 ## Workflow
 
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 12 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+
+1. FASE 0: Context Detection
+2. FASE 0.5: Completeness Check
+3. FASE 1: Research + Scenario Generation
+4. FASE 2: Test Plan + Classification
+5. FASE 3: Automated Test Execution
+6. FASE 4: Manual Test Execution
+7. FASE 4b: Combined Results
+8. FASE 4c: Coverage Adequacy Analysis
+9. FASE 5: Results Report + Action Choice
+10. FASE 5c: Fix Loop
+11. FASE 5d: Regression Check
+12. FASE 6: Update + Feedback
+
 ### FASE 0: Context Detection
+
+> **Todo**: roep `TaskCreate` aan met de 12 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Get branch and project info:**
 
@@ -144,6 +161,8 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 ---
 
 ### FASE 0.5: Completeness Check
+
+> **Todo**: markeer FASE 0 → `completed`, FASE 0.5 → `in_progress`.
 
 **Skip if:** `BRANCH_ONLY` mode (no context available).
 
@@ -264,6 +283,8 @@ Compare the code diff against the available context to verify completeness.
 
 ### FASE 1: Research + Scenario Generation (Explore agent)
 
+> **Todo**: markeer FASE 0.5 → `completed`, FASE 1 → `in_progress`.
+
 **Goal:** Research test strategies and generate scenarios. Runs in a single Explore agent to keep Context7 results and scenario details out of the main context.
 
 Spawn one Explore agent (`subagent_type="Explore"`, thoroughness: "very thorough") with the following prompt:
@@ -314,6 +335,8 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
 ---
 
 ### FASE 2: Test Plan + Classification
+
+> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
 
 **Goal:** Classify scenarios into AUTO/MANUAL, generate test data, set up dev server.
 
@@ -407,6 +430,8 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
 
 ### FASE 3: Automated Test Execution (Task Agent)
 
+> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+
 **When:** There are AUTO items after classification and dev server is confirmed running.
 
 **Launch a Task agent** to execute all AUTO items in a separate context window. This prevents snapshot/screenshot data from consuming the main conversation context.
@@ -471,6 +496,8 @@ AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}
 
 ### FASE 4: Manual Test Execution (interactive)
 
+> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+
 **When:** There are MANUAL items (originally classified or reclassified from TOOL_ERROR fallback).
 
 Show setup instructions once, then loop through each MANUAL item:
@@ -524,6 +551,8 @@ Use AskUserQuestion per item:
 
 ### FASE 4b: Combined Results
 
+> **Todo**: markeer FASE 4 → `completed`, FASE 4b → `in_progress`.
+
 Merge automated (FASE 3) and manual (FASE 4) results:
 
 ```
@@ -543,6 +572,8 @@ TOTAAL PASS: {n}  TOTAAL FAIL: {n}
 ---
 
 ### FASE 4c: Coverage Adequacy Analysis
+
+> **Todo**: markeer FASE 4b → `completed`, FASE 4c → `in_progress`.
 
 **Trigger:** Altijd na FASE 4b (ongeacht of alles PASS of er FAILs zijn).
 
@@ -601,6 +632,8 @@ Classificeer de voorgestelde scenarios (FASE 2 logica), voer ze uit (FASE 3/4 lo
 
 ### FASE 5: Results Report + Action Choice
 
+> **Todo**: markeer FASE 4c → `completed`, FASE 5 → `in_progress`.
+
 **Goal:** Combined report with requirement coverage, then choose: feedback or fix.
 
 ```
@@ -638,6 +671,8 @@ Use AskUserQuestion:
 ---
 
 ### FASE 5c: Fix Loop
+
+> **Todo**: markeer FASE 5 → `completed`, FASE 5c → `in_progress`.
 
 **When:** User chose "Zelf fixen" or "Beide" in FASE 5.
 
@@ -694,6 +729,8 @@ After fix loop completes → proceed to FASE 5d.
 
 ### FASE 5d: Regression Check
 
+> **Todo**: markeer FASE 5c → `completed`, FASE 5d → `in_progress`.
+
 **Skip when:**
 
 - Geen fixes toegepast in FASE 5c
@@ -738,6 +775,8 @@ Use AskUserQuestion:
 ---
 
 ### FASE 6: Update + Feedback
+
+> **Todo**: markeer FASE 5d → `completed`, FASE 6 → `in_progress`.
 
 #### Step 1: Parallel Sync (feature.json + backlog + dashboard) — volg `shared/SYNC.md` 3-File Sync Pattern
 
@@ -864,3 +903,5 @@ Use AskUserQuestion:
 ## Mode Comparison
 
 Zie FASE 0 stap 4 voor de mode-definitietabel (BRIEF_REVIEW / TODO_REVIEW / BRANCH_ONLY). De gedragsonderscheiden per fase staan inline bij elke fase die een `Skip if:` of modusvereiste benoemt.
+
+> **Todo**: markeer FASE 6 → `completed`.
