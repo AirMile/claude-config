@@ -78,7 +78,7 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 3. **Find context (in order of richness):**
 
-   a. **feature.json** — if feature name given → `.project/features/{name}/feature.json`. Otherwise → scan `.project/features/*/feature.json` for features with status DOING + stage built, or with an assignee.
+   a. **feature.json** — if feature name given → `.project/features/{name}/feature.json`. Otherwise → scan `.project/features/*/feature.json` for features with status DOING + stage built, or with `externalRef.assignees` set.
 
    b. **Backlog TODO** — if no feature.json found, check `.project/backlog.html` for a TODO/DOING item matching the feature name or branch name. Extract the item's description/title.
 
@@ -109,6 +109,10 @@ Verify teammate code delivery. Detects available context (feature.json with requ
    Context:   {feature.json | backlog TODO | git diff only}
    Status:    {backlog status: DOING/DONE/etc or "onbekend"}
    ```
+
+   <!-- modal-buffer -->
+
+   Print 8 blank lines as whitespace buffer (keeps the context block above visible when the modal panel opens).
 
    Use AskUserQuestion to confirm:
    - header: "Test Modus"
@@ -176,14 +180,14 @@ Compare the code diff against the available context to verify completeness.
 
 2. **Get relevant diff:**
 
-   Filter commits by assignee name if known:
+   Filter commits by assignee name if known (lees `externalRef.assignees[0]` uit feature.json):
 
    ```bash
-   git log --author="{assignee}" --oneline --since="2 weeks ago" -- .
+   git log --author="{externalRef.assignees[0]}" --oneline --since="2 weeks ago" -- .
    git diff $(git merge-base HEAD main)..HEAD
    ```
 
-   Fallback if on main or no assignee: diff last N commits relevant to the feature.
+   Fallback if on main or no assignee in externalRef: diff last N commits relevant to the feature.
 
 3. **Spawn Explore agent** for completeness analysis:
 
@@ -267,6 +271,10 @@ Compare the code diff against the available context to verify completeness.
    ```
 
 5. **If coverage < 100%:**
+
+   <!-- modal-buffer -->
+
+   Print 8 blank lines as whitespace buffer (keeps the coverage report above visible when the modal panel opens).
 
    Use AskUserQuestion:
    - header: "Incomplete"
@@ -836,7 +844,7 @@ Use AskUserQuestion:
 
 #### Step 2: Teammate Feedback
 
-**Skip if:** `BRANCH_ONLY` mode (no assignee context).
+**Skip if:** `BRANCH_ONLY` mode (no externalRef.assignees context).
 **Runs in:** `BRIEF_REVIEW` and `TODO_REVIEW` modes.
 
 Generate structured feedback based on test results, completeness check, and any fixes applied.
@@ -849,7 +857,7 @@ Generate structured feedback based on test results, completeness check, and any 
 **If all PASS (or all fixed):**
 
 ```
-FEEDBACK VOOR {assignee}
+FEEDBACK VOOR {externalRef.assignees[0] ?? "teammate"}
 
 Feature: {feature-name}
 Status: ✓ Alles PASS
@@ -867,7 +875,7 @@ Klaar voor merge.
 **If FAIL or MISSING items remain:**
 
 ```
-FEEDBACK VOOR {assignee}
+FEEDBACK VOOR {externalRef.assignees[0] ?? "teammate"}
 
 Feature: {feature-name}
 Status: {pass}/{total} PASS
@@ -891,7 +899,7 @@ Volgende stap: {concrete action items for remaining issues}
 Use AskUserQuestion:
 
 - header: "Feedback"
-- question: "Feedback voor {assignee} gegenereerd. Wat wil je ermee doen?"
+- question: "Feedback voor {externalRef.assignees[0] ?? 'teammate'} gegenereerd. Wat wil je ermee doen?"
 - options:
   - label: "Opslaan als bestand (Recommended)", description: "Sla op in .project/features/{feature}/feedback.md"
   - label: "Toon in chat", description: "Print feedback in conversatie (handmatig kopiëren)"
