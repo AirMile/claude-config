@@ -72,6 +72,9 @@ Lees `.project/project.json` en `.project/project-context.json`. Gebruik voor:
 - Bestaand DB schema (voorkom conflicten)
 - Code patterns om te volgen
 - Learnings uit eerdere features
+- `theme.cssVars` — aanwezig en niet leeg: log `"Theme loaded"`. Leeg of ontbrekend: log `"Theme leeg — fallback defaults (shared/TOKENS.md) worden gebruikt"`.
+
+**Token-bootstrap vangnet** (alleen als `feature.hasUI === true` of `IS_COMPONENT_BUILD === true`): voer de Bootstrap Procedure uit `shared/TOKENS.md` uit. Volledig idempotent — guards skippen automatisch als Tailwind ontbreekt of `tokens.css` al bestaat.
 
 **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
 
@@ -80,7 +83,6 @@ Configuratie:
 ```
 scopes: [component]
 pitfall-prefix: true
-global-memory: true
 current-feature: <feature-name>
 ```
 
@@ -362,6 +364,7 @@ Bij steps met 1 requirement of bij overlap, voor elke requirement sequentieel:
 4. **Stack-aware enforcement**:
    - **Code clarity**: descriptieve namen boven comments. Wel comments voor: niet-obvioze "waarom" beslissingen, workarounds, compatibility notes. Volg bestaande project comment-stijl.
    - **Code rules**: volg `shared/RULES.md` — Algemeen (R007-R009) + stack-specifieke secties. Bij twijfel: MUST_DO regels altijd, SHOULD_DO regels tenzij bewuste afwijking met reden.
+   - **Token enforcement** (alleen voor `.tsx`/`.jsx`/`.vue`/`.svelte` — skip voor API routes, tests, config): gebruik altijd token-namen (`bg-primary`, `text-foreground`) — nooit hex literals of `bg-[#hex]`. Theme leeg → gebruik fallback defaults uit `shared/TOKENS.md`. Run na elke Write een grep voor T101 (`#[0-9a-fA-F]{3,8}`) en T102 (`bg-\[#`, `text-\[#`) op het gegenereerde bestand — vervang violations direct vóór de output.
 5. **Update feature.json** na elke REQ: zet `requirements[].status` → `"built"` en voeg `technique` + `syncNote` toe. Bij Implementation Only: voeg ook `skipTestReason` toe (`visual-only`, `config-only`, of `prototype`). Dit bewaart voortgang bij context compaction.
 6. Output per requirement:
    ```
@@ -457,59 +460,31 @@ Richtlijnen:
 
 **PAGE-seeding** (safety net — frontend projects only):
 
-Als tijdens build nieuwe page-routes zijn ontstaan die **niet al in `/dev-define` zijn geseedd** (check `data.features.find(f => f.source === "/dev-define" && f.parentFeature === "{feature-name}")`), detecteer ze via dezelfde patronen als dev-define en vraag de user:
+Volg [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) voor het canonieke protocol.
 
-```yaml
-header: "Nieuwe pages gebouwd"
-question: "Tijdens build zijn {N} pages gebouwd die nog geen eigen backlog-todo hebben. Toevoegen voor de design → convert → check pipeline?"
-options:
-  - label: "Ja (Recommended)"
-    description: "Voeg PAGE-todo toe per nieuw gebouwde page"
-  - label: "Nee"
-    description: "Overslaan"
-multiSelect: false
-```
+**Trigger (safety net):** zelfde patronen als dev-define. Skip kandidaten die al door dev-define geseedd zijn: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`. Resolution: batch "Ja" / "Nee".
 
-Per bevestigde page → voeg toe aan `data.features[]` met `source: "/dev-build"`, `parentFeature: "{feature-name}"`, `phase: "P3"`, `status: "TODO"`, `type: "PAGE"`, `auto: true`.
+**Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `PAGE`
 
 **COMPONENT design sync** (alleen als `IS_COMPONENT_BUILD = true`):
 
 Na succesvolle build: update `project.json#design.components[]` — zoek op naam, zet `status: "BLT"`. Niet gevonden → voeg toe met status `"BLT"`, scope `COMPONENT_SCOPE`. Update ook `project-context.json#components[]` inventory: check op naam → nieuw: push `{ name, src: COMPONENT_OUTPUT_PATH, exports: ["{Name}"], variants, sizes }` → bestaand: update `src`.
 
-**Sub-component Reuse-Discovery** (frontend projects only — skip voor non-frontend):
+**Sub-component Reuse-Discovery** (frontend projects only):
 
-Na generatie van alle requirement-code: scan de gegenereerde bestanden op herhalende, uitbreid-bare sub-patterns die als los component herbruikbaar zouden zijn buiten deze feature. Detecteer:
+Volg [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) voor het canonieke protocol.
 
-- Inline JSX-blocks die dezelfde structuur herhalen (≥2x in hetzelfde bestand of ≥1x in meerdere bestanden van deze feature)
-- Stuk code dat een duidelijke visuele of functionele eenheid vormt met eigen props en rendering
+**Trigger:** herhalend JSX-block na code-gen — ≥2x in hetzelfde bestand of ≥1x over meerdere bestanden van dezelfde feature. Kandidaten: duidelijke visuele/functionele eenheid met eigen props en rendering.
 
-**Dedup**: check `project.json#design.components[]` en `project-context.json#components[]` op naam-overlap. Check `feature.json#suggestionsLog[]` — eerder rejected van `dev-build`? → skip. Van andere skill? → mag voorgesteld worden.
-
-Gevonden kandidaten → AskUserQuestion:
-
-```yaml
-header: "Sub-components gevonden"
-question: "Tijdens code-generatie zijn herbruikbare sub-patterns ontstaan. Promoten als COMPONENT-todo?"
-options:
-  - label: "{naam} — {korte beschrijving}", description: "Maak COMPONENT-todo (scope: atomic/section)"
-  - label: "..." (één per kandidaat)
-  - label: "Overslaan", description: "Inline laten"
-multiSelect: true
-```
-
-Per geaccepteerd: append backlog + `design.components[]` (status: IDEA) + `feature.json#suggestionsLog[]` (accepted).
-Per afgewezen: log in `suggestionsLog[]` (rejected).
+**Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
 
 **PAGE-suggesties via COMPONENT-links** (alleen als `IS_COMPONENT_BUILD = true`):
 
-Als het gebouwde component linkt naar routes (via `<Link href="...">` of `router.push(...)`) die niet in `project.json#design.pages[]` of `backlog.html` bestaan: toon suggestie:
+Volg [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) voor het canonieke protocol.
 
-```
-Onbekende route gevonden: {route}
-Wil je een PAGE-todo toevoegen voor {route}?
-```
+**Trigger (COMPONENT→route):** scan `<Link href="...">` en `router.push(...)` in gegenereerde bestanden. Kandidaat als route niet voorkomt in `design.pages[]` of `backlog.html`. Resolution: per route AskUserQuestion "Ja, PAGE-todo toevoegen (Recommended)" / "Overslaan".
 
-AskUserQuestion: "Ja, PAGE-todo toevoegen (Recommended)" | "Overslaan". Per geaccepteerde route → voeg PAGE-todo toe aan backlog.
+**Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `PAGE`
 
 **Learning extraction** (na feature.json sync): schrijf naar `project-context.json learnings[]` (append-only, identiek formaat als `dev-verify`/`dev-refactor`):
 

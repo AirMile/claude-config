@@ -132,6 +132,10 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    isComponent = IS_COMPONENT_VERIFY === true
    ```
 
+   **Token scan** (alleen als `hasUI = true` of `isComponent = true`):
+
+   Grep alle files in `feature.json files[]` die `.tsx`, `.jsx`, `.vue`, `.svelte` matchen voor T101 (`#[0-9a-fA-F]{3,8}` in JSX/className) en T102 (`bg-\[#`, `text-\[#`). Gevonden violations → voeg AUTO/CLI test-item toe: `"Token violations: {N} hardcoded waarden (T101/T102)"`, fix direct via `shared/TOKENS.md` mapping. Geen violations → skip (geen output).
+
    **COMPONENT extra check** (alleen als `isComponent = true`): voeg verplicht test-item toe:
 
    ```json
@@ -347,6 +351,10 @@ GECOMBINEERDE RESULTATEN: {feature-name}
 | # | Test | Type | Resultaat |
 |---|----- |------|-----------|
 ```
+
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the results table above visible when the modal panel opens).
 
 Bij AUTO FAILs → AskUserQuestion: Vertrouw auto resultaten (Aanbevolen) | Handmatig controleren.
 Bij SKIPs → AskUserQuestion: Accepteren (Aanbevolen) | Later testen.

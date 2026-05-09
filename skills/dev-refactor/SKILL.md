@@ -175,7 +175,6 @@ Lees `.project/project-context.json` (als bestaat). Extract `context.patterns`.
 ```
 scopes: [component]
 pitfall-prefix: true
-global-memory: true
 current-feature: <feature-name als feature-mode, anders "none">
 ```
 
@@ -280,7 +279,7 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
 **Lens-definities** (zie ook `shared/PATTERNS.md` als aanwezig):
 
 - **Reuse lens**: DRY binnen pipeline files, duplicatie met bestaande helpers/utilities in de codebase, inline logica die bestaande lib/stdlib kan gebruiken, extract-opportunities
-- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dode code, redundante state, leaky abstractions, RULES.md violations, stack-specific anti-patterns
+- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dode code, redundante state, leaky abstractions, RULES.md violations, stack-specific anti-patterns, Design Token violations (T101–T105 uit `shared/TOKENS.md` — alleen frontend files: `.tsx`/`.jsx`/`.vue`/`.svelte`)
 - **Efficiency lens**: missed concurrency (Promise.all), N+1, hot-path bloat, memory leaks, unbounded maps, TOCTOU, overly broad ops, no-op recurring updates
 
 Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe security-review bestaat `dev-owasp`).
@@ -998,7 +997,7 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 
    Next steps:
      1. /dev-define {next-feature} → volgende feature uit backlog
-     2. /dev-plan → backlog herzien als scope gewijzigd is
+     2. /project-plan → backlog herzien als scope gewijzigd is
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
