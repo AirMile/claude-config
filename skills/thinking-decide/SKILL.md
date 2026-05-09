@@ -106,11 +106,10 @@ Na de beslissing vastgesteld, check voor project-context:
 ```
 scopes: [architectural]
 pitfall-prefix: true
-global-memory: true
 current-feature: <feature-name als feature-specifiek scope, anders "none">
 ```
 
-Architectural patterns (eigen project) en globale `MEMORY.md` (cross-project patterns) sturen de afweging — beslissingen die conflicteren met bewezen patterns krijgen een lagere confidence-rating. Pitfall-prefix maakt eerdere bugs zichtbaar zodat opties die ze herhalen worden afgewezen.
+Architectural patterns (eigen project) sturen de afweging — beslissingen die conflicteren met bewezen patterns krijgen een lagere confidence-rating. Pitfall-prefix maakt eerdere bugs zichtbaar zodat opties die ze herhalen worden afgewezen.
 
 Als scope-context gevonden:
 

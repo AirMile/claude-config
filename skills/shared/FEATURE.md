@@ -263,7 +263,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 
   "suggestionsLog": [
     {
-      "skill": "dev-plan",
+      "skill": "project-plan",
       "type": "COMPONENT",
       "name": "Modal",
       "status": "accepted",
@@ -317,7 +317,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 - `observations` — bevindingen, suggesties voor andere features
 - `tests.verificationCheckpoint` — acceptance criteria mapping resultaat (gaps, mismatches, adjustments)
 
-**Toegevoegd door reuse-discovery (dev-define, dev-plan, dev-build, dev-verify):**
+**Toegevoegd door reuse-discovery (dev-define, project-plan, dev-build, dev-verify):**
 
 - `suggestionsLog[]` — bijgehouden door alle vier pipeline-skills die COMPONENT/PAGE-todos suggereren, én door `frontend-design`/`frontend-convert` voor gap-discovery (direction-flag `frontend→dev`). Append-only. Schema: `{ skill, type, name, status: "accepted"|"rejected", at, direction? }`. Dedup-sleutel: `(name, skill)`. Een voorstel dat eenmaal afgewezen is (`status: "rejected"`) wordt door dezelfde skill niet opnieuw voorgesteld, ook al is de trigger hetzelfde. Een nieuwe trigger vanuit een andere skill mag wél opnieuw voorstellen (andere detectie-bron) — zie dedupe-logica in de afzonderlijke skill-docs.
 

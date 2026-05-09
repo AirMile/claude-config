@@ -86,10 +86,9 @@ mkdir -p .project/session && git status --porcelain | sort > .project/session/pr
 
 - scopes: [component]
 - pitfall-prefix: true
-- global-memory: true
 - current-feature: {active feature naam, of "none"}
 
-Render LEARNINGS_CONTEXT block. Skip stilletjes als geen `project-context.json` of geen `~/.claude/memory/MEMORY.md`.
+Render LEARNINGS_CONTEXT block. Skip stilletjes als geen `project-context.json`.
 
 **Stel DEBUG_CONTEXT samen** (alle info beschikbaar voor inline investigation):
 
@@ -181,6 +180,10 @@ Then: ask for API/service details and error responses.
 ### Step 3: Bevestig samenvatting
 
 Show summary of type + symptom + context + details gathered.
+
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the summary above visible when the modal panel opens).
 
 AskUserQuestion:
 

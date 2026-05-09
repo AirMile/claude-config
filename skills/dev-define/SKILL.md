@@ -6,7 +6,8 @@ description: >-
   and architecture from a backlog item or a fresh name. Also handles PAGE and
   COMPONENT features from the backlog (functional pipeline, independent of
   /frontend-design).
-writes: [feature.requirements, backlog.status]
+writes:
+  [feature.requirements, feature.architecture, feature.files, backlog.status]
 metadata:
   author: mileszeilstra
   version: 2.6.0
@@ -44,12 +45,12 @@ FASE 1 van de dev workflow: define → build → test.
    header: "Concept zonder backlog"
    question: "Er is een concept maar nog geen backlog. Wil je eerst een backlog genereren?"
    options:
-     - label: "Ja, eerst /dev-plan (Recommended)", description: "Genereer backlog uit concept, dan features definiëren"
+     - label: "Ja, eerst /project-plan (Recommended)", description: "Genereer backlog uit concept, dan features definiëren"
      - label: "Nee, direct definiëren", description: "Definieer een losse feature zonder backlog"
    multiSelect: false
    ```
 
-   "Ja" → stop, toon: `Draai /dev-plan om je concept om te zetten in een backlog.`
+   "Ja" → stop, toon: `Draai /project-plan om je concept om te zetten in een backlog.`
    "Nee" → ga door naar optie d.
 
    d) **Geen backlog, geen concept (of direct definiëren gekozen):**
@@ -72,7 +73,7 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
      - `features[]` — bestaande features (voorkomt duplicaten/overlap)
      - `endpoints` — bestaande API surface
      - `data.entities` — bestaand data model
-     - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/dev-todo`). Laad die als context.
+     - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/project-todo`). Laad die als context.
      - `design.components[]` — bestaande component-specs (gebruikt voor reuse-discovery in FASE 1)
      - `design.pages[]` — bestaande page-specs (gebruikt voor reuse-discovery context)
    - **Onboarding check** (evalueer direct na project.json read):
@@ -89,7 +90,6 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
      ```
      scopes: [component, architectural]
      pitfall-prefix: true
-     global-memory: true
      current-feature: <feature-name>
      ```
 
@@ -272,64 +272,11 @@ De volledige requirements-tabel met acceptance criteria en de feature-overzicht-
 
 **Wanneer uitvoeren:** alleen als de huidige feature type NIET `COMPONENT` is, én het een frontend-project is (stack.framework aanwezig).
 
-**Doel:** requirements-tekst scannen op UI-elementen die mogelijk als gedeeld component gebouwd kunnen worden, maar nog niet in `design.components[]` of `project-context.json#components[]` staan.
+Volg [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) voor het canonieke protocol.
 
-**Stap 1 — Scan requirements op UI-element namen:**
+**Trigger:** keyword-scan op UI-element namen in requirements-tekst — Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton. Pas ook project-specifieke naam-prefixen toe. Voeg items in-memory toe (meegenomen naar FASE 4 sync); append kebab-naam ook aan huidige feature's `dependencies[]`.
 
-Zoek in alle requirement-descriptions naar zelfstandige naamwoorden die typische UI-elementen aanduiden: Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton. Pas ook project-specifieke naam-prefixen toe als ze al in de codebase voorkomen (bv. "ConfirmModal" als "Modal" variëert).
-
-**Stap 2 — Dedup:**
-
-1. Check `project.json#design.components[]` → heeft component al `name` die matcht? → skip.
-2. Check `project-context.json#components[]` → al gebouwd in inventory? → skip.
-3. Check `feature.json#suggestionsLog[]` → eerder voorstel met dezelfde `name` en `status: "rejected"` van **dezelfde skill** (`dev-define`)? → skip. Afgewezen door andere skill → mag opnieuw voorgesteld worden (andere detectie-bron).
-
-**Stap 3 — Voorstel:** (alleen als ≥1 kandidaat na dedup)
-
-AskUserQuestion:
-
-```yaml
-header: "Potentiële componenten gevonden"
-question: "De requirements noemen UI-elementen die als gedeelde components gebouwd kunnen worden. Welke wil je als COMPONENT-todo toevoegen?"
-options:
-  - label: "{naam} (atomic) — {korte context uit requirement}", description: "Maak COMPONENT-todo voor {naam}"
-  - label: "..." (één per kandidaat)
-  - label: "Overslaan", description: "Geen COMPONENT-todos toevoegen"
-multiSelect: true
-```
-
-**Stap 4 — Verwerking:**
-
-Per geaccepteerd voorstel (in-memory, meegenomen naar FASE 4 sync):
-
-1. Append aan `project.json#design.components[]`:
-   ```json
-   {
-     "name": "{naam}",
-     "purpose": "Infereer uit requirements-context",
-     "status": "IDEA",
-     "scope": "atomic"
-   }
-   ```
-2. Append aan `backlog.html#data.features[]`:
-   ```json
-   {
-     "name": "{kebab-case naam}",
-     "type": "COMPONENT",
-     "status": "TODO",
-     "phase": "P3",
-     "description": "Component gedetecteerd in requirements van {feature-name}",
-     "source": "/dev-define",
-     "scope": "atomic",
-     "dependencies": []
-   }
-   ```
-3. Log in `feature.json#suggestionsLog[]`: `{ skill: "dev-define", type: "COMPONENT", name, status: "accepted", at: ISO }`
-4. Append de kebab-case naam naar de **huidige feature's `dependencies[]`** (in-memory — wordt meegeschreven naar feature.json in FASE 3).
-
-Per afgewezen voorstel: log `{ skill: "dev-define", type: "COMPONENT", name, status: "rejected", at: ISO }`.
-
-"Overslaan" → log alle kandidaten als rejected voor deze skill. Geen backlog-items aangemaakt.
+**Source:** `"/dev-define"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
 
 ---
 
@@ -384,7 +331,7 @@ Ontwerp in drie stappen:
    - **Feature flow**: compacte `→`-keten van trigger tot output (conditionele paden in `[brackets]`, parallelle paden met `+`). Voorbeeld: `User click → validate input → [cache hit → return] / [cache miss → fetch API + update cache] → render response`.
    - **File structuur**: create/modify tabel.
    - **Interfaces/Types**: als relevant.
-   - **Design sketch**: alleen voor visuele features — ASCII wireframe (web/UI) of scene composition (3D/game). Overweeg: responsive breakpoints, loading state, empty state, error state. Bevestig wireframe inline via AskUserQuestion (zie uitzondering bovenaan): "Klopt dit visuele ontwerp?" — "Ja (Recommended)" / "Aanpassen".
+   - **Design sketch**: alleen voor visuele features — ASCII wireframe (web/UI) of scene composition (3D/game). Overweeg: responsive breakpoints, loading state, empty state, error state. Bevestig wireframe inline via AskUserQuestion (zie uitzondering bovenaan): "Klopt dit visuele ontwerp?" — "Ja (Recommended)" / "Aanpassen". Bij kleur-referenties in wireframes/acceptance criteria: gebruik token-namen (`bg-primary`, `text-foreground`) — geen hex-waarden. Zie `shared/TOKENS.md`.
    - **Dependency analysis**: REQ→REQ relaties.
    - **Build sequence**: genummerde implementatievolgorde. Combineer REQs in dezelfde step als ze dezelfde file raken en geen onderlinge dependencies hebben.
    - **Test strategy**: REQ→testfile→beschrijving tabel.
@@ -403,22 +350,23 @@ Ontwerp in drie stappen:
 
 Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md` voor volledig schema):
 
-| Veld                        | Conditie                                                                                                              |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `name`, `created`, `status` | altijd (status = `"DEFINED"`, geen stage — wacht op `/dev-build`)                                                     |
-| `summary`                   | altijd                                                                                                                |
-| `depends`                   | altijd (lege array als geen)                                                                                          |
-| `choices`                   | altijd (user antwoorden)                                                                                              |
-| `requirements`              | altijd (elke REQ met `status: "pending"`, `acceptance: [{when, then}]`)                                               |
-| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`)                                          |
-| `architecture`              | altijd (`componentTree`, `interfaces`, optioneel `registries[]`)                                                      |
-| `design`                    | alleen visuele features                                                                                               |
-| `apiContract`               | alleen bij backend                                                                                                    |
-| `buildSequence`             | altijd                                                                                                                |
-| `testStrategy`              | altijd (optioneel `location` veld)                                                                                    |
-| `clarifications`            | alleen opnemen als gray-area resolution minimaal 1 antwoord heeft opgeleverd — anders veld WEGLATEN (geen lege array) |
-| `durableDecisions`          | bij >3 requirements — beslissingen die over alle REQs gelden                                                          |
-| `research`                  | alleen als research is gedaan                                                                                         |
+| Veld                        | Conditie                                                                                                                                                                                           |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`, `created`, `status` | altijd (status = `"DEFINED"`, geen stage — wacht op `/dev-build`)                                                                                                                                  |
+| `summary`                   | altijd                                                                                                                                                                                             |
+| `depends`                   | altijd (lege array als geen)                                                                                                                                                                       |
+| `choices`                   | altijd (user antwoorden)                                                                                                                                                                           |
+| `requirements`              | altijd (elke REQ met `status: "pending"`, `acceptance: [{when, then}]`)                                                                                                                            |
+| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`)                                                                                                                       |
+| `architecture`              | altijd (`componentTree`, `interfaces`, optioneel `registries[]`)                                                                                                                                   |
+| `design`                    | alleen visuele features                                                                                                                                                                            |
+| `apiContract`               | alleen bij backend                                                                                                                                                                                 |
+| `buildSequence`             | altijd                                                                                                                                                                                             |
+| `testStrategy`              | altijd (optioneel `location` veld)                                                                                                                                                                 |
+| `clarifications`            | alleen opnemen als gray-area resolution minimaal 1 antwoord heeft opgeleverd — anders veld WEGLATEN (geen lege array)                                                                              |
+| `durableDecisions`          | bij >3 requirements — beslissingen die over alle REQs gelden                                                                                                                                       |
+| `research`                  | alleen als research is gedaan                                                                                                                                                                      |
+| `externalRef`               | alleen als het backlog-item dit veld had — kopieer 1:1 (`type`, `id`, `url`, `labels`, `split`). Traceerbaarheid naar externe issue-tracker voor downstream skills (`/dev-build`, `/core-commit`). |
 
 **`durableDecisions`** — beslissingen die tijdens de build NIET veranderen:
 
@@ -450,30 +398,6 @@ Alleen opnemen als er daadwerkelijk cross-requirement beslissingen zijn. Bij sim
 ]
 ```
 
-### FASE 3b: Toewijzing
-
-AskUserQuestion:
-
-```yaml
-header: "Toewijzing"
-question: "Wie gaat dit bouwen?"
-options:
-  - label: "Zelf bouwen (Recommended)"
-    description: "Ik bouw dit met /dev-build"
-  - label: "Teammate toewijzen"
-    description: "Genereer een task brief"
-multiSelect: false
-```
-
-**Zelf bouwen**: `assignee` blijft `null`. Ga door naar FASE 4.
-
-**Teammate toewijzen**:
-
-1. AskUserQuestion: "Naam van de teammate?" (vrije tekst)
-2. Zet `assignee` in memory (meenemen naar FASE 4 backlog sync)
-3. Genereer task brief in terminal output vanuit feature.json: header met naam/toewijzing, beschrijving, requirements tabel (ID + beschrijving + acceptatiecriteria), bestanden (actie + pad + doel), build volgorde, test strategie, dependencies.
-4. Toon bericht: "Kopieer bovenstaande tekst en stuur naar {naam}."
-
 ### FASE 4: Sync
 
 Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
@@ -488,7 +412,7 @@ Muteer in memory:
 
 **Backlog** (zie `shared/BACKLOG.md`):
 
-- Zoek feature → zet `status: "DEFINED"`, verwijder `transition` (als aanwezig), zet `assignee` (als gezet in FASE 3b). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DEFINED"`.
+- Zoek feature → zet `status: "DEFINED"`, verwijder `transition` (als aanwezig). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DEFINED"`.
 - **Dependencies**: Als tijdens FASE 1 of FASE 2 externe feature-afhankelijkheden zijn geïdentificeerd (andere features die eerst DONE moeten zijn), merge die naar `dependencies[]`. Verwijder nooit bestaande waarden — alleen toevoegen. Als niets nieuws gevonden: laat het veld ongewijzigd.
 - Zet `data.updated` naar vandaag.
 
@@ -512,43 +436,11 @@ Muteer in memory:
 
 **PAGE-seeding** (frontend projects only — skip voor pure API/backend/game features):
 
-Detecteer nieuwe pages uit de in-memory data:
+Volg [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) voor het canonieke protocol.
 
-- `feature.json#architecture.routes[]` — paden die matchen op `app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`, of path-patronen van de gekozen stack
-- `feature.json#files[]` — componenten waarvan de naam eindigt op `Page`, `Screen`, of `View`
+**Trigger:** scan `feature.json#architecture.routes[]` en `feature.json#files[]`. Resolution: batch AskUserQuestion "Ja, alle" / "Selectie" / "Nee".
 
-Idempotency: voor elke gedetecteerde page → check `data.features.find(f => f.name === <kebab-case naam>)` — sla over als al bestaat.
-
-Als er ≥1 nieuwe pages zijn → AskUserQuestion:
-
-```yaml
-header: "Pages gedetecteerd"
-question: "Deze feature introduceert {N} nieuwe pages. Wil je ze als losse PAGE-tasks toevoegen aan de backlog zodat ze de design → convert → check mini-pipeline doorlopen?"
-options:
-  - label: "Ja, alle (Recommended)"
-    description: "Voeg een PAGE-todo toe per page"
-  - label: "Selectie"
-    description: "Kies welke pages een aparte todo krijgen"
-  - label: "Nee"
-    description: "Geen extra todos — pages zijn al onderdeel van deze feature"
-multiSelect: false
-```
-
-Per geselecteerde page → voeg toe aan `data.features[]` (in-memory, wordt meegenomen in de schrijffase):
-
-```json
-{
-  "name": "{kebab-case page naam}",
-  "type": "PAGE",
-  "status": "TODO",
-  "phase": "P3",
-  "description": "Page introduced by feature {parentFeature}. Route: {route-pattern}",
-  "source": "/dev-define",
-  "dependencies": ["{parentFeature}"],
-  "parentFeature": "{parentFeature}",
-  "auto": true
-}
-```
+**Source:** `"/dev-define"` · **Direction:** `"dev→frontend"` · **Type:** `PAGE`
 
 Schrijf parallel terug:
 
@@ -572,6 +464,7 @@ Architecture: {component count} componenten
 Files: feature.json + backlog + dashboard
 
 Next: /dev-build {feature-name}
+     /team-outsource {feature-name}   ← als je wilt delegeren aan een teammate
 ```
 
 Laat de `Next`-regel weg als de feature géén backlog-item was én geen concept aanwezig is — wijs dan kort op het ontbreken van een backlog.

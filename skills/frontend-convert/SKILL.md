@@ -708,7 +708,7 @@ If page scope and backlog exists:
 
 ### 4.3 Gap-Discovery
 
-Scan alle gegenereerde/bijgewerkte component-files (`.tsx`, `.svelte`, `.vue`) voor stub-handlers: `() => {}`, `/* TODO */`, `// implement`, `console.log` als enige body. Volg het [Protocol: Gap-Discovery](../frontend-design/SKILL.md#protocol-gap-discovery) — Trigger C (Build post code-gen). Als geen gaps: stap overslaan.
+Trigger C — scan alle gegenereerde/bijgewerkte component-files op stub-handlers. Volg [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery). **Source:** `"/frontend-convert"` · **Direction:** `"frontend→dev"` · **Type:** `FEATURE`. Als geen gaps: stap overslaan.
 
 ### 4.4 Completion Report
 

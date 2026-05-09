@@ -22,7 +22,7 @@ Generate an ASCII [diagram type] showing [what to visualize].
 | --------------------- | -------------------- | --------------------------- |
 | Architecture/layers   | Component diagram    | dev-define, frontend-design |
 | Multi-step workflow   | Flowchart            | dev-build, dev-verify       |
-| Feature decomposition | Tree                 | dev-plan, game-plan         |
+| Feature decomposition | Tree                 | project-plan                |
 | State transitions     | State machine        | game-define                 |
 | Parallel processes    | Architecture diagram | team-review                 |
 | Decision flow         | Decision tree        | thinking-decide             |
@@ -199,7 +199,7 @@ Regels:
 
 **Rules:**
 
-- Skills die `.project/` MOGEN aanmaken zonder check: `dev-plan`, `game-plan`, `frontend-design`, `core-setup`
+- Skills die `.project/` MOGEN aanmaken zonder check: `project-plan`, `project-todo`, `frontend-design`, `core-setup`
 - Alle andere skills: als `.project/` niet bestaat of leeg is, toon suggestie en stop
 - Doe geen silent `mkdir -p` voor de hele `.project/` structuur — dat is `core-setup`'s taak
 - `mkdir -p .project/features/{name}` en `mkdir -p .project/session` binnen een bestaande `.project/` is wél ok
@@ -392,7 +392,7 @@ Use {when|with} <trigger>. <korte aanvulling>. Use with /<command-name>[, option
 - The option count is unbounded and runtime-dependent without natural categorization
 - The choice involves comparing items against each other rather than picking from independent categories
 
-In these cases: present a numbered plain-text list and ask for free-form input (e.g., `1, 3, 5` / `1-4` / `alles behalve 2`). Reference: `dev-todo`, `game-todo`, `core-profile`, `project-add`.
+In these cases: present a numbered plain-text list and ask for free-form input (e.g., `1, 3, 5` / `1-4` / `alles behalve 2`). Reference: `project-todo`, `core-profile`, `project-add`.
 
 Use `AskUserQuestion` only for the cancel/exit route (e.g., "Doorgaan met selectie" / "Annuleren").
 
@@ -412,6 +412,60 @@ Use `AskUserQuestion` only for the cancel/exit route (e.g., "Doorgaan met select
 | Audit findings      | Core files → Config → Claude config → CLAUDE.md   |
 
 **Modals with fixed/small option sets (≤7 options) are not subject to this rule.**
+
+---
+
+## Modal Whitespace Buffer
+
+**When:** A skill shows a table, list, or code-fence (substantive output block) and immediately calls `AskUserQuestion` after it.
+
+**Problem:** The modal renders as a panel below the chat output. In a short terminal window the modal panel pushes the bottom of the preceding table out of view while the modal is open — the user loses context exactly when they need it.
+
+**How:** Add an explicit instruction to print 8 blank lines before the `AskUserQuestion` call. Claude outputs those lines as chat content; the modal panel absorbs them instead of table content. Mark the spot with `<!-- modal-buffer -->` (machine-findable) followed by the instruction:
+
+```
+<!-- modal-buffer -->
+Print 8 blank lines as whitespace buffer (keeps content above visible when the modal panel opens).
+```
+
+The instruction must be plain text — do NOT rely on literal blank lines in the SKILL.md file (the markdown formatter strips them).
+
+**Example:**
+
+❌ Wrong (modal pushes table out of view):
+
+```
+| Feature | Risk |
+|---------|------|
+| Auth    | 4    |
+| Routing | 2    |
+
+Use AskUserQuestion: question = "Klopt deze prioritering?"
+```
+
+✅ Right (buffer protects content):
+
+```
+| Feature | Risk |
+|---------|------|
+| Auth    | 4    |
+| Routing | 2    |
+
+<!-- modal-buffer -->
+Print 8 blank lines as whitespace buffer (keeps content above visible when the modal panel opens).
+
+Use AskUserQuestion: question = "Klopt deze prioritering?"
+```
+
+**When NOT to use:**
+
+- Content above the modal is ≤3 lines (already short enough to stay fully visible)
+- `AskUserQuestion` follows a short instruction line with no substantive output block above it
+- Numbered-list + free-form parse pattern (see § Numbered List Selection) — no modal follows the list
+
+**Anti-pattern — do NOT embed data in the `question` field.** The table above is still visible; duplicating it in the question makes the modal unnecessarily large and clutters the confirmation prompt. Keep the question short and generic.
+
+**Reference implementation:** `project-plan/SKILL.md` FASE 1 stap 5 Feature Review modal.
 
 ---
 
@@ -449,3 +503,203 @@ Use `AskUserQuestion` only for the cancel/exit route (e.g., "Doorgaan met select
 - Always show the syntax hint inline with the question — don't expect the user to remember
 - Empty input always means "geen", never "alle" (safer default)
 - Echo the parsed selection back before destructive action (e.g., "Geselecteerd: items 1, 3, 5 — doorgaan?")
+
+---
+
+## Discovery (Gap, Reuse & Page)
+
+Drie gerelateerde flows die automatisch TODOs in de backlog droppen wanneer skills missende logica, herbruikbare UI, of nieuwe page-routes detecteren. Gemeenschappelijke structuur: **scan → dedup → AskUserQuestion → append + log**. Alle drie zijn **non-blocking** — de skill gaat altijd door ongeacht gaps.
+
+### Gedeeld: dedup-volgorde
+
+Vóór elke `data.features.push()`, in deze volgorde:
+
+1. **Naam-check** — `data.features.find(f => f.name === kebab-name)` → al in backlog? → skip.
+2. **Inventory-check** (type COMPONENT) — `project.json#design.components.find(c => c.name === kebab-name)` → al gespecificeerd? → link i.p.v. push.
+3. **suggestionsLog-check** — `feature.json#suggestionsLog.find(s => s.name === name && s.status === "rejected" && s.skill === current-skill)` → eerder afgewezen door huidige skill? → skip. Afgewezen door andere skill: mag opnieuw voorgesteld worden.
+
+### Gedeeld: suggestionsLog shape
+
+```json
+{
+  "skill": "{skill-naam}",
+  "type": "FEATURE|COMPONENT",
+  "name": "{component}.{prop} of {component-naam}",
+  "status": "accepted|rejected",
+  "at": "{ISO 8601}",
+  "direction": "frontend→dev|dev→frontend"
+}
+```
+
+Als geen gaps/kandidaten gevonden: stap volledig overslaan (geen prompt).
+
+---
+
+### Gap-Discovery
+
+**Richting:** frontend → dev
+
+**Doel:** stub-handlers en actie-werkwoorden in gegenereerde frontend-code detecteren die nog geen gekoppeld FEATURE in de backlog hebben.
+
+**Skills:** `frontend-design` (Triggers A/B/C), `frontend-convert` (Trigger C).
+
+#### Triggers
+
+- **A — Capture(Component):** scan `props[]` op regex `/^on[A-Z]/` of namen als `action`, `handler`, `submit`.
+- **B — Capture(Page):** scan `flows[]`/`purpose` op actie-werkwoorden: submit, delete, save, fetch, send, create, update, upload, download. Max 3 kandidaten, hoogste semantische gewicht eerst.
+- **C — Build/Convert (post code-gen):** scan gegenereerde `.tsx`/`.svelte`/`.vue` op stub-handlers: `() => {}`, `/* TODO */`, `// implement`, `console.log` als enige body.
+
+Fuzzy-match per kandidaat tegen `data.features` (type FEATURE/API/INTEGRATION) op naam/beschrijving. Threshold score > 0.5 → toon "Link aan bestaand" optie.
+
+#### Resolution (per gap-kandidaat)
+
+AskUserQuestion:
+
+```yaml
+header: "Gap: {component|page}.{prop/actie} heeft geen functionaliteit"
+question: "Wat moet er gebeuren met dit gedrag?"
+options:
+  - label: "Link aan bestaand: {best-match}"
+    description: "Voegt {entity} toe aan {feature}.frontend.linkedEntities[]"
+  - label: "Maak nieuw FEATURE TODO"
+    description: "Backlog krijgt [FEATURE] {suggested-name} TODO"
+  - label: "Markeer als decoratief"
+    description: "Geen gedrag nodig (visual demo). Gap: skipped"
+  - label: "Skip voor nu"
+    description: "Gap: pending — prompt verschijnt bij volgende Build/Capture"
+multiSelect: false
+```
+
+**Persisteer keuze:**
+
+- **Link:** append `{ prop, context, status: "linked", featureRef, at }` aan `design.{components|pages}[name].gaps[]`; append `{ type, name, prop }` aan `{feature-name}/feature.json#frontend.linkedEntities[]`
+- **Maak nieuw:** voer dedup-volgorde uit → push naar `data.features[]`; append gap met `status: "created", featureRef: name`; append `frontend.linkedEntities[]` entry
+- **Decoratief:** append gap met `status: "skipped"`
+- **Skip:** append gap met `status: "pending"`
+
+---
+
+### Reuse-Discovery
+
+**Richting:** dev → frontend
+
+**Doel:** herbruikbare UI-patronen detecteren tijdens dev-werk en als COMPONENT-todo in de backlog droppen.
+
+**Skills:** `dev-define` (keyword-scan requirements), `dev-build` (herhalend JSX-pattern), `project-plan` (cross-page pattern matching).
+
+#### Triggers (per skill)
+
+- **dev-define:** keyword-scan op UI-element namen in requirements (Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton). Pas ook project-specifieke naam-prefixen toe.
+- **dev-build:** herhalend JSX-block na code-gen — ≥2x in hetzelfde bestand of ≥1x over meerdere bestanden van dezelfde feature.
+- **project-plan:** cross-page UI-patroon-matching — groepeer features op beschrijvingen (Lijst/tabel, Card, Form, Modal/dialog, Navigation). Threshold: 2+ PAGE/FEATURE features delen het pattern.
+
+#### Resolution (batch)
+
+AskUserQuestion:
+
+```yaml
+header: "Potentiële componenten gevonden"
+question: "{Skill-specifieke vraag over kandidaten}"
+options:
+  - label: "{naam} — {korte context}"
+    description: "Maak COMPONENT-todo"
+  - label: "..." (één per kandidaat)
+  - label: "Overslaan"
+    description: "Geen COMPONENT-todos toevoegen"
+multiSelect: true
+```
+
+**Persisteer per geaccepteerd voorstel:**
+
+1. Voer dedup-volgorde uit (zie boven).
+2. Append aan `project.json#design.components[]`: `{ name, purpose: "infereer uit context", status: "IDEA", scope: "infereer uit context — atomic|section|layout, default atomic" }`
+3. Push naar `backlog.html#data.features[]`:
+   ```json
+   {
+     "name": "{kebab-case naam}",
+     "type": "COMPONENT",
+     "status": "TODO",
+     "phase": "P3",
+     "description": "Component gedetecteerd door {skill} in {context}",
+     "source": "/{skill-naam}",
+     "scope": "{infereer uit context, default atomic}",
+     "dependencies": []
+   }
+   ```
+4. Log in `feature.json#suggestionsLog[]` (accepted).
+5. Append kebab-naam aan `dependencies[]` van triggerende feature(s).
+
+Per afgewezen voorstel: log in `suggestionsLog[]` (rejected). "Overslaan" → log alle kandidaten als rejected.
+
+---
+
+### Page-Discovery
+
+**Richting:** dev ↔ frontend
+
+**Doel:** nieuwe page-routes detecteren tijdens dev-werk en als losse PAGE-todo in de backlog droppen zodat ze de design → convert → check pipeline doorlopen.
+
+**Skills:** `dev-define` (post-architecture seed), `dev-build` (post-codegen safety net + COMPONENT→route suggesties).
+
+#### Triggers (per skill)
+
+- **dev-define:** scan `feature.json#architecture.routes[]` op stack-specifieke page-patronen (`app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`); scan `feature.json#files[]` op suffixen `Page`, `Screen`, `View`.
+- **dev-build (safety net):** identieke patronen als dev-define. Skip kandidaten die al door dev-define geseedd zijn: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`.
+- **dev-build (COMPONENT→route):** scan `<Link href="...">` en `router.push(...)` in gegenereerde component-bestanden. Kandidaat als route niet voorkomt in `project.json#design.pages[]` of `backlog.html`.
+
+#### Resolution
+
+AskUserQuestion (vraagstelling per skill — zie skill-files voor exacte opties):
+
+- **dev-define:** batch — "Voeg per page een PAGE-todo toe?" — opties: "Ja, alle" / "Selectie" / "Nee".
+- **dev-build (safety net):** batch — "Toevoegen voor design → convert → check?" — "Ja" / "Nee".
+- **dev-build (COMPONENT→route):** per route — "PAGE-todo voor {route}?" — "Ja" / "Overslaan".
+
+**Persisteer per geaccepteerde page:**
+
+1. Voer dedup-volgorde uit (zie boven — naam-check; type PAGE slaat inventory-check over; suggestionsLog-check op rejected status).
+2. Push naar `data.features[]`:
+   ```json
+   {
+     "name": "{kebab-case page-naam}",
+     "type": "PAGE",
+     "status": "TODO",
+     "phase": "P3",
+     "description": "Page introduced by feature {parentFeature}. Route: {route-pattern}",
+     "source": "/{skill-naam}",
+     "dependencies": ["{parentFeature}"],
+     "parentFeature": "{parentFeature}",
+     "auto": true
+   }
+   ```
+3. Log in `feature.json#suggestionsLog[]` (accepted, `direction: "dev→frontend"`, `type: "PAGE"`).
+
+Per afgewezen voorstel: log in `suggestionsLog[]` (rejected).
+
+---
+
+## Smart Suggestions (AskUserQuestion)
+
+**When:** Elke keer dat een skill een vraag stelt via `AskUserQuestion`.
+
+**Rules:**
+
+- Eerste optie = aanbevolen → voeg `(Recommended)` toe aan het label
+- Altijd `multiSelect: true` als default — alleen `false` bij ja/nee confirmaties
+- 2-4 opties; `"Other"` is ingebouwd en hoeft niet handmatig toegevoegd
+- Skills voegen skill-specifieke opties toe voor hun context
+
+**Template:**
+
+```yaml
+header: "{Korte context}"
+question: "{Vraag}"
+options:
+  - label: "{Beste optie} (Recommended)"
+    description: "{Waarom dit de beste keuze is}"
+  - label: "{Alternatief}"
+    description: "{Wanneer dit relevant is}"
+multiSelect: true
+```
+
+**Single-select** (ja/nee, keuze uit één optie): `multiSelect: false`

@@ -452,7 +452,18 @@ Op basis van de beschrijving genereert Claude een contextbewust kleurenpalet:
 - Accent colors (primary, secondary, tertiary) passend bij de industrie/doelgroep
 - Semantic colors (success, warning, error, info)
 
-Toon het gegenereerde palet als tabel, vraag bevestiging. → Ga naar Stap 2
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the palette table above visible when the modal panel opens).
+
+```yaml
+header: "Kleurpalet"
+question: "Klopt dit kleurpalet?"
+options:
+  - label: "Ja, ga door (Recommended)", description: "Ga naar Stap 2"
+  - label: "Aanpassen", description: "Wijzig kleuren"
+multiSelect: false
+```
 
 **Token Layer Toelichting (na kleurbevestiging)**
 
@@ -622,7 +633,18 @@ Genereer standaard motion tokens op basis van `shared/DESIGN.md`:
 - Durations: `duration-instant` (100ms), `duration-fast` (200ms), `duration-normal` (300ms), `duration-slow` (500ms)
 - Easings: `ease-out` (cubic-bezier(0.25, 1, 0.5, 1)), `ease-in` (cubic-bezier(0.7, 0, 0.84, 0)), `ease-in-out` (cubic-bezier(0.65, 0, 0.35, 1))
 
-Toon als tabel, vraag bevestiging. → Ga naar Stap 7
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the motion token table above visible when the modal panel opens).
+
+```yaml
+header: "Motion Tokens"
+question: "Kloppen deze motion tokens?"
+options:
+  - label: "Ja, ga door (Recommended)", description: "Ga naar Stap 7"
+  - label: "Custom", description: "Geef eigen durations/easings op"
+multiSelect: false
+```
 
 **Als "Custom":**
 
@@ -668,7 +690,18 @@ Genereer standaard interaction tokens:
 - Hover: `transition: var(--duration-fast) var(--ease-out)`, `transform: none`
 - Active: `transform: scale(0.98)`
 
-Toon als tabel, vraag bevestiging. → Ga naar Stap 8
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the interaction token table above visible when the modal panel opens).
+
+```yaml
+header: "Interaction Tokens"
+question: "Kloppen deze interaction tokens?"
+options:
+  - label: "Ja, ga door (Recommended)", description: "Ga naar Stap 8"
+  - label: "Custom", description: "Geef eigen focus/hover/active stijlen op"
+multiSelect: false
+```
 
 **Als "Custom":**
 
@@ -716,7 +749,9 @@ THEME SAMENVATTING
 | **Interactions** | {Defaults / Custom / Geen} |
 ```
 
-**AskUserQuestion:**
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the THEME SAMENVATTING table above visible when the modal panel opens). **AskUserQuestion:**
 
 ```yaml
 header: "Confirm"

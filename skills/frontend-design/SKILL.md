@@ -278,7 +278,6 @@ Argument:   [geen | "{naam}" → MODE A ({type} gevonden) | "{naam}" → MODE B 
 ```
 scopes: [component]
 pitfall-prefix: true
-global-memory: true
 current-feature: <page-name als capture/iterate-mode op 1 pagina, anders "none">
 ```
 
@@ -518,6 +517,10 @@ Presenteer de 3 opties (origineel + 2 alternatieven) als ASCII wireframes.
 User kiest via AskUserQuestion welke layout, of combineert elementen.
 
 Bij pagina's met <3 secties: skip deze stap.
+
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the pages table above visible when the modal panel opens).
 
 ```yaml
 header: "Pagina's"
@@ -945,7 +948,7 @@ Bij confirmatie:
 1. Append aan `project.json#design.components[]`
 2. Append aan `backlog.html` als COMPONENT-feature met `status: TODO`, `phase: P3`, `source: "/frontend-design"`, `scope: {scope}`
 3. Update `data.updated`
-4. **Gap-discovery** — zie [Protocol: Gap-Discovery](#protocol-gap-discovery) hieronder: scan `props[]` voor handler-patronen en toon AskUserQuestion per gevonden gap.
+4. **Gap-discovery** — volg [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery), Trigger A: scan `props[]` voor handler-patronen en toon AskUserQuestion per gevonden gap.
 
 #### If "Bestaande bewerken":
 
@@ -977,77 +980,6 @@ multiSelect: true
 ```
 
 Process updates, proceed to FASE 3 (Confirm).
-
----
-
-### Protocol: Gap-Discovery
-
-Gedeeld protocol voor Capture (Component/Page) en Build. Detecteert handler-props of actie-werkwoorden zonder gekoppeld FEATURE in de backlog en stelt een koppeling of nieuw TODO voor.
-
-**Non-blocking:** het frontend Build/Capture gaat altijd door — gaps zijn metadata.
-
-#### Trigger A — Capture (Component)
-
-Na schrijven van component naar `project.json`:
-
-1. Scan `props[]` voor patronen: `/^on[A-Z]/` (onClick, onSubmit, onChange) of expliciete namen als `action`, `handler`, `onSubmit`, `submit`.
-2. Per gevonden handler-prop: check `feature.json#suggestionsLog[]` (as current feature context if available, anders backlog-search) — als al eerder `{ direction: "frontend→dev", name: "{component}.{prop}" }` afgewezen → skip.
-3. Fuzzy-match tegen backlog `data.features` van type `FEATURE`/`API`/`INTEGRATION` op naam/beschrijving (kebab-overlap, substring). Threshold: score > 0.5 — anders geen "Link aan bestaand" optie tonen.
-
-#### Trigger B — Capture (Page)
-
-Na schrijven van page naar `project.json`, als `flows[]` of `purpose` werkwoorden bevatten: "submit", "delete", "save", "fetch", "send", "create", "update", "upload", "download":
-
-1. Extraheer actie-kandidaten (max 3, hoogste semantische gewicht eerst).
-2. Per kandidaat: check suggestionsLog dedupe + fuzzy-match als boven.
-
-#### Trigger C — Build (post code-gen)
-
-Na generatie van `$GENERATED_FILES`: scan gegenereerde `.tsx`/`.svelte`/`.vue` bestanden voor stub-handlers: `() => {}`, `/* TODO */`, `// implement`, `console.log` als enige body. Per bestand:
-
-1. Extraheer prop-naam + omgeving (function name, line).
-2. Check suggestionsLog dedupe + fuzzy-match als boven.
-
-#### Resolution Flow (gemeenschappelijk)
-
-Per gap-kandidaat — AskUserQuestion:
-
-```yaml
-header: "Gap: {component|page}.{prop/actie} heeft geen functionaliteit"
-question: "Wat moet er gebeuren met dit gedrag?"
-options:
-  - label: "Link aan bestaand: {best-match}" # alleen als match gevonden
-    description: "Voegt {entity} toe aan {feature}.frontend.linkedEntities[]"
-  - label: "Maak nieuw FEATURE TODO"
-    description: "Backlog krijgt [FEATURE] {suggested-name} TODO"
-  - label: "Markeer als decoratief"
-    description: "Geen gedrag nodig (visual demo, illustratie). Gap: skipped"
-  - label: "Skip voor nu"
-    description: "Gap: pending — prompt verschijnt bij volgende Build/Capture"
-multiSelect: false
-```
-
-**Persisteer keuze:**
-
-- **Link**: append `{ prop, context, status: "linked", featureRef: "{feature-name}", at }` aan `design.{components|pages}[name].gaps[]`; append `{ type: "component"|"page", name, prop }` aan `{feature-name}/feature.json#frontend.linkedEntities[]`
-- **Maak nieuw**: append `[FEATURE] {name} TODO` aan backlog; append gap met `status: "created", featureRef: name`; schrijf `feature.json` terug met `frontend.linkedEntities[]` entry
-- **Decoratief**: append gap met `status: "skipped"`
-- **Skip**: append gap met `status: "pending"`
-
-**Log in suggestionsLog** (huidige feature of project-level context):
-
-```json
-{
-  "skill": "frontend-design",
-  "type": "FEATURE",
-  "name": "{component}.{prop}",
-  "status": "accepted|rejected",
-  "at": "{ISO 8601}",
-  "direction": "frontend→dev"
-}
-```
-
-Als geen gaps gevonden: stap volledig overslaan (geen prompt).
 
 ---
 
@@ -1137,7 +1069,18 @@ Props:    {props joined}
 States:   {states joined}
 ```
 
-AskUserQuestion: "Ga door (Recommended)" | "Spec aanpassen".
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the spec block above visible when the modal panel opens).
+
+```yaml
+header: "Spec Bevestiging"
+question: "Klopt deze spec?"
+options:
+  - label: "Ga door (Recommended)", description: "Spec klopt, door naar codegen"
+  - label: "Spec aanpassen", description: "Wijzig doel, scope, variants of props"
+multiSelect: false
+```
 
 #### Stap 4: Genereren (entity-aware)
 
@@ -1187,6 +1130,10 @@ Caveats:      {missing deps, ontbrekende tokens, auto-patch layout, etc. — of 
 ═══════════════════════════════════════════════════════════════
 ```
 
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the BUILD PLAN block above visible when the modal panel opens).
+
 ```yaml
 header: "Build plan"
 question: "Klopt dit plan? Dan genereer ik de code."
@@ -1204,9 +1151,18 @@ Na confirmatie — genereer code:
 - Afbeeldingen: alleen `/placeholder.svg?w={W}&h={H}` (PAGE only) — nooit externe CDN-URLs
 - Accessibility: `<main>`, `<section>`, `aria-label`, skip-nav (PAGE); correcte ARIA-attributes (COMPONENT)
 
-Toon gegenereerde bestanden als diff-preview voor user-confirmatie.
+<!-- modal-buffer -->
 
-AskUserQuestion: "Schrijf bestanden (Recommended)" | "Aanpassen voor schrijven".
+Print 8 blank lines as whitespace buffer (keeps the diff-preview above visible when the modal panel opens).
+
+```yaml
+header: "Schrijven"
+question: "Schrijf bestanden?"
+options:
+  - label: "Schrijf bestanden (Recommended)", description: "Pas bestanden toe op disk"
+  - label: "Aanpassen voor schrijven", description: "Wijzig nog iets voor het schrijven"
+multiSelect: false
+```
 
 Schrijf bestanden na confirmatie.
 
@@ -1447,7 +1403,7 @@ Sla block inventory tellers op als `$INV_NEW`, `$INV_UPDATED`, `$INV_CONFLICTS` 
 
 **5e. Gap-discovery** (altijd, ongeacht smoke-status):
 
-Zie [Protocol: Gap-Discovery](#protocol-gap-discovery) — Trigger C (Build post code-gen): scan `$GENERATED_FILES` voor stub-handlers en toon AskUserQuestion per gevonden gap. Als geen gaps: stap overslaan.
+Volg [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery), Trigger C (Build post code-gen): scan `$GENERATED_FILES` voor stub-handlers en toon AskUserQuestion per gevonden gap. Als geen gaps: stap overslaan.
 
 #### Stap 6: Completion report
 

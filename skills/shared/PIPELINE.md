@@ -7,14 +7,14 @@ Read-only referentie — geen executable skill. Zie BACKLOG.md, FEATURE.md, en S
 ## Dev Pipeline
 
 ```
-         /dev-todo ──┐
-                     ▼
-/dev-plan ──→ backlog.html
-                     │
-                     ▼
-              /dev-define ──→ /dev-build ──→ /dev-verify ──→ [/dev-refactor]
-                                   │              │
-                                   └── /dev-debug ◄┘
+         /project-todo ──┐
+                        ▼
+/project-plan ──→ backlog.html
+                        │
+                        ▼
+                 /dev-define ──→ /dev-build ──→ /dev-verify ──→ [/dev-refactor]
+                                      │              │
+                                      └── /dev-debug ◄┘
 ```
 
 Standalone (dev): `/dev-owasp` (security audit).
@@ -37,8 +37,8 @@ Frontend items slaan `defining/defined` over — design captures pages/flows, br
 
 | Skill        | Input                    | Output                      | Requires stage | Produces stage |
 | ------------ | ------------------------ | --------------------------- | -------------- | -------------- |
-| dev-plan     | concept / idee           | backlog.html                | —              | —              |
-| dev-todo     | beschrijving             | backlog item                | —              | —              |
+| project-plan | concept / idee           | backlog.html                | —              | —              |
+| project-todo | beschrijving             | backlog item                | —              | —              |
 | dev-define   | backlog item / user reqs | feature.json (req + arch)   | —              | defined        |
 | dev-build    | feature.json (defined)   | feature.json (code + tests) | defined        | built          |
 | dev-verify   | feature.json (built)     | feature.json (verified)     | built          | DONE           |

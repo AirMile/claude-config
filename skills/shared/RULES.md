@@ -175,6 +175,8 @@ const city = user?.address?.city ?? "Unknown";
 <h1 className="text-foreground text-2xl">Title</h1>
 ```
 
+> Zie `shared/TOKENS.md` voor canonical token-namen, fallback CSS vars, en violation patterns (T101–T105).
+
 **R004** Form labels
 
 ```jsx
@@ -965,7 +967,7 @@ Path B — Brief voor Claude Design / Figma:
 - Cross-pipeline koppeling loopt uitsluitend via `feature.json#frontend.linkedEntities[]` en `dependencies[]`
 
 **Dev pipeline (functionaliteit):**
-`/dev-define → /dev-plan → /dev-build → /dev-verify → /dev-refactor`
+`/project-plan → /dev-define → /dev-build → /dev-verify → /dev-refactor`
 
 - Werkt standalone — geen frontend-design vereist
 - Past in: features met logic/state/tests, ook backend-only

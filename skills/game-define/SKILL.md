@@ -74,12 +74,12 @@ The skill gathers requirements through targeted questions, optionally researches
    header: "Concept zonder backlog"
    question: "Er is een concept maar nog geen backlog. Wil je eerst een backlog genereren?"
    options:
-     - label: "Ja, eerst /game-plan (Recommended)", description: "Genereer backlog uit concept, dan features definiëren"
+     - label: "Ja, eerst /project-plan (Recommended)", description: "Genereer backlog uit concept, dan features definiëren"
      - label: "Nee, direct definiëren", description: "Definieer een losse feature zonder backlog"
    multiSelect: false
    ```
 
-   "Ja" → stop, toon: `Draai /game-plan om je concept om te zetten in een backlog.`
+   "Ja" → stop, toon: `Draai /project-plan om je concept om te zetten in een backlog.`
    "Nee" → ga door naar optie d.
 
    **d) No backlog, no concept (or user chose direct define):**
@@ -145,7 +145,7 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
      - `concept.pitch` als feature context (korte samenvatting). Fallback: als pitch leeg, lees `.project/project-concept.md` → eerste 2 zinnen
      - `features[]` — bestaande features (voorkomt duplicaten/overlap)
      - `data.entities` — bestaand data model
-     - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/dev-todo`). Laad die als context.
+     - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/project-todo`). Laad die als context.
    - **Naam-match op thinking markdown**: Grep `.project/thinking/*.md` op feature-naam (bestandsnaam + content). Bij 1+ match: lees de match(es) en gebruik als input voor FASE 1 vragen. De `.md` bestanden zijn bron van waarheid voor thinking-output — geen 7-dagen window meer.
    - Read `.project/project-context.json` (als bestaat) → extract:
      - `context.patterns` — bestaande code patterns
@@ -153,7 +153,6 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
      ```
      scopes: [component, architectural]
      pitfall-prefix: true
-     global-memory: true
      current-feature: <feature-name>
      ```
      Toon de geladen output vóór FASE 1 vragen. Component-scoped patterns en architectural patterns geven richting bij architectuur-keuzes en requirement-formulering. Pitfall-prefix voorkomt herhaling van eerdere bugs.
@@ -335,6 +334,10 @@ Alleen relevante edge cases — niet elk requirement heeft ze. Skip bij simpele 
 
 Tuning levers worden opgeslagen in `feature.json` per requirement als `tuningLevers[]`.
 
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the requirements table above visible when the modal panel opens).
+
 **Confirm with user** via **AskUserQuestion**:
 
 - header: "Requirements"
@@ -362,10 +365,18 @@ Na de requirements tabel bevestiging, presenteer een compleet overzicht:
 | Data          | {gekozen data management}   |
 | Requirements  | {N} requirements            |
 
-Vraag via AskUserQuestion: "Klopt dit overzicht voordat we doorgaan naar architectuur?"
+<!-- modal-buffer -->
 
-- "Ga door (Recommended)" — door naar scope analysis + architectuur
-- "Aanpassen" — terug naar relevante vraag
+Print 8 blank lines as whitespace buffer (keeps the overview table above visible when the modal panel opens).
+
+Vraag via AskUserQuestion:
+
+- header: "Requirements Samenvatting"
+- question: "Klopt dit overzicht voordat we doorgaan naar architectuur?"
+- options:
+  - label: "Ga door (Recommended)", description: "Door naar scope analysis + architectuur"
+  - label: "Aanpassen", description: "Terug naar relevante vraag"
+- multiSelect: false
 
 ### FASE 1b: Scope Analysis & Feature Splitting
 
@@ -438,6 +449,10 @@ Vraag via AskUserQuestion: "Klopt dit overzicht voordat we doorgaan naar archite
    Build order: {sub1} → {sub2}
    Cross-dependencies: {list or "none"}
    ```
+
+   <!-- modal-buffer -->
+
+   Print 8 blank lines as whitespace buffer (keeps the SPLIT RECOMMENDATION above visible when the modal panel opens).
 
    Use **AskUserQuestion** for confirmation:
    - header: "Feature Split"
@@ -745,61 +760,6 @@ Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md`
 - Signal architecture (welke signals, wie emit/ontvangt)
 - State machine aanpak (enum-based, node-based, stateless)
 
-### FASE 4b: Toewijzing
-
-AskUserQuestion:
-
-```yaml
-header: "Toewijzing"
-question: "Wie gaat dit bouwen?"
-options:
-  - label: "Zelf bouwen (Recommended)"
-    description: "Ik bouw dit met /game-build"
-  - label: "Teammate toewijzen"
-    description: "Genereer een task brief"
-multiSelect: false
-```
-
-**Zelf bouwen**: `assignee` blijft `null`. Ga door naar FASE 5.
-
-**Teammate toewijzen**:
-
-1. AskUserQuestion: "Naam van de teammate?" (vrije tekst)
-2. Zet `assignee` in memory (meenemen naar FASE 5 backlog sync)
-3. Genereer task brief in terminal output vanuit feature.json data:
-
-```
-───────────────────────────────────────
-TASK BRIEF — {feature-name}
-Toegewezen aan: {naam}
-───────────────────────────────────────
-
-## {feature-name}
-**Type:** {type} | **Prioriteit:** {phase} | **Status:** DEF
-
-### Beschrijving
-{summary uit feature.json}
-
-### Requirements
-| # | Requirement | Acceptatiecriteria |
-|---|------------|-------------------|
-{elke REQ uit feature.json}
-
-### Bestanden
-{elke file: actie + pad + doel}
-
-### Build Volgorde
-{genummerde stappen uit buildSequence}
-
-### Test Strategie
-{per REQ: testfile + beschrijving}
-
-### Dependencies
-{dependency + status als relevant}
-```
-
-4. Toon bericht: "Kopieer bovenstaande tekst en stuur naar {naam}."
-
 ### FASE 5: Sync
 
 Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
@@ -852,7 +812,7 @@ Data: {N} entities ({new} nieuw)
 Stack: {N} packages ({new} nieuw)
 
 Next steps:
-  1. /game-plan → genereer backlog uit concept (als nog geen backlog)
+  1. /project-plan → genereer backlog uit concept (als nog geen backlog)
   2. /game-build {feature-name} → start implementatie (als backlog al bestaat)
 ```
 

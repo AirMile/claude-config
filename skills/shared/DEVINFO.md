@@ -150,7 +150,7 @@ Geschreven door `frontend-design` (Build route) wanneer user "Open in convert" k
 
 ### `devinfo.tokenDrift` — Token Drift Log
 
-Geschreven door `frontend-tokens` (Updaten/Extraheren route) wanneer bestaande token-keys een andere waarde krijgen terwijl DOING/DONE PAGE-features bestaan. Gelezen en opgeruimd door `frontend-design` (Stap 5) en `frontend-convert` (FASE 4.1).
+Geschreven door `frontend-tokens` (Updaten/Extraheren route) wanneer bestaande token-keys een andere waarde krijgen terwijl DOING/DONE PAGE-features bestaan. Gelezen en opgeruimd door `frontend-design` (Stap 5), `frontend-convert` (FASE 4.1), en `dev-verify`/`dev-refactor` (als feature in `affectedFeatures` staat).
 
 ```json
 {

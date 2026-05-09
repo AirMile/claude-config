@@ -69,7 +69,7 @@ Sorteer desc op `date`. Cap op 15 entries.
 
 **Use case**: bij architectuur-beslissingen wil je zien welke patterns het project al gebruikt om consistent te blijven.
 
-**Gebruikt door**: `dev-plan`, `thinking-decide`.
+**Gebruikt door**: `project-plan`, `thinking-decide`.
 
 ### Scope: `pitfall-prefix`
 
@@ -88,49 +88,12 @@ matches = learnings
 
 ---
 
-## Globale memory altijd geladen
-
-Read `~/.claude/memory/MEMORY.md` (als bestaat). Verwacht formaat:
-
-```markdown
-## Patterns
-
-- **2026-04-28** — Stripe webhooks via idempotency keys
-  - Projects: auth, billing, payments
-
-## Pitfalls
-
-- **2026-04-20** — Promise.all faalt op eerste rejection
-  - Projects: auth, sync
-
-## Observations
-
-...
-```
-
-**Parsing**: per H2-sectie (`## Patterns`, `## Pitfalls`, `## Observations`), pak elk top-level bullet `- **{date}** — {summary}` mét z'n sub-bullet `- Projects: ...`. Type = sectienaam lowercased en singularized (Patterns → pattern).
-
-**Render** als sectie boven scope-specifieke output, geconverteerd naar compacte regel:
-
-```
-[2026-04-28] pattern — Stripe webhooks via idempotency keys (projects: auth, billing, payments)
-[2026-04-20] pitfall — Promise.all faalt op eerste rejection (projects: auth, sync)
-```
-
-Niet filteren — globale memory is per definitie cross-project relevant. Skip stilletjes als file niet bestaat. Bij parse-fout op individuele entry: skip die entry, ga door met de rest.
-
----
-
 ## Output format
 
 Skill ontvangt een ascii-blok dat in z'n context-output past:
 
 ```
 LEARNINGS CONTEXT
-
-Globaal (cross-project):
-  [2026-03-12] pattern — Stripe webhooks via idempotency keys (auth, billing, payments)
-  [2026-03-10] pitfall — Promise.all faalt op eerste rejection (auth, sync)
 
 Project pitfalls (laatste 5):
   [2026-04-20] auth-login — JWT refresh race condition bij parallel requests
@@ -158,19 +121,17 @@ Elke skill specificeert in z'n SKILL.md:
 Load learnings via shared/LEARNINGS-LOAD.md:
 - scopes: [component, architectural]
 - pitfall-prefix: true
-- global-memory: true
 - current-feature: <kebab-case naam, of "none" voor non-feature skills>
 ```
 
-`pitfall-prefix` en `global-memory` defaulten op `true` — alleen expliciet uitzetten als de skill echt geen pitfall-context nodig heeft.
+`pitfall-prefix` defaultt op `true` — alleen expliciet uitzetten als de skill echt geen pitfall-context nodig heeft.
 
 ---
 
 ## Edge cases
 
-- **Geen `project-context.json`**: skip alle scopes, alleen globale memory laden (als bestaat).
-- **Geen `~/.claude/memory/MEMORY.md`**: skip globale sectie, geen waarschuwing.
-- **Lege `learnings[]`**: skip alle project-scopes. Globale memory blijft.
+- **Geen `project-context.json`**: skip alle scopes — geen output.
+- **Lege `learnings[]`**: skip alle project-scopes.
 - **Geen `current-feature` opgegeven**: skip `component` scope. Andere scopes blijven.
 - **Worktree-aware**: lees `project-context.json` uit main worktree (volgens [SYNC.md](SYNC.md) Worktree-aware Pad Resolutie).
 

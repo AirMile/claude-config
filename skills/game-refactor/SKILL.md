@@ -39,7 +39,7 @@ This rule exists because refactoring external files risks breaking other feature
 
 - After `/game-verify` completes (features in DONE status)
 - When `.project/features/{name}/feature.json` exists with `tests` section
-- NOT for: fixing bugs (/game-verify), adding features (/game-define), planning (/game-plan)
+- NOT for: fixing bugs (/game-verify), adding features (/game-define), planning (/project-plan)
 
 ## Input
 
@@ -151,7 +151,6 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
    ```
    scopes: [component]
    pitfall-prefix: true
-   global-memory: true
    current-feature: <feature-name als feature-mode, anders "none">
    ```
 
@@ -889,7 +888,7 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 
    Next steps:
      1. /game-define {next-feature} → volgende feature uit backlog
-     2. /game-plan → backlog herzien als scope gewijzigd is
+     2. /project-plan → backlog herzien als scope gewijzigd is
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
