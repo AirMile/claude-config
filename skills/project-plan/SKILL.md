@@ -1,20 +1,20 @@
 ---
-name: dev-plan
-description: Transform idea or brainstorm output into a prioritized web feature plan with optional codebase/Context7/web research. Use with /dev-plan after /thinking-concept or /thinking-brainstorm to create implementation roadmaps.
+name: project-plan
+description: Transform idea or brainstorm output into a prioritized feature backlog. Auto-detects stack (web/game) from project.json. Use with /project-plan after /thinking-concept or /thinking-brainstorm to create implementation roadmaps.
 metadata:
   author: mileszeilstra
   version: 1.0.0
-  category: dev
+  category: project
 ---
 
-# Dev Plan
+# Project Plan
 
 ## Overview
 
-This is the **bridge** between `/thinking:*` commands and the dev pipeline.
-Transforms structured idea markdown into a prioritized feature backlog ready for `/dev-define`.
+This is the **bridge** between `/thinking:*` commands and the dev or game pipeline.
+Transforms structured idea markdown into a prioritized feature backlog ready for `/dev-define` (web) or `/game-define` (game).
 
-**Trigger**: `/dev-plan` or `/dev-plan [paste markdown]`
+**Trigger**: `/project-plan` or `/project-plan [paste markdown]`
 
 ## Input
 
@@ -22,7 +22,7 @@ Accepts markdown from:
 
 - `/thinking-concept` output
 - `/thinking-brainstorm` output
-- Any structured web concept markdown
+- Any structured concept markdown (web or game)
 
 ## Output
 
@@ -31,9 +31,27 @@ Accepts markdown from:
 - Decomposed features
 - Dependencies
 - P1/P2/P3/P4 priority
-- Direct links to `/dev-define {feature}`
+- Direct links to `/dev-define {feature}` (web) or `/game-define {feature}` (game)
 
 ## Workflow
+
+### Stack Detection (pre-FASE 0)
+
+**Goal:** Detect of het een web- of game-project is zodat de juiste feature-types en terminologie gebruikt worden.
+
+**Process:**
+
+1. Probeer `.project/project.json` te lezen
+2. Check velden in volgorde:
+   - `stack.engine === "godot"` → **GAME MODE**
+   - `concept.platform === "game"` → **GAME MODE**
+   - Geen match of geen project.json → **WEB MODE**
+3. Toon gedetecteerde mode:
+
+   ```
+   STACK DETECTED: web    (→ /dev-define pipeline)
+   STACK DETECTED: game   (→ /game-define pipeline)
+   ```
 
 ### FASE 0: Input Detection
 
@@ -54,7 +72,7 @@ Accepts markdown from:
    - Read concept: `.project/project-concept.md` als plain markdown, of fallback `project.json` (`concept.content`)
    - Read `backlog.html`
    - Analyze differences between concept and existing backlog
-   - Check `data.features[]` in `backlog.html` for entries with `source: "dev-todo"` or `source: "/core-setup"` or `source: "/dev-define"` or `source: "/dev-build"` to identify independently-added features
+   - Check `data.features[]` in `backlog.html` for entries with `source: "project-todo"` or `source: "dev-todo"` or `source: "/core-setup"` or `source: "/dev-define"` or `source: "/dev-build"` or `source: "/dev-verify"` or `source: "/game-define"` or `source: "/game-build"` to identify independently-added features
    - Compare current `concept.content` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
@@ -67,7 +85,7 @@ Accepts markdown from:
      Feature changes detected:
      - NEW: {list of features in concept but not in backlog}
      - MODIFIED: {list of features in both but with changed description/scope}
-     - INDEPENDENT: {list of features in backlog added via /dev-todo, /core-setup, /dev-define, /dev-build, or /dev-verify — not from concept}
+     - INDEPENDENT: {list of features in backlog added independently — not from concept}
      - REMOVED: {list of features in backlog, not in concept, AND not independently added}
      - UNCHANGED: {count} features
 
@@ -88,12 +106,12 @@ Accepts markdown from:
      ```
    - **If "Update backlog":**
      - **Merge rules by feature status:**
-       - **DOING/DONE features** (protected): preserve status, stage, priority, assignee, date, and notes. Only enrich description if concept provides new insights — never overwrite.
+       - **DOING/DONE features** (protected): preserve status, stage, priority, date, and notes. Only enrich description if concept provides new insights — never overwrite.
        - **TODO features (modified)**: update description/scope from concept, preserve priority and notes
        - **New features**: add as TODO with auto-assigned priority (user reviews in FASE 3)
        - **Removed TODO features**: mark as deprecated (don't delete)
        - **Removed DOING/DONE features**: show warning and ask user whether to keep or deprecate — these represent in-progress work that may still be relevant
-       - **INDEPENDENT features** (added via `/dev-todo`, `/core-setup`, `/dev-define`, `/dev-build`, or `/dev-verify`): always preserve unchanged — these are not derived from concept. Keep status, stage, priority, assignee, date, and description intact. Never deprecate or remove.
+       - **INDEPENDENT features**: always preserve unchanged — these are not derived from concept. Keep status, stage, priority, date, and description intact. Never deprecate or remove.
      - Continue to FASE 1 with update mode
    - **If "Nieuwe backlog":**
      - Use concept as input, ignore existing backlog
@@ -227,7 +245,7 @@ If ambiguities are identified, use AskUserQuestion to clarify before starting re
 
 Spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to do all research in an isolated context. This keeps Context7 results, web search output, and source file reads out of the main session.
 
-Agent prompt — include only research categories identified as needed in Step 1:
+**[WEB MODE]** Agent prompt:
 
 ```
 Research the following for a web project feature plan.
@@ -257,6 +275,35 @@ Web: {3-5 bullet points: real-world patterns, warnings, recommendations}
 RESEARCH_END
 ```
 
+**[GAME MODE]** Agent prompt:
+
+```
+Research the following for a Godot 4.x game feature plan.
+
+{If codebase research needed:}
+CODEBASE ANALYSIS:
+- Find similar features, existing patterns, scene tree conventions
+- Check existing implementations that can be reused
+- Note file structure and autoload conventions
+
+{If Context7 research needed:}
+GODOT RESEARCH:
+- resolve-library-id + query-docs for: Godot 4.x, GUT
+- Focus: scene composition, node types, GDScript patterns, signal usage, testing setup
+
+{If web research needed:}
+WEB RESEARCH (use WebSearch):
+- "Godot 4.x {mechanic} implementation patterns"
+- "Godot {feature-type} common pitfalls"
+
+RETURN FORMAT:
+RESEARCH_START
+Codebase: {3-5 bullet points: existing patterns, reusable scenes/scripts, conventions}
+Godot: {3-5 bullet points: scene architecture, GDScript patterns, pitfalls}
+Web: {3-5 bullet points: real-world patterns, warnings, recommendations}
+RESEARCH_END
+```
+
 **Step 4: Research Summary**
 
 Parse the agent's `RESEARCH_START...END` block. Display:
@@ -277,18 +324,19 @@ Only the compact summary enters the main context for FASE 1.
 
 ### FASE 1: Feature Extraction
 
-**Goal:** Identify distinct web features from the concept.
+**Goal:** Identify distinct features from the concept.
 
 **Learnings load** (vóór analyse) via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
 ```
 scopes: [architectural]
 pitfall-prefix: true
-global-memory: true
 current-feature: none
 ```
 
-Toon de geladen output. Architectural patterns sturen de feature decomposition (welke abstracties bestaan al, welke conventies volgen). Pitfall-prefix voorkomt herhaling van structurele bugs in nieuwe features.
+Toon de geladen output. Architectural patterns sturen de feature decomposition. Pitfall-prefix voorkomt herhaling van structurele bugs in nieuwe features.
+
+**[WEB MODE]**
 
 1. **Analyze:**
    - What are the core pages/routes?
@@ -306,7 +354,7 @@ Toon de geladen output. Architectural patterns sturen de feature decomposition (
    **If in update mode (from FASE 0 Scenario A):**
    - Start from existing backlog features as baseline — do NOT extract from scratch
    - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
-   - INDEPENDENT features (added via `/dev-todo`, `/core-setup`, `/dev-define`, `/dev-build`, or `/dev-verify`): always preserve unchanged — they are not concept-derived
+   - INDEPENDENT features: always preserve unchanged — they are not concept-derived
    - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
    - CANCELLED features zijn protected: behoud als `status: "CANCELLED"`, sluit uit van planning en build-order — behandel als niet-beschikbaar
    - Present the merged feature list with change markers for clarity
@@ -356,7 +404,7 @@ Toon de geladen output. Architectural patterns sturen de feature decomposition (
 
    Pas de feature lijst aan op basis van gevonden gaps.
 
-**Output:**
+**[WEB MODE] Output:**
 
 ```
 FEATURES EXTRACTED
@@ -373,63 +421,102 @@ In update mode, the Change column shows what happened to each feature.
 In create mode, the Change column is omitted.
 ```
 
-4. **Reuse-Discovery (optioneel — alleen bij ≥2 PAGE/FEATURE features met gedeelde UI-patterns):**
+5. **[WEB MODE] Reuse-Discovery (optioneel — alleen bij ≥2 PAGE/FEATURE features met gedeelde UI-patterns):**
 
-   **Wanneer overslaan:** geen frontend-project, minder dan 2 PAGE/FEATURE features, of alle UI patterns zijn al in `design.components[]` (indien beschikbaar).
+   **Wanneer overslaan:** geen frontend-project, minder dan 2 PAGE/FEATURE features, of alle UI patterns zijn al in `design.components[]`.
 
-   **Doel:** cross-page UI-patterns detecteren die als gedeeld component gebouwd kunnen worden. Threshold = 2+ pages moeten het pattern delen (speculatief voorstel).
+   Volg [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) voor het canonieke protocol.
 
-   **Stap 1 — Pattern scan:**
+   **Trigger:** cross-page UI-patroon-matching — groepeer features op beschrijvingen (Lijst/tabel, Card, Form, Modal/dialog, Navigation). Threshold: 2+ PAGE/FEATURE features delen het pattern. Voeg toe aan de feature-lijst (wordt meegenomen naar FASE 4 backlog generatie); append kebab-naam ook aan `dependencies[]` van elke PAGE/FEATURE die het pattern triggerde.
 
-   Groepeer geëxtraheerde features op UI-patronen in hun descriptions. Match op:
-   - Lijst/tabel-patronen: "list with filters", "table with search", "paginated list"
-   - Card-patronen: "card grid", "product card", "statistics card"
-   - Form-patronen: "form with validation", "multi-step form", "inline editing"
-   - Modal/dialog-patronen: "confirm dialog", "detail modal", "edit popup"
-   - Navigation-patronen: "sidebar nav", "breadcrumb", "tab navigation"
-
-   Groepen met 2+ matches = kandidaat COMPONENT.
-
-   **Stap 2 — Dedup:**
-   - Check `project.json#design.components[]` (als beschikbaar) — al in spec? → skip.
-   - Check `project-context.json#components[]` (als beschikbaar) — al gebouwd? → skip.
-
-   **Stap 3 — Voorstel:** (alleen als ≥1 kandidaat na dedup)
-
-   AskUserQuestion:
-
-   ```yaml
-   header: "Gedeelde UI-patronen gevonden"
-   question: "Deze features delen UI-patronen die als herbruikbare component gebouwd kunnen worden. Welke wil je als COMPONENT-todo toevoegen?"
-   options:
-     - label: "{naam} — gebruikt in: {page1}, {page2}", description: "Maak COMPONENT-todo (scope: atomic)"
-     - label: "..." (één per kandidaat)
-     - label: "Overslaan", description: "Geen COMPONENT-todos toevoegen"
-   multiSelect: true
-   ```
-
-   **Stap 4 — Verwerking:**
-
-   Per geaccepteerd voorstel — voeg toe aan de feature-lijst (wordt meegenomen naar FASE 4 backlog generatie):
-
-   ```json
-   {
-     "name": "{kebab-case naam}",
-     "type": "COMPONENT",
-     "status": "TODO",
-     "phase": "P3",
-     "description": "Component gedetecteerd als gedeeld pattern in: {page1}, {page2}",
-     "source": "/dev-plan",
-     "scope": "atomic",
-     "dependencies": []
-   }
-   ```
-
-   Ook: append de kebab-case naam naar de `dependencies[]` van **elke PAGE/FEATURE feature die het pattern triggerde** (in-memory — wordt meegeschreven in FASE 4 backlog generatie). Zo blokkeert `/dev-build` van die page features totdat het component DONE is.
+   **Source:** `"/project-plan"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
 
    "Overslaan" → geen COMPONENT-features aan lijst toevoegen.
 
-5. **Review with user:**
+6. **[WEB MODE] Design & Quality signals (optioneel — alleen bij expliciete mentions in concept):**
+
+   Scan concept tekst op de volgende keywords. Voeg alleen toe als het concept het **expliciet** noemt — niet bij impliciete speculatie.
+
+   | Keyword triggers                                                     | Type  | Naam            | Phase |
+   | -------------------------------------------------------------------- | ----- | --------------- | ----- |
+   | "design tokens", "kleuren", "typografie", "theme", "branding"        | THEME | `theme-init`    | P3    |
+   | "a11y", "accessibility", "WCAG", "screen reader", "toegankelijkheid" | A11Y  | `a11y-baseline` | P3    |
+   | "performance", "lighthouse", "core web vitals", "SEO", "snelheid"    | PERF  | `perf-baseline` | P3    |
+
+   Elk gevonden item: voeg toe aan de feature-lijst als:
+
+   ```json
+   {
+     "name": "{naam uit tabel}",
+     "type": "THEME|A11Y|PERF",
+     "status": "TODO",
+     "phase": "P3",
+     "description": "{relevante quote of parafrase uit concept}",
+     "source": "/project-plan"
+   }
+   ```
+
+   "Geen matches" → geen Design & Quality items toevoegen.
+
+---
+
+**[GAME MODE]**
+
+1. **Analyze:**
+   - What are the core mechanics?
+   - What systems need to be built?
+   - What can be split into independent features?
+
+   **If research was performed (FASE 0.5), also consider:**
+   - What already exists in the codebase that can be reused or extended?
+   - What framework patterns or conventions should guide the decomposition?
+   - What pitfalls or anti-patterns were identified to avoid?
+
+   **Granularity decision:** When a feature could be defined as one large item OR multiple smaller items, apply the right-size rule: each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — they're easier to combine than to split later.
+
+   **If in update mode (from FASE 0 Scenario A):**
+   - Start from existing backlog features as baseline — do NOT extract from scratch
+   - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
+   - INDEPENDENT features: always preserve unchanged — they are not concept-derived
+   - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
+   - Present the merged feature list with change markers for clarity
+
+2. **Extract features:**
+   - Each feature = one `/game-define` unit
+   - Feature should be implementable independently (with dependencies)
+   - Name in kebab-case for CLI use
+
+3. **Categorize by type:**
+   | Type | Description |
+   |------|-------------|
+   | CORE | Foundation systems (player, arena, input) |
+   | MECHANIC | Gameplay mechanics (combat, abilities) |
+   | CONTENT | Game content (specific abilities, elements) |
+   | POLISH | Juice, effects, feel |
+   | UI | User interface elements |
+
+**[GAME MODE] Output:**
+
+```
+FEATURES EXTRACTED
+
+Found {count} features:
+
+| # | Feature | Type | Description | Change |
+|---|---------|------|-------------|--------|
+| 1 | {name} | {type} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
+| 2 | {name} | {type} | {one-line description} | {marker or — if unchanged} |
+...
+
+In update mode, the Change column shows what happened to each feature.
+In create mode, the Change column is omitted.
+```
+
+4. **[GAME MODE] Feature Review (alle modes):**
+
+   <!-- modal-buffer -->
+
+   Print 8 blank lines as whitespace buffer (keeps the feature table above visible when the modal panel opens).
 
    Use AskUserQuestion:
    - header: "Feature Review"
@@ -440,11 +527,55 @@ In create mode, the Change column is omitted.
    - multiSelect: false
 
    **Response handling:**
-   - "Ja, dit klopt" → proceed to FASE 2
-   - "Features aanpassen" → ask what to change (add/remove/edit name/type/description/risk), apply changes, show updated table, re-ask
+   - "Ja, dit klopt" → proceed to FASE 2 (game) or Reuse-Discovery if applicable (web)
+   - "Features aanpassen" → ask what to change, apply changes, show updated table, re-ask
    - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms features are correct.**
+
+5. **[GAME MODE] Core loop validatie (alleen in create mode of bij gewijzigde P1 features):**
+
+   Controleer of de P1 features samen een speelbare gameplay loop vormen:
+
+   ```
+   LOOP VALIDATIE
+
+   Moment-to-moment (0-30s):
+   - Actie: {wat doet de speler} → Reactie: {wat doet het systeem} → Feedback: {wat ziet/hoort de speler}
+
+   Session loop (5-30min):
+   - Doel: {wat probeert de speler te bereiken}
+   - Poging: {hoe probeert de speler dat}
+   - Uitkomst: {win/verlies/progressie}
+
+   P1 loop compleet? {JA / NEE — {ontbrekend element}}
+   ```
+
+   - Als de loop NIET compleet is: toon welk element mist en stel voor om een feature toe te voegen of te promoten naar P1
+   - Als de loop WEL compleet is: toon bevestiging en ga door
+
+**[WEB MODE] Feature Review:**
+
+   <!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the feature table above visible when the modal panel opens).
+
+Use AskUserQuestion:
+
+- header: "Feature Review"
+- question: "Kloppen deze features? Je kunt toevoegen, verwijderen of aanpassen."
+- options:
+  - label: "Ja, dit klopt (Recommended)", description: "Features zijn correct, ga door naar dependencies"
+  - label: "Features aanpassen", description: "Toevoegen, verwijderen, of naam/type/beschrijving wijzigen"
+- multiSelect: false
+
+**Response handling:**
+
+- "Ja, dit klopt" → proceed to FASE 2
+- "Features aanpassen" → ask what to change (add/remove/edit name/type/description/risk), apply changes, show updated table, re-ask
+- "Other" → parse user's freeform input, apply changes, show updated table, re-ask
+
+**Loop until user confirms features are correct.**
 
 ### FASE 2: Dependency Analysis
 
@@ -456,6 +587,8 @@ In create mode, the Change column is omitted.
 
 2. **Build dependency graph** — genereer een ASCII decomposition tree met feature → epics → stories structuur en dependency edges:
 
+   **[WEB MODE] voorbeeld:**
+
    ```
    routing (base)
    └── auth-pages
@@ -465,11 +598,22 @@ In create mode, the Change column is omitted.
            └── api-user-data
    ```
 
+   **[GAME MODE] voorbeeld:**
+
+   ```
+   player-movement (base)
+   └── basic-combat
+       └── ability-system
+           ├── element-water
+           ├── element-fire
+           └── ability-draft
+   ```
+
 3. **Detect circular dependencies:**
    - If found, suggest how to break the cycle
    - Ask user for resolution if unclear
 
-4. **Detect broken dependencies (CANCELLED):**
+4. **[WEB MODE] Detect broken dependencies (CANCELLED):**
    - Als een feature afhankelijk is van een feature met `status: "CANCELLED"`, markeer als gebroken:
      ```
      ⚠ GEBROKEN DEPENDENCY: {feature-A} → {feature-B} (CANCELLED)
@@ -485,21 +629,19 @@ DEPENDENCIES MAPPED
 
 | Feature | Depends On | Blocks |
 |---------|------------|--------|
-| routing | - | auth-pages |
-| auth-pages | routing | user-dashboard |
-| user-dashboard | auth-pages | profile-settings, notifications |
+| {feature-1} | - | {feature-2} |
+| {feature-2} | {feature-1} | {feature-3} |
 ...
 
 Dependency tree:
-routing (base)
-└── auth-pages
-    └── user-dashboard
-        ├── profile-settings
-        ├── notifications
-        └── api-user-data
+{ascii tree}
 ```
 
-4. **Review with user:**
+5. **Review with user:**
+
+   <!-- modal-buffer -->
+
+   Print 8 blank lines as whitespace buffer (keeps the dependency tree above visible when the modal panel opens).
 
    Use AskUserQuestion:
    - header: "Dependency Review"
@@ -518,7 +660,7 @@ routing (base)
 
 ### FASE 3: Priority Assignment
 
-**Goal:** Prioriteiten toekennen (P1–P3).
+**Goal:** Prioriteiten toekennen (P1–P4).
 
 1. **Show feature list as numbered plain text:**
 
@@ -530,28 +672,38 @@ routing (base)
    ...
    ```
 
-   Vraag: "Welke features zijn P1 (minimaal nodig voor een werkend prototype)? Geef nummers (bv. `1, 3, 5` of `1-4` of `alles behalve 2, 7`)."
+   **[WEB MODE]** Vraag: "Welke features zijn P1 (minimaal nodig voor een werkend prototype)? Geef nummers (bv. `1, 3, 5` of `1-4` of `alles behalve 2, 7`)."
+   **[GAME MODE]** Vraag: "Welke features zijn P1 (minimaal nodig voor een speelbaar prototype)? Geef nummers (bv. `1, 3, 5` of `1-4` of `alles behalve 2, 7`)."
 
    Parse free-form input → P1-set. Gebruiker kan ook "alles" of "geen" zeggen.
 
 2. **Auto-assign remaining features using heuristics:**
    - P2: Features that directly extend P1 functionality OR are prerequisites for important P3 features
    - P3: Nice-to-have, polish, extra content, integrations without core impact
+   - P4: Stretch goals, experimental features, future considerations
    - When unclear: prefer P2 (easier to demote than to promote later)
 
 3. **Review with user:**
 
-   Show proposed prioritization table, then use AskUserQuestion:
+   Show proposed prioritization table, then:
+
+   <!-- modal-buffer -->
+
+   Print 8 blank lines as whitespace buffer (keeps the priority table above visible when the modal panel opens).
+
+   Use AskUserQuestion:
    - header: "Priority Review"
    - question: "Klopt deze prioritering? P1 = must-have, P2 = extends P1, P3 = nice-to-have, P4 = later. Je kunt features verplaatsen."
    - options:
      - label: "Ja, dit klopt (Recommended)", description: "Prioriteiten zijn correct, genereer backlog"
      - label: "Features verplaatsen", description: "Een of meer features naar een andere prioriteit"
+     - label: "Aanpassen", description: "Andere wijzigingen aan prioriteiten"
    - multiSelect: false
 
    **Response handling:**
    - "Ja, dit klopt" → proceed to FASE 4
    - "Features verplaatsen" → ask which features and target priority, update table, re-ask
+   - "Aanpassen" → let user describe changes, apply, show updated prioritization, re-ask
    - "Other" → parse user's freeform input, apply changes, re-ask
 
    **Loop until user confirms prioritization is correct.**
@@ -587,17 +739,19 @@ P4:
 
 2. **Bouw het JSON data-object:**
 
+   **[WEB MODE]:**
+
    ```json
    {
      "project": "{Project Name}",
      "generated": "{YYYY-MM-DD}",
      "updated": "{YYYY-MM-DD}",
-     "source": "/dev-plan",
+     "source": "/project-plan",
      "overview": "{Brief description from source}",
      "features": [
        {
          "name": "{feature-name}",
-         "type": "FEATURE|API|INTEGRATION|UI|REFACTOR",
+         "type": "FEATURE|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|PAGE-GAP",
          "status": "TODO",
          "phase": "P1|P2|P3|P4",
          "description": "{description}",
@@ -609,15 +763,47 @@ P4:
    }
    ```
 
-   **In update mode, apply merge rules:**
-   - For each existing backlog feature: preserve `status`, `stage`, `phase`, `assignee`, `date` from the current backlog
+   **[GAME MODE]:**
+
+   ```json
+   {
+     "project": "{Project Name}",
+     "generated": "{YYYY-MM-DD}",
+     "updated": "{YYYY-MM-DD}",
+     "source": "/project-plan",
+     "overview": "{Brief description from source}",
+     "features": [
+       {
+         "name": "{feature-name}",
+         "type": "CORE|MECHANIC|CONTENT|POLISH|UI",
+         "status": "TODO",
+         "phase": "P1|P2|P3|P4",
+         "description": "{description}",
+         "dependencies": ["{other-feature}"]
+       }
+     ],
+     "notes": "{Any notes or considerations}"
+   }
+   ```
+
+   **[WEB MODE] Sort `features[]` to match the FASE 2 suggested order:**
+   1. **Group by `phase`** in order: P1 → P2 → P3 → P4
+   2. **Within each phase, apply topological sort** based on `dependencies[]`:
+      - Features met `dependencies: []` eerst (binnen die fase)
+      - Vervolgens features waarvan alle dependencies eerder in de array staan
+      - Cross-phase dependencies (bv. P2-feature die afhangt van P1-feature) worden automatisch correct: P1 staat al vóór P2
+   3. **Tie-breaker** binnen dezelfde topologische "laag": behoud de volgorde uit FASE 1 (extractie-volgorde)
+
+   **[WEB MODE] In update mode, apply merge rules:**
+   - For each existing backlog feature: preserve `status`, `stage`, `phase`, `date` from the current backlog
    - For MODIFIED features (TODO status): update `description` and `type` from new extraction
    - For MODIFIED features (DOING/DONE status): only enrich `description` if concept adds new insights — never overwrite
    - For NEW features: add with `status: "TODO"`, `stage: null`
    - For DEPRECATED features: keep in the array but set `status: "DEPRECATED"`
    - Set `updated` to current date, keep original `generated` date
+   - INDEPENDENT features (added outside project-plan): always preserve intact
 
-3. **Vervang het JSON-blok** in het gekopieerde template:
+3. **Vervang het JSON-blok** in het template:
    - Zoek: `<script id="backlog-data" type="application/json">...</script>`
    - Vervang de inhoud tussen de tags met het gebouwde JSON object
 
@@ -633,10 +819,12 @@ P4:
    Als concept info beschikbaar uit input:
    1. Read `.project/project.json` (of maak nieuw met leeg schema)
    2. Vul `concept` sectie met name, description, goals, audience, scope — **OVERWRITE**
-   3. Vul `stack` sectie met gedetecteerde framework, taal, DB, etc. — alleen als velden leeg zijn
+   3. **[WEB MODE]** Vul ook `stack` sectie met gedetecteerde framework, taal, DB, etc. — alleen als velden leeg zijn
    4. Write `.project/project.json`
 
 **Output:**
+
+**[WEB MODE]:**
 
 ```
 BACKLOG CREATED
@@ -647,13 +835,35 @@ Server: http://localhost:9876/{project-dir}
 
 | Priority | Features |
 |----------|----------|
-| P1 | {count} |
-| P2       | {count} |
-| P3       | {count} |
-| Total    | {count} |
+| P1       | {count}  |
+| P2       | {count}  |
+| P3       | {count}  |
+| P4       | {count}  |
+| Total    | {count}  |
 
 Start development:
 /dev-define {first-P1-feature}
+```
+
+**[GAME MODE]:**
+
+```
+BACKLOG CREATED
+
+File: .project/backlog.html
+Dashboard: .project/project.json (concept)
+Server: http://localhost:9876/{project-dir}
+
+| Priority | Features |
+|----------|----------|
+| P1       | {count}  |
+| P2       | {count}  |
+| P3       | {count}  |
+| P4       | {count}  |
+| Total    | {count}  |
+
+Start development:
+/game-define {first-P1-feature}
 ```
 
 ## Best Practices
@@ -672,15 +882,21 @@ Start development:
 
 ### P1 Scope
 
+**[WEB MODE]:**
+
 - Functional > Feature-complete
 - Core user flow first
 - Polish is P3
 
+**[GAME MODE]:**
+
+- Playable > Feature-complete
+- Core loop first
+- Polish is P3
+
 ## Example
 
-**Input:** E-commerce dashboard idea markdown
-
-**Output:**
+**[WEB MODE] Input:** E-commerce dashboard idea markdown
 
 ```
 BACKLOG CREATED
@@ -706,4 +922,32 @@ P3:
 12. performance-optimization (REFACTOR)
 
 Start: /dev-define routing
+```
+
+**[GAME MODE] Input:** Elemental Clash idea markdown
+
+```
+BACKLOG CREATED
+
+File: .project/backlog.html
+
+P1:
+1. player-movement (CORE)
+2. basic-combat (MECHANIC)
+3. health-system (MECHANIC)
+4. ability-system (MECHANIC)
+5. element-water (CONTENT)
+
+P2:
+6. element-fire (CONTENT)
+7. element-earth (CONTENT)
+8. element-air (CONTENT)
+9. ability-draft (MECHANIC)
+
+P3:
+10. round-system (MECHANIC)
+11. ui-hud (UI)
+12. screen-shake (POLISH)
+
+Start: /game-define player-movement
 ```

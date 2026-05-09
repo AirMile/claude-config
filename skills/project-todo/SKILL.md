@@ -1,36 +1,49 @@
 ---
-name: dev-todo
+name: project-todo
 description: >-
   Add new backlog items (features, changes, bugs, refactors, pages, components,
-  a11y, performance) with optional thinking rounds. Use with /dev-todo or
-  /dev-todo [beschrijving] when capturing a new idea for the project backlog.
+  scenes, scripts, a11y, performance) with optional thinking rounds. Auto-detects
+  stack (web/game) from project.json. Use with /project-todo or /project-todo [beschrijving]
+  when capturing a new idea for the project backlog.
 metadata:
   author: mileszeilstra
-  version: 3.1.0
-  category: dev
+  version: 1.0.0
+  category: project
 ---
 
 # Todo
 
-Capture new backlog items, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have an idea" and a backlog item ready for `/dev-define`.
+Capture new backlog items, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have an idea" and a backlog item ready for `/dev-define` (web) or `/game-define` (game).
 
-**Trigger**: `/dev-todo` or `/dev-todo [beschrijving]`
+**Trigger**: `/project-todo` or `/project-todo [beschrijving]`
 
 ## When to Use
 
-- User has a new feature, change, bug fix, improvement, page, component, or frontend task for an existing product
-- User wants to quickly capture an item without full `/dev-plan`
+- User has a new feature, change, bug fix, improvement, mechanic, or content idea for an existing project
+- User wants to quickly capture an item without full `/project-plan`
 - User wants to think through an idea before adding to backlog
 
 NOT for: concept-level ideation (`/thinking-concept`), iterating on existing items (`/thinking-brainstorm`, `/thinking-critique`).
 
 ## Workflow
 
+### Stack Detection (pre-FASE 0)
+
+1. Probeer `.project/project.json` te lezen
+2. Check velden:
+   - `stack.engine === "godot"` OF `concept.platform === "game"` → **GAME MODE**
+   - Geen match of geen project.json → **WEB MODE**
+3. Toon gedetecteerde mode:
+   ```
+   STACK: web    (→ /dev-define pipeline)
+   STACK: game   (→ /game-define pipeline)
+   ```
+
 ### FASE 0: Input + Backlog Check
 
 1. **Beschrijving bepalen:**
-   - Argument meegegeven (`/dev-todo contactformulier toevoegen`) → gebruik als startbeschrijving
-   - Geen argument (`/dev-todo`) → vraag de gebruiker direct: "Wat wil je toevoegen aan de backlog?" Wacht op hun antwoord.
+   - Argument meegegeven (`/project-todo dash-ability toevoegen`) → gebruik als startbeschrijving
+   - Geen argument (`/project-todo`) → vraag de gebruiker direct: "Wat wil je toevoegen aan de backlog?" Wacht op hun antwoord.
 
 2. **Backlog check:**
    - Read `.project/backlog.html`
@@ -43,7 +56,7 @@ NOT for: concept-level ideation (`/thinking-concept`), iterating on existing ite
           "project": "{project directory name}",
           "generated": "{YYYY-MM-DD}",
           "updated": "{YYYY-MM-DD}",
-          "source": "/dev-todo",
+          "source": "/project-todo",
           "overview": "",
           "features": [],
           "notes": ""
@@ -67,7 +80,7 @@ NOT for: concept-level ideation (`/thinking-concept`), iterating on existing ite
        multiSelect: false
        ```
 
-       - "Toch toevoegen" → suffix toevoegen (bijv. `contact-form-2`)
+       - "Toch toevoegen" → suffix toevoegen (bijv. `dash-ability-2`)
        - "Item verdiepen" → suggest `/thinking-brainstorm {naam}` en stop
        - "Annuleren" → stop
 
@@ -97,13 +110,30 @@ Formuleer 2-3 vragen specifiek voor DIT idee. Presenteer alle vragen in één As
 - Concrete, clickable opties (2-4 per vraag)
 - Recommended option = meest waarschijnlijke keuze
 - Maximum 3 vragen
-- Focus op scope, doel, en aanpak — niet op implementatiedetails
+- **[WEB MODE]** Focus op scope, doel, en aanpak — niet op implementatiedetails
+- **[GAME MODE]** Focus op gameplay feel, balancing, en technische aanpak (Godot-specifiek)
+
+**[GAME MODE]** Gebruik deze question-headers als richtlijn:
+
+```yaml
+# Question 1
+header: "Gameplay"
+question: "{specifieke vraag over hoe deze mechanic voelt/werkt voor de speler}"
+
+# Question 2
+header: "Balancing"
+question: "{specifieke vraag over balancing, tuning, of interactie met bestaande mechanics}"
+
+# Question 3 (optional)
+header: "Technisch"
+question: "{specifieke vraag over technische aanpak of Godot-specifieke keuzes}"
+```
 
 Na de antwoorden: verwerk de inzichten in een aangescherpte beschrijving van het item. Ga door naar FASE 1b.
 
-### FASE 1b: Priority + Category
+### FASE 1b: Priority + Category/Type
 
-Eén AskUserQuestion call met twee vragen:
+**[WEB MODE]** Eén AskUserQuestion call met twee vragen:
 
 ```yaml
 # Vraag 1
@@ -126,7 +156,32 @@ options:
 multiSelect: false
 ```
 
-### FASE 1c: Type
+**[GAME MODE]** Twee losse AskUserQuestion calls:
+
+```yaml
+# Vraag 1: Priority
+header: "Priority"
+question: "Welke prioriteit heeft deze feature?"
+options:
+  - label: "P1 (Recommended)", description: "Hoogste prioriteit"
+  - label: "P2", description: "Belangrijk maar niet blokkerend"
+  - label: "P3", description: "Als er tijd is"
+  - label: "P4", description: "Parkeren voor later"
+multiSelect: false
+
+# Vraag 2: Type
+header: "Type"
+question: "Wat voor type item is dit?"
+options:
+  - label: "MECHANIC (Recommended)", description: "Nieuwe gameplay mechanic (ability, movement, combat)"
+  - label: "SYSTEM", description: "Ondersteunend systeem (spawning, scoring, saving)"
+  - label: "CONTENT", description: "Levels, vijanden, items, dialoog"
+  - label: "POLISH", description: "Juice, particles, screen shake, geluid"
+  - label: "UI", description: "HUD, menu's, feedback indicators"
+multiSelect: false
+```
+
+### FASE 1c: Type (alleen WEB MODE)
 
 Eén AskUserQuestion call (1 vraag). Opties afhankelijk van gekozen categorie:
 
@@ -147,26 +202,15 @@ multiSelect: false
 
 ```yaml
 header: "Type"
-question: "Frontend creatie loopt via /frontend-design Capture (frontend-track). Welke entity?"
+question: "Welke frontend entity?"
 options:
-  - label: "PAGE → /frontend-design (Recommended)", description: "Opent geen backlog-entry — kopieer commando hieronder"
-  - label: "COMPONENT → /frontend-design", description: "Opent geen backlog-entry — kopieer commando hieronder"
-  - label: "Toch PAGE-GAP (Dev-track)", description: "Ontbrekende functionaliteit op bestaande pagina — wordt gecategoriseerd als Dev-track item"
+  - label: "PAGE (Recommended)", description: "Nieuwe pagina/route — landt op Frontend track ('To design')"
+  - label: "COMPONENT", description: "Herbruikbaar UI-component — landt op Frontend track"
+  - label: "PAGE-GAP", description: "Ontbrekende functionaliteit op bestaande pagina — landt op Dev track"
 multiSelect: false
 ```
 
-Bij keuze **PAGE** of **COMPONENT**: toon copy-cmd en eindig zonder backlog-write:
-
-```
-PAGE/COMPONENT creatie loopt via /frontend-design Capture (frontend-track).
-
-Kopieer en run:
-  /frontend-design {ingevoerde naam}
-
-Na Capture verschijnt het item op de Frontend-track.
-```
-
-Bij keuze **Toch PAGE-GAP**: route door naar de **Design & Quality** flow hieronder — gebruiker kiest PAGE-GAP als type en krijgt een Dev-track backlog-entry.
+Alle drie types vallen door naar **FASE 1d → FASE 2 Backlog write**. PAGE en COMPONENT landen op de Frontend swimlane ("To design"); PAGE-GAP op de Dev swimlane ("To define").
 
 **If Design & Quality:**
 
@@ -177,7 +221,6 @@ options:
   - label: "THEME (Recommended)", description: "Design tokens — kleuren, typografie, spacing via /frontend-tokens"
   - label: "A11Y", description: "Accessibility verbetering via /frontend-check --scope=a11y"
   - label: "PERF", description: "Performance of SEO optimalisatie via /frontend-check"
-  - label: "PAGE-GAP", description: "Ontbrekende functionaliteit op een bestaande pagina"
 multiSelect: false
 ```
 
@@ -196,13 +239,13 @@ multiSelect: false
 
 **"Nee"** → `dependencies: []`
 
-**"Ja"** → AskUserQuestion (vrije tekst): "Welke features? (komma-gescheiden, bijv. user-auth, api-setup)" → parse naar array → `dependencies: ["naam1", "naam2"]`
+**"Ja"** → AskUserQuestion (vrije tekst): "Welke features? (komma-gescheiden)" → parse naar array → `dependencies: ["naam1", "naam2"]`
 
 ### FASE 2: Schrijf naar Backlog + Thinking
 
 1. Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data" type="application/json">...</script>`
 
-2. **Genereer naam:** kebab-case uit beschrijving (bijv. "Contactformulier met validatie" → `contact-form`)
+2. **Genereer naam:** kebab-case uit beschrijving (bijv. "Dash ability met cooldown" → `dash-ability`)
 
 3. **Insert in `data.features[]`** — voeg het nieuwe object toe na het laatste item met `status: "DOING"` of `status: "TODO"`, of aan het begin als er geen actieve items zijn:
 
@@ -213,20 +256,20 @@ multiSelect: false
      "status": "TODO",
      "phase": "{gekozen priority}",
      "description": "{beschrijving — aangescherpt als thinking rounds gedaan}",
-     "source": "dev-todo",
+     "source": "/project-todo",
      "dependencies": []
    }
    ```
 
-   Het `source: "dev-todo"` veld signaleert aan `/dev-plan` dat deze feature handmatig is toegevoegd (INDEPENDENT) en nooit overschreven mag worden bij backlog-rebuild.
+   Het `source: "/project-todo"` veld signaleert aan `/project-plan` dat deze feature handmatig is toegevoegd (INDEPENDENT) en nooit overschreven mag worden bij backlog-rebuild.
 
 4. **Update metadata:** zet `data.updated` naar huidige datum (`YYYY-MM-DD`)
 
-5. **Schrijf terug:** Edit het JSON-blok in `backlog.html`. Zoek een uniek anker in de bestaande features array (bijv. het eerstvolgende item na de insert-positie) en gebruik Edit om het nieuwe object ervoor te plaatsen. Houd de `<script>` tags intact.
+5. **Schrijf terug:** Edit het JSON-blok in `backlog.html`. Zoek een uniek anker in de bestaande features array en gebruik Edit om het nieuwe object ervoor te plaatsen. Houd de `<script>` tags intact.
 
 6. **Schrijf thinking output** (alleen als FASE 1a doorlopen):
    - Maak `.project/features/{naam}/` directory aan
-   - Schrijf naar `.project/features/{naam}/thinking.md`:
+   - **[WEB MODE]** Schrijf naar `.project/features/{naam}/thinking.md`:
 
      ```markdown
      # {Item Naam}
@@ -248,7 +291,48 @@ multiSelect: false
      {antwoord op aanpak-vraag, als gesteld}
      ```
 
+   - **[GAME MODE]** Schrijf naar `.project/features/{naam}/thinking.md`:
+
+     ```markdown
+     # {Feature Naam}
+
+     ## Beschrijving
+
+     {aangescherpte beschrijving}
+
+     ## Gameplay
+
+     {antwoord op gameplay-vraag}
+
+     ## Balancing
+
+     {antwoord op balancing-vraag}
+
+     ## Technisch
+
+     {antwoord op technische vraag, als gesteld}
+     ```
+
+7. **Log naar project.json thinking array** (als thinking rounds gedaan):
+   - Read `.project/project.json` (of maak `{}` als niet bestaat)
+   - Push naar `thinking` array (initialiseer als `[]` indien nodig):
+     ```json
+     {
+       "type": "feature-idea",
+       "date": "{today}",
+       "title": "{feature naam}",
+       "summary": "{beschrijving, max 200 chars}",
+       "file": ".project/features/{naam}/thinking.md",
+       "newFeature": "{naam}",
+       "source": "/project-todo"
+     }
+     ```
+   - Als geen thinking rounds gedaan (snel toevoegen), `file` weglaten
+   - Write `.project/project.json`
+
 ### FASE 3: Output
+
+**[WEB MODE]:**
 
 ```
 TODO TOEGEVOEGD
@@ -263,6 +347,7 @@ TODO TOEGEVOEGD
   - /thinking-critique {naam} - Toets het idee kritisch
   [If type is FEATURE, CHANGE, BUG, or API:]
   - /dev-define {naam} - Begin met requirements en bouwen
+  - /team-outsource {naam} - Outsource naar een teammate via GitHub/Jira/Linear
   [If type is PAGE or COMPONENT:]
   - /frontend-design {naam} - Bouw de pagina/component
   - /frontend-design - Definieer meerdere pagina's tegelijk
@@ -274,8 +359,22 @@ TODO TOEGEVOEGD
   - /frontend-check {naam} - Voer performance en SEO audit uit
   [If type is PAGE-GAP:]
   - /dev-define {naam} - Definieer de ontbrekende functionaliteit
+```
 
-  Tip: wijs toe aan een teammate door assignee toe te voegen in de backlog UI
+**[GAME MODE]:**
+
+```
+FEATURE TOEGEVOEGD
+
+  {naam}                {phase} · {type}
+  {beschrijving}
+  Thinking: .project/features/{naam}/thinking.md    ← alleen als thinking rounds gedaan
+
+  Backlog: .project/backlog.html
+  Next steps:
+  - /thinking-brainstorm {naam} - Verdiep het idee met variaties
+  - /thinking-critique {naam} - Toets het idee kritisch
+  - /game-define {naam} - Begin met requirements en architectuur
 ```
 
 ## Restrictions

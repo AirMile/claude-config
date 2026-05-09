@@ -310,7 +310,7 @@ Inclusief Competitive Landscape tabel en/of Technical Feasibility assessment als
 Auto-save zonder extra vragen:
 
 1. Schrijf rapport naar `.project/thinking/{concept-name}-research.md` (volledig rapport als user-archief)
-2. Voeg `## Research Findings` sectie toe aan `.project/project-concept.md` (dit is wat dev-plan/dev-define als context zien)
+2. Voeg `## Research Findings` sectie toe aan `.project/project-concept.md` (dit is wat project-plan/dev-define als context zien)
 3. Bevestig:
 
 ```
@@ -326,7 +326,7 @@ Next steps:
 - /thinking-critique - Kritisch analyseren met research context
 - /thinking-brainstorm - Creatief uitbreiden met nieuwe inzichten
 - /thinking-decide - Beslissing nemen op basis van research
-- /dev-plan - Omzetten naar web feature backlog
+- /project-plan - Omzetten naar feature backlog
 ```
 
 **Scope = feature of pagina:**

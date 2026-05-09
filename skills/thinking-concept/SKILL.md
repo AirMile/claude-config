@@ -596,8 +596,7 @@ multiSelect: false
    Next steps:
    - /thinking-critique - Kritisch analyseren en versterken
    - /thinking-brainstorm - Creatief uitbreiden en variaties
-   - /dev-plan - Omzetten naar web feature backlog
-   - /game-backlog - Omzetten naar feature backlog (voor games)
+   - /project-plan - Omzetten naar feature backlog
    ```
 
 **Concept-scope output is geïntegreerd in `project-concept.md`.** Geen losse `.project/thinking/*.md` voor concept-scope en geen `concept.thinking[]` append — het levende document is de bron. Update `concept.name` en `concept.pitch` in `project.json` als metadata wijzigt.
@@ -648,8 +647,7 @@ multiSelect: false
    Next steps:
    - /thinking-critique - Kritisch analyseren en versterken
    - /thinking-brainstorm - Creatief uitbreiden en variaties
-   - /dev-plan - Omzetten naar web feature backlog
-   - /game-backlog - Omzetten naar feature backlog (voor games)
+   - /project-plan - Omzetten naar feature backlog
    ```
 
 **If "Kopieer naar clipboard":**

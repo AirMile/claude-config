@@ -16,12 +16,12 @@ dev:
   - dev-build
   - dev-debug
   - dev-define
-  - dev-todo
   - dev-optimize
   - dev-owasp
-  - dev-plan
   - dev-refactor
   - dev-verify
+  - project-plan
+  - project-todo
 
 frontend:
   - frontend-check
@@ -39,19 +39,23 @@ game:
   - game-debug
   - game-define
   - game-optimize
-  - game-plan
   - game-refactor
-  - game-todo
   - game-verify
+  - project-plan
+  - project-todo
 
 project:
   - project-add
   - project-backlog
+  - project-plan
   - project-pull
   - project-remove
+  - project-todo
   - project-tunnel
 
 team:
+  - team-issues
+  - team-outsource
   - team-review
   - team-verify
 

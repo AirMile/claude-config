@@ -236,7 +236,7 @@ Next steps:
 - /marketing-content  — tekstvarianten schrijven op basis van deze signalen
 - /thinking-decide    — beslissing nemen op basis van deze inzichten
 - /marketing-screenshots — marketing screenshots voor launch
-- /dev-plan           — feature backlog op basis van marktinzichten
+- /project-plan       — feature backlog op basis van marktinzichten
 ```
 
 ## Guidelines
