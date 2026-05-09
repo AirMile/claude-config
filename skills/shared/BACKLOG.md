@@ -19,7 +19,7 @@ De backlog is een interactieve HTML list view met embedded JSON data. Alle skill
   "project": "Projectnaam",
   "generated": "2026-01-15",
   "updated": "2026-01-20",
-  "source": "/dev-plan",
+  "source": "/project-plan",
   "overview": "Korte beschrijving",
   "features": [
     {
@@ -28,10 +28,9 @@ De backlog is een interactieve HTML list view met embedded JSON data. Alle skill
       "status": "TODO|DEFINED|DOING|DONE|CANCELLED",
       "phase": "P1|P2|P3|P4",
       "description": "Beschrijving",
-      "source": "concept|dev-todo",
+      "source": "concept|project-todo",
       "dependencies": ["andere-feature"],
       "risk": "1-5|null",
-      "assignee": "naam|null",
       "date": "2026-01-15|null",
       "auto": "true|null",
       "refactor": "REFACTORED|ROLLED_BACK|null",
@@ -42,6 +41,18 @@ De backlog is een interactieve HTML list view met embedded JSON data. Alle skill
         "lastRun": "<YYYY-MM-DD>",
         "scopes": ["<scope-naam>"],
         "findings": { "critical": "<N>", "warnings": "<N>", "passed": "<N>" }
+      },
+      "externalRef": {
+        "type": "github|jira|linear",
+        "id": "<issue/ticket id>",
+        "url": "<full URL>",
+        "itemId": "<ProjectV2 node id of null>",
+        "assignees": ["<username>"],
+        "labels": ["<label>"],
+        "direction": "inbound|outbound",
+        "syncedStatus": "open|closed|null",
+        "syncedAt": "<YYYY-MM-DD>",
+        "split": "frontend|backend|tests|null"
       }
     }
   ],
@@ -56,12 +67,47 @@ Het `audit`-veld is **frontend-track-specifiek** (type `PAGE` of `COMPONENT`). `
 1. Read `.project/backlog.html` (volledige inhoud)
 2. Parse het JSON-blok (zie hierboven)
 3. Muteer het data object (status wijzigen, items toevoegen, etc.)
+
+   **Bij items toevoegen — dedup-check (altijd, voor elke `data.features.push()`):**
+   1. `data.features.find(f => f.name === kebab-name)` → al in backlog? → skip.
+   2. Type COMPONENT: ook `project.json#design.components.find(c => c.name === kebab-name)` → al gespecificeerd? → link i.p.v. push.
+   3. Discovery-flows: `feature.json#suggestionsLog.find(s => s.name === name && s.status === "rejected" && s.skill === current-skill)` → eerder afgewezen door huidige skill? → skip.
+
 4. Zet `updated` naar huidige datum (`YYYY-MM-DD`)
 5. Serialiseer het JSON object: `JSON.stringify(data, null, 2)`
 6. Vervang het blok tussen `<script id="backlog-data" type="application/json">` en `</script>` met de nieuwe JSON
 7. Write het volledige bestand terug naar `.project/backlog.html`
 
 **Gebruik Edit tool** om alleen het JSON-blok te vervangen — niet het hele bestand herschrijven. Zorg dat de `<script>` tags intact blijven.
+
+## Source-veld conventie
+
+Het `source`-veld op een backlog-item geeft aan welke skill het aangemaakt heeft. Conventie: **altijd met voorloopslash**, bijv. `"/project-todo"`, `"/dev-define"`, `"/frontend-design"`. Items met `source: "/project-todo"` zijn INDEPENDENT — `/project-plan` mag ze nooit overschrijven bij backlog-rebuild. Readers accepteren ook de slash-loze variant (`"project-todo"`) en legacy-waarden (`"dev-todo"`) van bestaande items.
+
+## Team-context
+
+In team-repos waar collega's geen claude-config gebruiken: backlog blijft lokaal (`.project/` is gitignored), team gebruikt zijn eigen tracker. Zie `shared/TEAM.md` voor de volledige workflow.
+
+Het **externalRef veld** linkt een backlog-item aan een externe issue/ticket. Eén issue kan meerdere items genereren via `/team-issues` smart split — die delen dezelfde `id` met verschillende `split` waarden.
+
+```json
+{
+  "name": "oauth-login",
+  "type": "PAGE",
+  "source": "/team-issues",
+  "externalRef": {
+    "type": "github",
+    "id": "123",
+    "url": "https://github.com/owner/repo/issues/123",
+    "labels": ["enhancement", "P1"],
+    "split": "frontend"
+  }
+}
+```
+
+- `/team-issues` schrijft het bij intake
+- `/dev-define` en `/frontend-design` kopiëren naar `feature.json`
+- `/core-commit` leest om commit-messages te prefixen
 
 ## Parallel sync
 
@@ -96,19 +142,30 @@ TODO (To design) → DEFINED (To convert) → DOING (To audit) → DONE (Shipped
                         ↑ alleen Path B         ↑ Path A slaat DEFINED over
 ```
 
-| Status      | Label        | Gezet door                                                        |
-| ----------- | ------------ | ----------------------------------------------------------------- |
-| `TODO`      | To design    | `/frontend-design` Capture, reuse-discovery                       |
-| `DEFINED`   | To convert   | `/frontend-design` Brief (Path B — offline handoff)               |
-| `DOING`     | To audit     | `/frontend-design` Build (Path A) of `/frontend-convert` (Path B) |
-| `DONE`      | Shipped      | `/frontend-check` PASS (terminaal — geen refactor-stap)           |
-| `CANCELLED` | Gearchiveerd | Handmatig via UI (○ knop), herstelbaar                            |
+| Status      | Label        | Gezet door                                                                    |
+| ----------- | ------------ | ----------------------------------------------------------------------------- |
+| `TODO`      | To design    | `/frontend-design` Capture, `/project-todo`, `/project-plan`, reuse-discovery |
+| `DEFINED`   | To convert   | `/frontend-design` Brief (Path B — offline handoff)                           |
+| `DOING`     | To audit     | `/frontend-design` Build (Path A) of `/frontend-convert` (Path B)             |
+| `DONE`      | Shipped      | `/frontend-check` PASS (terminaal — geen refactor-stap)                       |
+| `CANCELLED` | Gearchiveerd | Handmatig via UI (○ knop), herstelbaar                                        |
 
 **Path A** (Build met Claude Code): TODO → DOING → DONE — DEFINED wordt overgeslagen.
 
 **Path B** (Brief voor extern design): TODO → DEFINED → DOING → DONE.
 
 `/frontend-check` PASS zet `f.shipped = true` direct — geen refactor-stap voor frontend cards.
+
+### Wanneer welke skill voor PAGE/COMPONENT
+
+| Situatie                                          | Skill                           |
+| ------------------------------------------------- | ------------------------------- |
+| Snelle "ik bedacht net iets" toevoeging           | `/project-todo`                 |
+| Volledig ontwerp (screenshot, Figma, brief)       | `/frontend-design` Capture      |
+| Bulk-init uit concept of brainstorm-output        | `/project-plan`                 |
+| Pattern-detectie tijdens build (cross-page reuse) | `/project-plan` reuse-discovery |
+
+Alle vier routes schrijven dezelfde JSON-structuur naar `data.features[]` met `type=PAGE` of `COMPONENT` en `status=TODO`. `/frontend-design` Capture voegt extra spec-velden toe (mock paths, brief, audit). De andere routes laten die velden leeg — `/frontend-design` Build vult ze later aan.
 
 ### Dev track (FEATURE/API/UI/REFACTOR/BUG/etc.)
 
@@ -120,7 +177,7 @@ TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refac
 
 | Status      | Label        | Gezet door                             |
 | ----------- | ------------ | -------------------------------------- |
-| `TODO`      | To define    | `/dev-todo`, `/dev-plan`               |
+| `TODO`      | To define    | `/project-todo`, `/project-plan`       |
 | `DEFINED`   | To build     | `/dev-define` (afsluiting)             |
 | `DOING`     | To verify    | `/dev-build` (afsluiting)              |
 | `DONE`      | To refactor  | `/dev-verify` (afsluiting)             |
@@ -215,20 +272,11 @@ TODO (To design) → DEFINED (To convert) → DOING → DONE     ← Path B
 
 **`/frontend-check` PASS is terminaal** — geen refactor-stap. Item shipt direct naar Dashboard.
 
-### Reuse-discovery door dev-skills
+### Discovery door dev-skills
 
-Dev-skills suggereren COMPONENT-todos op basis van detectie tijdens page-werk:
+Triggers, resolution en persisteer-schema: zie [Discovery — Reuse-Discovery en Page-Discovery](./SKILL-PATTERNS.md#reuse-discovery).
 
-| Skill        | Trigger                                                  |
-| ------------ | -------------------------------------------------------- |
-| `dev-define` | Requirements noemen UI-elementen niet in `design.*`      |
-| `dev-plan`   | Cross-page pattern matching (threshold 2+ pages)         |
-| `dev-build`  | Sub-component bij code-gen complex genoeg voor extractie |
-| `dev-verify` | Herhalend visual pattern over meerdere pages             |
-
-Alle suggesties zijn **user-accept-only** — geen auto-create. Geaccepteerde voorstellen worden in `feature.json#suggestionsLog[]` gelogd; afgewezen voorstellen ook (voor dedupe — geen herhaalde prompts).
-
-Omgekeerde richting: een COMPONENT-build die links naar onbekende routes bevat → suggereert PAGE-todos.
+Alle suggesties zijn **user-accept-only** — geen auto-create. Geaccepteerde en afgewezen voorstellen worden gelogd in `feature.json#suggestionsLog[]` (voor dedup — geen herhaalde prompts).
 
 ### Multi-page components
 

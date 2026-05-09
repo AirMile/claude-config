@@ -10,13 +10,11 @@ const JS_DIR = path.join(__dirname, "../js");
 // Ordered list — volgorde is belangrijk (patches chainen globals)
 const JS_FILES = [
   "backlog-overrides.js",
-  "backlog-assignee.js",
   "backlog-dependency.js",
   "backlog-actions.js",
   "backlog-session.js",
   "backlog-brief.js",
   "backlog-sort.js",
-  "backlog-github.js",
 ];
 
 // Read at startup, cache in memory

@@ -429,6 +429,32 @@ body {
   flex-shrink: 0;
 }
 
+.group-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin-left: auto;
+  margin-right: -16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.group-add-btn:hover {
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+.group-add-btn svg {
+  flex-shrink: 0;
+}
+
 .group-body {
   overflow: hidden;
 }
@@ -1222,12 +1248,71 @@ body {
   cursor: default;
 }
 
-.assignee-chip {
-  font-size: 10px;
-  color: var(--text-dim);
+/* ── Action toolbar (capture-skill shortcuts) ── */
+.action-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+  background: var(--accent);
+  border: none;
+  border-radius: 20px;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  transition: opacity 0.12s;
+  white-space: nowrap;
+}
+
+.action-btn:hover {
+  opacity: 0.85;
+}
+
+.action-btn.action-plan {
+  background: var(--text-dim);
+}
+
+.action-btn.action-issues {
+  background: color-mix(in srgb, var(--accent) 70%, #6366f1);
+}
+
+/* ── Per-card externalRef link + copy ── */
+.card-ref-link {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.card-ref-link:hover {
+  text-decoration: underline;
+}
+
+.card-ref-copy {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.card-ref-copy:hover {
+  color: var(--text);
 }
 
 .github-chip {
@@ -1586,4 +1671,29 @@ body {
     padding-left: 30px;
     white-space: normal;
   }
+}
+
+/* ── Card outsource button ── */
+
+.card-outsource-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  border: 1px solid var(--accent, #6366f1);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent, #6366f1);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.card-outsource-btn:hover {
+  background: var(--accent, #6366f1);
+  color: #fff;
 }

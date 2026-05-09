@@ -120,7 +120,7 @@ Projecten:
   - ...
 ```
 
-Als er geen projecten gevonden zijn, hint naar `/project-add` of `/dev-plan`.
+Als er geen projecten gevonden zijn, hint naar `/project-add` of `/project-plan`.
 
 ### FASE 3: Kopieer link naar clipboard
 

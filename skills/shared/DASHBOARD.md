@@ -85,7 +85,19 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
     "patterns": [],
     "updated": ""
   },
-  "optimization_runs": []
+  "optimization_runs": [],
+  "team": {
+    "claudeMdMode": "local|tracked",
+    "commitConvention": "conventional|ticket-prefix|bracket|freeform",
+    "ticketPrefix": null,
+    "tracker": "github|jira|linear|null",
+    "githubProject": {
+      "owner": "",
+      "repo": "",
+      "projectNumber": null,
+      "defaultAssignee": null
+    }
+  }
 }
 ```
 
@@ -242,7 +254,7 @@ Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar 
 `conceptFile` = verwijzing naar `.project/project-concept.md` (preferred formaat voor nieuwe projecten)
 `content` = legacy inline concept content. Voor nieuwe projecten leeg — volledige content staat in `project-concept.md`.
 
-Het concept is een **levend document**. Thinking-skills (`/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-research`) integreren hun concept-scope output rechtstreeks in `project-concept.md` — er is geen geschiedenis-log in `project.json`. `/dev-plan` en `/dev-define` lezen alleen de huidige staat van `project-concept.md` als concept-context.
+Het concept is een **levend document**. Thinking-skills (`/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-research`) integreren hun concept-scope output rechtstreeks in `project-concept.md` — er is geen geschiedenis-log in `project.json`. `/project-plan` en `/dev-define` lezen alleen de huidige staat van `project-concept.md` als concept-context.
 
 ### Eén bron van waarheid
 
@@ -528,6 +540,17 @@ Overige velden = structured tokens per categorie
 
 Top-level string in `project.json` voor de lokale dev-URL (default `"http://localhost:3000"`). Routes in `architecture.routes[]` worden gerenderd als klikbare links die openen op `${localUrl}${path}` in een nieuw tabblad. Manual override per project.
 
+### team
+
+Bevat detecties uit `core-setup --mode=mature` (FASE 0.4) en `core-commit` (FASE 0.5) voor team-repo awareness. Veld is optioneel — afwezig betekent solo-mode (default behavior in alle skills).
+
+| Veld               | Waarden                                                              | Gezet door                  | Gelezen door                            |
+| ------------------ | -------------------------------------------------------------------- | --------------------------- | --------------------------------------- |
+| `claudeMdMode`     | `"local"` \| `"tracked"`                                             | `/core-setup --mode=mature` | Skills die CLAUDE.md schrijven          |
+| `commitConvention` | `"conventional"` \| `"ticket-prefix"` \| `"bracket"` \| `"freeform"` | `/core-commit` FASE 0.5     | `/core-commit` FASE 4 (compose)         |
+| `ticketPrefix`     | string \| `null` (bijv. `"JIRA"`, `"PROJ"`)                          | `/core-commit` FASE 0.5     | `/core-commit` FASE 4 (compose)         |
+| `tracker`          | `"github"` \| `"jira"` \| `"linear"` \| `null`                       | `/team-issues` (eerste run) | `/team-issues` daarna, backlog-template |
+
 ### architecture.routes (project-context.json)
 
 ```json
@@ -733,16 +756,16 @@ Append-only log. Skills die features voltooien extracten learnings automatisch (
 
 ### project.json secties
 
-| Sectie              | Geschreven door                                                                              | Wanneer                                  |
-| ------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `concept`           | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/dev-plan`, `/game-plan` | Bij concept creatie/iteratie/plan        |
-| `design`            | `/frontend-design`, `/frontend-tokens`                                                       | Bij design spec/page build/theme creatie |
-| `theme`             | `/frontend-tokens`                                                                           | Na theme create/update                   |
-| `stack`             | `/core-setup`, `/dev-plan`, `/dev-define`, `/dev-build`, `/frontend-design`                  | Bij detectie/nieuwe deps                 |
-| `data`              | `/dev-define`, `/game-define`                                                                | Bij entity definitie                     |
-| `endpoints`         | `/dev-define`, `/dev-build`                                                                  | Bij API definitie / na build             |
-| `features`          | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build`    | Bij status wijziging (DOING/DONE)        |
-| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                            | Bij run completion (FASE 6)              |
+| Sectie              | Geschreven door                                                                           | Wanneer                                  |
+| ------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `concept`           | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/project-plan`        | Bij concept creatie/iteratie/plan        |
+| `design`            | `/frontend-design`, `/frontend-tokens`                                                    | Bij design spec/page build/theme creatie |
+| `theme`             | `/frontend-tokens`                                                                        | Na theme create/update                   |
+| `stack`             | `/core-setup`, `/project-plan`, `/dev-define`, `/dev-build`, `/frontend-design`           | Bij detectie/nieuwe deps                 |
+| `data`              | `/dev-define`, `/game-define`                                                             | Bij entity definitie                     |
+| `endpoints`         | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build             |
+| `features`          | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build` | Bij status wijziging (DOING/DONE)        |
+| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                         | Bij run completion (FASE 6)              |
 
 ### project-context.json secties
 

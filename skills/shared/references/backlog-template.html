@@ -155,7 +155,7 @@
     </script>
 
     <!-- Page structure -->
-    <div class="layout">
+    <div class="layout layout--no-sidebar">
       <aside class="sidebar" id="sidebar"></aside>
       <main class="board-area">
         <nav class="top-nav">
@@ -166,6 +166,7 @@
             oninput="render()"
           />
           <div class="type-pills" id="type-pills"></div>
+          <div class="action-btns" id="action-btns"></div>
         </nav>
         <div id="board"></div>
       </main>
@@ -217,9 +218,6 @@
         >
         <input type="text" id="field-dep" placeholder="feature-a, feature-b" />
 
-        <label for="field-assignee">Toewijzen aan (optioneel)</label>
-        <input type="text" id="field-assignee" placeholder="naam teammate" />
-
         <div class="modal-buttons">
           <button class="btn-cancel" onclick="closeModal()">Annuleren</button>
           <button class="btn-save" id="modal-save">Opslaan</button>
@@ -268,7 +266,7 @@
         CANCELLED: "Gearchiveerd",
       };
       const STATUS_LABELS_DEV = {
-        TODO: "To define",
+        TODO: "To do",
         DEFINED: "To build",
         DOING: "To verify",
         DONE: "To refactor",
@@ -689,6 +687,37 @@
           }
         }
 
+        // Build action-btn toolbar
+        const actionContainer = document.getElementById("action-btns");
+        if (actionContainer) {
+          let actionHtml = "";
+          if ((data.features?.length || 0) === 0 && data.flags?.hasConcept) {
+            actionHtml +=
+              `<button class="action-btn action-plan" data-cmd="/project-plan" title="/project-plan">` +
+              `<span class="action-icon">⊕</span><span class="action-label">Plan</span></button>`;
+          }
+          if (data.team?.tracker) {
+            actionHtml +=
+              `<button class="action-btn action-issues" data-cmd="/team-issues" title="/team-issues">` +
+              `<span class="action-icon">↻</span><span class="action-label">Sync issues</span></button>`;
+          }
+          actionContainer.innerHTML = actionHtml;
+          actionContainer.querySelectorAll(".action-btn").forEach((btn) => {
+            btn.addEventListener("click", async (e) => {
+              e.stopPropagation();
+              const cmd = btn.dataset.cmd;
+              await navigator.clipboard.writeText(cmd);
+              const lbl = btn.querySelector(".action-label");
+              const orig = lbl.textContent;
+              lbl.textContent = "Gekopieerd";
+              setTimeout(() => {
+                lbl.textContent = orig;
+              }, 1500);
+              toast("Gekopieerd: " + cmd);
+            });
+          });
+        }
+
         const searchTerm = (
           document.getElementById("search-input")?.value || ""
         ).toLowerCase();
@@ -730,7 +759,10 @@
               );
             }
 
-            if (items.length === 0) return;
+            // Always render Dev TODO header (even empty) so the "+ add" button stays reachable.
+            const isDevTodoSection = trackId === "DEV" && status === "TODO";
+            if (items.length === 0 && !isDevTodoSection) return;
+            if (items.length === 0 && searchTerm) return;
 
             const sectionId = `${trackId.toLowerCase()}-${status.toLowerCase()}-section`;
 
@@ -761,16 +793,33 @@
             const batchVerb = trackId === "DEV" ? getBatchSkill(status) : null;
             const copyPrefix =
               data.source && data.source.startsWith("/game") ? "game" : "dev";
-            const batchBtnHtml = batchVerb
-              ? `<button class="group-batch-btn" data-cmd="/${copyPrefix}-${batchVerb}" title="Kopieer /${copyPrefix}-${batchVerb}" aria-label="Kopieer /${copyPrefix}-${batchVerb}">
+            const batchBtnHtml =
+              batchVerb && items.length > 0
+                ? `<button class="group-batch-btn" data-cmd="/${copyPrefix}-${batchVerb}" title="Kopieer /${copyPrefix}-${batchVerb}" aria-label="Kopieer /${copyPrefix}-${batchVerb}">
                   <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
                   <span>batch (${items.length})</span>
                  </button>`
-              : "";
+                : "";
 
-            header.innerHTML = `<h2>${esc(label)}${blockedSuffix}</h2>${batchBtnHtml}`;
+            const addBtnHtml =
+              status === "TODO"
+                ? `<button class="group-add-btn" data-cmd="/project-todo" title="Kopieer /project-todo" aria-label="Voeg todo toe">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                 </button>`
+                : "";
+
+            header.innerHTML = `<h2>${esc(label)}${blockedSuffix}</h2>${batchBtnHtml}${addBtnHtml}`;
 
             header.addEventListener("click", (e) => {
+              const addBtn = e.target.closest(".group-add-btn");
+              if (addBtn) {
+                e.stopPropagation();
+                const cmd = addBtn.dataset.cmd;
+                navigator.clipboard.writeText(cmd).then(() => {
+                  toast(`Gekopieerd: ${cmd}`);
+                });
+                return;
+              }
               const batchBtn = e.target.closest(".group-batch-btn");
               if (batchBtn) {
                 e.stopPropagation();
@@ -876,7 +925,7 @@
         renderTrack("DEV", "Dev", (type) => !isFrontendTrackType(type), [
           {
             status: "TODO",
-            label: "To define",
+            label: "To do",
             transitionLabels: TRANSITION_LABELS_DEV,
           },
           {
@@ -929,8 +978,8 @@
         const sidebar = document.getElementById("sidebar");
         if (sidebar) sidebar.innerHTML = sidebarHtml;
 
+        updateSidebarVisibility();
         updateSidebarActive();
-        requestAnimationFrame(updateSidebarVisibility);
       }
 
       function updateSidebarVisibility() {
@@ -981,7 +1030,14 @@
             metaHtml += `<span class="refactor-badge refactor-done">✓ refactored</span>`;
           }
         }
-        if (f.github_issue) {
+        if (f.externalRef?.url) {
+          const refType = f.externalRef.type || "github";
+          const refId = f.externalRef.id || "?";
+          const refLabel = refType === "github" ? `#${refId}` : refId;
+          metaHtml +=
+            `<a class="card-ref-link card-ref-${esc(refType)}" href="${esc(f.externalRef.url)}" target="_blank" rel="noopener" title="${esc(f.externalRef.url)}">${esc(refLabel)}</a>` +
+            `<button class="card-ref-copy" data-copy="${esc(f.externalRef.url)}" title="Kopieer issue-URL">⎘</button>`;
+        } else if (f.github_issue) {
           const ghNum = f.github_issue.match(/\/(\d+)$/);
           metaHtml += `<a class="card-gh-link" href="${esc(f.github_issue)}" target="_blank" rel="noopener" title="${esc(f.github_issue)}">#${ghNum ? ghNum[1] : "?"}</a>`;
         }
@@ -1010,8 +1066,13 @@
 
         const menuItemsHtml = (() => {
           if (f.status === "TODO" || f.status === "DEFINED") {
+            const canOutsource = !f.externalRef?.url && !f.github_issue;
+            const outsourceItem = canOutsource
+              ? `<button class="row-menu-item row-outsource-btn" data-cmd="/team-outsource ${esc(f.name)}">→ Outsource</button>`
+              : "";
             return (
               `<button class="row-menu-item row-edit-btn">✎ Bewerken</button>` +
+              outsourceItem +
               `<button class="row-menu-item row-cancel-btn">○ Archiveren</button>` +
               `<button class="row-menu-item row-delete-btn row-menu-item--danger">✕ Verwijderen</button>`
             );
@@ -1078,6 +1139,27 @@
                 syncJSON();
                 render();
               }
+              toast("Gekopieerd: " + cmd);
+            });
+          });
+        }
+
+        const refCopyBtn = row.querySelector(".card-ref-copy");
+        if (refCopyBtn) {
+          refCopyBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(refCopyBtn.dataset.copy).then(() => {
+              toast("URL gekopieerd");
+            });
+          });
+        }
+
+        const outsourceBtn = row.querySelector(".row-outsource-btn");
+        if (outsourceBtn) {
+          outsourceBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const cmd = outsourceBtn.dataset.cmd;
+            navigator.clipboard.writeText(cmd).then(() => {
               toast("Gekopieerd: " + cmd);
             });
           });
@@ -1194,9 +1276,6 @@
           if (status === "TODO" || !detail) {
             if (f.dependencies && f.dependencies.length > 0) {
               html += `<div class="expand-section"><div class="expand-label">Dependencies</div><div class="expand-deps">${f.dependencies.map((d) => `<span class="expand-dep">${esc(d)}</span>`).join("")}</div></div>`;
-            }
-            if (f.assignee) {
-              html += `<div class="expand-section"><div class="expand-label">Toegewezen aan</div><div class="expand-summary">${esc(f.assignee)}</div></div>`;
             }
             if (f.source) {
               html += `<div class="expand-section"><div class="expand-label">Bron</div><div class="expand-summary">${esc(f.source)}</div></div>`;
@@ -1361,7 +1440,6 @@
         document.getElementById("field-type").value = "FEATURE";
         document.getElementById("field-phase").value = "P1";
         document.getElementById("field-dep").value = "";
-        document.getElementById("field-assignee").value = "";
         document.getElementById("field-name").disabled = false;
         document.getElementById("modal-save").textContent = "Toevoegen";
         document.getElementById("modal").classList.add("active");
@@ -1382,8 +1460,6 @@
         document.getElementById("field-dep").value = (
           found.item.dependencies || []
         ).join(", ");
-        document.getElementById("field-assignee").value =
-          found.item.assignee || "";
         document.getElementById("field-name").disabled = false;
         document.getElementById("modal-save").textContent = "Opslaan";
         document.getElementById("modal").classList.add("active");
@@ -1407,8 +1483,6 @@
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean);
-        const assignee =
-          document.getElementById("field-assignee").value.trim() || null;
         if (!name) return;
 
         if (editingName) {
@@ -1419,7 +1493,6 @@
           found.item.type = type;
           found.item.phase = phase;
           found.item.dependencies = deps;
-          found.item.assignee = assignee;
           toast(name + " bijgewerkt");
         } else {
           data.features.push({
@@ -1429,7 +1502,6 @@
             phase,
             description: desc,
             dependencies: deps,
-            assignee,
           });
           toast(name + " toegevoegd");
         }

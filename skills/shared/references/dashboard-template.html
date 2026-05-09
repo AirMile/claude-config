@@ -648,7 +648,7 @@
               <button class="edit-btn edit-btn--accent" onclick="editConcept()">+ Toevoegen</button>
             </div>
             <div class="empty-state"><p>Nog geen concept gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-plan</code> of <code>/game-plan</code></p></div>`;
+            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/project-plan</code></p></div>`;
         }
         return `
           <div class="section-header">
@@ -1504,7 +1504,7 @@
               <h2>Stack</h2>
             </div>
             <div class="empty-state"><p>Nog geen stack gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-plan</code></p></div>`;
+            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/project-plan</code></p></div>`;
         }
         const fields = [
           ["Framework", s.framework],
@@ -2670,7 +2670,7 @@
           data.concept &&
           (data.concept.name || data.concept.content)
         );
-        const hasFeatures = (data.features || []).length > 0;
+        const hasFeatures = (data.features || []).some((f) => f.shipped);
         const hiddenSections = {};
         if (!hasTheme) hiddenSections.theme = true;
         if (!hasLearnings) hiddenSections.learnings = true;

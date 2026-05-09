@@ -21,7 +21,7 @@
       // Add clipboard button (visible on hover)
       if (actions && !actions.querySelector(".card-clip")) {
         var verb = getNextVerb(f);
-        var showClip = verb || f.assignee;
+        var showClip = verb;
         if (showClip) {
           var clipBtn = document.createElement("button");
           clipBtn.className = "card-clip";
