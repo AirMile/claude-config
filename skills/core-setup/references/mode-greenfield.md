@@ -184,6 +184,8 @@ Vraag via AskUserQuestion: "Klopt dit overzicht? Wil je iets aanpassen?"
 3. **Optional: Git init** — Check if `.git` already exists. If not, AskUserQuestion (single-select):
    - Full (init + .gitignore + commit), Only .gitignore, Skip
 
+4. **Token bootstrap** (alleen voor frontend stacks): voer de Bootstrap Procedure uit `shared/TOKENS.md` uit. Skipt automatisch als geen Tailwind gevonden, `tokens.css` al bestaat, of geen CSS entry detecteerbaar is.
+
 ---
 
 ## Phase 4: Install & Verify
@@ -353,12 +355,25 @@ Generate CLAUDE.md following the **canonical structure** from `references/claude
 
 **Section rules:**
 
-- `## Commands`: Always. Auto-detect from package manifest scripts
-- `## Project` / `### Stack`: Always. Pipeline skills read `### Stack` for stack detection
-- `### Standards`: Only for web projects
-- `### Testing`: Only if testing frameworks configured
-- `## Project Context`: Always. Reference to `.project/project.json` (stack, features, endpoints) and `.project/project-context.json` (structure, routing, patterns, architecture)
-- `### Stack` subcategories are flexible — add what's relevant, omit what's not
+- `## User Preferences`: Always. Language from Phase 1.
+- `## Frontend Edit Rules`: Only for frontend/fullstack projects (keep the marker block from `CLAUDE.base.md`).
+- `## Commands`: Always. Auto-detect from package manifest scripts.
+- `## Project` / `### Stack`: Always. Pipeline skills read `### Stack` for stack detection.
+- `### Standards`: Only for web projects.
+- `### Testing`: Only if testing frameworks configured.
+- `## Project Context`: Always. Reference to `.project/project.json` (stack, features, endpoints) and `.project/project-context.json` (structure, routing, patterns, architecture).
+- `### Stack` subcategories are flexible — add what's relevant, omit what's not.
+
+**Target size: ~30-50 lines.** No generic skill-runtime sections (Language Policy, Communication Style, Smart Suggestions, Command Execution Rules) — those live in `~/.claude/CLAUDE.md`.
+
+**`.gitignore` check** (idempotent — append only if missing):
+
+```bash
+# Ensure Claude-related files are gitignored
+grep -qxF 'CLAUDE.md' .gitignore 2>/dev/null || echo 'CLAUDE.md' >> .gitignore
+grep -qxF '.claude/' .gitignore 2>/dev/null || echo '.claude/' >> .gitignore
+grep -qxF '.project/' .gitignore 2>/dev/null || echo '.project/' >> .gitignore
+```
 
 ---
 
@@ -406,6 +421,13 @@ Zie `{skills_root}/shared/DASHBOARD.md` voor het volledige schema en merge-strat
    - `hosting`: uit user answers (Phase 2 Q4/Q5)
    - `packages`: uit gegenereerde package.json / project files
 4. Write `.project/project.json`
+   4b. Init backlog met concept-flag (alle projecttypen):
+   - Als `.project/backlog.html` niet bestaat: kopieer `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
+   - Read `backlog.html` → parse `<script id="backlog-data">` JSON
+   - Zet `data.flags = { "hasConcept": true, "conceptPath": ".project/project-concept.md" }`
+   - Zet `data.source = "/core-setup"` en `data.updated` naar huidige datum
+   - Edit JSON-blok terug (script-tags intact)
+   - Dit laat de `/project-plan` knop verschijnen in het backlog dashboard zodra er een concept is maar nog geen features zijn.
 5. Maak `.project/project-context.json` aan met `context` sectie (initieel, wordt bijgewerkt door build/refactor skills):
    - `context.structure`: file tree van project (zelfde formaat als voorheen in CLAUDE.md). Generate from actual file tree after Phase 3/4
    - `context.routing`: route patterns met arrow notation (alleen web projects met routing, anders lege array)
@@ -461,8 +483,7 @@ Skip Phase 7c volledig als `needsTheme = false`.
     "phase": "P1",
     "description": "Define color palette, typography scale, and spacing tokens via /frontend-tokens before UI work begins.",
     "source": "/core-setup",
-    "dependencies": [],
-    "auto": true
+    "dependencies": []
   }
 ]
 ```
@@ -557,8 +578,7 @@ Daarna alleen relevante vervolgskills (geen herhaling van todos die al in de bac
 
 **2. Plannen — feature backlog opzetten:**
 
-- Web/Backend/Fullstack/Mobile/Desktop/CLI: `/dev-plan` — zet ideeën om in geprioriteerde web feature backlog
-- Game: `/game-plan` — zet ideeën om in geprioriteerde game feature backlog
+- Alle stacks (web, game, CLI, etc.): `/project-plan` — zet ideeën om in geprioriteerde feature backlog (auto-detecteert stack)
 
 **3. Eerste feature definiëren + bouwen:**
 

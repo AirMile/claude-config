@@ -25,8 +25,9 @@ Zie `shared/SYNC.md`, `shared/DASHBOARD.md`, en `shared/LEARNING-EXTRACTION.md` 
 11. FASE 5.6: Claude-config init
 12. FASE 5.65: Auto Dev Tools
 13. FASE 5.7: Setup Task Seeding
-14. FASE 5.8: Module Gap Install
-15. FASE 6: Report
+14. FASE 5.75: Legacy github-project.json migratie
+15. FASE 5.8: Module Gap Install
+16. FASE 6: Report
 
 ## FASE 0: Pre-flight
 
@@ -58,6 +59,37 @@ Zie `shared/SYNC.md`, `shared/DASHBOARD.md`, en `shared/LEARNING-EXTRACTION.md` 
    Bij annuleren → exit.
 
 4. **Read `git config user.name`** → `GIT_USER` (voor author filter en self-skip).
+
+### FASE 0.4: .gitignore bootstrap
+
+Alle Claude-gerelateerde files zijn per-developer lokaal (niet gecommit). Check idempotent:
+
+```bash
+grep -qxF 'CLAUDE.md' .gitignore 2>/dev/null || echo 'CLAUDE.md' >> .gitignore
+grep -qxF '.claude/' .gitignore 2>/dev/null || echo '.claude/' >> .gitignore
+grep -qxF '.project/' .gitignore 2>/dev/null || echo '.project/' >> .gitignore
+```
+
+**Als per-developer files al gecommit zijn** (check via `git ls-files`):
+
+```bash
+TRACKED=$(git ls-files | grep -E '^(\.claude/|\.project/|CLAUDE\.md$)' | head -20)
+```
+
+Als `TRACKED` niet leeg is, toon AskUserQuestion (single-select):
+
+```yaml
+header: "Per-developer files in git"
+question: "De volgende files staan in git maar horen per-developer lokaal te zijn:\n{TRACKED}\nVerwijderen uit git (bestanden blijven lokaal)?"
+options:
+  - label: "Ja, verwijder uit git (Recommended)"
+    description: "git rm --cached -- <files> — bestanden blijven lokaal, teammates krijgen eigen versie via core-setup"
+  - label: "Nee, laat staan"
+    description: "Files blijven gecommit — niet aanbevolen bij team-repos"
+multiSelect: false
+```
+
+Bij "Ja": `git rm --cached -- $(echo "$TRACKED" | tr '\n' ' ')`
 
 ### FASE 0.5: Project Status Snapshot
 
@@ -301,6 +333,8 @@ Voor geselecteerde velden: schrijf naar `project.json`. Gedeselecteerde velden b
 
 Maak `.project/project-concept.md` aan met de geaccepteerde pitch-tekst als startpunt (gewone markdown, geen sjabloon).
 
+Als `.project/backlog.html` al bestaat (non-frontend projecten die FASE 5.7 overslaan): read backlog.html → parse `<script id="backlog-data">` JSON → zet `data.flags.hasConcept = true` + `data.flags.conceptPath = ".project/project-concept.md"` → edit terug (script-tags intact). Dit laat de `/project-plan` knop verschijnen in het backlog dashboard.
+
 ### FASE 5: Sync
 
 > **Todo**: markeer FASE 4.5 → `completed`, FASE 5 → `in_progress`.
@@ -332,9 +366,11 @@ echo '{"lastSync":"<ISO timestamp>"}' > .project/session/sync-state.json
 
 Maakt latere `/project-pull` runs incremental vanaf nu.
 
-### FASE 5.5: CLAUDE.md compleetheids-check
+### FASE 5.5: CLAUDE.md compleetheids-check + migratie
 
 > **Todo**: markeer FASE 5 → `completed`, FASE 5.5 → `in_progress`.
+
+**Stap 1 — Standaard sync:**
 
 Volg `references/claude-md-sync.md` met deze parameters:
 
@@ -344,6 +380,32 @@ Volg `references/claude-md-sync.md` met deze parameters:
 - `inferred-stack:` stack-object uit FASE 2 (framework, language, packages)
 
 FASE D produceert een compacte samenvatting voor het FASE 6 rapport.
+
+**Stap 2 — Legacy marker migratie (éénmalig):**
+
+Scan de huidige `CLAUDE.md` op verouderde marker-blokken die niet meer in `CLAUDE.base.md` horen:
+
+- `<!-- claude-config:section:language-policy start/end -->`
+- `<!-- claude-config:section:communication-style start/end -->`
+- `<!-- claude-config:section:smart-suggestions start/end -->`
+- `<!-- claude-config:section:command-execution-rules start/end -->`
+
+Bij aanwezigheid: AskUserQuestion (multi-select):
+
+```yaml
+header: "Legacy CLAUDE.md secties gevonden"
+question: "Deze secties zijn verplaatst naar ~/.claude/CLAUDE.md en hoeven niet meer per project. Wat wil je doen?"
+options:
+  - label: "Verwijder uit project CLAUDE.md (Recommended)"
+    description: "Secties horen in ~/.claude/CLAUDE.md (al aanwezig via bootstrap). Project CLAUDE.md wordt ~30 regels korter."
+  - label: "Laat staan"
+    description: "Secties blijven lokaal aanwezig — geen effect op werking"
+multiSelect: false
+```
+
+Bij "Verwijder": strip de marker-blokken (content tussen start/end markers inclusief de markers zelf).
+
+Bij "Laat staan": skip.
 
 ### FASE 5.6: Claude-config init
 
@@ -441,16 +503,54 @@ Markeer FASE 5.65 → `completed`.
   "phase": "P1",
   "description": "Define color palette, typography scale, and spacing tokens via /frontend-tokens before UI work begins.",
   "source": "/core-setup",
-  "dependencies": [],
-  "auto": true
+  "dependencies": []
 }
 ```
 
 Maak backlog aan uit template `{skills_path}/shared/references/backlog-template.html` als die ontbreekt. Skip als feature met naam `setup-design-tokens` al bestaat (idempotent).
 
+Zet altijd `data.flags.hasConcept = true` en `data.flags.conceptPath = ".project/project-concept.md"` in het backlog JSON-blok (ook als het design-tokens item al bestond). Dit laat de `/project-plan` knop verschijnen.
+
 Geen interactieve modal — toon alleen `Setup-task toegevoegd aan backlog` in stdout. De FASE 6 rapport "Next steps" sectie toont vervolgens automatisch de `/frontend-tokens` bullet.
 
 Markeer FASE 5.7 → `completed`.
+
+### FASE 5.75: Legacy github-project.json migratie
+
+> **Todo**: markeer FASE 5.7 → `completed`, FASE 5.75 → `in_progress`.
+
+**Trigger**: `.project/github-project.json` bestaat. Anders skip volledig.
+
+```bash
+test -f .project/github-project.json && echo "found"
+```
+
+**Bij aanwezig:**
+
+1. Read `.project/github-project.json` als JSON.
+2. Read `.project/project.json` → `data.team` sectie.
+3. Schrijf velden naar `data.team.githubProject`:
+
+   ```json
+   "githubProject": {
+     "owner": "<github_project.json owner>",
+     "repo": "<github_project.json repo>",
+     "projectNumber": "<github_project.json projectNumber of null>",
+     "defaultAssignee": "<github_project.json defaultAssignee of null>"
+   }
+   ```
+
+4. Write `project.json` terug.
+5. Verplaats het bestand naar archief:
+
+   ```bash
+   mkdir -p .project/.archive
+   mv .project/github-project.json .project/.archive/github-project.json
+   ```
+
+Geen prompt — silent migration. Toon alleen `Legacy github-project.json gemigreerd naar project.json#team.githubProject` in stdout.
+
+Markeer FASE 5.75 → `completed`.
 
 ### FASE 5.8: Module Gap Install
 

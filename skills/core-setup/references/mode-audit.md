@@ -97,8 +97,7 @@ Voor elke geselecteerde fix:
     "phase": "P1",
     "description": "Define color palette, typography scale, and spacing tokens via /frontend-tokens before UI work begins.",
     "source": "/core-setup",
-    "dependencies": [],
-    "auto": true
+    "dependencies": []
   }
   ```
   Maak backlog aan uit template `{skills_path}/shared/references/backlog-template.html` als die ontbreekt. Skip als feature met naam `setup-design-tokens` al bestaat (idempotent).

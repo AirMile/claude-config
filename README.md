@@ -79,11 +79,11 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 | Category    | Skills                                                                      |
 | ----------- | --------------------------------------------------------------------------- |
 | `core`      | setup, create, edit, delete, audit, commit, export, merge, profile, rewrite |
-| `dev`       | define, plan, build, verify, debug, refactor, optimize, todo, owasp         |
+| `dev`       | define, build, verify, debug, refactor, optimize, owasp                     |
 | `frontend`  | design, convert, check, tokens                                              |
-| `game`      | define, plan, build, verify, debug, refactor, optimize, todo                |
+| `game`      | define, build, verify, debug, refactor, optimize                            |
 | `marketing` | research, content, screenshots                                              |
-| `project`   | add, remove, pull, tunnel, backlog                                          |
+| `project`   | add, remove, pull, tunnel, backlog, plan, todo                              |
 | `school`    | learn                                                                       |
 | `team`      | review, verify                                                              |
 | `thinking`  | brainstorm, concept, critique, decide, research                             |
@@ -93,9 +93,8 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 
 Skills chain together in pipelines, handing off state via `.project/project.json`. See [`skills/shared/PIPELINE.md`](skills/shared/PIPELINE.md) for canonical diagrams.
 
-- **Dev**: `todo`/`plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere, `owasp` standalone)
+- **Dev/Game**: `project-todo`/`project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere)
 - **Frontend**: `design` → (`convert` / `check` / `tokens`) → handoff → `dev-build` (+ `core-setup install` for new tools)
-- **Game**: `define` → `plan` → `build` → `verify` → [`refactor`] (+ `debug`, `optimize`)
 - **Marketing**: `research` → `content` → `screenshots`
 
 ## Agents

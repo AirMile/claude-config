@@ -6,53 +6,6 @@ Language: Nederlands
 
 ---
 
-<!-- claude-config:section:language-policy start -->
-
-## Language Policy
-
-- Keep technical terms in English (code, paths, APIs, libraries, frameworks)
-- Skill/command files always in English — preference only affects runtime conversation
-<!-- claude-config:section:language-policy end -->
-
----
-
-<!-- claude-config:section:communication-style start -->
-
-## Communication Style
-
-Act as extension of user's thinking. No affirmations, compliments, filler, or pleasantries. Direct action, no social noise.
-
-Skill output (explanations, reports, findings): extremely concise. Sacrifice grammar for brevity. Does not apply to structured output (JSON, tables, code).
-
-<!-- claude-config:section:communication-style end -->
-
----
-
-<!-- claude-config:section:smart-suggestions start -->
-
-## Smart Suggestions (AskUserQuestion)
-
-Use AskUserQuestion for every question:
-
-- First option = recommended (add "(Recommended)" to label)
-- Always include "Explain question" as last option
-- multiSelect: true default — false only for yes/no confirmations
-- 2-4 options; "Other" is built-in
-- Commands define their own context-specific suggestions
-<!-- claude-config:section:smart-suggestions end -->
-
----
-
-<!-- claude-config:section:command-execution-rules start -->
-
-## Command Execution Rules
-
-Follow COMMAND.md instructions exactly — deviate only on explicit user request. Read files immediately without announcing, skip meta-commentary, execute directly.
-
-<!-- claude-config:section:command-execution-rules end -->
-
----
-
 <!-- claude-config:section:frontend-edit-rules start -->
 
 ## Frontend Edit Rules
@@ -88,7 +41,3 @@ Follow COMMAND.md instructions exactly — deviate only on explicit user request
 ## Project Context
 
 Lees `.project/project.json` bij sessiestart voor actuele project context (stack, features, endpoints, entities). Voor runtime context (architecture, patterns, learnings): `.project/project-context.json`. Voor het volledige concept document: `.project/project-concept.md`. Skills houden dit automatisch bij na elke build/refactor/test.
-
-## Cross-project memory
-
-Patterns en pitfalls die in 3+ projecten zijn waargenomen staan in `~/.claude/memory/MEMORY.md`. Lees dit bij architecturale beslissingen — vooral relevant bij `/thinking-decide`, `/dev-plan` en `/dev-define`. Skills die learnings laden via `shared/LEARNINGS-LOAD.md` doen dit automatisch.

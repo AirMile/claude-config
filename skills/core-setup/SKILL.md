@@ -43,7 +43,56 @@ Voor dynamic multi-select modals (Audit fixes, Resync drift, Tech stack, Suggest
 
 ---
 
-## Phase 0: Detect Mode
+## Phase 0: Bootstrap + Detect Mode
+
+### User-level bootstrap (idempotent, eenmalig per machine)
+
+Voer dit uit vóór mode-routing — stille bootstrap van user-globale claude-config.
+
+Resolve `SKILLS_PATH`:
+
+```bash
+# macOS/Linux
+SKILLS_PATH="$(realpath ~/.claude/skills 2>/dev/null)"
+# Windows (PowerShell)
+# $SKILLS_PATH = (Resolve-Path "$env:USERPROFILE\.claude\skills").Path
+```
+
+**1. `~/.claude/CLAUDE.md`** — kopieer als ontbreekt:
+
+```bash
+[ ! -f ~/.claude/CLAUDE.md ] && cp "$SKILLS_PATH/../local/CLAUDE.md.base" ~/.claude/CLAUDE.md
+```
+
+**2. `~/.claude/settings.json`** — merge `autoMemoryEnabled: false` als ontbreekt:
+
+```bash
+# Check of autoMemoryEnabled al aanwezig is; zo niet, merge
+python3 -c "
+import json, os
+path = os.path.expanduser('~/.claude/settings.json')
+try:
+    s = json.load(open(path)) if os.path.exists(path) else {}
+except (json.JSONDecodeError, OSError):
+    print('warning: settings.json onleesbaar — skip autoMemoryEnabled merge')
+    exit(0)
+if 'autoMemoryEnabled' not in s:
+    s['autoMemoryEnabled'] = False
+    json.dump(s, open(path, 'w'), indent=2)
+else:
+    pass
+"
+```
+
+**3. `~/.claude/keybindings.json`** — kopieer als ontbreekt:
+
+```bash
+[ ! -f ~/.claude/keybindings.json ] && cp "$SKILLS_PATH/../local/keybindings.json" ~/.claude/keybindings.json
+```
+
+Geen output bij success — stille bootstrap. Fout bij ontbrekende `SKILLS_PATH` → toon waarschuwing en ga door.
+
+---
 
 1. **Module arg check** — als `$1` aanwezig is en géén `--mode=` prefix heeft: match (case-insensitive) tegen tier-1 modules:
    `inspect-overlay`, `tailwind`, `shadcn-ui`, `vitest`, `playwright`, `biome`, `eslint-prettier`, `zustand`, `tanstack-query`, `react-hook-form-zod`

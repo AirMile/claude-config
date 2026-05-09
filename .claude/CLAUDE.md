@@ -76,6 +76,24 @@ State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared
 - **Backlog**: `.project/backlog.html` met status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped
 - **Build skills**: auto-commit, auto-sync `project.json` context na voltooiing
 
+## Bootstrap + .gitignore Filosofie
+
+**Per-developer, niet per-project**: `CLAUDE.md`, `.claude/`, en `.project/` zijn altijd gitignored. Ze horen bij de developer, niet bij de repo.
+
+**Bootstrap** (eenmalig per machine, via `/core-setup`):
+
+- `~/.claude/CLAUDE.md` ← `local/CLAUDE.md.base` (taal-policy, command-rules, gedragsregels)
+- `~/.claude/settings.json` ← merge `autoMemoryEnabled: false` + hooks
+- `~/.claude/keybindings.json` ← `local/keybindings.json`
+
+Idempotent — skip als file al bestaat. Geen junction nodig: `~/.claude/CLAUDE.md` is user-owned.
+
+**Auto Memory**: bewust uitgeschakeld (`autoMemoryEnabled: false`). Bestaand pull-based learnings-systeem (`.project/project-context.json#learnings[]` via `LEARNINGS-LOAD.md`) heeft betere token-efficiency via expliciete scope-keuze (`component` / `architectural` / `pitfall-prefix`).
+
+**Cross-project memory** (`~/.claude/memory/MEMORY.md`) is verwijderd — overlap met learnings zonder extra waarde.
+
+**Setup-skill**: gebruik altijd `/core-setup` voor projects, niet `/init` (built-in). `/init` slaat de thin-template + gitignore-flow over.
+
 ## Regels bij Wijzigingen
 
 - Volg bestaande conventies — check een vergelijkbare skill voordat je een nieuwe maakt

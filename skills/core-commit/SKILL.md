@@ -42,6 +42,25 @@ De `-C` flag heeft bekende problemen met Windows-paden die backslashes bevatten.
 ls .git/rebase-merge .git/rebase-apply .git/MERGE_HEAD .git/CHERRY_PICK_HEAD 2>/dev/null
 ```
 
+### 1.5. Convention + Ticket Detection
+
+Eenmalig per project (cache in `project.json#team`). Skip als `team.commitConvention` al gezet is.
+
+1. **Convention detect**: `git log --oneline -20` → regex-match dominant pattern (>60% van commits):
+   - `^[a-z]+(\([a-z-]+\))?: ` → `"conventional"` (Conventional Commits)
+   - `^[A-Z]+-\d+[: ]` → `"ticket-prefix"` (Jira/Linear style)
+   - `^\[[A-Z-]+\]` → `"bracket"` (bracket-tag style)
+   - Anders → `"freeform"`
+   - Cache in `project.json#team.commitConvention`. Bij ticket-prefix: extraheer prefix (bijv. `"JIRA"`) → `project.json#team.ticketPrefix`.
+
+2. **externalRef detect** (per commit, altijd):
+   - Zoek `feature.json` voor huidige branch → check `externalRef`:
+     - `type === "github"` → prefix-suggestie: `(#{id})` als suffix
+     - `type === "jira"` of `"linear"` → prefix-suggestie: `{id}: ` als prefix
+   - Geen feature.json → check branch-naam op `[A-Z]+-\d+` regex → gebruik als prefix-suggestie
+
+3. **Compose-integratie** (stap 4 hieronder): gebruik detected convention + externalRef bij het genereren van de commit message. Conservatief: toon de suggestie, gebruiker bevestigt vóór commit.
+
 ### 2. Stage Changes (indien nodig)
 
 Als er unstaged changes zijn maar niets staged:
@@ -207,6 +226,10 @@ docs: update API documentation for v2 endpoints
 ### 5. Confirm & Commit
 
 Toon gegenereerde message en vraag bevestiging:
+
+<!-- modal-buffer -->
+
+Print 8 blank lines as whitespace buffer (keeps the commit message above visible when the modal panel opens).
 
 - "Commit" → voer commit uit
 - "Edit" → laat user aanpassen

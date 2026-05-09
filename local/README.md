@@ -27,9 +27,9 @@ cp local/CLAUDE.md.base ~/.claude/CLAUDE.md
 
 ## Bestanden
 
-| Bestand                  | Doel                                                        |
-| ------------------------ | ----------------------------------------------------------- |
-| `statusline-command.cjs` | Statusline: repo naam, git branch, context %                |
-| `keybindings.json`       | Keybindings (autocomplete dismiss op pijltjes)              |
-| `settings.json.template` | Settings template zonder VPS-specifieke hooks               |
-| `CLAUDE.md.base`         | Universele CLAUDE.md secties (gedrag, communicatie, skills) |
+| Bestand                  | Doel                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `statusline-command.cjs` | Statusline: repo naam, git branch, context %                                    |
+| `keybindings.json`       | Keybindings (autocomplete dismiss op pijltjes)                                  |
+| `settings.json.template` | Settings template zonder VPS-specifieke hooks                                   |
+| `CLAUDE.md.base`         | Template voor `~/.claude/CLAUDE.md`: gedrag, taal-policy, command-rules, skills |
