@@ -258,13 +258,6 @@
       const STATUSES = ["TODO", "DEFINED", "DOING", "DONE"];
       const ARCHIVED_STATUSES = ["CANCELLED"];
 
-      const STATUS_LABELS_FRONTEND = {
-        TODO: "To design",
-        DEFINED: "To convert",
-        DOING: "To audit",
-        DONE: "Shipped",
-        CANCELLED: "Gearchiveerd",
-      };
       const STATUS_LABELS_DEV = {
         TODO: "To do",
         DEFINED: "To build",
@@ -651,11 +644,6 @@
         return null;
       }
 
-      function getBatchSkill(status) {
-        if (status === "DONE") return "refactor";
-        return null;
-      }
-
       // ─── Render ─────────────────────────────────────────────────────
       function render() {
         // Update page header
@@ -724,226 +712,220 @@
 
         let sidebarHtml = "";
 
-        // ─── renderTrack ──────────────────────────────────────────────
-        function renderTrack(trackId, trackLabel, typeFilter, statusDefs) {
-          if (_trackFilter !== "ALL" && _trackFilter !== trackId) return;
+        // ─── renderSection ────────────────────────────────────────────
+        function renderSection({
+          id,
+          label,
+          status,
+          typeFilter,
+          batchSkill,
+          transitionLabels,
+        }) {
+          const effectiveTypeFilter = (type) => {
+            if (_trackFilter === "FRONTEND" && !isFrontendTrackType(type))
+              return false;
+            if (_trackFilter === "DEV" && isFrontendTrackType(type))
+              return false;
+            return typeFilter(type);
+          };
 
-          const trackEl = document.createElement("section");
-          trackEl.className = `track track--${trackId.toLowerCase()}`;
-          trackEl.id = `track-${trackId.toLowerCase()}`;
+          let items = data.features.filter(
+            (f) =>
+              f.status === status &&
+              !f.shipped &&
+              effectiveTypeFilter(f.type) &&
+              (status === "TODO" || !FRONTEND_ONESHOT_TYPES.includes(f.type)),
+          );
 
-          if (dualTrack) {
-            const trackHeader = document.createElement("div");
-            trackHeader.className = "track-header";
-            trackHeader.innerHTML = `<span class="track-label">${esc(trackLabel)}</span>`;
-            trackEl.appendChild(trackHeader);
+          if (searchTerm) {
+            items = items.filter(
+              (f) =>
+                f.name.toLowerCase().includes(searchTerm) ||
+                (f.description || "").toLowerCase().includes(searchTerm),
+            );
           }
 
-          let hasSections = false;
-          let sbGroup = "";
+          // Always render TO DO section (even empty) so the "+ add" button stays reachable.
+          const isTodoSection = status === "TODO" && id === "todo";
+          if (items.length === 0 && !isTodoSection) return;
+          if (items.length === 0 && searchTerm) return;
 
-          statusDefs.forEach(({ status, label, transitionLabels }) => {
-            let items = data.features.filter(
-              (f) =>
-                f.status === status &&
-                !f.shipped &&
-                typeFilter(f.type) &&
-                (status === "TODO" || !FRONTEND_ONESHOT_TYPES.includes(f.type)),
-            );
+          const sectionId = `${id}-section`;
 
-            if (searchTerm) {
-              items = items.filter(
-                (f) =>
-                  f.name.toLowerCase().includes(searchTerm) ||
-                  (f.description || "").toLowerCase().includes(searchTerm),
-              );
-            }
+          const section = document.createElement("section");
+          section.className = "group";
+          section.id = sectionId;
+          section.dataset.status = status;
 
-            // Always render Dev TODO header (even empty) so the "+ add" button stays reachable.
-            const isDevTodoSection = trackId === "DEV" && status === "TODO";
-            if (items.length === 0 && !isDevTodoSection) return;
-            if (items.length === 0 && searchTerm) return;
+          const header = document.createElement("div");
+          header.className = "group-header";
+          header.dataset.status = status;
 
-            const sectionId = `${trackId.toLowerCase()}-${status.toLowerCase()}-section`;
+          let blockedSuffix = "";
+          if (status === "DEFINED") {
+            const blockedCount = items.filter((f) => {
+              const deps = f.dependencies || [];
+              return deps.some((dep) => {
+                const found = findItem(dep);
+                return !found || found.item.status !== "DONE";
+              });
+            }).length;
+            blockedSuffix =
+              blockedCount > 0
+                ? ` <span class="header-blocked-count">(${blockedCount} geblokkeerd)</span>`
+                : "";
+          }
 
-            const section = document.createElement("section");
-            section.className = "group";
-            section.id = sectionId;
-            section.dataset.status = status;
-
-            const header = document.createElement("div");
-            header.className = "group-header";
-            header.dataset.status = status;
-
-            let blockedSuffix = "";
-            if (status === "DEFINED") {
-              const blockedCount = items.filter((f) => {
-                const deps = f.dependencies || [];
-                return deps.some((dep) => {
-                  const found = findItem(dep);
-                  return !found || found.item.status !== "DONE";
-                });
-              }).length;
-              blockedSuffix =
-                blockedCount > 0
-                  ? ` <span class="header-blocked-count">(${blockedCount} geblokkeerd)</span>`
-                  : "";
-            }
-
-            const batchVerb = trackId === "DEV" ? getBatchSkill(status) : null;
-            const copyPrefix =
-              data.source && data.source.startsWith("/game") ? "game" : "dev";
-            const batchBtnHtml =
-              batchVerb && items.length > 0
-                ? `<button class="group-batch-btn" data-cmd="/${copyPrefix}-${batchVerb}" title="Kopieer /${copyPrefix}-${batchVerb}" aria-label="Kopieer /${copyPrefix}-${batchVerb}">
+          let batchBtnHtml = "";
+          if (batchSkill && items.length > 0) {
+            const isFrontendSection =
+              batchSkill === "convert" || batchSkill === "audit";
+            const cmdPrefix = isFrontendSection
+              ? "frontend"
+              : data.source && data.source.startsWith("/game")
+                ? "game"
+                : "dev";
+            const cmd = `/${cmdPrefix}-${batchSkill}`;
+            batchBtnHtml = `<button class="group-batch-btn" data-cmd="${cmd}" title="Kopieer ${cmd}" aria-label="Kopieer ${cmd}">
                   <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
                   <span>batch (${items.length})</span>
-                 </button>`
-                : "";
+                 </button>`;
+          }
 
-            const addBtnHtml =
-              status === "TODO"
-                ? `<button class="group-add-btn" data-cmd="/project-todo" title="Kopieer /project-todo" aria-label="Voeg todo toe">
+          const addBtnHtml =
+            status === "TODO"
+              ? `<button class="group-add-btn" data-cmd="/project-todo" title="Kopieer /project-todo" aria-label="Voeg todo toe">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
                  </button>`
-                : "";
+              : "";
 
-            header.innerHTML = `<h2>${esc(label)}${blockedSuffix}</h2>${batchBtnHtml}${addBtnHtml}`;
+          header.innerHTML = `<h2>${esc(label)}${blockedSuffix}</h2>${batchBtnHtml}${addBtnHtml}`;
 
-            header.addEventListener("click", (e) => {
-              const addBtn = e.target.closest(".group-add-btn");
-              if (addBtn) {
-                e.stopPropagation();
-                const cmd = addBtn.dataset.cmd;
-                navigator.clipboard.writeText(cmd).then(() => {
-                  toast(`Gekopieerd: ${cmd}`);
-                });
-                return;
-              }
-              const batchBtn = e.target.closest(".group-batch-btn");
-              if (batchBtn) {
-                e.stopPropagation();
-                const cmd = batchBtn.dataset.cmd;
-                navigator.clipboard.writeText(cmd).then(() => {
-                  const targets = data.features.filter(
-                    (f) =>
-                      f.status === status &&
-                      !f.shipped &&
-                      !f.refactor &&
-                      typeFilter(f.type),
-                  );
-                  targets.forEach((f) => {
-                    f.transition = transitionLabels[status] || "active";
-                  });
-                  if (targets.length) {
-                    syncJSON();
-                    render();
-                  }
-                  toast(
-                    `Gekopieerd: ${cmd}${targets.length ? ` — ${targets.length} gemarkeerd` : ""}`,
-                  );
-                });
-                return;
-              }
-              section.classList.toggle("collapsed");
-            });
-
-            section.appendChild(header);
-
-            const body = document.createElement("div");
-            body.className = "group-body";
-
-            const phaseOrder = ["P1", "P2", "P3", "P4", "—"];
-            const phases = [...new Set(items.map((f) => f.phase || "—"))].sort(
-              (a, b) => phaseOrder.indexOf(a) - phaseOrder.indexOf(b),
-            );
-
-            phases.forEach((phase) => {
-              const phaseItems = items.filter(
-                (f) => (f.phase || "—") === phase,
-              );
-              const phaseGroup = document.createElement("div");
-              phaseGroup.className = "phase-group";
-
-              const phaseHeader = document.createElement("header");
-              phaseHeader.className = "phase-header";
-              phaseHeader.innerHTML = `<svg class="phase-chevron" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(phase)}`;
-              phaseHeader.onclick = () =>
-                phaseGroup.classList.toggle("phase-collapsed");
-              phaseGroup.appendChild(phaseHeader);
-
-              phaseItems.forEach((f) => {
-                phaseGroup.appendChild(renderRow(f));
+          header.addEventListener("click", (e) => {
+            const addBtn = e.target.closest(".group-add-btn");
+            if (addBtn) {
+              e.stopPropagation();
+              const cmd = addBtn.dataset.cmd;
+              navigator.clipboard.writeText(cmd).then(() => {
+                toast(`Gekopieerd: ${cmd}`);
               });
-
-              body.appendChild(phaseGroup);
-            });
-
-            section.appendChild(body);
-            trackEl.appendChild(section);
-            hasSections = true;
-
-            sbGroup += `<a href="#${sectionId}" class="sb-${status.toLowerCase()}" data-status="${status}">${esc(label)}</a>`;
+              return;
+            }
+            const batchBtn = e.target.closest(".group-batch-btn");
+            if (batchBtn) {
+              e.stopPropagation();
+              const cmd = batchBtn.dataset.cmd;
+              navigator.clipboard.writeText(cmd).then(() => {
+                const targets = data.features.filter(
+                  (f) =>
+                    f.status === status &&
+                    !f.shipped &&
+                    !f.refactor &&
+                    effectiveTypeFilter(f.type),
+                );
+                targets.forEach((f) => {
+                  f.transition = transitionLabels[status] || "active";
+                });
+                if (targets.length) {
+                  syncJSON();
+                  render();
+                }
+                toast(
+                  `Gekopieerd: ${cmd}${targets.length ? ` — ${targets.length} gemarkeerd` : ""}`,
+                );
+              });
+              return;
+            }
+            section.classList.toggle("collapsed");
           });
 
-          if (!hasSections) return;
+          section.appendChild(header);
 
-          board.appendChild(trackEl);
+          const body = document.createElement("div");
+          body.className = "group-body";
 
-          if (dualTrack) {
-            sidebarHtml += `<div class="sb-track-group sb-track--${trackId.toLowerCase()}"><div class="sb-track-label">${esc(trackLabel)}</div>${sbGroup}</div>`;
-          } else {
-            sidebarHtml += sbGroup;
-          }
+          const phaseOrder = ["P1", "P2", "P3", "P4", "—"];
+          const phases = [...new Set(items.map((f) => f.phase || "—"))].sort(
+            (a, b) => phaseOrder.indexOf(a) - phaseOrder.indexOf(b),
+          );
+
+          phases.forEach((phase) => {
+            const phaseItems = items.filter((f) => (f.phase || "—") === phase);
+            const phaseGroup = document.createElement("div");
+            phaseGroup.className = "phase-group";
+
+            const phaseHeader = document.createElement("header");
+            phaseHeader.className = "phase-header";
+            phaseHeader.innerHTML = `<svg class="phase-chevron" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(phase)}`;
+            phaseHeader.onclick = () =>
+              phaseGroup.classList.toggle("phase-collapsed");
+            phaseGroup.appendChild(phaseHeader);
+
+            phaseItems.forEach((f) => {
+              phaseGroup.appendChild(renderRow(f));
+            });
+
+            body.appendChild(phaseGroup);
+          });
+
+          section.appendChild(body);
+          board.appendChild(section);
+
+          sidebarHtml += `<a href="#${sectionId}" class="sb-${status.toLowerCase()}" data-status="${status}">${esc(label)}</a>`;
         }
 
-        // ─── Frontend track ───────────────────────────────────────────
-        renderTrack(
-          "FRONTEND",
-          "Frontend",
-          (type) => isFrontendTrackType(type),
-          [
-            {
-              status: "TODO",
-              label: "To design",
-              transitionLabels: TRANSITION_LABELS_FRONTEND,
-            },
-            {
-              status: "DEFINED",
-              label: "To convert",
-              transitionLabels: TRANSITION_LABELS_FRONTEND,
-            },
-            {
-              status: "DOING",
-              label: "To audit",
-              transitionLabels: TRANSITION_LABELS_FRONTEND,
-            },
-          ],
-        );
-
-        // ─── Dev track ────────────────────────────────────────────────
-        renderTrack("DEV", "Dev", (type) => !isFrontendTrackType(type), [
+        // ─── Sections ─────────────────────────────────────────────────
+        const sections = [
           {
-            status: "TODO",
+            id: "todo",
             label: "To do",
+            status: "TODO",
+            typeFilter: () => true,
+            batchSkill: null,
             transitionLabels: TRANSITION_LABELS_DEV,
           },
           {
-            status: "DEFINED",
+            id: "build",
             label: "To build",
+            status: "DEFINED",
+            typeFilter: (t) => !isFrontendTrackType(t),
+            batchSkill: "build",
             transitionLabels: TRANSITION_LABELS_DEV,
           },
           {
-            status: "DOING",
+            id: "verify",
             label: "To verify",
+            status: "DOING",
+            typeFilter: (t) => !isFrontendTrackType(t),
+            batchSkill: "verify",
             transitionLabels: TRANSITION_LABELS_DEV,
           },
           {
-            status: "DONE",
+            id: "refactor",
             label: "To refactor",
+            status: "DONE",
+            typeFilter: (t) => !isFrontendTrackType(t),
+            batchSkill: "refactor",
             transitionLabels: TRANSITION_LABELS_DEV,
           },
-        ]);
+          {
+            id: "convert",
+            label: "To convert",
+            status: "DEFINED",
+            typeFilter: isFrontendTrackType,
+            batchSkill: "convert",
+            transitionLabels: TRANSITION_LABELS_FRONTEND,
+          },
+          {
+            id: "audit",
+            label: "To audit",
+            status: "DOING",
+            typeFilter: isFrontendTrackType,
+            batchSkill: "audit",
+            transitionLabels: TRANSITION_LABELS_FRONTEND,
+          },
+        ];
+        sections.forEach(renderSection);
 
         // Archived (CANCELLED) section — collapsed by default
         const cancelledItems = data.features.filter(

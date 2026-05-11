@@ -4,6 +4,8 @@ Portable configuratiebestanden voor `~/.claude/`. Kopieer naar je machine en pas
 
 ## Setup
 
+Voor automatische setup: gebruik `/core-setup` na het clonen — bootstrapt `~/.claude/` inclusief globale symlinks. Onderstaande commando's zijn de handmatige fallback.
+
 ```powershell
 # Windows
 Copy-Item "C:\Projects\claude-config\local\statusline-command.cjs" "$env:USERPROFILE\.claude\"

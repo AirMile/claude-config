@@ -10,7 +10,7 @@ Zie `shared/SYNC.md`, `shared/DASHBOARD.md`, en `shared/LEARNING-EXTRACTION.md` 
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 15 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 17 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
 
 1. FASE 0: Pre-flight
 2. FASE 0.5: Project Status Snapshot
@@ -27,11 +27,12 @@ Zie `shared/SYNC.md`, `shared/DASHBOARD.md`, en `shared/LEARNING-EXTRACTION.md` 
 13. FASE 5.7: Setup Task Seeding
 14. FASE 5.75: Legacy github-project.json migratie
 15. FASE 5.8: Module Gap Install
-16. FASE 6: Report
+16. FASE 5.85: Stack Baseline Research
+17. FASE 6: Report
 
 ## FASE 0: Pre-flight
 
-> **Todo**: roep `TaskCreate` aan met de 15 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: roep `TaskCreate` aan met de 17 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Detect git repo**:
 
@@ -59,6 +60,29 @@ Zie `shared/SYNC.md`, `shared/DASHBOARD.md`, en `shared/LEARNING-EXTRACTION.md` 
    Bij annuleren → exit.
 
 4. **Read `git config user.name`** → `GIT_USER` (voor author filter en self-skip).
+
+5. **Empty-project check** — bepaal `is_empty_project` (alle vier waar):
+   - `stack.framework` leeg in `project.json`
+   - `existing_learning_count == 0`
+   - Geen `package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`, of `project.godot` aanwezig
+   - Geen broncode-bestanden in root (skip `node_modules`, `.git`, `.project`, `.claude`, `dist`, `build`)
+
+   Als `is_empty_project` → AskUserQuestion (single-select):
+
+   ```yaml
+   header: "Lege scan"
+   question: "Dit project heeft nog geen framework, learnings of broncode — alleen de project-add scaffold. Mature scan levert hier weinig op. Switchen naar greenfield wizard?"
+   options:
+     - label: "Switch naar greenfield wizard (Recommended)"
+       description: "Stack/concept/standards instellen voordat je code schrijft"
+     - label: "Doorgaan met mature scan"
+       description: "Edge case: ik wil expliciet de mature flow"
+   multiSelect: false
+   ```
+
+   Bij "Switch naar greenfield wizard":
+   - Geen aparte data-handoff nodig — greenfield's Phase 2 stap 0 (Concept preflight) leest zelf `.project/project-concept.md` en `project.json#concept` van disk en toont de "Gebruik bestaand / Aanvullen / Opnieuw" modal.
+   - Laad `references/mode-greenfield.md` en exit deze mature run.
 
 ### FASE 0.4: .gitignore bootstrap
 
@@ -125,6 +149,8 @@ Learnings:    {existing_learning_count}
 Last sync:    {sync-state.json#lastSync of "nooit"}
 ```
 
+Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader. Gebruik dit bij FASE 0.6 (Module Gap-modal) en eventuele follow-up suggesties: weeg het concept-domein mee in defaults en aanbevelingen.
+
 Geen modal hier — alleen visibility. FASE 0.6 hieronder gebruikt deze snapshot direct voor de Module Gap-modal.
 
 Onthoud de lege slots als `gap_slots[]` voor gebruik in FASE 0.6.
@@ -134,6 +160,8 @@ Markeer FASE 0.5 → `completed`.
 ### FASE 0.6: Module Gap Ask
 
 > **Todo**: markeer FASE 0.5 → `completed`, FASE 0.6 → `in_progress`.
+
+**Framework-guard:** als `stack.framework` uit `project.json` leeg is, sla de modal volledig over. Sla `gap_choices = []` op, toon `Module Gap Ask overgeslagen — geen framework gedetecteerd. Voeg modules later toe via /core-setup [module].`, en markeer FASE 0.6 → `completed`. Zonder framework is slot-relevantie niet te bepalen en zou de modal foutieve opties tonen.
 
 **Trigger:** ten minste één relevant slot in `gap_slots[]` (uit FASE 0.5) is leeg. Anders: sla `gap_choices = []` op en markeer FASE 0.6 → `completed` zonder modal.
 
@@ -381,6 +409,18 @@ Volg `references/claude-md-sync.md` met deze parameters:
 
 FASE D produceert een compacte samenvatting voor het FASE 6 rapport.
 
+**Stap 1b — `## Commands` check:**
+
+Na sync: check of `## Commands` blok aanwezig is in de resulterende `CLAUDE.md`.
+
+Ontbreekt → genereer het conform `references/claude-md-sections.md` template:
+
+- Detecteer `package.json#scripts`, `Makefile`, of equivalent in repo root
+- Één regel per commando met inline comment (kort — wat doet het)
+- Voeg toe direct vóór `## Project` sectie (of als tweede sectie als `## Project` ontbreekt)
+
+Al aanwezig → skip.
+
 **Stap 2 — Legacy marker migratie (éénmalig):**
 
 Scan de huidige `CLAUDE.md` op verouderde marker-blokken die niet meer in `CLAUDE.base.md` horen:
@@ -587,9 +627,21 @@ Markeer FASE 5.8 → `completed`.
 
 ---
 
+### FASE 5.85: Stack Baseline Research
+
+> **Todo**: markeer FASE 5.8 → `completed`, FASE 5.85 → `in_progress`.
+
+Volg `references/stack-baseline-shared.md`.
+
+**Trigger:** alleen wanneer `stack.framework` gevuld is én `.claude/research/stack-baseline.md` nog niet bestaat (idempotent — herstart-veilig). Anders skip.
+
+Markeer FASE 5.85 → `completed`.
+
+---
+
 ### FASE 6: Report
 
-> **Todo**: markeer FASE 5.8 → `completed`, FASE 6 → `in_progress`.
+> **Todo**: markeer FASE 5.85 → `completed`, FASE 6 → `in_progress`.
 
 **Render-regels** voor het rapport hieronder:
 
@@ -612,11 +664,24 @@ Markeer FASE 5.8 → `completed`.
 | frontend stack && `needsTheme = true` | `/frontend-tokens`                              |
 | `installed_in_session[]` niet leeg    | toon "Modules toegevoegd: {list}" onder Updated |
 
+**Branch/PR-context ophalen (vóór render):**
+
+```bash
+git rev-parse --abbrev-ref HEAD                                          # huidige branch
+git rev-list --left-right --count origin/main...HEAD 2>/dev/null         # achter/voor main
+gh pr list --json number,title,headRefName,isDraft --limit 5 2>/dev/null # open PRs (skip als gh niet beschikbaar)
+```
+
 ```
 ONBOARD COMPLETE
 
 Project: {project-name}
 Mode:    mature (full scan {+ LLM extraction | --no-llm})
+
+Repository:
+  Branch:  {huidige branch}
+  vs main: ↓{N} behind  ↑{M} ahead  {indien geen remote: "(geen remote)"}
+{if open PRs aanwezig}  Open PRs: {#number title (draft?), ...}
 
 Context:
   Structure:    refreshed ({N} dirs)
@@ -637,6 +702,7 @@ Learnings:
   Authors:      {list, of "codebase-wide" voor LLM-inferred}
 
 CLAUDE.md:     {gegenereerd | {N} secties toegevoegd | al compleet}
+Stack baseline: {.claude/research/stack-baseline.md aangemaakt | al aanwezig | geskipt (geen framework)}
 Claude config: {settings.local.json + hook aangemaakt | al aanwezig}
 
 Updated: {date}

@@ -64,22 +64,21 @@ Accepts markdown from:
    - If `.project/` folder exists → continue to step 2
 
 2. **Check for existing files (only if .project exists):**
-   - Check if `.project/project-concept.md` exists (primary concept source)
-   - Fallback: check if `.project/project.json` exists and `concept.content` is non-empty (legacy)
+   - Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader. Concept aanwezig als `CONCEPT_CONTEXT.present`.
    - Check if `.project/backlog.html` exists
 
 3. **Scenario A: Both concept AND backlog exist**
-   - Read concept: `.project/project-concept.md` als plain markdown, of fallback `project.json` (`concept.content`)
+   - Gebruik `CONCEPT_CONTEXT.markdown` als concept-inhoud
    - Read `backlog.html`
    - Analyze differences between concept and existing backlog
    - Check `data.features[]` in `backlog.html` for entries with `source: "project-todo"` or `source: "dev-todo"` or `source: "/core-setup"` or `source: "/dev-define"` or `source: "/dev-build"` or `source: "/dev-verify"` or `source: "/game-define"` or `source: "/game-build"` to identify independently-added features
-   - Compare current `concept.content` against existing backlog features (semantic match by name/description)
+   - Compare `CONCEPT_CONTEXT.markdown` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
      ```
      EXISTING BACKLOG DETECTED
 
-     Concept: .project/project-concept.md (of fallback: project.json concept.content)
+     Concept: .project/project-concept.md
      Backlog: .project/backlog.html
 
      Feature changes detected:
@@ -120,13 +119,13 @@ Accepts markdown from:
      - Show detailed diff and exit
 
 4. **Scenario B: Only concept exists (no backlog)**
-   - Read concept: `.project/project-concept.md` als plain markdown, of fallback `project.json` (`concept.content`)
+   - Gebruik `CONCEPT_CONTEXT.markdown` als concept-inhoud (al gelezen in stap 2)
    - Show confirmation:
 
      ```
      CONCEPT DETECTED
 
-     File: .project/project-concept.md (of project.json)
+     File: .project/project-concept.md
      Title: {extracted title}
 
      Dit concept wordt gebruikt voor de backlog.
@@ -151,7 +150,7 @@ Accepts markdown from:
      WARNING: Backlog exists but no concept found
 
      Backlog: .project/backlog.html
-     Concept: Not found (project.json concept.content empty)
+     Concept: Niet gevonden — voer eerst /thinking-concept uit
 
      Een concept is nodig om de backlog te updaten.
      ```

@@ -9,6 +9,10 @@ Exit codes / stdout:
     greenfield   — new project, use interactive wizard
     mature       — existing codebase, use scan mode
     ambiguous    — unclear, skill will ask user
+
+Classification for .project/project.json is content-aware: an empty
+project-add scaffold (no framework, pitch, or features) is treated as
+if no project.json exists and falls through to signal counting.
 """
 
 import argparse
@@ -20,7 +24,7 @@ from pathlib import Path
 
 
 SOURCE_EXTENSIONS = {".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".gd", ".cs", ".php"}
-EXCLUDE_DIRS = {"node_modules", ".git", ".project", "vendor", "dist", "build", ".next", "__pycache__", ".godot"}
+EXCLUDE_DIRS = {"node_modules", ".git", ".project", ".claude", "vendor", "dist", "build", ".next", "__pycache__", ".godot"}
 
 
 def count_source_files(root: Path) -> int:
@@ -86,12 +90,29 @@ def count_dependencies(root: Path) -> int:
     return 0
 
 
-def has_project_json(root: Path) -> bool:
-    return (root / ".project" / "project.json").exists()
+def has_meaningful_project_json(root: Path) -> bool:
+    """True only if project.json has stack.framework or features set.
+    concept.pitch alone is NOT a maturity signal — it can be filled by
+    /thinking-concept on an empty project. Maturity = existing code."""
+    path = root / ".project" / "project.json"
+    if not path.exists():
+        return False
+    try:
+        data = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return False
+    stack = data.get("stack", {}) or {}
+    if stack.get("framework"):
+        return True
+    if data.get("features"):
+        return True
+    return False
 
 
 def classify(root: Path) -> str:
-    if has_project_json(root):
+    # A populated project.json is a hard mature signal.
+    # Empty project-add scaffolds fall through to signal counting.
+    if has_meaningful_project_json(root):
         return "mature"
 
     signals = 0

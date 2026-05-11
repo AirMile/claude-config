@@ -66,8 +66,7 @@ The skill gathers requirements through targeted questions, optionally researches
 
    **c) No backlog but concept exists:**
 
-   Check of `.project/project-concept.md` bestaat (of `project.json` → `concept.content` niet leeg).
-   Als concept gevonden:
+   Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md`. Als `CONCEPT_CONTEXT.present`:
    AskUserQuestion:
 
    ```yaml
@@ -142,7 +141,7 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
    - Glob + Grep voor bestaande code die de feature-naam importeert
    - Read `.project/project.json` → extract:
      - `stack` — framework, language, packages (fallback als architecture-baseline niet bestaat)
-     - `concept.pitch` als feature context (korte samenvatting). Fallback: als pitch leeg, lees `.project/project-concept.md` → eerste 2 zinnen
+     - `CONCEPT_CONTEXT.pitch` of eerste 2 zinnen van `CONCEPT_CONTEXT.markdown` als feature context (zie `shared/CONCEPT.md`)
      - `features[]` — bestaande features (voorkomt duplicaten/overlap)
      - `data.entities` — bestaand data model
      - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/project-todo`). Laad die als context.

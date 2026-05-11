@@ -160,6 +160,12 @@ Vraag via AskUserQuestion: "Klopt dit voordat we de analyse starten?"
 - "Ga door (Recommended)" — door naar gestructureerde analyse
 - "Aanpassen" — herformuleer de beslissing
 
+### Enter Plan Mode
+
+Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2. Steps 2-3 (assumptions → alternatives → steelman → recommendation → presentatie) draaien in plan mode; de volledige analyse (Step 3) wordt naar de plan file geschreven ter review.
+
+---
+
 ### Step 2: Structured Analysis — 4 Steps
 
 Analyze the decision through exactly 4 steps. Each step has a specific purpose. Do NOT skip steps or combine them.
@@ -283,6 +289,8 @@ multiSelect: false
 - "Akkoord" → proceed with recommendation, continue conversation
 - "Ander alternatief" → ask which one, briefly explain implications, proceed
 - "Dieper graven" → ask which point, analyze further in depth
+
+**Einde analysefase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf de volledige analyse (THINK + AANNAMES + CONSTRAINT + ALTERNATIEVEN + STAALMAN + AANBEVELING + REJECTED) naar de plan file, dan `ExitPlanMode`. Na approval gaat de skill door met de dashboard sync en `.project/`-writes.
 
 **Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
 

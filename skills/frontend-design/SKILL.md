@@ -423,17 +423,15 @@ Guided 4-step creation flow.
 
 Check for concept:
 
-1. Primary: check if `.project/project-concept.md` exists → Read als plain markdown
-2. Fallback: check if `concept` section exists in project.json met non-empty `concept.content`
+Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader.
 
-**If concept exists (uit project-concept.md of project.json):**
+**Als `CONCEPT_CONTEXT.present`:**
 
 ```
 PROJECT CONTEXT
 ════════════════════════════════════════════════
-Bron:    {project-concept.md | project.json}
-Naam:    {concept.name}
-Concept: {concept.content — first 200 chars}
+Naam:    {CONCEPT_CONTEXT.name}
+Concept: {CONCEPT_CONTEXT.markdown — first 200 chars}
 ════════════════════════════════════════════════
 ```
 
@@ -1730,11 +1728,8 @@ _Gegenereerd door /frontend-design · {datum}_
 
 {concept-bron in prioriteitsvolgorde:
 
-1. Als `.project/project-concept.md` bestaat → Read het volledige bestand (preferred)
-2. Anders als `concept.pitch` gevuld is → gebruik `concept.pitch` (1-2 zinnen samenvatting)
-3. Anders als `concept.content` gevuld is → gebruik `concept.content` (legacy inline)
-4. Anders → "Geen concept gedefinieerd"
-   }
+{`CONCEPT_CONTEXT.markdown` als aanwezig, anders `CONCEPT_CONTEXT.pitch`, anders "Geen concept gedefinieerd" — zie `shared/CONCEPT.md`}
+}
 
 ## Design Principes
 

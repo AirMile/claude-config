@@ -392,7 +392,7 @@ Use {when|with} <trigger>. <korte aanvulling>. Use with /<command-name>[, option
 - The option count is unbounded and runtime-dependent without natural categorization
 - The choice involves comparing items against each other rather than picking from independent categories
 
-In these cases: present a numbered plain-text list and ask for free-form input (e.g., `1, 3, 5` / `1-4` / `alles behalve 2`). Reference: `project-todo`, `core-profile`, `project-add`.
+In these cases: present a numbered plain-text list and ask for free-form input (e.g., `1, 3, 5` / `1-4` / `alles behalve 2`). Reference: `project-todo`, `project-add`.
 
 Use `AskUserQuestion` only for the cancel/exit route (e.g., "Doorgaan met selectie" / "Annuleren").
 

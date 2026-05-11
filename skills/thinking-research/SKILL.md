@@ -66,6 +66,12 @@ Search Obsidian met het inline argument. Bij match in `Ideas/`: vraag of dit als
 
 Accepteer input van gebruiker (thinking output, document, beschrijving, of chat context). Bij onduidelijkheid: stel 2-3 gerichte vragen. Bevestig het concept samengevat voordat je doorgaat.
 
+### Enter Plan Mode
+
+Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2. Steps 2-7 draaien in plan mode; het eindrapport (Step 7) wordt naar de plan file geschreven ter review. WebSearch, Context7 en Grep/Glob blijven werken in plan mode.
+
+---
+
 ### Step 2: Extract Research Foundation
 
 Extract eerst vier categorieën uit het concept, distilleer dan research vragen.
@@ -302,6 +308,8 @@ Recommendations zijn altijd actor-specifiek (bijv. "voor een B2B SaaS brand", "v
 ```
 
 Inclusief Competitive Landscape tabel en/of Technical Feasibility assessment als relevant.
+
+**Einde analysefase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf het research-rapport naar de plan file, dan `ExitPlanMode`. Na approval gaat de skill door met Step 8 (Save & Sync, `.project/`-writes en optioneel Obsidian).
 
 ### Step 8: Save & Sync
 

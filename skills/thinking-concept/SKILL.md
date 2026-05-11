@@ -425,6 +425,12 @@ Vraag via AskUserQuestion: "Klopt dit overzicht voordat we samenvatten?"
 - "Nog een ronde" — terug naar Step 2 voor extra vragen
 - "Aanpassen" — corrigeer specifiek punt
 
+### Enter Plan Mode
+
+Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 3. Steps 3-4 (synthese + output-generatie) draaien in plan mode; het concept-document (Step 4) wordt naar de plan file geschreven ter review.
+
+---
+
 ### Step 3: Synthesize and Confirm
 
 1. Create a concise summary based on all input
@@ -474,6 +480,8 @@ For product ideas (apps, services, businesses):
 - Pure markdown without introductory text or preambles
 - No "Here's your document:" framing
 - Proper markdown formatting (# for title, ## for sections)
+
+**Einde denkfase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf het concept-document naar de plan file, dan `ExitPlanMode`. Na approval gaat de skill door met Step 5 (output bestemming en `.project/`-writes).
 
 ### Step 5: Output Destination
 

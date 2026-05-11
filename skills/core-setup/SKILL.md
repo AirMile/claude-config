@@ -90,9 +90,40 @@ else:
 [ ! -f ~/.claude/keybindings.json ] && cp "$SKILLS_PATH/../local/keybindings.json" ~/.claude/keybindings.json
 ```
 
+**4. `~/.claude/{agents,hooks,skills,scripts}`** — maak globale symlinks/junctions als ontbreken (idempotent):
+
+macOS / Linux:
+
+```bash
+CONFIG_REPO="$(realpath "$SKILLS_PATH/..")"
+for dir in agents hooks skills scripts; do
+  [ ! -e "$HOME/.claude/$dir" ] && ln -sfn "$CONFIG_REPO/$dir" "$HOME/.claude/$dir"
+done
+```
+
+Windows (PowerShell):
+
+```powershell
+$configRepo = Split-Path (Resolve-Path "$env:USERPROFILE\.claude\skills") -Parent
+foreach ($dir in @("agents","hooks","skills","scripts")) {
+  $target = "$env:USERPROFILE\.claude\$dir"
+  if (-not (Test-Path $target)) {
+    cmd /c "mklink /J `"$target`" `"$configRepo\$dir`""
+  }
+}
+```
+
 Geen output bij success — stille bootstrap. Fout bij ontbrekende `SKILLS_PATH` → toon waarschuwing en ga door.
 
 ---
+
+0. **Check setup-pending marker** — als `.project/session/setup-pending.json` bestaat én geen expliciete `--mode=` flag is meegegeven:
+   1. Lees marker: `mode` veld bepaalt waarheen — `greenfield` of `mature`.
+   2. Verwijder marker direct na lezen: `rm -f .project/session/setup-pending.json`.
+   3. Toon: `project-add handoff — start {mode} flow direct.`
+   4. Laad `references/mode-{mode}.md`. Skip stap 1-5.
+
+   Bij `--mode=...` flag aanwezig: verwijder marker (`rm -f`) maar honor de expliciete flag.
 
 1. **Module arg check** — als `$1` aanwezig is en géén `--mode=` prefix heeft: match (case-insensitive) tegen tier-1 modules:
    `inspect-overlay`, `tailwind`, `shadcn-ui`, `vitest`, `playwright`, `biome`, `eslint-prettier`, `zustand`, `tanstack-query`, `react-hook-form-zod`

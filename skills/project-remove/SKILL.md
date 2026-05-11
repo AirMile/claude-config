@@ -1,6 +1,6 @@
 ---
 name: project-remove
-description: Remove project with safe symlink/junction cleanup. Use with /project-remove to unregister a project and clean up links.
+description: Remove a registered project — optionally delete the folder. Master config blijft intact. Use with /project-remove.
 metadata:
   author: mileszeilstra
   version: 1.1.0
@@ -41,17 +41,13 @@ multiSelect: false
 **Check dat project bestaat:**
 
 ```bash
-# Verifieer pad
 test -d "{projects_root}/[naam]"
-
-# Check voor links
-test -L "{projects_root}/[naam]/.claude/agents"
+test -f "{projects_root}/[naam]/.claude/settings.local.json"
 ```
 
 **Safety checks:**
 
 - NOOIT claude-config zelf verwijderen
-- NOOIT projecten zonder links (andere workflow)
 - Waarschuw als uncommitted changes
 
 ```bash
@@ -65,47 +61,18 @@ question: "Weet je zeker dat je [naam] wilt verwijderen?"
 header: "Bevestig"
 options:
   - label: "Ja, verwijder project"
-    description: "Verwijdert links en project folder. Master config blijft intact."
+    description: "Verwijdert project folder. Master config blijft intact."
   - label: "Nee, annuleer"
     description: "Geen wijzigingen"
 multiSelect: false
 ```
 
-### FASE 4: Link Removal
-
-**KRITIEK: Verwijder links veilig — target moet intact blijven!**
-
-**macOS (symlinks):**
-
-```bash
-unlink "{projects_root}/[naam]/.claude/agents"
-unlink "{projects_root}/[naam]/.claude/commands"
-unlink "{projects_root}/[naam]/.claude/resources"
-unlink "{projects_root}/[naam]/.claude/scripts"
-```
-
-**Windows (junctions):**
-
-```bash
-cmd //c "rmdir {projects_root}\[naam]\.claude\agents"
-cmd //c "rmdir {projects_root}\[naam]\.claude\commands"
-cmd //c "rmdir {projects_root}\[naam]\.claude\resources"
-cmd //c "rmdir {projects_root}\[naam]\.claude\scripts"
-```
-
-**Verificatie:**
-
-```bash
-# Check dat links weg zijn
-test ! -L "{projects_root}/[naam]/.claude/agents"
-```
-
-### FASE 5: Project Folder Removal
+### FASE 4: Project Folder Removal
 
 **Vraag:**
 
 ```yaml
-question: "Links verwijderd. Wil je ook de project folder verwijderen?"
+question: "Wil je de project folder verwijderen?"
 header: "Folder"
 options:
   - label: "Ja, verwijder alles (Recommended)"
@@ -128,7 +95,6 @@ rm -rf "{projects_root}/[naam]"
 ```
 Project [naam] verwijderd
 
-- Links: verwijderd (4x)
 - Project folder: [verwijderd/behouden]
 - Master config: intact
 ```
@@ -143,7 +109,7 @@ Project [naam] verwijderd
 
 1. Environment variable
 2. `.claude/paths.local.yaml` (lokaal per project, niet in git)
-3. `resources/paths.yaml` (gedeelde defaults)
+3. `skills/project-add/paths.yaml` (canonical defaults)
 
 ## Restrictions
 

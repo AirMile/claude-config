@@ -39,7 +39,7 @@ const {
   indexPage,
   esc,
 } = require("./lib/templates");
-const backlogPatch = require("./lib/backlog-patches");
+const buildBacklogPatch = require("./lib/backlog-patches");
 
 // Theme head injection (for existing backlogs that lack the theme tags)
 const themeHeadTags =
@@ -423,7 +423,7 @@ http
           const rootScript = `<script>window.__projectRoot=${JSON.stringify(projectRoot)};</script>`;
           html = html.replace(
             "</body>",
-            rootScript + backlogPatch + nav + "</body>",
+            rootScript + buildBacklogPatch() + nav + "</body>",
           );
           res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",

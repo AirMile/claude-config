@@ -2,8 +2,9 @@
 name: project-todo
 description: >-
   Add new backlog items (features, changes, bugs, refactors, pages, components,
-  scenes, scripts, a11y, performance) with optional thinking rounds. Auto-detects
-  stack (web/game) from project.json. Use with /project-todo or /project-todo [beschrijving]
+  scenes, scripts, a11y, performance) — single or smart-split multi-item for
+  cross-domain descriptions. Auto-detects stack (web/game) and initialises
+  project.json if missing. Use with /project-todo or /project-todo [beschrijving]
   when capturing a new idea for the project backlog.
 metadata:
   author: mileszeilstra
@@ -27,6 +28,67 @@ NOT for: concept-level ideation (`/thinking-concept`), iterating on existing ite
 
 ## Workflow
 
+### Pre-FASE 0: Project Onboarding
+
+Check of `.project/project.json` bestaat.
+
+- **Bestaat** → ga direct door naar Stack Detection.
+- **Bestaat niet** → AskUserQuestion:
+
+  ```yaml
+  header: "Project setup"
+  question: "Geen .project/project.json gevonden. Hoe wil je verder?"
+  options:
+    - label: "Run /core-setup eerst (Recommended)"
+      description: "Stop hier — voer /core-setup uit voor volledige projectinitialisatie"
+    - label: "Snel scaffold + item toevoegen"
+      description: "Maak minimale project.json aan en ga door"
+    - label: "Annuleren"
+  multiSelect: false
+  ```
+
+  - **"Run /core-setup eerst"** → output `Voer /core-setup uit om het project te initialiseren.`, stop.
+  - **"Snel scaffold"** → vraag eerst het project type via AskUserQuestion:
+
+    ```yaml
+    header: "Project type"
+    question: "Wat voor project is dit?"
+    options:
+      - label: "Web (Recommended)"
+        description: "Web/CLI/library — backend + frontend"
+      - label: "Game (Godot)"
+        description: "Godot game project met GDScript"
+    multiSelect: false
+    ```
+
+    Schrijf daarna twee bestanden en ga door:
+    1. `.project/project.json` (minimal):
+
+       ```json
+       {
+         "name": "{directory naam van het project}",
+         "created": "{YYYY-MM-DD}",
+         "stack": {},
+         "features": []
+       }
+       ```
+
+       - "Web" → `"stack": {}`
+       - "Game (Godot)" → `"stack": { "engine": "godot" }`
+
+    2. `.project/session/setup-pending.json` (zodat `/core-setup` later de rest afmaakt):
+       ```json
+       {
+         "source": "/project-todo",
+         "mode": "greenfield",
+         "createdAt": "{YYYY-MM-DD}"
+       }
+       ```
+
+    Toon: `PROJECT.JSON AANGEMAAKT — run /core-setup later voor volledige setup.`
+
+  - **"Annuleren"** → stop.
+
 ### Stack Detection (pre-FASE 0)
 
 1. Probeer `.project/project.json` te lezen
@@ -45,7 +107,40 @@ NOT for: concept-level ideation (`/thinking-concept`), iterating on existing ite
    - Argument meegegeven (`/project-todo dash-ability toevoegen`) → gebruik als startbeschrijving
    - Geen argument (`/project-todo`) → vraag de gebruiker direct: "Wat wil je toevoegen aan de backlog?" Wacht op hun antwoord.
 
-2. **Backlog check:**
+2. **Multi-item detectie:**
+
+   **[GAME MODE]:** sla deze stap over. Multi-item split is een dev/frontend concept en past niet bij game-types (MECHANIC/SYSTEM/CONTENT/POLISH/UI). Voeg game-items één voor één toe.
+
+   **[WEB MODE]:** analyseer de beschrijving op cross-domain signalen:
+   - Bevat connectors: "inclusief", "met bijbehorende", "en de pagina", "en de UI", "plus frontend", "met frontend"
+   - Beschrijft expliciet zowel backend/logica/API áls UI/pagina/component
+
+   **Als multi-domain gedetecteerd → AskUserQuestion:**
+
+   ```yaml
+   header: "Meerdere items"
+   question: "Dit lijkt meerdere domeinen te beslaan. Wil je splitsen?"
+   options:
+     - label: "Ja, splits op (Recommended)"
+       description: "Maak aparte items (bv. FEATURE + PAGE), gelinkt via dependencies"
+     - label: "Nee, één item"
+       description: "Voeg alles samen als één backlog item"
+   multiSelect: false
+   ```
+
+   **Bij "Ja":**
+   - Genereer een voorstel: 2-3 sub-items met `{ naam (kebab), type-hint, korte beschrijving }`. Gebruik je kennis van dev/frontend splitsing:
+     - Logica/API/data → FEATURE (Dev swimlane)
+     - Pagina/route → PAGE (Frontend swimlane)
+     - Herbruikbaar UI-stuk → COMPONENT (Frontend swimlane)
+   - Toon als plain-text tabel, vraag bevestiging (plain text, geen modal): "Klopt deze splitsing? Typ j om door te gaan, of pas de namen/types aan."
+   - Stel interne queue in: `items = [{naam, beschrijving, type-hint}, ...]` (max 3)
+   - Doorloop FASE 1b/1c/1d en FASE 2 sequentieel voor elk item
+   - Link via `dependencies[]`: frontend-children krijgen `dependencies: ["dev-item-naam"]`
+
+   **Bij "Nee" of geen detectie:** `items = [enkelvoudig item]`, verwerk normaal.
+
+3. **Backlog check:**
    - Read `.project/backlog.html`
    - **Niet gevonden** → maak aan:
      1. `mkdir -p .project`
@@ -63,9 +158,11 @@ NOT for: concept-level ideation (`/thinking-concept`), iterating on existing ite
         }
         ```
    - **Gevonden** → parse JSON, check duplicaten:
+
+     **Single-item:**
      - Genereer kebab-case naam uit beschrijving
      - Zoek `data.features.find(f => f.name === naam)`
-     - Gevonden → toon waarschuwing en AskUserQuestion:
+     - Gevonden → AskUserQuestion:
 
        ```yaml
        header: "Duplicaat"
@@ -83,6 +180,13 @@ NOT for: concept-level ideation (`/thinking-concept`), iterating on existing ite
        - "Toch toevoegen" → suffix toevoegen (bijv. `dash-ability-2`)
        - "Item verdiepen" → suggest `/thinking-brainstorm {naam}` en stop
        - "Annuleren" → stop
+
+     **Multi-item (items.length > 1):**
+     - Loop over alle queue-items en genereer kebab-case namen
+     - Check per item: `data.features.find(f => f.name === naam)` EN botsing met andere queue-namen
+     - Conflict → voeg stille suffix toe (`-2`, `-3`) zonder modal
+     - Toon na de loop alle definitieve namen als plain-text bevestiging vóór je verdergaat:
+       `"Items worden toegevoegd als: {naam-1}, {naam-2}. Typ j om door te gaan."`
 
 ### FASE 1: Uitwerken
 
@@ -133,7 +237,29 @@ Na de antwoorden: verwerk de inzichten in een aangescherpte beschrijving van het
 
 ### FASE 1b: Priority + Category/Type
 
-**[WEB MODE]** Eén AskUserQuestion call met twee vragen:
+**Multi-item modus** (items.length > 1): gebruik de batch-flow hieronder. Single-item: sla batch-flow over en gebruik de WEB/GAME MODE blokken direct.
+
+**Batch-flow:** één AskUserQuestion call met N+1 vragen:
+
+```yaml
+# Vraag 1 — Priority (geldt voor álle items in batch)
+header: "Priority"
+question: "Welke prioriteit heeft deze batch items?"
+options:
+  - label: "P1 (Recommended)", description: "Hoogste prioriteit"
+  - label: "P2", description: "Belangrijk maar niet blokkerend"
+  - label: "P3", description: "Als er tijd is"
+  - label: "P4", description: "Parkeren voor later"
+multiSelect: false
+
+# Vraag 2..N+1 — Type per item (één vraag per queue-item, header = kebab-naam)
+# Opties = dezelfde set als de single-item flow (zie WEB/GAME MODE hieronder),
+# gebaseerd op type-hint uit FASE 0 multi-split.
+```
+
+Als je per item een andere priority wilt: kies "Nee, één item" in FASE 0 en run `/project-todo` meerdere keren.
+
+**[WEB MODE]** Single-item — eén AskUserQuestion call met twee vragen:
 
 ```yaml
 # Vraag 1
@@ -156,7 +282,7 @@ options:
 multiSelect: false
 ```
 
-**[GAME MODE]** Twee losse AskUserQuestion calls:
+**[GAME MODE]** Single-item — twee losse AskUserQuestion calls:
 
 ```yaml
 # Vraag 1: Priority
@@ -226,6 +352,8 @@ multiSelect: false
 
 ### FASE 1d: Dependencies
 
+**Multi-item:** sla deze vraag over — dependencies zijn al bepaald in FASE 0 stap 2 (frontend-children krijgen automatisch `dependencies: ["dev-item-naam"]`).
+
 ```yaml
 header: "Dependencies"
 question: "Zijn er features die eerst af moeten zijn?"
@@ -242,6 +370,8 @@ multiSelect: false
 **"Ja"** → AskUserQuestion (vrije tekst): "Welke features? (komma-gescheiden)" → parse naar array → `dependencies: ["naam1", "naam2"]`
 
 ### FASE 2: Schrijf naar Backlog + Thinking
+
+**Loop:** alle onderstaande stappen draaien per item in de queue (FASE 0 stap 2). Bij single-item is `items = [enkelvoudig item]`. Bij multi-item loopt de skill stappen 1-7 sequentieel per item, waarbij `dependencies[]` verwijst naar eerder verwerkte items in de batch.
 
 1. Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data" type="application/json">...</script>`
 
@@ -268,8 +398,9 @@ multiSelect: false
 5. **Schrijf terug:** Edit het JSON-blok in `backlog.html`. Zoek een uniek anker in de bestaande features array en gebruik Edit om het nieuwe object ervoor te plaatsen. Houd de `<script>` tags intact.
 
 6. **Schrijf thinking output** (alleen als FASE 1a doorlopen):
-   - Maak `.project/features/{naam}/` directory aan
-   - **[WEB MODE]** Schrijf naar `.project/features/{naam}/thinking.md`:
+
+   Pad: `.project/thinking/feature-idea-{naam}.md` — `mkdir -p .project/thinking`
+   - **[WEB MODE]:**
 
      ```markdown
      # {Item Naam}
@@ -291,7 +422,7 @@ multiSelect: false
      {antwoord op aanpak-vraag, als gesteld}
      ```
 
-   - **[GAME MODE]** Schrijf naar `.project/features/{naam}/thinking.md`:
+   - **[GAME MODE]:**
 
      ```markdown
      # {Feature Naam}
@@ -313,33 +444,54 @@ multiSelect: false
      {antwoord op technische vraag, als gesteld}
      ```
 
-7. **Log naar project.json thinking array** (als thinking rounds gedaan):
-   - Read `.project/project.json` (of maak `{}` als niet bestaat)
-   - Push naar `thinking` array (initialiseer als `[]` indien nodig):
+   Geen mutatie aan `project.json` voor thinking — output staat in losse md-files conform DASHBOARD.md.
+
+7. **Sync naar `project.json.features[]`** (concept sync):
+   - Read `.project/project.json` (al gelezen in Pre-FASE 0)
+   - Initialize `features = []` indien missing
+   - Check duplicate op `name` — als gevonden én status > TODO: MERGE (update `summary`, behoud status). Anders push:
      ```json
      {
-       "type": "feature-idea",
-       "date": "{today}",
-       "title": "{feature naam}",
+       "name": "{kebab-naam}",
+       "type": "{type}",
+       "status": "TODO",
+       "phase": "{P1-P4}",
        "summary": "{beschrijving, max 200 chars}",
-       "file": ".project/features/{naam}/thinking.md",
-       "newFeature": "{naam}",
-       "source": "/project-todo"
+       "dependencies": [],
+       "source": "/project-todo",
+       "created": "{YYYY-MM-DD}"
      }
      ```
-   - Als geen thinking rounds gedaan (snel toevoegen), `file` weglaten
    - Write `.project/project.json`
+
+   Schrijf NIET naar `concept.content` of `project-concept.md` — dat is eigendom van `/thinking-concept`.
 
 ### FASE 3: Output
 
-**[WEB MODE]:**
+**[MULTI-ITEM — wanneer items queue > 1]:**
+
+```
+TODOS TOEGEVOEGD ({n} items)
+
+  1. {naam-1}    {phase} · {type}
+     {beschrijving-1}
+
+  2. {naam-2}    {phase} · {type}     ← depends on: {naam-1}
+     {beschrijving-2}
+
+  Backlog: .project/backlog.html
+  Next steps:
+  [Per item, passende next step uit de WEB/GAME MODE output hieronder]
+```
+
+**[WEB MODE — single item]:**
 
 ```
 TODO TOEGEVOEGD
 
   {naam}                {phase} · {type}
   {beschrijving}
-  Thinking: .project/features/{naam}/thinking.md    ← alleen als thinking rounds gedaan
+  Thinking: .project/thinking/feature-idea-{naam}.md    ← alleen als thinking rounds gedaan
 
   Backlog: .project/backlog.html
   Next steps:
@@ -368,7 +520,7 @@ FEATURE TOEGEVOEGD
 
   {naam}                {phase} · {type}
   {beschrijving}
-  Thinking: .project/features/{naam}/thinking.md    ← alleen als thinking rounds gedaan
+  Thinking: .project/thinking/feature-idea-{naam}.md    ← alleen als thinking rounds gedaan
 
   Backlog: .project/backlog.html
   Next steps:
@@ -382,8 +534,9 @@ FEATURE TOEGEVOEGD
 - Schrijf GEEN implementatiecode
 - Wijzig GEEN bestaande items in de backlog
 - Sla de priority en type vragen niet over
-- Voeg maar 1 item tegelijk toe
+- Max 3 items per batch bij smart split
 - Thinking rounds: max 3 vragen, niet meer
+- Schrijf NIET naar `project-concept.md` of `concept.content` — alleen `/thinking-concept` mag dat
 
 ### Terminal Formatting
 

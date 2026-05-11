@@ -70,6 +70,34 @@ Toepasbaar op: Project description, Project name, Tech stack, Suggestions (per c
 
 Ask sequentially, one question per response:
 
+0. **Concept preflight** — check of er al concept-data ligt vóór je iets vraagt:
+
+   Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader.
+
+   **Als `CONCEPT_CONTEXT.present`:**
+
+   Toon AskUserQuestion (single-select):
+   - header: "Concept"
+   - question: "Er ligt al een concept (van /thinking-concept of /project-add). Hoe wil je verder?"
+   - options:
+     - label: "Gebruik bestaand concept (Recommended)" — description: "Skip Project description + Project name vragen, lees pitch/name uit de bestaande bestanden"
+     - label: "Aanvullen met extra context" — description: "Toon huidig concept, vraag korte aanvullende beschrijving die ik mee laat wegen"
+     - label: "Opnieuw beginnen" — description: "Negeer bestaand concept, stel beide vragen alsnog (concept-md wordt later niet overschreven)"
+   - multiSelect: false
+
+   **Bij "Gebruik bestaand"**: sla `concept.name` en `concept.pitch` op als `PROJECT_NAME` / `PROJECT_PITCH`. Lees `.project/project-concept.md` volledig in als `CONCEPT_CONTEXT`. Skip stap 1 en 2. Ga direct naar stap 3 (Project type).
+
+   **Bij "Aanvullen"**: toon de eerste 200 chars van `project-concept.md` als context-blok, vraag om aanvullende beschrijving (free-form), append in-memory aan `PROJECT_PITCH` en `CONCEPT_CONTEXT`. Skip stap 2 (name behouden uit concept).
+
+   **Bij "Opnieuw"**: ga normaal door met stap 1 en 2. `CONCEPT_CONTEXT` blijft leeg.
+
+   **Geen concept aanwezig**: ga normaal door met stap 1. `CONCEPT_CONTEXT` blijft leeg.
+
+   **`CONCEPT_CONTEXT` als stack-context** — bij elke selection-style vraag hierna (Project type, Tech stack, Suggestions per categorie): gebruik `CONCEPT_CONTEXT` actief:
+   - Onderbouw `→ Claude raadt aan:` met concept-relevante reden ("Next.js — SSR voor de SEO die je in het concept noemt").
+   - Stem suggesties af op het domein uit het concept.
+   - Geen extra disk-read nodig — `CONCEPT_CONTEXT` zit al in context.
+
 1. **Project description** — Toon dit blok aan de user en wacht op antwoord:
 
    ```
@@ -381,17 +409,9 @@ grep -qxF '.project/' .gitignore 2>/dev/null || echo '.project/' >> .gitignore
 
 > **Todo**: markeer Phase 6 → `completed`, Phase 7 → `in_progress`.
 
-Generate `.claude/research/stack-baseline.md` — reusable framework conventions that avoid duplicate Context7 queries in other skills.
+Volg `references/stack-baseline-shared.md`.
 
-**Run as general-purpose agent** (`subagent_type="general-purpose"`) for context isolation — Context7 queries for multiple stack technologies produce substantial output that shouldn't stay in the main session. The agent needs Write access; Explore is read-only and won't work.
-
-1. Maak eerst de map aan: `mkdir -p .claude/research`
-2. Voor elke major technologie in de stack, query Context7 (`resolve-library-id` → `query-docs`)
-3. Distilleer per technologie: conventions (5-10), patterns (5-10), idioms (3-5), testing (3-5), pitfalls (3-5)
-4. Schrijf het resultaat direct naar `.claude/research/stack-baseline.md`
-5. Voeg een Context7 library IDs tabel onderaan toe voor follow-up queries
-
-**Game projects:** Also generate `.claude/research/architecture-baseline.md` with scene tree patterns, node types, signals, state machines.
+**Trigger:** `stack.framework` is gevuld én `.claude/research/stack-baseline.md` bestaat nog niet.
 
 ---
 
@@ -407,11 +427,13 @@ Zie `{skills_root}/shared/DASHBOARD.md` voor het volledige schema en merge-strat
 
 1. Check eerst of `.project/project.json` al bestaat (bijv. uit een initiële commit). Zo ja: lees + merge i.p.v. overschrijven. Zo nee: maak aan met het volledige lege schema uit `shared/DASHBOARD.md`
 2. Vul `concept` sectie (preferred: markdown-file, niet inline):
-   - `name`: projectnaam (uit Phase 1/2 user answers)
-   - `pitch`: 1-2 zinnen samenvatting (uit user answers)
+   - `name`: projectnaam — gebruik bestaande `concept.name` als gevuld, anders uit user answers; NIET overschrijven als al ingevuld
+   - `pitch`: 1-2 zinnen samenvatting — gebruik bestaande `concept.pitch` als gevuld, anders uit user answers; NIET overschrijven als al ingevuld
    - `conceptFile`: `"project-concept.md"` — verwijzing naar het markdown-bestand
    - `content`: lege string `""` — NOOIT ook inline invullen naast `conceptFile`
-   - Maak `.project/project-concept.md` aan met de korte projectbeschrijving als plain markdown (wat het project doet, voor wie, kernfunctionaliteit). Hoeft niet uitgebreid — thinking/plan skills vullen dit later aan.
+   - Concept-md handling:
+     - **Bestaat `.project/project-concept.md` met > 50 chars**: NIET overschrijven, NIET appenden. De aanvullende beschrijving uit Phase 2 stap 0 "Aanvullen" blijft in-memory — alleen `/thinking-concept` schrijft naar disk.
+     - **Bestaat niet of < 50 chars**: aanmaken met `PROJECT_PITCH` (uit Phase 2 answers of preflight) als plain markdown (wat het project doet, voor wie, kernfunctionaliteit). Hoeft niet uitgebreid — thinking/plan skills vullen dit later aan.
 3. Vul `stack` sectie volledig (OVERWRITE — core-setup is de eerste skill):
    - `framework`: uit user answers (Phase 2 Q3/Q4)
    - `language`: uit user answers (Phase 2 Q4)
@@ -596,5 +618,11 @@ Start later met /project-backlog om ze visueel af te vinken.
 
 - `/core-setup [module]` — voeg libraries toe (Tailwind, Vitest, Playwright, Biome, etc.)
 - `/frontend-design [feature]` — visuele design spec voor een feature
+
+**Cleanup:**
+
+```bash
+rm -f .project/session/setup-pending.json
+```
 
 > **Todo**: markeer Phase 9 → `completed`.

@@ -241,6 +241,12 @@ If the user provided an inline description/argument:
 6. If "Aanpassen": ask what to change, update summary, confirm again
 7. If insufficient context in conversation: inform user and fall back to manual input
 
+### Enter Plan Mode
+
+Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2. Steps 2-6 draaien in plan mode; de verfijnde output (Step 6) wordt naar de plan file geschreven ter review. Context7-research werkt normaal in plan mode.
+
+---
+
 ### Step 2: Determine Type & Select Techniques
 
 **Goal:** Analyze the idea type, load relevant techniques, and let the user select which to apply.
@@ -478,6 +484,8 @@ applied_techniques:
   - Assumption Testing
 ---
 ```
+
+**Einde denkfase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf het verfijnde idee-document naar de plan file, dan `ExitPlanMode`. Na approval gaat de skill door met Step 7 (output bestemming en `.project/`-writes).
 
 ### Step 7: Output Destination
 

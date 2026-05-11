@@ -17,6 +17,13 @@ paths:
     # Godot editor executable (gebruikt door /game-build, /game-verify)
     godot_executable: "/Applications/Godot.app/Contents/MacOS/Godot"
 
+    # Extra paden voor /project-switch (bookmarks naast git repos in projects_root)
+    # Override in paths.local.yaml met je eigen vault/scratch/etc.
+    # extra_paths:
+    #   - { name: "obsidian-vault", path: "$HOME/Documents/MyVault", type: "vault" }
+    #   - { name: "scratch", path: "$HOME/scratch", type: "dir" }
+    extra_paths: []
+
   windows:
     # Root folder where projects are created
     projects_root: "C:\\Projects"
@@ -26,6 +33,24 @@ paths:
 
     # Godot editor executable (gebruikt door /game-build, /game-verify)
     godot_executable: "C:\\Godot\\Godot_v4.4.1-stable_win64.exe"
+
+    # Extra paden voor /project-switch
+    # extra_paths:
+    #   - { name: "obsidian-vault", path: "$env:USERPROFILE\\Documents\\MyVault", type: "vault" }
+    extra_paths: []
+
+  linux:
+    # Root folder where projects are created
+    projects_root: "$HOME/projects"
+
+    # Location of the claude-config repository
+    config_repo: "$HOME/claude-config"
+
+    # Godot editor executable
+    godot_executable: "/usr/bin/godot4"
+
+    # Extra paden voor /project-switch
+    extra_paths: []
 
 # Resolution order (eerste match wint):
 # 1. Environment variable (CLAUDE_PROJECTS_ROOT, CLAUDE_CONFIG_REPO, CLAUDE_GODOT_EXECUTABLE)

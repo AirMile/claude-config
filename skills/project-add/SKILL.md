@@ -1,6 +1,6 @@
 ---
 name: project-add
-description: Add project (new or clone existing) with symlinks/junctions to shared claude-config. Use with /project-add to register a new project in the multi-project setup.
+description: Add project (new or clone existing) and register it in the multi-project setup. Use with /project-add.
 metadata:
   author: mileszeilstra
   version: 1.0.0
@@ -23,11 +23,12 @@ Voegt een project toe — maak een nieuw project aan of clone een bestaande GitH
 
 ```bash
 # Detect OS
-if [[ "$(uname -s)" == "Darwin" ]]; then
-  PLATFORM="macos"
-else
-  PLATFORM="windows"
-fi
+case "$(uname -s)" in
+  Darwin)                PLATFORM="macos" ;;
+  Linux)                 PLATFORM="linux" ;;
+  MINGW*|CYGWIN*|MSYS*) PLATFORM="windows" ;;
+  *) echo "Unsupported platform: $(uname -s)" >&2; exit 1 ;;
+esac
 ```
 
 Use the detected platform to resolve `{projects_root}` and `{config_repo}` from `paths.yaml` (see Configuration section below).
@@ -37,8 +38,6 @@ Use the detected platform to resolve `{projects_root}` and `{config_repo}` from 
 ```bash
 # Check claude-config bestaat en compleet is
 test -d "{config_repo}"
-test -d "{config_repo}/agents"
-test -d "{config_repo}/skills"
 test -d "{config_repo}/scripts"
 
 # Check gh CLI authenticated (nodig voor clone mode en publish)
@@ -61,7 +60,7 @@ Oplossing:
 → Stop command, maak GEEN folders aan
 
 **Als gh auth faalt:**
-→ Toon waarschuwing maar ga door (clone mode en publish worden niet beschikbaar)
+→ Sla op: `GH_AVAILABLE=false`. Toon: `gh niet beschikbaar — clone mode en GitHub publish overgeslagen.`
 
 **Als checks slagen:**
 → Ga door naar FASE 1
@@ -69,9 +68,11 @@ Oplossing:
 ### FASE 1: Mode Selectie
 
 **Als naam meegegeven via `/project-add [naam]`:**
-→ Neem aan: **nieuw project** modus. Ga naar FASE 2 (new).
+→ Neem aan: **nieuw project** modus. Valideer de naam direct (zelfde regels als FASE 2 (new): lowercase letters/cijfers/hyphens, geen spaties of speciale tekens, niet bestaand in `{projects_root}`). Bij validatiefout: toon de fout en stop. Bij geldig: sla naam op en ga naar FASE 3 (skip FASE 2 (new) naam-vraag).
 
 **Als geen naam meegegeven:**
+
+Als `GH_AVAILABLE=false`: toon alleen "Nieuw project aanmaken" (Clone vereist gh).
 
 ```yaml
 question: "Wat wil je doen?"
@@ -79,7 +80,7 @@ header: "Modus"
 options:
   - label: "Nieuw project aanmaken (Recommended)"
     description: "Maak een leeg project met claude-config symlinks"
-  - label: "Bestaande repo clonen"
+  - label: "Bestaande repo clonen" # alleen tonen als GH_AVAILABLE=true
     description: "Clone een GitHub repo en configureer claude-config symlinks"
 multiSelect: false
 ```
@@ -182,64 +183,7 @@ mkdir -p {projects_root}/[naam]/.project/features
 **New mode:** maakt alles vanaf scratch.
 **Clone mode:** project root bestaat al, maakt alleen `.claude/` en `.project/` subdirs aan.
 
-### FASE 3.5: Profiel Selectie
-
-Read profiles from `{config_repo}/skills/core-profile/profiles.yaml`.
-
-Show a **numbered list** of all profiles (except "core" and "all") with their unique skills (skills not in "core"). Format:
-
-```
-**Beschikbare profielen:**
-
-1. **dev** — dev-build, dev-debug, dev-define, dev-refactor, dev-verify
-2. **frontend** — frontend-tokens, frontend-design, frontend-build, frontend-convert
-3. **game** — game-backlog, game-build, game-define, game-verify
-...
-A. **all** — Alle skills
-
-Welk profiel wil je activeren? (nummer, naam, of komma-gescheiden)
-```
-
-Do NOT use AskUserQuestion — present the list in plain text so all options are visible. Let user type their choice (number(s), name(s), or comma-separated combinations).
-
-**Default suggestion:** "dev" (mention as recommended).
-
-Store the selected profile name(s) for FASE 4.
-
-### FASE 4: Symlinks/Junctions Maken
-
-**Whole-directory links (agents, hooks, scripts):**
-
-macOS:
-
-```bash
-ln -sfn {config_repo}/agents {projects_root}/[naam]/.claude/agents
-ln -sfn {config_repo}/hooks {projects_root}/[naam]/.claude/hooks
-ln -sfn {config_repo}/scripts {projects_root}/[naam]/.claude/scripts
-```
-
-Windows:
-
-```bash
-cmd /c "mklink /J {projects_root}\[naam]\.claude\agents {config_repo}\agents"
-cmd /c "mklink /J {projects_root}\[naam]\.claude\hooks {config_repo}\hooks"
-cmd /c "mklink /J {projects_root}\[naam]\.claude\scripts {config_repo}\scripts"
-```
-
-**Per-skill links via profile selection (cross-platform):**
-
-```bash
-mkdir -p {projects_root}/[naam]/.claude/skills
-
-python3 {config_repo}/skills/core-profile/switch-profile.py \
-  --profiles <selected_profiles_from_fase_3.5> \
-  --skills-dir {projects_root}/[naam]/.claude/skills \
-  --source-dir {config_repo}/skills
-```
-
-**Note:** Skills uses per-skill symlinks/junctions (not a single directory link) so profiles can be switched later with `/core-profile`.
-
-### FASE 5: Basis Bestanden
+### FASE 4: Basis Bestanden
 
 #### New mode:
 
@@ -247,13 +191,13 @@ python3 {config_repo}/skills/core-profile/switch-profile.py \
 
 **Schrijf initiële projectbestanden:**
 
-macOS:
+macOS / Linux:
 
 ```bash
 cat > "{projects_root}/[naam]/.project/project.json" << 'ENDJSON'
 {
   "concept": { "name": "[naam]", "pitch": "", "content": "" },
-  "localUrl": "http://localhost:3000",
+  "localUrl": "",
   "theme": {
     "colors": { "main": [], "accent": [], "semantic": [] },
     "typography": { "families": { "heading": "", "body": "", "mono": "" }, "sizes": [] },
@@ -286,7 +230,7 @@ Windows (PowerShell):
 ```powershell
 $projectJson = '{
   "concept": { "name": "[naam]", "pitch": "", "content": "" },
-  "localUrl": "http://localhost:3000",
+  "localUrl": "",
   "theme": {
     "colors": { "main": [], "accent": [], "semantic": [] },
     "typography": { "families": { "heading": "", "body": "", "mono": "" }, "sizes": [] },
@@ -339,6 +283,7 @@ build/
 Thumbs.db
 
 # Claude project (runtime data)
+.project/session/
 .project/sessions/
 .project/features/
 
@@ -366,6 +311,7 @@ Check of de volgende entries al in `.gitignore` staan. Voeg alleen ontbrekende e
 
 ```
 # Claude project (runtime data)
+.project/session/
 .project/sessions/
 .project/features/
 
@@ -397,25 +343,46 @@ git add .gitignore
 
 ### FASE 7: Project Configuratie
 
-**Roep /core-setup aan:**
+**Bepaal beoogde core-setup mode:**
 
+- New mode → `setup_mode = "greenfield"`
+- Clone mode → `setup_mode = "mature"` (cloned repo kan al broncode hebben)
+
+**AskUserQuestion (single-select):**
+
+```yaml
+header: "Setup wizard"
+question: "Wil je nu de project setup wizard draaien? (stack, CLAUDE.md, design tokens)"
+options:
+  - label: "Ja, configureer nu (Recommended)"
+    description: "Direct doorgaan met /core-setup --mode={setup_mode}"
+  - label: "Nee, later"
+    description: "Session marker schrijven — volgende /core-setup start direct in {setup_mode} mode"
+multiSelect: false
 ```
-Vraag gebruiker: "Wil je nu /core-setup uitvoeren om CLAUDE.md te configureren?"
 
-Options:
-- "Ja, configureer nu (Recommended)" → roep /core-setup aan
-- "Nee, later" → toon instructies voor handmatige setup
+**Bij "Ja, configureer nu":** roep `/core-setup --mode={setup_mode}` aan. Geen marker nodig — flow is sequentieel.
+
+**Bij "Nee, later":** schrijf marker zodat de volgende `/core-setup` run detectie overslaat:
+
+```bash
+mkdir -p .project/session
+cat > ".project/session/setup-pending.json" << ENDJSON
+{
+  "source": "project-add",
+  "mode": "{setup_mode}",
+  "createdAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+ENDJSON
 ```
 
-**Als /core-setup wordt uitgevoerd:**
-
-- Lees CLAUDE.base.md van `{config_repo}`
-- Volg normale /core-setup flow
-- Schrijf naar `{projects_root}/[naam]/CLAUDE.md`
+Toon: `Setup later: run /core-setup in een nieuwe sessie — de wizard start direct in {setup_mode} mode.`
 
 ### FASE 8: GitHub Publish
 
 #### New mode:
+
+Als `GH_AVAILABLE=false`: sla deze fase over. Toon: `GitHub publish overgeslagen — gh niet geauthenticeerd.` Ga naar FASE 9.
 
 ```yaml
 question: "Wil je de repo publiceren naar GitHub?"
@@ -440,17 +407,29 @@ git add -A
 git commit -m "feat: initial commit - [naam]"
 ```
 
-2. Maak GitHub repo en push:
+2. **Vraag korte description** (optioneel — vrije tekst):
+
+Toon: `Korte GitHub description (optioneel, Enter om over te slaan):`
+Lees user input → sla op als `REPO_DESC` (kan leeg zijn).
+
+3. Maak GitHub repo en push:
 
 ```bash
+# Bouw description-argument als bash array (leeg = geen flag)
+if [ -n "$REPO_DESC" ]; then
+  DESC_FLAG=(--description "$REPO_DESC")
+else
+  DESC_FLAG=()
+fi
+
 # Private repo
-gh repo create [naam] --private --source=. --push --description "[project description]"
+gh repo create [naam] --private --source=. --push "${DESC_FLAG[@]}"
 
 # OF public repo
-gh repo create [naam] --public --source=. --push --description "[project description]"
+gh repo create [naam] --public --source=. --push "${DESC_FLAG[@]}"
 ```
 
-3. Toon repo URL na succesvolle publish
+4. Toon repo URL na succesvolle publish
 
 **Vereisten voor publish:**
 
@@ -495,21 +474,30 @@ multiSelect: false
 
 **Validatie:**
 
-- Alias mag niet al bestaan in `~/.bashrc`
+- Alias mag niet al bestaan in de target rc-file
 - Alleen lowercase letters, max 4 karakters (kort en snel)
 
 **Toevoegen:**
 
+Detecteer shell en kies rc-file:
+
 ```bash
-# Append alias naar ~/.bashrc
-echo "alias [alias]='cd {projects_root}/[naam] && claude'" >> ~/.bashrc
+case "$SHELL" in
+  */zsh)  RC_FILE="$HOME/.zshrc" ;;
+  */bash) RC_FILE="$HOME/.bashrc" ;;
+  */fish) RC_FILE="$HOME/.config/fish/config.fish" ;;
+  *)      RC_FILE="$HOME/.profile" ;;
+esac
+
+echo "alias [alias]='cd {projects_root}/[naam] && claude'" >> "$RC_FILE"
 ```
 
 **Bevestig:**
 
 ```
 Alias aangemaakt: [alias] → cd {projects_root}/[naam] && claude
-Gebruik: source ~/.bashrc (of open nieuwe terminal) om te activeren
+Toegevoegd aan: $RC_FILE
+Gebruik: source $RC_FILE (of open nieuwe terminal) om te activeren
 ```
 
 ### FASE 10: Afronden
@@ -541,17 +529,12 @@ code {projects_root}/[naam]
 Structuur:
 {projects_root}/[naam]/
 ├── .claude/
-│   ├── agents/     → symlink/junction (hele map)
-│   ├── hooks/      → symlink/junction (hele map)
-│   ├── scripts/    → symlink/junction (hele map)
-│   ├── skills/     → per-skill symlinks/junctions (profiel: [naam])
 │   ├── docs/
 │   ├── research/
 │   └── CLAUDE.md (of nog te configureren)
 ├── .project/
 └── .gitignore
 
-Actief profiel: [profiel naam(en)]
 Alias: [alias] → cd {projects_root}/[naam] && claude (indien aangemaakt)
 GitHub: https://github.com/[user]/[naam] (indien gepubliceerd)
 ```
@@ -566,10 +549,6 @@ Bron: https://github.com/[owner]/[repo]
 Structuur:
 {projects_root}/[naam]/
 ├── .claude/
-│   ├── agents/     → symlink/junction (hele map)
-│   ├── hooks/      → symlink/junction (hele map)
-│   ├── scripts/    → symlink/junction (hele map)
-│   ├── skills/     → per-skill symlinks/junctions (profiel: [naam])
 │   ├── docs/
 │   ├── research/
 │   └── CLAUDE.md (of nog te configureren)
@@ -577,7 +556,6 @@ Structuur:
 ├── .gitignore (bijgewerkt met claude entries)
 └── [bestaande repo bestanden]
 
-Actief profiel: [profiel naam(en)]
 Alias: [alias] → cd {projects_root}/[naam] && claude (indien aangemaakt)
 GitHub: https://github.com/[owner]/[repo]
 ```

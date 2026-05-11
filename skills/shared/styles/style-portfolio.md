@@ -15,15 +15,8 @@ Writing voice of Miles Zeilstra. Professional student presenting their work. Not
 - Active verbs: "bouwde", "opgezet", "gescrapet". Never "was verantwoordelijk voor" or "gericht op".
 - Tech terms stay in English, rest follows input language: "matchup engine", "MVC patroon", "scrapen"
 - No adjective stacking. Never "gepolijste, data-gedreven, responsieve tool". One descriptor max.
-- Avoid these words/phrases entirely:
-  - "volledig", "compleet", "professioneel", "gepolijst"
-  - "gericht op", "verantwoordelijk voor", "in staat om"
-  - "data-gedreven", "gestroomlijnd", "robuust", "schaalbaar"
-  - "van concept tot deployment", "van A tot Z"
+- Erft alle anti-patterns uit `_anti-patterns.md`. Plus stijl-specifiek:
   - "passie voor", "energie van krijg", "gedreven door"
-  - "polished", "robust", "scalable", "streamlined", "cutting-edge"
-  - "responsible for", "focused on", "aimed at"
-  - "from concept to deployment", "end-to-end"
 
 ## Structure
 

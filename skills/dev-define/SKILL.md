@@ -37,8 +37,7 @@ FASE 1 van de dev workflow: define → build → test.
    - Backlog gekozen → stap 3. "Andere feature" → optie c.
 
    c) **Geen backlog maar concept aanwezig:**
-   Check of `.project/project-concept.md` bestaat (of `project.json` → `concept.content` niet leeg).
-   Als concept gevonden:
+   Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md`. Als `CONCEPT_CONTEXT.present`:
    AskUserQuestion:
 
    ```yaml
@@ -69,7 +68,7 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
    - Glob + Grep voor bestaande code die de feature-naam importeert. Bij 0 matches: stilzwijgend doorgaan. Bij ≥1 match: vermeld kort welke bestanden de naam al refereren.
    - Read `.project/project.json` → extract:
      - `stack` — framework, language, packages (fallback als stack-baseline.md niet bestaat)
-     - `concept.pitch` of `concept.content` als feature context (korte samenvatting). Fallback: als beide leeg, lees `.project/project-concept.md` → eerste 2 zinnen
+     - `CONCEPT_CONTEXT.pitch` of eerste 2 zinnen van `CONCEPT_CONTEXT.markdown` als feature context (zie `shared/CONCEPT.md`)
      - `features[]` — bestaande features (voorkomt duplicaten/overlap)
      - `endpoints` — bestaande API surface
      - `data.entities` — bestaand data model
@@ -153,15 +152,9 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
 
 ---
 
-### FASE 0c: Enter Plan Mode (denkfase markering)
+### FASE 0c: Enter Plan Mode
 
-Vóór FASE 1 start: roep **`EnterPlanMode`** aan om plan mode te activeren. Dit hint aan model-routers (zoals `opusplan`) dat de denkzware fasen 1 + 2 starten — die kunnen dan een sterker model inschakelen.
-
-Na de call krijg je via system-reminder het pad naar de plan file (bv. `/Users/.../plans/{slug}.md`). Noteer dit pad — dat is de bestemming voor alle FASE 2 design-writes.
-
-**Skip als al in plan mode** (geen dubbele EnterPlanMode call). Lees in dat geval het bestaande plan-file-pad uit de actieve plan-mode system-reminder.
-
-`AskUserQuestion` calls in FASE 1 + 2 blijven werken in plan mode. Schrijfacties (file writes, mkdir) zijn niet toegestaan tot ExitPlanMode aan het einde van FASE 2 — alle FASE 0 setup-writes zijn op dit punt al gedaan. Uitzondering: de plan file zelf mag wél tijdens plan mode geschreven/aangepast worden — dat is het kanaal naar de user-review. Alle andere file writes (feature.json, .project/\* updates) wachten tot na ExitPlanMode.
+Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór FASE 1. FASE 1 + 2 draaien in plan mode; alle FASE 2 design-output wordt naar de plan file geschreven ter review. Alle FASE 0 setup-writes zijn op dit punt al gedaan — file writes (feature.json, .project/\* updates) wachten tot na ExitPlanMode.
 
 ---
 
@@ -342,9 +335,7 @@ Ontwerp in drie stappen:
      - _Test locatie_: Colocated of apart? Documenteer in `testStrategy.location`.
      - _Module boundaries_: Welke modules importeren van welke? Noteer verboden imports bij circulaire risico's.
 
-**Einde denkfase**: roep **`ExitPlanMode`** aan. Na approval gaat de skill verder met FASE 3 (feature.json schrijven) in normale mode.
-
-**Skip als de skill al gestart was in plan mode** (gebruiker heeft zelf `/plan-mode` gedaan vóór `/dev-define` — laat ze in plan mode).
+**Einde denkfase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf het volledige architectuur-design naar de plan file, dan `ExitPlanMode`. Na approval gaat de skill verder met FASE 3 (feature.json schrijven).
 
 ### FASE 3: Write feature.json
 
