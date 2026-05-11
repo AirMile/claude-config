@@ -202,17 +202,6 @@ powershell -Command "(Get-ChildItem '.claude/skills' -Directory | Select-Object 
    test -f ".claude/skills/[prefix]-[name]/SKILL.md" && echo "OK" || echo "FAILED"
    ```
 
-#### Register in Profile
-
-1. Locate `profiles.yaml` in `.claude/skills/core-profile/` (or shared library equivalent)
-2. Detect profile from prefix (skill `dev-lint` → profile `dev`)
-3. Insert skill name in alphabetical order
-4. Validate:
-
-   ```bash
-   python3 .claude/skills/core-profile/switch-profile.py --validate
-   ```
-
 **Output:**
 
 ```
@@ -220,7 +209,6 @@ CREATED!
 
 - [list of created files]
 [If junction/symlink: Link: source → target]
-Profile: added to [profile-name] in profiles.yaml
 
 Test with: /[prefix]-[name]
 ```
@@ -238,7 +226,6 @@ Verify:
 - [ ] Supporting files exist (if referenced)
 - [ ] Skill name follows `[prefix]-[name]` convention
 - [ ] Junction/symlink accessible (if applicable)
-- [ ] profiles.yaml updated and validated
 
 Auto-fix without asking: formatting, whitespace, path separators.
 Ask user: content changes, missing files, structure changes.

@@ -11,9 +11,10 @@ A central repo that extends Claude Code with reusable slash commands (skills), s
 ## How it works
 
 ```
-~/.claude/skills/  →  junction/symlink to this repo's skills/
-~/.claude/agents/  →  junction/symlink to this repo's agents/
-~/.claude/hooks/   →  junction/symlink to this repo's hooks/
+~/.claude/skills/   →  junction/symlink to this repo's skills/
+~/.claude/agents/   →  junction/symlink to this repo's agents/
+~/.claude/hooks/    →  junction/symlink to this repo's hooks/
+~/.claude/scripts/  →  junction/symlink to this repo's scripts/
 ```
 
 Skills are invoked as `/skill-name` in Claude Code. Agents run as isolated sub-processes for tasks that benefit from parallelism or separate context.
@@ -22,29 +23,11 @@ Skills are invoked as `/skill-name` in Claude Code. Agents run as isolated sub-p
 
 ### 1. First-time bootstrap
 
-Clone the repo and create the global junctions/symlinks once:
-
-```powershell
-# Windows
-git clone <repo-url> C:\Projects\claude-config
-cmd /c mklink /J "%USERPROFILE%\.claude\skills" "C:\Projects\claude-config\skills"
-cmd /c mklink /J "%USERPROFILE%\.claude\agents" "C:\Projects\claude-config\agents"
-cmd /c mklink /J "%USERPROFILE%\.claude\hooks" "C:\Projects\claude-config\hooks"
-```
-
-```bash
-# macOS
-git clone <repo-url> ~/projects/claude-config
-ln -sfn ~/projects/claude-config/skills ~/.claude/skills
-ln -sfn ~/projects/claude-config/agents ~/.claude/agents
-ln -sfn ~/projects/claude-config/hooks ~/.claude/hooks
-```
-
-See [`local/README.md`](local/README.md) for portable configs (settings, keybindings, statusline, CLAUDE.md base).
+Clone the repo, then run `/core-setup` to bootstrap `~/.claude/` (CLAUDE.md, settings, keybindings, and all four global symlinks). See [`local/README.md`](local/README.md) for the manual fallback.
 
 ### 2. Register a project — `/project-add`
 
-Registers a project in the multi-project setup: creates project-level junctions/symlinks pointing back to this repo, optionally clones a GitHub repo. Run once per project.
+Creates project structure (`.claude/`, `.project/`) and optionally clones a GitHub repo. Run once per project.
 
 ### 3. Set up a project — `/core-setup`
 
@@ -76,18 +59,18 @@ CLAUDE.base.md    Template for per-project CLAUDE.md generation
 
 Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL-PATTERNS.md`](skills/shared/SKILL-PATTERNS.md) for conventions.
 
-| Category    | Skills                                                                      |
-| ----------- | --------------------------------------------------------------------------- |
-| `core`      | setup, create, edit, delete, audit, commit, export, merge, profile, rewrite |
-| `dev`       | define, build, verify, debug, refactor, optimize, owasp                     |
-| `frontend`  | design, convert, check, tokens                                              |
-| `game`      | define, build, verify, debug, refactor, optimize                            |
-| `marketing` | research, content, screenshots                                              |
-| `project`   | add, remove, pull, tunnel, backlog, plan, todo                              |
-| `school`    | learn                                                                       |
-| `team`      | review, verify                                                              |
-| `thinking`  | brainstorm, concept, critique, decide, research                             |
-| `shared`    | Shared refs: RULES, PATTERNS, PIPELINE, DASHBOARD, DEVINFO, PLAYWRIGHT, …   |
+| Category    | Skills                                                                    |
+| ----------- | ------------------------------------------------------------------------- |
+| `core`      | setup, create, edit, delete, audit, commit, export, merge, rewrite        |
+| `dev`       | define, build, verify, debug, refactor, optimize, owasp                   |
+| `frontend`  | design, convert, check, tokens                                            |
+| `game`      | define, build, verify, debug, refactor, optimize                          |
+| `marketing` | research, content, screenshots                                            |
+| `project`   | add, remove, pull, tunnel, backlog, plan, todo                            |
+| `school`    | learn                                                                     |
+| `team`      | review, verify                                                            |
+| `thinking`  | brainstorm, concept, critique, decide, research                           |
+| `shared`    | Shared refs: RULES, PATTERNS, PIPELINE, DASHBOARD, DEVINFO, PLAYWRIGHT, … |
 
 ## Pipelines
 
@@ -107,10 +90,6 @@ Sub-agents run in isolated context — used for parallelism, independent reasoni
 | `owasp-*` (13)       | OWASP Top 10 scanners + remediation strategies      |
 | `godot-*` (4)        | Godot/GDScript researchers + TDD implementer        |
 | `learning-extractor` | Extract atomic patterns/pitfalls for project memory |
-
-## Profiles
-
-`/core-profile` toggles skill visibility by profile (e.g. hide game skills when doing web work). Managed via `skills/core-profile/profiles.yaml`.
 
 ## Hooks
 

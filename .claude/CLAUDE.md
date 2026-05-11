@@ -20,6 +20,7 @@ Cross-platform: **Windows (primair)** en **macOS (optioneel)**.
 
 - Gebruik `{projects_root}` in skills, niet hardcoded paden
 - `paths.yaml` bevat per-platform defaults (override via env vars of `paths.local.yaml`)
+- **Padresolutie:** env var (`CLAUDE_PROJECTS_ROOT`, `CLAUDE_CONFIG_REPO`, `CLAUDE_GODOT_EXECUTABLE`) → `.claude/paths.local.yaml` (per project, niet in git) → `skills/project-add/paths.yaml` (canonical defaults)
 - Git op Windows: vermijd `git -C <path>` met backslashes → `cd "<path>" && git <cmd>`
 - Platform-specifieke commands altijd voor beide OS'en documenteren
 
@@ -71,10 +72,10 @@ State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared
 
 - **`.project/`**: alle runtime artifacts (gitignored) — wireframes, config, session, screenshots
 - **`.project/project.json`**: centraal project dashboard met context (structuur, routing, patterns), features, stack, endpoints, entities, thinking. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md verwijst hiernaar voor runtime context.
-- **Profiles**: `core-profile/profiles.yaml` + `switch-profile.py` togglet skill visibility per profiel
 - **Format-on-save**: hook runt Prettier (web) of gdformat (GDScript) na elke Write/Edit
 - **Backlog**: `.project/backlog.html` met status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped
 - **Build skills**: auto-commit, auto-sync `project.json` context na voltooiing
+- **Globaal vs lokaal**: `~/.claude/{agents,hooks,skills,scripts}/` zijn whole-directory symlinks naar de claude-config repo. Claude Code merget deze globale set met `<project>/.claude/`, waarbij globaal altijd zichtbaar is. Per-project filtering van skills/agents werkt daarom niet — daarom geen profielen meer; alles altijd beschikbaar.
 
 ## Bootstrap + .gitignore Filosofie
 

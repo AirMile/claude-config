@@ -173,30 +173,6 @@ Apply content edits, resource changes, renames, or deletions as appropriate.
 4. Update paths in SKILL.md
 5. Verify new link works
 
-#### Step 4.2: Update profiles.yaml (Rename/Delete only)
-
-**Skip this step for:** Content-only edits and resource changes.
-
-**Apply when:** Skill was renamed or deleted.
-
-1. **Locate profiles.yaml:**
-   - If per-skill junctions: `{shared_library}/core-profile/profiles.yaml`
-   - If no junctions: `.claude/skills/core-profile/profiles.yaml`
-
-2. **For rename:**
-   - Find old skill name in profiles.yaml
-   - Replace with new skill name
-   - Maintain alphabetical order within the profile
-
-3. **For delete:**
-   - Find and remove the skill name from profiles.yaml
-
-4. **Validate** by running:
-
-   ```bash
-   python3 .claude/skills/core-profile/switch-profile.py --validate
-   ```
-
 **Output**:
 
 ```
@@ -206,9 +182,7 @@ Modified:
 - [list of changed files]
 
 [If renamed: old name → new name]
-[If deleted: removed from profile]
 [If junction: Junction updated]
-profiles.yaml: updated
 ```
 
 ### Step 5: Verification
@@ -275,8 +249,6 @@ When editing an agent (`agents/*.md`), keep the `description` field short (max ~
 Use **AskUserQuestion** for confirmation with "Annuleren" as recommended option (destructive action).
 
 **If per-skill links:** remove link first (`unlink` on macOS, `cmd //c "rmdir"` on Windows), then delete from shared library.
-
-**Always:** remove skill name from profiles.yaml (Step 4.2).
 
 ### Add/Remove Resources
 

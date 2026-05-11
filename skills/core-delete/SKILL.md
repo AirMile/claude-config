@@ -37,7 +37,6 @@ Remove a skill safely by scanning all references, showing impact, updating depen
 TARGET: [name]
 Description: [from frontmatter]
 Has resources: [YES/NO — list files if yes]
-Profile: [which profile in profiles.yaml]
 ```
 
 ## FASE 1: Deep Reference Scan
@@ -66,13 +65,7 @@ Grep pattern="example-skill" path=".claude/skills" glob="**/SKILL.md"
 
 Filter out matches from the skill's own SKILL.md.
 
-**2b. Profiles registry**:
-
-```
-Grep pattern="example-skill" path=".claude/skills/core-profile/profiles.yaml"
-```
-
-**2c. Hooks**:
+**2b. Hooks**:
 
 ```
 Grep pattern="example-skill" path=".claude/hooks"
@@ -102,7 +95,6 @@ For each match, classify it:
 
 | Category        | Impact                                   | Action Needed                        |
 | --------------- | ---------------------------------------- | ------------------------------------ |
-| `PROFILE`       | Registration                             | Remove entry from profiles.yaml      |
 | `INVOCATION`    | Another skill invokes this one (`/name`) | Update or remove the reference       |
 | `SUGGESTION`    | Another skill suggests this one          | Update or remove the suggestion      |
 | `DOCUMENTATION` | Mentioned in docs/comments               | Update or remove the mention         |
@@ -118,8 +110,6 @@ Analyze each reference and classify it correctly. Pay attention to the context �
 
 ```
 IMPACT REPORT: [skill-name]
-
-Profile: [profile-name] — will be removed from profiles.yaml
 
 References found: [N total]
 
@@ -161,11 +151,6 @@ Use **AskUserQuestion**:
 
 For each reference found in FASE 1, apply the appropriate fix:
 
-**PROFILE references:**
-
-- Remove the skill name line from profiles.yaml
-- Maintain list formatting (no empty lines)
-
 **INVOCATION references** (another skill uses `/skill-name`):
 
 - Show the context (surrounding lines) from the referring skill
@@ -198,14 +183,6 @@ For each reference found in FASE 1, apply the appropriate fix:
 
 - Show the config context
 - Ask user how to handle
-
-### Step 2: Validate profiles.yaml
-
-After updating profiles.yaml, validate:
-
-```bash
-python3 .claude/skills/core-profile/switch-profile.py --validate
-```
 
 ### Step 3: Delete Skill Files
 
@@ -272,7 +249,6 @@ DELETED: [skill-name]
 
 Actions taken:
   ✓ Skill files removed ([N] files)
-  ✓ Removed from profiles.yaml ([profile-name])
   [✓ Updated [N] references in other files]
   [✓ Junction removed]
 
@@ -282,7 +258,6 @@ Remaining references: [0 / N still present]
 
 ## Safety Rules
 
-- **NEVER** delete `core-profile` — it manages all other skills
 - **NEVER** delete `core-create` or `core-edit` — essential management skills
 - **NEVER** delete `core-delete` itself
 - **ALWAYS** ask confirmation before any destructive action
