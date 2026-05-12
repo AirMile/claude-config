@@ -27,18 +27,18 @@ Cross-platform: **Windows (primair)** en **macOS (optioneel)**.
 ## Structuur
 
 ```
-skills/           55+ skills in 8 categorieën
+skills/           50 skills in 9 categorieën
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (elk met SKILL.md)
-agents/           20 sub-agent definities (.md met YAML frontmatter)
-hooks/            format-on-save.cjs, prompt-timer.cjs
+agents/           21 sub-agent definities (.md met YAML frontmatter)
+hooks/            format-on-save.cjs, prompt-timer.cjs, security-reminder.py
 local/            Portable configs voor ~/.claude/ (templates, niet gejunctiond)
 CLAUDE.base.md    Template voor per-project CLAUDE.md generatie
 ```
 
 ## Skill Conventies
 
-- **Naamgeving**: `{category}-{verb}` — lowercase, hyphen. Categorieën: core, dev, frontend, game, marketing, project, story, team, thinking
+- **Naamgeving**: `{category}-{verb}` — lowercase, hyphen. Categorieën: core, dev, frontend, game, marketing, project, school, team, thinking
 - **Directory**: elke skill = map met `SKILL.md`, optioneel `references/`, `scripts/`, `techniques/`
 - **Frontmatter**: metadata met author/version/category — gebruik `disable-model-invocation: true` alleen als de skill nooit via Skill tool aanroepbaar mag zijn (blokkeert ook user-triggered `/skill-name`)
 - **Pipeline-handoff**: skills die gedeelde state aanraken declareren `reads:` / `writes:` in frontmatter — zie `shared/DEVINFO.md` voor namespaces. Valideren met `python3 scripts/check-handoff.py`.
@@ -62,9 +62,10 @@ Volledig patroon: zie `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 ## Pipelines
 
-**Frontend**: plan, theme, compose/convert, iterate, audit/wcag — standalone skills, vrij combineerbaar. Elke skill detecteert beschikbare context (theme, code, design spec) en past zich aan.
-**Dev**: define → plan → build → test → debug → refactor
-**Game**: define → plan → build → test → debug → refactor (Godot 4.x, GDScript, GUT)
+**Dev**: `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` overal)
+**Game**: `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` overal, Godot 4.x / GUT)
+**Frontend**: `frontend-design` → [`frontend-convert`] → `frontend-check`
+**Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`
 
 State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared/DEVINFO.md`).
 
@@ -81,11 +82,12 @@ State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared
 
 **Per-developer, niet per-project**: `CLAUDE.md`, `.claude/`, en `.project/` zijn altijd gitignored. Ze horen bij de developer, niet bij de repo.
 
-**Bootstrap** (eenmalig per machine, via `/core-setup`):
+**Bootstrap** (eenmalig per machine, via `/core-bootstrap`):
 
 - `~/.claude/CLAUDE.md` ← `local/CLAUDE.md.base` (taal-policy, command-rules, gedragsregels)
-- `~/.claude/settings.json` ← merge `autoMemoryEnabled: false` + hooks
+- `~/.claude/settings.json` ← `local/settings.json.template` (hooks, autoMemoryEnabled, statusLine, …)
 - `~/.claude/keybindings.json` ← `local/keybindings.json`
+- `~/.claude/statusline-command.cjs` ← `local/statusline-command.cjs`
 
 Idempotent — skip als file al bestaat. Geen junction nodig: `~/.claude/CLAUDE.md` is user-owned.
 
@@ -93,7 +95,7 @@ Idempotent — skip als file al bestaat. Geen junction nodig: `~/.claude/CLAUDE.
 
 **Cross-project memory** (`~/.claude/memory/MEMORY.md`) is verwijderd — overlap met learnings zonder extra waarde.
 
-**Setup-skill**: gebruik altijd `/core-setup` voor projects, niet `/init` (built-in). `/init` slaat de thin-template + gitignore-flow over.
+**Bootstrap-skill**: gebruik `/core-bootstrap` voor eerste machine-init (eenmalig). Gebruik `/core-setup` voor project-interne setup — nooit `/init` (built-in slaat thin-template + gitignore-flow over).
 
 ## Regels bij Wijzigingen
 

@@ -4,7 +4,7 @@ Portable configuratiebestanden voor `~/.claude/`. Kopieer naar je machine en pas
 
 ## Setup
 
-Voor automatische setup: gebruik `/core-setup` na het clonen — bootstrapt `~/.claude/` inclusief globale symlinks. Onderstaande commando's zijn de handmatige fallback.
+Voor automatische setup: gebruik `/core-bootstrap` na het clonen — deployt 4 user-files + 4 globale symlinks naar `~/.claude/`. Onderstaande commando's zijn de handmatige fallback.
 
 ```powershell
 # Windows

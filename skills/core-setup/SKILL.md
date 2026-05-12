@@ -43,79 +43,13 @@ Voor dynamic multi-select modals (Audit fixes, Resync drift, Tech stack, Suggest
 
 ---
 
-## Phase 0: Bootstrap + Detect Mode
+## Phase 0: Detect Mode
 
-### User-level bootstrap (idempotent, eenmalig per machine)
+Vóór alle stappen: als `~/.claude/CLAUDE.md` ontbreekt, toon:
 
-Voer dit uit vóór mode-routing — stille bootstrap van user-globale claude-config.
+> `Globale bootstrap nog niet gedaan. Run /core-bootstrap eerst om ~/.claude/ te initialiseren.`
 
-Resolve `SKILLS_PATH`:
-
-```bash
-# macOS/Linux
-SKILLS_PATH="$(realpath ~/.claude/skills 2>/dev/null)"
-# Windows (PowerShell)
-# $SKILLS_PATH = (Resolve-Path "$env:USERPROFILE\.claude\skills").Path
-```
-
-**1. `~/.claude/CLAUDE.md`** — kopieer als ontbreekt:
-
-```bash
-[ ! -f ~/.claude/CLAUDE.md ] && cp "$SKILLS_PATH/../local/CLAUDE.md.base" ~/.claude/CLAUDE.md
-```
-
-**2. `~/.claude/settings.json`** — merge `autoMemoryEnabled: false` als ontbreekt:
-
-```bash
-# Check of autoMemoryEnabled al aanwezig is; zo niet, merge
-python3 -c "
-import json, os
-path = os.path.expanduser('~/.claude/settings.json')
-try:
-    s = json.load(open(path)) if os.path.exists(path) else {}
-except (json.JSONDecodeError, OSError):
-    print('warning: settings.json onleesbaar — skip autoMemoryEnabled merge')
-    exit(0)
-if 'autoMemoryEnabled' not in s:
-    s['autoMemoryEnabled'] = False
-    json.dump(s, open(path, 'w'), indent=2)
-else:
-    pass
-"
-```
-
-**3. `~/.claude/keybindings.json`** — kopieer als ontbreekt:
-
-```bash
-[ ! -f ~/.claude/keybindings.json ] && cp "$SKILLS_PATH/../local/keybindings.json" ~/.claude/keybindings.json
-```
-
-**4. `~/.claude/{agents,hooks,skills,scripts}`** — maak globale symlinks/junctions als ontbreken (idempotent):
-
-macOS / Linux:
-
-```bash
-CONFIG_REPO="$(realpath "$SKILLS_PATH/..")"
-for dir in agents hooks skills scripts; do
-  [ ! -e "$HOME/.claude/$dir" ] && ln -sfn "$CONFIG_REPO/$dir" "$HOME/.claude/$dir"
-done
-```
-
-Windows (PowerShell):
-
-```powershell
-$configRepo = Split-Path (Resolve-Path "$env:USERPROFILE\.claude\skills") -Parent
-foreach ($dir in @("agents","hooks","skills","scripts")) {
-  $target = "$env:USERPROFILE\.claude\$dir"
-  if (-not (Test-Path $target)) {
-    cmd /c "mklink /J `"$target`" `"$configRepo\$dir`""
-  }
-}
-```
-
-Geen output bij success — stille bootstrap. Fout bij ontbrekende `SKILLS_PATH` → toon waarschuwing en ga door.
-
----
+Stop.
 
 0. **Check setup-pending marker** — als `.project/session/setup-pending.json` bestaat én geen expliciete `--mode=` flag is meegegeven:
    1. Lees marker: `mode` veld bepaalt waarheen — `greenfield` of `mature`.

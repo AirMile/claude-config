@@ -87,7 +87,6 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
   },
   "optimization_runs": [],
   "team": {
-    "claudeMdMode": "local|tracked",
     "commitConvention": "conventional|ticket-prefix|bracket|freeform",
     "ticketPrefix": null,
     "tracker": "github|jira|linear|null",
@@ -546,7 +545,6 @@ Bevat detecties uit `core-setup --mode=mature` (FASE 0.4) en `core-commit` (FASE
 
 | Veld               | Waarden                                                              | Gezet door                  | Gelezen door                            |
 | ------------------ | -------------------------------------------------------------------- | --------------------------- | --------------------------------------- |
-| `claudeMdMode`     | `"local"` \| `"tracked"`                                             | `/core-setup --mode=mature` | Skills die CLAUDE.md schrijven          |
 | `commitConvention` | `"conventional"` \| `"ticket-prefix"` \| `"bracket"` \| `"freeform"` | `/core-commit` FASE 0.5     | `/core-commit` FASE 4 (compose)         |
 | `ticketPrefix`     | string \| `null` (bijv. `"JIRA"`, `"PROJ"`)                          | `/core-commit` FASE 0.5     | `/core-commit` FASE 4 (compose)         |
 | `tracker`          | `"github"` \| `"jira"` \| `"linear"` \| `null`                       | `/team-issues` (eerste run) | `/team-issues` daarna, backlog-template |

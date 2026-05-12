@@ -18,12 +18,14 @@ if no project.json exists and falls through to signal counting.
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 
-SOURCE_EXTENSIONS = {".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".gd", ".cs", ".php"}
+SOURCE_EXTENSIONS = {".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".gd", ".cs", ".php",
+                     ".vue", ".svelte", ".kt", ".kts", ".swift", ".rb", ".java", ".lua", ".c", ".cpp", ".h", ".hpp"}
 EXCLUDE_DIRS = {"node_modules", ".git", ".project", ".claude", "vendor", "dist", "build", ".next", "__pycache__", ".godot"}
 
 
@@ -84,6 +86,49 @@ def count_dependencies(root: Path) -> int:
         try:
             content = cargo.read_text()
             return content.count("\n[dependencies]") + content.count("\n[dev-dependencies]")
+        except OSError:
+            pass
+
+    pyproject = root / "pyproject.toml"
+    if pyproject.exists():
+        try:
+            content = pyproject.read_text()
+            # PEP 621: [project] dependencies = [...]
+            pep621 = re.search(r'\[project\].*?^dependencies\s*=\s*\[(.*?)\]', content, re.DOTALL | re.MULTILINE)
+            if pep621:
+                return len([l for l in pep621.group(1).splitlines() if l.strip().strip('",') and not l.strip().startswith('#')])
+            # Poetry: [tool.poetry.dependencies]
+            poetry = re.search(r'\[tool\.poetry\.dependencies\](.*?)(?=\[|\Z)', content, re.DOTALL)
+            if poetry:
+                return len([l for l in poetry.group(1).splitlines() if l.strip() and not l.strip().startswith('#')])
+        except OSError:
+            pass
+
+    go_mod = root / "go.mod"
+    if go_mod.exists():
+        try:
+            lines = go_mod.read_text().splitlines()
+            in_require = False
+            count = 0
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith("require ("):
+                    in_require = True
+                elif in_require and stripped == ")":
+                    in_require = False
+                elif in_require and stripped and not stripped.startswith("//"):
+                    count += 1
+                elif stripped.startswith("require ") and not stripped.startswith("require ("):
+                    count += 1
+            return count
+        except OSError:
+            pass
+
+    gemfile = root / "Gemfile"
+    if gemfile.exists():
+        try:
+            lines = gemfile.read_text().splitlines()
+            return sum(1 for l in lines if re.match(r'\s*gem ["\']', l))
         except OSError:
             pass
 

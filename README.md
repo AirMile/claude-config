@@ -23,7 +23,7 @@ Skills are invoked as `/skill-name` in Claude Code. Agents run as isolated sub-p
 
 ### 1. First-time bootstrap
 
-Clone the repo, then run `/core-setup` to bootstrap `~/.claude/` (CLAUDE.md, settings, keybindings, and all four global symlinks). See [`local/README.md`](local/README.md) for the manual fallback.
+Clone the repo, then run `/core-bootstrap` to bootstrap `~/.claude/` — deploys CLAUDE.md, settings.json (incl. hooks), keybindings, statusline-command.cjs, and all four global symlinks. One-time per machine, idempotent. See [`local/README.md`](local/README.md) for the manual fallback.
 
 ### 2. Register a project — `/project-add`
 
@@ -59,25 +59,24 @@ CLAUDE.base.md    Template for per-project CLAUDE.md generation
 
 Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL-PATTERNS.md`](skills/shared/SKILL-PATTERNS.md) for conventions.
 
-| Category    | Skills                                                                    |
-| ----------- | ------------------------------------------------------------------------- |
-| `core`      | setup, create, edit, delete, audit, commit, export, merge, rewrite        |
-| `dev`       | define, build, verify, debug, refactor, optimize, owasp                   |
-| `frontend`  | design, convert, check, tokens                                            |
-| `game`      | define, build, verify, debug, refactor, optimize                          |
-| `marketing` | research, content, screenshots                                            |
-| `project`   | add, remove, pull, tunnel, backlog, plan, todo                            |
-| `school`    | learn                                                                     |
-| `team`      | review, verify                                                            |
-| `thinking`  | brainstorm, concept, critique, decide, research                           |
-| `shared`    | Shared refs: RULES, PATTERNS, PIPELINE, DASHBOARD, DEVINFO, PLAYWRIGHT, … |
+| Category    | Skills                                                                               |
+| ----------- | ------------------------------------------------------------------------------------ |
+| `core`      | bootstrap, setup, create, edit, delete, audit, commit, export, merge, rewrite, write |
+| `dev`       | define, build, verify, debug, refactor, optimize, owasp                              |
+| `frontend`  | design, convert, check, tokens                                                       |
+| `game`      | define, build, verify, debug, refactor, optimize                                     |
+| `marketing` | research, content, screenshots                                                       |
+| `project`   | add, remove, pull, switch, tunnel, backlog, plan, todo                               |
+| `school`    | learn                                                                                |
+| `team`      | issues, outsource, review, verify                                                    |
+| `thinking`  | brainstorm, concept, critique, decide, research                                      |
 
 ## Pipelines
 
 Skills chain together in pipelines, handing off state via `.project/project.json`. See [`skills/shared/PIPELINE.md`](skills/shared/PIPELINE.md) for canonical diagrams.
 
 - **Dev/Game**: `project-todo`/`project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere)
-- **Frontend**: `design` → (`convert` / `check` / `tokens`) → handoff → `dev-build` (+ `core-setup install` for new tools)
+- **Frontend**: `design` → [`convert`] → `check`
 - **Marketing**: `research` → `content` → `screenshots`
 
 ## Agents
