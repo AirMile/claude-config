@@ -1,10 +1,10 @@
 # Technique: TDD (Test-Driven Development)
 
-## Filosofie
+## Philosophy
 
-**Kernprincipe**: tests verifiëren gedrag via public interfaces, niet implementatiedetails. Code mag volledig veranderen — tests niet.
+**Core principle**: tests verify behavior via public interfaces, not implementation details. Code may change completely — tests do not.
 
-**Goede tests** zijn integration-style: ze testen echte code paths via public APIs. Ze beschrijven _wat_ het systeem doet, niet _hoe_. Een goede test leest als een specificatie.
+**Good tests** are integration-style: they test real code paths via public APIs. They describe _what_ the system does, not _how_. A good test reads like a specification.
 
 ```typescript
 // Goed — test observable behavior
@@ -16,7 +16,7 @@ test("user can checkout with valid cart", async () => {
 });
 ```
 
-**Slechte tests** zijn gekoppeld aan implementatie. Ze mocken interne collaborators, testen private methods, of verifiëren via externe middelen.
+**Bad tests** are coupled to implementation. They mock internal collaborators, test private methods, or verify via external means.
 
 ```typescript
 // Slecht — test implementatiedetails
@@ -27,17 +27,17 @@ test("checkout calls paymentService.process", async () => {
 });
 ```
 
-**Rode vlaggen:** test breekt bij refactor terwijl gedrag niet veranderd is. Test naam beschrijft HOW, niet WHAT.
+**Red flags:** test breaks during refactor while behavior has not changed. Test name describes HOW, not WHAT.
 
 ```typescript
-// Slecht — omzeilt interface om te verifiëren
+// Bad — bypasses interface to verify
 test("createUser saves to database", async () => {
   await createUser({ name: "Alice" });
   const row = await db.query("SELECT * FROM users WHERE name = ?", ["Alice"]);
   expect(row).toBeDefined();
 });
 
-// Goed — verifieert via interface
+// Good — verifies via interface
 test("createUser makes user retrievable", async () => {
   const user = await createUser({ name: "Alice" });
   const retrieved = await getUser(user.id);
@@ -47,58 +47,58 @@ test("createUser makes user retrievable", async () => {
 
 ## Anti-pattern: Horizontal Slices
 
-**NIET alle tests eerst schrijven, dan alle code.** Dit is "horizontal slicing" — RED als "schrijf alle tests" en GREEN als "schrijf alle code."
+**DO NOT write all tests first, then all code.** This is "horizontal slicing" — RED as "write all tests" and GREEN as "write all code."
 
 ```
-FOUT (horizontaal):
+WRONG (horizontal):
   RED:   test1, test2, test3, test4, test5
   GREEN: impl1, impl2, impl3, impl4, impl5
 
-GOED (verticaal):
+CORRECT (vertical):
   RED→GREEN: test1→impl1
   RED→GREEN: test2→impl2
   RED→GREEN: test3→impl3
 ```
 
-Tests in bulk testen _denkbeeldig_ gedrag, niet _werkelijk_ gedrag. Je commit je aan teststructuur voordat je de implementatie begrijpt. Elke cycle bouwt voort op wat je leerde van de vorige.
+Tests in bulk test _imaginary_ behavior, not _actual_ behavior. You commit to a test structure before you understand the implementation. Each cycle builds on what you learned from the previous one.
 
 ## Single Requirement Workflow
 
 ### Step 1: Write Test (RED)
 
-Lees 1 bestaand test bestand (bij voorkeur model/service test) voor setup/teardown patronen (before/after hooks, DB lifecycle, import conventies). Gebruik dit als basis voor je test structuur.
+Read 1 existing test file (preferably a model/service test) for setup/teardown patterns (before/after hooks, DB lifecycle, import conventions). Use this as the basis for your test structure.
 
-Genereer test voor DIT requirement. Als requirement `acceptance[]` heeft: gebruik `when` als test-beschrijving (`it("when {when}, {then}", ...)`) en `then` als verwacht resultaat in de assert. Geen `acceptance[]` → volg project test conventies.
-Run test — verwacht FAIL. Als test meteen slaagt — je test bestaand gedrag. Pas de test aan.
+Generate a test for THIS requirement. If the requirement has `acceptance[]`: use `when` as the test description (`it("when {when}, {then}", ...)`) and `then` as the expected result in the assert. No `acceptance[]` → follow project test conventions.
+Run test — expect FAIL. If the test passes immediately — you are testing existing behavior. Adjust the test.
 
 ### Step 2: Implement (GREEN)
 
-Schrijf minimale code om de test te laten slagen. Context7 research indien nodig.
-Run test — verwacht PASS.
+Write minimal code to make the test pass. Context7 research if needed.
+Run test — expect PASS.
 
 ### Step 3: Refactor
 
-**Nooit refactoren terwijl RED.** Eerst naar GREEN.
+**Never refactor while RED.** Go to GREEN first.
 
-Zoek naar refactor candidates:
+Look for refactor candidates:
 
-- **Duplicatie** → extract function/class
-- **Shallow modules** → combineer of verdiep (zie [interface design](references/interface-design.md))
-- **Feature envy** → verplaats logica naar waar de data leeft
-- **Primitive obsession** → introduceer value objects
-- **Bestaande code** die de nieuwe code onthult als problematisch
+- **Duplication** → extract function/class
+- **Shallow modules** → combine or deepen (see [interface design](references/interface-design.md))
+- **Feature envy** → move logic to where the data lives
+- **Primitive obsession** → introduce value objects
+- **Existing code** that the new code reveals as problematic
 
-Run test — bevestig nog steeds PASS.
+Run test — confirm still PASS.
 
 ### Per-Cycle Checklist
 
 ```
-[ ] Test beschrijft behavior, niet implementation
-[ ] Test gebruikt alleen public interface
-[ ] Test overleeft interne refactor
-[ ] Code is minimaal voor deze test
-[ ] Geen speculatieve features toegevoegd
-[ ] Hergebruikt bestaande project utilities waar mogelijk
+[ ] Test describes behavior, not implementation
+[ ] Test uses only public interface
+[ ] Test survives internal refactor
+[ ] Code is minimal for this test
+[ ] No speculative features added
+[ ] Reuses existing project utilities where possible
 ```
 
 ### Output
@@ -111,7 +111,7 @@ REFACTOR: PASS
 SYNC:    {pattern/concept} in {main file(s)} — {what it does and why this approach. What depends on it.}
 ```
 
-## Referenties
+## References
 
-- [Mocking richtlijnen](references/mocking.md) — wanneer wel/niet mocken, DI patronen
-- [Interface design](references/interface-design.md) — deep modules, testbaarheidsregels
+- [Mocking guidelines](references/mocking.md) — when to mock and when not to, DI patterns
+- [Interface design](references/interface-design.md) — deep modules, testability rules

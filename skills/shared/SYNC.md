@@ -1,98 +1,98 @@
 # Project Sync Protocol
 
-Shared sync pattern voor skill completion. Skills verwijzen hiernaar voor het generieke protocol en specificeren alleen hun eigen mutaties.
+Shared sync pattern for skill completion. Skills reference this for the generic protocol and only specify their own mutations.
 
 ---
 
-## Worktree-aware Pad Resolutie
+## Worktree-aware Path Resolution
 
-Skills kunnen draaien in een git worktree (parallelle feature development). Omdat `.project/` gitignored is, bestaat het alleen in de main worktree.
+Skills can run in a git worktree (parallel feature development). Because `.project/` is gitignored, it only exists in the main worktree.
 
-### Detectie (eenmalig per skill)
+### Detection (once per skill)
 
-Bij de eerste `.project/` operatie (read of write):
+On the first `.project/` operation (read or write):
 
-1. `git worktree list --porcelain | head -1` → extraheer pad na `worktree ` → `{main_worktree}`
+1. `git worktree list --porcelain | head -1` → extract path after `worktree ` → `{main_worktree}`
 2. `git rev-parse --show-toplevel` → `{current}`
-3. **Verschillend** → in worktree. Gebruik `{main_worktree}/.project/` voor ALLE `.project/` operaties.
+3. **Different** → in worktree. Use `{main_worktree}/.project/` for ALL `.project/` operations.
    Log: `WORKTREE: .project/ → {main_worktree}/.project/`
-4. **Gelijk** → niet in worktree. Gebruik `.project/` relatief.
+4. **Same** → not in worktree. Use `.project/` relative.
 
 ### Scope
 
-- **`.project/`** (feature.json, backlog.html, project.json, session) → altijd main worktree
-- **Source code** (implementatie, tests) → lokale worktree (eigen branch)
-- Detectie eenmaal uitvoeren, geresolvd pad hergebruiken in alle fases
+- **`.project/`** (feature.json, backlog.html, project.json, session) → always main worktree
+- **Source code** (implementation, tests) → local worktree (own branch)
+- Run detection once, reuse the resolved path in all phases
 
 ---
 
 ## Sync Pattern
 
-Bij skill completion, sync feature state naar de relevante bestanden:
+On skill completion, sync feature state to the relevant files:
 
-### Step 1: Read (parallel, skip als niet bestaat)
+### Step 1: Read (parallel, skip if not present)
 
-Lees **direct voor het editen** — vertrouw NIET op reads uit eerdere fases (Prettier/linters kunnen bestanden tussentijds wijzigen):
+Read **immediately before editing** — do NOT rely on reads from earlier phases (Prettier/linters may have modified files in between):
 
 - `.project/features/{feature-name}/feature.json`
 - `.project/backlog.html`
 - `.project/project.json`
-- `.project/project-context.json` (alleen als context/architecture/learnings gewijzigd — build/test/refactor skills)
-- `.project/project-concept.md` (alleen als concept gewijzigd — thinking/plan skills)
+- `.project/project-context.json` (only if context/architecture/learnings changed — build/test/refactor skills)
+- `.project/project-concept.md` (only if concept changed — thinking/plan skills)
 
-### Step 2: Muteer in memory
+### Step 2: Mutate in memory
 
-**feature.json** — read-modify-write, behoud alle bestaande secties. Skill voegt specifieke velden toe/update (zie skill-specifieke mutaties).
+**feature.json** — read-modify-write, preserve all existing sections. Skill adds/updates specific fields (see skill-specific mutations).
 
-**backlog.html** (zie `shared/BACKLOG.md`):
+**backlog.html** (see `shared/BACKLOG.md`):
 
-- Parse JSON uit `<script id="backlog-data">`
-- Zoek feature op naam
-- Update `status` naar skill-specifieke waarde
-- Zet `data.updated` → huidige datum
-- Niet gevonden → voeg toe aan `data.features`
+- Parse JSON from `<script id="backlog-data">`
+- Find feature by name
+- Update `status` to skill-specific value
+- Set `data.updated` → current date
+- Not found → add to `data.features`
 
-**project.json** (zie `shared/DASHBOARD.md`):
+**project.json** (see `shared/DASHBOARD.md`):
 
-Merge per sectie — check altijd op bestaande entries voor push:
+Merge per section — always check for existing entries before push:
 
-| Sectie           | Merge logica                                                       |
-| ---------------- | ------------------------------------------------------------------ |
-| `features[]`     | Check op naam → nieuw: push → bestaand: update status              |
-| `stack.packages` | Check op naam → nieuw: push `{ name, version, purpose }` → skip    |
-| `endpoints`      | Check op method+path → nieuw: push → bestaand: update status       |
-| `data.entities`  | Check op naam → nieuw: push met fields/relations → bestaand: merge |
+| Section          | Merge logic                                                       |
+| ---------------- | ----------------------------------------------------------------- |
+| `features[]`     | Check by name → new: push → existing: update status               |
+| `stack.packages` | Check by name → new: push `{ name, version, purpose }` → skip     |
+| `endpoints`      | Check by method+path → new: push → existing: update status        |
+| `data.entities`  | Check by name → new: push with fields/relations → existing: merge |
 
-**project-context.json** (zie `shared/DASHBOARD.md`):
+**project-context.json** (see `shared/DASHBOARD.md`):
 
-Lees `.project/project-context.json` (of maak aan met `{}`). Merge per sectie:
+Read `.project/project-context.json` (or create with `{}`). Merge per section:
 
-| Sectie         | Merge logica                                                                                                                                                                                                                       |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `context`      | Update structure/routing/patterns individueel (alleen bij impact)                                                                                                                                                                  |
-| `architecture` | Volg component-first model uit `shared/DASHBOARD.md` (alleen bij impact). Update `components[]` (status, src, test). Merge `connects_to[]` op `to+type` combinatie (typed edges). Diagram optioneel → `.project/architecture.mmd`. |
-| `learnings`    | Dedup-key: `(type, normalized_summary, author ?? null)`. Normalize summary = lowercase + strip leestekens. Nieuw: push met verplicht `source` veld → bestaand: skip (append-only). `author` alleen bij `source === "synced"`.      |
+| Section        | Merge logic                                                                                                                                                                                                                            |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context`      | Update structure/routing/patterns individually (only when impacted)                                                                                                                                                                    |
+| `architecture` | Follow component-first model from `shared/DASHBOARD.md` (only when impacted). Update `components[]` (status, src, test). Merge `connects_to[]` on `to+type` combination (typed edges). Diagram optional → `.project/architecture.mmd`. |
+| `learnings`    | Dedup-key: `(type, normalized_summary, author ?? null)`. Normalize summary = lowercase + strip punctuation. New: push with required `source` field → existing: skip (append-only). `author` only when `source === "synced"`.           |
 
-**project-concept.md** (alleen bij concept-schrijvende skills):
+**project-concept.md** (only for concept-writing skills):
 
-Schrijf het volledige concept document als plain markdown naar `.project/project-concept.md`. Update gelijktijdig `concept.name` en `concept.pitch` in `project.json` (zodat lichte readers actuele metadata hebben).
+Write the full concept document as plain markdown to `.project/project-concept.md`. Simultaneously update `concept.name` and `concept.pitch` in `project.json` (so lightweight readers have current metadata).
 
 ### Step 3: Write (parallel)
 
-- Write `feature.json` (of targeted Edit als alleen specifieke velden wijzigen)
+- Write `feature.json` (or targeted Edit if only specific fields change)
 - Edit `backlog.html` (keep `<script>` tags intact)
-- Write `project.json` (of targeted Edit)
-- Write `project-context.json` (als context/architecture/learnings gewijzigd)
+- Write `project.json` (or targeted Edit)
+- Write `project-context.json` (if context/architecture/learnings changed)
 
-### Step 4: Skip-worktree herstellen
+### Step 4: Restore skip-worktree
 
-Na het schrijven van `.project/` bestanden, zet skip-worktree op eventuele nieuwe bestanden:
+After writing `.project/` files, set skip-worktree on any new files:
 
 ```bash
 git ls-files .project/ | xargs git update-index --skip-worktree 2>/dev/null
 ```
 
-Dit voorkomt dat `.project/` wijzigingen in git status verschijnen en pull/stash verstoren.
+This prevents `.project/` changes from appearing in git status and interfering with pull/stash.
 
 ### Active Feature Cleanup
 
@@ -102,27 +102,27 @@ rm -f .project/session/active-{feature-name}.json
 
 ---
 
-## Skill-specifieke mutaties
+## Skill-specific mutations
 
-Elke skill beschrijft in zijn eigen SKILL.md **alleen** wat afwijkt van het standaard protocol:
+Each skill describes in its own SKILL.md **only** what deviates from the standard protocol:
 
-- Welke `status` waarde voor backlog en feature.json
-- Welke velden worden toegevoegd/geupdate in feature.json
-- Welke project.json secties worden geraakt (endpoints, entities, architecture, etc.)
-- Eventuele extra bestanden of stappen
+- Which `status` value for backlog and feature.json
+- Which fields are added/updated in feature.json
+- Which project.json sections are touched (endpoints, entities, architecture, etc.)
+- Any extra files or steps
 
-Het generieke leespatroon, backlog-update formaat, merge-logica en schrijfpatroon hoeven niet herhaald te worden.
+The generic read pattern, backlog-update format, merge logic, and write pattern do not need to be repeated.
 
 ## Frontend skills
 
-Frontend skills volgen hetzelfde sync protocol met dezelfde stages als dev skills (`building/built/testing`). Verschil: frontend items gebruiken geen `feature.json` — status wordt alleen in backlog + `project.json` `features[]` bijgehouden.
+Frontend skills follow the same sync protocol with the same stages as dev skills (`building/built/testing`). Difference: frontend items do not use `feature.json` — status is tracked only in backlog + `project.json` `features[]`.
 
-| Skill               | Backlog mutatie                                  | project.json mutatie                              |
-| ------------------- | ------------------------------------------------ | ------------------------------------------------- |
-| `/frontend-design`  | Maakt batch PAGE TODOs                           | `design` (pages, flows, principles), `features[]` |
-| `/frontend-design`  | DOING + `building` → `built`                     | `stack.packages`, `design.pages`, `features[]`    |
-| `/frontend-convert` | DOING + `building` → `built`                     | `features[]`                                      |
-| `/frontend-check`   | `testing` → DONE                                 | `features[]`                                      |
-| `/frontend-check`   | A11Y scope: `testing` → DONE + nieuwe A11Y TODOs | `features[]`                                      |
+| Skill               | Backlog mutation                              | project.json mutation                             |
+| ------------------- | --------------------------------------------- | ------------------------------------------------- |
+| `/frontend-design`  | Creates batch PAGE TODOs                      | `design` (pages, flows, principles), `features[]` |
+| `/frontend-design`  | DOING + `building` → `built`                  | `stack.packages`, `design.pages`, `features[]`    |
+| `/frontend-convert` | DOING + `building` → `built`                  | `features[]`                                      |
+| `/frontend-check`   | `testing` → DONE                              | `features[]`                                      |
+| `/frontend-check`   | A11Y scope: `testing` → DONE + new A11Y TODOs | `features[]`                                      |
 
-Frontend items slaan `defining/defined` over — `/frontend-design` (capture-mode) maakt items aan als TODO, en `/dev-build` pakt ze direct op als `building` na Claude Design handoff.
+Frontend items skip `defining/defined` — `/frontend-design` (capture-mode) creates items as TODO, and `/dev-build` picks them up directly as `building` after Claude Design handoff.

@@ -91,20 +91,20 @@ Use **AskUserQuestion**:
 
 **If devinfo context was detected in Step 1.5:**
 
-- header: "Modus"
-- question: "Er is context beschikbaar uit een eerdere skill-uitvoering. Hoe wil je de skill analyseren?"
+- header: "Mode"
+- question: "Context is available from a previous skill run. How do you want to analyze the skill?"
 - options:
-  - label: "Uitgebreid met walkthrough (Recommended)", description: "Interne walkthrough met de gedetecteerde context als basis — levert de meest bruikbare observaties op"
-  - label: "Quick analyse", description: "Directe analyse zonder walkthrough — snel, geschikt voor kleine skills"
+  - label: "Extended with walkthrough (Recommended)", description: "Internal walkthrough using the detected context as a base — produces the most actionable observations"
+  - label: "Quick analysis", description: "Direct analysis without walkthrough — fast, suitable for small skills"
 - multiSelect: false
 
 **If only conversation context:**
 
-- header: "Modus"
-- question: "Hoe wil je de skill analyseren?"
+- header: "Mode"
+- question: "How do you want to analyze the skill?"
 - options:
-  - label: "Quick analyse (Recommended)", description: "Directe analyse zonder walkthrough — snel, geschikt voor kleine skills"
-  - label: "Uitgebreid met walkthrough", description: "Eerst een interne walkthrough, dan analyse met bevindingen"
+  - label: "Quick analysis (Recommended)", description: "Direct analysis without walkthrough — fast, suitable for small skills"
+  - label: "Extended with walkthrough", description: "Internal walkthrough first, then analysis with findings"
 - multiSelect: false
 
 ## Step 3: Internal Walkthrough (only if "Uitgebreid met walkthrough")

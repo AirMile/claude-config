@@ -30,7 +30,7 @@ Volg Context7 output voor:
 
 ## Framework specifics
 
-- **Next.js (App Router)**: gebruik `HydrationBoundary` voor server-prefetched data
+- **Next.js (App Router)**: use `HydrationBoundary` for server-prefetched data
 - **Vite (SPA)**: simpel `QueryClientProvider` in `main.tsx`
 
 ## Teardown

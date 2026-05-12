@@ -28,10 +28,10 @@ Flow: parse input → identify concepts → [auto quick or full] → teach (meth
 1. Fetch content via WebFetch. If fetch fails (timeout, 404, auth required, redirect loop):
    ```yaml
    header: "Fallback"
-   question: "URL niet bereikbaar. Hoe wil je verder?"
+   question: "URL not reachable. How do you want to proceed?"
    options:
-     - label: "Inhoud plakken (Recommended)", description: "Plak de lesinhoud hier — ik verwerk het als tekst"
-     - label: "Beschrijf het onderwerp", description: "Beschrijf het topic in eigen woorden, ga verder zonder bron"
+     - label: "Paste content (Recommended)", description: "Paste the lesson content here — I'll process it as text"
+     - label: "Describe the topic", description: "Describe the topic in your own words, continue without a source"
    multiSelect: false
    ```
    On paste: continue with pasted content as if fetched. On describe: switch to topic-text flow below.
@@ -70,7 +70,7 @@ Classify the input to set smart defaults throughout the skill:
 
 Store `input_type` for use in Phase 2 (method default) and Phase 4 (Key Parts intensity).
 
-**Course/vak detection:**
+**Course detection:**
 
 Skip this step if `input_type` is `codebase` — default `course_folder` to project name (from `package.json` name, repo folder name, or ask user) and save under `Academic/Projects/` instead of a course folder.
 
@@ -81,20 +81,20 @@ For all other input types:
 3. Ask via AskUserQuestion:
 
 ```yaml
-header: "Vak"
-question: "Bij welk vak hoort dit onderwerp?"
+header: "Course"
+question: "Which course does this topic belong to?"
 options:
-  - label: "{matched folder} (Recommended)", description: "Bestaand vak in Academic/"
-  - label: "{other existing folder}", description: "Bestaand vak"
-  - label: "Nieuw vak aanmaken", description: "Maak een nieuwe map aan in Academic/"
+  - label: "{matched folder} (Recommended)", description: "Existing course in Academic/"
+  - label: "{other existing folder}", description: "Existing course"
+  - label: "Create new course", description: "Create a new folder in Academic/"
 multiSelect: false
 ```
 
-If "Nieuw vak": ask for folder name.
+If "Create new course": ask for folder name.
 
 Store `course_folder` and `topic_title` for Phase 6.
 
-**Existing note check (terugkom-flow):**
+**Existing note check (return-flow):**
 
 After determining `course_folder` and `topic_title`, check if a note already exists:
 
@@ -113,18 +113,18 @@ Open questions:
 ```
 
 ```yaml
-header: "Terugkomen"
-question: "Je hebt dit onderwerp eerder bestudeerd. Wat wil je doen?"
+header: "Return"
+question: "You have studied this topic before. What do you want to do?"
 options:
-  - label: "Verder leren (Recommended)", description: "Focus op open vragen en zwakke concepten uit vorige sessie"
-  - label: "Opnieuw beginnen", description: "Start van scratch — negeer vorige sessie"
-  - label: "Ander topic", description: "Ik wil een ander onderwerp leren"
+  - label: "Continue learning (Recommended)", description: "Focus on open questions and weak concepts from the previous session"
+  - label: "Start over", description: "Start from scratch — ignore previous session"
+  - label: "Different topic", description: "I want to learn a different topic"
 multiSelect: false
 ```
 
-- **Verder leren**: Load previous concepts from the note's "Core Concepts" section. Mark previously understood concepts. Skip Phase 1 — go directly to Phase 2 with focus on open questions and concepts that lacked confidence. At save time (Phase 6): merge new learnings into existing note via `mcp__obsidian__patch_note` instead of overwrite.
-- **Opnieuw beginnen**: Continue to Phase 1 as normal (overwrite at save time).
-- **Ander topic**: Ask for new topic, restart Phase 0.
+- **Continue learning**: Load previous concepts from the note's "Core Concepts" section. Mark previously understood concepts. Skip Phase 1 — go directly to Phase 2 with focus on open questions and concepts that lacked confidence. At save time (Phase 6): merge new learnings into existing note via `mcp__obsidian__patch_note` instead of overwrite.
+- **Start over**: Continue to Phase 1 as normal (overwrite at save time).
+- **Different topic**: Ask for new topic, restart Phase 0.
 
 3. If no note exists: continue to Phase 1 as normal.
 
@@ -160,7 +160,7 @@ Break the topic into core concepts. Present as numbered list:
 CONCEPTS
 
 Topic: {topic title}
-Source: {URL, file path, or "eigen kennis"}
+Source: {URL, file path, or "own knowledge"}
 
 1. {concept} — {one-line description}
 2. {concept} — {one-line description}
@@ -176,11 +176,11 @@ If 1-2 concepts identified → switch to quick mode:
 - Skip Phase 2 method choice — explain directly with a clear example
 - Skip Phase 3-5 entirely
 - Phase 6: save with auto-confidence 4/5, skip confidence question
-- User can override by saying "deep dive" or "uitgebreid" → switch to full mode
+- User can override by saying "deep dive" or "extended" → switch to full mode
 
 If 3+ concepts → full mode:
 
-- Confirm via AskUserQuestion (Ja/Aanpassen)
+- Confirm via AskUserQuestion (Yes/Adjust)
 - If lesson material includes assignments, note them separately — they feed into Phase 5
 - Continue to Phase 2
 
@@ -195,13 +195,13 @@ Present method choice via AskUserQuestion. Mark the default as "(Recommended)" b
 - `architecture` → Architecture Walkthrough (Recommended)
 
 ```yaml
-header: "Methode"
-question: "Hoe wil je dit leren?"
+header: "Method"
+question: "How do you want to learn this?"
 options:
   - label: "{default method} (Recommended)", description: "{description}"
-  - label: "Concept Mapping", description: "Visueel begrip opbouwen — kernconcepten en hun relaties als diagram"
-  - label: "Syntax Explorer", description: "Syntax, idiomen en taalpatronen leren met ingebouwde typ-oefeningen"
-  - label: "Code Review Challenge", description: "Beoordeel code op correctheid en verbeterpunten"
+  - label: "Concept Mapping", description: "Build visual understanding — core concepts and their relationships as a diagram"
+  - label: "Syntax Explorer", description: "Learn syntax, idioms and language patterns with built-in typing exercises"
+  - label: "Code Review Challenge", description: "Evaluate code for correctness and improvement points"
 multiSelect: false
 ```
 
@@ -243,10 +243,10 @@ Intensity varies by `input_type`:
 
 ```yaml
 header: "Practice"
-question: "Wil je de kernonderdelen zelf schrijven om het in je vingers te krijgen?"
+question: "Do you want to write the core parts yourself to practice?"
 options:
-  - label: "Ja, laten we oefenen (Recommended)", description: "Schrijf {3-5} cruciale code-secties zelf"
-  - label: "Nee, skip", description: "Ga door naar de volgende stap"
+  - label: "Yes, let's practice (Recommended)", description: "Write {3-5} crucial code sections yourself"
+  - label: "No, skip", description: "Continue to the next step"
 multiSelect: false
 ```
 
@@ -275,10 +275,10 @@ If yes:
 
 ```yaml
 header: "AI Practice"
-question: "Wil je een variatie-opdracht doen via AI-directed practice?"
+question: "Do you want to do a variation assignment via AI-directed practice?"
 options:
-  - label: "Ja, geef me een opdracht (Recommended)", description: "Stuur Claude aan om een variatie te bouwen — train je prompt en review skills"
-  - label: "Nee, afronden", description: "Ga door naar opslaan"
+  - label: "Yes, give me an assignment (Recommended)", description: "Have Claude build a variation — train your prompting and review skills"
+  - label: "No, finish", description: "Continue to saving"
 multiSelect: false
 ```
 
@@ -306,13 +306,13 @@ If yes:
 **Confidence self-assessment:**
 
 ```yaml
-header: "Begrip"
-question: "Hoe goed snap je dit onderwerp nu?"
+header: "Understanding"
+question: "How well do you understand this topic now?"
 options:
-  - label: "5 - Kan het uitleggen", description: "Ik kan dit aan iemand anders uitleggen"
-  - label: "4 - Goed begrip", description: "Ik snap het en kan het toepassen"
-  - label: "3 - Basis begrip", description: "Ik snap de kern maar twijfel over details"
-  - label: "2 - Oppervlakkig", description: "Ik heb een idee maar mis nog veel"
+  - label: "5 - Can explain it", description: "I can explain this to someone else"
+  - label: "4 - Good understanding", description: "I understand it and can apply it"
+  - label: "3 - Basic understanding", description: "I understand the core but am uncertain about details"
+  - label: "2 - Surface level", description: "I have an idea but am still missing a lot"
 multiSelect: false
 ```
 
@@ -390,8 +390,8 @@ Saved: Academic/{course_folder}/{topic_title}.md
 {If practice done: "Practice: Key Parts {X/Y correct}, Direct & Review completed"}
 
 Next steps:
-- /school-learn [next topic] — leer het volgende onderwerp
-- Review in Obsidian — herlees je notities voor spaced repetition
+- /school-learn [next topic] — learn the next topic
+- Review in Obsidian — re-read your notes for spaced repetition
 ```
 
 ## Guidelines

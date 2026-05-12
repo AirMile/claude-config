@@ -43,4 +43,4 @@ Volg de Context7 output voor:
 
 ## Notes
 
-shadcn-ui is geen library in traditionele zin — het kopieert componenten naar je project. Geen runtime dependency, wel design tokens via Tailwind theme.
+shadcn-ui is not a library in the traditional sense — it copies components into your project. No runtime dependency, but design tokens via Tailwind theme.

@@ -27,7 +27,7 @@ Not for:
 
 ## Workflow
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 7 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 7 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. On context compaction the task list remains visible — no risk of forgotten phases.
 
 1. Step 1: Detection & Setup
 2. Step 2: Mode Selection
@@ -39,7 +39,7 @@ Not for:
 
 ### Step 1: Detection & Setup
 
-> **Todo**: roep `TaskCreate` aan met de 7 fase-items (zie boven). Markeer Step 1 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 7 phase items (see above). Mark Step 1 → `in_progress` via `TaskUpdate`.
 
 1. Get current branch: `git branch --show-current`
 2. Validate not on main/master/develop — if so, stop with error message
@@ -55,7 +55,7 @@ Not for:
 
 ### Step 2: Mode Selection
 
-> **Todo**: markeer Step 1 → `completed`, Step 2 → `in_progress`.
+> **Todo**: mark Step 1 → `completed`, Step 2 → `in_progress`.
 
 Use AskUserQuestion with 2 options:
 
@@ -64,7 +64,7 @@ Use AskUserQuestion with 2 options:
 
 ### Step 3: Gather Context
 
-> **Todo**: markeer Step 2 → `completed`, Step 3 → `in_progress`.
+> **Todo**: mark Step 2 → `completed`, Step 3 → `in_progress`.
 
 1. Read CLAUDE.md (global `~/.claude/CLAUDE.md` + project-level `CLAUDE.md` files)
 2. Identify languages/frameworks in the changed files
@@ -72,19 +72,19 @@ Use AskUserQuestion with 2 options:
 
 ### Step 4: Inline Review Analysis
 
-> **Todo**: markeer Step 3 → `completed`, Step 4 → `in_progress`.
+> **Todo**: mark Step 3 → `completed`, Step 4 → `in_progress`.
 
-Perform 3 analysis passes on the diff. All passes use the same diff and context — no agents needed. Toon een ASCII diagram van de parallelle review architectuur (3 passes → merge → filter → output).
+Perform 3 analysis passes on the diff. All passes use the same diff and context — no agents needed. Show an ASCII diagram of the parallel review architecture (3 passes → merge → filter → output).
 
-**Operational stance:** Skeptisch. Default: er zijn problemen tot het tegendeel bewezen is.
+**Operational stance:** Skeptical. Default: there are problems until proven otherwise.
 
-**Anti-fantasy check per pass:** Verwacht minimaal 1-2 findings per pass bij diff >50 regels. Zero findings vereist een expliciete verklaring waarom (bijv. "diff bevat alleen styling/config").
+**Anti-fantasy check per pass:** Expect at least 1-2 findings per pass for diffs >50 lines. Zero findings requires an explicit explanation why (e.g. "diff contains only styling/config").
 
-**Grounding vereiste:** Elke finding moet een evidence pair bevatten:
+**Grounding requirement:** Every finding must include an evidence pair:
 
-- **Regel/Bron:** "[exacte quote uit CLAUDE.md / best practice / git history]"
-- **Code:** "[exacte code die het schendt, met file:line]"
-- **Impact:** "[wat er mis kan gaan]"
+- **Line/Source:** "[exact quote from CLAUDE.md / best practice / git history]"
+- **Code:** "[exact code that violates it, with file:line]"
+- **Impact:** "[what can go wrong]"
 
 #### Pass 1: CLAUDE.md Compliance
 
@@ -132,7 +132,7 @@ Call Context7 inline for the detected languages/frameworks:
 
 ### Step 5: Confidence Scoring & Filtering
 
-> **Todo**: markeer Step 4 → `completed`, Step 5 → `in_progress`.
+> **Todo**: mark Step 4 → `completed`, Step 5 → `in_progress`.
 
 Apply filtering across all passes:
 
@@ -157,11 +157,11 @@ Discard findings that match false positive criteria:
 - Issues with lint-ignore comments
 - Intentional functionality changes
 
-**Zero-findings self-check:** Als alle passes samen 0 findings rapporteren bij diff >50 regels → heroverweeg: "Ben ik optimistisch? Zou een kritische reviewer dit laten passeren?" Doorloop de diff nogmaals met focus op gemiste issues.
+**Zero-findings self-check:** If all passes together report 0 findings for diffs >50 lines → reconsider: "Am I being optimistic? Would a critical reviewer let this pass?" Go through the diff once more with focus on missed issues.
 
 ### Step 6: Generate Feedback
 
-> **Todo**: markeer Step 5 → `completed`, Step 6 → `in_progress`.
+> **Todo**: mark Step 5 → `completed`, Step 6 → `in_progress`.
 
 Format output as:
 
@@ -195,7 +195,7 @@ Format output as:
 - [what was done well]
 ```
 
-**Verdict (altijd opnemen):**
+**Verdict (always include):**
 
 ```
 ### Verdict
@@ -208,14 +208,14 @@ If no issues found above threshold, say so clearly and focus on positives.
 
 ### Step 7: Output & PR Integration
 
-> **Todo**: markeer Step 6 → `completed`, Step 7 → `in_progress`.
+> **Todo**: mark Step 6 → `completed`, Step 7 → `in_progress`.
 
-- **If open PR exists**: use AskUserQuestion — "Wil je dit als PR comment posten?"
+- **If open PR exists**: use AskUserQuestion — "Do you want to post this as a PR comment?"
   - Yes: post via `gh pr comment <number> --body "..."`
   - No: show locally only
 - **If no PR**: show locally only
 
-> **Todo**: markeer Step 7 → `completed`.
+> **Todo**: mark Step 7 → `completed`.
 
 ---
 

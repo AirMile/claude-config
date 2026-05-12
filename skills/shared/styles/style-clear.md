@@ -1,57 +1,57 @@
 # Style: Clear
 
-Miles-stijl, objectief geframed. Sprekend-vertellend, geen "ik" tenzij echt nodig. Voor README's, project-docs, technische uitleg, brand pages.
+Miles style, objectively framed. Narrating voice, no "ik" unless truly necessary. For READMEs, project docs, technical explanations, brand pages.
 
 ## Sentence Structure
 
-- Front-load de zin. Kritieke informatie staat in de eerste 5-7 woorden. Lezers scannen, ze lezen niet door tot het eind.
+- Front-load the sentence. Critical information in the first 5-7 words. Readers scan, they don't read to the end.
 - "Restart het systeem via dit commando." Niet: "Om het systeem succesvol te restarten, voer je het volgende commando in."
-- Hard limit: 25 woorden per zin. Bij voorkeur korter.
-- Burstiness: wissel zinslengte af. Drie middellange zinnen achter elkaar = AI-ritme.
-- Geen em dashes. Komma's of nieuwe zinnen.
-- Dubbele punt voor opsomming en specificatie: "Stack: Laravel, React, MySQL."
-- Passieve constructies onder 10%. Actief is sneller te verwerken.
-- Geen typografische disruptie:
-  - Geen KAPITALEN voor nadruk (verlaagt leesbaarheid 13-18%).
-  - Sentence case voor koppen: "Webhooks configureren" niet "Webhooks Configureren".
-  - "&" altijd vervangen door "en".
+- Hard limit: 25 words per sentence. Shorter preferred.
+- Burstiness: vary sentence length. Three medium-length sentences in a row = AI rhythm.
+- No em dashes. Commas or new sentences.
+- Colon for enumeration and specification: "Stack: Laravel, React, MySQL."
+- Passive constructions under 10%. Active is faster to process.
+- No typographic disruption:
+  - No CAPITALS for emphasis (reduces readability 13-18%).
+  - Sentence case for headings: "Webhooks configureren" not "Webhooks Configureren".
+  - Always replace "&" with "en".
 
 ## Word Choice
 
-- Derde persoon of imperatief. "X werkt zo." / "Voer Y uit." Geen "ik" als informatiedrager.
-- Actieve constructies: "DraftGap scrapet", "de CLI genereert", "het systeem detecteert".
-- Tech termen in het Engels, rest volgt invoertaal.
-- Geen adjective stacking. Max één descriptor.
-- Geen operationele beleefdheid. Weg met "Please note that...", "We raden vriendelijk aan...", "Vergeet niet om...". Direct de instructie.
-- Erft alle anti-patterns uit `_anti-patterns.md`. Plus stijl-specifiek:
-- Verboden — anti-marketing-speak (rode vlaggen voor technische lezers in 2024-2026):
+- Third person or imperative. "X werkt zo." / "Voer Y uit." No "ik" as information carrier.
+- Active constructions: "DraftGap scrapet", "de CLI genereert", "het systeem detecteert".
+- Tech terms in English, rest follows input language.
+- No adjective stacking. Max one descriptor.
+- No operational politeness. Drop "Please note that...", "We raden vriendelijk aan...", "Vergeet niet om...". Straight to the instruction.
+- Inherits all anti-patterns from `_anti-patterns.md`. Plus style-specific:
+- Forbidden — anti-marketing-speak (red flags for technical readers in 2024-2026):
   - "seamless(ly)", "naadloos", "effortlessly", "moeiteloos"
   - "powerful", "robust", "krachtig", "schaalbaar"
   - "unlock", "unleash", "ontsluiten" (als capability-werkwoord)
   - "next-generation", "cutting-edge", "state-of-the-art", "industry-leading", "best-in-class", "next-level", "game-changing", "revolutionary"
   - "delightful", "magisch", "enchanting"
   - "elevate", "ultimate", "transformative", "supercharged"
-  - "blazing fast", "lightning fast" (zonder benchmark)
+  - "blazing fast", "lightning fast" (without a benchmark)
 
 ## Structure
 
-- Tussenkoppen vormen de ruggengraat. Alleen H2/H3 lezen moet voldoende zijn voor het hele verhaal. Beschrijvende koppen ("Webhooks configureren") niet generieke ("Volgende stappen", "Overzicht").
-- F-patroon-veilig: kritieke informatie nooit aan het eind van een lange zin of onderaan een gesloten alinea. Lezers scannen verticaal langs de linkermarge.
-- Eén concept per alinea. Max 3-4 zinnen.
-- Atomic answers: elke alinea staat zelfstandig. Iemand die alleen die alinea leest (via zoek of AI-overzicht) krijgt een kloppend antwoord.
-- Tabel voor matrix-data (3+ variabelen). Bullet voor opsomming. Genummerde lijst alleen voor chronologische stappen.
-- Code-block voor alles wat code is. Inline alleen voor variabele-namen of korte flags.
-- Voorbeelden boven abstracties: "Voer `npm run dev` uit" niet "De applicatie kan gestart worden via de CLI".
-- Documenteer foutgevallen expliciet. Edge cases, rate limits, error codes — apart benoemen, niet wegmoffelen.
-- Geen filler-introductie of -slot: geen "Welcome to X!" opener, geen "Thank you for using..." closer, geen "Built with ❤️", geen emoji-openers.
+- Subheadings form the backbone. Reading only H2/H3 must be sufficient for the full story. Descriptive headings ("Webhooks configureren") not generic ("Volgende stappen", "Overzicht").
+- F-pattern safe: critical information never at the end of a long sentence or at the bottom of a closed paragraph. Readers scan vertically along the left margin.
+- One concept per paragraph. Max 3-4 sentences.
+- Atomic answers: every paragraph stands on its own. Someone reading only that paragraph (via search or AI summary) gets a complete answer.
+- Table for matrix data (3+ variables). Bullet for enumeration. Numbered list only for chronological steps.
+- Code block for anything that is code. Inline only for variable names or short flags.
+- Examples over abstractions: "Voer `npm run dev` uit" not "De applicatie kan gestart worden via de CLI".
+- Document error cases explicitly. Edge cases, rate limits, error codes — call them out separately, don't bury them.
+- No filler intro or outro: no "Welcome to X!" opener, no "Thank you for using..." closer, no "Built with ❤️", no emoji openers.
 
 ## Tone
 
-- Informeren, niet verkopen. Feiten, geen beloftes.
-- Imperatief, geen user stories. "Voeg profielfoto-upload toe via S3." Niet: "Als gebruiker wil ik een profielfoto kunnen uploaden zodat..."
-- Geen feliciteringen of hype-beloning bij elke stap ("Geweldig!", "🎉 Done!", "You're all set!").
-- Oordelende uitspraken alleen onderbouwd: "X is sneller dan Y door Z" mag. "X is geweldig" niet.
-- Zakelijk maar warm: niet koud, niet enthousiast. Geen overdreven beleefdheid, ook niet bot.
+- Inform, don't sell. Facts, not promises.
+- Imperative, not user stories. "Voeg profielfoto-upload toe via S3." Not: "Als gebruiker wil ik een profielfoto kunnen uploaden zodat..."
+- No congratulations or hype-reward at every step ("Geweldig!", "🎉 Done!", "You're all set!").
+- Judgemental statements only when backed up: "X is sneller dan Y door Z" is fine. "X is geweldig" is not.
+- Business-like but warm: not cold, not enthusiastic. No excessive politeness, but not blunt either.
 
 ## Examples
 

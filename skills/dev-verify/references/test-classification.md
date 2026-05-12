@@ -169,7 +169,7 @@ Wanneer `feature.json` een `build` sectie heeft (dev-build is voltooid, tests be
 | AUTO/CLI (specifiek command)          | Ongewijzigd               | Build, typecheck, file state                       |
 | AUTO/BROWSER                          | Ongewijzigd               | Al E2E verificatie                                 |
 | MANUAL                                | Ongewijzigd               | Subjectief oordeel                                 |
-| Integratie-scenario (5c)              | AUTO (nooit COVERED)      | Cross-req is altijd nieuwe verificatie             |
+| Integration scenario (5c)             | AUTO (never COVERED)      | Cross-req is always new verification               |
 
 **Post-build specifieke patronen:**
 

@@ -132,17 +132,17 @@ No references: ✓ Safe to delete without side effects
 Use **AskUserQuestion**:
 
 - header: "Verwijderen"
-- question: "[If CRITICAL refs]: Er zijn **{N} kritieke** afhankelijkheden. Wil je doorgaan? [If no CRITICAL]: Geen kritieke afhankelijkheden gevonden. Doorgaan met verwijderen?"
+- question: "[If CRITICAL refs]: There are **{N} critical** dependencies. Continue? [If no CRITICAL]: No critical dependencies found. Continue with deletion?"
 - options:
-  - label: "Verwijder + update refs (Recommended)", description: "Verwijder skill en update alle referenties in andere bestanden"
-  - label: "Alleen verwijderen", description: "Verwijder skill zonder referenties aan te passen (kan dingen breken)"
+  - label: "Delete + update refs (Recommended)", description: "Delete skill and update all references in other files"
+  - label: "Delete only", description: "Delete skill without updating references (may break things)"
   - label: "Cancel", description: "No changes"
 - multiSelect: false
 
 **Response handling:**
 
-- "Verwijder + update refs" → proceed to PHASE 3 (full cleanup)
-- "Alleen verwijderen" → skip to PHASE 3 Step 3 (delete only, skip ref updates)
+- "Delete + update refs" → proceed to PHASE 3 (full cleanup)
+- "Delete only" → skip to PHASE 3 Step 3 (delete only, skip ref updates)
 - "Cancel" → stop, no changes
 
 ## PHASE 3: Execute Deletion
@@ -155,12 +155,12 @@ For each reference found in PHASE 1, apply the appropriate fix:
 
 - Show the context (surrounding lines) from the referring skill
 - Use AskUserQuestion per critical reference:
-  - header: "Referentie"
-  - question: "Hoe wil je deze referentie in `[file]` aanpassen?"
+  - header: "Reference"
+  - question: "How do you want to handle this reference in `[file]`?"
   - options:
-    - label: "Verwijder referentie (Recommended)", description: "Verwijder de regel/sectie die naar de skill verwijst"
-    - label: "Vervang door alternatief", description: "Vervang door een andere skill of instructie"
-    - label: "Overslaan", description: "Laat deze referentie staan"
+    - label: "Remove reference (Recommended)", description: "Remove the line/section that references the skill"
+    - label: "Replace with alternative", description: "Replace with another skill or instruction"
+    - label: "Skip", description: "Leave this reference as-is"
   - multiSelect: false
 - Apply the chosen fix using Edit tool
 

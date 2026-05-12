@@ -165,7 +165,7 @@ Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issue
    - `httpContractTested: true` + `delta: "none"` → **COVERED**
    - `httpContractTested: true` + delta → **AUTO/CLI** or **AUTO/BROWSER** (delta only)
    - `httpContractTested: false` → classify based on steps/hasUI/isPureAPI per `references/test-classification.md`
-   - Integratie-scenario's → altijd **AUTO** (nooit COVERED)
+   - Integration scenarios → always **AUTO** (never COVERED)
 
    e) Display classification table with Type column (COVERED/AUTO/MANUAL) + reason.
    Summary line: `COVERED: {n}  AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}`
@@ -454,7 +454,7 @@ Display re-test results.
 
 > **Todo**: mark PHASE 5 → `completed`, PHASE 5b → `in_progress`.
 
-Alles pass → PHASE 5c.
+All pass → PHASE 5c.
 
 Items still failing → AskUserQuestion: More details (Recommended) | Different approach | Accept | Fix yourself.
 Loop back to PHASE 3. AUTO items → re-run in PHASE 5A. MANUAL items → re-test in PHASE 5B.
@@ -574,7 +574,7 @@ AskUserQuestion: Yes, clear (Recommended) | Explain more | I have a question. Lo
 
 Save fix sync to `feature.json` (tests.fixSync).
 
-#### Step 2: Observaties
+#### Step 2: Observations
 
 **Skip when:** this session had no MANUAL items (pure automode — user checked nothing themselves, so nothing can have been noticed).
 
@@ -583,7 +583,7 @@ AskUserQuestion: No, all good (Recommended) | Yes, I noticed something.
 
 #### Step 3: 3-File Sync
 
-Skill-specifieke mutaties:
+Skill-specific mutations:
 
 **feature.json:**
 
@@ -746,7 +746,7 @@ Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{
 ```
 VERIFY COMPLETE: {feature-name}
 
-| Dimensie          | Score               |
+| Dimension         | Score               |
 | ----------------- | ------------------- |
 | Acceptance Tests  | {pass}/{total} PASS |
 | Builder Tests     | {pass}/{total} PASS |

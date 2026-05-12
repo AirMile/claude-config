@@ -33,7 +33,7 @@ Volg Context7 output voor:
 
 ## Framework specifics
 
-- **shadcn-ui aanwezig**: gebruik `<Form>` componenten uit shadcn die RHF wrappen
+- **shadcn-ui present**: use `<Form>` components from shadcn that wrap RHF
 - **Server Actions (Next.js)**: combineer met server-side zod parse voor double validation
 
 ## Teardown

@@ -15,7 +15,7 @@ Structured 11-phase debugging: context → intake → investigate → analyze �
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 11 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 11 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. On context compaction the task list remains visible — no risk of forgotten phases.
 
 1. PHASE 0: Context Loading
 2. PHASE 1: Problem Intake
@@ -31,52 +31,52 @@ Structured 11-phase debugging: context → intake → investigate → analyze �
 
 ## PHASE 0: Context Loading
 
-> **Todo**: roep `TaskCreate` aan met de 11 fase-items (zie boven). Markeer PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 11 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
-**Stack context** (optioneel, skip wat niet bestaat):
+**Stack context** (optional, skip what doesn't exist):
 
-- Lees CLAUDE.md `### Stack` sectie
-- Lees `.claude/research/stack-baseline.md`
+- Read CLAUDE.md `### Stack` section
+- Read `.claude/research/stack-baseline.md`
 
-**Project context** (optioneel, skip als niet bestaat):
+**Project context** (optional, skip if not present):
 
-- Lees `.project/project.json` → extract:
+- Read `.project/project.json` → extract:
   - `stack` (framework, language, packages)
   - `endpoints` (method, path, auth)
   - `data.entities` (names, fields, relations)
-- Lees `.project/project-context.json` (als bestaat) → extract:
+- Read `.project/project-context.json` (if present) → extract:
   - `context` (structure, routing, patterns)
 
-**Active feature detectie** (optioneel):
+**Active feature detection** (optional):
 
 - Check `.project/session/active-*.json` files
-- Fallback: lees `.project/backlog.html` → zoek meest recente feature met `status === "DOING"`
-- Als actieve feature gevonden:
-  - Noteer als context hint voor investigation agents
-  - Lees `.project/features/{feature-name}/feature.json` (als bestaat) → extract `requirements[]` (id + description + status)
-  - Noteer als FEATURE_REQUIREMENTS voor gebruik in PHASE 3 (spec-vs-impl onderscheid)
+- Fallback: read `.project/backlog.html` → find most recent feature with `status === "DOING"`
+- If active feature found:
+  - Note as context hint for investigation agents
+  - Read `.project/features/{feature-name}/feature.json` (if present) → extract `requirements[]` (id + description + status)
+  - Note as FEATURE_REQUIREMENTS for use in PHASE 3 (spec-vs-impl distinction)
 
-**Worktree switch** (alleen als active feature gedetecteerd):
+**Worktree switch** (only if active feature detected):
 
-Als active feature gevonden in vorige stap, voer steps 1-3 uit `shared/WORKTREE.md` (compute expected_path, check registered).
+If active feature found in previous step, run steps 1-3 from `shared/WORKTREE.md` (compute expected_path, check registered).
 
-- Worktree bestaat én pwd == main_root → AskUserQuestion:
+- Worktree exists and pwd == main_root → AskUserQuestion:
   - header: "Worktree"
-  - question: "Active feature '{name}' heeft worktree {short_path}. Hoe debuggen?"
+  - question: "Active feature '{name}' has worktree {short_path}. How to debug?"
   - options:
-    - "Switch naar worktree (Recommended)" → `EnterWorktree(path: expected_path)`
-    - "Standalone op huidige branch" → skip switch
-- Worktree bestaat én pwd in andere worktree dan expected → AskUserQuestion (debug is ad-hoc, geen hard fail):
+    - "Switch to worktree (Recommended)" → `EnterWorktree(path: expected_path)`
+    - "Standalone on current branch" → skip switch
+- Worktree exists and pwd in different worktree than expected → AskUserQuestion (debug is ad-hoc, no hard fail):
   - header: "Worktree"
-  - question: "Je zit in worktree {pwd_short}, active feature is '{name}' (worktree {expected_short}). Hoe verder?"
+  - question: "You are in worktree {pwd_short}, active feature is '{name}' (worktree {expected_short}). How to proceed?"
   - options:
-    - "Hier blijven debuggen (Recommended)" → skip switch, debug op huidige worktree
-    - "Switch naar feature-worktree" → `ExitWorktree(action: "keep")` + `EnterWorktree(path: expected_path)`
-    - "Switch naar main" → `ExitWorktree(action: "keep")` (alleen als pwd in een door deze session aangemaakte worktree zit; anders skip)
+    - "Stay here and debug (Recommended)" → skip switch, debug on current worktree
+    - "Switch to feature worktree" → `ExitWorktree(action: "keep")` + `EnterWorktree(path: expected_path)`
+    - "Switch to main" → `ExitWorktree(action: "keep")` (only if pwd is in a worktree created by this session; otherwise skip)
 - pwd == expected_path → already there, skip switch
-- Geen active feature of geen worktree → skip switch, debug draait standalone
+- No active feature or no worktree → skip switch, debug runs standalone
 
-**Git baseline** (voor scoped commit in PHASE 10):
+**Git baseline** (for scoped commit in PHASE 10):
 
 ```bash
 mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-debug-status.txt
@@ -86,42 +86,42 @@ mkdir -p .project/session && git status --porcelain | sort > .project/session/pr
 
 - scopes: [component]
 - pitfall-prefix: true
-- current-feature: {active feature naam, of "none"}
+- current-feature: {active feature name, or "none"}
 
-Render LEARNINGS_CONTEXT block. Skip stilletjes als geen `project-context.json`.
+Render LEARNINGS_CONTEXT block. Skip silently if no `project-context.json`.
 
-**Stel DEBUG_CONTEXT samen** (alle info beschikbaar voor inline investigation):
+**Assemble DEBUG_CONTEXT** (all info available for inline investigation):
 
 ```
 STACK: {framework} ({language}) — {packages}
-PATTERNS: {context.patterns of "niet beschikbaar"}
-STRUCTURE: {context.structure of "niet beschikbaar"}
-ACTIVE FEATURE: {feature naam + status of "geen"}
-REQUIREMENTS: {requirements ids + descriptions, of "niet beschikbaar"}
-ENDPOINTS: {endpoints of "niet beschikbaar"}
-ENTITIES: {data.entities of "niet beschikbaar"}
-KNOWN PITFALLS: {LEARNINGS_CONTEXT output, of "geen"}
+PATTERNS: {context.patterns or "not available"}
+STRUCTURE: {context.structure or "not available"}
+ACTIVE FEATURE: {feature name + status or "none"}
+REQUIREMENTS: {requirements ids + descriptions, or "not available"}
+ENDPOINTS: {endpoints or "not available"}
+ENTITIES: {data.entities or "not available"}
+KNOWN PITFALLS: {LEARNINGS_CONTEXT output, or "none"}
 ```
 
-Als niets beschikbaar → ga door zonder context (backwards compatible).
+If nothing available → continue without context (backwards compatible).
 
 ---
 
 ## PHASE 1: Problem Intake
 
-> **Todo**: markeer PHASE 0 → `completed`, PHASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
 ### Step 1: Classify
 
 AskUserQuestion:
 
-- header: "Probleem Type"
-- question: "Wat voor type probleem is dit?"
+- header: "Problem Type"
+- question: "What type of problem is this?"
 - options:
-  - "Runtime Error" — Crashes, exceptions, error messages in console of UI
-  - "Logic Bug" — Verkeerde output, unexpected behavior
-  - "Performance Issue" — Traag, memory leaks, timeouts
-  - "Integration Issue" — API failures, data sync, externe systemen
+  - "Runtime Error" — Crashes, exceptions, error messages in console or UI
+  - "Logic Bug" — Wrong output, unexpected behavior
+  - "Performance Issue" — Slow, memory leaks, timeouts
+  - "Integration Issue" — API failures, data sync, external systems
 
 ### Step 2: Details (per type)
 
@@ -129,25 +129,25 @@ AskUserQuestion:
 AskUserQuestion:
 
 - header: "Error Details"
-- question: "Welke informatie heb je over de error?"
+- question: "What information do you have about the error?"
 - options:
-  - "Ik heb een error message" — Exacte foutmelding beschikbaar
-  - "Ik heb een stack trace" — Volledige stack trace beschikbaar
-  - "Ik heb beide" — Error message en stack trace
-  - "Ik heb alleen een screenshot" — Visuele weergave
+  - "I have an error message" — Exact error message available
+  - "I have a stack trace" — Full stack trace available
+  - "I have both" — Error message and stack trace
+  - "I only have a screenshot" — Visual representation
 
 Then: ask user to share the details.
 
 **Logic Bug:**
 AskUserQuestion:
 
-- header: "Gedrag Details"
-- question: "Beschrijf het verschil tussen verwacht en werkelijk gedrag:"
+- header: "Behavior Details"
+- question: "Describe the difference between expected and actual behavior:"
 - options:
-  - "Ik weet exact wat er fout gaat" — Expected vs actual beschrijfbaar
-  - "Output is verkeerd" — Verkeerde waarde of weergave
-  - "Actie werkt niet" — Button, form, interactie faalt
-  - "Data klopt niet" — Verkeerde data getoond of opgeslagen
+  - "I know exactly what is going wrong" — Expected vs actual describable
+  - "Output is wrong" — Wrong value or display
+  - "Action does not work" — Button, form, interaction fails
+  - "Data is incorrect" — Wrong data shown or saved
 
 Then: ask for specific expected vs actual behavior.
 
@@ -155,39 +155,39 @@ Then: ask for specific expected vs actual behavior.
 AskUserQuestion:
 
 - header: "Performance Details"
-- question: "Wanneer treedt het performance probleem op?"
+- question: "When does the performance problem occur?"
 - options:
-  - "Bij specifieke actie" — Bepaalde pagina, button click, of data load
-  - "Altijd traag" — Consistent trage applicatie
-  - "Na verloop van tijd" — Start snel, wordt langzamer (memory leak)
-  - "Bij veel data" — Alleen traag met grote datasets
+  - "On a specific action" — Certain page, button click, or data load
+  - "Always slow" — Consistently slow application
+  - "Over time" — Starts fast, becomes slower (memory leak)
+  - "With large datasets" — Only slow with large amounts of data
 
 Then: ask about scale/context details.
 
 **Integration Issue:**
 AskUserQuestion:
 
-- header: "Integratie Details"
-- question: "Welk extern systeem is betrokken?"
+- header: "Integration Details"
+- question: "Which external system is involved?"
 - options:
   - "REST API" — HTTP endpoints, fetch calls
-  - "Database" — Supabase, Firebase, andere DB
+  - "Database" — Supabase, Firebase, other DB
   - "Third-party service" — Auth, payment, analytics
   - "File system / Storage" — Uploads, downloads, cloud storage
 
 Then: ask for API/service details and error responses.
 
-### Step 3: Bevestig samenvatting
+### Step 3: Confirm summary
 
 Show summary of type + symptom + context + details gathered.
 
 AskUserQuestion:
 
-- header: "Bevestiging"
-- question: "Klopt deze probleem samenvatting?"
+- header: "Confirmation"
+- question: "Is this problem summary correct?"
 - options:
-  - "Ja, start onderzoek (Aanbevolen)" — Start inline investigation
-  - "Nee, correctie nodig" — Meer details of correcties geven
+  - "Yes, start investigation (Recommended)" — Start inline investigation
+  - "No, correction needed" — Provide more details or corrections
 
 If "Nee" → ask for corrections, update summary, re-confirm.
 
@@ -195,15 +195,15 @@ If "Nee" → ask for corrections, update summary, re-confirm.
 
 ## PHASE 2: Codebase Investigation (Explore agent)
 
-> **Todo**: markeer PHASE 1 → `completed`, PHASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
 Spawn one Explore agent (`subagent_type="Explore"`) to investigate in an isolated context. This keeps source file reads and git output out of the main session — critical because PHASE 3-8 still need context space for root cause analysis, fix planning, and implementation.
 
-**Thoroughness op basis van problem type (PHASE 1):**
+**Thoroughness based on problem type (PHASE 1):**
 
-- Runtime Error met stack trace → `"medium"` (locatie al bekend, focus op call stack en context)
-- Runtime Error zonder stack trace → `"very thorough"`
-- Logic Bug / Performance Issue / Integration Issue → `"very thorough"` (oorzaak onduidelijk, brede scan)
+- Runtime Error with stack trace → `"medium"` (location already known, focus on call stack and context)
+- Runtime Error without stack trace → `"very thorough"`
+- Logic Bug / Performance Issue / Integration Issue → `"very thorough"` (cause unclear, broad scan)
 
 Agent prompt:
 
@@ -233,8 +233,8 @@ PASS 3 — CHANGE ANALYSIS (use files from Pass 1+2):
 - git log --oneline -10 -- {affected files}
 - git blame {error location}
 - Was this working before? What changed?
-- Check KNOWN PITFALLS in DEBUG_CONTEXT: als een pitfall matcht op symptoom of locatie,
-  vermeld dit als sterke hypothese — voeg toe als "Pitfall match: {summary}" in return format
+- Check KNOWN PITFALLS in DEBUG_CONTEXT: if a pitfall matches on symptom or location,
+  mention it as a strong hypothesis — add as "Pitfall match: {summary}" in return format
 
 RETURN FORMAT:
 INVESTIGATION_START
@@ -246,7 +246,7 @@ Data flow: {input source → processing → output}
 External factors: {APIs, DB, env vars involved}
 Recent changes: {relevant commits with dates}
 Regression risk: {yes/no — was this area recently modified?}
-Pitfall match: {matching pitfall summary, of "geen"}
+Pitfall match: {matching pitfall summary, or "none"}
 INVESTIGATION_END
 ```
 
@@ -256,11 +256,11 @@ Parse the agent's `INVESTIGATION_START...END` block — only the compact finding
 
 ## PHASE 3: Root Cause Analysis
 
-> **Todo**: markeer PHASE 2 → `completed`, PHASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
 Analyze:
 
-**Pitfall match shortcut**: als `Pitfall match` in INVESTIGATION_END aanwezig en niet "geen" → voeg die hypothese bovenaan toe met confidence "high" als startpunt. Evalueer alsnog tegen evidence — als evidence tegenspreekt, degradeer naar "medium" en ga door met stap 2.
+**Pitfall match shortcut**: if `Pitfall match` in INVESTIGATION_END is present and not "none" → add that hypothesis at the top with confidence "high" as a starting point. Still evaluate against evidence — if evidence contradicts, downgrade to "medium" and continue with step 2.
 
 1. Combine findings from all 3 investigation passes
 2. Identify patterns and correlations
@@ -268,18 +268,18 @@ Analyze:
 4. Evaluate each hypothesis against evidence
 5. Test one hypothesis at a time — never combine multiple fixes in a single verification step
 6. Determine most likely root cause
-7. Check FEATURE_REQUIREMENTS (uit PHASE 0): matcht de root cause aan een requirement die verkeerd geïmplementeerd is? Zo ja, markeer als **spec-issue** — in PHASE 6 is fix-thorough aanbevolen (minimal lost het symptoom, niet de spec-afwijking).
+7. Check FEATURE_REQUIREMENTS (from PHASE 0): does the root cause match a requirement that was incorrectly implemented? If so, mark as **spec-issue** — in PHASE 6 fix-thorough is recommended (minimal fixes the symptom, not the spec deviation).
 8. Identify knowledge gaps for PHASE 4
 
-Present findings + hypothesis + confidence (high/medium/low) + spec-issue markering (ja/nee) + research topics needed.
+Present findings + hypothesis + confidence (high/medium/low) + spec-issue marking (yes/no) + research topics needed.
 
 ---
 
 ## PHASE 4: Context7 Research
 
-> **Todo**: markeer PHASE 3 → `completed`, PHASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-**Skip als**: root cause is puur interne logica (geen externe library API's of third-party dependencies betrokken in affected files) → ga direct naar PHASE 5.
+**Skip if**: root cause is purely internal logic (no external library APIs or third-party dependencies involved in affected files) → go directly to PHASE 5.
 
 1. `mcp__context7__resolve-library-id` for relevant libraries
 2. `mcp__context7__query-docs` for:
@@ -293,25 +293,25 @@ Focus: dependency issues → version docs/migration guides, pattern misuse → c
 
 ## PHASE 5: Fix Plan Generation
 
-> **Todo**: markeer PHASE 4 → `completed`, PHASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-Launch 3 agents in parallel (zie `shared/SKILL-PATTERNS.md#parallel-dispatch` voor dispatch-criteria en prompt-template):
+Launch 3 agents in parallel (see `shared/SKILL-PATTERNS.md#parallel-dispatch` for dispatch criteria and prompt template):
 
-| Agent         | Philosophy           | Focus                                      |
-| ------------- | -------------------- | ------------------------------------------ |
-| fix-minimal   | "Kleinste wijziging" | Hotfix, minimal risk, fewest changes       |
-| fix-thorough  | "Volledige fix"      | Root cause, add tests, clean up            |
-| fix-defensive | "Preventief"         | Safeguards, validation, prevent recurrence |
+| Agent         | Philosophy        | Focus                                      |
+| ------------- | ----------------- | ------------------------------------------ |
+| fix-minimal   | "Smallest change" | Hotfix, minimal risk, fewest changes       |
+| fix-thorough  | "Full fix"        | Root cause, add tests, clean up            |
+| fix-defensive | "Preventive"      | Safeguards, validation, prevent recurrence |
 
 Each receives: root cause analysis + research findings + affected files.
 Each returns: specific changes with file:line refs, risk (low/medium/high), scope, trade-offs,
-AND: `Reproduction test assertion: {wat moet de test asserten om de bug te bewijzen}`
+AND: `Reproduction test assertion: {what the test must assert to prove the bug}`
 
 ---
 
 ## PHASE 6: Plan Selection
 
-> **Todo**: markeer PHASE 5 → `completed`, PHASE 6 → `in_progress`.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 6 → `in_progress`.
 
 Present all 3 options with approach, changes count, risk level, and trade-offs.
 Include recommendation based on context.
@@ -320,26 +320,26 @@ Include recommendation based on context.
 
 AskUserQuestion:
 
-- header: "Fix Strategie"
-- question: "Welke fix aanpak wil je gebruiken?"
+- header: "Fix Strategy"
+- question: "Which fix approach do you want to use?"
 - options:
-  - "Minimal (Aanbevolen voor productie)" — Kleinste wijziging, laag risico
-  - "Thorough" — Volledige fix met root cause + tests
-  - "Defensive" — Safeguards en validatie tegen herhaling
+  - "Minimal (Recommended for production)" — Smallest change, low risk
+  - "Thorough" — Full fix with root cause + tests
+  - "Defensive" — Safeguards and validation to prevent recurrence
 
-### Step 2: Fixes selecteren
+### Step 2: Select fixes
 
-**Fixes Selecteren:**
+**Select Fixes:**
 
 ```
-Voorgestelde fixes ({M} totaal):
+Proposed fixes ({M} total):
 
 1. {file:line} — {description}
 2. {file:line} — {description}
 ...
 ```
 
-Vraag: "Welke fixes wil je toepassen? Geef nummers (bv. `1, 3` of `alle`)."
+Ask: "Which fixes do you want to apply? Provide numbers (e.g. `1, 3` or `all`)."
 
 Parse → fix-set.
 
@@ -347,33 +347,33 @@ Parse → fix-set.
 
 ## PHASE 7: Reproduction Test
 
-> **Todo**: markeer PHASE 6 → `completed`, PHASE 7 → `in_progress`.
+> **Todo**: mark PHASE 6 → `completed`, PHASE 7 → `in_progress`.
 
-**Doel**: bewijs de bug met een falende test voor de fix. Maakt root cause concreet, voorkomt regressies, geeft objectief bewijs dat fix werkt.
+**Goal**: prove the bug with a failing test before the fix. Makes root cause concrete, prevents regressions, gives objective proof that the fix works.
 
-### Step 1: Testbaarheid bepalen
+### Step 1: Determine testability
 
-Default voor Runtime Error / Logic Bug: skip de vraag, ga direct naar Step 2.
+Default for Runtime Error / Logic Bug: skip the question, go directly to Step 2.
 
-Voor Performance Issue / Integration Issue / niet-runtime bugs, AskUserQuestion:
+For Performance Issue / Integration Issue / non-runtime bugs, AskUserQuestion:
 
 - header: "Reproduction Test"
-- question: "Is deze bug testbaar in een geautomatiseerde test?"
+- question: "Is this bug testable in an automated test?"
 - options:
-  - "Ja, schrijf reproduction test (Aanbevolen)" — Standaard pad voor assertable bugs
-  - "Playwright visual baseline — UI visual / CSS" — toHaveScreenshot() baseline als reproduction test (runner vereist)
-  - "Nee, skip — Performance zonder threshold" — Geen concrete meetwaarde definieerbaar
-  - "Nee, skip — Productie-only data" — Niet reproduceerbaar in test omgeving
+  - "Yes, write reproduction test (Recommended)" — Standard path for assertable bugs
+  - "Playwright visual baseline — UI visual / CSS" — toHaveScreenshot() baseline as reproduction test (runner required)
+  - "No, skip — Performance without threshold" — No concrete measurable value definable
+  - "No, skip — Production-only data" — Not reproducible in test environment
 
 **"Playwright visual baseline" gekozen:**
 
 Check runner beschikbaar: `npx playwright --version 2>/dev/null`.
 
-- **Beschikbaar**: ga door naar Step 2b (Playwright UI reproduction).
-- **Niet beschikbaar**: draai `/core-setup playwright` om daemon + runner te installeren. Daarna Step 2b.
-- **Installatie mislukt**: val terug op skip, noteer `reproductionTest: { skipped: true, reason: "runner niet beschikbaar" }`, ga naar PHASE 8.
+- **Available**: go to Step 2b (Playwright UI reproduction).
+- **Not available**: run `/core-setup playwright` to install daemon + runner. Then Step 2b.
+- **Installation failed**: fall back to skip, note `reproductionTest: { skipped: true, reason: "runner not available" }`, go to PHASE 8.
 
-**"Skip" gekozen (performance of productie-data):** noteer `reproductionTest: { skipped: true, reason: "{reden}" }` en ga naar PHASE 8.
+**"Skip" chosen (performance or production-data):** note `reproductionTest: { skipped: true, reason: "{reason}" }` and go to PHASE 8.
 
 ### Step 2b: Playwright UI reproduction (alleen bij "visual baseline" keuze in Step 1)
 
@@ -387,54 +387,54 @@ import { test, expect } from "@playwright/test";
 test("{issue slug} — visual regression", async ({ page }) => {
   await page.goto("{url-waar-bug-optreedt}");
   await page.waitForLoadState("networkidle");
-  // Eerste run: legt buggy staat vast als baseline
-  // Na fix: --update-snapshots om nieuwe correcte staat als baseline in te stellen
+  // First run: captures buggy state as baseline
+  // After fix: --update-snapshots to set new correct state as baseline
   await expect(page).toHaveScreenshot("{slug}-regression.png", {
     maxDiffPixelRatio: 0.02,
   });
-  // Optioneel: aria-snapshot voor structurele UI-regressies
+  // Optional: aria-snapshot for structural UI regressions
   await expect(
     page.locator("{selector-van-gebroken-component}"),
   ).toMatchAriaSnapshot();
 });
 ```
 
-Draai met `--update-snapshots` om buggy staat als baseline vast te leggen:
+Run with `--update-snapshots` to capture the buggy state as baseline:
 `npx playwright test test/regression/{slug}.spec.ts --config=.project/playwright-runs/playwright.config.ts --update-snapshots`
 
-Na fix (PHASE 8): draai zonder `--update-snapshots` → PASS als fix de render niet verslechtert t.o.v. het correcte beeld. Update baseline expliciet na gewenste visuele verbetering.
+After fix (PHASE 8): run without `--update-snapshots` → PASS if fix does not degrade the render compared to the correct image. Update baseline explicitly after desired visual improvement.
 
-Noteer: `reproductionTest: { file: "test/regression/{slug}.spec.ts", type: "visual-baseline", tool: "playwright-runner" }`
+Note: `reproductionTest: { file: "test/regression/{slug}.spec.ts", type: "visual-baseline", tool: "playwright-runner" }`
 
-Sla het step-3 run-commando op als: `npx playwright test test/regression/{slug}.spec.ts --config=.project/playwright-runs/playwright.config.ts`
+Store the step-3 run command as: `npx playwright test test/regression/{slug}.spec.ts --config=.project/playwright-runs/playwright.config.ts`
 
-### Step 2: Schrijf falende test
+### Step 2: Write failing test
 
-- Locatie: `test/regression/{slug}.test.{ext}` of voeg toe aan bestaand test bestand met `// REGRESSION: {issue}` marker
-- Framework: detecteer uit package.json (vitest/jest/node:test) of project conventie
-- Assert: het **verwachte** gedrag (niet het buggy gedrag)
-- Bevat de input/setup die de bug triggerde (uit PHASE 1 details + PHASE 2 investigation)
+- Location: `test/regression/{slug}.test.{ext}` or add to existing test file with `// REGRESSION: {issue}` marker
+- Framework: detect from package.json (vitest/jest/node:test) or project convention
+- Assert: the **expected** behavior (not the buggy behavior)
+- Contains the input/setup that triggered the bug (from PHASE 1 details + PHASE 2 investigation)
 
-### Step 3: Run de test
+### Step 3: Run the test
 
 ```bash
 {npm test command} -- {test file pattern}
 ```
 
-**Verwacht: FAIL voor de juiste reden** — match tegen PHASE 3 root cause:
+**Expected: FAIL for the right reason** — match against PHASE 3 root cause:
 
-| Result                                    | Reason                                                    | Action                    |
-| -------------------------------------------- | -------------------------------------------------------- | ------------------------ |
-| FAIL met assert mismatch matching root cause | Bug correct gereproduceerd                               | ✓ Door naar PHASE 8       |
-| FAIL door compile/setup error                | Test zelf is kapot                                       | Fix de test, run opnieuw |
-| PASS onverwacht                              | Bug niet correct gereproduceerd of root cause klopt niet | Terug naar PHASE 3        |
+| Result                                        | Reason                                              | Action                  |
+| --------------------------------------------- | --------------------------------------------------- | ----------------------- |
+| FAIL with assert mismatch matching root cause | Bug correctly reproduced                            | ✓ Continue to PHASE 8   |
+| FAIL due to compile/setup error               | Test itself is broken                               | Fix the test, run again |
+| PASS unexpectedly                             | Bug not correctly reproduced or root cause is wrong | Back to PHASE 3         |
 
-### Step 4: Bevestig
+### Step 4: Confirm
 
 ```
-REPRODUCTION TEST: {bestand}:{lijn}
-Expected fail reason: {root cause uit PHASE 3}
-Actual fail: {error output, max 5 regels}
+REPRODUCTION TEST: {file}:{line}
+Expected fail reason: {root cause from PHASE 3}
+Actual fail: {error output, max 5 lines}
 Status: ✓ Bug reproduced
 ```
 
@@ -442,93 +442,93 @@ Status: ✓ Bug reproduced
 
 ## PHASE 8: Implementation
 
-> **Todo**: markeer PHASE 7 → `completed`, PHASE 8 → `in_progress`.
+> **Todo**: mark PHASE 7 → `completed`, PHASE 8 → `in_progress`.
 
 Apply selected fixes from chosen strategy. Document each change with file:line references.
 
-**Bij reproduction test geschreven (PHASE 7)**: implementatie heeft als concrete success-criterium dat de reproduction test moet slagen. Niet meer code wijzigen dan nodig om die test groen te krijgen + de oorspronkelijke fix-plan scope.
+**With reproduction test written (PHASE 7)**: the concrete success criterion for implementation is that the reproduction test must pass. Do not change more code than needed to get that test green + the original fix-plan scope.
 
 ---
 
 ## PHASE 9: Verification
 
-> **Todo**: markeer PHASE 8 → `completed`, PHASE 9 → `in_progress`.
+> **Todo**: mark PHASE 8 → `completed`, PHASE 9 → `in_progress`.
 
-### Step 1: Reproduction test (skip als PHASE 7 geskipt)
+### Step 1: Reproduction test (skip if PHASE 7 was skipped)
 
 ```bash
 {npm test command} -- {reproduction test file}
 ```
 
-- PASS → fix bewijsbaar werkt voor de gereproduceerde bug
-- FAIL → fix incompleet, terug naar PHASE 8 (max 3 iteraties, daarna AskUserQuestion: Andere strategie | Meer research | Accepteren als incompleet)
+- PASS → fix provably works for the reproduced bug
+- FAIL → fix incomplete, back to PHASE 8 (max 3 iterations, then AskUserQuestion: Different strategy | More research | Accept as incomplete)
 
 ### Step 2: Regression suite
 
-**Skip als**: geen test suite aanwezig (geen `test` script in package.json, geen `vitest.config.*` of `jest.config.*`) → ga naar Step 3.
+**Skip if**: no test suite present (no `test` script in package.json, no `vitest.config.*` or `jest.config.*`) → go to Step 3.
 
-Run de full test suite (of minimaal: alle tests in directories die geraakte files importeren).
+Run the full test suite (or at minimum: all tests in directories that import affected files).
 
 ```bash
 {npm test command}
 ```
 
-- Nieuwe failures → AskUserQuestion: Fix regressie (Aanbevolen) | Accepteren (markeer als known) | Rollback fix
-- Geen failures → door naar Step 3
+- New failures → AskUserQuestion: Fix regression (Recommended) | Accept (mark as known) | Rollback fix
+- No failures → continue to Step 3
 
-### Step 3: Manual verification (alleen bij PHASE 7 skip)
+### Step 3: Manual verification (only if PHASE 7 was skipped)
 
-Suggest manual verification steps gebaseerd op het problem type uit PHASE 1.
-Vraag user te bevestigen dat de fix het oorspronkelijke probleem oplost.
+Suggest manual verification steps based on the problem type from PHASE 1.
+Ask user to confirm that the fix resolves the original problem.
 
 ---
 
 ## PHASE 10: Completion
 
-> **Todo**: markeer PHASE 9 → `completed`, PHASE 10 → `in_progress`.
+> **Todo**: mark PHASE 9 → `completed`, PHASE 10 → `in_progress`.
 
 ### Step 1: Learning Extraction
 
-Per resolved bug, evalueer of root cause + fix cross-feature waarde heeft. Filter:
+Per resolved bug, evaluate whether root cause + fix has cross-feature value. Filter:
 
-- **Wel extracten**: race conditions, validation gaps, API contract mismatches, dep-version bugs, framework gotchas, async/timing issues
-- **Niet extracten**: typo fixes, eenmalige config waardes, project-specifieke wiring, merge conflicts
+- **Do extract**: race conditions, validation gaps, API contract mismatches, dep-version bugs, framework gotchas, async/timing issues
+- **Don't extract**: typo fixes, one-off config values, project-specific wiring, merge conflicts
 
-**Append** naar `project-context.json` → `learnings[]`:
+**Append** to `project-context.json` → `learnings[]`:
 
 ```json
 {
   "date": "YYYY-MM-DD",
-  "feature": "{active feature uit PHASE 0, of directory primary segment van fix locatie}",
+  "feature": "{active feature from PHASE 0, or directory primary segment of fix location}",
   "type": "pitfall",
   "source": "extracted",
-  "summary": "{root cause + waar de fix zat, max 200 chars}"
+  "summary": "{root cause + where the fix was, max 200 chars}"
 }
 ```
 
-**Dedup** (per `shared/LEARNING-EXTRACTION.md`): tokenize summary → check tegen bestaande `learnings[]` met zelfde `(type, normalize(summary), author)` tuple. Match → skip.
+**Dedup** (per `shared/LEARNING-EXTRACTION.md`): tokenize summary → check against existing `learnings[]` with same `(type, normalize(summary), author)` tuple. Match → skip.
 
-Geen relevante pitfall → skip step zonder waarschuwing.
+No relevant pitfall → skip step without warning.
 
 ### Step 2: Scoped Commit
 
-Vergelijk `git status --porcelain | sort` met `.project/session/pre-debug-status.txt`:
+Compare `git status --porcelain | sort` with `.project/session/pre-debug-status.txt`:
 
-- **NEW** (alleen in current) → `git add -f` (`.project/` is gitignored, `-f` vereist)
-- **OVERLAP** (in beide, gewijzigd door deze debug-run) → `git add`
-- **PRE-EXISTING** (alleen in baseline) → niet stagen
+- **NEW** (only in current) → `git add -f` (`.project/` is gitignored, `-f` required)
+- **OVERLAP** (in both, modified by this debug run) → `git add`
+- **PRE-EXISTING** (only in baseline) → do not stage
 
-Baseline niet gevonden → fallback: vraag user welke files gerelateerd zijn aan de fix.
+Baseline not found → fallback: ask user which files are related to the fix.
 
 ```bash
-git commit -m "fix({feature}): {issue summary uit PHASE 1}
+git commit -m "fix({feature}): {issue summary from PHASE 1}
 
-Root cause: {samenvatting uit PHASE 3}
-Reproduction test: {pad, of 'skipped: {reden}'}
-Learning: {pitfall summary, of 'geen'}"
+Root cause: {summary from PHASE 3}
+Reproduction test: {path, or 'skipped: {reason}'}
+Learning: {pitfall summary, or 'none'}"
 ```
 
-`{feature}` = active feature naam uit PHASE 0, of weglaten als standalone debug.
+`{feature}` = active feature name from PHASE 0, or omit if standalone debug.
 
 Clean up: `rm -f .project/session/pre-debug-status.txt`
 
@@ -537,15 +537,15 @@ Clean up: `rm -f .project/session/pre-debug-status.txt`
 ```
 DEBUG COMPLETE: {issue}
 ========================
-Root cause: {samenvatting uit PHASE 3}
-Fix: {wat er gewijzigd is, file:line refs}
-Reproduction test: {pad, of "skipped: {reden}"}
+Root cause: {summary from PHASE 3}
+Fix: {what was changed, file:line refs}
+Reproduction test: {path, or "skipped: {reason}"}
 Regression: {N tests, X PASS, Y FAIL}
-Learning: {pitfall summary toegevoegd, of "geen extractie"}
+Learning: {pitfall summary added, or "no extraction"}
 
 Next steps:
-  1. /dev-verify {feature} → herverificatie als feature actief
-  2. /dev-build {feature} → als rebuild nodig is
+  1. /dev-verify {feature} → re-verification if feature active
+  2. /dev-build {feature} → if rebuild needed
 ```
 
-> **Todo**: markeer PHASE 10 → `completed`.
+> **Todo**: mark PHASE 10 → `completed`.

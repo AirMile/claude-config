@@ -1,9 +1,9 @@
 # Technique: Implementation First
 
-## Varianten
+## Variants
 
-- **Implementation First** (default): implementeer, dan test
-- **Implementation Only**: implementeer zonder automated tests. Alleen bij duidelijke reden (zie onder).
+- **Implementation First** (default): implement, then test
+- **Implementation Only**: implement without automated tests. Only when there is a clear reason (see below).
 
 ## Single Requirement Workflow
 
@@ -17,7 +17,7 @@ Verify it works (manual check or quick run).
 Generate test for the implemented requirement.
 Run test — fix implementation if FAIL.
 
-**Skip bij Implementation Only** — ga direct naar output.
+**Skip for Implementation Only** — go directly to output.
 
 ### Output
 
@@ -41,15 +41,15 @@ Files: {files created/modified}
 SYNC:  {pattern/concept} in {main file(s)} — {what it does and why this approach. What depends on it.}
 ```
 
-## Implementation Only: Toegestane Redenen
+## Implementation Only: Allowed Reasons
 
-Gebruik alleen wanneer automated tests geen waarde toevoegen:
+Use only when automated tests add no value:
 
-| Reden         | Wanneer                                                    |
-| ------------- | ---------------------------------------------------------- |
-| `visual-only` | Pure styling, layout, CSS, visuele effecten, particles     |
-| `config-only` | Env vars, route registratie, package config, static assets |
-| `prototype`   | Bewust tijdelijke code, throwaway MVP                      |
+| Reason        | When                                                        |
+| ------------- | ----------------------------------------------------------- |
+| `visual-only` | Pure styling, layout, CSS, visual effects, particles        |
+| `config-only` | Env vars, route registration, package config, static assets |
+| `prototype`   | Deliberately temporary code, throwaway MVP                  |
 
-Het requirement krijgt wél een manueel checklist-item in `tests.checklist[]` (PHASE 3B).
-De reden wordt gelogd in `feature.json` per requirement als `skipTestReason`.
+The requirement still gets a manual checklist item in `tests.checklist[]` (PHASE 3B).
+The reason is logged in `feature.json` per requirement as `skipTestReason`.

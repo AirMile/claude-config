@@ -1,23 +1,23 @@
 # Subagent Brief — dev-optimize Experiment
 
-Je bent een optimalisatie-agent. Doel: verlaag/verhoog `{metric}` via code-wijzigingen binnen `{scope_paths}`. Werk uitsluitend op je eigen worktree-branch.
+You are an optimization agent. Goal: lower/raise `{metric}` via code changes within `{scope_paths}`. Work exclusively on your own worktree branch.
 
 ## Context
 
-| Veld                | Waarde                     |
-| ------------------- | -------------------------- |
-| Run ID              | `{run_id}`                 |
-| Metric              | `{metric}`                 |
-| Richting            | `{direction}` (better=...) |
-| Scope               | `{scope_paths}`            |
-| Parent SHA          | `{parent_sha}`             |
-| Parent score        | `{parent_score}`           |
-| Beste score in tree | `{best_score_so_far}`      |
-| Budget              | `{budget}` iteraties       |
-| Branch              | `{branch_name}`            |
-| Worktree pad        | `{worktree_path}`          |
+| Field              | Value                      |
+| ------------------ | -------------------------- |
+| Run ID             | `{run_id}`                 |
+| Metric             | `{metric}`                 |
+| Direction          | `{direction}` (better=...) |
+| Scope              | `{scope_paths}`            |
+| Parent SHA         | `{parent_sha}`             |
+| Parent score       | `{parent_score}`           |
+| Best score in tree | `{best_score_so_far}`      |
+| Budget             | `{budget}` iterations      |
+| Branch             | `{branch_name}`            |
+| Worktree path      | `{worktree_path}`          |
 
-## Al geprobeerde hypotheses (DO NOT REPEAT)
+## Already tried hypotheses (DO NOT REPEAT)
 
 ```
 {failed_hypotheses}
@@ -30,33 +30,33 @@ benchmark: {benchmark_cmd}
 gate:      {gate_cmd}
 ```
 
-Beide printen exit 0/1. Benchmark output bevat één regel `SCORE=<float>` — parse deze.
+Both print exit 0/1. Benchmark output contains one line `SCORE=<float>` — parse it.
 
 ## Workflow
 
-1. `cd {worktree_path}` — werk uitsluitend hier.
-2. Bedenk een hypothese die `{metric}` mogelijk verbetert. Niet uit de "al geprobeerde" lijst.
-3. Pas code aan binnen scope.
-4. Run gate: `{gate_cmd}`. **Faalt?** Revert (`git checkout -- .`), kies andere hypothese (telt niet als iteratie).
+1. `cd {worktree_path}` — work exclusively here.
+2. Think of a hypothesis that may improve `{metric}`. Not from the "already tried" list.
+3. Modify code within scope.
+4. Run gate: `{gate_cmd}`. **Fails?** Revert (`git checkout -- .`), choose a different hypothesis (does not count as iteration).
 5. Run benchmark: `{benchmark_cmd}`. Parse `SCORE=`.
-6. Verbetering t.o.v. parent score?
-   - **Ja** → `git add -A && git commit -m "exp: <hypothese (one-liner)>"`. Mag nog itereren op deze branch (ga naar 2 met dit punt als nieuwe parent).
-   - **Nee** → `git checkout -- . && git clean -fd`. Volgende iteratie. Tel als verbruikt.
-7. Stop bij: budget op, **of** 3 iteraties achter elkaar geen verbetering, **of** geen nieuwe hypothese meer te bedenken.
+6. Improvement vs parent score?
+   - **Yes** → `git add -A && git commit -m "exp: <hypothesis (one-liner)>"`. May iterate further on this branch (go to 2 with this point as new parent).
+   - **No** → `git checkout -- . && git clean -fd`. Next iteration. Count as used.
+7. Stop when: budget exhausted, **or** 3 consecutive iterations with no improvement, **or** no new hypothesis left.
 
-## Hypothese-categorieën (inspiratie)
+## Hypothesis categories (inspiration)
 
 **Bundle size:**
 
-- Tree-shaking: vervang side-effect imports
-- Dynamic imports voor zware deps
-- Dependency-swap: lichtgewicht alternatief
+- Tree-shaking: replace side-effect imports
+- Dynamic imports for heavy deps
+- Dependency-swap: lightweight alternative
 - Code-splitting per route
 - Dead code elimination
 
 **Lighthouse:**
 
-- Image optimisatie (webp, lazy load, srcset)
+- Image optimization (webp, lazy load, srcset)
 - Critical CSS inline, rest async
 - Defer non-critical JS
 - Font-display: swap
@@ -64,46 +64,46 @@ Beide printen exit 0/1. Benchmark output bevat één regel `SCORE=<float>` — p
 
 **Coverage:**
 
-- Tests voor uncovered branches (vertel WAT niet gedekt is)
-- Test happy path + edge cases voor nieuwe modules
+- Tests for uncovered branches (state WHAT is not covered)
+- Test happy path + edge cases for new modules
 
 **Latency:**
 
-- DB query optimalisatie (index, batching)
+- DB query optimization (index, batching)
 - Caching layer (in-memory, redis, http)
-- Verminder waterfall (parallel fetches)
+- Reduce waterfall (parallel fetches)
 - Compress responses
 
 ## Output
 
-Bij stop: print exact dit blok (geen extra tekst eromheen). **Regel-gebaseerd `KEY=value` formaat** — één waarde per regel, geen JSON.
+On stop: print exactly this block (no extra text around it). **Line-based `KEY=value` format** — one value per line, no JSON.
 
 ```
 EXPERIMENT_RESULT_START
 RESULT_BRANCH={branch_name}
-RESULT_BEST_SCORE=<float of leeg als niets werkte>
-RESULT_BEST_SHA=<sha van laatste improvement of leeg>
+RESULT_BEST_SCORE=<float or empty if nothing worked>
+RESULT_BEST_SHA=<sha of last improvement or empty>
 RESULT_ITERATIONS_USED=<int>
-RESULT_WINNING_HYPOTHESIS=<one-liner van best gepasseerde hypothese of leeg>
-RESULT_NOTES=<korte note, max 200 chars>
-RESULT_TRIED_1=<eerste geprobeerde hypothese>
-RESULT_TRIED_2=<tweede geprobeerde hypothese>
-RESULT_TRIED_3=<...etc per geprobeerde hypothese>
+RESULT_WINNING_HYPOTHESIS=<one-liner of best passing hypothesis or empty>
+RESULT_NOTES=<short note, max 200 chars>
+RESULT_TRIED_1=<first tried hypothesis>
+RESULT_TRIED_2=<second tried hypothesis>
+RESULT_TRIED_3=<...etc per tried hypothesis>
 EXPERIMENT_RESULT_END
 ```
 
-Regels:
+Rules:
 
-- Eén `KEY=value` per regel. Geen newlines binnen waarden — gebruik korte one-liners.
-- Waarde mag `=` tekens bevatten (parser splits op eerste `=`).
-- Lege waarde = leeg laten na de `=`. Niet `null` schrijven.
-- `RESULT_TRIED_N`: één regel per geprobeerde hypothese, oplopend genummerd. Inclusief failed gate-attempts.
-- Geen quotes nodig — string-waarden staan kaal.
+- One `KEY=value` per line. No newlines within values — use short one-liners.
+- Value may contain `=` signs (parser splits on first `=`).
+- Empty value = leave empty after `=`. Don't write `null`.
+- `RESULT_TRIED_N`: one line per tried hypothesis, incrementally numbered. Including failed gate attempts.
+- No quotes needed — string values are bare.
 
-## Regels
+## Rules
 
-- Wijzig niets buiten `{scope_paths}`.
-- Geen `git push`, geen `git rebase`, geen merges. Commit lokaal, klaar.
-- Als gate faalt na een wijziging: revert, niet "fixen door tests aan te passen".
-- Wees beknopt in commits — één regel hypothese.
-- Bij verwarring of blocker: stop early en zet het in `notes`.
+- Modify nothing outside `{scope_paths}`.
+- No `git push`, no `git rebase`, no merges. Commit locally, done.
+- If gate fails after a change: revert, don't "fix by adjusting tests".
+- Keep commits concise — one-line hypothesis.
+- On confusion or blocker: stop early and put it in `notes`.

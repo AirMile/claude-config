@@ -2,7 +2,7 @@
 
 **Status:** stub — full guide te genereren via Context7 query.
 
-**Conflict check:** Bij ESLint/Prettier al geïnstalleerd, vraag of die vervangen moeten worden. Biome is een unified replacement.
+**Conflict check:** If ESLint/Prettier is already installed, ask whether it should be replaced. Biome is a unified replacement.
 
 ## Detection
 

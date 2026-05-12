@@ -1,6 +1,6 @@
 # Skill Pipeline
 
-Read-only referentie — geen executable skill. Zie BACKLOG.md, FEATURE.md, en SYNC.md voor detail.
+Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and SYNC.md for details.
 
 ---
 
@@ -29,7 +29,7 @@ Standalone (dev): `/dev-owasp` (security audit).
                                       └─→ [/core-setup [module]] (tools + libraries, incl. element picker)
 ```
 
-Frontend items slaan `defining/defined` over — design captures pages/flows, brief genereert context voor Claude Design, handoff bundle komt terug naar `/dev-build` als `building`.
+Frontend items skip `defining/defined` — design captures pages/flows, brief generates context for Claude Design, handoff bundle returns to `/dev-build` as `building`.
 
 ---
 
@@ -37,8 +37,8 @@ Frontend items slaan `defining/defined` over — design captures pages/flows, br
 
 | Skill        | Input                    | Output                      | Requires stage | Produces stage |
 | ------------ | ------------------------ | --------------------------- | -------------- | -------------- |
-| project-plan | concept / idee           | backlog.html                | —              | —              |
-| project-todo | beschrijving             | backlog item                | —              | —              |
+| project-plan | concept / idea           | backlog.html                | —              | —              |
+| project-todo | description              | backlog item                | —              | —              |
 | dev-define   | backlog item / user reqs | feature.json (req + arch)   | —              | defined        |
 | dev-build    | feature.json (defined)   | feature.json (code + tests) | defined        | built          |
 | dev-verify   | feature.json (built)     | feature.json (verified)     | built          | DONE           |
@@ -50,13 +50,13 @@ Frontend items slaan `defining/defined` over — design captures pages/flows, br
 
 ## State Machine
 
-**Backlog status** (zie BACKLOG.md):
+**Backlog status** (see BACKLOG.md):
 
 ```
 TODO → DOING → DONE
 ```
 
-**Feature stage** (binnen DOING, zie FEATURE.md):
+**Feature stage** (within DOING, see FEATURE.md):
 
 ```
 defining → defined → building → built → verifying → [DONE]
@@ -72,12 +72,12 @@ pending → built → PASS / FAIL
 
 ## Project Utilities
 
-Niet pipeline-stappen, maar project-aware utilities. Standalone aanroepbaar.
+Not pipeline steps, but project-aware utilities. Callable standalone.
 
-| Skill           | Doel                                              |
-| --------------- | ------------------------------------------------- |
-| project-add     | Project registreren + symlinks naar claude-config |
-| project-backlog | Lokale backlog/dashboard server (localhost:9876)  |
-| project-pull    | Git pull + `.project/` sync + learning extractie  |
-| project-remove  | Project deregistreren + cleanup                   |
-| project-tunnel  | Dev server + Cloudflare Tunnel                    |
+| Skill           | Purpose                                             |
+| --------------- | --------------------------------------------------- |
+| project-add     | Register project + create symlinks to claude-config |
+| project-backlog | Local backlog/dashboard server (localhost:9876)     |
+| project-pull    | Git pull + `.project/` sync + learning extraction   |
+| project-remove  | Deregister project + cleanup                        |
+| project-tunnel  | Dev server + Cloudflare Tunnel                      |

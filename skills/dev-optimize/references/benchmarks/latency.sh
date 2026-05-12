@@ -20,7 +20,7 @@ if ! curl -sf "$URL" >/dev/null 2>&1; then
   exit 1
 fi
 
-# wrk percentile output staat in --latency mode (zonder lua script).
+# wrk percentile output is available in --latency mode (without lua script).
 OUT=$(wrk -t4 -c"$CONNECTIONS" -d"${DURATION}s" --latency "$URL" 2>&1)
 P95=$(echo "$OUT" | awk '/^ *95%/ {print $2}' | sed 's/ms//; s/s$/000/')
 [ -z "$P95" ] && P95=999999

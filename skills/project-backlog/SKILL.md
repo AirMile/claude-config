@@ -12,7 +12,7 @@ metadata:
 
 # Backlog
 
-Start, stop of check de lokale backlog/dashboard server. Serveert alle project-backlogs en dashboards op `http://localhost:9876`.
+Start, stop, or check the local backlog/dashboard server. Serves all project backlogs and dashboards at `http://localhost:9876`.
 
 ## Trigger
 
@@ -20,14 +20,14 @@ Start, stop of check de lokale backlog/dashboard server. Serveert alle project-b
 
 ## Platform
 
-Detecteer platform:
+Detect platform:
 
 - **Windows**: `$PSVersionTable` bestaat → PowerShell
 - **macOS**: bash
 
-Projects root (eerste match wint):
+Projects root (first match wins):
 
-- Env var `CLAUDE_PROJECTS_ROOT` (override voor afwijkende locaties)
+- Env var `CLAUDE_PROJECTS_ROOT` (override for non-default locations)
 - **Windows fallback**: `C:\Projects`
 - **macOS fallback**: `$HOME/projects`
 
@@ -35,7 +35,7 @@ Server-script pad: `~/.claude/skills/shared/references/serve-backlog.js`
 
 ## Process
 
-### PHASE 0: Check huidige status
+### PHASE 0: Check current status
 
 **Windows (PowerShell):**
 
@@ -49,11 +49,11 @@ try { Invoke-WebRequest -Uri http://localhost:9876/ -UseBasicParsing -TimeoutSec
 curl -s http://localhost:9876/ > /dev/null 2>&1 && echo RUNNING || echo STOPPED
 ```
 
-Sla resultaat op als `SERVER_RUNNING`.
+Store result as `SERVER_RUNNING`.
 
-### PHASE 1: Actie uitvoeren
+### PHASE 1: Execute action
 
-**Als argument `stop`:**
+**If argument `stop`:**
 
 _Windows:_
 
@@ -67,11 +67,11 @@ _macOS:_
 kill $(lsof -ti:9876) 2>/dev/null
 ```
 
-Bevestig resultaat. Als geen server draaide → meld dat.
+Confirm result. If no server was running → report that.
 
-**Als SERVER_RUNNING = true:** Spring direct naar PHASE 2.
+**If SERVER_RUNNING = true:** Jump directly to PHASE 2.
 
-**Als SERVER_RUNNING = false:** Start de server.
+**If SERVER_RUNNING = false:** Start the server.
 
 _Windows:_
 
@@ -87,13 +87,13 @@ root="${CLAUDE_PROJECTS_ROOT:-$HOME/projects}"
 nohup node ~/.claude/skills/shared/references/serve-backlog.js "$root" > /tmp/backlog-server.log 2>&1 &
 ```
 
-Wacht max 5 seconden op readiness (gebruik de PHASE 0 check in een loop).
+Wait max 5 seconds for readiness (use the PHASE 0 check in a loop).
 
-Als na 5s niet bereikbaar → toon foutmelding + laatste regels uit de log file.
+If not reachable after 5s → show error message + last lines from the log file.
 
-### PHASE 2: Toon resultaat
+### PHASE 2: Show result
 
-Scan projecten in de projects root (directories met een `.project/` subdirectory):
+Scan projects in the projects root (directories containing a `.project/` subdirectory):
 
 _Windows:_
 
@@ -109,25 +109,25 @@ root="${CLAUDE_PROJECTS_ROOT:-$HOME/projects}"
 for d in "$root"/*/; do [ -d "$d/.project" ] && basename "$d"; done
 ```
 
-Toon output:
+Show output:
 
 ```
 Server:  http://localhost:9876
 
-Projecten:
-  - {project-naam} → http://localhost:9876/{project-naam}           (dashboard)
-                     http://localhost:9876/{project-naam}/backlog   (kanban)
+Projects:
+  - {project-name} → http://localhost:9876/{project-name}           (dashboard)
+                     http://localhost:9876/{project-name}/backlog   (kanban)
   - ...
 ```
 
-Als er geen projecten gevonden zijn, hint naar `/project-add` of `/project-plan`.
+If no projects are found, hint toward `/project-add` or `/project-plan`.
 
-### PHASE 3: Kopieer link naar clipboard
+### PHASE 3: Copy link to clipboard
 
-Bepaal welke URL gekopieerd wordt (context-aware):
+Determine which URL to copy (context-aware):
 
-- Als cwd direct onder de projects root ligt én die subdirectory bevat `.project/` → gebruik `http://localhost:9876/{project-naam}` (dashboard van huidig project)
-- Anders → gebruik `http://localhost:9876` (server root)
+- If cwd is directly under the projects root and that subdirectory contains `.project/` → use `http://localhost:9876/{project-name}` (dashboard of current project)
+- Otherwise → use `http://localhost:9876` (server root)
 
 **Windows (PowerShell):**
 
@@ -159,8 +159,8 @@ printf '%s' "$url" | pbcopy
 echo "$url"
 ```
 
-Toon onder de projecten-output:
+Show below the projects output:
 
 ```
-Link gekopieerd: {url}
+Link copied: {url}
 ```

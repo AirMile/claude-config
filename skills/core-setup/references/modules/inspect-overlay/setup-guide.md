@@ -2,42 +2,42 @@
 
 ## Detection
 
-| State                          | Conditie                                                                                  |
-| ------------------------------ | ----------------------------------------------------------------------------------------- |
-| `already-installed-configured` | Vite: `inspectOverlay` in `vite.config.*` · Next.js: `public/_inspect/client.js` aanwezig |
-| `not-installed`                | Geen van bovenstaande                                                                     |
+| State                          | Condition                                                                                |
+| ------------------------------ | ---------------------------------------------------------------------------------------- |
+| `already-installed-configured` | Vite: `inspectOverlay` in `vite.config.*` · Next.js: `public/_inspect/client.js` present |
+| `not-installed`                | None of the above                                                                        |
 
-Geen `installed-not-configured` toestand: inspect-overlay is een dev-only inject zonder NPM package. `installed` impliceert `configured`.
+No `installed-not-configured` state: inspect-overlay is a dev-only inject without an NPM package. `installed` implies `configured`.
 
 ## Pre-flight (continued)
 
 ### Dev Server Status
 
-Bepaal de dev server poort framework-aware:
+Determine the dev server port framework-aware:
 
-- **Vite**: lees `vite.config.*` voor `server.port`; fallback `5173`
-- **Next.js**: lees `package.json` scripts voor `--port` flag; fallback `3000`
+- **Vite**: read `vite.config.*` for `server.port`; fallback `5173`
+- **Next.js**: read `package.json` scripts for `--port` flag; fallback `3000`
 
-Check of die poort in use is. Track voor restart na setup.
+Check if that port is in use. Track for restart after setup.
 
 ### Pre-flight Output
 
-Report framework, plugin mode (Vite), overlay status, dev server status, en de gedetecteerde poort.
+Report framework, plugin mode (Vite), overlay status, dev server status, and the detected port.
 
 ## Setup — Vite
 
-### Plugin Selection (kritiek voor full mode)
+### Plugin Selection (critical for full mode)
 
-`@react-dev-inspector/babel-plugin` werkt alleen via Babel. Moderne `@vitejs/plugin-react` (v6+) gebruikt standaard **OXC** als transformer en negeert Babel-plugins → automatisch degraded mode. Daarom: voor full mode pin je op een Babel-compatibele versie.
+`@react-dev-inspector/babel-plugin` only works via Babel. Modern `@vitejs/plugin-react` (v6+) uses **OXC** as its default transformer and ignores Babel plugins → automatically degraded mode. Therefore: for full mode, pin to a Babel-compatible version.
 
-| Gevonden in `package.json`            | Actie (auto, geen modal)                                                            |
-| ------------------------------------- | ----------------------------------------------------------------------------------- |
-| `@vitejs/plugin-react-swc`            | Uninstall, install `@vitejs/plugin-react@^5`, update `vite.config` import           |
-| `@vitejs/plugin-react@^6` (of hoger)  | Downgrade naar `@vitejs/plugin-react@^5` (laatste Babel-versie) om OXC te vermijden |
-| `@vitejs/plugin-react@^5` of geen v6+ | Houden zoals het is — al Babel-compatible                                           |
-| Geen react plugin                     | Install `@vitejs/plugin-react@^5`                                                   |
+| Found in `package.json`               | Action (auto, no modal)                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `@vitejs/plugin-react-swc`            | Uninstall, install `@vitejs/plugin-react@^5`, update `vite.config` import |
+| `@vitejs/plugin-react@^6` (or higher) | Downgrade to `@vitejs/plugin-react@^5` (last Babel version) to avoid OXC  |
+| `@vitejs/plugin-react@^5` or no v6+   | Keep as is — already Babel-compatible                                     |
+| No react plugin                       | Install `@vitejs/plugin-react@^5`                                         |
 
-In greenfield: forceer altijd `@vitejs/plugin-react@^5` als pin. Geen modal — degraded mode is geen acceptabele default.
+In greenfield: always force `@vitejs/plugin-react@^5` as a pin. No modal — degraded mode is not an acceptable default.
 
 ### Install & Configure
 
@@ -57,7 +57,7 @@ In greenfield: forceer altijd `@vitejs/plugin-react@^5` als pin. Geen modal — 
 
 ### Verify Full Mode
 
-Na install: check dat `package.json` toont `"@vitejs/plugin-react": "^5.x.x"` (geen v6+) en dat `vite.config` de babel plugin doorgeeft. Bij twijfel: start dev server, open een component in de overlay en bevestig dat file:line refs worden getoond. Geen file:line → ergens nog OXC actief, check plugin-versie.
+After install: verify that `package.json` shows `"@vitejs/plugin-react": "^5.x.x"` (no v6+) and that `vite.config` passes through the babel plugin. If in doubt: start the dev server, open a component in the overlay and confirm that file:line refs are shown. No file:line → OXC still active somewhere, check plugin version.
 
 ## Setup — Next.js
 
@@ -73,12 +73,12 @@ Ask user:
 
 ```yaml
 header: "Plugin"
-question: "De inspect overlay kan Babel gebruiken voor exacte file:line referenties. Dit schakelt Turbopack uit (langzamere dev builds). Wil je full mode?"
+question: "The inspect overlay can use Babel for exact file:line references. This disables Turbopack (slower dev builds). Do you want full mode?"
 options:
-  - label: "Ja, met Babel (Recommended)"
-    description: "Exacte file:line refs. Schakelt Turbopack uit, dev builds trager, geen impact op production."
-  - label: "Nee, zonder Babel"
-    description: "Overlay werkt zonder exacte bestandsreferenties. Claude zoekt via tekst/classes. Turbopack blijft actief."
+  - label: "Yes, with Babel (Recommended)"
+    description: "Exact file:line refs. Disables Turbopack, slower dev builds, no impact on production."
+  - label: "No, without Babel"
+    description: "Overlay works without exact file references. Claude searches via text/classes. Turbopack remains active."
 multiSelect: false
 ```
 
@@ -157,9 +157,9 @@ Report overlay status:
 
 - Mode: Full (Babel) or Degraded
 - Controls: Ctrl+Shift+X (Win/Linux) or Cmd+Shift+X (Mac) to toggle
-- Server URL: tunnel URL if cloudflared running, else `localhost:<detected-port>` (5173 voor Vite default, 3000 voor Next.js default)
+- Server URL: tunnel URL if cloudflared running, else `localhost:<detected-port>` (5173 for Vite default, 3000 for Next.js default)
 
-Setup voltooid. Overlay is actief — gebruiker kan elementen inspecteren en referenties plakken in chat.
+Setup complete. Overlay is active — user can inspect elements and paste references into chat.
 
 ## Teardown
 

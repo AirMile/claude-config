@@ -2,29 +2,29 @@
 
 ## Detection
 
-Controleer beide pakketten apart:
+Check both packages separately:
 
-- **Daemon** (`@playwright/cli`): `npm list -g @playwright/cli 2>/dev/null` geeft output, OF `playwright-cli --version` succeeds
-- **Runner** (`@playwright/test`): `@playwright/test` in `package.json` devDependencies EN `playwright.config.ts` of `playwright.config.js` aanwezig
+- **Daemon** (`@playwright/cli`): `npm list -g @playwright/cli 2>/dev/null` produces output, OR `playwright-cli --version` succeeds
+- **Runner** (`@playwright/test`): `@playwright/test` in `package.json` devDependencies AND `playwright.config.ts` or `playwright.config.js` present
 
-Sla op als `$HAS_DAEMON` en `$HAS_RUNNER` (true/false).
+Store as `$HAS_DAEMON` and `$HAS_RUNNER` (true/false).
 
 ## Install
 
 ```yaml
 header: "Playwright"
-question: "Welke Playwright-component wil je installeren?"
+question: "Which Playwright component do you want to install?"
 options:
-  - label: "Beide (Recommended)"
-    description: "Daemon voor ad-hoc inspectie + Runner voor visual regression en a11y-baselines"
-  - label: "Alleen daemon (@playwright/cli)"
-    description: "REPL-stijl browser — screenshot, snapshot, console, network. Geen spec-files nodig."
-  - label: "Alleen runner (@playwright/test)"
-    description: "Test-suite met toHaveScreenshot, toMatchAriaSnapshot, --trace. Spec-files vereist."
+  - label: "Both (Recommended)"
+    description: "Daemon for ad-hoc inspection + Runner for visual regression and a11y-baselines"
+  - label: "Daemon only (@playwright/cli)"
+    description: "REPL-style browser — screenshot, snapshot, console, network. No spec files needed."
+  - label: "Runner only (@playwright/test)"
+    description: "Test suite with toHaveScreenshot, toMatchAriaSnapshot, --trace. Spec files required."
 multiSelect: false
 ```
 
-### Daemon installeren
+### Install daemon
 
 ```bash
 npm install -g @playwright/cli@latest
@@ -33,9 +33,9 @@ npx @playwright/cli install chromium
 
 Verify: `playwright-cli --version`
 
-### Runner installeren
+### Install runner
 
-Gebruik gedetecteerde package manager:
+Use the detected package manager:
 
 ```bash
 # npm
@@ -48,13 +48,13 @@ yarn add -D @playwright/test
 bun add -d @playwright/test
 ```
 
-Daarna browsers downloaden (alleen Chromium voor dev — kleiner, sneller):
+Then download browsers (Chromium only for dev — smaller, faster):
 
 ```bash
 npx playwright install chromium
 ```
 
-Genereer base `playwright.config.ts` (schrijf naar project-root):
+Generate base `playwright.config.ts` (write to project root):
 
 ```typescript
 import { defineConfig, devices } from "@playwright/test";
@@ -78,7 +78,7 @@ export default defineConfig({
 
 **Framework specifics:**
 
-- **Next.js**: voeg toe aan config:
+- **Next.js**: add to config:
   ```typescript
   webServer: {
     command: "npm run dev",
@@ -86,11 +86,11 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
   },
   ```
-- **Vite**: idem maar `command: "npm run dev"` op port 5173 en `url: "http://localhost:5173"`
+- **Vite**: same but `command: "npm run dev"` on port 5173 and `url: "http://localhost:5173"`
 
 ## Gitignore
 
-Voeg toe aan `.gitignore` (check eerst of al aanwezig):
+Add to `.gitignore` (check if already present first):
 
 ```bash
 grep -q "playwright-report" .gitignore 2>/dev/null || echo "playwright-report/" >> .gitignore
@@ -102,7 +102,7 @@ grep -q "playwright-runs" .gitignore 2>/dev/null || echo ".project/playwright-ru
 
 **Daemon**: `playwright-cli --version` → semver output
 
-**Runner**: schrijf tijdelijk smoke spec en verifieer:
+**Runner**: write a temporary smoke spec and verify:
 
 ```bash
 mkdir -p .project/playwright-runs
@@ -117,19 +117,19 @@ npx playwright test .project/playwright-runs/smoke.spec.ts --reporter=list
 rm .project/playwright-runs/smoke.spec.ts
 ```
 
-Exit code 0 = installatie geslaagd.
+Exit code 0 = installation successful.
 
 ## Teardown
 
 1. Daemon: `npm uninstall -g @playwright/cli`
-2. Runner: verwijder `@playwright/test` uit devDependencies
-3. Verwijder `playwright.config.ts`
-4. Verwijder `tests/` of `e2e/` directory (indien aanwezig)
-5. Verwijder browser binaries (optioneel, vraag user): `rm -rf ~/.cache/ms-playwright`
-6. Verwijder `.project/playwright-runs/` directory
+2. Runner: remove `@playwright/test` from devDependencies
+3. Delete `playwright.config.ts`
+4. Delete `tests/` or `e2e/` directory (if present)
+5. Delete browser binaries (optional, ask user): `rm -rf ~/.cache/ms-playwright`
+6. Delete `.project/playwright-runs/` directory
 
 ## Notes
 
-- Browsers (~300MB per browser). Met `install chromium` download je alleen Chromium (~100MB) — voldoende voor de meeste skill-workflows.
-- `snapshotDir` in config wijst naar `.project/playwright-runs/__screenshots__/` — hiernaartoe schrijven alle skills hun `toHaveScreenshot`/`toMatchAriaSnapshot` baselines. Gitignored, maar herbruikbaar tussen sessies.
-- Zie `shared/PLAYWRIGHT.md` voor het volledige on-the-fly spec pattern dat skills gebruiken voor visual regression en a11y-snapshots.
+- Browsers (~300MB per browser). With `install chromium` you only download Chromium (~100MB) — sufficient for most skill workflows.
+- `snapshotDir` in config points to `.project/playwright-runs/__screenshots__/` — all skills write their `toHaveScreenshot`/`toMatchAriaSnapshot` baselines there. Gitignored, but reusable across sessions.
+- See `shared/PLAYWRIGHT.md` for the full on-the-fly spec pattern that skills use for visual regression and a11y snapshots.

@@ -1,47 +1,47 @@
 # Architecture Decision Tree
 
-Beslisboom voor Godot 4.x architectuurkeuzes. Gebruik tijdens PHASE 3 (implementatie) wanneer je kiest hoe data, gedrag, en communicatie te structureren.
+Decision tree for Godot 4.x architecture choices. Use during PHASE 3 (implementation) when choosing how to structure data, behavior, and communication.
 
-## Data Opslag
+## Data Storage
 
-| Wanneer                            | Patroon                   | Voorbeeld                           |
-| ---------------------------------- | ------------------------- | ----------------------------------- |
-| Statisch, gedeeld tussen instances | Custom Resource (`.tres`) | `AbilityData`, `EnemyStats`         |
-| Per-instance, editor-tunable       | `@export` variabele       | `move_speed`, `max_health`          |
-| Per-instance, groep configuratie   | `@export` Resource        | `@export var stats: CharacterStats` |
-| Runtime-only, transient            | Gewone variabele          | `_current_health`, `_dash_timer`    |
-| Globale state, cross-scene         | Autoload (spaarzaam)      | `GameState`, `EventBus`             |
+| When                              | Pattern                   | Example                             |
+| --------------------------------- | ------------------------- | ----------------------------------- |
+| Static, shared between instances  | Custom Resource (`.tres`) | `AbilityData`, `EnemyStats`         |
+| Per-instance, editor-tunable      | `@export` variable        | `move_speed`, `max_health`          |
+| Per-instance, group configuration | `@export` Resource        | `@export var stats: CharacterStats` |
+| Runtime-only, transient           | Regular variable          | `_current_health`, `_dash_timer`    |
+| Global state, cross-scene         | Autoload (sparingly)      | `GameState`, `EventBus`             |
 
-**Vuistregel:** als het in de Inspector moet verschijnen → `@export`. Als meerdere nodes dezelfde data delen → Resource. Als het alleen runtime bestaat → gewone var.
+**Rule of thumb:** if it needs to appear in the Inspector → `@export`. If multiple nodes share the same data → Resource. If it only exists at runtime → regular var.
 
-## Gedrag & Architectuur
+## Behavior & Architecture
 
-| Wanneer                        | Patroon                    | Voorbeeld                            |
-| ------------------------------ | -------------------------- | ------------------------------------ |
-| Gedeeld gedrag over node types | Component (child node)     | `HealthComponent`, `HitboxComponent` |
-| IS-A relatie (zelden)          | Inheritance                | `EnemyBase` → `EnemyMelee`           |
-| Variatie in data, niet gedrag  | Resource + generiek script | `Ability.gd` + `fire_blast.tres`     |
+| When                              | Pattern                   | Example                              |
+| --------------------------------- | ------------------------- | ------------------------------------ |
+| Shared behavior across node types | Component (child node)    | `HealthComponent`, `HitboxComponent` |
+| IS-A relationship (rarely)        | Inheritance               | `EnemyBase` → `EnemyMelee`           |
+| Variation in data, not behavior   | Resource + generic script | `Ability.gd` + `fire_blast.tres`     |
 
-**Vuistregel:** als je twijfelt tussen inheritance en composition → composition. Inheritance alleen bij echte IS-A relaties waar de subclass gedrag OVERSCHRIJFT, niet alleen data varieert.
+**Rule of thumb:** when in doubt between inheritance and composition → composition. Inheritance only for true IS-A relationships where the subclass OVERRIDES behavior, not just varies data.
 
-## Communicatie
+## Communication
 
-| Wanneer                        | Patroon                 | Voorbeeld                                 |
-| ------------------------------ | ----------------------- | ----------------------------------------- |
-| Kind → ouder (1:1)             | Signal op kind          | `health_changed.emit()`                   |
-| Cross-system, losjes gekoppeld | Signal (direct connect) | `player.died.connect(ui._on_player_died)` |
-| Cross-scene, >5 verbindingen   | EventBus Autoload       | `EventBus.score_changed.emit(score)`      |
-| Ouder → kind (1:1, direct)     | Methode-aanroep         | `health_component.apply_damage(10)`       |
+| When                          | Pattern                 | Example                                   |
+| ----------------------------- | ----------------------- | ----------------------------------------- |
+| Child → parent (1:1)          | Signal on child         | `health_changed.emit()`                   |
+| Cross-system, loosely coupled | Signal (direct connect) | `player.died.connect(ui._on_player_died)` |
+| Cross-scene, >5 connections   | EventBus Autoload       | `EventBus.score_changed.emit(score)`      |
+| Parent → child (1:1, direct)  | Method call             | `health_component.apply_damage(10)`       |
 
-**Vuistregels:**
+**Rules of thumb:**
 
-- Signals stromen OMHOOG (kind → ouder). Methode-aanroepen stromen OMLAAG (ouder → kind).
-- Componenten communiceren NOOIT via `get_parent()` of `get_node("../../")` — altijd via signals omhoog.
-- EventBus alleen als >5 nodes naar dezelfde event luisteren OF de emitter en receiver in verschillende scenes zitten.
+- Signals flow UP (child → parent). Method calls flow DOWN (parent → child).
+- Components NEVER communicate via `get_parent()` or `get_node("../../")` — always via signals upward.
+- EventBus only when >5 nodes listen to the same event OR the emitter and receiver are in different scenes.
 
-## Anti-patronen
+## Anti-patterns
 
-- `get_parent().get_parent().do_thing()` → gebruik signal of exported NodePath
-- Gameplay logica in Autoload → kan niet getest/geïnstantieerd worden
-- Inheritance piramide (>2 niveaus) → decomposeer naar componenten
-- Untyped Dictionary als data container → maak een Resource class
+- `get_parent().get_parent().do_thing()` → use signal or exported NodePath
+- Gameplay logic in Autoload → cannot be tested/instantiated
+- Inheritance pyramid (>2 levels) → decompose into components
+- Untyped Dictionary as data container → create a Resource class

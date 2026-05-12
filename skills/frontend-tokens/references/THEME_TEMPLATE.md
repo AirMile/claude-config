@@ -1,8 +1,8 @@
 # Theme Design Tokens
 
-Project design systeem met colors, typography, spacing, breakpoints, en motion.
+Project design system with colors, typography, spacing, breakpoints, and motion.
 
-> **Kleurformat:** Gebruik OKLCH waar mogelijk — perceptueel uniform, betere dark mode generatie. Verlaag chroma richting wit/zwart. Tint neutrals met brand-hue (chroma ~0.01). Vermijd pure black (`#000`) en pure gray (chroma 0).
+> **Color format:** Use OKLCH where possible — perceptually uniform, better dark mode generation. Lower chroma toward white/black. Tint neutrals with brand-hue (chroma ~0.01). Avoid pure black (`#000`) and pure gray (chroma 0).
 
 ---
 
@@ -10,18 +10,18 @@ Project design systeem met colors, typography, spacing, breakpoints, en motion.
 
 ### Main Colors
 
-Basis kleuren voor achtergronden en tekst. Gebruik tinted neutrals, nooit pure zwart/grijs.
+Base colors for backgrounds and text. Use tinted neutrals, never pure black/grey.
 
-| Token        | Value        | Usage                                                                            |
-| ------------ | ------------ | -------------------------------------------------------------------------------- |
-| `dark`       | {dark}       | Primary text, dark backgrounds (niet #000 — gebruik bv. `oklch(15% 0.01 <hue>)`) |
-| `light`      | {light}      | Light backgrounds, text on dark (licht getint, niet puur #fff)                   |
-| `mid-gray`   | {mid-gray}   | Secondary elements, borders (tint met brand-hue)                                 |
-| `light-gray` | {light-gray} | Subtle backgrounds, dividers (tint met brand-hue)                                |
+| Token        | Value        | Usage                                                                        |
+| ------------ | ------------ | ---------------------------------------------------------------------------- |
+| `dark`       | {dark}       | Primary text, dark backgrounds (not #000 — use e.g. `oklch(15% 0.01 <hue>)`) |
+| `light`      | {light}      | Light backgrounds, text on dark (lightly tinted, not pure #fff)              |
+| `mid-gray`   | {mid-gray}   | Secondary elements, borders (tint with brand-hue)                            |
+| `light-gray` | {light-gray} | Subtle backgrounds, dividers (tint with brand-hue)                           |
 
 ### Accent Colors
 
-Kleuren voor interactieve elementen en visuele accenten.
+Colors for interactive elements and visual accents.
 
 | Token              | Value              | Usage                                     |
 | ------------------ | ------------------ | ----------------------------------------- |
@@ -31,7 +31,7 @@ Kleuren voor interactieve elementen en visuele accenten.
 
 ### Semantic Colors
 
-Betekenisvolle kleuren voor feedback en status.
+Meaningful colors for feedback and status.
 
 | Token     | Value     | Usage                             |
 | --------- | --------- | --------------------------------- |
@@ -42,7 +42,7 @@ Betekenisvolle kleuren voor feedback en status.
 
 ### Extended Palette (Optional)
 
-Volledige kleurschalen voor gedetailleerd design werk. Vermijd pure gray (chroma 0) — gebruik altijd een subtiele brand-tint.
+Full color scales for detailed design work. Avoid pure gray (chroma 0) — always use a subtle brand tint.
 
 | Scale   | 50     | 100     | 200     | 300     | 400     | 500     | 600     | 700     | 800     | 900     |
 | ------- | ------ | ------- | ------- | ------- | ------- | ------- | ------- | ------- | ------- | ------- |
@@ -70,21 +70,21 @@ Volledige kleurschalen voor gedetailleerd design werk. Vermijd pure gray (chroma
 
 ### Font Sizes
 
-Gebruik semantische namen — stabiel bij resize, directe design→code mapping.
+Use semantic names — stable on resize, direct design→code mapping.
 
-| Token             | Size            | Line Height | Usage                     |
-| ----------------- | --------------- | ----------- | ------------------------- |
-| `text-display`    | 3rem (48px)     | 1.1         | Hero headings             |
-| `text-title-l`    | 2.25rem (36px)  | 1.2         | Page titles               |
-| `text-title-m`    | 1.875rem (30px) | 1.25        | Section titles            |
-| `text-title-s`    | 1.5rem (24px)   | 1.3         | Card titles               |
-| `text-headline-l` | 1.25rem (20px)  | 1.4         | Subsection headers        |
-| `text-headline-m` | 1.125rem (18px) | 1.4         | List headers              |
-| `text-headline-s` | 1rem (16px)     | 1.5         | Bold emphasis             |
-| `text-body-l`     | 1rem (16px)     | 1.6         | Large body (leesbaarheid) |
-| `text-body-m`     | 0.875rem (14px) | 1.5         | Standard body             |
-| `text-body-s`     | 0.75rem (12px)  | 1.4         | Captions, labels          |
-| `text-code`       | 0.875rem (14px) | 1.6         | Code blocks               |
+| Token             | Size            | Line Height | Usage                    |
+| ----------------- | --------------- | ----------- | ------------------------ |
+| `text-display`    | 3rem (48px)     | 1.1         | Hero headings            |
+| `text-title-l`    | 2.25rem (36px)  | 1.2         | Page titles              |
+| `text-title-m`    | 1.875rem (30px) | 1.25        | Section titles           |
+| `text-title-s`    | 1.5rem (24px)   | 1.3         | Card titles              |
+| `text-headline-l` | 1.25rem (20px)  | 1.4         | Subsection headers       |
+| `text-headline-m` | 1.125rem (18px) | 1.4         | List headers             |
+| `text-headline-s` | 1rem (16px)     | 1.5         | Bold emphasis            |
+| `text-body-l`     | 1rem (16px)     | 1.6         | Large body (readability) |
+| `text-body-m`     | 0.875rem (14px) | 1.5         | Standard body            |
+| `text-body-s`     | 0.75rem (12px)  | 1.4         | Captions, labels         |
+| `text-code`       | 0.875rem (14px) | 1.6         | Code blocks              |
 
 ### Font Weights
 
@@ -174,7 +174,7 @@ Base unit: {spacing-base}
 | `ease-in`     | cubic-bezier(0.7, 0, 0.84, 0)  | Elements leaving  |
 | `ease-in-out` | cubic-bezier(0.65, 0, 0.35, 1) | State toggles     |
 
-> Exit animaties = 75% van enter duur. Respecteer altijd `prefers-reduced-motion`.
+> Exit animations = 75% of enter duration. Always respect `prefers-reduced-motion`.
 
 ---
 
@@ -189,7 +189,7 @@ Base unit: {spacing-base}
 | `color`  | var(--color-accent-primary) | Ring color (matches brand)   |
 | `offset` | 2px                         | Gap between element and ring |
 
-> Nooit `outline: none` zonder vervanging. Minimaal 3:1 contrast ratio voor focus ring.
+> Never `outline: none` without replacement. Minimum 3:1 contrast ratio for focus ring.
 
 ### Hover
 
@@ -198,15 +198,15 @@ Base unit: {spacing-base}
 | `transition` | var(--duration-fast) var(--ease-out) | Smooth hover transition |
 | `transform`  | none                                 | Optional hover lift     |
 
-Hover alternatieven: `translateY(-1px)` voor subtle lift, `scale(1.02)` voor subtle grow. Kies één per project.
+Hover alternatives: `translateY(-1px)` for subtle lift, `scale(1.02)` for subtle grow. Pick one per project.
 
 ### Active
 
-| Property    | Value       | Usage                      |
-| ----------- | ----------- | -------------------------- |
-| `transform` | scale(0.98) | Press feedback (ingedrukt) |
+| Property    | Value       | Usage                    |
+| ----------- | ----------- | ------------------------ |
+| `transform` | scale(0.98) | Press feedback (pressed) |
 
-> Active state moet altijd sneller zijn dan hover transition. Gebruik `duration-instant` voor active feedback.
+> Active state must always be faster than hover transition. Use `duration-instant` for active feedback.
 
 ---
 
@@ -230,7 +230,7 @@ Hover alternatieven: `translateY(-1px)` voor subtle lift, `scale(1.02)` voor sub
 
 ### Dark Mode
 
-> **Dark mode ≠ inverted light mode.** Nooit pure black als background — gebruik `oklch(12-18% 0.01 <hue>)`. Gebruik lichtere surfaces i.p.v. shadows voor diepte. Verlaag font-weight 1 stap (400 → 350). Desatureer accenten licht.
+> **Dark mode ≠ inverted light mode.** Never pure black as background — use `oklch(12-18% 0.01 <hue>)`. Use lighter surfaces instead of shadows for depth. Lower font-weight 1 step (400 → 350). Desaturate accents slightly.
 
 ```css
 .dark {

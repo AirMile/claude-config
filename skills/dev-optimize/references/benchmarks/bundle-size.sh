@@ -13,7 +13,7 @@ if [ ! -d "$DIST_DIR" ]; then
   exit 1
 fi
 
-# Som alle .js/.css groottes in kB (decimaal, 1000-based zoals tools tonen)
+# Sum all .js/.css sizes in kB (decimal, 1000-based as tools display)
 BYTES=$(find "$DIST_DIR" -type f \( -name '*.js' -o -name '*.css' -o -name '*.html' \) -exec wc -c {} + | tail -1 | awk '{print $1}')
 KB=$(awk "BEGIN { printf \"%.2f\", $BYTES / 1000 }")
 echo "SCORE=$KB"

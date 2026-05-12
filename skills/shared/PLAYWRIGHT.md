@@ -1,6 +1,6 @@
 # Playwright Browser Automation
 
-Reusable Playwright CLI patterns voor visual validation, accessibility checks, en browser-based testing across frontend skills. For round-based screenshot comparison loops, see `VERIFICATION.md`.
+Reusable Playwright CLI patterns for visual validation, accessibility checks, and browser-based testing across frontend skills. For round-based screenshot comparison loops, see `VERIFICATION.md`.
 
 **CLI:** `playwright-cli` (global via `@playwright/cli`). Check: `playwright-cli --version`.
 
@@ -8,26 +8,26 @@ Reusable Playwright CLI patterns voor visual validation, accessibility checks, e
 
 ## Overview
 
-| MCP (oud)                          | CLI command                                                                                 | Output                               |
+| MCP (old)                          | CLI command                                                                                 | Output                               |
 | ---------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------ |
 | `browser_navigate`                 | `playwright-cli goto [url]`                                                                 | Auto-snapshot link                   |
 | `browser_wait_for { time }`        | `playwright-cli run-code "async page => { await page.waitForTimeout(N); }"`                 | —                                    |
 | `browser_wait_for { text }`        | `playwright-cli run-code "async page => { await page.waitForSelector(':text(\"...\")'); }"` | —                                    |
-| `browser_snapshot`                 | `playwright-cli snapshot --filename=[path]`                                                 | YAML op disk, alleen link in stdout  |
-| `browser_snapshot` (inline)        | `playwright-cli snapshot`                                                                   | Volledige tree inline in stdout      |
-| `browser_take_screenshot`          | `playwright-cli screenshot --filename=[path]`                                               | PNG op disk, link in stdout          |
-| `browser_take_screenshot fullPage` | `playwright-cli screenshot --full-page --filename=[path]`                                   | PNG (volledige hoogte) op disk       |
+| `browser_snapshot`                 | `playwright-cli snapshot --filename=[path]`                                                 | YAML on disk, link only in stdout    |
+| `browser_snapshot` (inline)        | `playwright-cli snapshot`                                                                   | Full tree inline in stdout           |
+| `browser_take_screenshot`          | `playwright-cli screenshot --filename=[path]`                                               | PNG on disk, link in stdout          |
+| `browser_take_screenshot fullPage` | `playwright-cli screenshot --full-page --filename=[path]`                                   | PNG (full height) on disk            |
 | `browser_close`                    | `playwright-cli close`                                                                      | —                                    |
 | `browser_resize`                   | `playwright-cli resize [width] [height]`                                                    | Auto-snapshot link                   |
 | `browser_evaluate`                 | `playwright-cli eval "[js expression]"`                                                     | JSON result inline                   |
 | `browser_run_code`                 | `playwright-cli run-code "async page => { ... }"`                                           | Return value inline                  |
-| —                                  | `playwright-cli state-save [path]` / `state-load [path]`                                    | Storage state (cookies + LS) op disk |
+| —                                  | `playwright-cli state-save [path]` / `state-load [path]`                                    | Storage state (cookies + LS) on disk |
 | —                                  | `playwright-cli console [error\|warning\|info]`                                             | Console messages inline              |
 | —                                  | `playwright-cli requests` / `request <i>` / `response-headers <i>`                          | Network requests sinds page load     |
 
-> **Snapshot strategie**: `--filename` → tree op disk, alleen link terug (token-efficient, voor batch). Zonder flag → tree inline (voor directe analyse van 1-2 routes).
+> **Snapshot strategy**: `--filename` → tree on disk, link only returned (token-efficient, for batch). Without flag → tree inline (for direct analysis of 1-2 routes).
 
-> **Belangrijk**: `file://` protocol is geblokkeerd. Altijd HTTP vereist — start dev server voor lokale bestanden.
+> **Important**: `file://` protocol is blocked. HTTP always required — start dev server for local files.
 
 ---
 
@@ -35,22 +35,22 @@ Reusable Playwright CLI patterns voor visual validation, accessibility checks, e
 
 ### Basic Analysis Sequence
 
-Voor statische pagina-validatie:
+For static page validation:
 
 ```
 PLAYWRIGHT SEQUENCE
 ───────────────────
 1. playwright-cli open [url]
 2. playwright-cli snapshot --filename=snapshot.yml
-3. Read snapshot.yml                  ← alleen als tree-analyse nodig
+3. Read snapshot.yml                  ← only if tree analysis needed
 4. playwright-cli screenshot --filename=page.png
-5. Read page.png                      ← alleen als visuele check nodig
+5. Read page.png                      ← only if visual check needed
 6. playwright-cli close
 ```
 
 ### Dynamic Content Sequence
 
-Voor client-rendered content (SPA, React, Vue):
+For client-rendered content (SPA, React, Vue):
 
 ```
 PLAYWRIGHT SEQUENCE (Dynamic)
@@ -64,7 +64,7 @@ PLAYWRIGHT SEQUENCE (Dynamic)
 
 ### Timed Wait Sequence
 
-Voor animaties of transities:
+For animations or transitions:
 
 ```
 PLAYWRIGHT SEQUENCE (Timed)
@@ -79,15 +79,15 @@ PLAYWRIGHT SEQUENCE (Timed)
 
 ## Pre-flight Validation
 
-Voor elke Playwright-operatie, verifieer beschikbaarheid:
+For every Playwright operation, verify availability:
 
 ```
 PRE-FLIGHT: Playwright CLI
 ──────────────────────────
-[ ] playwright-cli beschikbaar: playwright-cli --version
+[ ] playwright-cli available: playwright-cli --version
     → version: [x.x.x | ERROR]
-[ ] Dev server draait op verwachte URL
-    (file:// is geblokkeerd — HTTP vereist)
+[ ] Dev server running at expected URL
+    (file:// is blocked — HTTP required)
 ```
 
 ### Availability Check
@@ -102,9 +102,9 @@ Playwright CLI: [✓ Available | ✗ Unavailable]
 
 ```yaml
 header: "Playwright Unavailable"
-question: "Playwright CLI niet beschikbaar. Hoe doorgaan?"
+question: "Playwright CLI not available. How to proceed?"
 options:
-  - label: "Doorgaan zonder visuals (Recommended)"
+  - label: "Continue without visuals (Recommended)"
     description: "Skip browser checks, continue workflow"
   - label: "Installeer via /core-setup"
     description: "Run /core-setup playwright — installeert daemon + runner + config"
@@ -118,12 +118,12 @@ options:
 
 ### Navigation Failures
 
-| Error              | Cause                    | Recovery                                           |
-| ------------------ | ------------------------ | -------------------------------------------------- |
-| URL not found      | Invalid path             | Controleer URL, start dev server indien nodig      |
-| Timeout            | Pagina laadt niet        | Verhoog waitForTimeout, retry once                 |
-| file:// blocked    | Protocol niet toegestaan | Gebruik `python3 -m http.server` voor lokale files |
-| Connection refused | Server draait niet       | Start dev server, retry                            |
+| Error              | Cause                | Recovery                                     |
+| ------------------ | -------------------- | -------------------------------------------- |
+| URL not found      | Invalid path         | Check URL, start dev server if needed        |
+| Timeout            | Page not loading     | Increase waitForTimeout, retry once          |
+| file:// blocked    | Protocol not allowed | Use `python3 -m http.server` for local files |
+| Connection refused | Server not running   | Start dev server, retry                      |
 
 ### Graceful Degradation
 
@@ -225,35 +225,35 @@ Example output:
 
 ### URL Handling
 
-- **Dev servers**: Altijd HTTP — `file://` is geblokkeerd
-- **Lokale bestanden**: `python3 -m http.server [port]` → `http://localhost:[port]/file.html`
-- **Storybook**: Gebruik iframe URL voor schonere analyse
+- **Dev servers**: Always HTTP — `file://` is blocked
+- **Local files**: `python3 -m http.server [port]` → `http://localhost:[port]/file.html`
+- **Storybook**: Use iframe URL for cleaner analysis
 
-### Snapshot Strategie
+### Snapshot Strategy
 
-| Scenario                            | Aanpak                                                  |
-| ----------------------------------- | ------------------------------------------------------- |
-| Directe tree-analyse (1-2 routes)   | `playwright-cli snapshot` (inline)                      |
-| Batch (6+ viewports/routes)         | `playwright-cli snapshot --filename=X.yml` + Read later |
-| Tree niet nodig (alleen screenshot) | Geen snapshot-call                                      |
+| Scenario                          | Approach                                                |
+| --------------------------------- | ------------------------------------------------------- |
+| Direct tree analysis (1-2 routes) | `playwright-cli snapshot` (inline)                      |
+| Batch (6+ viewports/routes)       | `playwright-cli snapshot --filename=X.yml` + Read later |
+| Tree not needed (screenshot only) | No snapshot call                                        |
 
-### Wait Strategie
+### Wait Strategy
 
-| Content Type    | Wait Aanpak                                                                  |
+| Content Type    | Wait Approach                                                                |
 | --------------- | ---------------------------------------------------------------------------- |
-| Static HTML     | Geen wait nodig                                                              |
+| Static HTML     | No wait needed                                                               |
 | SSR/SSG         | `run-code "async page => { await page.waitForTimeout(500); }"`               |
 | Client-rendered | `run-code "async page => { await page.waitForSelector(':text(\"...\")'); }"` |
-| Animaties       | `run-code "async page => { await page.waitForTimeout(2000); }"`              |
+| Animations      | `run-code "async page => { await page.waitForTimeout(2000); }"`              |
 | networkidle     | `run-code "async page => { await page.waitForLoadState('networkidle'); }"`   |
 
 ### Resource Cleanup
 
-- **Altijd** `playwright-cli close` na sessie — ook bij errors
-- **Bij hangende processen**: `playwright-cli kill-all`
-- **Geen orphaned Chrome** — CLI daemon sluit netjes, geen `pkill` nodig
+- **Always** `playwright-cli close` after session — even on errors
+- **On hanging processes**: `playwright-cli kill-all`
+- **No orphaned Chrome** — CLI daemon closes cleanly, no `pkill` needed
 
-### Named Sessions (multi-sessie / auth)
+### Named Sessions (multi-session / auth)
 
 ```bash
 playwright-cli -s=mysession open [url] --persistent
@@ -266,12 +266,12 @@ playwright-cli -s=mysession close
 
 ## Cross-Skill References
 
-| Skill                   | Uses Playwright For                                | Snapshot strategie  |
-| ----------------------- | -------------------------------------------------- | ------------------- |
-| `frontend-check`        | A11y tree analyse, focus validatie (--scope=a11y)  | Inline (1-2 routes) |
-| `frontend-convert`      | Screenshot capture + verification loop             | Screenshot only     |
-| `frontend-check`        | Multi-viewport, CWV, SEO render check, smoke, flow | --filename (batch)  |
-| `marketing-screenshots` | HiDPI screenshots, dark mode variants              | run-code newContext |
+| Skill                   | Uses Playwright For                                 | Snapshot strategy   |
+| ----------------------- | --------------------------------------------------- | ------------------- |
+| `frontend-check`        | A11y tree analysis, focus validation (--scope=a11y) | Inline (1-2 routes) |
+| `frontend-convert`      | Screenshot capture + verification loop              | Screenshot only     |
+| `frontend-check`        | Multi-viewport, CWV, SEO render check, smoke, flow  | --filename (batch)  |
+| `marketing-screenshots` | HiDPI screenshots, dark mode variants               | run-code newContext |
 
 ---
 
@@ -279,7 +279,7 @@ playwright-cli -s=mysession close
 
 ### Multi-Viewport Capture Sequence
 
-Per route, capture op 6 viewports:
+Per route, capture at 6 viewports:
 
 ```
 RESPONSIVE CAPTURE SEQUENCE
@@ -428,7 +428,7 @@ async (page) => {
 
 ## Use Cases: Auth State Persistence
 
-Voor flows die meerdere screenshots/checks doen op pagina's achter een login. Login één keer, sla state op, herlaad voor elke volgende context. Vermijdt herhaalde login-flow per call.
+For flows that do multiple screenshots/checks on pages behind a login. Log in once, save state, reload for each subsequent context. Avoids repeated login flow per call.
 
 ### Sequence
 
@@ -458,9 +458,9 @@ AUTH STATE FLOW
 
 ### Constraints
 
-- **State file lifecycle**: altijd opruimen aan einde van skill-run (state bevat session tokens).
+- **State file lifecycle**: always clean up at end of skill run (state contains session tokens).
 - **Locatie**: `.project/auth-state.json` (gitignored). Niet committen.
-- **Validity**: state expireert wanneer cookies aflopen — bij failure: re-login + state-save.
+- **Validity**: state expires when cookies expire — on failure: re-login + state-save.
 
 ---
 
@@ -538,7 +538,7 @@ NETWORK INSPECTION
 
 ### Token Efficiency
 
-`requests` (zonder index) returnt een gecomprimeerde lijst. Pas bij `request <i>` / `response-body <i>` haal je full content op — alleen doen voor relevante indexes.
+`requests` (without index) returns a compressed list. Only with `request <i>` / `response-body <i>` do you get full content — only do this for relevant indexes.
 
 ---
 
@@ -592,7 +592,7 @@ export default defineConfig({
   snapshotDir: "./__screenshots__", // baselines in .project/playwright-runs/__screenshots__/
   use: {
     baseURL: "http://localhost:3000", // aanpassen aan actieve dev server
-    trace: "retain-on-failure", // trace altijd bij failure
+    trace: "retain-on-failure", // always trace on failure
   },
   reporter: [["json", { outputFile: "./results.json" }]],
 });
@@ -663,7 +663,7 @@ rm -f .project/playwright-runs/playwright.config.ts
 rm -rf .project/playwright-runs/test-results/   # playwright output dir
 
 # Bij failure: bewaar alles voor debugging
-# Baselines blijven altijd: .project/playwright-runs/__screenshots__/
+# Baselines always stay at: .project/playwright-runs/__screenshots__/
 ```
 
 ### Baseline Management
@@ -678,7 +678,7 @@ rm -rf .project/playwright-runs/test-results/   # playwright output dir
 ### Trace Debuggen
 
 ```bash
-# Trace wordt automatisch opgeslagen bij failure (retain-on-failure in config)
+# Trace is automatically saved on failure (retain-on-failure in config)
 # Vind trace-bestand:
 ls .project/playwright-runs/test-results/*/trace.zip
 
@@ -751,7 +751,7 @@ async (page) => {
 
 ### HiDPI + colorScheme (referentie)
 
-Voor HiDPI 2× retina en dark/light mode snippets: zie **Use Cases: HiDPI Screenshots** hierboven — die patronen zijn identiek, gebruik `newContext({ deviceScaleFactor: 2, colorScheme: 'dark' })`.
+For HiDPI 2× retina and dark/light mode snippets: see **Use Cases: HiDPI Screenshots** above — those patterns are identical, use `newContext({ deviceScaleFactor: 2, colorScheme: 'dark' })`.
 
 ### Combinaties
 

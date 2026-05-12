@@ -1,105 +1,105 @@
-# Team-context
+# Team context
 
-Guidance voor het gebruik van claude-config in team-repos waar collega's geen claude-config gebruiken. De backlog en het dashboard zijn persoonlijke artifacts — het team gebruikt zijn eigen tracker.
+Guidance for using claude-config in team repos where colleagues do not use claude-config. The backlog and dashboard are personal artifacts — the team uses its own tracker.
 
-## Wanneer ben je in een team-repo?
+## When are you in a team repo?
 
-Drie signalen:
+Three signals:
 
-- `git log --format='%an' | sort -u | wc -l` > 1 (meerdere commit-authors)
-- `.git/config` heeft een remote
-- Anderen hebben recentelijk gecommit (laatste 30 dagen)
+- `git log --format='%an' | sort -u | wc -l` > 1 (multiple commit authors)
+- `.git/config` has a remote
+- Others have committed recently (last 30 days)
 
-`core-setup --mode=mature` detecteert dit automatisch en schrijft `CLAUDE.local.md` (niet `CLAUDE.md`) zodat je configuratie niet in de repo terechtkomt.
+`core-setup --mode=mature` detects this automatically and writes `CLAUDE.local.md` (not `CLAUDE.md`) so your configuration does not end up in the repo.
 
-## Skills per fase
+## Skills per phase
 
-| Fase                | Wel relevant                                                             | Minder relevant in mature team-repo                     |
-| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------- |
-| Concept / discovery | (niet jouw taak — team heeft al een concept of backlog)                  | `/thinking-concept`, `/project-plan` (greenfield-tools) |
-| Item capture        | `/team-issues` (issues van team-tracker), `/project-todo` (eigen ideeën) | —                                                       |
-| Verdiepen           | `/thinking-brainstorm`, `/thinking-critique` (op individuele items)      | —                                                       |
-| Definiëren          | `/dev-define`, `/frontend-design`                                        | —                                                       |
-| Bouwen              | `/dev-build`, `/frontend-design` Build, `/frontend-convert`              | —                                                       |
-| Testen              | `/dev-verify`, `/frontend-check`                                         | —                                                       |
-| Commit              | `/core-commit` (detecteert team commit-conventie automatisch)            | —                                                       |
-| Refactor            | `/dev-refactor`                                                          | —                                                       |
-| Review              | `/team-review` (PRs), `/team-verify` (completeness)                      | —                                                       |
-| Sync teammate code  | `/project-pull`                                                          | —                                                       |
+| Phase               | Relevant                                                               | Less relevant in mature team repo                       |
+| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
+| Concept / discovery | (not your task — team already has a concept or backlog)                | `/thinking-concept`, `/project-plan` (greenfield tools) |
+| Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas) | —                                                       |
+| Deep-dive           | `/thinking-brainstorm`, `/thinking-critique` (on individual items)     | —                                                       |
+| Define              | `/dev-define`, `/frontend-design`                                      | —                                                       |
+| Build               | `/dev-build`, `/frontend-design` Build, `/frontend-convert`            | —                                                       |
+| Test                | `/dev-verify`, `/frontend-check`                                       | —                                                       |
+| Commit              | `/core-commit` (detects team commit convention automatically)          | —                                                       |
+| Refactor            | `/dev-refactor`                                                        | —                                                       |
+| Review              | `/team-review` (PRs), `/team-verify` (completeness)                    | —                                                       |
+| Sync teammate code  | `/project-pull`                                                        | —                                                       |
 
 ## Issue-driven flow
 
-Standaard workflow wanneer het team GitHub Issues / Jira / Linear gebruikt:
+Default workflow when the team uses GitHub Issues / Jira / Linear:
 
 ```
-1. /team-issues               → importeer issues, smart-split naar meerdere todos
-2. (open backlog, kies item)
-3. /dev-define <name>         → definieer requirements + architectuur, bewaart externalRef
-   of /frontend-design <name> → design spec + build
-4. /dev-build <name>          → bouw de feature
-5. /dev-verify <name>         → acceptatietests + smoke
-6. /core-commit               → auto-prefix met issue-ID (GitHub #123 of JIRA-456)
-7. git push + PR              → /team-review voor self-review voor merge
-8. /dev-refactor <name>       → code cleanup, promote naar Dashboard
+1. /team-issues               → import issues, smart-split into multiple todos
+2. (open backlog, choose item)
+3. /dev-define <name>         → define requirements + architecture, stores externalRef
+   or /frontend-design <name> → design spec + build
+4. /dev-build <name>          → build the feature
+5. /dev-verify <name>         → acceptance tests + smoke
+6. /core-commit               → auto-prefix with issue-ID (GitHub #123 or JIRA-456)
+7. git push + PR              → /team-review for self-review before merge
+8. /dev-refactor <name>       → code cleanup, promote to Dashboard
 ```
 
 ## Outsourcing tasks
 
-Heb je een TODO of DEFINED item dat een teammate beter kan oppakken? Gebruik `/team-outsource <name>`:
+Have a TODO or DEFINED item that a teammate is better placed to handle? Use `/team-outsource <name>`:
 
-1. Skill leest backlog + optioneel `feature.json` (voor DEFINED items)
-2. Genereert een issue-brief in jouw gekozen format (Technical brief / User story / Minimal task)
-3. Maakt een GitHub/Jira/Linear issue aan met de teammate als assignee
-4. Schrijft `externalRef.direction: "outbound"` terug naar backlog → item blijft zichtbaar in jouw dashboard met link naar de externe issue
+1. Skill reads backlog + optional `feature.json` (for DEFINED items)
+2. Generates an issue brief in your chosen format (Technical brief / User story / Minimal task)
+3. Creates a GitHub/Jira/Linear issue with the teammate as assignee
+4. Writes `externalRef.direction: "outbound"` back to backlog → item stays visible in your dashboard with a link to the external issue
 
 **Triggers:**
 
-- Backlog dashboard → DEFINED card zonder externalRef → klik **Outsource** knop → kopieer command → plak in chat
-- Direct in chat: `/team-outsource <name>`
-- Multi-select voor minimal-task batch: `/team-outsource` (zonder argument → interactieve selectie)
+- Backlog dashboard → DEFINED card without externalRef → click **Outsource** button → copy command → paste in chat
+- Directly in chat: `/team-outsource <name>`
+- Multi-select for minimal-task batch: `/team-outsource` (without argument → interactive selection)
 
 **Tracker support:**
 
-| Tracker | Methode                                                       |
-| ------- | ------------------------------------------------------------- |
-| GitHub  | `gh issue create` (native CLI)                                |
-| Jira    | Paste-flow: output in chat → plak in tracker → geef URL terug |
-| Linear  | Paste-flow: zelfde als Jira                                   |
+| Tracker | Method                                                     |
+| ------- | ---------------------------------------------------------- |
+| GitHub  | `gh issue create` (native CLI)                             |
+| Jira    | Paste-flow: output in chat → paste in tracker → return URL |
+| Linear  | Paste-flow: same as Jira                                   |
 
-Configureer eenmalig je GitHub-project in `project.json#team.githubProject` — de skill vraagt dit bij de eerste run automatisch.
+Configure your GitHub project once in `project.json#team.githubProject` — the skill asks for this automatically on first run.
 
 ## Multi-fragment issues
 
-Één issue in de team-tracker kan meerdere backlog-items opleveren via `/team-issues` smart-split. Voorbeeld:
+One issue in the team tracker can produce multiple backlog items via `/team-issues` smart-split. Example:
 
 ```
 GitHub Issue #42: "Implement OAuth login"
-→ oauth-login           PAGE · Frontend  (login pagina)
+→ oauth-login           PAGE · Frontend  (login page)
 → oauth-callback        API  · Dev       (backend endpoint)
 → oauth-tests           FEATURE · Dev    (test coverage)
 ```
 
-Alle drie delen dezelfde `externalRef.id: "42"` met verschillende `externalRef.split` waarden. In de PR-description link je naar de issue (`Closes #42`), niet naar individuele backlog-items.
+All three share the same `externalRef.id: "42"` with different `externalRef.split` values. In the PR description link to the issue (`Closes #42`), not to individual backlog items.
 
-## externalRef in de pipeline
+## externalRef in the pipeline
 
-Het `externalRef` veld wordt doorgegeven door de pipeline zodat elke skill de externe ID kent:
+The `externalRef` field is passed through the pipeline so every skill knows the external ID:
 
 ```
 backlog.html (externalRef) → feature.json (externalRef) → /core-commit (ticket-prefix)
 ```
 
-Skills die het lezen:
+Skills that read it:
 
-- `/dev-define` — kopieert naar `feature.json` bij definitie
-- `/core-commit` — gebruikt `externalRef.id` als commit-prefix suggestie
+- `/dev-define` — copies to `feature.json` at definition time
+- `/core-commit` — uses `externalRef.id` as commit-prefix suggestion
 
-## Externe trackers zonder native tooling
+## External trackers without native tooling
 
-Voor Jira en Linear is er geen native CLI-integratie in v1. Werkwijze:
+For Jira and Linear there is no native CLI integration in v1. Approach:
 
-- Gebruik `/team-issues --paste` → plak issue URL of body → skill parsed wat mogelijk is
-- Of: voeg het item handmatig toe via `/project-todo` en zet het ticket-ID in de description:
+- Use `/team-issues --paste` → paste issue URL or body → skill parses what it can
+- Or: add the item manually via `/project-todo` and put the ticket ID in the description:
 
 ```json
 {
@@ -109,19 +109,19 @@ Voor Jira en Linear is er geen native CLI-integratie in v1. Werkwijze:
 }
 ```
 
-`/core-commit` herkent `[A-Z]+-\d+` patronen in `feature.description` en biedt die als commit-prefix aan.
+`/core-commit` recognizes `[A-Z]+-\d+` patterns in `feature.description` and offers them as commit-prefix suggestions.
 
-## Wat blijft persoonlijk
+## What stays personal
 
-`.project/` is gitignored — dit zijn jouw lokale artifacts:
+`.project/` is gitignored — these are your local artifacts:
 
-| Artifact                                          | Persoonlijk | Gedeeld in repo             |
-| ------------------------------------------------- | ----------- | --------------------------- |
-| `.project/backlog.html`                           | ✓           | —                           |
-| `.project/project.json`                           | ✓           | —                           |
-| `.project/features/*/`                            | ✓           | —                           |
-| `CLAUDE.local.md`                                 | ✓           | —                           |
-| Code (src/, app/, etc.)                           | —           | ✓                           |
-| `project.json#learnings[]` met `source: "synced"` | ✓ (lokaal)  | — (extractie uit team-code) |
+| Artifact                                           | Personal  | Shared in repo               |
+| -------------------------------------------------- | --------- | ---------------------------- |
+| `.project/backlog.html`                            | ✓         | —                            |
+| `.project/project.json`                            | ✓         | —                            |
+| `.project/features/*/`                             | ✓         | —                            |
+| `CLAUDE.local.md`                                  | ✓         | —                            |
+| Code (src/, app/, etc.)                            | —         | ✓                            |
+| `project.json#learnings[]` with `source: "synced"` | ✓ (local) | — (extracted from team code) |
 
-`project.json#learnings[]` met `source: "synced"` zijn extracties uit teammate code via `/project-pull` of `/core-setup --mode=mature` — ze zijn van jou, niet van het team.
+`project.json#learnings[]` with `source: "synced"` are extractions from teammate code via `/project-pull` or `/core-setup --mode=mature` — they belong to you, not the team.

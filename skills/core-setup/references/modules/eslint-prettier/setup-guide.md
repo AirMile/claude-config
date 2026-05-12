@@ -2,7 +2,7 @@
 
 **Status:** stub — full guide te genereren via Context7 query.
 
-**Conflict check:** Bij Biome al geïnstalleerd, vraag of dat vervangen moet worden. Niet beide tegelijk runnen.
+**Conflict check:** If Biome is already installed, ask whether it should be replaced. Do not run both simultaneously.
 
 ## Detection
 
@@ -41,7 +41,7 @@ Volg Context7 output voor:
 ## Framework specifics
 
 - **Next.js**: gebruikt `eslint-config-next` (al inbegrepen bij `create-next-app`)
-- **Vite**: voeg `eslint-plugin-react-refresh` toe
+- **Vite**: add `eslint-plugin-react-refresh`
 
 ## Teardown
 

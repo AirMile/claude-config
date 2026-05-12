@@ -27,9 +27,9 @@ Output: `CONCEPT_CONTEXT` met:
 - **Bijna leeg** (scaffold-stub, paar woorden): behandel als afwezig
 - **Legacy `concept.content`**: niet lezen — `thinking-concept` heeft dit veld weggemigreerd; lege fallback is correct gedrag
 
-## Wegen in suggesties
+## Weighing suggestions
 
-Bij elke selection-style modal of `→ Claude raadt aan:` regel met `CONCEPT_CONTEXT.present`:
+With every selection-style modal or `→ Claude recommends:` line when `CONCEPT_CONTEXT.present`:
 
 - Onderbouw advies met concept-relevante reden
 - Filter opties die duidelijk niet bij het concept-domein passen
@@ -37,8 +37,8 @@ Bij elke selection-style modal of `→ Claude raadt aan:` regel met `CONCEPT_CON
 
 Bij `present: false`: geen concept-referentie in de aanbevelingstekst.
 
-## Schrijven
+## Writing
 
-Verboden voor consumers. Alleen `/thinking-concept` schrijft naar `project-concept.md` of
-muteert `project.json#concept`. Aanvullende sessie-context (bijv. uit user input) blijft
-in-memory als `CONCEPT_CONTEXT.markdown += extra` — nooit terugschrijven naar disk.
+Forbidden for consumers. Only `/thinking-concept` writes to `project-concept.md` or
+mutates `project.json#concept`. Additional session context (e.g. from user input) stays
+in-memory as `CONCEPT_CONTEXT.markdown += extra` — never write back to disk.

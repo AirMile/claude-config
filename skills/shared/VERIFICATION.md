@@ -90,10 +90,10 @@ Skip for admin/internal tools or explicitly desktop-only pages.
 
 ## Error Handling
 
-| Failure                | Action                                                                          |
-| ---------------------- | ------------------------------------------------------------------------------- |
-| CLI unavailable        | Skip visual verification, message: "Open de pagina handmatig om te verifiëren." |
-| Dev server won't start | Offer to continue without visual check                                          |
-| Navigation fails       | Retry once → skip verification → document reason                                |
-| Screenshot fails       | Degrade to `playwright-cli snapshot` (accessibility tree only)                  |
-| file:// blocked        | Start `python3 -m http.server [port]`, gebruik `http://localhost:[port]/...`    |
+| Failure                | Action                                                                   |
+| ---------------------- | ------------------------------------------------------------------------ |
+| CLI unavailable        | Skip visual verification, message: "Open the page manually to verify."   |
+| Dev server won't start | Offer to continue without visual check                                   |
+| Navigation fails       | Retry once → skip verification → document reason                         |
+| Screenshot fails       | Degrade to `playwright-cli snapshot` (accessibility tree only)           |
+| file:// blocked        | Start `python3 -m http.server [port]`, use `http://localhost:[port]/...` |

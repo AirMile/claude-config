@@ -1265,7 +1265,7 @@ multiSelect: false
 2. **Tailwind project:**
    - **Tailwind 4 (CSS-first):** Grep CSS files (globals.css, index.css) for `@theme inline`. If found: update the `:root` CSS variables in that file directly — this IS the Tailwind config in v4
      - Follow the same two-block order: primitives first, semantics with var() refs after
-   - **Tailwind 3 (config-based):** Fallback naar `tailwind.config.{js,ts,mjs}` als er geen `@theme inline` is
+   - **Tailwind 3 (config-based):** Fall back to `tailwind.config.{js,ts,mjs}` when no `@theme inline` is present
    - Generate/update theme tokens:
      - `colors`: map color tokens to Tailwind color keys
      - `spacing`: map custom spacing tokens (skip if standard 4px scale)

@@ -13,7 +13,7 @@ Full OWASP Top 10:2025 scan: scope → 10 parallel scanners → aggregated repor
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 5 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 5 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. On context compaction the task list remains visible — no risk of forgotten phases.
 
 1. PHASE 1: Scope
 2. PHASE 2: Parallel Scan
@@ -23,7 +23,7 @@ Full OWASP Top 10:2025 scan: scope → 10 parallel scanners → aggregated repor
 
 ## PHASE 1: Scope
 
-> **Todo**: roep `TaskCreate` aan met de 5 fase-items (zie boven). Markeer PHASE 1 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 5 phase items (see above). Mark PHASE 1 → `in_progress` via `TaskUpdate`.
 
 ### Step 1: Detect tech stack
 
@@ -38,11 +38,11 @@ Scan project for languages, frameworks, and entry points:
 AskUserQuestion:
 
 - header: "Scan Scope"
-- question: "Welke delen van de codebase wil je scannen?"
+- question: "Which parts of the codebase do you want to scan?"
 - options:
-  - "Volledige codebase (Aanbevolen)" — Scan alles behalve node_modules/vendor/dist
-  - "Alleen backend/API" — Focus op server-side code
-  - "Specifieke map" — Geef een pad op
+  - "Full codebase (Recommended)" — Scan everything except node_modules/vendor/dist
+  - "Backend/API only" — Focus on server-side code
+  - "Specific directory" — Enter a path
 - multiSelect: false
 
 ### Step 3: Build file list
@@ -52,32 +52,32 @@ Group by type: routes/controllers, models/data, config, middleware, templates/vi
 
 ### Step 4: Load project context
 
-Lees `.project/project.json` (als bestaat). Extract:
+Read `.project/project.json` (if it exists). Extract:
 
 - `endpoints` — API surface (method, path, auth per route)
 - `data.entities` — data model (entity names, fields, relations)
 
-Lees `.project/project-context.json` (als bestaat). Extract:
+Read `.project/project-context.json` (if it exists). Extract:
 
 - `context.patterns` — auth patterns, middleware setup
 
-**Stel OWASP_CONTEXT samen** (meegeven aan scanner agents in PHASE 2):
+**Assemble OWASP_CONTEXT** (pass to scanner agents in PHASE 2):
 
 ```
-API SURFACE: {endpoints of "niet beschikbaar — scanners moeten zelf endpoints ontdekken"}
-DATA MODEL: {entities of "niet beschikbaar"}
-AUTH PATTERNS: {auth-gerelateerde patterns of "niet beschikbaar"}
+API SURFACE: {endpoints of "not available — scanners must discover endpoints themselves"}
+DATA MODEL: {entities of "not available"}
+AUTH PATTERNS: {auth-related patterns of "not available"}
 ```
 
-Als project.json niet bestaat → ga door zonder (backwards compatible).
+If project.json does not exist → continue without it (backwards compatible).
 
 ---
 
 ## PHASE 2: Parallel Scan
 
-> **Todo**: markeer PHASE 1 → `completed`, PHASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-Launch 10 scanner agents in parallel via Task tool (zie `shared/SKILL-PATTERNS.md#parallel-dispatch` voor dispatch-criteria en integratie-stappen):
+Launch 10 scanner agents in parallel via Task tool (see `shared/SKILL-PATTERNS.md#parallel-dispatch` for dispatch criteria and integration steps):
 
 | Agent             | Category                    | Risk     |
 | ----------------- | --------------------------- | -------- |
@@ -96,7 +96,7 @@ Each agent receives:
 
 - Tech stack summary
 - File list (grouped by type)
-- OWASP_CONTEXT (uit stap 4 — endpoints, data model, auth patterns)
+- OWASP_CONTEXT (from step 4 — endpoints, data model, auth patterns)
 - Project root path
 
 Each agent returns structured output with: category score (/10), positives, findings (file, line, severity, confidence, issue, fix, CWE), verdict.
@@ -107,13 +107,13 @@ Run all 10 in background. Collect results when all complete.
 
 ## PHASE 3: Aggregation & Report
 
-> **Todo**: markeer PHASE 2 → `completed`, PHASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
 Analyze:
 
 1. Collect all 10 category scores
 2. Calculate overall security score (weighted average — CRITICAL categories x1.5 weight)
-3. **Anti-fantasy check:** Als 3+ scanners score 9-10 geven → flag als verdacht. Verwacht onderbouwing per hoge score. Heroverweeg: "Zou een pentester deze scores geven?"
+3. **Anti-fantasy check:** If 3+ scanners give a score of 9-10 → flag as suspicious. Expect justification per high score. Reconsider: "Would a pentester give these scores?"
 4. Filter findings: discard confidence < 60%
 5. Group findings by severity: CRITICAL → HIGH → MEDIUM → LOW
 6. Count totals per severity
@@ -141,7 +141,7 @@ TOP CRITICAL/HIGH FINDINGS:
 1. [severity] [category] — [issue] — [file:line]
 2. ...
 
-Verdict: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OF CRITICAL findings)
+Verdict: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OR CRITICAL findings)
 ```
 
 AskUserQuestion:
@@ -153,13 +153,13 @@ AskUserQuestion:
   - "No, report only" — Stop here with the audit report
 - multiSelect: false
 
-If "Nee" → stop. Show report.
+If "No" → stop. Show report.
 
 ---
 
 ## PHASE 4: Fix Plans
 
-> **Todo**: markeer PHASE 3 → `completed`, PHASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
 Launch 3 fix agents in parallel via Task tool:
 
@@ -175,7 +175,7 @@ Each receives: aggregated scan results with all findings, severity counts, file 
 
 ## PHASE 5: Selection & Implementation
 
-> **Todo**: markeer PHASE 4 → `completed`, PHASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
 ### Step 1: Present options
 
@@ -205,12 +205,12 @@ FIX STRATEGIES
 
 AskUserQuestion:
 
-- header: "Fix Strategie"
-- question: "Welke fix strategie wil je toepassen?"
+- header: "Fix Strategy"
+- question: "Which fix strategy do you want to apply?"
 - options:
-  - "Pragmatic (Aanbevolen)" — CRITICAL + HIGH, goede balans
-  - "Minimal" — Alleen CRITICAL, laagste risico
-  - "Extensive" — Alles, inclusief preventieve maatregelen
+  - "Pragmatic (Recommended)" — CRITICAL + HIGH, good balance
+  - "Minimal" — CRITICAL only, lowest risk
+  - "Extensive" — Everything, including preventive measures
 - multiSelect: false
 
 ### Step 3: Implement
@@ -230,7 +230,7 @@ Remaining items: [N] (deferred)
 
 ```
 
-> **Todo**: markeer PHASE 5 → `completed`.
+> **Todo**: mark PHASE 5 → `completed`.
 
 ## Best Practices
 

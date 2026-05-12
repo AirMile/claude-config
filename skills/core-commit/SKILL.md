@@ -9,68 +9,68 @@ metadata:
 
 # Commit
 
-Analyseer staged changes en genereer een duidelijke commit message.
+Analyze staged changes and generate a clear commit message.
 
 ## Trigger
 
-`/core-commit` of `/core-commit [extra context]`
+`/core-commit` or `/core-commit [extra context]`
 
 ## Process
 
 ### 1. Pre-flight Checks
 
-Voer parallel uit:
+Run in parallel:
 
-- `git status` - bekijk staged/unstaged changes
-- `git diff --cached` - bekijk staged changes (of `git diff` als niets staged)
+- `git status` - review staged/unstaged changes
+- `git diff --cached` - review staged changes (or `git diff` if nothing staged)
 
-**Stop condities** (meld en exit):
+**Stop conditions** (report and exit):
 
-- Geen changes → "Geen wijzigingen om te committen"
-- Rebase in progress → "Rebase actief, los eerst op met `git rebase --continue` of `--abort`"
-- Merge in progress → "Merge conflict actief, los eerst op"
-- Cherry-pick in progress → "Cherry-pick actief, los eerst op"
+- No changes → "No changes to commit"
+- Rebase in progress → "Rebase active, resolve first with `git rebase --continue` or `--abort`"
+- Merge in progress → "Merge conflict active, resolve first"
+- Cherry-pick in progress → "Cherry-pick active, resolve first"
 
-**Platform notitie:**
-Gebruik altijd `cd "<project-root>" && git <command>` in plaats van `git -C <path>`.
-De `-C` flag heeft bekende problemen met Windows-paden die backslashes bevatten.
+**Platform note:**
+Always use `cd "<project-root>" && git <command>` instead of `git -C <path>`.
+The `-C` flag has known issues with Windows paths containing backslashes.
 
-**Detectie rebase/merge state:**
+**Detect rebase/merge state:**
 
 ```bash
-# Check voor actieve operaties
+# Check for active operations
 ls .git/rebase-merge .git/rebase-apply .git/MERGE_HEAD .git/CHERRY_PICK_HEAD 2>/dev/null
 ```
 
 ### 1.5. Convention + Ticket Detection
 
-Eenmalig per project (cache in `project.json#team`). Skip als `team.commitConvention` al gezet is.
+Once per project (cache in `project.json#team`). Skip if `team.commitConvention` is already set.
 
-1. **Convention detect**: `git log --oneline -20` → regex-match dominant pattern (>60% van commits):
+1. **Convention detect**: `git log --oneline -20` → regex-match dominant pattern (>60% of commits):
    - `^[a-z]+(\([a-z-]+\))?: ` → `"conventional"` (Conventional Commits)
    - `^[A-Z]+-\d+[: ]` → `"ticket-prefix"` (Jira/Linear style)
    - `^\[[A-Z-]+\]` → `"bracket"` (bracket-tag style)
-   - Anders → `"freeform"`
-   - Cache in `project.json#team.commitConvention`. Bij ticket-prefix: extraheer prefix (bijv. `"JIRA"`) → `project.json#team.ticketPrefix`.
+   - Otherwise → `"freeform"`
+   - Cache in `project.json#team.commitConvention`. For ticket-prefix: extract prefix (e.g. `"JIRA"`) → `project.json#team.ticketPrefix`.
 
-2. **externalRef detect** (per commit, altijd):
-   - Zoek `feature.json` voor huidige branch → check `externalRef`:
-     - `type === "github"` → prefix-suggestie: `(#{id})` als suffix
-     - `type === "jira"` of `"linear"` → prefix-suggestie: `{id}: ` als prefix
-   - Geen feature.json → check branch-naam op `[A-Z]+-\d+` regex → gebruik als prefix-suggestie
+2. **externalRef detect** (per commit, always):
+   - Search `feature.json` for current branch → check `externalRef`:
+     - `type === "github"` → prefix suggestion: `(#{id})` as suffix
+     - `type === "jira"` or `"linear"` → prefix suggestion: `{id}: ` as prefix
+   - No feature.json → check branch name against `[A-Z]+-\d+` regex → use as prefix suggestion
 
-3. **Compose-integratie** (stap 4 hieronder): gebruik detected convention + externalRef bij het genereren van de commit message. Conservatief: toon de suggestie, gebruiker bevestigt vóór commit.
+3. **Compose integration** (step 4 below): use detected convention + externalRef when generating the commit message. Conservative: show the suggestion, user confirms before commit.
 
-### 2. Stage Changes (indien nodig)
+### 2. Stage Changes (if needed)
 
-Als er unstaged changes zijn maar niets staged:
+If there are unstaged changes but nothing staged:
 
-- Toon overzicht van unstaged files
+- Show an overview of unstaged files
 
-**Blokkeer automatisch stagen van:**
+**Automatically block staging of:**
 
 ```
-# Secrets & credentials (NOOIT stagen)
+# Secrets & credentials (NEVER stage)
 .env, .env.*, *.env
 credentials.json, secrets.json, secrets.yml
 *.pem, *.key, *.pfx, *.p12, *.crt
@@ -79,22 +79,22 @@ config/secrets.yml
 **/service-account*.json
 ```
 
-**Waarschuw bij:**
+**Warn for:**
 
-- Grote files (>1MB) → toon bestandsgrootte
-- Nieuwe file types die nog niet in `.gitignore` staan
-- Binary files → vraag bevestiging
+- Large files (>1MB) → show file size
+- New file types not yet in `.gitignore`
+- Binary files → ask for confirmation
 
-**Waarschuw bij tracking-verwijderingen:**
-Als `.gitignore` wijzigingen ertoe leiden dat bestanden uit tracking moeten (`git rm --cached`):
+**Warn for tracking removals:**
+If `.gitignore` changes cause files to be removed from tracking (`git rm --cached`):
 
-- Toon het aantal bestanden dat uit tracking verdwijnt
-- Toon de directories die geraakt worden
-- Vraag expliciete bevestiging via AskUserQuestion
-- Stel voor om tracking-verwijdering als **aparte commit** te doen (bijv. `chore: remove X from git tracking`)
+- Show the number of files being removed from tracking
+- Show the directories that are affected
+- Ask for explicit confirmation via AskUserQuestion
+- Suggest doing the tracking removal as a **separate commit** (e.g. `chore: remove X from git tracking`)
 
-**Waarschuw bij verwijdering van kritieke bestanden:**
-Als staged changes een van deze bestanden verwijderen of uit tracking halen, toon een expliciete waarschuwing en vraag bevestiging:
+**Warn for deletion of critical files:**
+If staged changes delete or remove from tracking any of the following files, show an explicit warning and ask for confirmation:
 
 ```
 CLAUDE.md
@@ -146,51 +146,51 @@ Before staging, verify that risky file patterns are covered by `.gitignore`. Thi
 
 3. If missing patterns are found that match existing files/directories, show them grouped by category and ask via AskUserQuestion:
    - header: ".gitignore"
-   - question: "Deze patronen ontbreken in .gitignore maar bestaan wel in je working tree:\n\n[list per category]\n\nWil je ze toevoegen?"
+   - question: "These patterns are missing from .gitignore but exist in your working tree:\n\n[list per category]\n\nDo you want to add them?"
    - options:
      - "Add all (Recommended)" → append all missing patterns to `.gitignore`
      - "Let me pick" → show each pattern individually for yes/no
      - "Skip" → continue without changes
 4. If patterns were added: stage the updated `.gitignore` file (`git add .gitignore`) so it's included in the commit
 
-- Vraag: "Stage all changes?" (met AskUserQuestion)
-- Bij ja: `git add -A`
+- Ask: "Stage all changes?" (with AskUserQuestion)
+- If yes: `git add -A`
 
 ### 3. Analyze Changes
 
-Analyseer de diff op:
+Analyze the diff for:
 
 **Type** (Conventional Commits):
-| Type | Gebruik | SemVer |
-|------|---------|--------|
-| `feat` | Nieuwe feature | MINOR |
+| Type | Use | SemVer |
+|------|-----|--------|
+| `feat` | New feature | MINOR |
 | `fix` | Bug fix | PATCH |
-| `docs` | Alleen documentatie | - |
+| `docs` | Documentation only | - |
 | `style` | Formatting, whitespace | - |
 | `refactor` | Code refactoring | - |
-| `perf` | Performance verbetering | PATCH |
-| `test` | Tests toevoegen/fixen | - |
+| `perf` | Performance improvement | PATCH |
+| `test` | Adding/fixing tests | - |
 | `build` | Build system, dependencies | - |
-| `ci` | CI/CD configuratie | - |
-| `chore` | Overige taken | - |
-| `revert` | Revert vorige commit | - |
+| `ci` | CI/CD configuration | - |
+| `chore` | Other tasks | - |
+| `revert` | Revert previous commit | - |
 
-**Scope**: Component/module naam (optioneel)
-**Breaking change**: Voeg ! toe na type voor breaking changes
+**Scope**: Component/module name (optional)
+**Breaking change**: Add ! after type for breaking changes
 
-**Mixed concerns detectie:**
-Als staged changes meerdere ongerelateerde groepen bevatten:
+**Mixed concerns detection:**
+If staged changes contain multiple unrelated groups:
 
-- Detecteer op basis van pad-patroon (bijv. `.claude/` vs `src/` vs `public/`)
-- Detecteer op basis van type (deletions-only groep vs additions groep)
-- Als >2 duidelijk gescheiden groepen of >50% van de changes ongerelateerd is aan de primaire wijziging:
-  - Stel split voor via AskUserQuestion:
-    - "Split in aparte commits (Aanbevolen)" → unstage de secundaire groep, commit primair eerst
-    - "Eén commit" → ga door met alles
+- Detect based on path pattern (e.g. `.claude/` vs `src/` vs `public/`)
+- Detect based on type (deletions-only group vs additions group)
+- If >2 clearly separated groups or >50% of changes are unrelated to the primary change:
+  - Suggest split via AskUserQuestion:
+    - "Split into separate commits (Recommended)" → unstage the secondary group, commit primary first
+    - "One commit" → proceed with everything
 
 ### 4. Generate Message
 
-**Formaat (Conventional Commits 1.0.0):**
+**Format (Conventional Commits 1.0.0):**
 
 ```
 <type>[optional scope][!]: <description>
@@ -200,15 +200,15 @@ Als staged changes meerdere ongerelateerde groepen bevatten:
 [optional footer(s)]
 ```
 
-**Validatieregels:**
+**Validation rules:**
 
-- Header max **72 karakters** (Git conventie)
-- Type: lowercase, uit toegestane lijst
-- Subject: lowercase start, geen punt aan einde, imperatief ("add" niet "added")
-- Body: lege regel na header, leg "waarom" uit niet "wat"
-- Breaking change: gebruik ! of BREAKING CHANGE: footer
+- Header max **72 characters** (Git convention)
+- Type: lowercase, from allowed list
+- Subject: lowercase start, no trailing period, imperative mood ("add" not "added")
+- Body: empty line after header, explain "why" not "what"
+- Breaking change: use ! or BREAKING CHANGE: footer
 
-**Voorbeelden:**
+**Examples:**
 
 ```
 feat(auth): add OAuth2 login support
@@ -218,20 +218,20 @@ fix!: resolve race condition in request handling
 docs: update API documentation for v2 endpoints
 ```
 
-**Niet toestaan:**
+**Do not allow:**
 
-- Emoji's in commit messages
-- Subject langer dan 72 karakters
+- Emojis in commit messages
+- Subject longer than 72 characters
 
 ### 5. Confirm & Commit
 
-Toon gegenereerde message en vraag bevestiging:
+Show the generated message and ask for confirmation:
 
-- "Commit" → voer commit uit
-- "Edit" → laat user aanpassen
-- "Cancel" → annuleer
+- "Commit" → execute commit
+- "Edit" → allow user to modify
+- "Cancel" → cancel
 
-**Commit uitvoeren met HEREDOC** (veilig voor quotes en multiline):
+**Execute commit with HEREDOC** (safe for quotes and multilines):
 
 ```bash
 git commit -m "$(cat <<'EOF'
@@ -244,24 +244,24 @@ EOF
 
 **Pre-commit hook failure:**
 
-1. Toon volledige error output
-2. Vraag gebruiker (AskUserQuestion):
-   - "Fix issues" → los probleem op, **maak NIEUWE commit** (nooit amend op failure)
-   - "Skip hooks" → `HUSKY=0 git commit ...` of `git commit --no-verify`
-   - "Cancel" → annuleer
+1. Show full error output
+2. Ask user (AskUserQuestion):
+   - "Fix issues" → fix the issue, **create NEW commit** (never amend on failure)
+   - "Skip hooks" → `HUSKY=0 git commit ...` or `git commit --no-verify`
+   - "Cancel" → cancel
 
-**Hook bypass waarschuwing:**
+**Hook bypass warning:**
 
 ```
-⚠️ Hooks worden overgeslagen. Dit kan CI failures veroorzaken.
+⚠️ Hooks are being bypassed. This can cause CI failures.
 ```
 
-**Andere failures:**
+**Other failures:**
 
-- Empty commit → "Geen staged changes. Gebruik `git add` eerst."
-- Lock file exists → "Git is bezig (.git/index.lock). Wacht of verwijder lock."
+- Empty commit → "No staged changes. Use `git add` first."
+- Lock file exists → "Git is busy (.git/index.lock). Wait or remove the lock."
 
-**Bij succes:**
+**On success:**
 
 ```bash
 git log -1 --oneline
@@ -272,7 +272,7 @@ git log -1 --oneline
 After a successful commit, ask with AskUserQuestion:
 
 - header: "Push"
-- question: "Wil je de changes ook meteen pushen?"
+- question: "Do you also want to push the changes immediately?"
 - options:
   - "Push (Recommended)" → execute `git push`
   - "Skip" → done, show success output
@@ -289,34 +289,34 @@ After a successful commit, ask with AskUserQuestion:
 ✅ Pushed to [remote]/[branch]
 ```
 
-### 8. Amend Safety (ALLEEN indien user vraagt)
+### 8. Amend Safety (ONLY if user asks)
 
-**Amend ALLEEN toestaan wanneer ALLE voorwaarden waar zijn:**
+**Only allow amend when ALL conditions are true:**
 
-1. User vraagt expliciet om amend
-2. Vorige commit is door jou gemaakt (check: `git log -1 --format='%an'`)
-3. Commit is NIET gepusht naar remote (check: `git status` toont "ahead")
-4. Het is GEEN recovery van een gefaalde commit
+1. User explicitly asks for amend
+2. Previous commit was made by you (check: `git log -1 --format='%an'`)
+3. Commit has NOT been pushed to remote (check: `git status` shows "ahead")
+4. It is NOT a recovery from a failed commit
 
-**Bij twijfel:** Maak nieuwe commit, nooit amend.
+**When in doubt:** Create a new commit, never amend.
 
 ## Output
 
-**Succes:**
+**Success:**
 
 ```
 ✅ Committed: <type>(<scope>): <title>
 
-   [hash] op branch [branch-name]
+   [hash] on branch [branch-name]
    [+X -Y files changed]
 ```
 
 **Error:**
 
 ```
-❌ Commit failed: <reden>
+❌ Commit failed: <reason>
 
-   💡 <suggestie voor oplossing>
+   💡 <suggested fix>
 ```
 
 **Hook skipped:**
@@ -324,5 +324,5 @@ After a successful commit, ask with AskUserQuestion:
 ```
 ⚠️ Committed (hooks skipped): <type>(<scope>): <title>
 
-   [hash] op branch [branch-name]
+   [hash] on branch [branch-name]
 ```

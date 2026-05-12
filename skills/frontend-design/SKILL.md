@@ -67,7 +67,7 @@ The `design` section in `project.json` follows this schema:
   "principles": [
     {
       "name": "Mobile-first",
-      "description": "Design voor mobile viewport eerst, progressive enhancement"
+      "description": "Design for mobile viewport first, progressive enhancement"
     }
   ],
   "components": [
@@ -134,42 +134,42 @@ PREFLIGHT → ERROR (fail)
 
 ARG_KNOWN → BUILD (choice: Build)
 ARG_KNOWN → BRIEF (choice: Brief)
-ARG_KNOWN → PAGINA (choice: Edit spec, PAGE entity)
+ARG_KNOWN → PAGE_ROUTE (choice: Edit spec, PAGE entity)
 ARG_KNOWN → COMPONENT (choice: Edit spec, COMPONENT entity)
-ARG_KNOWN → AANMAKEN (choice: Capture as new)
+ARG_KNOWN → CREATE (choice: Capture as new)
 
-ARG_UNKNOWN → PAGINA (choice: New page)
+ARG_UNKNOWN → PAGE_ROUTE (choice: New page)
 ARG_UNKNOWN → COMPONENT (choice: New component)
 ARG_UNKNOWN → [*] (choice: Cancel)
 
-ACTION_SELECT → AANMAKEN (empty state)
-ACTION_SELECT → IMPORTEREN (empty state)
+ACTION_SELECT → CREATE (empty state)
+ACTION_SELECT → IMPORT (empty state)
 ACTION_SELECT → BUILD (populated + ≥1 PAGE or COMPONENT DEF without visuals)
-ACTION_SELECT → BEKIJKEN (populated)
-ACTION_SELECT → PAGINA (populated)
+ACTION_SELECT → VIEW (populated)
+ACTION_SELECT → PAGE_ROUTE (populated)
 ACTION_SELECT → COMPONENT (populated)
 ACTION_SELECT → FLOW (populated)
-ACTION_SELECT → PRINCIPES (populated)
-ACTION_SELECT → VERWIJDEREN (populated)
-ACTION_SELECT → HERSTELLEN (populated, history exists)
+ACTION_SELECT → PRINCIPLES (populated)
+ACTION_SELECT → DELETE (populated)
+ACTION_SELECT → RESTORE (populated, history exists)
 
-AANMAKEN → CONFIRM
-IMPORTEREN → CONFIRM
+CREATE → CONFIRM
+IMPORT → CONFIRM
 BUILD → BUILD_ENTITY (choose PAGE or COMPONENT)
 BUILD_ENTITY → BUILD_COMPLETE (smoke success)
 BUILD_ENTITY → BUILD_REFINE (smoke fail → "Refine")
 BUILD_ENTITY → ACTION_SELECT (smoke fail → "Fix manually" or max retries reached)
 BUILD_REFINE → BUILD_ENTITY (re-run smoke — max 3 rounds)
 BUILD_REFINE → ACTION_SELECT ("Fix manually" or "Accept as-is")
-BEKIJKEN → ACTION_SELECT ("Edit")
-BEKIJKEN → [*] ("Done")
-PAGINA → CONFIRM
+VIEW → ACTION_SELECT ("Edit")
+VIEW → [*] ("Done")
+PAGE_ROUTE → CONFIRM
 COMPONENT → CONFIRM
 FLOW → CONFIRM
-PRINCIPES → CONFIRM
-VERWIJDEREN → CONFIRM
-HERSTELLEN → POSTFLIGHT ("Yes" — skip X.0)
-HERSTELLEN → [*] ("Cancel")
+PRINCIPLES → CONFIRM
+DELETE → CONFIRM
+RESTORE → POSTFLIGHT ("Yes" — skip X.0)
+RESTORE → [*] ("Cancel")
 
 CONFIRM → POSTFLIGHT ("Yes")
 CONFIRM → ACTION_SELECT ("Edit" — loop back)
@@ -415,7 +415,7 @@ multiSelect: false
 
 ## PHASE 2: Action Execution
 
-### Route: Aanmaken (First-Time Setup)
+### Route: Create (First-Time Setup)
 
 Guided 4-step creation flow.
 
@@ -587,7 +587,7 @@ multiSelect: false
 
 **If "Standard set":** Generate:
 
-- Mobile-first: "Design for mobile viewport first, progressive enhancement"
+- Mobile-first: "Design for mobile viewport first, with progressive enhancement"
 - Consistent spacing: "Use a spacing scale for all margins and padding"
 - Accessibility: "WCAG 2.1 AA compliance, semantic HTML, keyboard navigation"
 
@@ -625,7 +625,7 @@ Proceed to PHASE 3 (Confirm).
 
 ---
 
-### Route: Importeren (Extract from Codebase or Screenshot)
+### Route: Import (Extract from Codebase or Screenshot)
 
 #### Step 0: Input Selection
 
@@ -780,13 +780,13 @@ From routing structure and navigation components (Link, useRouter, navigate), in
 
 #### Step 4: Present and Confirm
 
-Show extracted design spec in same table format as Aanmaken Step 5, including components table if components were imported. Proceed to PHASE 3 (Confirm).
+Show extracted design spec in same table format as Create Step 5, including components table if components were imported. Proceed to PHASE 3 (Confirm).
 
 ---
 
-### Route: Bekijken (View)
+### Route: View
 
-Read `project.json` → `design` section. Render as formatted table (same format as Aanmaken Step 5 summary).
+Read `project.json` → `design` section. Render as formatted table (same format as Create Step 5 summary).
 
 ```yaml
 header: "Action"
@@ -802,7 +802,7 @@ If "Edit": loop back to PHASE 1 (ACTION_SELECT with populated-state options).
 
 ---
 
-### Route: Pagina (Add/Edit Page)
+### Route: Page (Add/Edit Page)
 
 #### Step 1: Choice
 
@@ -1182,12 +1182,12 @@ Check availability: `curl -s http://localhost:{port}` (port from `project.json` 
 
 If dev server not available: skip 4b entirely with message `"Dev server unreachable — open manually."`. Proceed to Step 5.
 
-Als beschikbaar:
+If available:
 
-**Route bepaling per entity-type:**
+**Route determination per entity type:**
 
-- `$TARGET_TYPE = PAGE` → navigate naar page-route.
-- `$TARGET_TYPE = COMPONENT` → navigate naar `/_dev/components/{$TARGET}` (de demo-page).
+- `$TARGET_TYPE = PAGE` → navigate to the page route.
+- `$TARGET_TYPE = COMPONENT` → navigate to `/_dev/components/{$TARGET}` (the demo page).
 
 **Basic smoke checks (daemon):**
 
@@ -1197,9 +1197,9 @@ Als beschikbaar:
 4. **Check 4 — Layout collapse**: iterates through `<main>` direct children; fails if ≥1 element has `offsetHeight === 0` or `offsetWidth === 0`
 5. **Check 5 — Variant matrix (COMPONENT only)**: checks if `<main>` contains ≥ `{variants.length × sizes.length}` child blocks
 
-**Multi-viewport screenshots (daemon — altijd draaien):**
+**Multi-viewport screenshots (daemon — always run):**
 
-Capture op 375 (mobile) en 1440 (desktop). Per viewport:
+Capture at 375 (mobile) and 1440 (desktop). Per viewport:
 
 ```
 playwright-cli open {url}
@@ -1212,7 +1212,7 @@ playwright-cli screenshot --filename=.project/wireframes/{$TARGET}-1440.png
 playwright-cli close
 ```
 
-**Dark/light screenshots (daemon — als `project.json#theme.modes.dark` bestaat):**
+**Dark/light screenshots (daemon — if `project.json#theme.modes.dark` exists):**
 
 ```
 playwright-cli run-code "async page => {
@@ -1247,7 +1247,7 @@ Check if `@axe-core/playwright` is available: `node -e "require('@axe-core/playw
 Generate an on-the-fly runner spec for aria-snapshot assertion. First run creates baseline; subsequent runs fail on structural regression. See `shared/PLAYWRIGHT.md → Runner Mode` for the full on-the-fly pattern.
 
 ```typescript
-// .project/playwright-runs/design-{$TARGET}.spec.ts  (tijdelijk)
+// .project/playwright-runs/design-{$TARGET}.spec.ts  (temporary)
 import { test, expect } from "@playwright/test";
 test("aria snapshot — {$TARGET}", async ({ page }) => {
   await page.goto("{url}");
@@ -1257,9 +1257,9 @@ test("aria snapshot — {$TARGET}", async ({ page }) => {
 });
 ```
 
-Draai: `npx playwright test .project/playwright-runs/design-{$TARGET}.spec.ts --config=.project/playwright-runs/playwright.config.ts [--update-snapshots bij eerste run]`
+Run: `npx playwright test .project/playwright-runs/design-{$TARGET}.spec.ts --config=.project/playwright-runs/playwright.config.ts [--update-snapshots on first run]`
 
-Bij runner niet beschikbaar (`npx playwright --version` faalt): skip aria-snapshot, noteer als `SKIPPED: runner niet beschikbaar`.
+If runner not available (`npx playwright --version` fails): skip aria-snapshot, note as `SKIPPED: runner not available`.
 
 ```
 SMOKE CHECKS: {$TARGET} ({$TARGET_TYPE})
@@ -1424,7 +1424,7 @@ On "Later": end — backlog shows DOING status with next-step `/frontend-check {
 
 ### Route: Flow (Add/Edit Flow)
 
-Same structure as Pagina route.
+Same structure as Page route.
 
 #### If "New flow":
 
@@ -1441,7 +1441,7 @@ If "Select from pages": show existing pages as multi-select to build flow sequen
 
 Cross-reference: for each step, check if page exists in `design.pages`. If not, warn and offer to create it.
 
-#### If "Bestaande bewerken":
+#### If "Edit existing":
 
 Show existing flows as options, then edit name/steps/notes. Same pattern as page edit.
 
@@ -1449,7 +1449,7 @@ Proceed to PHASE 3 (Confirm).
 
 ---
 
-### Route: Principes (Add/Edit)
+### Route: Principles (Add/Edit)
 
 ```yaml
 header: "Principles"
@@ -1466,7 +1466,7 @@ multiSelect: false
 
 ---
 
-### Route: Verwijderen (Delete Item)
+### Route: Delete (Delete Item)
 
 ```yaml
 header: "Delete"
@@ -1501,7 +1501,7 @@ Proceed to PHASE 3 (Confirm).
 
 ---
 
-### Route: Herstellen (Restore Checkpoint)
+### Route: Restore (Restore Checkpoint)
 
 #### Step 1: Load Checkpoints
 
@@ -1873,7 +1873,7 @@ If "Cancel": exit cleanly, no changes written.
 
 ### X.0 Checkpoint Save (before write)
 
-Save the current `design` section as a checkpoint in `.project/session/design-history.json` before writing. Skipped for Herstellen-restores (see Herstellen Step 4).
+Save the current `design` section as a checkpoint in `.project/session/design-history.json` before writing. Skipped for Restore-restores (see Restore Step 4).
 
 1. Use the current `design` state from PHASE 0.3 (already in memory — no new read needed). Skip if empty.
 2. Read `.project/session/design-history.json` (create if not exists: `[]`).
@@ -2034,7 +2034,7 @@ This skill must **NEVER**:
 - Auto-delete pages, flows, or principles (only via explicit "Delete" route)
 - Overwrite other sections in project.json
 - Skip pre-flight or post-flight validation
-- Guess page structure without user input or codebase evidence (Importeren route)
+- Guess page structure without user input or codebase evidence (Import route)
 
 This skill must **ALWAYS**:
 
@@ -2042,7 +2042,7 @@ This skill must **ALWAYS**:
 - Use AskUserQuestion for all user choices
 - Show current values when editing existing items
 - Show change preview before confirming (PHASE 3)
-- Confirm before destructive actions with "Nee" as recommended option
+- Confirm before destructive actions with "No" as recommended option
 - Save checkpoint (X.0) before every mutating write — except restores
 - Run post-flight validation (PHASE X) after any write
 - Cross-reference flow steps against defined pages

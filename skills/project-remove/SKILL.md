@@ -115,8 +115,8 @@ Project [naam] verwijderd
 
 - Kan NOOIT claude-config verwijderen (hard check)
 - Verwijdert alleen projecten met link-based setup
-- Vraagt altijd bevestiging
-- Link removal is altijd veilig (target intact)
+- Always asks for confirmation
+- Link removal is always safe (target intact)
 
 ## Safety Notes
 

@@ -39,7 +39,7 @@ function processPayment(order) {
 Maak specifieke functies per externe operatie, niet één generieke fetcher:
 
 ```typescript
-// Goed — elke functie is onafhankelijk mockbaar
+// Good — every function is independently mockable
 const api = {
   getUser: (id) => fetch(`/users/${id}`),
   getOrders: (userId) => fetch(`/users/${userId}/orders`),

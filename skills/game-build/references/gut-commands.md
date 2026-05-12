@@ -1,8 +1,8 @@
 # GUT Commands Reference
 
-Godot test commands voor `/game-build`.
+Godot test commands for `/game-build`.
 
-> **Path resolutie**: `{godot_executable}` wordt opgelost via `paths.yaml` (zie [skills/project-add/paths.yaml](../../project-add/paths.yaml)). Per platform: macOS = `/Applications/Godot.app/Contents/MacOS/Godot`, Windows = `C:\Godot\Godot_v4.4.1-stable_win64.exe`. Override met env var `CLAUDE_GODOT_EXECUTABLE` of `.claude/paths.local.yaml`.
+> **Path resolution**: `{godot_executable}` is resolved via `paths.yaml` (see [skills/project-add/paths.yaml](../../project-add/paths.yaml)). Per platform: macOS = `/Applications/Godot.app/Contents/MacOS/Godot`, Windows = `C:\Godot\Godot_v4.4.1-stable_win64.exe`. Override with env var `CLAUDE_GODOT_EXECUTABLE` or `.claude/paths.local.yaml`.
 
 ```bash
 # Run all tests

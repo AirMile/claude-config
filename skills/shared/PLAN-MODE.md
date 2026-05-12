@@ -1,71 +1,71 @@
-# Plan Mode Protocol — Denkfase Markering
+# Plan Mode Protocol — Thinking Phase Marker
 
-Skills die multi-stap analyse of synthese doen kunnen plan mode gebruiken om aan model-routers (zoals `opusplan`) te hinten dat de denkstappen een sterker model verdienen. Plan mode covert de analyse-fase; file writes naar `.project/` wachten tot na approval.
+Skills that perform multi-step analysis or synthesis can use plan mode to hint to model-routers (such as `opusplan`) that the thinking steps deserve a stronger model. Plan mode covers the analysis phase; file writes to `.project/` wait until after approval.
 
-> **Scope**: dit protocol gaat over plan mode als _thinking hint_ rond een lange analyse-fase. Voor plan mode als _approval gate_ rond één output-write (`core-edit`, `core-create`, `core-audit`): inline documenteren, niet hier.
+> **Scope**: this protocol is about plan mode as a _thinking hint_ around a long analysis phase. For plan mode as an _approval gate_ around a single output-write (`core-edit`, `core-create`, `core-audit`): document inline, not here.
 
 ---
 
-## Wanneer toepassen
+## When to apply
 
-Skills met een denkzware fase:
+Skills with a thought-heavy phase:
 
-- Multi-stap synthese of analyse over meerdere AskUserQuestion-rondes
+- Multi-step synthesis or analysis across multiple AskUserQuestion rounds
 - Tool-heavy research (WebSearch + Context7 + reasoning)
 - Architecture/design generation
 - Pipeline-planning (concept → backlog, requirements → architecture)
 
-Niet toepassen op korte CRUD-skills, pure validation, of skills met alleen file-reads + format-output.
+Do not apply to short CRUD skills, pure validation, or skills with only file-reads + format-output.
 
 ---
 
-## Entry — vóór de eerste denkstap
+## Entry — before the first thinking step
 
-Roep **`EnterPlanMode`** aan na de input-/setup-fase en vóór de eerste analytische stap.
+Call **`EnterPlanMode`** after the input/setup phase and before the first analytical step.
 
-Na de call:
+After the call:
 
-1. Via system-reminder krijg je het pad naar de plan file. Noteer dit pad — de finale output wordt hiernaar geschreven ter review.
-2. Tools die blijven werken in plan mode: `AskUserQuestion`, `Read`, `Glob`, `Grep`, `WebSearch`, Context7 MCP, Obsidian MCP.
-3. Tools die NIET werken tot na exit: alle file writes naar `.project/` of project source.
-4. De plan file zelf mag wél worden geschreven tijdens plan mode — dat is het review-kanaal.
+1. Via system-reminder you receive the path to the plan file. Note this path — the final output will be written there for review.
+2. Tools that keep working in plan mode: `AskUserQuestion`, `Read`, `Glob`, `Grep`, `WebSearch`, Context7 MCP, Obsidian MCP.
+3. Tools that do NOT work until after exit: all file writes to `.project/` or project source.
+4. The plan file itself may be written during plan mode — that is the review channel.
 
-**Skip als al in plan mode** — als bij entry al een actieve plan-mode system-reminder bestaat (gebruiker heeft zelf `/plan-mode` of een andere plan-mode skill gestart), skip `EnterPlanMode`. Lees in dat geval het bestaande plan-file-pad uit de actieve system-reminder.
-
----
-
-## Exit — vóór de eerste file write
-
-Aan het einde van de denkfase:
-
-1. Schrijf de gegenereerde output naar de plan file (pad uit Entry).
-2. Roep **`ExitPlanMode`** aan om de output te presenteren voor user approval.
-3. Na approval: voer de file writes / sync-fase uit (buiten plan mode).
-
-**Skip `ExitPlanMode` als de skill al gestart was in plan mode** — laat de gebruiker zelf plan mode beëindigen.
+**Skip if already in plan mode** — if at entry an active plan-mode system-reminder already exists (the user started `/plan-mode` or another plan-mode skill themselves), skip `EnterPlanMode`. In that case read the existing plan-file path from the active system-reminder.
 
 ---
 
-## Skill-specifieke configuratie
+## Exit — before the first file write
 
-Skills die dit protocol gebruiken voegen in hun SKILL.md een korte sectie in op de entry- en exit-locaties.
+At the end of the thinking phase:
 
-**Entry-sectie** (vóór eerste denkstap):
+1. Write the generated output to the plan file (path from Entry).
+2. Call **`ExitPlanMode`** to present the output for user approval.
+3. After approval: execute the file writes / sync phase (outside plan mode).
+
+**Skip `ExitPlanMode` if the skill was already started in plan mode** — let the user end plan mode themselves.
+
+---
+
+## Skill-specific configuration
+
+Skills that use this protocol insert a short section in their SKILL.md at the entry and exit locations.
+
+**Entry section** (before first thinking step):
 
 ```markdown
 ### Enter Plan Mode
 
-Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step {X}.
-Steps {X-Y} draaien in plan mode; de finale output wordt naar de plan file geschreven ter review.
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step {X}.
+Steps {X-Y} run in plan mode; the final output is written to the plan file for review.
 ```
 
-**Exit-sectie** (na laatste denkstap, vóór file writes):
+**Exit section** (after last thinking step, before file writes):
 
 ```markdown
-**Einde denkfase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf {wat} naar de plan file, dan `ExitPlanMode`.
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write {what} to the plan file, then `ExitPlanMode`.
 ```
 
-Skills mogen optioneel specifieke tools noemen die intensief in plan mode gebruikt worden (bv. "WebSearch + Context7 blijven werken") als extra duidelijkheid voor die skill nuttig is.
+Skills may optionally name specific tools used intensively in plan mode (e.g. "WebSearch + Context7 keep working") if that extra clarity is useful for that skill.
 
 ---
 

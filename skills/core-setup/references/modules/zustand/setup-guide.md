@@ -35,9 +35,9 @@ Volg Context7 output voor:
 ## Teardown
 
 1. Uninstall `zustand`
-2. Verwijder `src/stores/` (of vraag user welke files weg moeten)
-3. Refactor componenten die `useStore` gebruikten naar alternatief
+2. Delete `src/stores/` (or ask user which files to remove)
+3. Refactor components that used `useStore` to an alternative
 
 ## Notes
 
-Zustand is minimaal (~1kb), geen provider nodig. Voor server state: gebruik TanStack Query parallel.
+Zustand is minimal (~1kb), no provider needed. For server state: use TanStack Query alongside.

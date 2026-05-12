@@ -1,8 +1,8 @@
 # Feature file: feature.json Format
 
-Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature-name}/feature.json`. Dit bestand wordt progressief verrijkt door elke skill in de pipeline.
+Each feature is stored as **one file**: `.project/features/{feature-name}/feature.json`. This file is progressively enriched by each skill in the pipeline.
 
-**Bestandsnaam:** altijd `feature.json` (niet `define.json`, `build.json`, etc.)
+**Filename:** always `feature.json` (not `define.json`, `build.json`, etc.)
 
 **Lifecycle:**
 
@@ -13,13 +13,13 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 /dev-refactor → enriches (improvements, positive observations)
 ```
 
-**Write patroon voor skills na define:**
+**Write pattern for skills after define:**
 
 ```
 1. Read feature.json
-2. Merge de relevante sectie (NIET andere secties overschrijven)
+2. Merge the relevant section (do NOT overwrite other sections)
 3. Update status
-4. Write feature.json als JSON.stringify(data, null, 2)
+4. Write feature.json as JSON.stringify(data, null, 2)
 ```
 
 ## feature.json schema
@@ -30,17 +30,17 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
   "status": "DONE",
   "created": "2026-02-20",
   "depends": ["clipboard-redesign"],
-  "summary": "Shift+Click multi-select voor inspect overlay",
+  "summary": "Shift+Click multi-select for inspect overlay",
 
   "choices": {
-    "coreFunction": "Multi-select voor vergelijking",
-    "patterns": "Zustand store met Map"
+    "coreFunction": "Multi-select for comparison",
+    "patterns": "Zustand store with Map"
   },
 
   "clarifications": [
     {
-      "question": "Wat als max pins bereikt en gebruiker nog een pint?",
-      "answer": "Blokkeren met visuele feedback",
+      "question": "What if max pins is reached and the user pins another?",
+      "answer": "Block with visual feedback",
       "impact": "REQ-001 edge case"
     }
   ],
@@ -48,7 +48,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
   "requirements": [
     {
       "id": "REQ-001",
-      "description": "Shift+Click op element pint het",
+      "description": "Shift+Click on element pins it",
       "category": "core",
       "acceptance": "Element heeft pinned state na Shift+Click",
       "technique": "TDD",
@@ -60,10 +60,10 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
           "default": 10,
           "min": 1,
           "max": 50,
-          "impact": "Hoeveel elementen tegelijk vergelijkbaar"
+          "impact": "How many elements can be compared simultaneously"
         }
       ],
-      "edgeCases": ["Wat als max pins bereikt en gebruiker nog een pint?"],
+      "edgeCases": ["What if max pins is reached and the user pins another?"],
       "implicitCoverage": "REQ-002 test also validates this via integration flow"
     }
   ],
@@ -73,14 +73,14 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
       "path": "src/hooks/usePinMode.ts",
       "type": "source",
       "action": "create",
-      "purpose": "State management voor pin mode",
+      "purpose": "State management for pin mode",
       "requirements": ["REQ-001"]
     },
     {
       "path": "src/components/Inspector.tsx",
       "type": "source",
       "action": "modify",
-      "purpose": "Shift+Click handler toevoegen",
+      "purpose": "Add Shift+Click handler",
       "requirements": ["REQ-002"]
     },
     {
@@ -93,7 +93,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
   ],
 
   "design": {
-    "wireframe": "ASCII wireframe tekst (alleen visuele features)",
+    "wireframe": "ASCII wireframe text (visual features only)",
     "components": ["PinBar", "PinOverlay"]
   },
 
@@ -119,7 +119,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
       "method": "POST",
       "path": "/api/pins",
       "auth": "bearer",
-      "description": "Pin een element permanent op"
+      "description": "Permanently pin an element"
     }
   ],
 
@@ -127,7 +127,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
     {
       "step": 1,
       "requirements": ["REQ-001"],
-      "description": "State hook implementeren",
+      "description": "Implement state hook",
       "dependsOn": []
     },
     {
@@ -142,13 +142,13 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
     {
       "requirementId": "REQ-001",
       "testFile": "src/hooks/__tests__/usePinMode.test.ts",
-      "description": "Valideert dat pin state correct toggled"
+      "description": "Validates that pin state toggles correctly"
     }
   ],
 
   "testStrategyLocation": "colocated",
 
-  "research": "Optioneel. Markdown string met stack/architecture research bevindingen.",
+  "research": "Optional. Markdown string with stack/architecture research findings.",
 
   "build": {
     "started": "2026-02-20",
@@ -159,7 +159,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
     "decisions": [
       "Used local state instead of context — context would re-render entire tree on every pin"
     ],
-    "explanation": "Markdown string met plain-language uitleg van de feature. Dashboard rendert via md()."
+    "explanation": "Markdown string with plain-language explanation of the feature. Dashboard renders via md()."
   },
 
   "packages": [
@@ -176,7 +176,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
         "type": "AUTO",
         "requirementId": "REQ-001",
         "status": "PASS",
-        "evidence": "DOM snapshot: PinBar zichtbaar met 1 element",
+        "evidence": "DOM snapshot: PinBar visible with 1 element",
         "fixApplied": null
       }
     ],
@@ -215,8 +215,8 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
           "file": "src/hooks/usePinMode.ts",
           "line": 23,
           "issue": "Array.find() in hot path",
-          "fix": "Vervangen door Map",
-          "result": "Render tijd -40%",
+          "fix": "Replace with Map",
+          "result": "Render time -40%",
           "risk": "LOW"
         }
       ],
@@ -228,29 +228,29 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
     },
     "decisions": [
       {
-        "decision": "Map ipv Array voor pin state",
-        "rationale": "PinBar kan 50+ elementen tonen — O(1) lookup"
+        "decision": "Map instead of Array for pin state",
+        "rationale": "PinBar can show 50+ elements — O(1) lookup"
       }
     ],
-    "positiveObservations": ["Error boundaries correct geïmplementeerd"],
+    "positiveObservations": ["Error boundaries correctly implemented"],
     "failureAnalysis": null,
     "pendingImprovements": []
   },
 
   "durableDecisions": [
     {
-      "decision": "State management voor pin-mode",
-      "chosen": "Local hook met Map",
-      "constraint": "PinBar moet 50+ elementen vloeiend renderen",
-      "rationale": "Context zou hele tree re-renderen op elke pin-toggle",
+      "decision": "State management for pin-mode",
+      "chosen": "Local hook with Map",
+      "constraint": "PinBar must render 50+ elements smoothly",
+      "rationale": "Context would re-render the entire tree on every pin-toggle",
       "rejected": [
         {
           "option": "Zustand global store",
-          "reason": "Overkill voor 1 component"
+          "reason": "Overkill for 1 component"
         },
         {
           "option": "React context",
-          "reason": "Re-render storm bij high-frequency toggles"
+          "reason": "Re-render storm with high-frequency toggles"
         }
       ],
       "date": "2026-02-20"
@@ -258,7 +258,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
   ],
 
   "observations": [
-    "Inspector z-index conflict bij overlapping modals — suggest: /dev-define z-index-system"
+    "Inspector z-index conflict with overlapping modals — suggest: /dev-define z-index-system"
   ],
 
   "suggestionsLog": [
@@ -280,102 +280,102 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 }
 ```
 
-## Velden per lifecycle fase
+## Fields per lifecycle phase
 
-**Altijd aanwezig** (geschreven door define):
+**Always present** (written by define):
 
 `name`, `status`, `created`, `depends`, `summary`, `choices`, `requirements`, `files`, `architecture`, `buildSequence`, `testStrategy`
 
-**Conditioneel van define:**
+**Conditional from define:**
 
-- `design` — alleen visuele features
-- `apiContract` — alleen backend features
-- `research` — alleen als stack/architecture research gedaan
-- `requirements[].tuningLevers` — alleen bij mechanica-requirements met getallen/timing
-- `requirements[].edgeCases` — alleen bij requirements met interacties/state changes
-- `clarifications` — alleen als gray-area resolution is uitgevoerd (open branches gevonden)
+- `design` — visual features only
+- `apiContract` — backend features only
+- `research` — only when stack/architecture research was done
+- `requirements[].tuningLevers` — only for mechanic-requirements with numbers/timing
+- `requirements[].edgeCases` — only for requirements with interactions/state changes
+- `clarifications` — only when gray-area resolution was performed (open branches found)
 
-**Toegevoegd door build:**
+**Added by build:**
 
-- `build` — summary met techniques, test counts, decisions, explanation
-- `packages` — npm/packages die deze feature toevoegde
-- `tests.checklist` — test items met status `"pending"` (initieel)
-- `requirements[].technique` — TDD of implementation-first per REQ
-- `requirements[].syncNote` — plain-language uitleg hoe REQ is gebouwd
+- `build` — summary with techniques, test counts, decisions, explanation
+- `packages` — npm/packages added by this feature
+- `tests.checklist` — test items with status `"pending"` (initial)
+- `requirements[].technique` — TDD or implementation-first per REQ
+- `requirements[].syncNote` — plain-language explanation of how REQ was built
 - `requirements[].status` → `"built"`
 
-**Toegevoegd door verify:**
+**Added by verify:**
 
-- `tests.finalStatus` — `PASSED` (alle requirements PASS), `FAILED` (≥1 FAIL), of `PARTIAL` (≥1 BLOCKED of UNCLEAR, 0 FAIL). PARTIAL = build draait, maar verificatie incompleet — heropenen na dependency-fix of clarification. Feature `status` blijft `"DONE"` om de pipeline niet te blokkeren; het signaal voor incomplete verificatie zit in `finalStatus`.
+- `tests.finalStatus` — `PASSED` (all requirements PASS), `FAILED` (≥1 FAIL), or `PARTIAL` (≥1 BLOCKED or UNCLEAR, 0 FAIL). PARTIAL = build runs, but verification is incomplete — reopen after dependency-fix or clarification. Feature `status` stays `"DONE"` to avoid blocking the pipeline; the signal for incomplete verification lives in `finalStatus`.
 - `tests.coverage` — statement/branch coverage
-- `tests.sessions` — per-sessie resultaten
+- `tests.sessions` — per-session results
 - `tests.checklist[].status` → PASS/FAIL/skip per item
 - `tests.evaluation` — per-REQ scoring (acceptancePass, acceptanceTotal, builderPass, builderTotal, verdict)
-- `tests.acceptanceTestFile` — pad naar gegenereerde acceptance test (blijft in codebase)
-- `requirements[].status` → `"PASS"` of `"FAIL"`
-- `requirements[].implicitCoverage` — wanneer requirement gedekt is door een andere test (set door PHASE 5d)
-- `observations` — bevindingen, suggesties voor andere features
-- `tests.verificationCheckpoint` — acceptance criteria mapping resultaat (gaps, mismatches, adjustments)
+- `tests.acceptanceTestFile` — path to generated acceptance test (stays in codebase)
+- `requirements[].status` → `"PASS"` or `"FAIL"`
+- `requirements[].implicitCoverage` — when a requirement is covered by another test (set by PHASE 5d)
+- `observations` — findings, suggestions for other features
+- `tests.verificationCheckpoint` — acceptance criteria mapping result (gaps, mismatches, adjustments)
 
-**Toegevoegd door reuse-discovery (dev-define, project-plan, dev-build, dev-verify):**
+**Added by reuse-discovery (dev-define, project-plan, dev-build, dev-verify):**
 
-- `suggestionsLog[]` — bijgehouden door alle vier pipeline-skills die COMPONENT/PAGE-todos suggereren, én door `frontend-design`/`frontend-convert` voor gap-discovery (direction-flag `frontend→dev`). Append-only. Schema: `{ skill, type, name, status: "accepted"|"rejected", at, direction? }`. Dedup-sleutel: `(name, skill)`. Een voorstel dat eenmaal afgewezen is (`status: "rejected"`) wordt door dezelfde skill niet opnieuw voorgesteld, ook al is de trigger hetzelfde. Een nieuwe trigger vanuit een andere skill mag wél opnieuw voorstellen (andere detectie-bron) — zie dedupe-logica in de afzonderlijke skill-docs.
+- `suggestionsLog[]` — maintained by all four pipeline skills that suggest COMPONENT/PAGE todos, and by `frontend-design`/`frontend-convert` for gap-discovery (direction-flag `frontend→dev`). Append-only. Schema: `{ skill, type, name, status: "accepted"|"rejected", at, direction? }`. Dedup key: `(name, skill)`. A proposal that was once rejected (`status: "rejected"`) is not re-proposed by the same skill, even if the trigger recurs. A new trigger from a different skill may re-propose (different detection source) — see dedupe logic in the individual skill docs.
 
-**Toegevoegd door gap-discovery (frontend-design, frontend-convert):**
+**Added by gap-discovery (frontend-design, frontend-convert):**
 
-- `frontend.linkedEntities[]` — cross-pipeline traceability: welke visual entities (components, pages) koppelen hun handler-props aan deze feature. Schema per item: `{ type: "component"|"page", name, prop }`. Wordt gelezen door `dev-build` om stub-handlers te vervangen door echte implementatie na build.
+- `frontend.linkedEntities[]` — cross-pipeline traceability: which visual entities (components, pages) link their handler-props to this feature. Schema per item: `{ type: "component"|"page", name, prop }`. Read by `dev-build` to replace stub-handlers with real implementation after build.
 
-**Toegevoegd door thinking-decide** (cross-phase, kan op elk moment):
+**Added by thinking-decide** (cross-phase, can occur at any time):
 
-- `durableDecisions[]` — feature-scoped beslissingen met `decision`, `chosen`, `constraint` (forcerende beperking), `rationale`, `rejected[]` (`{option, reason}`), `date`. Append-only — nieuwe entries worden toegevoegd, oude blijven staan. `constraint` en `rejected[]` zijn optioneel maar sterk aanbevolen voor non-trivial beslissingen; ze voorkomen dat afgewezen opties later als zombie-voorstellen terugkomen.
+- `durableDecisions[]` — feature-scoped decisions with `decision`, `chosen`, `constraint` (forcing constraint), `rationale`, `rejected[]` (`{option, reason}`), `date`. Append-only — new entries are added, old ones stay. `constraint` and `rejected[]` are optional but strongly recommended for non-trivial decisions; they prevent rejected options from resurfacing as zombie proposals later.
 
-**Toegevoegd door refactor:**
+**Added by refactor:**
 
-- `refactor.status` — CLEAN, REFACTORED, of ROLLED_BACK
-- `refactor.improvements` — per categorie (security, performance, dry, simplification, clarity, quality, errorHandling)
-- `refactor.decisions` — met rationale
+- `refactor.status` — CLEAN, REFACTORED, or ROLLED_BACK
+- `refactor.improvements` — per category (security, performance, dry, simplification, clarity, quality, errorHandling)
+- `refactor.decisions` — with rationale
 - `refactor.positiveObservations`
-- `refactor.failureAnalysis` — alleen bij ROLLED_BACK
-- `refactor.pendingImprovements` — alleen bij ROLLED_BACK
-- `shipped` — `true` als refactor CLEAN of REFACTORED was; feature is nu gepromoot naar Dashboard
-- `shippedAt` — ISO-datumstring (moment van promotion)
-- `shippedSha` — git blob sha van het refactor-commit (voor "as-shipped" snapshot detectie in Dashboard modal)
+- `refactor.failureAnalysis` — only for ROLLED_BACK
+- `refactor.pendingImprovements` — only for ROLLED_BACK
+- `shipped` — `true` if refactor was CLEAN or REFACTORED; feature is now promoted to Dashboard
+- `shippedAt` — ISO date string (moment of promotion)
+- `shippedSha` — git blob sha of the refactor commit (for "as-shipped" snapshot detection in Dashboard modal)
 
 ## Requirement status flow
 
 ```
 pending → built → PASS
                 → FAIL
-                → BLOCKED   (externe dependency ontbreekt)
-                → UNCLEAR   (acceptance criteria te vaag om te testen)
+                → BLOCKED   (external dependency missing)
+                → UNCLEAR   (acceptance criteria too vague to test)
 ```
 
-- `BLOCKED` — test kon niet draaien door externe afhankelijkheid (service down, ontbrekende API key, missing fixture). Signaal voor heropenen: fix dependency, dan opnieuw verifiëren.
-- `UNCLEAR` — acceptance criteria is te vaag om deterministisch te testen ("voelt snel", "werkt goed"). Signaal voor `/dev-define` heropenen om concrete criteria te formuleren.
-- `FAIL` blijft default voor ontbrekende tests zonder een van bovenstaande legitieme redenen — geen ontsnappingsroute voor vergeten tests.
+- `BLOCKED` — test could not run due to an external dependency (service down, missing API key, missing fixture). Signal to reopen: fix dependency, then re-verify.
+- `UNCLEAR` — acceptance criteria is too vague to test deterministically ("feels fast", "works well"). Signal to reopen `/dev-define` to formulate concrete criteria.
+- `FAIL` remains the default for missing tests without one of the above legitimate reasons — no escape hatch for forgotten tests.
 
-## Refactor status waarden
+## Refactor status values
 
 `CLEAN` | `REFACTORED` | `ROLLED_BACK`
 
-## Improvement categorieën
+## Improvement categories
 
 `security` | `performance` | `dry` | `simplification` | `clarity` | `quality` | `errorHandling`
 
-## Risk waarden
+## Risk values
 
 `LOW` | `MED`
 
-## Welke skills schrijven naar feature.json
+## Which skills write to feature.json
 
-| Skill              | Wat schrijven naar feature.json                                                                                                                          | Wanneer |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Skill              | What they write to feature.json                                                                                                                          | When     |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `/dev-define`      | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                           | PHASE 3  |
-| `/dev-build`       | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Leest clarifications als constraints                               | PHASE 4C |
+| `/dev-build`       | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Reads clarifications as constraints                                | PHASE 4C |
 | `/dev-verify`      | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | PHASE 6  |
 | `/dev-refactor`    | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | PHASE 5  |
-| `/thinking-decide` | Append: `durableDecisions[]` met decision, chosen, constraint, rationale, rejected[], date (alleen bij feature-scope)                                    | Step 3  |
-| `/game-define`     | Creates feature.json (zelfde als dev-define + clarifications, game-specifieke design velden)                                                             | PHASE 4  |
-| `/game-build`      | Enriches: build, tests.checklist (playtest items), requirements. Leest clarifications als constraints                                                    | PHASE 5  |
+| `/thinking-decide` | Append: `durableDecisions[]` with decision, chosen, constraint, rationale, rejected[], date (feature-scope only)                                         | Step 3   |
+| `/game-define`     | Creates feature.json (same as dev-define + clarifications, game-specific design fields)                                                                  | PHASE 4  |
+| `/game-build`      | Enriches: build, tests.checklist (playtest items), requirements. Reads clarifications as constraints                                                     | PHASE 5  |
 | `/game-verify`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | PHASE 6  |
 | `/game-refactor`   | Enriches: refactor, status → DONE                                                                                                                        | PHASE 5  |
