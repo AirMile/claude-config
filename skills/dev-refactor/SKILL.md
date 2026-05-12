@@ -97,8 +97,9 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file w
    **b) No feature name** (`/dev-refactor`):
 
    **b0) UI-queue detection (check first):**
-   - `queued = data.features.filter(f => f.transition === "refactoring" && f.status === "DONE" && !f.shipped)`
+   - `queued = data.features.filter(f => f.transition === "refactoring" && f.status === "DONE" && !f.shipped)` (see `shared/BACKLOG.md → Lifecycle Protocol`)
    - If `queued.length > 0`:
+     - Show: `Backlog: ✓ Task picked up — {names}`
      - **AskUserQuestion**:
        - header: "Queue"
        - question: "{N} features have been marked for refactor via the backlog UI: {names}. Use as queue?"

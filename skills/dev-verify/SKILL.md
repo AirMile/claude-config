@@ -50,7 +50,9 @@ Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issue
 
 > **Todo**: call `TaskCreate` with the 12 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
-1. **Read backlog** — `.project/backlog.html`, parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md`). Filter `status === "DOING"`. No feature name → suggest via AskUserQuestion.
+1. **Read backlog** — `.project/backlog.html`, parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
+   - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "verifying")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`.
+   - Fallback: filter `status === "DOING"`. No feature name → suggest via AskUserQuestion.
 
 2. **Parse input:**
    - Feature name only → proceed to classification

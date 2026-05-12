@@ -102,7 +102,8 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 1. **If no feature name provided — check backlog:**
    - Read `.project/backlog.html`, parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`)
-   - Filter defined features: `data.features.filter(f => f.status === "DEFINED")`
+   - See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `type === "FEATURE" && transition === "building"` — if found, auto-select (no modal needed).
+   - Fallback: Filter defined features: `data.features.filter(f => f.status === "DEFINED")`
    - First defined feature is the suggested next feature
    - Use **AskUserQuestion** with backlog-suggested feature:
      ```
@@ -218,7 +219,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    **Tag backlog card as active** (immediately after loading feature):
 
    Read `.project/backlog.html` (if present), parse JSON (see `shared/BACKLOG.md`).
-   Find feature by name → set `"status": "DOING"`, `"stage": "building"`, `data.updated` to now (transition DEFINED → DOING on build start).
+   Find feature by name → set `"status": "DOING"`, `"stage": "building"`, remove `transition`, `data.updated` to now.
    Write back via Edit (keep `<script>` tags intact).
    The card moves to the DOING column with stage `building`.
 

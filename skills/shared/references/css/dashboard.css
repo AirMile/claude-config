@@ -2200,6 +2200,56 @@ hr.divider {
   color: var(--text-muted);
 }
 
+/* Mode palette tabs */
+.sg-mode-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.sg-mode-tab {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.sg-mode-tab:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.sg-mode-tab.active {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.sg-mode-panel {
+  display: none;
+}
+
+.sg-mode-panel.active {
+  display: block;
+}
+
+.sg-mode-group {
+  margin-bottom: 16px;
+}
+.sg-mode-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
 /* Learnings tab */
 .learnings-group {
   margin-bottom: 24px;

@@ -28,10 +28,12 @@ PHASE 1 of the dev workflow: define → build → test.
 
 2. **If no name** (`/dev-define`):
 
-   a) Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">`
-   → Find first TODO: `data.features.find(f => f.status === "TODO")`
+   a) Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
 
-   b) **If backlog feature found:**
+   - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`, go to step 3.
+   - Fallback: `data.features.find(f => f.status === "TODO")` (first TODO).
+
+   b) **If backlog feature found (fallback path):**
    AskUserQuestion: "Next feature from backlog: **{name}**. Continue with this?"
    - "{name} (Recommended)" / "Different feature"
    - Backlog chosen → step 3. "Different feature" → option c.

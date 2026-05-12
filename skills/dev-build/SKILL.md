@@ -127,7 +127,9 @@ Blocked:
 
 If no feature name provided:
 
-1. Parse `.project/backlog.html` (see `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion** (ready features at the top)
+1. Parse `.project/backlog.html` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
+   - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "building")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`.
+   - Fallback: filter `status === "DEFINED"` → suggest via **AskUserQuestion** (ready features at the top)
 2. Fallback: list `.project/features/` with `feature.json`, let user select
 
 Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files.

@@ -983,6 +983,12 @@ Generates working code for PAGE or COMPONENT features with `status: DEF` and no 
 
 **Trigger:** only reachable if `$HAS_BUILD_CANDIDATES = true` (detected in PHASE 1).
 
+#### Step 0: Backlog task pickup
+
+See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "designing"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`) and skip entity/candidate selection modals.
+
+On successful code generation: remove `transition`, set `status: "DEFINED"`. See `shared/BACKLOG.md → Lifecycle Protocol → Write`.
+
 #### Step 1: Entity selection
 
 Show only type options for which candidates are available:

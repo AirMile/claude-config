@@ -307,3 +307,71 @@ Blocked:                    data.features.filter(f => (f.dependencies||[]).some(
 High risk (TODO/DEFINED):   data.features.filter(f => f.risk >= 4 && (f.status === "TODO" || f.status === "DEFINED"))
 Archived:                   data.features.filter(f => f.status === "CANCELLED")
 ```
+
+---
+
+## Lifecycle Protocol
+
+Backlog tasks flow through states via two actors:
+
+1. **Backlog dashboard UI** sets `transition` when the user clicks "Copy prompt" — this is the queue marker that tells the next skill which task is being requested.
+2. **Skill** reads `transition` to identify its task, runs the work, then writes `status` to the next state and removes `transition` on success.
+
+Skills do **not** write to the backlog at start — saves a read+write roundtrip and keeps abort idempotent (if aborted, user re-copies the prompt).
+
+### transition field semantics
+
+`feature.transition` — optional string, set by the dashboard, consumed by skills:
+
+| Value           | Dashboard sets when user copies prompt for      | Consumed by                                        |
+|-----------------|--------------------------------------------------|-----------------------------------------------------|
+| `"defining"`    | THEME setup or FEATURE definition prompt        | `frontend-tokens` (THEME) / `dev-define` (FEATURE) |
+| `"building"`    | Build prompt for a DEFINED feature              | `dev-build`                                         |
+| `"verifying"`   | Verify prompt for a DOING feature               | `dev-verify`                                        |
+| `"refactoring"` | Refactor prompt for a DONE+!shipped feature     | `dev-refactor`                                      |
+
+On successful completion the skill removes the `transition` field.
+
+### Read (PHASE 0)
+
+```
+Read .project/backlog.html → parse <script id="backlog-data"> JSON.
+Find a task matching the skill's filter (see table below).
+
+Found     → note taskName, continue.
+           Show: Backlog: ✓ Task picked up — {taskName}
+Not found → standalone run, no task to link.
+           Show: Backlog: ✓ No matching task in backlog (standalone run)
+```
+
+### Write (on success)
+
+```
+Re-read backlog.html, find taskName.
+Set status → {new status}, remove transition field.
+Write back.
+Show: Backlog: ✓ Task "{taskName}" → {newStatus}
+```
+
+### Abort (cancel / postflight fail)
+
+No backlog write — `transition` remains as set by the dashboard, user can re-copy the prompt to retry. Idempotent by design.
+
+### Skill filter & status transition table
+
+The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`. The FRONTEND pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"auditing"` — same pattern, different vocab.
+
+| Skill              | Filter                                                                       | New status on success              |
+|--------------------|------------------------------------------------------------------------------|------------------------------------|
+| `frontend-tokens`  | `type === "THEME" && transition === "defining"`                              | `"DONE"`                           |
+| `dev-define`       | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                        |
+| `dev-build`        | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                          |
+| `dev-verify`       | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                           |
+| `dev-refactor`     | `transition === "refactoring"`                                                | keep status, set `shipped: true`   |
+| `frontend-design`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DEFINED"`                        |
+| `frontend-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                          |
+| `frontend-check`   | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "auditing"`   | `"DONE"`, set `shipped: true`      |
+| `game-define`      | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                        |
+| `game-build`       | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                          |
+| `game-verify`      | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                           |
+| `game-refactor`    | `transition === "refactoring"`                                                | keep status, set `shipped: true`   |

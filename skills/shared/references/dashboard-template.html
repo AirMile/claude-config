@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <title>Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon-dashboard.svg" />
     <script src="/lib/themes.js"></script>
-    <link rel="stylesheet" href="/css/dashboard.css?v=8" />
+    <link rel="stylesheet" href="/css/dashboard.css?v=10" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
@@ -1292,31 +1293,15 @@
             <p style="color:var(--text-dim)">Design tokens, modes, CSS variables — managed via <code>/frontend-tokens</code></p></div>`;
         }
 
-        // ── Colors ──
-        function renderPalette(label, items) {
-          if (!items || !items.length) return "";
-          return `
-            <div class="sg-section">
-              <div class="sg-section-title">${esc(label)}</div>
-              <div class="sg-palette">${items
-                .map(
-                  (c) => `
-                <div class="sg-color">
-                  <div class="sg-color-swatch" style="background:${esc(c.value)}"></div>
-                  <div class="sg-color-info">
-                    <div class="sg-color-token">${esc(c.token)}</div>
-                    <div class="sg-color-value">${esc(c.value)}</div>
-                    ${c.usage ? `<div class="sg-color-usage">${esc(c.usage)}</div>` : ""}
-                  </div>
-                </div>`,
-                )
-                .join("")}</div>
-            </div>`;
-        }
-        const colorsHtml =
-          renderPalette("Main Colors", colors.main) +
-          renderPalette("Accent Colors", colors.accent) +
-          renderPalette("Semantic Colors", colors.semantic);
+        // ── Colors (primitives rendered inside the Colors section below mode tabs) ──
+        const brandHtml =
+          colors.accent && colors.accent.length
+            ? `<div class="sg-mode-group"><div class="sg-mode-group-label">Brand</div><div class="sg-palette">${colors.accent.map((c) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(c.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(c.token)}</div><div class="sg-color-value">${esc(c.value)}</div>${c.usage ? `<div class="sg-color-usage">${esc(c.usage)}</div>` : ""}</div></div>`).join("")}</div></div>`
+            : "";
+        const statusHtml =
+          colors.semantic && colors.semantic.length
+            ? `<div class="sg-mode-group"><div class="sg-mode-group-label">Status</div><div class="sg-palette">${colors.semantic.map((c) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(c.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(c.token)}</div><div class="sg-color-value">${esc(c.value)}</div>${c.usage ? `<div class="sg-color-usage">${esc(c.usage)}</div>` : ""}</div></div>`).join("")}</div></div>`
+            : "";
 
         // ── Typography ──
         const specimenEntries = [
@@ -1482,24 +1467,73 @@
         function renderModeSwatches(vars) {
           if (!vars.length)
             return '<p style="color:var(--text-dim);font-size:13px">No CSS variables defined in this mode.</p>';
-          return `<div class="sg-palette">${vars
-            .map(
-              (v) => `
-            <div class="sg-color">
-              <div class="sg-color-swatch" style="background:${esc(v.value)}"></div>
-              <div class="sg-color-info">
-                <div class="sg-color-token">${esc(v.token)}</div>
-                <div class="sg-color-value">${esc(v.value)}</div>
-              </div>
-            </div>`,
-            )
-            .join("")}</div>`;
+          const NON_COLOR = new Set([
+            "--radius",
+            "--font-sans",
+            "--font-mono",
+            "--font-serif",
+            "--font-heading",
+          ]);
+          const GROUPS = [
+            { label: "Base", keys: ["--background", "--foreground"] },
+            {
+              label: "Surfaces",
+              keys: [
+                "--card",
+                "--card-foreground",
+                "--popover",
+                "--popover-foreground",
+              ],
+            },
+            {
+              label: "Actions",
+              keys: [
+                "--primary",
+                "--primary-foreground",
+                "--secondary",
+                "--secondary-foreground",
+                "--accent",
+                "--accent-foreground",
+              ],
+            },
+            {
+              label: "States",
+              keys: [
+                "--muted",
+                "--muted-foreground",
+                "--destructive",
+                "--destructive-foreground",
+              ],
+            },
+            { label: "Form", keys: ["--border", "--input", "--ring"] },
+          ];
+          const varMap = new Map(vars.map((v) => [v.token, v]));
+          const assigned = new Set();
+          function swatch(v) {
+            return `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(v.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(v.token)}</div><div class="sg-color-value">${esc(v.value)}</div></div></div>`;
+          }
+          let html = "";
+          for (const g of GROUPS) {
+            const gv = g.keys.map((k) => varMap.get(k)).filter(Boolean);
+            if (!gv.length) continue;
+            gv.forEach((v) => assigned.add(v.token));
+            html += `<div class="sg-mode-group"><div class="sg-mode-group-label">${g.label}</div><div class="sg-palette">${gv.map(swatch).join("")}</div></div>`;
+          }
+          const rest = vars.filter(
+            (v) => !assigned.has(v.token) && !NON_COLOR.has(v.token),
+          );
+          if (rest.length)
+            html += `<div class="sg-mode-group"><div class="sg-mode-group-label">Other</div><div class="sg-palette">${rest.map(swatch).join("")}</div></div>`;
+          return (
+            html ||
+            '<p style="color:var(--text-dim);font-size:13px">No color variables defined in this mode.</p>'
+          );
         }
 
         const modesHtml = modeKeys.length
           ? `
           <div class="sg-section">
-            <div class="sg-section-title">Mode Palette</div>
+            <div class="sg-section-title">Colors</div>
             ${
               modeKeys.length > 1
                 ? `<div class="sg-mode-tabs">${modeKeys
@@ -1518,27 +1552,20 @@
               </div>`,
               )
               .join("")}</div>
+            ${brandHtml}
+            ${statusHtml}
           </div>`
-          : "";
-
-        // ── CSS Variables ──
-        const cssHtml = t.cssVars
-          ? `
-          <div class="sg-section">
-            <div class="sg-section-title">CSS Variables</div>
-            <div class="code-block">${esc(t.cssVars)}</div>
-          </div>`
-          : "";
+          : brandHtml || statusHtml
+            ? `<div class="sg-section"><div class="sg-section-title">Colors</div>${brandHtml}${statusHtml}</div>`
+            : "";
 
         return `
           <div class="section-header"><h2>Design System</h2></div>
-          ${colorsHtml}
           ${modesHtml}
           ${specimensHtml}
           ${radiusHtml}
           ${motionHtml}
-          ${interactionsHtml}
-          ${cssHtml}`;
+          ${interactionsHtml}`;
       }
 
       function renderStack() {

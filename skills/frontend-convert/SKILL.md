@@ -228,11 +228,14 @@ Store as `$PATCH_SECTIONS`. If "Full rewrite instead": restore scope to "Single 
 If scope is a full page (not a single component):
 
 1. Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`
-2. Find feature matching page name: `data.features.find(f => f.name === "{kebab-case-page-name}")`
+2. See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "converting"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`).
+3. Find feature matching page name: `data.features.find(f => f.name === "{kebab-case-page-name}")`
    - **Found + status TODO**: set `status: "DOING"`, `stage: "building"`, `date: "{YYYY-MM-DD}"`. Write back via Edit.
    - **Found + status DOING**: set `stage: "building"`. Write back via Edit.
    - **Not found**: add to `data.features[]`: `{ "name": "{name}", "type": "PAGE", "status": "DOING", "stage": "building", "phase": "P4", "description": "Converted from visual input", "dependencies": [] }`. Write back.
-3. Set `data.updated` to today. Keep `<script>` tags intact.
+4. Set `data.updated` to today. Keep `<script>` tags intact.
+
+On successful completion: re-read backlog.html, find the task by name → remove `transition`. See `shared/BACKLOG.md → Lifecycle Protocol → Write`.
 
 If scope is a component: skip this step.
 

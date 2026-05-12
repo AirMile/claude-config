@@ -170,6 +170,8 @@ Audits:     [Performance, SEO, AEO, Responsive]
 
 Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`.
 
+See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "auditing"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`).
+
 **If `targetType === "feature"`**: match directly on `featureName` (no URL-matching). Find `data.features.find(f => f.name === featureName)` → set `stage: "testing"`, `data.updated` to today. Write back.
 
 **All other target types**: filter features with `status === "DOING" && stage === "built"`. Match target URL/page against backlog items (best-effort: match page name from URL path to feature name). If match found: set `stage: "testing"`, `data.updated` to today. Write back via Edit (keep `<script>` tags intact).
@@ -1037,7 +1039,7 @@ Resolved: [N]/[total] findings
 If a backlog item was tagged as "testing" in PHASE 0:
 
 1. Read `.project/backlog.html` → parse JSON
-2. Find the feature → set `status: "DONE"`, remove `stage` field, `data.updated` to today
+2. Find the feature → set `status: "DONE"`, remove `stage` and `transition` fields, `data.updated` to today
 3. **If `f.type === "PAGE" || f.type === "COMPONENT"` (frontend track)**: also set `f.shipped = true` and `f.shippedAt = "{YYYY-MM-DD}"` (terminal — no refactor step for frontend cards). If the audit fixes triggered a git commit: also set `f.shippedSha = "{audit-commit-sha}"`. On a clean PASS without commit: omit `shippedSha`.
 4. **If `targetType === "feature"`**: also add `audit` field to the feature:
    ```json

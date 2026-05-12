@@ -85,7 +85,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 1. **Read backlog for pipeline status:**
 
    Read `.project/backlog.html` (if exists), parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`):
-   - Filter DONE features: `data.features.filter(f => f.status === "DONE")`
+   - See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Priority filter: `transition === "refactoring"` — if found, pre-select. Fallback: `data.features.filter(f => f.status === "DONE")`
    - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` section
    - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
 

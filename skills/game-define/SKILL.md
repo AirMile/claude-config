@@ -48,7 +48,8 @@ The skill gathers requirements through targeted questions, optionally researches
    ```
 
    - If backlog exists: parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`)
-   - Find the first TODO feature: `data.features.find(f => f.status === "TODO")`
+   - See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `type === "FEATURE" && transition === "defining"` — if found, auto-select (no modal needed).
+   - Fallback: `data.features.find(f => f.status === "TODO")` — use as suggestion
    - Use feature name as suggestion
 
    **b) If backlog has a next feature:**
@@ -762,7 +763,7 @@ Mutate in memory:
 **Backlog** (see `shared/BACKLOG.md`):
 
 - Find feature: `data.features.find(f => f.name === "{feature-name}")`
-- Found → set `.status = "DEFINED"`, remove `.stage` (no stage in DEFINED column) and set `.date = "{current date}"`
+- Found → set `.status = "DEFINED"`, remove `.stage` and `.transition` (no stage in DEFINED column) and set `.date = "{current date}"`
 - Not found → add: `{ "name": "{feature}", "type": "FEATURE", "status": "DEFINED", "phase": "P4", "description": "{from feature.json summary}", "dependencies": [], "source": "/game-define" }`
 - Set `data.updated` to current date
 

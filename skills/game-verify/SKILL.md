@@ -149,7 +149,8 @@ Now TESTABLE -> TDD fix loop
    ```
 
    - If backlog exists: parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`)
-   - Filter built features: `data.features.filter(f => f.status === "DOING" && f.stage === "built")`
+   - See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `type === "FEATURE" && transition === "verifying"` — if found, auto-select (no modal needed).
+   - Fallback: Filter built features: `data.features.filter(f => f.status === "DOING" && f.stage === "built")`
 
    Use **AskUserQuestion** if built features found:
    - header: "Feature"
@@ -1213,7 +1214,7 @@ Recorded in test results.
 
    **feature.json**: `status` → `"DONE"`, `requirements[].status` → `"PASS"` / `"FAIL"` / `"BLOCKED"` / `"UNCLEAR"` per item (BLOCKED/UNCLEAR include `evidence` string), `tests.checklist[].status` → update per item with evidence. Add/update `tests` section: `finalStatus` (`"PASSED"` all PASS / `"FAILED"` ≥1 FAIL / `"PARTIAL"` ≥1 BLOCKED or UNCLEAR, 0 FAIL), `sessions[]` (push `{ date, pass, fail, fixes }`), `fixSync`, `verificationCheckpoint` (gaps, mismatches, adjustments). Add `observations[]` if user reported out-of-scope issues. Do NOT overwrite other sections.
 
-   **Backlog** (see `shared/BACKLOG.md`): set `.status = "DONE"`, `data.updated` → current date.
+   **Backlog** (see `shared/BACKLOG.md → Lifecycle Protocol → Write`): set `.status = "DONE"`, remove `transition`, `data.updated` → current date.
 
    **project.json**: Feature status → `"DONE"`. Merge new packages if relevant.
 

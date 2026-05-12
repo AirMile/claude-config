@@ -65,6 +65,20 @@ http
 
     // ── Static files ──
 
+    // Favicon SVG (top-level static)
+    const faviconMatch = url.pathname.match(/^\/(favicon-[\w-]+\.svg)$/);
+    if (req.method === "GET" && faviconMatch) {
+      const file = path.join(__dirname, faviconMatch[1]);
+      if (fs.existsSync(file)) {
+        res.writeHead(200, {
+          "Content-Type": "image/svg+xml",
+          "Cache-Control": "no-cache",
+        });
+        res.end(fs.readFileSync(file, "utf8"));
+        return;
+      }
+    }
+
     // Static CSS and JS files
     const staticMatch = url.pathname.match(
       /^\/(css|js|lib)\/([\w-]+\.(css|js))$/,
