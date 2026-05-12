@@ -1,22 +1,22 @@
 # Resync Mode
 
-Synchroniseer alleen CLAUDE.md template-secties met de meest recente `CLAUDE.base.md`. Bestaande project-specifieke content blijft ongewijzigd.
+Synchronize only CLAUDE.md template sections with the most recent `CLAUDE.base.md`. Existing project-specific content remains unchanged.
 
 ---
 
 ## Pre-flight
 
-Controleer dat `CLAUDE.md` bestaat in de project root. Ontbreekt het → exit met instructie: gebruik `/core-setup` om het project eerst in te richten.
+Check that `CLAUDE.md` exists in the project root. If missing → exit with instruction: use `/core-setup` to set up the project first.
 
 ---
 
 ## Sync
 
-Volg `references/claude-md-sync.md` met deze parameters:
+Follow `references/claude-md-sync.md` with these parameters:
 
 - `mode: "resync"`
 - `generate-if-missing: false`
 - `stack-overwrite: "never"`
 - `inferred-stack: null`
 
-FASE D produceert een standalone ASCII rapport — dat is het eindresultaat van deze skill.
+PHASE D produces a standalone ASCII report — that is the final result of this skill.

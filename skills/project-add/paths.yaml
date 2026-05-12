@@ -1,10 +1,10 @@
 # Paths Configuration - DEFAULTS
 #
-# Dit bestand bevat de standaard waarden per platform.
-# Voor apparaat-specifieke configuratie, maak een LOKAAL bestand:
-#   .claude/paths.local.yaml (in elk project)
+# This file contains the default values per platform.
+# For device-specific configuration, create a LOCAL file:
+#   .claude/paths.local.yaml (in each project)
 #
-# Dit lokale bestand wordt NIET gecommit (staat in .gitignore).
+# This local file is NOT committed (listed in .gitignore).
 
 paths:
   macos:
@@ -14,11 +14,11 @@ paths:
     # Location of the claude-config repository
     config_repo: "$HOME/claude-config"
 
-    # Godot editor executable (gebruikt door /game-build, /game-verify)
+    # Godot editor executable (used by /game-build, /game-verify)
     godot_executable: "/Applications/Godot.app/Contents/MacOS/Godot"
 
-    # Extra paden voor /project-switch (bookmarks naast git repos in projects_root)
-    # Override in paths.local.yaml met je eigen vault/scratch/etc.
+    # Extra paths for /project-switch (bookmarks alongside git repos in projects_root)
+    # Override in paths.local.yaml with your own vault/scratch/etc.
     # extra_paths:
     #   - { name: "obsidian-vault", path: "$HOME/Documents/MyVault", type: "vault" }
     #   - { name: "scratch", path: "$HOME/scratch", type: "dir" }
@@ -31,10 +31,10 @@ paths:
     # Location of the claude-config repository
     config_repo: "C:\\Projects\\claude-config"
 
-    # Godot editor executable (gebruikt door /game-build, /game-verify)
+    # Godot editor executable (used by /game-build, /game-verify)
     godot_executable: "C:\\Godot\\Godot_v4.4.1-stable_win64.exe"
 
-    # Extra paden voor /project-switch
+    # Extra paths for /project-switch
     # extra_paths:
     #   - { name: "obsidian-vault", path: "$env:USERPROFILE\\Documents\\MyVault", type: "vault" }
     extra_paths: []
@@ -49,15 +49,15 @@ paths:
     # Godot editor executable
     godot_executable: "/usr/bin/godot4"
 
-    # Extra paden voor /project-switch
+    # Extra paths for /project-switch
     extra_paths: []
 
-# Resolution order (eerste match wint):
+# Resolution order (first match wins):
 # 1. Environment variable (CLAUDE_PROJECTS_ROOT, CLAUDE_CONFIG_REPO, CLAUDE_GODOT_EXECUTABLE)
-# 2. Lokaal: .claude/paths.local.yaml (per project, per apparaat)
-# 3. Gedeeld: resources/paths.yaml (dit bestand, defaults)
+# 2. Local: .claude/paths.local.yaml (per project, per device)
+# 3. Shared: resources/paths.yaml (this file, defaults)
 #
-# Voorbeeld paths.local.yaml:
+# Example paths.local.yaml:
 # ```yaml
 # paths:
 #   projects_root: "/home/user/code"

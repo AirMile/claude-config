@@ -1,14 +1,14 @@
 # CODEGEN — Shared Code Generation Patterns
 
-Gedeelde patronen voor `frontend-convert` (FASE 2.1/2.2) en `frontend-design` (Build route). Elke skill bevat skill-specifieke logica inline; deze file dekt alleen gedeelde, stackoverstijgende patronen.
+Shared patterns for `frontend-convert` (PHASE 2.1/2.2) and `frontend-design` (Build route). Each skill contains skill-specific logic inline; this file covers only shared, stack-agnostic patterns.
 
 ---
 
-## Block Inventory Consultatie
+## Block Inventory Consultation
 
-**Bron:** `project-context.json#components[]`
+**Source:** `project-context.json#components[]`
 
-Raadpleeg de block inventory vóór code-generatie om te voorkomen dat bestaande UI-blokken opnieuw gegenereerd worden.
+Consult the block inventory before code generation to avoid regenerating existing UI blocks.
 
 ```json
 // Voorbeeld component entry
@@ -21,56 +21,56 @@ Raadpleeg de block inventory vóór code-generatie om te voorkomen dat bestaande
 }
 ```
 
-**Aanpak:**
+**Approach:**
 
-1. Zoek componenten op naam-match: spec-sectie "call to action" → zoek `Button`, `CTA`, `PrimaryAction`
-2. Zoek op structuur: spec-sectie "card grid" → zoek `Card`, `Grid`, `ProductCard`
-3. Gebruik `src` pad voor imports — nooit herschrijven wat al bestaat
-4. Als component niet bestaat maar spec beschrijft het → genereer nieuw als inline component of apart bestand (zie Output Structure hieronder)
+1. Search components by name match: spec section "call to action" → search `Button`, `CTA`, `PrimaryAction`
+2. Search by structure: spec section "card grid" → search `Card`, `Grid`, `ProductCard`
+3. Use `src` path for imports — never rewrite what already exists
+4. If component doesn't exist but spec describes it → generate new as inline component or separate file (see Output Structure below)
 
 ---
 
 ## Token Mapping
 
-**Bron:** `project.json#theme`
+**Source:** `project.json#theme`
 
-Beschikbare token-categorieën:
+Available token categories:
 
-| Categorie   | Token pad                     | Tailwind equivalent                             |
+| Category    | Token path                    | Tailwind equivalent                             |
 | ----------- | ----------------------------- | ----------------------------------------------- |
-| Kleuren     | `theme.colors.primary`        | `bg-primary`, `text-primary`                    |
-| Achtergrond | `theme.colors.background`     | `bg-background`                                 |
-| Tekst       | `theme.colors.foreground`     | `text-foreground`                               |
+| Colors      | `theme.colors.primary`        | `bg-primary`, `text-primary`                    |
+| Background  | `theme.colors.background`     | `bg-background`                                 |
+| Text        | `theme.colors.foreground`     | `text-foreground`                               |
 | Border      | `theme.colors.border`         | `border-border`                                 |
 | Muted       | `theme.colors.muted`          | `bg-muted`, `text-muted-foreground`             |
 | Destructive | `theme.colors.destructive`    | `bg-destructive`, `text-destructive-foreground` |
-| Typography  | `theme.typography.fontFamily` | Gebruik CSS var of Tailwind `font-{name}`       |
-| Spacing     | `theme.spacing`               | Tailwind spacing scale of CSS var               |
+| Typography  | `theme.typography.fontFamily` | Use CSS var or Tailwind `font-{name}`           |
+| Spacing     | `theme.spacing`               | Tailwind spacing scale or CSS var               |
 
-**Regel:** gebruik altijd token-namen als ze beschikbaar zijn. Val terug op Tailwind defaults als een token ontbreekt. Gebruik **nooit** hardcoded hex-waarden tenzij in 1:1 modus (convert only).
+**Rule:** always use token names when available. Fall back to Tailwind defaults if a token is missing. **Never** use hardcoded hex values unless in 1:1 mode (convert only).
 
-**No-hex regel:**
+**No-hex rule:**
 
-Gebruik **nooit** raw hex-waarden of arbitrary Tailwind color-values buiten 1:1 convert-modus:
+**Never** use raw hex values or arbitrary Tailwind color values outside 1:1 convert mode:
 
-- Verboden: `bg-[#FF5733]`, `text-[#1a1a2e]`, `border-[#eee]`
-- Verboden: `style={{ backgroundColor: "#..." }}` inline
-- Toegestaan: `bg-primary`, `text-foreground`, `border-border`, `bg-[var(--color-…)]`
+- Forbidden: `bg-[#FF5733]`, `text-[#1a1a2e]`, `border-[#eee]`
+- Forbidden: `style={{ backgroundColor: "#..." }}` inline
+- Allowed: `bg-primary`, `text-foreground`, `border-border`, `bg-[var(--color-…)]`
 
-De Build route valideert dit na write via een regex post-pass (zie `frontend-design` Build Stap 4).
+The Build route validates this after write via a regex post-pass (see `frontend-design` Build Step 4).
 
 **Dark mode:**
 
-Check `theme.modes.dark`. Als aanwezig: voeg `dark:` prefix toe aan alle kleur-gerelateerde classes.
+Check `theme.modes.dark`. If present: add `dark:` prefix to all color-related classes.
 
 ```tsx
-// Goed — token + dark mode
+// Good — token + dark mode
 <div className="bg-background dark:bg-background text-foreground dark:text-foreground">
 
-// Goed — fallback zonder dark mode config
+// Good — fallback without dark mode config
 <div className="bg-white text-gray-900">
 
-// Fout — hardcoded in niet-1:1 modus
+// Wrong — hardcoded in non-1:1 mode
 <div style={{ backgroundColor: "#1a1a2e" }}>
 ```
 
@@ -78,7 +78,7 @@ Check `theme.modes.dark`. Als aanwezig: voeg `dark:` prefix toe aan alle kleur-g
 
 ## Output Structure Heuristics
 
-Bepaal het bestandspad op basis van `project.json#stack.framework`:
+Determine the file path based on `project.json#stack.framework`:
 
 | Framework          | Page pattern                      | Component pattern                    |
 | ------------------ | --------------------------------- | ------------------------------------ |
@@ -90,26 +90,26 @@ Bepaal het bestandspad op basis van `project.json#stack.framework`:
 | Astro              | `src/pages/{route}.astro`         | `src/components/{Name}.astro`        |
 | Remix              | `app/routes/{route}.tsx`          | `app/components/{Name}.tsx`          |
 
-Als framework niet in deze tabel staat of `stack.framework` leeg is: vraag user vóór code-generatie.
+If the framework is not in this table or `stack.framework` is empty: ask the user before code generation.
 
-**Co-location regel:** subcomponenten die alleen door één page worden gebruikt → co-locate in `_components/` (Next.js) of naast het page-bestand. Hergebruikte componenten → `src/components/` (of framework-equivalent).
+**Co-location rule:** subcomponents used by only one page → co-locate in `_components/` (Next.js) or next to the page file. Reused components → `src/components/` (or framework equivalent).
 
 ---
 
 ## Accessibility Scaffold {#a11y}
 
-Minimale a11y-structuur per page-type. Altijd toepassen, ook zonder expliciete spec-instructie.
+Minimal a11y structure per page type. Always apply, even without explicit spec instruction.
 
 **Page wrapper:**
 
 ```tsx
-// Next.js App Router voorbeeld
+// Next.js App Router example
 export default function DashboardPage() {
-  return <main aria-label="Dashboard">{/* inhoud */}</main>;
+  return <main aria-label="Dashboard">{/* content */}</main>;
 }
 ```
 
-**Skip nav (alleen voor pages met meerdere secties):**
+**Skip nav (only for pages with multiple sections):**
 
 ```tsx
 <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-background">
@@ -118,28 +118,28 @@ export default function DashboardPage() {
 <main id="main-content" aria-label="{page-name}">
 ```
 
-**Veelgebruikte patronen:**
+**Common patterns:**
 
-| Element       | Regel                                                                          |
-| ------------- | ------------------------------------------------------------------------------ |
-| `<button>`    | Altijd `aria-label` als tekst niet duidelijk is (`aria-label="Sluit dialoog"`) |
-| `<img>`       | Altijd `alt`. Decoratief: `alt=""`                                             |
-| Forms         | `<label htmlFor>` of `aria-label` per input. `role="alert"` voor inline-errors |
-| Navigatie     | `<nav aria-label="...">` — onderscheid main-nav van secondary-nav              |
-| Dialogen      | `role="dialog" aria-modal="true" aria-labelledby="{id}"`                       |
-| Loading state | `aria-busy="true"` op container, `aria-live="polite"` voor status-updates      |
+| Element       | Rule                                                                          |
+| ------------- | ----------------------------------------------------------------------------- |
+| `<button>`    | Always `aria-label` if text is not clear (`aria-label="Close dialog"`)        |
+| `<img>`       | Always `alt`. Decorative: `alt=""`                                            |
+| Forms         | `<label htmlFor>` or `aria-label` per input. `role="alert"` for inline errors |
+| Navigation    | `<nav aria-label="...">` — distinguish main-nav from secondary-nav            |
+| Dialogs       | `role="dialog" aria-modal="true" aria-labelledby="{id}"`                      |
+| Loading state | `aria-busy="true"` on container, `aria-live="polite"` for status updates      |
 
 ---
 
 ## cva Variant Pattern
 
-Gebruik `cva` (class-variance-authority) voor componenten met ≥2 varianten. Check beschikbaarheid in `package.json` — installeer niet automatisch, noteer als missing dependency.
+Use `cva` (class-variance-authority) for components with ≥2 variants. Check availability in `package.json` — do not install automatically, note as missing dependency.
 
 ```typescript
 import { cva, type VariantProps } from "class-variance-authority";
 
 const componentVariants = cva(
-  // base classes (altijd aanwezig)
+  // base classes (always present)
   "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2",
   {
     variants: {
@@ -169,39 +169,39 @@ interface ComponentProps
 
 ## State Components (loading / error / empty)
 
-Genereer state-varianten naast de happy path als de spec of context er om vraagt.
+Generate state variants alongside the happy path when the spec or context calls for it.
 
-| State     | Aanpak                                                                                         |
-| --------- | ---------------------------------------------------------------------------------------------- |
-| `loading` | Skeleton die happy-path layout spiegelt — zelfde grid/flex, placeholder blokken op tekst.      |
-| `error`   | Foutmelding + retry-actie. Gebruik `destructive` color token.                                  |
-| `empty`   | Contextual lege staat: infereer uit sectienaam wat de inhoud zou zijn (bijv. "Nog geen items") |
+| State     | Approach                                                                                        |
+| --------- | ----------------------------------------------------------------------------------------------- |
+| `loading` | Skeleton that mirrors the happy-path layout — same grid/flex, placeholder blocks on text.       |
+| `error`   | Error message + retry action. Use `destructive` color token.                                    |
+| `empty`   | Contextual empty state: infer from section name what the content would be (e.g. "No items yet") |
 
-Alle states volgen dezelfde `dark:` en responsive logica als de happy path.
+All states follow the same `dark:` and responsive logic as the happy path.
 
 ---
 
 ## Contextual Content
 
-Gebruik **nooit** "Lorem ipsum". Infereer placeholder-tekst uit spec of sectienaam:
+**Never** use "Lorem ipsum". Infer placeholder text from spec or section name:
 
-- Sectie "user profile" → "Jan Jansen", "jan@example.com"
-- Sectie "recent activity" → "Feature geïmplementeerd", "2 uur geleden"
-- Sectie "stats" → "1.247 gebruikers", "+12% deze week"
+- Section "user profile" → "Jan Jansen", "jan@example.com"
+- Section "recent activity" → "Feature implemented", "2 hours ago"
+- Section "stats" → "1,247 users", "+12% this week"
 
 ---
 
 ## Placeholder Images
 
-Gebruik **alleen** het project's eigen placeholder-asset. Externe CDN-URLs hallucineren makkelijk en breken bij deployen.
+Use **only** the project's own placeholder asset. External CDN URLs hallucinate easily and break on deploy.
 
 **Contract:**
 
-- Toegestaan: `/placeholder.svg?w={width}&h={height}` (of `/placeholder.png` als SVG niet ondersteund)
-- Verboden: Unsplash (`images.unsplash.com`), Pexels, picsum.photos, placehold.co, fakeimg.pl, en alle andere externe image-hosts
-- Noteer als missing dependency in BUILD PLAN als `public/placeholder.svg` niet bestaat
+- Allowed: `/placeholder.svg?w={width}&h={height}` (or `/placeholder.png` if SVG not supported)
+- Forbidden: Unsplash (`images.unsplash.com`), Pexels, picsum.photos, placehold.co, fakeimg.pl, and all other external image hosts
+- Note as missing dependency in BUILD PLAN if `public/placeholder.svg` does not exist
 
-**Dimensies per context:**
+**Dimensions per context:**
 
 | Context           | URL                             |
 | ----------------- | ------------------------------- |
@@ -210,13 +210,13 @@ Gebruik **alleen** het project's eigen placeholder-asset. Externe CDN-URLs hallu
 | Hero image        | `/placeholder.svg?w=1200&h=600` |
 | Product thumbnail | `/placeholder.svg?w=200&h=200`  |
 
-De Build route valideert externe URLs na write via een regex post-pass (zie `frontend-design` Build Stap 4).
+The Build route validates external URLs after write via a regex post-pass (see `frontend-design` Build Step 4).
 
 ---
 
 ## `cn()` Utility
 
-Gebruik `cn()` voor className-samenstelling. Maak `src/lib/utils.ts` aan als niet aanwezig:
+Use `cn()` for className composition. Create `src/lib/utils.ts` if not present:
 
 ```typescript
 import { clsx, type ClassValue } from "clsx";
@@ -227,4 +227,4 @@ export function cn(...inputs: ClassValue[]) {
 }
 ```
 
-Nodig: `clsx` en `tailwind-merge` in package.json. Noteer als missing dependency als afwezig.
+Required: `clsx` and `tailwind-merge` in package.json. Note as missing dependency if absent.

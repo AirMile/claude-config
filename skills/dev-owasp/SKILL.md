@@ -15,15 +15,15 @@ Full OWASP Top 10:2025 scan: scope → 10 parallel scanners → aggregated repor
 
 **Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 5 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
 
-1. FASE 1: Scope
-2. FASE 2: Parallel Scan
-3. FASE 3: Aggregation & Report
-4. FASE 4: Fix Plans
-5. FASE 5: Selection & Implementation
+1. PHASE 1: Scope
+2. PHASE 2: Parallel Scan
+3. PHASE 3: Aggregation & Report
+4. PHASE 4: Fix Plans
+5. PHASE 5: Selection & Implementation
 
-## FASE 1: Scope
+## PHASE 1: Scope
 
-> **Todo**: roep `TaskCreate` aan met de 5 fase-items (zie boven). Markeer FASE 1 → `in_progress` via `TaskUpdate`.
+> **Todo**: roep `TaskCreate` aan met de 5 fase-items (zie boven). Markeer PHASE 1 → `in_progress` via `TaskUpdate`.
 
 ### Step 1: Detect tech stack
 
@@ -61,7 +61,7 @@ Lees `.project/project-context.json` (als bestaat). Extract:
 
 - `context.patterns` — auth patterns, middleware setup
 
-**Stel OWASP_CONTEXT samen** (meegeven aan scanner agents in FASE 2):
+**Stel OWASP_CONTEXT samen** (meegeven aan scanner agents in PHASE 2):
 
 ```
 API SURFACE: {endpoints of "niet beschikbaar — scanners moeten zelf endpoints ontdekken"}
@@ -73,9 +73,9 @@ Als project.json niet bestaat → ga door zonder (backwards compatible).
 
 ---
 
-## FASE 2: Parallel Scan
+## PHASE 2: Parallel Scan
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: markeer PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
 Launch 10 scanner agents in parallel via Task tool (zie `shared/SKILL-PATTERNS.md#parallel-dispatch` voor dispatch-criteria en integratie-stappen):
 
@@ -105,9 +105,9 @@ Run all 10 in background. Collect results when all complete.
 
 ---
 
-## FASE 3: Aggregation & Report
+## PHASE 3: Aggregation & Report
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: markeer PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
 Analyze:
 
@@ -146,20 +146,20 @@ Verdict: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OF CR
 
 AskUserQuestion:
 
-- header: "Volgende stap"
-- question: "Wil je een fix plan genereren voor de gevonden issues?"
+- header: "Next step"
+- question: "Do you want to generate fix plans for the found issues?"
 - options:
-  - "Ja, genereer fix plans (Aanbevolen)" — 3 parallelle fix strategieen
-  - "Nee, alleen het rapport" — Stop hier met het audit rapport
+  - "Yes, generate fix plans (Recommended)" — 3 parallel fix strategies
+  - "No, report only" — Stop here with the audit report
 - multiSelect: false
 
 If "Nee" → stop. Show report.
 
 ---
 
-## FASE 4: Fix Plans
+## PHASE 4: Fix Plans
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: markeer PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
 Launch 3 fix agents in parallel via Task tool:
 
@@ -173,9 +173,9 @@ Each receives: aggregated scan results with all findings, severity counts, file 
 
 ---
 
-## FASE 5: Selection & Implementation
+## PHASE 5: Selection & Implementation
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+> **Todo**: markeer PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
 ### Step 1: Present options
 
@@ -230,7 +230,7 @@ Remaining items: [N] (deferred)
 
 ```
 
-> **Todo**: markeer FASE 5 → `completed`.
+> **Todo**: markeer PHASE 5 → `completed`.
 
 ## Best Practices
 

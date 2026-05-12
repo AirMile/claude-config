@@ -1,14 +1,14 @@
 # Audit Mode
 
-Scan het project en stel verbeteringen voor zonder volledige setup. Non-destructief: geen bestanden worden gewijzigd zonder expliciete opt-in.
+Scan the project and suggest improvements without a full setup. Non-destructive: no files are changed without explicit opt-in.
 
-**Skip Phase 2-4, ga direct naar audit.**
+**Skip Phase 2-4, go directly to audit.**
 
 ---
 
-## FASE 1: Project Scan
+## PHASE 1: Project Scan
 
-1. Scan voor ontbrekende essentials:
+1. Scan for missing essentials:
    - Formatter config (`.prettierrc`, `pyproject.toml [tool.black]`, etc.)
    - `.env.example`
    - `.gitignore`
@@ -16,79 +16,79 @@ Scan het project en stel verbeteringen voor zonder volledige setup. Non-destruct
    - Testing framework (`jest.config`, `vitest.config`, `pytest.ini`, etc.)
 
 2. Check Claude config:
-   - `.claude/settings.local.json` aanwezig?
-   - `format-on-save` hook geconfigureerd?
-   - Permissions ingesteld?
+   - `.claude/settings.local.json` present?
+   - `format-on-save` hook configured?
+   - Permissions set?
 
 3. Check CLAUDE.md:
-   - Bestaat?
-   - Heeft canonical sections? (zie `references/claude-md-sections.md`)
-   - Is `### Stack` up-to-date met werkelijke `package.json` / project files?
+   - Exists?
+   - Has canonical sections? (see `references/claude-md-sections.md`)
+   - Is `### Stack` up-to-date with actual `package.json` / project files?
 
 4. Check `.project/project.json`:
-   - Bestaat?
-   - `stack` sectie gevuld?
-   - `concept` aanwezig?
+   - Exists?
+   - `stack` section filled?
+   - `concept` present?
 
 5. Check design tokens (frontend projects only):
-   - Detect `stack.framework` uit `.project/project.json`, of als dat ontbreekt, uit `package.json` dependencies
+   - Detect `stack.framework` from `.project/project.json`, or if missing, from `package.json` dependencies
    - Frontend trigger: framework ∈ {React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS}
-   - `needsTheme` = `project.json#theme.colors` ontbreekt of is leeg
-   - Onthoud bevinding als `frontend_needs_theme` (alleen true als beide condities gelden)
+   - `needsTheme` = `project.json#theme.colors` missing or empty
+   - Store finding as `frontend_needs_theme` (only true when both conditions hold)
 
 6. Tier-1 module sweep:
-   Voor elke module in de tier-1 set (zie `references/mode-install.md` tier-1 tabel):
-   - Read `references/modules/{module}/setup-guide.md` Detection sectie
-   - Pas de beschreven check toe op het project (package.json + configfiles)
-   - Onthoud uitkomst: `already-installed-configured` | `installed-not-configured` | `not-installed`
+   For each module in the tier-1 set (see `references/mode-install.md` tier-1 table):
+   - Read `references/modules/{module}/setup-guide.md` Detection section
+   - Apply the described check to the project (package.json + config files)
+   - Store result: `already-installed-configured` | `installed-not-configured` | `not-installed`
 
-   Cache resultaten als `module_states` voor FASE 2. Sla `not-installed` modules niet op als bevinding (alleen de twee geïnstalleerde states zijn relevant voor audit).
-
----
-
-## FASE 2: Presenteer Bevindingen
-
-Presenteer bevindingen als checklist via AskUserQuestion (multi-select): welke fixes toepassen?
-
-Format per bevinding:
-
-```
-[ ] ✗ {missing item} — {korte reden waarom het nuttig is}
-```
-
-Default: alle kritieke items aangevinkt (formatter, .gitignore, type checking). Optionele items (testing framework) default uitgevinkt.
-
-Design-tokens item alleen tonen als `frontend_needs_theme = true` (uit FASE 1 stap 5). Tonen als optioneel item, default uitgevinkt:
-
-```
-[ ] ✗ design-tokens — frontend stack zonder color/typography/spacing tokens
-```
-
-Module sweep bevindingen uit FASE 1 stap 6 (alleen tonen als `module_states` niet leeg is):
-
-```
-[ ] ⚠ {module} — installed-not-configured ({configfile} ontbreekt)
-[ ] ℹ {module} — already-installed-configured (geen actie nodig)
-```
-
-`installed-not-configured` items default aangevinkt — deze zijn high-signal (library aanwezig, config ontbreekt of kapot). `already-installed-configured` items default uitgevinkt en alleen ter info.
+   Cache results as `module_states` for PHASE 2. Do not store `not-installed` modules as findings (only the two installed states are relevant for audit).
 
 ---
 
-## FASE 3: Voer Geselecteerde Fixes Uit
+## PHASE 2: Present Findings
 
-Voor elke geselecteerde fix:
+Present findings as a checklist via AskUserQuestion (multi-select): which fixes to apply?
 
-- **Tier-1 module (installed-not-configured)**: delegeer naar `references/mode-install.md` FASE 5 voor die specifieke module. Stap 0 detecteert `installed-not-configured` → skipt install, begint bij stap 2 Configure.
-- **Formatter config**: genereer config file op basis van gedetecteerde stack
-- **.env.example**: genereer leeg sjabloon met comment per sectie
-- **.gitignore**: genereer op basis van stack (Node/Python/Go/Rust/etc.)
-- **Type checking**: genereer `tsconfig.json` / `mypy.ini` met strict-mode defaults
-- **Testing framework**: vraag keuze (Vitest/Jest/Playwright voor JS, pytest voor Python, etc.), genereer config
-- **Claude config**: schrijf `settings.local.json` met Full Access defaults + format-on-save hook voor gedetecteerde stack
-- **CLAUDE.md**: voeg ontbrekende canonical sections toe (zie `references/claude-md-sections.md`). Bestaande content ongewijzigd.
-- **project.json**: maak aan of vul ontbrekende `concept`/`stack` velden in via korte prompt (naam, beschrijving)
-- **design-tokens**: seed `setup-design-tokens` feature naar `.project/backlog.html`:
+Format per finding:
+
+```
+[ ] ✗ {missing item} — {brief reason why it's useful}
+```
+
+Default: all critical items checked (formatter, .gitignore, type checking). Optional items (testing framework) default unchecked.
+
+Show design-tokens item only if `frontend_needs_theme = true` (from PHASE 1 step 5). Show as optional item, default unchecked:
+
+```
+[ ] ✗ design-tokens — frontend stack without color/typography/spacing tokens
+```
+
+Module sweep findings from PHASE 1 step 6 (only show if `module_states` is not empty):
+
+```
+[ ] ⚠ {module} — installed-not-configured ({configfile} missing)
+[ ] ℹ {module} — already-installed-configured (no action needed)
+```
+
+`installed-not-configured` items default checked — these are high-signal (library present, config missing or broken). `already-installed-configured` items default unchecked and informational only.
+
+---
+
+## PHASE 3: Apply Selected Fixes
+
+For each selected fix:
+
+- **Tier-1 module (installed-not-configured)**: delegate to `references/mode-install.md` PHASE 5 for that specific module. Step 0 detects `installed-not-configured` → skips install, starts at step 2 Configure.
+- **Formatter config**: generate config file based on detected stack
+- **.env.example**: generate empty template with comment per section
+- **.gitignore**: generate based on stack (Node/Python/Go/Rust/etc.)
+- **Type checking**: generate `tsconfig.json` / `mypy.ini` with strict-mode defaults
+- **Testing framework**: ask choice (Vitest/Jest/Playwright for JS, pytest for Python, etc.), generate config
+- **Claude config**: write `settings.local.json` with Full Access defaults + format-on-save hook for detected stack
+- **CLAUDE.md**: add missing canonical sections (see `references/claude-md-sections.md`). Existing content unchanged.
+- **project.json**: create or fill missing `concept`/`stack` fields via short prompt (name, description)
+- **design-tokens**: seed `setup-design-tokens` feature to `.project/backlog.html`:
   ```json
   {
     "name": "setup-design-tokens",
@@ -100,25 +100,25 @@ Voor elke geselecteerde fix:
     "dependencies": []
   }
   ```
-  Maak backlog aan uit template `{skills_path}/shared/references/backlog-template.html` als die ontbreekt. Skip als feature met naam `setup-design-tokens` al bestaat (idempotent).
+  Create backlog from template `{skills_path}/shared/references/backlog-template.html` if missing. Skip if feature named `setup-design-tokens` already exists (idempotent).
 
 ---
 
-## FASE 4: Summary
+## PHASE 4: Summary
 
-Render-regel: bullets met `{if <conditie>}` prefix alleen tonen als conditie true is — prefix niet letterlijk in output. `design-tokens-applied` is true als user `design-tokens` heeft aangevinkt in FASE 2 én FASE 3 succesvol is uitgevoerd.
+Render rule: bullets with `{if <condition>}` prefix only show when condition is true — prefix not literally in output. `design-tokens-applied` is true when user checked `design-tokens` in PHASE 2 and PHASE 3 completed successfully.
 
 ```
 AUDIT COMPLETE
 
-Fixes toegepast:
-  {N} bestanden aangemaakt/bijgewerkt
+Fixes applied:
+  {N} files created/updated
 
-Overgeslagen:
-  {M} items (niet geselecteerd)
+Skipped:
+  {M} items (not selected)
 
-Volgende stap:
-  /core-setup                 → diepe codebase scan + learnings extractie
-  /core-setup --mode=resync   → CLAUDE.md template-secties hersyncen
+Next step:
+  /core-setup                 → deep codebase scan + learnings extraction
+  /core-setup --mode=resync   → resync CLAUDE.md template sections
 {if design-tokens-applied}  /frontend-tokens            → design tokens (color, typography, spacing)
 ```

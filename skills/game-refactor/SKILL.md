@@ -57,7 +57,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 ```
 .claude/research/
 ├── architecture-baseline.md  ← EXISTING: Godot patterns, scene architecture, conventions
-│                                Read in FASE 2 for research decision
+│                                Read in PHASE 2 for research decision
 │
 └── refactor-patterns.md      ← NEW: GDScript-specific code smells & anti-patterns
                                  Generated via Context7 on first refactor
@@ -69,24 +69,24 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 ## Workflow
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 6 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. During context compaction the task list remains visible — no risk of forgotten phases.
 
-1. FASE 0: Batch Context Loading + Refactor Patterns
-2. FASE 1: Parallel Batch Analysis + Triage
-3. FASE 2: Aggregated Research Decision
-4. FASE 3: Combined Plan + Single Approval
-5. FASE 4: Apply + Test Per Feature
-6. FASE 5: Batch Completion
+1. PHASE 0: Batch Context Loading + Refactor Patterns
+2. PHASE 1: Parallel Batch Analysis + Triage
+3. PHASE 2: Aggregated Research Decision
+4. PHASE 3: Combined Plan + Single Approval
+5. PHASE 4: Apply + Test Per Feature
+6. PHASE 5: Batch Completion
 
-### FASE 0: Batch Context Loading + Refactor Patterns
+### PHASE 0: Batch Context Loading + Refactor Patterns
 
-> **Todo**: roep `TaskCreate` aan met de 6 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Read backlog for pipeline status:**
 
-   Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
+   Read `.project/backlog.html` (if exists), parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`):
    - Filter DONE features: `data.features.filter(f => f.status === "DONE")`
-   - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` sectie
+   - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` section
    - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
 
 2. **Determine feature queue:**
@@ -98,31 +98,31 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
    **b) No feature name** (`/game-refactor`):
    - Present scope selection via **AskUserQuestion**:
      - header: "Scope"
-     - question: "Wat wil je refactoren?"
+     - question: "What do you want to refactor?"
      - options:
-       - label: "Nog niet gerefactorde features (Recommended)", description: "{N} features: {feature1}, {feature2}, ..."
-       - label: "Alle DONE features", description: "Alle {M} DONE features, inclusief eerder gerefactorde"
-       - label: "Hele codebase", description: "Scan alle source files, niet feature-gebonden"
+       - label: "Unrefactored features (Recommended)", description: "{N} features: {feature1}, {feature2}, ..."
+       - label: "All DONE features", description: "All {M} DONE features, including previously refactored ones"
+       - label: "Entire codebase", description: "Scan all source files, not feature-bound"
      - multiSelect: false
-   - If "Nog niet gerefactorde features" → feature queue = unrefactored DONE features
-   - If "Alle DONE features" → feature queue = all DONE features
-   - If "Hele codebase" → **codebase mode** (see below)
-   - If 0 unrefactored features: toon "Alle features zijn al gerefactord" in de optie beschrijving
+   - If "Unrefactored features" → feature queue = unrefactored DONE features
+   - If "All DONE features" → feature queue = all DONE features
+   - If "Entire codebase" → **codebase mode** (see below)
+   - If 0 unrefactored features: show "All features have already been refactored" in the option description
 
    **c) "recent"**: find most recently modified `feature.json` with `tests` section, queue = `[that feature]`
 
-   **Codebase mode** ("Hele codebase"):
-   - Pipeline files = alle GDScript bestanden uit project (detecteer `src/`, `scripts/`, of scene directories uit project.json of CLAUDE.md)
+   **Codebase mode** ("Entire codebase"):
+   - Pipeline files = all GDScript files from project (detect `src/`, `scripts/`, or scene directories from project.json or CLAUDE.md)
    - Exclude: `.godot/`, `.project/`, `addons/gut/`, test files
-   - Geen feature.json schrijven — resultaat opslaan in `.project/session/codebase-refactor.json`
+   - Do not write feature.json — save result to `.project/session/codebase-refactor.json`
    - Commit message: `refactor(codebase): {summary}`
-   - Skip FASE 5 feature.json/backlog updates — alleen commit + rapport
+   - Skip PHASE 5 feature.json/backlog updates — only commit + report
 
 3. **Worktree switch** (single-mode only):
 
-   Als `feature_queue.length == 1` en niet in codebase-mode: voer de procedure in `shared/WORKTREE.md` uit met de feature-name. Switcht automatisch naar `worktree-{feature-name}` als die bestaat. Bij FAIL: stop met de melding uit WORKTREE.md.
+   If `feature_queue.length == 1` and not in codebase-mode: execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL: stop with the message from WORKTREE.md.
 
-   Batch-mode (queue > 1) of codebase-mode: skip — blijf op main, refactor over al-gemergede code.
+   Batch-mode (queue > 1) or codebase-mode: skip — stay on main, refactor over already-merged code.
 
 4. **Load feature.json for every feature in queue:**
 
@@ -141,20 +141,20 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
    - Fallback: grep for file paths matching `scripts/`, `scenes/`, `resources/`, `tests/`
    - Store as `pipeline_files[feature_name]`
 
-6. **Load project conventions + learnings** (voor Explore agent context):
+6. **Load project conventions + learnings** (for Explore agent context):
 
-   Read `.project/project-context.json` (als bestaat) → extract `context.patterns`.
-   Sla op als `PROJECT_CONVENTIONS` voor injectie in Explore agent prompts (FASE 1).
+   Read `.project/project-context.json` (if exists) → extract `context.patterns`.
+   Store as `PROJECT_CONVENTIONS` for injection into Explore agent prompts (PHASE 1).
 
    **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
    ```
    scopes: [component]
    pitfall-prefix: true
-   current-feature: <feature-name als feature-mode, anders "none">
+   current-feature: <feature-name if feature-mode, otherwise "none">
    ```
 
-   Sla op als `KNOWN_PITFALLS` voor injectie in Explore agent prompts (FASE 1) — voorkomt herintroductie van bekende Godot/GDScript bugs en helpt agents onderscheid maken tussen "intentioneel project pattern" en "code smell".
+   Store as `KNOWN_PITFALLS` for injection into Explore agent prompts (PHASE 1) — prevents reintroduction of known Godot/GDScript bugs and helps agents distinguish between "intentional project pattern" and "code smell".
 
 7. **Load or generate refactor-patterns.md:**
 
@@ -231,9 +231,9 @@ git status --porcelain | sort > .project/session/pre-skill-status.txt
 echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
-### FASE 1: Parallel Batch Analysis + Triage
+### PHASE 1: Parallel Batch Analysis + Triage
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
 **Goal:** Analyze ALL features in parallel, then triage into CLEAN vs HAS_FINDINGS.
 
@@ -247,39 +247,39 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
    {list of all pipeline_files paths for this feature}
 
    PROJECT CONVENTIONS:
-   {PROJECT_CONVENTIONS from FASE 0 step 5, of "niet beschikbaar"}
+   {PROJECT_CONVENTIONS from PHASE 0 step 5, or "not available"}
 
-   Lees ALLE bovenstaande pipeline files. Scan voor:
+   Read ALL of the above pipeline files. Scan for:
 
-   1. UNIVERSEEL (altijd scannen):
+   1. UNIVERSAL (always scan):
 
       SECURITY:
       - Injection: OS.execute, ClassDB abuse
       - Unsafe deserialization: var_to_str/str_to_var with untrusted input
       - Path traversal in file operations
 
-      DRY violations (ALLEEN binnen pipeline files):
-      - Duplicate code blocks (>5 lines identiek)
-      - Vergelijkbare logica patronen (>70% gelijkheid)
-      - Herhaalde conditionals, copy-paste
-      - Extract opportunities (zelfde code in 3+ locaties)
+      DRY violations (ONLY within pipeline files):
+      - Duplicate code blocks (>5 lines identical)
+      - Similar logic patterns (>70% similarity)
+      - Repeated conditionals, copy-paste
+      - Extract opportunities (same code in 3+ locations)
 
       OVER-ENGINEERING:
-      - Helpers die maar 1x gebruikt worden
-      - >3 indirectie-niveaus voor simpele operaties
-      - Premature optimization (complexe caching voor non-hot paths)
-      - Over-defensive code (try/catch rond code die niet kan falen)
-      - Abstract base classes met maar 1 implementatie
+      - Helpers used only once
+      - >3 levels of indirection for simple operations
+      - Premature optimization (complex caching for non-hot paths)
+      - Over-defensive code (try/catch around code that cannot fail)
+      - Abstract base classes with only 1 implementation
 
       CLARITY:
-      - Onnodige nesting (>3 niveaus diep)
-      - Dense one-liners die readability opofferen voor beknoptheid
-      - Slechte variabele/functienamen (single-letter, misleidend, te generiek)
-      - Overbodige comments die obvious code beschrijven
-      - "Clever" code die moeilijk te begrijpen is
-      - Inconsistentie met PROJECT CONVENTIONS (hierboven) of CLAUDE.md
+      - Unnecessary nesting (>3 levels deep)
+      - Dense one-liners that sacrifice readability for brevity
+      - Poor variable/function names (single-letter, misleading, too generic)
+      - Redundant comments describing obvious code
+      - "Clever" code that is hard to understand
+      - Inconsistency with PROJECT CONVENTIONS (above) or CLAUDE.md
 
-   2. GODOT-SPECIFIEK (altijd scannen):
+   2. GODOT-SPECIFIC (always scan):
 
       SIGNALS:
       - Unused signals (signal declared but never emitted)
@@ -316,74 +316,74 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
       - State transitions without exit/enter callbacks
       - Shared mutable state between states
 
-   3. STACK-SPECIFIEK (uit refactor-patterns):
+   3. STACK-SPECIFIC (from refactor-patterns):
 
       {injected patterns from refactor-patterns.md}
 
-   4. BALANCE (NIET rapporteren als finding):
+   4. BALANCE (do NOT report as finding):
 
-      - Abstracties die meerdere keren hergebruikt worden
-      - Expliciete signal connections voor clarity
-      - Benoemde constanten zelfs als ze maar 1x gebruikt worden
-      - Typed variables voor readability
-      - Voorkeur voor explicit boven compact — meer regels is OK als het duidelijker is
+      - Abstractions reused multiple times
+      - Explicit signal connections for clarity
+      - Named constants even if used only once
+      - Typed variables for readability
+      - Preference for explicit over compact — more lines is OK if it's clearer
 
-   5. ASSET GEZONDHEID (lichtgewicht check):
-      - Texturen groter dan nodig (bijv. 2048x2048 voor een kleine sprite)
-      - Ongecomprimeerde audio bestanden (.wav waar .ogg volstaat)
-      - Scenes met excessieve node counts (>50 nodes voor simpele features)
-      - Missing LOD op 3D meshes (indien van toepassing)
-      - Ongebruikte resources in scene (preload/load zonder referentie)
+   5. ASSET HEALTH (lightweight check):
+      - Textures larger than necessary (e.g. 2048x2048 for a small sprite)
+      - Uncompressed audio files (.wav where .ogg would suffice)
+      - Scenes with excessive node counts (>50 nodes for simple features)
+      - Missing LOD on 3D meshes (if applicable)
+      - Unused resources in scene (preload/load without reference)
 
-      Rapporteer als ASSET_FINDINGS (of "Geen asset issues gevonden").
-      Alleen flaggen als het een concreet probleem is, niet als theoretisch risico.
+      Report as ASSET_FINDINGS (or "No asset issues found").
+      Only flag as a concrete problem, not as theoretical risk.
 
-   6. ARCHITECTUUR overzicht:
-      - Welke Godot features/systems worden gebruikt
-      - Belangrijkste patterns (state machines, signals, autoloads, etc.)
+   6. ARCHITECTURE overview:
+      - Which Godot features/systems are used
+      - Key patterns (state machines, signals, autoloads, etc.)
       - Scene composition patterns
 
-   Geef terug als gestructureerd overzicht:
+   Return as structured overview:
    ANALYSIS_START
 
    FEATURE: {feature-name}
    STATUS: CLEAN | HAS_FINDINGS
 
    ARCHITECTURE:
-   Godot systems: {lijst van gebruikte systems}
-   Patterns: {lijst van architectuurpatronen}
+   Godot systems: {list of systems used}
+   Patterns: {list of architectural patterns}
    Scene structure: {high-level scene composition}
 
    SECURITY_FINDINGS:
-   - {file:line} {pattern} — {beschrijving} — Before: {code snippet}
-   (of "Geen security issues gevonden")
+   - {file:line} {pattern} — {description} — Before: {code snippet}
+   (or "No security issues found")
 
    DRY_FINDINGS:
-   - {file:line} ↔ {file:line} {type} — {beschrijving} — Code: {snippet}
-   (of "Geen DRY violations gevonden")
+   - {file:line} ↔ {file:line} {type} — {description} — Code: {snippet}
+   (or "No DRY violations found")
 
    OVERENGINEERING_FINDINGS:
-   - {file:line} {type} — {beschrijving} — Code: {snippet}
-   (of "Geen over-engineering gevonden")
+   - {file:line} {type} — {description} — Code: {snippet}
+   (or "No over-engineering found")
 
    GODOT_SPECIFIC_FINDINGS:
-   - {file:line} {category} {pattern} — {beschrijving} — Code: {snippet}
-   (of "Geen Godot-specifieke issues gevonden")
+   - {file:line} {category} {pattern} — {description} — Code: {snippet}
+   (or "No Godot-specific issues found")
 
    CLARITY_FINDINGS:
-   - {file:line} {type} — {beschrijving} — Code: {snippet}
-   (of "Geen clarity issues gevonden")
+   - {file:line} {type} — {description} — Code: {snippet}
+   (or "No clarity issues found")
 
    ASSET_FINDINGS:
-   - {file} {type} — {beschrijving} (bijv. "texture 2048x2048 voor 32px sprite")
-   (of "Geen asset issues gevonden")
+   - {file} {type} — {description} (e.g. "texture 2048x2048 for 32px sprite")
+   (or "No asset issues found")
 
    BALANCE_SKIPPED:
-   - {file:line} {type} — {reden waarom dit NIET als finding is opgenomen}
-   (optioneel — alleen als er items bewust gefilterd zijn)
+   - {file:line} {type} — {reason why this was NOT included as a finding}
+   (optional — only if items were deliberately filtered)
 
    POSITIVE_OBSERVATIONS:
-   - {wat al goed is in de codebase}
+   - {what is already good in the codebase}
 
    ANALYSIS_END
    ```
@@ -403,9 +403,9 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
    - **CLEAN**: STATUS = CLEAN (0 findings across all categories)
    - **HAS_FINDINGS**: STATUS = HAS_FINDINGS (1+ findings)
 
-   CLEAN features — **early-exit**, skip FASE 2-4 entirely.
+   CLEAN features — **early-exit**, skip PHASE 2-4 entirely.
 
-3. **If ALL features are CLEAN** — jump directly to FASE 5 (batch completion, no user approval needed).
+3. **If ALL features are CLEAN** — jump directly to PHASE 5 (batch completion, no user approval needed).
 
 **Output:**
 
@@ -429,9 +429,9 @@ Summary: {clean_count} clean, {findings_count} with findings
 
 ---
 
-### FASE 2: Aggregated Research Decision
+### PHASE 2: Aggregated Research Decision
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
 **Goal:** One research decision for all affected features combined (not per-feature).
 
@@ -456,7 +456,7 @@ Summary: {clean_count} clean, {findings_count} with findings
    | Advanced signal/scene patterns                                         | YES — research Godot patterns      |
    | No architecture baseline exists at all                                 | YES — research core Godot patterns |
 
-   **If research NOT needed** — proceed directly to FASE 3.
+   **If research NOT needed** — proceed directly to PHASE 3.
 
    **If research needed** — spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to research Godot patterns in an isolated context. This keeps Context7 results out of the main session.
 
@@ -532,9 +532,9 @@ Refactor patterns updated: {yes/no}
 
 ---
 
-### FASE 3: Combined Plan + Single Approval
+### PHASE 3: Combined Plan + Single Approval
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
 **Goal:** One plan combining ALL findings from ALL affected features, one user approval.
 
@@ -586,29 +586,29 @@ Refactor patterns updated: {yes/no}
 
    Use **AskUserQuestion** tool:
    - header: "Scope"
-   - question: "Welke verbeteringen wil je toepassen? ({M} totaal across {N} features)"
+   - question: "Which improvements do you want to apply? ({M} total across {N} features)"
    - options:
-     - label: "Alles toepassen (Recommended)", description: "Alle {M} verbeteringen in {N} features"
-     - label: "Alleen HIGH + MED", description: "{X+Y} verbeteringen, skip LOW"
-     - label: "Alleen HIGH", description: "{X} verbeteringen, alleen security/memory"
-     - label: "Per feature kiezen", description: "Selecteer per feature welke verbeteringen je wilt"
+     - label: "Apply everything (Recommended)", description: "All {M} improvements in {N} features"
+     - label: "HIGH + MED only", description: "{X+Y} improvements, skip LOW"
+     - label: "HIGH only", description: "{X} improvements, security/memory only"
+     - label: "Choose per feature", description: "Select which improvements to apply per feature"
    - multiSelect: false
 
-   **If "Per feature kiezen"** — show per-feature AskUserQuestion with multiSelect:
+   **If "Choose per feature"** — show per-feature AskUserQuestion with multiSelect:
    - header: "Features"
-   - question: "Welke features wil je refactoren?"
+   - question: "Which features do you want to refactor?"
    - options: one per feature with finding count
    - multiSelect: true
 
-   Only approved features proceed to FASE 4. Non-selected features get CLEAN status.
+   Only approved features proceed to PHASE 4. Non-selected features get CLEAN status.
 
-   The user can also type "Annuleren" via the built-in "Other" option — EXIT with "Refactor geannuleerd door gebruiker"
+   The user can also type "Cancel" via the built-in "Other" option — EXIT with "Refactor cancelled by user"
 
 ---
 
-### FASE 4: Apply + Test Per Feature
+### PHASE 4: Apply + Test Per Feature
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
 **Goal:** Apply approved improvements and test, with per-feature rollback isolation.
 
@@ -709,9 +709,9 @@ IMPROVEMENTS APPLIED
 
 ---
 
-### FASE 5: Batch Completion
+### PHASE 5: Batch Completion
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
 **Goal:** Proportional documentation, single backlog update, single commit.
 
@@ -773,53 +773,53 @@ IMPROVEMENTS APPLIED
       ```
 
    3. Update top-level `status`:
-      - CLEAN/REFACTORED: `"DONE"`, `"shipped": true`, `"shippedAt": <ISO-date>`, `"shippedSha": <git-sha na auto-commit>`
-      - ROLLED_BACK: keep `"DONE"` (refactor.status documenteert de rollback), geen shipped-velden
+      - CLEAN/REFACTORED: `"DONE"`, `"shipped": true`, `"shippedAt": <ISO-date>`, `"shippedSha": <git-sha after auto-commit>`
+      - ROLLED_BACK: keep `"DONE"` (refactor.status documents the rollback), no shipped fields
    4. Write feature.json back (do NOT overwrite other sections)
 
-   Als N > 1 features: lees alle feature.json parallel, muteer elk in memory, schrijf alle parallel terug.
+   If N > 1 features: read all feature.json in parallel, mutate each in memory, write all back in parallel.
 
-2. **Parallel sync** (backlog + dashboard + conditionele context sync):
+2. **Parallel sync** (backlog + dashboard + conditional context sync):
 
-   Lees parallel (skip als niet bestaat):
+   Read in parallel (skip if not exists):
    - `.project/backlog.html`
    - `.project/project.json`
    - `.project/project-context.json`
 
-   Muteer in memory:
+   Mutate in memory:
 
-   **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet per feature het `refactor` veld:
-   - CLEAN of REFACTORED → `f.refactor = "REFACTORED"`, `f.shipped = true`, `f.shippedAt = <ISO-date>`, `f.shippedSha = <git-sha>`, verwijder `transition` (als aanwezig) (rendert ✓ badge in DONE-kolom)
-   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"`, verwijder `transition` (als aanwezig) (rendert ⚠ badge)
+   **Backlog** (see `shared/BACKLOG.md`): status remains `"DONE"` for all features (CLEAN, REFACTORED, and ROLLED_BACK). Set per feature the `refactor` field:
+   - CLEAN or REFACTORED → `f.refactor = "REFACTORED"`, `f.shipped = true`, `f.shippedAt = <ISO-date>`, `f.shippedSha = <git-sha>`, remove `transition` (if present) (renders ✓ badge in DONE column)
+   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"`, remove `transition` (if present) (renders ⚠ badge)
 
-   Zet `data.updated` naar huidige datum.
+   Set `data.updated` to current date.
 
-   **Dashboard** (zie `shared/DASHBOARD.md`): ongewijzigd — er is geen aparte dashboard merge in game-refactor anders dan feature status.
+   **Dashboard** (see `shared/DASHBOARD.md`): unchanged — there is no separate dashboard merge in game-refactor other than feature status.
 
-   Learning extraction gebeurt alleen in `/game-verify`. Refactor-inzichten worden hier vastgelegd in `feature.json.refactor` — geen `learnings[]` append.
+   Learning extraction only happens in `/game-verify`. Refactor insights are recorded here in `feature.json.refactor` — no `learnings[]` append.
 
-   **Context sync (conditioneel)** — alleen als REFACTORED features structurele wijzigingen bevatten:
+   **Context sync (conditional)** — only if REFACTORED features contain structural changes:
 
-   Trigger als ANY: scripts hernoemd/verplaatst, nieuwe scripts via extractie, scene structure fundamenteel gewijzigd, autoload/singleton patterns gewijzigd.
-   Skip als: alleen interne code quality (naming, DRY, type hints, clarity), performance zonder structurele impact.
+   Trigger if ANY: scripts renamed/moved, new scripts via extraction, scene structure fundamentally changed, autoload/singleton patterns changed.
+   Skip if: only internal code quality (naming, DRY, type hints, clarity), performance without structural impact.
 
-   Wanneer getriggerd (in `project-context.json` mutatie):
-   - `context.structure` → overwrite full tree met gewijzigde script paths
+   When triggered (in `project-context.json` mutation):
+   - `context.structure` → overwrite full tree with changed script paths
    - Extracted scripts/scenes → add to structure tree
-   - `context.patterns` → merge gewijzigde patterns
-   - `context.updated` → huidige datum
-   - `architecture.components` → update bestaande componenten (status, src, test, connects_to), voeg nieuwe toe als scenes/signals zijn hernoemd/gesplitst. Volg component-first model uit `shared/DASHBOARD.md`.
+   - `context.patterns` → merge changed patterns
+   - `context.updated` → current date
+   - `architecture.components` → update existing components (status, src, test, connects_to), add new ones if scenes/signals were renamed/split. Follow component-first model from `shared/DASHBOARD.md`.
    - Quality: only project-specific, non-obvious, one line per item
-   - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
+   - Log: `context: {N} updates ({keys touched})` or `context: no updates needed`
 
-   Schrijf parallel terug:
+   Write back in parallel:
    - Edit `backlog.html` (keep `<script>` tags intact)
    - Write `project.json`
-   - Write `project-context.json` (als context/architecture/learnings gewijzigd)
+   - Write `project-context.json` (if context/architecture/learnings changed)
 
 3. **Scoped auto-commit** (only this skill's changes):
 
-   Compare current git status with baseline from FASE 0:
+   Compare current git status with baseline from PHASE 0:
 
    ```bash
    git status --porcelain | sort > /tmp/current-status.txt
@@ -856,19 +856,19 @@ IMPROVEMENTS APPLIED
 
    Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
-3b. **Feature archivering** (alleen features met `feature.json`, niet kleine items zonder pipeline):
+3b. **Feature archiving** (only features with `feature.json`, not small items without a pipeline):
 
-Voor elke CLEAN of REFACTORED feature waarvan `.project/features/{name}/feature.json` bestaat:
+For each CLEAN or REFACTORED feature where `.project/features/{name}/feature.json` exists:
 
 ```bash
 mkdir -p .project/features/archive
 mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 ```
 
-- `{shippedAt-date}` = datum uit het zojuist geschreven `shippedAt` veld (YYYY-MM-DD formaat)
-- Meerdere features in één run → elk naar eigen archive-dir
-- ROLLED_BACK features: niet archiveren
-- Skip als feature-dir al niet bestaat (idempotent)
+- `{shippedAt-date}` = date from the just-written `shippedAt` field (YYYY-MM-DD format)
+- Multiple features in one run → each to its own archive dir
+- ROLLED_BACK features: do not archive
+- Skip if feature dir no longer exists (idempotent)
 
 4. **Show completion:**
 
@@ -887,22 +887,22 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
    Refactoring complete. Features remain in DONE status.
 
    Next steps:
-     1. /game-define {next-feature} → volgende feature uit backlog
-     2. /project-plan → backlog herzien als scope gewijzigd is
+     1. /game-define {next-feature} → next feature from backlog
+     2. /project-plan → revisit backlog if scope has changed
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-   **Worktree integration hint** — voeg één extra regel toe aan het completion-blok als beide voorwaarden waar zijn:
-   1. Single-mode (queue.length == 1, niet codebase-mode)
-   2. Huidige branch matcht `worktree-*` pattern (`git branch --show-current`)
+   **Worktree integration hint** — add one extra line to the completion block if both conditions are true:
+   1. Single-mode (queue.length == 1, not codebase-mode)
+   2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
    Append:
 
    ```
-   💡 Run /core-merge {feature-name} om te integreren naar main/develop
+   💡 Run /core-merge {feature-name} to integrate into main/develop
    ```
 
-> **Todo**: markeer FASE 5 → `completed`.
+> **Todo**: mark PHASE 5 → `completed`.
 
 ---
 
@@ -936,9 +936,9 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 
 **git checkout fails for feature files** — report manual recovery steps:
 
-1. Show the `saved_hash` from FASE 4 step 1
+1. Show the `saved_hash` from PHASE 4 step 1
 2. List all `modified_files[feature_name]` and `created_files[feature_name]`
-3. Suggest: "Gebruik `/rewind` in Claude Code om terug te gaan naar een eerder punt"
+3. Suggest: "Use `/rewind` in Claude Code to go back to an earlier point"
 4. STOP — do not attempt destructive recovery commands
 
 ## Restrictions
@@ -954,8 +954,8 @@ This skill must NEVER:
 - Over-simplify code by removing helpful abstractions or combining too many concerns
 - Prioritize fewer lines over readability (explicit > compact)
 - Create "clever" solutions that are hard to understand or debug
-- Skip user approval at FASE 3 (unless 0 findings across all features)
-- Skip GUT test verification in FASE 4
+- Skip user approval at PHASE 3 (unless 0 findings across all features)
+- Skip GUT test verification in PHASE 4
 - Proceed if tests fail without analyzing failure type first (stale test vs regression)
 - Apply improvements without user scope selection
 - Run Explore agents sequentially when multiple features are in the queue (use parallel)
@@ -966,7 +966,7 @@ This skill must ALWAYS:
 - Enforce the pipeline_files scope boundary at every phase
 - Launch Explore agents in parallel for batch analysis (max 10 concurrent)
 - Triage features into CLEAN vs HAS_FINDINGS after analysis
-- Early-exit CLEAN features (skip FASE 2-4)
+- Early-exit CLEAN features (skip PHASE 2-4)
 - Use refactor-patterns.md for GDScript-aware analysis (generate on first run, cache thereafter)
 - Aggregate research decisions across all features (1 decision, not N)
 - Present ONE combined plan with ONE user approval for all features

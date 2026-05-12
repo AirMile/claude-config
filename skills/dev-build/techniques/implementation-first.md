@@ -51,5 +51,5 @@ Gebruik alleen wanneer automated tests geen waarde toevoegen:
 | `config-only` | Env vars, route registratie, package config, static assets |
 | `prototype`   | Bewust tijdelijke code, throwaway MVP                      |
 
-Het requirement krijgt wél een manueel checklist-item in `tests.checklist[]` (FASE 3B).
+Het requirement krijgt wél een manueel checklist-item in `tests.checklist[]` (PHASE 3B).
 De reden wordt gelogd in `feature.json` per requirement als `skipTestReason`.

@@ -1,106 +1,106 @@
 # claude-config
 
-Persoonlijke Claude Code configuratie: skills, agents, hooks en scripts. Gekoppeld aan `~/.claude/` via junctions (Windows) of symlinks (macOS) zodat alles globaal beschikbaar is.
+Personal Claude Code configuration: skills, agents, hooks, and scripts. Linked to `~/.claude/` via junctions (Windows) or symlinks (macOS) so everything is globally available.
 
-**Paden zijn identiek** — `~/.claude/skills/` en de repo's `skills/` wijzen naar dezelfde bestanden. Commits altijd in deze repo.
+**Paths are identical** — `~/.claude/skills/` and the repo's `skills/` point to the same files. Always commit in this repo.
 
 ## Platform
 
-Cross-platform: **Windows (primair)** en **macOS (optioneel)**.
+Cross-platform: **Windows (primary)** and **macOS (optional)**.
 
 |               | Windows                                  | macOS                          |
 | ------------- | ---------------------------------------- | ------------------------------ |
 | Repo          | `C:\Projects\claude-config`              | `$HOME/projects/claude-config` |
 | Projects root | `C:\Projects`                            | `$HOME/projects`               |
-| Koppeling     | `mklink /J` (junction)                   | `ln -sfn` (symlink)            |
-| Godot         | `/c/Godot/Godot_v4.4.1-stable_win64.exe` | n.v.t.                         |
+| Link          | `mklink /J` (junction)                   | `ln -sfn` (symlink)            |
+| Godot         | `/c/Godot/Godot_v4.4.1-stable_win64.exe` | n/a                            |
 | Shell         | PowerShell                               | bash/zsh                       |
 
-**Regels:**
+**Rules:**
 
-- Gebruik `{projects_root}` in skills, niet hardcoded paden
-- `paths.yaml` bevat per-platform defaults (override via env vars of `paths.local.yaml`)
-- **Padresolutie:** env var (`CLAUDE_PROJECTS_ROOT`, `CLAUDE_CONFIG_REPO`, `CLAUDE_GODOT_EXECUTABLE`) → `.claude/paths.local.yaml` (per project, niet in git) → `skills/project-add/paths.yaml` (canonical defaults)
-- Git op Windows: vermijd `git -C <path>` met backslashes → `cd "<path>" && git <cmd>`
-- Platform-specifieke commands altijd voor beide OS'en documenteren
+- Use `{projects_root}` in skills, not hardcoded paths
+- `paths.yaml` contains per-platform defaults (override via env vars or `paths.local.yaml`)
+- **Path resolution:** env var (`CLAUDE_PROJECTS_ROOT`, `CLAUDE_CONFIG_REPO`, `CLAUDE_GODOT_EXECUTABLE`) → `.claude/paths.local.yaml` (per project, not in git) → `skills/project-add/paths.yaml` (canonical defaults)
+- Git on Windows: avoid `git -C <path>` with backslashes → `cd "<path>" && git <cmd>`
+- Platform-specific commands always document both OSes
 
-## Structuur
+## Structure
 
 ```
-skills/           50 skills in 9 categorieën
+skills/           50 skills in 9 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
-  {cat}-{verb}/   Skill directories (elk met SKILL.md)
-agents/           21 sub-agent definities (.md met YAML frontmatter)
+  {cat}-{verb}/   Skill directories (each with SKILL.md)
+agents/           21 sub-agent definitions (.md with YAML frontmatter)
 hooks/            format-on-save.cjs, prompt-timer.cjs, security-reminder.py
-local/            Portable configs voor ~/.claude/ (templates, niet gejunctiond)
-CLAUDE.base.md    Template voor per-project CLAUDE.md generatie
+local/            Portable configs for ~/.claude/ (templates, not linked)
+CLAUDE.base.md    Template for per-project CLAUDE.md generation
 ```
 
-## Skill Conventies
+## Skill Conventions
 
-- **Naamgeving**: `{category}-{verb}` — lowercase, hyphen. Categorieën: core, dev, frontend, game, marketing, project, school, team, thinking
-- **Directory**: elke skill = map met `SKILL.md`, optioneel `references/`, `scripts/`, `techniques/`
-- **Frontmatter**: metadata met author/version/category — gebruik `disable-model-invocation: true` alleen als de skill nooit via Skill tool aanroepbaar mag zijn (blokkeert ook user-triggered `/skill-name`)
-- **Pipeline-handoff**: skills die gedeelde state aanraken declareren `reads:` / `writes:` in frontmatter — zie `shared/DEVINFO.md` voor namespaces. Valideren met `python3 scripts/check-handoff.py`.
-- **Taal**: instructies Nederlands, technische termen Engels
-- **Fases**: FASE 0 = pre-flight validatie → uitvoering → laatste fase = rapport (ASCII tabel)
-- **AskUserQuestion**: eerste optie = recommended, multiSelect default true
-- **Shared infra** (`skills/shared/*`): read-only single source of truth — refereer, niet dupliceren
+- **Naming**: `{category}-{verb}` — lowercase, hyphen. Categories: core, dev, frontend, game, marketing, project, school, team, thinking
+- **Directory**: each skill = folder with `SKILL.md`, optionally `references/`, `scripts/`, `techniques/`
+- **Frontmatter**: metadata with author/version/category — use `disable-model-invocation: true` only if the skill must never be invokable via the Skill tool (also blocks user-triggered `/skill-name`)
+- **Pipeline handoff**: skills that touch shared state declare `reads:` / `writes:` in frontmatter — see `shared/DEVINFO.md` for namespaces. Validate with `python3 scripts/check-handoff.py`.
+- **Language**: skill/agent files in English (hard rule). Runtime output: from `CLAUDE.md § User Preferences → Language:`. See `skills/shared/LANGUAGE.md`.
+- **Phases**: PHASE 0 = pre-flight validation → execution → last phase = report (ASCII table)
+- **AskUserQuestion**: first option = recommended, multiSelect default true
+- **Shared infra** (`skills/shared/*`): read-only single source of truth — reference, don't duplicate
 
 ## Task Tracking
 
-Multi-fase skills met 5+ fases gebruiken het `TaskCreate`/`TaskUpdate` patroon voor compaction-resilience. **Wel toepassen op**: build, verify, refactor, debug, optimize, multi-stage setup. **Niet toepassen op**: korte CLI-utilities, denk-skills, CRUD skills.
+Multi-phase skills with 5+ phases use the `TaskCreate`/`TaskUpdate` pattern for compaction-resilience. **Do apply to**: build, verify, refactor, debug, optimize, multi-stage setup. **Don't apply to**: short CLI utilities, thinking skills, CRUD skills.
 
-Volledig patroon: zie `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
+Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
-## Agent Conventies
+## Agent Conventions
 
 - Frontmatter: name, description, model (`sonnet` default), color
-- Draaien via `Task` tool in geïsoleerde context — output compact houden
-- Alleen gebruiken waar agents échte waarde toevoegen: schaal-parallelisme (OWASP scanners), onafhankelijk denken (fix strategies), context-isolatie bij grote hoeveelheden (refactor Explore)
-- Meeste skills doen analyse inline — agents alleen voor de uitzonderingen hierboven
+- Run via `Task` tool in isolated context — keep output compact
+- Only use where agents provide real value: scale-parallelism (OWASP scanners), independent reasoning (fix strategies), context-isolation for large volumes (refactor Explore)
+- Most skills do analysis inline — agents only for the exceptions above
 
 ## Pipelines
 
-**Dev**: `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` overal)
-**Game**: `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` overal, Godot 4.x / GUT)
+**Dev**: `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere)
+**Game**: `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere, Godot 4.x / GUT)
 **Frontend**: `frontend-design` → [`frontend-convert`] → `frontend-check`
 **Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`
 
-State handoff tussen skills via `.project/session/devinfo.json` (schema: `shared/DEVINFO.md`).
+State handoff between skills via `.project/session/devinfo.json` (schema: `shared/DEVINFO.md`).
 
-## Belangrijke Patronen
+## Key Patterns
 
-- **`.project/`**: alle runtime artifacts (gitignored) — wireframes, config, session, screenshots
-- **`.project/project.json`**: centraal project dashboard met context (structuur, routing, patterns), features, stack, endpoints, entities, thinking. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md verwijst hiernaar voor runtime context.
-- **Format-on-save**: hook runt Prettier (web) of gdformat (GDScript) na elke Write/Edit
-- **Backlog**: `.project/backlog.html` met status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped
-- **Build skills**: auto-commit, auto-sync `project.json` context na voltooiing
-- **Globaal vs lokaal**: `~/.claude/{agents,hooks,skills,scripts}/` zijn whole-directory symlinks naar de claude-config repo. Claude Code merget deze globale set met `<project>/.claude/`, waarbij globaal altijd zichtbaar is. Per-project filtering van skills/agents werkt daarom niet — daarom geen profielen meer; alles altijd beschikbaar.
+- **`.project/`**: all runtime artifacts (gitignored) — wireframes, config, session, screenshots
+- **`.project/project.json`**: central project dashboard with context (structure, routing, patterns), features, stack, endpoints, entities, thinking. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md references this for runtime context.
+- **Format-on-save**: hook runs Prettier (web) or gdformat (GDScript) after every Write/Edit
+- **Backlog**: `.project/backlog.html` with status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped
+- **Build skills**: auto-commit, auto-sync `project.json` context after completion
+- **Global vs local**: `~/.claude/{agents,hooks,skills,scripts}/` are whole-directory symlinks to the claude-config repo. Claude Code merges this global set with `<project>/.claude/`, where global is always visible. Per-project filtering of skills/agents therefore doesn't work — that's why there are no profiles; everything is always available.
 
-## Bootstrap + .gitignore Filosofie
+## Bootstrap + .gitignore Philosophy
 
-**Per-developer, niet per-project**: `CLAUDE.md`, `.claude/`, en `.project/` zijn altijd gitignored. Ze horen bij de developer, niet bij de repo.
+**Per-developer, not per-project**: `CLAUDE.md`, `.claude/`, and `.project/` are always gitignored. They belong to the developer, not the repo.
 
-**Bootstrap** (eenmalig per machine, via `/core-bootstrap`):
+**Bootstrap** (once per machine, via `/core-bootstrap`):
 
-- `~/.claude/CLAUDE.md` ← `local/CLAUDE.md.base` (taal-policy, command-rules, gedragsregels)
+- `~/.claude/CLAUDE.md` ← `local/CLAUDE.md.base` (language policy, command rules, behavior rules)
 - `~/.claude/settings.json` ← `local/settings.json.template` (hooks, autoMemoryEnabled, statusLine, …)
 - `~/.claude/keybindings.json` ← `local/keybindings.json`
 - `~/.claude/statusline-command.cjs` ← `local/statusline-command.cjs`
 
-Idempotent — skip als file al bestaat. Geen junction nodig: `~/.claude/CLAUDE.md` is user-owned.
+Idempotent — skip if file already exists. No junction needed: `~/.claude/CLAUDE.md` is user-owned.
 
-**Auto Memory**: bewust uitgeschakeld (`autoMemoryEnabled: false`). Bestaand pull-based learnings-systeem (`.project/project-context.json#learnings[]` via `LEARNINGS-LOAD.md`) heeft betere token-efficiency via expliciete scope-keuze (`component` / `architectural` / `pitfall-prefix`).
+**Auto Memory**: deliberately disabled (`autoMemoryEnabled: false`). The existing pull-based learnings system (`.project/project-context.json#learnings[]` via `LEARNINGS-LOAD.md`) has better token efficiency through explicit scope selection (`component` / `architectural` / `pitfall-prefix`).
 
-**Cross-project memory** (`~/.claude/memory/MEMORY.md`) is verwijderd — overlap met learnings zonder extra waarde.
+**Cross-project memory** (`~/.claude/memory/MEMORY.md`) has been removed — overlap with learnings without added value.
 
-**Bootstrap-skill**: gebruik `/core-bootstrap` voor eerste machine-init (eenmalig). Gebruik `/core-setup` voor project-interne setup — nooit `/init` (built-in slaat thin-template + gitignore-flow over).
+**Bootstrap skill**: use `/core-bootstrap` for first machine init (once). Use `/core-setup` for project-internal setup — never `/init` (built-in skips thin-template + gitignore flow).
 
-## Regels bij Wijzigingen
+## Rules for Changes
 
-- Volg bestaande conventies — check een vergelijkbare skill voordat je een nieuwe maakt
-- Shared bestanden niet aanpassen zonder impact op alle skills te overwegen
-- Nieuwe skills: kopieer frontmatter structuur van bestaande skill in dezelfde categorie
-- Test door de skill daadwerkelijk te runnen
-- Dev/game pipeline sync: bij structurele wijzigingen aan dev-pipeline skills (dev-define, dev-build, dev-verify, dev-debug, dev-refactor), check of de game-pipeline counterpart (game-\*) dezelfde wijziging nodig heeft. Domein-specifieke content (Godot vs web, GUT vs browser) hoeft niet gesyncroniseerd.
+- Follow existing conventions — check a comparable skill before creating a new one
+- Don't modify shared files without considering the impact on all skills
+- New skills: copy frontmatter structure from an existing skill in the same category
+- Test by actually running the skill
+- Dev/game pipeline sync: for structural changes to dev-pipeline skills (dev-define, dev-build, dev-verify, dev-debug, dev-refactor), check whether the game-pipeline counterpart (game-\*) needs the same change. Domain-specific content (Godot vs web, GUT vs browser) does not need to be synced.

@@ -15,213 +15,213 @@ metadata:
 
 # Write
 
-Schrijfhulp die tekst genereert in een Miles-stijl. Verzamelt context via vragen, kiest het juiste begeleidingsniveau automatisch, en past de gekozen stijl strikt toe.
+Writing assistant that generates text in Miles style. Gathers context via questions, selects the appropriate guidance level automatically, and applies the chosen style strictly.
 
 ## 1. Parse Input
 
-Analyseer het argument op:
+Analyze the argument for:
 
-- **Onderwerp** — waarover gaat de tekst
-- **Type tekst** — blog, post, note, README, docs, portfolio-page, etc.
-- **Context-rijkheid** — hoeveel is al gegeven (zie Step 3)
+- **Subject** — what the text is about
+- **Text type** — blog, post, note, README, docs, portfolio-page, etc.
+- **Context richness** — how much has already been provided (see Step 3)
 
-Als geen argument: vraag type tekst en onderwerp voordat je verdergaat.
+If no argument: ask for text type and subject before continuing.
 
 ## 2. Auto-Detect Style
 
-Match keywords in het argument tegen bekende types:
+Match keywords in the argument against known types:
 
-| Keywords in argument                                      | Stijl     | Voorbeeld                       |
-| --------------------------------------------------------- | --------- | ------------------------------- |
-| blog, post, note, essay, artikel, journal                 | personal  | "blog over mijn eerste project" |
-| README, docs, documentatie, uitleg, handleiding, tutorial | clear     | "README voor draftgap"          |
-| portfolio, showcase, CV, demo-page, project-page          | portfolio | "portfolio-tekst voor draftgap" |
-| rapport, analyse, insights, deep dive, review, verslag    | insights  | "analyse van mijn ontwikkeling" |
+| Keywords in argument                                      | Style     | Example                       |
+| --------------------------------------------------------- | --------- | ----------------------------- |
+| blog, post, note, essay, artikel, journal                 | personal  | "blog about my first project" |
+| README, docs, documentation, explanation, guide, tutorial | clear     | "README for draftgap"         |
+| portfolio, showcase, CV, demo-page, project-page          | portfolio | "portfolio text for draftgap" |
+| report, analysis, insights, deep dive, review             | insights  | "analysis of my development"  |
 
-Geen match gevonden? Vraag:
+No match found? Ask:
 
 ```yaml
 header: "Style"
-question: "Welke schrijfstijl?"
+question: "Which writing style?"
 options:
   - label: "Personal"
-    description: "Persoonlijke ik-voice. Schrijf alsof je het iemand vertelt aan tafel. Voor blogs, posts, notes."
+    description: "Personal first-person voice. Write as if telling someone across the table. For blogs, posts, notes."
   - label: "Clear"
-    description: "Objectief in Miles-stijl. Sprekend-vertellend, geen 'ik'. Voor README's, docs, uitleg."
+    description: "Objective in Miles style. Conversational-narrative, no 'I'. For READMEs, docs, explanations."
   - label: "Portfolio"
-    description: "Direct, actief, toont niet claimt. Professioneel maar natuurlijk. Voor demo/showcase."
+    description: "Direct, active, shows don't tells. Professional but natural. For demo/showcase."
   - label: "Insights"
-    description: "Analytisch, data-verweven, zelfverzekerd. Claim-bewijs-conclusie."
+    description: "Analytical, data-woven, confident. Claim-evidence-conclusion."
 multiSelect: false
 ```
 
-Match gevonden? Laat weten welke stijl is gedetecteerd en vraag bevestiging:
+Match found? Inform which style was detected and ask for confirmation:
 
 ```yaml
-header: "Stijl"
-question: "Gedetecteerde stijl: {X}. Klopt dat?"
+header: "Style"
+question: "Detected style: {X}. Is that correct?"
 options:
-  - label: "Ja, gebruik {X}"
+  - label: "Yes, use {X}"
     description: ""
-  - label: "Andere stijl kiezen"
+  - label: "Choose a different style"
     description: ""
 multiSelect: false
 ```
 
-## 3. Bepaal Flow-Niveau
+## 3. Determine Flow Level
 
-Beoordeel context-rijkheid van het argument op basis van hoeveel er al bekend is:
+Assess context richness of the argument based on how much is already known:
 
-**Sparse** (< 5 inhoudswoorden, bijv. "blog over X"):
-→ Vraag flow-niveau via AskUserQuestion:
+**Sparse** (< 5 content words, e.g. "blog about X"):
+→ Ask flow level via AskUserQuestion:
 
 ```yaml
-header: "Begeleiding"
-question: "Hoe uitgebreid wil je worden begeleid?"
+header: "Guidance"
+question: "How much guidance do you want?"
 options:
   - label: "Standard (Recommended)"
-    description: "Twee korte vragenrondes (audience + doel, daarna kernpunten + angle), dan direct draft."
+    description: "Two short question rounds (audience + goal, then key points + angle), then straight to draft."
   - label: "Quick"
-    description: "Één vragenronde (kernpunten + lengte), meteen draft. Voor als je al weet wat je wil."
+    description: "One question round (key points + length), draft immediately. For when you already know what you want."
   - label: "Full"
-    description: "Twee rondes + outline-goedkeuring + iteratieronde achteraf. Voor belangrijke teksten."
+    description: "Two rounds + outline approval + iteration round afterwards. For important texts."
 multiSelect: false
 ```
 
-**Medium** (5–15 woorden met duidelijk onderwerp + angle of audience):
-→ Default **Standard**, sla flow-vraag over.
+**Medium** (5–15 words with clear subject + angle or audience):
+→ Default **Standard**, skip flow question.
 
-**Rich** (15+ woorden met meerdere context-elementen al ingevuld):
-→ Default **Quick**, sla flow-vraag over.
+**Rich** (15+ words with multiple context elements already filled in):
+→ Default **Quick**, skip flow question.
 
-**Keyword-override** (altijd van toepassing):
+**Keyword-override** (always applies):
 
-- "uitgebreid", "begeleid", "diep" in argument → forceer **Full**
-- "snel", "kort", "draft" in argument → forceer **Quick**
+- "detailed", "guided", "deep" in argument → force **Full**
+- "quick", "short", "draft" in argument → force **Quick**
 
-## 4. Context Verzamelen
+## 4. Gather Context
 
 ### Quick
 
-Eén AskUserQuestion-block (kan alles tegelijk):
+One AskUserQuestion block (can cover everything at once):
 
 ```yaml
 header: "Context"
-question: "Vul kort in zodat ik kan beginnen:"
+question: "Fill in briefly so I can get started:"
 options:
-  - label: "Kernpunten + lengte"
-    description: "Wat moet er sowieso in? (3-5 punten). Hoe lang? (kort/medium/lang)"
+  - label: "Key points + length"
+    description: "What must definitely be included? (3-5 points). How long? (short/medium/long)"
 multiSelect: false
 ```
 
-Accepteer ook vrije tekst via "Other". Ga na beantwoording direct naar Step 5.
+Also accept free text via "Other". Proceed directly to Step 5 after answering.
 
 ### Standard
 
-**Ronde 1 — AskUserQuestion:**
+**Round 1 — AskUserQuestion:**
 
 ```yaml
 header: "Audience"
-question: "Wie is de lezer en wat is het doel?"
+question: "Who is the reader and what is the goal?"
 options:
-  - label: "Audience + doel"
-    description: "Wie leest dit? Developers / managers / vrienden / iedereen? Doel: informeren / overtuigen / vermaken?"
+  - label: "Audience + goal"
+    description: "Who reads this? Developers / managers / friends / everyone? Goal: inform / persuade / entertain?"
 multiSelect: false
 ```
 
-Lengte-voorkeur als aparte optie of via "Other":
+Length preference as a separate option or via "Other":
 
 ```yaml
-header: "Lengte"
-question: "Hoe lang moet de tekst zijn?"
+header: "Length"
+question: "How long should the text be?"
 options:
-  - label: "Kort (< 300 woorden)"
+  - label: "Short (< 300 words)"
     description: ""
-  - label: "Medium (300–700 woorden)"
+  - label: "Medium (300–700 words)"
     description: ""
-  - label: "Lang (700+ woorden)"
+  - label: "Long (700+ words)"
     description: ""
 multiSelect: false
 ```
 
-**Ronde 2 — AskUserQuestion:**
+**Round 2 — AskUserQuestion:**
 
 ```yaml
-header: "Inhoud"
-question: "Wat moet er sowieso in?"
+header: "Content"
+question: "What must definitely be included?"
 options:
-  - label: "Kernpunten"
-    description: "3-5 dingen die zeker in de tekst moeten. Gebruik 'Other' voor een lijstje."
-  - label: "Angle / invalshoek"
-    description: "Is er een specifieke hoek, stelling of boodschap die centraal moet staan?"
+  - label: "Key points"
+    description: "3-5 things that must definitely appear in the text. Use 'Other' for a list."
+  - label: "Angle / perspective"
+    description: "Is there a specific angle, thesis, or message that should be central?"
 multiSelect: true
 ```
 
-Ga na beide rondes naar Step 5.
+Proceed to Step 5 after both rounds.
 
 ### Full
 
-Zelfde als Standard (Ronde 1 + 2) plus na context:
+Same as Standard (Round 1 + 2) plus after context:
 
-**Outline-fase:**
+**Outline phase:**
 
-Genereer een outline: tussenkoppen + één zin per sectie. Toon aan gebruiker en vraag:
+Generate an outline: section headers + one sentence per section. Show to user and ask:
 
 ```yaml
 header: "Outline"
-question: "Klopt de structuur?"
+question: "Does the structure look right?"
 options:
-  - label: "Goed, schrijf de draft"
+  - label: "Good, write the draft"
     description: ""
-  - label: "Aanpassen"
-    description: "Zeg wat anders moet, ik pas de outline aan en vraag opnieuw."
+  - label: "Adjust"
+    description: "Tell me what needs to change, I'll update the outline and ask again."
 multiSelect: false
 ```
 
-Pas outline aan tot akkoord, dan naar Step 5.
+Adjust outline until approved, then proceed to Step 5.
 
-**Iteratie-fase** (na draft):
+**Iteration phase** (after draft):
 
 ```yaml
 header: "Draft"
-question: "Hoe is de draft?"
+question: "How is the draft?"
 options:
-  - label: "Goed zo"
+  - label: "Looks good"
     description: ""
-  - label: "Iteratieronde"
-    description: "Zeg wat anders moet. Ik pas aan en toon de nieuwe versie."
+  - label: "Iteration round"
+    description: "Tell me what needs to change. I'll adjust and show the new version."
 multiSelect: false
 ```
 
-## 5. Schrijf Draft
+## 5. Write Draft
 
 ```
 Read("../shared/styles/_anti-patterns.md")
 Read("../shared/styles/style-{style}.md")
 ```
 
-Schrijf de volledige tekst met alle regels uit beide bestanden strikt toegepast.
+Write the full text with all rules from both files strictly applied.
 
-Behoud:
+Preserve:
 
-- Taal van de context-input (NL → NL, EN → EN)
-- Tech termen in Engels
+- Language of the context input (NL → NL, EN → EN)
+- Tech terms in English
 
 ## 5b. Self-Check
 
-Verifieer de draft voor output. Stilzwijgend:
+Verify the draft before output. Silently:
 
-1. Loop de draft zin voor zin langs. Markeer:
-   - Zinnen > 25 woorden
+1. Loop through the draft sentence by sentence. Flag:
+   - Sentences > 25 words
    - Em dashes
-   - Elk verboden woord uit `_anti-patterns.md` of de stijl-specifieke lijst
-   - Drie zinnen van vergelijkbare lengte achter elkaar (geen burstiness)
-   - Stijl-specifieke overtredingen (panoramische opener bij personal, marketing-speak bij clear, etc.)
-2. Gevonden overtredingen: herschrijf die zinnen ter plekke. Geen overtredings-lijst outputten.
-3. Herhaal maximaal één keer als een herschrijving nieuwe problemen introduceert. Na twee passes: accepteer resterende imperfectie.
+   - Every forbidden word from `_anti-patterns.md` or the style-specific list
+   - Three sentences of similar length in a row (no burstiness)
+   - Style-specific violations (panoramic opener for personal, marketing-speak for clear, etc.)
+2. Found violations: rewrite those sentences in place. Do not output the violations list.
+3. Repeat at most once if a rewrite introduces new problems. After two passes: accept remaining imperfection.
 
-Self-check is stil. Output blijft tekst-only (Step 6).
+Self-check is silent. Output remains text-only (Step 6).
 
 ## 6. Output
 
-Output ALLEEN de tekst. Geen commentaar, geen "hier is je draft", geen wrapping.
+Output ONLY the text. No commentary, no "here is your draft", no wrapping.

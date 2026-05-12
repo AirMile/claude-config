@@ -1,6 +1,6 @@
 # Source Visual: SaaS Pricing Page
 
-Dit bestand simuleert de output van FASE 0.2 (Visual Analysis) — wat Claude uit een screenshot of URL zou extraheren.
+Dit bestand simuleert de output van PHASE 0.2 (Visual Analysis) — wat Claude uit een screenshot of URL zou extraheren.
 
 ## Layout
 

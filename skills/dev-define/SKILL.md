@@ -16,74 +16,74 @@ metadata:
 
 # Feature Definition
 
-FASE 1 van de dev workflow: define → build → test.
+PHASE 1 of the dev workflow: define → build → test.
 
-**Trigger**: `/dev-define` of `/dev-define [feature-name]`
+**Trigger**: `/dev-define` or `/dev-define [feature-name]`
 
 ## Workflow
 
-### FASE 0: Feature Name & Context
+### PHASE 0: Feature Name & Context
 
-1. **If name provided** (`/dev-define auth`): gebruik als feature name, ga naar stap 2b.
+1. **If name provided** (`/dev-define auth`): use as feature name, go to step 2b.
 
 2. **If no name** (`/dev-define`):
 
-   a) Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data">`
-   → Zoek eerste TODO: `data.features.find(f => f.status === "TODO")`
+   a) Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">`
+   → Find first TODO: `data.features.find(f => f.status === "TODO")`
 
-   b) **Als backlog feature gevonden:**
-   AskUserQuestion: "Volgende feature uit backlog: **{name}**. Hiermee doorgaan?"
-   - "{name} (Recommended)" / "Andere feature"
-   - Backlog gekozen → stap 3. "Andere feature" → optie c.
+   b) **If backlog feature found:**
+   AskUserQuestion: "Next feature from backlog: **{name}**. Continue with this?"
+   - "{name} (Recommended)" / "Different feature"
+   - Backlog chosen → step 3. "Different feature" → option c.
 
-   c) **Geen backlog maar concept aanwezig:**
-   Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md`. Als `CONCEPT_CONTEXT.present`:
+   c) **No backlog but concept present:**
+   Read `CONCEPT_CONTEXT` per `shared/CONCEPT.md`. If `CONCEPT_CONTEXT.present`:
    AskUserQuestion:
 
    ```yaml
-   header: "Concept zonder backlog"
-   question: "Er is een concept maar nog geen backlog. Wil je eerst een backlog genereren?"
+   header: "Concept without backlog"
+   question: "There is a concept but no backlog yet. Do you want to generate a backlog first?"
    options:
-     - label: "Ja, eerst /project-plan (Recommended)", description: "Genereer backlog uit concept, dan features definiëren"
-     - label: "Nee, direct definiëren", description: "Definieer een losse feature zonder backlog"
+     - label: "Yes, first /project-plan (Recommended)", description: "Generate backlog from concept, then define features"
+     - label: "No, define directly", description: "Define a standalone feature without a backlog"
    multiSelect: false
    ```
 
-   "Ja" → stop, toon: `Draai /project-plan om je concept om te zetten in een backlog.`
-   "Nee" → ga door naar optie d.
+   "Yes" → stop, show: `Run /project-plan to convert your concept into a backlog.`
+   "No" → continue to option d.
 
-   d) **Geen backlog, geen concept (of direct definiëren gekozen):**
-   AskUserQuestion: "Welke feature wil je definiëren?" met 3 suggesties relevant voor het project.
+   d) **No backlog, no concept (or direct define chosen):**
+   AskUserQuestion: "Which feature do you want to define?" with 3 suggestions relevant to the project.
 
-2b. **Feature existence check** (na naam-bepaling, vóór context-load):
+2b. **Feature existence check** (after name is determined, before context load):
 
-Check: `.project/features/{feature-name}/feature.json` bestaat?
+Check: `.project/features/{feature-name}/feature.json` exists?
 
-- **Niet gevonden** → ga door naar stap 3 (gewone flow).
-- **Gevonden** → ga naar FASE 0b (update-mode).
+- **Not found** → continue to step 3 (normal flow).
+- **Found** → go to PHASE 0b (update-mode).
 
-3. **Project folder + context** (paralleliseer):
+3. **Project folder + context** (parallelize):
    - `mkdir -p .project/features/{feature-name}`
    - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json`
-   - Glob + Grep voor bestaande code die de feature-naam importeert. Bij 0 matches: stilzwijgend doorgaan. Bij ≥1 match: vermeld kort welke bestanden de naam al refereren.
+   - Glob + Grep for existing code that imports the feature name. With 0 matches: continue silently. With ≥1 match: briefly mention which files already reference the name.
    - Read `.project/project.json` → extract:
-     - `stack` — framework, language, packages (fallback als stack-baseline.md niet bestaat)
-     - `CONCEPT_CONTEXT.pitch` of eerste 2 zinnen van `CONCEPT_CONTEXT.markdown` als feature context (zie `shared/CONCEPT.md`)
-     - `features[]` — bestaande features (voorkomt duplicaten/overlap)
-     - `endpoints` — bestaande API surface
-     - `data.entities` — bestaand data model
-     - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/project-todo`). Laad die als context.
-     - `design.components[]` — bestaande component-specs (gebruikt voor reuse-discovery in FASE 1)
-     - `design.pages[]` — bestaande page-specs (gebruikt voor reuse-discovery context)
-   - **Onboarding check** (evalueer direct na project.json read):
-     - `project.json` niet aanwezig → toon: `⚠️ Geen project.json gevonden. Overweeg eerst /core-setup te draaien voor betere codebase-context.`
-     - Aanwezig maar leeg (geen `context`, `stack`, én `features`) → toon: `ℹ️ project.json bestaat maar mist codebase-context. /core-setup kan dit aanvullen.`
-     - Aanwezig met content → stil doorgaan.
-     - Niet-blocking — skill gaat altijd verder.
-   - **Naam-match op thinking markdown**: Grep `.project/thinking/*.md` op feature-naam (bestandsnaam + content). Bij 1+ match: lees de match(es) en gebruik als input voor FASE 1 vragen. De `.md` bestanden zijn bron van waarheid voor thinking-output — geen 7-dagen window meer.
-   - **Backlog card → TODO**: Read `.project/backlog.html` → parse JSON uit `<script id="backlog-data">`. Zoek feature op naam → behoud `status: "TODO"`, zet `date: "{date}"`. Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "TODO"`. Zet `data.updated` naar vandaag. Schrijf terug naar `backlog.html`.
-   - Read `.project/project-context.json` (als bestaat) → extract:
-     - `context.patterns` — bestaande code patterns
+     - `stack` — framework, language, packages (fallback if stack-baseline.md does not exist)
+     - `CONCEPT_CONTEXT.pitch` or first 2 sentences of `CONCEPT_CONTEXT.markdown` as feature context (see `shared/CONCEPT.md`)
+     - `features[]` — existing features (prevents duplicates/overlap)
+     - `endpoints` — existing API surface
+     - `data.entities` — existing data model
+     - `thinking[]` — scan for entries with `newFeature` field matching the feature name (added via `/project-todo`). Load those as context.
+     - `design.components[]` — existing component specs (used for reuse-discovery in PHASE 1)
+     - `design.pages[]` — existing page specs (used for reuse-discovery context)
+   - **Onboarding check** (evaluate immediately after project.json read):
+     - `project.json` not present → show: `⚠️ No project.json found. Consider running /core-setup first for better codebase context.`
+     - Present but empty (no `context`, `stack`, and `features`) → show: `ℹ️ project.json exists but lacks codebase context. /core-setup can fill this in.`
+     - Present with content → continue silently.
+     - Non-blocking — skill always continues.
+   - **Name-match on thinking markdown**: Grep `.project/thinking/*.md` for feature name (filename + content). With 1+ match: read the match(es) and use as input for PHASE 1 questions. The `.md` files are the source of truth for thinking output — no 7-day window anymore.
+   - **Backlog card → TODO**: Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">`. Find feature by name → keep `status: "TODO"`, set `date: "{date}"`. Not found → add to `data.features` with `phase: "P4"`, `status: "TODO"`. Set `data.updated` to today. Write back to `backlog.html`.
+   - Read `.project/project-context.json` (if exists) → extract:
+     - `context.patterns` — existing code patterns
    - **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
      ```
@@ -92,285 +92,285 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
      current-feature: <feature-name>
      ```
 
-     **Verplichte output bij ≥1 match** — toon als aparte chat-block vóór FASE 1 vragen (niet samengevoegd met past-decisions output):
+     **Required output at ≥1 match** — show as separate chat block before PHASE 1 questions (not merged with past-decisions output):
 
      ```
-     RELEVANTE LEARNINGS
-     - [pattern] {summary} (uit feature {feature})
-     - [pitfall] {summary} (uit feature {feature})
+     RELEVANT LEARNINGS
+     - [pattern] {summary} (from feature {feature})
+     - [pitfall] {summary} (from feature {feature})
      ```
 
-     Geen matches → toon niets, ga stil door.
+     No matches → show nothing, continue silently.
 
-   - Read `.claude/research/stack-baseline.md` (conventie/patterns detail — als niet beschikbaar, gebruik `project.json.stack` als basis)
-   - **Past decisions scan** (twee bronnen, beide scope):
-     - Feature-scope: Glob `.project/features/*/feature.json` → flatten alle `durableDecisions[]`. Tag elke entry met `[feature-X]`.
-     - Project-scope: Glob `.project/thinking/*-decision-*.md` → lees eerste ~30 regels per file, extract `THINK:` regel (titel), `AANBEVELING:` regel (chosen), en `CONSTRAINT` sectie. Tag elke entry met `[project]`.
-     - Merge beide bronnen. Filter relevant via keyword-overlap tussen huidige feature-naam/concept en elke decision's titel, chosen, of constraint (≥2 substantieve termen). Houd top 3 meest-relevante.
+   - Read `.claude/research/stack-baseline.md` (convention/patterns detail — if not available, use `project.json.stack` as basis)
+   - **Past decisions scan** (two sources, both scoped):
+     - Feature-scope: Glob `.project/features/*/feature.json` → flatten all `durableDecisions[]`. Tag each entry with `[feature-X]`.
+     - Project-scope: Glob `.project/thinking/*-decision-*.md` → read first ~30 lines per file, extract `THINK:` line (title), `RECOMMENDATION:` line (chosen), and `CONSTRAINT` section. Tag each entry with `[project]`.
+     - Merge both sources. Filter relevant via keyword overlap between current feature name/concept and each decision's title, chosen, or constraint (≥2 substantive terms). Keep top 3 most relevant.
 
-### FASE 0b: Update-mode (alleen als feature.json al bestaat)
+### PHASE 0b: Update-mode (only if feature.json already exists)
 
-1. Lees `.project/features/{feature-name}/feature.json`.
+1. Read `.project/features/{feature-name}/feature.json`.
 
-2. Toon bestaande requirements samenvatting:
+2. Show existing requirements summary:
 
-   | ID      | Beschrijving (eerste 60 chars) | Status  |
-   | ------- | ------------------------------ | ------- |
-   | REQ-001 | {beschrijving}                 | pending |
+   | ID      | Description (first 60 chars) | Status  |
+   | ------- | ---------------------------- | ------- |
+   | REQ-001 | {description}                | pending |
 
-3. AskUserQuestion: "Feature **{name}** bestaat al met {N} requirements. Wat wil je aanpassen?"
+3. AskUserQuestion: "Feature **{name}** already exists with {N} requirements. What do you want to change?"
 
    ```yaml
    header: "Update-mode"
    options:
-     - label: "Requirements toevoegen (Recommended)", description: "Nieuwe requirements via FASE 1 flow, doorgenummerd vanaf REQ-{N+1}"
-     - label: "Requirements wijzigen", description: "Bestaande requirements herformuleren of acceptance aanpassen"
-     - label: "Requirements verwijderen", description: "Requirements uit scope halen (soft-delete)"
-     - label: "Meerdere van bovenstaande", description: "Combinatie van toevoegen, wijzigen en/of verwijderen"
+     - label: "Add requirements (Recommended)", description: "New requirements via PHASE 1 flow, numbered from REQ-{N+1}"
+     - label: "Modify requirements", description: "Reword existing requirements or adjust acceptance"
+     - label: "Remove requirements", description: "Remove requirements from scope (soft-delete)"
+     - label: "Multiple of the above", description: "Combination of add, modify, and/or remove"
    multiSelect: false
    ```
 
-4. Verwerk delta op basis van keuze:
-   - **Toevoegen**: Doorloop FASE 1 Requirements Gathering voor alleen de nieuwe requirements. Nummer door vanaf `REQ-{N+1}`.
-   - **Wijzigen**: Vraag welke REQ-IDs. Per REQ: toon huidige beschrijving + acceptance, vraag nieuwe versie. Gebruik formaat `[{ when, then }]` per scenario.
-   - **Verwijderen**: Vraag welke REQ-IDs. Markeer met `deltaOp: "REMOVED"` — verwijder niet fysiek uit de array. Ook: verwijder het REQ-ID uit alle `buildSequence[].requirements[]` arrays; als een step daarna leeg is → verwijder de step.
-   - **Meerdere**: Combineer bovenstaande flows in één ronde.
+4. Process delta based on choice:
+   - **Add**: Run through PHASE 1 Requirements Gathering for new requirements only. Number from `REQ-{N+1}`.
+   - **Modify**: Ask which REQ-IDs. Per REQ: show current description + acceptance, ask for new version. Use format `[{ when, then }]` per scenario.
+   - **Remove**: Ask which REQ-IDs. Mark with `deltaOp: "REMOVED"` — do not physically remove from array. Also: remove the REQ-ID from all `buildSequence[].requirements[]` arrays; if a step becomes empty afterwards → remove the step.
+   - **Multiple**: Combine the above flows in one round.
 
-5. Sla `deltaOp` op per requirement:
-   - Ongewijzigd: `"deltaOp": "UNCHANGED"`
-   - Nieuw: `"deltaOp": "ADDED"`
-   - Gewijzigd: `"deltaOp": "MODIFIED"` + `"previousDescription": "{oorspronkelijke tekst}"`
-   - Verwijderd: `"deltaOp": "REMOVED"` (blijft in array, wordt niet gebouwd of getest)
+5. Save `deltaOp` per requirement:
+   - Unchanged: `"deltaOp": "UNCHANGED"`
+   - New: `"deltaOp": "ADDED"`
+   - Modified: `"deltaOp": "MODIFIED"` + `"previousDescription": "{original text}"`
+   - Removed: `"deltaOp": "REMOVED"` (stays in array, not built or tested)
 
-6. **Status-reset**: als feature `status` was `"DOING"` → zet terug naar `"DEFINED"` in `feature.json` en backlog.
+6. **Status-reset**: if feature `status` was `"DOING"` → reset to `"DEFINED"` in `feature.json` and backlog.
 
-7. Skip FASE 1b (feature splitting) tenzij het aantal requirements na update boven 6 stijgt én er duidelijke clusters zijn.
+7. Skip PHASE 1b (feature splitting) unless the number of requirements after update exceeds 6 and there are clear clusters.
 
-8. Ga naar FASE 2 voor alleen ADDED en MODIFIED requirements. UNCHANGED requirements hoeven geen herarchitectuur, tenzij MODIFIED requirements architecturale impact hebben (vraag user).
+8. Go to PHASE 2 for ADDED and MODIFIED requirements only. UNCHANGED requirements do not need re-architecture, unless MODIFIED requirements have architectural impact (ask user).
 
-9. Bij FASE 3 write: **merge** delta naar bestaand `feature.json` — overschrijf niet volledig. Bewaar bestaande `architecture`, `apiContract`, `design`, `testStrategy`, `durableDecisions`, `research` en UNCHANGED requirements intact (tenzij MODIFIED requirements architecturale impact hebben — vraag user). `buildSequence`: verwijder stappen die leeg zijn na REMOVED-filtering; voeg nieuwe stappen toe voor ADDED requirements (uit FASE 2 architectuur output); bestaande stappen voor UNCHANGED requirements ongewijzigd laten.
-
----
-
-### FASE 0c: Enter Plan Mode
-
-Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór FASE 1. FASE 1 + 2 draaien in plan mode; alle FASE 2 design-output wordt naar de plan file geschreven ter review. Alle FASE 0 setup-writes zijn op dit punt al gedaan — file writes (feature.json, .project/\* updates) wachten tot na ExitPlanMode.
+9. At PHASE 3 write: **merge** delta into existing `feature.json` — do not overwrite completely. Keep existing `architecture`, `apiContract`, `design`, `testStrategy`, `durableDecisions`, `research` and UNCHANGED requirements intact (unless MODIFIED requirements have architectural impact — ask user). `buildSequence`: remove steps that are empty after REMOVED-filtering; add new steps for ADDED requirements (from PHASE 2 architecture output); leave existing steps for UNCHANGED requirements untouched.
 
 ---
 
-### FASE 1: Requirements Gathering
+### PHASE 0c: Enter Plan Mode
 
-**Risk-check (alleen als `feature.risk >= 4`):**
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 1. PHASE 1 + 2 run in plan mode; all PHASE 2 design output is written to the plan file for review. All PHASE 0 setup writes are done at this point — file writes (feature.json, .project/\* updates) wait until after ExitPlanMode.
 
-Als de geladen backlog-feature een `risk`-score van 4 of 5 heeft, toon deze waarschuwing vóór de eerste vraag:
+---
 
-```
-⚠ HOOG RISICO — Complexiteit {risk}/5
+### PHASE 1: Requirements Gathering
 
-Deze feature heeft een hoge complexiteitsscore. Overweeg vóór de definitie:
-- Splits de feature op in kleinere onderdelen
-- Verifieer dat dependencies beschikbaar zijn
-- Bespreek scope met de gebruiker als onderdelen onduidelijk zijn
-```
+**Risk-check (only if `feature.risk >= 4`):**
 
-**Surface relevant past decisions** (alleen bij ≥1 match uit FASE 0 scan, anders skip stilzwijgend):
+If the loaded backlog feature has a `risk` score of 4 or 5, show this warning before the first question:
 
 ```
-EERDER BESLOTEN (mogelijk relevant)
-- [project] {decision} → koos {chosen} (constraint: {constraint})
-- [feature-X] {decision} → koos {chosen} (constraint: {constraint})
+⚠ HIGH RISK — Complexity {risk}/5
+
+This feature has a high complexity score. Consider before defining:
+- Split the feature into smaller parts
+- Verify that dependencies are available
+- Discuss scope with the user if parts are unclear
 ```
 
-Toon vóór de eerste AskUserQuestion. Geen actie-vraag — alleen context zodat vraag-1 antwoorden niet conflicteren met eerder besloten richtingen. Als een huidige antwoord-optie direct conflicteert, noem dat kort in de optie-description ("Wijkt af van {feature-X} decision").
+**Surface relevant past decisions** (only with ≥1 match from PHASE 0 scan, otherwise skip silently):
 
-3-5 vragen via AskUserQuestion, afgestemd op stack en projecttype.
+```
+PREVIOUSLY DECIDED (possibly relevant)
+- [project] {decision} → chose {chosen} (constraint: {constraint})
+- [feature-X] {decision} → chose {chosen} (constraint: {constraint})
+```
 
-**Must-cover categorieën** (altijd dekken, formulering adaptief per stack):
+Show before the first AskUserQuestion. No action question — context only so question-1 answers don't conflict with previously decided directions. If a current answer option directly conflicts, mention that briefly in the option description ("Deviates from {feature-X} decision").
 
-- **Core function**: wat moet het doen vanuit gebruikersperspectief?
-- **Data/state**: waar komt data vandaan, hoe wordt het opgeslagen/beheerd?
-- **Output/contract**: wat levert het op? (backend: response types, error handling, exported interface. UI: events, visuele feedback. CLI: output format.)
+3-5 questions via AskUserQuestion, tailored to stack and project type.
 
-**Vraag 1 (altijd): Core Function** — "Wat moet deze feature doen?" met 2-3 opties.
+**Must-cover categories** (always cover, phrasing adaptive per stack):
 
-**Vraag 2-4 (adaptief)**: Dek de must-cover categorieën. Kies subcategorieën passend bij de stack (patterns, visual/output, persistence, API design). Leid opties af uit de baseline en bestaande code. Combineer gerelateerde vragen in één AskUserQuestion call als ze samen logisch zijn (max 2 per call).
+- **Core function**: what must it do from a user perspective?
+- **Data/state**: where does data come from, how is it stored/managed?
+- **Output/contract**: what does it produce? (backend: response types, error handling, exported interface. UI: events, visual feedback. CLI: output format.)
 
-**Vraag 5 (optioneel)**: Alleen bij complexe configuratie of meerdere benaderingen.
+**Question 1 (always): Core Function** — "What should this feature do?" with 2-3 options.
 
-**User-delegatie**: als de user antwoordt met "wat denk jij?" of vergelijkbaar, geef een korte aanbeveling met trade-off en ga door met die keuze.
+**Questions 2-4 (adaptive)**: Cover the must-cover categories. Choose subcategories appropriate for the stack (patterns, visual/output, persistence, API design). Derive options from the baseline and existing code. Combine related questions in one AskUserQuestion call if they are logically connected (max 2 per call).
 
-#### Doorvraag-check
+**Question 5 (optional)**: Only for complex configuration or multiple approaches.
 
-Na de initiële vragen, evalueer of er open branches zijn:
+**User-delegation**: if the user responds with "what do you think?" or similar, give a brief recommendation with trade-off and proceed with that choice.
 
-- Onbesproken edge cases in de antwoorden
-- Impliciete aannames die niet bevestigd zijn
-- Conflicten tussen antwoorden
+#### Follow-up Check
 
-**Skip doorvraag** als de feature simpel is (≤5 verwachte REQs) EN er geen open branches zijn.
-**Anders**: stel 1-2 gerichte doorvragen. Formuleer als "Wat gebeurt er als...?" of "Hoe gaat dit om met...?"
+After the initial questions, evaluate whether there are open branches:
 
-Max 2 extra vragen, dan door naar extraction.
+- Unaddressed edge cases in the answers
+- Implicit assumptions that haven't been confirmed
+- Conflicts between answers
+
+**Skip follow-up** if the feature is simple (≤5 expected REQs) AND there are no open branches.
+**Otherwise**: ask 1-2 targeted follow-up questions. Frame as "What happens if...?" or "How does this handle...?"
+
+Max 2 extra questions, then proceed to extraction.
 
 #### Gray-Area Resolution
 
-**Skip** als doorvraag-check geen open branches heeft gevonden.
+**Skip** if the follow-up check found no open branches.
 
-**Anders**: voor elke geïdentificeerde open branch (max 3):
+**Otherwise**: for each identified open branch (max 3):
 
-1. Formuleer de ambiguïteit als concrete keuze via AskUserQuestion:
-   - Header: de open branch als korte zin
-   - Opties: 2-3 concrete benaderingen + "Niet relevant voor scope"
-   - Eerste optie = Recommended
+1. Frame the ambiguity as a concrete choice via AskUserQuestion:
+   - Header: the open branch as a short sentence
+   - Options: 2-3 concrete approaches + "Not relevant to scope"
+   - First option = Recommended
 
-2. Noteer de keuze als clarification:
-   `{ "question": "{open branch}", "answer": "{gekozen optie}", "impact": "kort welk requirement-gebied dit raakt" }`
+2. Record the choice as a clarification:
+   `{ "question": "{open branch}", "answer": "{chosen option}", "impact": "brief note on which requirement area this affects" }`
 
-**"Niet relevant"** → noteer als scoped-out, niet als requirement.
-**>3 open branches** → verwerk overige inline bij requirement extraction als edge case.
+**"Not relevant"** → record as scoped-out, not as a requirement.
+**>3 open branches** → handle remaining ones inline during requirement extraction as edge cases.
 
-Max 3 AskUserQuestion calls. Dan door naar extraction.
+Max 3 AskUserQuestion calls. Then proceed to extraction.
 
 #### Requirement Extraction + Checkpoint
 
-Extraheer testbare requirements **intern** (geen tabel-output naar chat). Schrijf elk acceptance-scenario als een apart `{ when, then }` object. Meerdere condities → meerdere objecten (niet samenvoegen in één zin).
+Extract testable requirements **internally** (no table output to chat). Write each acceptance scenario as a separate `{ when, then }` object. Multiple conditions → multiple objects (do not combine in one sentence).
 
-**Completeness self-check** (voer uit, NIET aan user tonen):
+**Completeness self-check** (execute, do NOT show to user):
 
-- Elk `when` is een concrete trigger (actie, input, toestand). Elk `then` is een observeerbaar resultaat (status code, UI-element, returnwaarde, state change). Niet vaag: "werkt goed", "goede performance", "gebruiksvriendelijk".
-- Data sources geïdentificeerd (waar komt input/output vandaan?)
-- Error/edge cases benoemd voor requirements met user input of externe data
-- Geen overlap tussen requirements (twee REQs die hetzelfde beschrijven)
-- Scope past bij 1 feature (als >10 REQs → markeer voor FASE 1b)
+- Each `when` is a concrete trigger (action, input, state). Each `then` is an observable result (status code, UI element, return value, state change). Not vague: "works well", "good performance", "user-friendly".
+- Data sources identified (where does input/output come from?)
+- Error/edge cases named for requirements with user input or external data
+- No overlap between requirements (two REQs describing the same thing)
+- Scope fits 1 feature (if >10 REQs → flag for PHASE 1b)
 
-Fix gevonden gaps intern: voeg ontbrekende acceptance criteria toe, splits overlappende REQs, voeg edge case REQs toe.
+Fix found gaps internally: add missing acceptance criteria, split overlapping REQs, add edge case REQs.
 
-**Korte chat-checkpoint** — toon alleen een beknopte numbered list (REQ-ID + 1-regel beschrijving, zonder category en zonder acceptance) zodat user kan bevestigen dat de scope klopt vóór architectuur-werk:
+**Short chat checkpoint** — show only a concise numbered list (REQ-ID + 1-line description, without category and without acceptance) so user can confirm scope is correct before architecture work:
 
 ```
-REQ-001 — {1-regel beschrijving}
-REQ-002 — {1-regel beschrijving}
+REQ-001 — {1-line description}
+REQ-002 — {1-line description}
 ...
-({N} requirements; volledige acceptance + overzicht volgt in plan file)
+({N} requirements; full acceptance + overview follows in plan file)
 ```
 
-Bevestig met user via AskUserQuestion: "Klopt deze scope?"
+Confirm with user via AskUserQuestion: "Is this scope correct?"
 
-- "Ja, ga door (Recommended)" — door naar scope analysis + architectuur
-- "Aanpassen" — terug naar relevante vraag
+- "Yes, continue (Recommended)" — proceed to scope analysis + architecture
+- "Adjust" — back to relevant question
 
-De volledige requirements-tabel met acceptance criteria en de feature-overzicht-tabel worden alleen in de plan file geschreven (in FASE 2), niet inline in de chat.
+The full requirements table with acceptance criteria and the feature overview table are only written in the plan file (in PHASE 2), not inline in chat.
 
-#### Reuse-Discovery (optioneel — skip voor COMPONENT-features zelf)
+#### Reuse-Discovery (optional — skip for COMPONENT features themselves)
 
-**Wanneer uitvoeren:** alleen als de huidige feature type NIET `COMPONENT` is, én het een frontend-project is (stack.framework aanwezig).
+**When to run:** only if the current feature type is NOT `COMPONENT`, and it is a frontend project (stack.framework present).
 
-Volg [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) voor het canonieke protocol.
+Follow [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) for the canonical protocol.
 
-**Trigger:** keyword-scan op UI-element namen in requirements-tekst — Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton. Pas ook project-specifieke naam-prefixen toe. Voeg items in-memory toe (meegenomen naar FASE 4 sync); append kebab-naam ook aan huidige feature's `dependencies[]`.
+**Trigger:** keyword scan on UI element names in requirements text — Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton. Also apply project-specific name prefixes. Add items in-memory (carried forward to PHASE 4 sync); also append kebab-name to current feature's `dependencies[]`.
 
 **Source:** `"/dev-define"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
 
 ---
 
-### FASE 1b: Scope Analysis & Feature Splitting
+### PHASE 1b: Scope Analysis & Feature Splitting
 
-**≤6 requirements**: toon ALTIJD één regel inline aan de gebruiker:
+**≤6 requirements**: ALWAYS show one line inline to the user:
 
 ```
 Scope: {N} requirements — SINGLE feature
 ```
 
-Geen AskUserQuestion, geen extra uitleg. Daarna direct door naar FASE 2. Skip cluster-analyse.
+No AskUserQuestion, no extra explanation. Then proceed directly to PHASE 2. Skip cluster analysis.
 
-**7-10 requirements**: cluster op afhankelijkheden. ≥2 clusters met ≤2 cross-deps → RECOMMEND SPLIT.
+**7-10 requirements**: cluster on dependencies. ≥2 clusters with ≤2 cross-deps → RECOMMEND SPLIT.
 
-**>10 requirements**: RECOMMEND SPLIT (tenzij lineaire keten, single concern).
+**>10 requirements**: RECOMMEND SPLIT (unless linear chain, single concern).
 
-**Als SINGLE**: toon kort, ga door.
+**If SINGLE**: show briefly, continue.
 
-**Als SPLIT aanbevolen**:
+**If SPLIT recommended**:
 
-1. Toon voorstel met clusters, build order, cross-dependencies
-2. AskUserQuestion: "Akkoord met opsplitsing?" — Akkoord / Aanpassen / Eén feature houden
-3. Bij split:
-   - Schrijf `.project/features/{feature-name}/00-split.md` met: split decision, sub-feature tabel (requirements + focus), build order
-   - Maak sub-feature folders: `mkdir -p .project/features/{feature-name}-{sub}`
+1. Show proposal with clusters, build order, cross-dependencies
+2. AskUserQuestion: "Agree with split?" — Agree / Adjust / Keep as one feature
+3. On split:
+   - Write `.project/features/{feature-name}/00-split.md` with: split decision, sub-feature table (requirements + focus), build order
+   - Create sub-feature folders: `mkdir -p .project/features/{feature-name}-{sub}`
    - Re-number requirements per sub-feature (REQ-001, REQ-002, etc.)
-   - Doorloop FASE 2-4 per sub-feature in build order
-   - Bij backlog: sync elke sub-feature individueel
+   - Run PHASE 2-4 per sub-feature in build order
+   - In backlog: sync each sub-feature individually
 
-### FASE 2: Architecture
+### PHASE 2: Architecture
 
-**Output-regel voor deze hele fase**: schrijf het volledige architectuur-ontwerp **direct naar de plan file** (Write/Edit, gebruik het pad uit de FASE 0c system-reminder). **Toon geen design-tabellen, file-structuren, interfaces, build sequence of test strategy inline in de chat** — alleen een korte progress-marker (bv. `Architectuur ontworpen: N componenten, M files, K build steps. Plan file bijgewerkt.`).
+**Output rule for this entire phase**: write the full architecture design **directly to the plan file** (Write/Edit, use the path from the PHASE 0c system-reminder). **Do not show design tables, file structures, interfaces, build sequence or test strategy inline in chat** — only a short progress marker (e.g. `Architecture designed: N components, M files, K build steps. Plan file updated.`).
 
-**Uitzondering**: bij visuele features mag de ASCII-wireframe wél inline in een AskUserQuestion description verschijnen — anders kan user niet beoordelen vóór de finale plan-file write.
+**Exception**: for visual features the ASCII wireframe may appear inline in an AskUserQuestion description — otherwise the user cannot review it before the final plan file write.
 
-Ontwerp in drie stappen:
+Design in three steps:
 
-1. **Baseline check** (intern):
-   - Doorzoek `stack-baseline.md` op patronen relevant voor deze feature
-   - **Pattern gevonden** → gebruik als basis voor design, skip research
-   - **Pattern niet gevonden** → inline research:
-     - Call `resolve-library-id` + `query-docs` via Context7 voor library/framework patterns
-     - Call WebSearch voor externe APIs en services
+1. **Baseline check** (internally):
+   - Search `stack-baseline.md` for patterns relevant to this feature
+   - **Pattern found** → use as basis for design, skip research
+   - **Pattern not found** → inline research:
+     - Call `resolve-library-id` + `query-docs` via Context7 for library/framework patterns
+     - Call WebSearch for external APIs and services
      - Focus: recommended patterns, state approach, file structure
-       Na research: update `stack-baseline.md` met nieuwe patronen (append, niet overschrijven)
-   - **Geen baseline file** → altijd research uitvoeren. Baseline NIET aanmaken (dat is /core-setup)
+       After research: update `stack-baseline.md` with new patterns (append, do not overwrite)
+   - **No baseline file** → always execute research. Do NOT create baseline (that is /core-setup)
 
-2. **Bestaande code** (intern): Glob + Read de meest relevante bestanden met vergelijkbare patterns. Dit informeert het ontwerp.
+2. **Existing code** (internally): Glob + Read the most relevant files with similar patterns. This informs the design.
 
-3. **Design** → schrijf naar plan file: feature flow, file structuur, interfaces/types, design sketch (alleen visueel), dependency analysis, build sequence, test strategy, AI-navigability beslissingen.
-   - **Feature flow**: compacte `→`-keten van trigger tot output (conditionele paden in `[brackets]`, parallelle paden met `+`). Voorbeeld: `User click → validate input → [cache hit → return] / [cache miss → fetch API + update cache] → render response`.
-   - **File structuur**: create/modify tabel.
-   - **Interfaces/Types**: als relevant.
-   - **Design sketch**: alleen voor visuele features — ASCII wireframe (web/UI) of scene composition (3D/game). Overweeg: responsive breakpoints, loading state, empty state, error state. Bevestig wireframe inline via AskUserQuestion (zie uitzondering bovenaan): "Klopt dit visuele ontwerp?" — "Ja (Recommended)" / "Aanpassen". Bij kleur-referenties in wireframes/acceptance criteria: gebruik token-namen (`bg-primary`, `text-foreground`) — geen hex-waarden. Zie `shared/TOKENS.md`.
-   - **Dependency analysis**: REQ→REQ relaties.
-   - **Build sequence**: genummerde implementatievolgorde. Combineer REQs in dezelfde step als ze dezelfde file raken en geen onderlinge dependencies hebben.
-   - **Test strategy**: REQ→testfile→beschrijving tabel.
-   - **AI-navigability** (evalueer na design, pas file structure/interfaces aan waar nodig — skip bij ≤3 bestanden zonder nieuw pattern):
-     - _Module exports_: Per nieuw bestand: wat is public, wat is private? Bij >3 bestanden in dezelfde dir: overweeg barrel/index bestand.
-     - _Registries_: Meerdere instances van hetzelfde concept (endpoints, commands, entities)? → Centraliseer in één bestand. Noteer in `architecture.registries[]`.
-     - _Structuur_: Plat vs genest? Richtlijn: plat tenzij >10 files of duidelijke subcategorieën. Volg bestaande projectconventie.
-     - _Test locatie_: Colocated of apart? Documenteer in `testStrategy.location`.
-     - _Module boundaries_: Welke modules importeren van welke? Noteer verboden imports bij circulaire risico's.
+3. **Design** → write to plan file: feature flow, file structure, interfaces/types, design sketch (visual only), dependency analysis, build sequence, test strategy, AI-navigability decisions.
+   - **Feature flow**: compact `→` chain from trigger to output (conditional paths in `[brackets]`, parallel paths with `+`). Example: `User click → validate input → [cache hit → return] / [cache miss → fetch API + update cache] → render response`.
+   - **File structure**: create/modify table.
+   - **Interfaces/Types**: if relevant.
+   - **Design sketch**: only for visual features — ASCII wireframe (web/UI) or scene composition (3D/game). Consider: responsive breakpoints, loading state, empty state, error state. Confirm wireframe inline via AskUserQuestion (see exception above): "Is this visual design correct?" — "Yes (Recommended)" / "Adjust". For color references in wireframes/acceptance criteria: use token names (`bg-primary`, `text-foreground`) — no hex values. See `shared/TOKENS.md`.
+   - **Dependency analysis**: REQ→REQ relations.
+   - **Build sequence**: numbered implementation order. Combine REQs in the same step if they touch the same file and have no mutual dependencies.
+   - **Test strategy**: REQ→testfile→description table.
+   - **AI-navigability** (evaluate after design, adjust file structure/interfaces where needed — skip for ≤3 files without new pattern):
+     - _Module exports_: Per new file: what is public, what is private? With >3 files in the same dir: consider barrel/index file.
+     - _Registries_: Multiple instances of the same concept (endpoints, commands, entities)? → Centralize in one file. Record in `architecture.registries[]`.
+     - _Structure_: Flat vs nested? Guideline: flat unless >10 files or clear subcategories. Follow existing project convention.
+     - _Test location_: Colocated or separate? Document in `testStrategy.location`.
+     - _Module boundaries_: Which modules import from which? Note forbidden imports at circular risk.
 
-**Einde denkfase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf het volledige architectuur-design naar de plan file, dan `ExitPlanMode`. Na approval gaat de skill verder met FASE 3 (feature.json schrijven).
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 3 (writing feature.json).
 
-### FASE 3: Write feature.json
+### PHASE 3: Write feature.json
 
-Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md` voor volledig schema):
+Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema):
 
-| Veld                        | Conditie                                                                                                                                                                                           |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`, `created`, `status` | altijd (status = `"DEFINED"`, geen stage — wacht op `/dev-build`)                                                                                                                                  |
-| `summary`                   | altijd                                                                                                                                                                                             |
-| `depends`                   | altijd (lege array als geen)                                                                                                                                                                       |
-| `choices`                   | altijd (user antwoorden)                                                                                                                                                                           |
-| `requirements`              | altijd (elke REQ met `status: "pending"`, `acceptance: [{when, then}]`)                                                                                                                            |
-| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`)                                                                                                                       |
-| `architecture`              | altijd (`componentTree`, `interfaces`, optioneel `registries[]`)                                                                                                                                   |
-| `design`                    | alleen visuele features                                                                                                                                                                            |
-| `apiContract`               | alleen bij backend                                                                                                                                                                                 |
-| `buildSequence`             | altijd                                                                                                                                                                                             |
-| `testStrategy`              | altijd (optioneel `location` veld)                                                                                                                                                                 |
-| `clarifications`            | alleen opnemen als gray-area resolution minimaal 1 antwoord heeft opgeleverd — anders veld WEGLATEN (geen lege array)                                                                              |
-| `durableDecisions`          | bij >3 requirements — beslissingen die over alle REQs gelden                                                                                                                                       |
-| `research`                  | alleen als research is gedaan                                                                                                                                                                      |
-| `externalRef`               | alleen als het backlog-item dit veld had — kopieer 1:1 (`type`, `id`, `url`, `labels`, `split`). Traceerbaarheid naar externe issue-tracker voor downstream skills (`/dev-build`, `/core-commit`). |
+| Field                       | Condition                                                                                                                                                                                 |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`, `created`, `status` | always (status = `"DEFINED"`, no stage — wait for `/dev-build`)                                                                                                                           |
+| `summary`                   | always                                                                                                                                                                                    |
+| `depends`                   | always (empty array if none)                                                                                                                                                              |
+| `choices`                   | always (user answers)                                                                                                                                                                     |
+| `requirements`              | always (each REQ with `status: "pending"`, `acceptance: [{when, then}]`)                                                                                                                  |
+| `files`                     | always (normalized: `path`, `type`, `action`, `purpose`, `requirements`)                                                                                                                  |
+| `architecture`              | always (`componentTree`, `interfaces`, optional `registries[]`)                                                                                                                           |
+| `design`                    | visual features only                                                                                                                                                                      |
+| `apiContract`               | backend only                                                                                                                                                                              |
+| `buildSequence`             | always                                                                                                                                                                                    |
+| `testStrategy`              | always (optional `location` field)                                                                                                                                                        |
+| `clarifications`            | only include if gray-area resolution produced at least 1 answer — otherwise OMIT field (no empty array)                                                                                   |
+| `durableDecisions`          | with >3 requirements — decisions that apply across all REQs                                                                                                                               |
+| `research`                  | only if research was performed                                                                                                                                                            |
+| `externalRef`               | only if the backlog item had this field — copy 1:1 (`type`, `id`, `url`, `labels`, `split`). Traceability to external issue tracker for downstream skills (`/dev-build`, `/core-commit`). |
 
-**`durableDecisions`** — beslissingen die tijdens de build NIET veranderen:
+**`durableDecisions`** — decisions that do NOT change during the build:
 
-- Persistentie-strategie (welke storage API, welk formaat)
-- ID-generatie en idempotency-contract
-- Key data models en hun relaties
-- Externe service boundaries
-- Route structuren / URL patronen (bij routing-features)
-- Auth/authz aanpak (bij auth-features)
+- Persistence strategy (which storage API, which format)
+- ID generation and idempotency contract
+- Key data models and their relations
+- External service boundaries
+- Route structures / URL patterns (for routing features)
+- Auth/authz approach (for auth features)
 
-Alleen opnemen als er daadwerkelijk cross-requirement beslissingen zijn. Bij simpele features (≤3 REQs) overslaan.
+Only include if there are actually cross-requirement decisions. Skip for simple features (≤3 REQs).
 
-**`buildSequence`** structuur — dev-build itereert dit direct:
+**`buildSequence`** structure — dev-build iterates this directly:
 
 ```json
 [
@@ -389,59 +389,59 @@ Alleen opnemen als er daadwerkelijk cross-requirement beslissingen zijn. Bij sim
 ]
 ```
 
-### FASE 4: Sync
+### PHASE 4: Sync
 
-Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
+Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations below.
 
-Lees parallel **direct voor het editen** (skip als niet bestaat) — vertrouw NIET op reads uit eerdere fases (Prettier/linters kunnen bestanden tussentijds wijzigen):
+Read in parallel **directly before editing** (skip if not exists) — do NOT rely on reads from earlier phases (Prettier/linters can modify files in between):
 
 - `.project/backlog.html`
 - `.project/project.json`
 - `.project/project-context.json`
 
-Muteer in memory:
+Mutate in memory:
 
-**Backlog** (zie `shared/BACKLOG.md`):
+**Backlog** (see `shared/BACKLOG.md`):
 
-- Zoek feature → zet `status: "DEFINED"`, verwijder `transition` (als aanwezig). Niet gevonden → voeg toe aan `data.features` met `phase: "P4"`, `status: "DEFINED"`.
-- **Dependencies**: Als tijdens FASE 1 of FASE 2 externe feature-afhankelijkheden zijn geïdentificeerd (andere features die eerst DONE moeten zijn), merge die naar `dependencies[]`. Verwijder nooit bestaande waarden — alleen toevoegen. Als niets nieuws gevonden: laat het veld ongewijzigd.
-- Zet `data.updated` naar vandaag.
+- Find feature → set `status: "DEFINED"`, remove `transition` (if present). Not found → add to `data.features` with `phase: "P4"`, `status: "DEFINED"`.
+- **Dependencies**: If during PHASE 1 or PHASE 2 external feature dependencies were identified (other features that must be DONE first), merge those into `dependencies[]`. Never remove existing values — only add. If nothing new found: leave field unchanged.
+- Set `data.updated` to today.
 
-**Dashboard** (zie `shared/DASHBOARD.md`):
+**Dashboard** (see `shared/DASHBOARD.md`):
 
 - Update feature in `features` array: status → `"DEFINED"`, update summary
-- Merge per entity type (check altijd op bestaande voor push):
-  - **Data entities** (optioneel — alleen als feature domain entities introduceert): check op naam → nieuw: push met fields/relations → bestaand: merge nieuwe velden. Als feature geen entities heeft (UI-only, refactor, utility): skip deze update, log `Skipped data.entities: no entities`.
-  - **Endpoints**: check op method+path → nieuw: push met `status: "planned"`, `auth: "public" | "user" | "admin"` (default `"public"`, gebruik `"user"` als JWT/session vereist, `"admin"` als role-check vereist; laat `auth` veld weg bij projecten zonder auth) → bestaand: skip
-  - **Routes** in `.project/project-context.json` → `architecture.routes[]`: voor elke nieuwe pagina-route in deze feature → check op `path` → nieuw: push `{ path, purpose, feature: "<feature-name>" }` + `auth` veld alleen als project auth heeft → bestaand: update `purpose` als gewijzigd. Skip voor non-frontend features (pure API/utility).
-  - **Stack packages**: check op naam → nieuw: push `{ name, version, purpose }` → bestaand: skip
-  - **Features**: check op naam → nieuw: push `{ name, status: "DEFINED", summary, created }` → bestaand: update status
-  - **Architecture** in `.project/project-context.json`: genereer/update `architecture` sectie als project meerdere componenten/modules heeft. **Volg component-first model uit `shared/DASHBOARD.md`**:
-    - `layers`: optioneel — definieer lagen met `{ name, order }` als project expliciete layer-naming gebruikt (bijv. API Laag order 1, Data Laag order 3). Skip als project dit niet hanteert.
-    - `dataFlow`: één-regel samenvatting van de request flow
-    - `components`: per component `{ name, layer, description, status, connects_to }`. Nieuwe feature componenten → `status: "planned"`. Bestaande gebouwde → `status: "done"`. Externe services → `status: "external"`. `connects_to`: array van typed edges `{ to, type }` waar `type` een van `calls` | `reads` | `writes` | `depends_on` is (zie `shared/DASHBOARD.md` Edge velden voor mapping)
-    - Merge strategie: check of component `name` al bestaat → nee: push → ja: merge (overschrijf status, merge `connects_to[]` met dedup op `to+type` combinatie)
-    - Optioneel: genereer Mermaid diagram naar `.project/architecture.mmd` voor visuele context
-    - Skip als single-file feature zonder architecturele impact
-  - **Context** in `.project/project-context.json`: update `context.structure` en `context.routing` als de feature nieuwe bestanden of routes toevoegt. **Let op**: structure/routing zijn JSON-escaped strings — bij grote wijzigingen gebruik Write i.p.v. Edit om escaping-problemen te voorkomen.
+- Merge per entity type (always check for existing before push):
+  - **Data entities** (optional — only if feature introduces domain entities): check on name → new: push with fields/relations → existing: merge new fields. If feature has no entities (UI-only, refactor, utility): skip this update, log `Skipped data.entities: no entities`.
+  - **Endpoints**: check on method+path → new: push with `status: "planned"`, `auth: "public" | "user" | "admin"` (default `"public"`, use `"user"` if JWT/session required, `"admin"` if role-check required; omit `auth` field for projects without auth) → existing: skip
+  - **Routes** in `.project/project-context.json` → `architecture.routes[]`: for each new page route in this feature → check on `path` → new: push `{ path, purpose, feature: "<feature-name>" }` + `auth` field only if project has auth → existing: update `purpose` if changed. Skip for non-frontend features (pure API/utility).
+  - **Stack packages**: check on name → new: push `{ name, version, purpose }` → existing: skip
+  - **Features**: check on name → new: push `{ name, status: "DEFINED", summary, created }` → existing: update status
+  - **Architecture** in `.project/project-context.json`: generate/update `architecture` section if project has multiple components/modules. **Follow component-first model from `shared/DASHBOARD.md`**:
+    - `layers`: optional — define layers with `{ name, order }` if project uses explicit layer naming (e.g. API Layer order 1, Data Layer order 3). Skip if project does not use this.
+    - `dataFlow`: one-line summary of the request flow
+    - `components`: per component `{ name, layer, description, status, connects_to }`. New feature components → `status: "planned"`. Existing built components → `status: "done"`. External services → `status: "external"`. `connects_to`: array of typed edges `{ to, type }` where `type` is one of `calls` | `reads` | `writes` | `depends_on` (see `shared/DASHBOARD.md` Edge fields for mapping)
+    - Merge strategy: check if component `name` already exists → no: push → yes: merge (overwrite status, merge `connects_to[]` with dedup on `to+type` combination)
+    - Optional: generate Mermaid diagram to `.project/architecture.mmd` for visual context
+    - Skip for single-file feature without architectural impact
+  - **Context** in `.project/project-context.json`: update `context.structure` and `context.routing` if the feature adds new files or routes. **Note**: structure/routing are JSON-escaped strings — for large changes use Write instead of Edit to avoid escaping issues.
 
-**PAGE-seeding** (frontend projects only — skip voor pure API/backend/game features):
+**PAGE-seeding** (frontend projects only — skip for pure API/backend/game features):
 
-Volg [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) voor het canonieke protocol.
+Follow [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) for the canonical protocol.
 
-**Trigger:** scan `feature.json#architecture.routes[]` en `feature.json#files[]`. Resolution: batch AskUserQuestion "Ja, alle" / "Selectie" / "Nee".
+**Trigger:** scan `feature.json#architecture.routes[]` and `feature.json#files[]`. Resolution: batch AskUserQuestion "Yes, all" / "Selection" / "No".
 
 **Source:** `"/dev-define"` · **Direction:** `"dev→frontend"` · **Type:** `PAGE`
 
-Schrijf parallel terug:
+Write back in parallel:
 
 - Edit `backlog.html` (keep `<script>` tags intact)
-- Edit `project.json` (features, endpoints, data, stack — gebruik Edit voor gerichte wijzigingen, niet Write)
-- Edit/Write `project-context.json` (als architecture of context gewijzigd — Write bij grote diagram-wijzigingen)
+- Edit `project.json` (features, endpoints, data, stack — use Edit for targeted changes, not Write)
+- Edit/Write `project-context.json` (if architecture or context changed — Write for large diagram changes)
 
-**Auto-build markering** (na sync):
+**Auto-build marking** (after sync):
 
-Lees backlog opnieuw, zoek feature, zet `"auto": true`, schrijf terug via Edit. Geen user-prompt — altijd auto markeren zodat de card een AUTO-badge krijgt en het clipboard het juiste `/dev-build`-commando geeft.
+Read backlog again, find feature, set `"auto": true`, write back via Edit. No user prompt — always mark auto so the card gets an AUTO badge and the clipboard has the correct `/dev-build` command.
 
 Clean up: `rm -f .project/session/active-{feature-name}.json`
 
@@ -450,19 +450,19 @@ Clean up: `rm -f .project/session/active-{feature-name}.json`
 ```
 DEFINE COMPLETE: {feature-name}
 
-Requirements: {N} (met acceptance criteria)
-Architecture: {component count} componenten
+Requirements: {N} (with acceptance criteria)
+Architecture: {component count} components
 Files: feature.json + backlog + dashboard
 
 Next: /dev-build {feature-name}
-     /team-outsource {feature-name}   ← als je wilt delegeren aan een teammate
+     /team-outsource {feature-name}   ← if you want to delegate to a teammate
 ```
 
-Laat de `Next`-regel weg als de feature géén backlog-item was én geen concept aanwezig is — wijs dan kort op het ontbreken van een backlog.
+Omit the `Next` line if the feature was not a backlog item and no concept is present — briefly note the absence of a backlog instead.
 
 ## Restrictions
 
-- Schrijf GEEN implementatiecode (dat is /dev-build)
-- Sla requirements extractie niet over
-- Ga niet verder zonder user-bevestiging bij checkpoints
-- Skip de `EnterPlanMode`/`ExitPlanMode` calls niet — die zijn nodig voor model-routers (zoals `opusplan`) om denkfasen onder een sterker model te draaien
+- Do NOT write implementation code (that is /dev-build)
+- Do not skip requirements extraction
+- Do not proceed without user confirmation at checkpoints
+- Do not skip the `EnterPlanMode`/`ExitPlanMode` calls — these are needed for model routers (such as `opusplan`) to run thinking phases under a stronger model

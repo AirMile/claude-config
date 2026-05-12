@@ -52,70 +52,70 @@ Example triggers:
      Source: .project/project-concept.md
      Title: {concept title from H1}
 
-     Dit concept wordt gebruikt voor brainstorming.
+     This concept will be used for brainstorming.
      ```
 
    - Use AskUserQuestion:
      ```yaml
-     header: "Concept Laden"
-     question: "Wil je dit concept uitbreiden?"
+     header: "Load Concept"
+     question: "Do you want to brainstorm on this concept?"
      options:
-       - label: "Ja, brainstorm hierop (Recommended)", description: "Gebruik concept uit project.json"
-       - label: "Ander concept", description: "Ik wil een ander concept plakken"
+       - label: "Yes, brainstorm on this (Recommended)", description: "Use concept from project.json"
+       - label: "Different concept", description: "I want to paste a different concept"
      multiSelect: false
      ```
-   - If "Ja": proceed with loaded concept
-   - If "Ander concept": ask user to paste input
+   - If "Yes": proceed with loaded concept
+   - If "Different concept": ask user to paste input
 
 **Step 1a: Scope Check**
 
-Na de concept-detectie, check ook voor bredere scope:
+After concept detection, also check for broader scope:
 
-1. Check of `.project/backlog.html` bestaat
-2. Check of `.project/features/` mappen bevat
-3. Glob voor pagina-bestanden (`app/**/page.tsx`, `src/pages/**/*.tsx`)
+1. Check if `.project/backlog.html` exists
+2. Check if `.project/features/` contains folders
+3. Glob for page files (`app/**/page.tsx`, `src/pages/**/*.tsx`)
 
-Als scope-context gevonden EN concept al geladen uit project.json:
+If scope context found AND concept already loaded from project.json:
 
 ```yaml
 header: "Scope"
-question: "Waarover wil je brainstormen?"
+question: "What do you want to brainstorm about?"
 options:
-  - label: "Concept (Recommended)", description: "Werk met concept uit project.json"
-  - label: "Feature uit backlog", description: "Focus op een specifieke feature"
-  - label: "Pagina / UX flow", description: "Focus op layout, UX of user flow"
-  - label: "Los idee", description: "Standalone idee, niet gekoppeld aan het project"
+  - label: "Concept (Recommended)", description: "Work with concept from project.json"
+  - label: "Feature from backlog", description: "Focus on a specific feature"
+  - label: "Page / UX flow", description: "Focus on layout, UX or user flow"
+  - label: "Standalone idea", description: "Standalone idea, not linked to the project"
 multiSelect: false
 ```
 
-**If "Feature uit backlog":**
+**If "Feature from backlog":**
 
-- Lees `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`), toon features met status TODO of DEF
-- AskUserQuestion om feature te kiezen
-- Laad `01-define.md` (als die bestaat) als input-context
-- Laad bestaande `thinking.md` (als die bestaat) als vorige thinking output
-- Geen define? Gebruik feature-beschrijving uit backlog
+- Read `.project/backlog.html`, parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`), show features with status TODO or DEF
+- AskUserQuestion to choose feature
+- Load `01-define.md` (if it exists) as input context
+- Load existing `thinking.md` (if it exists) as previous thinking output
+- No define? Use feature description from backlog
 
-**If "Pagina / UX flow":**
+**If "Page / UX flow":**
 
-- Glob voor pagina-bestanden in het project
-- AskUserQuestion om pagina te kiezen, of laat gebruiker een UX flow beschrijven
-- Laad pagina-bestand als input-context
-- Check `.project/thinking/{naam}.md` voor eerdere thinking output
+- Glob for page files in the project
+- AskUserQuestion to choose page, or let user describe a UX flow
+- Load page file as input context
+- Check `.project/thinking/{name}.md` for previous thinking output
 
-**If "Los idee":**
+**If "Standalone idea":**
 
-- Negeer het geladen concept — dit idee staat los van het project
-- Vraag: "Beschrijf je idee in een paar zinnen"
-- Check `.project/thinking/` voor eerdere losse ideeën
+- Ignore the loaded concept — this idea is independent of the project
+- Ask: "Describe your idea in a few sentences"
+- Check `.project/thinking/` for previous standalone ideas
 - Proceed to Step 2 with user's input
 
-**Output-pad volgt automatisch de scope:**
+**Output path follows scope automatically:**
 
-- Scope = concept → schrijf naar `.project/project-concept.md` + update project.json metadata (name, pitch)
-- Scope = feature → schrijf naar `.project/features/{naam}/thinking.md`
-- Scope = pagina/UX → schrijf naar `.project/thinking/{onderwerp}.md`
-- Scope = los idee → schrijf naar `.project/thinking/{onderwerp}.md`
+- Scope = concept → write to `.project/project-concept.md` + update project.json metadata (name, pitch)
+- Scope = feature → write to `.project/features/{name}/thinking.md`
+- Scope = page/UX → write to `.project/thinking/{topic}.md`
+- Scope = standalone idea → write to `.project/thinking/{topic}.md`
 
 **Step 1b: Check Obsidian vault (if no concept found in project.json)**
 
@@ -123,31 +123,31 @@ If the user provided an inline description/argument:
 
 1. Search Obsidian: `mcp__obsidian__search_notes(query={argument}, limit=3)`
 2. If relevant match found in `Ideas/`:
-   - Show: "Er is een bestaand idee in Obsidian: **{title}** (`{path}`)"
+   - Show: "There is an existing idea in Obsidian: **{title}** (`{path}`)"
    - Use AskUserQuestion:
      ```yaml
      header: "Obsidian Match"
-     question: "Wil je dit bestaande idee als startpunt gebruiken?"
+     question: "Do you want to use this existing idea as a starting point?"
      options:
-       - label: "Ja, gebruik als basis (Recommended)", description: "Laad het Obsidian idee en brainstorm hierop"
-       - label: "Nee, ander concept", description: "Ik wil een ander concept gebruiken"
-       - label: "Chat context", description: "Gebruik het gesprek als startpunt"
+       - label: "Yes, use as basis (Recommended)", description: "Load the Obsidian idea and brainstorm on it"
+       - label: "No, different concept", description: "I want to use a different concept"
+       - label: "Chat context", description: "Use the conversation as starting point"
      multiSelect: false
      ```
-   - **If "Ja":** Read the note with `mcp__obsidian__read_note()`, load as starting concept, track `obsidian_source_path` for later save-back
+   - **If "Yes":** Read the note with `mcp__obsidian__read_note()`, load as starting concept, track `obsidian_source_path` for later save-back
    - **If "Chat context":** Process using Chat Context flow (see below)
 3. If no match found:
    - Use AskUserQuestion:
      ```yaml
      header: "Input"
-     question: "Waar wil je mee brainstormen?"
+     question: "What do you want to brainstorm about?"
      options:
-       - label: "Chat context gebruiken (Recommended)", description: "Gebruik wat er in dit gesprek is besproken"
-       - label: "Concept plakken", description: "Plak of typ een idee/concept"
+       - label: "Use chat context (Recommended)", description: "Use what has been discussed in this conversation"
+       - label: "Paste concept", description: "Paste or type an idea/concept"
      multiSelect: false
      ```
-   - If "Chat context gebruiken": process using Chat Context flow (see below)
-   - If "Concept plakken": proceed to manual input below
+   - If "Use chat context": process using Chat Context flow (see below)
+   - If "Paste concept": proceed to manual input below
 
 **If no concept in project.json OR user wants different input:**
 
@@ -173,8 +173,8 @@ If the user provided an inline description/argument:
 
    ```yaml
    options:
-     - label: "Ja, dit klopt (Recommended)", description: "Start met brainstormen over dit idee"
-     - label: "Aanpassen", description: "Ik wil de samenvatting bijwerken"
+     - label: "Yes, that's correct (Recommended)", description: "Start brainstorming on this idea"
+     - label: "Adjust", description: "I want to update the summary"
    multiSelect: false
    ```
 
@@ -206,19 +206,19 @@ If the user provided an inline description/argument:
 4. Use AskUserQuestion to confirm:
    ```yaml
    header: "Context Check"
-   question: "Klopt deze samenvatting van het gesprek?"
+   question: "Does this summary of the conversation look right?"
    options:
-     - label: "Ja, klopt (Recommended)", description: "Gebruik dit als input"
-     - label: "Aanpassen", description: "Ik wil de samenvatting bijwerken"
+     - label: "Yes, correct (Recommended)", description: "Use this as input"
+     - label: "Adjust", description: "I want to update the summary"
    multiSelect: false
    ```
 5. If confirmed: use as input concept and proceed to Step 2
-6. If "Aanpassen": ask what to change, update summary, confirm again
+6. If "Adjust": ask what to change, update summary, confirm again
 7. If insufficient context in conversation: inform user and fall back to manual input
 
 ### Enter Plan Mode
 
-Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2. Steps 2-6 draaien in plan mode; het verfijnde idee-document (Step 6) wordt naar de plan file geschreven ter review.
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 2. Steps 2-6 run in plan mode; the refined idea document (Step 6) is written to the plan file for review.
 
 ---
 
@@ -252,14 +252,14 @@ Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2.
    2. [Technique Name]
    3. [Technique Name]
 
-   [Recommendation: 1-2 technieken is optimaal]
+   [Recommendation: 1-2 techniques is optimal]
    ```
 
 5. Use AskUserQuestion with technique options:
 
    ```yaml
-   header: "Techniek"
-   question: "Welke techniek wil je toepassen?"
+   header: "Technique"
+   question: "Which technique do you want to apply?"
    options:
      - label: "1. [Top Technique] (Recommended)", description: "[rationale]"
      - label: "2. [Technique 2]", description: "[brief description]"
@@ -300,7 +300,7 @@ Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2.
    - [concrete suggestion 2]
    - [concrete suggestion 3]
 
-   Reageer per nummer of in je eigen woorden.
+   Respond by number or in your own words.
    ```
 
 4. Engage in natural dialogue — the user may:
@@ -379,9 +379,9 @@ Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2.
 
    [Already applied]: [list of techniques already used]
 
-   Beschikbare opties:
-   - Genereer verfijnde versie (eindresultaat)
-   - Pas nog 1-3 extra technieken toe
+   Available options:
+   - Generate refined version (final result)
+   - Apply 1-3 more techniques
    ```
 
 4. If no relevant techniques remain (all applied or none relevant):
@@ -392,16 +392,16 @@ Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2.
 5. Use AskUserQuestion with next action options:
 
    ```yaml
-   header: "Volgende Stap"
-   question: "Hoe wil je verder?"
+   header: "Next Step"
+   question: "How do you want to continue?"
    options:
-     - label: "Genereer verfijnde versie (Recommended)", description: "Creëer het eindresultaat met alle inzichten"
+     - label: "Generate refined version (Recommended)", description: "Create the final result with all insights"
      - label: "[Technique 1]", description: "[rationale - most relevant remaining technique]"
      - label: "[Technique 2]", description: "[brief description]"
    multiSelect: false
    ```
 
-   - If "Genereer verfijnde versie": proceed to Step 6
+   - If "Generate refined version": proceed to Step 6
    - If a technique selected: go to Step 3 for that technique, then back to Step 5 after
 
 ### Step 6: Generate Final Output
@@ -451,123 +451,123 @@ Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2.
 [Content with integrated variations...]
 ```
 
-**Einde denkfase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf het verfijnde idee-document naar de plan file, dan `ExitPlanMode`. Na approval gaat de skill door met Step 7 (output bestemming en `.project/`-writes).
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with Step 7 (output destination and `.project/` writes).
 
 ### Step 7: Output Destination
 
 After generating the refined content, determine output destination based on scope.
 
-**If scope = feature of pagina (uit Step 1a):**
+**If scope = feature or page (from Step 1a):**
 
-Sla automatisch op bij de scope-locatie:
+Save automatically to the scope location:
 
-- Scope = feature → schrijf naar `.project/features/{naam}/thinking.md`
-- Scope = pagina/UX → maak `.project/thinking/` aan indien nodig, schrijf naar `.project/thinking/{onderwerp}.md`
+- Scope = feature → write to `.project/features/{name}/thinking.md`
+- Scope = page/UX → create `.project/thinking/` if needed, write to `.project/thinking/{topic}.md`
 
 ```
 THINKING OUTPUT SAVED
 
-File: {output-pad}
-Scope: {feature:{naam} | pagina:{onderwerp}}
+File: {output-path}
+Scope: {feature:{name} | page:{topic}}
 Applied techniques: {list of techniques used}
 ```
 
-**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+**Dashboard sync — thinking log** (see `shared/DASHBOARD.md`):
 
-1. Read `.project/project.json` (skip als niet bestaat)
-2. Schrijf volledige markdown naar `.project/thinking/{today}-brainstorm-{slug}.md`
-3. Push naar `thinking` array:
+1. Read `.project/project.json` (skip if not present)
+2. Write full markdown to `.project/thinking/{today}-brainstorm-{slug}.md`
+3. Push to `thinking` array:
    ```json
    {
      "type": "brainstorm",
      "date": "{today}",
-     "title": "{onderwerp van de brainstorm}",
+     "title": "{topic of the brainstorm}",
      "summary": "{key insight, max 200 chars}",
      "file": ".project/thinking/{today}-brainstorm-{slug}.md",
      "variants": ["{variant 1}", "{variant 2}", "..."],
-     "chosen": "{gekozen variant}",
+     "chosen": "{chosen variant}",
      "source": "/thinking-brainstorm"
    }
    ```
 4. Write `.project/project.json`
 
-Vraag daarna optioneel:
+Then optionally ask:
 
 ```yaml
 header: "Concept"
-question: "Wil je dit ook opslaan als project concept?"
+question: "Do you also want to save this as the project concept?"
 options:
-  - label: "Nee (Recommended)", description: "Output is opgeslagen bij de scope"
-  - label: "Ja, ook naar concept", description: "Update ook project-concept.md"
+  - label: "No (Recommended)", description: "Output is saved at the scope location"
+  - label: "Yes, also to concept", description: "Also update project-concept.md"
 multiSelect: false
 ```
 
-If "Ja": Write het volledige concept document als plain markdown naar `.project/project-concept.md`. Update ook project.json: Read `.project/project.json` (of maak aan met {}), set `concept.name` (H1 titel), `concept.pitch` (eerste alinea, 1-2 zinnen), `concept.conceptFile = "project-concept.md"`. Verwijder `concept.content` als die bestaat (gemigreerd naar .md). Write terug.
+If "Yes": Write the full concept document as plain markdown to `.project/project-concept.md`. Also update project.json: Read `.project/project.json` (or create with {}), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
 
-**If scope = los idee (uit Step 1a):**
+**If scope = standalone idea (from Step 1a):**
 
-Sla op naar `.project/thinking/{today}-brainstorm-{slug}.md`:
+Save to `.project/thinking/{today}-brainstorm-{slug}.md`:
 
-1. Maak `.project/thinking/` aan indien nodig
-2. Schrijf naar `.project/thinking/{today}-brainstorm-{slug}.md`
+1. Create `.project/thinking/` if needed
+2. Write to `.project/thinking/{today}-brainstorm-{slug}.md`
 
 ```
 THINKING OUTPUT SAVED
 
 File: .project/thinking/{today}-brainstorm-{slug}.md
-Scope: los idee
+Scope: standalone idea
 Applied techniques: {list of techniques used}
 ```
 
-**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+**Dashboard sync — thinking log** (see `shared/DASHBOARD.md`):
 
-1. Read `.project/project.json` (skip als niet bestaat)
-2. Push naar `thinking` array (file is al geschreven hierboven):
+1. Read `.project/project.json` (skip if not present)
+2. Push to `thinking` array (file already written above):
    ```json
    {
      "type": "brainstorm",
      "date": "{today}",
-     "title": "{onderwerp van de brainstorm}",
+     "title": "{topic of the brainstorm}",
      "summary": "{key insight, max 200 chars}",
      "file": ".project/thinking/{today}-brainstorm-{slug}.md",
      "variants": ["{variant 1}", "{variant 2}", "..."],
-     "chosen": "{gekozen variant}",
+     "chosen": "{chosen variant}",
      "source": "/thinking-brainstorm"
    }
    ```
 3. Write `.project/project.json`
 
-Vraag daarna:
+Then ask:
 
 ```yaml
 header: "Obsidian"
-question: "Wil je dit idee ook opslaan naar Obsidian?"
+question: "Do you also want to save this idea to Obsidian?"
 options:
-  - label: "Nee (Recommended)", description: "Output is opgeslagen in .project/thinking/"
-  - label: "Ja, naar Obsidian", description: "Sla ook op als Idea note in Obsidian vault"
+  - label: "No (Recommended)", description: "Output is saved in .project/thinking/"
+  - label: "Yes, to Obsidian", description: "Also save as Idea note in Obsidian vault"
 multiSelect: false
 ```
 
-If "Ja, naar Obsidian": volg de Obsidian save flow (zie hieronder bij "Opslaan naar Obsidian").
+If "Yes, to Obsidian": follow the Obsidian save flow (see below under "Save to Obsidian").
 
-**If scope = concept (default) of geen scope gekozen:**
+**If scope = concept (default) or no scope chosen:**
 
 Use AskUserQuestion:
 
 ```yaml
 header: "Output"
-question: "Wat wil je met het uitgebreide concept doen?"
+question: "What do you want to do with the expanded concept?"
 options:
-  - label: "Opslaan naar concept (Recommended)", description: "Update project-concept.md met uitgebreide versie"
-  - label: "Opslaan naar Obsidian", description: "Opslaan als permanente Idea note in je Obsidian vault"
-  - label: "Kopieer naar clipboard", description: "Kopieer markdown naar clipboard (niet opslaan)"
+  - label: "Save to concept (Recommended)", description: "Update project-concept.md with expanded version"
+  - label: "Save to Obsidian", description: "Save as permanent Idea note in your Obsidian vault"
+  - label: "Copy to clipboard", description: "Copy markdown to clipboard (don't save)"
 multiSelect: false
 ```
 
-**If "Opslaan naar concept":**
+**If "Save to concept":**
 
-1. Write het volledige refined concept document als plain markdown naar `.project/project-concept.md`
-2. Update ook project.json: Read `.project/project.json` (of maak aan met `{}`), set `concept.name` (titel van refined idea), `concept.pitch` (eerste alinea, 1-2 zinnen), `concept.conceptFile = "project-concept.md"`. Verwijder `concept.content` als die bestaat (gemigreerd naar .md). Write terug.
+1. Write the full refined concept document as plain markdown to `.project/project-concept.md`
+2. Also update project.json: Read `.project/project.json` (or create with `{}`), set `concept.name` (title of refined idea), `concept.pitch` (first paragraph, 1-2 sentences), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
 3. Confirm:
 
    ```
@@ -577,16 +577,16 @@ multiSelect: false
    Applied techniques: {list of techniques used}
 
    Next steps:
-   - /thinking-critique - Kritisch analyseren en versterken
-   - /thinking-brainstorm - Nog een brainstormronde
-   - /project-plan - Omzetten naar feature backlog
+   - /thinking-critique - Critically analyze and strengthen
+   - /thinking-brainstorm - Another brainstorm round
+   - /project-plan - Convert to feature backlog
    ```
 
-**Concept-scope output is geïntegreerd in `project-concept.md`.** De gekozen variant wordt verwerkt in het levende document — geen losse `.project/thinking/*.md` voor concept-scope, geen `concept.thinking[]` append. Update `concept.name` en `concept.pitch` in `project.json` als metadata wijzigt.
+**Concept-scope output is integrated into `project-concept.md`.** The chosen variant is processed into the living document — no separate `.project/thinking/*.md` for concept-scope, no `concept.thinking[]` append. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
 
-**If "Opslaan naar Obsidian":**
+**If "Save to Obsidian":**
 
-1. Also save concept: Write het volledige concept document naar `.project/project-concept.md`. Update `.project/project.json` (of maak aan met `{}`): set `concept.name`, `concept.pitch` (eerste alinea), `concept.conceptFile = "project-concept.md"`. Verwijder `concept.content` als die bestaat.
+1. Also save concept: Write the full concept document to `.project/project-concept.md`. Update `.project/project.json` (or create with `{}`): set `concept.name`, `concept.pitch` (first paragraph), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists.
 2. If concept was loaded from Obsidian (tracked via `obsidian_source_path`):
    - Overwrite: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
    - Update frontmatter status to `developing` via `mcp__obsidian__update_frontmatter()`
@@ -606,12 +606,12 @@ multiSelect: false
    Applied techniques: {list}
 
    Next steps:
-   - /thinking-critique - Kritisch analyseren en versterken
-   - /thinking-brainstorm - Nog een brainstormronde
-   - /project-plan - Omzetten naar feature backlog
+   - /thinking-critique - Critically analyze and strengthen
+   - /thinking-brainstorm - Another brainstorm round
+   - /project-plan - Convert to feature backlog
    ```
 
-**If "Kopieer naar clipboard":**
+**If "Copy to clipboard":**
 
 1. Wrap output in a code block with `markdown` language tag for copy button
 2. Display the content — user copies via the code block's copy button

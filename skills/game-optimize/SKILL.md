@@ -13,15 +13,15 @@ metadata:
 
 # Optimize
 
-Autonome verbeter-loop voor Godot 4.x: definieer metric → spawn parallelle subagents in worktrees → houd verbeteringen, gooi regressies weg → loop tot stall.
+Autonomous improvement loop for Godot 4.x: define metric → spawn parallel subagents in worktrees → keep improvements, discard regressions → loop until stall.
 
-**Trigger**: `/game-optimize` of `/game-optimize [auto]`
+**Trigger**: `/game-optimize` or `/game-optimize [auto]`
 
-Geïnspireerd op `evo-hq/evo` autoresearch patroon, geïntegreerd met `.project/` en GUT testing. Geen externe dependency.
+Inspired by the `evo-hq/evo` autoresearch pattern, integrated with `.project/` and GUT testing. No external dependency.
 
 ## Input
 
-Geen verplichte input. Config interactief in FASE 1 of via resume.
+No required input. Config interactively in PHASE 1 or via resume.
 
 ## Output
 
@@ -29,30 +29,30 @@ Geen verplichte input. Config interactief in FASE 1 of via resume.
 .project/optimize/{run-id}/
 ├── spec.json          # metric, gate, scope, baseline, parameters
 ├── tree.json          # nodes (id, parent, branch, score, status, hypotheses)
-├── runs/{NNNN}.json   # per-ronde resultaat
-├── benchmark.tscn     # Godot benchmark scene (gegenereerd uit template)
-├── benchmark.gd       # Godot benchmark script (parsed SCORE= regel)
+├── runs/{NNNN}.json   # per-round result
+├── benchmark.tscn     # Godot benchmark scene (generated from template)
+├── benchmark.gd       # Godot benchmark script (parses SCORE= line)
 ├── gate.sh            # default: GUT testsuite headless
-└── branches.txt       # cleanup-lijst voor abort
+└── branches.txt       # cleanup list for abort
 ```
 
-Update bij voltooiing: `.project/project.json` → push naar `optimization_runs[]`.
+Update on completion: `.project/project.json` → push to `optimization_runs[]`.
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 7 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 7 items (status `pending`), then use `TaskUpdate` to set `in_progress` at the start and `completed` at the end of each phase. During context compaction the task list stays visible — no risk of forgotten phases.
 
-1. FASE 0: Pre-flight
-2. FASE 1: Define Metric
-3. FASE 2: Instrument Benchmark
-4. FASE 3: Baseline Run
-5. FASE 4: Optimize Loop
-6. FASE 5: Pick Winner
-7. FASE 6: Sync + Report
+1. PHASE 0: Pre-flight
+2. PHASE 1: Define Metric
+3. PHASE 2: Instrument Benchmark
+4. PHASE 3: Baseline Run
+5. PHASE 4: Optimize Loop
+6. PHASE 5: Pick Winner
+7. PHASE 6: Sync + Report
 
-### FASE 0: Pre-flight
+### PHASE 0: Pre-flight
 
-> **Todo**: roep `TaskCreate` aan met de 7 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 7 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 **Capture git baseline:**
 
@@ -75,13 +75,13 @@ ensure_pattern "session/active-optimize-*.json"
 ensure_pattern "session/pre-skill-sha.txt"
 ```
 
-Voorkomt dat full repo-checkouts (worktrees) of lokale session-state per ongeluk in een commit terechtkomen.
+Prevents full repo-checkouts (worktrees) or local session state from accidentally ending up in a commit.
 
 **Git safety:**
 
-1. `git status --porcelain` leeg? Anders **AskUserQuestion** (Auto-mode: stash):
+1. `git status --porcelain` empty? Otherwise **AskUserQuestion** (Auto-mode: stash):
    - "Stash changes (Recommended)" / "Abort"
-2. Default branch detecteren (zie shared/SKILL-PATTERNS.md Git Safety Gates).
+2. Detect default branch (see shared/SKILL-PATTERNS.md Git Safety Gates).
 3. `BASE_SHA=$(git rev-parse HEAD)`.
 
 **Detect Godot:**
@@ -96,7 +96,7 @@ GODOT_BIN="${GODOT_BIN:-$(command -v godot4 || command -v godot)}"
 "$GODOT_BIN" --version 2>/dev/null
 ```
 
-Geen Godot → exit met "game-optimize vereist Godot 4.x. Set GODOT_BIN env var of voeg toe aan PATH."
+No Godot → exit with "game-optimize requires Godot 4.x. Set GODOT_BIN env var or add to PATH."
 
 **Detect GUT:**
 
@@ -104,111 +104,111 @@ Geen Godot → exit met "game-optimize vereist Godot 4.x. Set GODOT_BIN env var 
 test -d addons/gut && echo "GUT installed" || echo "GUT not found, gate disabled"
 ```
 
-Geen GUT → waarschuw dat default gate niet werkt; user moet eigen gate definiëren of accepteren dat tests subagents niet detecteert.
+No GUT → warn that default gate does not work; user must define their own gate or accept that tests will not catch subagent regressions.
 
-**Resume detection** + **Auto-mode** + **active signal**: zie identiek aan `dev-optimize` FASE 0.
+**Resume detection** + **Auto-mode** + **active signal**: see identical to `dev-optimize` PHASE 0.
 
-**Auto-mode defaults** (specifiek voor game):
+**Auto-mode defaults** (game-specific):
 
-| Beslispunt          | Default                    |
-| ------------------- | -------------------------- |
-| Metric keuze        | **FPS** (default)          |
-| Subagents per ronde | **3**                      |
-| Budget per subagent | **5 iteraties**            |
-| Stall threshold     | **5 rondes**               |
-| Winner-merge        | **Top branch automatisch** |
+| Decision point      | Default                      |
+| ------------------- | ---------------------------- |
+| Metric choice       | **FPS** (default)            |
+| Subagents per round | **3**                        |
+| Budget per subagent | **5 iterations**             |
+| Stall threshold     | **5 rounds**                 |
+| Winner-merge        | **Top branch automatically** |
 
-**Project context** (skip als niet bestaat):
+**Project context** (skip if not exists):
 
-Lees `.project/project.json` voor stack-info en eerdere `optimization_runs[]`.
+Read `.project/project.json` for stack info and previous `optimization_runs[]`.
 
-### FASE 1: Define Metric
+### PHASE 1: Define Metric
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-Bij resume: skip.
+On resume: skip.
 
-**AskUserQuestion 1 — wat optimaliseren?** (Auto-mode: FPS)
+**AskUserQuestion 1 — what to optimize?** (Auto-mode: FPS)
 
 ```yaml
 header: "Metric"
-question: "Wat wil je optimaliseren?"
+question: "What do you want to optimize?"
 options:
-  - label: "FPS in stress-scene (Recommended)"
-    description: "Gemiddelde FPS bij N entities/sprites. Higher is better."
+  - label: "FPS in stress scene (Recommended)"
+    description: "Average FPS at N entities/sprites. Higher is better."
   - label: "Frame time"
-    description: "ms per frame in vaste benchmark scene. Lower is better."
+    description: "ms per frame in a fixed benchmark scene. Lower is better."
   - label: "Memory footprint"
     description: "MB peak (Performance.MEMORY_STATIC). Lower is better."
   - label: "AI win-rate"
-    description: "% wins van AI in M simulated matches. Higher is better."
+    description: "% wins of AI in M simulated matches. Higher is better."
   - label: "Pathfinding speed"
-    description: "ms voor N paths op een vaste map. Lower is better."
+    description: "ms for N paths on a fixed map. Lower is better."
 multiSelect: false
 ```
 
-(Custom optie via "Other" → vraag follow-up: scene path + score-extractie regel.)
+(Custom option via "Other" → ask follow-up: scene path + score extraction line.)
 
-**AskUserQuestion 2 — richting** (Auto-mode: minimize voor frame-time/memory/pathfinding, maximize voor FPS/winrate):
+**AskUserQuestion 2 — direction** (Auto-mode: minimize for frame-time/memory/pathfinding, maximize for FPS/winrate):
 
 ```yaml
-header: "Richting"
+header: "Direction"
 options:
-  - label: "Lager is beter (minimize)"
-  - label: "Hoger is beter (maximize)"
+  - label: "Lower is better (minimize)"
+  - label: "Higher is better (maximize)"
 multiSelect: false
 ```
 
-**AskUserQuestion 3 — scope** (Auto-mode: hele `scripts/`):
+**AskUserQuestion 3 — scope** (Auto-mode: entire `scripts/`):
 
 ```yaml
 header: "Scope"
-question: "Welke directories mogen subagents wijzigen?"
+question: "Which directories may subagents modify?"
 options:
   - label: "scripts/ (Recommended)"
-    description: "Alleen GDScript, scenes intact"
+    description: "GDScript only, scenes intact"
   - label: "scripts/ + scenes/"
-    description: "Sta scene-edits toe (riskanter)"
+    description: "Allow scene edits (riskier)"
   - label: "scripts/ + addons/{name}"
     description: "Custom subset"
   - label: "Custom paths"
 multiSelect: false
 ```
 
-**AskUserQuestion 4 — loop parameters** (Auto-mode: defaults). De keuze bepaalt ook welk subagent-model gebruikt wordt:
+**AskUserQuestion 4 — loop parameters** (Auto-mode: defaults). The choice also determines which subagent model is used:
 
 ```yaml
 header: "Parameters"
 options:
-  - label: "Conservatief: 3 agents × 5 iter, stall 5, 60min cap, sonnet (Recommended)"
-    description: "Goedkoop en snel."
-  - label: "Standaard: 5 agents × 5 iter, stall 5, 90min cap, sonnet"
-  - label: "Aggressief: 8 agents × 8 iter, stall 8, 180min cap, opus"
-    description: "Veel meer compute en duurder model — alleen voor lange, lastige runs."
+  - label: "Conservative: 3 agents × 5 iter, stall 5, 60min cap, sonnet (Recommended)"
+    description: "Cheap and fast."
+  - label: "Standard: 5 agents × 5 iter, stall 5, 90min cap, sonnet"
+  - label: "Aggressive: 8 agents × 8 iter, stall 8, 180min cap, opus"
+    description: "Much more compute and more expensive model — only for long, difficult runs."
 multiSelect: false
 ```
 
-Mapping (zelfde als dev-optimize):
+Mapping (same as dev-optimize):
 
-| Keuze        | subagents | budget | stall | wallclock | model    |
+| Choice       | subagents | budget | stall | wallclock | model    |
 | ------------ | --------- | ------ | ----- | --------- | -------- |
-| Conservatief | 3         | 5      | 5     | 60 min    | `sonnet` |
-| Standaard    | 5         | 5      | 5     | 90 min    | `sonnet` |
-| Aggressief   | 8         | 8      | 8     | 180 min   | `opus`   |
+| Conservative | 3         | 5      | 5     | 60 min    | `sonnet` |
+| Standard     | 5         | 5      | 5     | 90 min    | `sonnet` |
+| Aggressive   | 8         | 8      | 8     | 180 min   | `opus`   |
 
-Voor Godot is benchmark-tijd vaak hoger (Godot import-cache, scene-load) — wallclock-cap dus relatief belangrijker dan bij dev-optimize.
+For Godot, benchmark time is often higher (Godot import cache, scene load) — wallclock cap is therefore relatively more important than with dev-optimize.
 
 **AskUserQuestion 5 — benchmark parameters (per metric):**
 
-| Metric      | Vraag                                       | Default         |
-| ----------- | ------------------------------------------- | --------------- |
-| FPS         | Aantal entities in stress-scene?            | 1000            |
-| frame_time  | Run-duur (seconden)?                        | 10              |
-| memory      | Run-duur (seconden) voor peak meting?       | 30              |
-| ai_winrate  | Aantal simulated matches?                   | 100             |
-| pathfinding | Aantal paths + map-naam (uit scenes/maps/)? | 1000 + selectie |
+| Metric      | Question                                        | Default          |
+| ----------- | ----------------------------------------------- | ---------------- |
+| FPS         | Number of entities in stress scene?             | 1000             |
+| frame_time  | Run duration (seconds)?                         | 10               |
+| memory      | Run duration (seconds) for peak measurement?    | 30               |
+| ai_winrate  | Number of simulated matches?                    | 100              |
+| pathfinding | Number of paths + map name (from scenes/maps/)? | 1000 + selection |
 
-**Schrijf `.project/optimize/{run-id}/spec.json`** (zie dev-optimize voor volledige schema, inclusief `max_wallclock_minutes`, `subagent_model`, `run_started_at`). Vervang `benchmark_cmd` door:
+**Write `.project/optimize/{run-id}/spec.json`** (see dev-optimize for full schema, including `max_wallclock_minutes`, `subagent_model`, `run_started_at`). Replace `benchmark_cmd` with:
 
 ```bash
 "benchmark_cmd": "$GODOT_BIN --headless --path . res://.project/optimize/{run-id}/benchmark.tscn --quit-after 120"
@@ -220,13 +220,13 @@ Voor Godot is benchmark-tijd vaak hoger (Godot import-cache, scene-load) — wal
 "gate_cmd": "bash .project/optimize/{run-id}/gate.sh"
 ```
 
-### FASE 2: Instrument Benchmark
+### PHASE 2: Instrument Benchmark
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-**Stap 1 — kopieer benchmark template (Godot scene + script):**
+**Step 1 — copy benchmark template (Godot scene + script):**
 
-Eén universele scene `references/benchmarks/benchmark.tscn` (Node met script-ref) + per-metric GDScript:
+One universal scene `references/benchmarks/benchmark.tscn` (Node with script-ref) + per-metric GDScript:
 
 | Metric      | Script template                        |
 | ----------- | -------------------------------------- |
@@ -238,48 +238,48 @@ Eén universele scene `references/benchmarks/benchmark.tscn` (Node met script-re
 
 Workflow:
 
-1. Kopieer `benchmark.tscn` → `.project/optimize/{run-id}/benchmark.tscn`. Substitueer `{RUN_ID}` in het `path` van de ExtResource zodat het script-pad klopt.
-2. Kopieer gekozen `<metric>.gd` → `.project/optimize/{run-id}/benchmark.gd`. Substitueer placeholders (`{ENTITY_COUNT}`, `{DURATION_FRAMES}`, `{SCENE_TO_LOAD}`, etc.) met user-gekozen waarden uit AskUserQuestion 5.
+1. Copy `benchmark.tscn` → `.project/optimize/{run-id}/benchmark.tscn`. Substitute `{RUN_ID}` in the `path` of the ExtResource so the script path is correct.
+2. Copy chosen `<metric>.gd` → `.project/optimize/{run-id}/benchmark.gd`. Substitute placeholders (`{ENTITY_COUNT}`, `{DURATION_FRAMES}`, `{SCENE_TO_LOAD}`, etc.) with user-chosen values from AskUserQuestion 5.
 
-Templates printen één regel `SCORE=<float>` op stdout via `print()` voor `get_tree().quit()`. Skill parsed laatste `SCORE=` regel uit Godot stdout.
+Templates print one line `SCORE=<float>` to stdout via `print()` before `get_tree().quit()`. Skill parses the last `SCORE=` line from Godot stdout.
 
-**Stap 2 — gate script:**
+**Step 2 — gate script:**
 
-Default `references/gates/gut-green.sh` → kopieert script dat GUT headless draait:
+Default `references/gates/gut-green.sh` → copies script that runs GUT headless:
 
 ```bash
 #!/bin/bash
 "$GODOT_BIN" --headless --path . -s addons/gut/gut_cmdln.gd -gtest_dirs=test/ -gexit
 ```
 
-Geen GUT → kopieert no-op gate met waarschuwing.
+No GUT → copies no-op gate with warning.
 
-**Stap 3 — review + edit:**
+**Step 3 — review + edit:**
 
 **AskUserQuestion** (Auto-mode: Run as-is):
 
 ```yaml
 header: "Scripts"
-question: "Klopt benchmark.gd en gate.sh?"
+question: "Is benchmark.gd and gate.sh correct?"
 options:
   - label: "Run as-is (Recommended)"
-  - label: "Edit eerst"
+  - label: "Edit first"
   - label: "Abort"
 multiSelect: false
 ```
 
-`chmod +x` op gate.sh.
+`chmod +x` on gate.sh.
 
-### FASE 3: Baseline Run
+### PHASE 3: Baseline Run
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 
-# Gate eerst
+# Gate first
 if ! bash .project/optimize/{run-id}/gate.sh; then
-  echo "BASELINE GATE FAIL: fix GUT tests eerst"
+  echo "BASELINE GATE FAIL: fix GUT tests first"
   exit 1
 fi
 
@@ -288,77 +288,77 @@ RAW=$("$GODOT_BIN" --headless --path . res://.project/optimize/{run-id}/benchmar
 BASELINE=$(echo "$RAW" | grep -E '^SCORE=' | tail -1 | cut -d= -f2)
 ```
 
-Schrijf `runs/0000.json` en initialiseer `tree.json` (zie dev-optimize FASE 3).
+Write `runs/0000.json` and initialize `tree.json` (see dev-optimize PHASE 3).
 
-**Display + kostenraming** (zelfde berekening als dev-optimize FASE 3 — zie daar voor de formules). Godot benchmark-tijden zijn vaak hoger (eerste run per worktree heeft import-cache overhead van 30-60s), houd daar rekening mee in de schatting.
+**Display + cost estimate** (same calculation as dev-optimize PHASE 3 — see there for the formulas). Godot benchmark times are often higher (first run per worktree has import-cache overhead of 30-60s), take that into account in the estimate.
 
 ```
 BASELINE: {metric} = {score} ({direction})
 GUT: {pass}/{total} tests green.
 
-KOSTENRAMING (worst-case):
-- {subagents} agents × {budget} iter × {stall} rondes = {TOTAL_ITERS} agent-iteraties
-- ~{PER_ITER_SECONDS}s per iteratie ({BENCHMARK_SECONDS}s benchmark + {GATE_SECONDS}s gate + 30s import)
-- Geschatte tijd: ~{TOTAL_MINUTES} min (capped op {max_wallclock_minutes} min)
-- Geschatte cost: ~${TOTAL_DOLLARS} ({subagent_model})
+COST ESTIMATE (worst-case):
+- {subagents} agents × {budget} iter × {stall} rounds = {TOTAL_ITERS} agent-iterations
+- ~{PER_ITER_SECONDS}s per iteration ({BENCHMARK_SECONDS}s benchmark + {GATE_SECONDS}s gate + 30s import)
+- Estimated time: ~{TOTAL_MINUTES} min (capped at {max_wallclock_minutes} min)
+- Estimated cost: ~${TOTAL_DOLLARS} ({subagent_model})
 ```
 
-**AskUserQuestion** (Auto-mode: bij `TOTAL_DOLLARS > 10` OR `TOTAL_MINUTES > 120` → abort):
+**AskUserQuestion** (Auto-mode: if `TOTAL_DOLLARS > 10` OR `TOTAL_MINUTES > 120` → abort):
 
-Identieke optie-set als dev-optimize: Doorgaan / Verlaag budget / Abort.
+Identical option set as dev-optimize: Continue / Reduce budget / Abort.
 
-**Markeer run-start**: schrijf `run_started_at = now_iso` naar `spec.json` (voor wallclock-cap in FASE 4).
+**Mark run-start**: write `run_started_at = now_iso` to `spec.json` (for wallclock cap in PHASE 4).
 
-### FASE 4: Optimize Loop
+### PHASE 4: Optimize Loop
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-Identieke loop-mechaniek als `dev-optimize` FASE 4 (selecteer parents → spawn subagents in worktrees → verzamel → stall check → continue prompt).
+Identical loop mechanics as `dev-optimize` PHASE 4 (select parents → spawn subagents in worktrees → collect → stall check → continue prompt).
 
-**Verschil — subagent brief:**
+**Difference — subagent brief:**
 
-Lees `references/subagent-brief.md` template (game-versie). Extra context:
+Read `references/subagent-brief.md` template (game version). Extra context:
 
-- Godot binary path (uit `GODOT_BIN`)
-- GUT-tests moeten groen blijven (gate)
-- GDScript-specifieke pitfalls (zie `references/gdscript-pitfalls.md`)
+- Godot binary path (from `GODOT_BIN`)
+- GUT tests must stay green (gate)
+- GDScript-specific pitfalls (see `references/gdscript-pitfalls.md`)
 
-**Brief extra clausule:**
+**Brief extra clause:**
 
 ```
-Werk in worktree {EXP_PATH}.
-GDScript-only wijzigingen tenzij scope ook scenes/ bevat.
+Work in worktree {EXP_PATH}.
+GDScript-only changes unless scope also includes scenes/.
 Performance hypotheses (FPS/frame-time):
   - Object pooling
-  - Signal-vs-poll patronen
-  - PackedArray ipv Array
-  - Static typing toevoegen
+  - Signal-vs-poll patterns
+  - PackedArray instead of Array
+  - Add static typing
   - LOD via visibility/process_mode
   - Batch draw calls
 AI hypotheses (winrate):
   - Heuristic weight tuning
   - Decision tree pruning
   - Lookahead depth
-Run benchmark per iteratie:
+Run benchmark per iteration:
   $GODOT_BIN --headless --path . {benchmark.tscn} --quit-after 120
-Parse SCORE= regel.
+Parse SCORE= line.
 ```
 
-**Worktree-naming:** `optimize/{run-id}/exp_{short-id}` (identiek aan dev-optimize).
+**Worktree-naming:** `optimize/{run-id}/exp_{short-id}` (identical to dev-optimize).
 
-**Resultaat-aggregatie:** identiek aan dev-optimize.
+**Result aggregation:** identical to dev-optimize.
 
-### FASE 5: Pick Winner
+### PHASE 5: Pick Winner
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-Identiek aan `dev-optimize` FASE 5: top-3 tonen, AskUserQuestion, branch behouden, losers opruimen.
+Identical to `dev-optimize` PHASE 5: show top-3, AskUserQuestion, keep branch, clean up losers.
 
-### FASE 6: Sync + Report
+### PHASE 6: Sync + Report
 
-> **Todo**: markeer FASE 5 → `completed`, FASE 6 → `in_progress`.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 6 → `in_progress`.
 
-Append aan `.project/project.json → optimization_runs[]` (schema in [shared/DASHBOARD.md](../shared/DASHBOARD.md) sectie `optimization_runs`):
+Append to `.project/project.json → optimization_runs[]` (schema in [shared/DASHBOARD.md](../shared/DASHBOARD.md) section `optimization_runs`):
 
 ```json
 {
@@ -378,11 +378,11 @@ Append aan `.project/project.json → optimization_runs[]` (schema in [shared/DA
 }
 ```
 
-`stopped_reason` waarden: `stall` | `wallclock` | `user` | `no_improvement`. Append-only — dedup op `run_id`.
+`stopped_reason` values: `stall` | `wallclock` | `user` | `no_improvement`. Append-only — dedup on `run_id`.
 
-Cleanup session-files (`pre-skill-sha.txt`, `active-optimize-{run-id}.json`).
+Clean up session files (`pre-skill-sha.txt`, `active-optimize-{run-id}.json`).
 
-**Display rapport:**
+**Display report:**
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -392,8 +392,8 @@ Metric:        {metric} ({direction})
 Baseline:      {baseline}
 Final:         {best_score}
 Improvement:   {improvement_pct}%
-Rondes:        {N}
-Experimenten:  {kept} kept / {discarded} discarded
+Rounds:        {N}
+Experiments:   {kept} kept / {discarded} discarded
 Winner:        {winner_branch}
 
 TOP 3 HYPOTHESES (kept):
@@ -403,24 +403,24 @@ TOP 3 HYPOTHESES (kept):
 
 Next steps:
   1. git checkout {winner_branch} → inspect changes in Godot editor
-  2. Open project in editor om visueel te valideren (geen visuele regressie)
-  3. /core-commit → bij goedkeuring branch mergen via PR
-  4. /game-optimize → nog een run met andere metric
+  2. Open project in editor to validate visually (no visual regression)
+  3. /core-commit → on approval merge branch via PR
+  4. /game-optimize → another run with a different metric
 ```
 
-> **Todo**: markeer FASE 6 → `completed`.
+> **Todo**: mark PHASE 6 → `completed`.
 
 ## Edge Cases
 
-- **Geen GUT installed**: gate is no-op. Subagents kunnen kapotte logica introduceren zonder detectie. Beperk scope strikt of skip game-optimize tot GUT staat.
-- **Headless rendering werkt niet** (sommige hosts): voeg `--audio-driver Dummy --rendering-driver opengl3` toe. Bij vello-based shaders: gebruik `forward_plus` met lagere resolutie.
-- **Benchmark timeout**: Godot blijft soms hangen. Skill wrapt commando in `timeout 180s`.
-- **Worktree + Godot import cache**: elke worktree krijgt eigen `.godot/` cache. Eerste run van een worktree is langzamer (import). Acceptabel: amortizeert over budget-iteraties.
-- **AI winrate determinisme**: zorg dat seed in benchmark gefixed is, anders is score-noise te groot voor zinvolle vergelijking. Subagent-brief moet dit benadrukken.
-- **Cross-platform path issues**: `res://` paths werken cross-platform, OS-paden in shell scripts moeten via `paths.yaml` of env var.
+- **No GUT installed**: gate is no-op. Subagents can introduce broken logic without detection. Strictly limit scope or skip game-optimize until GUT is set up.
+- **Headless rendering does not work** (some hosts): add `--audio-driver Dummy --rendering-driver opengl3`. For vello-based shaders: use `forward_plus` with lower resolution.
+- **Benchmark timeout**: Godot sometimes hangs. Skill wraps command in `timeout 180s`.
+- **Worktree + Godot import cache**: each worktree gets its own `.godot/` cache. First run of a worktree is slower (import). Acceptable: amortizes over budget iterations.
+- **AI winrate determinism**: ensure the seed in the benchmark is fixed, otherwise score noise is too large for meaningful comparison. Subagent brief must emphasize this.
+- **Cross-platform path issues**: `res://` paths work cross-platform, OS paths in shell scripts must go through `paths.yaml` or env var.
 
 ## Rationale
 
-Zelfde als `dev-optimize`: geen externe `evo-hq-cli` dep, volledige controle, naadloze integratie met `.project/` en GUT. Domein-verschillen (Godot CLI ipv npm, scenes ipv bundle, GUT ipv vitest) zitten alleen in benchmark/gate templates en subagent-brief — de loop-mechaniek is identiek.
+Same as `dev-optimize`: no external `evo-hq-cli` dep, full control, seamless integration with `.project/` and GUT. Domain differences (Godot CLI instead of npm, scenes instead of bundle, GUT instead of vitest) are only in benchmark/gate templates and subagent brief — the loop mechanics are identical.
 
-Waarom standalone? Game-optimalisatie is meet-driven, niet feature-build. Werkt op bestaande scenes/scripts, niet op een feature in DOING-status.
+Why standalone? Game optimization is measurement-driven, not feature-build. Works on existing scenes/scripts, not on a feature in DOING status.

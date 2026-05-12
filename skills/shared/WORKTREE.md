@@ -1,6 +1,6 @@
 # Worktree Switch Boilerplate
 
-Used in FASE 0 of pipeline skills that operate on a single feature (verify, debug, refactor single-mode). Skip in batch/codebase modes.
+Used in PHASE 0 of pipeline skills that operate on a single feature (verify, debug, refactor single-mode). Skip in batch/codebase modes.
 
 ## Why
 
@@ -14,7 +14,7 @@ The worktree path is predictable: `{repo-root}/.claude/worktrees/{feature-name}`
 - **skill is in batch-mode** (refactor with `feature_queue.length > 1`)
 - **skill is in codebase-mode** (refactor on full codebase, not feature-bound)
 
-In skip cases: do not run any of the steps below. Continue the calling skill's FASE 0 on the current branch.
+In skip cases: do not run any of the steps below. Continue the calling skill's PHASE 0 on the current branch.
 
 ## Procedure
 
@@ -49,9 +49,9 @@ expected_path = "{main_root}/.claude/worktrees/{feature-name}"
 | == `main_root`     | no         | **Continue** — no worktree was used for this feature, run on current branch                                                                    |
 | == `expected_path` | no         | **Continue cautiously** — pwd matches but not registered (rare race condition)                                                                 |
 
-### Step 5: Continue with skill FASE 0
+### Step 5: Continue with skill PHASE 0
 
-After successful switch (or skip), proceed with the rest of the skill's FASE 0.
+After successful switch (or skip), proceed with the rest of the skill's PHASE 0.
 
 ## Caveats
 

@@ -69,7 +69,7 @@ Skills mogen optioneel specifieke tools noemen die intensief in plan mode gebrui
 
 ---
 
-## Gebruikt door
+## Used by
 
 `dev-define`, `thinking-brainstorm`, `thinking-concept`, `thinking-critique`, `thinking-decide`, `thinking-research`
 

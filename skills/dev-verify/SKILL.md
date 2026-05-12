@@ -13,7 +13,7 @@ metadata:
 
 Verify phase: define → build → **verify**
 
-Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issues. Na verify is de feature klaar.
+Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issues. After verify the feature is done.
 
 **Trigger**: `/dev-verify {feature-name}` or `/dev-verify {feature-name} {feedback}`
 
@@ -25,65 +25,65 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 /dev-verify user-registration Everything works except...    # free text (skips automation)
 ```
 
-> Feedback categorisatie tabel: zie FASE 3.
+> Feedback categorization table: see PHASE 3.
 > Classification criteria: `references/test-classification.md`
 > Code quality rules: `../shared/RULES.md` (R007-R009)
 
 ## Workflow
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 12 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 12 items (status `pending`), then use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end. During context compaction the task list remains visible — no risk of missed phases.
 
-1. FASE 0: Load Context and Classify
-2. FASE 1: Automated Testing
-3. FASE 1b: Parse Inline Feedback
-4. FASE 2: Manual Walkthrough
-5. FASE 2b: Combined Results
-6. FASE 3: Categorize Issues
-7. FASE 4: Fix Loop
-8. FASE 5: Re-test
-9. FASE 5b: Re-test Loop
-10. FASE 5c: Regression Check
-11. FASE 5d: Requirement Verification
-12. FASE 6: Completion
+1. PHASE 0: Load Context and Classify
+2. PHASE 1: Automated Testing
+3. PHASE 1b: Parse Inline Feedback
+4. PHASE 2: Manual Walkthrough
+5. PHASE 2b: Combined Results
+6. PHASE 3: Categorize Issues
+7. PHASE 4: Fix Loop
+8. PHASE 5: Re-test
+9. PHASE 5b: Re-test Loop
+10. PHASE 5c: Regression Check
+11. PHASE 5d: Requirement Verification
+12. PHASE 6: Completion
 
-### FASE 0: Load Context and Classify
+### PHASE 0: Load Context and Classify
 
-> **Todo**: roep `TaskCreate` aan met de 12 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 12 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
-1. **Read backlog** — `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` (zie `shared/BACKLOG.md`). Filter `status === "DOING"`. Geen feature name → suggest via AskUserQuestion.
+1. **Read backlog** — `.project/backlog.html`, parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md`). Filter `status === "DOING"`. No feature name → suggest via AskUserQuestion.
 
 2. **Parse input:**
    - Feature name only → proceed to classification
-   - Feature name + inline feedback → skip to FASE 1b
-   - Feature name + free text → skip to FASE 1b
+   - Feature name + inline feedback → skip to PHASE 1b
+   - Feature name + free text → skip to PHASE 1b
 
-3. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`. Geen checklist → exit: run `/dev-build` first.
+3. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`. No checklist → exit: run `/dev-build` first.
 
-   **COMPONENT detectie** (na feature.json load): check of `feature.type === "COMPONENT"` of backlog-item type COMPONENT is. Als ja: stel `IS_COMPONENT_VERIFY = true`. Zoek demo-page: check of `app/_dev/components/{name}/page.tsx` bestaat. Niet gevonden → exit: `"Demo-page niet gevonden. Run /dev-build {feature} opnieuw — dit genereert app/_dev/components/{name}/page.tsx."`. Dev server navigeert naar `/_dev/components/{name}` i.p.v. de gewone feature-route.
+   **COMPONENT detection** (after feature.json load): check whether `feature.type === "COMPONENT"` or backlog-item type is COMPONENT. If yes: set `IS_COMPONENT_VERIFY = true`. Look up demo-page: check whether `app/_dev/components/{name}/page.tsx` exists. Not found → exit: `"Demo-page not found. Run /dev-build {feature} again — this generates app/_dev/components/{name}/page.tsx."`. Dev server navigates to `/_dev/components/{name}` instead of the regular feature route.
 
-4. **Worktree switch** — voer de procedure in `shared/WORKTREE.md` uit met de feature-name. Switcht automatisch naar `worktree-{feature-name}` als die bestaat. Bij FAIL (in andere worktree dan de feature): stop met de melding uit WORKTREE.md.
+4. **Worktree switch** — execute the procedure in `shared/WORKTREE.md` with the feature-name. Switches automatically to `worktree-{feature-name}` if it exists. On FAIL (in a different worktree than the feature): stop with the message from WORKTREE.md.
 
 5. **Tag backlog + capture baseline:**
    - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
    - Session file: `echo '{"feature":"{name}","skill":"verify","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
 
-6. **Load stack & project context** — CLAUDE.md stack sectie + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Stel STACK_CONTEXT samen:
+6. **Load stack & project context** — CLAUDE.md stack section + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Compose STACK_CONTEXT:
 
    ```
    STACK CONTEXT:
    Framework: {framework} ({language})
    Testing: {testing info}
-   Packages: {relevante packages}
+   Packages: {relevant packages}
 
    PROJECT CONTEXT:
-   Structure: {context.structure of "niet beschikbaar"}
-   Routing: {context.routing of "niet beschikbaar"}
-   Patterns: {context.patterns of "niet beschikbaar"}
-   Endpoints: {endpoints of "niet beschikbaar"}
-   Entities: {data.entities of "niet beschikbaar"}
+   Structure: {context.structure or "not available"}
+   Routing: {context.routing or "not available"}
+   Patterns: {context.patterns or "not available"}
+   Endpoints: {endpoints or "not available"}
+   Entities: {data.entities or "not available"}
    ```
 
-7. **Gather test data** via Explore agent op **Sonnet** (`model: "sonnet"`) — zero source file reads in main context:
+7. **Gather test data** via Explore agent on **Sonnet** (`model: "sonnet"`) — zero source file reads in main context:
 
    ```
    Feature: {feature-name}
@@ -91,62 +91,62 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
 
    {STACK_CONTEXT}
 
-   Lees feature.json (checklist + requirements + build sectie). Zoek in source code naar:
-   - Validatie regels, API endpoints relevant voor test items
-   - Bestaande test files en test patterns
-   - Per requirement (id + acceptance scenarios) — **skip requirements met `deltaOp === "REMOVED"`**: lees de source files die dit REQ implementeren
-     (feature.json files[] waar requirements het REQ-ID bevat).
-     Bepaal welke acceptance test(s) elk scenario zouden verifiëren.
-     Formaat: `acceptance: [{ when, then }]` — elk object = één test scenario.
-     (bijv. "201 bij succes, 400 bij >5, 409 bij duplicate" = 3 scenario's).
+   Read feature.json (checklist + requirements + build section). Search in source code for:
+   - Validation rules, API endpoints relevant to test items
+   - Existing test files and test patterns
+   - Per requirement (id + acceptance scenarios) — **skip requirements with `deltaOp === "REMOVED"`**: read the source files that implement this REQ
+     (feature.json files[] where requirements contain the REQ-ID).
+     Determine which acceptance test(s) would verify each scenario.
+     Format: `acceptance: [{ when, then }]` — each object = one test scenario.
+     (e.g. "201 on success, 400 on >5, 409 on duplicate" = 3 scenarios).
 
-   Geef terug als:
+   Return as:
    FEATURE_CONTEXT_START
-   Bestaande tests: {paden, of "geen"}
+   Existing tests: {paths, or "none"}
    Per test item:
    - Item {N}: {title}
-     Testdata: {concrete waarden}
-     Verwacht: {expected outcome}
-     Aanbevolen methode: BROWSER | CLI
-     Reden: {waarom}
-     Al gedekt: {wat build tests verifiëren}
-     httpContractTested: true/false (test de build test het HTTP/functie contract?)
-     delta: {extra verificatie nodig bovenop build tests, of "geen"}
+     Test data: {concrete values}
+     Expected: {expected outcome}
+     Recommended method: BROWSER | CLI
+     Reason: {why}
+     Already covered: {what build tests verify}
+     httpContractTested: true/false (does the build test the HTTP/function contract?)
+     delta: {extra verification needed on top of build tests, or "none"}
      acceptanceTests: [
-       { scenario: "{test beschrijving}", method: "CLI", expected: "{verwacht}" }
+       { scenario: "{test description}", method: "CLI", expected: "{expected}" }
      ]
    FEATURE_CONTEXT_END
    ```
 
 8. **Classify and plan test execution:**
 
-   a) Baseline check: `npm test 2>&1 | tail -20` (of project-specifiek command).
+   a) Baseline check: `npm test 2>&1 | tail -20` (or project-specific command).
    Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n})`
 
    b) Detect post-build mode:
 
    ```
    postBuildMode = true
-   hasUI = feature.json heeft "design" veld OF files[] bevat frontend bestanden (.tsx, .vue, .svelte)
-   isPureAPI = feature.json heeft "apiContract" EN NIET hasUI
+   hasUI = feature.json has "design" field OR files[] contains frontend files (.tsx, .vue, .svelte)
+   isPureAPI = feature.json has "apiContract" AND NOT hasUI
    isComponent = IS_COMPONENT_VERIFY === true
    ```
 
-   **Token scan** (alleen als `hasUI = true` of `isComponent = true`):
+   **Token scan** (only if `hasUI = true` or `isComponent = true`):
 
-   Grep alle files in `feature.json files[]` die `.tsx`, `.jsx`, `.vue`, `.svelte` matchen voor T101 (`#[0-9a-fA-F]{3,8}` in JSX/className) en T102 (`bg-\[#`, `text-\[#`). Gevonden violations → voeg AUTO/CLI test-item toe: `"Token violations: {N} hardcoded waarden (T101/T102)"`, fix direct via `shared/TOKENS.md` mapping. Geen violations → skip (geen output).
+   Grep all files in `feature.json files[]` matching `.tsx`, `.jsx`, `.vue`, `.svelte` for T101 (`#[0-9a-fA-F]{3,8}` in JSX/className) and T102 (`bg-\[#`, `text-\[#`). Violations found → add AUTO/CLI test item: `"Token violations: {N} hardcoded values (T101/T102)"`, fix directly via `shared/TOKENS.md` mapping. No violations → skip (no output).
 
-   **COMPONENT extra check** (alleen als `isComponent = true`): voeg verplicht test-item toe:
+   **COMPONENT extra check** (only if `isComponent = true`): add mandatory test item:
 
    ```json
    {
      "id": "COMP-MATRIX",
-     "title": "Variant matrix zichtbaar op demo-page",
+     "title": "Variant matrix visible on demo-page",
      "steps": [
-       "Navigeer naar /_dev/components/{name}",
-       "Controleer aanwezigheid van alle variants × sizes × states cards"
+       "Navigate to /_dev/components/{name}",
+       "Verify presence of all variants × sizes × states cards"
      ],
-     "expected": "Alle {variants × sizes × states} combinaties zijn zichtbaar zonder errors",
+     "expected": "All {variants × sizes × states} combinations are visible without errors",
      "type": "AUTO/BROWSER"
    }
    ```
@@ -154,212 +154,208 @@ Adversarial evaluator: schrijft acceptance tests vanuit spec, runt ze, fixt issu
    Display:
 
    ```
-   POST-BUILD DETECTIE: {testsTotal} bestaande tests ({tdd} TDD, {implFirst} impl-first)
-   Strategie: {isComponent → "COMPONENT demo-page verificatie (/_dev/components/{name})" | hasUI → "E2E browser verificatie" | isPureAPI → "API integratie" | else → "Integratie verificatie"}
-   Baseline: bestaande test suite als pre-check
+   POST-BUILD DETECTION: {testsTotal} existing tests ({tdd} TDD, {implFirst} impl-first)
+   Strategy: {isComponent → "COMPONENT demo-page verification (/_dev/components/{name})" | hasUI → "E2E browser verification" | isPureAPI → "API integration" | else → "Integration verification"}
+   Baseline: existing test suite as pre-check
    ```
 
-   c) Cross-requirement integratie — Analyseer `requirements[]`, identificeer combinaties waar output van één requirement input is voor een andere. Max 3 scenario's, voeg toe als extra test items (niet gepersisteerd naar feature.json checklist). Geen logische combinaties → skip.
+   c) Cross-requirement integration — Analyze `requirements[]`, identify combinations where output of one requirement is input for another. Max 3 scenarios, add as extra test items (not persisted to feature.json checklist). No logical combinations → skip.
 
-   d) Per item, gebruik Explore agent output:
-   - `httpContractTested: true` + `delta: "geen"` → **COVERED**
-   - `httpContractTested: true` + delta → **AUTO/CLI** of **AUTO/BROWSER** (alleen delta)
-   - `httpContractTested: false` → classificeer op steps/hasUI/isPureAPI per `references/test-classification.md`
+   d) Per item, use Explore agent output:
+   - `httpContractTested: true` + `delta: "none"` → **COVERED**
+   - `httpContractTested: true` + delta → **AUTO/CLI** or **AUTO/BROWSER** (delta only)
+   - `httpContractTested: false` → classify based on steps/hasUI/isPureAPI per `references/test-classification.md`
    - Integratie-scenario's → altijd **AUTO** (nooit COVERED)
 
-   e) Display classificatie tabel met Type kolom (COVERED/AUTO/MANUAL) + reden.
-   Samenvattingsregel: `COVERED: {n}  AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}`
+   e) Display classification table with Type column (COVERED/AUTO/MANUAL) + reason.
+   Summary line: `COVERED: {n}  AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}`
 
-   f) Bij gemixte types (COVERED + AUTO + MANUAL): toon ASCII flowchart van de test executie flow. Bij alleen COVERED + AUTO/CLI: skip flowchart.
+   f) With mixed types (COVERED + AUTO + MANUAL): show ASCII flowchart of the test execution flow. With only COVERED + AUTO/CLI: skip flowchart.
 
    g) Proceed automatically with the recommended classification. No user approval needed — continue directly to step 8h.
 
-   h) **Goal-backward verificatie + acceptance test planning:**
+   h) **Goal-backward verification + acceptance test planning:**
 
-   Map tests terug naar acceptance criteria en plan acceptance tests voor gaps in één stap:
+   Map tests back to acceptance criteria and plan acceptance tests for gaps in one step:
 
-   | REQ   | Acceptance Criterion                    | Test Items  | Dekking | Acceptance Tests |
-   | ----- | --------------------------------------- | ----------- | ------- | ---------------- |
-   | REQ-1 | POST 201, 400 bij >5, 409 bij duplicate | unit: model | GAP     | 3 CLI tests      |
-   | REQ-2 | GET retourneert array, seeded defaults  | unit: seed  | GAP     | 2 CLI tests      |
-   | REQ-3 | Modal sluit bij klik buiten             | Item 2      | ✓       | —                |
+   | REQ   | Acceptance Criterion                  | Test Items  | Coverage | Acceptance Tests |
+   | ----- | ------------------------------------- | ----------- | -------- | ---------------- |
+   | REQ-1 | POST 201, 400 on >5, 409 on duplicate | unit: model | GAP      | 3 CLI tests      |
+   | REQ-2 | GET returns array, seeded defaults    | unit: seed  | GAP      | 2 CLI tests      |
+   | REQ-3 | Modal closes on click outside         | Item 2      | ✓        | —                |
 
-   **GAP**: requirement waar builder's tests het acceptance criterium niet dekken (test verifieert interne methods/data structures i.p.v. het criterium zelf).
+   **GAP**: requirement where builder's tests do not cover the acceptance criterion (test verifies internal methods/data structures instead of the criterion itself).
 
-   Per GAP met CLI-testbare acceptance tests (uit Explore agent `acceptanceTests[]`): voeg toe aan AUTO/CLI queue (FASE 1) met `source: "acceptance"` markering.
-   BROWSER en MANUAL gaps → voeg items toe via bestaande classificatie (step 7d).
+   Per GAP with CLI-testable acceptance tests (from Explore agent `acceptanceTests[]`): add to AUTO/CLI queue (PHASE 1) with `source: "acceptance"` marker.
+   BROWSER and MANUAL gaps → add items via existing classification (step 7d).
 
-   Geen gaps → toon `Acceptance mapping: {n}/{n} REQs gedekt` en ga door naar FASE 1.
-   CLI gaps gevonden → display: `ACCEPTANCE TESTS: {n} test(s) gepland voor {m} requirements`
+   No gaps → show `Acceptance mapping: {n}/{n} REQs covered` and proceed to PHASE 1.
+   CLI gaps found → display: `ACCEPTANCE TESTS: {n} test(s) planned for {m} requirements`
 
-9. **Dev server** (conditioneel):
+9. **Dev server** (conditional):
 
    ```
-   Alle non-COVERED items AUTO/CLI (in-process testbaar) → skip dev server entirely
-   MANUAL of AUTO/BROWSER items                          → start via /project-tunnel proces (tunnel nodig)
-   AUTO/CLI met live server vereist                      → start op localhost (zonder tunnel)
+   All non-COVERED items AUTO/CLI (in-process testable)  → skip dev server entirely
+   MANUAL or AUTO/BROWSER items                          → start via /project-tunnel process (tunnel needed)
+   AUTO/CLI with live server required                    → start on localhost (without tunnel)
    ```
 
-   Bij falen → graceful fallback: alle items worden MANUAL, skip FASE 1.
+   On failure → graceful fallback: all items become MANUAL, skip PHASE 1.
 
 ---
 
-### FASE 1: Automated Testing
+### PHASE 1: Automated Testing
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-**Skip** als er geen AUTO items zijn (alle non-COVERED items zijn MANUAL, of alles is COVERED).
+**Skip** if there are no AUTO items (all non-COVERED items are MANUAL, or everything is COVERED).
 
-Launch Agent om non-COVERED AUTO items uit te voeren in apart context window.
+Launch Agent to execute non-COVERED AUTO items in a separate context window.
 
-**AUTO/CLI aanpak keuze** (agent bepaalt op basis van feature type):
+**AUTO/CLI approach selection** (agent decides based on feature type):
 
-- **Pure API / service feature**: schrijf integration test file (node:test / vitest) met mock dependencies en echte DB (mongodb-memory-server). Test via service layer, niet HTTP.
-- **Feature met running server vereist**: curl commands tegen dev server.
-- **Build/lint verificatie**: directe bash commands.
+- **Pure API / service feature**: write integration test file (node:test / vitest) with mock dependencies and real DB (mongodb-memory-server). Test via service layer, not HTTP.
+- **Feature requiring running server**: curl commands against dev server.
+- **Build/lint verification**: direct bash commands.
 
 Agent prompt:
 
 ```
-Test de volgende items automatisch via browser tools, bash commands, of integration tests.
+Test the following items automatically via browser tools, bash commands, or integration tests.
 Feature: {feature-name}
-{IF dev server draait: Dev server: {url}}
+{IF dev server running: Dev server: {url}}
 
 {STACK_CONTEXT}
 
 ITEMS:
 {per AUTO item:}
 - Item {N}: {title}
-  Stappen: {test steps}
-  Testdata: {test data}
-  Verwacht: {expected outcome}
-  Methode: {BROWSER of CLI}
+  Steps: {test steps}
+  Test data: {test data}
+  Expected: {expected outcome}
+  Method: {BROWSER or CLI}
 
-INSTRUCTIES:
-1. Voer stappen uit via bash commands, Playwright runner specs, of schrijf een integration test file
-2. Voor CLI items zonder running server: schrijf een integration test (test/integration/{feature}.integration.test.js) die de service/functie direct test met mock dependencies en echte DB
-3. Voor acceptance items (source: "acceptance"): schrijf test in apart bestand (test/acceptance/{feature}.acceptance.test.js).
-   MOET het project's test framework gebruiken (vitest/jest/node:test — check package.json).
-   Dit zorgt dat `npm test` ze oppikt als regression suite bij toekomstige /dev-build runs.
-   Voorbeeld: builder test `expect(countDocuments).toBeCalled` vs acceptance test `POST 6th → expect(res.status).toBe(400)`
-4. Voor BROWSER items: schrijf een Playwright runner spec in test/acceptance/{feature}.spec.ts (GEEN MCP browser tools).
-   Gebruik het on-the-fly spec pattern: zie shared/PLAYWRIGHT.md → Runner Mode.
-   Runner beschikbaar check: `npx playwright --version 2>/dev/null`.
-   Beschikbaar → schrijf spec met `expect(page)` assertions. Bij a11y-criteria: gebruik `toMatchAriaSnapshot()`.
-   Bij visuele criteria ("voelt snel", "ziet er goed uit"): gebruik `toHaveScreenshot()` — eerste run maakt baseline.
-   Draai: `npx playwright test test/acceptance/{feature}.spec.ts --reporter=json`
-   Runner niet beschikbaar → draai `/core-setup playwright` om daemon + runner te installeren, dan opnieuw.
-   Bij persistente failure → markeer als TOOL_ERROR en noteer: "runner spec gegenereerd maar kon niet draaien"
-5. Bepaal PASS/FAIL met bewijs en redenering
-6. TOOL_ERROR (runner faalt of CLI errors) → markeer als TOOL_ERROR
+INSTRUCTIONS:
+1. Execute steps via bash commands, Playwright runner specs, or write an integration test file
+2. For CLI items without running server: write an integration test (test/integration/{feature}.integration.test.js) that tests the service/function directly with mock dependencies and real DB
+3. For acceptance items (source: "acceptance"): write test in separate file (test/acceptance/{feature}.acceptance.test.js).
+   MUST use the project's test framework (vitest/jest/node:test — check package.json).
+   This ensures `npm test` picks them up as regression suite on future /dev-build runs.
+   Example: builder test `expect(countDocuments).toBeCalled` vs acceptance test `POST 6th → expect(res.status).toBe(400)`
+4. For BROWSER items: write a Playwright runner spec in test/acceptance/{feature}.spec.ts (NO MCP browser tools).
+   Use the on-the-fly spec pattern: see shared/PLAYWRIGHT.md → Runner Mode.
+   Runner availability check: `npx playwright --version 2>/dev/null`.
+   Available → write spec with `expect(page)` assertions. For a11y criteria: use `toMatchAriaSnapshot()`.
+   For visual criteria ("feels fast", "looks good"): use `toHaveScreenshot()` — first run creates baseline.
+   Run: `npx playwright test test/acceptance/{feature}.spec.ts --reporter=json`
+   Runner not available → run `/core-setup playwright` to install daemon + runner, then retry.
+   On persistent failure → mark as TOOL_ERROR and note: "runner spec generated but could not run"
+5. Determine PASS/FAIL with evidence and reasoning
+6. TOOL_ERROR (runner fails or CLI errors) → mark as TOOL_ERROR
 
-POST-BUILD: baseline al GREEN. Focus op INTEGRATIE en ACCEPTANCE, niet unit logica.
-Draai NIET opnieuw npm test.
+POST-BUILD: baseline already GREEN. Focus on INTEGRATION and ACCEPTANCE, not unit logic.
+Do NOT re-run npm test.
 
-RESULTAAT FORMAT:
+RESULT FORMAT:
 AUTOMATED_RESULTS_START
-| # | Test | Resultaat | Bewijs | Redenering |
+| # | Test | Result | Evidence | Reasoning |
 |---|------|-----------|--------|------------|
 AUTOMATED_RESULTS_END
 
-FALLBACK_ITEMS: {TOOL_ERROR items, of "geen"}
+FALLBACK_ITEMS: {TOOL_ERROR items, or "none"}
 ```
 
-**Parse resultaten:** als output truncated is (geen markers zichtbaar), gebruik Grep om `AUTOMATED_RESULTS_START` te vinden in agent output. TOOL_ERROR items → reclassify als MANUAL.
+**Parse results:** if output is truncated (no markers visible), use Grep to find `AUTOMATED_RESULTS_START` in agent output. TOOL_ERROR items → reclassify as MANUAL.
 
-**Agent faalt volledig:** graceful fallback → alle AUTO items worden MANUAL.
+**Agent fails completely:** graceful fallback → all AUTO items become MANUAL.
 
 Display: `AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}`
 
 ---
 
-### FASE 1b: Parse Inline Feedback
+### PHASE 1b: Parse Inline Feedback
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 1b → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 1b → `in_progress`.
 
-**Wanneer:** user gaf feedback mee bij `/dev-verify {name} {feedback}` (skipt FASE 1 + 2).
+**When:** user provided feedback with `/dev-verify {name} {feedback}` (skips PHASE 1 + 2).
 
-Parse naar item/PASS/FAIL/notes. Accepteer `1:PASS 2:FAIL note` en vrije tekst.
-Toon samenvatting, ga naar FASE 3.
+Parse into item/PASS/FAIL/notes. Accept `1:PASS 2:FAIL note` and free text.
+Show summary, go to PHASE 3.
 
-Onduidelijke feedback → AskUserQuestion: Opnieuw invoeren (Aanbevolen) | Per item doorgaan | Uitleg.
+Unclear feedback → AskUserQuestion: Re-enter (Recommended) | Continue per item | Explain.
 
 ---
 
-### FASE 2: Manual Walkthrough
+### PHASE 2: Manual Walkthrough
 
-> **Todo**: markeer FASE 1b → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1b → `completed`, PHASE 2 → `in_progress`.
 
-**Wanneer:** er zijn MANUAL items.
+**When:** there are MANUAL items.
 
-Toon setup eenmalig (bijv. "Open {tunnel_url}"). Per MANUAL item:
+Show setup once (e.g. "Open {tunnel_url}"). Per MANUAL item:
 
 ```
 ──────────────────────────────────────
-HANDMATIG TEST {n}/{total}: {title}
+MANUAL TEST {n}/{total}: {title}
 ──────────────────────────────────────
 
-STAPPEN:
-1. {concrete actie met data}
+STEPS:
+1. {concrete action with data}
 
-TESTDATA:
-{tabel met velden + waarden}
+TEST DATA:
+{table with fields + values}
 
-VERWACHT:
+EXPECTED:
 → {expected outcome}
 ```
 
-**Codegen-tip voor herhaalbare flows** (toon eenmalig boven eerste MANUAL item als flow ≥3 stappen heeft):
+**Codegen tip for repeatable flows** (show once above first MANUAL item if flow has ≥3 steps):
 
 ```
-💡 Voor flows met ≥3 stappen: run `npx playwright codegen {url}` in een terminal om
-   je interacties op te nemen als Playwright spec. Lever die op aan /dev-verify voor
-   automatische BROWSER-verificatie bij toekomstige runs.
+💡 For flows with ≥3 steps: run `npx playwright codegen {url}` in a terminal to
+   record your interactions as a Playwright spec. Submit it to /dev-verify for
+   automatic BROWSER-verification on future runs.
 ```
 
-AskUserQuestion per item: Pass (Aanbevolen) | Fail | Skip.
+AskUserQuestion per item: Pass (Recommended) | Fail | Skip.
 
-- Fail → vraag kort wat er mis ging
-- Skip → noteer reden
+- Fail → ask briefly what went wrong
+- Skip → note reason
 
 ---
 
-### FASE 2b: Combined Results
+### PHASE 2b: Combined Results
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 2b → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 2b → `in_progress`.
 
-Merge COVERED + automated + manual resultaten.
+Merge COVERED + automated + manual results.
 
-**Compact** (postBuildMode + alle PASS + COVERED items):
+**Compact** (postBuildMode + all PASS + COVERED items):
 
 ```
-TEST RESULTAAT: {feature-name} (POST-BUILD)
+TEST RESULT: {feature-name} (POST-BUILD)
 
 BASELINE: npm test → PASS ({n}/{n})
-COVERED: {n} items (build tests dekken contract)
-INTEGRATIE: {n} scenario's → {n} PASS
-TOTAAL: {n}/{n} PASS
+COVERED: {n} items (build tests cover contract)
+INTEGRATION: {n} scenarios → {n} PASS
+TOTAL: {n}/{n} PASS
 
-Geen fixes nodig.
+No fixes needed.
 ```
 
-**Volledige tabel** (bij FAILs of geen COVERED):
+**Full table** (with FAILs or no COVERED):
 
 ```
-GECOMBINEERDE RESULTATEN: {feature-name}
+COMBINED RESULTS: {feature-name}
 
-| # | Test | Type | Resultaat |
+| # | Test | Type | Result |
 |---|----- |------|-----------|
 ```
 
-<!-- modal-buffer -->
+With AUTO FAILs → AskUserQuestion: Trust auto results (Recommended) | Check manually.
+With SKIPs → AskUserQuestion: Accept (Recommended) | Test later.
 
-Print 8 blank lines as whitespace buffer (keeps the results table above visible when the modal panel opens).
-
-Bij AUTO FAILs → AskUserQuestion: Vertrouw auto resultaten (Aanbevolen) | Handmatig controleren.
-Bij SKIPs → AskUserQuestion: Accepteren (Aanbevolen) | Later testen.
-
-**Evaluation Score** (alleen tonen als acceptance tests zijn uitgevoerd):
+**Evaluation Score** (only show if acceptance tests were run):
 
 ```
 EVALUATION: {feature-name}
@@ -371,23 +367,23 @@ EVALUATION: {feature-name}
 ```
 
 Acceptance test FAIL → issue type **SPEC**. Builder test FAIL → issue type **TESTABLE**.
-Geen acceptance tests uitgevoerd → skip tabel, categoriseer alleen op builder test FAILs.
+No acceptance tests run → skip table, categorize only on builder test FAILs.
 
-Alle PASS → FASE 6. FAILs (SPEC of TESTABLE) → FASE 3.
+All PASS → PHASE 6. FAILs (SPEC or TESTABLE) → PHASE 3.
 
 ---
 
-### FASE 3: Categorize Issues
+### PHASE 3: Categorize Issues
 
-> **Todo**: markeer FASE 2b → `completed`, FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2b → `completed`, PHASE 3 → `in_progress`.
 
-Per FAIL: categoriseer als SPEC/TESTABLE/MEASURABLE/SUBJECTIVE (zie tabel hierboven).
-SPEC → uit acceptance test failures (criterium niet gedekt door implementatie).
-SUBJECTIVE → AskUserQuestion voor verduidelijking, dan re-categoriseer.
+Per FAIL: categorize as SPEC/TESTABLE/MEASURABLE/SUBJECTIVE (see table above).
+SPEC → from acceptance test failures (criterion not covered by implementation).
+SUBJECTIVE → AskUserQuestion for clarification, then re-categorize.
 
 Technique mapping:
 
-- **SPEC** (acceptance criterium niet gedekt) → **Implementation First** (criterium is duidelijk, fix is concreet) + schrijf/update acceptance test
+- **SPEC** (acceptance criterion not covered) → **Implementation First** (criterion is clear, fix is concrete) + write/update acceptance test
 - Validatie, business logic, edge cases, race conditions → **TDD**
 - CRUD wiring, config, imports, routing → **Implementation First**
 - Default → TDD
@@ -400,34 +396,34 @@ Display technique map:
 
 ---
 
-### FASE 4: Fix Loop
+### PHASE 4: Fix Loop
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
 #### TDD Fix
 
-Complexe issues → AskUserQuestion: Research via Context7 (Aanbevolen) | Direct fixen.
+Complex issues → AskUserQuestion: Research via Context7 (Recommended) | Fix directly.
 
-TDD: test → red → fix → green. Max 3 pogingen, daarna vraag user.
+TDD: test → red → fix → green. Max 3 attempts, then ask user.
 
 ```
 [FIX] Item {N}: {title}
 Technique: TDD | Type: {AUTO|MANUAL}
-RED: FAIL ({wat})  GREEN: PASS
-SYNC: Root cause: {file:line}. Fix: {aanpak}. Impact: {scope}.
+RED: FAIL ({what})  GREEN: PASS
+SYNC: Root cause: {file:line}. Fix: {approach}. Impact: {scope}.
 ```
 
-Test slaagt al → AskUserQuestion: Overslaan (Aanbevolen) | Test aanpassen | Handmatig checken.
+Test already passes → AskUserQuestion: Skip (Recommended) | Adjust test | Check manually.
 
 #### Implementation First Fix
 
-Fix → schrijf test → verify PASS. Max 3 pogingen.
+Fix → write test → verify PASS. Max 3 attempts.
 
 ```
 [FIX] Item {N}: {title}
 Technique: Implementation First | Type: {AUTO|MANUAL}
-IMPLEMENTED: {wat}  TESTED: PASS
-SYNC: Root cause: {file:line}. Fix: {aanpak}. Impact: {scope}.
+IMPLEMENTED: {what}  TESTED: PASS
+SYNC: Root cause: {file:line}. Fix: {approach}. Impact: {scope}.
 ```
 
 #### MEASURABLE: Direct Fix
@@ -437,153 +433,153 @@ Fix direct (config, styling, timing). Needs manual re-test.
 ```
 [FIX] Item {N}: {title}
 Technique: Direct Fix | Type: {AUTO|MANUAL}
-SYNC: Root cause: {file:line}. Fix: {aanpak}. Impact: {scope}.
+SYNC: Root cause: {file:line}. Fix: {approach}. Impact: {scope}.
 ```
 
 ---
 
-### FASE 5: Re-test
+### PHASE 5: Re-test
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-Re-test ALLEEN gefixte items.
+Re-test ONLY fixed items.
 
-**Phase A: Auto** — fixed AUTO items via Agent (zelfde aanpak als FASE 1, markers `RETEST_RESULTS_START`/`RETEST_RESULTS_END`). TOOL_ERROR → Phase B.
+**Phase A: Auto** — fixed AUTO items via Agent (same approach as PHASE 1, markers `RETEST_RESULTS_START`/`RETEST_RESULTS_END`). TOOL_ERROR → Phase B.
 
-**Phase B: Manual** — fixed MANUAL items via walkthrough. Toon WIJZIGING (fix summary) + originele stappen.
+**Phase B: Manual** — fixed MANUAL items via walkthrough. Show CHANGE (fix summary) + original steps.
 
-Display re-test resultaten.
+Display re-test results.
 
-### FASE 5b: Re-test Loop
+### PHASE 5b: Re-test Loop
 
-> **Todo**: markeer FASE 5 → `completed`, FASE 5b → `in_progress`.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 5b → `in_progress`.
 
-Alles pass → FASE 5c.
+Alles pass → PHASE 5c.
 
-Items falen nog → AskUserQuestion: Meer details (Aanbevolen) | Andere aanpak | Accepteren | Zelf fixen.
-Loop terug naar FASE 3. AUTO items → re-run in FASE 5A. MANUAL items → re-test in FASE 5B.
+Items still failing → AskUserQuestion: More details (Recommended) | Different approach | Accept | Fix yourself.
+Loop back to PHASE 3. AUTO items → re-run in PHASE 5A. MANUAL items → re-test in PHASE 5B.
 
 ---
 
-### FASE 5c: Regression Check
+### PHASE 5c: Regression Check
 
-> **Todo**: markeer FASE 5b → `completed`, FASE 5c → `in_progress`.
+> **Todo**: mark PHASE 5b → `completed`, PHASE 5c → `in_progress`.
 
 **Skip when:**
 
-- Geen fixes toegepast in FASE 4
-- Geen eerder-PASS AUTO items in FASE 2b
-- Alle fixes waren MANUAL-only (config/styling)
+- No fixes applied in PHASE 4
+- No previously-PASS AUTO items in PHASE 2b
+- All fixes were MANUAL-only (config/styling)
 
-Draai alle eerder-PASS AUTO items opnieuw via Agent (zelfde aanpak als FASE 1).
+Re-run all previously-PASS AUTO items via Agent (same approach as PHASE 1).
 
 ```
 REGRESSION CHECK: {feature-name}
 
-| # | Test               | Was    | Nu     |
+| # | Test               | Was    | Now    |
 |---|--------------------|--------|--------|
 | 1 | Route rendering    | ✓ PASS | ✓ PASS |
 | 3 | Form validation    | ✓ PASS | ✗ FAIL |
 
-Regressies: {n} | Stabiel: {n}
+Regressions: {n} | Stable: {n}
 ```
 
-**Geen regressies:** Door naar FASE 6.
+**No regressions:** Proceed to PHASE 6.
 
-**Regressies:** Toon en bied keuze via AskUserQuestion: Fixen (Aanbevolen) | Accepteren. Bij fixen → terug naar FASE 4 voor alleen de regressie-items. Herhaal FASE 5c NIET na regressie-fix (max 1 pass).
+**Regressions:** Show and offer choice via AskUserQuestion: Fix (Recommended) | Accept. If fixing → back to PHASE 4 for regression items only. Do NOT repeat PHASE 5c after regression fix (max 1 pass).
 
 ---
 
-### FASE 5d: Requirement Verification
+### PHASE 5d: Requirement Verification
 
-> **Todo**: markeer FASE 5c → `completed`, FASE 5d → `in_progress`.
+> **Todo**: mark PHASE 5c → `completed`, PHASE 5d → `in_progress`.
 
-**Skip when:** Alle tests FAIL (coverage check zinloos bij catastrofale failures).
+**Skip when:** All tests FAIL (coverage check pointless on catastrophic failures).
 
-Cross-check `feature.json` requirements tegen test resultaten:
+Cross-check `feature.json` requirements against test results:
 
-1. **Laad requirement → test mapping:**
-   - Per `requirements[]` entry (id, description, status) — **skip entries met `deltaOp === "REMOVED"`**
-   - Zoek matching `tests.checklist[]` entries via `requirementId`
+1. **Load requirement → test mapping:**
+   - Per `requirements[]` entry (id, description, status) — **skip entries with `deltaOp === "REMOVED"`**
+   - Look up matching `tests.checklist[]` entries via `requirementId`
 
-2. **Bouw coverage matrix:**
+2. **Build coverage matrix:**
 
    ```
    REQUIREMENT COVERAGE: {feature-name}
 
-   | REQ       | Beschrijving (kort)        | Tests | Status        |
+   | REQ       | Description (short)       | Tests | Status        |
    |-----------|----------------------------|-------|---------------|
-   | REQ-001   | {eerste 40 chars}          | 2     | ✓ COVERED     |
-   | REQ-002   | {eerste 40 chars}          | 0     | ✗ GEEN TEST   |
-   | REQ-003   | {eerste 40 chars}          | 1     | ⊘ BLOCKED     |
-   | REQ-004   | {eerste 40 chars}          | 0     | ? UNCLEAR     |
+   | REQ-001   | {first 40 chars}           | 2     | ✓ COVERED     |
+   | REQ-002   | {first 40 chars}           | 0     | ✗ NO TEST     |
+   | REQ-003   | {first 40 chars}           | 1     | ⊘ BLOCKED     |
+   | REQ-004   | {first 40 chars}           | 0     | ? UNCLEAR     |
 
    Coverage: {covered}/{total} requirements ({percentage}%)
-   Non-testable: BLOCKED={n} UNCLEAR={n} (heropenen nodig)
+   Non-testable: BLOCKED={n} UNCLEAR={n} (needs re-opening)
    ```
 
-3. **Classificeer per requirement:**
-   - **COVERED**: minstens 1 test met matching `requirementId` EN status `PASS`
-   - **FAIL**: minstens 1 test matching maar status `FAIL`
-   - **BLOCKED**: test bestaat niet of faalt door externe dependency (service down, ontbrekende API key, missing fixture)
-   - **UNCLEAR**: geen test mogelijk omdat acceptance criteria te vaag is (bv. "voelt snel", "werkt goed") — niet-deterministisch
-   - **GEEN TEST**: geen test in `checklist[]` met matching `requirementId` (geen legitieme reden)
+3. **Classify per requirement:**
+   - **COVERED**: at least 1 test with matching `requirementId` AND status `PASS`
+   - **FAIL**: at least 1 test matching but status `FAIL`
+   - **BLOCKED**: test does not exist or fails due to external dependency (service down, missing API key, missing fixture)
+   - **UNCLEAR**: no test possible because acceptance criteria is too vague (e.g. "feels fast", "works well") — non-deterministic
+   - **NO TEST**: no test in `checklist[]` with matching `requirementId` (no legitimate reason)
 
-4. **Alle requirements COVERED:** toon compact samenvatting, door naar FASE 6.
+4. **All requirements COVERED:** show compact summary, proceed to PHASE 6.
 
-5. **Bij GEEN TEST, FAIL, BLOCKED of UNCLEAR requirements:**
+5. **With NO TEST, FAIL, BLOCKED or UNCLEAR requirements:**
 
-   Per ongedekt requirement, AskUserQuestion:
+   Per uncovered requirement, AskUserQuestion:
 
    ```yaml
-   header: "REQ niet gedekt: {REQ-ID}"
-   question: "{requirement description} — geen test gevonden. Wat wil je doen?"
+   header: "REQ not covered: {REQ-ID}"
+   question: "{requirement description} — no test found. What do you want to do?"
    options:
-     - label: "Test toevoegen (Recommended)", description: "Schrijf een test — CLI/acceptance, Playwright runner spec voor BROWSER, of visual baseline via toHaveScreenshot"
-     - label: "Gedekt door andere test", description: "Impliciet getest via een andere test"
-     - label: "Blocked door dependency", description: "Externe service/fixture ontbreekt — niet testbaar nu"
-     - label: "Criteria te vaag", description: "Acceptance criteria mist concreetheid — heropen /dev-define of zet om naar visual baseline"
+     - label: "Add test (Recommended)", description: "Write a test — CLI/acceptance, Playwright runner spec for BROWSER, or visual baseline via toHaveScreenshot"
+     - label: "Covered by other test", description: "Implicitly tested via another test"
+     - label: "Blocked by dependency", description: "External service/fixture missing — not testable now"
+     - label: "Criteria too vague", description: "Acceptance criteria lacks concreteness — re-open /dev-define or convert to visual baseline"
    multiSelect: false
    ```
 
-   - **Test toevoegen** → voeg test item toe aan `tests.checklist[]` met `requirementId`, `status: "pending"`. Loop terug naar FASE 1 (AUTO) of FASE 2 (MANUAL) voor alleen dit item. Kies automatisch de juiste methode:
-     - Functioneel criterium → CLI/acceptance test (vitest/jest)
-     - Browser-gedrag / user flow → Playwright runner spec in `test/acceptance/{feature}.spec.ts`
-     - Visueel criterium ("voelt snel", "ziet er goed uit", "geen layout-shift") → `toHaveScreenshot()` baseline via runner
-     - A11y-criterium → `toMatchAriaSnapshot()` via runner
-   - **Gedekt door andere test** → vraag welke test het dekt. Markeer requirement met `implicitCoverage: "{REQ-ID} test also validates this via {beschrijving}"`. Status → `"PASS"`.
-   - **Blocked door dependency** → vraag welke dependency. Status → `"BLOCKED"`, voeg toe aan `requirements[].evidence = "blocked by: {reason}"`. Niet mergen-blokkerend; signaal voor heropenen na dependency-fix.
-   - **Criteria te vaag** → twee paden:
-     - Kan worden geconcretiseerd met een visual baseline → schrijf `toHaveScreenshot()` runner spec, status → `"PASS"` na baseline.
-     - Kan niet worden geconcretiseerd → vraag wat vaag is. Status → `"UNCLEAR"`, voeg toe aan `requirements[].evidence = "needs clarification: {what's vague}"`. Signaal voor `/dev-define` heropen om concrete acceptance te formuleren.
+   - **Add test** → add test item to `tests.checklist[]` with `requirementId`, `status: "pending"`. Loop back to PHASE 1 (AUTO) or PHASE 2 (MANUAL) for this item only. Automatically choose the right method:
+     - Functional criterion → CLI/acceptance test (vitest/jest)
+     - Browser behavior / user flow → Playwright runner spec in `test/acceptance/{feature}.spec.ts`
+     - Visual criterion ("feels fast", "looks good", "no layout-shift") → `toHaveScreenshot()` baseline via runner
+     - A11y criterion → `toMatchAriaSnapshot()` via runner
+   - **Covered by other test** → ask which test covers it. Mark requirement with `implicitCoverage: "{REQ-ID} test also validates this via {description}"`. Status → `"PASS"`.
+   - **Blocked by dependency** → ask which dependency. Status → `"BLOCKED"`, add to `requirements[].evidence = "blocked by: {reason}"`. Not merge-blocking; signal to re-open after dependency fix.
+   - **Criteria too vague** → two paths:
+     - Can be concretized with a visual baseline → write `toHaveScreenshot()` runner spec, status → `"PASS"` after baseline.
+     - Cannot be concretized → ask what is vague. Status → `"UNCLEAR"`, add to `requirements[].evidence = "needs clarification: {what's vague}"`. Signal for `/dev-define` re-open to formulate concrete acceptance.
 
 ---
 
-### FASE 6: Completion
+### PHASE 6: Completion
 
-> **Todo**: markeer FASE 5d → `completed`, FASE 6 → `in_progress`.
+> **Todo**: mark PHASE 5d → `completed`, PHASE 6 → `in_progress`.
 
-#### Step 1: Fix Sync (skip als geen fixes)
+#### Step 1: Fix Sync (skip if no fixes)
 
 Per fix in plain language:
 
 ```
 Fix {N}: {title}
-- Problem: {wat}
+- Problem: {what}
 - Change: {file:line}
-- Watch out: {alleen als relevant}
+- Watch out: {only if relevant}
 ```
 
-AskUserQuestion: Ja, helder (Aanbevolen) | Leg meer uit | Ik heb een vraag. Loop tot helder.
+AskUserQuestion: Yes, clear (Recommended) | Explain more | I have a question. Loop until clear.
 
-Sla fix sync op voor `feature.json` (tests.fixSync).
+Save fix sync to `feature.json` (tests.fixSync).
 
 #### Step 2: Observaties
 
-**Skip wanneer:** deze sessie geen MANUAL items had (pure automode — user heeft niets zelf gecontroleerd, dus kan niets opgemerkt hebben).
+**Skip when:** this session had no MANUAL items (pure automode — user checked nothing themselves, so nothing can have been noticed).
 
-AskUserQuestion: Nee, alles goed (Aanbevolen) | Ja, ik heb iets opgemerkt.
-"Ja" → vraag beschrijving, noteer voor feature.json (observations[]).
+AskUserQuestion: No, all good (Recommended) | Yes, I noticed something.
+"Yes" → ask description, note for feature.json (observations[]).
 
 #### Step 3: 3-File Sync
 
@@ -592,41 +588,41 @@ Skill-specifieke mutaties:
 **feature.json:**
 
 - `status` → `"DONE"`
-- `requirements[].status` → `"PASS"` / `"FAIL"` / `"BLOCKED"` / `"UNCLEAR"` per REQ (BLOCKED/UNCLEAR includeren `evidence` string)
+- `requirements[].status` → `"PASS"` / `"FAIL"` / `"BLOCKED"` / `"UNCLEAR"` per REQ (BLOCKED/UNCLEAR include `evidence` string)
 - `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item
-- `tests.finalStatus` → `"PASSED"` (alle requirements PASS) / `"FAILED"` (≥1 FAIL) / `"PARTIAL"` (≥1 BLOCKED of UNCLEAR, 0 FAIL). PARTIAL signaleert incomplete verificatie; feature `status` blijft `"DONE"`.
+- `tests.finalStatus` → `"PASSED"` (all requirements PASS) / `"FAILED"` (≥1 FAIL) / `"PARTIAL"` (≥1 BLOCKED or UNCLEAR, 0 FAIL). PARTIAL signals incomplete verification; feature `status` remains `"DONE"`.
 - `tests.sessions[]` → append `{ "date": "YYYY-MM-DD", "pass": N, "fail": N, "skip": N }`
-- `tests.fixSync` → fix summaries (als fixes toegepast)
-- `observations[]` → toevoegen (indien aanwezig)
-- `tests.verificationCheckpoint` → `{ "gaps": ["REQ-ID"], "mismatches": ["beschrijving"], "adjustments": "none|added|reworded" }`
+- `tests.fixSync` → fix summaries (if fixes applied)
+- `observations[]` → add (if present)
+- `tests.verificationCheckpoint` → `{ "gaps": ["REQ-ID"], "mismatches": ["description"], "adjustments": "none|added|reworded" }`
 - `tests.evaluation` → per-REQ scores `[{ reqId, acceptancePass, acceptanceTotal, builderPass, builderTotal, verdict }]`
-- `tests.acceptanceTestFile` → pad naar geschreven acceptance test bestand (persistent in codebase)
+- `tests.acceptanceTestFile` → path to written acceptance test file (persistent in codebase)
 
 **PAGE-seeding (safety net — frontend projects only):**
 
-Voer uit **vóór** de backlog-mutatie. Trigger alleen als **alle** condities waar zijn:
+Execute **before** the backlog mutation. Trigger only if **all** conditions are true:
 
-1. `project.json#stack.framework` is een frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS)
-2. FASE 4 heeft fixes toegepast (er zijn `tests.fixSync` entries deze sessie)
-3. Er bestaan nieuwe page-files die niet in `feature.json#files[]` stonden vóór deze sessie — detecteer via diff t.o.v. `pre-skill-status.txt` baseline. Paden die matchen: `app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`, of componentnamen die eindigen op `Page`, `Screen`, `View`
-4. Na idempotency-filter (`data.features.find(f => f.name === <kebab-naam>)`) blijven ≥1 kandidaten over
+1. `project.json#stack.framework` is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS)
+2. PHASE 4 applied fixes (there are `tests.fixSync` entries this session)
+3. New page-files exist that were not in `feature.json#files[]` before this session — detect via diff against `pre-skill-status.txt` baseline. Paths matching: `app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`, or component names ending in `Page`, `Screen`, `View`
+4. After idempotency-filter (`data.features.find(f => f.name === <kebab-name>)`) ≥1 candidates remain
 
-Als alle condities waar zijn → AskUserQuestion:
+If all conditions are true → AskUserQuestion:
 
 ```yaml
-header: "Pages tijdens fix gedetecteerd"
-question: "FASE 4 heeft {N} nieuwe page-files toegevoegd. Wil je ze als PAGE-todos op de backlog?"
+header: "Pages detected during fix"
+question: "PHASE 4 added {N} new page-files. Do you want to add them as PAGE-todos on the backlog?"
 options:
-  - label: "Ja, alle (Recommended)"
-    description: "Maak voor elke page een PAGE-todo zodat ze design → check doorlopen"
-  - label: "Selectie"
-    description: "Kies welke pages een aparte todo krijgen"
-  - label: "Nee"
-    description: "Geen extra todos — pages zijn dekkend in fix-sync"
+  - label: "Yes, all (Recommended)"
+    description: "Create a PAGE-todo for each page so they go through design → check"
+  - label: "Selection"
+    description: "Choose which pages get a separate todo"
+  - label: "No"
+    description: "No extra todos — pages are covered in fix-sync"
 multiSelect: false
 ```
 
-Per geselecteerde page → push naar `data.features[]`:
+Per selected page → push to `data.features[]`:
 
 ```json
 {
@@ -642,48 +638,48 @@ Per geselecteerde page → push naar `data.features[]`:
 }
 ```
 
-Update `data.updated`. Edit backlog-JSON terug in `backlog.html`.
+Update `data.updated`. Write backlog JSON back to `backlog.html`.
 
-**backlog:** parse JSON uit `<script id="backlog-data">` (zie `shared/BACKLOG.md`). Match op `feature.name` (niet `id` — het backlog-formaat gebruikt `name` als unieke key). Set `status = "DONE"`, verwijder `stage` en `transition` (als aanwezig). **Verificatie**: na schrijven, parse opnieuw en controleer dat de status "DONE" is. Bij geen match op name: log een warning en stop — silent no-op is een bug.
+**backlog:** parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md`). Match on `feature.name` (not `id` — the backlog format uses `name` as the unique key). Set `status = "DONE"`, remove `stage` and `transition` (if present). **Verification**: after writing, parse again and verify that status is "DONE". If no match on name: log a warning and stop — silent no-op is a bug.
 
-**project-context.json**: Bij fixes in FASE 4: update `architecture.components[]` — merge gewijzigde bestanden naar component `src`/`test`, bevestig `status: "done"`, voeg test files toe.
+**project-context.json**: When fixes in PHASE 4: update `architecture.components[]` — merge changed files into component `src`/`test`, confirm `status: "done"`, add test files.
 
-**COMPONENT design sync** (alleen als `IS_COMPONENT_VERIFY = true`):
+**COMPONENT design sync** (only if `IS_COMPONENT_VERIFY = true`):
 
-Update `project.json#design.components[]` — zoek op naam, zet `status: "DONE"`. Niet gevonden → voeg toe met status `"DONE"`. Update `project-context.json#components[]` inventory: voeg test-paden toe aan bestaand inventory-item (merge, niet overschrijven).
+Update `project.json#design.components[]` — look up by name, set `status: "DONE"`. Not found → add with status `"DONE"`. Update `project-context.json#components[]` inventory: add test paths to existing inventory item (merge, do not overwrite).
 
-**Reuse-Discovery** (frontend projects only — skip als `IS_COMPONENT_VERIFY = true`, skip als geen BROWSER-tests gedraaid):
+**Reuse-Discovery** (frontend projects only — skip if `IS_COMPONENT_VERIFY = true`, skip if no BROWSER tests were run):
 
-Na succesvolle verificatie van een PAGE-feature waarbij BROWSER-tests gerund zijn: scan de test-resultaten en screencap-context op visuele patronen die in meerdere pages of features herhalen. Detecteer herhalende layout-blokken (stat cards, listtabellen, hero-sectie, etc.) met vergelijkbare structuur.
+After successful verification of a PAGE-feature where BROWSER-tests were run: scan the test-results and screencap-context for visual patterns that repeat across multiple pages or features. Detect repeating layout blocks (stat cards, list tables, hero section, etc.) with similar structure.
 
-**Dedup**: check `project.json#design.components[]` en `project-context.json#components[]`. Check `feature.json#suggestionsLog[]` — eerder rejected van `dev-verify`? → skip.
+**Dedup**: check `project.json#design.components[]` and `project-context.json#components[]`. Check `feature.json#suggestionsLog[]` — previously rejected from `dev-verify`? → skip.
 
-Gevonden kandidaten (max 2 per run, om verify niet te vertragen) → AskUserQuestion:
+Candidates found (max 2 per run, to not slow down verify) → AskUserQuestion:
 
 ```yaml
-header: "Herhalende UI-patronen"
-question: "Visuele verificatie toont patronen die als gedeeld component herbruikbaar zijn. COMPONENT-todos aanmaken?"
+header: "Repeating UI patterns"
+question: "Visual verification shows patterns reusable as shared components. Create COMPONENT-todos?"
 options:
-  - label: "{naam} — {korte visuele beschrijving}", description: "Maak COMPONENT-todo"
-  - label: "..." (één per kandidaat)
-  - label: "Overslaan", description: "Geen COMPONENT-todos toevoegen"
+  - label: "{name} — {short visual description}", description: "Create COMPONENT-todo"
+  - label: "..." (one per candidate)
+  - label: "Skip", description: "No COMPONENT-todos to add"
 multiSelect: true
 ```
 
-Per geaccepteerd: append backlog + `design.components[]` (status: IDEA) + `feature.json#suggestionsLog[]` (accepted).
-Per afgewezen: log in `suggestionsLog[]` (rejected, skill: "dev-verify").
+Per accepted: append backlog + `design.components[]` (status: IDEA) + `feature.json#suggestionsLog[]` (accepted).
+Per rejected: log in `suggestionsLog[]` (rejected, skill: "dev-verify").
 
 #### Step 3b: Learning Extraction
 
-Extracteer projectbrede learnings uit de voltooide feature. Lees de zojuist geschreven `feature.json` en evalueer (verplichte source-tag per bron):
+Extract project-wide learnings from the completed feature. Read the just-written `feature.json` and evaluate (mandatory source-tag per source):
 
-- `build.decisions[]` → type `pattern`, source `extracted` (architecturale keuzes die andere features beïnvloeden)
-- `tests.fixSync[]` → type `pitfall`, source `extracted` (bugs met root causes)
-- `observations[]` → type `observation`, source `inferred` (cross-feature inzichten)
+- `build.decisions[]` → type `pattern`, source `extracted` (architectural decisions that affect other features)
+- `tests.fixSync[]` → type `pitfall`, source `extracted` (bugs with root causes)
+- `observations[]` → type `observation`, source `inferred` (cross-feature insights)
 
-**Filter**: alleen items die relevant zijn buiten deze ene feature. Skip feature-specifieke implementatiedetails.
+**Filter**: only items that are relevant beyond this one feature. Skip feature-specific implementation details.
 
-**Append** naar `project-context.json` → `learnings[]`:
+**Append** to `project-context.json` → `learnings[]`:
 
 ```json
 {
@@ -691,49 +687,49 @@ Extracteer projectbrede learnings uit de voltooide feature. Lees de zojuist gesc
   "feature": "{feature-name}",
   "type": "pattern|pitfall|observation",
   "source": "extracted|inferred",
-  "summary": "Max 200 chars samenvatting"
+  "summary": "Max 200 chars summary"
 }
 ```
 
-**Dedup** voor elke candidate learning:
+**Dedup** for each candidate learning:
 
-1. Exact shortcut: zelfde feature + zelfde summary → skip (geen Jaccard nodig)
-2. Tokeniseer candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer
-3. Voor elke bestaande learning in `learnings[]` met hetzelfde `type`:
+1. Exact shortcut: same feature + same summary → skip (no Jaccard needed)
+2. Tokenize candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer
+3. For each existing learning in `learnings[]` with the same `type`:
    - `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip candidate
-4. Overleeft beide checks → append
+4. Passes both checks → append
 
-Geen learnings gevonden → skip stap.
+No learnings found → skip step.
 
 #### Step 4: Scoped commit
 
-**Pre-commit diagnostics** (stack-aware, identiek aan dev-build):
+**Pre-commit diagnostics** (stack-aware, identical to dev-build):
 
-- Lees `package.json` → check `scripts` op keys matching `typecheck|type-check|tsc|lint`
-- Python project (geen package.json): check op `mypy.ini` of `[tool.mypy]` in `pyproject.toml`
-- Geen match gevonden → skip stilzwijgend
+- Read `package.json` → check `scripts` for keys matching `typecheck|type-check|tsc|lint`
+- Python project (no package.json): check for `mypy.ini` or `[tool.mypy]` in `pyproject.toml`
+- No match found → skip silently
 
-Bij match: run gevonden script(s) (meerdere matches → parallel) via Bash tool met `timeout: 60000`
+On match: run found script(s) (multiple matches → parallel) via Bash tool with `timeout: 60000`
 
-- **PASS** → toon `DIAGNOSTICS: PASS`, door naar git status compare
-- **FAIL** → toon errors (max 30 regels) + AskUserQuestion:
-  - `"Fix eerst (Recommended)"` — stop Step 4, geen commit; user fixt en herstart skill
-  - `"Toch committen"` — door; voeg `[diagnostics-warnings]` toe aan commit message
+- **PASS** → show `DIAGNOSTICS: PASS`, proceed to git status compare
+- **FAIL** → show errors (max 30 lines) + AskUserQuestion:
+  - `"Fix first (Recommended)"` — stop Step 4, no commit; user fixes and restarts skill
+  - `"Commit anyway"` — proceed; add `[diagnostics-warnings]` to commit message
 
-Vergelijk `git status --porcelain | sort` met `.project/session/pre-skill-status.txt`:
+Compare `git status --porcelain | sort` with `.project/session/pre-skill-status.txt`:
 
-- **NEW** (alleen in current) → `git add -f` (subdirs als `.project/features/` en `.project/sessions/` zijn gitignored — `-f` vereist voor session-bestanden die hieronder vallen)
-- **OVERLAP** (in beide, gewijzigd door deze skill) → `git add -f`
-- **PRE-EXISTING** (alleen in baseline, of overlap niet door deze skill gewijzigd) → niet stagen
+- **NEW** (only in current) → `git add -f` (subdirs like `.project/features/` and `.project/sessions/` are gitignored — `-f` required for session files that fall under them)
+- **OVERLAP** (in both, changed by this skill) → `git add -f`
+- **PRE-EXISTING** (only in baseline, or overlap not changed by this skill) → do not stage
 
-Baseline niet gevonden → fallback `git add -A`.
+Baseline not found → fallback `git add -A`.
 
-**Variabelen** (telling per FASE 0 classificatie):
+**Variables** (count per PHASE 0 classification):
 
-- `{acceptance}` = aantal acceptance tests geschreven in FASE 1 (source: "acceptance")
-- `{auto}` = aantal items met type AUTO (CLI of BROWSER) — exclusief COVERED
-- `{manual}` = aantal items met type MANUAL
-- `{covered}` = aantal items met type COVERED (build tests dekken het contract)
+- `{acceptance}` = number of acceptance tests written in PHASE 1 (source: "acceptance")
+- `{auto}` = number of items with type AUTO (CLI or BROWSER) — excluding COVERED
+- `{manual}` = number of items with type MANUAL
+- `{covered}` = number of items with type COVERED (build tests cover the contract)
 
 ```bash
 git commit -m "verify({feature}): {N} requirements verified ({acceptance} acceptance, {auto} auto, {manual} manual)
@@ -757,19 +753,19 @@ VERIFY COMPLETE: {feature-name}
 | Spec Issues Fixed | {n}                 |
 
 Next steps:
-  1. /dev-refactor {feature} → optionele code quality polish
-  2. /dev-define {next-feature} → volgende feature oppakken
+  1. /dev-refactor {feature} → optional code quality polish
+  2. /dev-define {next-feature} → pick up next feature
 ```
 
-**Worktree integration hint** — voeg één extra regel toe als beide voorwaarden waar zijn:
+**Worktree integration hint** — add one extra line if both conditions are true:
 
-1. Huidige branch matcht `worktree-*` pattern (`git branch --show-current`)
-2. Feature is na deze run op `status: "DONE"` in backlog
+1. Current branch matches `worktree-*` pattern (`git branch --show-current`)
+2. Feature is at `status: "DONE"` in backlog after this run
 
 Append:
 
 ```
-💡 Feature klaar — run /core-merge {feature-name} om te integreren naar main/develop
+💡 Feature done — run /core-merge {feature-name} to integrate to main/develop
 ```
 
 ---
@@ -777,31 +773,31 @@ Append:
 ## Example Flows
 
 ```
-# Pure API (fast path, geen gaps)
+# Pure API (fast path, no gaps)
 /dev-verify api-routes
-→ FASE 0: 6 COVERED + 3 integratie AUTO/CLI, acceptance: 0 gaps
-→ FASE 1: 3 integratie → 3 PASS
-→ FASE 2b: Compact → 9/9 PASS, evaluation: alle REQs PASS
-→ FASE 6: commit
+→ PHASE 0: 6 COVERED + 3 integration AUTO/CLI, acceptance: 0 gaps
+→ PHASE 1: 3 integration → 3 PASS
+→ PHASE 2b: Compact → 9/9 PASS, evaluation: all REQs PASS
+→ PHASE 6: commit
 
-# API feature met acceptance test gaps
+# API feature with acceptance test gaps
 /dev-verify slider-presets
-→ FASE 0: 6 REQs, builder tests dekken unit logic
-→ FASE 0 step 8h: 8 acceptance tests gepland (HTTP contract gaps)
-→ FASE 1: schrijf acceptance tests + run → 6 PASS, 2 FAIL
-→ FASE 2b: REQ-002, REQ-005 FAIL op acceptance
-→ FASE 3-4: 2 SPEC issues → Implementation First fixes
-→ FASE 5: re-test → all PASS
-→ FASE 6: evaluation + commit (acceptance tests persistent)
+→ PHASE 0: 6 REQs, builder tests cover unit logic
+→ PHASE 0 step 8h: 8 acceptance tests planned (HTTP contract gaps)
+→ PHASE 1: write acceptance tests + run → 6 PASS, 2 FAIL
+→ PHASE 2b: REQ-002, REQ-005 FAIL on acceptance
+→ PHASE 3-4: 2 SPEC issues → Implementation First fixes
+→ PHASE 5: re-test → all PASS
+→ PHASE 6: evaluation + commit (acceptance tests persistent)
 
-# UI feature met fixes
+# UI feature with fixes
 /dev-verify user-registration
-→ FASE 0: 2 COVERED + 1 AUTO/BROWSER + 1 MANUAL + 2 acceptance → tunnel
-→ FASE 1: AUTO/BROWSER → FAIL, acceptance → 1 FAIL
-→ FASE 2: Manual → PASS
-→ FASE 3-4: 1 SPEC + 1 TESTABLE → fixes
-→ FASE 5: Re-test → all PASS
-→ FASE 6: Fix sync + evaluation + commit
+→ PHASE 0: 2 COVERED + 1 AUTO/BROWSER + 1 MANUAL + 2 acceptance → tunnel
+→ PHASE 1: AUTO/BROWSER → FAIL, acceptance → 1 FAIL
+→ PHASE 2: Manual → PASS
+→ PHASE 3-4: 1 SPEC + 1 TESTABLE → fixes
+→ PHASE 5: Re-test → all PASS
+→ PHASE 6: Fix sync + evaluation + commit
 ```
 
-> **Todo**: markeer FASE 6 → `completed`.
+> **Todo**: mark PHASE 6 → `completed`.

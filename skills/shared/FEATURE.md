@@ -313,7 +313,7 @@ Elke feature wordt opgeslagen als **één bestand**: `.project/features/{feature
 - `tests.evaluation` — per-REQ scoring (acceptancePass, acceptanceTotal, builderPass, builderTotal, verdict)
 - `tests.acceptanceTestFile` — pad naar gegenereerde acceptance test (blijft in codebase)
 - `requirements[].status` → `"PASS"` of `"FAIL"`
-- `requirements[].implicitCoverage` — wanneer requirement gedekt is door een andere test (set door FASE 5d)
+- `requirements[].implicitCoverage` — wanneer requirement gedekt is door een andere test (set door PHASE 5d)
 - `observations` — bevindingen, suggesties voor andere features
 - `tests.verificationCheckpoint` — acceptance criteria mapping resultaat (gaps, mismatches, adjustments)
 
@@ -370,12 +370,12 @@ pending → built → PASS
 
 | Skill              | Wat schrijven naar feature.json                                                                                                                          | Wanneer |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `/dev-define`      | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                           | FASE 3  |
-| `/dev-build`       | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Leest clarifications als constraints                               | FASE 4C |
-| `/dev-verify`      | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | FASE 6  |
-| `/dev-refactor`    | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | FASE 5  |
+| `/dev-define`      | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                           | PHASE 3  |
+| `/dev-build`       | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Leest clarifications als constraints                               | PHASE 4C |
+| `/dev-verify`      | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | PHASE 6  |
+| `/dev-refactor`    | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | PHASE 5  |
 | `/thinking-decide` | Append: `durableDecisions[]` met decision, chosen, constraint, rationale, rejected[], date (alleen bij feature-scope)                                    | Step 3  |
-| `/game-define`     | Creates feature.json (zelfde als dev-define + clarifications, game-specifieke design velden)                                                             | FASE 4  |
-| `/game-build`      | Enriches: build, tests.checklist (playtest items), requirements. Leest clarifications als constraints                                                    | FASE 5  |
-| `/game-verify`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | FASE 6  |
-| `/game-refactor`   | Enriches: refactor, status → DONE                                                                                                                        | FASE 5  |
+| `/game-define`     | Creates feature.json (zelfde als dev-define + clarifications, game-specifieke design velden)                                                             | PHASE 4  |
+| `/game-build`      | Enriches: build, tests.checklist (playtest items), requirements. Leest clarifications als constraints                                                    | PHASE 5  |
+| `/game-verify`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | PHASE 6  |
+| `/game-refactor`   | Enriches: refactor, status → DONE                                                                                                                        | PHASE 5  |

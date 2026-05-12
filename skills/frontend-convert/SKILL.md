@@ -18,51 +18,51 @@ metadata:
 
 Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens (from project.json). Self-verifies by comparing source image against Playwright CLI screenshot of generated output.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-design` · `/core-setup` · `/frontend-check`
+**Related skills:** `/frontend-tokens` · `/frontend-design` · `/core-setup` · `/frontend-check`
 
 ## References
 
 - `../shared/RULES.md` — React/TypeScript coding rules
 - `../shared/PATTERNS.md` — Component patterns (compound, render props, etc.)
 - `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
-- `../shared/CODEGEN.md` — Block inventory, token mapping, output structure, a11y scaffold, cva pattern (gedeeld met frontend-design Build route)
+- `../shared/CODEGEN.md` — Block inventory, token mapping, output structure, a11y scaffold, cva pattern (shared with frontend-design Build route)
 - `../shared/PLAYWRIGHT.md` — Playwright CLI, screenshot capture
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
 - `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
-- `./examples/` — Before/after conversie voorbeelden (1:1 en inspiratie modus)
+- `./examples/` — Before/after conversion examples (1:1 and inspiration mode)
 
 ---
 
-## FASE 0: Pre-flight
+## PHASE 0: Pre-flight
 
 ### 0.0 Handoff Detection (auto)
 
 Read `.project/session/devinfo.json` → check `handoff.source`.
 
-**Als `handoff.source === "build-incomplete"`:**
+**If `handoff.source === "build-incomplete"`:**
 
-Check `handoff.timestamp` — als ouder dan 24u: toon `"Handoff is {N}u oud — mogelijk niet meer relevant"` bij de prompt.
+Check `handoff.timestamp` — if older than 24h: show `"Handoff is {N}h old — may no longer be relevant"` with the prompt.
 
 ```yaml
-header: "Handoff van Build gedetecteerd"
-question: "Build van '{handoff.target}' is incompleet ({handoff.failedChecks}). Verder met patch op die files?"
+header: "Handoff from Build detected"
+question: "Build of '{handoff.target}' is incomplete ({handoff.failedChecks}). Continue with patch on those files?"
 options:
-  - label: "Ja, patch (Recommended)", description: "Scope = patch, files uit handoff geladen, before-screenshot uit handoff.buildScreenshot"
-  - label: "Nieuwe screenshot", description: "Negeer handoff, ga normaal door met FASE 0.1"
-  - label: "Annuleren", description: "Stop, handoff blijft staan voor latere run"
+  - label: "Yes, patch (Recommended)", description: "Scope = patch, files loaded from handoff, before-screenshot from handoff.buildScreenshot"
+  - label: "New screenshot", description: "Ignore handoff, continue normally with PHASE 0.1"
+  - label: "Cancel", description: "Stop, handoff remains for a later run"
 multiSelect: false
 ```
 
-**Bij "Ja, patch":**
+**On "Yes, patch":**
 
-1. Vraag user om de target-screenshot (de visie waar Build niet helemaal bij kon): `"Plak de gewenste eindstand als screenshot"`
-2. Sla op als `$SOURCE_IMAGE`, `$SCOPE = "patch"`, `$PATCH_FILE = handoff.files[0]`
-3. `$BEFORE_SCREENSHOT = handoff.buildScreenshot` (als null: sla before-screenshot stap 0.4b Stap 2 over)
-4. Spring naar **0.4b Stap 3** (Visual diff) — sla 0.1 t/m 0.4b Stap 2 over
+1. Ask user for the target screenshot (the desired end state Build didn't fully reach): `"Paste the desired final state as a screenshot"`
+2. Store as `$SOURCE_IMAGE`, `$SCOPE = "patch"`, `$PATCH_FILE = handoff.files[0]`
+3. `$BEFORE_SCREENSHOT = handoff.buildScreenshot` (if null: skip before-screenshot step 0.4b Step 2)
+4. Jump to **0.4b Step 3** (Visual diff) — skip 0.1 through 0.4b Step 2
 
-Handoff wordt opgeruimd in FASE 4 na success (`devinfo.handoff = null`).
+Handoff is cleaned up in PHASE 4 after success (`devinfo.handoff = null`).
 
-**Als `handoff` leeg/absent of `handoff.source !== "build-incomplete"`:** Sla 0.0 over, ga naar 0.1.
+**If `handoff` is empty/absent or `handoff.source !== "build-incomplete"`:** Skip 0.0, go to 0.1.
 
 ---
 
@@ -81,11 +81,11 @@ Determine the input type from the argument or conversation:
 
 ```yaml
 header: "Visual Input"
-question: "Wat wil je converteren? Plak een screenshot in chat, geef een bestandspad, of geef een URL."
+question: "What do you want to convert? Paste a screenshot in chat, provide a file path, or give a URL."
 options:
-  - label: "Ik plak een screenshot", description: "Plak afbeelding in het volgende bericht"
-  - label: "Bestandspad", description: "Pad naar screenshot/export/afbeelding"
-  - label: "URL", description: "Website URL, Figma share link, of Canva link"
+  - label: "I'll paste a screenshot", description: "Paste image in the next message"
+  - label: "File path", description: "Path to screenshot/export/image"
+  - label: "URL", description: "Website URL, Figma share link, or Canva link"
 multiSelect: false
 ```
 
@@ -118,17 +118,17 @@ Key colors: [dominant colors as hex, max 5]
 Dark mode:  [light only | dark only | both visible | unknown]
 Typography: [heading style, body style — approximate]
 Components: [identifiable UI patterns: cards, nav, hero, form, table, etc.]
-Variants:   [component naam → gedetecteerde variant-assen: size=sm/md/lg, state=default/hover/disabled, type=primary/ghost]
-            [of: geen varianten detecteerbaar]
-States:     [geen aparte state-frames | loading | error | empty | success]
-            Detecteer alleen frames/artboards die expliciet een non-default state tonen. Sla op als $STATES.
-Properties: [design properties met directe CSS-mapping — noteer alleen wat zichtbaar aanwezig is:
-              fill → background-color/color: [waarde(n)]
-              stroke → border: [waarde(n)]
-              corner-radius → border-radius: [waarde(n)]
-              shadow → box-shadow: [waarde(n)]
-              opacity → opacity: [waarde(n)]
-              rotation → transform: rotate([waarde(n)])]
+Variants:   [component name → detected variant axes: size=sm/md/lg, state=default/hover/disabled, type=primary/ghost]
+            [or: no variants detectable]
+States:     [no separate state frames | loading | error | empty | success]
+            Detect only frames/artboards that explicitly show a non-default state. Store as $STATES.
+Properties: [design properties with direct CSS mapping — note only what is visibly present:
+              fill → background-color/color: [value(s)]
+              stroke → border: [value(s)]
+              corner-radius → border-radius: [value(s)]
+              shadow → box-shadow: [value(s)]
+              opacity → opacity: [value(s)]
+              rotation → transform: rotate([value(s)])]
 
 ════════════════════════════════════════════════════════════
 ```
@@ -136,11 +136,11 @@ Properties: [design properties met directe CSS-mapping — noteer alleen wat zic
 ### 0.3 Mode Selection
 
 ```yaml
-header: "Modus"
-question: "Hoe wil je dit visuele ontwerp converteren?"
+header: "Mode"
+question: "How do you want to convert this visual design?"
 options:
-  - label: "1:1 kopie (Recommended)", description: "Zo getrouw mogelijk nabouwen — kleuren, fonts, spacing uit het origineel"
-  - label: "Inspiratie", description: "Layout/structuur overnemen, project theme tokens toepassen"
+  - label: "1:1 copy (Recommended)", description: "Reproduce as faithfully as possible — colors, fonts, spacing from the original"
+  - label: "Inspiration", description: "Adopt layout/structure, apply project theme tokens"
 multiSelect: false
 ```
 
@@ -152,76 +152,76 @@ Based on the visual analysis (0.2), confirm the output scope:
 
 ```yaml
 header: "Scope"
-question: "Wat moet de output zijn?"
+question: "What should the output be?"
 options:
-  - label: "Volledige pagina (Recommended)", description: "Pagina-bestand + sectie-componenten"
-  - label: "Eén component", description: "Alleen dit component genereren"
-  - label: "Meerdere losse componenten", description: "Elk visueel blok als apart component"
-  - label: "Bestaand component bijwerken", description: "Patch op basis van nieuwe screenshot — alleen gewijzigde secties"
+  - label: "Full page (Recommended)", description: "Page file + section components"
+  - label: "Single component", description: "Generate only this component"
+  - label: "Multiple separate components", description: "Each visual block as a separate component"
+  - label: "Update existing component", description: "Patch based on new screenshot — only changed sections"
 multiSelect: false
 ```
 
-Bij "Bestaand component bijwerken": sla FASE 0.5 over en ga naar FASE 0.4b.
+On "Update existing component": skip PHASE 0.5 and go to PHASE 0.4b.
 
 ### 0.4b Patch Detection
 
-Alleen bij scope = patch.
+Only for scope = patch.
 
-#### Stap 1: Component locatie
+#### Step 1: Component location
 
-Als het componentpad niet al bekend is (bijv. via argument of via bestandsselectie in VSCode):
+If the component path is not already known (e.g. via argument or file selection in VSCode):
 
 ```yaml
 header: "Component"
-question: "Welk bestand wil je bijwerken?"
+question: "Which file do you want to update?"
 options:
-  - label: "Ik typ het pad", description: "Relatief of absoluut pad naar het .tsx/.jsx bestand"
+  - label: "I'll type the path", description: "Relative or absolute path to the .tsx/.jsx file"
 multiSelect: false
 ```
 
-Lees het bestand via Read tool. Als het bestand niet bestaat: stop met melding en val terug naar scope "Eén component".
+Read the file via Read tool. If the file does not exist: stop with message and fall back to scope "Single component".
 
-#### Stap 2: Before-screenshot
+#### Step 2: Before-screenshot
 
-Render het huidige component via Playwright (als dev server beschikbaar):
+Render the current component via Playwright (if dev server is available):
 
 ```
-playwright-cli goto http://localhost:[port]/[page met dit component]
+playwright-cli goto http://localhost:[port]/[page with this component]
 playwright-cli run-code "async page => { await page.waitForTimeout(2000); }"
 playwright-cli screenshot --filename=.project/patch-before.png
 ```
 
-Als Playwright niet beschikbaar: sla before-screenshot over en ga direct naar stap 3 zonder visuele diff.
+If Playwright is not available: skip before-screenshot and go directly to step 3 without visual diff.
 
-#### Stap 3: Visual diff
+#### Step 3: Visual diff
 
-Vergelijk `$SOURCE_IMAGE` (nieuw) met `patch-before.png` (huidig):
+Compare `$SOURCE_IMAGE` (new) with `patch-before.png` (current):
 
 ```
-PATCH ANALYSE
+PATCH ANALYSIS
 ════════════════════════════════════════════════════════════
-Gewijzigd:
-  [Sectie/element dat visueel veranderd is — beschrijving]
-  [Sectie/element 2 — indien van toepassing]
+Changed:
+  [Section/element that changed visually — description]
+  [Section/element 2 — if applicable]
 
-Ongewijzigd:
-  [Secties die identiek zijn — worden niet aangeraakt]
+Unchanged:
+  [Sections that are identical — will not be touched]
 ════════════════════════════════════════════════════════════
 ```
 
-#### Stap 4: Confirm
+#### Step 4: Confirm
 
 ```yaml
 header: "Patch Scope"
-question: "Klopt deze analyse van wat er gewijzigd is?"
+question: "Is this analysis of what changed correct?"
 options:
-  - label: "Ja, ga door (Recommended)", description: "Patch alleen de gewijzigde secties"
-  - label: "Aanpassen", description: "Ik wil de scope wijzigen"
-  - label: "Toch volledig herschrijven", description: "Val terug naar normale generatie"
+  - label: "Yes, continue (Recommended)", description: "Patch only the changed sections"
+  - label: "Adjust", description: "I want to change the scope"
+  - label: "Full rewrite instead", description: "Fall back to normal generation"
 multiSelect: false
 ```
 
-Sla op als `$PATCH_SECTIONS`. Als "Toch volledig herschrijven": herstel scope naar "Eén component" en ga door met normale FASE 0.5.
+Store as `$PATCH_SECTIONS`. If "Full rewrite instead": restore scope to "Single component" and continue with normal PHASE 0.5.
 
 ### 0.5 Backlog Stage (page scope only)
 
@@ -244,7 +244,7 @@ Check `.project/project.json` → `theme` section.
 
 - **Theme populated + inspiration mode:** Read and store tokens. Mandatory for mapping.
 - **Theme populated + copy mode:** Read as reference. Use for shared utilities (cn(), Tailwind config) but not for color/font values.
-- **No theme + inspiration mode:** Abort with suggestion: `"Inspiration mode vereist een theme. Run eerst /frontend-tokens of kies 1:1 kopie."`
+- **No theme + inspiration mode:** Abort with suggestion: `"Inspiration mode requires a theme. Run /frontend-tokens first or choose 1:1 copy."`
 - **No theme + copy mode:** Proceed with extracted values from source image.
 
 ```
@@ -286,7 +286,7 @@ Existing:   [N] components found
 
 ---
 
-## FASE 1: Token Mapping (Inspiration mode only)
+## PHASE 1: Token Mapping (Inspiration mode only)
 
 **Skip this phase entirely if `$MODE` = copy.**
 
@@ -322,37 +322,37 @@ Spacing:
 
 ```yaml
 header: "Token Mapping"
-question: "Klopt deze mapping van bron-design naar je project tokens?"
+question: "Is this mapping from source design to your project tokens correct?"
 options:
-  - label: "Ja, ga door (Recommended)", description: "Gebruik deze mapping voor code generatie"
-  - label: "Aanpassen", description: "Ik wil specifieke mappings wijzigen"
+  - label: "Yes, continue (Recommended)", description: "Use this mapping for code generation"
+  - label: "Adjust", description: "I want to change specific mappings"
 multiSelect: false
 ```
 
-If "Aanpassen": ask which mappings to change, update, re-confirm.
+If "Adjust": ask which mappings to change, update, re-confirm.
 
 ---
 
-## FASE 2: Code Generation
+## PHASE 2: Code Generation
 
 ### 2.0 Patch Guard (scope = patch only)
 
-Als `$SCOPE` ≠ patch: sla deze sectie over en ga direct naar 2.1.
+If `$SCOPE` ≠ patch: skip this section and go directly to 2.1.
 
-Per sectie in `$PATCH_SECTIONS`:
+Per section in `$PATCH_SECTIONS`:
 
-1. Lees de betreffende regels in het bestaande componentbestand (Read tool).
-2. Genereer alleen de gewijzigde JSX/klassen/structuur op basis van `$SOURCE_IMAGE`.
-3. Pas toe via **Edit tool** — nooit Write. Zoek de exacte string, vervang alleen dat blok.
-4. Toon per edit een korte samenvatting:
+1. Read the relevant lines in the existing component file (Read tool).
+2. Generate only the changed JSX/classes/structure based on `$SOURCE_IMAGE`.
+3. Apply via **Edit tool** — never Write. Find the exact string, replace only that block.
+4. Show a brief summary per edit:
    ```
-   PATCH: [sectie-naam]
+   PATCH: [section-name]
    ─────────────────────────
-   Bestand: [pad:regel]
-   Wijziging: [beschrijving — bijv. "CTA tekst + variant gewijzigd"]
+   File: [path:line]
+   Change: [description — e.g. "CTA text + variant updated"]
    ```
 
-Na alle edits: ga naar FASE 3 (verificatie) met de nieuwe screenshot als target. Sla 2.1 en 2.2 over.
+After all edits: go to PHASE 3 (verification) with the new screenshot as target. Skip 2.1 and 2.2.
 
 ### 2.1 Plan Output Structure
 
@@ -372,12 +372,12 @@ Strategy per section:
   [Section 2] → [new component | reuse existing]
   ...
 
-{Als $VARIANTS niet leeg:}
+{If $VARIANTS is non-empty:}
 Variant components:
-  [ComponentName] → cva ([variant-assen: type × size])
-  [ComponentName] → cva ([variant-assen: state])
+  [ComponentName] → cva ([variant axes: type × size])
+  [ComponentName] → cva ([variant axes: state])
 
-{Als $STATES niet leeg:}
+{If $STATES is non-empty:}
 State components:
   [ComponentName] → loading: skeleton | error: ErrorBoundary | empty: EmptyState
 
@@ -399,53 +399,53 @@ Generate the page and components based on the source image.
 
 **Component states:**
 
-Als `$STATES` niet leeg: genereer state-varianten naast de happy path.
+If `$STATES` is non-empty: generate state variants alongside the happy path.
 
-- **Loading**: gebruik een skeleton die de happy path layout spiegelt — zelfde grid/flex structuur, placeholder blokken op tekstposities. Geen generieke spinner tenzij de source dat expliciet toont.
-- **Error**: toon foutmelding met retry-actie als dat logisch is voor de context. Gebruik `error`-semantische kleur als het theme die definieert.
-- **Empty**: contextual lege staat — infereer uit de sectienaam wat er zou staan (bijv. "Nog geen projecten" voor een projectenlijst).
+- **Loading**: use a skeleton that mirrors the happy path layout — same grid/flex structure, placeholder blocks at text positions. No generic spinner unless the source explicitly shows one.
+- **Error**: show error message with retry action if that makes sense for the context. Use `error`-semantic color if the theme defines one.
+- **Empty**: contextual empty state — infer from the section name what would go there (e.g. "No projects yet" for a projects list).
 
-Alle states volgen dezelfde `dark:` en responsive logica als de happy path.
+All states follow the same `dark:` and responsive logic as the happy path.
 
-**Mode-specific** (zie `./examples/` voor gold standard voorbeelden per modus):
+**Mode-specific** (see `./examples/` for gold standard examples per mode):
 
-- **1:1 copy:** Match source colors, fonts, spacing as closely as possible. Use arbitrary Tailwind values (`bg-[#FF5733]`, `text-[20px]`) when no standard class matches. Prioritize visual fidelity. Referentie: `./examples/PricingPage-1to1.tsx`
-- **Inspiration:** Use only theme tokens (from project.json) and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Referentie: `./examples/PricingPage-inspiration.tsx`
+- **1:1 copy:** Match source colors, fonts, spacing as closely as possible. Use arbitrary Tailwind values (`bg-[#FF5733]`, `text-[20px]`) when no standard class matches. Prioritize visual fidelity. Reference: `./examples/PricingPage-1to1.tsx`
+- **Inspiration:** Use only theme tokens (from project.json) and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Reference: `./examples/PricingPage-inspiration.tsx`
 
 **Dark mode classes:**
 
-Check `theme.modes.dark` in `project.json`. Als aanwezig (`$HAS_DARK_MODE = true`): voeg `dark:` Tailwind prefix toe aan alle background-, text-color-, en border-classes.
+Check `theme.modes.dark` in `project.json`. If present (`$HAS_DARK_MODE = true`): add `dark:` Tailwind prefix to all background-, text-color-, and border-classes.
 
-- `bg-white dark:bg-[var(--color-dark)]` of via theme alias: `bg-background dark:bg-background`
+- `bg-white dark:bg-[var(--color-dark)]` or via theme alias: `bg-background dark:bg-background`
 - `text-gray-900 dark:text-[var(--color-light)]`
 - `border-gray-200 dark:border-[var(--color-mid-gray)]`
 
-Als `theme.modes.dark` ontbreekt: geen `dark:` classes — niet toevoegen op goed geluk.
+If `theme.modes.dark` is missing: no `dark:` classes — do not add them speculatively.
 
 **Responsive layout:**
 
-Als `$RESPONSIVE_VIEWPORTS` meerdere viewports toont: gebruik Tailwind responsive prefixes systematisch (mobile-first).
+If `$RESPONSIVE_VIEWPORTS` shows multiple viewports: use Tailwind responsive prefixes systematically (mobile-first).
 
-- Geen prefix = mobile/default
+- No prefix = mobile/default
 - `md:` = tablet (768px+)
 - `lg:` = desktop (1024px+)
 
-Voorbeelden: `flex-col md:flex-row`, `hidden md:block`, `px-4 md:px-8 lg:px-16`, `text-sm lg:text-base`
+Examples: `flex-col md:flex-row`, `hidden md:block`, `px-4 md:px-8 lg:px-16`, `text-sm lg:text-base`
 
-Als single viewport: genereer voor die viewport. Voeg `{/* TODO: responsive — alleen [mobile|desktop] frame beschikbaar */}` toe bovenaan het component.
+If single viewport: generate for that viewport. Add `{/* TODO: responsive — only [mobile|desktop] frame available */}` at the top of the component.
 
 **Contextual content:** Never use "Lorem ipsum." Infer contextual placeholder text from the source image or describe what real content would go there.
 
 **Variant-aware components:**
 
-Als `$VARIANTS` niet leeg is: gebruik `cva` (class-variance-authority) voor elk component met ≥2 gedetecteerde varianten. Check eerst of `cva` beschikbaar is in `package.json`; installeer niet automatisch — voeg toe aan Generation Summary als missing dependency.
+If `$VARIANTS` is non-empty: use `cva` (class-variance-authority) for each component with ≥2 detected variants. Check first if `cva` is available in `package.json`; do not install automatically — add to Generation Summary as missing dependency.
 
-Structuur:
+Structure:
 
 ```typescript
 import { cva, type VariantProps } from "class-variance-authority";
 
-const buttonVariants = cva("base-classes-hier", {
+const buttonVariants = cva("base-classes-here", {
   variants: {
     variant: { primary: "...", ghost: "...", destructive: "..." },
     size: { sm: "...", md: "...", lg: "..." },
@@ -459,7 +459,7 @@ interface ButtonProps
     VariantProps<typeof buttonVariants> {}
 ```
 
-Zonder gedetecteerde varianten (`$VARIANTS` leeg): genereer normaal zonder `cva`.
+Without detected variants (`$VARIANTS` empty): generate normally without `cva`.
 
 ### 2.3 Generation Summary
 
@@ -475,28 +475,28 @@ Files created:
 Existing components imported:
   ✓ [component path]              (reused)
 
-{Als cva gebruikt maar niet aanwezig in package.json:}
+{If cva used but not present in package.json:}
 Dependencies:
-  ⚠ cva niet gevonden in package.json — installeer: npm install class-variance-authority
+  ⚠ cva not found in package.json — install: npm install class-variance-authority
 
 Mode:       [1:1 copy | Inspiration with theme tokens]
 Theme:      [Integrated from project.json#theme | Extracted from source]
-Dark mode:  [✓ dark: classes toegepast | — geen dark mode in theme]
-Responsive: [✓ responsive prefixes toegepast | — single viewport (TODO comment geplaatst)]
-States:     [✓ state components gegenereerd: [loading|error|empty] | — geen state frames gedetecteerd]
+Dark mode:  [✓ dark: classes applied | — no dark mode in theme]
+Responsive: [✓ responsive prefixes applied | — single viewport (TODO comment placed)]
+States:     [✓ state components generated: [loading|error|empty] | — no state frames detected]
 
 ════════════════════════════════════════════════════════════
 ```
 
 ---
 
-## FASE 3: Visual Verification Loop
+## PHASE 3: Visual Verification Loop
 
 Self-verify by comparing the source image against a Playwright CLI screenshot of the generated output. Max 3 rounds. See `../shared/VERIFICATION.md` for the generic loop pattern, round management, and code quality checks.
 
 ### 3.0 Pre-flight
 
-Check Playwright CLI beschikbaar: `playwright-cli --version`. If unavailable: skip with message `"Playwright CLI niet beschikbaar — open de pagina handmatig om te verifiëren."`, proceed to FASE 4.
+Check Playwright CLI available: `playwright-cli --version`. If unavailable: skip with message `"Playwright CLI not available — open the page manually to verify."`, proceed to PHASE 4.
 
 ### 3.1 Dev Server
 
@@ -519,23 +519,23 @@ VERIFICATION ROUND [N]/3
 2. `playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"` (allow hydration)
 3. `playwright-cli screenshot --filename=.project/verify-round-[N].png`
 4. `Read .project/verify-round-[N].png` → capture generated page
-5. `playwright-cli console error` → check for runtime JS errors (zie `../shared/PLAYWRIGHT.md` → Console Error Inspection)
-   → Filter output tegen PLAYWRIGHT.md → Default Ignore Patterns vóór rapportage; alleen niet-gefilterde regels worden findings.
+5. `playwright-cli console error` → check for runtime JS errors (see `../shared/PLAYWRIGHT.md` → Console Error Inspection)
+   → Filter output against PLAYWRIGHT.md → Default Ignore Patterns before reporting; only unfiltered lines become findings.
 
-**Runner verificatie (ronde 1 only — baseline aanmaken of vergelijken):**
+**Runner verification (round 1 only — create or compare baseline):**
 
-Check runner beschikbaar: `npx playwright --version 2>/dev/null`.
+Check runner available: `npx playwright --version 2>/dev/null`.
 
-Als beschikbaar → genereer on-the-fly spec (zie `shared/PLAYWRIGHT.md → Runner Mode`):
+If available → generate on-the-fly spec (see `shared/PLAYWRIGHT.md → Runner Mode`):
 
 ```typescript
-// .project/playwright-runs/convert-{slug}-r1.spec.ts  (tijdelijk)
+// .project/playwright-runs/convert-{slug}-r1.spec.ts  (temporary)
 import { test, expect } from "@playwright/test";
 
 test("visual baseline — {slug}", async ({ page }) => {
   await page.goto("{url}");
   await page.waitForLoadState("networkidle");
-  // Pixel-diff: eerste run maakt baseline aan, volgende runs vergelijken
+  // Pixel-diff: first run creates baseline, subsequent runs compare
   await expect(page).toHaveScreenshot("convert-{slug}.png", {
     mask: [
       page.locator('[data-testid="timestamp"]'),
@@ -543,12 +543,12 @@ test("visual baseline — {slug}", async ({ page }) => {
     ],
     maxDiffPixelRatio: 0.03,
   });
-  // Structurele equivalentie: semantic HTML van output vs verwacht
+  // Structural equivalence: semantic HTML of output vs expected
   await expect(page.locator("main")).toMatchAriaSnapshot();
 });
 ```
 
-Als `$HAS_DARK_MODE = true`: voeg dark-variant toe:
+If `$HAS_DARK_MODE = true`: add dark variant:
 
 ```typescript
 test("visual baseline dark — {slug}", async ({ browser }) => {
@@ -563,13 +563,13 @@ test("visual baseline dark — {slug}", async ({ browser }) => {
 });
 ```
 
-Eerste run: `npx playwright test ... --update-snapshots` (baseline aanmaken in `.project/playwright-runs/__screenshots__/`).
-Volgende rondes (2, 3): baseline al aanwezig → run zonder `--update-snapshots` → FAIL bij pixel-regressie of aria-structuurwijziging.
+First run: `npx playwright test ... --update-snapshots` (create baseline in `.project/playwright-runs/__screenshots__/`).
+Subsequent rounds (2, 3): baseline already present → run without `--update-snapshots` → FAIL on pixel regression or aria structure change.
 
-Runner FAIL = discrepantie gevonden → behandel als fix-target naast Vision-bevindingen.
-Runner niet beschikbaar → skip runner, ga door met Vision-only sanity-check.
+Runner FAIL = discrepancy found → treat as fix target alongside Vision findings.
+Runner not available → skip runner, continue with Vision-only sanity check.
 
-**Vision-vergelijking (sanity-check — altijd draaien, ook als runner beschikbaar):**
+**Vision comparison (sanity check — always run, even if runner is available):**
 
 Compare source image vs generated screenshot. Analyze:
 
@@ -579,7 +579,7 @@ Compare source image vs generated screenshot. Analyze:
 - Typography (heading sizes, weight, alignment)
 - Component rendering (all sections visible, no blank areas, no error overlays)
 - Missing elements (anything in source not present in output)
-- **Runtime errors** (van stap 5 — JS errors duiden op gebroken hydration of missende imports, ook als visueel niets opvalt; rapporteer als **P004** findings — zie RULES.md)
+- **Runtime errors** (from step 5 — JS errors indicate broken hydration or missing imports, even if nothing looks wrong visually; report as **P004** findings — see RULES.md)
 
 **Assessment:**
 
@@ -594,7 +594,7 @@ Discrepancies:
   [2. specific issue — file:line — suggested fix]
   [3. specific issue — file:line — suggested fix]
 
-JS errors (uit console):
+JS errors (from console):
   [- TypeError: foo is undefined at HeroSection:14]
   [- Failed to load module: ./Icon — verify import path]
 
@@ -602,32 +602,32 @@ Action: [✓ Acceptable — stop | → Fix and re-check]
 ═════════════════════════
 ```
 
-Runtime errors zijn altijd fixable in deze fase — los op vóór visuele discrepancies (een component dat crasht kan visuele issues veroorzaken die elders niet bestaan).
+Runtime errors are always fixable in this phase — resolve before visual discrepancies (a crashing component can cause visual issues that don't exist elsewhere).
 
 **Decision logic:**
 
-- **No significant discrepancies** → stop loop, proceed to FASE 4
+- **No significant discrepancies** → stop loop, proceed to PHASE 4
 - **Fixable discrepancies AND rounds remaining** → apply targeted edits, increment round, repeat from 3.2
 - **Round 3 reached** → stop loop regardless, report remaining discrepancies
 
-### 3.2b Code Quality Check (eerste ronde only)
+### 3.2b Code Quality Check (first round only)
 
-Na de eerste visuele verificatie, scan alle gegenereerde bestanden:
+After the first visual verification, scan all generated files:
 
-**Altijd checken (beide modes):**
+**Always check (both modes):**
 
-- Ontbrekende alt text: `<img>` of `<Image>` zonder `alt` prop (R002)
-- Ontbrekende labels: `<input>`/`<select>` zonder `<label>` of `aria-label` (R004)
-- Div-soup: `<div onClick>` zonder `role="button"` — gebruik `<button>` (R001)
-- Implicit any: functies/parameters zonder type annotation (T002)
+- Missing alt text: `<img>` or `<Image>` without `alt` prop (R002)
+- Missing labels: `<input>`/`<select>` without `<label>` or `aria-label` (R004)
+- Div-soup: `<div onClick>` without `role="button"` — use `<button>` (R001)
+- Implicit any: functions/parameters without type annotation (T002)
 
-**Alleen in inspiratie modus:**
+**Inspiration mode only:**
 
-- Arbitrary color values: `bg-[#hex]`, `text-[#hex]`, `border-[#hex]` etc. — moet theme tokens gebruiken (H101)
-- Arbitrary spacing: `p-[16px]`, `gap-[24px]`, `mt-[32px]` etc. — moet standaard Tailwind scale gebruiken (R103)
-- Referentie: vergelijk met `./examples/PricingPage-inspiration.tsx` — geen enkele arbitrary value
+- Arbitrary color values: `bg-[#hex]`, `text-[#hex]`, `border-[#hex]` etc. — must use theme tokens (H101)
+- Arbitrary spacing: `p-[16px]`, `gap-[24px]`, `mt-[32px]` etc. — must use standard Tailwind scale (R103)
+- Reference: compare with `./examples/PricingPage-inspiration.tsx` — no arbitrary values at all
 
-Bij violations: neem mee als fixes in stap 3.3 samen met visuele discrepancies. Voeg toe aan het ROUND assessment:
+On violations: include as fixes in step 3.3 alongside visual discrepancies. Add to the ROUND assessment:
 
 ```
 Code quality:  [PASS | [N] violations]
@@ -669,7 +669,7 @@ Close browser: `playwright-cli close`
 
 ---
 
-## FASE 4: Completion
+## PHASE 4: Completion
 
 ### 4.1 Update DevInfo
 
@@ -694,9 +694,9 @@ Update `.project/session/devinfo.json`:
 }
 ```
 
-**Handoff cleanup** (als sessie startte via FASE 0.0 handoff): zet `devinfo.handoff = null`.
+**Handoff cleanup** (if session started via PHASE 0.0 handoff): set `devinfo.handoff = null`.
 
-**TokenDrift cleanup** (als page scope): lees `devinfo.tokenDrift.affectedFeatures` → verwijder de huidige page-naam als die erin staat → als lijst leeg: `tokenDrift.resolved = true`. Write terug.
+**TokenDrift cleanup** (if page scope): read `devinfo.tokenDrift.affectedFeatures` → remove the current page name if present → if list is empty: `tokenDrift.resolved = true`. Write back.
 
 ### 4.2 Backlog Completion Sync (page scope only)
 
@@ -708,7 +708,7 @@ If page scope and backlog exists:
 
 ### 4.3 Gap-Discovery
 
-Trigger C — scan alle gegenereerde/bijgewerkte component-files op stub-handlers. Volg [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery). **Source:** `"/frontend-convert"` · **Direction:** `"frontend→dev"` · **Type:** `FEATURE`. Als geen gaps: stap overslaan.
+Trigger C — scan all generated/updated component files for stub handlers. Follow [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery). **Source:** `"/frontend-convert"` · **Direction:** `"frontend→dev"` · **Type:** `FEATURE`. If no gaps: skip this step.
 
 ### 4.4 Completion Report
 
@@ -721,7 +721,7 @@ Mode:         [1:1 copy | Inspiration]
 Framework:    [detected framework]
 Verification: [N] rounds, [High | Medium | Low] match
 Code quality: [PASS | [N] violations fixed]
-Gaps:         [N linked | M created | K pending | "geen"]
+Gaps:         [N linked | M created | K pending | "none"]
 
 Files ([N]):
   Page:       [page file path]
@@ -730,19 +730,19 @@ Files ([N]):
 ═══════════════════════════════════════════════════════════
 ```
 
-Vraag na report:
+Ask after report:
 
 ```yaml
-header: "Doorgaan met audit?"
-question: "/frontend-check {page-name} controleert A11Y, tokens en responsive gedrag."
+header: "Continue with audit?"
+question: "/frontend-check {page-name} checks A11Y, tokens, and responsive behavior."
 options:
-  - label: "Ja, audit nu (Recommended)", description: "frontend-check inline uitvoeren"
-  - label: "Later", description: "Status blijft DOING — /frontend-check {page-name} staat klaar in de backlog"
+  - label: "Yes, audit now (Recommended)", description: "Run frontend-check inline"
+  - label: "Later", description: "Status stays DOING — /frontend-check {page-name} ready in the backlog"
 multiSelect: false
 ```
 
-Bij "Ja": lees `frontend-check/SKILL.md` en voer FASE 0–4 inline uit voor `{page-name}`.
-Bij "Later": eindig — backlog toont DOING-status met next-step `/frontend-check {page-name}`.
+On "Yes": read `frontend-check/SKILL.md` and run PHASE 0–4 inline for `{page-name}`.
+On "Later": end — backlog shows DOING status with next step `/frontend-check {page-name}`.
 
 ---
 

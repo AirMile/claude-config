@@ -23,71 +23,71 @@ Flow: extract research questions → auto-select technique → execute multi-sou
 2. If found AND no inline input provided:
    - Show concept name and ask confirmation:
      ```yaml
-     header: "Concept Laden"
-     question: "Wil je dit concept onderzoeken?"
+     header: "Load Concept"
+     question: "Do you want to research this concept?"
      options:
-       - label: "Ja, onderzoek dit (Recommended)", description: "Gebruik concept uit project.json"
-       - label: "Ander concept", description: "Ik wil een ander concept plakken"
+       - label: "Yes, research this (Recommended)", description: "Use concept from project.json"
+       - label: "Different concept", description: "I want to paste a different concept"
      multiSelect: false
      ```
 
-**Scope check** — alleen als er scope-context bestaat (backlog, features, of pagina-bestanden):
+**Scope check** — only if scope context exists (backlog, features, or page files):
 
-Check `.project/backlog.html`, `.project/features/`, en `app/**/page.tsx` / `src/pages/**/*.tsx`. Als minstens één gevonden:
+Check `.project/backlog.html`, `.project/features/`, and `app/**/page.tsx` / `src/pages/**/*.tsx`. If at least one found:
 
 ```yaml
 header: "Scope"
-question: "Waarover wil je research doen?"
+question: "What do you want to research?"
 options:
-  - label: "Concept (Recommended)", description: "Werk met concept uit project.json"
-  - label: "Feature uit backlog", description: "Focus op een specifieke feature"
-  - label: "Pagina / UX flow", description: "Focus op layout, UX of user flow"
-  - label: "Los idee", description: "Standalone idee, niet gekoppeld aan het project"
+  - label: "Concept (Recommended)", description: "Work with concept from project.json"
+  - label: "Feature from backlog", description: "Focus on a specific feature"
+  - label: "Page / UX flow", description: "Focus on layout, UX or user flow"
+  - label: "Standalone idea", description: "Standalone idea, not linked to the project"
 multiSelect: false
 ```
 
-Scope-specifieke input:
+Scope-specific input:
 
-- **Feature**: Lees backlog (zie `shared/BACKLOG.md`), toon features TODO/DEF, laad `01-define.md` of feature-beschrijving
-- **Pagina/UX**: Glob voor pagina-bestanden, laad als context
-- **Los idee**: Negeer geladen concept, vraag gebruiker om beschrijving
+- **Feature**: Read backlog (see `shared/BACKLOG.md`), show features TODO/DEF, load `01-define.md` or feature description
+- **Page/UX**: Glob for page files, load as context
+- **Standalone idea**: Ignore loaded concept, ask user for description
 
-Output-pad volgt scope:
+Output path follows scope:
 
 - concept → `.project/project-concept.md` + update project.json metadata (name, pitch)
-- feature → `.project/features/{naam}/research.md`
-- pagina/UX of los idee → `.project/thinking/{onderwerp}-research.md`
+- feature → `.project/features/{name}/research.md`
+- page/UX or standalone idea → `.project/thinking/{topic}-research.md`
 
-**Obsidian fallback** — als geen `.project/` folder bestaat:
+**Obsidian fallback** — if no `.project/` folder exists:
 
-Search Obsidian met het inline argument. Bij match in `Ideas/`: vraag of dit als startpunt dient. Track `obsidian_source_path` voor save-back.
+Search Obsidian with the inline argument. If match in `Ideas/`: ask if this serves as starting point. Track `obsidian_source_path` for save-back.
 
-**Overige input** — als geen concept gevonden of gebruiker wil ander input:
+**Other input** — if no concept found or user wants different input:
 
-Accepteer input van gebruiker (thinking output, document, beschrijving, of chat context). Bij onduidelijkheid: stel 2-3 gerichte vragen. Bevestig het concept samengevat voordat je doorgaat.
+Accept input from user (thinking output, document, description, or chat context). If unclear: ask 2-3 targeted questions. Confirm the concept summarized before proceeding.
 
 ### Enter Plan Mode
 
-Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2. Steps 2-7 draaien in plan mode; het eindrapport (Step 7) wordt naar de plan file geschreven ter review. WebSearch, Context7 en Grep/Glob blijven werken in plan mode.
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 2. Steps 2-7 run in plan mode; the final report (Step 7) is written to the plan file for review. WebSearch, Context7 and Grep/Glob continue to work in plan mode.
 
 ---
 
 ### Step 2: Extract Research Foundation
 
-Extract eerst vier categorieën uit het concept, distilleer dan research vragen.
+First extract four categories from the concept, then distill research questions.
 
-**2a. Extract foundation (4 categorieën, kort, één regel per item):**
+**2a. Extract foundation (4 categories, brief, one line per item):**
 
-- **Assumptions** — wat nemen we voor waar aan dat we mogelijk moeten valideren?
-- **Knowledge gaps** — wat weten we simpelweg niet? (markt, concurrenten, prijzen, gebruikersgedrag)
-- **Decisions** — welke keuzes moeten we maken en welke info hebben we daarvoor nodig? (tech stack, pricing, doelgroep)
-- **Risks** — wat kan dit concept laten falen? (technisch, juridisch, schaalbaarheid, adoptie)
+- **Assumptions** — what are we taking for granted that we may need to validate?
+- **Knowledge gaps** — what do we simply not know? (market, competitors, pricing, user behavior)
+- **Decisions** — what choices do we need to make and what info do we need for them? (tech stack, pricing, target audience)
+- **Risks** — what could cause this concept to fail? (technical, legal, scalability, adoption)
 
-**2b. Distilleer 3-5 research vragen** met de hoogste impact op haalbaarheid. Vragen kunnen uit elke categorie komen — meestal een mix. Elke vraag moet beantwoordbaar zijn via web search, documentatie, of codebase analyse en specifiek voor DIT concept.
+**2b. Distill 3-5 research questions** with the highest impact on feasibility. Questions can come from any category — usually a mix. Each question must be answerable via web search, documentation, or codebase analysis and be specific to THIS concept.
 
-**2c. Bewaar assumptions** apart (ook degene die niet in research vragen terechtkomen) — die worden in Step 5/7 gemarkeerd als Validated / Invalidated / Still Open.
+**2c. Store assumptions** separately (including those that don't make it into research questions) — these will be marked as Validated / Invalidated / Still Open in Step 5/7.
 
-Presenteer:
+Present:
 
 ```
 RESEARCH FOUNDATION
@@ -109,7 +109,7 @@ Risks:
 - {risk 1}
 - {risk 2}
 
-RESEARCH QUESTIONS (gedistilleerd uit bovenstaande)
+RESEARCH QUESTIONS (distilled from the above)
 
 1. {specific research question — highest priority}
 2. {specific research question}
@@ -118,36 +118,36 @@ RESEARCH QUESTIONS (gedistilleerd uit bovenstaande)
 5. {specific research question} (optional)
 ```
 
-Bevestig via AskUserQuestion (Ja/Aanpassen).
+Confirm via AskUserQuestion (Yes/Adjust).
 
 ### Step 3: Select Research Technique
 
-Read `references/research-techniques.md`. Selecteer automatisch de meest relevante techniek op basis van:
+Read `references/research-techniques.md`. Automatically select the most relevant technique based on:
 
-- Welke techniek adresseert de hoogst-geprioriteerde onbeantwoorde vragen?
-- Welke technieken zijn al toegepast? (sluit uit)
+- Which technique addresses the highest-priority unanswered questions?
+- Which techniques have already been applied? (exclude)
 
-Toon de keuze kort:
+Show the choice briefly:
 
 ```
 RESEARCH TECHNIQUE: {Technique Name}
 
-{1-2 zinnen waarom deze techniek gekozen is}
+{1-2 sentences explaining why this technique was chosen}
 ```
 
-Ga direct door naar Step 4.
+Proceed directly to Step 4.
 
 ### Step 4: Execute Research
 
-Read de geselecteerde techniek uit `references/research-techniques.md`.
+Read the selected technique from `references/research-techniques.md`.
 
-**Execute research sources parallel waar mogelijk:**
+**Execute research sources in parallel where possible:**
 
-- **WebSearch**: 2-4 gerichte queries afgeleid van de techniek
-- **Context7**: `resolve-library-id` → `query-docs` voor technische vragen
-- **Codebase**: `Grep`/`Glob` als het concept een bestaand project betreft
+- **WebSearch**: 2-4 targeted queries derived from the technique
+- **Context7**: `resolve-library-id` → `query-docs` for technical questions
+- **Codebase**: `Grep`/`Glob` if the concept involves an existing project
 
-Presenteer bevindingen per bron:
+Present findings per source:
 
 ```
 WEB|DOCS|CODE — {SOURCE NAME}
@@ -161,20 +161,20 @@ Findings:
 Sources: {URLs or file paths}
 ```
 
-Bied aan om dieper in te gaan als bevindingen onverwachte hoeken onthullen.
+Offer to go deeper if findings reveal unexpected angles.
 
 **Guidelines:**
 
-- Cross-reference tussen bronnen
-- Flag tegenspraken en aannames die uitgedaagd worden
-- Kwantitatieve data waar beschikbaar
-- Altijd bronnen citeren
+- Cross-reference between sources
+- Flag contradictions and challenged assumptions
+- Quantitative data where available
+- Always cite sources
 
-**Bij Trend Analysis techniek:** Gebruik de mentale modellen uit de techniek als operationele bril tijdens uitvoering, niet als nabespreking. Noteer temperatuurverschillen expliciet per bron en label elk signaal met trajectory-vocabulaire (acute_rise / plateau / zombie / comeback).
+**For Trend Analysis technique:** Use the mental models from the technique as an operational lens during execution, not as post-analysis. Explicitly note temperature differences per source and label each signal with trajectory vocabulary (acute_rise / plateau / zombie / comeback).
 
 ### Step 5: Synthesize Findings
 
-Map bevindingen naar de research vragen uit Step 2:
+Map findings to the research questions from Step 2:
 
 ```
 SYNTHESIS — {Technique Name}
@@ -203,11 +203,11 @@ SYNTHESIS — {Technique Name}
 - {unexpected finding or new angle discovered}
 ```
 
-Ga door naar Step 6.
+Proceed to Step 6.
 
 ### Step 6: Next Action
 
-Bouw eerst een open-items overzicht op basis van Step 5 tracking:
+First build an open-items overview based on Step 5 tracking:
 
 ```
 Open items overview:
@@ -219,34 +219,34 @@ Open items overview:
 Total open items: {sum}
 ```
 
-**Beslislogica:**
+**Decision logic:**
 
-- **Total = 0** of geen relevante technieken over \u2192 ga direct naar Step 7
-- **Total > 0** \u2192 toon AskUserQuestion. Bepaal de aanbevolen techniek door:
-  1. Selecteer het meest urgente type open item in volgorde: **High-severity risks > Blocked decisions > Still-Open assumptions > Unanswered questions**
-  2. Match het type met de `Addresses:` mapping uit `references/research-techniques.md`
-  3. Eerste optie blijft "Genereer rapport (Recommended)" zodat de gebruiker altijd kan afsluiten
+- **Total = 0** or no relevant techniques remaining → go directly to Step 7
+- **Total > 0** → show AskUserQuestion. Determine the recommended technique by:
+  1. Select the most urgent type of open item in order: **High-severity risks > Blocked decisions > Still-Open assumptions > Unanswered questions**
+  2. Match the type with the `Addresses:` mapping from `references/research-techniques.md`
+  3. First option remains "Generate report (Recommended)" so the user can always close out
 
-Toon de redenering kort v\u00f3\u00f3r de vraag:
+Show the reasoning briefly before the question:
 
 ```
-Recommendation: {Technique} \u2014 addresses {N} open {item type}(s)
+Recommendation: {Technique} — addresses {N} open {item type}(s)
 ```
 
-Vraag via AskUserQuestion:
+Ask via AskUserQuestion:
 
 ```yaml
-header: "Volgende Stap"
-question: "Hoe wil je verder?"
+header: "Next Step"
+question: "How do you want to continue?"
 options:
-  - label: "Genereer rapport (Recommended)", description: "Cre\u00eber het eindresultaat met alle bevindingen"
-  - label: "{Technique}", description: "{rationale \u2014 addresses {N} open {item type}}"
+  - label: "Generate report (Recommended)", description: "Create the final result with all findings"
+  - label: "{Technique}", description: "{rationale — addresses {N} open {item type}}"
 multiSelect: false
 ```
 
 ### Step 7: Generate Final Report
 
-Genereer een gestructureerd markdown rapport:
+Generate a structured markdown report:
 
 ```markdown
 # Research: {concept title}
@@ -294,7 +294,7 @@ Genereer een gestructureerd markdown rapport:
 
 ## Recommendations
 
-Recommendations zijn altijd actor-specifiek (bijv. "voor een B2B SaaS brand", "voor een solo creator"). Geen generieke "blijf monitoren"-adviezen — elke aanbeveling bevat een concrete actie of beslissing.
+Recommendations are always actor-specific (e.g. "for a B2B SaaS brand", "for a solo creator"). No generic "keep monitoring" advice — every recommendation contains a concrete action or decision.
 
 1. {actionable recommendation}
 
@@ -307,19 +307,19 @@ Recommendations zijn altijd actor-specifiek (bijv. "voor een B2B SaaS brand", "v
 - [{source title}]({url})
 ```
 
-Inclusief Competitive Landscape tabel en/of Technical Feasibility assessment als relevant.
+Include Competitive Landscape table and/or Technical Feasibility assessment where relevant.
 
-**Einde analysefase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf het research-rapport naar de plan file, dan `ExitPlanMode`. Na approval gaat de skill door met Step 8 (Save & Sync, `.project/`-writes en optioneel Obsidian).
+**End of analysis phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the research report to the plan file, then `ExitPlanMode`. After approval the skill continues with Step 8 (Save & Sync, `.project/` writes and optional Obsidian).
 
 ### Step 8: Save & Sync
 
 **Scope = concept (default):**
 
-Auto-save zonder extra vragen:
+Auto-save without extra questions:
 
-1. Schrijf rapport naar `.project/thinking/{concept-name}-research.md` (volledig rapport als user-archief)
-2. Voeg `## Research Findings` sectie toe aan `.project/project-concept.md` (dit is wat project-plan/dev-define als context zien)
-3. Bevestig:
+1. Write report to `.project/thinking/{concept-name}-research.md` (full report as user archive)
+2. Add `## Research Findings` section to `.project/project-concept.md` (this is what project-plan/dev-define see as context)
+3. Confirm:
 
 ```
 RESEARCH SAVED
@@ -328,32 +328,32 @@ Report: .project/thinking/{concept-name}-research.md
 Concept: project-concept.md updated with key findings
 Applied techniques: {list}
 
-Wil je ook naar Obsidian opslaan? Zo ja, laat het weten.
+Want to also save to Obsidian? Let me know.
 
 Next steps:
-- /thinking-critique - Kritisch analyseren met research context
-- /thinking-brainstorm - Creatief uitbreiden met nieuwe inzichten
-- /thinking-decide - Beslissing nemen op basis van research
-- /project-plan - Omzetten naar feature backlog
+- /thinking-critique - Critically analyze with research context
+- /thinking-brainstorm - Creatively expand with new insights
+- /thinking-decide - Make a decision based on research
+- /project-plan - Convert to feature backlog
 ```
 
-**Scope = feature of pagina:**
+**Scope = feature or page:**
 
-1. Schrijf naar scope-pad (`.project/features/{naam}/research.md` of `.project/thinking/{onderwerp}-research.md`)
-2. Vraag optioneel of key findings ook in `project-concept.md` verwerkt moeten worden
+1. Write to scope path (`.project/features/{name}/research.md` or `.project/thinking/{topic}-research.md`)
+2. Optionally ask if key findings should also be added to `project-concept.md`
 
-De markdown is de bron van waarheid — geen `project.json` `thinking[]` append. Skills die research willen consumeren (zoals `/dev-define`) lezen rechtstreeks uit `.project/thinking/*.md` of `.project/features/{naam}/research.md`.
+The markdown is the source of truth — no `project.json` `thinking[]` append. Skills that want to consume research (like `/dev-define`) read directly from `.project/thinking/*.md` or `.project/features/{name}/research.md`.
 
-**Scope = los idee:**
+**Scope = standalone idea:**
 
-1. Schrijf naar `.project/thinking/{onderwerp}-research.md`
-2. Bied Obsidian save aan als optie
+1. Write to `.project/thinking/{topic}-research.md`
+2. Offer Obsidian save as option
 
-De markdown is de bron van waarheid — geen `project.json` `thinking[]` append.
+The markdown is the source of truth — no `project.json` `thinking[]` append.
 
-**Obsidian save flow** (wanneer gevraagd):
+**Obsidian save flow** (when requested):
 
-Als `obsidian_source_path` bekend: schrijf naast het originele idee. Anders: detecteer categorie, schrijf naar `Ideas/{subfolder}/{title} - Research.md` met frontmatter, en update `Home.md` recent ideas.
+If `obsidian_source_path` is known: write alongside the original idea. Otherwise: detect category, write to `Ideas/{subfolder}/{title} - Research.md` with frontmatter, and update `Home.md` recent ideas.
 
 ---
 
@@ -361,19 +361,19 @@ Als `obsidian_source_path` bekend: schrijf naast het originele idee. Anders: det
 
 **Flow:**
 
-- Geen AskUserQuestion tussen research execution stappen — gewoon uitvoeren en presenteren
-- Na synthese altijd naar Step 6 voor volgende actie
-- Eén techniek per keer: selecteer → uitvoeren → synthetiseren → beslissen
+- No AskUserQuestion between research execution steps — just execute and present
+- After synthesis always go to Step 6 for next action
+- One technique at a time: select → execute → synthesize → decide
 
-**Flexibiliteit:**
+**Flexibility:**
 
-- Gebruiker kan research focus op elk moment bijsturen
-- Bij onverwachte bevindingen: bied aan om dat pad te verkennen
+- User can adjust research focus at any time
+- With unexpected findings: offer to explore that path
 
 **Formatting:**
 
-- NOOIT blockquote syntax (`>`) — onleesbare achtergrond in dark terminals
-- NOOIT backticks voor nadruk op gewone woorden — gebruik **bold**
-- Backticks alleen voor code, file paths, en command references
+- NEVER use blockquote syntax (`>`) — unreadable background in dark terminals
+- NEVER use backticks for emphasis on regular words — use **bold**
+- Backticks only for code, file paths, and command references
 
 **Language:** Follow the Language Policy in CLAUDE.md.

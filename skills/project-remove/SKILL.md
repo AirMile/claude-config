@@ -17,7 +17,7 @@ Verwijdert een project met veilige link removal (target blijft intact).
 
 ## Process
 
-### FASE 1: Project Selectie
+### PHASE 1: Project Selectie
 
 **Als geen naam gegeven:**
 
@@ -36,7 +36,7 @@ options:
 multiSelect: false
 ```
 
-### FASE 2: Validatie
+### PHASE 2: Validatie
 
 **Check dat project bestaat:**
 
@@ -54,7 +54,7 @@ test -f "{projects_root}/[naam]/.claude/settings.local.json"
 cd "{projects_root}/[naam]" && git status --porcelain
 ```
 
-### FASE 3: Bevestiging
+### PHASE 3: Bevestiging
 
 ```yaml
 question: "Weet je zeker dat je [naam] wilt verwijderen?"
@@ -67,7 +67,7 @@ options:
 multiSelect: false
 ```
 
-### FASE 4: Project Folder Removal
+### PHASE 4: Project Folder Removal
 
 **Vraag:**
 
@@ -88,7 +88,7 @@ multiSelect: false
 rm -rf "{projects_root}/[naam]"
 ```
 
-### FASE 6: Afronden
+### PHASE 6: Afronden
 
 **Output:**
 

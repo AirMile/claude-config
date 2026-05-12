@@ -1,6 +1,6 @@
 ---
 name: marketing-content
-argument-hint: "[onderwerp]"
+argument-hint: "[topic]"
 description: >-
   Turn marketing research signals into concrete text variants per format and
   platform. Grounded in trend trajectories, sentiment conflicts, and audience
@@ -14,151 +14,147 @@ metadata:
 
 # Marketing Content
 
-Zet research-signalen om in concrete tekstvarianten per format en platform. Elke variant
-is traceerbaar naar een specifiek signaal — geen generieke output.
+Turn research signals into concrete text variants per format and platform. Each variant
+is traceable to a specific signal — no generic output.
 
-**Trigger**: `/marketing-content` of `/marketing-content [onderwerp]`
+**Trigger**: `/marketing-content` or `/marketing-content [topic]`
 
-Tweede stap in de marketing pipeline: `/marketing-research` → **`/marketing-content`** → `/marketing-screenshots`
+Second step in the marketing pipeline: `/marketing-research` → **`/marketing-content`** → `/marketing-screenshots`
 
-## FASE 0: Input & Context
+## PHASE 0: Input & Context
 
 **Research auto-detect:**
 
-Zoek naar `.project/thinking/*-marketing-research.md`. Als gevonden:
+Search for `.project/thinking/*-marketing-research.md`. If found:
 
-- Laad de SCOPE ANKERS sectie (onderwerp, doelgroep, kanalen, trajectory labels)
-- Laad de Signal Analysis sectie (platform temperaturen, sentiment-conflict)
-- Laad de Doelgroep Taal sectie (exacte woorden en frames van de doelgroep)
-- Bevestig aan de gebruiker welk research-bestand geladen is
+- Load the SCOPE ANCHORS section (topic, target audience, channels, trajectory labels)
+- Load the Signal Analysis section (platform temperatures, sentiment conflict)
+- Load the Audience Language section (exact words and frames used by the audience)
+- Confirm to the user which research file was loaded
 
-Als niet gevonden: vraag vrij-tekst beschrijving van het onderwerp en doelgroep.
+If not found: ask for a free-text description of the topic and target audience.
 
-**Format selectie** via AskUserQuestion:
+**Format selection** via AskUserQuestion:
 
 ```yaml
 header: "Format"
-question: "Welk type content wil je genereren?"
+question: "What type of content do you want to generate?"
 options:
   - label: "Social post (Recommended)", description: "Twitter/X, LinkedIn, Instagram"
-  - label: "Email subject line", description: "3-5 varianten voor A/B test"
-  - label: "Ad headline", description: "Google/Meta — max 30 tekens"
-  - label: "Landing page sectie", description: "Hero headline + subline"
+  - label: "Email subject line", description: "3-5 variants for A/B test"
+  - label: "Ad headline", description: "Google/Meta — max 30 characters"
+  - label: "Landing page section", description: "Hero headline + subline"
 multiSelect: true
 ```
 
-**Platform selectie** (alleen als Social post gekozen) via AskUserQuestion:
+**Platform selection** (only if Social post chosen) via AskUserQuestion:
 
 ```yaml
 header: "Platform"
-question: "Voor welk platform?"
+question: "Which platform?"
 options:
-  - label: "Twitter/X (Recommended)", description: "Max 280 tekens, directe toon"
-  - label: "LinkedIn", description: "Professioneel, meer context toegestaan"
-  - label: "Instagram", description: "Visueel, caption + hashtags"
+  - label: "Twitter/X (Recommended)", description: "Max 280 characters, direct tone"
+  - label: "LinkedIn", description: "Professional, more context allowed"
+  - label: "Instagram", description: "Visual, caption + hashtags"
 multiSelect: true
 ```
 
-**Tone/voice selectie** via AskUserQuestion:
+**Tone/voice selection** via AskUserQuestion:
 
 ```yaml
 header: "Tone"
-question: "Welke toon past bij dit merk of deze campagne?"
+question: "Which tone fits this brand or campaign?"
 options:
-  - label: "Informatief (Recommended)", description: "Helder, feitelijk, educatief — bouwt vertrouwen"
-  - label: "Urgent", description: "Actiegericht, tijdgebonden — duwt naar beslissing"
-  - label: "Provocatief", description: "Scherp, prikkelend, uitdagend — verovert aandacht"
-  - label: "Inspirerend", description: "Motiverend, aspirationeel — raakt emotie"
+  - label: "Informative (Recommended)", description: "Clear, factual, educational — builds trust"
+  - label: "Urgent", description: "Action-driven, time-bound — pushes to decision"
+  - label: "Provocative", description: "Sharp, challenging, bold — captures attention"
+  - label: "Inspiring", description: "Motivating, aspirational — connects emotionally"
 multiSelect: false
 ```
 
-Gebruik de gekozen tone als stijlconstraint in FASE 2: elke variant moet de geselecteerde
-toon consistent reflecteren, ook als het trajectory-label een andere richting suggereert.
+Use the selected tone as a style constraint in PHASE 2: every variant must consistently reflect the selected tone, even if the trajectory label suggests a different direction.
 
-## FASE 1: Messaging Angles Distilleren
+## PHASE 1: Distill Messaging Angles
 
-Map de sterkste research-signalen naar messaging frames:
+Map the strongest research signals to messaging frames:
 
-| Signaal            | Messaging frame                                        |
-| ------------------ | ------------------------------------------------------ |
-| `acute_rise`       | Urgentie — "dit is het moment"                         |
-| `comeback`         | Contrast — "het is terug, en nu anders"                |
-| `plateau`          | Differentiatie — "wat maakt jou anders dan mainstream" |
-| `zombie`           | Contra-indicator — vermijd, of gebruik als contrast    |
-| sentiment-conflict | Provocatie — "niet iedereen is het eens over..."       |
-| doelgroep taal     | Spiegel — gebruik hun exacte woorden terug             |
+| Signal             | Messaging frame                                              |
+| ------------------ | ------------------------------------------------------------ |
+| `acute_rise`       | Urgency — "this is the moment"                               |
+| `comeback`         | Contrast — "it's back, and different now"                    |
+| `plateau`          | Differentiation — "what makes you different from mainstream" |
+| `zombie`           | Counter-indicator — avoid, or use as contrast                |
+| sentiment-conflict | Provocation — "not everyone agrees about..."                 |
+| audience language  | Mirror — use their exact words back                          |
 
-Selecteer de 3 sterkste angles op basis van beschikbare signalen. Als er geen research
-beschikbaar is: gebruik Competitor Differentiation, Audience Mirror, en Problem/Solution
-als default angles.
+Select the 3 strongest angles based on available signals. If no research is available: use Competitor Differentiation, Audience Mirror, and Problem/Solution as default angles.
 
-Presenteer:
+Present:
 
 ```
 MESSAGING ANGLES
 
-1. {angle naam} — {frame} — gebaseerd op: {signaal + bron}
-2. {angle naam} — {frame} — gebaseerd op: {signaal + bron}
-3. {angle naam} — {frame} — gebaseerd op: {signaal + bron}
+1. {angle name} — {frame} — based on: {signal + source}
+2. {angle name} — {frame} — based on: {signal + source}
+3. {angle name} — {frame} — based on: {signal + source}
 ```
 
-## FASE 2: Varianten Genereren
+## PHASE 2: Generate Variants
 
-Per gekozen format: genereer 3-5 varianten, gespreid over de messaging angles.
+Per chosen format: generate 3-5 variants, spread across the messaging angles.
 
-**Lengte- en toonregels per format:**
+**Length and tone rules per format:**
 
-| Format               | Lengte         | Toon                             |
-| -------------------- | -------------- | -------------------------------- |
-| Twitter/X post       | Max 280 tekens | Direct, geen opmaak              |
-| LinkedIn post        | 150-300 tekens | Professioneel, opener toegestaan |
-| Instagram caption    | 100-150 + tags | Visueel ondersteunend, emojis ok |
-| Email subject line   | Max 50 tekens  | Nieuwsgierigheid of urgentie     |
-| Ad headline          | Max 30 tekens  | Actiegericht, één kernboodschap  |
-| Landing page hero    | 6-10 woorden   | Belofte of probleemstelling      |
-| Landing page subline | 15-25 woorden  | Uitleg van de belofte            |
+| Format               | Length         | Tone                               |
+| -------------------- | -------------- | ---------------------------------- |
+| Twitter/X post       | Max 280 chars  | Direct, no formatting              |
+| LinkedIn post        | 150-300 chars  | Professional, opener allowed       |
+| Instagram caption    | 100-150 + tags | Visually supportive, emojis ok     |
+| Email subject line   | Max 50 chars   | Curiosity or urgency               |
+| Ad headline          | Max 30 chars   | Action-driven, single core message |
+| Landing page hero    | 6-10 words     | Promise or problem statement       |
+| Landing page subline | 15-25 words    | Explanation of the promise         |
 
-Elke variant bevat:
+Each variant contains:
 
-- De tekst (lengte-regel gerespecteerd)
-- **Angle**: welk messaging frame
-- **Signal**: welk research signaal rechtvaardigt dit
-- **Trajectory**: `acute_rise` / `plateau` / `comeback` / `zombie` (als van toepassing)
+- The text (length rule respected)
+- **Angle**: which messaging frame
+- **Signal**: which research signal justifies this
+- **Trajectory**: `acute_rise` / `plateau` / `comeback` / `zombie` (if applicable)
 
-Verbod op generieke tekst. Als een variant niet traceerbaar is naar een concreet signaal
-of een van de angles, schrijf hem niet.
+No generic text allowed. If a variant is not traceable to a concrete signal or one of the angles, do not write it.
 
-Presenteer per format:
+Present per format:
 
 ```
 {FORMAT} — {platform}
 
 Variant 1:
-"{tekst}"
-Angle: {frame} | Signal: {signaal} | Trajectory: {label}
+"{text}"
+Angle: {frame} | Signal: {signal} | Trajectory: {label}
 
 Variant 2:
 ...
 ```
 
-## FASE 3: Opslaan
+## PHASE 3: Save
 
-Sla op naar `.project/thinking/{onderwerp}-marketing-content.md`.
+Save to `.project/thinking/{topic}-marketing-content.md`.
 
-Toon next steps:
+Show next steps:
 
 ```
 Next steps:
-- /marketing-screenshots — screenshots + visuals voor launch
-- /marketing-research — nieuwe research ronde voor ander onderwerp
+- /marketing-screenshots — screenshots + visuals for launch
+- /marketing-research — new research round for another topic
 ```
 
 ## Guidelines
 
 **Formatting:**
 
-- NOOIT blockquote syntax (`>`) — onleesbare achtergrond in dark terminals
-- NOOIT backticks voor nadruk op gewone woorden — gebruik **bold**
-- Backticks alleen voor code, file paths, en command references
+- NEVER blockquote syntax (`>`) — unreadable background in dark terminals
+- NEVER backticks for emphasis on regular words — use **bold**
+- Backticks only for code, file paths, and command references
 
 **Language:** Follow the Language Policy in CLAUDE.md.

@@ -1,6 +1,6 @@
 # Architecture Decision Tree
 
-Beslisboom voor Godot 4.x architectuurkeuzes. Gebruik tijdens FASE 3 (implementatie) wanneer je kiest hoe data, gedrag, en communicatie te structureren.
+Beslisboom voor Godot 4.x architectuurkeuzes. Gebruik tijdens PHASE 3 (implementatie) wanneer je kiest hoe data, gedrag, en communicatie te structureren.
 
 ## Data Opslag
 

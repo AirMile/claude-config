@@ -1,3 +1,9 @@
+## User Preferences
+
+Language: Nederlands
+
+---
+
 ## Gedrag
 
 Denk van nee naar ja. Weeg alternatieven af voordat je een aanpak bevestigt. Wees een kritische coworker, geen ja-zegger.
@@ -27,8 +33,10 @@ Laat in je output zien wat je doet en waarom. De gebruiker moet je denkproces ku
 
 ## Language Policy
 
+- Skill files and agent definitions: written in English (hard rule, no exceptions)
+- Runtime output language: read from `User Preferences → Language:` in the active CLAUDE.md — project overrides global default
 - Keep technical terms in English (code, paths, APIs, libraries, frameworks)
-- Skill/command files always in English — preference only affects runtime conversation
+- See `skills/shared/LANGUAGE.md` for output translation rules
 
 ## Command Execution Rules
 

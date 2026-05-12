@@ -1,45 +1,45 @@
 # Dashboard: project.json Format
 
-Het project dashboard is een interactieve UI die project metadata toont en bewerkt. Alle skills die het dashboard lezen of schrijven gebruiken dezelfde aanpak.
+The project dashboard is an interactive UI that displays and edits project metadata. All skills that read or write the dashboard use the same approach.
 
-**Bestand:** `.project/project.json`
+**File:** `.project/project.json`
 **Template:** `{skills_path}/shared/references/dashboard-template.html`
-**Server:** `{skills_path}/shared/references/serve-backlog.js` (poort 9876)
+**Server:** `{skills_path}/shared/references/serve-backlog.js` (port 9876)
 
-**API endpoint `/{project}/feature/{name}`:** mergt drie bronnen — `feature.json` (als aanwezig), backlog-feature object (type/status/audit.\*), en `design.{pages|components}[name]` (voor PAGE/COMPONENT). Path A frontend cards (geen feature.json) worden volledig opgebouwd uit backlog + design spec.
+**API endpoint `/{project}/feature/{name}`:** merges three sources — `feature.json` (if present), backlog-feature object (type/status/audit.\*), and `design.{pages|components}[name]` (for PAGE/COMPONENT). Path A frontend cards (no feature.json) are fully built from backlog + design spec.
 
-**UI secties (single-scroll):** Concept | Components | Stack | Config (CLAUDE.md)
-Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar links zijn anchor-links die naar de betreffende sectie scrollen. `stack`, `data`, `endpoints` en `theme` blijven aparte secties in project.json; de dashboard-secties zijn projectspecifiek geconfigureerd via de `visibleTabs` array in het template.
+**UI sections (single-scroll):** Concept | Components | Stack | Config (CLAUDE.md)
+All sections are visible at once in one scroll — no tabs. Sidebar links are anchor-links that scroll to the relevant section. `stack`, `data`, `endpoints` and `theme` remain separate sections in project.json; the dashboard sections are project-specifically configured via the `visibleTabs` array in the template.
 
-## Dashboard lezen
+## Reading the dashboard
 
 1. Read `.project/project.json`
-2. Parse als JSON
-3. Gebruik de relevante sectie
+2. Parse as JSON
+3. Use the relevant section
 
-**Secties:**
+**Sections:**
 
-| Sectie              | Beschrijving                                           |
+| Section             | Description                                            |
 | ------------------- | ------------------------------------------------------ |
-| `concept`           | Project naam + volledige concept (markdown)            |
-| `architecture`      | Mermaid diagram + beschrijving van de architectuur     |
-| `design`            | Pagina's, user flows, design principes                 |
-| `theme`             | Kleuren, fonts, spacing, CSS vars                      |
-| `stack`             | Framework, taal, DB, hosting, packages                 |
-| `data`              | Entities, velden, relaties                             |
-| `endpoints`         | Method, path, auth, status, beschrijving               |
-| `features`          | Naam, status, summary, depends, created                |
-| `context`           | Project structuur, routing, patterns (runtime context) |
-| `optimization_runs` | Append-only log van dev-optimize / game-optimize runs  |
+| `concept`           | Project name + full concept (markdown)                 |
+| `architecture`      | Mermaid diagram + description of the architecture      |
+| `design`            | Pages, user flows, design principles                   |
+| `theme`             | Colors, fonts, spacing, CSS vars                       |
+| `stack`             | Framework, language, DB, hosting, packages             |
+| `data`              | Entities, fields, relations                            |
+| `endpoints`         | Method, path, auth, status, description                |
+| `features`          | Name, status, summary, depends, created                |
+| `context`           | Project structure, routing, patterns (runtime context) |
+| `optimization_runs` | Append-only log of dev-optimize / game-optimize runs   |
 
-## Dashboard schrijven
+## Writing the dashboard
 
-1. Read `.project/project.json` (of maak nieuw als niet bestaat)
+1. Read `.project/project.json` (or create new if it doesn't exist)
 2. Parse JSON
-3. Muteer de relevante sectie (NIET andere secties overschrijven)
-4. Write terug als `JSON.stringify(data, null, 2)`
+3. Mutate the relevant section (do NOT overwrite other sections)
+4. Write back as `JSON.stringify(data, null, 2)`
 
-**Nieuw bestand aanmaken** als `.project/project.json` niet bestaat:
+**Create new file** if `.project/project.json` does not exist:
 
 ```json
 {
@@ -100,30 +100,30 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
 }
 ```
 
-## Merge-strategie per sectie
+## Merge strategy per section
 
-| Sectie              | Strategie           | Toelichting                                                        |
-| ------------------- | ------------------- | ------------------------------------------------------------------ |
-| `concept`           | **OVERWRITE**       | `name`+`pitch`+`content` overschrijven, `thinking` is APPEND       |
-| `architecture`      | **OVERWRITE**       | Diagram + beschrijving volledig overschrijven                      |
-| `design`            | **MERGE op `name`** | Pages/flows/principles/components merge op naam, nooit auto-delete |
-| `theme`             | **OVERWRITE**       | Volledig overschrijven bij `/frontend-tokens`                      |
-| `stack`             | **MERGE**           | Voeg packages toe, overschrijf geen bestaande                      |
-| `data`              | **MERGE**           | Voeg entities/velden/relaties toe per entity                       |
-| `endpoints`         | **MERGE**           | Voeg toe of update status, verwijder niet                          |
-| `features`          | **MERGE op `name`** | Update status, voeg nieuwe toe, verwijder niet                     |
-| `context`           | **MERGE per key**   | Update structure/routing/patterns individueel                      |
-| `optimization_runs` | **APPEND**          | Append-only log, dedup op `run_id`. Nooit verwijderen.             |
+| Section             | Strategy            | Notes                                                               |
+| ------------------- | ------------------- | ------------------------------------------------------------------- |
+| `concept`           | **OVERWRITE**       | `name`+`pitch`+`content` overwritten, `thinking` is APPEND          |
+| `architecture`      | **OVERWRITE**       | Diagram + description fully overwritten                             |
+| `design`            | **MERGE on `name`** | Pages/flows/principles/components merged on name, never auto-delete |
+| `theme`             | **OVERWRITE**       | Fully overwritten by `/frontend-tokens`                             |
+| `stack`             | **MERGE**           | Add packages, do not overwrite existing ones                        |
+| `data`              | **MERGE**           | Add entities/fields/relations per entity                            |
+| `endpoints`         | **MERGE**           | Add or update status, do not delete                                 |
+| `features`          | **MERGE on `name`** | Update status, add new ones, do not delete                          |
+| `context`           | **MERGE per key**   | Update structure/routing/patterns individually                      |
+| `optimization_runs` | **APPEND**          | Append-only log, dedup on `run_id`. Never delete.                   |
 
 ### Stack merge
 
 ```
 1. Read project.json
-2. Voor elk nieuw package:
-   - Check of package.name al bestaat in stack.packages
-   - Zo nee: push naar stack.packages
-   - Zo ja: update version als nieuwe versie nieuwer is
-3. Overschrijf top-level stack velden (framework, language, etc.) alleen als ze leeg zijn OF bij initieel vullen
+2. For each new package:
+   - Check if package.name already exists in stack.packages
+   - If not: push to stack.packages
+   - If yes: update version if newer version is newer
+3. Overwrite top-level stack fields (framework, language, etc.) only if they are empty OR during initial population
 4. Write project.json
 ```
 
@@ -131,10 +131,10 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
 
 ```
 1. Read project.json
-2. Voor elke entity:
-   - Check of entity.name al bestaat in data.entities
-   - Zo nee: push hele entity
-   - Zo ja: merge velden (voeg nieuwe toe, overschrijf niet bestaande) en relaties
+2. For each entity:
+   - Check if entity.name already exists in data.entities
+   - If not: push entire entity
+   - If yes: merge fields (add new ones, do not overwrite existing) and relations
 3. Write project.json
 ```
 
@@ -142,10 +142,10 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
 
 ```
 1. Read project.json
-2. Voor elk endpoint:
-   - Check of combinatie method+path al bestaat
-   - Zo nee: push nieuw endpoint
-   - Zo ja: update status (bijv. "planned" -> "done"), behoud rest
+2. For each endpoint:
+   - Check if method+path combination already exists
+   - If not: push new endpoint
+   - If yes: update status (e.g. "planned" -> "done"), keep the rest
 3. Write project.json
 ```
 
@@ -153,18 +153,18 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
 
 ```
 1. Read project.json
-2. Voor elke page:
-   - Check of page.name al bestaat in design.pages
-   - Zo nee: push nieuwe page
-   - Zo ja: update purpose, status, sections, flows, notes
-3. Idem voor flows (merge op name, update steps/notes)
+2. For each page:
+   - Check if page.name already exists in design.pages
+   - If not: push new page
+   - If yes: update purpose, status, sections, flows, notes
+3. Same for flows (merge on name, update steps/notes)
    Flow object shape: `{ "name": string, "steps": [page-name, ...], "notes": string }`
-   Steps zijn page-namen uit `design.pages[].name` — orphan steps zijn toegestaan maar genereren een waarschuwing.
-4. Idem voor principles (merge op name, update description)
-5. Idem voor components (merge op name, update purpose/status/scope/appliesTo/variants/sizes/states/props/slots/notes)
-   Component object shape: zie `design` schema hieronder.
-   `usedIn[]` is auto-onderhouden door Build/convert post-pass — niet handmatig overschrijven.
-6. Nooit auto-delete — alleen via expliciete verwijder-actie
+   Steps are page-names from `design.pages[].name` — orphan steps are allowed but generate a warning.
+4. Same for principles (merge on name, update description)
+5. Same for components (merge on name, update purpose/status/scope/appliesTo/variants/sizes/states/props/slots/notes)
+   Component object shape: see `design` schema below.
+   `usedIn[]` is auto-maintained by Build/convert post-pass — do not overwrite manually.
+6. Never auto-delete — only via explicit delete action
 7. Write project.json
 ```
 
@@ -175,7 +175,7 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
 ```json
 {
   "name": "Button",
-  "purpose": "Primaire actie-trigger met icon-support",
+  "purpose": "Primary action trigger with icon support",
   "status": "DEF",
   "scope": "atomic",
   "appliesTo": "all",
@@ -194,30 +194,30 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
 
 **scope:**
 
-| Waarde    | Betekenis                                                   | Voorbeeld               |
+| Value     | Meaning                                                     | Example                 |
 | --------- | ----------------------------------------------------------- | ----------------------- |
-| `atomic`  | Klein herbruikbaar element                                  | Button, Input, Avatar   |
-| `section` | Composiet binnen één page                                   | StatCard, ProductCard   |
-| `layout`  | Multi-page wrapper, leeft in `app/layout.tsx` of equivalent | NavBar, Footer, Sidebar |
+| `atomic`  | Small reusable element                                      | Button, Input, Avatar   |
+| `section` | Composite within a single page                              | StatCard, ProductCard   |
+| `layout`  | Multi-page wrapper, lives in `app/layout.tsx` or equivalent | NavBar, Footer, Sidebar |
 
 **appliesTo:**
 
-- `"all"` — geldt voor alle pages (default voor `layout`)
-- `["dashboard", "settings"]` — alleen specifieke pages
-- `"route-group:authenticated"` — voor Next.js route-groups
+- `"all"` — applies to all pages (default for `layout`)
+- `["dashboard", "settings"]` — specific pages only
+- `"route-group:authenticated"` — for Next.js route-groups
 
-**usedIn:** auto-onderhouden door Build/convert post-pass — lijst van pages die deze component importeren. Nooit handmatig overschrijven.
+**usedIn:** auto-maintained by Build/convert post-pass — list of pages that import this component. Never overwrite manually.
 
-**gaps:** auto-onderhouden door `frontend-design` Capture/Build en `frontend-convert` — lijst van handler-props zonder gekoppeld FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only voor user; bijwerken via gap-discovery flow.
+**gaps:** auto-maintained by `frontend-design` Capture/Build and `frontend-convert` — list of handler-props without a linked FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only for user; update via gap-discovery flow.
 
 ### Features merge
 
 ```
 1. Read project.json
-2. Voor elke feature:
-   - Check of feature.name al bestaat in features array
-   - Zo nee: push nieuwe feature
-   - Zo ja: update status/stage (bijv. "DOING" stage "defined" -> "built"), update summary als gewijzigd
+2. For each feature:
+   - Check if feature.name already exists in features array
+   - If not: push new feature
+   - If yes: update status/stage (e.g. "DOING" stage "defined" -> "built"), update summary if changed
 3. Write project.json
 ```
 
@@ -225,56 +225,56 @@ Alle secties zijn tegelijk zichtbaar in één scroll — geen tabs. Sidebar link
 
 ```
 1. Read project.json
-2. Voor elk veld in context:
-   - structure: OVERWRITE (volledige file tree)
-   - routing: OVERWRITE (volledige routing array)
-   - patterns: MERGE (voeg nieuwe toe, update bestaande op key)
-   - updated: zet naar huidige datum
+2. For each field in context:
+   - structure: OVERWRITE (full file tree)
+   - routing: OVERWRITE (full routing array)
+   - patterns: MERGE (add new ones, update existing on key)
+   - updated: set to current date
 3. Write project.json
 ```
 
-Skills schrijven naar `context` na elke build/refactor. CLAUDE.md verwijst naar `project.json` voor deze runtime context.
+Skills write to `context` after each build/refactor. CLAUDE.md refers to `project.json` for this runtime context.
 
-## Sectie schema's
+## Section schemas
 
 ### concept
 
 ```json
 {
-  "name": "Project Naam",
-  "pitch": "Korte samenvatting van het concept in 1-2 zinnen.",
+  "name": "Project Name",
+  "pitch": "Short summary of the concept in 1-2 sentences.",
   "conceptFile": "project-concept.md",
   "content": ""
 }
 ```
 
-`name` = korte project naam (voor dashboard header)
-`pitch` = 1-2 zinnen samenvatting van het concept (voor lichte context loading door dev skills). Moet altijd gevuld zijn — niet afhankelijk van fallback naar `content`.
-`conceptFile` = verwijzing naar `.project/project-concept.md` (preferred formaat voor nieuwe projecten)
-`content` = legacy inline concept content. Voor nieuwe projecten leeg — volledige content staat in `project-concept.md`.
+`name` = short project name (for dashboard header)
+`pitch` = 1-2 sentence summary of the concept (for lightweight context loading by dev skills). Must always be filled — not dependent on fallback to `content`.
+`conceptFile` = reference to `.project/project-concept.md` (preferred format for new projects)
+`content` = legacy inline concept content. For new projects empty — full content lives in `project-concept.md`.
 
-Het concept is een **levend document**. Thinking-skills (`/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-research`) integreren hun concept-scope output rechtstreeks in `project-concept.md` — er is geen geschiedenis-log in `project.json`. `/project-plan` en `/dev-define` lezen alleen de huidige staat van `project-concept.md` als concept-context.
+The concept is a **living document**. Thinking-skills (`/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-research`) integrate their concept-scope output directly into `project-concept.md` — there is no history log in `project.json`. `/project-plan` and `/dev-define` only read the current state of `project-concept.md` as concept context.
 
-### Eén bron van waarheid
+### Single source of truth
 
-**NOOIT beide** `content` en `project-concept.md` tegelijk invullen. Regels bij write:
+**NEVER populate both** `content` and `project-concept.md` at the same time. Rules for writes:
 
-1. **Nieuw project** (preferred): maak `.project/project-concept.md` aan, zet `concept.conceptFile = "project-concept.md"`, houd `concept.content = ""`.
-2. **Legacy project** (bestaande inline `content`): laat zoals is of migreer eenmalig (verplaats `content` → `.md`, zet `content = ""`).
-3. **Bij concept write**: eerst check of `project-concept.md` bestaat. Zo ja → schrijf naar .md, zet `content = ""`. Zo nee + legacy content → blijf inline schrijven.
+1. **New project** (preferred): create `.project/project-concept.md`, set `concept.conceptFile = "project-concept.md"`, keep `concept.content = ""`.
+2. **Legacy project** (existing inline `content`): leave as-is or migrate once (move `content` → `.md`, set `content = ""`).
+3. **On concept write**: first check if `project-concept.md` exists. If yes → write to .md, set `content = ""`. If not + legacy content → keep writing inline.
 
 ### project-concept.md
 
-Volledig concept document als plain markdown (niet JSON-escaped).
+Full concept document as plain markdown (not JSON-escaped).
 
 **Read:** `Read .project/project-concept.md`
-**Write:** Direct markdown schrijven. Update ook `concept.name` en `concept.pitch` in project.json (zodat lichte readers actuele metadata hebben).
+**Write:** Write markdown directly. Also update `concept.name` and `concept.pitch` in project.json (so lightweight readers have current metadata).
 
-Dashboard server's `populateFromProject()` handelt beide formaten af — bestaande legacy projecten blijven werken.
+Dashboard server's `populateFromProject()` handles both formats — existing legacy projects continue to work.
 
 ## project-context.json
 
-Nieuw bestand `.project/project-context.json` bevat runtime context die alleen door build/test/refactor skills gelezen wordt. Schema:
+New file `.project/project-context.json` contains runtime context read only by build/test/refactor skills. Schema:
 
 ```json
 {
@@ -284,7 +284,7 @@ Nieuw bestand `.project/project-context.json` bevat runtime context die alleen d
 }
 ```
 
-De dashboard server's `populateFromProject()` mergt dit bestand in de unified response. Backward compatible: als velden nog in project.json staan (legacy), worden die gebruikt.
+The dashboard server's `populateFromProject()` merges this file into the unified response. Backward compatible: if fields still exist in project.json (legacy), those are used.
 
 ### architecture
 
@@ -292,15 +292,15 @@ De dashboard server's `populateFromProject()` mergt dit bestand in de unified re
 {
   "dataFlow": "Request → API Gateway → Auth check → Service → Database",
   "layers": [
-    { "name": "API Laag", "order": 1 },
+    { "name": "API Layer", "order": 1 },
     { "name": "Services", "order": 2 },
-    { "name": "Data Laag", "order": 3 }
+    { "name": "Data Layer", "order": 3 }
   ],
   "components": [
     {
       "name": "API Gateway",
-      "layer": "API Laag",
-      "description": "Routing en rate limiting voor alle endpoints",
+      "layer": "API Layer",
+      "description": "Routing and rate limiting for all endpoints",
       "status": "done",
       "src": ["src/gateway.js", "src/middleware/rateLimit.js"],
       "test": ["test/gateway.test.js"],
@@ -314,13 +314,13 @@ De dashboard server's `populateFromProject()` mergt dit bestand in de unified re
     {
       "name": "Auth Service",
       "layer": "Services",
-      "description": "JWT authenticatie en sessie management",
+      "description": "JWT authentication and session management",
       "status": "planned",
       "connects_to": [{ "to": "PostgreSQL", "type": "writes" }]
     },
     {
       "name": "PostgreSQL",
-      "layer": "Data Laag",
+      "layer": "Data Layer",
       "status": "external"
     }
   ]
@@ -329,67 +329,67 @@ De dashboard server's `populateFromProject()` mergt dit bestand in de unified re
 
 #### Component-first model
 
-Het component is de atomaire eenheid. Alle data per component zit in één object — geen fuzzy matching nodig.
+The component is the atomic unit. All data per component lives in one object — no fuzzy matching needed.
 
-**Component velden:**
+**Component fields:**
 
-| Veld          | Type     | Verplicht | Beschrijving                                            |
-| ------------- | -------- | --------- | ------------------------------------------------------- |
-| `name`        | string   | ja        | Unieke functionele naam                                 |
-| `layer`       | string   | ja        | Laag naam (moet matchen met `layers[].name`)            |
-| `description` | string   | nee       | Korte functionele beschrijving (max 200 chars)          |
-| `status`      | string   | ja        | `done` \| `planned` \| `external`                       |
-| `src`         | string[] | nee       | Source bestanden (relatief aan project root)            |
-| `test`        | string[] | nee       | Test bestanden                                          |
-| `connects_to` | edge[]   | nee       | Typed edges naar andere components (zie hieronder)      |
-| `endpoints`   | string[] | nee       | Endpoint paths die bij dit component horen              |
-| `entities`    | string[] | nee       | Entity namen die dit component gebruikt                 |
-| `feature`     | string   | nee       | Feature naam die dit component heeft aangemaakt/gebouwd |
+| Field         | Type     | Required | Description                                    |
+| ------------- | -------- | -------- | ---------------------------------------------- |
+| `name`        | string   | yes      | Unique functional name                         |
+| `layer`       | string   | yes      | Layer name (must match `layers[].name`)        |
+| `description` | string   | no       | Short functional description (max 200 chars)   |
+| `status`      | string   | yes      | `done` \| `planned` \| `external`              |
+| `src`         | string[] | no       | Source files (relative to project root)        |
+| `test`        | string[] | no       | Test files                                     |
+| `connects_to` | edge[]   | no       | Typed edges to other components (see below)    |
+| `endpoints`   | string[] | no       | Endpoint paths belonging to this component     |
+| `entities`    | string[] | no       | Entity names this component uses               |
+| `feature`     | string   | no       | Feature name that created/built this component |
 
-**Edge velden (`connects_to[]`):**
+**Edge fields (`connects_to[]`):**
 
-| Veld   | Type   | Verplicht | Beschrijving                     |
-| ------ | ------ | --------- | -------------------------------- |
-| `to`   | string | ja        | Naam van het doel-component      |
-| `type` | string | ja        | Edge type: zie waarden hieronder |
+| Field  | Type   | Required | Description                  |
+| ------ | ------ | -------- | ---------------------------- |
+| `to`   | string | yes      | Name of the target component |
+| `type` | string | yes      | Edge type: see values below  |
 
-**Edge type waarden:**
+**Edge type values:**
 
 - `calls` — RPC/HTTP/function-call (mockable in tests)
-- `reads` — leest state/data (read-only afhankelijkheid)
-- `writes` — schrijft state/data (migratie-impact bij wijziging)
-- `depends_on` — bibliotheek/configuratie (geen runtime-IO)
+- `reads` — reads state/data (read-only dependency)
+- `writes` — writes state/data (migration impact on change)
+- `depends_on` — library/configuration (no runtime IO)
 
-Kies het type op basis van de werkelijke interactie. Bij meerdere relaties tussen dezelfde components: meerdere edge entries (bijv. zowel `reads` als `writes` naar dezelfde DB).
+Choose the type based on the actual interaction. For multiple relations between the same components: multiple edge entries (e.g. both `reads` and `writes` to the same DB).
 
-**Layer velden:**
+**Layer fields:**
 
-| Veld    | Type   | Beschrijving                   |
-| ------- | ------ | ------------------------------ |
-| `name`  | string | Unieke laag naam               |
-| `order` | number | Sorteervolgorde (1 = bovenaan) |
+| Field   | Type   | Description          |
+| ------- | ------ | -------------------- |
+| `name`  | string | Unique layer name    |
+| `order` | number | Sort order (1 = top) |
 
-**`dataFlow`** = één-regel samenvatting van de volledige request flow (voor snelle context).
+**`dataFlow`** = one-line summary of the full request flow (for quick context).
 
-**Status waarden:** `done` = gebouwd en werkend, `planned` = nog niet gebouwd, `external` = externe service/database (niet door ons beheerd).
+**Status values:** `done` = built and working, `planned` = not yet built, `external` = external service/database (not managed by us).
 
-#### Voordelen t.o.v. oude model
+#### Advantages over the old model
 
-- **Expliciete connections**: `connects_to` array i.p.v. parsen uit Mermaid `-->` pijlen
-- **Expliciete endpoints/entities**: direct per component, niet fuzzy gematcht achteraf
-- **Geen dubbele data**: description, files, status allemaal in één object
-- **Layer als first-class concept**: sortering en groepering op basis van `order`, niet op subgraph parsing
+- **Explicit connections**: `connects_to` array instead of parsing from Mermaid `-->` arrows
+- **Explicit endpoints/entities**: directly per component, not fuzzy-matched afterwards
+- **No duplicate data**: description, files, status all in one object
+- **Layer as first-class concept**: sorting and grouping based on `order`, not subgraph parsing
 
-#### Diagram (optioneel)
+#### Diagram (optional)
 
-Het Mermaid diagram is nu **optioneel** — de Code Cards zijn de primaire view. Als een diagram beschikbaar is, toont de UI een "Diagram" toggle knop.
+The Mermaid diagram is now **optional** — the Code Cards are the primary view. If a diagram is available, the UI shows a "Diagram" toggle button.
 
-**Preferred**: `.project/architecture.mmd` bestand (plain Mermaid, geen JSON-escaping).
+**Preferred**: `.project/architecture.mmd` file (plain Mermaid, no JSON-escaping).
 **Legacy**: Inline `diagram` string in project-context.json.
 
-Skills mogen het diagram nog steeds genereren voor visuele context, maar het is niet meer de bron van waarheid voor connections of status. Die komen uit `components[]`.
+Skills may still generate the diagram for visual context, but it is no longer the source of truth for connections or status. Those come from `components[]`.
 
-#### Diagram conventies (als diagram gegenereerd wordt)
+#### Diagram conventions (when diagram is generated)
 
 **classDef:**
 
@@ -400,28 +400,28 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 ```
 
 **Node labels:** `GW[API Gateway<br/>gateway.js]:::done`
-**Subgraphs:** Groepeer per `layer.name`.
+**Subgraphs:** Group per `layer.name`.
 
-#### Skills die architecture schrijven
+#### Skills that write architecture
 
-| Skill           | Wat het schrijft                                                                              | Wanneer               |
-| --------------- | --------------------------------------------------------------------------------------------- | --------------------- |
-| `/dev-define`   | Initiële `layers` + `components` (status planned, geen src/test) + `dataFlow`                 | Bij feature definitie |
-| `/dev-build`    | Update `components`: status → done, vul `src`, `test`, `connects_to`, `endpoints`, `entities` | Na build              |
-| `/dev-verify`   | Update `components`: bevestig status done, voeg test files toe                                | Na test               |
-| `/project-pull` | Sync volledige `architecture` sectie bij pull                                                 | Bij context sync      |
+| Skill           | What it writes                                                                                 | When                      |
+| --------------- | ---------------------------------------------------------------------------------------------- | ------------------------- |
+| `/dev-define`   | Initial `layers` + `components` (status planned, no src/test) + `dataFlow`                     | During feature definition |
+| `/dev-build`    | Update `components`: status → done, fill `src`, `test`, `connects_to`, `endpoints`, `entities` | After build               |
+| `/dev-verify`   | Update `components`: confirm status done, add test files                                       | After test                |
+| `/project-pull` | Sync full `architecture` section on pull                                                       | On context sync           |
 
-**Write strategie:**
+**Write strategy:**
 
 1. Read `project-context.json`
-2. Voor elk component: check of `name` al bestaat in `components[]`
-   - Zo nee: push nieuw component
-   - Zo ja: merge velden (overschrijf `status`, `src`, `test`; merge `endpoints`, `entities` met dedup; merge `connects_to[]` met dedup op `to+type` combinatie)
-3. Write terug
+2. For each component: check if `name` already exists in `components[]`
+   - If not: push new component
+   - If yes: merge fields (overwrite `status`, `src`, `test`; merge `endpoints`, `entities` with dedup; merge `connects_to[]` with dedup on `to+type` combination)
+3. Write back
 
 ### theme
 
-**Design system bron van waarheid.** `theme` bevat alle design tokens (colors, typography, spacing, borderRadius, shadows, modes, motion, interactions, cssVars). De dashboard UI rendert dit als "Design System" sectie. Beheer via `/frontend-tokens`.
+**Design system source of truth.** `theme` contains all design tokens (colors, typography, spacing, borderRadius, shadows, modes, motion, interactions, cssVars). The dashboard UI renders this as the "Design System" section. Manage via `/frontend-tokens`.
 
 ```json
 {
@@ -480,9 +480,9 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 }
 ```
 
-`cssVars` = complete CSS variabelen export (voor consumptie door andere skills)
-`modes` = light/dark mode CSS (object met mode naam als key)
-Overige velden = structured tokens per categorie
+`cssVars` = complete CSS variables export (for consumption by other skills)
+`modes` = light/dark mode CSS (object with mode name as key)
+Other fields = structured tokens per category
 
 ### stack
 
@@ -500,7 +500,7 @@ Overige velden = structured tokens per categorie
 
 ### data
 
-**Optioneel — alleen data-heavy projecten.** In de praktijk laten simpele projecten (static sites, utilities, games, UI-only components) dit leeg. Skills die schrijven (`/dev-define`, `/dev-verify`, `/dev-refactor`, `/game-define`, `/team-verify`) slaan deze update over als het domein geen expliciete entities introduceert — log dan `Skipped data.entities: no entities`.
+**Optional — only for data-heavy projects.** In practice, simple projects (static sites, utilities, games, UI-only components) leave this empty. Skills that write (`/dev-define`, `/dev-verify`, `/dev-refactor`, `/game-define`, `/team-verify`) skip this update if the domain introduces no explicit entities — log `Skipped data.entities: no entities`.
 
 ```json
 {
@@ -526,28 +526,28 @@ Overige velden = structured tokens per categorie
     "path": "/api/auth/login",
     "auth": "public",
     "status": "done",
-    "description": "JWT login met email/password"
+    "description": "JWT login with email/password"
   }
 ]
 ```
 
-**Status waarden:** `planned` | `building` | `done`
+**Status values:** `planned` | `building` | `done`
 
-**Auth waarden:** `"public"` | `"user"` | `"admin"` (enum). Backwards-compat: `false` → `"public"`, `true` → `"user"`. Het dashboard rendert protected routes/endpoints met een 🔒 icoon en role-badge.
+**Auth values:** `"public"` | `"user"` | `"admin"` (enum). Backwards-compat: `false` → `"public"`, `true` → `"user"`. The dashboard renders protected routes/endpoints with a 🔒 icon and role-badge.
 
 ### localUrl
 
-Top-level string in `project.json` voor de lokale dev-URL (default `"http://localhost:3000"`). Routes in `architecture.routes[]` worden gerenderd als klikbare links die openen op `${localUrl}${path}` in een nieuw tabblad. Manual override per project.
+Top-level string in `project.json` for the local dev URL (default `"http://localhost:3000"`). Routes in `architecture.routes[]` are rendered as clickable links that open on `${localUrl}${path}` in a new tab. Manual override per project.
 
 ### team
 
-Bevat detecties uit `core-setup --mode=mature` (FASE 0.4) en `core-commit` (FASE 0.5) voor team-repo awareness. Veld is optioneel — afwezig betekent solo-mode (default behavior in alle skills).
+Contains detections from `core-setup --mode=mature` (PHASE 0.4) and `core-commit` (PHASE 0.5) for team-repo awareness. Field is optional — absent means solo-mode (default behavior in all skills).
 
-| Veld               | Waarden                                                              | Gezet door                  | Gelezen door                            |
-| ------------------ | -------------------------------------------------------------------- | --------------------------- | --------------------------------------- |
-| `commitConvention` | `"conventional"` \| `"ticket-prefix"` \| `"bracket"` \| `"freeform"` | `/core-commit` FASE 0.5     | `/core-commit` FASE 4 (compose)         |
-| `ticketPrefix`     | string \| `null` (bijv. `"JIRA"`, `"PROJ"`)                          | `/core-commit` FASE 0.5     | `/core-commit` FASE 4 (compose)         |
-| `tracker`          | `"github"` \| `"jira"` \| `"linear"` \| `null`                       | `/team-issues` (eerste run) | `/team-issues` daarna, backlog-template |
+| Field              | Values                                                               | Set by                     | Read by                                     |
+| ------------------ | -------------------------------------------------------------------- | -------------------------- | ------------------------------------------- |
+| `commitConvention` | `"conventional"` \| `"ticket-prefix"` \| `"bracket"` \| `"freeform"` | `/core-commit` PHASE 0.5   | `/core-commit` PHASE 4 (compose)            |
+| `ticketPrefix`     | string \| `null` (e.g. `"JIRA"`, `"PROJ"`)                           | `/core-commit` PHASE 0.5   | `/core-commit` PHASE 4 (compose)            |
+| `tracker`          | `"github"` \| `"jira"` \| `"linear"` \| `null`                       | `/team-issues` (first run) | `/team-issues` afterwards, backlog-template |
 
 ### architecture.routes (project-context.json)
 
@@ -555,21 +555,21 @@ Bevat detecties uit `core-setup --mode=mature` (FASE 0.4) en `core-commit` (FASE
 [
   {
     "path": "/dashboard",
-    "purpose": "Home — overzichtskaarten en recente activiteit",
+    "purpose": "Home — overview cards and recent activity",
     "auth": "user",
     "feature": "dashboard-layout"
   }
 ]
 ```
 
-| Veld      | Type   | Verplicht | Beschrijving                                             |
-| --------- | ------ | --------- | -------------------------------------------------------- |
-| `path`    | string | ja        | Route path (bv. `/dashboard`)                            |
-| `purpose` | string | nee       | Korte beschrijving van de pagina                         |
-| `auth`    | enum   | nee       | `"public"` \| `"user"` \| `"admin"` (default `"public"`) |
-| `feature` | string | nee       | Feature die de route introduceerde (kebab-case)          |
+| Field     | Type   | Required | Description                                              |
+| --------- | ------ | -------- | -------------------------------------------------------- |
+| `path`    | string | yes      | Route path (e.g. `/dashboard`)                           |
+| `purpose` | string | no       | Short description of the page                            |
+| `auth`    | enum   | no       | `"public"` \| `"user"` \| `"admin"` (default `"public"`) |
+| `feature` | string | no       | Feature that introduced the route (kebab-case)           |
 
-Geschreven door `/dev-define` (initieel) en `/dev-build` (bevestigd na implementatie). Merge op `path` — bestaand record updaten i.p.v. dupliceren.
+Written by `/dev-define` (initial) and `/dev-build` (confirmed after implementation). Merge on `path` — update existing record instead of duplicating.
 
 ### features
 
@@ -579,7 +579,7 @@ Geschreven door `/dev-define` (initieel) en `/dev-build` (bevestigd na implement
     "name": "pin-mode",
     "type": "FEATURE",
     "status": "DONE",
-    "summary": "Shift+Click multi-select voor inspect overlay",
+    "summary": "Shift+Click multi-select for inspect overlay",
     "depends": ["clipboard-redesign"],
     "created": "2026-02-20",
     "refactor": "REFACTORED",
@@ -590,31 +590,31 @@ Geschreven door `/dev-define` (initieel) en `/dev-build` (bevestigd na implement
 ]
 ```
 
-**Status waarden:** `TODO` | `DEFINED` | `DOING` | `DONE`
-**Stage waarden (alleen bij DOING):** `defining` | `defined` | `building` | `built` | `testing`
-**`shipped`**: alleen `true` na `/dev-refactor` (CLEAN of REFACTORED). Dashboard toont alleen `features[]` met `shipped: true`.
+**Status values:** `TODO` | `DEFINED` | `DOING` | `DONE`
+**Stage values (DOING only):** `defining` | `defined` | `building` | `built` | `testing`
+**`shipped`**: only `true` after `/dev-refactor` (CLEAN or REFACTORED). Dashboard only shows `features[]` with `shipped: true`.
 
 ### recentChanges
 
-Kleine shipped items (type CHANGE/BUG/PAGE/COMPONENT/etc) die geen volledige feature-pipeline doorlopen hebben. Worden gepromoot via `/dev-refactor --small-items` na een lichte conventie-check.
+Small shipped items (type CHANGE/BUG/PAGE/COMPONENT/etc) that did not go through the full feature pipeline. Promoted via `/dev-refactor --small-items` after a lightweight convention check.
 
 ```json
 [
   {
     "name": "fix-button-spacing",
     "type": "CHANGE",
-    "description": "Button padding inconsistent op mobile",
+    "description": "Button padding inconsistent on mobile",
     "shipped": true,
     "shippedAt": "2026-02-25"
   }
 ]
 ```
 
-Dashboard toont `recentChanges[]` als een compacte strip onder de features-grid.
+Dashboard shows `recentChanges[]` as a compact strip below the features grid.
 
 ### optimization_runs
 
-Append-only log van `/dev-optimize` en `/game-optimize` runs. Eén entry per voltooide run. Werkt als historie voor het dashboard — niet voor live state (die zit in `.project/optimize/{run-id}/`).
+Append-only log of `/dev-optimize` and `/game-optimize` runs. One entry per completed run. Serves as history for the dashboard — not for live state (that lives in `.project/optimize/{run-id}/`).
 
 ```json
 [
@@ -636,43 +636,43 @@ Append-only log van `/dev-optimize` en `/game-optimize` runs. Eén entry per vol
 ]
 ```
 
-**Veld-waarden:**
+**Field values:**
 
-| Veld                    | Type     | Beschrijving                                                                                                                                       |
+| Field                   | Type     | Description                                                                                                                                        |
 | ----------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `run_id`                | string   | Timestamp-ID `YYYYMMDD-HHMMSS` (uniek per run)                                                                                                     |
-| `skill`                 | string   | `dev-optimize` of `game-optimize`                                                                                                                  |
-| `metric`                | string   | `bundle_size_kb`, `lighthouse`, `coverage`, `latency_p95_ms`, `fps`, `frame_time_ms`, `memory_mb`, `ai_winrate_pct`, `pathfinding_ms`, of `custom` |
-| `direction`             | string   | `minimize` of `maximize`                                                                                                                           |
-| `baseline`              | number   | Score voor optimize-run                                                                                                                            |
-| `final`                 | number   | Beste behaalde score                                                                                                                               |
-| `improvement_pct`       | number   | Percentage verbetering t.o.v. baseline (positief = beter)                                                                                          |
-| `rounds`                | int      | Aantal voltooide rondes                                                                                                                            |
-| `experiments_kept`      | int      | Aantal subagent-branches die verbetering opleverden                                                                                                |
-| `experiments_discarded` | int      | Aantal subagent-branches die werden weggegooid                                                                                                     |
-| `winner_branch`         | string   | Volledige branch-naam van de winnende experimenten                                                                                                 |
+| `run_id`                | string   | Timestamp ID `YYYYMMDD-HHMMSS` (unique per run)                                                                                                    |
+| `skill`                 | string   | `dev-optimize` or `game-optimize`                                                                                                                  |
+| `metric`                | string   | `bundle_size_kb`, `lighthouse`, `coverage`, `latency_p95_ms`, `fps`, `frame_time_ms`, `memory_mb`, `ai_winrate_pct`, `pathfinding_ms`, or `custom` |
+| `direction`             | string   | `minimize` or `maximize`                                                                                                                           |
+| `baseline`              | number   | Score before the optimize run                                                                                                                      |
+| `final`                 | number   | Best achieved score                                                                                                                                |
+| `improvement_pct`       | number   | Percentage improvement vs baseline (positive = better)                                                                                             |
+| `rounds`                | int      | Number of completed rounds                                                                                                                         |
+| `experiments_kept`      | int      | Number of subagent branches that produced improvement                                                                                              |
+| `experiments_discarded` | int      | Number of subagent branches that were discarded                                                                                                    |
+| `winner_branch`         | string   | Full branch name of the winning experiments                                                                                                        |
 | `stopped_reason`        | string   | `stall`, `wallclock`, `user`, `no_improvement`                                                                                                     |
-| `date`                  | ISO date | Voltooiingsdatum                                                                                                                                   |
+| `date`                  | ISO date | Completion date                                                                                                                                    |
 
-**Append-strategie:**
+**Append strategy:**
 
 ```
 1. Read project.json
-2. Initialiseer optimization_runs = [] als veld niet bestaat
-3. Check of run_id al bestaat — zo ja: skip (idempotent)
-4. Push nieuwe entry naar einde van array
+2. Initialize optimization_runs = [] if field does not exist
+3. Check if run_id already exists — if yes: skip (idempotent)
+4. Push new entry to end of array
 5. Write project.json
 ```
 
-Geen verwijdering, geen update — alleen append. Voor live status van een lopende run: zie `.project/optimize/{run-id}/spec.json` + `tree.json`.
+No deletion, no update — append only. For live status of a running run: see `.project/optimize/{run-id}/spec.json` + `tree.json`.
 
 ### thinking-output
 
-Thinking-skills (`/thinking-decide`, `/thinking-research`, `/thinking-brainstorm`, `/thinking-critique`) schrijven hun volledige output naar `.project/thinking/*.md` (bestandsnaam: `{date}-{type}-{slug}.md`). Die markdown-bestanden zijn de enige bron van waarheid — er bestaat geen top-level `thinking[]` array in `project.json`.
+Thinking-skills (`/thinking-decide`, `/thinking-research`, `/thinking-brainstorm`, `/thinking-critique`) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
 
-Concept-scope thinking-output (`/thinking-concept`, `/thinking-brainstorm` concept, `/thinking-critique` concept, `/thinking-research` concept) integreert rechtstreeks in `project-concept.md` — geen historie-log in `project.json`.
+Concept-scope thinking-output (`/thinking-concept`, `/thinking-brainstorm` concept, `/thinking-critique` concept, `/thinking-research` concept) integrates directly into `project-concept.md` — no history log in `project.json`.
 
-Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks via Grep op `.project/thinking/*.md` voor naam-match.
+Skills that consume thinking-output (such as `/dev-define`) read directly via Grep on `.project/thinking/*.md` for name matching.
 
 ### context
 
@@ -688,16 +688,16 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
     "Path alias: @/ → src/",
     "Env setup: copy .env.example → .env",
     "Sanity preview: Draft mode via /api/preview",
-    "Code maturity: student — respecteer lesmateriaal-patronen, geen over-abstractions, duplicatie <10 regels oké"
+    "Code maturity: student — respect lesson-material patterns, no over-abstractions, duplication <10 lines ok"
   ],
   "updated": "2026-02-20"
 }
 ```
 
-`structure` = file tree (zelfde formaat als voorheen in CLAUDE.md `## Project structuur`). Key directories met inline comments.
-`routing` = route patterns met arrow notation. Alleen voor web projects met routing.
-`patterns` = non-obvious patterns, gotchas, env setup. Eén string per item, `key: detail` formaat. Quality rules: project-specific only, concise, elk item moet z'n plek verdienen.
-`updated` = datum van laatste context update.
+`structure` = file tree (same format as previously in CLAUDE.md `## Project structure`). Key directories with inline comments.
+`routing` = route patterns with arrow notation. Only for web projects with routing.
+`patterns` = non-obvious patterns, gotchas, env setup. One string per item, `key: detail` format. Quality rules: project-specific only, concise, each item must earn its place.
+`updated` = date of last context update.
 
 ### learnings
 
@@ -708,7 +708,7 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
     "feature": "auth-login",
     "type": "pattern",
     "source": "extracted",
-    "summary": "JWT refresh via httpOnly cookie rotation i.p.v. DB-stored tokens"
+    "summary": "JWT refresh via httpOnly cookie rotation instead of DB-stored tokens"
   },
   {
     "date": "2026-04-28",
@@ -721,93 +721,93 @@ Skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks v
 ]
 ```
 
-`type` waarden: `pattern` (architecturale keuze), `pitfall` (bug/gotcha), `observation` (cross-feature inzicht).
-`source` waarden: `extracted` (directe observatie van code-output of test-resultaat) | `inferred` (cross-feature patroonherkenning of LLM-inferentie) | `synced` (geëxtraheerd uit teammate code of mature codebase via project-pull / core-setup --mode=mature).
-`date` = extractie datum. `feature` = bron-feature (kebab-case). Voor `synced` learnings zonder gestructureerde feature: gebruik primary directory (`auth`, `payments`). `summary` = max 200 chars.
-`author` = optioneel, alleen bij `source === "synced"`. Spiegelt `features[].author`.
+`type` values: `pattern` (architectural choice), `pitfall` (bug/gotcha), `observation` (cross-feature insight).
+`source` values: `extracted` (direct observation from code output or test result) | `inferred` (cross-feature pattern recognition or LLM inference) | `synced` (extracted from teammate code or mature codebase via project-pull / core-setup --mode=mature).
+`date` = extraction date. `feature` = source feature (kebab-case). For `synced` learnings without a structured feature: use primary directory (`auth`, `payments`). `summary` = max 200 chars.
+`author` = optional, only for `source === "synced"`. Mirrors `features[].author`.
 
-**Source mapping** (eigen werk, in dev-verify / game-verify):
+**Source mapping** (own work, in dev-verify / game-verify):
 
-| Bron in feature.json | learning.type | learning.source |
-| -------------------- | ------------- | --------------- |
-| `build.decisions[]`  | `pattern`     | `extracted`     |
-| `tests.fixSync[]`    | `pitfall`     | `extracted`     |
-| `observations[]`     | `observation` | `inferred`      |
+| Source in feature.json | learning.type | learning.source |
+| ---------------------- | ------------- | --------------- |
+| `build.decisions[]`    | `pattern`     | `extracted`     |
+| `tests.fixSync[]`      | `pitfall`     | `extracted`     |
+| `observations[]`       | `observation` | `inferred`      |
 
 **Source mapping** (teammate / mature codebase, in project-pull / core-setup --mode=mature):
 
-| Bron                                             | learning.type              | learning.source |
+| Source                                           | learning.type              | learning.source |
 | ------------------------------------------------ | -------------------------- | --------------- |
-| Fix-commits met body (≥10 woorden + cause-clue)  | `pitfall`                  | `synced`        |
-| TODO/FIXME/HACK comments (≥10 woorden)           | `pitfall`                  | `synced`        |
-| Nieuwe abstraction-dirs (repository/middleware)  | `pattern`                  | `synced`        |
-| Nieuwe wrapper-deps in package.json              | `pattern`                  | `synced`        |
-| LLM-inferred patterns (signal-triggered/onboard) | `pattern` of `observation` | `synced`        |
+| Fix-commits with body (≥10 words + cause-clue)   | `pitfall`                  | `synced`        |
+| TODO/FIXME/HACK comments (≥10 words)             | `pitfall`                  | `synced`        |
+| New abstraction-dirs (repository/middleware)     | `pattern`                  | `synced`        |
+| New wrapper-deps in package.json                 | `pattern`                  | `synced`        |
+| LLM-inferred patterns (signal-triggered/onboard) | `pattern` or `observation` | `synced`        |
 
-Zie [skills/shared/LEARNING-EXTRACTION.md](skills/shared/LEARNING-EXTRACTION.md) voor heuristieken en filters.
+See [skills/shared/LEARNING-EXTRACTION.md](skills/shared/LEARNING-EXTRACTION.md) for heuristics and filters.
 
-Append-only log. Skills die features voltooien extracten learnings automatisch (zie dev-verify FASE 6, dev-refactor FASE 5). `project-pull` (incremental) en `core-setup --mode=mature` (eenmalig) extracten learnings uit teammate/legacy code. `source` is verplicht bij nieuwe writes.
+Append-only log. Skills that complete features extract learnings automatically (see dev-verify PHASE 6, dev-refactor PHASE 5). `project-pull` (incremental) and `core-setup --mode=mature` (one-time) extract learnings from teammate/legacy code. `source` is required on new writes.
 
-**Dit vervangt de dynamische CLAUDE.md secties** (`## Project structuur`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md bevat nu alleen een referentie naar `project.json` voor deze context.
+**This replaces the dynamic CLAUDE.md sections** (`## Project structure`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md now only contains a reference to `project.json` for this context.
 
-## Welke skills schrijven wat
+## Which skills write what
 
-### project.json secties
+### project.json sections
 
-| Sectie              | Geschreven door                                                                           | Wanneer                                  |
+| Section             | Written by                                                                                | When                                     |
 | ------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `concept`           | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/project-plan`        | Bij concept creatie/iteratie/plan        |
-| `design`            | `/frontend-design`, `/frontend-tokens`                                                    | Bij design spec/page build/theme creatie |
-| `theme`             | `/frontend-tokens`                                                                        | Na theme create/update                   |
-| `stack`             | `/core-setup`, `/project-plan`, `/dev-define`, `/dev-build`, `/frontend-design`           | Bij detectie/nieuwe deps                 |
-| `data`              | `/dev-define`, `/game-define`                                                             | Bij entity definitie                     |
-| `endpoints`         | `/dev-define`, `/dev-build`                                                               | Bij API definitie / na build             |
-| `features`          | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build` | Bij status wijziging (DOING/DONE)        |
-| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                         | Bij run completion (FASE 6)              |
+| `concept`           | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/project-plan`        | On concept creation/iteration/plan       |
+| `design`            | `/frontend-design`, `/frontend-tokens`                                                    | On design spec/page build/theme creation |
+| `theme`             | `/frontend-tokens`                                                                        | After theme create/update                |
+| `stack`             | `/core-setup`, `/project-plan`, `/dev-define`, `/dev-build`, `/frontend-design`           | On detection/new deps                    |
+| `data`              | `/dev-define`, `/game-define`                                                             | On entity definition                     |
+| `endpoints`         | `/dev-define`, `/dev-build`                                                               | On API definition / after build          |
+| `features`          | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build` | On status change (DOING/DONE)            |
+| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                         | On run completion (PHASE 6)              |
 
-### project-context.json secties
+### project-context.json sections
 
-| Sectie         | Geschreven door                                                                              | Wanneer                                                                  |
+| Section        | Written by                                                                                   | When                                                                     |
 | -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                                   | Bij architectuur definitie / na build                                    |
-| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`                | Bij build/refactor (structuur, routing, patterns)                        |
-| `learnings`    | `/dev-verify`, `/dev-refactor`, `/game-verify`, `/project-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred) of teammate/legacy code (synced) |
+| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                                   | On architecture definition / after build                                 |
+| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`                | On build/refactor (structure, routing, patterns)                         |
+| `learnings`    | `/dev-verify`, `/dev-refactor`, `/game-verify`, `/project-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred) or teammate/legacy code (synced) |
 
-### Skill sync overzicht
+### Skill sync overview
 
-| Skill                       | project.json                                                        | project-context.json                                              | Wanneer              |
-| --------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------- |
-| `/core-setup`               | `stack` (volledig)                                                  | `context` (initieel)                                              | Na project generatie |
-| `/dev-define`               | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING)  | `architecture` (write), `learnings` (read)                        | FASE 6               |
-| `/dev-build`                | `endpoints`, `stack.packages`, `features` (DOING+built)             | `context`, `architecture` (write)                                 | FASE 4C              |
-| `/dev-verify`               | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)   | `architecture`, `learnings` (write)                               | FASE 6 completion    |
-| `/dev-refactor`             | `stack.packages`, `endpoints`, `data.entities`                      | `context`, `architecture`, `learnings` (write)                    | FASE 5 completion    |
-| `/frontend-design`          | `design` (pages, flows, principles), `features` (batch TODO)        | —                                                                 | Bij elke uitvoering  |
-| `/frontend-design`          | `stack.packages`, `design.pages`, `features` (DOING+built)          | —                                                                 | Na FASE 4            |
-| `/frontend-tokens`          | `design.principles`                                                 | —                                                                 | Na completion        |
-| `/game-define`              | `data.entities`, `stack.packages`, `features` (DOING)               | `architecture` (write)                                            | FASE 6               |
-| `/game-build`               | `features` (DOING+built)                                            | `context`, `architecture` (write)                                 | FASE 5 completion    |
-| `/team-verify`              | `features`, `stack.packages`, `endpoints`, `data.entities`          | `architecture` (write)                                            | FASE 7 completion    |
-| `/game-refactor`            | `features` (DONE)                                                   | `context`, `architecture` (write)                                 | FASE 5 completion    |
-| `/dev-optimize`             | `optimization_runs` (append)                                        | —                                                                 | FASE 6 completion    |
-| `/game-optimize`            | `optimization_runs` (append)                                        | —                                                                 | FASE 6 completion    |
-| `/project-pull`             | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull             |
-| `/core-setup --mode=mature` | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | Eenmalig bij join    |
+| Skill                       | project.json                                                        | project-context.json                                              | When                     |
+| --------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------ |
+| `/core-setup`               | `stack` (full)                                                      | `context` (initial)                                               | After project generation |
+| `/dev-define`               | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING)  | `architecture` (write), `learnings` (read)                        | PHASE 6                  |
+| `/dev-build`                | `endpoints`, `stack.packages`, `features` (DOING+built)             | `context`, `architecture` (write)                                 | PHASE 4C                 |
+| `/dev-verify`               | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)   | `architecture`, `learnings` (write)                               | PHASE 6 completion       |
+| `/dev-refactor`             | `stack.packages`, `endpoints`, `data.entities`                      | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
+| `/frontend-design`          | `design` (pages, flows, principles), `features` (batch TODO)        | —                                                                 | On each run              |
+| `/frontend-design`          | `stack.packages`, `design.pages`, `features` (DOING+built)          | —                                                                 | After PHASE 4            |
+| `/frontend-tokens`          | `design.principles`                                                 | —                                                                 | After completion         |
+| `/game-define`              | `data.entities`, `stack.packages`, `features` (DOING)               | `architecture` (write)                                            | PHASE 6                  |
+| `/game-build`               | `features` (DOING+built)                                            | `context`, `architecture` (write)                                 | PHASE 5 completion       |
+| `/team-verify`              | `features`, `stack.packages`, `endpoints`, `data.entities`          | `architecture` (write)                                            | PHASE 7 completion       |
+| `/game-refactor`            | `features` (DONE)                                                   | `context`, `architecture` (write)                                 | PHASE 5 completion       |
+| `/dev-optimize`             | `optimization_runs` (append)                                        | —                                                                 | PHASE 6 completion       |
+| `/game-optimize`            | `optimization_runs` (append)                                        | —                                                                 | PHASE 6 completion       |
+| `/project-pull`             | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                 |
+| `/core-setup --mode=mature` | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | One-time on join         |
 
 ## Server
 
-De server draait op `http://localhost:9876` en serveert zowel backlogs als dashboards:
+The server runs on `http://localhost:9876` and serves both backlogs and dashboards:
 
-- `http://localhost:9876/` — overzicht alle projecten
-- `http://localhost:9876/{project}` — project dashboard (hoofdpagina)
+- `http://localhost:9876/` — overview of all projects
+- `http://localhost:9876/{project}` — project dashboard (main page)
 - `http://localhost:9876/{project}/backlog` — backlog (single-scroll list view)
 - `http://localhost:9876/{project}/feature/{name}` — feature detail (unified feature.json)
 
-De feature detail endpoint leest `feature.json` (zie `shared/FEATURE.md` voor schema).
+The feature detail endpoint reads `feature.json` (see `shared/FEATURE.md` for schema).
 
-Start de server:
+Start the server:
 
 ```bash
-# Respecteert $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
+# Respects $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
 curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node {skills_path}/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
 ```

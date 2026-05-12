@@ -13,7 +13,7 @@ metadata:
 
 ## Overview
 
-This is **FASE 3** of the gamedev workflow: plan -> define -> build -> **verify** -> refactor
+This is **PHASE 3** of the gamedev workflow: plan -> define -> build -> **verify** -> refactor
 
 The verify phase handles human playtest verification of implemented game features through structured feedback, intelligent issue categorization, and iterative fix loops until all items pass.
 
@@ -121,42 +121,42 @@ Now TESTABLE -> TDD fix loop
 
 ## Workflow
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 10 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 10 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. When context compacts, the task list stays visible — no risk of forgotten phases.
 
-1. FASE 0: Load Context
-2. FASE 1: Parse Feedback
-3. FASE 1b: Debug Analysis
-4. FASE 2: Categorize Issues
-5. FASE 3: Fix Loop
-6. FASE 4: Generate Re-test Checklist
-7. FASE 5: Re-test Loop
-8. FASE 5c: Regression Check
-9. FASE 5d: Requirement Verification
-10. FASE 6: Completion
+1. PHASE 0: Load Context
+2. PHASE 1: Parse Feedback
+3. PHASE 1b: Debug Analysis
+4. PHASE 2: Categorize Issues
+5. PHASE 3: Fix Loop
+6. PHASE 4: Generate Re-test Checklist
+7. PHASE 5: Re-test Loop
+8. PHASE 5c: Regression Check
+9. PHASE 5d: Requirement Verification
+10. PHASE 6: Completion
 
-### FASE 0: Load Context
+### PHASE 0: Load Context
 
-> **Todo**: roep `TaskCreate` aan met de 10 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 10 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 **Goal:** Load playtest checklist from build phase and prepare for feedback.
 
 **Steps:**
 
-1. **Check backlog for BLT features (if no feature name provided):**
+1. **Check backlog for built features (if no feature name provided):**
 
    ```
    Read(".project/backlog.html")
    ```
 
-   - If backlog exists: parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
+   - If backlog exists: parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`)
    - Filter built features: `data.features.filter(f => f.status === "DOING" && f.stage === "built")`
 
    Use **AskUserQuestion** if built features found:
    - header: "Feature"
-   - question: "Welke feature wil je testen? ({N} features in built stage)"
+   - question: "Which feature do you want to test? ({N} features in built stage)"
    - options:
-     - label: "{feature-name} (Recommended)", description: "Volgende uit backlog"
-     - label: "Andere feature", description: "Ik wil een andere feature testen"
+     - label: "{feature-name} (Recommended)", description: "Next from backlog"
+     - label: "Other feature", description: "I want to test a different feature"
    - multiSelect: false
 
 2. **Parse user input:**
@@ -164,7 +164,7 @@ Now TESTABLE -> TDD fix loop
    - If feature name + feedback -> parse feedback immediately
    - If "recent" -> find most recently modified feature.json with `tests.checklist`
 
-3. **Worktree switch** — voer de procedure in `shared/WORKTREE.md` uit met de feature-name. Switcht automatisch naar `worktree-{feature-name}` als die bestaat. Bij FAIL (in andere worktree dan de feature): stop met de melding uit WORKTREE.md.
+3. **Worktree switch** — execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL (in a different worktree than the feature): stop with the message from WORKTREE.md.
 
 4. **Locate playtest checklist:**
 
@@ -193,41 +193,41 @@ Now TESTABLE -> TDD fix loop
    - Note expected behavior for each item (from `title` field)
    - Count total items
    - **Classify each item:**
-     - **COVERED**: GUT unit tests from `/game-build` already verify this requirement. Check `tests/test_{feature}.gd` for matching test functions. COVERED items zijn al geverifieerd — skip in playtest.
-     - **MANUAL**: Requires human verification (gameplay feel, visuals, audio, game launch). Alles dat niet COVERED is.
-   - Display classificatie:
+     - **COVERED**: GUT unit tests from `/game-build` already verify this requirement. Check `tests/test_{feature}.gd` for matching test functions. COVERED items are already verified — skip in playtest.
+     - **MANUAL**: Requires human verification (gameplay feel, visuals, audio, game launch). Everything that is not COVERED.
+   - Display classification:
 
    ```
-   CHECKLIST CLASSIFICATIE:
+   CHECKLIST CLASSIFICATION:
 
-   COVERED ({N} items — skip, al geverifieerd door GUT tests):
+   COVERED ({N} items — skip, already verified by GUT tests):
    - Item {X}: {description} → test_{function}()
 
-   MANUAL ({M} items — playtest nodig):
+   MANUAL ({M} items — playtest required):
    - Item {Y}: {description}
    ```
 
-   Als alle items COVERED → skip playtest, ga naar FASE 6 completion.
+   If all items are COVERED → skip playtest, go to PHASE 6 completion.
 
-   **Goal-backward verificatie** — map tests terug naar acceptance criteria:
+   **Goal-backward verification** — map tests back to acceptance criteria:
 
-   Filter: requirements met `deltaOp === "REMOVED"` overslaan — niet opnemen in de mapping.
+   Filter: skip requirements with `deltaOp === "REMOVED"` — do not include in the mapping.
 
-   Bouw mapping vanuit feature.json `requirements[].acceptance` (`[{ when, then }]` objecten) en geclassificeerde items. Elk `{ when, then }` scenario = één rij:
+   Build mapping from feature.json `requirements[].acceptance` (`[{ when, then }]` objects) and classified items. Each `{ when, then }` scenario = one row:
 
-   | REQ   | When                       | Then (verwacht)           | Test Items | Dekking |
-   | ----- | -------------------------- | ------------------------- | ---------- | ------- |
-   | REQ-1 | vijand geraakt door aanval | vijand neemt schade       | Item 1, 3  | ✓       |
-   | REQ-2 | critical hit geregistreerd | knockback wordt toegepast | —          | GAP     |
+   | REQ   | When                    | Then (expected)      | Test Items | Coverage |
+   | ----- | ----------------------- | -------------------- | ---------- | -------- |
+   | REQ-1 | enemy hit by attack     | enemy takes damage   | Item 1, 3  | ✓        |
+   | REQ-2 | critical hit registered | knockback is applied | —          | GAP      |
 
-   **GAP**: requirement zonder test items (COVERED of MANUAL).
-   **MISMATCH**: test items die implementation details verifiëren i.p.v. observable gameplay (test title refereert interne functies i.p.v. speler-zichtbaar gedrag).
+   **GAP**: requirement without test items (COVERED or MANUAL).
+   **MISMATCH**: test items that verify implementation details instead of observable gameplay (test title references internal functions instead of player-visible behavior).
 
-   Geen gaps, geen mismatches → toon `Acceptance mapping: {n}/{n} REQs gedekt` en ga door.
+   No gaps, no mismatches → show `Acceptance mapping: {n}/{n} REQs covered` and continue.
 
-   Gaps of mismatches → AskUserQuestion:
-   - "Accepteer en ga door (Recommended)" — noteer, proceed
-   - "Test items aanpassen" — voeg items toe voor gaps, herformuleer mismatches
+   Gaps or mismatches → AskUserQuestion:
+   - "Accept and continue (Recommended)" — note it, proceed
+   - "Adjust test items" — add items for gaps, reformulate mismatches
 
 7. **Verify playtest scene exists:**
 
@@ -254,76 +254,76 @@ Now TESTABLE -> TDD fix loop
 
    -> Exit skill
 
-6b. **Post-Build Baseline Check** (als `build` sectie bestaat in feature.json)
+6b. **Post-Build Baseline Check** (if `build` section exists in feature.json)
 
-Twee checks vóór playtest:
+Two checks before playtest:
 
 **Check 1: Full GUT Regression Suite**
 
-Run de volledige GUT test suite om te verifiëren dat alle features nog werken:
+Run the full GUT test suite to verify all features still work:
 
 ```bash
 "{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit
 ```
 
-Parse output (zelfde regels als game-build: PASS 1 regel, FAIL max 10 regels).
+Parse output (same rules as game-build: PASS 1 line, FAIL max 10 lines).
 
 ```
 BASELINE: full suite → {passed}/{total} PASS
 ```
 
-Bij failures:
+On failures:
 
-- Onderscheid failures van de HUIDIGE feature vs ANDERE features
-- Huidige feature fails → waarschuw, ga door met playtest (dit is wat we gaan testen)
-- Andere feature fails → waarschuw:
+- Distinguish failures from the CURRENT feature vs OTHER features
+- Current feature fails → warn, continue with playtest (this is what we're going to test)
+- Other feature fails → warn:
 
   ```
-  ⚠ REGRESSIE: {N} tests van andere features falen
+  ⚠ REGRESSION: {N} tests from other features failing
   - test_{other}.test_xxx: {reason}
   ```
 
   Use AskUserQuestion:
-  - "Doorgaan met playtest (Recommended)" — "Regressies worden gerapporteerd maar blokkeren de test niet"
-  - "Stop — eerst regressies fixen" — "Fix de andere features voordat je deze test"
+  - "Continue with playtest (Recommended)" — "Regressions are reported but don't block the test"
+  - "Stop — fix regressions first" — "Fix the other features before testing this one"
 
-Als GUT niet beschikbaar of geen test bestanden → skip met: `BASELINE: overgeslagen (geen GUT tests gevonden)`
+If GUT is not available or no test files found → skip with: `BASELINE: skipped (no GUT tests found)`
 
 **Check 2: Integration Test Scene**
 
-Herrun de integration test scene als aanvullende check:
+Re-run the integration test scene as an additional check:
 
 ```bash
 "{godot_executable}" --headless --path . -s res://tests/scenes/test_{feature}_runtime.tscn
 ```
 
-Parse output voor `FINAL:PASS` of `FINAL:FAIL`.
+Parse output for `FINAL:PASS` or `FINAL:FAIL`.
 
 Display: `BASELINE: integration tests → {PASS|FAIL}`
-Bij FAIL: waarschuw ("Integration tests falen — mogelijke regressie sinds build"), toon gefaalde tests, ga door met playtest.
+On FAIL: warn ("Integration tests failing — possible regression since build"), show failed tests, continue with playtest.
 
-Als integration test scene niet bestaat → skip, geen output.
+If integration test scene does not exist → skip, no output.
 
-6c. **Cross-Requirement Gameplay Scenario's** (als `build` sectie bestaat en 2+ requirements)
+6c. **Cross-Requirement Gameplay Scenarios** (if `build` section exists and 2+ requirements)
 
-Analyseer `requirements[]` uit feature.json. Identificeer combinaties waar gameplay-interacties meerdere requirements raken.
+Analyze `requirements[]` from feature.json. Identify combinations where gameplay interactions touch multiple requirements.
 
-Genereer maximaal 3 gameplay scenario's:
+Generate at most 3 gameplay scenarios:
 
 ```
-GAMEPLAY SCENARIO'S: {feature}
+GAMEPLAY SCENARIOS: {feature}
 
-| # | Scenario                                      | Requirements     |
-|---|-----------------------------------------------|------------------|
-| G1| Gebruik ability → observeer effect → check cooldown | REQ-001 + REQ-003 |
-| G2| Ability op meerdere vijanden → effects stapelen?    | REQ-001 + REQ-002 |
-| G3| Ability tijdens beweging → positie correct?         | REQ-001 + REQ-004 |
+| # | Scenario                                           | Requirements      |
+|---|----------------------------------------------------|-------------------|
+| G1| Use ability → observe effect → check cooldown      | REQ-001 + REQ-003 |
+| G2| Ability on multiple enemies → effects stack?       | REQ-001 + REQ-002 |
+| G3| Ability while moving → position correct?           | REQ-001 + REQ-004 |
 ```
 
-Voeg deze toe aan de checklist als extra items met `"integration": true, "type": "MANUAL"`.
-Ze worden meegenomen in de playtest instructies.
+Add these to the checklist as extra items with `"integration": true, "type": "MANUAL"`.
+They are included in the playtest instructions.
 
-Als er geen logische cross-requirement combinaties zijn → skip, geen output.
+If there are no logical cross-requirement combinations → skip, no output.
 
 7. **Launch game with test scenario:**
 
@@ -342,20 +342,20 @@ Als er geen logische cross-requirement combinaties zijn → skip, geen output.
 
    TEST SCENARIO:
 
-   Stap 1: {first action from checklist}
-   Stap 2: {second action}
-   Stap 3: {third action}
+   Step 1: {first action from checklist}
+   Step 2: {second action}
+   Step 3: {third action}
    ...
 
-   VERWACHT GEDRAG:
+   EXPECTED BEHAVIOR:
    - {expected result 1}
    - {expected result 2}
    - {expected result 3}
 
-   Debug tracking is actief - je acties worden gelogd.
+   Debug tracking is active - your actions are being logged.
 
-   Voer deze acties uit in de game.
-   Sluit de game als je klaar bent.
+   Perform these actions in the game.
+   Close the game when you are done.
    ```
 
    **Note:** Game runs in background. DebugListener captures all debug\_\* signals.
@@ -363,23 +363,23 @@ Als er geen logische cross-requirement combinaties zijn → skip, geen output.
 8. **Wait for user completion:**
 
    When user closes game or indicates ready, use AskUserQuestion tool:
-   - header: "Test Resultaat"
-   - question: "Hoe ging de test?"
+   - header: "Test Result"
+   - question: "How did the test go?"
    - options:
-     - label: "Alles werkt (Aanbevolen)", description: "Alle stappen werken zoals verwacht"
-     - label: "Er zijn problemen", description: "Sommige dingen werken niet goed"
-     - label: "Game crashte", description: "De game stopte onverwacht"
+     - label: "Everything works (Recommended)", description: "All steps work as expected"
+     - label: "There are issues", description: "Some things don't work correctly"
+     - label: "Game crashed", description: "The game stopped unexpectedly"
    - multiSelect: false
 
    **Response handling:**
 
-   **If "Alles werkt":**
-   -> Skip to FASE 6 (Completion), mark all items PASS
+   **If "Everything works":**
+   -> Skip to PHASE 6 (Completion), mark all items PASS
 
-   **If "Er zijn problemen":**
-   -> Proceed to FASE 1b (Debug Analysis + User Details)
+   **If "There are issues":**
+   -> Proceed to PHASE 1b (Debug Analysis + User Details)
 
-   **If "Game crashte":**
+   **If "Game crashed":**
 
    ```python
    crash_output = mcp__godot-mcp__get_debug_output()
@@ -424,7 +424,7 @@ Feedback: received
 
 **Tag backlog + capture baseline:**
 
-- Backlog: lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`). Zoek feature op naam → zet `"stage": "testing"`, `data.updated` → nu (Edit, keep `<script>` tags intact)
+- Backlog: read `.project/backlog.html` (if it exists), parse JSON (see `shared/BACKLOG.md`). Find feature by name → set `"stage": "testing"`, `data.updated` → now (Edit, keep `<script>` tags intact)
 - Git baseline + session file:
 
 ```bash
@@ -433,9 +433,9 @@ git status --porcelain | sort > .project/session/pre-skill-status.txt
 echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
-### FASE 1: Parse Feedback
+### PHASE 1: Parse Feedback
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
 **Goal:** Extract PASS/FAIL status and notes from user feedback.
 
@@ -466,12 +466,12 @@ echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}"}'
    **If cannot parse:**
 
    Use AskUserQuestion tool:
-   - header: "Feedback Onduidelijk"
-   - question: "Ik kon de feedback niet goed parsen. Kun je het in dit formaat geven?"
+   - header: "Feedback Unclear"
+   - question: "I could not parse the feedback correctly. Can you provide it in this format?"
    - options:
-     - label: "Opnieuw invoeren (Aanbevolen)", description: "Gebruik formaat: 1:PASS 2:FAIL [notes]"
-     - label: "Per item doorgaan", description: "Ik vraag per item of het PASS of FAIL is"
-     - label: "Uitleg", description: "Leg de feedback formaten uit"
+     - label: "Re-enter (Recommended)", description: "Use format: 1:PASS 2:FAIL [notes]"
+     - label: "Go through item by item", description: "I will ask per item whether it is PASS or FAIL"
+     - label: "Explanation", description: "Explain the feedback formats"
    - multiSelect: false
 
 5. **Build results array:**
@@ -504,13 +504,13 @@ Failed: 2 items
 
 ---
 
-### FASE 1b: Debug Analysis
+### PHASE 1b: Debug Analysis
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 1b → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 1b → `in_progress`.
 
 **Goal:** Combine debug output with user feedback for accurate issue identification.
 
-**When to use:** This fase runs when user selected "Er zijn problemen" in step 7.
+**When to use:** This phase runs when user selected "There are issues" in step 7.
 
 **Steps:**
 
@@ -536,10 +536,10 @@ Failed: 2 items
    ...
    ```
 
-3. **Toon checklist en vraag welke items niet werkten:**
+3. **Show checklist and ask which items did not work:**
 
    ```
-   Checklist items ({N} totaal):
+   Checklist items ({N} total):
 
    1. [Visuals] {item-1}
    2. [Controls] {item-2}
@@ -547,20 +547,20 @@ Failed: 2 items
    ...
    ```
 
-   Vraag: "Welke items werkten niet? Geef nummers (bv. `1, 3, 5`) of `geen` als alles werkte."
+   Question: "Which items did not work? Give numbers (e.g. `1, 3, 5`) or `none` if everything worked."
 
-   Parse → failure-set, ga door naar Step 4 voor specifics per geselecteerd item.
+   Parse → failure-set, continue to Step 4 for specifics per selected item.
 
 4. **For each selected problem, ask specifics:**
 
    ```
-   Je selecteerde: "Item 3: Puddle spawnt op impact"
+   You selected: "Item 3: Puddle spawns on impact"
 
-   Wat was het probleem precies?
-   - Puddle verscheen niet?
-   - Verkeerde positie?
-   - Verkeerde grootte?
-   - Anders?
+   What was the exact problem?
+   - Puddle did not appear?
+   - Wrong position?
+   - Wrong size?
+   - Something else?
    ```
 
    Wait for user description.
@@ -570,7 +570,7 @@ Failed: 2 items
    ```
    ISSUE ANALYSIS: Item 3
 
-   User feedback: "Puddle verscheen niet"
+   User feedback: "Puddle did not appear"
 
    Debug log analysis:
    ✓ debug_ability_used signal: FOUND at 00:01.456
@@ -584,7 +584,7 @@ Failed: 2 items
    Likely cause: Missing call in execute() after damage calculation
    ```
 
-6. **Generate enriched feedback for FASE 2:**
+6. **Generate enriched feedback for PHASE 2:**
 
    Convert to structured feedback with debug context:
 
@@ -621,13 +621,13 @@ Root causes identified: {count}
 -> Proceeding to categorize issues with debug context...
 ```
 
--> Continue to FASE 2 (Categorize Issues) with enriched feedback
+-> Continue to PHASE 2 (Categorize Issues) with enriched feedback
 
 ---
 
-### FASE 2: Categorize Issues
+### PHASE 2: Categorize Issues
 
-> **Todo**: markeer FASE 1b → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1b → `completed`, PHASE 2 → `in_progress`.
 
 **Goal:** Determine fix approach for each failed item.
 
@@ -668,15 +668,15 @@ Root causes identified: {count}
 2. **Handle SUBJECTIVE issues immediately:**
 
    For each SUBJECTIVE item, use AskUserQuestion tool:
-   - header: "Verduidelijking Item {N}"
-   - question: "'{notes}' is niet specifiek genoeg. Wat is er precies mis?"
+   - header: "Clarification Item {N}"
+   - question: "'{notes}' is not specific enough. What exactly is wrong?"
    - options: (context-dependent, examples below)
-     - label: "Te snel/langzaam", description: "Timing of snelheid probleem"
-     - label: "Te sterk/zwak", description: "Damage, kracht, of effect probleem"
-     - label: "Verkeerde timing", description: "Wanneer iets gebeurt klopt niet"
-     - label: "Visueel probleem", description: "Hoe het eruit ziet klopt niet"
-     - label: "Audio probleem", description: "Geluid mist of klopt niet"
-     - label: "Anders", description: "Ik beschrijf het specifiek"
+     - label: "Too fast/slow", description: "Timing or speed problem"
+     - label: "Too strong/weak", description: "Damage, force, or effect problem"
+     - label: "Wrong timing", description: "When something happens is incorrect"
+     - label: "Visual problem", description: "How it looks is incorrect"
+     - label: "Audio problem", description: "Sound is missing or incorrect"
+     - label: "Other", description: "I will describe it specifically"
    - multiSelect: false
 
    After clarification:
@@ -709,9 +709,9 @@ FAILED: 2 items (3, 4)
 
 ---
 
-### FASE 3: Fix Loop
+### PHASE 3: Fix Loop
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
 **Goal:** Fix all issues using appropriate method for each type.
 
@@ -751,10 +751,10 @@ COMPLEX (offer research):
 Use AskUserQuestion tool:
 
 - header: "Research"
-- question: "Dit is een complexe fix ({brief issue description}). Wil je Godot patterns researchen?"
+- question: "This is a complex fix ({brief issue description}). Do you want to research Godot patterns?"
 - options:
-  - label: "Ja, research (Aanbevolen)", description: "Research beste aanpak"
-  - label: "Nee, direct fixen", description: "Fix zonder research"
+  - label: "Yes, research (Recommended)", description: "Research best approach"
+  - label: "No, fix directly", description: "Fix without research"
 - multiSelect: false
 
 **If research requested:**
@@ -824,11 +824,11 @@ Use research findings to inform the fix implementation below.
 
    Use AskUserQuestion tool:
    - header: "Test Passed"
-   - question: "De test slaagt al. Wat wil je doen?"
+   - question: "The test already passes. What do you want to do?"
    - options:
-     - label: "Overslaan (Aanbevolen)", description: "Item lijkt al gefixt, ga naar volgende"
-     - label: "Test aanpassen", description: "De test klopt niet, ik geef nieuwe waarden"
-     - label: "Handmatig checken", description: "Stop en check dit handmatig"
+     - label: "Skip (Recommended)", description: "Item appears already fixed, move to next"
+     - label: "Adjust test", description: "The test is incorrect, I will provide new values"
+     - label: "Check manually", description: "Stop and check this manually"
    - multiSelect: false
 
    **If test FAILS (expected):**
@@ -880,7 +880,7 @@ Use research findings to inform the fix implementation below.
    - No test possible (subjective/feel)
    - Document the change
 
-3. **Report fix:**
+3. **Result:**
 
    ```
    FIXED (cannot auto-verify)
@@ -911,9 +911,9 @@ Files modified: 2
 
 ---
 
-### FASE 4: Generate Re-test Checklist
+### PHASE 4: Generate Re-test Checklist
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
 **Goal:** Create minimal checklist for only the fixed items.
 
@@ -959,22 +959,22 @@ Provide feedback when ready.
 
 ---
 
-### FASE 5: Re-test Loop
+### PHASE 5: Re-test Loop
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
 **Goal:** Process re-test feedback and loop until all pass.
 
 **Steps:**
 
 1. **Parse re-test feedback:**
-   - Same parsing as FASE 1
+   - Same parsing as PHASE 1
    - Only expect results for fixed items
 
 2. **Evaluate results:**
 
    **If all re-tests PASS:**
-   -> Continue to FASE 6 (Completion)
+   -> Continue to PHASE 6 (Completion)
 
    **If any re-tests FAIL:**
 
@@ -992,16 +992,16 @@ Provide feedback when ready.
 3. **Handle persistent failures:**
 
    Use AskUserQuestion tool:
-   - header: "Item {N} Faalt Nog"
-   - question: "Item {N} werkt nog niet na fix. Wat wil je doen?"
+   - header: "Item {N} Still Failing"
+   - question: "Item {N} still does not work after the fix. What do you want to do?"
    - options:
-     - label: "Meer details geven (Aanbevolen)", description: "Ik geef specifiekere feedback"
-     - label: "Andere aanpak", description: "Probeer een andere fix strategie"
-     - label: "Accepteren zoals het is", description: "Markeer als acceptabel voor nu"
-     - label: "Handmatig fixen", description: "Stop en fix het zelf"
+     - label: "Provide more details (Recommended)", description: "I will give more specific feedback"
+     - label: "Different approach", description: "Try a different fix strategy"
+     - label: "Accept as-is", description: "Mark as acceptable for now"
+     - label: "Fix manually", description: "Stop and fix it yourself"
    - multiSelect: false
 
-4. **Loop back to FASE 2:**
+4. **Loop back to PHASE 2:**
    - Re-categorize new feedback
    - Apply new fixes
    - Generate new re-test checklist
@@ -1009,105 +1009,105 @@ Provide feedback when ready.
 
 ---
 
-### FASE 5c: Regression Check
+### PHASE 5c: Regression Check
 
-> **Todo**: markeer FASE 5 → `completed`, FASE 5c → `in_progress`.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 5c → `in_progress`.
 
 **Skip when:**
 
-- Geen TDD fixes toegepast in FASE 3 (alleen MEASURABLE fixes → lage kans op side effects)
-- Geen bestaande test files om te draaien
+- No TDD fixes applied in PHASE 3 (only MEASURABLE fixes → low chance of side effects)
+- No existing test files to run
 
-**Doel:** Verifieer dat fixes geen eerder-werkende tests hebben gebroken.
+**Goal:** Verify that fixes have not broken previously-passing tests.
 
-Draai `gut_cmdln.gd` opnieuw voor ALLE bestaande test files (niet alleen de gefixte). Vergelijk output met de FASE 0.6b baseline.
+Re-run `gut_cmdln.gd` for ALL existing test files (not just the fixed ones). Compare output with the PHASE 0.6b baseline.
 
 ```
 REGRESSION CHECK: {feature-name}
 
-GUT test suite opnieuw gedraaid...
+GUT test suite re-run...
 
 Baseline: {n} pass / {n} fail
-Nu:       {n} pass / {n} fail
+Now:      {n} pass / {n} fail
 
-Nieuwe failures:
+New failures:
 - test_{x}.gd::test_{method}: {assertion error}
 
-Regressies: {n} | Stabiel: {n}
+Regressions: {n} | Stable: {n}
 ```
 
-**Geen regressies:** Door naar FASE 6.
+**No regressions:** Continue to PHASE 6.
 
-**Regressies:** Toon en bied keuze via AskUserQuestion: Fixen (Aanbevolen) | Accepteren. Bij fixen → terug naar FASE 3 voor alleen de regressie-items. Herhaal FASE 5c NIET na regressie-fix (max 1 pass).
+**Regressions:** Show and offer choice via AskUserQuestion: Fix (Recommended) | Accept. If fixing → back to PHASE 3 for the regression items only. Do NOT repeat PHASE 5c after a regression fix (max 1 pass).
 
 ---
 
-### FASE 5d: Requirement Verification
+### PHASE 5d: Requirement Verification
 
-> **Todo**: markeer FASE 5c → `completed`, FASE 5d → `in_progress`.
+> **Todo**: mark PHASE 5c → `completed`, PHASE 5d → `in_progress`.
 
-**Skip when:** Alle tests FAIL (coverage check zinloos bij catastrofale failures).
+**Skip when:** All tests FAIL (coverage check is pointless with catastrophic failures).
 
-Cross-check `feature.json` requirements tegen test resultaten:
+Cross-check `feature.json` requirements against test results:
 
-1. **Laad requirement → test mapping:**
-   - Per `requirements[]` entry (id, description, status) — **skip entries met `deltaOp === "REMOVED"`**
-   - Zoek matching `tests.checklist[]` entries via `requirementId`
+1. **Load requirement → test mapping:**
+   - Per `requirements[]` entry (id, description, status) — **skip entries with `deltaOp === "REMOVED"`**
+   - Find matching `tests.checklist[]` entries via `requirementId`
 
-2. **Bouw coverage matrix:**
+2. **Build coverage matrix:**
 
    ```
    REQUIREMENT COVERAGE: {feature-name}
 
-   | REQ       | Beschrijving (kort)        | Tests | Status        |
+   | REQ       | Description (short)        | Tests | Status        |
    |-----------|----------------------------|-------|---------------|
-   | REQ-001   | {eerste 40 chars}          | 2     | ✓ COVERED     |
-   | REQ-002   | {eerste 40 chars}          | 0     | ✗ GEEN TEST   |
-   | REQ-003   | {eerste 40 chars}          | 1     | ⊘ BLOCKED     |
-   | REQ-004   | {eerste 40 chars}          | 0     | ? UNCLEAR     |
+   | REQ-001   | {first 40 chars}           | 2     | ✓ COVERED     |
+   | REQ-002   | {first 40 chars}           | 0     | ✗ NO TEST     |
+   | REQ-003   | {first 40 chars}           | 1     | ⊘ BLOCKED     |
+   | REQ-004   | {first 40 chars}           | 0     | ? UNCLEAR     |
 
    Coverage: {covered}/{total} requirements ({percentage}%)
-   Non-testable: BLOCKED={n} UNCLEAR={n} (heropenen nodig)
+   Non-testable: BLOCKED={n} UNCLEAR={n} (needs reopening)
    ```
 
-3. **Classificeer per requirement:**
-   - **COVERED**: minstens 1 test met matching `requirementId` EN status `PASS`
-   - **FAIL**: minstens 1 test matching maar status `FAIL`
-   - **BLOCKED**: test bestaat niet of faalt door externe dependency (missing asset, addon niet geladen, export-preset ontbreekt)
-   - **UNCLEAR**: geen test mogelijk omdat acceptance criteria te vaag is (bv. "voelt juicy", "is fun") — niet-deterministisch
-   - **GEEN TEST**: geen test in `checklist[]` met matching `requirementId` (geen legitieme reden)
+3. **Classify per requirement:**
+   - **COVERED**: at least 1 test with matching `requirementId` AND status `PASS`
+   - **FAIL**: at least 1 test matching but status `FAIL`
+   - **BLOCKED**: test does not exist or fails due to external dependency (missing asset, addon not loaded, export preset missing)
+   - **UNCLEAR**: no test possible because acceptance criteria is too vague (e.g. "feels juicy", "is fun") — non-deterministic
+   - **NO TEST**: no test in `checklist[]` with matching `requirementId` (no legitimate reason)
 
-4. **Alle requirements COVERED:** toon compact samenvatting, door naar FASE 6.
+4. **All requirements COVERED:** show compact summary, continue to PHASE 6.
 
-5. **Bij GEEN TEST, FAIL, BLOCKED of UNCLEAR requirements:**
+5. **On NO TEST, FAIL, BLOCKED or UNCLEAR requirements:**
 
-   Per ongedekt requirement, AskUserQuestion:
+   Per uncovered requirement, AskUserQuestion:
 
    ```yaml
-   header: "REQ niet gedekt: {REQ-ID}"
-   question: "{requirement description} — geen test gevonden. Wat wil je doen?"
+   header: "REQ not covered: {REQ-ID}"
+   question: "{requirement description} — no test found. What do you want to do?"
    options:
-     - label: "Test toevoegen (Recommended)", description: "Schrijf een test voor dit requirement"
-     - label: "Gedekt door andere test", description: "Impliciet getest via een andere test"
-     - label: "Blocked door dependency", description: "Missing asset/addon/preset — niet testbaar nu"
-     - label: "Criteria te vaag", description: "Acceptance criteria mist concreetheid — heropen /game-define"
+     - label: "Add test (Recommended)", description: "Write a test for this requirement"
+     - label: "Covered by other test", description: "Implicitly tested via another test"
+     - label: "Blocked by dependency", description: "Missing asset/addon/preset — not testable now"
+     - label: "Criteria too vague", description: "Acceptance criteria lacks concreteness — reopen /game-define"
    multiSelect: false
    ```
 
-   - **Test toevoegen** → voeg test item toe aan `tests.checklist[]` met `requirementId`, `status: "pending"`. Loop terug naar FASE 1 voor GUT test of FASE 2 (MANUAL) voor alleen dit item.
-   - **Gedekt door andere test** → vraag welke test het dekt. Markeer requirement met `implicitCoverage: "{REQ-ID} test also validates this via {beschrijving}"`. Status → `"PASS"`.
-   - **Blocked door dependency** → vraag welke dependency. Status → `"BLOCKED"`, voeg toe aan `requirements[].evidence = "blocked by: {reason}"`. Niet mergen-blokkerend; signaal voor heropenen na dependency-fix.
-   - **Criteria te vaag** → vraag wat vaag is. Status → `"UNCLEAR"`, voeg toe aan `requirements[].evidence = "needs clarification: {what's vague}"`. Signaal voor `/game-define` heropen om concrete acceptance te formuleren.
+   - **Add test** → add test item to `tests.checklist[]` with `requirementId`, `status: "pending"`. Loop back to PHASE 1 for GUT test or PHASE 2 (MANUAL) for this item only.
+   - **Covered by other test** → ask which test covers it. Mark requirement with `implicitCoverage: "{REQ-ID} test also validates this via {description}"`. Status → `"PASS"`.
+   - **Blocked by dependency** → ask which dependency. Status → `"BLOCKED"`, add to `requirements[].evidence = "blocked by: {reason}"`. Not merge-blocking; signal to reopen after dependency fix.
+   - **Criteria too vague** → ask what is vague. Status → `"UNCLEAR"`, add to `requirements[].evidence = "needs clarification: {what's vague}"`. Signal for `/game-define` reopen to formulate concrete acceptance.
 
 ---
 
-### FASE 6: Completion
+### PHASE 6: Completion
 
-> **Todo**: markeer FASE 5d → `completed`, FASE 6 → `in_progress`.
+> **Todo**: mark PHASE 5d → `completed`, PHASE 6 → `in_progress`.
 
 **Goal:** Sync user on fixes, capture observations, mark feature as verified and update documentation.
 
-#### Step 0: Fix Sync (only when fixes were applied in FASE 3)
+#### Step 0: Fix Sync (only when fixes were applied in PHASE 3)
 
 **Skip this step if all items passed on first attempt (no fixes needed).**
 
@@ -1142,16 +1142,16 @@ Fix 2: No sound on cast
 **0b) Comprehension check** via AskUserQuestion:
 
 - header: "Fix Sync"
-- question: "Snap je de fixes die zijn toegepast?"
+- question: "Do you understand the fixes that were applied?"
 - options:
-  - label: "Ja, helder (Aanbevolen)", description: "Ik begrijp wat er is veranderd en waarom"
-  - label: "Leg meer uit", description: "Geef een uitgebreidere uitleg met voorbeelden"
-  - label: "Ik heb een vraag", description: "Ik wil iets specifieks vragen"
+  - label: "Yes, clear (Recommended)", description: "I understand what changed and why"
+  - label: "Explain more", description: "Give a more detailed explanation with examples"
+  - label: "I have a question", description: "I want to ask about something specific"
 - multiSelect: false
 
-**If "Leg meer uit"** → explain each fix in more detail with before/after examples, then re-ask.
-**If "Ik heb een vraag"** → answer the question, then re-ask.
-**Loop until "Ja, helder".**
+**If "Explain more"** → explain each fix in more detail with before/after examples, then re-ask.
+**If "I have a question"** → answer the question, then re-ask.
+**Loop until "Yes, clear".**
 
 **0c) Save fix sync** — store the summary for inclusion in feature.json `tests.sessions[]`.
 
@@ -1163,21 +1163,21 @@ The user was actively playtesting and may have noticed issues outside the curren
 
 Use AskUserQuestion tool:
 
-- header: "Observaties"
-- question: "Is je tijdens het playtesten nog iets anders opgevallen buiten de scope van deze feature?"
+- header: "Observations"
+- question: "Did you notice anything else during playtesting that is outside the scope of this feature?"
 - options:
-  - label: "Nee, alles goed (Aanbevolen)", description: "Geen verdere opmerkingen"
-  - label: "Ja, ik heb iets opgemerkt", description: "Ik wil iets noteren voor later"
+  - label: "No, all good (Recommended)", description: "No further remarks"
+  - label: "Yes, I noticed something", description: "I want to note something for later"
 - multiSelect: false
 
-**If "Ja"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in feature.json `observations[]`. Do NOT attempt to fix these — they are out of scope.
+**If "Yes"** → ask the user to describe what they noticed (plain text, no modal). Record the observations for inclusion in feature.json `observations[]`. Do NOT attempt to fix these — they are out of scope.
 
 After documenting, show confirmation:
 
 ```
-OBSERVATIE GENOTEERD
+OBSERVATION NOTED
 
-Opgenomen in test results.
+Recorded in test results.
 ```
 
 ---
@@ -1203,32 +1203,32 @@ Opgenomen in test results.
 
 2. **Parallel sync** (feature.json + backlog + project.json + project-context.json):
 
-   Lees parallel (skip als niet bestaat):
+   Read in parallel (skip if not exists):
    - `.project/features/{feature-name}/feature.json`
    - `.project/backlog.html`
    - `.project/project.json`
    - `.project/project-context.json`
 
-   Muteer in memory:
+   Mutate in memory:
 
-   **feature.json**: `status` → `"DONE"`, `requirements[].status` → `"PASS"` / `"FAIL"` / `"BLOCKED"` / `"UNCLEAR"` per item (BLOCKED/UNCLEAR includeren `evidence` string), `tests.checklist[].status` → update per item with evidence. Add/update `tests` sectie: `finalStatus` (`"PASSED"` alle PASS / `"FAILED"` ≥1 FAIL / `"PARTIAL"` ≥1 BLOCKED of UNCLEAR, 0 FAIL), `sessions[]` (push `{ date, pass, fail, fixes }`), `fixSync`, `verificationCheckpoint` (gaps, mismatches, adjustments). Add `observations[]` if user reported out-of-scope issues. NIET andere secties overschrijven.
+   **feature.json**: `status` → `"DONE"`, `requirements[].status` → `"PASS"` / `"FAIL"` / `"BLOCKED"` / `"UNCLEAR"` per item (BLOCKED/UNCLEAR include `evidence` string), `tests.checklist[].status` → update per item with evidence. Add/update `tests` section: `finalStatus` (`"PASSED"` all PASS / `"FAILED"` ≥1 FAIL / `"PARTIAL"` ≥1 BLOCKED or UNCLEAR, 0 FAIL), `sessions[]` (push `{ date, pass, fail, fixes }`), `fixSync`, `verificationCheckpoint` (gaps, mismatches, adjustments). Add `observations[]` if user reported out-of-scope issues. Do NOT overwrite other sections.
 
-   **Backlog** (zie `shared/BACKLOG.md`): zet `.status = "DONE"`, `data.updated` → huidige datum.
+   **Backlog** (see `shared/BACKLOG.md`): set `.status = "DONE"`, `data.updated` → current date.
 
-   **project.json**: Feature status → `"DONE"`. Merge nieuwe packages als relevant.
+   **project.json**: Feature status → `"DONE"`. Merge new packages if relevant.
 
-   **project-context.json**: Bij fixes in FASE 3: update `architecture.components[]` — merge gewijzigde bestanden naar component `src`/`test`, bevestig `status: "done"`.
+   **project-context.json**: On fixes in PHASE 3: update `architecture.components[]` — merge modified files to component `src`/`test`, confirm `status: "done"`.
 
-   **Learning Extraction** — extracteer projectbrede learnings uit de voltooide feature:
+   **Learning Extraction** — extract project-wide learnings from the completed feature:
 
-   Lees de zojuist geschreven `feature.json` en evalueer (verplichte source-tag per bron):
-   - `build.decisions[]` → type `pattern`, source `extracted` (architecturale keuzes die andere features beïnvloeden)
-   - `tests.fixSync[]` en `tests.sessions[].fixes` → type `pitfall`, source `extracted` (bugs met root causes)
-   - `observations[]` → type `observation`, source `inferred` (cross-feature inzichten)
+   Read the just-written `feature.json` and evaluate (mandatory source tag per source):
+   - `build.decisions[]` → type `pattern`, source `extracted` (architectural choices that affect other features)
+   - `tests.fixSync[]` and `tests.sessions[].fixes` → type `pitfall`, source `extracted` (bugs with root causes)
+   - `observations[]` → type `observation`, source `inferred` (cross-feature insights)
 
-   **Filter**: alleen items die relevant zijn buiten deze ene feature. Skip feature-specifieke implementatiedetails.
+   **Filter**: only items relevant outside this single feature. Skip feature-specific implementation details.
 
-   **Append** naar `project-context.json` → `learnings[]`:
+   **Append** to `project-context.json` → `learnings[]`:
 
    ```json
    {
@@ -1236,28 +1236,28 @@ Opgenomen in test results.
      "feature": "{feature-name}",
      "type": "pattern|pitfall|observation",
      "source": "extracted|inferred",
-     "summary": "Max 200 chars samenvatting"
+     "summary": "Max 200 char summary"
    }
    ```
 
-   **Dedup** voor elke candidate learning:
-   1. Exact shortcut: zelfde feature + zelfde summary → skip (geen Jaccard nodig)
-   2. Tokeniseer candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer
-   3. Voor elke bestaande learning in `learnings[]` met hetzelfde `type`:
+   **Dedup** for each candidate learning:
+   1. Exact shortcut: same feature + same summary → skip (no Jaccard needed)
+   2. Tokenize candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer
+   3. For each existing learning in `learnings[]` with the same `type`:
       - `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip candidate
-   4. Overleeft beide checks → append
+   4. Survives both checks → append
 
-   Geen learnings gevonden → skip.
+   No learnings found → skip.
 
-   Schrijf parallel terug:
+   Write in parallel:
    - Write `feature.json`
    - Edit `backlog.html` (keep `<script>` tags intact)
    - Write `project.json`
-   - Write `project-context.json` (als context/architecture/learnings gewijzigd)
+   - Write `project-context.json` (if context/architecture/learnings changed)
 
 3. **Scoped auto-commit** (only this skill's changes):
 
-   Compare current git status with baseline from FASE 0:
+   Compare current git status with baseline from PHASE 0:
 
    ```bash
    git status --porcelain | sort > /tmp/current-status.txt
@@ -1295,19 +1295,19 @@ Items: {N}/{N} passing
 Committed: test({feature}): verified
 
 Next steps:
-  1. /game-refactor → code quality check + learnings extractie
-  2. /game-define {next-feature} → volgende feature oppakken
+  1. /game-refactor → code quality check + learning extraction
+  2. /game-define {next-feature} → pick up next feature
 ```
 
-**Worktree integration hint** — voeg één extra regel toe als beide voorwaarden waar zijn:
+**Worktree integration hint** — append one extra line if both conditions are true:
 
-1. Huidige branch matcht `worktree-*` pattern (`git branch --show-current`)
-2. Feature is na deze run op `status: "DONE"` in backlog
+1. Current branch matches `worktree-*` pattern (`git branch --show-current`)
+2. Feature is set to `status: "DONE"` in backlog after this run
 
 Append:
 
 ```
-💡 Feature klaar — run /core-merge {feature-name} om te integreren naar main/develop
+Feature done — run /core-merge {feature-name} to integrate into main/develop
 ```
 
 ---
@@ -1351,11 +1351,11 @@ Claude: FEEDBACK ANALYSIS
         | 3 | "too small" | SUBJECTIVE | Need details |
         | 4 | "no sound" | MEASURABLE | Direct fix |
 
-        [AskUserQuestion: "Verduidelijking Item 3"
-         question: "'too small' is niet specifiek genoeg. Wat bedoel je?"
-         options: "2x groter", "3x groter", "Specifieke radius (px)", "Anders"]
+        [AskUserQuestion: "Clarification Item 3"
+         question: "'too small' is not specific enough. What do you mean?"
+         options: "2x bigger", "3x bigger", "Specific radius (px)", "Other"]
 
-User: 2x groter
+User: 2x bigger
 
 Claude: Now testable! Starting TDD fix loop...
 
@@ -1400,7 +1400,7 @@ Claude: WATER-ABILITY COMPLETE!
 
 ### Language
 
-Follow the Language Policy in CLAUDE.md. AskUserQuestion labels in user's preferred language.
+Follow the Language Policy in `skills/shared/LANGUAGE.md`. AskUserQuestion labels in user's preferred language.
 
 ### TDD for Testable Issues
 
@@ -1451,11 +1451,11 @@ This skill must ALWAYS:
 
 ## Path Resolution
 
-`{godot_executable}` in commands wordt opgelost via `paths.yaml`:
+`{godot_executable}` in commands is resolved via `paths.yaml`:
 
 - macOS: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Windows: `C:\Godot\Godot_v4.4.1-stable_win64.exe`
 
-Override: env var `CLAUDE_GODOT_EXECUTABLE` of `.claude/paths.local.yaml`. Canonical defaults staan in [skills/project-add/paths.yaml](skills/project-add/paths.yaml).
+Override: env var `CLAUDE_GODOT_EXECUTABLE` or `.claude/paths.local.yaml`. Canonical defaults are in [skills/project-add/paths.yaml](skills/project-add/paths.yaml).
 
-> **Todo**: markeer FASE 6 → `completed`.
+> **Todo**: mark PHASE 6 → `completed`.

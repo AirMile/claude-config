@@ -30,7 +30,7 @@ Bij de eerste `.project/` operatie (read of write):
 
 Bij skill completion, sync feature state naar de relevante bestanden:
 
-### Stap 1: Read (parallel, skip als niet bestaat)
+### Step 1: Read (parallel, skip als niet bestaat)
 
 Lees **direct voor het editen** — vertrouw NIET op reads uit eerdere fases (Prettier/linters kunnen bestanden tussentijds wijzigen):
 
@@ -40,7 +40,7 @@ Lees **direct voor het editen** — vertrouw NIET op reads uit eerdere fases (Pr
 - `.project/project-context.json` (alleen als context/architecture/learnings gewijzigd — build/test/refactor skills)
 - `.project/project-concept.md` (alleen als concept gewijzigd — thinking/plan skills)
 
-### Stap 2: Muteer in memory
+### Step 2: Muteer in memory
 
 **feature.json** — read-modify-write, behoud alle bestaande secties. Skill voegt specifieke velden toe/update (zie skill-specifieke mutaties).
 
@@ -77,14 +77,14 @@ Lees `.project/project-context.json` (of maak aan met `{}`). Merge per sectie:
 
 Schrijf het volledige concept document als plain markdown naar `.project/project-concept.md`. Update gelijktijdig `concept.name` en `concept.pitch` in `project.json` (zodat lichte readers actuele metadata hebben).
 
-### Stap 3: Write (parallel)
+### Step 3: Write (parallel)
 
 - Write `feature.json` (of targeted Edit als alleen specifieke velden wijzigen)
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Write `project.json` (of targeted Edit)
 - Write `project-context.json` (als context/architecture/learnings gewijzigd)
 
-### Stap 4: Skip-worktree herstellen
+### Step 4: Skip-worktree herstellen
 
 Na het schrijven van `.project/` bestanden, zet skip-worktree op eventuele nieuwe bestanden:
 

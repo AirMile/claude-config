@@ -2,13 +2,13 @@
 name: core-bootstrap
 description: >-
   Bootstrap user-level ~/.claude/ (CLAUDE.md, settings.json, keybindings,
-  statusline) + globale symlinks/junctions naar de claude-config repo. Eenmalig
-  per machine — idempotent, skip files die al bestaan tenzij --force. Use with
+  statusline) + global symlinks/junctions to the claude-config repo. One-time
+  per machine — idempotent, skips files that already exist unless --force. Use with
   /core-bootstrap.
 argument-hint: "[--force]"
 metadata:
   author: mileszeilstra
-  version: 1.0.0
+  version: 1.1.0
   category: core
 ---
 
@@ -16,22 +16,22 @@ metadata:
 
 **Trigger**: `/core-bootstrap [--force]`
 
-Bootstrap van de user-globale Claude Code configuratie. Deployt 4 user-files naar `~/.claude/` en maakt 4 globale symlinks/junctions aan. Eenmalig per machine na het clonen van de claude-config repo.
+Bootstrap of the user-global Claude Code configuration. Deploys 4 user-files to `~/.claude/` and creates 4 global symlinks/junctions. One-time per machine after cloning the claude-config repo.
 
-`--force`: overschrijft bestaande user-files (FASE 1). Symlinks zijn altijd idempotent via `ln -sfn` / pre-check.
+`--force`: overwrites existing user-files (PHASE 1). Symlinks are always idempotent via `ln -sfn` / pre-check.
 
 ---
 
-## FASE 0: Pre-flight
+## PHASE 0: Pre-flight
 
-Resolve `CONFIG_REPO` — de root van de geclonte claude-config repo:
+Resolve `CONFIG_REPO` — the root of the cloned claude-config repo:
 
 ```bash
-# macOS/Linux — volg symlink van ~/.claude/skills als die al bestaat
+# macOS/Linux — follow symlink of ~/.claude/skills if it already exists
 if [ -L "$HOME/.claude/skills" ]; then
   CONFIG_REPO="$(realpath "$HOME/.claude/skills/..")"
 else
-  # Fallback: huidige working directory als het de repo is
+  # Fallback: current working directory if it is the repo
   CONFIG_REPO="$(pwd)"
 fi
 ```
@@ -45,23 +45,54 @@ if (Test-Path "$env:USERPROFILE\.claude\skills" -PathType Container) {
 }
 ```
 
-Valideer dat `$CONFIG_REPO/local/` bestaat. Zo niet:
+Validate that `$CONFIG_REPO/local/` exists. If not:
 
-> `Kan local/ niet vinden. Draai /core-bootstrap vanuit de claude-config repo directory, of zorg dat ~/.claude/skills al symlinkt naar de repo.`
+> `Cannot find local/. Run /core-bootstrap from the claude-config repo directory, or ensure ~/.claude/skills already symlinks to the repo.`
 
 Stop.
 
-Parse `--force` flag: als aanwezig, sla `FORCE=true` op.
+Parse `--force` flag: if present, store `FORCE=true`.
+
+### Language selection
+
+Check whether `~/.claude/CLAUDE.md` already contains a `Language:` setting:
+
+```bash
+grep -q "Language:" "$HOME/.claude/CLAUDE.md" 2>/dev/null && echo "found" || echo "not-found"
+```
+
+If `Language:` is found **and** `FORCE` is not set → store `LANGUAGE_CHOICE=skip` (language step skipped).
+
+If `Language:` is not found **or** `FORCE=true` → ask:
+
+```yaml
+header: "Language"
+question: "Which language should Claude use for output?"
+options:
+  - label: "English (Recommended)"
+    description: "Claude responds in English"
+  - label: "Nederlands"
+    description: "Claude antwoordt in het Nederlands"
+  - label: "Deutsch"
+    description: "Claude antwortet auf Deutsch"
+  - label: "Français"
+    description: "Claude répond en français"
+  - label: "Español"
+    description: "Claude responde en español"
+multiSelect: false
+```
+
+Store the chosen label in `LANGUAGE_CHOICE` (e.g. `"English"`). If the user selects "Nederlands" → `LANGUAGE_CHOICE=skip` (template default, no patch needed).
 
 ---
 
-## FASE 1: Kopieer user-files
+## PHASE 1: Copy user-files
 
-Kopieer 4 files naar `~/.claude/`. **Skip als de doelfile al bestaat** tenzij `FORCE=true`. Maak `~/.claude/` aan als die ontbreekt.
+Copy 4 files to `~/.claude/`. **Skip if the destination already exists** unless `FORCE=true`. Create `~/.claude/` if it is missing.
 
-Rapporteer per file de uitkomst (voor FASE 3 rapport):
+Report the outcome per file (for the PHASE 3 report):
 
-| File                   | Bron                                        | Doel                               |
+| File                   | Source                                      | Destination                        |
 | ---------------------- | ------------------------------------------- | ---------------------------------- |
 | CLAUDE.md              | `$CONFIG_REPO/local/CLAUDE.md.base`         | `~/.claude/CLAUDE.md`              |
 | settings.json          | `$CONFIG_REPO/local/settings.json.template` | `~/.claude/settings.json`          |
@@ -86,7 +117,7 @@ for dest_name in "${!FILES[@]}"; do
   dest="$CLAUDE_DIR/$dest_name"
   if [ ! -f "$dest" ] || [ "$FORCE" = "true" ]; then
     cp "$src" "$dest"
-    # STATUS: placed (of forced-overwrite bij FORCE)
+    # STATUS: placed (or forced-overwrite when FORCE)
   else
     : # STATUS: already-exists
   fi
@@ -111,31 +142,48 @@ foreach ($destName in $files.Keys) {
   $dest = "$claudeDir\$destName"
   if (-not (Test-Path $dest) -or $FORCE) {
     Copy-Item $src $dest
-    # STATUS: placed (of forced-overwrite bij FORCE)
+    # STATUS: placed (or forced-overwrite when FORCE)
   } else {
     # STATUS: already-exists
   }
 }
 ```
 
-**Na kopiëren**: toon kort een reminder:
+### Language patch
 
-> `settings.json gekopieerd — controleer of hook-paden kloppen voor jouw platform (zie local/README.md).`
+After copying CLAUDE.md (only if it was actually placed or force-overwritten, and `LANGUAGE_CHOICE` is not `skip`):
 
-Toon deze reminder alleen als settings.json daadwerkelijk geplaatst of overschreven is.
+Locate the `Language:` line in `~/.claude/CLAUDE.md` and replace the value with `LANGUAGE_CHOICE`.
+
+```bash
+# macOS/Linux — replace Language: line in-place
+sed -i '' "s/^Language:.*$/Language: $LANGUAGE_CHOICE/" "$HOME/.claude/CLAUDE.md"
+```
+
+```powershell
+# Windows
+(Get-Content "$env:USERPROFILE\.claude\CLAUDE.md") -replace '^Language:.*$', "Language: $LANGUAGE_CHOICE" |
+  Set-Content "$env:USERPROFILE\.claude\CLAUDE.md"
+```
+
+**After copying**: show a brief reminder:
+
+> `settings.json copied — verify that hook paths are correct for your platform (see local/README.md).`
+
+Show this reminder only if settings.json was actually placed or overwritten.
 
 ---
 
-## FASE 2: Globale symlinks / junctions
+## PHASE 2: Global symlinks / junctions
 
-Koppel 4 directories: `agents`, `hooks`, `skills`, `scripts`. Skip als de link al bestaat (`-e` check, geen overwrite).
+Link 4 directories: `agents`, `hooks`, `skills`, `scripts`. Skip if the link already exists (`-e` check, no overwrite).
 
 ```bash
 # macOS/Linux
 for dir in agents hooks skills scripts; do
   target="$HOME/.claude/$dir"
   [ ! -e "$target" ] && ln -sfn "$CONFIG_REPO/$dir" "$target"
-  # STATUS: linked (nieuw) of already-exists
+  # STATUS: linked (new) or already-exists
 done
 ```
 
@@ -145,7 +193,7 @@ foreach ($dir in @("agents","hooks","skills","scripts")) {
   $target = "$env:USERPROFILE\.claude\$dir"
   if (-not (Test-Path $target)) {
     cmd /c "mklink /J `"$target`" `"$CONFIG_REPO\$dir`""
-    # STATUS: linked (nieuw)
+    # STATUS: linked (new)
   } else {
     # STATUS: already-exists
   }
@@ -154,12 +202,12 @@ foreach ($dir in @("agents","hooks","skills","scripts")) {
 
 ---
 
-## FASE 3: Rapport
+## PHASE 3: Report
 
-Toon ASCII tabel met uitkomst per item:
+Show ASCII table with outcome per item:
 
 ```
-Bootstrap voltooid
+Bootstrap complete
 ══════════════════════════════════════════════════════
  Item                      Status
 ──────────────────────────────────────────────────────
@@ -171,11 +219,14 @@ Bootstrap voltooid
  ~/.claude/hooks/           already-exists
  ~/.claude/skills/          already-exists
  ~/.claude/scripts/         already-exists
+ Language                   English
 ══════════════════════════════════════════════════════
 ```
 
-Statussen: `placed` · `already-exists` · `forced-overwrite` · `linked` · `error: <reden>`
+Statuses: `placed` · `already-exists` · `forced-overwrite` · `linked` · `error: <reason>`
 
-Slottip (altijd tonen):
+For the Language row: show the chosen language, or `skipped (already set)` if `LANGUAGE_CHOICE=skip`.
 
-> Volgende stap: open een project en run `/core-setup` voor project-interne setup.
+Closing tip (always show):
+
+> Next step: open a project and run `/core-setup` for project-internal setup.

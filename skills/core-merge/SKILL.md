@@ -14,7 +14,7 @@ Integrate a finished feature branch (created via `EnterWorktree` in the build sk
 
 ## Trigger
 
-`/core-merge` of `/core-merge [feature-name]`
+`/core-merge` or `/core-merge [feature-name]`
 
 ## When to Use
 
@@ -24,7 +24,7 @@ Integrate a finished feature branch (created via `EnterWorktree` in the build sk
 
 Not for: regular commits (use `/core-commit`), pulling remote changes (use `/project-pull`), creating new branches.
 
-## FASE 0: Pre-flight + State Detection
+## PHASE 0: Pre-flight + State Detection
 
 ### Detect current state
 
@@ -48,7 +48,7 @@ Parse `git worktree list --porcelain` once. The first entry is always the main c
   - Branch == `auth` (manual `git worktree add` with same-name branch), OR
   - Path ends with `/auth` (manual worktree path-based match)
 - Pick first match. If multiple matches → AskUserQuestion to disambiguate.
-- Not found → fail: "Geen worktree gevonden voor 'auth'. Bestaande worktrees: {list}."
+- Not found → fail: "No worktree found for 'auth'. Existing worktrees: {list}."
 
 **If no argument and currently in a worktree** (current pwd != main_root):
 
@@ -60,9 +60,9 @@ Parse `git worktree list --porcelain` once. The first entry is always the main c
 - List all candidate worktrees from parsed output (already excluded main).
 - Use AskUserQuestion to pick one:
   - header: "Worktree"
-  - question: "Welke worktree wil je integreren?"
+  - question: "Which worktree do you want to integrate?"
   - options: per worktree: `{branch} ({short path}, {N} commits ahead)`. Limit to 4 — if more, show top 4 by recency and add "Other" for free input.
-- 0 candidates → exit: "Geen actieve worktrees gevonden."
+- 0 candidates → exit: "No active worktrees found."
 
 ### Validate state
 
@@ -70,33 +70,33 @@ Before proceeding:
 
 - Source worktree must not have uncommitted changes:
   - Run `cd "{worktree_path}" && git status --porcelain`
-  - If non-empty → AskUserQuestion: "Worktree heeft ongecommitteerde changes. Wat doen?"
-    - "Stop, ik commit eerst (Recommended)" → exit
-    - "Stash en doorgaan" → `cd "{worktree_path}" && git stash push -u`
-    - "Negeer (gevaarlijk)" → continue, warn user
+  - If non-empty → AskUserQuestion: "Worktree has uncommitted changes. What do you want to do?"
+    - "Stop, I'll commit first (Recommended)" → exit
+    - "Stash and continue" → `cd "{worktree_path}" && git stash push -u`
+    - "Ignore (dangerous)" → continue, warn user
 
-## FASE 0b: Already-merged Detection
+## PHASE 0b: Already-merged Detection
 
 After source branch is determined, check if it's already integrated:
 
-1. Detect target candidates (same as FASE 1): `git branch -a` filtered on `main|master|develop|staging`
+1. Detect target candidates (same as PHASE 1): `git branch -a` filtered on `main|master|develop|staging`
 2. Per candidate: `git branch --merged {target} | grep -E "^[* ]+{source}$"` — branch is in `--merged` output?
 3. If source-branch is merged in any target:
    - AskUserQuestion:
      - header: "Already merged"
-     - question: "Branch `{source}` is al gemerged in `{merged_target}`. Wat nu?"
+     - question: "Branch `{source}` is already merged into `{merged_target}`. What now?"
      - options:
-       - "Cleanup only (Recommended)" — verwijder worktree + branch, geen nieuwe merge
-       - "Cancel" — exit zonder actie
-   - Cleanup only → skip FASE 1, FASE 2, FASE 3 en spring direct naar FASE 4 cleanup-prompt
-     - Set `strategy = "cleanup-only"`, `merged_into = "{merged_target}"` voor FASE 5 rapport
-4. Niet gemerged → check commits-ahead voor remaining targets:
-   - `git log {target}..{source} --oneline | wc -l` — if 0 commits ahead op alle targets → "Niets te mergen.", exit
-   - Else → continue normaal naar FASE 1
+       - "Cleanup only (Recommended)" — remove worktree + branch, no new merge
+       - "Cancel" — exit without action
+   - Cleanup only → skip PHASE 1, PHASE 2, PHASE 3 and jump directly to PHASE 4 cleanup-prompt
+     - Set `strategy = "cleanup-only"`, `merged_into = "{merged_target}"` for PHASE 5 report
+4. Not merged → check commits-ahead for remaining targets:
+   - `git log {target}..{source} --oneline | wc -l` — if 0 commits ahead on all targets → "Nothing to merge.", exit
+   - Else → continue normally to PHASE 1
 
-> **Caveat (rebase-workflow)**: `git branch --merged` herkent rebase-merged commits niet altijd. Bij rebase-flow kan deze check een false negative geven. Werkaround: handmatig `git worktree remove --force` + `git branch -D`.
+> **Caveat (rebase-workflow)**: `git branch --merged` does not always recognize rebase-merged commits. In a rebase-flow this check can produce a false negative. Workaround: manually `git worktree remove --force` + `git branch -D`.
 
-## FASE 1: Target Branch Selection
+## PHASE 1: Target Branch Selection
 
 Detect candidate targets:
 
@@ -107,12 +107,12 @@ git branch -a | grep -E '^[* ]+(main|master|develop|staging)$' | sed 's/^[* ]*//
 Use AskUserQuestion:
 
 - header: "Target"
-- question: "Naar welke branch mergen?"
-- options: gevonden candidates (default first = `main` of `master`)
+- question: "Which branch do you want to merge into?"
+- options: found candidates (default first = `main` or `master`)
 
 If no candidates found → ask user freeform via "Other".
 
-## FASE 2: Strategy Selection
+## PHASE 2: Strategy Selection
 
 Detect `gh` availability:
 
@@ -133,19 +133,19 @@ If a PR exists:
 - **state == "OPEN"**:
   - AskUserQuestion:
     - header: "Existing PR"
-    - question: "PR #{n} bestaat al ({url}). Wat doen?"
+    - question: "PR #{n} already exists ({url}). What do you want to do?"
     - options:
-      - "Toon PR-URL en exit (Recommended)" — print URL, exit succesvol
-      - "Update PR (push extra commits)" — `git push` op branch, geen nieuwe PR
-      - "Force nieuwe PR" — `gh pr close {n} --comment "Replaced by new PR"`, dan normale PR-flow
+      - "Show PR URL and exit (Recommended)" — print URL, exit successfully
+      - "Update PR (push extra commits)" — `git push` on branch, no new PR
+      - "Force new PR" — `gh pr close {n} --comment "Replaced by new PR"`, then normal PR-flow
       - "Cancel" — exit
 - **state == "MERGED"**:
-  - Auto-route naar cleanup-only path (zelfde als FASE 0b cleanup-only):
-    - Set `strategy = "cleanup-only"`, `pr_url = {url}` voor FASE 5 rapport
-    - Spring direct naar FASE 4 cleanup-prompt
-- **state == "CLOSED"** (en niet merged):
-  - AskUserQuestion: "PR #{n} is gesloten. Force nieuwe?"
-    - "Ja, nieuwe PR aanmaken (Recommended)"
+  - Auto-route to cleanup-only path (same as PHASE 0b cleanup-only):
+    - Set `strategy = "cleanup-only"`, `pr_url = {url}` for PHASE 5 report
+    - Jump directly to PHASE 4 cleanup-prompt
+- **state == "CLOSED"** (and not merged):
+  - AskUserQuestion: "PR #{n} is closed. Force new PR?"
+    - "Yes, create new PR (Recommended)"
     - "Cancel" — exit
 
 If no PR exists: continue to strategy options below.
@@ -154,23 +154,23 @@ If no PR exists: continue to strategy options below.
 
 Build options list dynamically:
 
-| Strategy                           | Show always                              |
-| ---------------------------------- | ---------------------------------------- |
-| Push + open PR via gh              | Only if `gh` installed AND authenticated |
-| Squash-merge lokaal naar {target}  | Always                                   |
-| Merge --no-ff lokaal naar {target} | Always                                   |
-| Alleen push (geen PR/merge)        | Only if remote configured                |
+| Strategy                            | Show always                              |
+| ----------------------------------- | ---------------------------------------- |
+| Push + open PR via gh               | Only if `gh` installed AND authenticated |
+| Squash-merge locally into {target}  | Always                                   |
+| Merge --no-ff locally into {target} | Always                                   |
+| Push only (no PR/merge)             | Only if remote configured                |
 
 AskUserQuestion:
 
-- header: "Strategie"
-- question: "Hoe wil je deze feature integreren?"
-- options: dynamic list (first = "Push + open PR" if available, else "Squash-merge lokaal")
+- header: "Strategy"
+- question: "How do you want to integrate this feature?"
+- options: dynamic list (first = "Push + open PR" if available, else "Squash-merge locally")
 - multiSelect: false
 
-## FASE 3: Execute
+## PHASE 3: Execute
 
-> **Cross-platform**: gebruik `cd "{worktree_path}" && git <cmd>` i.p.v. `git -C <path>`. Op Windows breekt `git -C` met paden die backslashes bevatten. Quote het pad altijd.
+> **Cross-platform**: use `cd "{worktree_path}" && git <cmd>` instead of `git -C <path>`. On Windows, `git -C` breaks with paths containing backslashes. Always quote the path.
 
 ### Strategy: Push + open PR
 
@@ -194,10 +194,10 @@ AskUserQuestion:
 6. Capture PR URL from output
 7. Skip cleanup (PR must be reviewed first)
 
-### Strategy: Squash-merge lokaal
+### Strategy: Squash-merge locally
 
 1. If session is in a worktree → `ExitWorktree(action: "keep")`
-2. Defensive checkout — als target alleen remote bestaat, maak een lokale tracking branch:
+2. Defensive checkout — if target only exists remotely, create a local tracking branch:
    ```bash
    git show-ref --verify --quiet "refs/heads/{target}" \
      && git checkout {target} \
@@ -209,12 +209,12 @@ AskUserQuestion:
    - Subject: `feat({feature}): {summary}` — derive `{summary}` from latest `build({feature})` commit body or first paragraph of feature.json description if available
    - Body: list of squashed skill-commits as bullets
 6. `git commit -m "{subject}\n\n{body}"`
-7. → FASE 4 cleanup-prompt
+7. → PHASE 4 cleanup-prompt
 
 ### Strategy: Merge --no-ff
 
 1. If session is in a worktree → `ExitWorktree(action: "keep")`
-2. Defensive checkout (zelfde patroon als Squash-merge step 2):
+2. Defensive checkout (same pattern as Squash-merge step 2):
    ```bash
    git show-ref --verify --quiet "refs/heads/{target}" \
      && git checkout {target} \
@@ -222,7 +222,7 @@ AskUserQuestion:
    ```
 3. `git pull --rebase` (skip if no remote)
 4. `git merge --no-ff worktree-{feature} -m "Merge feature {feature}\n\n{commit subjects bullet list}"`
-5. → FASE 4 cleanup-prompt
+5. → PHASE 4 cleanup-prompt
 
 ### Strategy: Push only
 
@@ -230,17 +230,17 @@ AskUserQuestion:
 2. `cd "{worktree_path}" && git push -u origin worktree-{feature}`
 3. Skip cleanup, output remote-tracking confirmation
 
-## FASE 4: Cleanup (only after local merge)
+## PHASE 4: Cleanup (only after local merge)
 
 Only run after Squash-merge or Merge --no-ff strategies. Skip after PR-flow and Push-only.
 
 AskUserQuestion:
 
 - header: "Cleanup"
-- question: "Worktree opruimen?"
+- question: "Clean up worktree?"
 - options:
-  - "Ja, remove worktree + delete branch (Recommended)" → execute cleanup
-  - "Nee, behoud worktree" → skip cleanup, log path
+  - "Yes, remove worktree + delete branch (Recommended)" → execute cleanup
+  - "No, keep worktree" → skip cleanup, log path
 - multiSelect: false
 
 If cleanup chosen:
@@ -253,11 +253,11 @@ git branch -D worktree-{feature}
 If branch was pushed to remote and merged via PR / local-merge:
 
 - Detect remote tracking: `git config branch.worktree-{feature}.remote`
-- If set → AskUserQuestion: "Ook remote branch verwijderen?"
-  - "Ja" → `git push origin --delete worktree-{feature}`
-  - "Nee" → skip
+- If set → AskUserQuestion: "Also delete remote branch?"
+  - "Yes" → `git push origin --delete worktree-{feature}`
+  - "No" → skip
 
-## FASE 5: Output Report
+## PHASE 5: Output Report
 
 Generate ASCII table summary:
 
@@ -266,8 +266,8 @@ CORE-MERGE COMPLETE
 
 Strategy:    {Push + PR | Squash-merge | Merge --no-ff | Push only | Cleanup only}
 Source:      {source-branch}
-Target:      {target}                                  (skip line voor Cleanup only zonder context)
-Commits:     {N} commits integrated                    (skip line voor Cleanup only)
+Target:      {target}                                  (skip line for Cleanup only without context)
+Commits:     {N} commits integrated                    (skip line for Cleanup only)
 Result:      {merge SHA | PR URL | push ref | already merged in {target} | PR #{n} merged}
 Worktree:    {removed | kept at {path}}
 Branch:      {deleted | kept ({source-branch})}
@@ -309,41 +309,41 @@ Next steps:
 
 If source branch equals target branch (e.g. `/core-merge` triggered while on `main`):
 
-- "Source en target zijn dezelfde branch ({target}). Niets te doen.", exit
+- "Source and target are the same branch ({target}). Nothing to do.", exit
 
 ### Uncommitted changes in worktree
 
-Already handled in FASE 0 validate.
+Already handled in PHASE 0 validate.
 
 ### `gh` not installed or not authenticated
 
-PR-strategy verborgen in FASE 2. Geen error, gewoon andere opties.
+PR-strategy hidden in PHASE 2. No error, just other options.
 
 ### Merge conflicts
 
-`git merge --squash` of `git merge --no-ff` faalt:
+`git merge --squash` or `git merge --no-ff` fails:
 
 ```
-❌ Merge conflict in {N} bestanden:
+❌ Merge conflict in {N} files:
   - {file1}
   - {file2}
 
-Los handmatig op:
+Resolve manually:
   1. Edit conflicts in working tree
   2. git add {resolved files}
-  3. git commit (voor --no-ff) of git commit -m "feat({feature}): ..." (voor squash)
-  4. /core-merge {feature} opnieuw voor cleanup
+  3. git commit (for --no-ff) or git commit -m "feat({feature}): ..." (for squash)
+  4. /core-merge {feature} again for cleanup
 ```
 
-Exit, geen automatic retry. User moet conflicts oplossen.
+Exit, no automatic retry. User must resolve conflicts.
 
 ### Push rejected
 
-`git push` failed met "rejected" / "behind remote":
+`git push` failed with "rejected" / "behind remote":
 
-- AskUserQuestion: "Push rejected. Wat doen?"
-  - "Pull --rebase eerst (Recommended)" → `git pull --rebase` then retry push
-  - "Force push (gevaarlijk)" → confirm with second AskUserQuestion, then `git push --force-with-lease`
+- AskUserQuestion: "Push rejected. What do you want to do?"
+  - "Pull --rebase first (Recommended)" → `git pull --rebase` then retry push
+  - "Force push (dangerous)" → confirm with second AskUserQuestion, then `git push --force-with-lease`
   - "Cancel" → exit
 
 ### `gh pr create` failure
@@ -351,9 +351,9 @@ Exit, geen automatic retry. User moet conflicts oplossen.
 If PR creation fails after successful push:
 
 - Show error
-- AskUserQuestion: "PR-creation gefaald. Wat doen?"
-  - "Skip — branch is gepusht, maak PR handmatig" → exit met success op push
-  - "Retry" → `gh pr create` opnieuw
+- AskUserQuestion: "PR creation failed. What do you want to do?"
+  - "Skip — branch is pushed, create PR manually" → exit with success on push
+  - "Retry" → `gh pr create` again
   - "Cancel" → exit
 
 ## Output
@@ -392,7 +392,7 @@ If PR creation fails after successful push:
 **Failure:**
 
 ```
-❌ {operation} failed: {reden}
+❌ {operation} failed: {reason}
 
-   💡 {suggestie}
+   💡 {suggestion}
 ```

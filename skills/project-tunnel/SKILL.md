@@ -9,7 +9,7 @@ metadata:
 
 # Project Tunnel
 
-Start de dev server met Cloudflare Tunnel voor HTTPS-toegang vanaf elk apparaat.
+Start the dev server with Cloudflare Tunnel for HTTPS access from any device.
 
 ## 1. Detect framework
 
@@ -17,7 +17,7 @@ Check `package.json` dependencies:
 
 - `"vite"` → Vite project
 - `"next"` → Next.js project
-- Anders → fout: "Geen ondersteund framework gevonden in package.json"
+- Otherwise → error: "No supported framework found in package.json"
 
 **Start commands:**
 
@@ -26,13 +26,13 @@ Check `package.json` dependencies:
 | Vite      | `node node_modules/.bin/vite --port 3000 --host` |
 | Next.js   | `node node_modules/.bin/next dev -p 3000`        |
 
-> **Belangrijk:** Gebruik altijd `node node_modules/.bin/...` in plaats van `npx`. `npx` wrapper-processen sterven soms stil onder `nohup`, terwijl directe `node` aanroep stabiel is.
+> **Important:** Always use `node node_modules/.bin/...` instead of `npx`. `npx` wrapper processes sometimes die silently under `nohup`, while direct `node` invocation is stable.
 
 ## 2. Pre-flight checks
 
-**Dependencies:** Als `node_modules` niet bestaat → `npm install` eerst.
+**Dependencies:** If `node_modules` does not exist → run `npm install` first.
 
-**Vite allowedHosts:** Als Vite project, check of `vite.config` een `server.allowedHosts` heeft die `.trycloudflare.com` toestaat. Zo niet → voeg toe:
+**Vite allowedHosts:** If Vite project, check whether `vite.config` has a `server.allowedHosts` that allows `.trycloudflare.com`. If not → add:
 
 ```js
 server: {
@@ -40,39 +40,39 @@ server: {
 }
 ```
 
-**Port 3000:** Gebruik `curl` om te detecteren of er al een server draait:
+**Port 3000:** Use `curl` to detect whether a server is already running:
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000
 ```
 
-- **200/3xx** → er draait iets. Check `/tmp/devserver.log` voor het project pad.
-  - **Zelfde project** → skip naar stap 4
-  - **Ander project** → meld welk project, kill alles (stap 2b), door naar stap 3
-- **000 (geen connectie)** → vrij, door naar stap 3
+- **200/3xx** → something is running. Check `/tmp/devserver.log` for the project path.
+  - **Same project** → skip to step 4
+  - **Different project** → report which project, kill everything (step 2b), continue to step 3
+- **000 (no connection)** → free, continue to step 3
 
-### 2b. Cleanup (wanneer kill nodig is)
+### 2b. Cleanup (when kill is needed)
 
-Kill in drie lagen om zombie processes te voorkomen:
+Kill in three layers to prevent zombie processes:
 
 ```bash
-# Laag 1: port-gebaseerd
+# Layer 1: port-based
 fuser -k 3000/tcp 2>/dev/null
 
-# Laag 2: framework processes (gebruik wat van toepassing is)
+# Layer 2: framework processes (use what applies)
 # Next.js:
 pkill -f "next dev" 2>/dev/null
 pkill -f "next-router-worker" 2>/dev/null
 # Vite:
 pkill -f "vite" 2>/dev/null
 
-# Laag 3: tunnel
+# Layer 3: tunnel
 pkill -f cloudflared 2>/dev/null
 
 sleep 2
 ```
 
-> `fuser` en `ss` detecteren Node.js dev servers soms niet omdat de port op een manier gebonden wordt die niet zichtbaar is voor deze tools. Daarom altijd ook `pkill -f` met de framework-specifieke process naam gebruiken.
+> `fuser` and `ss` sometimes fail to detect Node.js dev servers because the port is bound in a way that is not visible to these tools. Therefore always also use `pkill -f` with the framework-specific process name.
 
 ## 3. Start dev server
 
@@ -81,7 +81,7 @@ nohup [framework command] > /tmp/devserver.log 2>&1 &
 echo $! > /tmp/devserver.pid
 ```
 
-Wacht tot server klaar is met `curl` (max 20s, eerste compile kan lang duren):
+Wait until the server is ready using `curl` (max 20s, first compile can take a while):
 
 ```bash
 for i in $(seq 1 20); do
@@ -91,19 +91,19 @@ for i in $(seq 1 20); do
 done
 ```
 
-Niet klaar na 20s → toon laatste 20 regels uit `/tmp/devserver.log` en stop.
+Not ready after 20s → show last 20 lines from `/tmp/devserver.log` and stop.
 
-> **Verificatie:** Gebruik altijd `curl` tegen `127.0.0.1:3000`, nooit `ss` of `lsof`. Deze tools detecteren Node.js dev servers niet betrouwbaar.
+> **Verification:** Always use `curl` against `127.0.0.1:3000`, never `ss` or `lsof`. These tools do not reliably detect Node.js dev servers.
 
 ## 4. Start tunnel
 
-Check bestaande tunnel eerst:
+Check for existing tunnel first:
 
 ```bash
 pgrep -f cloudflared > /dev/null && grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log 2>/dev/null | head -1
 ```
 
-Geen actieve tunnel → start nieuwe:
+No active tunnel → start a new one:
 
 ```bash
 pkill -f cloudflared 2>/dev/null; sleep 1
@@ -112,25 +112,25 @@ sleep 10
 grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | head -1
 ```
 
-> `--config /dev/null` voorkomt dat een named tunnel config (`~/.cloudflared/config.yml`) de quick tunnel breekt. `--metrics 127.0.0.1:0` voorkomt metrics port conflicten.
+> `--config /dev/null` prevents a named tunnel config (`~/.cloudflared/config.yml`) from breaking the quick tunnel. `--metrics 127.0.0.1:0` prevents metrics port conflicts.
 
-Rapporteer de tunnel URL.
+Report the tunnel URL.
 
-## 5. Framework-specifieke tunnel config
+## 5. Framework-specific tunnel config
 
 ### Next.js: allowedDevOrigins
 
-Next.js blokkeert cross-origin requests van onbekende origins in dev mode. Zonder de tunnel hostname in `allowedDevOrigins` hydrateren client components niet (pagina blijft hangen op loading state).
+Next.js blocks cross-origin requests from unknown origins in dev mode. Without the tunnel hostname in `allowedDevOrigins`, client components do not hydrate (page stays stuck on loading state).
 
-> **Belangrijk:** Next.js ondersteunt GEEN wildcard subdomain matching (`.trycloudflare.com` werkt niet). De volledige tunnel hostname is vereist.
+> **Important:** Next.js does NOT support wildcard subdomain matching (`.trycloudflare.com` does not work). The full tunnel hostname is required.
 
-Na het verkrijgen van de tunnel URL in stap 4:
+After obtaining the tunnel URL in step 4:
 
-1. Extract de hostname uit de tunnel URL (zonder `https://`)
-2. Check of `next.config` al een `allowedDevOrigins` array heeft met deze hostname
-3. Zo niet → **vervang** de hele `allowedDevOrigins` array met alleen de nieuwe hostname (oude tunnel hostnames zijn toch ongeldig)
-4. **Wacht 5 seconden** — Next.js detecteert config changes en herstart automatisch
-5. Verifieer dat de server nog draait na auto-restart:
+1. Extract the hostname from the tunnel URL (without `https://`)
+2. Check whether `next.config` already has an `allowedDevOrigins` array with this hostname
+3. If not → **replace** the entire `allowedDevOrigins` array with only the new hostname (old tunnel hostnames are invalid anyway)
+4. **Wait 5 seconds** — Next.js detects config changes and restarts automatically
+5. Verify that the server is still running after auto-restart:
 
 ```bash
 sleep 5
@@ -141,22 +141,22 @@ for i in $(seq 1 15); do
 done
 ```
 
-6. Als de server NIET meer reageert na 15s → handmatig herstarten (zie stap 3)
-7. Verifieer opnieuw met curl-loop, rapporteer tunnel URL
+6. If the server does NOT respond after 15s → restart manually (see step 3)
+7. Verify again with curl loop, report tunnel URL
 
-> Omdat quick tunnels een random hostname krijgen bij elke start, moet deze stap elke keer uitgevoerd worden.
+> Because quick tunnels get a random hostname on each start, this step must be executed every time.
 
-### Vite: geen actie nodig
+### Vite: no action needed
 
-Vite heeft geen origin-restrictie in dev mode. Na stap 4 direct de tunnel URL rapporteren.
+Vite has no origin restriction in dev mode. After step 4 report the tunnel URL directly.
 
 ## Stop
 
-Bij verzoek om te stoppen:
+On request to stop:
 
 ```bash
 fuser -k 3000/tcp 2>/dev/null
-# Kill framework processes (gebruik wat van toepassing is)
+# Kill framework processes (use what applies)
 pkill -f "next dev" 2>/dev/null
 pkill -f "next-router-worker" 2>/dev/null
 pkill -f "vite" 2>/dev/null

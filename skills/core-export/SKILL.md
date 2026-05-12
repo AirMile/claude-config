@@ -20,7 +20,7 @@ If `[path]` is provided, scope is locked to that folder.
 
 ## Process
 
-### FASE 0: Pre-flight
+### PHASE 0: Pre-flight
 
 Run in parallel:
 
@@ -51,7 +51,7 @@ Suggest adding the entry via AskUserQuestion:
 
 If accepted, append `.project/exports/` to `.gitignore`.
 
-### FASE 1: Resolve Scope
+### PHASE 1: Resolve Scope
 
 If `[path]` argument provided: skip the scope question, scope = that folder.
 
@@ -74,7 +74,7 @@ Otherwise, ask via AskUserQuestion:
 
 For diff/commits modes, capture the file list and pass to repomix via `--include` (comma-separated patterns). For submap mode, pass the path as positional scope argument.
 
-### FASE 2: Gather Inputs
+### PHASE 2: Gather Inputs
 
 Use a single AskUserQuestion call with multiple questions. **Skip format and compression questions if `repomix.config.json` exists.**
 
@@ -107,7 +107,7 @@ Use a single AskUserQuestion call with multiple questions. **Skip format and com
   - label: "Clipboard", description: "Direct op het clipboard zetten (macOS pbcopy / Windows clip)"
 - multiSelect: false
 
-### FASE 3: Build Command
+### PHASE 3: Build Command
 
 Compose the repomix invocation.
 
@@ -166,13 +166,13 @@ Detect platform via `uname` (Darwin / Linux) or `$OS` (Windows_NT).
 | JSON     | json     | json      |
 | Plain    | plain    | txt       |
 
-### FASE 4: Execute
+### PHASE 4: Execute
 
 Run the composed command. Repomix prints progress and a summary including token count and file count.
 
 If repomix flags potential secrets (Secretlint hits), surface those warnings prominently — do not silently ignore them.
 
-### FASE 5: Report
+### PHASE 5: Report
 
 Print a summary table:
 

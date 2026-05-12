@@ -1,8 +1,8 @@
-# Learning Extraction Heuristieken
+# Learning Extraction Heuristics
 
-Gedeelde regels voor het extraheren van learnings uit teammate code en mature codebases. Gebruikt door `/project-pull` (incremental, signal-triggered) en `/core-setup --mode=mature` (eenmalig, full scan).
+Shared rules for extracting learnings from teammate code and mature codebases. Used by `/project-pull` (incremental, signal-triggered) and `/core-setup --mode=mature` (once, full scan).
 
-> **Output schema**: alle extracties produceren entries voor `project-context.json.learnings[]` met `source: "synced"` en optioneel `author`. Zie [shared/DASHBOARD.md](DASHBOARD.md) `learnings` sectie.
+> **Output schema**: all extractions produce entries for `project-context.json.learnings[]` with `source: "synced"` and optional `author`. See [shared/DASHBOARD.md](DASHBOARD.md) `learnings` section.
 
 ---
 
@@ -18,11 +18,11 @@ git log --grep='^fix\|^bugfix' --format='%H|%an|%s%n%b' $RANGE
 
 `$RANGE` = `$PRE_REF..HEAD` in pull, `--since="6 months ago"` in onboard.
 
-**Filter (cumulatief):**
+**Filter (cumulative):**
 
-- Body niet leeg (skip kale `fix: typo`)
-- Body ≥10 woorden, OF body bevat root-cause keyword: `because|waardoor|caused|door|root cause|reason|reden|oorzaak`
-- Skip als auteur === `git config user.name` (eigen werk → al in feature.json)
+- Body not empty (skip bare `fix: typo`)
+- Body ≥10 words, OR body contains root-cause keyword: `because|waardoor|caused|door|root cause|reason|reden|oorzaak`
+- Skip if author === `git config user.name` (own work → already in feature.json)
 
 **Output:**
 
@@ -32,7 +32,7 @@ git log --grep='^fix\|^bugfix' --format='%H|%an|%s%n%b' $RANGE
   "source": "synced",
   "author": "{commit author}",
   "feature": "{primary-directory uit changed files}",
-  "summary": "{commit subject zonder 'fix:' prefix} — {body samenvatting max 200 chars}"
+  "summary": "{commit subject without 'fix:' prefix} — {body summary max 200 chars}"
 }
 ```
 
@@ -44,14 +44,14 @@ git log --grep='^fix\|^bugfix' --format='%H|%an|%s%n%b' $RANGE
 grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' {scope}
 ```
 
-`{scope}` in pull: alleen teammate-changed files (filter via `git blame --porcelain` op author ≠ self).
-`{scope}` in onboard: alle source files (excl. node_modules, .git, .project, dist, build).
+`{scope}` in pull: only teammate-changed files (filter via `git blame --porcelain` on author ≠ self).
+`{scope}` in onboard: all source files (excl. node_modules, .git, .project, dist, build).
 
-**Filter (cumulatief):**
+**Filter (cumulative):**
 
-- ≥10 woorden in comment body
-- Bevat werkwoord-clue: `breaks|fails|causes|veroorzaakt|kapot|werkt niet|moet|should|hangs|blocks|crashes|leaks|loses|loses`
-- Verwerp generic patterns: `TODO: implement`, `FIXME: fix this`, `TODO: refactor`
+- ≥10 words in comment body
+- Contains verb-clue: `breaks|fails|causes|veroorzaakt|kapot|werkt niet|moet|should|hangs|blocks|crashes|leaks|loses|loses`
+- Reject generic patterns: `TODO: implement`, `FIXME: fix this`, `TODO: refactor`
 
 **Output:**
 
@@ -67,7 +67,7 @@ grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' {scope}
 
 ### 3. Patterns uit nieuwe abstraction-dirs
 
-**Detectie:** vergelijk component lijst (uit `project-pull` FASE 4f / `core-setup --mode=mature` FASE 2) tegen bestaande `architecture.components[]` in `project-context.json`.
+**Detection:** compare component list (from `project-pull` PHASE 4f / `core-setup --mode=mature` PHASE 2) against existing `architecture.components[]` in `project-context.json`.
 
 **Mapping table:**
 
@@ -79,20 +79,20 @@ grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' {scope}
 | `decorators/`, `decorator/`    | Decorator pattern         |
 | `interceptors/`                | Interceptor pattern       |
 | `handlers/`                    | Handler/Command pattern   |
-| `services/` (nieuw)            | Service layer             |
+| `services/` (new)              | Service layer             |
 | `usecases/`, `use-cases/`      | Use case / Clean Arch     |
 | `domains/`, `domain/`          | Domain-driven design      |
 | `events/`, `subscribers/`      | Event-driven architecture |
 
-**Output (per nieuwe match):**
+**Output (per new match):**
 
 ```json
 {
   "type": "pattern",
   "source": "synced",
-  "author": "{primary commit author die dir aanmaakte}",
+  "author": "{primary commit author who created the dir}",
   "feature": "{dir name}",
-  "summary": "{Pattern label} geïntroduceerd in {path} ({N} files)"
+  "summary": "{Pattern label} introduced in {path} ({N} files)"
 }
 ```
 
@@ -104,7 +104,7 @@ grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' {scope}
 git diff $RANGE -- package.json
 ```
 
-Parse added entries in `dependencies` of `devDependencies`. Match tegen lijst:
+Parse added entries in `dependencies` or `devDependencies`. Match against list:
 
 | Package                                   | Pattern label                    |
 | ----------------------------------------- | -------------------------------- |
@@ -124,7 +124,7 @@ Parse added entries in `dependencies` of `devDependencies`. Match tegen lijst:
 | `vitest`, `jest`                          | Test runner                      |
 | `playwright`                              | E2E testing via Playwright       |
 
-Geen match → skip (geen pattern emit).
+No match → skip (no pattern emitted).
 
 **Output:**
 
@@ -132,7 +132,7 @@ Geen match → skip (geen pattern emit).
 {
   "type": "pattern",
   "source": "synced",
-  "author": "{commit author die dep toevoegde}",
+  "author": "{commit author who added the dep}",
   "feature": "stack",
   "summary": "{Pattern label}"
 }
@@ -140,28 +140,28 @@ Geen match → skip (geen pattern emit).
 
 ---
 
-## Signal-detectie (alleen `project-pull`)
+## Signal Detection (only `project-pull`)
 
-Bepaalt of de LLM-subagent moet worden aangeroepen. **Conventie-vrij**: geen commit-titel parsing, alleen file-system en git diff.
+Determines whether the LLM sub-agent should be invoked. **Convention-free**: no commit-title parsing, only file-system and git diff.
 
 ```
 1. Parse `git diff $PRE_REF..HEAD --name-status`
-2. Groep changed files per top-level component-directory
-   (eerste 2 segmenten: src/payments/, app/api/billing/, etc.)
-3. Trigger als:
-   - Eén directory ≥10 files gewijzigd (A/M, niet D), OF
-   - Nieuwe top-level directory aangemaakt (alle files status=A)
-4. Geen trigger → MVP only, klaar
-5. Trigger → roep `learning-extractor` agent aan op getriggerde files
+2. Group changed files per top-level component-directory
+   (first 2 segments: src/payments/, app/api/billing/, etc.)
+3. Trigger if:
+   - One directory ≥10 files changed (A/M, not D), OR
+   - New top-level directory created (all files status=A)
+4. No trigger → MVP only, done
+5. Trigger → call `learning-extractor` agent on triggered files
 ```
 
-Skip volledig als `--no-learn` flag gezet.
+Skip entirely if `--no-learn` flag is set.
 
 ---
 
-## LLM Extractie Scope
+## LLM Extraction Scope
 
-Gedraag van `learning-extractor` agent verschilt per skill:
+Behavior of `learning-extractor` agent differs per skill:
 
 ### `project-pull` (signal-triggered)
 
@@ -172,37 +172,37 @@ Gedraag van `learning-extractor` agent verschilt per skill:
 
 ### `core-setup --mode=mature` (eenmalig, mature codebase)
 
-- **Input**: representative files per component (5-10 per component, gekozen op basis van: file size > 50 LOC, niet test-files, niet generated)
-- **Scope**: naming conventions + error handling style + response shapes + architectuur patterns
-- **Output**: 5-15 atomaire learnings
-- **Cap**: max 50 entries totaal in eerste run
+- **Input**: representative files per component (5-10 per component, chosen based on: file size > 50 LOC, not test files, not generated)
+- **Scope**: naming conventions + error handling style + response shapes + architecture patterns
+- **Output**: 5-15 atomic learnings
+- **Cap**: max 50 entries total in first run
 
-### Wat de LLM produceert (atomair)
+### What the LLM produces (atomic)
 
-| Aspect             | Voorbeeld output                                                           |
-| ------------------ | -------------------------------------------------------------------------- |
-| Naming conventions | "Handler files eindigen op `-handler.ts`, services op `-service.ts`"       |
-| Error handling     | "Services throwen `DomainError` subclasses, controllers vangen alleen die" |
-| Response shapes    | "API responses gebruiken `{ ok: bool, data?: T, error?: string }`"         |
-| Architectuur       | "CQRS-style split: reads via Repository, writes via Service"               |
+| Aspect             | Example output                                                          |
+| ------------------ | ----------------------------------------------------------------------- |
+| Naming conventions | "Handler files end with `-handler.ts`, services with `-service.ts`"     |
+| Error handling     | "Services throw `DomainError` subclasses, controllers catch only those" |
+| Response shapes    | "API responses use `{ ok: bool, data?: T, error?: string }`"            |
+| Architecture       | "CQRS-style split: reads via Repository, writes via Service"            |
 
-**NIET produceren**: narrative paragraphs, project-niveau samenvattingen, code voorbeelden. Alles atomair, ≤200 chars per summary.
+**Do NOT produce**: narrative paragraphs, project-level summaries, code examples. Everything atomic, ≤200 chars per summary.
 
 ---
 
 ## Dedup Tokenizer
 
-Tokenisatie algoritme. Gebruikt voor:
+Tokenization algorithm. Used for:
 
-- Pre-write dedup binnen één skill run
-- Cross-run dedup tegen bestaande `learnings[]`
+- Pre-write dedup within a single skill run
+- Cross-run dedup against existing `learnings[]`
 
-**Stappen:**
+**Steps:**
 
 1. Lowercase
 2. Strip leestekens (`.,;:!?()[]{}'"` → spaties)
 3. Split op whitespace
-4. Filter stopwoorden:
+4. Filter stopwords:
    ```
    de het een en of maar dus dat die deze dit met via voor bij naar van uit op
    in te is zijn was waren wordt worden werd geworden niet geen ook al alle
@@ -211,14 +211,14 @@ Tokenisatie algoritme. Gebruikt voor:
    to is are was were be been being have has had do does did will would could
    should may might shall not no also all only then when though still just
    ```
-5. Filter tokens met length < 3
+5. Filter tokens with length < 3
    5b. Suffix-normalisering (tokens met length > 5):
    - eindigt op `tion` of `sion` → verwijder laatste 3 chars (`condition` → `condit`)
    - eindigt op `ing` → verwijder laatste 3 chars (`caching` → `cach`)
    - eindigt op `ed` → verwijder laatste 2 chars (`failed` → `fail`)
    - eindigt op `s` maar NIET op `ss` → verwijder laatste char (`requests` → `request`)
    - eindigt op `er` en length > 6 → verwijder laatste 2 chars (`handler` → `handl`)
-6. Resultaat: `tokenSet` (uniek)
+6. Result: `tokenSet` (unique)
 
 **Dedup-key** voor `learnings[]`: `(type, normalize(summary), author ?? null)`.
 
@@ -226,26 +226,26 @@ Match = exact tuple match. Geen Jaccard binnen één project (alleen cross-proje
 
 ---
 
-## Author Resolutie
+## Author Resolution
 
-Voor MVP signalen:
+For MVP signals:
 
-| Bron                          | Author bron                                                      |
-| ----------------------------- | ---------------------------------------------------------------- |
-| Fix-commit pitfall            | `git log --format=%an` van die commit                            |
-| TODO/FIXME comment            | `git blame --porcelain` op de regel waar comment staat           |
-| Nieuwe abstraction-dir        | `git log --diff-filter=A --format=%an` van de eerste file in dir |
-| Nieuwe wrapper-dep            | `git log --format=%an -- package.json` van die toevoeging        |
-| LLM-inferred (signal/onboard) | `null` (codebase-wide, niet attributable aan één persoon)        |
+| Source                        | Author source                                                   |
+| ----------------------------- | --------------------------------------------------------------- |
+| Fix-commit pitfall            | `git log --format=%an` of that commit                           |
+| TODO/FIXME comment            | `git blame --porcelain` on the line where the comment appears   |
+| New abstraction-dir           | `git log --diff-filter=A --format=%an` of the first file in dir |
+| New wrapper-dep               | `git log --format=%an -- package.json` of that addition         |
+| LLM-inferred (signal/onboard) | `null` (codebase-wide, not attributable to one person)          |
 
-Author === git user → skip (eigen werk).
+Author === git user → skip (own work).
 
 ---
 
-## Kwaliteitsfilters (alle bronnen)
+## Quality Filters (all sources)
 
-- Summary ≥10 woorden of bevat specifieke termen (geen generic filler)
-- Geen duplicate van bestaande `learnings[]` (dedup-key match)
-- Pattern label moet niet-leeg zijn (geen "introduced X in Y" zonder X)
+- Summary ≥10 words or contains specific terms (no generic filler)
+- No duplicate of existing `learnings[]` (dedup-key match)
+- Pattern label must be non-empty (no "introduced X in Y" without X)
 
-Bij twijfel → niet emit. Append-only contract maakt cleanup duur.
+When in doubt → do not emit. Append-only contract makes cleanup expensive.

@@ -35,25 +35,25 @@ Accepts markdown from:
 
 ## Workflow
 
-### Stack Detection (pre-FASE 0)
+### Stack Detection (pre-PHASE 0)
 
-**Goal:** Detect of het een web- of game-project is zodat de juiste feature-types en terminologie gebruikt worden.
+**Goal:** Detect whether this is a web or game project so the correct feature types and terminology are used.
 
 **Process:**
 
-1. Probeer `.project/project.json` te lezen
-2. Check velden in volgorde:
+1. Try to read `.project/project.json`
+2. Check fields in order:
    - `stack.engine === "godot"` → **GAME MODE**
    - `concept.platform === "game"` → **GAME MODE**
-   - Geen match of geen project.json → **WEB MODE**
-3. Toon gedetecteerde mode:
+   - No match or no project.json → **WEB MODE**
+3. Show detected mode:
 
    ```
    STACK DETECTED: web    (→ /dev-define pipeline)
    STACK DETECTED: game   (→ /game-define pipeline)
    ```
 
-### FASE 0: Input Detection
+### PHASE 0: Input Detection
 
 **Goal:** Auto-detect concept and existing backlog, determine action.
 
@@ -64,11 +64,11 @@ Accepts markdown from:
    - If `.project/` folder exists → continue to step 2
 
 2. **Check for existing files (only if .project exists):**
-   - Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader. Concept aanwezig als `CONCEPT_CONTEXT.present`.
+   - Read `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader. Concept present as `CONCEPT_CONTEXT.present`.
    - Check if `.project/backlog.html` exists
 
 3. **Scenario A: Both concept AND backlog exist**
-   - Gebruik `CONCEPT_CONTEXT.markdown` als concept-inhoud
+   - Use `CONCEPT_CONTEXT.markdown` as concept content
    - Read `backlog.html`
    - Analyze differences between concept and existing backlog
    - Check `data.features[]` in `backlog.html` for entries with `source: "project-todo"` or `source: "dev-todo"` or `source: "/core-setup"` or `source: "/dev-define"` or `source: "/dev-build"` or `source: "/dev-verify"` or `source: "/game-define"` or `source: "/game-build"` to identify independently-added features
@@ -96,30 +96,30 @@ Accepts markdown from:
    - Use AskUserQuestion:
      ```yaml
      header: "Backlog Update"
-     question: "Er bestaat al een backlog. Wat wil je doen?"
+     question: "A backlog already exists. What do you want to do?"
      options:
-       - label: "Update backlog (Recommended)", description: "Voeg nieuwe features toe, behoud DOING/DONE features en handmatige wijzigingen"
-       - label: "Nieuwe backlog", description: "Begin opnieuw, negeer oude backlog"
-       - label: "Annuleren", description: "Bekijk eerst de verschillen, doe niets"
+       - label: "Update backlog (Recommended)", description: "Add new features, keep DOING/DONE features and manual changes"
+       - label: "New backlog", description: "Start fresh, ignore old backlog"
+       - label: "Cancel", description: "Review differences first, do nothing"
      multiSelect: false
      ```
    - **If "Update backlog":**
      - **Merge rules by feature status:**
        - **DOING/DONE features** (protected): preserve status, stage, priority, date, and notes. Only enrich description if concept provides new insights — never overwrite.
        - **TODO features (modified)**: update description/scope from concept, preserve priority and notes
-       - **New features**: add as TODO with auto-assigned priority (user reviews in FASE 3)
+       - **New features**: add as TODO with auto-assigned priority (user reviews in PHASE 3)
        - **Removed TODO features**: mark as deprecated (don't delete)
        - **Removed DOING/DONE features**: show warning and ask user whether to keep or deprecate — these represent in-progress work that may still be relevant
        - **INDEPENDENT features**: always preserve unchanged — these are not derived from concept. Keep status, stage, priority, date, and description intact. Never deprecate or remove.
-     - Continue to FASE 1 with update mode
-   - **If "Nieuwe backlog":**
+     - Continue to PHASE 1 with update mode
+   - **If "New backlog":**
      - Use concept as input, ignore existing backlog
-     - Continue to FASE 1 with create mode
-   - **If "Annuleren":**
+     - Continue to PHASE 1 with create mode
+   - **If "Cancel":**
      - Show detailed diff and exit
 
 4. **Scenario B: Only concept exists (no backlog)**
-   - Gebruik `CONCEPT_CONTEXT.markdown` als concept-inhoud (al gelezen in stap 2)
+   - Use `CONCEPT_CONTEXT.markdown` as concept content (already read in step 2)
    - Show confirmation:
 
      ```
@@ -128,20 +128,20 @@ Accepts markdown from:
      File: .project/project-concept.md
      Title: {extracted title}
 
-     Dit concept wordt gebruikt voor de backlog.
+     This concept will be used for the backlog.
      ```
 
    - Use AskUserQuestion:
      ```yaml
-     header: "Concept Laden"
-     question: "Wil je een backlog genereren van dit concept?"
+     header: "Load Concept"
+     question: "Do you want to generate a backlog from this concept?"
      options:
-       - label: "Ja, genereer backlog (Recommended)", description: "Gebruik project concept"
-       - label: "Ander concept", description: "Ik wil een ander concept gebruiken"
+       - label: "Yes, generate backlog (Recommended)", description: "Use project concept"
+       - label: "Different concept", description: "I want to use a different concept"
      multiSelect: false
      ```
-   - If "Ja": proceed with loaded concept to FASE 1
-   - If "Ander concept": go to Scenario D
+   - If "Yes": proceed with loaded concept to PHASE 1
+   - If "Different concept": go to Scenario D
 
 5. **Scenario C: Only backlog exists (no concept)**
    - Show warning:
@@ -150,18 +150,18 @@ Accepts markdown from:
      WARNING: Backlog exists but no concept found
 
      Backlog: .project/backlog.html
-     Concept: Niet gevonden — voer eerst /thinking-concept uit
+     Concept: Not found — run /thinking-concept first
 
-     Een concept is nodig om de backlog te updaten.
+     A concept is required to update the backlog.
      ```
 
    - Use AskUserQuestion:
      ```yaml
-     header: "Geen Concept"
-     question: "Wat wil je doen?"
+     header: "No Concept"
+     question: "What do you want to do?"
      options:
-       - label: "Concept plakken", description: "Plak een nieuw concept om backlog te updaten"
-       - label: "Backlog bekijken", description: "Open de bestaande backlog"
+       - label: "Paste concept", description: "Paste a new concept to update the backlog"
+       - label: "View backlog", description: "Open the existing backlog"
      multiSelect: false
      ```
 
@@ -169,17 +169,17 @@ Accepts markdown from:
    - Ask user to paste concept:
      ```yaml
      header: "Input"
-     question: "Plak de output van /thinking-concept of /thinking-brainstorm"
+     question: "Paste the output of /thinking-concept or /thinking-brainstorm"
      options:
-       - label: "Ik plak het hieronder", description: "Typ of plak je idea/brainstorm markdown"
-       - label: "Uit bestand laden", description: "Laad van een bestaand .md bestand"
+       - label: "I'll paste it below", description: "Type or paste your idea/brainstorm markdown"
+       - label: "Load from file", description: "Load from an existing .md file"
      multiSelect: false
      ```
 
 7. **If markdown provided inline (overrides auto-detection):**
    - Parse the provided markdown
    - Extract core concept and features
-   - Continue to FASE 1
+   - Continue to PHASE 1
 
 8. **Validate input:**
    - Check for recognizable structure (title, sections)
@@ -202,25 +202,25 @@ Use AskUserQuestion:
 
 ```yaml
 header: "Research"
-question: "Wil je eerst onderzoek doen voordat features worden geëxtraheerd?"
+question: "Do you want to do research before extracting features?"
 options:
-  - label: "Nee, direct extraheren (Recommended)"
-    description: "Ga door naar feature extractie"
-  - label: "Ja, research doen"
-    description: "Analyseer codebase, framework docs (Context7), en web examples voor betere feature extractie"
+  - label: "No, extract directly (Recommended)"
+    description: "Proceed to feature extraction"
+  - label: "Yes, do research"
+    description: "Analyze codebase, framework docs (Context7), and web examples for better feature extraction"
 multiSelect: false
 ```
 
 **Response handling:**
 
-- "Nee" → skip to FASE 1
-- "Ja" → proceed to FASE 0.5
+- "No" → skip to PHASE 1
+- "Yes" → proceed to PHASE 0.5
 
-### FASE 0.5: Research (Optional)
+### PHASE 0.5: Research (Optional)
 
 **Goal:** Gather codebase, documentation, and web research to inform feature extraction.
 
-**Triggered when:** User chooses "Ja, research doen" at end of FASE 0.
+**Triggered when:** User chooses "Yes, do research" at end of PHASE 0.
 
 **Step 1: Analyze Research Needs**
 
@@ -319,13 +319,13 @@ RESEARCH COMPLETE
 → Research results will inform feature extraction...
 ```
 
-Only the compact summary enters the main context for FASE 1.
+Only the compact summary enters the main context for PHASE 1.
 
-### FASE 1: Feature Extraction
+### PHASE 1: Feature Extraction
 
 **Goal:** Identify distinct features from the concept.
 
-**Learnings load** (vóór analyse) via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+**Learnings load** (before analysis) via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
 ```
 scopes: [architectural]
@@ -333,7 +333,7 @@ pitfall-prefix: true
 current-feature: none
 ```
 
-Toon de geladen output. Architectural patterns sturen de feature decomposition. Pitfall-prefix voorkomt herhaling van structurele bugs in nieuwe features.
+Show the loaded output. Architectural patterns guide feature decomposition. Pitfall-prefix prevents repeating structural bugs in new features.
 
 **[WEB MODE]**
 
@@ -343,19 +343,19 @@ Toon de geladen output. Architectural patterns sturen de feature decomposition. 
    - What API endpoints are required?
    - What can be split into independent features?
 
-   **If research was performed (FASE 0.5), also consider:**
+   **If research was performed (PHASE 0.5), also consider:**
    - What already exists in the codebase that can be reused or extended?
    - What framework patterns or conventions should guide the decomposition?
    - What pitfalls or anti-patterns were identified to avoid?
 
    **Granularity decision:** When a feature could be defined as one large item OR multiple smaller items, apply the right-size rule: each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — they're easier to combine than to split later.
 
-   **If in update mode (from FASE 0 Scenario A):**
+   **If in update mode (from PHASE 0 Scenario A):**
    - Start from existing backlog features as baseline — do NOT extract from scratch
    - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
    - INDEPENDENT features: always preserve unchanged — they are not concept-derived
    - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
-   - CANCELLED features zijn protected: behoud als `status: "CANCELLED"`, sluit uit van planning en build-order — behandel als niet-beschikbaar
+   - CANCELLED features are protected: preserve as `status: "CANCELLED"`, exclude from planning and build order — treat as unavailable
    - Present the merged feature list with change markers for clarity
 
 2. **Extract features:**
@@ -371,37 +371,37 @@ Toon de geladen output. Architectural patterns sturen de feature decomposition. 
    | INTEGRATION | Third-party services (analytics, payments, auth providers) |
    | UI | Styling, UX improvements, visual components |
    | REFACTOR | Code quality, performance, architecture improvements |
-   | PAGE | Frontend page/route (doorloopt design → convert → check pipeline) |
-   | COMPONENT | Herbruikbaar UI-component (doorloopt zelfde pipeline als PAGE) |
-   | PAGE-GAP | Ontbrekende functionaliteit gevonden door /frontend-design |
+   | PAGE | Frontend page/route (goes through design → convert → check pipeline) |
+   | COMPONENT | Reusable UI component (goes through same pipeline as PAGE) |
+   | PAGE-GAP | Missing functionality found by /frontend-design |
 
 4. **Score risk:**
 
-   Ken elke feature een risk-score toe:
+   Assign each feature a risk score:
 
-   | Score | Risk (hoe complex?)                                            |
-   | ----- | -------------------------------------------------------------- |
-   | 1     | Triviale wijziging, geen onbekenden                            |
-   | 2     | Bekende techniek, weinig afhankelijkheden                      |
-   | 3     | Gemiddelde complexiteit, enkele onbekenden                     |
-   | 4     | Complexe integratie of nieuwe technologie                      |
-   | 5     | Hoge complexiteit, veel onbekenden of externe afhankelijkheden |
+   | Score | Risk (how complex?)                                     |
+   | ----- | ------------------------------------------------------- |
+   | 1     | Trivial change, no unknowns                             |
+   | 2     | Known technique, few dependencies                       |
+   | 3     | Average complexity, some unknowns                       |
+   | 4     | Complex integration or new technology                   |
+   | 5     | High complexity, many unknowns or external dependencies |
 
-   **Per feature, noteer kort:**
-   - Risk score (1-5) + reden (max 1 zin)
+   **Per feature, note briefly:**
+   - Risk score (1-5) + reason (max 1 sentence)
 
-   **Heuristieken:**
-   - Features met externe API/service dependency → hogere risk
-   - Features die al deels bestaan in codebase (update mode) → lagere risk
+   **Heuristics:**
+   - Features with external API/service dependency → higher risk
+   - Features that partially exist in codebase (update mode) → lower risk
 
-   **Extraction quality self-check** (voer uit voor de review, NIET aan user tonen):
-   - Elke feature is 1-3 dagen werk (te groot → splits, te klein → combineer)
-   - Geen overlappende scope tussen features
-   - Dependencies zijn expliciet (feature X heeft feature Y nodig → noteer voor FASE 2)
-   - Risk scores zijn onderbouwd (score zonder reden → voeg reden toe)
-   - Research findings verwerkt (als FASE 0.5 gedaan: bevindingen in feature beschrijvingen)
+   **Extraction quality self-check** (run before review, do NOT show to user):
+   - Each feature is 1-3 days of work (too large → split, too small → combine)
+   - No overlapping scope between features
+   - Dependencies are explicit (feature X requires feature Y → note for PHASE 2)
+   - Risk scores are substantiated (score without reason → add reason)
+   - Research findings incorporated (if PHASE 0.5 was done: findings reflected in feature descriptions)
 
-   Pas de feature lijst aan op basis van gevonden gaps.
+   Adjust the feature list based on found gaps.
 
 **[WEB MODE] Output:**
 
@@ -420,42 +420,42 @@ In update mode, the Change column shows what happened to each feature.
 In create mode, the Change column is omitted.
 ```
 
-5. **[WEB MODE] Reuse-Discovery (optioneel — alleen bij ≥2 PAGE/FEATURE features met gedeelde UI-patterns):**
+5. **[WEB MODE] Reuse-Discovery (optional — only with ≥2 PAGE/FEATURE features with shared UI patterns):**
 
-   **Wanneer overslaan:** geen frontend-project, minder dan 2 PAGE/FEATURE features, of alle UI patterns zijn al in `design.components[]`.
+   **When to skip:** no frontend project, fewer than 2 PAGE/FEATURE features, or all UI patterns are already in `design.components[]`.
 
-   Volg [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) voor het canonieke protocol.
+   Follow [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) for the canonical protocol.
 
-   **Trigger:** cross-page UI-patroon-matching — groepeer features op beschrijvingen (Lijst/tabel, Card, Form, Modal/dialog, Navigation). Threshold: 2+ PAGE/FEATURE features delen het pattern. Voeg toe aan de feature-lijst (wordt meegenomen naar FASE 4 backlog generatie); append kebab-naam ook aan `dependencies[]` van elke PAGE/FEATURE die het pattern triggerde.
+   **Trigger:** cross-page UI-pattern matching — group features by descriptions (List/table, Card, Form, Modal/dialog, Navigation). Threshold: 2+ PAGE/FEATURE features share the pattern. Add to the feature list (included in PHASE 4 backlog generation); also append kebab-name to `dependencies[]` of each PAGE/FEATURE that triggered the pattern.
 
    **Source:** `"/project-plan"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
 
-   "Overslaan" → geen COMPONENT-features aan lijst toevoegen.
+   "Skip" → do not add COMPONENT features to the list.
 
-6. **[WEB MODE] Design & Quality signals (optioneel — alleen bij expliciete mentions in concept):**
+6. **[WEB MODE] Design & Quality signals (optional — only with explicit mentions in concept):**
 
-   Scan concept tekst op de volgende keywords. Voeg alleen toe als het concept het **expliciet** noemt — niet bij impliciete speculatie.
+   Scan concept text for the following keywords. Only add if the concept **explicitly** mentions them — not on implicit speculation.
 
-   | Keyword triggers                                                     | Type  | Naam            | Phase |
+   | Keyword triggers                                                     | Type  | Name            | Phase |
    | -------------------------------------------------------------------- | ----- | --------------- | ----- |
-   | "design tokens", "kleuren", "typografie", "theme", "branding"        | THEME | `theme-init`    | P3    |
+   | "design tokens", "colors", "typography", "theme", "branding"         | THEME | `theme-init`    | P3    |
    | "a11y", "accessibility", "WCAG", "screen reader", "toegankelijkheid" | A11Y  | `a11y-baseline` | P3    |
-   | "performance", "lighthouse", "core web vitals", "SEO", "snelheid"    | PERF  | `perf-baseline` | P3    |
+   | "performance", "lighthouse", "core web vitals", "SEO", "speed"       | PERF  | `perf-baseline` | P3    |
 
-   Elk gevonden item: voeg toe aan de feature-lijst als:
+   For each found item: add to the feature list as:
 
    ```json
    {
-     "name": "{naam uit tabel}",
+     "name": "{name from table}",
      "type": "THEME|A11Y|PERF",
      "status": "TODO",
      "phase": "P3",
-     "description": "{relevante quote of parafrase uit concept}",
+     "description": "{relevant quote or paraphrase from concept}",
      "source": "/project-plan"
    }
    ```
 
-   "Geen matches" → geen Design & Quality items toevoegen.
+   "No matches" → do not add Design & Quality items.
 
 ---
 
@@ -466,14 +466,14 @@ In create mode, the Change column is omitted.
    - What systems need to be built?
    - What can be split into independent features?
 
-   **If research was performed (FASE 0.5), also consider:**
+   **If research was performed (PHASE 0.5), also consider:**
    - What already exists in the codebase that can be reused or extended?
    - What framework patterns or conventions should guide the decomposition?
    - What pitfalls or anti-patterns were identified to avoid?
 
    **Granularity decision:** When a feature could be defined as one large item OR multiple smaller items, apply the right-size rule: each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — they're easier to combine than to split later.
 
-   **If in update mode (from FASE 0 Scenario A):**
+   **If in update mode (from PHASE 0 Scenario A):**
    - Start from existing backlog features as baseline — do NOT extract from scratch
    - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
    - INDEPENDENT features: always preserve unchanged — they are not concept-derived
@@ -511,72 +511,64 @@ In update mode, the Change column shows what happened to each feature.
 In create mode, the Change column is omitted.
 ```
 
-4. **[GAME MODE] Feature Review (alle modes):**
-
-   <!-- modal-buffer -->
-
-   Print 8 blank lines as whitespace buffer (keeps the feature table above visible when the modal panel opens).
+4. **[GAME MODE] Feature Review (all modes):**
 
    Use AskUserQuestion:
    - header: "Feature Review"
-   - question: "Kloppen deze features? Je kunt toevoegen, verwijderen of aanpassen."
+   - question: "Are these features correct? You can add, remove, or adjust."
    - options:
-     - label: "Ja, dit klopt (Recommended)", description: "Features zijn correct, ga door naar dependencies"
-     - label: "Features aanpassen", description: "Toevoegen, verwijderen, of naam/type/beschrijving wijzigen"
+     - label: "Yes, this is correct (Recommended)", description: "Features are correct, proceed to dependencies"
+     - label: "Adjust features", description: "Add, remove, or change name/type/description"
    - multiSelect: false
 
    **Response handling:**
-   - "Ja, dit klopt" → proceed to FASE 2 (game) or Reuse-Discovery if applicable (web)
-   - "Features aanpassen" → ask what to change, apply changes, show updated table, re-ask
+   - "Yes, this is correct" → proceed to PHASE 2 (game) or Reuse-Discovery if applicable (web)
+   - "Adjust features" → ask what to change, apply changes, show updated table, re-ask
    - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms features are correct.**
 
-5. **[GAME MODE] Core loop validatie (alleen in create mode of bij gewijzigde P1 features):**
+5. **[GAME MODE] Core loop validation (only in create mode or when P1 features changed):**
 
-   Controleer of de P1 features samen een speelbare gameplay loop vormen:
+   Check whether the P1 features together form a playable gameplay loop:
 
    ```
-   LOOP VALIDATIE
+   LOOP VALIDATION
 
    Moment-to-moment (0-30s):
-   - Actie: {wat doet de speler} → Reactie: {wat doet het systeem} → Feedback: {wat ziet/hoort de speler}
+   - Action: {what the player does} → Response: {what the system does} → Feedback: {what the player sees/hears}
 
    Session loop (5-30min):
-   - Doel: {wat probeert de speler te bereiken}
-   - Poging: {hoe probeert de speler dat}
-   - Uitkomst: {win/verlies/progressie}
+   - Goal: {what the player is trying to achieve}
+   - Attempt: {how the player tries to achieve it}
+   - Outcome: {win/loss/progression}
 
-   P1 loop compleet? {JA / NEE — {ontbrekend element}}
+   P1 loop complete? {YES / NO — {missing element}}
    ```
 
-   - Als de loop NIET compleet is: toon welk element mist en stel voor om een feature toe te voegen of te promoten naar P1
-   - Als de loop WEL compleet is: toon bevestiging en ga door
+   - If the loop is NOT complete: show which element is missing and suggest adding a feature or promoting one to P1
+   - If the loop IS complete: show confirmation and proceed
 
 **[WEB MODE] Feature Review:**
-
-   <!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the feature table above visible when the modal panel opens).
 
 Use AskUserQuestion:
 
 - header: "Feature Review"
-- question: "Kloppen deze features? Je kunt toevoegen, verwijderen of aanpassen."
+- question: "Are these features correct? You can add, remove, or adjust."
 - options:
-  - label: "Ja, dit klopt (Recommended)", description: "Features zijn correct, ga door naar dependencies"
-  - label: "Features aanpassen", description: "Toevoegen, verwijderen, of naam/type/beschrijving wijzigen"
+  - label: "Yes, this is correct (Recommended)", description: "Features are correct, proceed to dependencies"
+  - label: "Adjust features", description: "Add, remove, or change name/type/description/risk"
 - multiSelect: false
 
 **Response handling:**
 
-- "Ja, dit klopt" → proceed to FASE 2
-- "Features aanpassen" → ask what to change (add/remove/edit name/type/description/risk), apply changes, show updated table, re-ask
+- "Yes, this is correct" → proceed to PHASE 2
+- "Adjust features" → ask what to change (add/remove/edit name/type/description/risk), apply changes, show updated table, re-ask
 - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
 **Loop until user confirms features are correct.**
 
-### FASE 2: Dependency Analysis
+### PHASE 2: Dependency Analysis
 
 **Goal:** Determine implementation order based on dependencies.
 
@@ -584,9 +576,9 @@ Use AskUserQuestion:
    - What other features must exist first?
    - Can this be built standalone?
 
-2. **Build dependency graph** — genereer een ASCII decomposition tree met feature → epics → stories structuur en dependency edges:
+2. **Build dependency graph** — generate an ASCII decomposition tree with feature → epics → stories structure and dependency edges:
 
-   **[WEB MODE] voorbeeld:**
+   **[WEB MODE] example:**
 
    ```
    routing (base)
@@ -597,7 +589,7 @@ Use AskUserQuestion:
            └── api-user-data
    ```
 
-   **[GAME MODE] voorbeeld:**
+   **[GAME MODE] example:**
 
    ```
    player-movement (base)
@@ -613,13 +605,13 @@ Use AskUserQuestion:
    - Ask user for resolution if unclear
 
 4. **[WEB MODE] Detect broken dependencies (CANCELLED):**
-   - Als een feature afhankelijk is van een feature met `status: "CANCELLED"`, markeer als gebroken:
+   - If a feature depends on a feature with `status: "CANCELLED"`, mark as broken:
      ```
-     ⚠ GEBROKEN DEPENDENCY: {feature-A} → {feature-B} (CANCELLED)
-     Opties: (1) verwijder deze dependency, (2) herstel {feature-B} via backlog UI
+     ⚠ BROKEN DEPENDENCY: {feature-A} → {feature-B} (CANCELLED)
+     Options: (1) remove this dependency, (2) restore {feature-B} via backlog UI
      ```
-   - Presenteer gebroken dependencies vóór de dependency-tabel
-   - Vraag gebruiker om resolutie voordat je verder gaat met FASE 3
+   - Present broken dependencies before the dependency table
+   - Ask user for resolution before proceeding to PHASE 3
 
 **Output:**
 
@@ -638,43 +630,39 @@ Dependency tree:
 
 5. **Review with user:**
 
-   <!-- modal-buffer -->
-
-   Print 8 blank lines as whitespace buffer (keeps the dependency tree above visible when the modal panel opens).
-
    Use AskUserQuestion:
    - header: "Dependency Review"
-   - question: "Klopt deze volgorde? Je kunt dependencies aanpassen."
+   - question: "Is this order correct? You can adjust dependencies."
    - options:
-     - label: "Ja, dit klopt (Recommended)", description: "Dependencies zijn correct, ga door naar prioriteit"
-     - label: "Dependencies aanpassen", description: "Toevoegen, verwijderen of volgorde wijzigen"
+     - label: "Yes, this is correct (Recommended)", description: "Dependencies are correct, proceed to priority"
+     - label: "Adjust dependencies", description: "Add, remove, or reorder dependencies"
    - multiSelect: false
 
    **Response handling:**
-   - "Ja, dit klopt" → proceed to FASE 3
-   - "Dependencies aanpassen" → ask what to change (add/remove/reorder), update graph, show updated table, re-ask
+   - "Yes, this is correct" → proceed to PHASE 3
+   - "Adjust dependencies" → ask what to change (add/remove/reorder), update graph, show updated table, re-ask
    - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
    **Loop until user confirms dependencies are correct.**
 
-### FASE 3: Priority Assignment
+### PHASE 3: Priority Assignment
 
-**Goal:** Prioriteiten toekennen (P1–P4).
+**Goal:** Assign priorities (P1–P4).
 
 1. **Show feature list as numbered plain text:**
 
    ```
-   Features ({N} totaal):
+   Features ({N} total):
 
    1. {feature-1}: {description}
    2. {feature-2}: {description}
    ...
    ```
 
-   **[WEB MODE]** Vraag: "Welke features zijn P1 (minimaal nodig voor een werkend prototype)? Geef nummers (bv. `1, 3, 5` of `1-4` of `alles behalve 2, 7`)."
-   **[GAME MODE]** Vraag: "Welke features zijn P1 (minimaal nodig voor een speelbaar prototype)? Geef nummers (bv. `1, 3, 5` of `1-4` of `alles behalve 2, 7`)."
+   **[WEB MODE]** Ask: "Which features are P1 (minimum needed for a working prototype)? Give numbers (e.g. `1, 3, 5` or `1-4` or `all except 2, 7`)."
+   **[GAME MODE]** Ask: "Which features are P1 (minimum needed for a playable prototype)? Give numbers (e.g. `1, 3, 5` or `1-4` or `all except 2, 7`)."
 
-   Parse free-form input → P1-set. Gebruiker kan ook "alles" of "geen" zeggen.
+   Parse free-form input → P1-set. User can also say "all" or "none".
 
 2. **Auto-assign remaining features using heuristics:**
    - P2: Features that directly extend P1 functionality OR are prerequisites for important P3 features
@@ -686,23 +674,19 @@ Dependency tree:
 
    Show proposed prioritization table, then:
 
-   <!-- modal-buffer -->
-
-   Print 8 blank lines as whitespace buffer (keeps the priority table above visible when the modal panel opens).
-
    Use AskUserQuestion:
    - header: "Priority Review"
-   - question: "Klopt deze prioritering? P1 = must-have, P2 = extends P1, P3 = nice-to-have, P4 = later. Je kunt features verplaatsen."
+   - question: "Is this prioritization correct? P1 = must-have, P2 = extends P1, P3 = nice-to-have, P4 = later. You can move features."
    - options:
-     - label: "Ja, dit klopt (Recommended)", description: "Prioriteiten zijn correct, genereer backlog"
-     - label: "Features verplaatsen", description: "Een of meer features naar een andere prioriteit"
-     - label: "Aanpassen", description: "Andere wijzigingen aan prioriteiten"
+     - label: "Yes, this is correct (Recommended)", description: "Priorities are correct, generate backlog"
+     - label: "Move features", description: "Move one or more features to a different priority"
+     - label: "Adjust", description: "Other changes to priorities"
    - multiSelect: false
 
    **Response handling:**
-   - "Ja, dit klopt" → proceed to FASE 4
-   - "Features verplaatsen" → ask which features and target priority, update table, re-ask
-   - "Aanpassen" → let user describe changes, apply, show updated prioritization, re-ask
+   - "Yes, this is correct" → proceed to PHASE 4
+   - "Move features" → ask which features and target priority, update table, re-ask
+   - "Adjust" → let user describe changes, apply, show updated prioritization, re-ask
    - "Other" → parse user's freeform input, apply changes, re-ask
 
    **Loop until user confirms prioritization is correct.**
@@ -726,17 +710,17 @@ P4:
 - {feature}: {reason}
 ```
 
-### FASE 4: Generate Backlog
+### PHASE 4: Generate Backlog
 
-**Goal:** Write de interactieve HTML kanban backlog.
+**Goal:** Write the interactive HTML kanban backlog.
 
-**Refereer naar `shared/BACKLOG.md` voor het volledige data-formaat.**
+**Refer to `shared/BACKLOG.md` for the full data format.**
 
 1. **Template or merge:**
-   - **Create mode**: Kopieer template van `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`. Maak `.project/` aan als die niet bestaat.
-   - **Update mode**: Lees bestaande `.project/backlog.html`, parse het huidige JSON-blok. Kopieer NIET opnieuw het template — update in-place.
+   - **Create mode**: Copy template from `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`. Create `.project/` if it does not exist.
+   - **Update mode**: Read existing `.project/backlog.html`, parse the current JSON block. Do NOT copy the template again — update in-place.
 
-2. **Bouw het JSON data-object:**
+2. **Build the JSON data object:**
 
    **[WEB MODE]:**
 
@@ -755,7 +739,7 @@ P4:
          "phase": "P1|P2|P3|P4",
          "description": "{description}",
          "dependencies": ["{other-feature}"],
-         "risk": "{1-5 uit FASE 1 risk-score}"
+         "risk": "{1-5 from PHASE 1 risk-score}"
        }
      ],
      "notes": "{Any notes or considerations}"
@@ -785,13 +769,13 @@ P4:
    }
    ```
 
-   **[WEB MODE] Sort `features[]` to match the FASE 2 suggested order:**
+   **[WEB MODE] Sort `features[]` to match the PHASE 2 suggested order:**
    1. **Group by `phase`** in order: P1 → P2 → P3 → P4
    2. **Within each phase, apply topological sort** based on `dependencies[]`:
-      - Features met `dependencies: []` eerst (binnen die fase)
-      - Vervolgens features waarvan alle dependencies eerder in de array staan
-      - Cross-phase dependencies (bv. P2-feature die afhangt van P1-feature) worden automatisch correct: P1 staat al vóór P2
-   3. **Tie-breaker** binnen dezelfde topologische "laag": behoud de volgorde uit FASE 1 (extractie-volgorde)
+      - Features with `dependencies: []` first (within that phase)
+      - Then features whose all dependencies appear earlier in the array
+      - Cross-phase dependencies (e.g. P2-feature depending on P1-feature) are automatically correct: P1 is already before P2
+   3. **Tie-breaker** within the same topological "layer": preserve the order from PHASE 1 (extraction order)
 
    **[WEB MODE] In update mode, apply merge rules:**
    - For each existing backlog feature: preserve `status`, `stage`, `phase`, `date` from the current backlog
@@ -802,23 +786,23 @@ P4:
    - Set `updated` to current date, keep original `generated` date
    - INDEPENDENT features (added outside project-plan): always preserve intact
 
-3. **Vervang het JSON-blok** in het template:
-   - Zoek: `<script id="backlog-data" type="application/json">...</script>`
-   - Vervang de inhoud tussen de tags met het gebouwde JSON object
+3. **Replace the JSON block** in the template:
+   - Find: `<script id="backlog-data" type="application/json">...</script>`
+   - Replace the content between the tags with the built JSON object
 
-4. **Start backlog server** (als niet al draaiend):
+4. **Start backlog server** (if not already running):
 
    ```bash
-   # Respecteert $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
+   # Respects $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
    curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node ~/.claude/skills/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
    ```
 
-5. **Update project dashboard** (zie `shared/DASHBOARD.md`):
+5. **Update project dashboard** (see `shared/DASHBOARD.md`):
 
-   Als concept info beschikbaar uit input:
-   1. Read `.project/project.json` (of maak nieuw met leeg schema)
-   2. Vul `concept` sectie met name, description, goals, audience, scope — **OVERWRITE**
-   3. **[WEB MODE]** Vul ook `stack` sectie met gedetecteerde framework, taal, DB, etc. — alleen als velden leeg zijn
+   If concept info is available from input:
+   1. Read `.project/project.json` (or create new with empty schema)
+   2. Fill `concept` section with name, description, goals, audience, scope — **OVERWRITE**
+   3. **[WEB MODE]** Also fill `stack` section with detected framework, language, DB, etc. — only if fields are empty
    4. Write `.project/project.json`
 
 **Output:**

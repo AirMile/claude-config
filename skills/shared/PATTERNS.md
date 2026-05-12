@@ -1,6 +1,6 @@
 # Frontend Design Patterns
 
-Design patterns reference voor React/Next.js implementatie. Gebruikt door wireframe, style, en scaffold skills.
+Design patterns reference for React/Next.js implementation. Used by wireframe, style, and scaffold skills.
 
 ---
 
@@ -8,10 +8,10 @@ Design patterns reference voor React/Next.js implementatie. Gebruikt door wirefr
 
 ### Compound Components
 
-**Wanneer:** Multi-part UI met gedeelde state.
+**When:** Multi-part UI with shared state.
 
 ```tsx
-// Definitie
+// Definition
 interface CardContextType {
   variant: 'default' | 'elevated' | 'outlined'
 }
@@ -38,28 +38,28 @@ Card.Footer = function CardFooter({ children }: { children: ReactNode }) {
   return <div className={styles.footer}>{children}</div>
 }
 
-// Gebruik
+// Usage
 <Card variant="elevated">
-  <Card.Header>Titel</Card.Header>
-  <Card.Body>Content hier</Card.Body>
-  <Card.Footer>Acties</Card.Footer>
+  <Card.Header>Title</Card.Header>
+  <Card.Body>Content here</Card.Body>
+  <Card.Footer>Actions</Card.Footer>
 </Card>
 ```
 
-**Voordelen:**
+**Benefits:**
 
-- Flexibele compositie
-- Gedeelde context zonder prop drilling
-- Duidelijke hiërarchie
+- Flexible composition
+- Shared context without prop drilling
+- Clear hierarchy
 
 ---
 
 ### Render Props / Children as Function
 
-**Wanneer:** Behavior delen zonder inheritance.
+**When:** Sharing behavior without inheritance.
 
 ```tsx
-// Definitie
+// Definition
 interface ToggleRenderProps {
   isOn: boolean;
   toggle: () => void;
@@ -74,15 +74,15 @@ function Toggle({
   return <>{children({ isOn, toggle: () => setIsOn(!isOn) })}</>;
 }
 
-// Gebruik
+// Usage
 <Toggle>
   {({ isOn, toggle }) => (
-    <button onClick={toggle}>{isOn ? "Aan" : "Uit"}</button>
+    <button onClick={toggle}>{isOn ? "On" : "Off"}</button>
   )}
 </Toggle>;
 ```
 
-**Modern alternatief:** Custom hooks zijn vaak cleaner:
+**Modern alternative:** Custom hooks are often cleaner:
 
 ```tsx
 function useToggle(initial = false) {
@@ -90,10 +90,10 @@ function useToggle(initial = false) {
   return { isOn, toggle: () => setIsOn(!isOn), setIsOn };
 }
 
-// Gebruik
+// Usage
 function MyComponent() {
   const { isOn, toggle } = useToggle();
-  return <button onClick={toggle}>{isOn ? "Aan" : "Uit"}</button>;
+  return <button onClick={toggle}>{isOn ? "On" : "Off"}</button>;
 }
 ```
 
@@ -101,10 +101,10 @@ function MyComponent() {
 
 ### Controlled vs Uncontrolled
 
-**Wanneer:** Form handling strategy bepalen.
+**When:** Determining form handling strategy.
 
 ```tsx
-// Uncontrolled (interne state)
+// Uncontrolled (internal state)
 function UncontrolledInput() {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -115,12 +115,12 @@ function UncontrolledInput() {
   return <input ref={inputRef} defaultValue="initial" />;
 }
 
-// Controlled (externe state)
+// Controlled (external state)
 function ControlledInput({ value, onChange }: Props) {
   return <input value={value} onChange={(e) => onChange(e.target.value)} />;
 }
 
-// Hybrid (beide ondersteunen)
+// Hybrid (support both)
 function FlexibleInput({ value, defaultValue, onChange }: Props) {
   const [internalValue, setInternalValue] = useState(defaultValue ?? "");
   const isControlled = value !== undefined;
@@ -141,16 +141,16 @@ function FlexibleInput({ value, defaultValue, onChange }: Props) {
 }
 ```
 
-**Vuistregel:**
+**Rule of thumb:**
 
-- Uncontrolled: Eenvoudige forms, geen real-time validation
+- Uncontrolled: Simple forms, no real-time validation
 - Controlled: Complex forms, validation, dependent fields
 
 ---
 
 ### Slot Pattern
 
-**Wanneer:** Flexibele layout met named regions.
+**When:** Flexible layout with named regions.
 
 ```tsx
 interface LayoutProps {
@@ -173,7 +173,7 @@ function PageLayout({ header, sidebar, main, footer }: LayoutProps) {
   );
 }
 
-// Gebruik
+// Usage
 <PageLayout
   header={<Navigation />}
   sidebar={<FilterPanel />}
@@ -186,7 +186,7 @@ function PageLayout({ header, sidebar, main, footer }: LayoutProps) {
 
 ### Polymorphic Components
 
-**Wanneer:** Component moet als verschillende HTML elements renderen.
+**When:** Component needs to render as different HTML elements.
 
 ```tsx
 type PolymorphicProps<E extends ElementType> = {
@@ -203,7 +203,7 @@ function Button<E extends ElementType = 'button'>({
   return <Component {...props}>{children}</Component>
 }
 
-// Gebruik
+// Usage
 <Button>Click me</Button>                    // renders <button>
 <Button as="a" href="/page">Link</Button>    // renders <a>
 <Button as={Link} to="/page">Router</Button> // renders React Router Link
@@ -215,7 +215,7 @@ function Button<E extends ElementType = 'button'>({
 
 ### URL State (searchParams)
 
-**Wanneer:** Filters, pagination, shareable state.
+**When:** Filters, pagination, shareable state.
 
 ```tsx
 // Next.js App Router
@@ -252,7 +252,7 @@ function useUrlState<T extends Record<string, string>>(defaults: T) {
   return [state, setState] as const;
 }
 
-// Gebruik
+// Usage
 function ProductFilters() {
   const [filters, setFilters] = useUrlState({
     category: "",
@@ -265,8 +265,8 @@ function ProductFilters() {
       value={filters.sort}
       onChange={(e) => setFilters({ sort: e.target.value })}
     >
-      <option value="newest">Nieuwste</option>
-      <option value="price">Prijs</option>
+      <option value="newest">Newest</option>
+      <option value="price">Price</option>
     </select>
   );
 }
@@ -276,7 +276,7 @@ function ProductFilters() {
 
 ### Context + Reducer
 
-**Wanneer:** Complex shared state met actions.
+**When:** Complex shared state with actions.
 
 ```tsx
 // Types
@@ -340,7 +340,7 @@ function useCart() {
 
 ### Server State (React Query / SWR)
 
-**Wanneer:** Async data met caching.
+**When:** Async data with caching.
 
 ```tsx
 // React Query pattern
@@ -365,7 +365,7 @@ function useAddProduct() {
   });
 }
 
-// Gebruik
+// Usage
 function ProductList() {
   const { data, isLoading, error } = useProducts({ category: "electronics" });
   const addProduct = useAddProduct();
@@ -515,13 +515,13 @@ function SplitView({ list, detail, showDetail }: SplitViewProps) {
 
 ### Level Definitions
 
-| Level        | Beschrijving                 | Voorbeelden                        | Complexity          |
-| ------------ | ---------------------------- | ---------------------------------- | ------------------- |
-| **Atom**     | Kleinste UI element          | Button, Input, Badge, Icon         | Single element      |
-| **Molecule** | Groep van 2-3 atoms          | SearchBar, FormField, NavItem      | 2-3 atoms           |
-| **Organism** | Meerdere molecules           | Header, Card, Sidebar, ProductTile | Multiple molecules  |
-| **Template** | Pagina layout zonder content | PageLayout, DashboardTemplate      | Regions only        |
-| **Page**     | Template + echte content     | HomePage, ProductPage              | Full implementation |
+| Level        | Description                 | Examples                           | Complexity          |
+| ------------ | --------------------------- | ---------------------------------- | ------------------- |
+| **Atom**     | Smallest UI element         | Button, Input, Badge, Icon         | Single element      |
+| **Molecule** | Group of 2-3 atoms          | SearchBar, FormField, NavItem      | 2-3 atoms           |
+| **Organism** | Multiple molecules          | Header, Card, Sidebar, ProductTile | Multiple molecules  |
+| **Template** | Page layout without content | PageLayout, DashboardTemplate      | Regions only        |
+| **Page**     | Template + real content     | HomePage, ProductPage              | Full implementation |
 
 ### Component Mapping
 
@@ -627,11 +627,11 @@ class ErrorBoundary extends Component<Props, State> {
       return (
         this.props.fallback ?? (
           <div role="alert">
-            <h2>Er ging iets mis</h2>
+            <h2>Something went wrong</h2>
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
             >
-              Probeer opnieuw
+              Try again
             </button>
           </div>
         )
@@ -642,7 +642,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// Gebruik
+// Usage
 <ErrorBoundary fallback={<ProductErrorState />}>
   <ProductList />
 </ErrorBoundary>;
@@ -671,7 +671,7 @@ async function fetchProduct(id: string): Promise<Result<Product>> {
   }
 }
 
-// Gebruik
+// Usage
 const result = await fetchProduct("123");
 if (result.success) {
   console.log(result.data);
@@ -687,7 +687,7 @@ if (result.success) {
 ### Memoization
 
 ```tsx
-// useMemo voor expensive berekeningen
+// useMemo for expensive calculations
 function ProductList({ products, filters }: Props) {
   const filteredProducts = useMemo(
     () => products.filter((p) => matchesFilters(p, filters)),
@@ -703,7 +703,7 @@ function ProductList({ products, filters }: Props) {
   );
 }
 
-// React.memo voor component re-renders
+// React.memo for component re-renders
 const ProductCard = memo(function ProductCard({
   product,
 }: {
@@ -712,7 +712,7 @@ const ProductCard = memo(function ProductCard({
   return <div>{product.name}</div>;
 });
 
-// useCallback voor stable function references
+// useCallback for stable function references
 function Parent() {
   const [count, setCount] = useState(0);
 
@@ -736,7 +736,7 @@ const HeavyComponent = dynamic(() => import("./HeavyComponent"), {
 });
 
 // Route-based splitting (Next.js does this automatically)
-// pages/heavy-page.tsx wordt automatisch gesplit
+// pages/heavy-page.tsx is split automatically
 
 // Component-based splitting
 const LazyChart = lazy(() => import("./Chart"));
@@ -756,7 +756,7 @@ function Dashboard() {
 
 ### Server Component Data Loading (Next.js App Router)
 
-**Wanneer:** Data ophalen in Server Components zonder client-side state.
+**When:** Fetching data in Server Components without client-side state.
 
 ```tsx
 // app/dashboard/page.tsx (Server Component)
@@ -790,7 +790,7 @@ type Metric = z.infer<typeof MetricSchema>;
 
 export async function getMetrics(): Promise<Metric[]> {
   const res = await fetch(`${process.env.API_URL}/metrics`, {
-    next: { revalidate: 60 }, // ISR: revalidate elke 60s
+    next: { revalidate: 60 }, // ISR: revalidate every 60s
   });
   if (!res.ok) throw new Error(`Failed to fetch metrics: ${res.status}`);
   const data = await res.json();
@@ -798,17 +798,17 @@ export async function getMetrics(): Promise<Metric[]> {
 }
 ```
 
-**Voordelen:**
+**Benefits:**
 
-- Zero client-side JS voor data fetching
-- Automatische deduplicatie door React
-- Type-safe met Zod validatie
+- Zero client-side JS for data fetching
+- Automatic deduplication by React
+- Type-safe with Zod validation
 
 ---
 
 ### API Service Layer Pattern
 
-**Wanneer:** Gedeelde data access functies voor meerdere components.
+**When:** Shared data access functions for multiple components.
 
 ```
 src/services/
@@ -853,7 +853,7 @@ export const usersService = {
 
 ### Loading State Patterns (Skeleton)
 
-**Wanneer:** Async data laden met visuele feedback.
+**When:** Loading async data with visual feedback.
 
 ```tsx
 // Skeleton component
@@ -867,7 +867,7 @@ function MetricCardSkeleton() {
   );
 }
 
-// Met Suspense (Server Components)
+// With Suspense (Server Components)
 import { Suspense } from "react";
 
 function Dashboard() {
@@ -878,7 +878,7 @@ function Dashboard() {
   );
 }
 
-// Met React Query (Client Components)
+// With React Query (Client Components)
 function MetricCard({ id }: { id: string }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["metric", id],
@@ -895,7 +895,7 @@ function MetricCard({ id }: { id: string }) {
 
 ### Error State Patterns
 
-**Wanneer:** API errors graceful afhandelen met gebruikersvriendelijke UI.
+**When:** Handling API errors gracefully with user-friendly UI.
 
 ```tsx
 // Inline error
@@ -908,10 +908,10 @@ function MetricCardError({
 }) {
   return (
     <div className="bg-card border border-error/20 rounded-lg p-4" role="alert">
-      <p className="text-sm text-error">Kon data niet laden</p>
+      <p className="text-sm text-error">Could not load data</p>
       {onRetry && (
         <button onClick={onRetry} className="text-xs text-primary mt-2">
-          Opnieuw proberen
+          Try again
         </button>
       )}
     </div>
@@ -919,9 +919,9 @@ function MetricCardError({
 }
 
 // ErrorBoundary (class component — catches render errors)
-// Zie Error Handling Patterns sectie
+// See Error Handling Patterns section
 
-// React Query error met retry
+// React Query error with retry
 function DataSection() {
   const { data, error, refetch } = useQuery({
     queryKey: ["data"],
@@ -936,11 +936,11 @@ function DataSection() {
 
 ---
 
-## Integration met Skills
+## Integration with Skills
 
 ### Wireframe → Pattern Mapping
 
-Wanneer wireframe `data-component` heeft, map naar pattern:
+When wireframe has `data-component`, map to pattern:
 
 ```
 data-component="Card" → Compound Components pattern
@@ -951,7 +951,7 @@ data-component="List" → Server State pattern
 
 ### Style → Pattern Mapping
 
-Wanneer style tokens genereren, gebruik patterns:
+When generating style tokens, use patterns:
 
 ```
 Layout tokens → Responsive Patterns CSS
@@ -961,7 +961,7 @@ State tokens → Controlled/Uncontrolled indicators
 
 ### Scaffold → Pattern Implementation
 
-Wanneer components scaffolden:
+When scaffolding components:
 
 ```
 Atom → Simple functional component

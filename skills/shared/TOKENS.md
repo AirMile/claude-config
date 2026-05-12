@@ -190,7 +190,7 @@ When replacing hardcoded values, map to nearest token by visual role (not exact 
 
 ## Bootstrap Procedure
 
-Canonical steps for installing fallback token files into a target project. Referenced by `dev-build` FASE 0 and `core-setup` Phase 3 — do not duplicate the steps in those skills.
+Canonical steps for installing fallback token files into a target project. Referenced by `dev-build` PHASE 0 and `core-setup` Phase 3 — do not duplicate the steps in those skills.
 
 **Guards (run first, skip silently if any guard fails):**
 
@@ -212,4 +212,4 @@ Canonical steps for installing fallback token files into a target project. Refer
 
 **Tailwind v4:** not supported yet. Detect via `package.json` (`"tailwindcss": "^4"`). If found → log "Tailwind v4 detected — manual token setup required (see roadmap)" and skip.
 
-> **Callers:** `dev-build/SKILL.md` FASE 0, `core-setup/references/mode-greenfield.md` Phase 3.
+> **Callers:** `dev-build/SKILL.md` PHASE 0, `core-setup/references/mode-greenfield.md` Phase 3.

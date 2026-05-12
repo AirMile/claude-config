@@ -9,7 +9,7 @@
 | `installed`     | `@tanstack/react-query` in dependencies      |
 | `not-installed` | `@tanstack/react-query` niet in dependencies |
 
-Geen apart configuratiebestand — `installed` geldt als `already-installed-configured` voor FASE 5 stap 0.
+Geen apart configuratiebestand — `installed` geldt als `already-installed-configured` voor PHASE 5 stap 0.
 
 ## Install (via Context7)
 

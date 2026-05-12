@@ -1,26 +1,26 @@
 # Session Tracking
 
-Lichtgewicht session state voor cross-skill coördinatie. Pipeline skills gebruiken de onderstaande bestanden. Frontend pipeline skills gebruiken daarnaast `.project/session/devinfo.json` voor handoff data tussen skills (bijv. `frontend-design` → `frontend-convert`).
+Lightweight session state for cross-skill coordination. Pipeline skills use the files below. Frontend pipeline skills also use `.project/session/devinfo.json` for handoff data between skills (e.g. `frontend-design` → `frontend-convert`).
 
 ---
 
 ## Skill Handoff Contract (frontmatter)
 
-Pipeline-skills die gedeelde state aanraken declareren dit expliciet via `reads:` en `writes:` in de YAML frontmatter. Doel: per-skill zichtbaar maken welke gedeelde velden worden gelezen/geschreven, zodat afhankelijkheden tussen pipeline-fases controleerbaar zijn zonder de SKILL.md tekst te lezen.
+Pipeline skills that touch shared state declare this explicitly via `reads:` and `writes:` in the YAML frontmatter. Purpose: make per-skill which shared fields are read/written visible, so dependencies between pipeline phases are verifiable without reading the SKILL.md text.
 
 ### Namespaces
 
-| Prefix           | Bestand                                              | Gebruik                     |
+| Prefix           | File                                                 | Usage                       |
 | ---------------- | ---------------------------------------------------- | --------------------------- |
 | `feature.*`      | `.project/features/{name}/feature.json` (top-level)  | dev-pipeline, game-pipeline |
 | `backlog.status` | `.project/backlog.html` (feature status transitions) | dev-pipeline, game-pipeline |
 | `devinfo.*`      | `.project/session/devinfo.json` (top-level key)      | frontend-pipeline           |
 
-### Granulariteit
+### Granularity
 
-Alleen top-level secties — geen sub-paths zoals `feature.build.decisions`. Schema-evolutie van sub-velden mag de frontmatter niet raken.
+Top-level sections only — no sub-paths like `feature.build.decisions`. Schema evolution of sub-fields must not affect the frontmatter.
 
-### Voorbeeld
+### Example
 
 ```yaml
 ---
@@ -36,27 +36,27 @@ metadata:
 ---
 ```
 
-### Wanneer toepassen
+### When to apply
 
-- Skill leest of schrijft `feature.json` / `devinfo.json` / `backlog.status` → declareer.
-- Skill werkt alleen met eigen artifacts (bijv. `optimize/{run-id}/`) → laat weg.
-- Lege lijsten weglaten i.p.v. `reads: []` schrijven.
+- Skill reads or writes `feature.json` / `devinfo.json` / `backlog.status` → declare.
+- Skill works only with its own artifacts (e.g. `optimize/{run-id}/`) → omit.
+- Leave out empty lists instead of writing `reads: []`.
 
-### Impliciete signalen (niet declareren)
+### Implicit signals (do not declare)
 
-Sommige bestanden worden door élke pipeline-skill aangeraakt als runtime-lifecycle, niet als handoff. Die staan **niet** in `reads:`/`writes:`:
+Some files are touched by every pipeline skill as runtime lifecycle, not as handoff. These are **not** in `reads:`/`writes:`:
 
-- `.project/session/active-{name}.json` — runtime-signaal voor het backlog-dashboard, geschreven bij skill start en opgeruimd bij einde. Geen volgende skill leest dit voor beslissingen.
-- `.project/session/pre-skill-sha.txt` / `pre-skill-status.txt` — git-baseline voor scoped commits, lokaal aan één skill-run.
-- `devinfo.currentSkill` (`{name, phase, startedAt}`) — runtime-progressie binnen één frontend-skill (PREFLIGHT → COMPLETE), niet gelezen door volgende skills voor besluitvorming.
+- `.project/session/active-{name}.json` — runtime signal for the backlog dashboard, written on skill start and cleaned up on end. No subsequent skill reads this for decisions.
+- `.project/session/pre-skill-sha.txt` / `pre-skill-status.txt` — git baseline for scoped commits, local to one skill run.
+- `devinfo.currentSkill` (`{name, phase, startedAt}`) — runtime progress within one frontend skill (PREFLIGHT → COMPLETE), not read by subsequent skills for decision-making.
 
 ---
 
 ## Active Feature Signal
 
-Wanneer een dev/game skill een feature verwerkt, schrijf een signaalbestand zodat het backlog dashboard de actieve feature kan highlighten.
+When a dev/game skill processes a feature, write a signal file so the backlog dashboard can highlight the active feature.
 
-**Storage:** `.project/session/active-{feature-name}.json` (één bestand per actieve feature)
+**Storage:** `.project/session/active-{feature-name}.json` (one file per active feature)
 
 ### Schema
 
@@ -68,48 +68,48 @@ Wanneer een dev/game skill een feature verwerkt, schrijf een signaalbestand zoda
 }
 ```
 
-**Geldige `skill` waarden:** `define`, `plan`, `build`, `test`, `debug`, `refactor`
+**Valid `skill` values:** `define`, `plan`, `build`, `test`, `debug`, `refactor`
 
 ### Protocol
 
-**Bij skill start** (nadat feature naam bekend is):
+**On skill start** (after feature name is known):
 
 ```bash
 mkdir -p .project/session
 echo '{"feature":"FEATURE_NAME","skill":"SKILL_VERB","startedAt":"TIMESTAMP"}' > .project/session/active-FEATURE_NAME.json
 ```
 
-**Bij skill einde** (completion of error exit):
+**On skill end** (completion or error exit):
 
 ```bash
 rm -f .project/session/active-FEATURE_NAME.json
 ```
 
-Meerdere features kunnen tegelijk actief zijn (bijv. parallelle Claude sessies). Entries ouder dan 2 uur worden automatisch genegeerd (staleness protection).
+Multiple features can be active simultaneously (e.g. parallel Claude sessions). Entries older than 2 hours are automatically ignored (staleness protection).
 
-Het backlog dashboard detecteert wijzigingen in de session directory via SSE en toont automatisch een visuele indicator (pulserende rand + skill label) op elke actieve feature card.
+The backlog dashboard detects changes in the session directory via SSE and automatically shows a visual indicator (pulsing border + skill label) on each active feature card.
 
 ---
 
 ## Git Baseline
 
-**Storage:** `.project/session/pre-skill-sha.txt` of `pre-skill-status.txt`
+**Storage:** `.project/session/pre-skill-sha.txt` or `pre-skill-status.txt`
 
-**Doel:** scoped commits — alleen files van deze skill stagen.
+**Purpose:** scoped commits — only stage files from this skill.
 
-**Bij skill start:**
+**On skill start:**
 
 ```bash
 git rev-parse HEAD > .project/session/pre-skill-sha.txt
 ```
 
-**Bij skill einde (commit):**
+**On skill end (commit):**
 
 ```bash
 git diff --name-only $(cat .project/session/pre-skill-sha.txt) HEAD
 ```
 
-Bestanden die NIET in deze diff staan EN al dirty waren → pre-existing, niet stagen.
+Files NOT in this diff AND already dirty → pre-existing, do not stage.
 
 **Cleanup:**
 
@@ -123,7 +123,7 @@ rm -f .project/session/pre-skill-sha.txt .project/session/active-FEATURE_NAME.js
 
 ### `devinfo.handoff` — Build Incomplete
 
-Geschreven door `frontend-design` (Build route) wanneer user "Open in convert" kiest na smoke-failure. Gelezen door `frontend-convert` FASE 0.0.
+Written by `frontend-design` (Build route) when user chooses "Open in convert" after smoke-failure. Read by `frontend-convert` PHASE 0.0.
 
 ```json
 {
@@ -142,15 +142,15 @@ Geschreven door `frontend-design` (Build route) wanneer user "Open in convert" k
 }
 ```
 
-`source` waarden: `"build-incomplete"` (van Build-route failure). Overige `source`-waarden zijn van `frontend-convert` zelf (zie FASE 4.1).
+`source` values: `"build-incomplete"` (from Build-route failure). Other `source` values come from `frontend-convert` itself (see PHASE 4.1).
 
-**Cleanup:** `frontend-convert` FASE 4.1 na success → zet `devinfo.handoff = null`. Als handoff ouder dan 24u: `frontend-convert` FASE 0.0 toont staleness-warning.
+**Cleanup:** `frontend-convert` PHASE 4.1 after success → set `devinfo.handoff = null`. If handoff is older than 24h: `frontend-convert` PHASE 0.0 shows staleness warning.
 
 ---
 
 ### `devinfo.tokenDrift` — Token Drift Log
 
-Geschreven door `frontend-tokens` (Updaten/Extraheren route) wanneer bestaande token-keys een andere waarde krijgen terwijl DOING/DONE PAGE-features bestaan. Gelezen en opgeruimd door `frontend-design` (Stap 5), `frontend-convert` (FASE 4.1), en `dev-verify`/`dev-refactor` (als feature in `affectedFeatures` staat).
+Written by `frontend-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `frontend-design` (Step 5), `frontend-convert` (PHASE 4.1), and `dev-verify`/`dev-refactor` (if feature is in `affectedFeatures`).
 
 ```json
 {
@@ -165,4 +165,4 @@ Geschreven door `frontend-tokens` (Updaten/Extraheren route) wanneer bestaande t
 }
 ```
 
-**Cleanup:** na elke succesvolle Build of convert-run op een feature in `affectedFeatures`, wordt die feature uit de lijst verwijderd. Als lijst leeg → `resolved: true`.
+**Cleanup:** after each successful Build or convert-run on a feature in `affectedFeatures`, that feature is removed from the list. When list is empty → `resolved: true`.

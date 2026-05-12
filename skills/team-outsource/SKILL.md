@@ -16,7 +16,7 @@ metadata:
 
 # Team Outsource
 
-Maak een externe issue aan voor een teammate op basis van een lokaal backlog-item of feature.json brief. Schrijft `externalRef.direction: "outbound"` terug zodat het item in het lokale dashboard gelinkt blijft aan de externe issue.
+Create an external issue for a teammate based on a local backlog item or feature.json brief. Writes `externalRef.direction: "outbound"` back so the item stays linked to the external issue in the local dashboard.
 
 **Trigger**: `/team-outsource`, `/team-outsource <name>`, `/team-outsource --paste`
 
@@ -24,33 +24,33 @@ Maak een externe issue aan voor een teammate op basis van een lokaal backlog-ite
 
 > **Seed task list at start:**
 >
-> TaskCreate met fases:
+> TaskCreate with phases:
 >
-> - FASE 0: Pre-flight + tracker detection
-> - FASE 1: Item selectie + brief composition
-> - FASE 2: Format selection
-> - FASE 3: Assignee + tracker target
-> - FASE 4: Confirm preview
-> - FASE 5: Create issue
-> - FASE 6: Write externalRef terug
-> - FASE 7: Output
+> - PHASE 0: Pre-flight + tracker detection
+> - PHASE 1: Item selection + brief composition
+> - PHASE 2: Format selection
+> - PHASE 3: Assignee + tracker target
+> - PHASE 4: Confirm preview
+> - PHASE 5: Create issue
+> - PHASE 6: Write externalRef back
+> - PHASE 7: Output
 
-### FASE 0: Pre-flight + tracker detection
+### PHASE 0: Pre-flight + tracker detection
 
-> **Todo**: markeer FASE 0 → `in_progress`.
+> **Todo**: mark PHASE 0 → `in_progress`.
 
-1. Read `.project/project.json` → check `team.tracker`. Onbekend → run `gh repo view --json nameWithOwner` (succes → `tracker = "github"`). `--paste` flag aanwezig of `gh` faalt → `tracker = "paste"`.
+1. Read `.project/project.json` → check `team.tracker`. Unknown → run `gh repo view --json nameWithOwner` (success → `tracker = "github"`). `--paste` flag present or `gh` fails → `tracker = "paste"`.
 2. Read `.project/backlog.html` → parse `<script id="backlog-data">` JSON → `data`.
-3. Als argument `<name>` gezet → zoek in `data.features` op exacte naam. Geen match → toon "Geen item gevonden met naam `{name}`" + lijst van top-3 vergelijkbare namen en exit.
-4. Check of gevonden item al `externalRef` heeft → toon "Al outsourced naar {externalRef.type} #{externalRef.id}" en exit (geen dubbele issues).
+3. If argument `<name>` is set → search in `data.features` by exact name. No match → show "No item found with name `{name}`" + list of top-3 similar names and exit.
+4. Check if found item already has `externalRef` → show "Already outsourced to {externalRef.type} #{externalRef.id}" and exit (no duplicate issues).
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-### FASE 1: Item selectie + brief composition
+### PHASE 1: Item selection + brief composition
 
-> **Todo**: markeer FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 1 → `in_progress`.
 
-**Als geen argument gegeven:** toon AskUserQuestion (multiSelect=true) van alle backlog-items met `status ∈ {TODO, DEFINED}` en zonder `externalRef.direction === "outbound"`:
+**If no argument given:** show AskUserQuestion (multiSelect=true) of all backlog items with `status ∈ {TODO, DEFINED}` and without `externalRef.direction === "outbound"`:
 
 ```
 #  oauth-callback    DEFINED · API · P1
@@ -58,54 +58,54 @@ Maak een externe issue aan voor een teammate op basis van een lokaal backlog-ite
 #  user-profile      DEFINED · FEATURE · P2
 ```
 
-**Per geselecteerd item — brief composition:**
+**Per selected item — brief composition:**
 
-Lees `.project/features/<name>/feature.json` als die bestaat.
+Read `.project/features/<name>/feature.json` if it exists.
 
-| Bron                        | Content                                                  |
+| Source                      | Content                                                  |
 | --------------------------- | -------------------------------------------------------- |
-| `feature.json#summary`      | Issue-body lead-paragraph                                |
-| `feature.json#requirements` | Acceptance criteria als genummerde lijst                 |
+| `feature.json#summary`      | Issue-body lead paragraph                                |
+| `feature.json#requirements` | Acceptance criteria as numbered list                     |
 | `feature.json#architecture` | Implementation hints (file paths, components, endpoints) |
-| `feature.json#technique`    | Voorgestelde aanpak (TDD / Implementation First)         |
-| backlog-item `description`  | Fallback als feature.json ontbreekt (TODO items)         |
+| `feature.json#technique`    | Suggested approach (TDD / Implementation First)          |
+| backlog-item `description`  | Fallback if feature.json is missing (TODO items)         |
 
-Bij DEFINED items met feature.json → sla `briefSource = "feature"` op. Bij TODO zonder feature.json → `briefSource = "backlog"`.
+For DEFINED items with feature.json → store `briefSource = "feature"`. For TODO without feature.json → `briefSource = "backlog"`.
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-### FASE 2: Format selection
+### PHASE 2: Format selection
 
-> **Todo**: markeer FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 2 → `in_progress`.
 
 AskUserQuestion (single select):
 
 ```yaml
 header: "Brief format"
-question: "In welke vorm wil je de issue aanmaken?"
+question: "In what form do you want to create the issue?"
 options:
   - label: "Technical brief (Recommended)"
-    description: "Requirements, architecture, acceptance criteria, file paths. Optimaal voor DEFINED items met feature.json."
+    description: "Requirements, architecture, acceptance criteria, file paths. Optimal for DEFINED items with feature.json."
   - label: "User story"
-    description: "Als <rol>, wil ik <doel>, zodat <waarom>. Plus acceptance criteria. Korter."
+    description: "As <role>, I want <goal>, so that <why>. Plus acceptance criteria. Shorter."
   - label: "Minimal task"
-    description: "Titel + 1-2 zinnen beschrijving. Gebruik dit voor eenvoudige TODO items."
+    description: "Title + 1-2 sentence description. Use this for simple TODO items."
 multiSelect: false
 ```
 
-Stel default op basis van `briefSource`:
+Set default based on `briefSource`:
 
 - `briefSource === "feature"` → default Technical brief
 - `briefSource === "backlog"` → default Minimal task
 
-**Compose issue body** op basis van gekozen format:
+**Compose issue body** based on chosen format:
 
 **Technical brief:**
 
 ```markdown
 ## Summary
 
-{feature.json#summary of backlog description}
+{feature.json#summary or backlog description}
 
 ## Acceptance criteria
 
@@ -126,7 +126,7 @@ Stel default op basis van `briefSource`:
 **User story:**
 
 ```markdown
-Als {rol uit summary}, wil ik {doel}, zodat {waarom}.
+As {role from summary}, I want {goal}, so that {why}.
 
 ## Acceptance criteria
 
@@ -137,68 +137,68 @@ Als {rol uit summary}, wil ik {doel}, zodat {waarom}.
 **Minimal task:**
 
 ```markdown
-{backlog description of summary — max 2 zinnen}
+{backlog description or summary — max 2 sentences}
 ```
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
-### FASE 3: Assignee + tracker target
+### PHASE 3: Assignee + tracker target
 
-> **Todo**: markeer FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 3 → `in_progress`.
 
 **GitHub config check:**
 
-Read `project.json#team.githubProject`. Als ontbreekt of incompleet: vraag eenmalig via AskUserQuestion:
+Read `project.json#team.githubProject`. If missing or incomplete: ask once via AskUserQuestion:
 
 ```yaml
 header: "GitHub project"
-question: "Geef je GitHub project details op. Dit wordt gecached in project.json."
+question: "Enter your GitHub project details. This will be cached in project.json."
 ```
 
-Gevraagde velden (vrije tekst per stuk):
+Requested fields (free text each):
 
 1. Owner + repo (default: `gh repo view --json nameWithOwner`)
-2. Default assignee GitHub-username (kan leeg)
-3. Project board nummer (optioneel — voor ProjectV2 koppeling, vul in als je op een GitHub Project werkt)
+2. Default assignee GitHub username (can be empty)
+3. Project board number (optional — for ProjectV2 linking, fill in if working on a GitHub Project)
 
-Schrijf ingevulde velden naar `project.json#team.githubProject`.
+Write filled-in fields to `project.json#team.githubProject`.
 
-**Assignee selectie:**
+**Assignee selection:**
 
 ```yaml
 header: "Assignee"
-question: "Aan wie wijs je dit toe?"
+question: "Who do you want to assign this to?"
 options:
   - label: "{defaultAssignee} (Recommended)"
-    description: "Gecachede standaard — wijzig via project.json#team.githubProject.defaultAssignee"
-  - label: "Andere username"
-    description: "Typ een GitHub-username"
-  - label: "Geen assignee"
-    description: "Issue zonder toewijzing aanmaken"
+    description: "Cached default — change via project.json#team.githubProject.defaultAssignee"
+  - label: "Other username"
+    description: "Type a GitHub username"
+  - label: "No assignee"
+    description: "Create issue without assignment"
 multiSelect: false
 ```
 
-Als `defaultAssignee` leeg → sla "gecachede standaard" optie over, toon direct "Andere username" + "Geen assignee".
+If `defaultAssignee` is empty → skip "cached default" option, show "Other username" + "No assignee" directly.
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-### FASE 4: Confirm preview
+### PHASE 4: Confirm preview
 
-> **Todo**: markeer FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 4 → `in_progress`.
 
-Toon issue preview:
+Show issue preview:
 
 ```
 ISSUE PREVIEW
 ══════════════════════════════════════════════════
 Tracker:    github (owner/repo)
-Title:      {feature name of backlog naam}
+Title:      {feature name or backlog name}
 Assignee:   @{username}
-Labels:     {phase als label, bijv. P1}
+Labels:     {phase as label, e.g. P1}
 
 Body:
   ## Summary
-  {eerste 3 regels van body}
+  {first 3 lines of body}
   ...
 ══════════════════════════════════════════════════
 ```
@@ -207,30 +207,30 @@ AskUserQuestion (single select):
 
 ```yaml
 header: "Confirm"
-question: "Issue aanmaken met bovenstaande inhoud?"
+question: "Create issue with the above content?"
 options:
-  - label: "Aanmaken (Recommended)"
-  - label: "Annuleren"
+  - label: "Create (Recommended)"
+  - label: "Cancel"
 multiSelect: false
 ```
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-### FASE 5: Create issue
+### PHASE 5: Create issue
 
-> **Todo**: markeer FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 5 → `in_progress`.
 
 **GitHub:**
 
-Schrijf body naar tijdelijk bestand:
+Write body to temporary file:
 
 ```bash
 cat > /tmp/team-outsource-body-{name}.md << 'EOF'
-{gecomponeerde body}
+{composed body}
 EOF
 ```
 
-Maak issue aan:
+Create issue:
 
 ```bash
 gh issue create \
@@ -241,14 +241,14 @@ gh issue create \
   --label "{phase}"
 ```
 
-Skip `--assignee` flag als geen assignee gekozen. Capture stdout voor issue URL + nummer.
+Skip `--assignee` flag if no assignee chosen. Capture stdout for issue URL + number.
 
 **Jira/Linear/paste:**
 
-Toon body in terminal:
+Show body in terminal:
 
 ```
-ISSUE BODY — kopieer onderstaande tekst naar {tracker}
+ISSUE BODY — copy the text below to {tracker}
 
 ────────────────────────────────────────────────────
 {title}
@@ -256,26 +256,26 @@ ISSUE BODY — kopieer onderstaande tekst naar {tracker}
 {body}
 ────────────────────────────────────────────────────
 
-Na aanmaken: plak de issue URL hieronder.
+After creating: paste the issue URL below.
 ```
 
-AskUserQuestion vrije tekst: paste URL → parse `id` via:
+AskUserQuestion free text: paste URL → parse `id` via:
 
 - GitHub: `/(\d+)$/`
 - Jira: `/([A-Z]+-\d+)/`
 - Linear: `/([A-Z]+-\d+)/`
 
-Bij parse-fout: toon "Kon ID niet extraheren uit URL — handmatig invullen?" en vraag opnieuw.
+On parse error: show "Could not extract ID from URL — enter manually?" and ask again.
 
-> **Todo**: markeer FASE 5 → `completed`, FASE 6 → `in_progress`.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 6 → `in_progress`.
 
-### FASE 6: Write externalRef terug
+### PHASE 6: Write externalRef back
 
-> **Todo**: markeer FASE 6 → `in_progress`.
+> **Todo**: mark PHASE 6 → `in_progress`.
 
-Re-read `.project/backlog.html` direct vóór write (Prettier/linters kunnen bestand tussentijds wijzigen).
+Re-read `.project/backlog.html` directly before writing (Prettier/linters may have modified the file in the meantime).
 
-Zoek feature op naam → update `externalRef` veld:
+Find feature by name → update `externalRef` field:
 
 ```json
 {
@@ -292,15 +292,15 @@ Zoek feature op naam → update `externalRef` veld:
 }
 ```
 
-Zet `data.updated` naar vandaag. Edit JSON-blok terug in `backlog.html` (script-tags intact).
+Set `data.updated` to today. Edit JSON block back into `backlog.html` (script tags intact).
 
-Als `.project/features/<name>/feature.json` bestaat: voeg ook hier `externalRef` aan toe (1:1 copy).
+If `.project/features/<name>/feature.json` exists: also add `externalRef` there (1:1 copy).
 
-> **Todo**: markeer FASE 6 → `completed`, FASE 7 → `in_progress`.
+> **Todo**: mark PHASE 6 → `completed`, PHASE 7 → `in_progress`.
 
-### FASE 7: Output
+### PHASE 7: Output
 
-> **Todo**: markeer FASE 7 → `in_progress`.
+> **Todo**: mark PHASE 7 → `in_progress`.
 
 ```
 OUTSOURCED
@@ -309,28 +309,28 @@ OUTSOURCED
   {url}
 
   Assignee:  @{username}
-  Status:    {backlog status} · gemarkeerd als outbound
+  Status:    {backlog status} · marked as outbound
 
-  Next: monitor via /team-verify zodra er commits zijn op deze branch
+  Next: monitor via /team-verify once there are commits on this branch
 ```
 
-> **Todo**: markeer FASE 7 → `completed`.
+> **Todo**: mark PHASE 7 → `completed`.
 
 ## Restrictions
 
-- Geen bidirectionele sync — externe status-updates komen niet automatisch terug naar backlog
-- Skip items die al een `externalRef` hebben (zowel inbound als outbound) — geen dubbele issues
-- Eén item tegelijk voor technical brief / user story formats. Multi-select OK voor minimal-task batch
-- Backlog status verandert niet bij outsourcen — `externalRef.direction` is het signaal, niet de statuskolom
-- `paste` flow: minimale URL-validatie — gebruiker is verantwoordelijk voor correcte paste
+- No bidirectional sync — external status updates do not automatically come back to the backlog
+- Skip items that already have an `externalRef` (both inbound and outbound) — no duplicate issues
+- One item at a time for technical brief / user story formats. Multi-select OK for minimal-task batch
+- Backlog status does not change on outsourcing — `externalRef.direction` is the signal, not the status column
+- `paste` flow: minimal URL validation — user is responsible for correct paste
 
 ## Tracker-support matrix
 
-| Tracker | Methode    | Assignee-support |
+| Tracker | Method     | Assignee support |
 | ------- | ---------- | ---------------- |
 | GitHub  | `gh` CLI   | GitHub username  |
-| Jira    | paste-flow | Handmatig in UI  |
-| Linear  | paste-flow | Handmatig in UI  |
+| Jira    | paste-flow | Manual in UI     |
+| Linear  | paste-flow | Manual in UI     |
 
 ## Terminal Formatting
 
@@ -339,4 +339,4 @@ OUTSOURCED
 
 ## Language
 
-Follow the Language Policy in CLAUDE.md (instructies Nederlands, technische termen Engels).
+Follow `skills/shared/LANGUAGE.md` for output language rules.

@@ -1,52 +1,52 @@
 # Backlog: HTML+JSON Format
 
-De backlog is een interactieve HTML list view met embedded JSON data. Alle skills die de backlog lezen of schrijven gebruiken dezelfde aanpak.
+The backlog is an interactive HTML list view with embedded JSON data. All skills that read or write the backlog use the same approach.
 
-**Bestand:** `.project/backlog.html`
+**File:** `.project/backlog.html`
 **Template:** `{skills_path}/shared/references/backlog-template.html`
-**Server:** `{skills_path}/shared/references/serve-backlog.js` (poort 9876)
+**Server:** `{skills_path}/shared/references/serve-backlog.js` (port 9876)
 
-## Backlog lezen
+## Reading the backlog
 
 1. Read `.project/backlog.html`
-2. Zoek het JSON-blok: `<script id="backlog-data" type="application/json">...</script>`
-3. Parse de inhoud als JSON
+2. Find the JSON block: `<script id="backlog-data" type="application/json">...</script>`
+3. Parse the contents as JSON
 
-**Data structuur:**
+**Data structure:**
 
 ```json
 {
-  "project": "Projectnaam",
+  "project": "Project name",
   "generated": "2026-01-15",
   "updated": "2026-01-20",
   "source": "/project-plan",
-  "overview": "Korte beschrijving",
+  "overview": "Short description",
   "features": [
     {
-      "name": "feature-naam",
+      "name": "feature-name",
       "type": "FEATURE|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|THEME|A11Y|PERF|PAGE-GAP",
       "status": "TODO|DEFINED|DOING|DONE|CANCELLED",
       "phase": "P1|P2|P3|P4",
-      "description": "Beschrijving",
+      "description": "Description",
       "source": "concept|project-todo",
-      "dependencies": ["andere-feature"],
+      "dependencies": ["other-feature"],
       "risk": "1-5|null",
       "date": "2026-01-15|null",
       "auto": "true|null",
       "refactor": "REFACTORED|ROLLED_BACK|null",
       "audit": {
-        "buildScreenshot": "<pad>",
+        "buildScreenshot": "<path>",
         "buildSmokeStatus": "PASS|FAIL|SKIPPED",
-        "buildSmokeError": "<korte reden — alleen bij FAIL>",
+        "buildSmokeError": "<short reason — only on FAIL>",
         "lastRun": "<YYYY-MM-DD>",
-        "scopes": ["<scope-naam>"],
+        "scopes": ["<scope-name>"],
         "findings": { "critical": "<N>", "warnings": "<N>", "passed": "<N>" }
       },
       "externalRef": {
         "type": "github|jira|linear",
         "id": "<issue/ticket id>",
         "url": "<full URL>",
-        "itemId": "<ProjectV2 node id of null>",
+        "itemId": "<ProjectV2 node id or null>",
         "assignees": ["<username>"],
         "labels": ["<label>"],
         "direction": "inbound|outbound",
@@ -56,39 +56,39 @@ De backlog is een interactieve HTML list view met embedded JSON data. Alle skill
       }
     }
   ],
-  "notes": "Eventuele notities"
+  "notes": "Any notes"
 }
 ```
 
-Het `audit`-veld is **frontend-track-specifiek** (type `PAGE` of `COMPONENT`). `buildScreenshot`/`buildSmokeStatus`/`buildSmokeError` worden geschreven door `/frontend-design` Build (smoke-render). `lastRun`/`scopes`/`findings` worden geschreven door `/frontend-check` FASE 4.3. Geen veld is verplicht; consumers checken op aanwezigheid. PASS-status is af te leiden uit `findings.critical === 0` — geen aparte boolean nodig.
+The `audit` field is **frontend-track-specific** (type `PAGE` or `COMPONENT`). `buildScreenshot`/`buildSmokeStatus`/`buildSmokeError` are written by `/frontend-design` Build (smoke-render). `lastRun`/`scopes`/`findings` are written by `/frontend-check` PHASE 4.3. No field is required; consumers check for presence. PASS status can be derived from `findings.critical === 0` — no separate boolean needed.
 
-## Backlog schrijven
+## Writing the backlog
 
-1. Read `.project/backlog.html` (volledige inhoud)
-2. Parse het JSON-blok (zie hierboven)
-3. Muteer het data object (status wijzigen, items toevoegen, etc.)
+1. Read `.project/backlog.html` (full contents)
+2. Parse the JSON block (see above)
+3. Mutate the data object (change status, add items, etc.)
 
-   **Bij items toevoegen — dedup-check (altijd, voor elke `data.features.push()`):**
-   1. `data.features.find(f => f.name === kebab-name)` → al in backlog? → skip.
-   2. Type COMPONENT: ook `project.json#design.components.find(c => c.name === kebab-name)` → al gespecificeerd? → link i.p.v. push.
-   3. Discovery-flows: `feature.json#suggestionsLog.find(s => s.name === name && s.status === "rejected" && s.skill === current-skill)` → eerder afgewezen door huidige skill? → skip.
+   **When adding items — dedup check (always, before every `data.features.push()`):**
+   1. `data.features.find(f => f.name === kebab-name)` → already in backlog? → skip.
+   2. Type COMPONENT: also `project.json#design.components.find(c => c.name === kebab-name)` → already specified? → link instead of push.
+   3. Discovery flows: `feature.json#suggestionsLog.find(s => s.name === name && s.status === "rejected" && s.skill === current-skill)` → previously rejected by current skill? → skip.
 
-4. Zet `updated` naar huidige datum (`YYYY-MM-DD`)
-5. Serialiseer het JSON object: `JSON.stringify(data, null, 2)`
-6. Vervang het blok tussen `<script id="backlog-data" type="application/json">` en `</script>` met de nieuwe JSON
-7. Write het volledige bestand terug naar `.project/backlog.html`
+4. Set `updated` to current date (`YYYY-MM-DD`)
+5. Serialize the JSON object: `JSON.stringify(data, null, 2)`
+6. Replace the block between `<script id="backlog-data" type="application/json">` and `</script>` with the new JSON
+7. Write the full file back to `.project/backlog.html`
 
-**Gebruik Edit tool** om alleen het JSON-blok te vervangen — niet het hele bestand herschrijven. Zorg dat de `<script>` tags intact blijven.
+**Use Edit tool** to replace only the JSON block — do not rewrite the whole file. Ensure the `<script>` tags remain intact.
 
-## Source-veld conventie
+## Source field convention
 
-Het `source`-veld op een backlog-item geeft aan welke skill het aangemaakt heeft. Conventie: **altijd met voorloopslash**, bijv. `"/project-todo"`, `"/dev-define"`, `"/frontend-design"`. Items met `source: "/project-todo"` zijn INDEPENDENT — `/project-plan` mag ze nooit overschrijven bij backlog-rebuild. Readers accepteren ook de slash-loze variant (`"project-todo"`) en legacy-waarden (`"dev-todo"`) van bestaande items.
+The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/dev-define"`, `"/frontend-design"`. Items with `source: "/project-todo"` are INDEPENDENT — `/project-plan` must never overwrite them during backlog-rebuild. Readers also accept the slash-less variant (`"project-todo"`) and legacy values (`"dev-todo"`) from existing items.
 
-## Team-context
+## Team context
 
-In team-repos waar collega's geen claude-config gebruiken: backlog blijft lokaal (`.project/` is gitignored), team gebruikt zijn eigen tracker. Zie `shared/TEAM.md` voor de volledige workflow.
+In team repos where colleagues do not use claude-config: backlog remains local (`.project/` is gitignored), team uses its own tracker. See `shared/TEAM.md` for the full workflow.
 
-Het **externalRef veld** linkt een backlog-item aan een externe issue/ticket. Eén issue kan meerdere items genereren via `/team-issues` smart split — die delen dezelfde `id` met verschillende `split` waarden.
+The **externalRef field** links a backlog item to an external issue/ticket. One issue can generate multiple items via `/team-issues` smart split — those share the same `id` with different `split` values.
 
 ```json
 {
@@ -105,96 +105,96 @@ Het **externalRef veld** linkt een backlog-item aan een externe issue/ticket. E�
 }
 ```
 
-- `/team-issues` schrijft het bij intake
-- `/dev-define` en `/frontend-design` kopiëren naar `feature.json`
-- `/core-commit` leest om commit-messages te prefixen
+- `/team-issues` writes it on intake
+- `/dev-define` and `/frontend-design` copy to `feature.json`
+- `/core-commit` reads to prefix commit messages
 
 ## Parallel sync
 
-Wanneer een skill meerdere bestanden tegelijk synchroniseert (backlog + project.json + feature.json):
+When a skill synchronizes multiple files at the same time (backlog + project.json + feature.json):
 
-1. **Lees parallel**: alle bestanden in één tool call batch
-2. **Muteer in memory**: pas alle data objecten aan
-3. **Schrijf parallel**: alle bestanden in één tool call batch
+1. **Read in parallel**: all files in one tool call batch
+2. **Mutate in memory**: update all data objects
+3. **Write in parallel**: all files in one tool call batch
 
-Dit reduceert 6+ sequentiële round-trips naar 2. Bestanden zijn onafhankelijk — geen volgorde vereist.
+This reduces 6+ sequential round-trips to 2. Files are independent — no ordering required.
 
-## Backlog genereren (nieuwe backlog)
+## Generating the backlog (new backlog)
 
-1. Kopieer template: `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
-2. Bouw het JSON data-object met alle features
-3. Vervang het placeholder JSON in het `<script id="backlog-data">` blok met het echte data-object
-4. Start de server als die niet draait:
+1. Copy template: `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
+2. Build the JSON data object with all features
+3. Replace the placeholder JSON in the `<script id="backlog-data">` block with the real data object
+4. Start the server if it is not running:
    ```bash
-   # Respecteert $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
+   # Respects $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
    curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node {skills_path}/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
    ```
-5. Toon de URL: `http://localhost:9876/{project-dir}/backlog`
+5. Show the URL: `http://localhost:9876/{project-dir}/backlog`
 
-## Status flow (twee tracks)
+## Status flow (two tracks)
 
-De backlog is verdeeld in twee tracks: **Frontend** (PAGE/COMPONENT) en **Dev** (alle overige types). Status-waarden zijn identiek, maar de labels en skills per status verschillen.
+The backlog is divided into two tracks: **Frontend** (PAGE/COMPONENT) and **Dev** (all other types). Status values are identical, but labels and skills per status differ.
 
 ### Frontend track (PAGE/COMPONENT)
 
 ```
 TODO (To design) → DEFINED (To convert) → DOING (To audit) → DONE (Shipped) → shipped
-                        ↑ alleen Path B         ↑ Path A slaat DEFINED over
+                        ↑ Path B only              ↑ Path A skips DEFINED
 ```
 
-| Status      | Label        | Gezet door                                                                    |
-| ----------- | ------------ | ----------------------------------------------------------------------------- |
-| `TODO`      | To design    | `/frontend-design` Capture, `/project-todo`, `/project-plan`, reuse-discovery |
-| `DEFINED`   | To convert   | `/frontend-design` Brief (Path B — offline handoff)                           |
-| `DOING`     | To audit     | `/frontend-design` Build (Path A) of `/frontend-convert` (Path B)             |
-| `DONE`      | Shipped      | `/frontend-check` PASS (terminaal — geen refactor-stap)                       |
-| `CANCELLED` | Gearchiveerd | Handmatig via UI (○ knop), herstelbaar                                        |
+| Status      | Label      | Set by                                                                        |
+| ----------- | ---------- | ----------------------------------------------------------------------------- |
+| `TODO`      | To design  | `/frontend-design` Capture, `/project-todo`, `/project-plan`, reuse-discovery |
+| `DEFINED`   | To convert | `/frontend-design` Brief (Path B — offline handoff)                           |
+| `DOING`     | To audit   | `/frontend-design` Build (Path A) or `/frontend-convert` (Path B)             |
+| `DONE`      | Shipped    | `/frontend-check` PASS (terminal — no refactor step)                          |
+| `CANCELLED` | Archived   | Manually via UI (○ button), restorable                                        |
 
-**Path A** (Build met Claude Code): TODO → DOING → DONE — DEFINED wordt overgeslagen.
+**Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
 
-**Path B** (Brief voor extern design): TODO → DEFINED → DOING → DONE.
+**Path B** (Brief for external design): TODO → DEFINED → DOING → DONE.
 
-`/frontend-check` PASS zet `f.shipped = true` direct — geen refactor-stap voor frontend cards.
+`/frontend-check` PASS sets `f.shipped = true` directly — no refactor step for frontend cards.
 
-### Wanneer welke skill voor PAGE/COMPONENT
+### When to use which skill for PAGE/COMPONENT
 
-| Situatie                                          | Skill                           |
+| Situation                                         | Skill                           |
 | ------------------------------------------------- | ------------------------------- |
-| Snelle "ik bedacht net iets" toevoeging           | `/project-todo`                 |
-| Volledig ontwerp (screenshot, Figma, brief)       | `/frontend-design` Capture      |
-| Bulk-init uit concept of brainstorm-output        | `/project-plan`                 |
-| Pattern-detectie tijdens build (cross-page reuse) | `/project-plan` reuse-discovery |
+| Quick "just thought of something" addition        | `/project-todo`                 |
+| Full design (screenshot, Figma, brief)            | `/frontend-design` Capture      |
+| Bulk-init from concept or brainstorm output       | `/project-plan`                 |
+| Pattern detection during build (cross-page reuse) | `/project-plan` reuse-discovery |
 
-Alle vier routes schrijven dezelfde JSON-structuur naar `data.features[]` met `type=PAGE` of `COMPONENT` en `status=TODO`. `/frontend-design` Capture voegt extra spec-velden toe (mock paths, brief, audit). De andere routes laten die velden leeg — `/frontend-design` Build vult ze later aan.
+All four routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. `/frontend-design` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/frontend-design` Build fills them in later.
 
 ### Dev track (FEATURE/API/UI/REFACTOR/BUG/etc.)
 
 ```
 TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped
-                                                                  ↓ (handmatig)
-                                                              CANCELLED (Gearchiveerd)
+                                                                  ↓ (manual)
+                                                              CANCELLED (Archived)
 ```
 
-| Status      | Label        | Gezet door                             |
-| ----------- | ------------ | -------------------------------------- |
-| `TODO`      | To define    | `/project-todo`, `/project-plan`       |
-| `DEFINED`   | To build     | `/dev-define` (afsluiting)             |
-| `DOING`     | To verify    | `/dev-build` (afsluiting)              |
-| `DONE`      | To refactor  | `/dev-verify` (afsluiting)             |
-| `CANCELLED` | Gearchiveerd | Handmatig via UI (○ knop), herstelbaar |
+| Status      | Label       | Set by                                 |
+| ----------- | ----------- | -------------------------------------- |
+| `TODO`      | To define   | `/project-todo`, `/project-plan`       |
+| `DEFINED`   | To build    | `/dev-define` (completion)             |
+| `DOING`     | To verify   | `/dev-build` (completion)              |
+| `DONE`      | To refactor | `/dev-verify` (completion)             |
+| `CANCELLED` | Archived    | Manually via UI (○ button), restorable |
 
-`/dev-refactor` is de **promotion-trigger** voor dev-cards: na CLEAN of REFACTORED zet het `f.shipped = true` + `f.shippedAt` + `f.shippedSha`. Shipped items verdwijnen uit de backlog en verhuizen naar het Dashboard.
+`/dev-refactor` is the **promotion trigger** for dev-cards: after CLEAN or REFACTORED it sets `f.shipped = true` + `f.shippedAt` + `f.shippedSha`. Shipped items leave the backlog and move to the Dashboard.
 
-**`f.shipped` veld:**
+**`f.shipped` field:**
 
-| Waarde              | Betekenis                                                 |
-| ------------------- | --------------------------------------------------------- |
-| `false` / ontbreekt | Wacht op volgende stap — zichtbaar in de actieve sectie   |
-| `true`              | Gepromoot naar Dashboard — niet meer zichtbaar in backlog |
+| Value             | Meaning                                               |
+| ----------------- | ----------------------------------------------------- |
+| `false` / missing | Waiting for next step — visible in the active section |
+| `true`            | Promoted to Dashboard — no longer visible in backlog  |
 
 ### UI: dual-track swimlanes
 
-Het backlog-board toont twee top-level swimlanes met eigen status-secties en eigen verb-labels. Track-pills (`All | Frontend | Dev`) bovenaan het board filteren op track. Binnen elke track zijn features gegroepeerd per fase (P1/P2/P3/P4).
+The backlog board shows two top-level swimlanes with their own status sections and verb labels. Track pills (`All | Frontend | Dev`) at the top of the board filter by track. Within each track, features are grouped by phase (P1/P2/P3/P4).
 
 ```
 ═══ FRONTEND ════════════════════════════════════════
@@ -203,38 +203,38 @@ Het backlog-board toont twee top-level swimlanes met eigen status-secties en eig
   ▾ To audit     (PAGE/COMPONENT DOING)
 
 ═══ DEV ══════════════════════════════════════════════
-  ▾ To define    (overige TODO)
-  ▾ To build     (overige DEFINED)
-  ▾ To verify    (overige DOING)
-  ▾ To refactor  (overige DONE)
+  ▾ To define    (other TODO)
+  ▾ To build     (other DEFINED)
+  ▾ To verify    (other DOING)
+  ▾ To refactor  (other DONE)
 ```
 
-DONE+`shipped: true` (beide tracks) verdwijnen naar het Dashboard. CANCELLED is één gedeelde gearchiveerde sectie onderaan.
+DONE+`shipped: true` (both tracks) move to the Dashboard. CANCELLED is one shared archived section at the bottom.
 
-## Refactor-badges ("To refactor" sectie)
+## Refactor-badges ("To refactor" section)
 
-Items met `status === "DONE"` worden getoond in de **"To refactor"** sectie van de backlog. Ze tonen een badge die `/dev-refactor`'s uitkomst reflecteert:
+Items with `status === "DONE"` are shown in the **"To refactor"** section of the backlog. They show a badge reflecting `/dev-refactor`'s outcome:
 
-| `f.refactor` waarde | Badge  | Betekenis                                                                        |
-| ------------------- | ------ | -------------------------------------------------------------------------------- |
-| `null` / ontbreekt  | (geen) | Refactor nog niet gedraaid — feature is refactor-kandidaat                       |
-| `"REFACTORED"`      | ✓      | Refactor voltooid (CLEAN-analyse en REFACTORED beide hieronder gerekend)         |
-| `"ROLLED_BACK"`     | ⚠      | Refactor geprobeerd, teruggedraaid (zie `feature.json.refactor.failureAnalysis`) |
+| `f.refactor` value | Badge  | Meaning                                                                       |
+| ------------------ | ------ | ----------------------------------------------------------------------------- |
+| `null` / missing   | (none) | Refactor not yet run — feature is a refactor candidate                        |
+| `"REFACTORED"`     | ✓      | Refactor completed (CLEAN analysis and REFACTORED both counted here)          |
+| `"ROLLED_BACK"`    | ⚠      | Refactor attempted, rolled back (see `feature.json.refactor.failureAnalysis`) |
 
-`/dev-refactor` schrijft dit veld op zowel `feature.json` als de backlog-feature in dezelfde sync. Bij CLEAN of REFACTORED volgt ook `f.shipped = true` en verhuist het item naar het Dashboard.
+`/dev-refactor` writes this field on both `feature.json` and the backlog feature in the same sync. On CLEAN or REFACTORED, `f.shipped = true` also follows and the item moves to the Dashboard.
 
-## COMPONENT als first-class type
+## COMPONENT as first-class type
 
-`type: "COMPONENT"` is een first-class backlog-type naast `PAGE`, `FEATURE`, `API`, etc. COMPONENT-features leven op de **Frontend track** — samen met PAGE — en doorlopen de frontend pipeline.
+`type: "COMPONENT"` is a first-class backlog type alongside `PAGE`, `FEATURE`, `API`, etc. COMPONENT features live on the **Frontend track** — together with PAGE — and go through the frontend pipeline.
 
-### Aanmaken
+### Creating
 
-COMPONENT-todos worden aangemaakt door:
+COMPONENT todos are created by:
 
-- `/frontend-design` Component-route (expliciete user-input)
-- Dev-skills als reuse-discovery (suggestie, user-accept-only) — zie hieronder
+- `/frontend-design` Component-route (explicit user input)
+- Dev-skills as reuse-discovery (suggestion, user-accept-only) — see below
 
-Schema bij aanmaken:
+Schema when creating:
 
 ```json
 {
@@ -242,68 +242,68 @@ Schema bij aanmaken:
   "type": "COMPONENT",
   "status": "TODO",
   "phase": "P3",
-  "description": "Primaire actie-trigger met primary/ghost/destructive varianten",
+  "description": "Primary action trigger with primary/ghost/destructive variants",
   "source": "/frontend-design",
   "scope": "atomic",
   "dependencies": []
 }
 ```
 
-**scope-veld op backlog-item** (spiegelt `design.components[].scope`):
+**scope field on backlog item** (mirrors `design.components[].scope`):
 
-| Waarde    | Betekenis                          |
-| --------- | ---------------------------------- |
-| `atomic`  | Klein herbruikbaar element         |
-| `section` | Composiet binnen één page          |
-| `layout`  | Multi-page wrapper (alle/meerdere) |
+| Value     | Meaning                           |
+| --------- | --------------------------------- |
+| `atomic`  | Small reusable element            |
+| `section` | Composite within a single page    |
+| `layout`  | Multi-page wrapper (all/multiple) |
 
-### Pipeline (Frontend track — identiek aan PAGE)
+### Pipeline (Frontend track — identical to PAGE)
 
 ```
 TODO (To design) → DOING (To audit) → DONE (Shipped)       ← Path A
 TODO (To design) → DEFINED (To convert) → DOING → DONE     ← Path B
 ```
 
-| Stap    | Skill               | Output                                                   |
-| ------- | ------------------- | -------------------------------------------------------- |
-| Design  | `/frontend-design`  | code (Build) of brief (Brief) + demo-page voor COMPONENT |
-| Convert | `/frontend-convert` | code van brief (Path B only)                             |
-| Audit   | `/frontend-check`   | A11Y + tokens + responsive — terminaal, zet `shipped`    |
+| Step    | Skill               | Output                                                  |
+| ------- | ------------------- | ------------------------------------------------------- |
+| Design  | `/frontend-design`  | code (Build) or brief (Brief) + demo-page for COMPONENT |
+| Convert | `/frontend-convert` | code from brief (Path B only)                           |
+| Audit   | `/frontend-check`   | A11Y + tokens + responsive — terminal, sets `shipped`   |
 
-**`/frontend-check` PASS is terminaal** — geen refactor-stap. Item shipt direct naar Dashboard.
+**`/frontend-check` PASS is terminal** — no refactor step. Item ships directly to Dashboard.
 
-### Discovery door dev-skills
+### Discovery by dev-skills
 
-Triggers, resolution en persisteer-schema: zie [Discovery — Reuse-Discovery en Page-Discovery](./SKILL-PATTERNS.md#reuse-discovery).
+Triggers, resolution and persistence schema: see [Discovery — Reuse-Discovery and Page-Discovery](./SKILL-PATTERNS.md#reuse-discovery).
 
-Alle suggesties zijn **user-accept-only** — geen auto-create. Geaccepteerde en afgewezen voorstellen worden gelogd in `feature.json#suggestionsLog[]` (voor dedup — geen herhaalde prompts).
+All suggestions are **user-accept-only** — no auto-create. Accepted and rejected suggestions are logged in `feature.json#suggestionsLog[]` (for dedup — no repeated prompts).
 
 ### Multi-page components
 
-Een NavBar met `scope: layout, appliesTo: all` is **één backlog-item** — niet één per page. Build patcht `app/layout.tsx` (of framework-equivalent) één keer. Alle PAGE-features die daarna gebouwd worden erven de NavBar automatisch via de layout-import.
+A NavBar with `scope: layout, appliesTo: all` is **one backlog item** — not one per page. Build patches `app/layout.tsx` (or framework equivalent) once. All PAGE features built afterwards inherit the NavBar automatically via the layout import.
 
-Voor route-group-specifieke layout-components: `appliesTo: "route-group:authenticated"` → patch in `app/(auth)/layout.tsx`.
+For route-group-specific layout components: `appliesTo: "route-group:authenticated"` → patch in `app/(auth)/layout.tsx`.
 
-### Backlog-filter (dashboard)
+### Backlog filter (dashboard)
 
-Het backlog-dashboard toont track-pills (`All | Frontend | Dev`) om de kanban-weergave te filteren. `Frontend` toont alleen PAGE/COMPONENT items; `Dev` toont alle overige types. Het bestaande `type`-veld is de data source.
+The backlog dashboard shows track pills (`All | Frontend | Dev`) to filter the kanban view. `Frontend` shows only PAGE/COMPONENT items; `Dev` shows all other types. The existing `type` field is the data source.
 
-## Features filteren
+## Filtering features
 
-Voorbeelden van veelvoorkomende queries op het JSON object:
+Examples of common queries on the JSON object:
 
 ```
-Volgende TODO feature:      data.features.find(f => f.status === "TODO")
-Alle DEFINED features:      data.features.filter(f => f.status === "DEFINED")
-Alle DOING features:        data.features.filter(f => f.status === "DOING")
-Defined (klaar voor build): data.features.filter(f => f.status === "DEFINED")
-Actief (DOING):             data.features.filter(f => f.status === "DOING")
-Alle DONE features:         data.features.filter(f => f.status === "DONE")
-DONE niet-gerefactord:      data.features.filter(f => f.status === "DONE" && !f.refactor)
-Wacht op refactor:          data.features.filter(f => f.status === "DONE" && !f.shipped)
-Shipped (naar dashboard):   data.features.filter(f => f.shipped === true)
+Next TODO feature:          data.features.find(f => f.status === "TODO")
+All DEFINED features:       data.features.filter(f => f.status === "DEFINED")
+All DOING features:         data.features.filter(f => f.status === "DOING")
+Defined (ready to build):   data.features.filter(f => f.status === "DEFINED")
+Active (DOING):             data.features.filter(f => f.status === "DOING")
+All DONE features:          data.features.filter(f => f.status === "DONE")
+DONE not-refactored:        data.features.filter(f => f.status === "DONE" && !f.refactor)
+Waiting for refactor:       data.features.filter(f => f.status === "DONE" && !f.shipped)
+Shipped (to dashboard):     data.features.filter(f => f.shipped === true)
 P1 features:                data.features.filter(f => f.phase === "P1")
-Geblokkeerd:                data.features.filter(f => (f.dependencies||[]).some(d => { const x=data.features.find(g=>g.name===d); return !x||x.status!=="DONE"; }))
-Hoog risico (TODO/DEFINED): data.features.filter(f => f.risk >= 4 && (f.status === "TODO" || f.status === "DEFINED"))
-Gearchiveerd:               data.features.filter(f => f.status === "CANCELLED")
+Blocked:                    data.features.filter(f => (f.dependencies||[]).some(d => { const x=data.features.find(g=>g.name===d); return !x||x.status!=="DONE"; }))
+High risk (TODO/DEFINED):   data.features.filter(f => f.risk >= 4 && (f.status === "TODO" || f.status === "DEFINED"))
+Archived:                   data.features.filter(f => f.status === "CANCELLED")
 ```

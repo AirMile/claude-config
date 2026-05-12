@@ -13,7 +13,7 @@ Remove a skill safely by scanning all references, showing impact, updating depen
 
 **Trigger**: `/core-delete` or `/core-delete [name]`
 
-## FASE 0: Skill Selection
+## PHASE 0: Skill Selection
 
 **If name provided** (`/core-delete thinking-brainstorm`):
 
@@ -39,7 +39,7 @@ Description: [from frontmatter]
 Has resources: [YES/NO — list files if yes]
 ```
 
-## FASE 1: Deep Reference Scan
+## PHASE 1: Deep Reference Scan
 
 Scan the entire `.claude/` directory for references to the target skill. Search for multiple patterns to catch all reference styles.
 
@@ -104,7 +104,7 @@ For each match, classify it:
 
 Analyze each reference and classify it correctly. Pay attention to the context — is it a hard dependency (workflow breaks without it) or a soft reference (mention in a list)?
 
-## FASE 2: Impact Report
+## PHASE 2: Impact Report
 
 ### Step 1: Display Report
 
@@ -136,20 +136,20 @@ Use **AskUserQuestion**:
 - options:
   - label: "Verwijder + update refs (Recommended)", description: "Verwijder skill en update alle referenties in andere bestanden"
   - label: "Alleen verwijderen", description: "Verwijder skill zonder referenties aan te passen (kan dingen breken)"
-  - label: "Annuleren", description: "Niets wijzigen"
+  - label: "Cancel", description: "No changes"
 - multiSelect: false
 
 **Response handling:**
 
-- "Verwijder + update refs" → proceed to FASE 3 (full cleanup)
-- "Alleen verwijderen" → skip to FASE 3 Step 3 (delete only, skip ref updates)
-- "Annuleren" → stop, no changes
+- "Verwijder + update refs" → proceed to PHASE 3 (full cleanup)
+- "Alleen verwijderen" → skip to PHASE 3 Step 3 (delete only, skip ref updates)
+- "Cancel" → stop, no changes
 
-## FASE 3: Execute Deletion
+## PHASE 3: Execute Deletion
 
 ### Step 1: Update References (if selected)
 
-For each reference found in FASE 1, apply the appropriate fix:
+For each reference found in PHASE 1, apply the appropriate fix:
 
 **INVOCATION references** (another skill uses `/skill-name`):
 
@@ -232,7 +232,7 @@ rm -rf ".claude/skills/[name]"
 test ! -d ".claude/skills/[name]" && echo "DELETED" || echo "STILL EXISTS"
 ```
 
-## FASE 4: Verification & Report
+## PHASE 4: Verification & Report
 
 ### Step 1: Post-Deletion Scan
 

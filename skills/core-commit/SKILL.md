@@ -227,10 +227,6 @@ docs: update API documentation for v2 endpoints
 
 Toon gegenereerde message en vraag bevestiging:
 
-<!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the commit message above visible when the modal panel opens).
-
 - "Commit" → voer commit uit
 - "Edit" → laat user aanpassen
 - "Cancel" → annuleer

@@ -1,31 +1,31 @@
 # Validation Templates
 
-Herbruikbare validation patterns voor alle skills. Referentie document voor pre-flight en post-flight checks.
+Reusable validation patterns for all skills. Reference document for pre-flight and post-flight checks.
 
 ---
 
 ## Pre-Flight Checklist Pattern
 
-Run deze checks **VOORDAT** dure operaties starten (agents, file generation, API calls).
+Run these checks **BEFORE** expensive operations start (agents, file generation, API calls).
 
 ### 1. Context Validation
 
 ```markdown
 **Context Check:**
 
-- [ ] Vereiste input bestanden aanwezig
-- [ ] Dependencies beschikbaar (andere skills output)
-- [ ] User confirmation verkregen waar nodig
+- [ ] Required input files present
+- [ ] Dependencies available (other skills output)
+- [ ] User confirmation obtained where needed
 ```
 
-**Implementatie:**
+**Implementation:**
 
 ```
 PRE-FLIGHT: Context
 -------------------
-Input files: [✓|✗] [bestand] - [status]
+Input files: [✓|✗] [file] - [status]
 Dependencies: [✓|✗] [dependency] - [status]
-Confirmation: [✓|✗] [actie] - [status]
+Confirmation: [✓|✗] [action] - [status]
 ```
 
 ### 2. Resource Validation
@@ -33,18 +33,18 @@ Confirmation: [✓|✗] [actie] - [status]
 ```markdown
 **Resource Check:**
 
-- [ ] Output directory bestaat of kan gecreëerd worden
-- [ ] Schrijfrechten beschikbaar
-- [ ] Geen conflicterende processen
-- [ ] MCP tools beschikbaar (indien nodig)
+- [ ] Output directory exists or can be created
+- [ ] Write permissions available
+- [ ] No conflicting processes
+- [ ] MCP tools available (if needed)
 ```
 
-**Implementatie:**
+**Implementation:**
 
 ```
 PRE-FLIGHT: Resources
 ---------------------
-Directory: [✓|✗] [pad] - [writable|readonly|missing]
+Directory: [✓|✗] [path] - [writable|readonly|missing]
 Tools: [✓|✗] [tool] - [available|unavailable]
 Conflicts: [✓|✗] [process] - [status]
 ```
@@ -54,21 +54,21 @@ Conflicts: [✓|✗] [process] - [status]
 ```markdown
 **Scope Check:**
 
-- [ ] Input parameters valide
-- [ ] Output paden correct
-- [ ] Geen overschrijf-conflicten
+- [ ] Input parameters valid
+- [ ] Output paths correct
+- [ ] No overwrite conflicts
 ```
 
-**Implementatie:**
+**Implementation:**
 
 ```
 PRE-FLIGHT: Scope
 -----------------
 Parameters: [✓|✗] [param] = [value] - [valid|invalid]
-Output: [✓|✗] [pad] - [available|exists|conflict]
+Output: [✓|✗] [path] - [available|exists|conflict]
 ```
 
-### Pre-Flight Samenvatting
+### Pre-Flight Summary
 
 ```
 ═══════════════════════════════════════
@@ -86,25 +86,25 @@ Status: [→ Ready to proceed | ⚠ Issues found]
 
 ## Post-Flight Verification Pattern
 
-Run deze checks **NA** generatie/modificatie operaties.
+Run these checks **AFTER** generation/modification operations.
 
 ### 1. Existence Checks
 
 ```markdown
 **Existence Check:**
 
-- [ ] Alle verwachte bestanden aangemaakt
-- [ ] Geen lege of corrupte outputs
-- [ ] Bestandsgroottes realistisch
+- [ ] All expected files created
+- [ ] No empty or corrupt outputs
+- [ ] File sizes realistic
 ```
 
-**Implementatie:**
+**Implementation:**
 
 ```
 POST-FLIGHT: Existence
 ----------------------
 Files created: [N]/[M] expected
-- [✓|✗] [bestand] - [size] bytes
+- [✓|✗] [file] - [size] bytes
 Empty files: [N] detected
 Corrupt files: [N] detected
 ```
@@ -114,20 +114,20 @@ Corrupt files: [N] detected
 ```markdown
 **Structural Check:**
 
-- [ ] Bestanden parseerbaar (HTML valid, JSON valid, etc.)
-- [ ] Vereiste secties aanwezig
+- [ ] Files parseable (HTML valid, JSON valid, etc.)
+- [ ] Required sections present
 - [ ] Encoding correct (UTF-8)
 ```
 
-**Implementatie:**
+**Implementation:**
 
 ```
 POST-FLIGHT: Structure
 ----------------------
 Parse status:
-- [✓|✗] [bestand] - [valid|invalid] [format]
+- [✓|✗] [file] - [valid|invalid] [format]
 Required sections:
-- [✓|✗] [sectie] in [bestand]
+- [✓|✗] [section] in [file]
 ```
 
 ### 3. Semantic Validation
@@ -135,23 +135,23 @@ Required sections:
 ```markdown
 **Semantic Check:**
 
-- [ ] Content matcht intent
-- [ ] Geen placeholder/template variables remaining
-- [ ] Interne referenties kloppen
+- [ ] Content matches intent
+- [ ] No placeholder/template variables remaining
+- [ ] Internal references correct
 ```
 
-**Implementatie:**
+**Implementation:**
 
 ```
 POST-FLIGHT: Semantic
 ---------------------
 Placeholders: [N] remaining (should be 0)
-- [bestand:regel] - {{placeholder}}
+- [file:line] - {{placeholder}}
 References:
 - [✓|✗] [link] → [target]
 ```
 
-### Post-Flight Samenvatting
+### Post-Flight Summary
 
 ```
 ═══════════════════════════════════════
@@ -182,7 +182,7 @@ Strategy per retry:
   - After 2: Graceful degradation or manual mode
 ```
 
-**Implementatie:**
+**Implementation:**
 
 ```markdown
 ### On Failure - Retry Sequence
@@ -227,22 +227,22 @@ Level 4: 1 agent, 3 styles sequential → 3 wireframes
 Level 5: Template only, user fills in → 1 template
 ```
 
-### Escalatie Protocol
+### Escalation Protocol
 
-Na uitputting van retries (3x gefaald of Level 4-5 degradation), kies een escalatie-optie via AskUserQuestion:
+After exhausting retries (3x failed or Level 4-5 degradation), choose an escalation option via AskUserQuestion:
 
-| Optie              | Wanneer                       | Actie                                 |
-| ------------------ | ----------------------------- | ------------------------------------- |
-| Reassign           | Ander agent/aanpak geschikter | Spawn alternatief of wissel strategie |
-| Decompose          | Taak te complex               | Splits in subtaken, retry per subtaak |
-| Revise approach    | Strategie werkt niet          | AskUserQuestion met alternatieven     |
-| Accept with limits | Deels gelukt                  | Documenteer gaps, ga door met partial |
-| Defer              | Niet urgent                   | Markeer als TODO, ga door             |
+| Option             | When                          | Action                                 |
+| ------------------ | ----------------------------- | -------------------------------------- |
+| Reassign           | Different agent/approach fits | Spawn alternative or switch strategy   |
+| Decompose          | Task too complex              | Split into subtasks, retry per subtask |
+| Revise approach    | Strategy not working          | AskUserQuestion with alternatives      |
+| Accept with limits | Partially succeeded           | Document gaps, continue with partial   |
+| Defer              | Not urgent                    | Mark as TODO, continue                 |
 
 ### Rollback
 
-> **Note:** Rollback wordt afgehandeld door Claude Code's ingebouwde "Rewind" functie.
-> Geen custom rollback logica nodig in skills.
+> **Note:** Rollback is handled by Claude Code's built-in "Rewind" function.
+> No custom rollback logic needed in skills.
 
 ---
 
@@ -322,21 +322,21 @@ Na uitputting van retries (3x gefaald of Level 4-5 degradation), kies een escala
 
 ---
 
-## AskUserQuestion Patterns voor Recovery
+## AskUserQuestion Patterns for Recovery
 
 ### Missing Dependency
 
 ```yaml
 header: "Dependency Missing"
-question: "[Dependency] niet gevonden. Hoe wil je doorgaan?"
+question: "[Dependency] not found. How do you want to continue?"
 options:
-  - label: "Maak eerst [dependency] (Recommended)"
-    description: "Run /[skill] om dependency te maken"
-  - label: "Doorgaan zonder"
-    description: "Gebruik defaults waar mogelijk"
-  - label: "Pad opgeven"
-    description: "Geef handmatig locatie van [dependency]"
-  - label: "Annuleren"
+  - label: "Create [dependency] first (Recommended)"
+    description: "Run /[skill] to create dependency"
+  - label: "Continue without"
+    description: "Use defaults where possible"
+  - label: "Provide path"
+    description: "Manually specify location of [dependency]"
+  - label: "Cancel"
     description: "Stop workflow"
 ```
 
@@ -344,46 +344,46 @@ options:
 
 ```yaml
 header: "Conflict"
-question: "[File] bestaat al. Wat wil je doen?"
+question: "[File] already exists. What do you want to do?"
 options:
-  - label: "Overschrijven (Recommended)"
-    description: "Vervang bestaand bestand"
-  - label: "Hernoemen"
-    description: "Maak [file]-v2 of kies nieuwe naam"
-  - label: "Bekijken"
-    description: "Toon huidige inhoud eerst"
-  - label: "Annuleren"
+  - label: "Overwrite (Recommended)"
+    description: "Replace existing file"
+  - label: "Rename"
+    description: "Create [file]-v2 or choose new name"
+  - label: "View"
+    description: "Show current contents first"
+  - label: "Cancel"
     description: "Stop workflow"
 ```
 
 ### Partial Failure
 
 ```yaml
-header: "Gedeeltelijk Mislukt"
-question: "[N]/[M] taken gelukt. Hoe wil je doorgaan?"
+header: "Partially Failed"
+question: "[N]/[M] tasks succeeded. How do you want to continue?"
 options:
-  - label: "Retry gefaalde (Recommended)"
-    description: "Probeer alleen [failed] opnieuw"
-  - label: "Doorgaan met successen"
-    description: "Negeer gefaalde, ga verder"
-  - label: "Alles opnieuw"
-    description: "Start hele fase opnieuw"
-  - label: "Handmatig"
-    description: "Bekijk failures, fix handmatig"
+  - label: "Retry failed (Recommended)"
+    description: "Try only [failed] again"
+  - label: "Continue with successes"
+    description: "Ignore failed, continue"
+  - label: "Retry all"
+    description: "Restart entire phase"
+  - label: "Manual"
+    description: "Review failures, fix manually"
 ```
 
 ### Post-Flight Failure
 
 ```yaml
-header: "Validatie Mislukt"
-question: "Post-flight check vond [N] problemen. Wat nu?"
+header: "Validation Failed"
+question: "Post-flight check found [N] problems. What now?"
 options:
   - label: "Auto-fix (Recommended)"
-    description: "Probeer automatisch te repareren"
-  - label: "Bekijk problemen"
-    description: "Toon details per probleem"
-  - label: "Negeren"
-    description: "Accepteer output ondanks problemen"
+    description: "Try to repair automatically"
+  - label: "View problems"
+    description: "Show details per problem"
+  - label: "Ignore"
+    description: "Accept output despite problems"
 ```
 
 ---
@@ -443,9 +443,9 @@ Skills MUST NOT block on missing state unless it's a logical requirement (e.g., 
 
 ---
 
-## Integration met DevInfo
+## Integration with DevInfo
 
-Bij elke validation checkpoint, update devInfo:
+At each validation checkpoint, update devInfo:
 
 ```json
 {

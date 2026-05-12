@@ -44,24 +44,24 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 ## Workflow
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 12 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 12 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of skipping phases.
 
-1. FASE 0: Context Detection
-2. FASE 0.5: Completeness Check
-3. FASE 1: Research + Scenario Generation
-4. FASE 2: Test Plan + Classification
-5. FASE 3: Automated Test Execution
-6. FASE 4: Manual Test Execution
-7. FASE 4b: Combined Results
-8. FASE 4c: Coverage Adequacy Analysis
-9. FASE 5: Results Report + Action Choice
-10. FASE 5c: Fix Loop
-11. FASE 5d: Regression Check
-12. FASE 6: Update + Feedback
+1. PHASE 0: Context Detection
+2. PHASE 0.5: Completeness Check
+3. PHASE 1: Research + Scenario Generation
+4. PHASE 2: Test Plan + Classification
+5. PHASE 3: Automated Test Execution
+6. PHASE 4: Manual Test Execution
+7. PHASE 4b: Combined Results
+8. PHASE 4c: Coverage Adequacy Analysis
+9. PHASE 5: Results Report + Action Choice
+10. PHASE 5c: Fix Loop
+11. PHASE 5d: Regression Check
+12. PHASE 6: Update + Feedback
 
-### FASE 0: Context Detection
+### PHASE 0: Context Detection
 
-> **Todo**: roep `TaskCreate` aan met de 12 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 12 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Get branch and project info:**
 
@@ -69,7 +69,7 @@ Verify teammate code delivery. Detects available context (feature.json with requ
    git branch --show-current
    ```
 
-2. **Capture git baseline** (voor scoped commit in FASE 6):
+2. **Capture git baseline** (for scoped commit in PHASE 6):
 
    ```bash
    mkdir -p .project/session
@@ -93,80 +93,76 @@ Verify teammate code delivery. Detects available context (feature.json with requ
    | No feature.json, no backlog match                  | `BRANCH_ONLY`  | Git diff only — test what's visible              |
 
 5. **Parse user input:**
-   - Feature name only → proceed to FASE 0.5
-   - Feature name + inline feedback → parse into structured results (item number, PASS/FAIL, notes); map to requirements where possible; show summary; skip directly to FASE 5
+   - Feature name only → proceed to PHASE 0.5
+   - Feature name + inline feedback → parse into structured results (item number, PASS/FAIL, notes); map to requirements where possible; show summary; skip directly to PHASE 5
    - Feature name + free text → same as inline feedback above
 
 6. **Output:**
 
    ```
-   CONTEXT DETECTIE
+   CONTEXT DETECTION
 
-   Modus:     {BRIEF_REVIEW | TODO_REVIEW | BRANCH_ONLY}
+   Mode:      {BRIEF_REVIEW | TODO_REVIEW | BRANCH_ONLY}
    Feature:   {name or branch name}
-   Assignee:  {name or "geen"}
+   Assignee:  {name or "none"}
    Branch:    {branch}
    Context:   {feature.json | backlog TODO | git diff only}
-   Status:    {backlog status: DOING/DONE/etc or "onbekend"}
+   Status:    {backlog status: DOING/DONE/etc or "unknown"}
    ```
 
-   <!-- modal-buffer -->
-
-   Print 8 blank lines as whitespace buffer (keeps the context block above visible when the modal panel opens).
-
    Use AskUserQuestion to confirm:
-   - header: "Test Modus"
-   - question: "Doorgaan met {mode} voor {feature}?"
+   - header: "Test Mode"
+   - question: "Continue with {mode} for {feature}?"
    - options:
-     - label: "Ja, doorgaan (Recommended)", description: "{mode description}"
-     - label: "Andere feature", description: "Ik wil een andere feature testen"
-     - label: "Annuleren", description: "Stop"
+     - label: "Yes, continue (Recommended)", description: "{mode description}"
+     - label: "Different feature", description: "I want to test a different feature"
+     - label: "Cancel", description: "Stop"
    - multiSelect: false
 
-7. **Signal active feature** (na feature naam bepaald):
+7. **Signal active feature** (after feature name is determined):
 
    ```bash
    echo '{"feature":"{feature-name}","skill":"team-verify","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
    ```
 
-8. **Load stack & project context** (voor agent prompts):
+8. **Load stack & project context** (for agent prompts):
 
-   **Stack detectie:**
-   - Lees CLAUDE.md `### Stack` sectie
-   - Lees `.claude/research/stack-baseline.md` (als beschikbaar)
-   - Fallback: detecteer uit package.json / go.mod / etc.
+   **Stack detection:**
+   - Read CLAUDE.md `### Stack` section
+   - Read `.claude/research/stack-baseline.md` (if available)
+   - Fallback: detect from package.json / go.mod / etc.
 
-   **Project context:** Lees `.project/project.json` (als bestaat). Extract alleen:
+   **Project context:** Read `.project/project.json` (if it exists). Extract only:
    - `stack` (framework, language, testing, packages)
    - `endpoints` (method, path, auth)
    - `data.entities` (names, fields, relations)
 
-   Lees `.project/project-context.json` (als bestaat). Extract:
+   Read `.project/project-context.json` (if it exists). Extract:
    - `context` (structure, routing, patterns)
 
-   Als project.json/project-context.json of stack-baseline niet bestaat → ga door zonder (backwards compatible).
+   If project.json/project-context.json or stack-baseline does not exist → continue without (backwards compatible).
 
-   **Stel STACK_CONTEXT samen** (wordt meegegeven aan alle agents in deze skill):
+   **Assemble STACK_CONTEXT** (passed to all agents in this skill):
 
    ```
    STACK CONTEXT:
    Framework: {stack.framework} ({stack.language})
-   Testing: {stack testing info of stack-baseline testing conventions}
-   Packages: {relevante packages}
+   Testing: {stack testing info or stack-baseline testing conventions}
+   Packages: {relevant packages}
 
    PROJECT CONTEXT:
-   Structure: {context.structure of "niet beschikbaar"}
-   Routing: {context.routing of "niet beschikbaar"}
-   Patterns: {context.patterns of "niet beschikbaar"}
-   Endpoints: {endpoints of "niet beschikbaar"}
-   Entities: {data.entities of "niet beschikbaar"}
+   Structure: {context.structure or "not available"}
+   Routing: {context.routing or "not available"}
+   Patterns: {context.patterns or "not available"}
+   Endpoints: {endpoints or "not available"}
+   Entities: {data.entities or "not available"}
    ```
 
 ---
 
-### FASE 0.5: Completeness Check
+### PHASE 0.5: Completeness Check
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 0.5 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 0.5 → `in_progress`.
 
 **Skip if:** `BRANCH_ONLY` mode (no context available).
 
@@ -180,7 +176,7 @@ Compare the code diff against the available context to verify completeness.
 
 2. **Get relevant diff:**
 
-   Filter commits by assignee name if known (lees `externalRef.assignees[0]` uit feature.json):
+   Filter commits by assignee name if known (read `externalRef.assignees[0]` from feature.json):
 
    ```bash
    git log --author="{externalRef.assignees[0]}" --oneline --since="2 weeks ago" -- .
@@ -259,39 +255,35 @@ Compare the code diff against the available context to verify completeness.
    ```
    COMPLETENESS CHECK: {feature-name}
 
-   | #       | Beschrijving              | Status    | Bewijs              |
+   | #       | Description              | Status    | Evidence              |
    |---------|--------------------------|-----------|---------------------|
-   | REQ-001 | User kan inloggen        | ✓ FOUND   | src/auth/login.ts   |
-   | REQ-002 | Validatie op email       | ~ PARTIAL | src/auth/login.ts   |
+   | REQ-001 | User can log in          | ✓ FOUND   | src/auth/login.ts   |
+   | REQ-002 | Email validation         | ~ PARTIAL | src/auth/login.ts   |
    | REQ-003 | Rate limiting            | ✗ MISSING | —                   |
 
-   Dekking: {N}/{total} ({percentage}%)
-   {BRIEF_REVIEW only:} Ontbrekende bestanden: {list or "geen"}
-   {BRIEF_REVIEW only:} Extra bestanden: {list or "geen"}
+   Coverage: {N}/{total} ({percentage}%)
+   {BRIEF_REVIEW only:} Missing files: {list or "none"}
+   {BRIEF_REVIEW only:} Extra files: {list or "none"}
    ```
 
 5. **If coverage < 100%:**
 
-   <!-- modal-buffer -->
-
-   Print 8 blank lines as whitespace buffer (keeps the coverage report above visible when the modal panel opens).
-
    Use AskUserQuestion:
    - header: "Incomplete"
-   - question: "{N} items niet (volledig) gevonden. Wat wil je doen?"
+   - question: "{N} items not (fully) found. What do you want to do?"
    - options:
-     - label: "Toch doorgaan (Recommended)", description: "Test wat er WEL is, rapporteer ontbrekende items"
-     - label: "Terugkoppelen", description: "Genereer feedback voor teammate, stop testing"
-     - label: "Annuleren", description: "Stop"
+     - label: "Continue anyway (Recommended)", description: "Test what IS there, report missing items"
+     - label: "Send feedback", description: "Generate feedback for teammate, stop testing"
+     - label: "Cancel", description: "Stop"
    - multiSelect: false
 
-   If "Terugkoppelen" → skip to FASE 6 (generate feedback with completeness results).
+   If "Send feedback" → skip to PHASE 6 (generate feedback with completeness results).
 
 ---
 
-### FASE 1: Research + Scenario Generation (Explore agent)
+### PHASE 1: Research + Scenario Generation (Explore agent)
 
-> **Todo**: markeer FASE 0.5 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0.5 → `completed`, PHASE 1 → `in_progress`.
 
 **Goal:** Research test strategies and generate scenarios. Runs in a single Explore agent to keep Context7 results and scenario details out of the main context.
 
@@ -304,11 +296,11 @@ Feature: {feature-name}
 Diff: {diff summary — changed files + key changes, NOT full diff}
 
 {BRIEF_REVIEW: "Requirements: {JSON of requirements[]}" + "testStrategy: {JSON of testStrategy[]}"}
-{TODO_REVIEW: "Expectations: {parsed expectations from FASE 0.5}"}
+{TODO_REVIEW: "Expectations: {parsed expectations from PHASE 0.5}"}
 
-OPERATIONAL STANCE: Failure-seeking. Default: er zijn scenarios gemist.
-Verwacht minimaal 3 edge cases en 2 integratie-risico's. Minder vereist onderbouwing.
-Self-check: "Welke randgevallen heeft de developer waarschijnlijk niet overwogen?"
+OPERATIONAL STANCE: Failure-seeking. Default: scenarios have been missed.
+Expect at least 3 edge cases and 2 integration risks. Fewer requires justification.
+Self-check: "Which edge cases has the developer probably not considered?"
 
 TASKS:
 1. Check existing test infrastructure: grep for test files, configs, frameworks
@@ -342,9 +334,9 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
 
 ---
 
-### FASE 2: Test Plan + Classification
+### PHASE 2: Test Plan + Classification
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
 **Goal:** Classify scenarios into AUTO/MANUAL, generate test data, set up dev server.
 
@@ -354,37 +346,37 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
 
    ```
    Feature: {feature-name}
-   Scenarios from FASE 1: {list of scenarios with requirement mapping}
+   Scenarios from PHASE 1: {list of scenarios with requirement mapping}
 
    {STACK_CONTEXT}
 
-   Lees de source code en zoek naar:
-   - Form fields, validatie regels, API endpoints relevant voor de test items
-   - Bestaande test files die hergebruikt kunnen worden
-   - Test patterns passend bij de stack (bijv. Vitest voor React, PHPUnit voor Laravel)
+   Read the source code and look for:
+   - Form fields, validation rules, API endpoints relevant to the test items
+   - Existing test files that can be reused
+   - Test patterns matching the stack (e.g. Vitest for React, PHPUnit for Laravel)
 
-   Geef terug als gestructureerd overzicht:
+   Return as structured overview:
    FEATURE_CONTEXT_START
-   Bestaande tests: {pad naar test files, of "geen"}
+   Existing tests: {path to test files, or "none"}
    Per scenario:
    - Item {N}: {title}
-     Testdata: {concrete waarden}
-     Verwacht: {expected outcome}
-     Aanbevolen methode: BROWSER | CLI | MANUAL
-     Reden: {waarom deze methode}
+     Test data: {concrete values}
+     Expected: {expected outcome}
+     Recommended method: BROWSER | CLI | MANUAL
+     Reason: {why this method}
    FEATURE_CONTEXT_END
    ```
 
 2. **Classify each scenario** using `test-classification.md` criteria:
 
    ```
-   TEST CLASSIFICATIE: {feature-name}
+   TEST CLASSIFICATION: {feature-name}
 
-   | # | Test                     | Type         | Requirement | Reden                              |
-   |---|--------------------------|--------------|-------------|------------------------------------|
-   | 1 | Register with valid data | AUTO/BROWSER | REQ-001     | DOM: redirect + welkomst zichtbaar |
-   | 2 | Without email            | AUTO/BROWSER | REQ-002     | DOM: foutmelding zichtbaar         |
-   | 3 | Welcome mail sent        | MANUAL       | REQ-004     | Email verificatie niet via DOM     |
+   | # | Test                     | Type         | Requirement | Reason                                  |
+   |---|--------------------------|--------------|-------------|-----------------------------------------|
+   | 1 | Register with valid data | AUTO/BROWSER | REQ-001     | DOM: redirect + welcome message visible |
+   | 2 | Without email            | AUTO/BROWSER | REQ-002     | DOM: error message visible              |
+   | 3 | Welcome mail sent        | MANUAL       | REQ-004     | Email verification not via DOM          |
 
    AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}
    ```
@@ -393,12 +385,12 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
 
    Use AskUserQuestion:
    - header: "Test Plan"
-   - question: "Doorgaan met test uitvoering?"
+   - question: "Continue with test execution?"
    - options:
-     - label: "Ja, voer tests uit (Recommended)", description: "Start automated tests, daarna manual"
-     - label: "Alleen automated", description: "Skip manual tests"
-     - label: "Alles handmatig", description: "Sla automatische tests over"
-     - label: "Annuleren", description: "Stop"
+     - label: "Yes, run tests (Recommended)", description: "Start automated tests, then manual"
+     - label: "Automated only", description: "Skip manual tests"
+     - label: "All manual", description: "Skip automated tests"
+     - label: "Cancel", description: "Stop"
    - multiSelect: false
 
 4. **Dev server + Cloudflare Tunnel:**
@@ -429,16 +421,16 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
    c) If server or tunnel fails:
 
    ```
-   ⚠ Dev server + tunnel niet gestart. Alle items worden MANUAL.
+   ⚠ Dev server + tunnel not started. All items will be MANUAL.
    ```
 
-   Graceful fallback: reclassify ALL items as MANUAL, skip FASE 3.
+   Graceful fallback: reclassify ALL items as MANUAL, skip PHASE 3.
 
 ---
 
-### FASE 3: Automated Test Execution (Task Agent)
+### PHASE 3: Automated Test Execution (Task Agent)
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
 **When:** There are AUTO items after classification and dev server is confirmed running.
 
@@ -447,7 +439,7 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
 **Task agent prompt template:**
 
 ```
-Test de volgende items automatisch via browser tools en bash commands.
+Test the following items automatically via browser tools and bash commands.
 Dev server: {url}
 Feature: {feature-name}
 
@@ -456,55 +448,55 @@ Feature: {feature-name}
 ITEMS:
 {for each AUTO item:}
 - Item {N}: {title} [Requirement: {REQ-ID}]
-  Stappen: {test steps}
-  Testdata: {test data from FASE 2}
-  Verwacht: {expected outcome}
-  Methode: {BROWSER of CLI}
-  Patroon: {matching test pattern from test-classification.md}
+  Steps: {test steps}
+  Test data: {test data from PHASE 2}
+  Expected: {expected outcome}
+  Method: {BROWSER or CLI}
+  Pattern: {matching test pattern from test-classification.md}
 
-INSTRUCTIES:
-1. Navigeer naar de dev server URL en verifieer dat deze draait
-2. Voor elk item:
-   a. Voer de stappen uit met MCP browser tools of bash commands
-   b. Analyseer het resultaat en bepaal PASS of FAIL met bewijs
-3. Als een browser tool faalt voor een item, markeer als TOOL_ERROR
+INSTRUCTIONS:
+1. Navigate to the dev server URL and verify it is running
+2. For each item:
+   a. Execute the steps using MCP browser tools or bash commands
+   b. Analyze the result and determine PASS or FAIL with evidence
+3. If a browser tool fails for an item, mark as TOOL_ERROR
 
-RESULTAAT FORMAT (strict):
+RESULT FORMAT (strict):
 AUTOMATED_RESULTS_START
-| # | Test | Requirement | Resultaat | Bewijs | Redenering |
+| # | Test | Requirement | Result | Evidence | Reasoning |
 |---|------|-------------|-----------|--------|------------|
-| {N} | {title} | {REQ-ID} | PASS/FAIL/TOOL_ERROR | {wat gezien} | {waarom pass/fail} |
+| {N} | {title} | {REQ-ID} | PASS/FAIL/TOOL_ERROR | {what was seen} | {why pass/fail} |
 AUTOMATED_RESULTS_END
 
-FALLBACK_ITEMS: {items met TOOL_ERROR, komma-gescheiden nummers, of "geen"}
+FALLBACK_ITEMS: {items with TOOL_ERROR, comma-separated numbers, or "none"}
 ```
 
 **Parse agent results:**
 
 1. If TaskOutput contains `AUTOMATED_RESULTS_START` → parse directly
 2. If truncated → use Grep to find markers in agent output file, Read with offset
-3. TOOL_ERROR items → reclassify as MANUAL for FASE 4
+3. TOOL_ERROR items → reclassify as MANUAL for PHASE 4
 
 Display:
 
 ```
-AUTO TEST RESULTATEN: {feature-name}
+AUTO TEST RESULTS: {feature-name}
 
-| # | Test              | Requirement | Resultaat | Bewijs (kort)              |
+| # | Test              | Requirement | Result | Evidence (short)             |
 |---|-------------------|-------------|-----------|----------------------------|
-| 1 | Valid registration| REQ-001     | ✓ PASS    | /dashboard + welkomstmelding |
-| 2 | Without email     | REQ-002     | ✗ FAIL    | Geen foutmelding zichtbaar |
+| 1 | Valid registration| REQ-001     | ✓ PASS    | /dashboard + welcome message |
+| 2 | Without email     | REQ-002     | ✗ FAIL    | No error message visible     |
 
 AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}
 ```
 
-**If agent fails entirely:** Graceful fallback → reclassify all AUTO as MANUAL, proceed to FASE 4.
+**If agent fails entirely:** Graceful fallback → reclassify all AUTO as MANUAL, proceed to PHASE 4.
 
 ---
 
-### FASE 4: Manual Test Execution (interactive)
+### PHASE 4: Manual Test Execution (interactive)
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
 **When:** There are MANUAL items (originally classified or reclassified from TOOL_ERROR fallback).
 
@@ -519,23 +511,23 @@ Open {tunnel_url}
 
 ```
 ──────────────────────────────────────
-HANDMATIG TEST {n}/{total_manual}: {item title}
+MANUAL TEST {n}/{total_manual}: {item title}
 ──────────────────────────────────────
 
-STAPPEN:
-1. {concrete action, e.g. "Ga naar /register"}
-2. {concrete action with data, e.g. "Vul in: Email → test@voorbeeld.nl"}
-3. {concrete action, e.g. "Klik op 'Registreren'"}
+STEPS:
+1. {concrete action, e.g. "Go to /register"}
+2. {concrete action with data, e.g. "Enter: Email → test@example.com"}
+3. {concrete action, e.g. "Click 'Register'"}
 
-TESTDATA:
+TEST DATA:
 ┌─────────────┬──────────────────────┐
-│ Veld        │ Waarde               │
+│ Field       │ Value                │
 ├─────────────┼──────────────────────┤
-│ Naam        │ Test User            │
-│ Email       │ test@voorbeeld.nl    │
+│ Name        │ Test User            │
+│ Email       │ test@example.com     │
 └─────────────┴──────────────────────┘
 
-VERWACHT:
+EXPECTED:
 → {exact expected outcome}
 
 REQUIREMENT: {REQ-ID}: {description}
@@ -544,11 +536,11 @@ REQUIREMENT: {REQ-ID}: {description}
 Use AskUserQuestion per item:
 
 - header: "Test {n}/{total_manual}"
-- question: "Resultaat van '{item title}'?"
+- question: "Result for '{item title}'?"
 - options:
-  - label: "Pass (Recommended)", description: "Werkt zoals verwacht"
-  - label: "Fail", description: "Werkt niet — ik geef details"
-  - label: "Skip", description: "Kan niet testen, sla over"
+  - label: "Pass (Recommended)", description: "Works as expected"
+  - label: "Fail", description: "Does not work — I will provide details"
+  - label: "Skip", description: "Cannot test, skip"
 - multiSelect: false
 
 **If Pass** → record PASS, next item.
@@ -557,132 +549,132 @@ Use AskUserQuestion per item:
 
 ---
 
-### FASE 4b: Combined Results
+### PHASE 4b: Combined Results
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 4b → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 4b → `in_progress`.
 
-Merge automated (FASE 3) and manual (FASE 4) results:
+Merge automated (PHASE 3) and manual (PHASE 4) results:
 
 ```
-GECOMBINEERDE RESULTATEN: {feature-name}
+COMBINED RESULTS: {feature-name}
 
-| # | Test                  | Type   | Requirement | Resultaat              |
+| # | Test                  | Type   | Requirement | Result              |
 |---|-----------------------|--------|-------------|------------------------|
 | 1 | Valid registration    | AUTO   | REQ-001     | ✓ PASS                |
-| 2 | Without email         | AUTO   | REQ-002     | ✗ FAIL: geen error    |
-| 3 | Welcome mail          | MANUAL | REQ-004     | ✗ FAIL: geen mail     |
+| 2 | Without email         | AUTO   | REQ-002     | ✗ FAIL: no error      |
+| 3 | Welcome mail          | MANUAL | REQ-004     | ✗ FAIL: no mail       |
 
 AUTO PASS: {n}  AUTO FAIL: {n}
 MANUAL PASS: {n}  MANUAL FAIL: {n}  SKIP: {n}
-TOTAAL PASS: {n}  TOTAAL FAIL: {n}
+TOTAL PASS: {n}  TOTAL FAIL: {n}
 ```
 
 ---
 
-### FASE 4c: Coverage Adequacy Analysis
+### PHASE 4c: Coverage Adequacy Analysis
 
-> **Todo**: markeer FASE 4b → `completed`, FASE 4c → `in_progress`.
+> **Todo**: mark PHASE 4b → `completed`, PHASE 4c → `in_progress`.
 
-**Trigger:** Altijd na FASE 4b (ongeacht of alles PASS of er FAILs zijn).
+**Trigger:** Always after PHASE 4b (regardless of whether everything is PASS or there are FAILs).
 
-**Doel:** Analyseer of de gegenereerde test scenarios de code _voldoende_ dekken, of dat er blinde vlekken zijn.
+**Goal:** Analyze whether the generated test scenarios cover the code _sufficiently_, or whether there are blind spots.
 
 **Spawn Explore agent** (`subagent_type="Explore"`, thoroughness: "very thorough"):
 
 ```
-Analyseer of de test scenarios de code volledig dekken.
+Analyze whether the test scenarios fully cover the code.
 
 {STACK_CONTEXT}
 
 Feature: {feature-name}
 Code diff: {diff summary}
 
-Uitgevoerde test scenarios:
-{lijst van alle scenarios met resultaten uit FASE 4b}
+Executed test scenarios:
+{list of all scenarios with results from PHASE 4b}
 
-ANALYSEER:
-1. Welke code paths in de diff worden NIET geraakt door de huidige scenarios?
-2. Welke error handling / edge cases zijn niet getest?
-3. Zijn er security-relevante paden (auth, input validatie, permissies) zonder test?
-4. Zijn er integratie-punten met andere componenten die niet getest zijn?
+ANALYZE:
+1. Which code paths in the diff are NOT covered by the current scenarios?
+2. Which error handling / edge cases have not been tested?
+3. Are there security-relevant paths (auth, input validation, permissions) without a test?
+4. Are there integration points with other components that have not been tested?
 
 RETURN FORMAT:
 ADEQUACY_START
-Coverage: VOLDOENDE | ONVOLDOENDE
-Gaps: {lijst van ontbrekende scenarios, of "geen"}
-Suggested: {0-3 extra scenario-voorstellen als gaps gevonden}
+Coverage: SUFFICIENT | INSUFFICIENT
+Gaps: {list of missing scenarios, or "none"}
+Suggested: {0-3 extra scenario proposals if gaps found}
 ADEQUACY_END
 ```
 
-**Als VOLDOENDE + geen gaps:**
+**If SUFFICIENT + no gaps:**
 
 ```
-COVERAGE ANALYSE: ✓ Scenarios dekken de code adequaat
+COVERAGE ANALYSIS: ✓ Scenarios adequately cover the code
 ```
 
-Ga door naar FASE 5.
+Continue to PHASE 5.
 
-**Als ONVOLDOENDE of gaps gevonden:**
+**If INSUFFICIENT or gaps found:**
 
 ```
-COVERAGE ANALYSE: {feature-name}
+COVERAGE ANALYSIS: {feature-name}
 
-Gaps gevonden:
-1. {gap beschrijving}
-2. {gap beschrijving}
+Gaps found:
+1. {gap description}
+2. {gap description}
 
-Extra scenarios worden automatisch toegevoegd en getest...
+Extra scenarios will be added and tested automatically...
 ```
 
-Classificeer de voorgestelde scenarios (FASE 2 logica), voer ze uit (FASE 3/4 logica), en merge resultaten terug in de FASE 4b tabel. Geen user interactie — Claude voegt gaps automatisch toe en test ze. Max 1 iteratie (geen herhaling van FASE 4c na de extra scenarios).
+Classify the proposed scenarios (PHASE 2 logic), execute them (PHASE 3/4 logic), and merge results back into the PHASE 4b table. No user interaction — Claude adds gaps automatically and tests them. Max 1 iteration (no repeat of PHASE 4c after the extra scenarios).
 
 ---
 
-### FASE 5: Results Report + Action Choice
+### PHASE 5: Results Report + Action Choice
 
-> **Todo**: markeer FASE 4c → `completed`, FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4c → `completed`, PHASE 5 → `in_progress`.
 
 **Goal:** Combined report with requirement coverage, then choose: feedback or fix.
 
 ```
-TEST RESULTATEN: {feature-name}
+TEST RESULTS: {feature-name}
 
-REQUIREMENT DEKKING
-| REQ     | Beschrijving         | In Code | Getest | Resultaat |
-|---------|---------------------|---------|--------|-----------|
-| REQ-001 | User kan inloggen   | ✓       | ✓      | PASS      |
-| REQ-002 | Email validatie     | ✓       | ✓      | FAIL      |
-| REQ-003 | Rate limiting       | ✗       | —      | MISSING   |
-| REQ-004 | Welcome mail        | ✓       | ✓      | PASS      |
+REQUIREMENT COVERAGE
+| REQ     | Description         | In Code | Tested | Result  |
+|---------|---------------------|---------|--------|---------|
+| REQ-001 | User can log in     | ✓       | ✓      | PASS    |
+| REQ-002 | Email validation    | ✓       | ✓      | FAIL    |
+| REQ-003 | Rate limiting       | ✗       | —      | MISSING |
+| REQ-004 | Welcome mail        | ✓       | ✓      | PASS    |
 
-Totaal: {pass}/{total} PASS | {fail} FAIL | {missing} MISSING
+Total: {pass}/{total} PASS | {fail} FAIL | {missing} MISSING
 ```
 
-**If all PASS + no MISSING** → skip action choice, proceed to FASE 6 (feedback = positief bericht).
+**If all PASS + no MISSING** → skip action choice, proceed to PHASE 6 (feedback = positive message).
 
 **If any FAIL or MISSING:**
 
 Use AskUserQuestion:
 
-- header: "Actie"
-- question: "Er zijn {fail} gefaalde en {missing} ontbrekende items. Wat wil je doen?"
+- header: "Action"
+- question: "There are {fail} failed and {missing} missing items. What do you want to do?"
 - options:
-  - label: "Terugkoppelen (Recommended)", description: "Genereer feedback voor teammate — zij fixen het zelf"
-  - label: "Zelf fixen", description: "Fix de issues in hun code en stuur als werkend terug"
-  - label: "Beide", description: "Fix wat kan, koppel de rest terug"
+  - label: "Send feedback (Recommended)", description: "Generate feedback for teammate — they fix it themselves"
+  - label: "Fix myself", description: "Fix the issues in their code and send back as working"
+  - label: "Both", description: "Fix what can be fixed, send back the rest as feedback"
 - multiSelect: false
 
-**If "Terugkoppelen"** → proceed to FASE 6 (feedback).
-**If "Zelf fixen"** → proceed to FASE 5c (fix loop for ALL failed items).
-**If "Beide"** → proceed to FASE 5c (fix loop). After fixes, FASE 6 generates feedback for remaining MISSING/unfixed items.
+**If "Send feedback"** → proceed to PHASE 6 (feedback).
+**If "Fix myself"** → proceed to PHASE 5c (fix loop for ALL failed items).
+**If "Both"** → proceed to PHASE 5c (fix loop). After fixes, PHASE 6 generates feedback for remaining MISSING/unfixed items.
 
 ---
 
-### FASE 5c: Fix Loop
+### PHASE 5c: Fix Loop
 
-> **Todo**: markeer FASE 5 → `completed`, FASE 5c → `in_progress`.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 5c → `in_progress`.
 
-**When:** User chose "Zelf fixen" or "Beide" in FASE 5.
+**When:** User chose "Fix myself" or "Both" in PHASE 5.
 
 For each FAIL item, analyze and fix:
 
@@ -701,15 +693,15 @@ Impact: {what this affects}
 
 **Re-test after all fixes:**
 
-- AUTO items that were fixed → re-run via Task agent (same approach as FASE 3)
-- MANUAL items that were fixed → guided re-test (same approach as FASE 4)
+- AUTO items that were fixed → re-run via Task agent (same approach as PHASE 3)
+- MANUAL items that were fixed → guided re-test (same approach as PHASE 4)
 
 Display re-test results:
 
 ```
-RE-TEST RESULTATEN: {feature-name}
+RE-TEST RESULTS: {feature-name}
 
-| # | Test              | Type   | Requirement | Resultaat |
+| # | Test              | Type   | Requirement | Result |
 |---|-------------------|--------|-------------|-----------|
 | 2 | Without email     | AUTO   | REQ-002     | ✓ PASS   |
 | 3 | Welcome mail      | MANUAL | REQ-004     | ✓ PASS   |
@@ -721,101 +713,101 @@ RE-TEST PASS: {n}  RE-TEST FAIL: {n}
 
 Use AskUserQuestion:
 
-- header: "Fix Mislukt"
-- question: "Item {N} werkt nog niet na fix. Wat wil je doen?"
+- header: "Fix Failed"
+- question: "Item {N} still does not work after fix. What do you want to do?"
 - options:
-  - label: "Nog een poging (Recommended)", description: "Probeer een andere fix strategie"
-  - label: "Terugkoppelen", description: "Stuur als feedback naar teammate"
-  - label: "Accepteren", description: "Markeer als bekend issue"
+  - label: "Try again (Recommended)", description: "Try a different fix strategy"
+  - label: "Send feedback", description: "Send as feedback to teammate"
+  - label: "Accept", description: "Mark as known issue"
 - multiSelect: false
 
 Max 3 fix attempts per item before forcing fallback to feedback.
 
-After fix loop completes → proceed to FASE 5d.
+After fix loop completes → proceed to PHASE 5d.
 
 ---
 
-### FASE 5d: Regression Check
+### PHASE 5d: Regression Check
 
-> **Todo**: markeer FASE 5c → `completed`, FASE 5d → `in_progress`.
+> **Todo**: mark PHASE 5c → `completed`, PHASE 5d → `in_progress`.
 
 **Skip when:**
 
-- Geen fixes toegepast in FASE 5c
-- Geen eerder-PASS AUTO items in FASE 4b
-- Alle fixes waren MANUAL-only (config/styling — lage kans op side effects)
+- No fixes applied in PHASE 5c
+- No previously-PASS AUTO items in PHASE 4b
+- All fixes were MANUAL-only (config/styling — low chance of side effects)
 
-**Doel:** Verifieer dat fixes geen eerder-werkende functionaliteit hebben gebroken.
+**Goal:** Verify that fixes have not broken previously working functionality.
 
-Verzamel alle items uit FASE 4b die PASS waren EN AUTO classificatie hadden. Draai deze opnieuw via Task agent (zelfde aanpak als FASE 3).
+Collect all items from PHASE 4b that were PASS and had AUTO classification. Re-run these via Task agent (same approach as PHASE 3).
 
 Display:
 
 ```
 REGRESSION CHECK: {feature-name}
 
-{n} eerder-PASS AUTO items opnieuw getest...
+{n} previously-PASS AUTO items re-tested...
 
-| # | Test               | Was    | Nu     |
+| # | Test               | Was    | Now    |
 |---|--------------------|--------|--------|
 | 1 | Valid registration | ✓ PASS | ✓ PASS |
 | 4 | Email format       | ✓ PASS | ✗ FAIL |
 
-Regressies: {n} | Stabiel: {n}
+Regressions: {n} | Stable: {n}
 ```
 
-**Geen regressies:** Door naar FASE 6.
+**No regressions:** Continue to PHASE 6.
 
-**Regressies gevonden:** Voeg FAIL items toe aan de resultaten. Bied dezelfde fix/feedback keuze als FASE 5:
+**Regressions found:** Add FAIL items to results. Offer the same fix/feedback choice as PHASE 5:
 
 Use AskUserQuestion:
 
-- header: "Regressie"
-- question: "{n} eerder-werkende items falen nu. Wat wil je doen?"
+- header: "Regression"
+- question: "{n} previously working items are now failing. What do you want to do?"
 - options:
-  - label: "Fixen (Recommended)", description: "Fix de regressies (terug naar FASE 5c voor deze items)"
-  - label: "Terugkoppelen", description: "Meld regressies in feedback aan teammate"
-  - label: "Accepteren", description: "Markeer als bekend issue"
+  - label: "Fix (Recommended)", description: "Fix the regressions (back to PHASE 5c for these items)"
+  - label: "Send feedback", description: "Report regressions in feedback to teammate"
+  - label: "Accept", description: "Mark as known issue"
 - multiSelect: false
 
-**Na regressie-fix:** Herhaal FASE 5d NIET (max 1 regression pass om loops te voorkomen).
+**After regression fix:** Do NOT repeat PHASE 5d (max 1 regression pass to prevent loops).
 
 ---
 
-### FASE 6: Update + Feedback
+### PHASE 6: Update + Feedback
 
-> **Todo**: markeer FASE 5d → `completed`, FASE 6 → `in_progress`.
+> **Todo**: mark PHASE 5d → `completed`, PHASE 6 → `in_progress`.
 
-#### Step 1: Parallel Sync (feature.json + backlog + dashboard) — volg `shared/SYNC.md` 3-File Sync Pattern
+#### Step 1: Parallel Sync (feature.json + backlog + dashboard) — follow `shared/SYNC.md` 3-File Sync Pattern
 
-1. **Update feature.json** (`BRIEF_REVIEW` mode only, skip als niet bestaat):
+1. **Update feature.json** (`BRIEF_REVIEW` mode only, skip if it does not exist):
    - `requirements[].status` → `"pass"` / `"fail"` / `"missing"` per requirement
    - Add/update `tests` section with session results
    - Update feature `status` if appropriate
-   - NIET andere secties overschrijven
+   - Do NOT overwrite other sections
 
-2. **Update backlog** (als `.project/backlog.html` bestaat, `BRIEF_REVIEW` of `TODO_REVIEW` mode):
-   (zie `shared/BACKLOG.md` voor parse/write patroon)
-   - Zoek feature in `data.features[]` op naam
-   - All PASS + no MISSING → `.status = "DONE"`, verwijder `stage`
-   - Otherwise → `.status` blijft `"DOING"`, `.stage` blijft `"built"`
-   - `data.updated` → huidige datum
+2. **Update backlog** (if `.project/backlog.html` exists, `BRIEF_REVIEW` or `TODO_REVIEW` mode):
+   (see `shared/BACKLOG.md` for parse/write pattern)
+   - Find feature in `data.features[]` by name
+   - All PASS + no MISSING → `.status = "DONE"`, remove `stage`
+   - Otherwise → `.status` stays `"DOING"`, `.stage` stays `"built"`
+   - `data.updated` → current date
    - Edit `backlog.html` (keep `<script>` tags intact)
 
-3. **Update project.json** (als `.project/project.json` bestaat, `BRIEF_REVIEW` of `TODO_REVIEW` mode):
-   (zie `shared/DASHBOARD.md`)
-   - `features` array: zoek feature op naam, zet status naar `"DONE"` (all pass) of `"DOING"` + stage `"built"` (fails remaining)
-   - `stack.packages`: merge als packages geïnstalleerd tijdens fix loop
-   - `endpoints`: merge als gewijzigd tijdens fixes
-   - `data.entities`: merge als gewijzigd tijdens fixes
-   - `architecture.components` in `.project/project-context.json` — **volg component-first model uit `shared/DASHBOARD.md`**:
-     - Bevestig component status → `"done"`, merge test files uit FASE 3 naar component `test[]`, merge source fixes uit FASE 5c naar `src[]`
-     - Voeg nieuwe componenten toe als die tijdens fixes zijn ontstaan
-     - Skip als geen `architecture.components` bestaat in project-context.json
+3. **Update project.json** (if `.project/project.json` exists, `BRIEF_REVIEW` or `TODO_REVIEW` mode):
+   (see `shared/DASHBOARD.md`)
+   - `features` array: find feature by name, set status to `"DONE"` (all pass) or `"DOING"` + stage `"built"` (fails remaining)
+   - `stack.packages`: merge if packages were installed during fix loop
+   - `endpoints`: merge if changed during fixes
+   - `data.entities`: merge if changed during fixes
+   - `architecture.components` in `.project/project-context.json` — **follow component-first model from `shared/DASHBOARD.md`**:
+     - Confirm component status → `"done"`, merge test files from PHASE 3 into component `test[]`, merge source fixes from PHASE 5c into `src[]`
+     - Add new components if they were created during fixes
+     - Skip if no `architecture.components` exists in project-context.json
 
 4. **Scoped auto-commit** (only this skill's changes):
 
-   Compare current git status with baseline from FASE 0:
+   Compare current git status with baseline from PHASE 0:
 
    ```bash
    git status --porcelain | sort > /tmp/current-status.txt
@@ -849,67 +841,67 @@ Use AskUserQuestion:
 
 Generate structured feedback based on test results, completeness check, and any fixes applied.
 
-**Feature Readiness Verdict (altijd opnemen):**
+**Feature Readiness Verdict (always include):**
 
 - `READY` — ≥90% requirements/scenarios pass + 0 CRITICAL failures
-- `NOT READY` — anders (inclusief reden)
+- `NOT READY` — otherwise (including reason)
 
 **If all PASS (or all fixed):**
 
 ```
-FEEDBACK VOOR {externalRef.assignees[0] ?? "teammate"}
+FEEDBACK FOR {externalRef.assignees[0] ?? "teammate"}
 
 Feature: {feature-name}
-Status: ✓ Alles PASS
+Status: ✓ All PASS
 
-✓ Wat werkt:
+✓ What works:
 {list of passing requirements/expectations with brief evidence}
 
 {If fixes were applied:}
-Fixes toegepast:
+Fixes applied:
 {numbered list of fixes with file:line references}
 
-Klaar voor merge.
+Ready to merge.
 ```
 
 **If FAIL or MISSING items remain:**
 
 ```
-FEEDBACK VOOR {externalRef.assignees[0] ?? "teammate"}
+FEEDBACK FOR {externalRef.assignees[0] ?? "teammate"}
 
 Feature: {feature-name}
 Status: {pass}/{total} PASS
 
-✓ Wat werkt:
+✓ What works:
 {list of passing requirements with brief evidence}
 
 ✗ Issues:
 {numbered list of failing/missing items with specific details:}
 1. {REQ-ID} ({description}): {what's wrong or missing}
-   Verwacht: {acceptance criteria}
-   Gevonden: {what was found, or "niet geïmplementeerd"}
+   Expected: {acceptance criteria}
+   Found: {what was found, or "not implemented"}
 
 {If some items were fixed:}
-✓ Al gefixt:
+✓ Already fixed:
 {list of fixes applied with file:line references}
 
-Volgende stap: {concrete action items for remaining issues}
+Next step: {concrete action items for remaining issues}
 ```
 
 Use AskUserQuestion:
 
 - header: "Feedback"
-- question: "Feedback voor {externalRef.assignees[0] ?? 'teammate'} gegenereerd. Wat wil je ermee doen?"
+- question: "Feedback for {externalRef.assignees[0] ?? 'teammate'} generated. What do you want to do with it?"
 - options:
-  - label: "Opslaan als bestand (Recommended)", description: "Sla op in .project/features/{feature}/feedback.md"
-  - label: "Toon in chat", description: "Print feedback in conversatie (handmatig kopiëren)"
-  - label: "Overslaan", description: "Geen actie"
+  - label: "Save as file (Recommended)", description: "Save to .project/features/{feature}/feedback.md"
+  - label: "Show in chat", description: "Print feedback in conversation (copy manually)"
+  - label: "Skip", description: "No action"
 - multiSelect: false
 
 ---
 
 ## Mode Comparison
 
-Zie FASE 0 stap 4 voor de mode-definitietabel (BRIEF_REVIEW / TODO_REVIEW / BRANCH_ONLY). De gedragsonderscheiden per fase staan inline bij elke fase die een `Skip if:` of modusvereiste benoemt.
+See PHASE 0 step 4 for the mode definition table (BRIEF_REVIEW / TODO_REVIEW / BRANCH_ONLY). The behavioral differences per phase are documented inline at each phase that specifies a `Skip if:` or mode requirement.
 
-> **Todo**: markeer FASE 6 → `completed`.
+> **Todo**: mark PHASE 6 → `completed`.

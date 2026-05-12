@@ -108,7 +108,7 @@ options:
     description: "Skip browser checks, continue workflow"
   - label: "Installeer via /core-setup"
     description: "Run /core-setup playwright — installeert daemon + runner + config"
-  - label: "Annuleren"
+  - label: "Cancel"
     description: "Stop workflow"
 ```
 

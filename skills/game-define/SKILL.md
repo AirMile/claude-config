@@ -12,7 +12,7 @@ metadata:
 
 ## Overview
 
-This skill defines game feature requirements and architecture for Godot 4.x projects. It is FASE 1 of the gamedev workflow: plan -> **define** -> build -> test -> refactor.
+This skill defines game feature requirements and architecture for Godot 4.x projects. It is PHASE 1 of the gamedev workflow: plan -> **define** -> build -> test -> refactor.
 
 The skill gathers requirements through targeted questions, optionally researches Godot scene architecture, and designs the implementation. Output is a consolidated documentation file ready for the build phase.
 
@@ -33,7 +33,7 @@ The skill gathers requirements through targeted questions, optionally researches
 
 ## Workflow
 
-### FASE 0: Feature Name + Context
+### PHASE 0: Feature Name + Context
 
 1. **If name provided** (`/game-define abilities`):
    - Use provided name as feature name
@@ -47,68 +47,68 @@ The skill gathers requirements through targeted questions, optionally researches
    Read(".project/backlog.html")
    ```
 
-   - If backlog exists: parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
-   - Zoek eerste TODO feature: `data.features.find(f => f.status === "TODO")`
-   - Gebruik feature naam als suggestie
+   - If backlog exists: parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`)
+   - Find the first TODO feature: `data.features.find(f => f.status === "TODO")`
+   - Use feature name as suggestion
 
    **b) If backlog has a next feature:**
 
    Use **AskUserQuestion** tool:
    - header: "Feature Name"
-   - question: "Volgende feature uit backlog: **{feature-name}**. Hiermee doorgaan?"
+   - question: "Next feature from backlog: **{feature-name}**. Continue with this?"
    - options:
      - label: "{feature-name} (Recommended)", description: "{description from backlog TODO list}"
-     - label: "Andere feature", description: "Ik wil een andere feature definiëren"
+     - label: "Other feature", description: "I want to define a different feature"
    - multiSelect: false
 
    - If user picks the backlog feature → use that name, continue to step 3
-   - If user picks "Andere feature" → fall through to option (c)
+   - If user picks "Other feature" → fall through to option (c)
 
    **c) No backlog but concept exists:**
 
-   Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md`. Als `CONCEPT_CONTEXT.present`:
+   Read `CONCEPT_CONTEXT` per `shared/CONCEPT.md`. If `CONCEPT_CONTEXT.present`:
    AskUserQuestion:
 
    ```yaml
-   header: "Concept zonder backlog"
-   question: "Er is een concept maar nog geen backlog. Wil je eerst een backlog genereren?"
+   header: "Concept without backlog"
+   question: "There is a concept but no backlog yet. Generate a backlog first?"
    options:
-     - label: "Ja, eerst /project-plan (Recommended)", description: "Genereer backlog uit concept, dan features definiëren"
-     - label: "Nee, direct definiëren", description: "Definieer een losse feature zonder backlog"
+     - label: "Yes, /project-plan first (Recommended)", description: "Generate backlog from concept, then define features"
+     - label: "No, define directly", description: "Define a standalone feature without backlog"
    multiSelect: false
    ```
 
-   "Ja" → stop, toon: `Draai /project-plan om je concept om te zetten in een backlog.`
-   "Nee" → ga door naar optie d.
+   "Yes" → stop, show: `Run /project-plan to convert your concept into a backlog.`
+   "No" → continue to option d.
 
    **d) No backlog, no concept (or user chose direct define):**
 
    Use **AskUserQuestion** tool:
    - header: "Feature Name"
-   - question: "Welke game feature wil je definiëren? Kies een suggestie of typ je eigen feature-naam via 'Other'."
+   - question: "Which game feature do you want to define? Pick a suggestion or type your own feature name via 'Other'."
    - options:
-     - label: "Ability System", description: "Speler abilities en element-based krachten"
-     - label: "Player Movement", description: "Beweging, controls, physics"
+     - label: "Ability System", description: "Player abilities and element-based powers"
+     - label: "Player Movement", description: "Movement, controls, physics"
      - label: "Combat System", description: "Damage, health, knockback"
      - label: "UI System", description: "HUD, menus, ability selection"
    - multiSelect: false
 
    The user can type any feature name via the built-in "Other" option.
 
-**Tag backlog card als actief** (direct na feature naam bepaling):
+**Tag backlog card as active** (immediately after feature name determination):
 
-Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-Zoek feature op naam → behoud `"status": "TODO"`, zet `"stage": "defining"`, `data.updated` naar nu.
-Schrijf terug via Edit (keep `<script>` tags intact).
-Niet gevonden → skip (feature wordt pas bij FASE 5 aan backlog toegevoegd).
-De card blijft in TODO maar krijgt een pulserende `defining` stage-badge.
+Read `.project/backlog.html` (if it exists), parse JSON (see `shared/BACKLOG.md`).
+Find feature by name → keep `"status": "TODO"`, set `"stage": "defining"`, `data.updated` to now.
+Write back via Edit (keep `<script>` tags intact).
+Not found → skip (feature is added to backlog at PHASE 5).
+The card stays in TODO but gets a pulsing `defining` stage-badge.
 
-2b. **Feature existence check** (na naam-bepaling, vóór context-load):
+2b. **Feature existence check** (after name determination, before context-load):
 
-Check: `.project/features/{feature-name}/feature.json` bestaat?
+Check: `.project/features/{feature-name}/feature.json` exists?
 
-- **Niet gevonden** → ga door naar stap 3 (gewone flow).
-- **Gevonden** → ga naar FASE 0b (update-mode).
+- **Not found** → continue to step 3 (normal flow).
+- **Found** → go to PHASE 0b (update-mode).
 
 3. **Create project folder + signal active feature:**
 
@@ -125,7 +125,7 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
    ```
 
    - If found: store as context for all subsequent phases (requirements, design, architecture)
-   - If not found: note absence, continue without (research may be triggered in FASE 2)
+   - If not found: note absence, continue without (research may be triggered in PHASE 2)
 
    ```
    ℹ Architecture baseline loaded — context available for all phases.
@@ -137,164 +137,164 @@ Check: `.project/features/{feature-name}/feature.json` bestaat?
    ⚠ Architecture baseline not found — run /core-setup to generate.
    ```
 
-5. **Load project context** (paralleliseer met stap 4):
-   - Glob + Grep voor bestaande code die de feature-naam importeert
+5. **Load project context** (parallelize with step 4):
+   - Glob + Grep for existing code that imports the feature name
    - Read `.project/project.json` → extract:
-     - `stack` — framework, language, packages (fallback als architecture-baseline niet bestaat)
-     - `CONCEPT_CONTEXT.pitch` of eerste 2 zinnen van `CONCEPT_CONTEXT.markdown` als feature context (zie `shared/CONCEPT.md`)
-     - `features[]` — bestaande features (voorkomt duplicaten/overlap)
-     - `data.entities` — bestaand data model
-     - `thinking[]` — scan voor entries met `newFeature` veld matching de feature-naam (toegevoegd via `/project-todo`). Laad die als context.
-   - **Naam-match op thinking markdown**: Grep `.project/thinking/*.md` op feature-naam (bestandsnaam + content). Bij 1+ match: lees de match(es) en gebruik als input voor FASE 1 vragen. De `.md` bestanden zijn bron van waarheid voor thinking-output — geen 7-dagen window meer.
-   - Read `.project/project-context.json` (als bestaat) → extract:
-     - `context.patterns` — bestaande code patterns
+     - `stack` — framework, language, packages (fallback if architecture-baseline does not exist)
+     - `CONCEPT_CONTEXT.pitch` or first 2 sentences of `CONCEPT_CONTEXT.markdown` as feature context (see `shared/CONCEPT.md`)
+     - `features[]` — existing features (prevents duplicates/overlap)
+     - `data.entities` — existing data model
+     - `thinking[]` — scan for entries with `newFeature` field matching the feature name (added via `/project-todo`). Load those as context.
+   - **Name-match on thinking markdown**: Grep `.project/thinking/*.md` on feature name (filename + content). With 1+ match: read the match(es) and use as input for PHASE 1 questions. The `.md` files are the source of truth for thinking output — no 7-day window anymore.
+   - Read `.project/project-context.json` (if it exists) → extract:
+     - `context.patterns` — existing code patterns
    - **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
      ```
      scopes: [component, architectural]
      pitfall-prefix: true
      current-feature: <feature-name>
      ```
-     Toon de geladen output vóór FASE 1 vragen. Component-scoped patterns en architectural patterns geven richting bij architectuur-keuzes en requirement-formulering. Pitfall-prefix voorkomt herhaling van eerdere bugs.
-   - **Onboarding check** (evalueer direct na project.json read):
-     - `project.json` niet aanwezig → toon: `⚠️ Geen project.json gevonden. Overweeg eerst /core-setup te draaien voor betere codebase-context.` Ga door zonder (non-blocking).
-     - Aanwezig maar leeg (geen `context`, `stack`, én `features`) → toon: `ℹ️ project.json bestaat maar mist codebase-context. /core-setup kan dit aanvullen.`
-     - Aanwezig met content → stil doorgaan.
-   - **Past decisions scan** (twee bronnen, beide scope):
-     - Feature-scope: Glob `.project/features/*/feature.json` → flatten alle `durableDecisions[]`. Tag elke entry met `[feature-X]`.
-     - Project-scope: Glob `.project/thinking/*-decision-*.md` → lees eerste ~30 regels per file, extract `THINK:` regel (titel), `AANBEVELING:` regel (chosen), en `CONSTRAINT` sectie. Tag elke entry met `[project]`.
-     - Merge beide bronnen. Filter relevant via keyword-overlap tussen huidige feature-naam/concept en elke decision's titel, chosen, of constraint (≥2 substantieve termen). Houd top 3 meest-relevante.
+     Show the loaded output before PHASE 1 questions. Component-scoped patterns and architectural patterns guide architecture choices and requirement formulation. Pitfall-prefix prevents repetition of earlier bugs.
+   - **Onboarding check** (evaluate immediately after project.json read):
+     - `project.json` not present → show: `⚠️ No project.json found. Consider running /core-setup first for better codebase context.` Continue without (non-blocking).
+     - Present but empty (no `context`, `stack`, or `features`) → show: `ℹ️ project.json exists but is missing codebase context. /core-setup can fill this in.`
+     - Present with content → proceed silently.
+   - **Past decisions scan** (two sources, both scope):
+     - Feature-scope: Glob `.project/features/*/feature.json` → flatten all `durableDecisions[]`. Tag each entry with `[feature-X]`.
+     - Project-scope: Glob `.project/thinking/*-decision-*.md` → read first ~30 lines per file, extract `THINK:` line (title), `AANBEVELING:` line (chosen), and `CONSTRAINT` section. Tag each entry with `[project]`.
+     - Merge both sources. Filter relevant via keyword-overlap between current feature name/concept and each decision's title, chosen, or constraint (≥2 substantive terms). Keep top 3 most-relevant.
 
-### FASE 0b: Update-mode (alleen als feature.json al bestaat)
+### PHASE 0b: Update-mode (only if feature.json already exists)
 
-1. Lees `.project/features/{feature-name}/feature.json`.
+1. Read `.project/features/{feature-name}/feature.json`.
 
-2. Toon bestaande requirements samenvatting:
+2. Show existing requirements summary:
 
-   | ID      | Beschrijving (eerste 60 chars) | Status  |
-   | ------- | ------------------------------ | ------- |
-   | REQ-001 | {beschrijving}                 | pending |
+   | ID      | Description (first 60 chars) | Status  |
+   | ------- | ---------------------------- | ------- |
+   | REQ-001 | {description}                | pending |
 
-3. AskUserQuestion: "Feature **{name}** bestaat al met {N} requirements. Wat wil je aanpassen?"
+3. AskUserQuestion: "Feature **{name}** already exists with {N} requirements. What do you want to change?"
 
    ```yaml
    header: "Update-mode"
    options:
-     - label: "Requirements toevoegen (Recommended)", description: "Nieuwe requirements, doorgenummerd vanaf REQ-{N+1}"
-     - label: "Requirements wijzigen", description: "Bestaande requirements herformuleren of acceptance aanpassen"
-     - label: "Requirements verwijderen", description: "Requirements uit scope halen (soft-delete)"
-     - label: "Meerdere van bovenstaande", description: "Combinatie van toevoegen, wijzigen en/of verwijderen"
+     - label: "Add requirements (Recommended)", description: "New requirements, numbered from REQ-{N+1}"
+     - label: "Edit requirements", description: "Reformulate existing requirements or adjust acceptance"
+     - label: "Remove requirements", description: "Remove requirements from scope (soft-delete)"
+     - label: "Multiple of the above", description: "Combination of add, edit and/or remove"
    multiSelect: false
    ```
 
-4. Verwerk delta op basis van keuze:
-   - **Toevoegen**: Doorloop FASE 1 Requirements Gathering voor alleen de nieuwe requirements. Nummer door vanaf `REQ-{N+1}`.
-   - **Wijzigen**: Vraag welke REQ-IDs. Per REQ: toon huidige beschrijving + acceptance, vraag nieuwe versie. Gebruik formaat `[{ when, then }]` per scenario.
-   - **Verwijderen**: Vraag welke REQ-IDs. Markeer met `deltaOp: "REMOVED"` — verwijder niet fysiek uit de array. Ook: verwijder het REQ-ID uit alle `buildSequence[].requirements[]` arrays; als een step daarna leeg is → verwijder de step.
-   - **Meerdere**: Combineer bovenstaande flows in één ronde.
+4. Process delta based on choice:
+   - **Add**: Run through PHASE 1 Requirements Gathering for the new requirements only. Number from `REQ-{N+1}`.
+   - **Edit**: Ask which REQ-IDs. Per REQ: show current description + acceptance, ask for new version. Use format `[{ when, then }]` per scenario.
+   - **Remove**: Ask which REQ-IDs. Mark with `deltaOp: "REMOVED"` — do not physically delete from the array. Also: remove the REQ-ID from all `buildSequence[].requirements[]` arrays; if a step becomes empty → remove the step.
+   - **Multiple**: Combine the above flows in one round.
 
-5. Sla `deltaOp` op per requirement:
-   - Ongewijzigd: `"deltaOp": "UNCHANGED"`
-   - Nieuw: `"deltaOp": "ADDED"`
-   - Gewijzigd: `"deltaOp": "MODIFIED"` + `"previousDescription": "{oorspronkelijke tekst}"`
-   - Verwijderd: `"deltaOp": "REMOVED"` (blijft in array, wordt niet gebouwd of getest)
+5. Save `deltaOp` per requirement:
+   - Unchanged: `"deltaOp": "UNCHANGED"`
+   - New: `"deltaOp": "ADDED"`
+   - Modified: `"deltaOp": "MODIFIED"` + `"previousDescription": "{original text}"`
+   - Removed: `"deltaOp": "REMOVED"` (stays in array, is not built or tested)
 
-6. **Status-reset**: als feature `status` was `"DOING"` → zet terug naar `"DEFINED"` in `feature.json` en backlog.
+6. **Status-reset**: if feature `status` was `"DOING"` → reset to `"DEFINED"` in `feature.json` and backlog.
 
-7. Skip FASE 1b (feature splitting) tenzij het aantal requirements na update boven 6 stijgt én er duidelijke clusters zijn.
+7. Skip PHASE 1b (feature splitting) unless the number of requirements after update exceeds 6 and there are clear clusters.
 
-8. Ga naar FASE 2 voor alleen ADDED en MODIFIED requirements. Bij FASE 5 write: **merge** delta naar bestaand `feature.json` — overschrijf niet volledig. Bewaar bestaande `build`, `tests` en UNCHANGED requirements intact. `buildSequence`: verwijder stappen die leeg zijn na REMOVED-filtering; voeg nieuwe stappen toe voor ADDED requirements (uit FASE 2 architectuur output); bestaande stappen voor UNCHANGED requirements ongewijzigd laten.
+8. Go to PHASE 2 for ADDED and MODIFIED requirements only. For PHASE 5 write: **merge** delta into existing `feature.json` — do not overwrite fully. Preserve existing `build`, `tests` and UNCHANGED requirements. `buildSequence`: remove steps that are empty after REMOVED-filtering; add new steps for ADDED requirements (from PHASE 2 architecture output); leave existing steps for UNCHANGED requirements unchanged.
 
 ---
 
-### FASE 1: Requirements Gathering
+### PHASE 1: Requirements Gathering
 
-**Risk-check (alleen als `feature.risk >= 4`):**
+**Risk-check (only if `feature.risk >= 4`):**
 
-Als de geladen backlog-feature een `risk`-score van 4 of 5 heeft, toon deze waarschuwing vóór de eerste vraag:
-
-```
-⚠ HOOG RISICO — Complexiteit {risk}/5
-
-Deze feature heeft een hoge complexiteitsscore. Overweeg vóór de definitie:
-- Splits de feature op in kleinere onderdelen
-- Verifieer dat dependencies beschikbaar zijn
-- Bespreek scope als onderdelen onduidelijk zijn
-```
-
-**Surface relevant past decisions** (alleen bij ≥1 match uit FASE 0 scan, anders skip stilzwijgend):
+If the loaded backlog feature has a `risk` score of 4 or 5, show this warning before the first question:
 
 ```
-EERDER BESLOTEN (mogelijk relevant)
-- [project] {decision} → koos {chosen} (constraint: {constraint})
-- [feature-X] {decision} → koos {chosen} (constraint: {constraint})
+⚠ HIGH RISK — Complexity {risk}/5
+
+This feature has a high complexity score. Consider before defining:
+- Split the feature into smaller parts
+- Verify that dependencies are available
+- Discuss scope if parts are unclear
 ```
 
-Toon vóór de eerste AskUserQuestion. Geen actie-vraag — alleen context zodat vraag-1 antwoorden niet conflicteren met eerder besloten richtingen. Als een huidige antwoord-optie direct conflicteert, noem dat kort in de optie-description ("Wijkt af van {feature-X} decision").
+**Surface relevant past decisions** (only with ≥1 match from PHASE 0 scan, otherwise skip silently):
+
+```
+PREVIOUSLY DECIDED (possibly relevant)
+- [project] {decision} → chose {chosen} (constraint: {constraint})
+- [feature-X] {decision} → chose {chosen} (constraint: {constraint})
+```
+
+Show before the first AskUserQuestion. No action question — context only so that question-1 answers do not conflict with previously decided directions. If a current answer option directly conflicts, mention that briefly in the option description ("Deviates from {feature-X} decision").
 
 Ask 5 targeted questions using AskUserQuestion:
 
 **Question 1: Core Function**
 
 - header: "Core Function"
-- question: "Wat moet deze feature doen vanuit spelersperspectief?"
+- question: "What should this feature do from the player's perspective?"
 
 **Question 2: Game Mechanics**
 
 - header: "Mechanics"
-- question: "Welke game mechanics zijn betrokken?"
+- question: "Which game mechanics are involved?"
 - options: Physics-based, Turn-based, Real-time, State-based
 
 **Question 3: Player Interactions**
 
 - header: "Interactions"
-- question: "Welke speler interacties moet deze feature ondersteunen?"
+- question: "Which player interactions must this feature support?"
 - options: Input controls, Collision triggers, UI selection, Automatic
 
 **Question 4: Visual Feedback**
 
 - header: "Visuals"
-- question: "Welke visuele feedback is nodig?"
+- question: "Which visual feedback is needed?"
 - options: Sprite animations, Particles, UI updates, Screen effects
 
 **Question 5: Data Requirements**
 
 - header: "Data"
-- question: "Welke data moet worden opgeslagen/beheerd?"
+- question: "Which data needs to be stored/managed?"
 - options: Stats/values, Inventory/collections, State persistence, Configuration
 
-**User-delegatie**: als de user antwoordt met "wat denk jij?" of vergelijkbaar, geef een korte aanbeveling met trade-off en ga door met die keuze.
+**User delegation**: if the user responds with "what do you think?" or similar, give a brief recommendation with trade-off and continue with that choice.
 
-#### Doorvraag-check
+#### Follow-up check
 
-Na de initiële vragen, evalueer of er open branches zijn:
+After the initial questions, evaluate whether there are open branches:
 
-- Onbesproken edge cases in de antwoorden
-- Impliciete aannames die niet bevestigd zijn
-- Conflicten tussen antwoorden
+- Undiscussed edge cases in the answers
+- Implicit assumptions that have not been confirmed
+- Conflicts between answers
 
-**≤3 requirements verwacht**: skip doorvraag, ga naar extraction.
-**>3 requirements verwacht**: stel 1-2 gerichte doorvragen over de belangrijkste open branch. Formuleer als "Wat gebeurt er als...?" of "Hoe gaat dit om met...?"
+**≤3 requirements expected**: skip follow-up, go to extraction.
+**>3 requirements expected**: ask 1-2 targeted follow-up questions about the most important open branch. Frame as "What happens if...?" or "How does this handle...?"
 
-Max 2 extra vragen, dan door naar extraction.
+Max 2 extra questions, then proceed to extraction.
 
 #### Gray-Area Resolution
 
-**Skip** als doorvraag-check geen open branches heeft gevonden.
+**Skip** if the follow-up check found no open branches.
 
-**Anders**: voor elke geïdentificeerde open branch (max 3):
+**Otherwise**: for each identified open branch (max 3):
 
-1. Formuleer de ambiguïteit als concrete keuze via AskUserQuestion:
-   - Header: de open branch als korte zin
-   - Opties: 2-3 concrete benaderingen + "Niet relevant voor scope"
-   - Eerste optie = Recommended
+1. Frame the ambiguity as a concrete choice via AskUserQuestion:
+   - Header: the open branch as a short phrase
+   - Options: 2-3 concrete approaches + "Not relevant for scope"
+   - First option = Recommended
 
-2. Noteer de keuze als clarification:
-   `{ "question": "{open branch}", "answer": "{gekozen optie}", "impact": "kort welk requirement-gebied dit raakt" }`
+2. Record the choice as a clarification:
+   `{ "question": "{open branch}", "answer": "{chosen option}", "impact": "brief note on which requirement area this affects" }`
 
-**"Niet relevant"** → noteer als scoped-out, niet als requirement.
-**>3 open branches** → verwerk overige inline bij requirement extraction als edge case.
+**"Not relevant"** → record as scoped-out, not as a requirement.
+**>3 open branches** → handle remaining ones inline during requirement extraction as edge cases.
 
-Max 3 AskUserQuestion calls. Dan door naar extraction.
+Max 3 AskUserQuestion calls. Then proceed to extraction.
 
 #### Requirement Extraction
 
@@ -303,81 +303,73 @@ After questions, extract testable requirements:
 - Each requirement gets an ID (REQ-001, REQ-002, etc.)
 - Categorize by type (core, scene, script, signal)
 - Determine test type for each
-- Define acceptance scenarios per requirement als `{ when, then }` paren (concrete, verifiable)
+- Define acceptance scenarios per requirement as `{ when, then }` pairs (concrete, verifiable)
 
 Show requirements table with acceptance scenarios:
 
 | ID      | Requirement   | Category   | Test Type | Acceptance                              |
 | ------- | ------------- | ---------- | --------- | --------------------------------------- |
-| REQ-001 | {description} | {category} | {type}    | WHEN {trigger} → THEN {verwacht result} |
+| REQ-001 | {description} | {category} | {type}    | WHEN {trigger} → THEN {expected result} |
 
-Meerdere scenario's per requirement → meerdere rijen met hetzelfde REQ-ID, of bullets.
+Multiple scenarios per requirement → multiple rows with the same REQ-ID, or bullets.
 
-#### Tuning Levers & Edge Cases (mechanica-requirements)
+#### Tuning Levers & Edge Cases (mechanics requirements)
 
-Voor requirements die **getallen of timing** bevatten (damage, speed, cooldown, radius, etc.), extraheer tuning levers:
+For requirements that contain **numbers or timing** (damage, speed, cooldown, radius, etc.), extract tuning levers:
 
-| Parameter | Default  | Min   | Max   | Impact                            |
-| --------- | -------- | ----- | ----- | --------------------------------- |
-| {naam}    | {waarde} | {min} | {max} | {wat verandert er voor de speler} |
+| Parameter | Default | Min   | Max   | Impact                        |
+| --------- | ------- | ----- | ----- | ----------------------------- |
+| {name}    | {value} | {min} | {max} | {what changes for the player} |
 
-Markeer defaults als `[PLACEHOLDER]` als ze nog niet geplaytest zijn.
+Mark defaults as `[PLACEHOLDER]` if they have not been playtested yet.
 
-Voor requirements met **interacties of state changes**, documenteer edge cases:
+For requirements with **interactions or state changes**, document edge cases:
 
-- Wat als de waarde 0 is?
-- Wat als twee acties tegelijk triggeren?
-- Wat als de speler maximale/minimale resource heeft?
+- What if the value is 0?
+- What if two actions trigger simultaneously?
+- What if the player has maximum/minimum resource?
 
-Alleen relevante edge cases — niet elk requirement heeft ze. Skip bij simpele features (≤3 requirements zonder getallen).
+Only relevant edge cases — not every requirement has them. Skip for simple features (≤3 requirements without numbers).
 
-Tuning levers worden opgeslagen in `feature.json` per requirement als `tuningLevers[]`.
-
-<!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the requirements table above visible when the modal panel opens).
+Tuning levers are stored in `feature.json` per requirement as `tuningLevers[]`.
 
 **Confirm with user** via **AskUserQuestion**:
 
 - header: "Requirements"
-- question: "Akkoord met deze requirements?"
+- question: "Agree with these requirements?"
 - options:
-  - label: "Akkoord (Recommended)", description: "Requirements zijn compleet en correct"
-  - label: "Aanpassen", description: "Ik wil requirements wijzigen of toevoegen"
-  - label: "Opnieuw beginnen", description: "Verwerp alles en stel nieuwe vragen"
+  - label: "Agree (Recommended)", description: "Requirements are complete and correct"
+  - label: "Edit", description: "I want to change or add requirements"
+  - label: "Start over", description: "Discard everything and ask new questions"
 - multiSelect: false
 
-**If "Aanpassen"** → ask what to change, update requirements table, re-confirm.
-**If "Opnieuw beginnen"** → restart FASE 1 from Question 1.
+**If "Edit"** → ask what to change, update requirements table, re-confirm.
+**If "Start over"** → restart PHASE 1 from Question 1.
 
-### CHECKPOINT: Requirements Samenvatting
+### CHECKPOINT: Requirements Summary
 
-Na de requirements tabel bevestiging, presenteer een compleet overzicht:
+After the requirements table confirmation, present a complete overview:
 
-| Aspect        | Waarde                      |
+| Aspect        | Value                       |
 | ------------- | --------------------------- |
-| Feature       | {naam}                      |
-| Core function | {vanuit spelersperspectief} |
-| Mechanics     | {gekozen mechanics}         |
-| Interactions  | {gekozen interacties}       |
-| Visuals       | {gekozen visuele feedback}  |
-| Data          | {gekozen data management}   |
+| Feature       | {name}                      |
+| Core function | {from player's perspective} |
+| Mechanics     | {chosen mechanics}          |
+| Interactions  | {chosen interactions}       |
+| Visuals       | {chosen visual feedback}    |
+| Data          | {chosen data management}    |
 | Requirements  | {N} requirements            |
 
-<!-- modal-buffer -->
+Ask via AskUserQuestion:
 
-Print 8 blank lines as whitespace buffer (keeps the overview table above visible when the modal panel opens).
-
-Vraag via AskUserQuestion:
-
-- header: "Requirements Samenvatting"
-- question: "Klopt dit overzicht voordat we doorgaan naar architectuur?"
+- header: "Requirements Summary"
+- question: "Does this overview look correct before we continue to architecture?"
 - options:
-  - label: "Ga door (Recommended)", description: "Door naar scope analysis + architectuur"
-  - label: "Aanpassen", description: "Terug naar relevante vraag"
+  - label: "Continue (Recommended)", description: "On to scope analysis + architecture"
+  - label: "Edit", description: "Back to relevant question"
 - multiSelect: false
 
-### FASE 1b: Scope Analysis & Feature Splitting
+### PHASE 1b: Scope Analysis & Feature Splitting
 
 **Goal:** Analyze gathered requirements and decide whether to keep as a single feature or split into multiple sub-features for optimal build execution.
 
@@ -385,7 +377,7 @@ Vraag via AskUserQuestion:
 
 1. **Analyze requirement scope:**
 
-   Count requirements and map dependency graph from FASE 1 output.
+   Count requirements and map dependency graph from PHASE 1 output.
 
    ```
    SCOPE ANALYSIS:
@@ -428,7 +420,7 @@ Vraag via AskUserQuestion:
    → Continuing to architecture design.
    ```
 
-   Proceed to FASE 2.
+   Proceed to PHASE 2.
 
 5. **If SPLIT recommended:**
 
@@ -449,23 +441,19 @@ Vraag via AskUserQuestion:
    Cross-dependencies: {list or "none"}
    ```
 
-   <!-- modal-buffer -->
-
-   Print 8 blank lines as whitespace buffer (keeps the SPLIT RECOMMENDATION above visible when the modal panel opens).
-
    Use **AskUserQuestion** for confirmation:
    - header: "Feature Split"
-   - question: "Akkoord met deze opsplitsing?"
+   - question: "Agree with this split?"
    - options:
-     - label: "Akkoord (Recommended)", description: "Opsplitsen in {n} sub-features"
-     - label: "Aanpassen", description: "Ik wil de groepering wijzigen"
-     - label: "Eén feature houden", description: "Niet splitsen, alles in één feature"
+     - label: "Agree (Recommended)", description: "Split into {n} sub-features"
+     - label: "Edit", description: "I want to change the grouping"
+     - label: "Keep as one feature", description: "No split, everything in one feature"
    - multiSelect: false
 
    **Response Handling:**
-   - Akkoord → proceed with split
-   - Aanpassen → ask which requirements should move where, regenerate split
-   - Eén feature houden → proceed as SINGLE feature to FASE 2
+   - Agree → proceed with split
+   - Edit → ask which requirements should move where, regenerate split
+   - Keep as one feature → proceed as SINGLE feature to PHASE 2
 
 6. **Execute split (if approved):**
 
@@ -512,10 +500,10 @@ Vraag via AskUserQuestion:
    mkdir -p .project/features/{feature-name}-{sub2}
    ```
 
-   c. Continue FASE 2-5 for EACH sub-feature sequentially:
+   c. Continue PHASE 2-5 for EACH sub-feature sequentially:
    - Re-number requirements per sub-feature (REQ-001, REQ-002, etc.)
    - Each sub-feature gets its own architecture, scene layout, and feature.json
-   - Use build order: complete all FASEs for sub-feature 1 before starting sub-feature 2
+   - Use build order: complete all PHASEs for sub-feature 1 before starting sub-feature 2
 
 7. **Update backlog (split only):**
 
@@ -524,15 +512,15 @@ Vraag via AskUserQuestion:
    - Each sub-feature gets its own line in the backlog
    - Add `(split from {original-name})` annotation
 
-### FASE 2: Architecture Check (Automatisch)
+### PHASE 2: Architecture Check (Automatic)
 
-**Goal:** Automatisch bepalen of research nodig is op basis van architecture-baseline.
+**Goal:** Automatically determine whether research is needed based on the architecture-baseline.
 
 **Steps:**
 
 1. **Use pre-loaded architecture-baseline:**
-   - Use the baseline context loaded in FASE 0
-   - If baseline was not found in FASE 0, skip to step 5 (baseline not found fallback)
+   - Use the baseline context loaded in PHASE 0
+   - If baseline was not found in PHASE 0, skip to step 5 (baseline not found fallback)
 
 2. **Extract feature type from requirements:**
    Map the feature to a category:
@@ -562,7 +550,7 @@ Vraag via AskUserQuestion:
    **A) Pattern FOUND in baseline:**
 
    ```
-   ✓ Architecture pattern gevonden in baseline
+   ✓ Architecture pattern found in baseline
 
    | Field | Value |
    |-------|-------|
@@ -571,18 +559,18 @@ Vraag via AskUserQuestion:
    | Pattern | {from baseline} |
    | State Machine | {from baseline} |
 
-   → Baseline gebruiken, research overgeslagen.
+   → Using baseline, research skipped.
    ```
 
-   - Use patterns from baseline for FASE 3
+   - Use patterns from baseline for PHASE 3
    - Skip godot-scene-researcher agent
 
    **B) Pattern NOT FOUND in baseline:**
 
    ```
-   ⚠ Geen architecture pattern gevonden voor "{feature-type}"
+   ⚠ No architecture pattern found for "{feature-type}"
 
-   → Research wordt uitgevoerd en baseline wordt bijgewerkt.
+   → Research will be run and baseline will be updated.
    ```
 
    - Launch godot-scene-researcher agent:
@@ -613,23 +601,23 @@ Vraag via AskUserQuestion:
    If `.claude/research/architecture-baseline.md` does not exist:
 
    ```
-   ⚠ Architecture baseline niet gevonden.
+   ⚠ Architecture baseline not found.
 
-   → Volledige research wordt uitgevoerd.
-   Tip: Run /core-setup om baseline te genereren.
+   → Full research will be run.
+   Tip: Run /core-setup to generate the baseline.
    ```
 
    - Always launch godot-scene-researcher agent
    - Do NOT create baseline (that's /setup's job)
 
-### FASE 2b: Scene Layout & Gameplay Flow
+### PHASE 2b: Scene Layout & Gameplay Flow
 
 **Goal:** Define visual scene layout and gameplay state flow before architecture design.
 
 **Condition:** Only execute this phase if the feature involves visual elements (scenes, sprites, UI, particles). If the feature is non-visual (pure data, logic, resources), skip with:
 
 ```
-FASE 2b: N/A — non-visual feature
+PHASE 2b: N/A — non-visual feature
 ```
 
 **Steps:**
@@ -667,15 +655,15 @@ FASE 2b: N/A — non-visual feature
 4. **Confirm with user:**
    Use **AskUserQuestion**:
    - header: "Scene Layout"
-   - question: "Klopt dit visuele ontwerp en de gameplay flow?"
+   - question: "Does this visual design and gameplay flow look correct?"
    - options:
-     - label: "Ja (Recommended)", description: "Layout en flow zijn correct, ga door"
-     - label: "Aanpassen", description: "Ik wil het ontwerp wijzigen"
+     - label: "Yes (Recommended)", description: "Layout and flow are correct, continue"
+     - label: "Edit", description: "I want to change the design"
    - multiSelect: false
 
-### FASE 3: Architecture Design
+### PHASE 3: Architecture Design
 
-Design based on requirements (and research if done). Genereer een ASCII state machine van de core gameplay loop (states + transitions + triggers) naast de scene tree:
+Design based on requirements (and research if done). Generate an ASCII state machine of the core gameplay loop (states + transitions + triggers) alongside the scene tree:
 
 **Scene Tree:**
 
@@ -732,73 +720,73 @@ IMPLEMENTATION ORDER:
 3. REQ-003 (after REQ-002)
 ```
 
-### FASE 4: Write feature.json
+### PHASE 4: Write feature.json
 
-Schrijf `.project/features/{feature-name}/feature.json` (zie `shared/FEATURE.md` voor volledig schema):
+Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema):
 
-| Veld                        | Conditie                                                                           |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| `name`, `created`, `status` | altijd (status = `"DEFINED"`, geen stage — wacht op `/game-build`)                 |
-| `summary`                   | altijd                                                                             |
-| `depends`                   | altijd (lege array als geen)                                                       |
-| `choices`                   | altijd (user antwoorden)                                                           |
-| `requirements`              | altijd (elke REQ met `status: "pending"`)                                          |
-| `files`                     | altijd (genormaliseerd: `path`, `type`, `action`, `purpose`, `requirements`)       |
-| `architecture`              | altijd (`componentTree`, `interfaces`)                                             |
-| `design`                    | alleen visuele features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`) |
-| `buildSequence`             | altijd                                                                             |
-| `testStrategy`              | altijd                                                                             |
-| `clarifications`            | alleen als gray-area resolution is uitgevoerd                                      |
-| `durableDecisions`          | bij >3 requirements — beslissingen die over alle REQs gelden                       |
-| `research`                  | alleen als research is gedaan                                                      |
+| Field                       | Condition                                                                           |
+| --------------------------- | ----------------------------------------------------------------------------------- |
+| `name`, `created`, `status` | always (status = `"DEFINED"`, no stage — waiting for `/game-build`)                 |
+| `summary`                   | always                                                                              |
+| `depends`                   | always (empty array if none)                                                        |
+| `choices`                   | always (user answers)                                                               |
+| `requirements`              | always (each REQ with `status: "pending"`)                                          |
+| `files`                     | always (normalized: `path`, `type`, `action`, `purpose`, `requirements`)            |
+| `architecture`              | always (`componentTree`, `interfaces`)                                              |
+| `design`                    | only for visual features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`) |
+| `buildSequence`             | always                                                                              |
+| `testStrategy`              | always                                                                              |
+| `clarifications`            | only if gray-area resolution was performed                                          |
+| `durableDecisions`          | with >3 requirements — decisions that apply across all REQs                         |
+| `research`                  | only if research was done                                                           |
 
-**`durableDecisions`** — beslissingen die tijdens de build NIET veranderen:
+**`durableDecisions`** — decisions that do NOT change during the build:
 
-- Scene tree structuur (root node type, compositie)
+- Scene tree structure (root node type, composition)
 - Resource schema shape (custom Resources, exports)
-- Signal architecture (welke signals, wie emit/ontvangt)
-- State machine aanpak (enum-based, node-based, stateless)
+- Signal architecture (which signals, who emits/receives)
+- State machine approach (enum-based, node-based, stateless)
 
-### FASE 5: Sync
+### PHASE 5: Sync
 
-Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
+Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations below.
 
-Lees parallel **direct voor het editen** (skip als niet bestaat) — vertrouw NIET op reads uit eerdere fases (Prettier/linters kunnen bestanden tussentijds wijzigen):
+Read in parallel **directly before editing** (skip if not present) — do NOT rely on reads from earlier phases (Prettier/linters may have modified files in the meantime):
 
 - `.project/backlog.html`
 - `.project/project.json`
 - `.project/project-context.json`
 
-Muteer in memory:
+Mutate in memory:
 
-**Backlog** (zie `shared/BACKLOG.md`):
+**Backlog** (see `shared/BACKLOG.md`):
 
-- Zoek feature: `data.features.find(f => f.name === "{feature-name}")`
-- Gevonden → zet `.status = "DEFINED"`, verwijder `.stage` (geen stage in DEFINED-kolom) en zet `.date = "{current date}"`
-- Niet gevonden → voeg toe: `{ "name": "{feature}", "type": "FEATURE", "status": "DEFINED", "phase": "P4", "description": "{from feature.json summary}", "dependencies": [], "source": "/game-define" }`
-- Zet `data.updated` naar huidige datum
+- Find feature: `data.features.find(f => f.name === "{feature-name}")`
+- Found → set `.status = "DEFINED"`, remove `.stage` (no stage in DEFINED column) and set `.date = "{current date}"`
+- Not found → add: `{ "name": "{feature}", "type": "FEATURE", "status": "DEFINED", "phase": "P4", "description": "{from feature.json summary}", "dependencies": [], "source": "/game-define" }`
+- Set `data.updated` to current date
 
-**Dashboard** (zie `shared/DASHBOARD.md`):
+**Dashboard** (see `shared/DASHBOARD.md`):
 
-- **Data entities** (optioneel — alleen als feature domain entities introduceert): voor elke entity check of `data.entities` al entry heeft met die naam → nee: push met fields/relations → ja: merge nieuwe velden. Als feature geen entities heeft (UI-only scene, pure gameplay, utility): skip, log `Skipped data.entities: no entities`.
-- **Stack**: als Godot plugins/assets → check `stack.packages` op naam → nee: push `{ name, version, purpose }`
-- **Features**: check op naam → nee: push `{ name, status: "DEFINED", summary, depends: [], created }` → ja: update status naar `"DEFINED"`, verwijder `stage`
-- **Architecture** in `.project/project-context.json`: genereer/update als feature scene tree en/of signals heeft. **Volg component-first model uit `shared/DASHBOARD.md`**:
-  - `layers`: definieer lagen met `{ name, order }` (bijv. Scenes order 1, Systems order 2, Resources order 3)
-  - `dataFlow`: één-regel samenvatting van de scene/signal flow
-  - `components`: per component `{ name, layer, description, status, connects_to }`. Scene tree als componenten. `connects_to[]` als typed edges `{ to, type }` (`calls` voor signal emits/method calls, `reads`/`writes` voor shared state of autoloads, `depends_on` voor scene-tree parent of resource references). Alle features DOING → `status: "planned"`, bestaande → `"done"`
-  - Merge strategie: check of component `name` al bestaat → nee: push → ja: merge
-  - Skip als feature te klein (enkele node zonder signals)
+- **Data entities** (optional — only if feature introduces domain entities): for each entity check whether `data.entities` already has an entry with that name → no: push with fields/relations → yes: merge new fields. If feature has no entities (UI-only scene, pure gameplay, utility): skip, log `Skipped data.entities: no entities`.
+- **Stack**: if Godot plugins/assets → check `stack.packages` by name → no: push `{ name, version, purpose }`
+- **Features**: check by name → no: push `{ name, status: "DEFINED", summary, depends: [], created }` → yes: update status to `"DEFINED"`, remove `stage`
+- **Architecture** in `.project/project-context.json`: generate/update if feature has a scene tree and/or signals. **Follow component-first model from `shared/DASHBOARD.md`**:
+  - `layers`: define layers with `{ name, order }` (e.g. Scenes order 1, Systems order 2, Resources order 3)
+  - `dataFlow`: one-line summary of the scene/signal flow
+  - `components`: per component `{ name, layer, description, status, connects_to }`. Scene tree as components. `connects_to[]` as typed edges `{ to, type }` (`calls` for signal emits/method calls, `reads`/`writes` for shared state or autoloads, `depends_on` for scene-tree parent or resource references). All features DOING → `status: "planned"`, existing → `"done"`
+  - Merge strategy: check whether component `name` already exists → no: push → yes: merge
+  - Skip if feature is too small (single node without signals)
 
-Schrijf parallel terug:
+Write back in parallel:
 
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Write `project.json` (stack, features, data)
-- Write `project-context.json` (als architecture gewijzigd)
+- Write `project-context.json` (if architecture changed)
 
-**Auto-build markering** (na sync):
+**Auto-build marking** (after sync):
 
-Lees backlog opnieuw, zoek feature, zet `"auto": true`, schrijf terug via Edit. Geen user-prompt — altijd auto markeren zodat de card een AUTO-badge krijgt en het clipboard het juiste `/game-build`-commando geeft.
+Read backlog again, find feature, set `"auto": true`, write back via Edit. No user prompt — always mark auto so the card gets an AUTO-badge and the clipboard gets the correct `/game-build` command.
 
 Clean up: `rm -f .project/session/active-{feature-name}.json`
 
@@ -807,12 +795,12 @@ Clean up: `rm -f .project/session/active-{feature-name}.json`
 ```
 DASHBOARD SYNCED
 
-Data: {N} entities ({new} nieuw)
-Stack: {N} packages ({new} nieuw)
+Data: {N} entities ({new} new)
+Stack: {N} packages ({new} new)
 
 Next steps:
-  1. /project-plan → genereer backlog uit concept (als nog geen backlog)
-  2. /game-build {feature-name} → start implementatie (als backlog al bestaat)
+  1. /project-plan → generate backlog from concept (if no backlog yet)
+  2. /game-build {feature-name} → start implementation (if backlog already exists)
 ```
 
 ## Best Practices

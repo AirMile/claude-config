@@ -9,7 +9,7 @@
 | `installed`     | `zustand` in dependencies      |
 | `not-installed` | `zustand` niet in dependencies |
 
-Geen apart configuratiebestand — `installed` geldt als `already-installed-configured` voor FASE 5 stap 0.
+Geen apart configuratiebestand — `installed` geldt als `already-installed-configured` voor PHASE 5 stap 0.
 
 ## Install (via Context7)
 

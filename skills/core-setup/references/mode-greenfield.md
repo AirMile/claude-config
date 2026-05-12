@@ -1,38 +1,38 @@
 # Greenfield Mode
 
-Interactieve wizard voor nieuwe projecten. User beantwoordt vragen over stack en standards; skill genereert alle project files.
+Interactive wizard for new projects. User answers questions about stack and standards; skill generates all project files.
 
 **CRITICAL: One question per response.** Never combine multiple questions in one message.
 
-**Plain-text question format** — wrap elke plain-text vraag in dit visueel-distinct blok zodat de user direct ziet dat input gevraagd wordt. Niet toepassen op AskUserQuestion modals — die hebben hun eigen UI.
+**Plain-text question format** — wrap every plain-text question in this visually distinct block so the user immediately sees that input is being requested. Do not apply to AskUserQuestion modals — those have their own UI.
 
 ```
 ---
 
-### ▸ Vraag — {korte titel}
+### ▸ Question — {short title}
 
-{Vraag tekst, eventueel met genummerde opties op nieuwe regels}
+{Question text, optionally with numbered options on new lines}
 
-→ Claude raadt aan: {advies + 1 zin reden}
+→ Claude recommends: {advice + 1-sentence reason}
 
-{input-hint, bijv. "Welke wil je toevoegen? (bijv. `1,3` of `geen`)"}
+{input hint, e.g. "Which would you like to add? (e.g. `1,3` or `none`)"}
 
 ---
 ```
 
-**Regels:**
+**Rules:**
 
-- `→ Claude raadt aan:` regel is verplicht bij selection-style vragen (Project name, Tech stack, Suggestions). Skip alleen bij free-form (Project description).
-- `→ Tip:` regel is optioneel bij free-form vragen voor scope/context-sturing. Geen aanbeveling, alleen guardrail.
-- Niet toevoegen aan AskUserQuestion modals — die hebben hun eigen "Let Claude decide" optie.
+- `→ Claude recommends:` line is required for selection-style questions (Project name, Tech stack, Suggestions). Skip only for free-form (Project description).
+- `→ Tip:` line is optional for free-form questions for scope/context guidance. Not a recommendation, just a guardrail.
+- Do not add to AskUserQuestion modals — those have their own "Let Claude decide" option.
 
-Toepasbaar op: Project description, Project name, Tech stack, Suggestions (per categorie).
+Applies to: Project description, Project name, Tech stack, Suggestions (per category).
 
 ---
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 12 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 12 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgotten phases.
 
 1. Phase 1: Detect & Configure
 2. Phase 2: Collect Project Info
@@ -49,7 +49,7 @@ Toepasbaar op: Project description, Project name, Tech stack, Suggestions (per c
 
 ## Phase 1: Detect & Configure
 
-> **Todo**: roep `TaskCreate` aan met de 12 fase-items (zie boven). Markeer Phase 1 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 12 phase items (see above). Mark Phase 1 → `in_progress` via `TaskUpdate`.
 
 1. **Language selection** — AskUserQuestion (single-select):
    - Options: English, Nederlands, Deutsch, Français, Español
@@ -66,127 +66,127 @@ Toepasbaar op: Project description, Project name, Tech stack, Suggestions (per c
 
 ## Phase 2: Collect Project Info
 
-> **Todo**: markeer Phase 1 → `completed`, Phase 2 → `in_progress`.
+> **Todo**: mark Phase 1 → `completed`, Phase 2 → `in_progress`.
 
 Ask sequentially, one question per response:
 
-0. **Concept preflight** — check of er al concept-data ligt vóór je iets vraagt:
+0. **Concept preflight** — check if concept data already exists before asking anything:
 
-   Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader.
+   Read `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader.
 
-   **Als `CONCEPT_CONTEXT.present`:**
+   **If `CONCEPT_CONTEXT.present`:**
 
-   Toon AskUserQuestion (single-select):
+   Show AskUserQuestion (single-select):
    - header: "Concept"
-   - question: "Er ligt al een concept (van /thinking-concept of /project-add). Hoe wil je verder?"
+   - question: "There is already a concept (from /thinking-concept or /project-add). How do you want to continue?"
    - options:
-     - label: "Gebruik bestaand concept (Recommended)" — description: "Skip Project description + Project name vragen, lees pitch/name uit de bestaande bestanden"
-     - label: "Aanvullen met extra context" — description: "Toon huidig concept, vraag korte aanvullende beschrijving die ik mee laat wegen"
-     - label: "Opnieuw beginnen" — description: "Negeer bestaand concept, stel beide vragen alsnog (concept-md wordt later niet overschreven)"
+     - label: "Use existing concept (Recommended)" — description: "Skip Project description + Project name questions, read pitch/name from the existing files"
+     - label: "Supplement with extra context" — description: "Show current concept, ask for a brief additional description to factor in"
+     - label: "Start over" — description: "Ignore existing concept, ask both questions anyway (concept-md will not be overwritten later)"
    - multiSelect: false
 
-   **Bij "Gebruik bestaand"**: sla `concept.name` en `concept.pitch` op als `PROJECT_NAME` / `PROJECT_PITCH`. Lees `.project/project-concept.md` volledig in als `CONCEPT_CONTEXT`. Skip stap 1 en 2. Ga direct naar stap 3 (Project type).
+   **On "Use existing"**: store `concept.name` and `concept.pitch` as `PROJECT_NAME` / `PROJECT_PITCH`. Read `.project/project-concept.md` fully into `CONCEPT_CONTEXT`. Skip steps 1 and 2. Go directly to step 3 (Project type).
 
-   **Bij "Aanvullen"**: toon de eerste 200 chars van `project-concept.md` als context-blok, vraag om aanvullende beschrijving (free-form), append in-memory aan `PROJECT_PITCH` en `CONCEPT_CONTEXT`. Skip stap 2 (name behouden uit concept).
+   **On "Supplement"**: show the first 200 chars of `project-concept.md` as a context block, ask for an additional description (free-form), append in-memory to `PROJECT_PITCH` and `CONCEPT_CONTEXT`. Skip step 2 (name retained from concept).
 
-   **Bij "Opnieuw"**: ga normaal door met stap 1 en 2. `CONCEPT_CONTEXT` blijft leeg.
+   **On "Start over"**: continue normally with steps 1 and 2. `CONCEPT_CONTEXT` remains empty.
 
-   **Geen concept aanwezig**: ga normaal door met stap 1. `CONCEPT_CONTEXT` blijft leeg.
+   **No concept present**: continue normally with step 1. `CONCEPT_CONTEXT` remains empty.
 
-   **`CONCEPT_CONTEXT` als stack-context** — bij elke selection-style vraag hierna (Project type, Tech stack, Suggestions per categorie): gebruik `CONCEPT_CONTEXT` actief:
-   - Onderbouw `→ Claude raadt aan:` met concept-relevante reden ("Next.js — SSR voor de SEO die je in het concept noemt").
-   - Stem suggesties af op het domein uit het concept.
-   - Geen extra disk-read nodig — `CONCEPT_CONTEXT` zit al in context.
+   **`CONCEPT_CONTEXT` as stack context** — for every selection-style question that follows (Project type, Tech stack, Suggestions per category): actively use `CONCEPT_CONTEXT`:
+   - Back up `→ Claude recommends:` with a concept-relevant reason ("Next.js — SSR for the SEO mentioned in the concept").
+   - Tailor suggestions to the domain from the concept.
+   - No extra disk read needed — `CONCEPT_CONTEXT` is already in context.
 
-1. **Project description** — Toon dit blok aan de user en wacht op antwoord:
-
-   ```
-   ---
-
-   ### ▸ Vraag — Project description
-
-   Beschrijf kort wat je project doet en voor wie het bedoeld is.
-
-   → Tip: 1-3 zinnen is genoeg — uitbreiden kan later via /thinking-concept.
-
-   ---
-   ```
-
-2. **Project name** — Stel 2-3 kebab-case namen voor op basis van Phase 2.1 beschrijving en toon dit blok:
+1. **Project description** — Show this block to the user and wait for a response:
 
    ```
    ---
 
-   ### ▸ Vraag — Project name
+   ### ▸ Question — Project description
 
-   1. {suggestie-1}
-   2. {suggestie-2}
-   3. {suggestie-3}
+   Briefly describe what your project does and who it is for.
 
-   → Claude raadt aan: 1 — {korte reden}
+   → Tip: 1-3 sentences is enough — you can expand later via /thinking-concept.
 
-   Kies een nummer of typ je eigen.
+   ---
+   ```
+
+2. **Project name** — Suggest 2-3 kebab-case names based on the Phase 2.1 description and show this block:
+
+   ```
+   ---
+
+   ### ▸ Question — Project name
+
+   1. {suggestion-1}
+   2. {suggestion-2}
+   3. {suggestion-3}
+
+   → Claude recommends: 1 — {brief reason}
+
+   Choose a number or type your own.
 
    ---
    ```
 
 3. **Project type** — AskUserQuestion (single-select):
    - Web Frontend, Web Backend, Fullstack, Game, Mobile, Desktop, CLI
-4. **Tech stack** — Plain text genummerde lijst (**single-select**: één primaire stack/framework combinatie). Toon relevante volledige stacks op basis van project type in dit blok:
+4. **Tech stack** — Plain text numbered list (**single-select**: one primary stack/framework combination). Show relevant complete stacks based on project type in this block:
 
    ```
    ---
 
-   ### ▸ Vraag — Tech stack
+   ### ▸ Question — Tech stack
 
-   1. {stack-combinatie 1, bijv. "Tauri + React + TypeScript"} — {korte beschrijving}
-   2. {stack-combinatie 2} — {korte beschrijving}
+   1. {stack combination 1, e.g. "Tauri + React + TypeScript"} — {brief description}
+   2. {stack combination 2} — {brief description}
    ...
 
-   → Claude raadt aan: {nummer} — {1 zin reden op basis van project type/beschrijving}
+   → Claude recommends: {number} — {1-sentence reason based on project type/description}
 
-   Welke wil je gebruiken? (kies een nummer)
+   Which would you like to use? (choose a number)
 
    ---
    ```
 
-   **Belangrijk:** Tech stack is een keuze tussen mutually-exclusive stacks (je gebruikt niet Tauri én Electron). Daarom single-select. Multi-select libraries komen in de volgende vraag (Suggestions).
+   **Important:** Tech stack is a choice between mutually exclusive stacks (you don't use both Tauri and Electron). Therefore single-select. Multi-select libraries come in the next question (Suggestions).
 
-5. **Suggestions** — Plain text genummerde lijst per categorie (multi-select via free-form parse). Toon complementaire libraries op basis van gekozen stack. Splits per categorie als er meer dan 7 opties zijn:
+5. **Suggestions** — Plain text numbered list per category (multi-select via free-form parse). Show complementary libraries based on the chosen stack. Split per category if there are more than 7 options:
    - **Styling/UI**: Tailwind, shadcn/ui, CSS Modules, styled-components, etc.
-   - **Testing + Utilities**: Vitest, Jest, Cypress, TypeScript, ESLint, Prettier, Zod, Husky, etc. (Playwright NIET aanbieden — skills draaien al `npx playwright` direct; alleen via `/core-setup playwright` als de user expliciet een eigen E2E suite wil)
-   - **State/Data** (alleen relevant voor de stack): Zustand, Redux, TanStack Query, SWR, etc.
-   - **Forms** (alleen voor React/Vue/Svelte stack): react-hook-form + zod (tier-1, recommended), Formik, VeeValidate (Vue), Felte (Svelte)
+   - **Testing + Utilities**: Vitest, Jest, Cypress, TypeScript, ESLint, Prettier, Zod, Husky, etc. (Do NOT offer Playwright — skills already run `npx playwright` directly; only via `/core-setup playwright` if the user explicitly wants their own E2E suite)
+   - **State/Data** (only relevant for the stack): Zustand, Redux, TanStack Query, SWR, etc.
+   - **Forms** (only for React/Vue/Svelte stack): react-hook-form + zod (tier-1, recommended), Formik, VeeValidate (Vue), Felte (Svelte)
 
-   Per categorie één vraag tegelijk in dit format:
+   One question per category at a time in this format:
 
    ```
    ---
 
-   ### ▸ Vraag — Suggestions: {categorie}
+   ### ▸ Question — Suggestions: {category}
 
    1. {library 1}
    2. {library 2}
    ...
 
-   → Claude raadt aan: {nummers} — {1 zin reden op basis van stack/project context}
+   → Claude recommends: {numbers} — {1-sentence reason based on stack/project context}
 
-   Welke wil je toevoegen? (bijv. `1,3` of `geen`)
+   Which would you like to add? (e.g. `1,3` or `none`)
 
    ---
    ```
 
 6. **Web standards** (skip for game/CLI/desktop) — Three single-select questions:
-   - Data fetching strategy (if React/Vue + externe API/backend): plain fetch, SWR, TanStack Query
-     **Skip** als het project geen externe data sources heeft (bijv. localStorage-only, in-memory state, static content)
+   - Data fetching strategy (if React/Vue + external API/backend): plain fetch, SWR, TanStack Query
+     **Skip** if the project has no external data sources (e.g. localStorage-only, in-memory state, static content)
    - Accessibility: WCAG 2.1 AA, WCAG 2.1 A, Minimal
    - Responsive: Mobile-first, Desktop-first, Fixed width
 
 ---
 
-## CHECKPOINT: Interview Samenvatting
+## CHECKPOINT: Interview Summary
 
-Toon een ASCII tree van alle gemaakte keuzes — alleen wat de user heeft gekozen voor stack, libraries, state/forms, web standards. **Niet** de toekomstige fases tonen (de TaskCreate todo-lijst doet dat al). Voorbeeld:
+Show an ASCII tree of all choices made — only what the user chose for stack, libraries, state/forms, web standards. **Do not** show future phases (the TaskCreate todo list already does that). Example:
 
 ```
 streaky (Web Frontend)
@@ -196,14 +196,14 @@ streaky (Web Frontend)
 └── Standards:    WCAG 2.1 AA · Mobile-first · TanStack Query
 ```
 
-Vraag via AskUserQuestion: "Klopt dit overzicht? Wil je iets aanpassen?"
+Ask via AskUserQuestion: "Is this overview correct? Would you like to change anything?"
 
-- "Ga door met setup (Recommended)" — door naar Phase 3
-- "Aanpassen" — terug naar relevante vraag
+- "Continue with setup (Recommended)" — proceed to Phase 3
+- "Adjust" — return to the relevant question
 
 ## Phase 3: Generate Project
 
-> **Todo**: markeer Phase 2 → `completed`, Phase 3 → `in_progress`.
+> **Todo**: mark Phase 2 → `completed`, Phase 3 → `in_progress`.
 
 1. **Fetch latest versions** via `npm view` / `pip show` / `cargo search` or equivalent for the stack's package manager.
 
@@ -212,13 +212,13 @@ Vraag via AskUserQuestion: "Klopt dit overzicht? Wil je iets aanpassen?"
 3. **Optional: Git init** — Check if `.git` already exists. If not, AskUserQuestion (single-select):
    - Full (init + .gitignore + commit), Only .gitignore, Skip
 
-4. **Token bootstrap** (alleen voor frontend stacks): voer de Bootstrap Procedure uit `shared/TOKENS.md` uit. Skipt automatisch als geen Tailwind gevonden, `tokens.css` al bestaat, of geen CSS entry detecteerbaar is.
+4. **Token bootstrap** (only for frontend stacks): execute the Bootstrap Procedure from `shared/TOKENS.md`. Skips automatically if no Tailwind found, `tokens.css` already exists, or no CSS entry detectable.
 
 ---
 
 ## Phase 4: Install & Verify
 
-> **Todo**: markeer Phase 3 → `completed`, Phase 4 → `in_progress`.
+> **Todo**: mark Phase 3 → `completed`, Phase 4 → `in_progress`.
 
 Install dependencies and run build to verify setup compiles. Non-blocking: continue setup even if install/build fails.
 
@@ -226,7 +226,7 @@ Install dependencies and run build to verify setup compiles. Non-blocking: conti
 
 ## Phase 5: Configure Claude
 
-> **Todo**: markeer Phase 4 → `completed`, Phase 5 → `in_progress`.
+> **Todo**: mark Phase 4 → `completed`, Phase 5 → `in_progress`.
 
 ### Documentation Generators
 
@@ -249,16 +249,16 @@ AskUserQuestion (single-select) — permission preset:
 - **Full access (Recommended)**: read + edit + create files, bash (npm/npx/node), git, tests
 - **Restrictive**: read-only files, tests only
 
-Voor maatwerk: de user kan `.claude/settings.local.json` direct bewerken na de setup (template hieronder).
+For custom settings: the user can edit `.claude/settings.local.json` directly after setup (template below).
 
-Daarna plain text — directory exclusions:
+Then plain text — directory exclusions:
 
 ```
 ---
 
-### ▸ Vraag — Directory exclusions
+### ▸ Question — Directory exclusions
 
-Welke mappen wil je uitsluiten van Claude's schrijftoegang?
+Which directories do you want to exclude from Claude's write access?
 
 1. node_modules
 2. vendor
@@ -266,9 +266,9 @@ Welke mappen wil je uitsluiten van Claude's schrijftoegang?
 4. build
 5. .env
 
-→ Claude raadt aan: {nummers} — {1 zin reden op basis van stack/project type}
+→ Claude recommends: {numbers} — {1-sentence reason based on stack/project type}
 
-Welke wil je uitsluiten? (bijv. `1,3` of `geen`)
+Which would you like to exclude? (e.g. `1,3` or `none`)
 
 ---
 ```
@@ -288,21 +288,21 @@ Write `.claude/settings.local.json` with `permissions.allow` and `permissions.de
 
 Auto-format after every Write/Edit.
 
-**Step 1 — Check bestaande hook:**
+**Step 1 — Check existing hook:**
 
 ```bash
 ls -la .claude/hooks/format-on-save.cjs 2>/dev/null
 ```
 
-Als het bestand al bestaat (via symlink naar globale claude-config of project-lokaal): lees het en check of het de project-stack ondersteunt (bijv. Biome via `biome.json` detectie). Zo ja, skip aanmaken — referenceer alleen in `settings.local.json`.
+If the file already exists (via symlink to global claude-config or project-local): read it and check if it supports the project stack (e.g. Biome via `biome.json` detection). If yes, skip creating — only reference in `settings.local.json`.
 
-**Step 2 — Alleen aanmaken als geen bestaande hook:**
+**Step 2 — Only create if no existing hook:**
 
-Maak `.claude/hooks/format-on-save.cjs` aan met:
+Create `.claude/hooks/format-on-save.cjs` with:
 
-- Node.js script dat stdin JSON leest, file path extraheert, extension checkt, formatter aanroept
-- Gebruik `.cjs` om ES Module issues te vermijden
-- BELANGRIJK: schrijf NIET naar `.claude/hooks/` als die map een symlink is naar een gedeelde repo (check via `readlink .claude/hooks`)
+- Node.js script that reads stdin JSON, extracts file path, checks extension, calls formatter
+- Use `.cjs` to avoid ES Module issues
+- IMPORTANT: do NOT write to `.claude/hooks/` if that directory is a symlink to a shared repo (check via `readlink .claude/hooks`)
 
 Formatter selection per stack:
 
@@ -318,7 +318,7 @@ Formatter selection per stack:
 | C/C++                                   | clang-format  | `clang-format -i`         |
 | Dart/Flutter                            | dart format   | `dart format`             |
 
-Voeg de hook toe aan `settings.local.json` — in dezelfde file als `permissions` (niet apart schrijven):
+Add the hook to `settings.local.json` — in the same file as `permissions` (do not write separately):
 
 ```json
 {
@@ -346,36 +346,36 @@ Voeg de hook toe aan `settings.local.json` — in dezelfde file als `permissions
 
 ## Phase 5b: Auto Dev Tools
 
-> **Todo**: markeer Phase 5 → `completed`, Phase 5b → `in_progress`.
+> **Todo**: mark Phase 5 → `completed`, Phase 5b → `in_progress`.
 
-Installeer dev-tools die framework-conditional zijn en geen user-input nodig hebben. Geen modal, geen confirmation — auto-install bij match, silent skip bij mismatch.
+Install dev tools that are framework-conditional and require no user input. No modal, no confirmation — auto-install on match, silent skip on mismatch.
 
 ### inspect-overlay
 
-**Trigger:** `stack.framework` ∈ `{React+Vite, Next.js}`. Bepaal dit uit Phase 2.4 stack-keuze.
+**Trigger:** `stack.framework` ∈ `{React+Vite, Next.js}`. Determine this from Phase 2.4 stack choice.
 
-| Stack uit Phase 2.4                                                               | Actie                                                                  |
-| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| React + Vite                                                                      | Install via `setup-guide.md#Setup — Vite`                              |
-| Next.js                                                                           | Install via `setup-guide.md#Setup — Next.js` (Babel full mode default) |
-| Alle andere (incl. Vue, Svelte, Astro, Nuxt, game, CLI, backend, mobile, desktop) | Skip silent — geen output                                              |
+| Stack from Phase 2.4                                                             | Action                                                                 |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| React + Vite                                                                     | Install via `setup-guide.md#Setup — Vite`                              |
+| Next.js                                                                          | Install via `setup-guide.md#Setup — Next.js` (Babel full mode default) |
+| All others (incl. Vue, Svelte, Astro, Nuxt, game, CLI, backend, mobile, desktop) | Skip silently — no output                                              |
 
-**Auto-mode aannames** (geen modals tonen):
+**Auto-mode assumptions** (no modals shown):
 
-- **Vite-pad**: pin **`@vitejs/plugin-react@^5`** in `package.json` (NIET v6 — die gebruikt OXC i.p.v. Babel waardoor de overlay in degraded mode valt zonder file:line refs). Volg setup-guide `## Setup — Vite` → `### Plugin Selection` (auto, geen modal) en daarna `### Install & Configure` stappen 1-6.
-- **Next.js-pad**: kies Babel full mode automatisch. Volg setup-guide `### Babel Plugin (Full Mode)` accept-pad én `### Install` stappen 1-6.
+- **Vite path**: pin **`@vitejs/plugin-react@^5`** in `package.json` (NOT v6 — that uses OXC instead of Babel, causing the overlay to fall into degraded mode without file:line refs). Follow setup-guide `## Setup — Vite` → `### Plugin Selection` (auto, no modal) and then `### Install & Configure` steps 1-6.
+- **Next.js path**: choose Babel full mode automatically. Follow setup-guide `### Babel Plugin (Full Mode)` accept path and `### Install` steps 1-6.
 
-**Skip de "Restart dev server" stap** — in greenfield draait er nog geen dev server.
+**Skip the "Restart dev server" step** — in greenfield no dev server is running yet.
 
-**Track voor Phase 9 Summary** of de overlay is geïnstalleerd (ja/nee + framework).
+**Track for Phase 9 Summary** whether the overlay was installed (yes/no + framework).
 
-**Geen project.json update nodig** — inspect-overlay is dev-only, geen `stack.*` key.
+**No project.json update needed** — inspect-overlay is dev-only, no `stack.*` key.
 
 ---
 
 ## Phase 6: Update CLAUDE.md
 
-> **Todo**: markeer Phase 5b → `completed`, Phase 6 → `in_progress`.
+> **Todo**: mark Phase 5b → `completed`, Phase 6 → `in_progress`.
 
 Update `## User Preferences` with language from Phase 1.
 
@@ -407,61 +407,61 @@ grep -qxF '.project/' .gitignore 2>/dev/null || echo '.project/' >> .gitignore
 
 ## Phase 7: Stack Research
 
-> **Todo**: markeer Phase 6 → `completed`, Phase 7 → `in_progress`.
+> **Todo**: mark Phase 6 → `completed`, Phase 7 → `in_progress`.
 
-Volg `references/stack-baseline-shared.md`.
+Follow `references/stack-baseline-shared.md`.
 
-**Trigger:** `stack.framework` is gevuld én `.claude/research/stack-baseline.md` bestaat nog niet.
+**Trigger:** `stack.framework` is filled in and `.claude/research/stack-baseline.md` does not yet exist.
 
 ---
 
 ## Phase 7b: Dashboard Init
 
-> **Todo**: markeer Phase 7 → `completed`, Phase 7b → `in_progress`.
+> **Todo**: mark Phase 7 → `completed`, Phase 7b → `in_progress`.
 
-**Goal:** Maak `.project/project.json` aan als het eerste dashboard bestand voor dit project. core-setup is de eerste skill die draait — alle latere skills bouwen hierop voort.
+**Goal:** Create `.project/project.json` as the first dashboard file for this project. core-setup is the first skill to run — all later skills build on this.
 
-Zie `{skills_root}/shared/DASHBOARD.md` voor het volledige schema en merge-strategieën (te vinden via `find ~/.claude -name DASHBOARD.md` of in de claude-config repo).
+See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies (found via `find ~/.claude -name DASHBOARD.md` or in the claude-config repo).
 
 **Steps:**
 
-1. Check eerst of `.project/project.json` al bestaat (bijv. uit een initiële commit). Zo ja: lees + merge i.p.v. overschrijven. Zo nee: maak aan met het volledige lege schema uit `shared/DASHBOARD.md`
-2. Vul `concept` sectie (preferred: markdown-file, niet inline):
-   - `name`: projectnaam — gebruik bestaande `concept.name` als gevuld, anders uit user answers; NIET overschrijven als al ingevuld
-   - `pitch`: 1-2 zinnen samenvatting — gebruik bestaande `concept.pitch` als gevuld, anders uit user answers; NIET overschrijven als al ingevuld
-   - `conceptFile`: `"project-concept.md"` — verwijzing naar het markdown-bestand
-   - `content`: lege string `""` — NOOIT ook inline invullen naast `conceptFile`
+1. First check if `.project/project.json` already exists (e.g. from an initial commit). If yes: read + merge instead of overwriting. If no: create with the full empty schema from `shared/DASHBOARD.md`
+2. Fill `concept` section (preferred: markdown file, not inline):
+   - `name`: project name — use existing `concept.name` if filled, otherwise from user answers; do NOT overwrite if already filled
+   - `pitch`: 1-2 sentence summary — use existing `concept.pitch` if filled, otherwise from user answers; do NOT overwrite if already filled
+   - `conceptFile`: `"project-concept.md"` — reference to the markdown file
+   - `content`: empty string `""` — NEVER also fill inline alongside `conceptFile`
    - Concept-md handling:
-     - **Bestaat `.project/project-concept.md` met > 50 chars**: NIET overschrijven, NIET appenden. De aanvullende beschrijving uit Phase 2 stap 0 "Aanvullen" blijft in-memory — alleen `/thinking-concept` schrijft naar disk.
-     - **Bestaat niet of < 50 chars**: aanmaken met `PROJECT_PITCH` (uit Phase 2 answers of preflight) als plain markdown (wat het project doet, voor wie, kernfunctionaliteit). Hoeft niet uitgebreid — thinking/plan skills vullen dit later aan.
-3. Vul `stack` sectie volledig (OVERWRITE — core-setup is de eerste skill):
-   - `framework`: uit user answers (Phase 2 Q3/Q4)
-   - `language`: uit user answers (Phase 2 Q4)
-   - `styling`: uit user answers (Phase 2 Q4/Q5)
-   - `db`: uit user answers (Phase 2 Q4/Q5)
-   - `auth`: uit user answers (Phase 2 Q4/Q5)
-   - `hosting`: uit user answers (Phase 2 Q4/Q5)
-   - `packages`: uit gegenereerde package.json / project files
+     - **`.project/project-concept.md` exists with > 50 chars**: do NOT overwrite, do NOT append. The supplemental description from Phase 2 step 0 "Supplement" stays in-memory — only `/thinking-concept` writes to disk.
+     - **Does not exist or < 50 chars**: create with `PROJECT_PITCH` (from Phase 2 answers or preflight) as plain markdown (what the project does, who for, core functionality). Does not need to be extensive — thinking/plan skills will expand this later.
+3. Fill `stack` section fully (OVERWRITE — core-setup is the first skill):
+   - `framework`: from user answers (Phase 2 Q3/Q4)
+   - `language`: from user answers (Phase 2 Q4)
+   - `styling`: from user answers (Phase 2 Q4/Q5)
+   - `db`: from user answers (Phase 2 Q4/Q5)
+   - `auth`: from user answers (Phase 2 Q4/Q5)
+   - `hosting`: from user answers (Phase 2 Q4/Q5)
+   - `packages`: from generated package.json / project files
 4. Write `.project/project.json`
-   4b. Init backlog met concept-flag (alle projecttypen):
-   - Als `.project/backlog.html` niet bestaat: kopieer `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
+   4b. Init backlog with concept flag (all project types):
+   - If `.project/backlog.html` does not exist: copy `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
    - Read `backlog.html` → parse `<script id="backlog-data">` JSON
-   - Zet `data.flags = { "hasConcept": true, "conceptPath": ".project/project-concept.md" }`
-   - Zet `data.source = "/core-setup"` en `data.updated` naar huidige datum
-   - Edit JSON-blok terug (script-tags intact)
-   - Dit laat de `/project-plan` knop verschijnen in het backlog dashboard zodra er een concept is maar nog geen features zijn.
-5. Maak `.project/project-context.json` aan met `context` sectie (initieel, wordt bijgewerkt door build/refactor skills):
-   - `context.structure`: file tree van project (zelfde formaat als voorheen in CLAUDE.md). Generate from actual file tree after Phase 3/4
-   - `context.routing`: route patterns met arrow notation (alleen web projects met routing, anders lege array)
-   - `context.patterns`: non-obvious patterns ontdekt tijdens setup (path aliases, env config, etc.)
-   - `context.updated`: huidige datum
+   - Set `data.flags = { "hasConcept": true, "conceptPath": ".project/project-concept.md" }`
+   - Set `data.source = "/core-setup"` and `data.updated` to current date
+   - Edit JSON block back (script tags intact)
+   - This makes the `/project-plan` button appear in the backlog dashboard once there is a concept but no features yet.
+5. Create `.project/project-context.json` with `context` section (initial, updated by build/refactor skills):
+   - `context.structure`: file tree of project (same format as previously in CLAUDE.md). Generate from actual file tree after Phase 3/4
+   - `context.routing`: route patterns with arrow notation (only web projects with routing, otherwise empty array)
+   - `context.patterns`: non-obvious patterns discovered during setup (path aliases, env config, etc.)
+   - `context.updated`: current date
    - Write `.project/project-context.json`
-6. Set skip-worktree op alle `.project/` bestanden zodat lokale wijzigingen git status/pull niet verstoren:
+6. Set skip-worktree on all `.project/` files so local changes do not disturb git status/pull:
    ```bash
    git add --sparse .project/
    git ls-files .project/ | xargs git update-index --skip-worktree
    ```
-   Eerst staging is verplicht — `update-index --skip-worktree` werkt alleen op bestanden die in de index staan.
+   Staging first is required — `update-index --skip-worktree` only works on files that are in the index.
 
 **Output:**
 
@@ -477,24 +477,24 @@ Packages: {N} packages
 
 ## Phase 7c: Setup Task Seeding (frontend projects only)
 
-> **Todo**: markeer Phase 7b → `completed`, Phase 7c → `in_progress`.
+> **Todo**: mark Phase 7b → `completed`, Phase 7c → `in_progress`.
 
-**Goal:** Seed aanbevolen setup-tasks naar de backlog zodat de user een duidelijk vervolgpad heeft.
+**Goal:** Seed recommended setup tasks into the backlog so the user has a clear next path.
 
-**Trigger:** Alleen als `stack.framework` een frontend framework is (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS). Skip volledig voor game, CLI, backend-only of desktop.
+**Trigger:** Only if `stack.framework` is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS). Skip entirely for game, CLI, backend-only, or desktop.
 
-**Stap 1 — Compute conditions:**
+**Step 1 — Compute conditions:**
 
-- `needsTheme` = `project.json#theme` heeft geen `colors` of is leeg
+- `needsTheme` = `project.json#theme` has no `colors` or is empty
 
-Skip Phase 7c volledig als `needsTheme = false`.
+Skip Phase 7c entirely if `needsTheme = false`.
 
-**Stap 2 — Seed features naar `.project/backlog.html`:**
+**Step 2 — Seed features to `.project/backlog.html`:**
 
-1. Als `backlog.html` niet bestaat: kopieer `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`, zet `data.source = "/core-setup"`
-2. Read `backlog.html` → parse JSON uit `<script id="backlog-data">` blok
-3. Check `data.features.find(f => f.name === "setup-design-tokens")` — sla over als al bestaat
-4. Voeg toe als `needsTheme = true`:
+1. If `backlog.html` does not exist: copy `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`, set `data.source = "/core-setup"`
+2. Read `backlog.html` → parse JSON from `<script id="backlog-data">` block
+3. Check `data.features.find(f => f.name === "setup-design-tokens")` — skip if already exists
+4. Add if `needsTheme = true`:
 
 ```json
 [
@@ -510,18 +510,18 @@ Skip Phase 7c volledig als `needsTheme = false`.
 ]
 ```
 
-5. Zet `data.updated` naar huidige datum (`YYYY-MM-DD`)
-6. Edit het JSON-blok terug in `backlog.html` (script-tags intact)
+5. Set `data.updated` to current date (`YYYY-MM-DD`)
+6. Edit the JSON block back into `backlog.html` (script tags intact)
 
-**Stap 3 — Auto-execute:**
+**Step 3 — Auto-execute:**
 
-Geen prompt. Skill chaining is silent: na het seeden van `setup-design-tokens` exit core-setup en draai `/frontend-tokens` direct. Meld het in Phase 9 Summary onder "Volgende skill draaiend".
+No prompt. Skill chaining is silent: after seeding `setup-design-tokens` exit core-setup and run `/frontend-tokens` directly. Report in Phase 9 Summary under "Next skill running".
 
 ---
 
 ## Phase 8: Commit (optional)
 
-> **Todo**: markeer Phase 7c → `completed`, Phase 8 → `in_progress`.
+> **Todo**: mark Phase 7c → `completed`, Phase 8 → `in_progress`.
 
 AskUserQuestion (single-select): Commit setup files now, or skip.
 
@@ -531,7 +531,7 @@ If committing: stage relevant files, create commit with conventional commit form
 
 ## Phase 9: Summary
 
-> **Todo**: markeer Phase 8 → `completed`, Phase 9 → `in_progress`.
+> **Todo**: mark Phase 8 → `completed`, Phase 9 → `in_progress`.
 
 Show a concise summary of what was set up:
 
@@ -539,85 +539,85 @@ Show a concise summary of what was set up:
 SETUP COMPLETE: {project name}
 
 Start developing:
-  {dev command}           → {what it starts, e.g. "frontend op :5173 + backend op :3001"}
+  {dev command}           → {what it starts, e.g. "frontend on :5173 + backend on :3001"}
 
 Useful commands:
   {test command}          → run tests
   {build command}         → production build
 ```
 
-**Als Phase 5b inspect-overlay heeft geïnstalleerd**, voeg toe na het code block:
+**If Phase 5b installed inspect-overlay**, add after the code block:
 
 ```
 Dev tools:
-  Inspect overlay         → Cmd+Shift+X (Mac) / Ctrl+Shift+X (Win/Linux) om te togglen
+  Inspect overlay         → Cmd+Shift+X (Mac) / Ctrl+Shift+X (Win/Linux) to toggle
 ```
 
-Voor Next.js Babel full mode, voeg ook toe: `Note: Turbopack uitgeschakeld (Babel full mode voor exacte file:line refs).`
+For Next.js Babel full mode, also add: `Note: Turbopack disabled (Babel full mode for exact file:line refs).`
 
 ### Smart Backlog Server Prompt (conditional)
 
-**Stap 1 — Detect todos:** Lees `.project/backlog.html` (als die bestaat) en parse `data.features`. Tel items met status `TODO` of `DEFINED`.
+**Step 1 — Detect todos:** Read `.project/backlog.html` (if it exists) and parse `data.features`. Count items with status `TODO` or `DEFINED`.
 
-| Conditie                              | Actie                                      |
-| ------------------------------------- | ------------------------------------------ |
-| Geen `backlog.html` of 0 todos        | Skip backlog prompt — geen modal           |
-| ≥1 todo (bijv. `setup-design-tokens`) | Toon AskUserQuestion modal (zie hieronder) |
+| Condition                            | Action                                 |
+| ------------------------------------ | -------------------------------------- |
+| No `backlog.html` or 0 todos         | Skip backlog prompt — no modal         |
+| ≥1 todo (e.g. `setup-design-tokens`) | Show AskUserQuestion modal (see below) |
 
-**Stap 2 — Modal (alleen bij ≥1 todo):**
+**Step 2 — Modal (only when ≥1 todo):**
 
 AskUserQuestion (single-select):
 
-- "Start backlog server (Recommended)" — `/project-backlog start` op `http://localhost:9876`. Toon `{N} todo(s) in backlog: {lijst van eerste 3 names}`.
-- "Skip" — later handmatig starten met `/project-backlog`
+- "Start backlog server (Recommended)" — `/project-backlog start` on `http://localhost:9876`. Show `{N} todo(s) in backlog: {list of first 3 names}`.
+- "Skip" — start manually later with `/project-backlog`
 
-Bewaar het resultaat als `backlog_started` (true/false) voor smart next steps.
+Store result as `backlog_started` (true/false) for smart next steps.
 
 ### Smart Next Steps
 
-Pas suggesties aan op basis van project type (Phase 2.3) **én** `backlog_started`. Volgorde:
+Tailor suggestions based on project type (Phase 2.3) **and** `backlog_started`. Order:
 
-**Als `backlog_started = true`:**
+**If `backlog_started = true`:**
 
 ```
-Bekijk je backlog:        http://localhost:9876
-Eerste todo aanpakken:    {top todo name} → {bijbehorende skill}
+View your backlog:         http://localhost:9876
+Work on first todo:        {top todo name} → {corresponding skill}
 ```
 
-Daarna alleen relevante vervolgskills (geen herhaling van todos die al in de backlog staan):
+Then only relevant follow-up skills (no repetition of todos already in the backlog):
 
-- Web/Backend/Fullstack/Mobile/Desktop/CLI: `/dev-define [nieuwe feature]` → `/dev-build [feature]`
+- Web/Backend/Fullstack/Mobile/Desktop/CLI: `/dev-define [new feature]` → `/dev-build [feature]`
 - Game: `/game-define [feature]` → `/game-build [feature]`
-- Concept uitbouwen: `/thinking-concept`, `/thinking-brainstorm`
+- Expand concept: `/thinking-concept`, `/thinking-brainstorm`
 
-**Als `backlog_started = false` of geen todos in backlog:**
+**If `backlog_started = false` or no todos in backlog:**
 
-**1. Concept verkennen (optioneel, aanbevolen voor greenfield):**
+**1. Explore concept (optional, recommended for greenfield):**
 
-- `/thinking-concept` — bouw projectconcept uit met begeleidende vragen
-- `/thinking-brainstorm` — expandeer ideeën via creatieve technieken
-- `/thinking-research` — research stack/markt/concurrenten als input voor planning
+- `/thinking-concept` — build out project concept with guided questions
+- `/thinking-brainstorm` — expand ideas via creative techniques
+- `/thinking-research` — research stack/market/competitors as input for planning
 
-**2. Plannen — feature backlog opzetten:**
+**2. Plan — set up feature backlog:**
 
-- Alle stacks (web, game, CLI, etc.): `/project-plan` — zet ideeën om in geprioriteerde feature backlog (auto-detecteert stack)
+- All stacks (web, game, CLI, etc.): `/project-plan` — convert ideas into a prioritized feature backlog (auto-detects stack)
 
-**3. Eerste feature definiëren + bouwen:**
+**3. Define + build first feature:**
 
 - Web/Backend/etc: `/dev-define [feature]` → `/dev-build [feature]`
 - Game: `/game-define [feature]` → `/game-build [feature]`
 
-**Als er todos zijn maar backlog niet gestart:** voeg bovenaan toe:
+**If there are todos but backlog not started:** add at the top:
 
 ```
-Tip: er staan {N} todo(s) klaar in .project/backlog.html.
-Start later met /project-backlog om ze visueel af te vinken.
+Tip: {N} todo(s) ready in .project/backlog.html.
+Start later with /project-backlog to check them off visually.
 ```
 
-**Aanvullend voor frontend/fullstack** (skip voor game/CLI/desktop/backend-only):
+**Additionally for frontend/fullstack** (skip for game/CLI/desktop/backend-only):
 
-- `/core-setup [module]` — voeg libraries toe (Tailwind, Vitest, Playwright, Biome, etc.)
-- `/frontend-design [feature]` — visuele design spec voor een feature
+- `/core-setup [module]` — add libraries (Tailwind, Vitest, Playwright, Biome, etc.)
+- `/frontend-design [feature]` — visual design spec for a feature
 
 **Cleanup:**
 
@@ -625,4 +625,4 @@ Start later met /project-backlog om ze visueel af te vinken.
 rm -f .project/session/setup-pending.json
 ```
 
-> **Todo**: markeer Phase 9 → `completed`.
+> **Todo**: mark Phase 9 → `completed`.

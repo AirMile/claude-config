@@ -93,7 +93,7 @@ Use **AskUserQuestion** tool:
 - header: "Confirm"
 - question: "Klopt deze samenvatting?"
 - options:
-  - label: "Ja, ga door (Recommended)", description: "Samenvatting is correct, ga verder"
+  - label: "Ja, ga door (Recommended)", description: "Summary is correct, continue"
   - label: "Nee, aanpassen", description: "Ik wil iets wijzigen"
 - multiSelect: false
 
@@ -126,10 +126,10 @@ Use **AskUserQuestion** tool:
 - **Pass paths, not content**: if the skill spawns 2+ sub-agents that read project files — pass a `<reference-paths>` block with categorized paths, not file contents. Agents read only what's relevant. See `shared/SKILL-PATTERNS.md`
 - **Git safety gates**: if the skill performs git mutations — re-read state after every mutation, check state dimensions separately (clean? upstream? unpushed?), enforce safety gates before risky ops. See `shared/SKILL-PATTERNS.md`
 - **Next steps**: if the skill is part of a pipeline — add a `Next steps:` block to the completion output pointing to the next skill(s). See `shared/SKILL-PATTERNS.md`
-- **Project bootstrapping**: if the skill expects `.project/` files — check existence in FASE 0, suggest `core-setup` if missing. See `shared/SKILL-PATTERNS.md`
+- **Project bootstrapping**: if the skill expects `.project/` files — check existence in PHASE 0, suggest `core-setup` if missing. See `shared/SKILL-PATTERNS.md`
 - **Agent context block**: if the skill spawns agents that need project knowledge — use the standardized `PROJECT_CONTEXT` block. See `shared/SKILL-PATTERNS.md`
 - **Dynamic multi-select**: if the skill needs the user to pick from a runtime-generated list (feature lists, agent output, file scans) — choose between holistic comparison (→ plain-text list + free-form parse) or independent picks (→ modal with cap=7, split per category). See `shared/SKILL-PATTERNS.md` § Modal Option Cap and § Numbered List Selection.
-- **Task tracking**: if the skill has 5+ fases and risk of context compaction (verify, debug, refactor, build, multi-stage setup) — add a seed-blok (`TaskCreate` with all phases at start of `## Process`) + inline transitiemarkers (`> **Todo**: markeer FASE X → completed, FASE Y → in_progress.`) at each phase header. Reference: `dev-build/SKILL.md` for full pattern. See `shared/SKILL-PATTERNS.md` § Task Tracking.
+- **Task tracking**: if the skill has 5+ fases and risk of context compaction (verify, debug, refactor, build, multi-stage setup) — add a seed-blok (`TaskCreate` with all phases at start of `## Process`) + inline transitiemarkers (`> **Todo**: markeer PHASE X → completed, PHASE Y → in_progress.`) at each phase header. Reference: `dev-build/SKILL.md` for full pattern. See `shared/SKILL-PATTERNS.md` § Task Tracking.
 
 **Enter plan mode** before writing the draft:
 

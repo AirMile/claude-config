@@ -18,7 +18,7 @@ metadata:
 
 **Trigger**: `/core-setup [--mode=greenfield|mature|audit|resync|install] [module] [--no-llm]`
 
-Hub skill die detecteert wat het project nodig heeft en de juiste flow laadt.
+Hub skill that detects what the project needs and loads the appropriate flow.
 
 ### "Let Claude decide" Option
 
@@ -31,7 +31,7 @@ For every AskUserQuestion where the choice involves **technical decisions** (not
 
 **Include in**: all other modals (tech stack, suggestions, web standards, git init, permissions, exclusions).
 
-**When selected**: kies de beste optie op basis van project context en best practices. Toon:
+**When selected**: pick the best option based on project context and best practices. Display:
 
 ```
 CLAUDE'S PICK: {chosen option} — {brief reason}
@@ -39,62 +39,62 @@ CLAUDE'S PICK: {chosen option} — {brief reason}
 
 ### Modal Option Cap
 
-Voor dynamic multi-select modals (Audit fixes, Resync drift, Tech stack, Suggestions, Documentation Generators): pas `shared/SKILL-PATTERNS.md` § Modal Option Cap toe. Modals met ≤7 opties zijn vrijgesteld.
+For dynamic multi-select modals (Audit fixes, Resync drift, Tech stack, Suggestions, Documentation Generators): apply `shared/SKILL-PATTERNS.md` § Modal Option Cap. Modals with ≤7 options are exempt.
 
 ---
 
 ## Phase 0: Detect Mode
 
-Vóór alle stappen: als `~/.claude/CLAUDE.md` ontbreekt, toon:
+Before all steps: if `~/.claude/CLAUDE.md` is missing, display:
 
-> `Globale bootstrap nog niet gedaan. Run /core-bootstrap eerst om ~/.claude/ te initialiseren.`
+> `Global bootstrap not done yet. Run /core-bootstrap first to initialize ~/.claude/.`
 
 Stop.
 
-0. **Check setup-pending marker** — als `.project/session/setup-pending.json` bestaat én geen expliciete `--mode=` flag is meegegeven:
-   1. Lees marker: `mode` veld bepaalt waarheen — `greenfield` of `mature`.
-   2. Verwijder marker direct na lezen: `rm -f .project/session/setup-pending.json`.
-   3. Toon: `project-add handoff — start {mode} flow direct.`
-   4. Laad `references/mode-{mode}.md`. Skip stap 1-5.
+0. **Check setup-pending marker** — if `.project/session/setup-pending.json` exists and no explicit `--mode=` flag was passed:
+   1. Read marker: `mode` field determines the destination — `greenfield` or `mature`.
+   2. Delete marker immediately after reading: `rm -f .project/session/setup-pending.json`.
+   3. Display: `project-add handoff — starting {mode} flow directly.`
+   4. Load `references/mode-{mode}.md`. Skip steps 1-5.
 
-   Bij `--mode=...` flag aanwezig: verwijder marker (`rm -f`) maar honor de expliciete flag.
+   If `--mode=...` flag is present: delete marker (`rm -f`) but honor the explicit flag.
 
-1. **Module arg check** — als `$1` aanwezig is en géén `--mode=` prefix heeft: match (case-insensitive) tegen tier-1 modules:
+1. **Module arg check** — if `$1` is present and has no `--mode=` prefix: match (case-insensitive) against tier-1 modules:
    `inspect-overlay`, `tailwind`, `shadcn-ui`, `vitest`, `playwright`, `biome`, `eslint-prettier`, `zustand`, `tanstack-query`, `react-hook-form-zod`
-   - **Match** → laad `references/mode-install.md` met `direct_module=$1`. Skip stap 2-4.
-   - **Geen match** → sla `$1` op als `direct_research`, laad `references/mode-install.md` met research-pad. Skip stap 2-4.
+   - **Match** → load `references/mode-install.md` with `direct_module=$1`. Skip steps 2-4.
+   - **No match** → store `$1` as `direct_research`, load `references/mode-install.md` with research path. Skip steps 2-4.
 
-2. **Check `--mode` flag** — als meegegeven, sla stap 3 over en laad direct de bijbehorende reference:
+2. **Check `--mode` flag** — if provided, skip step 3 and load the corresponding reference directly:
    - `--mode=greenfield` → `references/mode-greenfield.md`
-   - `--mode=mature` → `references/mode-mature.md` (geef `--no-llm` flag door indien aanwezig)
+   - `--mode=mature` → `references/mode-mature.md` (pass through `--no-llm` flag if present)
    - `--mode=audit` → `references/mode-audit.md`
    - `--mode=resync` → `references/mode-resync.md`
    - `--mode=install` → `references/mode-install.md`
 
-3. **Detect bestaand project** — run detectie:
+3. **Detect existing project** — run detection:
 
    ```bash
    python3 .claude/skills/core-setup/scripts/detect-existing.py --path .
    python3 .claude/skills/core-setup/scripts/detect-mode.py --path .
    ```
 
-   Gebruik `detect-mode.py` output als primaire classificatie. `detect-existing.py` controleert aanwezigheid van bestaande config files.
+   Use `detect-mode.py` output as the primary classification. `detect-existing.py` checks for presence of existing config files.
 
-4. **Kies mode** op basis van resultaten:
+4. **Choose mode** based on results:
 
-   | detect-mode output | Bestaande configs? | Actie                                                             | User-facing one-liner                             |
-   | ------------------ | ------------------ | ----------------------------------------------------------------- | ------------------------------------------------- |
-   | `greenfield`       | nee                | Laad `mode-greenfield.md` direct                                  | `Nieuw project — start setup wizard.`             |
-   | `greenfield`       | ja                 | AskUserQuestion: Greenfield wizard / Mature scan / Audit / Resync | `Bestaand project gedetecteerd — kies hieronder.` |
-   | `mature`           | n.v.t.             | Laad `mode-mature.md` direct                                      | `Bestaand project — scan codebase.`               |
-   | `ambiguous`        | n.v.t.             | AskUserQuestion: Greenfield wizard / Mature scan / Audit          | `Project state onduidelijk — kies hieronder.`     |
+   | detect-mode output | Existing configs? | Action                                                            | User-facing one-liner                       |
+   | ------------------ | ----------------- | ----------------------------------------------------------------- | ------------------------------------------- |
+   | `greenfield`       | no                | Load `mode-greenfield.md` directly                                | `New project — starting setup wizard.`      |
+   | `greenfield`       | yes               | AskUserQuestion: Greenfield wizard / Mature scan / Audit / Resync | `Existing project detected — choose below.` |
+   | `mature`           | n/a               | Load `mode-mature.md` directly                                    | `Existing project — scanning codebase.`     |
+   | `ambiguous`        | n/a               | AskUserQuestion: Greenfield wizard / Mature scan / Audit          | `Project state unclear — choose below.`     |
 
-   **Rapportage-regel:** toon alleen de one-liner uit de tabel hierboven aan de user. Geen filenames (`mode-greenfield.md`), geen script-output, geen interne classificatie-termen. Detectie-details horen in een eventuele debug-mode, niet in de happy path.
+   **Reporting rule:** show only the one-liner from the table above to the user. No filenames (`mode-greenfield.md`), no script output, no internal classification terms. Detection details belong in a debug mode, not in the happy path.
 
-   **AskUserQuestion bij ambiguous / bestaande configs** (single-select):
-   - **Greenfield wizard** — "Nieuw project, ik wil stack en standards instellen" → `mode-greenfield.md`
-   - **Mature scan (Recommended bij bestaand project)** — "Bestaand project, scan de codebase en bouw base memory op (incl. Module Gap-modal voor lege tier-1 slots)" → `mode-mature.md`
-   - **Audit** — "Check wat er mist, geen volledige setup" → `mode-audit.md`
-   - **Resync** _(alleen bij `greenfield + bestaande configs`, niet bij `ambiguous`)_ — "Alleen CLAUDE.md template-secties updaten" → `mode-resync.md`
+   **AskUserQuestion for ambiguous / existing configs** (single-select):
+   - **Greenfield wizard** — "New project, I want to configure stack and standards" → `mode-greenfield.md`
+   - **Mature scan (Recommended for existing project)** — "Existing project, scan the codebase and build base memory (incl. Module Gap modal for empty tier-1 slots)" → `mode-mature.md`
+   - **Audit** — "Check what's missing, no full setup" → `mode-audit.md`
+   - **Resync** _(only for `greenfield + existing configs`, not for `ambiguous`)_ — "Only update CLAUDE.md template sections" → `mode-resync.md`
 
-5. **Laad de gekozen reference.**
+5. **Load the chosen reference.**

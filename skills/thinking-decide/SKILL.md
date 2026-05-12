@@ -4,7 +4,7 @@ description: >-
   Structured decision-making framework. Invoke when user needs help weighing
   trade-offs between options, comparing pros and cons, or making a strategic
   choice between approaches. Ideal for architecture decisions, technology
-  choices, and any significant afweging where multiple valid options exist.
+  choices, and any significant trade-off where multiple valid options exist.
   Surfaces assumptions, generates alternatives, steelmans the strongest
   counterargument, and delivers a confidence-rated recommendation. Not for
   trivial choices like naming or formatting.
@@ -57,112 +57,112 @@ NOT for: trivial choices, code formatting, simple bug fixes.
 
   ```yaml
   header: "Decision"
-  question: "Klopt deze beslissing?"
+  question: "Does this decision look right?"
   options:
-    - label: "Ja, klopt (Recommended)", description: "Analyseer deze beslissing"
-    - label: "Aanpassen", description: "Ik wil de vraag anders formuleren"
+    - label: "Yes, correct (Recommended)", description: "Analyze this decision"
+    - label: "Adjust", description: "I want to phrase the question differently"
   multiSelect: false
   ```
 
-- If "Aanpassen": ask user for revised decision statement, then proceed.
+- If "Adjust": ask user for revised decision statement, then proceed.
 
 ### Step 1.5: Past Decision Check (if .project exists)
 
-Voorkomt dat een eerder afgewezen of reeds genomen beslissing opnieuw wordt geanalyseerd zonder dat de vorige context in beeld is.
+Prevents a previously rejected or already-made decision from being re-analyzed without the prior context being visible.
 
-1. Glob `.project/features/*/feature.json` — flatten alle `durableDecisions[]` arrays.
-2. Glob `.project/thinking/*-decision-*.md` — extract `THINK:` regel + chosen optie + constraint uit elke file (eerste ~30 regels volstaan).
-3. Fuzzy match tegen huidige decision statement: keyword-overlap op decision titel, chosen optie, of constraint (≥2 substantieve termen overlap).
-4. Bij ≥1 match, AskUserQuestion:
+1. Glob `.project/features/*/feature.json` — flatten all `durableDecisions[]` arrays.
+2. Glob `.project/thinking/*-decision-*.md` — extract `THINK:` line + chosen option + constraint from each file (first ~30 lines are sufficient).
+3. Fuzzy match against current decision statement: keyword-overlap on decision title, chosen option, or constraint (≥2 substantive terms overlap).
+4. If ≥1 match, AskUserQuestion:
 
    ```yaml
-   header: "Eerder besloten?"
-   question: "Eerder besloten: {decision title} → koos {chosen} (constraint: {constraint}). Is dit dezelfde context?"
+   header: "Previously decided?"
+   question: "Previously decided: {decision title} → chose {chosen} (constraint: {constraint}). Is this the same context?"
    options:
-     - label: "Dezelfde context (Recommended)", description: "Hergebruik eerdere beslissing, skip nieuwe analyse"
-     - label: "Constraint is anders", description: "Noteer nieuwe constraint, ga door met analyse"
-     - label: "Niet relevant", description: "Andere beslissing, ga door met analyse"
+     - label: "Same context (Recommended)", description: "Reuse previous decision, skip new analysis"
+     - label: "Constraint is different", description: "Note new constraint, continue with analysis"
+     - label: "Not relevant", description: "Different decision, continue with analysis"
    multiSelect: false
    ```
 
-   - **Dezelfde context** → toon eerdere analyse (markdown content of durableDecisions entry). Vraag "nog iets toe te voegen?" Zo nee: stop skill met verwijzing naar bron-bestand.
-   - **Constraint is anders** → vraag nieuwe constraint, noteer als startpunt voor Step 2. Door naar Step 1a.
-   - **Niet relevant** → door naar Step 1a.
+   - **Same context** → show previous analysis (markdown content or durableDecisions entry). Ask "anything to add?" If no: stop skill with reference to source file.
+   - **Constraint is different** → ask for new constraint, note as starting point for Step 2. Continue to Step 1a.
+   - **Not relevant** → continue to Step 1a.
 
-5. Bij 0 matches: stille no-op, door naar Step 1a.
+5. If 0 matches: silent no-op, continue to Step 1a.
 
-Bij ≥2 matches: toon alleen de top 2 meest-relevant (hoogste keyword-overlap), niet alle.
+If ≥2 matches: show only the top 2 most relevant (highest keyword-overlap), not all.
 
 ### Step 1a: Scope Detection (if .project exists)
 
-Na de beslissing vastgesteld, check voor project-context:
+After the decision is established, check for project context:
 
-1. Check of `.project/project-concept.md` bestaat (primary) of `.project/project.json` een non-empty `concept.content` heeft (legacy fallback)
-2. Check of `.project/backlog.html` bestaat
-3. Check of `.project/features/` mappen bevat
+1. Check if `.project/project-concept.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
+2. Check if `.project/backlog.html` exists
+3. Check if `.project/features/` contains folders
 
 **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
 ```
 scopes: [architectural]
 pitfall-prefix: true
-current-feature: <feature-name als feature-specifiek scope, anders "none">
+current-feature: <feature-name if feature-specific scope, otherwise "none">
 ```
 
-Architectural patterns (eigen project) sturen de afweging — beslissingen die conflicteren met bewezen patterns krijgen een lagere confidence-rating. Pitfall-prefix maakt eerdere bugs zichtbaar zodat opties die ze herhalen worden afgewezen.
+Architectural patterns (own project) guide the trade-off — decisions that conflict with proven patterns receive a lower confidence rating. Pitfall-prefix makes previous bugs visible so options that repeat them are rejected.
 
-Als scope-context gevonden:
+If scope context found:
 
 ```yaml
 header: "Scope"
-question: "Waar gaat deze beslissing over?"
+question: "What is this decision about?"
 options:
-  - label: "Project-breed (Recommended)", description: "Architectuur, tech stack, of strategie beslissing"
-  - label: "Feature-specifiek", description: "Beslissing over een specifieke feature"
-  - label: "Losse beslissing", description: "Niet gekoppeld aan het project"
+  - label: "Project-wide (Recommended)", description: "Architecture, tech stack, or strategy decision"
+  - label: "Feature-specific", description: "Decision about a specific feature"
+  - label: "Standalone decision", description: "Not linked to the project"
 multiSelect: false
 ```
 
-**If "Feature-specifiek":**
+**If "Feature-specific":**
 
-- Lees `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`), toon features met status TODO of DOING
-- AskUserQuestion om feature te kiezen
-- Laad feature context: `01-define.md`, `thinking.md` (als ze bestaan)
-- Feature context meegeven als achtergrond bij de beslissing
+- Read `.project/backlog.html`, parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`), show features with status TODO or DOING
+- AskUserQuestion to choose feature
+- Load feature context: `01-define.md`, `thinking.md` (if they exist)
+- Pass feature context as background for the decision
 
-**If "Project-breed":**
+**If "Project-wide":**
 
-- Laad concept uit `.project/project-concept.md` als achtergrond
-- Beslissing gaat over het hele project
+- Load concept from `.project/project-concept.md` as background
+- Decision is about the entire project
 
-**If "Losse beslissing":**
+**If "Standalone decision":**
 
-- Geen extra context laden
+- No extra context to load
 
-**Output-pad volgt automatisch de scope:**
+**Output path follows scope automatically:**
 
-- Scope = feature → schrijf naar `.project/features/{naam}/decisions.md` (append)
-- Scope = project → schrijf naar `.project/thinking/{today}-decision-{slug}.md`
-- Scope = los → schrijf naar `.project/thinking/{today}-decision-{slug}.md`
+- Scope = feature → write to `.project/features/{name}/decisions.md` (append)
+- Scope = project → write to `.project/thinking/{today}-decision-{slug}.md`
+- Scope = standalone → write to `.project/thinking/{today}-decision-{slug}.md`
 
-### CHECKPOINT: Decision Samenvatting
+### CHECKPOINT: Decision Summary
 
-Na het vaststellen van de beslissing en scope, presenteer een overzicht:
+After establishing the decision and scope, present an overview:
 
-| Aspect     | Waarde                                    |
-| ---------- | ----------------------------------------- |
-| Beslissing | {decision statement}                      |
-| Scope      | {project-breed / feature-specifiek / los} |
-| Context    | {relevante project/feature context}       |
+| Aspect   | Value                                          |
+| -------- | ---------------------------------------------- |
+| Decision | {decision statement}                           |
+| Scope    | {project-wide / feature-specific / standalone} |
+| Context  | {relevant project/feature context}             |
 
-Vraag via AskUserQuestion: "Klopt dit voordat we de analyse starten?"
+Ask via AskUserQuestion: "Does this look right before we start the analysis?"
 
-- "Ga door (Recommended)" — door naar gestructureerde analyse
-- "Aanpassen" — herformuleer de beslissing
+- "Continue (Recommended)" — proceed to structured analysis
+- "Adjust" — reformulate the decision
 
 ### Enter Plan Mode
 
-Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 2. Steps 2-3 (assumptions → alternatives → steelman → recommendation → presentatie) draaien in plan mode; de volledige analyse (Step 3) wordt naar de plan file geschreven ter review.
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 2. Steps 2-3 (assumptions → alternatives → steelman → recommendation → presentation) run in plan mode; the full analysis (Step 3) is written to the plan file for review.
 
 ---
 
@@ -238,88 +238,88 @@ After completing all 4 analysis steps, present a visual decision flow as ASCII d
 ```
 THINK: [decision statement]
 
-AANNAMES
+ASSUMPTIONS
 - [assumption 1] (validated/unvalidated)
 - [assumption 2] (validated/unvalidated)
 - [assumption 3] (validated/unvalidated)
 
 CONSTRAINT
-[De forcerende beperking die deze keuze triggert — niet opinie, niet voorkeur.
- Bv. "externe API geeft max 10 req/s", "mobile bundle moet <200KB", "team
- heeft geen Rust ervaring". Als er geen echte constraint is, is dit waarschijnlijk
- geen beslissing die analyse verdient.]
+[The forcing constraint that triggers this choice — not opinion, not preference.
+ E.g. "external API has max 10 req/s", "mobile bundle must be <200KB", "team
+ has no Rust experience". If there is no real constraint, this probably isn't
+ a decision that warrants analysis.]
 
-ALTERNATIEVEN
+ALTERNATIVES
 1. [approach] — [key trade-off]
 2. [approach] — [key trade-off]
 3. [approach] — [key trade-off]
 4. Status quo — [key trade-off]
 
-STAALMAN (tegen [preferred option])
+STEELMAN (against [preferred option])
 [2-3 sentence strongest counterargument]
 Severity: [Dealbreaker/Significant/Manageable]
 
-AANBEVELING: [choice]
+RECOMMENDATION: [choice]
 - [1-2 sentence rationale]
 - Trade-offs: [what we accept]
 - Confidence: [High/Medium/Low]
 - Check: [unvalidated assumption that matters most]
 
 REJECTED ALTERNATIVES
-- [Optie X] — Afgewezen omdat [concrete reden, gekoppeld aan constraint].
-- [Optie Y] — Afgewezen omdat [reden].
-[Voorkomt dat afgewezen opties later als zombie-voorstellen terugkomen.
- Skip "status quo" hier als die al in de constraint-uitleg verklaard is.]
+- [Option X] — Rejected because [concrete reason, linked to constraint].
+- [Option Y] — Rejected because [reason].
+[Prevents rejected options from resurfacing as zombie proposals later.
+ Skip "status quo" here if it's already explained in the constraint section.]
 ```
 
 Use AskUserQuestion:
 
 ```yaml
-header: "Beslissing"
-question: "Hoe wil je verder?"
+header: "Decision"
+question: "How do you want to continue?"
 options:
-  - label: "Akkoord (Recommended)", description: "Ga verder met de aanbeveling"
-  - label: "Ander alternatief", description: "Kies een van de andere alternatieven"
-  - label: "Dieper graven", description: "Onderzoek een specifiek punt verder"
+  - label: "Agreed (Recommended)", description: "Proceed with the recommendation"
+  - label: "Different alternative", description: "Choose one of the other alternatives"
+  - label: "Dig deeper", description: "Investigate a specific point further"
 multiSelect: false
 ```
 
 **Response handling:**
 
-- "Akkoord" → proceed with recommendation, continue conversation
-- "Ander alternatief" → ask which one, briefly explain implications, proceed
-- "Dieper graven" → ask which point, analyze further in depth
+- "Agreed" → proceed with recommendation, continue conversation
+- "Different alternative" → ask which one, briefly explain implications, proceed
+- "Dig deeper" → ask which point, analyze further in depth
 
-**Einde analysefase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf de volledige analyse (THINK + AANNAMES + CONSTRAINT + ALTERNATIEVEN + STAALMAN + AANBEVELING + REJECTED) naar de plan file, dan `ExitPlanMode`. Na approval gaat de skill door met de dashboard sync en `.project/`-writes.
+**End of analysis phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full analysis (THINK + ASSUMPTIONS + CONSTRAINT + ALTERNATIVES + STEELMAN + RECOMMENDATION + REJECTED) to the plan file, then `ExitPlanMode`. After approval the skill continues with the dashboard sync and `.project/` writes.
 
-**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+**Dashboard sync — thinking log** (see `shared/DASHBOARD.md`):
 
-**If scope = feature (uit Step 1a):**
+**If scope = feature (from Step 1a):**
 
-1. Schrijf volledige analyse naar `.project/features/{naam}/decisions.md` (append als bestand al bestaat)
+1. Write full analysis to `.project/features/{name}/decisions.md` (append if file already exists)
 
-De feature-koppeling wordt vastgelegd in `feature.json` → `durableDecisions[]` (zie `Feature scope koppeling` verderop). Geen `project.json` `thinking[]` append nodig.
+The feature link is recorded in `feature.json` → `durableDecisions[]` (see Feature scope link below). No `project.json` `thinking[]` append needed.
 
-**If scope = project of los (of geen scope gekozen):**
+**If scope = project or standalone (or no scope chosen):**
 
-1. Schrijf volledige analyse naar `.project/thinking/{today}-decision-{slug}.md`
+1. Write full analysis to `.project/thinking/{today}-decision-{slug}.md`
 
-De markdown in `.project/thinking/` is de bron van waarheid. Geen `project.json` `thinking[]` append voor deze scope — skills die thinking-output consumeren (zoals `/dev-define`) lezen rechtstreeks uit `.project/thinking/*.md`.
+The markdown in `.project/thinking/` is the source of truth. No `project.json` `thinking[]` append for this scope — skills that consume thinking output (like `/dev-define`) read directly from `.project/thinking/*.md`.
 
-**Feature scope koppeling:** als de beslissing in de context van een actieve feature valt (via Step 1a scope of via `.project/session/active-*.json`), push ook naar `feature.json` → `durableDecisions[]`:
+**Feature scope link:** if the decision is in the context of an active feature (via Step 1a scope or via `.project/session/active-*.json`), also push to `feature.json` → `durableDecisions[]`:
 
 ```json
 {
-  "decision": "{beslissing titel}",
-  "chosen": "{gekozen optie}",
-  "constraint": "{forcerende beperking, 1 zin}",
-  "rationale": "{waarom, 1-2 zinnen}",
-  "rejected": [{ "option": "{optie naam}", "reason": "{korte reden}" }],
+  "decision": "{decision title}",
+  "chosen": "{chosen option}",
+  "constraint": "{forcing constraint, 1 sentence}",
+  "rationale": "{why, 1-2 sentences}",
+  "rejected": [{ "option": "{option name}", "reason": "{brief reason}" }],
   "date": "{today}"
 }
 ```
 
-Lees `.project/features/{feature-name}/feature.json`, initialiseer `durableDecisions` als `[]` indien nodig, push entry, schrijf terug.
+Read `.project/features/{feature-name}/feature.json`, initialize `durableDecisions` as `[]` if needed, push entry, write back.
 
 ## Best Practices
 

@@ -1,6 +1,6 @@
 ---
 name: dev-build
-description: Build features with TDD or implementation-first per requirement. Use with /dev-build or /dev-build [feature-name] after /dev-define. Voor PAGE/COMPONENT-features leest dev-build design.pages[]/design.components[] als visuele spec-bron indien aanwezig.
+description: Build features with TDD or implementation-first per requirement. Use with /dev-build or /dev-build [feature-name] after /dev-define. For PAGE/COMPONENT features dev-build reads design.pages[]/design.components[] as visual spec source if present.
 reads: [feature.requirements]
 writes: [feature.requirements, feature.build, backlog.status, learnings]
 metadata:
@@ -11,7 +11,7 @@ metadata:
 
 # Build
 
-**FASE 2** of the dev workflow: define -> **build** -> test
+**PHASE 2** of the dev workflow: define -> **build** -> test
 
 Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD, Implementation First, or Implementation Only), builds sequentially.
 
@@ -30,31 +30,31 @@ Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), a
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 6 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgetting phases.
 
-1. FASE 0: Context Loading
-2. FASE 1: Technique Mapping
-3. FASE 2: Execute Build
-4. FASE 2b: Regression Gate
-5. FASE 3A: Project Sync
-6. FASE 3B: Scoped Commit
+1. PHASE 0: Context Loading
+2. PHASE 1: Technique Mapping
+3. PHASE 2: Execute Build
+4. PHASE 2b: Regression Gate
+5. PHASE 3A: Project Sync
+6. PHASE 3B: Scoped Commit
 
-### FASE 0: Context Loading
+### PHASE 0: Context Loading
 
-> **Todo**: roep `TaskCreate` aan met de 6 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
-**Capture git baseline** (eerste actie):
+**Capture git baseline** (first action):
 
-Bepaal eerst de repo root. Als CWD geen git-repo is, zoek de repo via de feature-locatie:
+First determine the repo root. If CWD is not a git repo, locate the repo via the feature location:
 
 ```bash
 REPO=$(git rev-parse --show-toplevel 2>/dev/null) || \
   REPO=$(cd "$(dirname "$(find . -maxdepth 6 -name 'feature.json' -path '*/.project/features/*' | head -1)")/../../.." && pwd)
 ```
 
-Geen repo gevonden → exit: "Geen git-repo gedetecteerd; /dev-build vereist een tracked project."
+No repo found → exit: "No git repo detected; /dev-build requires a tracked project."
 
-Bewaar `$REPO` — alle latere git-commando's gebruiken `git -C "$REPO" ...`.
+Store `$REPO` — all subsequent git commands use `git -C "$REPO" ...`.
 
 ```bash
 mkdir -p "$REPO/.project/session"
@@ -62,23 +62,23 @@ find "$REPO/.project/session" -maxdepth 1 \( -name "active-*.json" -o -name "pre
 git -C "$REPO" rev-parse HEAD > "$REPO/.project/session/pre-skill-sha.txt"
 ```
 
-**Detect stack:** lees CLAUDE.md `### Stack` sectie + `.claude/research/stack-baseline.md` (als beschikbaar). Fallback: `project.json.stack`.
+**Detect stack:** read CLAUDE.md `### Stack` section + `.claude/research/stack-baseline.md` (if available). Fallback: `project.json.stack`.
 
-**Project context** (skip als niet bestaat):
+**Project context** (skip if not present):
 
-Lees `.project/project.json` en `.project/project-context.json`. Gebruik voor:
+Read `.project/project.json` and `.project/project-context.json`. Use for:
 
-- Bestaande endpoints (voorkom dubbele routes)
-- Bestaand DB schema (voorkom conflicten)
-- Code patterns om te volgen
-- Learnings uit eerdere features
-- `theme.cssVars` — aanwezig en niet leeg: log `"Theme loaded"`. Leeg of ontbrekend: log `"Theme leeg — fallback defaults (shared/TOKENS.md) worden gebruikt"`.
+- Existing endpoints (prevent duplicate routes)
+- Existing DB schema (prevent conflicts)
+- Code patterns to follow
+- Learnings from earlier features
+- `theme.cssVars` — present and non-empty: log `"Theme loaded"`. Empty or missing: log `"Theme empty — fallback defaults (shared/TOKENS.md) will be used"`.
 
-**Token-bootstrap vangnet** (alleen als `feature.hasUI === true` of `IS_COMPONENT_BUILD === true`): voer de Bootstrap Procedure uit `shared/TOKENS.md` uit. Volledig idempotent — guards skippen automatisch als Tailwind ontbreekt of `tokens.css` al bestaat.
+**Token-bootstrap safety net** (only if `feature.hasUI === true` or `IS_COMPONENT_BUILD === true`): execute the Bootstrap Procedure from `shared/TOKENS.md`. Fully idempotent — guards skip automatically if Tailwind is missing or `tokens.css` already exists.
 
 **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
 
-Configuratie:
+Configuration:
 
 ```
 scopes: [component]
@@ -86,90 +86,90 @@ pitfall-prefix: true
 current-feature: <feature-name>
 ```
 
-Toon de geladen output. Pitfall-prefix sectie + component-scoped patterns geven context voor de build (geen constraint — bij twijfel ga uit van root cause, niet pattern-match).
+Display the loaded output. The pitfall-prefix section + component-scoped patterns provide context for the build (not a constraint — when in doubt assume root cause, don't pattern-match).
 
-Bewaar de geladen learnings voor FASE 1 (Technique Mapping).
+Store the loaded learnings for PHASE 1 (Technique Mapping).
 
-**COMPONENT Build Detection** (na feature.json load):
+**COMPONENT Build Detection** (after feature.json load):
 
-Als `feature.type === "COMPONENT"` (of backlog-item type is COMPONENT):
+If `feature.type === "COMPONENT"` (or backlog item type is COMPONENT):
 
-1. Bepaal `COMPONENT_SCOPE`:
-   - Check `feature.json#architecture.scope` of top-level `scope` veld
-   - Fallback: check `project.json#design.components[]` — match op naam → lees `scope`
-   - Fallback: vraag user via AskUserQuestion: `"Wat is de scope van dit component?"` (atomic/section/layout)
+1. Determine `COMPONENT_SCOPE`:
+   - Check `feature.json#architecture.scope` or top-level `scope` field
+   - Fallback: check `project.json#design.components[]` — match on name → read `scope`
+   - Fallback: ask user via AskUserQuestion: `"What is the scope of this component?"` (atomic/section/layout)
 
-2. Bepaal `COMPONENT_OUTPUT_PATH` op basis van scope en framework (zie FASE 2):
+2. Determine `COMPONENT_OUTPUT_PATH` based on scope and framework (see PHASE 2):
    - `atomic` → `src/components/ui/{Name}.tsx`
    - `section` → `src/components/{Name}.tsx`
-   - `layout` → `src/components/{Name}.tsx` (+ auto-patch `app/layout.tsx` na build)
+   - `layout` → `src/components/{Name}.tsx` (+ auto-patch `app/layout.tsx` after build)
 
-3. Sla op als `IS_COMPONENT_BUILD = true`, `COMPONENT_SCOPE`, `COMPONENT_OUTPUT_PATH`.
+3. Store as `IS_COMPONENT_BUILD = true`, `COMPONENT_SCOPE`, `COMPONENT_OUTPUT_PATH`.
 
 **Load feature:**
 
-Ready queue (alleen als geen feature-naam via CLI opgegeven):
+Ready queue (only if no feature name provided via CLI):
 
-Parse `.project/backlog.html`. Bereken per DEFINED feature of alle `dependencies[]` `status === "DONE"` hebben (of dep-lijst leeg is). Toon vóór de feature-selectie:
+Parse `.project/backlog.html`. For each DEFINED feature calculate whether all `dependencies[]` have `status === "DONE"` (or the dep list is empty). Display before the feature selection:
 
 ```
-Ready om te bouwen:
-  ✓ auth-login        P1  (geen deps)
+Ready to build:
+  ✓ auth-login        P1  (no deps)
   ✓ user-profile      P2  deps: [auth-login ✓]
 
-Geblokkeerd:
-  ✗ payment-flow      P1  wacht op: [stripe-integration — DOING]
-  ✗ checkout          P2  wacht op: [payment-flow ✗, cart — TODO]
+Blocked:
+  ✗ payment-flow      P1  waiting for: [stripe-integration — DOING]
+  ✗ checkout          P2  waiting for: [payment-flow ✗, cart — TODO]
 ```
 
-- Toon "Geblokkeerd" sectie alleen als er geblokkeerde features zijn
-- Als geen DEFINED features bestaan → "Geen features klaar om te bouwen." → exit
+- Only show "Blocked" section if blocked features exist
+- If no DEFINED features exist → "No features ready to build." → exit
 
 If no feature name provided:
 
-1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion** (ready features bovenaan)
-2. Fallback: list `.project/features/` met `feature.json`, let user select
+1. Parse `.project/backlog.html` (see `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion** (ready features at the top)
+2. Fallback: list `.project/features/` with `feature.json`, let user select
 
-Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifiek `registries[]` en `interfaces`). Als `clarifications[]` aanwezig: behandel als harde constraints tijdens implementatie (gray-area beslissingen van de user). Als `architecture.registries[]` aanwezig: gebruik als leidraad — nieuwe instances (endpoints, commands, entities) toevoegen aan het aangegeven registry-bestand, niet verspreiden over losse bestanden.
+Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files.
 
-Niet gevonden → exit: "Run `/dev-define` eerst."
+Not found → exit: "Run `/dev-define` first."
 
 **Dependency check:**
 
-Skip als geen `depends[]` of leeg.
+Skip if no `depends[]` or empty.
 
-1. Parse `.project/backlog.html`. Niet gevonden → skip.
-2. Per dependency: status moet `"DONE"` zijn.
-3. Blockers gevonden → **AskUserQuestion**:
-   - "Stop — werk eerst {dep} af (Recommended)" / "Toch doorgaan"
-   - Stop → exit. Doorgaan → continue.
+1. Parse `.project/backlog.html`. Not found → skip.
+2. Per dependency: status must be `"DONE"`.
+3. Blockers found → **AskUserQuestion**:
+   - "Stop — finish {dep} first (Recommended)" / "Continue anyway"
+   - Stop → exit. Continue → proceed.
 
 **Workspace setup:**
 
-Alleen tonen als we NIET al in een worktree zitten:
+Only show if we are NOT already in a worktree:
 
-1. Check: `git rev-parse --show-toplevel` vs eerste pad uit `git worktree list --porcelain`
-   → Verschillend: al in worktree → skip
+1. Check: `git rev-parse --show-toplevel` vs first path from `git worktree list --porcelain`
+   → Different: already in worktree → skip
 2. AskUserQuestion:
    ```yaml
    header: "Workspace"
-   question: "Wil je in een worktree werken voor deze build?"
+   question: "Do you want to work in a worktree for this build?"
    options:
-     - label: "Nee, huidige directory (Recommended)"
-       description: "Werk op de huidige branch"
-     - label: "Ja, worktree aanmaken"
-       description: "Geïsoleerde workspace — ideaal bij parallel werken"
+     - label: "No, current directory (Recommended)"
+       description: "Work on the current branch"
+     - label: "Yes, create worktree"
+       description: "Isolated workspace — ideal for parallel work"
    multiSelect: false
    ```
-3. Ja → `EnterWorktree(name: "{feature-name}")`
+3. Yes → `EnterWorktree(name: "{feature-name}")`
 
-> **Branch-naming**: `EnterWorktree` maakt branch `worktree-{feature-name}` (NIET `{feature-name}`). Vervolgskills (`dev-verify`, `dev-debug`, `dev-refactor` single-mode) detecteren deze worktree automatisch via `shared/WORKTREE.md` en switchen erin. Voor merge/cleanup gebruik je `/core-merge` of handmatig `git worktree remove --force` + `git branch -D worktree-{feature-name}`.
+> **Branch naming**: `EnterWorktree` creates branch `worktree-{feature-name}` (NOT `{feature-name}`). Follow-up skills (`dev-verify`, `dev-debug`, `dev-refactor` single-mode) detect this worktree automatically via `shared/WORKTREE.md` and switch into it. For merge/cleanup use `/core-merge` or manually `git worktree remove --force` + `git branch -D worktree-{feature-name}`.
 
-**Tag backlog card als actief** (direct na feature laden):
+**Tag backlog card as active** (immediately after loading feature):
 
-Lees `.project/backlog.html` (als bestaat), zoek feature op naam → zet `"status": "DOING"`, verwijder `transition` veld als het aanwezig is (niet verplicht), `updated` naar huidige datum (overgang DEFINED → DOING bij build-start). Schrijf terug via Edit.
+Read `.project/backlog.html` (if exists), find feature by name → set `"status": "DOING"`, remove `transition` field if present (not required), `updated` to current date (transition DEFINED → DOING at build start). Write back via Edit.
 
-**Signal active feature** (na backlog update):
+**Signal active feature** (after backlog update):
 
 ```bash
 echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
@@ -188,50 +188,50 @@ IMPLEMENTATION ORDER:
 (from buildSequence, sorted by step)
 ```
 
-**Risk-check (alleen als backlog feature `risk >= 4`):**
+**Risk check (only if backlog feature `risk >= 4`):**
 
-Als de geladen backlog-feature een `risk`-score van 4 of 5 heeft, toon deze waarschuwing vóór FASE 1:
+If the loaded backlog feature has a `risk` score of 4 or 5, show this warning before PHASE 1:
 
 ```
-⚠ HOOG RISICO — Complexiteit {risk}/5
+⚠ HIGH RISK — Complexity {risk}/5
 
-Overweeg vóór de bouw:
-- Zijn alle dependencies beschikbaar (status DONE)?
-- Is de feature-definitie volledig (alle REQs helder)?
-- Bouw in kleine stappen — commit na elke werkende REQ
+Consider before building:
+- Are all dependencies available (status DONE)?
+- Is the feature definition complete (all REQs clear)?
+- Build in small steps — commit after each working REQ
 ```
 
-### FASE 1: Technique Mapping
+### PHASE 1: Technique Mapping
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-**REMOVED filter**: Requirements met `deltaOp === "REMOVED"` overslaan — geen technique toewijzen, niet tonen in technique map tabel.
+**REMOVED filter**: Requirements with `deltaOp === "REMOVED"` — skip, don't assign technique, don't show in technique map table.
 
 Assign per requirement:
 
 - **TDD**: validation rules, business logic, calculations, complex conditions, testable math
 - **Implementation First**: CRUD, middleware, config, wiring
-- **Implementation Only**: pure styling/layout, visual/particle effects, static content, env config, prototype code — alleen wanneer automated tests geen waarde toevoegen. Verplichte reden: `visual-only`, `config-only`, of `prototype`
+- **Implementation Only**: pure styling/layout, visual/particle effects, static content, env config, prototype code — only when automated tests add no value. Required reason: `visual-only`, `config-only`, or `prototype`
 
-**Pitfall overlap check**: voor elke requirement, vergelijk met de pitfall-lijst uit FASE 0. Bij duidelijke thematische overlap (zelfde domein, zelfde type bug-risico) → log expliciet welke pitfall geraakt wordt en hoe deze build het voorkomt. Geen forcing — alleen markeren waar relevant.
+**Pitfall overlap check**: for each requirement, compare against the pitfall list from PHASE 0. On clear thematic overlap (same domain, same type of bug risk) → explicitly log which pitfall is touched and how this build avoids it. No forcing — only flag where relevant.
 
-Display technique map als tabel. Proceed automatically — do NOT confirm with the user.
+Display technique map as a table. Proceed automatically — do NOT confirm with the user.
 
-### FASE 2: Execute Build
+### PHASE 2: Execute Build
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-**COMPONENT output-pad routing** (alleen als `IS_COMPONENT_BUILD = true`):
+**COMPONENT output path routing** (only if `IS_COMPONENT_BUILD = true`):
 
-Overschrijf `feature.json files[]` paden met de definitieve output-paden op basis van `COMPONENT_SCOPE`:
+Override `feature.json files[]` paths with the definitive output paths based on `COMPONENT_SCOPE`:
 
-| Scope     | Hoofd-component bestand        | Demo-page                             |
+| Scope     | Main component file            | Demo page                             |
 | --------- | ------------------------------ | ------------------------------------- |
 | `atomic`  | `src/components/ui/{Name}.tsx` | `app/_dev/components/{name}/page.tsx` |
 | `section` | `src/components/{Name}.tsx`    | `app/_dev/components/{name}/page.tsx` |
 | `layout`  | `src/components/{Name}.tsx`    | `app/_dev/components/{name}/page.tsx` |
 
-Genereer de demo-page naast het component-bestand. De demo-page toont een variant-matrix van alle `variants × sizes × states`:
+Generate the demo page alongside the component file. The demo page shows a variant matrix of all `variants × sizes × states`:
 
 ```tsx
 // app/_dev/components/{name}/page.tsx (gitignored via _dev/)
@@ -248,38 +248,38 @@ export default function {Name}Demo() {
 }
 ```
 
-Voeg `app/_dev/` toe aan `.gitignore` als het er nog niet in staat (check eerst):
+Add `app/_dev/` to `.gitignore` if not already there (check first):
 
 ```bash
 grep -q "_dev/" .gitignore 2>/dev/null || echo "app/_dev/" >> .gitignore
 ```
 
-**Variant visual spec (G1 — alleen als component >1 variant heeft):**
+**Variant visual spec (G1 — only if component has >1 variant):**
 
-Conditie: `feature.json.requirements` bevat `cva(...)` met meer dan één variant-sleutel of meer dan één waarde per sleutel. Skip voor 1-variant components.
+Condition: `feature.json.requirements` contains `cva(...)` with more than one variant key or more than one value per key. Skip for 1-variant components.
 
-**Pre-flight (Playwright runner)**: Check `package.json` op `@playwright/test` devDep. Bij ontbreken:
+**Pre-flight (Playwright runner)**: Check `package.json` for `@playwright/test` devDep. If missing:
 
 ```yaml
 header: "Playwright runner"
-question: "Variant visual specs vereisen @playwright/test. Hoe verder?"
+question: "Variant visual specs require @playwright/test. How to proceed?"
 options:
   - label: "Run /core-setup playwright (Recommended)"
-    description: "Installeert daemon + runner + base config"
+    description: "Installs daemon + runner + base config"
   - label: "Skip variant specs"
-    description: "Sla deze stap over, ga door met build"
+    description: "Skip this step, continue with build"
 multiSelect: false
 ```
 
-Bij **Skip** → spring naar "Layout auto-patch" sectie hieronder.
+On **Skip** → jump to "Layout auto-patch" section below.
 
-Genereer `.project/playwright-runs/component-{name}.spec.ts`:
+Generate `.project/playwright-runs/component-{name}.spec.ts`:
 
 ```typescript
 import { test, expect } from "@playwright/test";
 
-const variants = { variants_array }; // bijv. ['default', 'destructive', 'outline']
-const sizes = { sizes_array }; // bijv. ['sm', 'md', 'lg'] — [] als geen size-variant
+const variants = { variants_array }; // e.g. ['default', 'destructive', 'outline']
+const sizes = { sizes_array }; // e.g. ['sm', 'md', 'lg'] — [] if no size variant
 
 test.beforeEach(async ({ page }) => {
   await page.goto("http://localhost:3000/_dev/components/{name}");
@@ -302,70 +302,70 @@ for (const variant of variants) {
 }
 ```
 
-Genereer `.project/playwright-runs/playwright.config.ts` (zie `shared/PLAYWRIGHT.md → Runner Mode`).
+Generate `.project/playwright-runs/playwright.config.ts` (see `shared/PLAYWRIGHT.md → Runner Mode`).
 
-Eerste run (baseline aanmaken):
+First run (create baseline):
 `npx playwright test .project/playwright-runs/component-{name}.spec.ts --update-snapshots`
 
-Volgende runs (regressie check):
+Subsequent runs (regression check):
 `npx playwright test .project/playwright-runs/component-{name}.spec.ts`
-→ FAIL = visuele regressie in een specifieke variant/size combinatie.
+→ FAIL = visual regression in a specific variant/size combination.
 
-Toon na eerste succesvolle run:
+Display after first successful run:
 
 ```
 VARIANT VISUAL SPEC
   Component:  {Name}
-  Variants:   {N} ({variant-namen})
-  Sizes:      {M} ({size-namen}) / n.v.t.
+  Variants:   {N} ({variant names})
+  Sizes:      {M} ({size names}) / n/a
   Spec:       .project/playwright-runs/component-{name}.spec.ts
-  Baselines:  .project/playwright-runs/__screenshots__/ ({N×M} PNG's)
+  Baselines:  .project/playwright-runs/__screenshots__/ ({N×M} PNGs)
 ```
 
-**Layout auto-patch** (alleen als `COMPONENT_SCOPE === "layout"`):
+**Layout auto-patch** (only if `COMPONENT_SCOPE === "layout"`):
 
-Na het genereren van het component-bestand: voeg import + render toe aan `app/layout.tsx` (of framework-equivalent). Conflict-detectie: check of de component-naam al geïmporteerd is. Bij conflict → toon diff en vraag user via AskUserQuestion: "Patchen (Recommended)" | "Handmatig toepassen". Geen conflict → patch direct. Toon:
+After generating the component file: add import + render to `app/layout.tsx` (or framework equivalent). Conflict detection: check if the component name is already imported. On conflict → show diff and ask user via AskUserQuestion: "Patch (Recommended)" | "Apply manually". No conflict → patch directly. Display:
 
 ```
-AUTO-PATCH layout.tsx: import {Name} van "{pad}" toegevoegd + <{Name} /> in render.
+AUTO-PATCH layout.tsx: import {Name} from "{path}" added + <{Name} /> in render.
 ```
 
 For each buildSequence step:
 
-**REMOVED filter per step**: filter `step.requirements` → verwijder IDs waarvan `feature.json.requirements[id].deltaOp === "REMOVED"`. Als step leeg na filter → skip step, ga door naar volgende.
+**REMOVED filter per step**: filter `step.requirements` → remove IDs where `feature.json.requirements[id].deltaOp === "REMOVED"`. If step is empty after filter → skip step, continue to next.
 
-**Parallel build check** (per step met >1 requirement):
+**Parallel build check** (per step with >1 requirement):
 
-1. Check file overlap: vergelijk `files[]` waar `requirements` arrays overlappen tussen REQs in deze step
-2. **Geen overlap** → launch Agent per REQ (max 3 parallel). Elke agent krijgt: technique file content, relevante source files uit feature.json `files[]`, stack context (CLAUDE.md ### Stack), eerdere SYNC notes van deze build
-3. **Wel overlap** → serieel bouwen (onderstaande stappen)
-4. Parse agent resultaten via `BUILD_RESULT_START...BUILD_RESULT_END` markers, update feature.json per REQ
+1. Check file overlap: compare `files[]` where `requirements` arrays overlap between REQs in this step
+2. **No overlap** → launch Agent per REQ (max 3 parallel). Each agent receives: technique file content, relevant source files from feature.json `files[]`, stack context (CLAUDE.md ### Stack), earlier SYNC notes from this build
+3. **Overlap** → build sequentially (steps below)
+4. Parse agent results via `BUILD_RESULT_START...BUILD_RESULT_END` markers, update feature.json per REQ
 
    ```
    BUILD_RESULT_START
    REQ: {id}
    Technique: {TDD | Implementation First | Implementation Only}
    Status: {GREEN | BLOCKED}
-   Files modified: {lijst}
-   Files created: {lijst}
-   Test output: {PASS | FAIL met details}
+   Files modified: {list}
+   Files created: {list}
+   Test output: {PASS | FAIL with details}
    SYNC: {pattern/concept in file(s) — what, why, depends on}
    BUILD_RESULT_END
    ```
 
-Bij steps met 1 requirement of bij overlap, voor elke requirement sequentieel:
+For steps with 1 requirement or with overlap, for each requirement sequentially:
 
 1. Load technique:
    - **TDD** → `Read(".claude/skills/dev-build/techniques/tdd.md")`
    - **Implementation First** → `Read(".claude/skills/dev-build/techniques/implementation-first.md")`
-   - **Implementation Only** → geen file laden (techniek = geen tests; `skipTestReason` verplicht invullen)
-2. **Read existing code**: lees alle bestanden uit feature.json `files[]` die `action: "modify"` hebben, plus 1 bestaand test bestand voor setup/teardown patronen (before/after hooks, DB lifecycle, import conventies).
+   - **Implementation Only** → no file loaded (technique = no tests; `skipTestReason` must be filled in)
+2. **Read existing code**: read all files from feature.json `files[]` that have `action: "modify"`, plus 1 existing test file for setup/teardown patterns (before/after hooks, DB lifecycle, import conventions).
 3. Execute technique workflow
 4. **Stack-aware enforcement**:
-   - **Code clarity**: descriptieve namen boven comments. Wel comments voor: niet-obvioze "waarom" beslissingen, workarounds, compatibility notes. Volg bestaande project comment-stijl.
-   - **Code rules**: volg `shared/RULES.md` — Algemeen (R007-R009) + stack-specifieke secties. Bij twijfel: MUST_DO regels altijd, SHOULD_DO regels tenzij bewuste afwijking met reden.
-   - **Token enforcement** (alleen voor `.tsx`/`.jsx`/`.vue`/`.svelte` — skip voor API routes, tests, config): gebruik altijd token-namen (`bg-primary`, `text-foreground`) — nooit hex literals of `bg-[#hex]`. Theme leeg → gebruik fallback defaults uit `shared/TOKENS.md`. Run na elke Write een grep voor T101 (`#[0-9a-fA-F]{3,8}`) en T102 (`bg-\[#`, `text-\[#`) op het gegenereerde bestand — vervang violations direct vóór de output.
-5. **Update feature.json** na elke REQ: zet `requirements[].status` → `"built"` en voeg `technique` + `syncNote` toe. Bij Implementation Only: voeg ook `skipTestReason` toe (`visual-only`, `config-only`, of `prototype`). Dit bewaart voortgang bij context compaction.
+   - **Code clarity**: descriptive names over comments. Do use comments for: non-obvious "why" decisions, workarounds, compatibility notes. Follow existing project comment style.
+   - **Code rules**: follow `shared/RULES.md` — General (R007-R009) + stack-specific sections. When in doubt: MUST_DO rules always, SHOULD_DO rules unless deliberate deviation with reason.
+   - **Token enforcement** (only for `.tsx`/`.jsx`/`.vue`/`.svelte` — skip for API routes, tests, config): always use token names (`bg-primary`, `text-foreground`) — never hex literals or `bg-[#hex]`. Theme empty → use fallback defaults from `shared/TOKENS.md`. Run a grep after each Write for T101 (`#[0-9a-fA-F]{3,8}`) and T102 (`bg-\[#`, `text-\[#`) on the generated file — replace violations directly before output.
+5. **Update feature.json** after each REQ: set `requirements[].status` → `"built"` and add `technique` + `syncNote`. For Implementation Only: also add `skipTestReason` (`visual-only`, `config-only`, or `prototype`). This preserves progress during context compaction.
 6. Output per requirement:
    ```
    REQ-XXX: {description}
@@ -377,166 +377,166 @@ Bij steps met 1 requirement of bij overlap, voor elke requirement sequentieel:
 
 **Edge cases:**
 
-- **Combined steps** (e.g. "REQ-002 + REQ-003"): build als één unit. Technique = die van het eerste REQ in de combinatie.
-- **Already covered**: als een REQ al (deels) werkt door een eerder REQ → schrijf alleen tests, verify GREEN. Output: `RED: N/A (covered by REQ-XXX)`
+- **Combined steps** (e.g. "REQ-002 + REQ-003"): build as one unit. Technique = that of the first REQ in the combination.
+- **Already covered**: if a REQ already (partially) works due to an earlier REQ → only write tests, verify GREEN. Output: `RED: N/A (covered by REQ-XXX)`
 
-**On blocker:** log in feature.json `build.blockers[]`, mark BLOCKED, ga door met andere requirements. Suggest `/thinking-decide` voor architecturele blockers.
+**On blocker:** log in feature.json `build.blockers[]`, mark BLOCKED, continue with other requirements. Suggest `/thinking-decide` for architectural blockers.
 
-### FASE 2b: Regression Gate
+### PHASE 2b: Regression Gate
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 2b → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 2b → `in_progress`.
 
-Na succesvolle afronding van alle requirements, run de **volledige test suite** met timeout (hangende tests = FAIL). Inclusief acceptance tests uit eerdere `/dev-verify` runs (`test/acceptance/*.test.js`) — deze beschermen tegen spec-regressies.
+After successful completion of all requirements, run the **full test suite** with timeout (hanging tests = FAIL). Including acceptance tests from earlier `/dev-verify` runs (`test/acceptance/*.test.js`) — these protect against spec regressions.
 
-Gebruik de Bash tool met `timeout: 300000` parameter (milliseconden) — niet het shell `timeout` commando (werkt niet op macOS).
+Use the Bash tool with `timeout: 300000` parameter (milliseconds) — not the shell `timeout` command (doesn't work on macOS).
 
-**PASS:** Alle tests slagen → door naar FASE 3A.
+**PASS:** All tests pass → proceed to PHASE 3A.
 
 ```
-REGRESSION CHECK: {total}/{total} PASS — geen regressies
+REGRESSION CHECK: {total}/{total} PASS — no regressions
 ```
 
-**FAIL:** Andere feature tests falen — dit is een gate.
+**FAIL:** Other feature tests fail — this is a gate.
 
 ```
 REGRESSION CHECK: {passed}/{total} PASS
-REGRESSIES GEVONDEN:
+REGRESSIONS FOUND:
 - {test_file}.{test_name}: {reason}
 
-Bestanden overlap: {lijst van bestanden die zowel door deze feature
-als de falende tests worden gerefereerd}
+File overlap: {list of files referenced by both this feature
+and the failing tests}
 ```
 
-Bij regressie:
+On regression:
 
-1. Analyseer of de huidige feature de regressie veroorzaakt (check gedeelde files/imports)
-2. Als JA: fix de regressie voordat je doorgaat. Re-run full suite na fix.
-3. Als NEE (pre-existing failure): waarschuw gebruiker, laat kiezen via AskUserQuestion:
-   - "Fix eerst de regressie (Recommended)" — "Voorkomt dat de regressie doorschuift naar /dev-verify"
-   - "Toch doorgaan" — "Regressie was er al voor deze build"
-4. Max 2 fix-pogingen. Daarna: rapporteer als blocker en laat gebruiker beslissen.
+1. Analyze whether the current feature caused the regression (check shared files/imports)
+2. If YES: fix the regression before continuing. Re-run full suite after fix.
+3. If NO (pre-existing failure): warn the user, let them choose via AskUserQuestion:
+   - "Fix the regression first (Recommended)" — "Prevents the regression from carrying into /dev-verify"
+   - "Continue anyway" — "Regression existed before this build"
+4. Max 2 fix attempts. After that: report as blocker and let user decide.
 
-**Skip:** Als er geen test bestanden bestaan, geen test runner geconfigureerd, of stack niet herkend.
+**Skip:** If no test files exist, no test runner configured, or stack not recognized.
 
 ```
-REGRESSION CHECK: overgeslagen ({reden})
+REGRESSION CHECK: skipped ({reason})
 ```
 
-### FASE 3A: Project Sync
+### PHASE 3A: Project Sync
 
-> **Todo**: markeer FASE 2b → `completed`, FASE 3A → `in_progress`.
+> **Todo**: mark PHASE 2b → `completed`, PHASE 3A → `in_progress`.
 
-Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties:
+Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations:
 
-**feature.json**: `status → "DOING"`, `files[]` → merge met actuele bestanden. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]`. Bestaande secties NIET overschrijven. Note: `requirements[]` is al enriched in FASE 2 stap 4.
+**feature.json**: `status → "DOING"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]`. Do NOT overwrite existing sections. Note: `requirements[]` is already enriched in PHASE 2 step 4.
 
-**tests.checklist[]** — per requirement minimaal 1 test item:
+**tests.checklist[]** — at least 1 test item per requirement:
 
 ```json
 {
   "id": 1,
-  "title": "beschrijving van wat te verifiëren",
+  "title": "description of what to verify",
   "requirementId": "REQ-XXX",
-  "steps": ["stap 1", "stap 2"],
-  "expected": "verwacht resultaat",
+  "steps": ["step 1", "step 2"],
+  "expected": "expected result",
   "status": "pending"
 }
 ```
 
-Richtlijnen:
+Guidelines:
 
-- UI features: steps als browser-interacties (navigeer, klik, vul in)
-- API features: steps als HTTP-verzoeken met concrete endpoints en payloads
-- Expected = observable resultaat (response body, status code, zichtbaar effect)
-- Voeg GEEN "run npm test" items toe — unit tests zijn al gedekt door de build
+- UI features: steps as browser interactions (navigate, click, fill in)
+- API features: steps as HTTP requests with concrete endpoints and payloads
+- Expected = observable result (response body, status code, visible effect)
+- Do NOT add "run npm test" items — unit tests are already covered by the build
 
-**Backlog**: `data.updated` → nu. Status blijft `"DOING"`.
+**Backlog**: `data.updated` → now. Status stays `"DOING"`.
 
-**Context**: update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip als geen structurele impact.
+**Context**: update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip if no structural impact.
 
-**Architecture** (volg component-first model uit `shared/DASHBOARD.md`): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `description` (korte functionele beschrijving, max 200 chars — wat doet dit component?), `src`, `test`, `connects_to` (typed edges `{ to, type }` uit werkelijke imports en runtime IO — `calls` voor function/HTTP calls, `reads`/`writes` voor DB of state IO, `depends_on` voor pure library/config dependencies), `endpoints` (bijv. `"POST /api/auth/login"`), `entities` (gebruikte model namen), `feature` (huidige feature naam). Nieuwe componenten die tijdens build zijn ontstaan: push met alle velden inclusief `feature`. Skip als geen structurele impact.
+**Architecture** (follow component-first model from `shared/DASHBOARD.md`): update `architecture.components[]` — built components `status: "planned"` → `"done"`, fill `description` (short functional description, max 200 chars — what does this component do?), `src`, `test`, `connects_to` (typed edges `{ to, type }` from actual imports and runtime IO — `calls` for function/HTTP calls, `reads`/`writes` for DB or state IO, `depends_on` for pure library/config dependencies), `endpoints` (e.g. `"POST /api/auth/login"`), `entities` (used model names), `feature` (current feature name). New components that emerged during the build: push with all fields including `feature`. Skip if no structural impact.
 
-**Routes** (`architecture.routes[]`): bevestig routes die tijdens build daadwerkelijk geïmplementeerd zijn — controleer `auth` veld klopt met de werkelijke middleware/guard (`"public" | "user" | "admin"`), update `purpose` als de pagina nu beter beschreven kan worden. Nieuwe routes die tijdens build zijn ontstaan: push `{ path, purpose, auth, feature }`. Endpoints in `endpoints[]` met daadwerkelijke auth-check: migreer `auth: false` → `"public"` en `auth: true` → `"user"` (of `"admin"` bij role-check).
+**Routes** (`architecture.routes[]`): confirm routes that were actually implemented during the build — verify `auth` field matches the actual middleware/guard (`"public" | "user" | "admin"`), update `purpose` if the page can now be described better. New routes that emerged during the build: push `{ path, purpose, auth, feature }`. Endpoints in `endpoints[]` with actual auth check: migrate `auth: false` → `"public"` and `auth: true` → `"user"` (or `"admin"` for role check).
 
-**PAGE-seeding** (safety net — frontend projects only):
+**PAGE seeding** (safety net — frontend projects only):
 
-Volg [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) voor het canonieke protocol.
+Follow [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) for the canonical protocol.
 
-**Trigger (safety net):** zelfde patronen als dev-define. Skip kandidaten die al door dev-define geseedd zijn: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`. Resolution: batch "Ja" / "Nee".
+**Trigger (safety net):** same patterns as dev-define. Skip candidates already seeded by dev-define: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`. Resolution: batch "Yes" / "No".
 
 **Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `PAGE`
 
-**COMPONENT design sync** (alleen als `IS_COMPONENT_BUILD = true`):
+**COMPONENT design sync** (only if `IS_COMPONENT_BUILD = true`):
 
-Na succesvolle build: update `project.json#design.components[]` — zoek op naam, zet `status: "BLT"`. Niet gevonden → voeg toe met status `"BLT"`, scope `COMPONENT_SCOPE`. Update ook `project-context.json#components[]` inventory: check op naam → nieuw: push `{ name, src: COMPONENT_OUTPUT_PATH, exports: ["{Name}"], variants, sizes }` → bestaand: update `src`.
+After successful build: update `project.json#design.components[]` — find by name, set `status: "BLT"`. Not found → add with status `"BLT"`, scope `COMPONENT_SCOPE`. Also update `project-context.json#components[]` inventory: check by name → new: push `{ name, src: COMPONENT_OUTPUT_PATH, exports: ["{Name}"], variants, sizes }` → existing: update `src`.
 
 **Sub-component Reuse-Discovery** (frontend projects only):
 
-Volg [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) voor het canonieke protocol.
+Follow [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) for the canonical protocol.
 
-**Trigger:** herhalend JSX-block na code-gen — ≥2x in hetzelfde bestand of ≥1x over meerdere bestanden van dezelfde feature. Kandidaten: duidelijke visuele/functionele eenheid met eigen props en rendering.
+**Trigger:** repeating JSX block after code-gen — ≥2× in the same file or ≥1× across multiple files of the same feature. Candidates: clear visual/functional unit with its own props and rendering.
 
 **Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
 
-**PAGE-suggesties via COMPONENT-links** (alleen als `IS_COMPONENT_BUILD = true`):
+**PAGE suggestions via COMPONENT links** (only if `IS_COMPONENT_BUILD = true`):
 
-Volg [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) voor het canonieke protocol.
+Follow [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) for the canonical protocol.
 
-**Trigger (COMPONENT→route):** scan `<Link href="...">` en `router.push(...)` in gegenereerde bestanden. Kandidaat als route niet voorkomt in `design.pages[]` of `backlog.html`. Resolution: per route AskUserQuestion "Ja, PAGE-todo toevoegen (Recommended)" / "Overslaan".
+**Trigger (COMPONENT→route):** scan `<Link href="...">` and `router.push(...)` in generated files. Candidate if route does not appear in `design.pages[]` or `backlog.html`. Resolution: per route AskUserQuestion "Yes, add PAGE todo (Recommended)" / "Skip".
 
 **Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `PAGE`
 
-**Learning extraction** (na feature.json sync): schrijf naar `project-context.json learnings[]` (append-only, identiek formaat als `dev-verify`/`dev-refactor`):
+**Learning extraction** (after feature.json sync): write to `project-context.json learnings[]` (append-only, identical format as `dev-verify`/`dev-refactor`):
 
-- `build.decisions[]` → `type: "pattern"` (architecturale keuze gemaakt)
-- `build.blockers[]` waar de blocker opgelost is (niet meer BLOCKED aan einde build) → `type: "pitfall"`
+- `build.decisions[]` → `type: "pattern"` (architectural choice made)
+- `build.blockers[]` where the blocker is resolved (no longer BLOCKED at end of build) → `type: "pitfall"`
 
 ```json
 {
   "date": "...",
-  "feature": "{naam}",
+  "feature": "{name}",
   "type": "pattern|pitfall",
   "source": "extracted",
   "summary": "..."
 }
 ```
 
-Alleen schrijven als er decisions of opgeloste blockers aanwezig zijn — geen lege entries.
+Only write if decisions or resolved blockers are present — no empty entries.
 
-### FASE 3B: Scoped Commit
+### PHASE 3B: Scoped Commit
 
-> **Todo**: markeer FASE 3A → `completed`, FASE 3B → `in_progress`.
+> **Todo**: mark PHASE 3A → `completed`, PHASE 3B → `in_progress`.
 
-**Strategie**: stage alleen files die door deze build zijn aangemaakt of gewijzigd. Laat pre-existing dirty files met rust.
+**Strategy**: stage only files created or modified by this build. Leave pre-existing dirty files untouched.
 
-**Stap 0: Pre-commit diagnostics** (stack-aware):
+**Step 0: Pre-commit diagnostics** (stack-aware):
 
-- Lees `package.json` → check `scripts` op keys die matchen op `typecheck|type-check|tsc|lint`
-- Python project (geen package.json): check op aanwezigheid van `mypy.ini` of `[tool.mypy]` in `pyproject.toml`
-- Geen match gevonden → skip stilzwijgend
+- Read `package.json` → check `scripts` for keys matching `typecheck|type-check|tsc|lint`
+- Python project (no package.json): check for `mypy.ini` or `[tool.mypy]` in `pyproject.toml`
+- No match found → skip silently
 
-Bij match: run gevonden script(s) (meerdere matches → parallel) via Bash tool met `timeout: 60000`:
+On match: run found script(s) (multiple matches → parallel) via Bash tool with `timeout: 60000`:
 
-- **PASS** → toon `DIAGNOSTICS: PASS`, door naar git status
-- **FAIL** → toon errors (max 30 regels) + AskUserQuestion:
-  - `"Fix eerst (Recommended)"` — stop FASE 3C, geen commit; user fixt errors en herstart de skill
-  - `"Toch committen"` — door naar git add + commit; voeg `[diagnostics-warnings]` toe aan commit message
+- **PASS** → display `DIAGNOSTICS: PASS`, proceed to git status
+- **FAIL** → display errors (max 30 lines) + AskUserQuestion:
+  - `"Fix first (Recommended)"` — stop PHASE 3C, no commit; user fixes errors and restarts the skill
+  - `"Commit anyway"` — proceed to git add + commit; add `[diagnostics-warnings]` to commit message
 
 ```bash
 git -C "$REPO" status --porcelain
 ```
 
-Categoriseer elke file:
+Categorize each file:
 
-1. **Check baseline**: vergelijk met de SHA uit `$REPO/.project/session/pre-skill-sha.txt`:
+1. **Check baseline**: compare with the SHA from `$REPO/.project/session/pre-skill-sha.txt`:
    ```bash
    git -C "$REPO" diff --name-only $(cat "$REPO/.project/session/pre-skill-sha.txt") HEAD 2>/dev/null
    ```
-   Als diff leeg is (geen mid-build commits): gebruik `git -C "$REPO" diff --name-only $(cat "$REPO/.project/session/pre-skill-sha.txt")` (zonder HEAD) voor unstaged changes, plus `git -C "$REPO" ls-files --others --exclude-standard` voor nieuwe bestanden.
-   Bestanden die NIET door deze build zijn gewijzigd EN al dirty waren → PRE-EXISTING, niet stagen.
-2. **Nieuwe/gewijzigde bestanden van deze feature** (bestanden uit `feature.json files[]`, test files, feature.json zelf) → `git add`.
-3. **Untracked bestanden** die niet bij de feature horen → niet stagen.
-4. **.project/ bestanden** (project.json, backlog.html, project-context.json) → probeer toe te voegen. Als skip-worktree of sparse-checkout dit blokkeert: accepteer en ga door (deze bestanden zijn lokaal bijgewerkt maar worden niet gecommit).
+   If diff is empty (no mid-build commits): use `git -C "$REPO" diff --name-only $(cat "$REPO/.project/session/pre-skill-sha.txt")` (without HEAD) for unstaged changes, plus `git -C "$REPO" ls-files --others --exclude-standard` for new files.
+   Files NOT modified by this build AND already dirty → PRE-EXISTING, don't stage.
+2. **New/modified files from this feature** (files from `feature.json files[]`, test files, feature.json itself) → `git add`.
+3. **Untracked files** not belonging to the feature → don't stage.
+4. **.project/ files** (project.json, backlog.html, project-context.json) → try to add. If skip-worktree or sparse-checkout blocks this: accept and continue (these files are updated locally but won't be committed).
 
 ```bash
 git -C "$REPO" commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
@@ -554,20 +554,20 @@ Tests: {passed}/{total} PASS
 Files created: {count} | modified: {count}
 
 Next steps:
-  1. /dev-verify {feature} → hybrid test verificatie
-  2. /dev-debug → als er onverwachte failures zijn
+  1. /dev-verify {feature} → hybrid test verification
+  2. /dev-debug → if there are unexpected failures
 ```
 
-**Worktree reminder** — voeg één extra blok toe aan de output als de huidige branch matcht `worktree-*` pattern (`git -C "$REPO" branch --show-current`):
+**Worktree reminder** — add one extra block to the output if the current branch matches the `worktree-*` pattern (`git -C "$REPO" branch --show-current`):
 
 ```
-💡 Worktree actief: {worktree_path}
-   Volgende skills (/dev-verify, /dev-refactor, /dev-debug) starten in een NIEUWE chat —
-   ze detecteren deze worktree automatisch en switchen erin.
-   Voor merge/cleanup: /core-merge {feature}
+💡 Worktree active: {worktree_path}
+   Next skills (/dev-verify, /dev-refactor, /dev-debug) start in a NEW chat —
+   they detect this worktree automatically and switch into it.
+   For merge/cleanup: /core-merge {feature}
 ```
 
-> **Todo**: markeer FASE 3B → `completed`. Alle 6 fases moeten nu `completed` zijn.
+> **Todo**: mark PHASE 3B → `completed`. All 6 phases should now be `completed`.
 
 ## Test Output Parsing
 

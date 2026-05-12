@@ -13,27 +13,27 @@ metadata:
 
 # Tokens
 
-Beheert het project design systeem: design tokens aanmaken, bekijken, updaten, en dark/light mode configuratie. Inclusief motion tokens (durations, easings) en interaction tokens (focus ring, hover, active states).
+Manages the project design system: creating, viewing, updating design tokens, and dark/light mode configuration. Includes motion tokens (durations, easings) and interaction tokens (focus ring, hover, active states).
 
 **Keywords**: design tokens, theme, colors, typography, spacing, breakpoints, dark mode, light mode, tailwind, css variables, design system, brand colors, font families, motion, animation, easing, transitions, interactions, focus ring, hover states
 
 ## Overview
 
-Dit command beheert de `theme` sectie in `.project/project.json` die design tokens bevat (colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars). Het kan tokens automatisch extraheren uit bestaande Tailwind of CSS configuratie.
+This command manages the `theme` section in `.project/project.json` which contains design tokens (colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars). It can automatically extract tokens from existing Tailwind or CSS configuration.
 
 **Output locatie:** `.project/project.json` → `theme` sectie
 
-**Referenties:**
+**References:**
 
-- `skills/frontend-tokens/references/THEME_TEMPLATE.md` — Token categorieën en naming conventions
-- `skills/shared/DESIGN.md` — Anti-patterns, OKLCH kleuradvies, typography, motion, interaction states
+- `skills/frontend-tokens/references/THEME_TEMPLATE.md` — Token categories and naming conventions
+- `skills/shared/DESIGN.md` — Anti-patterns, OKLCH color advice, typography, motion, interaction states
 
 ## When to Use
 
-- Design systeem opzetten voor nieuw project
-- Bestaande design tokens bekijken of updaten
-- Tokens extraheren uit Tailwind/CSS config
-- Dark/light mode toevoegen of aanpassen
+- Setting up a design system for a new project
+- Viewing or updating existing design tokens
+- Extracting tokens from Tailwind/CSS config
+- Adding or adjusting dark/light mode
 
 ---
 
@@ -124,28 +124,28 @@ De `theme` sectie in `project.json` volgt dit schema:
 }
 ```
 
-Zie `shared/DASHBOARD.md` voor het volledige `project.json` schema met alle secties.
+See `shared/DASHBOARD.md` for the complete `project.json` schema with all sections.
 
 ---
 
 ## Read/Write Protocol
 
-### Lezen
+### Reading
 
 1. Read `.project/project.json`
-2. Parse als JSON
-3. Gebruik `theme` sectie (kan leeg/undefined zijn)
+2. Parse as JSON
+3. Use `theme` section (may be empty/undefined)
 
-### Schrijven
+### Writing
 
-1. Read `.project/project.json` (of maak nieuw met leeg schema als niet bestaat)
+1. Read `.project/project.json` (or create new with empty schema if it doesn't exist)
 2. Parse JSON
-3. Muteer ALLEEN de `theme` sectie (NIET andere secties overschrijven)
-4. Write terug als `JSON.stringify(data, null, 2)`
+3. Mutate ONLY the `theme` section (do NOT overwrite other sections)
+4. Write back as `JSON.stringify(data, null, 2)`
 
-### Nieuw bestand aanmaken
+### Creating a new file
 
-Als `.project/project.json` niet bestaat, maak aan met het lege schema uit `shared/DASHBOARD.md`:
+If `.project/project.json` does not exist, create with the empty schema from `shared/DASHBOARD.md`:
 
 ```json
 {
@@ -171,7 +171,7 @@ Als `.project/project.json` niet bestaat, maak aan met het lege schema uit `shar
 }
 ```
 
-Vul vervolgens de `theme` sectie met de gegenereerde tokens.
+Then populate the `theme` section with the generated tokens.
 
 ---
 
@@ -184,12 +184,12 @@ stateDiagram-v2
     PREFLIGHT --> ACTION_SELECT: validation pass
     PREFLIGHT --> ERROR: validation fail
 
-    ACTION_SELECT --> CREATE: "Aanmaken"
-    ACTION_SELECT --> VIEW: "Bekijken"
-    ACTION_SELECT --> UPDATE: "Updaten"
-    ACTION_SELECT --> EXTRACT: "Extraheren"
+    ACTION_SELECT --> CREATE: "Create"
+    ACTION_SELECT --> VIEW: "View"
+    ACTION_SELECT --> UPDATE: "Update"
+    ACTION_SELECT --> EXTRACT: "Extract"
     ACTION_SELECT --> MODES: "Modes"
-    ACTION_SELECT --> DELETE: "Verwijderen"
+    ACTION_SELECT --> DELETE: "Delete"
 
     CREATE --> CONFIRM: all steps complete
     VIEW --> [*]: display only (no state change)
@@ -198,9 +198,9 @@ stateDiagram-v2
     MODES --> CONFIRM: mode configured
     DELETE --> CONFIRM: user confirmed
 
-    CONFIRM --> POSTFLIGHT: user confirms "Ja"
-    CONFIRM --> ACTION_SELECT: user selects "Aanpassen"
-    CONFIRM --> [*]: user selects "Annuleren"
+    CONFIRM --> POSTFLIGHT: user confirms "Yes"
+    CONFIRM --> ACTION_SELECT: user selects "Adjust"
+    CONFIRM --> [*]: user selects "Cancel"
 
     POSTFLIGHT --> COMPLETE: validation pass
     POSTFLIGHT --> RECOVER: validation fail
@@ -227,9 +227,9 @@ stateDiagram-v2
 
 ## Workflow
 
-### FASE 0: Pre-flight Validation
+### PHASE 0: Pre-flight Validation
 
-**Voer deze checks uit VOORDAT de workflow begint.**
+**Run these checks BEFORE the workflow starts.**
 
 ```
 PRE-FLIGHT CHECK
@@ -257,17 +257,17 @@ Session: [✓|✗] [New session | Continuing from {skill}]
 Handoff: [✓|✗] [data available | not applicable]
 ```
 
-**3. Conflict Check (voor Create/Update)**
+**3. Conflict Check (for Create/Update)**
 
 ```bash
-# Read .project/project.json → check of theme sectie al gevuld is
+# Read .project/project.json → check if theme section is already populated
 ```
 
 ```
 Conflicts: [✓|✗] project.json theme - [empty | has data (will warn) | file missing]
 ```
 
-**Pre-flight Samenvatting:**
+**Pre-flight Summary:**
 
 ```
 ════════════════════════════════════════════════
@@ -287,22 +287,22 @@ Status: [→ Ready to proceed | ⚠ Warning: {issue} | ✗ Cannot proceed]
 
 ```yaml
 header: "Pre-flight Failed"
-question: "Pre-flight check mislukt: {reason}. Hoe wil je doorgaan?"
+question: "Pre-flight check failed: {reason}. How would you like to proceed?"
 options:
-  - label: "Fix en retry (Recommended)", description: "Los probleem op en probeer opnieuw"
-  - label: "Doorgaan anyway", description: "Negeer warning en ga door"
-  - label: "Annuleren", description: "Stop workflow"
+  - label: "Fix and retry (Recommended)", description: "Resolve the issue and try again"
+  - label: "Continue anyway", description: "Ignore warning and continue"
+  - label: "Cancel", description: "Stop workflow"
 multiSelect: false
 ```
 
 ---
 
-### FASE 1: Actie Selectie
+### PHASE 1: Action Selection
 
-**Check eerst of project.json een gevulde theme sectie bevat:**
+**First check if project.json has a populated theme section:**
 
 ```bash
-# Read .project/project.json → parse JSON → check theme sectie
+# Read .project/project.json → parse JSON → check theme section
 ```
 
 **Design Principles Context (optional):**
@@ -310,22 +310,22 @@ multiSelect: false
 Check `.project/project.json` → `design.principles`. If principles exist, show them as context before action selection:
 
 ```
-DESIGN PRINCIPES BESCHIKBAAR
+DESIGN PRINCIPLES AVAILABLE
 ════════════════════════════════════════════════════════════════
 - {principle.name}: {principle.description}
 - {principle.name}: {principle.description}
 ════════════════════════════════════════════════════════════════
 
-Deze principes worden meegenomen als suggestie bij token keuzes.
+These principles are taken into account as suggestions for token choices.
 ```
 
 Principles are advisory — use them to inform suggestions (e.g., if "Mobile-first" exists, suggest mobile-optimized breakpoints), but don't enforce.
 
-**Als theme sectie DATA bevat (niet leeg):**
+**If theme section contains DATA (not empty):**
 
-**Completeness check — voer uit voordat het actiemenu getoond wordt:**
+**Completeness check — run before the action menu is shown:**
 
-Check welke van de 10 verwachte secties aanwezig zijn in `theme`. Een sectie telt als "aanwezig" als de key bestaat EN niet een leeg object `{}`, leeg array `[]`, of lege string `""` is.
+Check which of the 10 expected sections are present in `theme`. A section counts as "present" if the key exists AND is not an empty object `{}`, empty array `[]`, or empty string `""`.
 
 ```
 THEME STATUS
@@ -341,215 +341,211 @@ THEME STATUS
   [✓|✗] modes
   [✓|✗] cssVars
 
-Compleet: {N}/10 secties
+Complete: {N}/10 sections
 ════════════════════════════════════════════════
 ```
 
-**Als alle secties aanwezig (N = 10):**
+**If all sections present (N = 10):**
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Theme"
-question: "Wat wil je doen?"
+question: "What would you like to do?"
 options:
-  - label: "Bekijken", description: "Toon huidige design tokens"
-  - label: "Updaten", description: "Wijzig bestaande tokens"
-  - label: "Modes", description: "Dark/light mode beheren"
-  - label: "Verwijderen", description: "Theme data verwijderen"
+  - label: "View", description: "Show current design tokens"
+  - label: "Update", description: "Modify existing tokens"
+  - label: "Modes", description: "Manage dark/light mode"
+  - label: "Delete", description: "Remove theme data"
 multiSelect: false
 ```
 
-**Als secties ontbreken (N < 10):**
+**If sections are missing (N < 10):**
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Theme"
-question: "Wat wil je doen? (⚠ {10-N} secties ontbreken: {missing_list})"
+question: "What would you like to do? (⚠ {10-N} sections missing: {missing_list})"
 options:
-  - label: "Aanvullen (Recommended)", description: "Vul ontbrekende secties aan: {missing_list}"
-  - label: "Bekijken", description: "Toon huidige design tokens"
-  - label: "Updaten", description: "Wijzig bestaande tokens"
-  - label: "Modes", description: "Dark/light mode beheren"
+  - label: "Fill in (Recommended)", description: "Add missing sections: {missing_list}"
+  - label: "View", description: "Show current design tokens"
+  - label: "Update", description: "Modify existing tokens"
+  - label: "Modes", description: "Manage dark/light mode"
 multiSelect: false
 ```
 
-**Als theme sectie LEEG is of project.json niet bestaat:**
+**If theme section is EMPTY or project.json does not exist:**
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Theme"
-question: "Geen theme gevonden. Wat wil je doen?"
+question: "No theme found. What would you like to do?"
 options:
-  - label: "Aanmaken (Recommended)", description: "Nieuwe theme met guided setup"
-  - label: "Extraheren", description: "Tokens ophalen uit bestaande Tailwind/CSS"
-  - label: "Explain question", description: "Leg opties uit"
+  - label: "Create (Recommended)", description: "New theme with guided setup"
+  - label: "Extract", description: "Retrieve tokens from existing Tailwind/CSS"
+  - label: "Explain question", description: "Explain options"
 multiSelect: false
 ```
 
 ---
 
-### FASE 2: Actie Uitvoering
+### PHASE 2: Action Execution
 
-#### Route: Aanvullen (Ontbrekende Secties)
+#### Route: Fill In (Missing Sections)
 
-Targets alleen de ontbrekende secties. Voor elke ontbrekende sectie, voer de bijbehorende stap uit de Aanmaken-route uit:
+Targets only the missing sections. For each missing section, run the corresponding step from the Create route:
 
-| Ontbrekende Sectie | → Voer Stap Uit                                                          |
-| ------------------ | ------------------------------------------------------------------------ |
-| colors             | Stap 1: Kleuren                                                          |
-| typography         | Stap 2: Typography                                                       |
-| spacing            | Stap 3: Spacing                                                          |
-| breakpoints        | Stap 4: Breakpoints                                                      |
-| modes              | Stap 5: Dark Mode                                                        |
-| motion             | Stap 6: Motion                                                           |
-| interactions       | Stap 7: Interactions                                                     |
-| borderRadius       | Genereer defaults (0.125rem, 0.25rem, 0.375rem, 0.5rem, 0.75rem, 9999px) |
-| shadows            | Genereer defaults (sm, md, lg, xl + glow met accent kleur)               |
-| cssVars            | Auto-genereer uit alle aanwezige token data                              |
+| Missing Section | → Run Step                                                               |
+| --------------- | ------------------------------------------------------------------------ |
+| colors          | Step 1: Colors                                                           |
+| typography      | Step 2: Typography                                                       |
+| spacing         | Step 3: Spacing                                                          |
+| breakpoints     | Step 4: Breakpoints                                                      |
+| modes           | Step 5: Dark Mode                                                        |
+| motion          | Step 6: Motion                                                           |
+| interactions    | Step 7: Interactions                                                     |
+| borderRadius    | Generate defaults (0.125rem, 0.25rem, 0.375rem, 0.5rem, 0.75rem, 9999px) |
+| shadows         | Generate defaults (sm, md, lg, xl + glow with accent color)              |
+| cssVars         | Auto-generate from all present token data                                |
 
-Sla al-aanwezige secties over. Na het aanvullen van alle ontbrekende secties:
+Skip already-present sections. After filling in all missing sections:
 
 1. Regenereer `cssVars` om nieuw toegevoegde tokens te bevatten
-2. → Ga naar FASE X: Post-flight Validation
-3. → Ga naar X.6: Theme Infrastructure Sync
-4. → Ga naar FASE Y: Website Sync
+2. → Go to PHASE X: Post-flight Validation
+3. → Go to X.6: Theme Infrastructure Sync
+4. → Go to PHASE Y: Website Sync
 
 ---
 
-#### Route: Aanmaken (Nieuwe Theme)
+#### Route: Create (New Theme)
 
-**Stap 1: Kleuren**
+**Step 1: Colors**
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Colors"
-question: "Hoe wil je kleuren definiëren?"
+question: "How would you like to define colors?"
 options:
-  - label: "Genereer voor mij (Recommended)", description: "Beschrijf wat je bouwt, Claude kiest passende kleuren"
-  - label: "Handmatig invoeren", description: "Ik geef hex values op"
-  - label: "Extraheren uit config", description: "Haal uit Tailwind/CSS"
-  - label: "Explain question", description: "Leg uit wat design tokens zijn"
+  - label: "Generate for me (Recommended)", description: "Describe what you're building, Claude picks suitable colors"
+  - label: "Enter manually", description: "I'll provide hex values"
+  - label: "Extract from config", description: "Pull from Tailwind/CSS"
+  - label: "Explain question", description: "Explain what design tokens are"
 multiSelect: false
 ```
 
-**Als "Genereer voor mij":**
+**If "Generate for me":**
 
 ```
-Beschrijf kort wat je bouwt:
+Briefly describe what you're building:
 
-→ Voorbeeld: "Healthcare dashboard voor artsen"
-→ Voorbeeld: "E-commerce voor luxe horloges"
-→ Voorbeeld: "SaaS landing page voor projectmanagement"
+→ Example: "Healthcare dashboard for doctors"
+→ Example: "E-commerce for luxury watches"
+→ Example: "SaaS landing page for project management"
 ```
 
-Op basis van de beschrijving genereert Claude een contextbewust kleurenpalet:
+Based on the description, Claude generates a context-aware color palette:
 
 - Main colors (dark, light, mid-gray, light-gray)
-- Accent colors (primary, secondary, tertiary) passend bij de industrie/doelgroep
+- Accent colors (primary, secondary, tertiary) suited to the industry/audience
 - Semantic colors (success, warning, error, info)
 
-<!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the palette table above visible when the modal panel opens).
-
 ```yaml
-header: "Kleurpalet"
-question: "Klopt dit kleurpalet?"
+header: "Color palette"
+question: "Does this color palette look right?"
 options:
-  - label: "Ja, ga door (Recommended)", description: "Ga naar Stap 2"
-  - label: "Aanpassen", description: "Wijzig kleuren"
+  - label: "Yes, continue (Recommended)", description: "Go to Step 2"
+  - label: "Adjust", description: "Modify colors"
 multiSelect: false
 ```
 
-**Token Layer Toelichting (na kleurbevestiging)**
+**Token Layer Explanation (after color confirmation)**
 
-De gegenereerde kleuren volgen een drielaags structuur:
+The generated colors follow a three-layer structure:
 
-- **Primitives** (`main` en `accent` groepen): directe hex/OKLCH waarden.
+- **Primitives** (`main` and `accent` groups): direct hex/OKLCH values.
   CSS output: `--color-dark: #1a1a2e`, `--color-accent-primary: #3B82F6`
-- **Semantics** (`semantic` groep): verwijzen via `var()` naar een primitive.
-  CSS output: `--color-success: var(--color-accent-primary)` (niet: `--color-success: #10B981`)
-  Reden: als `accent-primary` wijzigt, updaten semantic tokens automatisch mee.
+- **Semantics** (`semantic` group): reference a primitive via `var()`.
+  CSS output: `--color-success: var(--color-accent-primary)` (not: `--color-success: #10B981`)
+  Reason: if `accent-primary` changes, semantic tokens update automatically.
 
-Houd deze structuur aan bij het opbouwen van `cssVars` in Stap 8.
+Follow this structure when building `cssVars` in Step 8.
 
-**Kleurformaat**
+**Color format**
 
-Detecteer Tailwind versie uit `package.json` vóór kleurengeneratie:
+Detect Tailwind version from `package.json` before generating colors:
 
-- `"tailwindcss": "^4.*"` → gebruik **OKLCH** (`oklch(L C H)`, bijv. `oklch(0.15 0.02 260)`)
-- Tailwind 3 of geen Tailwind → gebruik **hex** (`#RRGGBB`)
+- `"tailwindcss": "^4.*"` → use **OKLCH** (`oklch(L C H)`, e.g. `oklch(0.15 0.02 260)`)
+- Tailwind 3 or no Tailwind → use **hex** (`#RRGGBB`)
 
-OKLCH voordeel: L-component direct aanpasbaar voor dark mode (zelfde C/H = zelfde kleur, alleen helderheid wisselt). Hex heeft dit niet.
+OKLCH advantage: L-component directly adjustable for dark mode (same C/H = same hue, only lightness changes). Hex does not have this.
 
-**Als "Handmatig invoeren":**
+**If "Enter manually":**
 
 ```
-Geef je primaire kleuren (hex values):
+Provide your primary colors (hex values):
 
-1. Primary (hoofdkleur voor acties/buttons)
-   → Voorbeeld: #3B82F6
+1. Primary (main color for actions/buttons)
+   → Example: #3B82F6
 
-2. Secondary (ondersteunende kleur)
-   → Voorbeeld: #10B981
+2. Secondary (supporting color)
+   → Example: #10B981
 
-3. Neutral (grijs voor tekst/borders)
-   → Voorbeeld: #6B7280
+3. Neutral (gray for text/borders)
+   → Example: #6B7280
 ```
 
-**Als "Extraheren":** → Spring naar Route: Extraheren
+**If "Extract":** → Jump to Route: Extract
 
-**Stap 2: Typography**
+**Step 2: Typography**
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Typography"
-question: "Welke fonts gebruik je?"
+question: "Which fonts do you use?"
 options:
   - label: "System fonts (Recommended)", description: "system-ui, sans-serif"
-  - label: "Custom fonts", description: "Eigen font families opgeven"
-  - label: "Extraheren", description: "Haal uit bestaande CSS"
+  - label: "Custom fonts", description: "Specify your own font families"
+  - label: "Extract", description: "Pull from existing CSS"
 multiSelect: false
 ```
 
-**Als "Custom fonts":**
+**If "Custom fonts":**
 
 ```
-Geef je font families:
+Provide your font families:
 
 1. Headings font
-   → Voorbeeld: "Inter", "Poppins"
+   → Example: "Inter", "Poppins"
 
 2. Body font
-   → Voorbeeld: "Inter", system-ui
+   → Example: "Inter", system-ui
 
-3. Mono font (optioneel, voor code)
-   → Voorbeeld: "Fira Code", monospace
+3. Mono font (optional, for code)
+   → Example: "Fira Code", monospace
 
-Type 's' voor populaire combinaties
+Type 's' for popular combinations
 ```
 
-**Stap 3: Spacing**
+**Step 3: Spacing**
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Spacing"
-question: "Spacing scale voorkeur?"
+question: "Spacing scale preference?"
 options:
   - label: "4px base (Recommended)", description: "4, 8, 12, 16, 20, 24, 32, 48, 64"
   - label: "8px base", description: "8, 16, 24, 32, 40, 48, 64, 80, 96"
-  - label: "Custom", description: "Eigen spacing scale"
-  - label: "Explain question", description: "Leg uit wat een spacing scale is"
+  - label: "Custom", description: "Custom spacing scale"
+  - label: "Explain question", description: "Explain what a spacing scale is"
 multiSelect: false
 ```
 
-**Stap 4: Breakpoints**
+**Step 4: Breakpoints**
 
 **AskUserQuestion:**
 
@@ -559,158 +555,150 @@ question: "Responsive breakpoints?"
 options:
   - label: "Tailwind defaults (Recommended)", description: "sm:640, md:768, lg:1024, xl:1280"
   - label: "Bootstrap style", description: "sm:576, md:768, lg:992, xl:1200"
-  - label: "Custom", description: "Eigen breakpoints"
-  - label: "Explain question", description: "Leg uit hoe breakpoints werken"
+  - label: "Custom", description: "Custom breakpoints"
+  - label: "Explain question", description: "Explain how breakpoints work"
 multiSelect: false
 ```
 
-**Stap 5: Dark Mode**
+**Step 5: Dark Mode**
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Dark Mode"
-question: "Wil je dark mode toevoegen aan je theme?"
+question: "Would you like to add dark mode to your theme?"
 options:
-  - label: "Ja, auto-generate (Recommended)", description: "Genereer dark kleuren automatisch op basis van je light palette"
-  - label: "Ja, handmatig", description: "Zelf dark mode kleuren opgeven"
-  - label: "Nee, alleen light mode", description: "Sla dark mode over (later toe te voegen via Modes)"
+  - label: "Yes, auto-generate (Recommended)", description: "Automatically generate dark colors based on your light palette"
+  - label: "Manual", description: "Enter dark mode colors manually"
+  - label: "No, light mode only", description: "Skip dark mode (can be added later via Modes)"
 multiSelect: false
 ```
 
-**Als "Ja, auto-generate":**
+**If "Yes, auto-generate":**
 
-- Inverteer background/foreground: `dark` <> `light`
-- Pas `mid-gray` en `light-gray` aan voor dark context
-- Behoud accent kleuren maar verhoog lightness (~10-15%) voor leesbaarheid op donkere achtergrond
-- **Als OKLCH kleuren:** pas uitsluitend de L-component aan (bijv. `oklch(0.15 0.02 260)` → `oklch(0.90 0.02 260)` voor background-inversion); C en H blijven gelijk voor kleurconsistentie
+- Invert background/foreground: `dark` <> `light`
+- Adjust `mid-gray` and `light-gray` for dark context
+- Retain accent colors but increase lightness (~10-15%) for readability on dark background
+- **If OKLCH colors:** adjust only the L-component (e.g. `oklch(0.15 0.02 260)` → `oklch(0.90 0.02 260)` for background-inversion); C and H stay the same for color consistency
 - Genereer `.dark` CSS block naast `:root`
 - Toon preview (zelfde als Mode Comparison)
 
-**Als "Ja, handmatig":**
+**If "Manual":**
 
 ```
-Geef je dark mode kleuren (hex values):
+Provide your dark mode colors (hex values):
 
-1. Background (donkere achtergrond)
-   → Voorbeeld: #1a1a2e
+1. Background (dark background)
+   → Example: #1a1a2e
 
-2. Foreground (lichte tekst op donker)
-   → Voorbeeld: #f5f5f5
+2. Foreground (light text on dark)
+   → Example: #f5f5f5
 
-3. Card background (iets lichter dan background)
-   → Voorbeeld: #2d2d44
+3. Card background (slightly lighter than background)
+   → Example: #2d2d44
 
-4. Border kleur
-   → Voorbeeld: #3d3d5c
+4. Border color
+   → Example: #3d3d5c
 ```
 
-**Als "Nee":**
+**If "No":**
 
-- Sla dark mode over
-- `modes` bevat alleen `light` key
-- → Ga naar Stap 6
+- Skip dark mode
+- `modes` only contains `light` key
+- → Go to Step 6
 
-**Stap 6: Motion**
+**Step 6: Motion**
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Motion"
-question: "Motion tokens voor animaties en transities?"
+question: "Motion tokens for animations and transitions?"
 options:
-  - label: "Defaults (Recommended)", description: "Standaard durations (100/200/300/500ms) + smooth easings"
-  - label: "Custom", description: "Eigen durations en easing curves opgeven"
-  - label: "Geen motion tokens", description: "Sla over (later toe te voegen via Update)"
-  - label: "Explain question", description: "Leg uit wat motion tokens zijn"
+  - label: "Defaults (Recommended)", description: "Standard durations (100/200/300/500ms) + smooth easings"
+  - label: "Custom", description: "Specify custom durations and easing curves"
+  - label: "No motion tokens", description: "Skip (can be added later via Update)"
+  - label: "Explain question", description: "Explain what motion tokens are"
 multiSelect: false
 ```
 
-**Als "Defaults":**
+**If "Defaults":**
 
-Genereer standaard motion tokens op basis van `shared/DESIGN.md`:
+Generate standard motion tokens based on `shared/DESIGN.md`:
 
 - Durations: `duration-instant` (100ms), `duration-fast` (200ms), `duration-normal` (300ms), `duration-slow` (500ms)
 - Easings: `ease-out` (cubic-bezier(0.25, 1, 0.5, 1)), `ease-in` (cubic-bezier(0.7, 0, 0.84, 0)), `ease-in-out` (cubic-bezier(0.65, 0, 0.35, 1))
 
-<!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the motion token table above visible when the modal panel opens).
-
 ```yaml
 header: "Motion Tokens"
-question: "Kloppen deze motion tokens?"
+question: "Do these motion tokens look right?"
 options:
-  - label: "Ja, ga door (Recommended)", description: "Ga naar Stap 7"
-  - label: "Custom", description: "Geef eigen durations/easings op"
+  - label: "Yes, continue (Recommended)", description: "Go to Step 7"
+  - label: "Custom", description: "Specify custom durations/easings"
 multiSelect: false
 ```
 
-**Als "Custom":**
+**If "Custom":**
 
 ```
-Geef je motion preferences:
+Provide your motion preferences:
 
-1. Snelheid voorkeur?
-   → "snappy" (kortere durations: 75/150/200/350ms)
-   → "smooth" (standaard: 100/200/300/500ms)
-   → "relaxed" (langere durations: 150/250/400/600ms)
+1. Speed preference?
+   → "snappy" (shorter durations: 75/150/200/350ms)
+   → "smooth" (standard: 100/200/300/500ms)
+   → "relaxed" (longer durations: 150/250/400/600ms)
 
-2. Easing stijl?
+2. Easing style?
    → "smooth" (ease-out-quart — default)
    → "snappy" (ease-out-expo — confident, direct)
-   → "custom" (eigen cubic-bezier waarden)
+   → "custom" (custom cubic-bezier values)
 ```
 
-**Als "Geen motion tokens":**
+**If "No motion tokens":**
 
-- Sla motion over, `motion` sectie wordt leeg object
-- → Ga naar Stap 7
+- Skip motion, `motion` section becomes empty object
+- → Go to Step 7
 
-**Stap 7: Interactions**
+**Step 7: Interactions**
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Interactions"
-question: "Interaction tokens voor hover, focus en active states?"
+question: "Interaction tokens for hover, focus, and active states?"
 options:
   - label: "Defaults (Recommended)", description: "Focus ring (2px accent), subtle hover transition, scale active"
-  - label: "Custom", description: "Eigen interaction styles opgeven"
-  - label: "Geen interaction tokens", description: "Sla over (later toe te voegen via Update)"
-  - label: "Explain question", description: "Leg uit wat interaction tokens zijn"
+  - label: "Custom", description: "Specify custom interaction styles"
+  - label: "No interaction tokens", description: "Skip (can be added later via Update)"
+  - label: "Explain question", description: "Explain what interaction tokens are"
 multiSelect: false
 ```
 
-**Als "Defaults":**
+**If "Defaults":**
 
-Genereer standaard interaction tokens:
+Generate standard interaction tokens:
 
 - Focus ring: `width: 2px`, `style: solid`, `color: var(--color-accent-primary)`, `offset: 2px`
 - Hover: `transition: var(--duration-fast) var(--ease-out)`, `transform: none`
 - Active: `transform: scale(0.98)`
 
-<!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the interaction token table above visible when the modal panel opens).
-
 ```yaml
 header: "Interaction Tokens"
-question: "Kloppen deze interaction tokens?"
+question: "Do these interaction tokens look right?"
 options:
-  - label: "Ja, ga door (Recommended)", description: "Ga naar Stap 8"
-  - label: "Custom", description: "Geef eigen focus/hover/active stijlen op"
+  - label: "Yes, continue (Recommended)", description: "Go to Step 8"
+  - label: "Custom", description: "Specify custom focus/hover/active styles"
 multiSelect: false
 ```
 
-**Als "Custom":**
+**If "Custom":**
 
 ```
-Geef je interaction preferences:
+Provide your interaction preferences:
 
 1. Focus ring
-   → Kleur: accent-primary / custom
-   → Breedte: 2px / custom
+   → Color: accent-primary / custom
+   → Width: 2px / custom
    → Offset: 2px / custom
 
 2. Hover effect
@@ -721,22 +709,22 @@ Geef je interaction preferences:
    → Transform: scale(0.98) / scale(0.95) / none
 ```
 
-**Als "Geen interaction tokens":**
+**If "No interaction tokens":**
 
-- Sla interactions over, `interactions` sectie wordt leeg object
-- → Ga naar Stap 8
+- Skip interactions, `interactions` section becomes empty object
+- → Go to Step 8
 
-**CHECKPOINT: Design Tokens Samenvatting**
+**CHECKPOINT: Design Tokens Summary**
 
-Presenteer alle verzamelde tokens als overzicht voordat ze worden opgeslagen:
+Present all collected tokens as an overview before they are saved:
 
-**Stap 8: Bevestiging**
+**Step 8: Confirmation**
 
 ```
-THEME SAMENVATTING
+THEME SUMMARY
 
-| Categorie | Waarde |
-|-----------|--------|
+| Category | Value |
+|----------|-------|
 | **Primary** | {color} |
 | **Secondary** | {color} |
 | **Neutral** | {color} |
@@ -744,55 +732,53 @@ THEME SAMENVATTING
 | **Body** | {font} |
 | **Spacing** | {scale} |
 | **Breakpoints** | {list} |
-| **Dark Mode** | {Ja (auto) / Ja (custom) / Nee} |
-| **Motion** | {Defaults / Custom / Geen} |
-| **Interactions** | {Defaults / Custom / Geen} |
+| **Dark Mode** | {Yes (auto) / Yes (custom) / No} |
+| **Motion** | {Defaults / Custom / None} |
+| **Interactions** | {Defaults / Custom / None} |
 ```
 
-<!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the THEME SAMENVATTING table above visible when the modal panel opens). **AskUserQuestion:**
+**AskUserQuestion:**
 
 ```yaml
 header: "Confirm"
-question: "Theme aanmaken met deze settings?"
+question: "Create theme with these settings?"
 options:
-  - label: "Ja, aanmaken (Recommended)", description: "Schrijf naar .project/project.json (theme sectie)"
-  - label: "Aanpassen", description: "Terug om wijzigingen te maken"
-  - label: "Annuleren", description: "Stop zonder aanmaken"
+  - label: "Yes, create (Recommended)", description: "Write to .project/project.json (theme section)"
+  - label: "Adjust", description: "Go back to make changes"
+  - label: "Cancel", description: "Stop without creating"
 multiSelect: false
 ```
 
-**Als "Ja":**
+**If "Yes":**
 
-1. Raadpleeg `skills/frontend-tokens/references/THEME_TEMPLATE.md` voor token categorien en naming conventions
-2. Bouw het theme JSON object volgens het schema (zie "Theme JSON Schema" hierboven)
-3. Vul `colors` (main, accent, semantic) met structured token objects
-4. Vul `typography` met families en sizes. Gebruik semantische namen voor `sizes`:
-   `text-display` (grootste heading), `text-title-l/m/s`, `text-headline-l/m/s`, `text-body-l/m/s`, `text-code`
-   i.p.v. size-based namen als `text-xs/sm/base/lg`. Wijs elke naam een concrete rem-waarde toe passend bij het project.
-5. Vul `spacing` met base en scale
-6. Vul `breakpoints`, `borderRadius`, `shadows`
-7. **Als dark mode gekozen:** Vul `modes` met zowel `light` als `dark` CSS strings
-8. **Als geen dark mode:** Vul `modes` met alleen `light` key
-9. **Als motion gekozen:** Vul `motion` met durations en easings
-10. **Als interactions gekozen:** Vul `interactions` met focusRing, hover, active
-11. Genereer `cssVars` — volledige CSS variables string (alle tokens incl. motion/interaction als `:root { ... }`)
-12. Read `.project/project.json` (of maak nieuw met leeg schema)
-13. Set `theme` sectie → Write terug als formatted JSON
-14. → Ga naar FASE X: Post-flight Validation
-15. → Ga naar X.6: Theme Infrastructure Sync
-16. → Ga naar FASE Y: Website Sync
+1. Consult `skills/frontend-tokens/references/THEME_TEMPLATE.md` for token categories and naming conventions
+2. Build the theme JSON object according to the schema (see "Theme JSON Schema" above)
+3. Populate `colors` (main, accent, semantic) with structured token objects
+4. Populate `typography` with families and sizes. Use semantic names for `sizes`:
+   `text-display` (largest heading), `text-title-l/m/s`, `text-headline-l/m/s`, `text-body-l/m/s`, `text-code`
+   instead of size-based names like `text-xs/sm/base/lg`. Assign each name a concrete rem value suited to the project.
+5. Populate `spacing` with base and scale
+6. Populate `breakpoints`, `borderRadius`, `shadows`
+7. **If dark mode chosen:** Populate `modes` with both `light` and `dark` CSS strings
+8. **If no dark mode:** Populate `modes` with only the `light` key
+9. **If motion chosen:** Populate `motion` with durations and easings
+10. **If interactions chosen:** Populate `interactions` with focusRing, hover, active
+11. Generate `cssVars` — full CSS variables string (all tokens incl. motion/interaction as `:root { ... }`)
+12. Read `.project/project.json` (or create new with empty schema)
+13. Set `theme` section → Write back as formatted JSON
+14. → Go to PHASE X: Post-flight Validation
+15. → Go to X.6: Theme Infrastructure Sync
+16. → Go to PHASE Y: Website Sync
 
 ---
 
-#### Route: Bekijken
+#### Route: View
 
-1. Read `.project/project.json` → parse `theme` sectie
-2. Parse en toon in overzichtelijke tabel:
+1. Read `.project/project.json` → parse `theme` section
+2. Parse and display in a clear table:
 
 ```
-HUIDIGE THEME
+CURRENT THEME
 
 ## Colors
 | Token | Value | Preview |
@@ -822,38 +808,38 @@ HUIDIGE THEME
 | ... | ... |
 ```
 
-3. **Completeness check:** check alle 10 verwachte secties (colors, typography, spacing, breakpoints, borderRadius, shadows, motion, interactions, modes, cssVars). Als secties ontbreken:
+3. **Completeness check:** check all 10 expected sections (colors, typography, spacing, breakpoints, borderRadius, shadows, motion, interactions, modes, cssVars). If sections are missing:
 
 ```
-⚠ ONTBREKENDE SECTIES: {missing_list}
-  Gebruik "Aanvullen" om ontbrekende secties toe te voegen.
+⚠ MISSING SECTIONS: {missing_list}
+  Use "Fill in" to add missing sections.
 ```
 
 **AskUserQuestion:**
 
-Als alle secties aanwezig:
+If all sections present:
 
 ```yaml
 header: "Action"
-question: "Wat wil je doen?"
+question: "What would you like to do?"
 options:
-  - label: "Klaar", description: "Terug naar conversation"
-  - label: "Updaten", description: "Wijzigingen maken"
-  - label: "Exporteren", description: "Toon als CSS variables"
+  - label: "Done", description: "Return to conversation"
+  - label: "Update", description: "Make changes"
+  - label: "Export", description: "Show as CSS variables"
   - label: "Visual Preview", description: "Open theme preview in browser"
 multiSelect: false
 ```
 
-Als secties ontbreken — voeg "Aanvullen" toe:
+If sections are missing — add "Fill in":
 
 ```yaml
 header: "Action"
-question: "Wat wil je doen? (⚠ {N} secties ontbreken)"
+question: "What would you like to do? (⚠ {N} sections missing)"
 options:
-  - label: "Aanvullen (Recommended)", description: "Vul ontbrekende secties aan: {missing_list}"
-  - label: "Klaar", description: "Terug naar conversation"
-  - label: "Updaten", description: "Wijzigingen maken"
-  - label: "Exporteren", description: "Toon als CSS variables"
+  - label: "Fill in (Recommended)", description: "Add missing sections: {missing_list}"
+  - label: "Done", description: "Return to conversation"
+  - label: "Update", description: "Make changes"
+  - label: "Export", description: "Show as CSS variables"
 multiSelect: false
 ```
 
@@ -879,47 +865,47 @@ Generating preview page...
 
 #### Token Drift Check (shared helper)
 
-Gebruik vóór elke Write op `theme.colors`, `theme.typography`, of `theme.spacing` waarbij een **bestaande key** een andere waarde krijgt (niet puur additief).
+Use before every Write on `theme.colors`, `theme.typography`, or `theme.spacing` where an **existing key** gets a different value (not purely additive).
 
-**Additief = geen drift-risk** (geen check nodig):
+**Additive = no drift-risk** (no check needed):
 
-- Nieuwe key toevoegen aan `colors` (bv. `colors.brand-accent`)
-- Nieuwe size toevoegen aan `typography.sizes`
+- Adding a new key to `colors` (e.g. `colors.brand-accent`)
+- Adding a new size to `typography.sizes`
 
-**Drift-risk = bestaande key wijzigt** (run drift check):
+**Drift-risk = existing key changes** (run drift check):
 
-- `colors.primary` waarde wijzigt of wordt verwijderd/hernoemd
-- `typography.fontFamily` wijzigt
-- `spacing` schaal significant wijzigt
+- `colors.primary` value changes or is removed/renamed
+- `typography.fontFamily` changes
+- `spacing` scale changes significantly
 
-**Drift-check stappen:**
+**Drift-check steps:**
 
-1. Lees `backlog.html` → filter op `type === "PAGE" && (status === "DOING" || status === "DONE")`
-2. Als geen affected pages → skip (geen prompt)
-3. Bij ≥1 affected page: toon:
+1. Read `backlog.html` → filter on `type === "PAGE" && (status === "DOING" || status === "DONE")`
+2. If no affected pages → skip (no prompt)
+3. With ≥1 affected page: show:
 
 ```
 TOKEN DRIFT WARNING
 
-Wijziging:  {token-pad}  {oude waarde} → {nieuwe waarde}
-Affected:   {N} PAGE-features (DOING/DONE)
-            - {page-naam}  ({status}, gebouwd {datum})
-            - ...
+Change:    {token-path}  {old value} → {new value}
+Affected:  {N} PAGE-features (DOING/DONE)
+           - {page-name}  ({status}, built {date})
+           - ...
 
-Pages die bg-{token} / text-{token} gebruiken kunnen visueel breken.
+Pages using bg-{token} / text-{token} may break visually.
 ```
 
 ```yaml
-header: "Token drift gedetecteerd"
-question: "Hoe verder?"
+header: "Token drift detected"
+question: "How to proceed?"
 options:
-  - label: "Doorgaan + log drift (Recommended)", description: "Tokens schrijven, drift gelogd in devinfo.tokenDrift voor latere re-render"
-  - label: "Eerst pages bijwerken", description: "Stop nu — draai /frontend-convert {page} patch op affected pages"
-  - label: "Annuleren", description: "Geen wijziging schrijven"
+  - label: "Continue + log drift (Recommended)", description: "Write tokens, drift logged in devinfo.tokenDrift for later re-render"
+  - label: "Update pages first", description: "Stop now — run /frontend-convert {page} patch on affected pages"
+  - label: "Cancel", description: "No change written"
 multiSelect: false
 ```
 
-**Bij "Doorgaan + log drift"**: schrijf naar `devinfo.tokenDrift`:
+**On "Continue + log drift"**: write to `devinfo.tokenDrift`:
 
 ```json
 {
@@ -927,107 +913,107 @@ multiSelect: false
     "changedAt": "{ISO-timestamp}",
     "changes": [
       {
-        "path": "{token-pad}",
-        "from": "{oude waarde}",
-        "to": "{nieuwe waarde}"
+        "path": "{token-path}",
+        "from": "{old value}",
+        "to": "{new value}"
       }
     ],
-    "affectedFeatures": ["{page-naam-1}", "{page-naam-2}"],
+    "affectedFeatures": ["{page-name-1}", "{page-name-2}"],
     "resolved": false
   }
 }
 ```
 
-Toon na write:
+Show after write:
 
 ```
-Aanbevolen vervolg per affected page:
-  /frontend-convert {page} patch    (re-render met nieuwe tokens)
+Recommended follow-up per affected page:
+  /frontend-convert {page} patch    (re-render with new tokens)
 ```
 
-**Bij "Eerst pages bijwerken"** of **"Annuleren"**: stop zonder Write.
+**On "Update pages first"** or **"Cancel"**: stop without Write.
 
 ---
 
-#### Route: Updaten
+#### Route: Update
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Update"
-question: "Welke sectie wil je updaten?"
+question: "Which section would you like to update?"
 options:
-  - label: "Colors", description: "Kleuren aanpassen"
-  - label: "Typography", description: "Fonts aanpassen"
-  - label: "Spacing", description: "Spacing scale aanpassen"
-  - label: "Breakpoints", description: "Breakpoints aanpassen"
-  - label: "Motion", description: "Durations en easings aanpassen"
-  - label: "Interactions", description: "Focus ring, hover, active states aanpassen"
-  - label: "Alles", description: "Volledige herconfig"
+  - label: "Colors", description: "Adjust colors"
+  - label: "Typography", description: "Adjust fonts"
+  - label: "Spacing", description: "Adjust spacing scale"
+  - label: "Breakpoints", description: "Adjust breakpoints"
+  - label: "Motion", description: "Adjust durations and easings"
+  - label: "Interactions", description: "Adjust focus ring, hover, active states"
+  - label: "All", description: "Full reconfiguration"
 multiSelect: true
 ```
 
-**Per geselecteerde sectie:**
+**Per selected section:**
 
-- Lees huidige waarden uit `project.json` → `theme` sectie
-- Toon huidige waarden
-- Vraag nieuwe waarden (zelfde flow als Aanmaken)
-- Toon diff preview
-- **Drift check** (zie "Token Drift Check" hierboven) voor colors/typography/spacing-wijzigingen
-- Bevestig wijziging
-- Read project.json → update alleen gewijzigde theme subsecties → Write terug
-- → Ga naar FASE X: Post-flight Validation
-- → Ga naar X.6: Theme Infrastructure Sync (update CSS variables / Tailwind config met gewijzigde tokens)
-- → Ga naar FASE Y: Website Sync (scan voor oude token waarden in componenten)
+- Read current values from `project.json` → `theme` section
+- Show current values
+- Ask for new values (same flow as Create)
+- Show diff preview
+- **Drift check** (see "Token Drift Check" above) for colors/typography/spacing changes
+- Confirm change
+- Read project.json → update only changed theme subsections → Write back
+- → Go to PHASE X: Post-flight Validation
+- → Go to X.6: Theme Infrastructure Sync (update CSS variables / Tailwind config with changed tokens)
+- → Go to PHASE Y: Website Sync (scan voor oude token waarden in componenten)
 
 ---
 
-#### Route: Extraheren
+#### Route: Extract
 
-**Stap 1: Detectie**
+**Step 1: Detection**
 
 ```bash
-# Zoek configuratie files
+# Find configuration files
 # - tailwind.config.js/ts/mjs
-# - CSS files met :root variables
+# - CSS files with :root variables
 # - globals.css, variables.css, etc.
 ```
 
 **Output:**
 
 ```
-DETECTIE RESULTAAT
+DETECTION RESULT
 
-| Bron | Status | Tokens |
-|------|--------|--------|
-| tailwind.config.js | ✓ Gevonden | ~{N} colors, spacing |
-| src/styles/globals.css | ✓ Gevonden | ~{N} CSS variables |
-| src/index.css | ✗ Geen tokens | - |
+| Source | Status | Tokens |
+|--------|--------|--------|
+| tailwind.config.js | ✓ Found | ~{N} colors, spacing |
+| src/styles/globals.css | ✓ Found | ~{N} CSS variables |
+| src/index.css | ✗ No tokens | - |
 ```
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Extract"
-question: "Uit welke bronnen extraheren?"
+question: "Which sources to extract from?"
 options:
-  - label: "Alle bronnen (Recommended)", description: "Combineer alle gevonden tokens"
-  - label: "Alleen Tailwind", description: "Alleen uit tailwind config"
-  - label: "Alleen CSS", description: "Alleen :root variables"
+  - label: "All sources (Recommended)", description: "Combine all found tokens"
+  - label: "Tailwind only", description: "Only from tailwind config"
+  - label: "CSS only", description: "Only :root variables"
 multiSelect: false
 ```
 
-**Stap 2: Extractie uitvoeren**
+**Step 2: Perform extraction**
 
-1. Parse geselecteerde bronnen
-2. Map naar theme JSON structuur (zie schema hierboven)
-3. Toon preview van geextraheerde tokens
-4. **Drift check** (zie "Token Drift Check" hierboven) — als extractie bestaande `colors`/`typography`/`spacing` keys overschrijft
-5. Vraag bevestiging (zelfde als Aanmaken Stap 6)
-6. Write naar project.json theme sectie
-7. → Ga naar FASE X: Post-flight Validation
-8. → Ga naar X.6: Theme Infrastructure Sync
-9. → Ga naar FASE Y: Website Sync
+1. Parse selected sources
+2. Map to theme JSON structure (see schema above)
+3. Show preview of extracted tokens
+4. **Drift check** (see "Token Drift Check" above) — if extraction overwrites existing `colors`/`typography`/`spacing` keys
+5. Ask for confirmation (same as Create Step 6)
+6. Write to project.json theme section
+7. → Go to PHASE X: Post-flight Validation
+8. → Go to X.6: Theme Infrastructure Sync
+9. → Go to PHASE Y: Website Sync
 
 ---
 
@@ -1037,40 +1023,40 @@ multiSelect: false
 
 ```yaml
 header: "Modes"
-question: "Theme mode actie?"
+question: "Theme mode action?"
 options:
-  - label: "Dark mode toevoegen (Recommended)", description: "Voeg dark variant toe aan huidige theme"
-  - label: "Light mode toevoegen", description: "Voeg light variant toe"
-  - label: "Mode verwijderen", description: "Verwijder een bestaande mode"
-  - label: "Mode switchen", description: "Wissel default mode"
-  - label: "Explain question", description: "Leg uit hoe modes werken"
+  - label: "Add dark mode (Recommended)", description: "Add dark variant to current theme"
+  - label: "Add light mode", description: "Add light variant"
+  - label: "Remove mode", description: "Remove an existing mode"
+  - label: "Switch mode", description: "Toggle default mode"
+  - label: "Explain question", description: "Explain how modes work"
 multiSelect: false
 ```
 
-**Als "Dark mode toevoegen":**
+**If "Add dark mode":**
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Dark Mode"
-question: "Hoe dark mode kleuren genereren?"
+question: "How to generate dark mode colors?"
 options:
-  - label: "Auto-generate (Recommended)", description: "Inverteer/adjust automatisch"
-  - label: "Handmatig", description: "Zelf dark kleuren opgeven"
-  - label: "Extraheren", description: "Haal uit bestaande dark theme CSS"
-  - label: "Explain question", description: "Tips voor dark mode kleuren"
+  - label: "Auto-generate (Recommended)", description: "Automatically invert/adjust"
+  - label: "Manual", description: "Specify dark colors yourself"
+  - label: "Extract", description: "Pull from existing dark theme CSS"
+  - label: "Explain question", description: "Tips for dark mode colors"
 multiSelect: false
 ```
 
-**Als "Auto-generate":**
+**If "Auto-generate":**
 
-- Lees huidige kleuren uit project.json → theme.colors
-- Genereer dark variants van huidige kleuren
-- Toon preview
-- Vraag bevestiging
-- Update project.json → theme.modes met dark key
-- → Ga naar FASE X: Post-flight Validation
-- → Ga naar X.6: Theme Infrastructure Sync
+- Read current colors from project.json → theme.colors
+- Generate dark variants of current colors
+- Show preview
+- Ask for confirmation
+- Update project.json → theme.modes with dark key
+- → Go to PHASE X: Post-flight Validation
+- → Go to X.6: Theme Infrastructure Sync
 
 #### Mode Comparison
 
@@ -1113,39 +1099,39 @@ Opening comparison in browser...
 
 ```yaml
 header: "Mode Preview"
-question: "Bekijk de light/dark vergelijking in browser. Tevreden?"
+question: "Review the light/dark comparison in browser. Satisfied?"
 options:
-  - label: "Ja, opslaan (Recommended)", description: "Bevestig mode configuratie"
-  - label: "Aanpassen", description: "Wijzig kleuren"
+  - label: "Yes, save (Recommended)", description: "Confirm mode configuration"
+  - label: "Adjust", description: "Modify colors"
 ```
 
 ---
 
-#### Route: Verwijderen
+#### Route: Delete
 
 **AskUserQuestion:**
 
 ```yaml
 header: "Delete"
-question: "Weet je zeker dat je de theme wilt verwijderen?"
+question: "Are you sure you want to delete the theme?"
 options:
-  - label: "Ja, verwijderen", description: "Verwijder theme sectie uit project.json"
-  - label: "Nee, annuleren (Recommended)", description: "Behoud theme"
+  - label: "Yes, remove", description: "Remove theme section from project.json"
+  - label: "No, cancel (Recommended)", description: "Keep theme"
 multiSelect: false
 ```
 
-**Als "Ja":**
+**If "Yes":**
 
 1. Read `.project/project.json`
-2. Set `theme` sectie naar leeg object `{}`
-3. Write terug
-4. → Ga naar Output Formaat (toon "THEME VERWIJDERD")
+2. Set `theme` section to empty object `{}`
+3. Write back
+4. → Go to Output Format (show "THEME REMOVED")
 
 ---
 
-### FASE X: Post-flight Validation
+### PHASE X: Post-flight Validation
 
-**Voer deze checks uit NA elke write operatie (Create/Update/Extract/Modes).**
+**Run these checks AFTER every write operation (Create/Update/Extract/Modes).**
 
 ```
 POST-FLIGHT CHECK
@@ -1184,7 +1170,7 @@ Colors:
   [✓|✗] No empty values
   [✓|✗] Each color has token, value, usage
   [✓|⚠] Semantic tokens use var() refs — not raw hex (warning only: existing setups may have raw values)
-  [✓|⚠] Semantic completeness — success, warning, error, info gedefinieerd en onderling distinct (⚠ als één ontbreekt of als twee dezelfde primitive ref gebruiken)
+  [✓|⚠] Semantic completeness — success, warning, error, info defined and mutually distinct (⚠ if one is missing or two use the same primitive ref)
 Typography:
   [✓|✗] Font families have fallbacks
   [✓|✗] Sizes have token, size, lineHeight
@@ -1221,11 +1207,11 @@ CSS Export:
 ```
 Integrity:
   [✓|✗] project.json is valid JSON
-  [✓|✗] Other secties ongewijzigd (concept, stack, data, endpoints, decisions)
+  [✓|✗] Other sections unchanged (concept, stack, data, endpoints, decisions)
   [✓|✗] Theme sectie matches schema
 ```
 
-**Post-flight Samenvatting:**
+**Post-flight Summary:**
 
 ```
 ════════════════════════════════════════════════
@@ -1250,11 +1236,11 @@ Status: [→ Complete | ⚠ Warnings: {list} | ✗ Recovery needed]
 
 ```yaml
 header: "Post-flight Failed"
-question: "Validatie vond problemen: {issues}. Wat nu?"
+question: "Validation found problems: {issues}. What now?"
 options:
-  - label: "Auto-fix (Recommended)", description: "Probeer automatisch te repareren"
-  - label: "Handmatig fixen", description: "Bekijk en fix problemen"
-  - label: "Negeren", description: "Accepteer output ondanks problemen"
+  - label: "Auto-fix (Recommended)", description: "Attempt automatic repair"
+  - label: "Fix manually", description: "Review and fix problems"
+  - label: "Ignore", description: "Accept output despite problems"
 multiSelect: false
 ```
 
@@ -1264,21 +1250,21 @@ multiSelect: false
 
 **Always runs after successful post-flight validation.** Ensures theme tokens are available in the project's styling infrastructure, not just in project.json.
 
-**Bij Updates:** diff de oude token waarden (voor de update) tegen de nieuwe waarden. Gebruik dit diff om:
+**On Updates:** diff the old token values (before the update) against the new values. Use this diff to:
 
-1. Alleen gewijzigde CSS variables bij te werken in het CSS/config bestand (niet alles opnieuw genereren)
-2. Een lijst van gewijzigde tokens te tonen in de infrastructure sync output
-3. De oude waarden door te geven aan FASE Y zodat die ook op oude hex codes / rgba waarden kan scannen in componenten
+1. Only update changed CSS variables in the CSS/config file (not regenerate everything)
+2. Show a list of changed tokens in the infrastructure sync output
+3. Pass the old values to PHASE Y so it can also scan for old hex codes / rgba values in components
 
 **Styling approach detectie:**
 
 1. **Detect styling approach** from `package.json` + CSS files:
-   - `tailwindcss` present → check voor Tailwind 4 CSS-first OF klassieke config (zie stap 2)
+   - `tailwindcss` present → check for Tailwind 4 CSS-first OR classic config (see step 2)
    - Neither → CSS variables project
 
 2. **Tailwind project:**
-   - **Tailwind 4 (CSS-first):** Grep CSS bestanden (globals.css, index.css) voor `@theme inline`. Als gevonden: update de `:root` CSS variables in dat bestand direct — dit IS de Tailwind config in v4
-     - Volg dezelfde twee-blokken volgorde: primitives eerst, semantics met var() refs daarna
+   - **Tailwind 4 (CSS-first):** Grep CSS files (globals.css, index.css) for `@theme inline`. If found: update the `:root` CSS variables in that file directly — this IS the Tailwind config in v4
+     - Follow the same two-block order: primitives first, semantics with var() refs after
    - **Tailwind 3 (config-based):** Fallback naar `tailwind.config.{js,ts,mjs}` als er geen `@theme inline` is
    - Generate/update theme tokens:
      - `colors`: map color tokens to Tailwind color keys
@@ -1290,17 +1276,17 @@ multiSelect: false
 
 3. **Non-Tailwind project:**
    - Generate/update CSS variables file (e.g., `src/styles/theme.css`) from `theme.cssVars`
-   - CSS output moet twee opeenvolgende blokken bevatten binnen `:root { ... }`:
-     1. **Primitives** (main + accent kleuren, spacing, typography, motion): directe waarden
+   - CSS output must contain two consecutive blocks within `:root { ... }`:
+     1. **Primitives** (main + accent colors, spacing, typography, motion): direct values
         `--color-dark: #1a1a2e;`
         `--color-accent-primary: #3B82F6;`
-     2. **Semantics** (semantic kleuren): var() verwijzingen naar primitives
+     2. **Semantics** (semantic colors): var() references to primitives
         `--color-success: var(--color-accent-primary);`
-   - Genereer semantics als `var(--color-{meest-passende-primitive})` — match op kleurgroep of gebruikersbedoeling
+   - Generate semantics as `var(--color-{best-matching-primitive})` — match on color group or user intent
    - Check if it's imported in the main CSS entry point — if not, warn
 
 4. **No project detected** (no package.json, no source files):
-   - Skip with: `"Geen project gedetecteerd — theme alleen opgeslagen in project.json."`
+   - Skip with: `"No project detected — theme saved to project.json only."`
 
 ```
 THEME INFRASTRUCTURE
@@ -1313,7 +1299,7 @@ Tokens:   {N} color, {M} spacing, {P} typography, {Q} motion, {R} interaction to
 
 ---
 
-## FASE Y: Website Sync (Create/Update only)
+## PHASE Y: Website Sync (Create/Update only)
 
 **After post-flight validation, check if existing website code uses the theme.**
 
@@ -1326,7 +1312,7 @@ Skip this phase entirely for View, Delete, or when no website code exists.
 # src/**/*.{tsx,jsx,astro,vue}, app/**/*.{tsx,jsx}, *.html
 ```
 
-- **No source files found** → skip with: `"Geen website code gevonden — theme opgeslagen."` → proceed to Output Formaat
+- **No source files found** → skip with: `"No website code found — theme saved."` → proceed to Output Format
 - **Source files found** → continue to Y.2
 
 ### Y.2 Theme Usage Analysis
@@ -1339,18 +1325,18 @@ Scan the codebase for theme integration:
    - Hardcoded color values: `#hex`, `rgb()`, `hsl()`, `bg-[#`, `text-[#`
    - Theme token usage: `bg-primary`, `text-accent`, `var(--`, theme class references
    - Hardcoded spacing: `p-[16px]`, `gap-[24px]`, arbitrary Tailwind values
-   - **Bij Updates:** ook scannen op OUDE token waarden uit de diff van X.6. Als een kleur veranderde van `#C89B3C` naar `#0AC8B9`, scan dan voor resterende `#C89B3C` referenties in component files en arbitrary Tailwind values (`bg-[#C89B3C]`, `shadow-[...rgba(200,155,60,...)]`, etc.)
+   - **On Updates:** also scan for OLD token values from the X.6 diff. If a color changed from `#C89B3C` to `#0AC8B9`, scan for remaining `#C89B3C` references in component files and arbitrary Tailwind values (`bg-[#C89B3C]`, `shadow-[...rgba(200,155,60,...)]`, etc.)
 
 **Tally results:**
 
 ```
 WEBSITE SYNC CHECK
 ════════════════════════════════════════════════
-Bestanden gescand:     {N}
-Theme integratie:      {Tailwind config | CSS vars | Geen}
-Hardcoded kleuren:     {N} bestanden, {M} waarden
-Oude waarden gevonden: {N} bestanden, {M} referenties (bij updates)
-Theme token gebruik:   {N} bestanden, {M} referenties
+Files scanned:         {N}
+Theme integration:     {Tailwind config | CSS vars | None}
+Hardcoded colors:      {N} files, {M} values
+Old values found:      {N} files, {M} references (on updates)
+Theme token usage:     {N} files, {M} references
 ════════════════════════════════════════════════
 ```
 
@@ -1359,10 +1345,10 @@ Theme token gebruik:   {N} bestanden, {M} referenties
 **If code already uses theme correctly** (hardcoded count ≤ 3 AND theme tokens present):
 
 ```
-✓ Theme in sync — website gebruikt al design tokens.
+✓ Theme in sync — website already uses design tokens.
 ```
 
-→ Proceed to Output Formaat.
+→ Proceed to Output Format.
 
 **If code has hardcoded values** (hardcoded count > 3 OR no theme token usage):
 
@@ -1370,18 +1356,18 @@ Theme token gebruik:   {N} bestanden, {M} referenties
 
 ```yaml
 header: "Website Sync"
-question: "Er zijn {N} bestanden met hardcoded kleuren/styling die het theme niet gebruiken. Wil je restylen?"
+question: "There are {N} files with hardcoded colors/styling that don't use the theme. Would you like to restyle?"
 options:
-  - label: "Ja, restyle alles (Recommended)", description: "Vervang hardcoded waarden door theme tokens in alle {N} bestanden"
-  - label: "Extract als theme", description: "Formaliseer bestaande kleuren/waarden als theme tokens (reverse sync)"
-  - label: "Toon bestanden", description: "Bekijk welke bestanden geraakt worden voordat je beslist"
-  - label: "Nee, alleen theme opslaan", description: "Sla over — handmatig later"
+  - label: "Yes, restyle all (Recommended)", description: "Replace hardcoded values with theme tokens in all {N} files"
+  - label: "Extract as theme", description: "Formalize existing colors/values as theme tokens (reverse sync)"
+  - label: "Show files", description: "View which files are affected before deciding"
+  - label: "No, save theme only", description: "Skip — manual later"
 multiSelect: false
 ```
 
-**If "Extract als theme":** Run the Extraheren route (FASE 2 → Route: Extraheren) to parse existing hardcoded color/spacing values from component files as theme tokens. After extraction, merge into `project.json#theme` (existing tokens take priority, extracted values fill gaps), re-run Theme Infrastructure Sync (X.6). This formalizes existing design choices rather than overwriting them.
+**If "Extract as theme":** Run the Extract route (PHASE 2 → Route: Extract) to parse existing hardcoded color/spacing values from component files as theme tokens. After extraction, merge into `project.json#theme` (existing tokens take priority, extracted values fill gaps), re-run Theme Infrastructure Sync (X.6). This formalizes existing design choices rather than overwriting them.
 
-**If "Toon bestanden":** Show file list with hardcoded value count per file, then re-ask with "Ja, restyle alles" / "Selectief kiezen" / "Nee" options.
+**If "Show files":** Show file list with hardcoded value count per file, then re-ask with "Yes, restyle all" / "Select specific" / "No" options.
 
 ### Y.4 Restyle Execution (if approved)
 
@@ -1408,32 +1394,32 @@ After restyle, quick scan for remaining hardcoded values. Report count.
 ```
 WEBSITE SYNC
 ════════════════════════════════════════════════
-Bestanden gescand:    {N}
-Bestanden gerestyled: {M}
-Vervangingen:         {X} hardcoded waarden → theme tokens
+Files scanned:    {N}
+Files restyled:   {M}
+Replacements:     {X} hardcoded values → theme tokens
 
-Gewijzigde bestanden:
-  ✓ {file} — {N} kleuren gerestyled
-  ✓ {file} — {N} kleuren + spacing
-  ✓ tailwind.config.ts — theme extension toegevoegd/bijgewerkt
+Changed files:
+  ✓ {file} — {N} colors restyled
+  ✓ {file} — {N} colors + spacing
+  ✓ tailwind.config.ts — theme extension added/updated
 
-Resterend:            {R} hardcoded waarden (handmatige review aanbevolen)
+Remaining:            {R} hardcoded values (manual review recommended)
 ════════════════════════════════════════════════
 ```
 
 ---
 
-## Output Formaat
+## Output Format
 
-**Na succesvolle actie:**
+**After successful action:**
 
 ```
-THEME [AANGEMAAKT/BIJGEWERKT/VERWIJDERD]
+THEME [CREATED/UPDATED/DELETED]
 
-Locatie: .project/project.json (theme sectie)
+Location: .project/project.json (theme section)
 
-| Categorie | Tokens |
-|-----------|--------|
+| Category | Tokens |
+|----------|--------|
 | Colors | {N} (main: {n}, accent: {n}, semantic: {n}) |
 | Typography | {N} (families: {n}, sizes: {n}) |
 | Spacing | {N} |
@@ -1445,13 +1431,13 @@ Locatie: .project/project.json (theme sectie)
 | Modes | {light/dark/both} |
 | CSS Vars | {present/missing} |
 
-Theme tokens ready in project.json voor downstream consumption.
+Theme tokens ready in project.json for downstream consumption.
 
 Next steps:
-  1. /frontend-design {page} → bouw een pagina met deze tokens
-  2. /frontend-convert → converteer een design met deze tokens
-  3. /frontend-tokens → bekijk of update tokens later
-  4. /frontend-check → check performance en SEO
+  1. /frontend-design {page} → build a page with these tokens
+  2. /frontend-convert → convert a design with these tokens
+  3. /frontend-tokens → view or update tokens later
+  4. /frontend-check → check performance and SEO
   5. /frontend-check --scope=a11y → accessibility audit
 ```
 
@@ -1459,25 +1445,25 @@ Next steps:
 
 ## Error Recovery
 
-> Zie ook: `skills/shared/VALIDATION.md` voor algemene recovery patterns.
+> See also: `skills/shared/VALIDATION.md` for general recovery patterns.
 
 ### Extraction Failures
 
-| Error                      | Recovery                            |
-| -------------------------- | ----------------------------------- |
-| Config file niet gevonden  | Offer manual path input             |
-| Parse error in config      | Toon raw content, vraag format hint |
-| Geen tokens gevonden       | Offer defaults + manual input       |
-| Tailwind v3 vs v4 verschil | Detecteer versie, pas parser aan    |
+| Error                      | Recovery                                  |
+| -------------------------- | ----------------------------------------- |
+| Config file not found      | Offer manual path input                   |
+| Parse error in config      | Show raw content, ask for format hint     |
+| No tokens found            | Offer defaults + manual input             |
+| Tailwind v3 vs v4 mismatch | Detect version, adjust parser accordingly |
 
 ### Write Failures
 
-| Error                     | Recovery                           |
-| ------------------------- | ---------------------------------- |
-| Permission denied         | Suggest alternative path           |
-| Disk full                 | Warn, suggest cleanup              |
-| Directory niet creeerbaar | Offer manual creation instructions |
-| JSON parse error          | Backup corrupt file, maak nieuw    |
+| Error                   | Recovery                           |
+| ----------------------- | ---------------------------------- |
+| Permission denied       | Suggest alternative path           |
+| Disk full               | Warn, suggest cleanup              |
+| Directory not creatable | Offer manual creation instructions |
+| JSON parse error        | Backup corrupt file, create new    |
 
 ### Validation Failures
 
@@ -1489,17 +1475,17 @@ Next steps:
 | CSS syntax error | Re-generate cssVars   | Show error location          |
 | Invalid JSON     | Re-generate file      | Show parse error             |
 
-> **Note:** Rollback wordt afgehandeld door Claude Code's ingebouwde "Rewind" functie.
+> **Note:** Rollback is handled by Claude Code's built-in "Rewind" function.
 
 ---
 
 ## DevInfo Integration
 
-> Zie ook: `skills/shared/DEVINFO.md` voor volledige specificatie.
+> See also: `skills/shared/DEVINFO.md` for the full specification.
 
 ### Session Initialization
 
-Bij skill start:
+At skill start:
 
 ```json
 {
@@ -1513,7 +1499,7 @@ Bij skill start:
 
 ### Progress Updates
 
-Update devinfo bij elke fase transitie:
+Update devinfo on every phase transition:
 
 - `PREFLIGHT` → `ACTION_SELECT`
 - `ACTION_SELECT` → `CREATE|UPDATE|EXTRACT|MODES|DELETE`
@@ -1534,7 +1520,7 @@ Update `.project/project.json` → `design.principles` with concrete design syst
 
 ### Completion Handoff
 
-Bij succesvolle completion:
+On successful completion:
 
 ```json
 {
@@ -1562,27 +1548,27 @@ Bij succesvolle completion:
 
 ### Output Contract (theme → wireframe)
 
-Deze skill garandeert bij completion:
+This skill guarantees at completion:
 
-- `.project/project.json` bevat een gevulde `theme` sectie
-- `theme` bevat valid sections: colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars
-- `theme.cssVars` bevat syntactisch valide CSS variables string
-- Handoff data beschikbaar in devinfo
+- `.project/project.json` contains a populated `theme` section
+- `theme` contains valid sections: colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars
+- `theme.cssVars` contains a syntactically valid CSS variables string
+- Handoff data available in devinfo
 
 ### Consumption by Other Skills
 
-Andere skills consumeren theme data als volgt:
+Other skills consume theme data as follows:
 
-- **CSS variables nodig:** Read `project.json` → `theme.cssVars`
-- **Structured tokens nodig:** Read `project.json` → `theme.colors`, `theme.typography`, etc.
-- **Mode-specifiek CSS:** Read `project.json` → `theme.modes.light` / `theme.modes.dark`
+- **CSS variables needed:** Read `project.json` → `theme.cssVars`
+- **Structured tokens needed:** Read `project.json` → `theme.colors`, `theme.typography`, etc.
+- **Mode-specific CSS:** Read `project.json` → `theme.modes.light` / `theme.modes.dark`
 
 ---
 
 ## Resources
 
-- `skills/frontend-tokens/references/THEME_TEMPLATE.md` - Referentie voor token categorien en naming conventions
-- `skills/shared/DASHBOARD.md` - project.json schema en merge-strategie
+- `skills/frontend-tokens/references/THEME_TEMPLATE.md` - Reference for token categories and naming conventions
+- `skills/shared/DASHBOARD.md` - project.json schema and merge strategy
 - `skills/shared/VALIDATION.md` - Pre/post-flight validation templates
 - `skills/shared/DEVINFO.md` - Session state tracking
 
@@ -1590,24 +1576,24 @@ Andere skills consumeren theme data als volgt:
 
 ## Restrictions
 
-Dit command moet **NOOIT**:
+This command must **NEVER**:
 
-- Theme aanmaken zonder bevestiging
-- Bestaande theme overschrijven zonder waarschuwing
-- Tokens raden zonder bron (config of user input)
-- Post-flight validation overslaan
-- Andere secties in project.json overschrijven (alleen `theme` muteren)
-- Website code restylen zonder expliciete gebruikersbevestiging
-- Restyle uitvoeren zonder eerst hardcoded waarden te scannen
+- Create a theme without confirmation
+- Overwrite an existing theme without a warning
+- Guess tokens without a source (config or user input)
+- Skip post-flight validation
+- Overwrite other sections in project.json (only mutate `theme`)
+- Restyle website code without explicit user confirmation
+- Perform a restyle without first scanning for hardcoded values
 
-Dit command moet **ALTIJD**:
+This command must **ALWAYS**:
 
-- Pre-flight validation uitvoeren
-- AskUserQuestion gebruiken voor alle keuzes
-- Huidige waarden tonen bij updates
-- Diff preview tonen voor wijzigingen
-- Bevestiging vragen voor destructieve acties
-- Post-flight validation uitvoeren
-- Website Sync check uitvoeren na Create/Update (FASE Y)
-- DevInfo updaten bij fase transities
-- JSON integrity check: andere secties ongewijzigd na write
+- Run pre-flight validation
+- Use AskUserQuestion for all choices
+- Show current values during updates
+- Show a diff preview for changes
+- Ask for confirmation before destructive actions
+- Run post-flight validation
+- Run the Website Sync check after Create/Update (PHASE Y)
+- Update DevInfo on phase transitions
+- JSON integrity check: other sections unchanged after write

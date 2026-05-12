@@ -132,46 +132,46 @@
 
 **Sources:** WebSearch (primary)
 
-**Mental models (operationele lens — gebruik deze actief tijdens analyse):**
+**Mental models (operational lens — use these actively during analysis):**
 
-- Signal Detection: wat valt op, waarom en voor wie?
-- Triangulation: klopt dit signaal op meerdere platforms/bronnen?
-- Counter-Intuitive: waar breekt de consensus? Wat zie je NIET trending dat je zou verwachten?
-- MECE: zijn alle relevante platform/brontypen gedekt?
+- Signal Detection: what stands out, why, and for whom?
+- Triangulation: does this signal hold across multiple platforms/sources?
+- Counter-Intuitive: where does the consensus break? What is NOT trending that you would expect?
+- MECE: are all relevant platform/source types covered?
 
-**Platform DNA (gebruik als interpretatiegids):**
+**Platform DNA (use as interpretation guide):**
 
-| Platform     | Karakter                                        |
-| ------------ | ----------------------------------------------- |
-| Twitter/X    | Vroege adoptie, emotioneel, snelle cycli        |
-| Reddit       | Kritisch, gedetailleerd, nichegemeenschappen    |
-| LinkedIn     | Professioneel, lagging indicator, B2B sentiment |
-| Hacker News  | Tech/startup, sceptisch, anti-hype              |
-| Product Hunt | Launch-moment buzz, vroege adopters             |
+| Platform     | Character                                      |
+| ------------ | ---------------------------------------------- |
+| Twitter/X    | Early adoption, emotional, fast cycles         |
+| Reddit       | Critical, detailed, niche communities          |
+| LinkedIn     | Professional, lagging indicator, B2B sentiment |
+| Hacker News  | Tech/startup, skeptical, anti-hype             |
+| Product Hunt | Launch-moment buzz, early adopters             |
 
-Temperatuurverschil = analytisch signaal: trending op Twitter maar niet op LinkedIn → emotioneel/consument issue zonder zakelijke traction (of nog niet doorgesijpeld).
+Temperature difference = analytical signal: trending on Twitter but not on LinkedIn → emotional/consumer issue without business traction (or not yet filtered through).
 
-**Rank-trajectory vocabulaire:**
+**Rank-trajectory vocabulary:**
 
-- `acute_rise`: verschijnt en stijgt snel → time-sensitive window
-- `plateau`: hoog maar stabiel → mainstream, commodity-risk
-- `zombie`: blijft hangen zonder groei → uitgestorven momentum, vermijd
-- `comeback`: was weg, keert terug → nieuwe trigger, onderzoek de aanleiding
+- `acute_rise`: appears and rises quickly → time-sensitive window
+- `plateau`: high but stable → mainstream, commodity-risk
+- `zombie`: stagnant with no growth → exhausted momentum, avoid
+- `comeback`: was gone, returns → new trigger, investigate the cause
 
 **Approach:**
 
-- Welke platforms/communities noemen dit en in welke toon?
-- Wat zijn de temperatuurverschillen per platform?
-- Wat is het trajectory (acute_rise / plateau / zombie / comeback)?
-- Welke zwakke signalen zijn er die de mainstream bronnen nog niet dekken?
-- Waar breekt de consensus — wat is het echte conflict?
+- Which platforms/communities mention this and in what tone?
+- What are the temperature differences per platform?
+- What is the trajectory (acute_rise / plateau / zombie / comeback)?
+- What weak signals exist that mainstream sources don't yet cover?
+- Where does the consensus break — what is the real conflict?
 
-**Anti-hallucinatie:** "stabiel hoog" is GEEN stijging. Definieer trajectory altijd relatief aan een tijdvenster, niet als absolute claim.
+**Anti-hallucination:** "stably high" is NOT a rise. Always define trajectory relative to a time window, not as an absolute claim.
 
 **Output structure:**
 
-- Trend velocity per platform (stijgend/stabiel/dalend + karakter)
-- Temperatuurverschillen geïnterpreteerd (wat zegt het verschil?)
-- Trajectory assessment met vocabulaire
-- Zwakke signalen (bronnen die mainstream niet dekken)
-- Sentiment-conflict: "waar klapt de consensus?"
+- Trend velocity per platform (rising/stable/declining + character)
+- Temperature differences interpreted (what does the difference say?)
+- Trajectory assessment with vocabulary
+- Weak signals (sources mainstream doesn't cover)
+- Sentiment conflict: "where does the consensus break?"

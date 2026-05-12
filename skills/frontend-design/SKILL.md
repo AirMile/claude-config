@@ -17,39 +17,39 @@ metadata:
 
 # Design
 
-Drie modi:
+Three modes:
 
-1. **Capture** — beheert de design specificatie van het project (pagina's, user flows, design principes, components) in `.project/project.json` → `design`. Iteratief aan te roepen.
-2. **Brief** — genereert een markdown brief op basis van de design spec + block inventory uit de dev-pipeline + tokens + patterns. Output plak je in Claude Design als context. Het visuele werk gebeurt daar; de handoff bundle uit Claude Design gaat terug naar Claude Code (`/frontend-convert`). Ondersteunt page-briefs en component-briefs.
-3. **Build** — genereert werkende code voor backlog-features (PAGE of COMPONENT) met `status: DEF` waarvoor geen visueel referentiemateriaal beschikbaar is. Hergebruikt tokens + spec + bestaande components. Voor visuele input (screenshot/Figma/URL): gebruik `/frontend-convert`.
+1. **Capture** — manages the project design specification (pages, user flows, design principles, components) in `.project/project.json` → `design`. Can be called iteratively.
+2. **Brief** — generates a markdown brief based on the design spec + block inventory from the dev-pipeline + tokens + patterns. Paste the output into Claude Design as context. The visual work happens there; the handoff bundle from Claude Design goes back to Claude Code (`/frontend-convert`). Supports page-briefs and component-briefs.
+3. **Build** — generates working code for backlog features (PAGE or COMPONENT) with `status: DEF` for which no visual reference material is available. Reuses tokens + spec + existing components. For visual input (screenshot/Figma/URL): use `/frontend-convert`.
 
-**Verwante skills:** `/frontend-tokens` · `/frontend-convert` · `/core-setup` · `/frontend-check`
+**Related skills:** `/frontend-tokens` · `/frontend-convert` · `/core-setup` · `/frontend-check`
 
-**Output locaties:**
+**Output locations:**
 
-- Capture mode: `.project/project.json` → `design` sectie
+- Capture mode: `.project/project.json` → `design` section
 - Brief mode: `.project/claude-design-brief.md`
 
 ## References
 
-- `../shared/DASHBOARD.md` — project.json schema en merge-strategieën
+- `../shared/DASHBOARD.md` — project.json schema and merge strategies
 - `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
 - `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
 - `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
-- `../shared/CODEGEN.md` — Code-gen patronen: block inventory, token mapping, output structure, a11y scaffold (Build route)
+- `../shared/CODEGEN.md` — Code-gen patterns: block inventory, token mapping, output structure, a11y scaffold (Build route)
 
 ---
 
 ## Design JSON Schema
 
-De `design` sectie in `project.json` volgt dit schema:
+The `design` section in `project.json` follows this schema:
 
 ```json
 {
   "pages": [
     {
       "name": "dashboard",
-      "purpose": "Overzicht met metrics en status",
+      "purpose": "Overview with metrics and status",
       "status": "DEF",
       "sections": ["hero", "metrics-grid", "activity-feed"],
       "flows": ["login → dashboard", "dashboard → settings"],
@@ -73,7 +73,7 @@ De `design` sectie in `project.json` volgt dit schema:
   "components": [
     {
       "name": "Button",
-      "purpose": "Primaire actie-trigger met icon-support",
+      "purpose": "Primary action trigger with icon support",
       "status": "DEF",
       "scope": "atomic",
       "appliesTo": "all",
@@ -89,36 +89,36 @@ De `design` sectie in `project.json` volgt dit schema:
 }
 ```
 
-**Status waarden (pages en components):** `IDEA` | `DEF` | `BLT` | `DONE`
+**Status values (pages and components):** `IDEA` | `DEF` | `BLT` | `DONE`
 
-**`pages[].uses[]`** — auto-onderhouden door Build/convert post-pass. Lijst van component-namen die deze page importeert. Niet handmatig editen.
+**`pages[].uses[]`** — auto-maintained by Build/convert post-pass. List of component names imported by this page. Do not edit manually.
 
-**`components[].usedIn[]`** — auto-onderhouden door Build/convert post-pass. Lijst van page-namen die deze component importeren. Niet handmatig editen.
+**`components[].usedIn[]`** — auto-maintained by Build/convert post-pass. List of page names that import this component. Do not edit manually.
 
 **`components[].scope`:**
 
-| Waarde    | Betekenis                                                   | Voorbeeld               |
+| Value     | Meaning                                                     | Example                 |
 | --------- | ----------------------------------------------------------- | ----------------------- |
-| `atomic`  | Klein herbruikbaar element                                  | Button, Input, Avatar   |
-| `section` | Composiet binnen één page                                   | StatCard, ProductCard   |
-| `layout`  | Multi-page wrapper, leeft in `app/layout.tsx` of equivalent | NavBar, Footer, Sidebar |
+| `atomic`  | Small reusable element                                      | Button, Input, Avatar   |
+| `section` | Composite within a single page                              | StatCard, ProductCard   |
+| `layout`  | Multi-page wrapper, lives in `app/layout.tsx` or equivalent | NavBar, Footer, Sidebar |
 
-**`components[].appliesTo`:** `"all"` | `["page1", "page2"]` | `"route-group:groupname"` (alleen relevant voor `scope: layout`)
+**`components[].appliesTo`:** `"all"` | `["page1", "page2"]` | `"route-group:groupname"` (only relevant for `scope: layout`)
 
-**Merge-strategie:** `MERGE op name` — pages/flows/principles/components merge op naam, update velden, nooit auto-delete.
+**Merge strategy:** `MERGE on name` — pages/flows/principles/components merge on name, update fields, never auto-delete.
 
 ---
 
-## Verboden keuzes (anti-slop)
+## Forbidden choices (anti-slop)
 
-NOOIT gebruiken zonder expliciete reden van de gebruiker. Deze keuzes signaleren AI-gegenereerd werk en convergeren naar generieke output:
+NEVER use without explicit reason from the user. These choices signal AI-generated work and converge toward generic output:
 
 - **Fonts**: Inter, Roboto, Arial, system-ui, Space Grotesk
-- **Kleurenschema's**: paarse gradiënten op witte achtergrond, tech-startup blauw (#3B82F6 / Tailwind default), generieke "AI purple"
-- **Layouts**: 3-kolom features-grid met emoji icons, hero-with-gradient-mesh, centered-narrow-column blog template
-- **Component clichés**: floating glass cards, "trusted by" logo bar, gradient text op heading, blur-orb backgrounds, generic "modern SaaS" hero
+- **Color schemes**: purple gradients on white background, tech-startup blue (#3B82F6 / Tailwind default), generic "AI purple"
+- **Layouts**: 3-column features grid with emoji icons, hero-with-gradient-mesh, centered-narrow-column blog template
+- **Component clichés**: floating glass cards, "trusted by" logo bar, gradient text on heading, blur-orb backgrounds, generic "modern SaaS" hero
 
-In plaats daarvan: kies een context-specifieke richting met intentie. Varieer tussen runs — twee opeenvolgende design sessies mogen niet convergeren naar dezelfde fonts/kleuren.
+Instead: choose a context-specific direction with intent. Vary between runs — two consecutive design sessions must not converge toward the same fonts/colors.
 
 ---
 
@@ -127,20 +127,20 @@ In plaats daarvan: kies een context-specifieke richting met intentie. Varieer tu
 ```
 [*] → PREFLIGHT
 
-PREFLIGHT → ARG_KNOWN (pass + argument matcht bestaand entity)
-PREFLIGHT → ARG_UNKNOWN (pass + argument gegeven maar onbekend)
-PREFLIGHT → ACTION_SELECT (pass + geen argument)
+PREFLIGHT → ARG_KNOWN (pass + argument matches existing entity)
+PREFLIGHT → ARG_UNKNOWN (pass + argument given but unknown)
+PREFLIGHT → ACTION_SELECT (pass + no argument)
 PREFLIGHT → ERROR (fail)
 
-ARG_KNOWN → BUILD (keuze: Build)
-ARG_KNOWN → BRIEF (keuze: Brief)
-ARG_KNOWN → PAGINA (keuze: Edit spec, PAGE entity)
-ARG_KNOWN → COMPONENT (keuze: Edit spec, COMPONENT entity)
-ARG_KNOWN → AANMAKEN (keuze: Capture als nieuw)
+ARG_KNOWN → BUILD (choice: Build)
+ARG_KNOWN → BRIEF (choice: Brief)
+ARG_KNOWN → PAGINA (choice: Edit spec, PAGE entity)
+ARG_KNOWN → COMPONENT (choice: Edit spec, COMPONENT entity)
+ARG_KNOWN → AANMAKEN (choice: Capture as new)
 
-ARG_UNKNOWN → PAGINA (keuze: Nieuwe pagina)
-ARG_UNKNOWN → COMPONENT (keuze: Nieuwe component)
-ARG_UNKNOWN → [*] (keuze: Annuleer)
+ARG_UNKNOWN → PAGINA (choice: New page)
+ARG_UNKNOWN → COMPONENT (choice: New component)
+ARG_UNKNOWN → [*] (choice: Cancel)
 
 ACTION_SELECT → AANMAKEN (empty state)
 ACTION_SELECT → IMPORTEREN (empty state)
@@ -155,25 +155,25 @@ ACTION_SELECT → HERSTELLEN (populated, history exists)
 
 AANMAKEN → CONFIRM
 IMPORTEREN → CONFIRM
-BUILD → BUILD_ENTITY (PAGE or COMPONENT kiezen)
+BUILD → BUILD_ENTITY (choose PAGE or COMPONENT)
 BUILD_ENTITY → BUILD_COMPLETE (smoke success)
 BUILD_ENTITY → BUILD_REFINE (smoke fail → "Refine")
-BUILD_ENTITY → ACTION_SELECT (smoke fail → "Handmatig fixen" of max retries bereikt)
-BUILD_REFINE → BUILD_ENTITY (re-run smoke — max 3 rondes)
-BUILD_REFINE → ACTION_SELECT ("Handmatig fixen" of "Accepteren as-is")
-BEKIJKEN → ACTION_SELECT ("Aanpassen")
-BEKIJKEN → [*] ("Klaar")
+BUILD_ENTITY → ACTION_SELECT (smoke fail → "Fix manually" or max retries reached)
+BUILD_REFINE → BUILD_ENTITY (re-run smoke — max 3 rounds)
+BUILD_REFINE → ACTION_SELECT ("Fix manually" or "Accept as-is")
+BEKIJKEN → ACTION_SELECT ("Edit")
+BEKIJKEN → [*] ("Done")
 PAGINA → CONFIRM
 COMPONENT → CONFIRM
 FLOW → CONFIRM
 PRINCIPES → CONFIRM
 VERWIJDEREN → CONFIRM
-HERSTELLEN → POSTFLIGHT ("Ja" — skip X.0)
-HERSTELLEN → [*] ("Annuleren")
+HERSTELLEN → POSTFLIGHT ("Yes" — skip X.0)
+HERSTELLEN → [*] ("Cancel")
 
-CONFIRM → POSTFLIGHT ("Ja")
-CONFIRM → ACTION_SELECT ("Aanpassen" — loop back)
-CONFIRM → [*] ("Annuleren")
+CONFIRM → POSTFLIGHT ("Yes")
+CONFIRM → ACTION_SELECT ("Edit" — loop back)
+CONFIRM → [*] ("Cancel")
 
 POSTFLIGHT → COMPLETE (pass)
 POSTFLIGHT → RECOVER (fail)
@@ -199,7 +199,7 @@ COMPLETE → [*]
 3. Mutate ONLY the `design` section (other sections UNTOUCHED)
 4. Write back as `JSON.stringify(data, null, 2)`
 
-**Nieuw bestand aanmaken** als `.project/project.json` niet bestaat: gebruik het EMPTY schema uit `shared/DASHBOARD.md`, voeg `design` sectie toe:
+**Create new file** if `.project/project.json` does not exist: use the EMPTY schema from `shared/DASHBOARD.md`, add `design` section:
 
 ```json
 "design": {
@@ -217,12 +217,12 @@ For each page/flow/principle/component:
 1. Find by `name` in existing array
 2. If not found: push new item
 3. If found: update fields (purpose, status, sections, flows, notes, steps, description, scope, appliesTo, variants, sizes, states, props, slots)
-4. Never auto-delete items (only via explicit "Verwijderen" route)
+4. Never auto-delete items (only via explicit "Delete" route)
 5. `pages[].uses[]` and `components[].usedIn[]` are auto-maintained by Build post-pass — never overwrite during merge
 
 ---
 
-## FASE 0: Pre-flight
+## PHASE 0: Pre-flight
 
 ### 0.1 Directory Check
 
@@ -245,30 +245,30 @@ Session: [✓] [New session | Continuing from {skill}]
 Read `.project/project.json` and check if `design` section has data.
 
 ```
-Design: [empty — guided setup beschikbaar | {N} pagina's, {M} flows, {P} principes, {C} components]
+Design: [empty — guided setup available | {N} pages, {M} flows, {P} principles, {C} components]
 ```
 
 ### 0.5 Argument Detection
 
-Detect of een naam als argument is meegegeven (`/frontend-design {naam}`).
+Detect whether a name was passed as an argument (`/frontend-design {name}`).
 
 ```
-$SKILL_ARG = argument na /frontend-design (leeg als geen argument)
+$SKILL_ARG = argument after /frontend-design (empty if no argument)
 ```
 
-**Als `$SKILL_ARG` niet leeg:**
+**If `$SKILL_ARG` is not empty:**
 
-1. Check `design.pages[]` → entry met `name === $SKILL_ARG`? → `$ARG_MODE = "A"`, `$ARG_TYPE = "PAGE"`
-2. Check `design.components[]` → entry met `name === $SKILL_ARG`? → `$ARG_MODE = "A"`, `$ARG_TYPE = "COMPONENT"`
-3. Check backlog → PAGE/COMPONENT feature met `name === $SKILL_ARG`? → `$ARG_MODE = "A"`, `$ARG_TYPE = backlog type`
-4. Geen match → `$ARG_MODE = "B"`, `$ARG_NAME = $SKILL_ARG`
+1. Check `design.pages[]` → entry with `name === $SKILL_ARG`? → `$ARG_MODE = "A"`, `$ARG_TYPE = "PAGE"`
+2. Check `design.components[]` → entry with `name === $SKILL_ARG`? → `$ARG_MODE = "A"`, `$ARG_TYPE = "COMPONENT"`
+3. Check backlog → PAGE/COMPONENT feature with `name === $SKILL_ARG`? → `$ARG_MODE = "A"`, `$ARG_TYPE = backlog type`
+4. No match → `$ARG_MODE = "B"`, `$ARG_NAME = $SKILL_ARG`
 
-**Als `$SKILL_ARG` leeg:** `$ARG_MODE = "C"`
+**If `$SKILL_ARG` is empty:** `$ARG_MODE = "C"`
 
-Voeg toe aan pre-flight summary:
+Add to pre-flight summary:
 
 ```
-Argument:   [geen | "{naam}" → MODE A ({type} gevonden) | "{naam}" → MODE B (onbekend)]
+Argument:   [none | "{name}" → MODE A ({type} found) | "{name}" → MODE B (unknown)]
 ```
 
 ### 0.4 Learnings Load
@@ -278,20 +278,20 @@ Argument:   [geen | "{naam}" → MODE A ({type} gevonden) | "{naam}" → MODE B 
 ```
 scopes: [component]
 pitfall-prefix: true
-current-feature: <page-name als capture/iterate-mode op 1 pagina, anders "none">
+current-feature: <page-name if capture/iterate-mode on 1 page, otherwise "none">
 ```
 
-UI/UX patterns en pitfalls uit eerdere designs sturen consistente keuzes (component naming, layout patterns, accessibility gotchas). Skip stilzwijgend als geen learnings beschikbaar.
+UI/UX patterns and pitfalls from previous designs drive consistent choices (component naming, layout patterns, accessibility gotchas). Skip silently if no learnings available.
 
 **On failure:** AskUserQuestion:
 
 ```yaml
 header: "Pre-flight"
-question: "Pre-flight check gefaald. Hoe wil je doorgaan?"
+question: "Pre-flight check failed. How do you want to proceed?"
 options:
-  - label: "Fix en retry (Recommended)", description: "Probeer het probleem op te lossen"
-  - label: "Doorgaan anyway", description: "Negeer en ga door"
-  - label: "Annuleren", description: "Stop"
+  - label: "Fix and retry (Recommended)", description: "Try to resolve the problem"
+  - label: "Continue anyway", description: "Ignore and continue"
+  - label: "Cancel", description: "Stop"
 multiSelect: false
 ```
 
@@ -308,139 +308,139 @@ Design:     [empty | {N} pages, {M} flows, {P} principles]
 
 ---
 
-## FASE 1: Actie Selectie
+## PHASE 1: Action Selection
 
-Branching op basis van `$ARG_MODE` (bepaald in FASE 0.5).
+Branching based on `$ARG_MODE` (determined in PHASE 0.5).
 
 ---
 
-### Mode A — Bestaand entity (`$ARG_MODE = "A"`)
+### Mode A — Existing entity (`$ARG_MODE = "A"`)
 
-Entity gevonden in design[]/backlog. Toon entity-specifieke acties direct:
+Entity found in design[]/backlog. Show entity-specific actions directly:
 
 ```yaml
-header: "Wat wil je met {naam} doen?"
-question: "{$ARG_TYPE} '{naam}' — {status}, {korte spec-samenvatting uit design.*}"
+header: "What do you want to do with {name}?"
+question: "{$ARG_TYPE} '{name}' — {status}, {short spec summary from design.*}"
 options:
-  - label: "Build met Claude Code (Recommended)"
-    description: "Genereer code direct naar repo"
-  - label: "Brief voor Claude Design"
-    description: "Markdown handoff voor Claude Design / Figma"
+  - label: "Build with Claude Code (Recommended)"
+    description: "Generate code directly to repo"
+  - label: "Brief for Claude Design"
+    description: "Markdown handoff for Claude Design / Figma"
   - label: "Edit spec"
-    description: "Naam, scope, variants of beschrijving aanpassen"
-  - label: "Capture als nieuw (andere naam)"
-    description: "Ik bedoelde een andere {$ARG_TYPE} — voer nieuwe naam in"
+    description: "Update name, scope, variants or description"
+  - label: "Capture as new (different name)"
+    description: "I meant a different {$ARG_TYPE} — enter a new name"
 multiSelect: false
 ```
 
 Routing:
 
-- "Build" → Route: Build (met `$ARG_TYPE` en `$ARG_ENTITY` vooringesteld, skip entity-keuze)
-- "Brief" → Route: Brief (met entity vooringesteld)
-- "Edit spec" → Route: Pagina of Component (afhankelijk van `$ARG_TYPE`, in edit-modus)
-- "Capture als nieuw" → vraag nieuwe naam → Route: Pagina of Component (in create-modus)
+- "Build" → Route: Build (with `$ARG_TYPE` and `$ARG_ENTITY` pre-set, skip entity selection)
+- "Brief" → Route: Brief (with entity pre-set)
+- "Edit spec" → Route: Page or Component (depending on `$ARG_TYPE`, in edit mode)
+- "Capture as new" → ask for new name → Route: Page or Component (in create mode)
 
 ---
 
-### Mode B — Onbekende naam (`$ARG_MODE = "B"`)
+### Mode B — Unknown name (`$ARG_MODE = "B"`)
 
-Naam `$ARG_NAME` staat niet in design[]/backlog.
+Name `$ARG_NAME` is not in design[]/backlog.
 
 ```yaml
-header: "'{$ARG_NAME}' is niet bekend"
-question: "Wat wil je aanmaken?"
+header: "'{$ARG_NAME}' is not known"
+question: "What do you want to create?"
 options:
-  - label: "Nieuwe pagina"
-    description: "Capture flow voor PAGE met naam {$ARG_NAME}"
-  - label: "Nieuwe component"
-    description: "Capture flow voor COMPONENT met naam {$ARG_NAME}"
-  - label: "Annuleer"
-    description: "Verkeerde naam — stop zonder iets aan te maken"
+  - label: "New page"
+    description: "Capture flow for PAGE with name {$ARG_NAME}"
+  - label: "New component"
+    description: "Capture flow for COMPONENT with name {$ARG_NAME}"
+  - label: "Cancel"
+    description: "Wrong name — stop without creating anything"
 multiSelect: false
 ```
 
 Routing:
 
-- "Nieuwe pagina" → Route: Pagina (naam vooringevuld)
-- "Nieuwe component" → Route: Component (naam vooringevuld)
-- "Annuleer" → exit
+- "New page" → Route: Page (name pre-filled)
+- "New component" → Route: Component (name pre-filled)
+- "Cancel" → exit
 
 ---
 
-### Mode C — Geen argument (`$ARG_MODE = "C"`)
+### Mode C — No argument (`$ARG_MODE = "C"`)
 
-Gebruik bestaande design-state branching:
+Use existing design-state branching:
 
 #### If design section EMPTY (or project.json missing):
 
 ```yaml
 header: "Design"
-question: "Geen design spec gevonden. Wat wil je doen?"
+question: "No design spec found. What do you want to do?"
 options:
-  - label: "Aanmaken (Recommended)", description: "Nieuwe design spec met guided setup"
-  - label: "Importeren", description: "Design extraheren uit bestaande codebase"
+  - label: "Create (Recommended)", description: "New design spec with guided setup"
+  - label: "Import", description: "Extract design from existing codebase"
 multiSelect: false
 ```
 
 ### If design section HAS DATA:
 
-Detecteer eerst:
+Detect first:
 
-- `$HAS_BUILD_CANDIDATES` (true/false): zijn er PAGE- of COMPONENT-features met `status: DEF` op de backlog waarvoor géén visuele referentie bestaat in `.project/wireframes/` of `design.pages[]/design.components[].screenshots[]`?
-- `$HAS_PAGE_CANDIDATES` (true/false): subset van bovenstaande, alleen PAGE-type.
-- `$HAS_COMPONENT_CANDIDATES` (true/false): subset van bovenstaande, alleen COMPONENT-type.
+- `$HAS_BUILD_CANDIDATES` (true/false): are there PAGE or COMPONENT features with `status: DEF` on the backlog for which no visual reference exists in `.project/wireframes/` or `design.pages[]/design.components[].screenshots[]`?
+- `$HAS_PAGE_CANDIDATES` (true/false): subset of the above, PAGE type only.
+- `$HAS_COMPONENT_CANDIDATES` (true/false): subset of the above, COMPONENT type only.
 
 ```yaml
 header: "Design"
-question: "Design spec gevonden ({N} pagina's, {M} flows, {P} principes, {C} components). Wat wil je doen?"
-# Als $HAS_BUILD_CANDIDATES = true:
+question: "Design spec found ({N} pages, {M} flows, {P} principles, {C} components). What do you want to do?"
+# If $HAS_BUILD_CANDIDATES = true:
 options:
-  - label: "Build (Recommended)", description: "Genereer code voor {X} PAGE/COMPONENT(s) met status DEF — geen visueel materiaal nodig"
-  - label: "Brief genereren", description: "Markdown brief voor Claude Design (page of component)"
-  - label: "Bekijken", description: "Toon huidige design spec"
-  - label: "Pagina", description: "Pagina toevoegen of bewerken"
-  - label: "Component", description: "Component toevoegen of bewerken"
-# Als $HAS_BUILD_CANDIDATES = false:
+  - label: "Build (Recommended)", description: "Generate code for {X} PAGE/COMPONENT(s) with status DEF — no visual material needed"
+  - label: "Generate brief", description: "Markdown brief for Claude Design (page or component)"
+  - label: "View", description: "Show current design spec"
+  - label: "Page", description: "Add or edit a page"
+  - label: "Component", description: "Add or edit a component"
+# If $HAS_BUILD_CANDIDATES = false:
 options:
-  - label: "Brief genereren (Recommended)", description: "Markdown brief voor Claude Design (page of component)"
-  - label: "Bekijken", description: "Toon huidige design spec"
-  - label: "Pagina", description: "Pagina toevoegen of bewerken"
-  - label: "Component", description: "Component toevoegen of bewerken"
+  - label: "Generate brief (Recommended)", description: "Markdown brief for Claude Design (page or component)"
+  - label: "View", description: "Show current design spec"
+  - label: "Page", description: "Add or edit a page"
+  - label: "Component", description: "Add or edit a component"
 multiSelect: false
 ```
 
-"Other" opties: "Flow" (flows beheren), "Principes" (principes beheren), "Verwijderen" (pagina/component/flow/principe verwijderen), "Herstellen" (terug naar eerdere design staat — alleen tonen als `.project/session/design-history.json` bestaat en niet leeg is).
+"Other" options: "Flow" (manage flows), "Principles" (manage principles), "Delete" (remove page/component/flow/principle), "Restore" (go back to an earlier design state — only show if `.project/session/design-history.json` exists and is not empty).
 
 ---
 
-## FASE 2: Actie Uitvoering
+## PHASE 2: Action Execution
 
 ### Route: Aanmaken (First-Time Setup)
 
 Guided 4-step creation flow.
 
-#### Stap 1: Projectcontext
+#### Step 1: Project context
 
 Check for concept:
 
-Lees `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader.
+Read `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader.
 
-**Als `CONCEPT_CONTEXT.present`:**
+**If `CONCEPT_CONTEXT.present`:**
 
 ```
 PROJECT CONTEXT
 ════════════════════════════════════════════════
-Naam:    {CONCEPT_CONTEXT.name}
+Name:    {CONCEPT_CONTEXT.name}
 Concept: {CONCEPT_CONTEXT.markdown — first 200 chars}
 ════════════════════════════════════════════════
 ```
 
 ```yaml
 header: "Context"
-question: "Klopt deze context nog?"
+question: "Is this context still correct?"
 options:
-  - label: "Ja, ga door (Recommended)", description: "Context is correct"
-  - label: "Ik pas het aan", description: "Beschrijf de context opnieuw"
+  - label: "Yes, continue (Recommended)", description: "Context is correct"
+  - label: "I'll update it", description: "Describe the context again"
 multiSelect: false
 ```
 
@@ -448,29 +448,29 @@ multiSelect: false
 
 ```yaml
 header: "Context"
-question: "Beschrijf kort wat je bouwt en voor wie."
+question: "Briefly describe what you're building and for whom."
 options:
-  - label: "Ik typ het uit", description: "Vrije beschrijving"
+  - label: "I'll type it out", description: "Free description"
 multiSelect: false
 ```
 
 Store context for generating relevant page suggestions.
 
-#### Stap 2: Pagina's definiëren
+#### Step 2: Define pages
 
 ```yaml
-header: "Pagina's"
-question: "Welke pagina's heeft je app nodig? Beschrijf naam + doel per pagina."
+header: "Pages"
+question: "Which pages does your app need? Describe name + purpose per page."
 options:
-  - label: "Ik typ ze uit (Recommended)", description: "Beschrijf elke pagina vrij"
-  - label: "Standaard set", description: "Home, Dashboard, Settings, Login/Register"
-  - label: "Later", description: "Sla pagina's over, voeg later toe"
+  - label: "I'll type them out (Recommended)", description: "Describe each page freely"
+  - label: "Standard set", description: "Home, Dashboard, Settings, Login/Register"
+  - label: "Later", description: "Skip pages, add later"
 multiSelect: false
 ```
 
-**If "Standaard set":** Generate 4 default pages with generic purposes based on project context. Present for confirmation.
+**If "Standard set":** Generate 4 default pages with generic purposes based on project context. Present for confirmation.
 
-**If "Ik typ ze uit":** User provides free-text list. Parse into structured page objects:
+**If "I'll type them out":** User provides free-text list. Parse into structured page objects:
 
 For EACH page, generate:
 
@@ -484,66 +484,62 @@ For EACH page, generate:
 Show summary table:
 
 ```
-PAGINA'S
+PAGES
 ════════════════════════════════════════════════
-| Naam      | Doel                          | Secties                      | Status |
+| Name      | Purpose                       | Sections                     | Status |
 |-----------|-------------------------------|------------------------------|--------|
-| dashboard | Overzicht met metrics         | hero, metrics-grid, feed     | DEF    |
-| settings  | Account instellingen          | profile-form, notifications  | DEF    |
+| dashboard | Overview with metrics         | hero, metrics-grid, feed     | DEF    |
+| settings  | Account settings              | profile-form, notifications  | DEF    |
 ════════════════════════════════════════════════
 ```
 
-#### Stap 2b: Design Alternatieven (optioneel)
+#### Step 2b: Design Alternatives (optional)
 
-Bij pagina's met ≥3 secties, bied aan:
+For pages with ≥3 sections, offer:
 
 ```yaml
-header: "Alternatieven"
-question: "Wil je alternatieve layouts vergelijken voor {page-name}?"
+header: "Alternatives"
+question: "Do you want to compare alternative layouts for {page-name}?"
 options:
-  - label: "Nee, ga door (Recommended)", description: "Huidige indeling is goed"
-  - label: "Ja, 2 alternatieven", description: "Genereer 2 radicaal andere sectiedelingen"
+  - label: "No, continue (Recommended)", description: "Current layout is fine"
+  - label: "Yes, 2 alternatives", description: "Generate 2 radically different section layouts"
 multiSelect: false
 ```
 
-**Als "Ja":** spawn 2 agents parallel, elk met een andere constraint:
+**If "Yes":** spawn 2 agents in parallel, each with a different constraint:
 
-- Agent 1: "Minimaliseer secties — max 2, combineer waar mogelijk"
-- Agent 2: "Maximaliseer focus — elke sectie heeft één doel"
+- Agent 1: "Minimize sections — max 2, combine where possible"
+- Agent 2: "Maximize focus — each section has one purpose"
 
-Presenteer de 3 opties (origineel + 2 alternatieven) als ASCII wireframes.
-User kiest via AskUserQuestion welke layout, of combineert elementen.
+Present the 3 options (original + 2 alternatives) as ASCII wireframes.
+User chooses via AskUserQuestion which layout, or combines elements.
 
-Bij pagina's met <3 secties: skip deze stap.
-
-<!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the pages table above visible when the modal panel opens).
+For pages with <3 sections: skip this step.
 
 ```yaml
-header: "Pagina's"
-question: "Kloppen deze pagina's?"
+header: "Pages"
+question: "Are these pages correct?"
 options:
-  - label: "Ja, ga door (Recommended)", description: "Ga naar flows"
-  - label: "Aanpassen", description: "Ik wil iets wijzigen"
+  - label: "Yes, continue (Recommended)", description: "Go to flows"
+  - label: "Edit", description: "I want to change something"
 multiSelect: false
 ```
 
-If "Aanpassen": ask what to change, update, re-confirm.
+If "Edit": ask what to change, update, re-confirm.
 
-#### Stap 3: User Flows
+#### Step 3: User Flows
 
 ```yaml
 header: "Flows"
-question: "Welke user flows zijn belangrijk? (bijv. onboarding, checkout, account setup)"
+question: "Which user flows are important? (e.g. onboarding, checkout, account setup)"
 options:
-  - label: "Ik typ ze uit (Recommended)", description: "Beschrijf elke flow met stappen"
-  - label: "Afleiden uit pagina's", description: "Genereer flows op basis van gedefinieerde pagina's"
-  - label: "Later", description: "Sla flows over, voeg later toe"
+  - label: "I'll type them out (Recommended)", description: "Describe each flow with steps"
+  - label: "Derive from pages", description: "Generate flows based on defined pages"
+  - label: "Later", description: "Skip flows, add later"
 multiSelect: false
 ```
 
-**If "Afleiden uit pagina's":** Analyze defined pages and generate logical flows:
+**If "Derive from pages":** Analyze defined pages and generate logical flows:
 
 - Login-flow if login page exists
 - Navigation flows between related pages
@@ -551,7 +547,7 @@ multiSelect: false
 
 Present for confirmation.
 
-**If "Ik typ ze uit":** User provides descriptions. Parse into structured flow objects:
+**If "I'll type them out":** User provides descriptions. Parse into structured flow objects:
 
 - `name`: descriptive name
 - `steps`: array of page names as flow steps
@@ -560,7 +556,7 @@ Present for confirmation.
 **Cross-reference:** For each step in a flow, check if the page exists in the defined pages. If not:
 
 ```
-⚠ Flow "{flow}" refereert naar pagina "{page}" die nog niet gedefinieerd is.
+⚠ Flow "{flow}" references page "{page}" which has not been defined yet.
 ```
 
 Offer to add missing pages.
@@ -570,137 +566,137 @@ Show summary:
 ```
 FLOWS
 ════════════════════════════════════════════════
-| Naam        | Stappen                                    |
+| Name        | Steps                                      |
 |-------------|--------------------------------------------|
 | onboarding  | landing → signup → verify → dashboard      |
 | settings    | dashboard → settings → save → dashboard    |
 ════════════════════════════════════════════════
 ```
 
-#### Stap 4: Design Principes
+#### Step 4: Design Principles
 
 ```yaml
-header: "Principes"
-question: "Welke design principes gelden?"
+header: "Principles"
+question: "Which design principles apply?"
 options:
-  - label: "Standaard set (Recommended)", description: "Mobile-first, Consistent spacing, Accessibility (WCAG AA)"
-  - label: "Ik definieer zelf", description: "Eigen principes opgeven"
-  - label: "Later", description: "Sla principes over, voeg later toe"
+  - label: "Standard set (Recommended)", description: "Mobile-first, Consistent spacing, Accessibility (WCAG AA)"
+  - label: "I'll define my own", description: "Enter custom principles"
+  - label: "Later", description: "Skip principles, add later"
 multiSelect: false
 ```
 
-**If "Standaard set":** Generate:
+**If "Standard set":** Generate:
 
-- Mobile-first: "Design voor mobile viewport eerst, progressive enhancement"
-- Consistent spacing: "Gebruik een spacing scale voor alle margins en padding"
-- Accessibility: "WCAG 2.1 AA compliance, semantische HTML, keyboard navigatie"
+- Mobile-first: "Design for mobile viewport first, progressive enhancement"
+- Consistent spacing: "Use a spacing scale for all margins and padding"
+- Accessibility: "WCAG 2.1 AA compliance, semantic HTML, keyboard navigation"
 
-**If "Ik definieer zelf":** Free-text input, parse into `{ name, description }` objects.
+**If "I'll define my own":** Free-text input, parse into `{ name, description }` objects.
 
-#### Stap 5: Samenvatting
+#### Step 5: Summary
 
 Show complete summary:
 
 ```
-DESIGN SPEC SAMENVATTING
+DESIGN SPEC SUMMARY
 ════════════════════════════════════════════════
 
-Pagina's ({N}):
-| Naam      | Doel                    | Secties                  | Status |
+Pages ({N}):
+| Name      | Purpose                 | Sections                 | Status |
 |-----------|-------------------------|--------------------------|--------|
-| dashboard | Overzicht met metrics   | hero, metrics-grid, feed | DEF    |
-| settings  | Account instellingen    | profile-form, notifs     | DEF    |
+| dashboard | Overview with metrics   | hero, metrics-grid, feed | DEF    |
+| settings  | Account settings        | profile-form, notifs     | DEF    |
 
 Flows ({M}):
-| Naam       | Stappen                                 |
+| Name       | Steps                                   |
 |------------|-----------------------------------------|
 | onboarding | landing → signup → verify → dashboard   |
 
-Principes ({P}):
-| Naam          | Beschrijving                                     |
+Principles ({P}):
+| Name          | Description                                      |
 |---------------|--------------------------------------------------|
-| Mobile-first  | Design voor mobile viewport eerst                |
-| Accessibility | WCAG 2.1 AA compliance, semantische HTML         |
+| Mobile-first  | Design for mobile viewport first                 |
+| Accessibility | WCAG 2.1 AA compliance, semantic HTML            |
 
 ════════════════════════════════════════════════
 ```
 
-Proceed to FASE 3 (Confirm).
+Proceed to PHASE 3 (Confirm).
 
 ---
 
 ### Route: Importeren (Extract from Codebase or Screenshot)
 
-#### Stap 0: Input Selectie
+#### Step 0: Input Selection
 
 ```yaml
-header: "Importeren"
-question: "Wat is je input?"
+header: "Import"
+question: "What is your input?"
 options:
-  - label: "Codebase (Recommended)", description: "Scan framework bestanden voor pagina's en flows"
-  - label: "Screenshot", description: "Analyseer een screenshot van een bestaand design"
+  - label: "Codebase (Recommended)", description: "Scan framework files for pages and flows"
+  - label: "Screenshot", description: "Analyze a screenshot of an existing design"
 multiSelect: false
 ```
 
-**Als "Screenshot":** ga naar Stap 0b. **Als "Codebase":** ga naar Stap 1.
+**If "Screenshot":** go to Step 0b. **If "Codebase":** go to Step 1.
 
-#### Stap 0b: Screenshot Analyse
+#### Step 0b: Screenshot Analysis
 
-1. **Detecteer input-methode:**
-   - Als er **meerdere afbeeldingen** in de conversatie zitten → meld aantal en ga direct naar analyse:
+1. **Detect input method:**
+   - If there are **multiple images** in the conversation → report count and proceed directly to analysis:
      ```
-     ℹ {N} screenshots gedetecteerd — elke afbeelding wordt als aparte pagina geanalyseerd.
+     ℹ {N} screenshots detected — each image will be analyzed as a separate page.
      ```
-   - Als er **één afbeelding** in de conversatie zit → gebruik die direct.
-   - Als er **geen afbeelding** in de conversatie zit:
+   - If there is **one image** in the conversation → use it directly.
+   - If there is **no image** in the conversation:
 
      ```yaml
      header: "Screenshot"
-     question: "Voeg een screenshot toe aan je volgende bericht, of geef een bestandspad op."
+     question: "Add a screenshot to your next message, or provide a file path."
      options:
-       - label: "Ik voeg hem toe (Recommended)", description: "Sleep of gebruik de bijlage-knop in VSCode"
-       - label: "Bestandspad", description: "Geef een absoluut of relatief pad op"
+       - label: "I'll add it (Recommended)", description: "Drag or use the attachment button in VSCode"
+       - label: "File path", description: "Provide an absolute or relative path"
      multiSelect: false
      ```
 
-     - "Ik voeg hem toe": wacht op het volgende bericht en gebruik de meegestuurde afbeelding(en).
-     - "Bestandspad": lees de afbeelding via Read tool op het opgegeven pad.
+     - "I'll add it": wait for the next message and use the attached image(s).
+     - "File path": read the image via the Read tool at the given path.
 
-2. **Analyseer visueel (Claude Vision):**
+2. **Analyze visually (Claude Vision):**
 
-   Per afbeelding afzonderlijk:
-   - Detecteer paginatype (landing, dashboard, form, checkout, settings, etc.)
-   - Identificeer zichtbare secties (hero, nav, sidebar, content-area, footer, cards, etc.)
-   - Leid doel af uit de lay-out en zichtbare content
+   Per image separately:
+   - Detect page type (landing, dashboard, form, checkout, settings, etc.)
+   - Identify visible sections (hero, nav, sidebar, content-area, footer, cards, etc.)
+   - Infer purpose from layout and visible content
 
-   Bij meerdere afbeeldingen: spawn N agents parallel (één per afbeelding), merge resultaten, toon voortgang:
+   For multiple images: spawn N agents in parallel (one per image), merge results, show progress:
 
    ```
-   Afbeelding 1/{N}: [paginatype] — {M} secties gedetecteerd
-   Afbeelding 2/{N}: [paginatype] — {M} secties gedetecteerd
+   Image 1/{N}: [page type] — {M} sections detected
+   Image 2/{N}: [page type] — {M} sections detected
    ...
    ```
 
-3. **Genereer page object per afbeelding:**
+3. **Generate page object per image:**
 
    ```json
    {
-     "name": "{slug van paginatype}",
-     "purpose": "{afgeleid uit screenshot — 1-2 zinnen}",
+     "name": "{slug of page type}",
+     "purpose": "{derived from screenshot — 1-2 sentences}",
      "status": "IDEA",
-     "sections": ["{sectie1}", "{sectie2}"],
+     "sections": ["{section1}", "{section2}"],
      "flows": [],
-     "notes": "Geïmporteerd via screenshot"
+     "notes": "Imported via screenshot"
    }
    ```
 
-   Dedupliceer op `name`: als twee screenshots hetzelfde paginatype detecteren, suffix de tweede met `-2`.
+   Deduplicate on `name`: if two screenshots detect the same page type, suffix the second with `-2`.
 
-4. Ga naar Stap 4: Present and Confirm (tabel toont alle geïmporteerde page objects als rijen).
+4. Go to Step 4: Present and Confirm (table shows all imported page objects as rows).
 
 ---
 
-#### Stap 1: Scan
+#### Step 1: Scan
 
 Glob for page files AND component files in common framework patterns:
 
@@ -714,7 +710,7 @@ Glob for page files AND component files in common framework patterns:
 | Remix              | `app/routes/**/*.{tsx,jsx}` |
 | Astro              | `src/pages/**/*.astro`      |
 
-**Components** (scan naast pages):
+**Components** (scan alongside pages):
 
 - `src/components/**/*.{tsx,jsx,svelte,vue,astro}`
 - `app/components/**/*.{tsx,jsx}`
@@ -722,43 +718,43 @@ Glob for page files AND component files in common framework patterns:
 - Exclude: `_dev/`, `node_modules/`, `*.test.*`, `*.stories.*`
 
 ```
-SCAN RESULTAAT
+SCAN RESULT
 ════════════════════════════════════════════════
 Framework:   [detected]
-Pagina's:    {N} gevonden
-Components:  {M} gevonden
+Pages:       {N} found
+Components:  {M} found
 ════════════════════════════════════════════════
 ```
 
-#### Stap 2: Parse Pages
+#### Step 2: Parse Pages
 
 For each detected page file:
 
 - Extract page name from file path
-- Analyze imports to detect section components → vul `uses[]`
+- Analyze imports to detect section components → populate `uses[]`
 - Infer purpose from component names and composition
 
-#### Stap 2b: Parse Components
+#### Step 2b: Parse Components
 
-For each detected component file (parallell aan Stap 2):
+For each detected component file (parallel with Step 2):
 
-1. Extract component name uit bestandsnaam (PascalCase)
-2. Check of naam al in `design.components[]` staat → skip als bestaand
-3. Detect scope-heuristiek:
-   - Bestand in `layout.tsx` import-tree → `scope: layout`
-   - Geïmporteerd door ≥2 pages → `scope: section` of `atomic`
-   - Alleen in `ui/` map → `scope: atomic`
+1. Extract component name from filename (PascalCase)
+2. Check if name already in `design.components[]` → skip if existing
+3. Detect scope heuristic:
+   - File in `layout.tsx` import tree → `scope: layout`
+   - Imported by ≥2 pages → `scope: section` or `atomic`
+   - Only in `ui/` folder → `scope: atomic`
    - Standalone in `components/` → `scope: section`
 4. Detect cva-variants/sizes via regex: `variants.variant[]`, `variants.size[]`
-5. Scan alle page-imports → vul `usedIn[]`
-6. Genereer component object met `status: BLT` (al gebouwd)
+5. Scan all page imports → populate `usedIn[]`
+6. Generate component object with `status: BLT` (already built)
 
-Toon preview van gedetecteerde components:
+Show preview of detected components:
 
 ```
-COMPONENTS GEVONDEN
+COMPONENTS FOUND
 ════════════════════════════════════════════════
-| Naam    | Scope   | Variants          | UsedIn      |
+| Name    | Scope   | Variants          | UsedIn      |
 |---------|---------|-------------------|-------------|
 | Button  | atomic  | primary/ghost/... | dashboard   |
 | NavBar  | layout  | —                 | (all pages) |
@@ -767,80 +763,80 @@ COMPONENTS GEVONDEN
 ```
 
 ```yaml
-header: "Components importeren"
-question: "Welke components wil je in de design spec opnemen?"
+header: "Import components"
+question: "Which components do you want to include in the design spec?"
 options:
-  - label: "Alle ({M} components)", description: "Voeg alle gevonden components toe"
-  - label: "Selecteer", description: "Kies handmatig welke"
-  - label: "Geen", description: "Sla component-import over"
+  - label: "All ({M} components)", description: "Add all found components"
+  - label: "Select", description: "Choose manually which ones"
+  - label: "None", description: "Skip component import"
 multiSelect: false
 ```
 
-Bij "Selecteer": toon als multiSelect met alle component-namen als opties.
+For "Select": show as multiSelect with all component names as options.
 
-#### Stap 3: Infer Flows
+#### Step 3: Infer Flows
 
 From routing structure and navigation components (Link, useRouter, navigate), infer user flows between pages.
 
-#### Stap 4: Present and Confirm
+#### Step 4: Present and Confirm
 
-Show extracted design spec in same table format as Aanmaken Stap 5, inclusief components-tabel als er components geïmporteerd worden. Proceed to FASE 3 (Confirm).
+Show extracted design spec in same table format as Aanmaken Step 5, including components table if components were imported. Proceed to PHASE 3 (Confirm).
 
 ---
 
 ### Route: Bekijken (View)
 
-Read `project.json` → `design` section. Render as formatted table (same format as Aanmaken Stap 5 summary).
+Read `project.json` → `design` section. Render as formatted table (same format as Aanmaken Step 5 summary).
 
 ```yaml
-header: "Actie"
-question: "Wat wil je doen?"
+header: "Action"
+question: "What do you want to do?"
 options:
-  - label: "Klaar", description: "Terug naar conversation"
-  - label: "Aanpassen", description: "Naar actie selectie"
+  - label: "Done", description: "Back to conversation"
+  - label: "Edit", description: "Go to action selection"
 multiSelect: false
 ```
 
-If "Klaar": end skill, no state change.
-If "Aanpassen": loop back to FASE 1 (ACTION_SELECT with populated-state options).
+If "Done": end skill, no state change.
+If "Edit": loop back to PHASE 1 (ACTION_SELECT with populated-state options).
 
 ---
 
 ### Route: Pagina (Add/Edit Page)
 
-#### Stap 1: Keuze
+#### Step 1: Choice
 
 ```yaml
-header: "Pagina"
-question: "Wat wil je doen?"
+header: "Page"
+question: "What do you want to do?"
 options:
-  - label: "Nieuwe pagina toevoegen (Recommended)", description: "Voeg een pagina toe aan de design spec"
-  - label: "Bestaande bewerken", description: "Pas een bestaande pagina aan"
+  - label: "Add new page (Recommended)", description: "Add a page to the design spec"
+  - label: "Edit existing", description: "Edit an existing page"
 multiSelect: false
 ```
 
-#### If "Nieuwe pagina":
+#### If "Add new page":
 
 ```yaml
-header: "Nieuwe Pagina"
-question: "Beschrijf de pagina: naam, doel, en welke secties/content erop moet."
+header: "New Page"
+question: "Describe the page: name, purpose, and which sections/content it needs."
 options:
-  - label: "Ik typ het uit", description: "Vrije beschrijving"
+  - label: "I'll type it out", description: "Free description"
 multiSelect: false
 ```
 
-Parse description into structured page object. Show preview, proceed to FASE 3 (Confirm).
+Parse description into structured page object. Show preview, proceed to PHASE 3 (Confirm).
 
-#### If "Bestaande bewerken":
+#### If "Edit existing":
 
 Show existing pages as options (dynamically generated):
 
 ```yaml
-header: "Bewerken"
-question: "Welke pagina wil je bewerken?"
+header: "Edit"
+question: "Which page do you want to edit?"
 options:
-  - label: "{page1.name}", description: "{page1.purpose} ({page1.status}) — {N} secties"
-  - label: "{page2.name}", description: "{page2.purpose} ({page2.status}) — {N} secties"
+  - label: "{page1.name}", description: "{page1.purpose} ({page1.status}) — {N} sections"
+  - label: "{page2.name}", description: "{page2.purpose} ({page2.status}) — {N} sections"
   # ... max 4 options, rest via "Other"
 multiSelect: false
 ```
@@ -848,73 +844,73 @@ multiSelect: false
 Then ask what to change:
 
 ```yaml
-header: "Bewerk: {page-name}"
-question: "Wat wil je aanpassen?"
+header: "Edit: {page-name}"
+question: "What do you want to update?"
 options:
-  - label: "Doel", description: "Huidige: {purpose}"
-  - label: "Secties", description: "Huidige: {sections joined}"
-  - label: "Status", description: "Huidige: {status}"
-  - label: "Notities", description: "Huidige: {notes or 'leeg'}"
+  - label: "Purpose", description: "Current: {purpose}"
+  - label: "Sections", description: "Current: {sections joined}"
+  - label: "Status", description: "Current: {status}"
+  - label: "Notes", description: "Current: {notes or 'empty'}"
 multiSelect: true
 ```
 
-Process updates, proceed to FASE 3 (Confirm).
+Process updates, proceed to PHASE 3 (Confirm).
 
 ---
 
 ### Route: Component (Add/Edit)
 
-#### Stap 1: Keuze
+#### Step 1: Choice
 
 ```yaml
 header: "Component"
-question: "Wat wil je doen?"
+question: "What do you want to do?"
 options:
-  - label: "Nieuw component toevoegen (Recommended)", description: "Voeg een component toe aan de design spec"
-  - label: "Bestaande bewerken", description: "Pas een bestaand component aan"
+  - label: "Add new component (Recommended)", description: "Add a component to the design spec"
+  - label: "Edit existing", description: "Edit an existing component"
 multiSelect: false
 ```
 
-#### If "Nieuw component":
+#### If "Add new component":
 
 ```yaml
-header: "Nieuw Component"
-question: "Beschrijf het component: naam, doel, en welke varianten/states het heeft."
+header: "New Component"
+question: "Describe the component: name, purpose, and which variants/states it has."
 options:
-  - label: "Ik typ het uit", description: "Vrije beschrijving"
+  - label: "I'll type it out", description: "Free description"
 multiSelect: false
 ```
 
-Parse description en vraag aanvullend:
+Parse description and ask additionally:
 
 ```yaml
 header: "Component details"
-question: "Wat voor type component is dit?"
+question: "What type of component is this?"
 options:
-  - label: "Atomic (Recommended)", description: "Klein herbruikbaar element — Button, Input, Avatar"
-  - label: "Section", description: "Composiet binnen één page — StatCard, ProductCard"
+  - label: "Atomic (Recommended)", description: "Small reusable element — Button, Input, Avatar"
+  - label: "Section", description: "Composite within a single page — StatCard, ProductCard"
   - label: "Layout", description: "Multi-page wrapper — NavBar, Footer, Sidebar"
 multiSelect: false
 ```
 
-Als `scope: layout`: stel aanvullend `appliesTo` in:
+If `scope: layout`: additionally set `appliesTo`:
 
 ```yaml
-header: "Toepassing"
-question: "Op welke pages van toepassing?"
+header: "Scope"
+question: "Which pages does this apply to?"
 options:
-  - label: "Alle pages (Recommended)", description: "Elke page — voegt toe aan root layout"
-  - label: "Specifieke pages", description: "Selecteer welke pages"
-  - label: "Route-groep", description: "Bijv. alle authenticated pages"
+  - label: "All pages (Recommended)", description: "Every page — adds to root layout"
+  - label: "Specific pages", description: "Select which pages"
+  - label: "Route group", description: "E.g. all authenticated pages"
 multiSelect: false
 ```
 
-Genereer component object:
+Generate component object:
 
 ```json
 {
   "name": "{slug}",
-  "purpose": "{afgeleid uit beschrijving}",
+  "purpose": "{derived from description}",
   "status": "DEF",
   "scope": "{atomic|section|layout}",
   "appliesTo": "{all | [page-names] | route-group:name}",
@@ -928,33 +924,33 @@ Genereer component object:
 }
 ```
 
-Toon preview-tabel:
+Show preview table:
 
 ```
 COMPONENT
 ════════════════════════════════════════════════
-| Naam    | Doel                   | Scope   | Variants          | Status |
+| Name    | Purpose                | Scope   | Variants          | Status |
 |---------|------------------------|---------|-------------------|--------|
-| button  | Primaire actie-trigger | atomic  | primary/ghost/... | DEF    |
+| button  | Primary action trigger | atomic  | primary/ghost/... | DEF    |
 ════════════════════════════════════════════════
 ```
 
-Proceed to FASE 3 (Confirm).
+Proceed to PHASE 3 (Confirm).
 
-Bij confirmatie:
+On confirmation:
 
-1. Append aan `project.json#design.components[]`
-2. Append aan `backlog.html` als COMPONENT-feature met `status: TODO`, `phase: P3`, `source: "/frontend-design"`, `scope: {scope}`
+1. Append to `project.json#design.components[]`
+2. Append to `backlog.html` as COMPONENT feature with `status: TODO`, `phase: P3`, `source: "/frontend-design"`, `scope: {scope}`
 3. Update `data.updated`
-4. **Gap-discovery** — volg [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery), Trigger A: scan `props[]` voor handler-patronen en toon AskUserQuestion per gevonden gap.
+4. **Gap-discovery** — follow [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery), Trigger A: scan `props[]` for handler patterns and show AskUserQuestion per found gap.
 
-#### If "Bestaande bewerken":
+#### If "Edit existing":
 
 Show existing components as options:
 
 ```yaml
-header: "Bewerken"
-question: "Welk component wil je bewerken?"
+header: "Edit"
+question: "Which component do you want to edit?"
 options:
   - label: "{component1.name}", description: "{component1.purpose} ({component1.status}) — {scope}"
   - label: "{component2.name}", description: "..."
@@ -965,138 +961,134 @@ multiSelect: false
 Then:
 
 ```yaml
-header: "Bewerk: {component-name}"
-question: "Wat wil je aanpassen?"
+header: "Edit: {component-name}"
+question: "What do you want to update?"
 options:
-  - label: "Doel", description: "Huidige: {purpose}"
-  - label: "Variants/Sizes/States", description: "Huidige: {variants joined}"
-  - label: "Props/Slots", description: "Huidige: {props joined}"
-  - label: "Status", description: "Huidige: {status}"
-  - label: "Scope / appliesTo", description: "Huidige: {scope}"
-  - label: "Notities", description: "Huidige: {notes or 'leeg'}"
+  - label: "Purpose", description: "Current: {purpose}"
+  - label: "Variants/Sizes/States", description: "Current: {variants joined}"
+  - label: "Props/Slots", description: "Current: {props joined}"
+  - label: "Status", description: "Current: {status}"
+  - label: "Scope / appliesTo", description: "Current: {scope}"
+  - label: "Notes", description: "Current: {notes or 'empty'}"
 multiSelect: true
 ```
 
-Process updates, proceed to FASE 3 (Confirm).
+Process updates, proceed to PHASE 3 (Confirm).
 
 ---
 
 ### Route: Build (In-Claude-Code Code Generation)
 
-Genereert werkende code voor PAGE- of COMPONENT-features met `status: DEF` en geen visueel referentiemateriaal. Zie `../shared/CODEGEN.md` voor de gedeelde code-gen patronen die ook door `frontend-convert` worden gebruikt.
+Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. See `../shared/CODEGEN.md` for the shared code-gen patterns also used by `frontend-convert`.
 
-**Trigger:** alleen bereikbaar als `$HAS_BUILD_CANDIDATES = true` (gedetecteerd in FASE 1).
+**Trigger:** only reachable if `$HAS_BUILD_CANDIDATES = true` (detected in PHASE 1).
 
-#### Stap 1: Entity-keuze
+#### Step 1: Entity selection
 
-Toon alleen type-opties waarvoor kandidaten beschikbaar zijn:
+Show only type options for which candidates are available:
 
 ```yaml
-header: "Build — wat bouwen?"
-question: "Welk type wil je genereren?"
-# Als zowel PAGE als COMPONENT kandidaten:
+header: "Build — what to build?"
+question: "Which type do you want to generate?"
+# If both PAGE and COMPONENT candidates:
 options:
-  - label: "PAGE (Recommended)", description: "{X} page(s) met status DEF beschikbaar"
-  - label: "COMPONENT", description: "{Y} component(s) met status DEF beschikbaar"
-# Als alleen PAGE kandidaten: skip keuze, ga direct door met PAGE
-# Als alleen COMPONENT kandidaten: skip keuze, ga direct door met COMPONENT
+  - label: "PAGE (Recommended)", description: "{X} page(s) with status DEF available"
+  - label: "COMPONENT", description: "{Y} component(s) with status DEF available"
+# If only PAGE candidates: skip choice, proceed directly with PAGE
+# If only COMPONENT candidates: skip choice, proceed directly with COMPONENT
 multiSelect: false
 ```
 
-Sla gekozen entity-type op als `$TARGET_TYPE` (PAGE of COMPONENT).
+Store chosen entity type as `$TARGET_TYPE` (PAGE or COMPONENT).
 
-#### Stap 2: Kandidaat kiezen
+#### Step 2: Choose candidate
 
-**Als `$TARGET_TYPE = PAGE`:** toon alle PAGE-features met `status: DEF` op de backlog waarvoor geen visuele referentie bestaat:
+**If `$TARGET_TYPE = PAGE`:** show all PAGE features with `status: DEF` on the backlog for which no visual reference exists:
 
 ```yaml
-header: "Build — page kiezen"
-question: "Welke page wil je bouwen?"
+header: "Build — choose page"
+question: "Which page do you want to build?"
 options:
   - label: "{kebab-name}", description: "{description} — {route-pattern}"
   # max 4, rest via Other
 multiSelect: false
 ```
 
-Sla op als `$TARGET_PAGE`.
+Store as `$TARGET_PAGE`.
 
-**Als `$TARGET_TYPE = COMPONENT`:** toon alle COMPONENT-features met `status: DEF`:
+**If `$TARGET_TYPE = COMPONENT`:** show all COMPONENT features with `status: DEF`:
 
 ```yaml
-header: "Build — component kiezen"
-question: "Welk component wil je bouwen?"
+header: "Build — choose component"
+question: "Which component do you want to build?"
 options:
   - label: "{name}", description: "{purpose} — {scope}"
   # max 4, rest via Other
 multiSelect: false
 ```
 
-Sla op als `$TARGET_COMPONENT`. Sla `$TARGET` = `$TARGET_PAGE` of `$TARGET_COMPONENT`.
+Store as `$TARGET_COMPONENT`. Store `$TARGET` = `$TARGET_PAGE` or `$TARGET_COMPONENT`.
 
-#### Stap 3: Spec lookup (entity-agnostic)
+#### Step 3: Spec lookup (entity-agnostic)
 
-**Als `$TARGET_TYPE = PAGE`:**
+**If `$TARGET_TYPE = PAGE`:**
 
-1. Zoek `.project/features/{$TARGET}/feature.json` → read als spec-bron (primair).
-2. Fallback: `design.pages[]` gefilterd op naam gelijkend aan `$TARGET`.
-3. Als beide leeg → AskUserQuestion: "Beschrijf kort de page: doel, secties, acties." → sla op als inline spec en schrijf naar `design.pages[]` voor later hergebruik.
+1. Look up `.project/features/{$TARGET}/feature.json` → read as spec source (primary).
+2. Fallback: `design.pages[]` filtered by name matching `$TARGET`.
+3. If both empty → AskUserQuestion: "Briefly describe the page: purpose, sections, actions." → store as inline spec and write to `design.pages[]` for later reuse.
 
-Toon spec:
+Show spec:
 
 ```
 SPEC: {$TARGET} (PAGE)
-Doel:    {purpose}
-Secties: {sections joined}
-Routes:  {route-patterns}
+Purpose:  {purpose}
+Sections: {sections joined}
+Routes:   {route-patterns}
 ```
 
-**Als `$TARGET_TYPE = COMPONENT`:**
+**If `$TARGET_TYPE = COMPONENT`:**
 
-1. Zoek `.project/features/{$TARGET}/feature.json` → read als spec-bron (primair).
-2. Fallback: `design.components[]` gefilterd op naam gelijkend aan `$TARGET`.
-3. Als beide leeg → AskUserQuestion: "Beschrijf kort het component: doel, variants, props." → sla op als inline spec en schrijf naar `design.components[]` voor later hergebruik.
+1. Look up `.project/features/{$TARGET}/feature.json` → read as spec source (primary).
+2. Fallback: `design.components[]` filtered by name matching `$TARGET`.
+3. If both empty → AskUserQuestion: "Briefly describe the component: purpose, variants, props." → store as inline spec and write to `design.components[]` for later reuse.
 
-Toon spec:
+Show spec:
 
 ```
 SPEC: {$TARGET} (COMPONENT)
-Doel:     {purpose}
+Purpose:  {purpose}
 Scope:    {scope}
 Variants: {variants joined}
 Props:    {props joined}
 States:   {states joined}
 ```
 
-<!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the spec block above visible when the modal panel opens).
-
 ```yaml
-header: "Spec Bevestiging"
-question: "Klopt deze spec?"
+header: "Spec Confirmation"
+question: "Is this spec correct?"
 options:
-  - label: "Ga door (Recommended)", description: "Spec klopt, door naar codegen"
-  - label: "Spec aanpassen", description: "Wijzig doel, scope, variants of props"
+  - label: "Continue (Recommended)", description: "Spec is correct, proceed to codegen"
+  - label: "Update spec", description: "Change purpose, scope, variants or props"
 multiSelect: false
 ```
 
-#### Stap 4: Genereren (entity-aware)
+#### Step 4: Generate (entity-aware)
 
-Raadpleeg `../shared/CODEGEN.md` voor volledige patronen. Output-pad bepaald door entity-type én scope:
+Consult `../shared/CODEGEN.md` for full patterns. Output path determined by entity type and scope:
 
 | Entity              | Output-pad                                           | Sub-output                          |
 | ------------------- | ---------------------------------------------------- | ----------------------------------- |
 | PAGE                | `app/{route}/page.tsx` (of framework-equivalent)     | `app/{route}/_components/{Sub}.tsx` |
 | COMPONENT (atomic)  | `src/components/ui/{Name}.tsx`                       | —                                   |
 | COMPONENT (section) | `src/components/{Name}.tsx`                          | —                                   |
-| COMPONENT (layout)  | `src/components/{Name}.tsx` + patch `app/layout.tsx` | Demo-page (zie hieronder)           |
+| COMPONENT (layout)  | `src/components/{Name}.tsx` + patch `app/layout.tsx` | Demo page (see below)               |
 
-**Auto-patch voor layout-components:** als `scope: layout`, voegt Build een import + render-statement toe aan `app/layout.tsx` (of framework-equivalent). Voor `appliesTo: route-group:X`: patch in `app/(X)/layout.tsx`. Detecteer bestaande imports vóór patch — toon conflict-warning bij duplicate en vraag om bevestiging.
+**Auto-patch for layout components:** if `scope: layout`, Build adds an import + render statement to `app/layout.tsx` (or framework equivalent). For `appliesTo: route-group:X`: patch in `app/(X)/layout.tsx`. Detect existing imports before patching — show conflict warning on duplicate and ask for confirmation.
 
-**Demo-page voor COMPONENT:** genereer `app/_dev/components/{name}/page.tsx` (gitignored) die alle variants × sizes × states toont — gebruikt voor smoke-render in Stap 4b.
+**Demo page for COMPONENT:** generate `app/_dev/components/{name}/page.tsx` (gitignored) showing all variants × sizes × states — used for smoke-render in Step 4b.
 
 ```tsx
-// Auto-gegenereerd — gitignored
+// Auto-generated — gitignored
 export default function {Name}Demo() {
   return (
     <main aria-label="{Name} demo">
@@ -1114,89 +1106,81 @@ export default function {Name}Demo() {
 }
 ```
 
-**Thinking-checkpoint** — presenteer vóór code-generatie, wacht op user-confirmatie:
+**Thinking checkpoint** — present before code generation, wait for user confirmation:
 
 ```
 BUILD PLAN: {$TARGET} ({$TARGET_TYPE})
 ═══════════════════════════════════════════════════════════════
-Structure:    {output-paden — één regel per file}
-Tokens used:  {token-namen die ingezet worden}
-Blocks reused: {imports uit components[] — of "none"}
-Images:       {placeholder strategy of "n.v.t."}
+Structure:    {output paths — one line per file}
+Tokens used:  {token names to be used}
+Blocks reused: {imports from components[] — or "none"}
+Images:       {placeholder strategy or "n/a"}
 A11y plan:    {semantic structure + aria-labels}
-Caveats:      {missing deps, ontbrekende tokens, auto-patch layout, etc. — of "none"}
+Caveats:      {missing deps, missing tokens, auto-patch layout, etc. — or "none"}
 ═══════════════════════════════════════════════════════════════
 ```
 
-<!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the BUILD PLAN block above visible when the modal panel opens).
-
 ```yaml
 header: "Build plan"
-question: "Klopt dit plan? Dan genereer ik de code."
+question: "Is this plan correct? Then I'll generate the code."
 options:
-  - label: "Genereren (Recommended)", description: "Plan klopt, schrijf de bestanden"
-  - label: "Plan aanpassen", description: "Ik wil iets wijzigen"
+  - label: "Generate (Recommended)", description: "Plan is correct, write the files"
+  - label: "Adjust plan", description: "I want to change something"
 multiSelect: false
 ```
 
-Na confirmatie — genereer code:
+After confirmation — generate code:
 
-- Semantic HTML layout (PAGE) of cva-component (COMPONENT) op basis van spec
-- Hergebruik bestaande components waar matchend (import uit hun paden in `components[]`)
-- Tailwind/CSS classes via theme tokens — **geen raw hex** (`#…`) of arbitrary color-values (`bg-[#…]`)
-- Afbeeldingen: alleen `/placeholder.svg?w={W}&h={H}` (PAGE only) — nooit externe CDN-URLs
-- Accessibility: `<main>`, `<section>`, `aria-label`, skip-nav (PAGE); correcte ARIA-attributes (COMPONENT)
-
-<!-- modal-buffer -->
-
-Print 8 blank lines as whitespace buffer (keeps the diff-preview above visible when the modal panel opens).
+- Semantic HTML layout (PAGE) or cva component (COMPONENT) based on spec
+- Reuse existing components where matching (import from their paths in `components[]`)
+- Tailwind/CSS classes via theme tokens — **no raw hex** (`#…`) or arbitrary color-values (`bg-[#…]`)
+- Images: only `/placeholder.svg?w={W}&h={H}` (PAGE only) — never external CDN URLs
+- Accessibility: `<main>`, `<section>`, `aria-label`, skip-nav (PAGE); correct ARIA attributes (COMPONENT)
 
 ```yaml
-header: "Schrijven"
-question: "Schrijf bestanden?"
+header: "Write"
+question: "Write files?"
 options:
-  - label: "Schrijf bestanden (Recommended)", description: "Pas bestanden toe op disk"
-  - label: "Aanpassen voor schrijven", description: "Wijzig nog iets voor het schrijven"
+  - label: "Write files (Recommended)", description: "Apply files to disk"
+  - label: "Adjust before writing", description: "Change something before writing"
 multiSelect: false
 ```
 
-Schrijf bestanden na confirmatie.
+Write files after confirmation.
 
-#### Stap 4: Post-write checks + smoke render
+#### Step 4: Post-write checks + smoke render
 
-**4a. Statische checks** (geen dev-server nodig — draai direct na file-write):
+**4a. Static checks** (no dev server needed — run directly after file write):
 
-**Hex post-pass** — scan elk gegenereerd `.tsx`/`.vue`/`.svelte`/`.css` bestand:
+**Hex post-pass** — scan every generated `.tsx`/`.vue`/`.svelte`/`.css` file:
 
-- Verboden: `#[0-9a-fA-F]{3,8}` in `className`-strings of inline-style props (buiten `//` en `/* */` comments)
-- Verboden: arbitrary Tailwind color-values `bg-[#`, `text-[#`, `border-[#`
-- Verboden: externe placeholder-URLs (`images.unsplash.com`, `picsum.photos`, `placehold.co`, `fakeimg.pl`)
+- Forbidden: `#[0-9a-fA-F]{3,8}` in `className`-strings of inline-style props (outside `//` and `/* */` comments)
+- Forbidden: arbitrary Tailwind color-values `bg-[#`, `text-[#`, `border-[#`
+- Forbidden: external placeholder-URLs (`images.unsplash.com`, `picsum.photos`, `placehold.co`, `fakeimg.pl`)
 
-Bij match → toon violation + AskUserQuestion:
+On match → show violation + AskUserQuestion:
 
 ```yaml
 header: "Code violation"
-question: "Gevonden: {violation-type} in {bestand}:{regel}. Hoe verder?"
+question: "Found: {violation-type} in {file}:{line}. How to proceed?"
 options:
-  - label: "Auto-fix (Recommended)", description: "Map naar dichtstbijzijnde theme-token of /placeholder.svg"
-  - label: "Handmatig fixen", description: "Ik pas het zelf aan"
-  - label: "Negeer", description: "Bewust afwijken van de token-regel"
+  - label: "Auto-fix (Recommended)", description: "Map to nearest theme token or /placeholder.svg"
+  - label: "Fix manually", description: "I'll fix it myself"
+  - label: "Ignore", description: "Intentionally deviate from the token rule"
 multiSelect: false
 ```
 
-**Unknown-import scan** — scan elk gegenereerd bestand op `from ['"](.+?)['"]`:
+**Unknown-import scan** — scan every generated file for `from ['"](.+?)['"]`:
 
-- Relatieve imports (`./`, `../`, `@/`): controleer of bestand bestaat via projectstructuur
-- Bare imports: controleer aanwezigheid in `package.json`
-- Bij unresolved imports → toon lijst, noteer als missing dependency in completion report
+- Relative imports (`./`, `../`, `@/`): check if file exists in project structure
+- Bare imports: check presence in `package.json`
+- On unresolved imports → show list, note as missing dependency in completion report
 
-**4b. Smoke render** (vereist dev-server):
+**4b. Smoke render** (requires dev server):
 
-Check beschikbaarheid: `curl -s http://localhost:{port}` (poort uit `project.json` of CLAUDE.md).
+Check availability: `curl -s http://localhost:{port}` (port from `project.json` or CLAUDE.md).
 
-Als dev-server niet beschikbaar: skip 4b volledig met melding `"Dev server niet bereikbaar — open handmatig."`. Ga door naar Stap 5.
+If dev server not available: skip 4b entirely with message `"Dev server unreachable — open manually."`. Proceed to Step 5.
 
 Als beschikbaar:
 
@@ -1205,13 +1189,13 @@ Als beschikbaar:
 - `$TARGET_TYPE = PAGE` → navigate naar page-route.
 - `$TARGET_TYPE = COMPONENT` → navigate naar `/_dev/components/{$TARGET}` (de demo-page).
 
-**Basis smoke-checks (daemon):**
+**Basic smoke checks (daemon):**
 
-1. **Check 1 — Console errors**: 0 fatale errors (`playwright-cli console error` gefilterd tegen default ignore patterns)
-2. **Check 2 — Layout intact**: body height > 100px, breedte > 200px
-3. **Check 3 — Tokens geladen**: computed style van `--color-primary` of equivalent is geen lege string
-4. **Check 4 — Layout-collapse**: loopt door `<main>` direct-children; faalt als ≥1 element `offsetHeight === 0` of `offsetWidth === 0`
-5. **Check 5 — Variant matrix (COMPONENT only)**: controleert of `<main>` ≥ `{variants.length × sizes.length}` child-blokken bevat
+1. **Check 1 — Console errors**: 0 fatal errors (`playwright-cli console error` filtered against default ignore patterns)
+2. **Check 2 — Layout intact**: body height > 100px, width > 200px
+3. **Check 3 — Tokens loaded**: computed style of `--color-primary` or equivalent is not an empty string
+4. **Check 4 — Layout collapse**: iterates through `<main>` direct children; fails if ≥1 element has `offsetHeight === 0` or `offsetWidth === 0`
+5. **Check 5 — Variant matrix (COMPONENT only)**: checks if `<main>` contains ≥ `{variants.length × sizes.length}` child blocks
 
 **Multi-viewport screenshots (daemon — altijd draaien):**
 
@@ -1241,26 +1225,26 @@ playwright-cli run-code "async page => {
 }"
 ```
 
-**A11y-smoke (mandatory — auto-installeer als missing):**
+**A11y smoke (mandatory — auto-install if missing):**
 
-Check of `@axe-core/playwright` beschikbaar is: `node -e "require('@axe-core/playwright')" 2>/dev/null`.
+Check if `@axe-core/playwright` is available: `node -e "require('@axe-core/playwright')" 2>/dev/null`.
 
-- **Beschikbaar**: run axe via `playwright-cli run-code`. Faal op `critical`, toon `serious` als warning.
-- **Niet beschikbaar**: AskUserQuestion:
+- **Available**: run axe via `playwright-cli run-code`. Fail on `critical`, show `serious` as warning.
+- **Not available**: AskUserQuestion:
   ```yaml
   header: "axe-core"
-  question: "@axe-core/playwright is niet geïnstalleerd. A11y-check is verplicht voor Build-smoke."
+  question: "@axe-core/playwright is not installed. A11y check is required for Build smoke."
   options:
-    - label: "Nu installeren (Recommended)"
-      description: "npm install --save-dev @axe-core/playwright — dan opnieuw draaien"
-    - label: "Overslaan (eenmalig)"
-      description: "Noteer als missing dep in rapport, ga door"
+    - label: "Install now (Recommended)"
+      description: "npm install --save-dev @axe-core/playwright — then re-run"
+    - label: "Skip (once)"
+      description: "Note as missing dep in report, continue"
   ```
-  Bij "Nu installeren": `npm install --save-dev @axe-core/playwright`, daarna run de axe-check. Bij "Overslaan": noteer als `MISSING_DEP: @axe-core/playwright` in rapport.
+  On "Install now": `npm install --save-dev @axe-core/playwright`, then run the axe check. On "Skip": note as `MISSING_DEP: @axe-core/playwright` in report.
 
-**Aria-snapshot baseline (runner — na daemon-checks):**
+**Aria-snapshot baseline (runner — after daemon checks):**
 
-Genereer een on-the-fly runner spec voor aria-snapshot assertion. Eerste run maakt baseline aan; volgende runs falen bij structurele regressie. Zie `shared/PLAYWRIGHT.md → Runner Mode` voor het volledige on-the-fly pattern.
+Generate an on-the-fly runner spec for aria-snapshot assertion. First run creates baseline; subsequent runs fail on structural regression. See `shared/PLAYWRIGHT.md → Runner Mode` for the full on-the-fly pattern.
 
 ```typescript
 // .project/playwright-runs/design-{$TARGET}.spec.ts  (tijdelijk)
@@ -1280,42 +1264,42 @@ Bij runner niet beschikbaar (`npx playwright --version` faalt): skip aria-snapsh
 ```
 SMOKE CHECKS: {$TARGET} ({$TARGET_TYPE})
 ──────────────────────────────────────────────────
-✓ Console errors       0 fataal
+✓ Console errors       0 fatal
 ✓ Layout intact        body 1024×768
-✓ Tokens geladen       --color-primary OK
+✓ Tokens loaded        --color-primary OK
 ✓ Section collapse     0 collapsed
 ✓ Multi-viewport       375px OK · 1440px OK
-✓ Dark mode            .project/wireframes/{$TARGET}-dark.png  (alleen als dark mode aan)
-✓ Variant matrix       6/6 varianten zichtbaar  (COMPONENT only)
+✓ Dark mode            .project/wireframes/{$TARGET}-dark.png  (only if dark mode enabled)
+✓ Variant matrix       6/6 variants visible  (COMPONENT only)
 ✓ axe a11y             0 critical
-✓ Aria snapshot        baseline aangemaakt / geen regressie
+✓ Aria snapshot        baseline created / no regression
 ──────────────────────────────────────────────────
 ```
 
-**4c. Bij failure:**
+**4c. On failure:**
 
 ```yaml
-header: "Smoke check gefaald"
-question: "Check gefaald: {beschrijving}. Hoe verder?"
+header: "Smoke check failed"
+question: "Check failed: {description}. How to proceed?"
 options:
-  - label: "Refine (Recommended)", description: "Beschrijf wat moet wijzigen — ik pas alleen die sectie aan"
-  - label: "Handmatig fixen", description: "Ik fix het zelf"
-  - label: "Open in convert", description: "/frontend-convert patch voor visueel bijwerk (PAGE only)"
-  - label: "Skip verificatie", description: "Ga door zonder te verifiëren"
+  - label: "Refine (Recommended)", description: "Describe what needs to change — I'll only edit that section"
+  - label: "Fix manually", description: "I'll fix it myself"
+  - label: "Open in convert", description: "/frontend-convert patch for visual rework (PAGE only)"
+  - label: "Skip verification", description: "Continue without verifying"
 multiSelect: false
 ```
 
-**Refine-loop** (bij keuze "Refine" — max 3 rondes):
+**Refine loop** (on "Refine" — max 3 rounds):
 
-1. AskUserQuestion: "Welke sectie?" — toon `<main>` direct-children als opties
-2. AskUserQuestion: "Wat moet er anders?" — vrije tekst
-3. Edit op **alleen** die sectie (nooit Write op hele file)
+1. AskUserQuestion: "Which section?" — show `<main>` direct children as options
+2. AskUserQuestion: "What needs to change?" — free text
+3. Edit on **only** that section (never Write on entire file)
 4. Re-run checks 4b
-5. Bij aanhoudende failure na 3 rondes → AskUserQuestion: "Handmatig fixen | Open in convert | Accepteren as-is"
+5. On persistent failure after 3 rounds → AskUserQuestion: "Fix manually | Open in convert | Accept as-is"
 
-**Bij keuze "Open in convert"** (alleen voor PAGE — COMPONENT heeft geen convert-flow):
+**On "Open in convert"** (PAGE only — COMPONENT has no convert flow):
 
-Schrijf naar `.project/session/devinfo.json`:
+Write to `.project/session/devinfo.json`:
 
 ```json
 {
@@ -1323,7 +1307,7 @@ Schrijf naar `.project/session/devinfo.json`:
     "source": "build-incomplete",
     "target": "{$TARGET}",
     "files": ["{generated-file-1}", "{generated-file-2}"],
-    "failedChecks": ["{check-naam-1}", "{check-naam-2}"],
+    "failedChecks": ["{check-name-1}", "{check-name-2}"],
     "reason": "smoke-fail",
     "buildScreenshot": "{screenshot-pad of null}",
     "timestamp": "{ISO-timestamp}"
@@ -1341,69 +1325,69 @@ Handoff saved:    devinfo.handoff (source: build-incomplete)
 Next:  /frontend-convert {$TARGET}   (auto-detected handoff → patch mode)
 ```
 
-#### Stap 5: Backlog sync + Block inventory + Drift cleanup
+#### Step 5: Backlog sync + Block inventory + Drift cleanup
 
-**5a. Block inventory** (alleen bij smoke PASS):
+**5a. Block inventory** (only on smoke PASS):
 
-Parse alle `$GENERATED_FILES` → filter op component-paden (`_components/`, `src/components/`, `app/components/`). Skip page-files (`page.tsx`, `+page.svelte`, route-level files). Per component-bestand:
+Parse all `$GENERATED_FILES` → filter on component paths (`_components/`, `src/components/`, `app/components/`). Skip page files (`page.tsx`, `+page.svelte`, route-level files). Per component file:
 
-1. Extraheer named exports met regex: `export (function|const|default) (\w+)` + `export { … }`
-2. Detect cva-variants als `cva(` aanwezig: extraheer `variants.variant[]` en `variants.size[]`
-3. Sla op als entry: `{ name, src, exports, variants, sizes }`
-4. Conflict-check op `components[].name`:
-   - Zelfde naam + andere `src` → skip + noteer als conflict
-   - Zelfde naam + zelfde `src` → merge (idempotent re-run)
-   - Nieuw → append
-5. Read `.project/project-context.json` → update `components[]` → Write terug (alleen als er wijzigingen zijn)
+1. Extract named exports with regex: `export (function|const|default) (\w+)` + `export { … }`
+2. Detect cva-variants if `cva(` present: extract `variants.variant[]` and `variants.size[]`
+3. Store as entry: `{ name, src, exports, variants, sizes }`
+4. Conflict check on `components[].name`:
+   - Same name + different `src` → skip + note as conflict
+   - Same name + same `src` → merge (idempotent re-run)
+   - New → append
+5. Read `.project/project-context.json` → update `components[]` → Write back (only if changes)
 
-**5b. Bidirectional linking** (alleen bij smoke PASS):
+**5b. Bidirectional linking** (only on smoke PASS):
 
-Parse imports uit alle `$GENERATED_FILES`:
+Parse imports from all `$GENERATED_FILES`:
 
-- Scan op `from ['"](.+?)['"]` — extraheer component-namen uit import-paden
-- Match tegen `design.components[].name` (case-insensitive)
+- Scan for `from ['"](.+?)['"]` — extract component names from import paths
+- Match against `design.components[].name` (case-insensitive)
 
-**Als `$TARGET_TYPE = PAGE`:**
+**If `$TARGET_TYPE = PAGE`:**
 
-- Vul `design.pages[{$TARGET}].uses[]` → lijst van gedetecteerde component-namen (dedupe)
-- Voor elke matched component: append `{$TARGET}` naar `design.components[{name}].usedIn[]` (dedupe)
+- Populate `design.pages[{$TARGET}].uses[]` → list of detected component names (dedupe)
+- For each matched component: append `{$TARGET}` to `design.components[{name}].usedIn[]` (dedupe)
 
-**Als `$TARGET_TYPE = COMPONENT`:**
+**If `$TARGET_TYPE = COMPONENT`:**
 
-- Vul `design.components[{$TARGET}].status = "BLT"`
-- Als sub-components gegenereerd als `_components/` of inline (complex pattern) → toon promote-prompt:
+- Set `design.components[{$TARGET}].status = "BLT"`
+- If sub-components generated as `_components/` or inline (complex pattern) → show promote prompt:
   ```yaml
-  header: "Sub-components gevonden"
-  question: "Wil je deze als shared COMPONENT in de backlog plaatsen?"
+  header: "Sub-components found"
+  question: "Do you want to add these as shared COMPONENTs in the backlog?"
   options:
-    - label: "Ja, als COMPONENT-todo", description: "{sub-component-name} → backlog"
-    - label: "Nee, inline laten", description: "Blijft onderdeel van dit component"
+    - label: "Yes, as COMPONENT-todo", description: "{sub-component-name} → backlog"
+    - label: "No, keep inline", description: "Stays part of this component"
   multiSelect: true
   ```
 
-Write `project.json#design` terug na sync.
+Write `project.json#design` back after sync.
 
-**5c. TokenDrift cleanup** (bij smoke PASS):
+**5c. TokenDrift cleanup** (on smoke PASS):
 
-Lees `.project/session/devinfo.json` → check `tokenDrift.affectedFeatures`. Als `{$TARGET}` erin staat: verwijder uit de lijst. Als lijst daarna leeg is: zet `tokenDrift.resolved = true`. Write terug.
+Read `.project/session/devinfo.json` → check `tokenDrift.affectedFeatures`. If `{$TARGET}` is in it: remove from the list. If list is then empty: set `tokenDrift.resolved = true`. Write back.
 
 **5d. Backlog sync**:
 
-Parse `backlog.html` → match op `name === {$TARGET}`:
+Parse `backlog.html` → match on `name === {$TARGET}`:
 
-- Smoke success → `feature.status = "DOING"` + `feature.audit.buildScreenshot = {pad}` + `feature.audit.buildSmokeStatus = "PASS"`
-- Smoke fail → backlog-status **ongewijzigd** (blijft TODO of DEFINED). Zet `feature.audit.buildSmokeStatus = "FAIL"` + `feature.audit.buildSmokeError = {korte reden}`.
-- Smoke skip → backlog-status **ongewijzigd**. Zet `feature.audit.buildSmokeStatus = "SKIPPED"`.
+- Smoke success → `feature.status = "DOING"` + `feature.audit.buildScreenshot = {path}` + `feature.audit.buildSmokeStatus = "PASS"`
+- Smoke fail → backlog status **unchanged** (stays TODO or DEFINED). Set `feature.audit.buildSmokeStatus = "FAIL"` + `feature.audit.buildSmokeError = {short reason}`.
+- Smoke skip → backlog status **unchanged**. Set `feature.audit.buildSmokeStatus = "SKIPPED"`.
 
-Update `data.updated` alleen bij smoke success. Edit terug in `backlog.html`.
+Update `data.updated` only on smoke success. Edit back to `backlog.html`.
 
-Sla block inventory tellers op als `$INV_NEW`, `$INV_UPDATED`, `$INV_CONFLICTS` voor gebruik in Stap 6.
+Store block inventory counters as `$INV_NEW`, `$INV_UPDATED`, `$INV_CONFLICTS` for use in Step 6.
 
-**5e. Gap-discovery** (altijd, ongeacht smoke-status):
+**5e. Gap-discovery** (always, regardless of smoke status):
 
-Volg [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery), Trigger C (Build post code-gen): scan `$GENERATED_FILES` voor stub-handlers en toon AskUserQuestion per gevonden gap. Als geen gaps: stap overslaan.
+Follow [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery), Trigger C (Build post code-gen): scan `$GENERATED_FILES` for stub handlers and show AskUserQuestion per found gap. If no gaps: skip step.
 
-#### Stap 6: Completion report
+#### Step 6: Completion report
 
 ```
 BUILD COMPLETE: {$TARGET} ({$TARGET_TYPE})
@@ -1413,28 +1397,28 @@ Files:
   {generated-file-2}
 
 Tokens used:      {N token references}
-Components:       {hergebruikte components}
-Block inventory:  +{$INV_NEW} nieuw, ~{$INV_UPDATED} bijgewerkt, !{$INV_CONFLICTS} conflict
-Linked:           {uses/usedIn sync — of "n.v.t."}
-Missing deps:     {lijst of "none"}
+Components:       {reused components}
+Block inventory:  +{$INV_NEW} new, ~{$INV_UPDATED} updated, !{$INV_CONFLICTS} conflict
+Linked:           {uses/usedIn sync — or "n/a"}
+Missing deps:     {list or "none"}
 Smoke render:     {PASS | FAIL | SKIPPED}
-Screenshot:       {pad of n.v.t.}
-Gaps:             {N linked | M created | K pending | "geen"}
+Screenshot:       {path or n/a}
+Gaps:             {N linked | M created | K pending | "none"}
 ```
 
-Vraag na report:
+Ask after report:
 
 ```yaml
-header: "Doorgaan met audit?"
-question: "/frontend-check {$TARGET} controleert A11Y, tokens en responsive gedrag."
+header: "Continue with audit?"
+question: "/frontend-check {$TARGET} checks A11Y, tokens and responsive behavior."
 options:
-  - label: "Ja, audit nu (Recommended)", description: "frontend-check inline uitvoeren"
-  - label: "Later", description: "Status blijft DOING — /frontend-check {$TARGET} staat klaar in de backlog"
+  - label: "Yes, audit now (Recommended)", description: "Run frontend-check inline"
+  - label: "Later", description: "Status stays DOING — /frontend-check {$TARGET} is ready in the backlog"
 multiSelect: false
 ```
 
-Bij "Ja": lees `frontend-check/SKILL.md` en voer FASE 0–4 inline uit voor `{$TARGET}`.
-Bij "Later": eindig — backlog toont DOING-status met next-step `/frontend-check {$TARGET}`.
+On "Yes": read `frontend-check/SKILL.md` and run PHASE 0–4 inline for `{$TARGET}`.
+On "Later": end — backlog shows DOING status with next-step `/frontend-check {$TARGET}`.
 
 ---
 
@@ -1442,18 +1426,18 @@ Bij "Later": eindig — backlog toont DOING-status met next-step `/frontend-chec
 
 Same structure as Pagina route.
 
-#### If "Nieuwe flow":
+#### If "New flow":
 
 ```yaml
-header: "Nieuwe Flow"
-question: "Beschrijf de flow: naam en stappen als pagina-naar-pagina."
+header: "New Flow"
+question: "Describe the flow: name and steps as page-to-page."
 options:
-  - label: "Ik typ het uit (Recommended)", description: "Bijv: 'onboarding: landing → signup → verify → dashboard'"
-  - label: "Selecteer uit pagina's", description: "Kies pagina's en bouw de flow stap voor stap"
+  - label: "I'll type it out (Recommended)", description: "E.g.: 'onboarding: landing → signup → verify → dashboard'"
+  - label: "Select from pages", description: "Choose pages and build the flow step by step"
 multiSelect: false
 ```
 
-If "Selecteer uit pagina's": show existing pages as multi-select to build flow sequence.
+If "Select from pages": show existing pages as multi-select to build flow sequence.
 
 Cross-reference: for each step, check if page exists in `design.pages`. If not, warn and offer to create it.
 
@@ -1461,157 +1445,157 @@ Cross-reference: for each step, check if page exists in `design.pages`. If not, 
 
 Show existing flows as options, then edit name/steps/notes. Same pattern as page edit.
 
-Proceed to FASE 3 (Confirm).
+Proceed to PHASE 3 (Confirm).
 
 ---
 
 ### Route: Principes (Add/Edit)
 
 ```yaml
-header: "Principes"
-question: "Wat wil je doen?"
+header: "Principles"
+question: "What do you want to do?"
 options:
-  - label: "Toevoegen (Recommended)", description: "Nieuw principe toevoegen"
-  - label: "Bewerken", description: "Bestaand principe aanpassen"
+  - label: "Add (Recommended)", description: "Add a new principle"
+  - label: "Edit", description: "Edit an existing principle"
 multiSelect: false
 ```
 
-**Adding:** Free-text input (name + description), parse, proceed to FASE 3 (Confirm).
+**Adding:** Free-text input (name + description), parse, proceed to PHASE 3 (Confirm).
 
-**Editing:** Show list of current principles as selectable options, then edit description. Proceed to FASE 3 (Confirm).
+**Editing:** Show list of current principles as selectable options, then edit description. Proceed to PHASE 3 (Confirm).
 
 ---
 
 ### Route: Verwijderen (Delete Item)
 
 ```yaml
-header: "Verwijderen"
-question: "Wat wil je verwijderen?"
+header: "Delete"
+question: "What do you want to delete?"
 options:
-  - label: "Pagina", description: "Een pagina uit de design spec"
-  - label: "Component", description: "Een component uit de design spec"
-  - label: "Flow", description: "Een user flow"
-  - label: "Principe", description: "Een design principe"
+  - label: "Page", description: "A page from the design spec"
+  - label: "Component", description: "A component from the design spec"
+  - label: "Flow", description: "A user flow"
+  - label: "Principle", description: "A design principle"
 multiSelect: false
 ```
 
 Show items of selected type as options. After selection, confirm with safety pattern:
 
 ```yaml
-header: "Bevestig Verwijdering"
-question: "Weet je zeker dat je '{item-name}' wilt verwijderen?"
+header: "Confirm Deletion"
+question: "Are you sure you want to delete '{item-name}'?"
 options:
-  - label: "Nee, annuleren (Recommended)", description: "Behoud item"
-  - label: "Ja, verwijderen", description: "Definitief verwijderen"
+  - label: "No, cancel (Recommended)", description: "Keep item"
+  - label: "Yes, remove", description: "Permanently remove"
 multiSelect: false
 ```
 
 **Cross-reference check:** When deleting a page, check if it's referenced in any flows. If so, warn:
 
 ```
-⚠ Pagina "{page}" wordt gebruikt in flow(s): {flow-names}.
-  Deze flow stappen worden orphaned.
+⚠ Page "{page}" is used in flow(s): {flow-names}.
+  These flow steps will be orphaned.
 ```
 
-Proceed to FASE 3 (Confirm).
+Proceed to PHASE 3 (Confirm).
 
 ---
 
 ### Route: Herstellen (Restore Checkpoint)
 
-#### Stap 1: Checkpoints laden
+#### Step 1: Load Checkpoints
 
-Lees `.project/session/design-history.json`.
+Read `.project/session/design-history.json`.
 
-- Als het bestand niet bestaat of leeg is → toon melding en stop:
+- If the file does not exist or is empty → show message and stop:
   ```
-  ℹ Geen checkpoints beschikbaar. Wijzigingen worden pas opgeslagen na de eerste write.
+  ℹ No checkpoints available. Changes are only saved after the first write.
   ```
 
-#### Stap 2: Checkpoint kiezen
+#### Step 2: Choose Checkpoint
 
-Toon de 4 recentste checkpoints als opties:
+Show the 4 most recent checkpoints as options:
 
 ```yaml
-header: "Herstellen"
-question: "Naar welk checkpoint wil je terug?"
+header: "Restore"
+question: "Which checkpoint do you want to restore?"
 options:
-  - label: "{HH:mm DD-MM}", description: "{trigger} — {N} pagina's, {M} flows"
+  - label: "{HH:mm DD-MM}", description: "{trigger} — {N} pages, {M} flows"
   # max 4 entries
 multiSelect: false
 ```
 
-#### Stap 3: Diff tonen
+#### Step 3: Show Diff
 
 ```
 RESTORE PREVIEW
 ════════════════════════════════════════════════
-Huidig:   {N} pagina's, {M} flows, {P} principes
-Restore:  {N} pagina's, {M} flows, {P} principes
+Current: {N} pages, {M} flows, {P} principles
+Restore: {N} pages, {M} flows, {P} principles
 
-Verdwijnen: {pagina/flow namen die weg zijn in checkpoint}
-Verschijnen: {pagina/flow namen die nieuw zijn in checkpoint}
+Removed:  {page/flow names that are gone in checkpoint}
+Added:    {page/flow names that are new in checkpoint}
 ════════════════════════════════════════════════
 ```
 
-#### Stap 4: Confirm + Write
+#### Step 4: Confirm + Write
 
 ```yaml
-header: "Herstellen"
-question: "Weet je zeker dat je wilt herstellen naar dit checkpoint?"
+header: "Restore"
+question: "Are you sure you want to restore to this checkpoint?"
 options:
-  - label: "Nee, annuleren (Recommended)", description: "Behoud huidige staat"
-  - label: "Ja, herstellen", description: "Overschrijf huidige design spec"
+  - label: "No, cancel (Recommended)", description: "Keep current state"
+  - label: "Yes, restore", description: "Overwrite current design spec"
 multiSelect: false
 ```
 
-Bij "Ja": schrijf `snapshot` uit het gekozen checkpoint terug naar `project.json → design`. Ga direct naar FASE X.1 (Write) + FASE X.2 (Validate) — sla X.0 over.
+On "Yes": write `snapshot` from the chosen checkpoint back to `project.json → design`. Go directly to PHASE X.1 (Write) + PHASE X.2 (Validate) — skip X.0.
 
 ---
 
 ### Route: Brief (Claude Design Handoff)
 
-Genereer een markdown brief die je in Claude Design plakt. De brief bundelt alle context die Claude Design nodig heeft om visuals te genereren die passen bij het project (zodat je geen dubbele componenten of inconsistent tokens krijgt).
+Generate a markdown brief to paste into Claude Design. The brief bundles all context Claude Design needs to generate visuals that match the project (so you don't get duplicate components or inconsistent tokens).
 
-#### Stap 1: Scope
+#### Step 1: Scope
 
 ```yaml
 header: "Brief Scope"
-question: "Waarvoor genereer je de brief?"
+question: "What are you generating the brief for?"
 options:
-  - label: "Specifieke pagina (Recommended)", description: "Brief voor één pagina uit design.pages"
-  - label: "Component", description: "Brief voor één component uit design.components"
-  - label: "Beide", description: "Aparte briefs voor page + component"
-  - label: "Flow", description: "Brief voor een user flow (meerdere pagina's als reeks)"
+  - label: "Specific page (Recommended)", description: "Brief for one page from design.pages"
+  - label: "Component", description: "Brief for one component from design.components"
+  - label: "Both", description: "Separate briefs for page + component"
+  - label: "Flow", description: "Brief for a user flow (multiple pages as sequence)"
 multiSelect: false
 ```
 
-**If "Specifieke pagina":** toon `design.pages` met status DEF/IDEA als opties (max 4, rest via Other). User kiest pagina. → ga naar Stap 2 (page-flow).
+**If "Specific page":** show `design.pages` with status DEF/IDEA as options (max 4, rest via Other). User chooses page. → go to Step 2 (page-flow).
 
-**If "Component":** toon `design.components` als opties (max 4, rest via Other). User kiest component. → ga naar Stap 1b (component-brief).
+**If "Component":** show `design.components` as options (max 4, rest via Other). User chooses component. → go to Step 1b (component-brief).
 
-**If "Beide":** kies pagina én component. Genereer twee aparte bestanden.
+**If "Both":** choose page and component. Generate two separate files.
 
-**If "Flow":** toon `design.flows` als opties. User kiest flow. Brief bevat alle pagina's in `flow.steps`. → ga naar Stap 2 (page-flow).
+**If "Flow":** show `design.flows` as options. User chooses flow. Brief contains all pages in `flow.steps`. → go to Step 2 (page-flow).
 
-**If "Volledige app":** geen extra keuze nodig. → ga naar Stap 2 (page-flow).
+**If "Full app":** no extra choice needed. → go to Step 2 (page-flow).
 
-#### Stap 1b: Component Brief genereren
+#### Step 1b: Generate Component Brief
 
-Sla op als `$TARGET_COMPONENT` (naam van gekozen component uit `design.components[]`).
+Store as `$TARGET_COMPONENT` (name of chosen component from `design.components[]`).
 
-Voer Stap 2 (block inventory) en Stap 3 (tokens) parallel uit, dan schrijf component-brief:
+Run Step 2 (block inventory) and Step 3 (tokens) in parallel, then write component brief:
 
 Output-pad: `.project/claude-design-brief-{component-name}.md`
 
 ```markdown
 # Component Brief: {ComponentName}
 
-_Gegenereerd door /frontend-design · {datum}_
+_Generated by /frontend-design · {date}_
 
 ## Purpose
 
-{purpose uit design.components[].purpose}
+{purpose from design.components[].purpose}
 
 ## Scope
 
@@ -1625,284 +1609,284 @@ _Gegenereerd door /frontend-design · {datum}_
 | {variant[0]} | {size[0]} | hover    |                  |
 | {variant[0]} | {size[0]} | disabled |                  |
 
-{herhaal per variant × size combinatie uit spec}
+{repeat per variant × size combination from spec}
 
 ## Props
 
-{props[] uit spec — bullet list}
+{props[] from spec — bullet list}
 
 ## Slots
 
-{slots[] of "geen"}
+{slots[] or "none"}
 
 ## States
 
-{states[] met hints — bijv. "disabled: opacity-50, pointer-events-none"}
+{states[] with hints — e.g. "disabled: opacity-50, pointer-events-none"}
 
 ## Design Tokens
 
-{Primary tokens uit project.json#theme die relevant zijn voor dit component:
+{Primary tokens from project.json#theme relevant to this component:
 colors.primary, colors.foreground, colors.border, etc.}
 
-## Block Inventory (mogelijke baseline)
+## Block Inventory (possible baseline)
 
-{components[] uit project-context.json waarbij naam overlapt:}
+{components[] from project-context.json where name overlaps:}
 
-- `{bestaande-component}` ({path}) — {beschrijving}
-  {of "Geen vergelijkbare bestaande components gevonden"}
+- `{existing-component}` ({path}) — {description}
+  {or "No comparable existing components found"}
 
 ## Used In (context)
 
-{usedIn[] — pages die dit component al gebruiken, voor visuele consistency:}
-{of "Nieuw component — nog niet in gebruik"}
+{usedIn[] — pages already using this component, for visual consistency:}
+{or "New component — not yet in use"}
 
-## Patterns & Conventies
+## Patterns & Conventions
 
 - TypeScript strict mode
-- `cn()` utility voor className composition
-- cva (class-variance-authority) voor variants — controleer aanwezigheid in package.json
-- Tailwind scale (geen arbitrary values)
-- ARIA: {relevante aria-attributen voor dit component-type}
+- `cn()` utility for className composition
+- cva (class-variance-authority) for variants — check presence in package.json
+- Tailwind scale (no arbitrary values)
+- ARIA: {relevant aria attributes for this component type}
 
 ## Output
 
-shadcn/ui-style cva component met:
+shadcn/ui-style cva component with:
 
 - variants: {variants joined}
 - sizes: {sizes joined}
-- asChild support (Radix UI pattern, indien van toepassing)
-- Handoff bundle voor `/frontend-convert` (code → implementatie)
+- asChild support (Radix UI pattern, if applicable)
+- Handoff bundle for `/frontend-convert` (code → implementation)
 ```
 
-Na generatie: ga naar Stap 5 (schrijf bestand + toon samenvatting).
+After generation: go to Step 5 (write file + show summary).
 
-#### Stap 2: Block Inventory
+#### Step 2: Block Inventory
 
-Spawn een Explore agent om de dev-pipeline blocks te inventariseren. Dit isoleert recursieve import tracing uit de main context.
+Spawn an Explore agent to inventory the dev-pipeline blocks. This isolates recursive import tracing from the main context.
 
 Agent prompt:
 
 ```
-Inventariseer de bestaande frontend building blocks in dit project.
+Inventory the existing frontend building blocks in this project.
 
 1. Detect framework via package.json (Next.js App Router, Next.js Pages, Vite + React, Remix, Astro).
 2. Scan components directories:
    - src/components/**/*.{tsx,jsx}
    - app/components/**/*.{tsx,jsx}
    - components/**/*.{tsx,jsx}
-   Rapporteer per component: naam, bestandslocatie, exported props (interface), en één regel beschrijving van wat het doet (afgeleid uit naam + JSX).
+   Report per component: name, file location, exported props (interface), and one line description of what it does (derived from name + JSX).
 3. Scan hooks:
    - src/hooks/**/*.{ts,tsx}
-   Rapporteer per hook: naam, wat het returnt, welke API/service het aanroept (indien zichtbaar).
+   Report per hook: name, what it returns, which API/service it calls (if visible).
 4. Scan services/API clients:
    - src/services/**/*.{ts,tsx}
    - src/lib/api/**/*.{ts,tsx}
-   Rapporteer per service: functienaam, endpoint, return type.
+   Report per service: function name, endpoint, return type.
 
-Return als gestructureerde lijst. Focus op REUSABILITY — welke bestaande blocks zijn toepasbaar voor nieuwe pagina's?
+Return as structured list. Focus on REUSABILITY — which existing blocks are applicable for new pages?
 ```
 
-Agent output wordt de "Block Inventory" sectie in de brief.
+Agent output becomes the "Block Inventory" section in the brief.
 
-**Fallback als framework/dirs niet gevonden:** skip inventory, noteer in brief: `Block inventory: n/a (nog geen componenten gebouwd)`.
+**Fallback if framework/dirs not found:** skip inventory, note in brief: `Block inventory: n/a (no components built yet)`.
 
-#### Stap 3: Tokens + Patterns
+#### Step 3: Tokens + Patterns
 
-1. Read `.project/project.json` → `theme` sectie (als aanwezig). Extract: colors, typography, spacing, cssVars.
-   Voor typography: extraheer de semantische type scale namen (`text-display`, `text-title-*`, `text-headline-*`, `text-body-*`, `text-code`) uit `theme.typography.sizes[].token` als aanwezig. Sla op als `$TYPE_SCALE`.
-   Voor dark mode: check `theme.modes.dark` in project.json. Sla op als `$HAS_DARK_MODE` (true/false).
-   Voor motion: check `theme.motion` in project.json. Sla op als `$MOTION_TOKENS` (true/false).
-2. Read `shared/PATTERNS.md` → extract patroonnamen en één-regel beschrijvingen (compound components, render props, etc).
-3. Als `theme` ontbreekt: noteer `Tokens: Tailwind defaults (geen theme gedefinieerd)`.
+1. Read `.project/project.json` → `theme` section (if present). Extract: colors, typography, spacing, cssVars.
+   For typography: extract semantic type scale names (`text-display`, `text-title-*`, `text-headline-*`, `text-body-*`, `text-code`) from `theme.typography.sizes[].token` if present. Store as `$TYPE_SCALE`.
+   For dark mode: check `theme.modes.dark` in project.json. Store as `$HAS_DARK_MODE` (true/false).
+   For motion: check `theme.motion` in project.json. Store as `$MOTION_TOKENS` (true/false).
+2. Read `shared/PATTERNS.md` → extract pattern names and one-line descriptions (compound components, render props, etc).
+3. If `theme` is missing: note `Tokens: Tailwind defaults (no theme defined)`.
 
-#### Stap 4: Compose Brief
+#### Step 4: Compose Brief
 
-Schrijf `.project/claude-design-brief.md`:
+Write `.project/claude-design-brief.md`:
 
 ```markdown
-# Claude Design Brief — {scope naam}
+# Claude Design Brief — {scope name}
 
-_Gegenereerd door /frontend-design · {datum}_
+_Generated by /frontend-design · {date}_
 
 ## Project Context
 
-{concept-bron in prioriteitsvolgorde:
+{concept source in priority order:
 
-{`CONCEPT_CONTEXT.markdown` als aanwezig, anders `CONCEPT_CONTEXT.pitch`, anders "Geen concept gedefinieerd" — zie `shared/CONCEPT.md`}
+{`CONCEPT_CONTEXT.markdown` if present, otherwise `CONCEPT_CONTEXT.pitch`, otherwise "No concept defined" — see `shared/CONCEPT.md`}
 }
 
-## Design Principes
+## Design Principles
 
 {design.principles[].name + description, bullet list}
 
 ## Scope
 
-{Als pagina: single page spec}
-{Als flow: flow + pagina-reeks}
-{Als volledig: alle pagina's}
+{If page: single page spec}
+{If flow: flow + page sequence}
+{If full: all pages}
 
-### Pagina: {name}
+### Page: {name}
 
-- **Doel**: {purpose}
-- **Secties**: {sections joined}
-- **Gerelateerde flows**: {flows joined}
+- **Purpose**: {purpose}
+- **Sections**: {sections joined}
+- **Related flows**: {flows joined}
 - **Status**: {status}
 
-{herhaal per pagina indien meerdere}
+{repeat per page if multiple}
 
 ## Design Tokens
 
-{Als theme gevuld:}
+{If theme populated:}
 
-- **Kleuren**: {primary, secondary, accent, bg, text}
+- **Colors**: {primary, secondary, accent, bg, text}
 - **Typography**: {font families}
-  {Als $TYPE_SCALE gevuld:}
-  Semantische scale: `text-display`, `text-title-l/m/s`, `text-headline-l/m/s`, `text-body-l/m/s`, `text-code`
-  {Als $TYPE_SCALE leeg:}
-  Geen semantische scale gedefinieerd — gebruik Tailwind text-scale of stel eigen semantische groepen voor in het design.
+  {If $TYPE_SCALE populated:}
+  Semantic scale: `text-display`, `text-title-l/m/s`, `text-headline-l/m/s`, `text-body-l/m/s`, `text-code`
+  {If $TYPE_SCALE empty:}
+  No semantic scale defined — use Tailwind text-scale or propose custom semantic groups in the design.
 - **Spacing**: {scale}
 - **CSS vars**: {list}
 
-{Als $HAS_DARK_MODE:}
+{If $HAS_DARK_MODE:}
 
-- **Dark mode**: `.dark` class op root element activeert dark mode — ontwerp voor beide varianten. Toon key screens in light én dark naast elkaar.
+- **Dark mode**: `.dark` class on root element activates dark mode — design for both variants. Show key screens in light and dark side by side.
 
-{Als $MOTION_TOKENS:}
+{If $MOTION_TOKENS:}
 
-- **Motion**: `duration-instant` (100ms) voor buttons/toggles · `duration-fast` (200ms) voor tooltips/hovers · `duration-normal` (300ms) voor menus/accordions · `duration-slow` (500ms) voor modals/drawers. Easing: `ease-out` (enter), `ease-in` (exit), `ease-in-out` (toggle). Specificeer per interactief element welke token van toepassing is.
+- **Motion**: `duration-instant` (100ms) for buttons/toggles · `duration-fast` (200ms) for tooltips/hovers · `duration-normal` (300ms) for menus/accordions · `duration-slow` (500ms) for modals/drawers. Easing: `ease-out` (enter), `ease-in` (exit), `ease-in-out` (toggle). Specify which token applies per interactive element.
 
-{Als geen theme:}
-Tailwind defaults — Claude Design mag eigen palet voorstellen (noteer de keuze in de handoff).
+{If no theme:}
+Tailwind defaults — Claude Design may propose its own palette (note the choice in the handoff).
 
 ## Block Inventory
 
-Bestaande building blocks die hergebruikt moeten worden (GEEN duplicaten genereren):
+Existing building blocks that must be reused (do NOT generate duplicates):
 
 ### Components
 
-- `{ComponentName}` ({path}) — {beschrijving} · props: {interface samenvatting}
+- `{ComponentName}` ({path}) — {description} · props: {interface summary}
 
 ### Hooks
 
-- `{useHook}` ({path}) — {wat het returnt} · aanroep: `{API/service}`
+- `{useHook}` ({path}) — {what it returns} · call: `{API/service}`
 
 ### Services
 
 - `{serviceFn}` ({path}) — {endpoint} → {return type}
 
-## Patterns & Conventies
+## Patterns & Conventions
 
-{uit shared/PATTERNS.md, bullet list met pattern naam + eenregel beschrijving}
+{from shared/PATTERNS.md, bullet list with pattern name + one-line description}
 
 - TypeScript strict mode
 - Semantic HTML + ARIA
-- `cn()` utility voor className composition
-- Tailwind scale (geen arbitrary values)
-- Sizing vocabulary: `fill` (flex: 1 / width: 100%), `hug` (fit-content/auto), `fixed` (expliciete px/rem waarde) — gebruik deze termen in commentaar bij layout-elementen
+- `cn()` utility for className composition
+- Tailwind scale (no arbitrary values)
+- Sizing vocabulary: `fill` (flex: 1 / width: 100%), `hug` (fit-content/auto), `fixed` (explicit px/rem value) — use these terms in comments next to layout elements
 
-## Output Verwachting
+## Expected Output
 
-Genereer in Claude Design:
+Generate in Claude Design:
 
-1. Visuele layout die de bovenstaande sectie-indeling volgt
-2. Hergebruik van bestaande components waar mogelijk (zie Block Inventory)
-3. Tokens uit de theme sectie (indien gevuld)
-4. Handoff bundle die doorgestuurd kan worden naar Claude Code (`/dev-build`)
+1. Visual layout that follows the section structure above
+2. Reuse existing components where possible (see Block Inventory)
+3. Tokens from the theme section (if populated)
+4. Handoff bundle to forward to Claude Code (`/dev-build`)
 ```
 
-#### Stap 5: Write + Show
+#### Step 5: Write + Show
 
-Bepaal output-pad per scope:
+Determine output path per scope:
 
-| Scope         | Bestand                                            |
-| ------------- | -------------------------------------------------- |
-| Pagina / Flow | `.project/claude-design-brief.md`                  |
-| Component     | `.project/claude-design-brief-{component-name}.md` |
-| Beide         | beide bestanden hierboven                          |
+| Scope       | File                                               |
+| ----------- | -------------------------------------------------- |
+| Page / Flow | `.project/claude-design-brief.md`                  |
+| Component   | `.project/claude-design-brief-{component-name}.md` |
+| Both        | both files above                                   |
 
-Write bestand(en).
+Write file(s).
 
-**Backlog sync** — als `{$TARGET}` een PAGE of COMPONENT is in de backlog:
+**Backlog sync** — if `{$TARGET}` is a PAGE or COMPONENT in the backlog:
 
-Parse `backlog.html` → match op `name === {$TARGET}`:
+Parse `backlog.html` → match on `name === {$TARGET}`:
 
-- Zet `feature.status = "DEFINED"` (Path B: brief gegenereerd, wacht op convert)
-- Update `data.updated`, edit terug in `backlog.html`.
+- Set `feature.status = "DEFINED"` (Path B: brief generated, waiting for convert)
+- Update `data.updated`, edit back into `backlog.html`.
 
-Print samenvatting:
+Print summary:
 
 ```
-CLAUDE DESIGN BRIEF GEGENEREERD
+CLAUDE DESIGN BRIEF GENERATED
 ════════════════════════════════════════════════
-Bestand(en):   {pad(en)}
-Scope:         {pagina | component | flow | beide | volledige app}
-Pagina's:      {N}   (of n.v.t. voor puur component-brief)
+File(s):       {path(s)}
+Scope:         {page | component | flow | both | full app}
+Pages:         {N}   (or n/a for pure component brief)
 Components:    {M} in inventory
-Tokens:        [✓ uit theme | ⚠ Tailwind defaults]
+Tokens:        [✓ from theme | ⚠ Tailwind defaults]
 ════════════════════════════════════════════════
 
 Next steps:
-  1. Open {bestand(en)}
-  2. Kopieer inhoud → plak in Claude Design (claude.ai/design)
-  3. Na generatie → "Handoff to Claude Code" button
+  1. Open {file(s)}
+  2. Copy content → paste into Claude Design (claude.ai/design)
+  3. After generation → "Handoff to Claude Code" button
 
-  Klaar met extern design?
+  Done with external design?
   /frontend-convert {$TARGET}
 ```
 
-Geen FASE 3 confirm nodig voor brief-mode. Skip naar Completion.
+No PHASE 3 confirm needed for brief-mode. Skip to Completion.
 
 ---
 
-## FASE 3: Confirm + Loop
+## PHASE 3: Confirm + Loop
 
 Reached after any mutating action. Show what will change:
 
 ```
-WIJZIGINGEN
+CHANGES
 ════════════════════════════════════════════════
-+ Pagina "checkout" toegevoegd (3 secties)
-~ Flow "purchase" bijgewerkt (stap toegevoegd)
-- Principe "Dark theme" verwijderd
++ Page "checkout" added (3 sections)
+~ Flow "purchase" updated (step added)
+- Principle "Dark theme" removed
 
-Totaal na wijziging: {N} pagina's, {C} components, {M} flows, {P} principes
+Total after change: {N} pages, {C} components, {M} flows, {P} principles
 ════════════════════════════════════════════════
 ```
 
 ```yaml
 header: "Confirm"
-question: "Wijzigingen doorvoeren?"
+question: "Apply changes?"
 options:
-  - label: "Ja, opslaan (Recommended)", description: "Schrijf naar project.json"
-  - label: "Aanpassen", description: "Terug naar actie selectie"
-  - label: "Annuleren", description: "Stop zonder wijzigingen"
+  - label: "Yes, save (Recommended)", description: "Write to project.json"
+  - label: "Edit", description: "Back to action selection"
+  - label: "Cancel", description: "Stop without changes"
 multiSelect: false
 ```
 
-If "Ja": proceed to FASE X (write + post-flight).
-If "Aanpassen": loop back to FASE 1 (ACTION_SELECT with updated state).
-If "Annuleren": exit cleanly, no changes written.
+If "Yes": proceed to PHASE X (write + post-flight).
+If "Edit": loop back to PHASE 1 (ACTION_SELECT with updated state).
+If "Cancel": exit cleanly, no changes written.
 
 ---
 
-## FASE X: Post-flight Validation
+## PHASE X: Post-flight Validation
 
-### X.0 Checkpoint Save (vóór write)
+### X.0 Checkpoint Save (before write)
 
-Sla de huidige `design` sectie op als checkpoint in `.project/session/design-history.json` vóórdat er geschreven wordt. Wordt overgeslagen bij Herstellen-restores (zie Herstellen Stap 4).
+Save the current `design` section as a checkpoint in `.project/session/design-history.json` before writing. Skipped for Herstellen-restores (see Herstellen Step 4).
 
-1. Gebruik de huidige `design` staat uit FASE 0.3 (al in geheugen — geen nieuwe read nodig). Skip als leeg.
-2. Lees `.project/session/design-history.json` (maak aan als niet bestaat: `[]`).
-3. Prepend nieuw entry:
+1. Use the current `design` state from PHASE 0.3 (already in memory — no new read needed). Skip if empty.
+2. Read `.project/session/design-history.json` (create if not exists: `[]`).
+3. Prepend new entry:
    ```json
    {
      "timestamp": "{ISO 8601}",
-     "trigger": "{actie-beschrijving, bijv. 'Pagina checkout toegevoegd'}",
+     "trigger": "{action description, e.g. 'Page checkout added'}",
      "snapshot": { "pages": [...], "flows": [...], "principles": [...] }
    }
    ```
-4. Houd max 10 entries: drop oudste als `length > 10`.
-5. Schrijf terug naar `.project/session/design-history.json`.
+4. Keep max 10 entries: drop oldest if `length > 10`.
+5. Write back to `.project/session/design-history.json`.
 
 ### X.1 Write to project.json
 
@@ -1925,23 +1909,23 @@ Follow the Read/Write Protocol defined above. Only mutate the `design` section.
 POST-FLIGHT CHECK
 ════════════════════════════════════════════════
 File:       [✓] .project/project.json — valid JSON
-Pages:      [✓] {N} pagina's — all valid
+Pages:      [✓] {N} pages — all valid
 Flows:      [✓] {M} flows — all valid
-Principles: [✓] {P} principes — all valid
-Integrity:  [✓] andere secties ongewijzigd
-CrossRef:   [✓|⚠] flow stappen → pagina's
+Principles: [✓] {P} principles — all valid
+Integrity:  [✓] other sections unchanged
+CrossRef:   [✓|⚠] flow steps → pages
 ════════════════════════════════════════════════
 ```
 
 **On failure:**
 
 ```yaml
-header: "Validatie"
-question: "Post-flight validatie gefaald. Hoe wil je doorgaan?"
+header: "Validation"
+question: "Post-flight validation failed. How do you want to proceed?"
 options:
-  - label: "Auto-fix (Recommended)", description: "Los automatisch op"
-  - label: "Handmatig fixen", description: "Ik fix het zelf"
-  - label: "Negeren", description: "Ga door ondanks fout"
+  - label: "Auto-fix (Recommended)", description: "Fix automatically"
+  - label: "Fix manually", description: "I'll fix it myself"
+  - label: "Ignore", description: "Continue despite error"
 multiSelect: false
 ```
 
@@ -2006,35 +1990,35 @@ Update `.project/session/devinfo.json`:
 ### Completion Report
 
 ```
-DESIGN SPEC [AANGEMAAKT|BIJGEWERKT]
+DESIGN SPEC [CREATED|UPDATED]
 ═══════════════════════════════════════════════════════════════
 
-Locatie: .project/project.json (design sectie)
+Location: .project/project.json (design section)
 
-[Alleen tonen als design-history.json bestaat en niet leeg is:]
-WIJZIGINGEN DEZE SESSIE
+[Only show if design-history.json exists and is not empty:]
+CHANGES THIS SESSION
 ─────────────────────────────────────────────────
-+ {naam}  (nieuw pagina/flow/principe)
-~ {naam}  (gewijzigd — veld: {purpose|sections|steps|...})
-- {naam}  (verwijderd)
-[Als geen wijzigingen: dit blok weglaten]
++ {name}  (new page/flow/principle)
+~ {name}  (changed — field: {purpose|sections|steps|...})
+- {name}  (removed)
+[If no changes: omit this block]
 ─────────────────────────────────────────────────
 
-| Categorie | Aantal | Details                            |
-|-----------|--------|------------------------------------|
-| Pagina's  | {N}    | {status breakdown: 2 DEF, 1 BLT}  |
-| Flows     | {M}    | {flow names joined}                |
-| Principes | {P}    | {principle names joined}           |
+| Category   | Count | Details                            |
+|------------|-------|------------------------------------|
+| Pages      | {N}   | {status breakdown: 2 DEF, 1 BLT}  |
+| Flows      | {M}   | {flow names joined}                |
+| Principles | {P}   | {principle names joined}           |
 
-Backlog: {X} nieuwe PAGE items toegevoegd
-  {lijst van toegevoegde pagina namen}
+Backlog: {X} new PAGE items added
+  {list of added page names}
 
 Next steps:
-  1. /frontend-design       → voeg meer pagina's/flows toe (iteratief)
-  2. /frontend-tokens       → design tokens en kleuren op basis van principes
-  3. /frontend-design       → genereer Claude Design brief (brief-mode)
-  4. /frontend-convert      → converteer een bestaand design naar code
-  5. /frontend-check        → performance/SEO audit (als flows gedefinieerd: ook scope Flow beschikbaar)
+  1. /frontend-design       → add more pages/flows (iterative)
+  2. /frontend-tokens       → design tokens and colors based on principles
+  3. /frontend-design       → generate Claude Design brief (brief-mode)
+  4. /frontend-convert      → convert an existing design to code
+  5. /frontend-check        → performance/SEO audit (if flows defined: Flow scope also available)
   6. /frontend-check --scope=a11y → accessibility audit
 
 ═══════════════════════════════════════════════════════════════
@@ -2046,21 +2030,21 @@ Next steps:
 
 This skill must **NEVER**:
 
-- Write design spec without user confirmation (FASE 3)
-- Auto-delete pages, flows, or principles (only via explicit "Verwijderen" route)
+- Write design spec without user confirmation (PHASE 3)
+- Auto-delete pages, flows, or principles (only via explicit "Delete" route)
 - Overwrite other sections in project.json
 - Skip pre-flight or post-flight validation
 - Guess page structure without user input or codebase evidence (Importeren route)
 
 This skill must **ALWAYS**:
 
-- Run pre-flight validation (FASE 0) before any operation
+- Run pre-flight validation (PHASE 0) before any operation
 - Use AskUserQuestion for all user choices
 - Show current values when editing existing items
-- Show change preview before confirming (FASE 3)
+- Show change preview before confirming (PHASE 3)
 - Confirm before destructive actions with "Nee" as recommended option
 - Save checkpoint (X.0) before every mutating write — except restores
-- Run post-flight validation (FASE X) after any write
+- Run post-flight validation (PHASE X) after any write
 - Cross-reference flow steps against defined pages
 - Update DevInfo at completion
 - Show completion report with next steps

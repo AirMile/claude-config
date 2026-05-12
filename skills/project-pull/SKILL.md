@@ -15,25 +15,25 @@ metadata:
 
 # Pull
 
-Pull remote changes, analyseer de diff, ververs `.project/` context, analyseer teammate code voor features, entities, endpoints en architectuur, en extract synced learnings uit teammate commits.
+Pull remote changes, analyze the diff, refresh `.project/` context, analyze teammate code for features, entities, endpoints and architecture, and extract synced learnings from teammate commits.
 
-**Trigger**: `/project-pull`, `/project-pull [remote/branch]`, of `/project-pull --no-learn`
+**Trigger**: `/project-pull`, `/project-pull [remote/branch]`, or `/project-pull --no-learn`
 
-**`--no-learn` flag**: Skip FASE 4j (learning extraction). Gebruik als je alleen context/architecture wilt syncen zonder learnings te genereren.
+**`--no-learn` flag**: Skip PHASE 4j (learning extraction). Use if you only want to sync context/architecture without generating learnings.
 
-**First-time onboarding (vervangt oude `--full` flag)**: gebruik `/core-setup` voor volledig codebase scan + LLM learnings extractie wanneer je een mature repo binnenstapt.
+**First-time onboarding (replaces old `--full` flag)**: use `/core-setup` for a full codebase scan + LLM learnings extraction when joining a mature repo.
 
 ## References
 
 - `shared/SYNC.md` — merge protocol (read-modify-write per section)
 - `shared/DASHBOARD.md` — project.json + project-context.json schema
-- `shared/LEARNING-EXTRACTION.md` — heuristieken voor MVP signalen en LLM extractie (FASE 4j)
+- `shared/LEARNING-EXTRACTION.md` — heuristics for MVP signals and LLM extraction (PHASE 4j)
 
 ## Process
 
-### FASE 0: Pre-flight
+### PHASE 0: Pre-flight
 
-1. **Clean `.project/` files** (voorkom dat lokale .project/ wijzigingen stash/pull verstoren):
+1. **Clean `.project/` files** (prevent local .project/ changes from interfering with stash/pull):
 
    ```bash
    git ls-files .project/ | xargs git update-index --no-skip-worktree 2>/dev/null
@@ -41,26 +41,26 @@ Pull remote changes, analyseer de diff, ververs `.project/` context, analyseer t
    git ls-files .project/ | xargs git update-index --skip-worktree 2>/dev/null
    ```
 
-   Dit reset `.project/` naar HEAD en maakt ze onzichtbaar voor git. Veilig omdat FASE 3/4 de content altijd regenereert vanuit de broncode.
+   This resets `.project/` to HEAD and makes them invisible to git. Safe because PHASE 3/4 always regenerates the content from source code.
 
-2. Check git status (`.project/` verschijnt niet meer door skip-worktree):
+2. Check git status (`.project/` no longer appears due to skip-worktree):
 
    ```bash
    git status --porcelain
    ```
 
-   Als dirty → **AskUserQuestion**:
+   If dirty → **AskUserQuestion**:
    - header: "Uncommitted"
-   - question: "Er zijn uncommitted changes. Wat wil je doen?"
+   - question: "There are uncommitted changes. What would you like to do?"
    - options:
-     - "Stash (Recommended)" — "Stash changes, pull, dan re-apply"
-     - "Commit eerst" — "Commit huidige changes voordat je pullt"
-     - "Annuleren" — "Stop, ik fix dit zelf"
+     - "Stash (Recommended)" — "Stash changes, pull, then re-apply"
+     - "Commit first" — "Commit current changes before pulling"
+     - "Cancel" — "Stop, I'll fix this myself"
    - multiSelect: false
 
-   Bij "Stash": `git stash push -u -m "project-pull auto-stash"` (`-u` voor untracked files). Na succesvolle pull in FASE 1: `git stash apply` (NIET `pop`). Bij apply success → `git stash drop`. Bij conflict na apply → meld en laat user resolven. **NOOIT de stash droppen bij conflict** — de stash blijft als vangnet.
-   Bij "Commit eerst" → exit met instructie om `/core-commit` te runnen en daarna `/project-pull`.
-   Bij "Annuleren" → exit.
+   On "Stash": `git stash push -u -m "project-pull auto-stash"` (`-u` for untracked files). After successful pull in PHASE 1: `git stash apply` (NOT `pop`). On apply success → `git stash drop`. On conflict after apply → report and let user resolve. **NEVER drop the stash on conflict** — the stash remains as a safety net.
+   On "Commit first" → exit with instruction to run `/core-commit` and then `/project-pull`.
+   On "Cancel" → exit.
 
 3. Check remote:
 
@@ -69,36 +69,36 @@ Pull remote changes, analyseer de diff, ververs `.project/` context, analyseer t
    git fetch 2>&1
    ```
 
-   Als geen remote of fetch faalt → exit met error.
+   If no remote or fetch fails → exit with error.
 
-4. Check `.project/project-context.json` existence → onthoud als `has_context_json`. Fallback: check `.project/project.json` → onthoud als `has_project_json`.
+4. Check `.project/project-context.json` existence → store as `has_context_json`. Fallback: check `.project/project.json` → store as `has_project_json`.
 
-5. **Onboard-nudge** (eenmalig per project, voor fresh codebases):
+5. **Onboard nudge** (once per project, for fresh codebases):
 
    ```bash
    total_commits=$(git rev-list --count HEAD 2>/dev/null || echo 0)
    ```
 
-   Bepaal `learnings_empty`:
-   - Als `has_context_json` = false → `learnings_empty = true`
-   - Anders: lees `.project/project-context.json` → `learnings_empty = (learnings.length === 0)`
+   Determine `learnings_empty`:
+   - If `has_context_json` = false → `learnings_empty = true`
+   - Otherwise: read `.project/project-context.json` → `learnings_empty = (learnings.length === 0)`
 
-   Bepaal `dismissed`: check `.project/session/onboard-dismissed` bestaat.
+   Determine `dismissed`: check if `.project/session/onboard-dismissed` exists.
 
-   Bij `learnings_empty && total_commits > 50 && !dismissed` → **AskUserQuestion**:
+   If `learnings_empty && total_commits > 50 && !dismissed` → **AskUserQuestion**:
    - header: "Onboard?"
-   - question: "Dit lijkt een nieuwe codebase voor je ({N} commits, geen learnings). `/core-setup` bouwt base memory uit conventies, patterns en pitfalls van bestaande code. Nu runnen?"
+   - question: "This looks like a new codebase for you ({N} commits, no learnings). `/core-setup` builds base memory from conventions, patterns and pitfalls in existing code. Run now?"
    - options:
-     - "Ja, run /core-setup (Recommended)" — exit project-pull met instructie aan user om `/core-setup` te starten
-     - "Nee, alleen pull" — ga door met FASE 1
-     - "Niet meer vragen voor dit project" — schrijf `.project/session/onboard-dismissed` (lege marker file), ga door met FASE 1
+     - "Yes, run /core-setup (Recommended)" — exit project-pull with instruction to start `/core-setup`
+     - "No, just pull" — continue with PHASE 1
+     - "Don't ask again for this project" — write `.project/session/onboard-dismissed` (empty marker file), continue with PHASE 1
    - multiSelect: false
 
-   Bij "Ja": exit met message `RUN /core-setup FOR BASE MEMORY (then re-run /project-pull for incremental updates)`. Geen pull/sync.
+   On "Yes": exit with message `RUN /core-setup FOR BASE MEMORY (then re-run /project-pull for incremental updates)`. No pull/sync.
 
-### FASE 1: Pull
+### PHASE 1: Pull
 
-Bewaar pre-pull ref:
+Store pre-pull ref:
 
 ```bash
 PRE_REF=$(git rev-parse HEAD)
@@ -110,45 +110,45 @@ Pull:
 git pull --rebase
 ```
 
-Als conflicts → toon conflicting files, exit met instructie om conflicts te resolven en daarna `/project-pull` opnieuw te runnen.
+If conflicts → show conflicting files, exit with instruction to resolve conflicts and then re-run `/project-pull`.
 
-**Bepaal of we doorgaan:**
+**Determine whether to continue:**
 
-- Pull had nieuwe commits → door naar FASE 2
-- "Already up to date" EN (`has_context_json` OF `has_project_json`) = true → door naar FASE 2 met `force_full_scan = true` (context kan stale zijn)
-- "Already up to date" EN geen van beide bestaan → exit:
+- Pull had new commits → continue to PHASE 2
+- "Already up to date" AND (`has_context_json` OR `has_project_json`) = true → continue to PHASE 2 with `force_full_scan = true` (context may be stale)
+- "Already up to date" AND neither exist → exit:
   ```
   ALREADY UP TO DATE (no project-context.json or project.json — run /core-setup to initialize)
   ```
 
-**Restore skip-worktree** na pull (ook als already up to date):
+**Restore skip-worktree** after pull (also when already up to date):
 
 ```bash
 git ls-files .project/ | xargs git update-index --skip-worktree 2>/dev/null
 ```
 
-Als gestasht in FASE 0: `git stash apply`. Bij success → `git stash drop`. Bij conflict → meld en exit (**stash NIET droppen** — blijft als vangnet).
+If stashed in PHASE 0: `git stash apply`. On success → `git stash drop`. On conflict → report and exit (**do NOT drop stash** — remains as safety net).
 
-### FASE 2: Diff Analysis
+### PHASE 2: Diff Analysis
 
-**Doel:** toon wat er veranderd is en bepaal welke context-secties een update nodig hebben.
+**Goal:** show what changed and determine which context sections need an update.
 
-**2a) Commits overzicht**
+**2a) Commits overview**
 
 ```bash
 git log $PRE_REF..HEAD --oneline
 ```
 
-Als geen commits (already up to date) → sla 2a/2b/2c over, ga naar 2d.
+If no commits (already up to date) → skip 2a/2b/2c, go to 2d.
 
-**2b) Changed files overzicht**
+**2b) Changed files overview**
 
 ```bash
 git diff $PRE_REF..HEAD --stat
 git diff $PRE_REF..HEAD --name-status
 ```
 
-Toon samenvatting aan de user:
+Show summary to the user:
 
 ```
 PULL COMPLETE
@@ -162,28 +162,28 @@ Commits: {N} new
 Files: {N} changed ({added} added, {modified} modified, {deleted} deleted)
 ```
 
-**2c) Categoriseer changed files**
+**2c) Categorize changed files**
 
-Lees de `--name-status` output en categoriseer elk bestand:
+Read the `--name-status` output and categorize each file:
 
-| Categorie      | Match                                                                                                         | Impact              |
+| Category       | Match                                                                                                         | Impact              |
 | -------------- | ------------------------------------------------------------------------------------------------------------- | ------------------- |
-| **Structural** | Files met status A (added), D (deleted), of R (renamed/moved)                                                 | `context.structure` |
+| **Structural** | Files with status A (added), D (deleted), or R (renamed/moved)                                                | `context.structure` |
 | **Route**      | `app/**/page.{tsx,jsx,ts,js}`, `app/**/route.{ts,js}`, `pages/**/*.{tsx,jsx,ts,js}`, `*.tscn`                 | `context.routing`   |
 | **Config**     | `tsconfig.json`, `vite.config.*`, `next.config.*`, `.env.example`, `.nvmrc`, `.node-version`, `project.godot` | `context.patterns`  |
-| **Code-only**  | Overige modified files (status M, geen match met bovenstaande)                                                | Geen context impact |
+| **Code-only**  | Other modified files (status M, no match with the above)                                                      | No context impact   |
 
-Route file patterns zijn stack-afhankelijk. Lees `stack.framework` uit `project.json` om te bepalen welke patterns relevant zijn.
+Route file patterns are stack-dependent. Read `stack.framework` from `project.json` to determine which patterns are relevant.
 
-**2d) Impact bepaling**
+**2d) Impact determination**
 
 ```
-needs_structure = structural_files.length > 0 OF force_full_scan
-needs_routing   = route_files.length > 0 OF force_full_scan
-needs_patterns  = config_files.length > 0 OF force_full_scan
+needs_structure = structural_files.length > 0 OR force_full_scan
+needs_routing   = route_files.length > 0 OR force_full_scan
+needs_patterns  = config_files.length > 0 OR force_full_scan
 ```
 
-**Fallback:** als `$PRE_REF` niet beschikbaar is (eerste pull, shallow clone) → `force_full_scan = true`.
+**Fallback:** if `$PRE_REF` is not available (first pull, shallow clone) → `force_full_scan = true`.
 
 **2e) Detect teammate commits**
 
@@ -207,52 +207,52 @@ Also get merge commits to detect feature branches:
 git log HEAD --merges --since="$SINCE" --format="%H|%an|%s"
 ```
 
-Store as `has_teammate_commits = true/false`. If zero teammate commits → skip FASE 4 (geen teammate enrichment nodig). Voor volledige codebase scan: gebruik `/core-setup`.
+Store as `has_teammate_commits = true/false`. If zero teammate commits → skip PHASE 4 (no teammate enrichment needed). For a full codebase scan: use `/core-setup`.
 
-### FASE 3: Context Sync
+### PHASE 3: Context Sync
 
-Skip volledig als noch `has_context_json` noch `has_project_json` = true. Toon:
+Skip entirely if neither `has_context_json` nor `has_project_json` = true. Show:
 
 ```
 SKIP CONTEXT SYNC (no project-context.json or project.json — run /core-setup to initialize)
 ```
 
-Lees `.project/project-context.json`, parse JSON. Update `context` sectie gericht:
+Read `.project/project-context.json`, parse JSON. Update `context` section selectively:
 
-**3a) Structure scan** (alleen als `needs_structure`)
+**3a) Structure scan** (only if `needs_structure`)
 
-Scan de project root voor de file tree. Bouw een compacte structure string:
+Scan the project root for the file tree. Build a compact structure string:
 
-- Gebruik Glob tool voor directory discovery
+- Use Glob tool for directory discovery
 - Exclude: node_modules, .git, .project, dist, build, .next, vendor, **pycache**, .godot
-- Eén-regel comments per directory die het doel beschrijft
-- Formaat: zelfde als in `DASHBOARD.md` context.structure schema
+- One-line comments per directory describing its purpose
+- Format: same as in `DASHBOARD.md` context.structure schema
 
-Overwrite `context.structure` volledig.
+Overwrite `context.structure` fully.
 
-**3b) Route detection** (alleen als `needs_routing`)
+**3b) Route detection** (only if `needs_routing`)
 
-Detect stack uit `project.json.stack.framework`.
+Detect stack from `project.json.stack.framework`.
 
-| Stack                | Detectie methode                                             |
-| -------------------- | ------------------------------------------------------------ |
-| Next.js (App Router) | Scan `app/**/page.{tsx,jsx,ts,js}` → extract route patterns  |
-| Next.js (Pages)      | Scan `pages/**/*.{tsx,jsx,ts,js}` → extract route patterns   |
-| Express/Fastify      | Grep voor `router.get\|post\|put\|delete\|app.get\|app.post` |
-| Godot                | Scan `*.tscn` scene files → extract scene tree               |
-| Overig               | Skip routing, set `context.routing = []`                     |
+| Stack                | Detection method                                            |
+| -------------------- | ----------------------------------------------------------- |
+| Next.js (App Router) | Scan `app/**/page.{tsx,jsx,ts,js}` → extract route patterns |
+| Next.js (Pages)      | Scan `pages/**/*.{tsx,jsx,ts,js}` → extract route patterns  |
+| Express/Fastify      | Grep for `router.get\|post\|put\|delete\|app.get\|app.post` |
+| Godot                | Scan `*.tscn` scene files → extract scene tree              |
+| Other                | Skip routing, set `context.routing = []`                    |
 
-Route formaat: `"/path" → Description` (arrow notation).
+Route format: `"/path" → Description` (arrow notation).
 
-Overwrite `context.routing` volledig.
+Overwrite `context.routing` fully.
 
-**Important:** if FASE 4 will also run (`has_teammate_commits`), retain the parsed route file contents in memory. FASE 4e reuses this data for endpoint extraction instead of re-reading the same files.
+**Important:** if PHASE 4 will also run (`has_teammate_commits`), retain the parsed route file contents in memory. PHASE 4e reuses this data for endpoint extraction instead of re-reading the same files.
 
-**3c) Pattern auto-detect** (alleen als `needs_patterns`)
+**3c) Pattern auto-detect** (only if `needs_patterns`)
 
-Scan voor automatisch detecteerbare patterns:
+Scan for automatically detectable patterns:
 
-| Bron                                      | Pattern                                 |
+| Source                                    | Pattern                                 |
 | ----------------------------------------- | --------------------------------------- |
 | `tsconfig.json` → `compilerOptions.paths` | Path alias: `@/* → src/*`               |
 | `vite.config.*` → `resolve.alias`         | Path alias: `@/ → src/`                 |
@@ -260,20 +260,20 @@ Scan voor automatisch detecteerbare patterns:
 | `project.godot` → `[autoload]`            | Autoload: `{name} → {path}` per entry   |
 | `.nvmrc` / `.node-version` exists         | Node version: `{version}`               |
 
-**Merge** met bestaande `context.patterns`:
+**Merge** with existing `context.patterns`:
 
 - Auto-detected patterns (prefix: "Path alias:", "Env setup:", "Autoload:", "Node version:"): overwrite
-- Handmatige patterns (zonder deze prefixes): behouden
+- Manual patterns (without these prefixes): retain
 
 **3d) Update timestamp**
 
-Set `context.updated` naar huidige datum (`YYYY-MM-DD`). Doe dit altijd, ook als alleen code-only changes.
+Set `context.updated` to current date (`YYYY-MM-DD`). Do this always, even for code-only changes.
 
-Write `project-context.json` terug met `JSON.stringify(data, null, 2)`.
+Write `project-context.json` back with `JSON.stringify(data, null, 2)`.
 
-### FASE 4: Teammate Deep Analysis
+### PHASE 4: Teammate Deep Analysis
 
-Skip entirely if `has_teammate_commits = false`. This fase enriches project.json and project-context.json with context from code you didn't write. Voor een volledige codebase scan (eerste keer joinen): gebruik `/core-setup`.
+Skip entirely if `has_teammate_commits = false`. This phase enriches project.json and project-context.json with context from code you didn't write. For a full codebase scan (first time joining): use `/core-setup`.
 
 **4a) Determine scope**
 
@@ -321,7 +321,7 @@ The `source` field tracks which file defines this entity — used by 4g to detec
 
 **4e) Extract endpoints from routes**
 
-Reuse route file contents cached in FASE 3b if available. Only read additional route files that weren't covered by 3b (e.g., new files from teammate commits not yet in the working tree during 3b).
+Reuse route file contents cached in PHASE 3b if available. Only read additional route files that weren't covered by 3b (e.g., new files from teammate commits not yet in the working tree during 3b).
 
 Detect stack from `project.json.stack.framework`:
 
@@ -348,7 +348,7 @@ For files with status `D` (deleted) in teammate commits:
 1. **Entities**: if a model file was deleted, check `data.entities[]` — match on `source` field and remove entries whose source file no longer exists.
 2. **Endpoints**: if a route file was deleted, check `endpoints[]` — remove entries from that route file.
 3. **Architecture components**: if a source file was deleted, remove it from `architecture.components[].src` or `.test` arrays. Remove component entries with empty `src` arrays.
-4. **Routing**: already handled by FASE 3 (full overwrite of `context.routing`).
+4. **Routing**: already handled by PHASE 3 (full overwrite of `context.routing`).
 
 **4h) Sync to project files**
 
@@ -397,7 +397,7 @@ Write `.project/session/sync-state.json`:
 
 **4j) Learning extraction**
 
-Skip volledig als `--no-learn` flag gezet. Heuristieken: zie [shared/LEARNING-EXTRACTION.md](../shared/LEARNING-EXTRACTION.md).
+Skip entirely if `--no-learn` flag is set. Heuristics: see [shared/LEARNING-EXTRACTION.md](../shared/LEARNING-EXTRACTION.md).
 
 **4j.1) MVP — fix-commit pitfalls**
 
@@ -405,58 +405,58 @@ Skip volledig als `--no-learn` flag gezet. Heuristieken: zie [shared/LEARNING-EX
 git log $PRE_REF..HEAD --grep='^fix\|^bugfix' --format='%H|%an|%s%n%b' --no-merges
 ```
 
-Per commit: filter author ≠ self. Body ≥10 woorden OF bevat root-cause keyword (`because|waardoor|caused|door|root cause|reason|reden|oorzaak`). Skip kale `fix: typo`. Output `{ type: "pitfall", source: "synced", author, feature: <primary-dir>, summary: <subject zonder prefix> — <body sample> }`.
+Per commit: filter author ≠ self. Body ≥10 words OR contains root-cause keyword (`because|waardoor|caused|door|root cause|reason|reden|oorzaak`). Skip bare `fix: typo`. Output `{ type: "pitfall", source: "synced", author, feature: <primary-dir>, summary: <subject without prefix> — <body sample> }`.
 
 **4j.2) MVP — TODO/FIXME comments**
 
-Voor elke teammate-changed file (uit FASE 4a):
+For each teammate-changed file (from PHASE 4a):
 
 ```bash
 grep -nE '(TODO|FIXME|HACK|XXX|NOTE):' <file>
 git blame --porcelain -L <line>,<line> <file>
 ```
 
-Filter: ≥10 woorden body, bevat werkwoord-clue (`breaks|fails|causes|veroorzaakt|kapot|werkt niet|moet|should|hangs|blocks|crashes|leaks`). Skip generic patterns (`TODO: implement`, `FIXME: fix this`). Author uit `git blame` ≠ self. Output `{ type: "pitfall", source: "synced", author, feature: <dir-segment>, summary: <comment body, ≤200 chars> }`.
+Filter: ≥10 words body, contains verb clue (`breaks|fails|causes|veroorzaakt|kapot|werkt niet|moet|should|hangs|blocks|crashes|leaks`). Skip generic patterns (`TODO: implement`, `FIXME: fix this`). Author from `git blame` ≠ self. Output `{ type: "pitfall", source: "synced", author, feature: <dir-segment>, summary: <comment body, ≤200 chars> }`.
 
-**4j.3) MVP — nieuwe abstraction-dirs**
+**4j.3) MVP — new abstraction dirs**
 
-Vergelijk component lijst uit FASE 4f tegen bestaande `architecture.components[]`. Voor nieuwe entries: match directory keyword tegen mapping table in `LEARNING-EXTRACTION.md`. Output `{ type: "pattern", source: "synced", author, feature: <dir>, summary: "<Pattern label> geïntroduceerd in <path> (<N> files)" }`.
+Compare component list from PHASE 4f against existing `architecture.components[]`. For new entries: match directory keyword against mapping table in `LEARNING-EXTRACTION.md`. Output `{ type: "pattern", source: "synced", author, feature: <dir>, summary: "<Pattern label> introduced in <path> (<N> files)" }`.
 
-**4j.4) MVP — wrapper-deps**
+**4j.4) MVP — wrapper deps**
 
-Hergebruik package.json diff uit FASE 4h. Voor elke nieuwe dep: lookup in wrapper mapping table (zod, pino, axios, prisma, etc). Geen match → skip. Output `{ type: "pattern", source: "synced", author, feature: "stack", summary: "<Pattern label>" }`.
+Reuse package.json diff from PHASE 4h. For each new dep: lookup in wrapper mapping table (zod, pino, axios, prisma, etc). No match → skip. Output `{ type: "pattern", source: "synced", author, feature: "stack", summary: "<Pattern label>" }`.
 
-**4j.5) Signal-detectie + LLM-extractie**
+**4j.5) Signal detection + LLM extraction**
 
-Bepaal signal:
+Determine signal:
 
 ```
-1. Group teammate-changed files per top-level component-directory (eerste 2 segmenten)
-2. Trigger als: één directory ≥10 files (status A/M), OF nieuwe top-level directory (alle status A)
-3. Geen trigger → skip 4j.5
+1. Group teammate-changed files per top-level component directory (first 2 segments)
+2. Trigger if: one directory ≥10 files (status A/M), OR new top-level directory (all status A)
+3. No trigger → skip 4j.5
 ```
 
-Bij trigger: roep `learning-extractor` agent aan via Agent tool:
+On trigger: call `learning-extractor` agent via Agent tool:
 
 - `subagent_type: "learning-extractor"`
-- prompt bevat: `mode: "pull-signal"`, `files: [<getriggerde paden>]`, `existing_learnings: <huidige learnings[]>`, `cap: 5`
+- prompt contains: `mode: "pull-signal"`, `files: [<triggered paths>]`, `existing_learnings: <current learnings[]>`, `cap: 5`
 
-Parse JSON output. Voor elke entry: zet `source: "synced"`, `author: null` (codebase-wide), `feature: <triggered dir>`. Append aan extractie-resultaten.
+Parse JSON output. For each entry: set `source: "synced"`, `author: null` (codebase-wide), `feature: <triggered dir>`. Append to extraction results.
 
-**4j.6) Dedup en sync**
+**4j.6) Dedup and sync**
 
-Lees `project-context.json` (re-read direct vóór write per SYNC.md). Voor elke nieuwe entry uit 4j.1-4j.5:
+Read `project-context.json` (re-read immediately before write per SYNC.md). For each new entry from 4j.1-4j.5:
 
-- Exact dedup-key: `(type, normalize(summary), author ?? null)`. Normalize = lowercase + strip leestekens. Match → skip.
-- Jaccard dedup (tweede laag): tokeniseer candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer. Voor elke bestaande learning in `learnings[]` met hetzelfde `type`: `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip.
-- Intra-run Jaccard: zelfde check maar dan tegen andere entries in deze run (zelfde `type`, Jaccard ≥ 0.55) → skip.
-- Cap totaal nieuwe entries per run op **20**. Bij overschrijding: prefereer pitfalls boven patterns boven observations, daarna meest recente datum.
+- Exact dedup key: `(type, normalize(summary), author ?? null)`. Normalize = lowercase + strip punctuation. Match → skip.
+- Jaccard dedup (second layer): tokenize candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer. For each existing learning in `learnings[]` with the same `type`: `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip.
+- Intra-run Jaccard: same check but against other entries in this run (same `type`, Jaccard ≥ 0.55) → skip.
+- Cap total new entries per run at **20**. On overflow: prefer pitfalls over patterns over observations, then most recent date.
 
-Voeg overlevende entries toe aan `learnings[]`. Schrijf `project-context.json` terug.
+Add surviving entries to `learnings[]`. Write `project-context.json` back.
 
-Track counts voor FASE 5 rapport: `{ patterns: P, pitfalls: Q, observations: R, by_authors: [...] }`.
+Track counts for PHASE 5 report: `{ patterns: P, pitfalls: Q, observations: R, by_authors: [...] }`.
 
-### FASE 5: Report
+### PHASE 5: Report
 
 **Normal pull with context sync (no teammate analysis):**
 
@@ -510,7 +510,7 @@ CONTEXT REFRESHED (no new commits, stale context updated)
   Updated:   {date}
 ```
 
-**Geen project.json:**
+**No project.json:**
 
 ```
 PULL COMPLETE (no project-context.json or project.json — run /core-setup to initialize)

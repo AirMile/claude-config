@@ -35,7 +35,7 @@ Server-script pad: `~/.claude/skills/shared/references/serve-backlog.js`
 
 ## Process
 
-### FASE 0: Check huidige status
+### PHASE 0: Check huidige status
 
 **Windows (PowerShell):**
 
@@ -51,7 +51,7 @@ curl -s http://localhost:9876/ > /dev/null 2>&1 && echo RUNNING || echo STOPPED
 
 Sla resultaat op als `SERVER_RUNNING`.
 
-### FASE 1: Actie uitvoeren
+### PHASE 1: Actie uitvoeren
 
 **Als argument `stop`:**
 
@@ -69,7 +69,7 @@ kill $(lsof -ti:9876) 2>/dev/null
 
 Bevestig resultaat. Als geen server draaide → meld dat.
 
-**Als SERVER_RUNNING = true:** Spring direct naar FASE 2.
+**Als SERVER_RUNNING = true:** Spring direct naar PHASE 2.
 
 **Als SERVER_RUNNING = false:** Start de server.
 
@@ -87,11 +87,11 @@ root="${CLAUDE_PROJECTS_ROOT:-$HOME/projects}"
 nohup node ~/.claude/skills/shared/references/serve-backlog.js "$root" > /tmp/backlog-server.log 2>&1 &
 ```
 
-Wacht max 5 seconden op readiness (gebruik de FASE 0 check in een loop).
+Wacht max 5 seconden op readiness (gebruik de PHASE 0 check in een loop).
 
 Als na 5s niet bereikbaar → toon foutmelding + laatste regels uit de log file.
 
-### FASE 2: Toon resultaat
+### PHASE 2: Toon resultaat
 
 Scan projecten in de projects root (directories met een `.project/` subdirectory):
 
@@ -122,7 +122,7 @@ Projecten:
 
 Als er geen projecten gevonden zijn, hint naar `/project-add` of `/project-plan`.
 
-### FASE 3: Kopieer link naar clipboard
+### PHASE 3: Kopieer link naar clipboard
 
 Bepaal welke URL gekopieerd wordt (context-aware):
 

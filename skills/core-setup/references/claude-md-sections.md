@@ -115,7 +115,7 @@ npm run preview  # Preview production build
 ```markdown
 ## Project Context
 
-Lees `.project/project.json` bij sessiestart voor actuele project context (structuur, routing, patterns, features, stack, endpoints, entities). Skills houden dit automatisch bij na elke build/refactor.
+Read `.project/project.json` at session start for current project context (structure, routing, patterns, features, stack, endpoints, entities). Skills keep this updated after each build/refactor.
 ```
 
 **Rules:**
@@ -184,7 +184,7 @@ npm run start    # Start production server
 
 ## Project Context
 
-Lees `.project/project.json` bij sessiestart voor actuele project context (structuur, routing, patterns, features, stack, endpoints, entities). Skills houden dit automatisch bij na elke build/refactor.
+Read `.project/project.json` at session start for current project context (structure, routing, patterns, features, stack, endpoints, entities). Skills keep this updated after each build/refactor.
 
 ```
 

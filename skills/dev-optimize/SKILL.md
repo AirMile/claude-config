@@ -13,15 +13,15 @@ metadata:
 
 # Optimize
 
-Autonome verbeter-loop: definieer metric → spawn parallelle subagents in worktrees → houd verbeteringen, gooi regressies weg → loop tot stall.
+Autonomous improvement loop: define metric → spawn parallel subagents in worktrees → keep improvements, discard regressions → loop until stall.
 
-**Trigger**: `/dev-optimize` of `/dev-optimize [auto]`
+**Trigger**: `/dev-optimize` or `/dev-optimize [auto]`
 
-Geïnspireerd op `evo-hq/evo` autoresearch patroon, geïntegreerd met de `.project/` conventie. Geen externe dependency.
+Inspired by the `evo-hq/evo` autoresearch pattern, integrated with the `.project/` convention. No external dependency.
 
 ## Input
 
-Geen verplichte input. Alle config wordt interactief opgehaald in FASE 1 of overgenomen uit een eerdere run (resume).
+No required input. All config is collected interactively in PHASE 1 or carried over from a previous run (resume).
 
 ## Output
 
@@ -29,27 +29,27 @@ Geen verplichte input. Alle config wordt interactief opgehaald in FASE 1 of over
 .project/optimize/{run-id}/
 ├── spec.json          # metric, gate, scope, baseline, parameters
 ├── tree.json          # nodes (id, parent, branch, score, status, hypotheses)
-├── runs/{NNNN}.json   # per-ronde resultaat
-└── branches.txt       # cleanup-lijst voor abort
+├── runs/{NNNN}.json   # per-round result
+└── branches.txt       # cleanup list for abort
 ```
 
-Update bij voltooiing: `.project/project.json` → push naar `optimization_runs[]` (zie `shared/DASHBOARD.md`).
+Update on completion: `.project/project.json` → push to `optimization_runs[]` (see `shared/DASHBOARD.md`).
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 7 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 7 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgotten phases.
 
-1. FASE 0: Pre-flight
-2. FASE 1: Define Metric
-3. FASE 2: Instrument Benchmark
-4. FASE 3: Baseline Run
-5. FASE 4: Optimize Loop
-6. FASE 5: Pick Winner
-7. FASE 6: Sync + Report
+1. PHASE 0: Pre-flight
+2. PHASE 1: Define Metric
+3. PHASE 2: Instrument Benchmark
+4. PHASE 3: Baseline Run
+5. PHASE 4: Optimize Loop
+6. PHASE 5: Pick Winner
+7. PHASE 6: Sync + Report
 
-### FASE 0: Pre-flight
+### PHASE 0: Pre-flight
 
-> **Todo**: roep `TaskCreate` aan met de 7 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 7 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 **Capture git baseline:**
 
@@ -72,19 +72,19 @@ ensure_pattern "session/active-optimize-*.json"
 ensure_pattern "session/pre-skill-sha.txt"
 ```
 
-Voorkomt dat full repo-checkouts (worktrees) of lokale session-state per ongeluk in een commit terechtkomen.
+Prevents full repo-checkouts (worktrees) or local session-state from accidentally ending up in a commit.
 
 **Git safety:**
 
-1. `git status --porcelain` — moet leeg zijn. Als dirty:
+1. `git status --porcelain` — must be empty. If dirty:
    - **AskUserQuestion** (Auto-mode: stash):
      - "Stash changes (Recommended)" — `git stash push -u -m "dev-optimize pre-run"`
-     - "Abort" — exit, gebruiker commit zelf eerst
+     - "Abort" — exit, user commits first
 2. Detect default branch:
    ```bash
    DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
    ```
-3. Bewaar `BASE_SHA=$(git rev-parse HEAD)` — alle worktrees forken hieruit (of uit een parent-node verderop in de loop).
+3. Store `BASE_SHA=$(git rev-parse HEAD)` — all worktrees fork from here (or from a parent-node further in the loop).
 
 **Detect tools:**
 
@@ -94,32 +94,32 @@ npm --version 2>/dev/null
 git worktree list --porcelain 2>/dev/null
 ```
 
-Geen node/npm → exit met "dev-optimize vereist Node + npm in PATH."
+No node/npm → exit with "dev-optimize requires Node + npm in PATH."
 
 **Resume detection:**
 
-Scan `.project/optimize/` voor bestaande run-dirs zonder `runs/final.json`:
+Scan `.project/optimize/` for existing run-dirs without `runs/final.json`:
 
-- Geen open run → nieuwe run, genereer `RUN_ID=$(date +%Y%m%d-%H%M%S)`.
-- ≥1 open run → **AskUserQuestion** (Auto-mode: nieuwe run):
-  - "Hervat {oudste-open-run-id}" — laad `spec.json` + `tree.json`, ga naar FASE 4
-  - "Nieuwe run starten (Recommended)" — archiveer oude (rename → `{run-id}.aborted/`), maak nieuwe
-  - "Bekijk eerst" — toon `git worktree list` + samenvatting per open run, vraag opnieuw
+- No open run → new run, generate `RUN_ID=$(date +%Y%m%d-%H%M%S)`.
+- ≥1 open run → **AskUserQuestion** (Auto-mode: new run):
+  - "Resume {oldest-open-run-id}" — load `spec.json` + `tree.json`, go to PHASE 4
+  - "Start new run (Recommended)" — archive old (rename → `{run-id}.aborted/`), create new
+  - "View first" — show `git worktree list` + summary per open run, ask again
 
-**Auto-mode** (actief bij argument `auto`):
+**Auto-mode** (active with argument `auto`):
 
-| Beslispunt            | Default                    | Reden                                    |
-| --------------------- | -------------------------- | ---------------------------------------- |
-| Dirty working tree    | **Stash**                  | Niet de user's changes verliezen         |
-| Open run gedetecteerd | **Nieuwe run**             | Vorige is mogelijk halverwege gecrasht   |
-| Metric keuze          | **Bundle size** (default)  | Meest universele meting                  |
-| Subagents per ronde   | **3**                      | Conservatief, voorkomt resource overload |
-| Budget per subagent   | **5 iteraties**            | Zoals evo default                        |
-| Stall threshold       | **5 rondes**               | Zoals evo default                        |
-| Continue/Stop prompt  | **Continue tot stall**     | Geen gebruiker aanwezig                  |
-| Winner-merge          | **Top branch automatisch** | Op nieuwe branch, niet op base           |
+| Decision point       | Default                      | Reason                                   |
+| -------------------- | ---------------------------- | ---------------------------------------- |
+| Dirty working tree   | **Stash**                    | Don't lose the user's changes            |
+| Open run detected    | **New run**                  | Previous may have crashed halfway        |
+| Metric choice        | **Bundle size** (default)    | Most universal measurement               |
+| Subagents per round  | **3**                        | Conservative, prevents resource overload |
+| Budget per subagent  | **5 iterations**             | Same as evo default                      |
+| Stall threshold      | **5 rounds**                 | Same as evo default                      |
+| Continue/Stop prompt | **Continue until stall**     | No user present                          |
+| Winner-merge         | **Top branch automatically** | On new branch, not on base               |
 
-Schrijf bij start: `.project/session/active-optimize-{run-id}.json`:
+Write at start: `.project/session/active-optimize-{run-id}.json`:
 
 ```json
 {
@@ -129,83 +129,83 @@ Schrijf bij start: `.project/session/active-optimize-{run-id}.json`:
 }
 ```
 
-**Project context** (skip als niet bestaat):
+**Project context** (skip if not exists):
 
-Lees `.project/project.json` voor stack-info en eerdere `optimization_runs[]` (toon laatste 3 als context).
+Read `.project/project.json` for stack info and previous `optimization_runs[]` (show last 3 as context).
 
-### FASE 1: Define Metric
+### PHASE 1: Define Metric
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-Bij resume: skip deze fase, `spec.json` is al gevuld.
+On resume: skip this phase, `spec.json` is already populated.
 
-**AskUserQuestion 1 — wat optimaliseren?** (Auto-mode: bundle size)
+**AskUserQuestion 1 — what to optimize?** (Auto-mode: bundle size)
 
 ```yaml
 header: "Metric"
-question: "Wat wil je optimaliseren?"
+question: "What do you want to optimize?"
 options:
   - label: "Bundle size (Recommended)"
-    description: "kB van production build (npm run build → dist/)"
+    description: "kB of production build (npm run build → dist/)"
   - label: "Lighthouse score"
     description: "Performance/A11y/Best-Practices/SEO via Lighthouse CLI"
   - label: "Test coverage"
-    description: "% covered lines/branches via vitest --coverage of jest --coverage"
+    description: "% covered lines/branches via vitest --coverage or jest --coverage"
   - label: "API latency"
-    description: "p95 ms via ab/wrk tegen lokale server"
+    description: "p95 ms via ab/wrk against local server"
 multiSelect: false
 ```
 
-(Custom optie via "Other" → vraag follow-up: benchmark command + score-extractie regex.)
+(Custom option via "Other" → follow-up question: benchmark command + score-extraction regex.)
 
-**AskUserQuestion 2 — richting** (Auto-mode: minimize voor size/latency, maximize voor coverage/lighthouse):
+**AskUserQuestion 2 — direction** (Auto-mode: minimize for size/latency, maximize for coverage/lighthouse):
 
 ```yaml
-header: "Richting"
-question: "Lager of hoger is beter?"
+header: "Direction"
+question: "Lower or higher is better?"
 options:
-  - label: "Lager is beter (minimize)"
-  - label: "Hoger is beter (maximize)"
+  - label: "Lower is better (minimize)"
+  - label: "Higher is better (maximize)"
 multiSelect: false
 ```
 
-**AskUserQuestion 3 — scope** (Auto-mode: hele `src/`):
+**AskUserQuestion 3 — scope** (Auto-mode: entire `src/`):
 
 ```yaml
 header: "Scope"
-question: "Welke directories mogen subagents wijzigen?"
+question: "Which directories may subagents modify?"
 options:
   - label: "src/ (Recommended)"
   - label: "src/ + package.json"
-    description: "Sta dependency-swaps toe (pas op: kan tests breken)"
-  - label: "Heel project (incl. config)"
+    description: "Allow dependency swaps (caution: can break tests)"
+  - label: "Entire project (incl. config)"
   - label: "Custom paths"
 multiSelect: false
 ```
 
-**AskUserQuestion 4 — loop parameters** (Auto-mode: defaults). De keuze bepaalt ook welk subagent-model gebruikt wordt:
+**AskUserQuestion 4 — loop parameters** (Auto-mode: defaults). The choice also determines which subagent model is used:
 
 ```yaml
 header: "Parameters"
-question: "Hoe agressief mag de loop draaien?"
+question: "How aggressively may the loop run?"
 options:
-  - label: "Conservatief: 3 agents × 5 iter, stall 5, 60min cap, sonnet (Recommended)"
-    description: "Goedkoop en snel. Geschikt voor de meeste use cases."
-  - label: "Standaard: 5 agents × 5 iter, stall 5, 90min cap, sonnet"
-  - label: "Aggressief: 8 agents × 8 iter, stall 8, 180min cap, opus"
-    description: "Veel meer compute en duurder model — alleen voor lange, lastige problemen."
+  - label: "Conservative: 3 agents × 5 iter, stall 5, 60min cap, sonnet (Recommended)"
+    description: "Cheap and fast. Suitable for most use cases."
+  - label: "Standard: 5 agents × 5 iter, stall 5, 90min cap, sonnet"
+  - label: "Aggressive: 8 agents × 8 iter, stall 8, 180min cap, opus"
+    description: "Much more compute and more expensive model — only for long, difficult problems."
 multiSelect: false
 ```
 
 Mapping:
 
-| Keuze        | subagents | budget | stall | wallclock | model    |
+| Choice       | subagents | budget | stall | wallclock | model    |
 | ------------ | --------- | ------ | ----- | --------- | -------- |
-| Conservatief | 3         | 5      | 5     | 60 min    | `sonnet` |
-| Standaard    | 5         | 5      | 5     | 90 min    | `sonnet` |
-| Aggressief   | 8         | 8      | 8     | 180 min   | `opus`   |
+| Conservative | 3         | 5      | 5     | 60 min    | `sonnet` |
+| Standard     | 5         | 5      | 5     | 90 min    | `sonnet` |
+| Aggressive   | 8         | 8      | 8     | 180 min   | `opus`   |
 
-**Schrijf `.project/optimize/{run-id}/spec.json`:**
+**Write `.project/optimize/{run-id}/spec.json`:**
 
 ```json
 {
@@ -227,57 +227,57 @@ Mapping:
 }
 ```
 
-### FASE 2: Instrument Benchmark
+### PHASE 2: Instrument Benchmark
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-**Stap 1 — kopieer template:**
+**Step 1 — copy template:**
 
-Kopieer benchmark template naar `.project/optimize/{run-id}/benchmark.sh`. Templates per metric:
+Copy benchmark template to `.project/optimize/{run-id}/benchmark.sh`. Templates per metric:
 
-| Metric      | Template path                           |
-| ----------- | --------------------------------------- |
-| bundle_size | `references/benchmarks/bundle-size.sh`  |
-| lighthouse  | `references/benchmarks/lighthouse.sh`   |
-| coverage    | `references/benchmarks/coverage.sh`     |
-| latency     | `references/benchmarks/latency.sh`      |
-| custom      | minimal stub die `echo SCORE=<n>` print |
+| Metric      | Template path                             |
+| ----------- | ----------------------------------------- |
+| bundle_size | `references/benchmarks/bundle-size.sh`    |
+| lighthouse  | `references/benchmarks/lighthouse.sh`     |
+| coverage    | `references/benchmarks/coverage.sh`       |
+| latency     | `references/benchmarks/latency.sh`        |
+| custom      | minimal stub that prints `echo SCORE=<n>` |
 
-Templates printen één regel `SCORE=<float>` op stdout. Skill parsed laatste `SCORE=` regel.
+Templates print one line `SCORE=<float>` on stdout. Skill parses last `SCORE=` line.
 
-**Stap 2 — gate script:**
+**Step 2 — gate script:**
 
-Default `references/gates/tests-green.sh` → kopieer naar `.project/optimize/{run-id}/gate.sh`. Detecteer test-commando via `package.json scripts.test`. Geen `test` script → toon waarschuwing en gebruik `:` (no-op gate).
+Default `references/gates/tests-green.sh` → copy to `.project/optimize/{run-id}/gate.sh`. Detect test command via `package.json scripts.test`. No `test` script → show warning and use `:` (no-op gate).
 
-**Stap 3 — review + edit:**
+**Step 3 — review + edit:**
 
-Toon beide scripts, vraag via **AskUserQuestion** (Auto-mode: Run as-is):
+Show both scripts, ask via **AskUserQuestion** (Auto-mode: Run as-is):
 
 ```yaml
 header: "Scripts"
-question: "Klopt benchmark.sh en gate.sh?"
+question: "Are benchmark.sh and gate.sh correct?"
 options:
   - label: "Run as-is (Recommended)"
-  - label: "Edit eerst"
-    description: "Open in editor, daarna verder"
+  - label: "Edit first"
+    description: "Open in editor, then continue"
   - label: "Abort"
 multiSelect: false
 ```
 
-"Edit eerst" → toon paths, wacht tot user terugkomt, dan re-prompt.
+"Edit first" → show paths, wait for user to return, then re-prompt.
 
-`chmod +x` op beide scripts.
+`chmod +x` on both scripts.
 
-### FASE 3: Baseline Run
+### PHASE 3: Baseline Run
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 
-# Gate eerst (faalt → abort, repo is niet healthy)
+# Gate first (fails → abort, repo is not healthy)
 if ! bash .project/optimize/{run-id}/gate.sh; then
-  echo "BASELINE GATE FAIL: fix tests eerst"
+  echo "BASELINE GATE FAIL: fix tests first"
   exit 1
 fi
 
@@ -285,7 +285,7 @@ fi
 BASELINE=$(bash .project/optimize/{run-id}/benchmark.sh | grep -E '^SCORE=' | tail -1 | cut -d= -f2)
 ```
 
-Schrijf `runs/0000.json`:
+Write `runs/0000.json`:
 
 ```json
 {
@@ -300,7 +300,7 @@ Schrijf `runs/0000.json`:
 
 Update `spec.json.baseline = <score>`.
 
-Initialiseer `tree.json`:
+Initialize `tree.json`:
 
 ```json
 {
@@ -319,21 +319,21 @@ Initialiseer `tree.json`:
 }
 ```
 
-**Display + kostenraming** (na baseline, vóór de loop start):
+**Display + cost estimate** (after baseline, before the loop starts):
 
-Bereken op basis van de werkelijk gemeten baseline-tijd:
+Calculate based on the actually measured baseline time:
 
 ```
-BENCHMARK_SECONDS = werkelijke duur van baseline benchmark.sh
-GATE_SECONDS      = werkelijke duur van baseline gate.sh
-PER_ITER_SECONDS  = BENCHMARK_SECONDS + GATE_SECONDS + 10  # 10s overhead voor edit
+BENCHMARK_SECONDS = actual duration of baseline benchmark.sh
+GATE_SECONDS      = actual duration of baseline gate.sh
+PER_ITER_SECONDS  = BENCHMARK_SECONDS + GATE_SECONDS + 10  # 10s overhead for edit
 TOTAL_ITERS       = subagents_per_round × budget_per_subagent × stall_threshold  # worst-case
 TOTAL_MINUTES     = (TOTAL_ITERS × PER_ITER_SECONDS) / 60
 
-# Token kosten ruwe schatting (Claude pricing april 2026):
-# sonnet: ~$0.15 per iteratie (50k input + 5k output)
-# opus:   ~$0.75 per iteratie
-TOKEN_COST_PER_ITER  = 0.15 als spec.subagent_model == "sonnet" else 0.75
+# Token cost rough estimate (Claude pricing April 2026):
+# sonnet: ~$0.15 per iteration (50k input + 5k output)
+# opus:   ~$0.75 per iteration
+TOKEN_COST_PER_ITER  = 0.15 if spec.subagent_model == "sonnet" else 0.75
 TOTAL_DOLLARS        = TOTAL_ITERS × TOKEN_COST_PER_ITER
 ```
 
@@ -343,87 +343,87 @@ Display:
 BASELINE: {metric} = {score} ({direction})
 Repo healthy, gate green.
 
-KOSTENRAMING (worst-case):
-- {subagents} agents × {budget} iter × {stall} rondes = {TOTAL_ITERS} agent-iteraties
-- ~{PER_ITER_SECONDS}s per iteratie ({BENCHMARK_SECONDS}s benchmark + {GATE_SECONDS}s gate)
-- Geschatte tijd: ~{TOTAL_MINUTES} min (capped op {max_wallclock_minutes} min)
-- Geschatte cost: ~${TOTAL_DOLLARS} ({subagent_model})
+COST ESTIMATE (worst-case):
+- {subagents} agents × {budget} iter × {stall} rounds = {TOTAL_ITERS} agent-iterations
+- ~{PER_ITER_SECONDS}s per iteration ({BENCHMARK_SECONDS}s benchmark + {GATE_SECONDS}s gate)
+- Estimated time: ~{TOTAL_MINUTES} min (capped at {max_wallclock_minutes} min)
+- Estimated cost: ~${TOTAL_DOLLARS} ({subagent_model})
 ```
 
-**AskUserQuestion** (Auto-mode: bij `TOTAL_DOLLARS > 10` OR `TOTAL_MINUTES > 120` → abort, anders door):
+**AskUserQuestion** (Auto-mode: if `TOTAL_DOLLARS > 10` OR `TOTAL_MINUTES > 120` → abort, otherwise continue):
 
 ```yaml
-header: "Doorgaan?"
-question: "Klopt deze schatting? Doorgaan met de loop?"
+header: "Continue?"
+question: "Does this estimate look right? Continue with the loop?"
 options:
-  - label: "Doorgaan (Recommended)"
-  - label: "Verlaag budget"
-    description: "Terug naar FASE 1 voor lagere subagents/budget/stall"
+  - label: "Continue (Recommended)"
+  - label: "Lower budget"
+    description: "Back to PHASE 1 for lower subagents/budget/stall"
   - label: "Abort"
 multiSelect: false
 ```
 
-"Verlaag budget" → FASE 1 AskUserQuestion 4 opnieuw, recompute spec.json + raming, terug naar FASE 3 display.
+"Lower budget" → PHASE 1 AskUserQuestion 4 again, recompute spec.json + estimate, back to PHASE 3 display.
 
-**Markeer run-start**:
+**Mark run-start**:
 
 ```bash
-# Schrijf timestamp voor wallclock-cap
+# Write timestamp for wallclock-cap
 NOW_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 # Update spec.json: run_started_at = NOW_ISO
 ```
 
-### FASE 4: Optimize Loop
+### PHASE 4: Optimize Loop
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-Initialiseer `ROUND=1`, `STALL_COUNT=0`, `BEST_SCORE=baseline`.
+Initialize `ROUND=1`, `STALL_COUNT=0`, `BEST_SCORE=baseline`.
 
-**Per ronde:**
+**Per round:**
 
-#### Stap a — Selecteer parents
+#### Step a — Select parents
 
-Lees `tree.json`. Filter nodes met `status in ["baseline", "kept"]`. Sorteer op score (richting). Doel: pak K = `subagents_per_round` parents.
+Read `tree.json`. Filter nodes with `status in ["baseline", "kept"]`. Sort by score (direction). Goal: take K = `subagents_per_round` parents.
 
-**Selectie-regel** (mechanisch, geen file-overlap berekening):
+**Selection rule** (mechanical, no file-overlap calculation):
 
 ```
-candidates = nodes met status in ["baseline", "kept"], gesorteerd op score
-parent_ids_in_last_2_rounds = set van node-ids die parent waren in runs[N-1] of runs[N-2]
+candidates = nodes with status in ["baseline", "kept"], sorted by score
+parent_ids_in_last_2_rounds = set of node-ids that were parent in runs[N-1] or runs[N-2]
 
 parents = []
 for c in candidates:
   if len(parents) >= K: break
-  if c.id in parent_ids_in_last_2_rounds: continue   # diversiteit afdwingen
+  if c.id in parent_ids_in_last_2_rounds: continue   # enforce diversity
   parents.append(c)
 
-# Fallback: als <K candidates voldoen aan filter (vroege rondes of kleine boom),
-# vul aan met de best-scorende beschikbare candidates zonder filter
+# Fallback: if <K candidates satisfy the filter (early rounds or small tree),
+# fill up with the best-scoring available candidates without filter
 while len(parents) < K and remaining_candidates:
   parents.append(next_best_candidate)
 ```
 
-Resultaat: dezelfde node kan niet 2× achter elkaar parent zijn — de boom blijft breed in plaats van te convergeren naar één pad. Geen string- of file-overlap analyse nodig.
+Result: the same node cannot be parent 2× in a row — the tree stays broad instead of converging to one path. No string- or file-overlap analysis needed.
 
-**Wallclock cap check** (zie Fix 1 in v0.1.1): bereken `elapsed_minutes = (now - run_started_at) / 60`. Als `elapsed_minutes >= max_wallclock_minutes` → break naar FASE 5 met `stopped_reason = "wallclock"`.
+**Wallclock cap check** (see Fix 1 in v0.1.1): calculate `elapsed_minutes = (now - run_started_at) / 60`. If `elapsed_minutes >= max_wallclock_minutes` → break to PHASE 5 with `stopped_reason = "wallclock"`.
 
-#### Stap b — Spawn subagents (parallel)
+#### Step b — Spawn subagents (parallel)
 
-Voor elke parent: bouw brief en spawn agent.
+For each parent: build brief and spawn agent.
 
-**Brief samenstellen** (per subagent):
+**Build brief** (per subagent):
 
-Lees `references/subagent-brief.md` template. Vul placeholders:
+Read `references/subagent-brief.md` template. Fill placeholders:
 
 - `{run_id}`, `{metric}`, `{direction}`, `{scope_paths}`
 - `{parent_sha}`, `{parent_score}`
 - `{budget}` = `budget_per_subagent`
 - `{benchmark_cmd}`, `{gate_cmd}`
-- `{failed_hypotheses}` = unie van alle `hypotheses_tried[]` uit tree, dedup op string-gelijkheid (case-insensitive, trim whitespace). Geen cap — pass alles. Eén hypothese per regel in de brief.
-- `{best_score_so_far}` voor context
-- `{branch_name}` = `optimize/{run-id}/exp_{short-id}` waar short-id = `printf "r%02d_p%02d_$(openssl rand -hex 2)" $ROUND $PARENT_IDX`
+- `{failed_hypotheses}` = union of all `hypotheses_tried[]` from tree, dedup on string-equality (case-insensitive, trim whitespace). No cap — pass everything. One hypothesis per line in the brief.
+- `{best_score_so_far}` for context
+- `{branch_name}` = `optimize/{run-id}/exp_{short-id}` where short-id = `printf "r%02d_p%02d_$(openssl rand -hex 2)" $ROUND $PARENT_IDX`
 
-**Worktree creëren** (orchestrator-side, niet in agent):
+**Create worktree** (orchestrator-side, not in agent):
 
 ```bash
 EXP_BRANCH="optimize/{run-id}/exp_{short-id}"
@@ -432,71 +432,71 @@ git worktree add -b "$EXP_BRANCH" "$EXP_PATH" "$PARENT_SHA"
 echo "$EXP_BRANCH" >> .project/optimize/{run-id}/branches.txt
 ```
 
-**Spawn Agent** met `subagent_type: general-purpose`, `run_in_background: true`, `model: <spec.subagent_model>` (default `sonnet`, `opus` alleen bij Aggressief), prompt = brief + extra:
+**Spawn Agent** with `subagent_type: general-purpose`, `run_in_background: true`, `model: <spec.subagent_model>` (default `sonnet`, `opus` only for Aggressive), prompt = brief + extra:
 
 ```
-Werk uitsluitend binnen worktree: {EXP_PATH}
+Work exclusively within worktree: {EXP_PATH}
 Branch: {EXP_BRANCH}
-Cd er eerst heen. Commit op deze branch alleen jouw eigen wijzigingen.
+Cd there first. Only commit your own changes on this branch.
 
-Max iteraties: {budget}.
+Max iterations: {budget}.
 
-Per iteratie:
-1. Verzin een hypothese die {metric} kan verbeteren binnen scope: {scope_paths}.
-   Niet uit deze lijst (al geprobeerd of mislukt): {failed_hypotheses}
-2. Pas code aan.
-3. Run: {gate_cmd}. Faalt? Revert je wijzigingen, probeer iets anders.
+Per iteration:
+1. Come up with a hypothesis that can improve {metric} within scope: {scope_paths}.
+   Not from this list (already tried or failed): {failed_hypotheses}
+2. Modify code.
+3. Run: {gate_cmd}. Fails? Revert your changes, try something else.
 4. Run: {benchmark_cmd}. Parse SCORE=.
-5. Score verbeterd t.o.v. {parent_score} ({direction})?
-   Ja → git commit -am "exp: <hypothese>". Mag nog iteraties doen op deze branch.
-   Nee → revert, volgende iteratie. Tel geen commit.
+5. Score improved compared to {parent_score} ({direction})?
+   Yes → git commit -am "exp: <hypothesis>". May do more iterations on this branch.
+   No → revert, next iteration. Don't count as commit.
 
-Stop bij: budget op, of 3 iteraties achter elkaar geen verbetering, of niet meer kunnen bedenken.
+Stop when: budget exhausted, or 3 iterations in a row with no improvement, or out of ideas.
 
-Return als regel-gebaseerde key=value tussen markers (zie subagent-brief.md voor volledig formaat):
+Return as line-based key=value between markers (see subagent-brief.md for full format):
 EXPERIMENT_RESULT_START
 RESULT_BRANCH={EXP_BRANCH}
-RESULT_BEST_SCORE=<float of leeg>
-RESULT_BEST_SHA=<sha of leeg>
+RESULT_BEST_SCORE=<float or empty>
+RESULT_BEST_SHA=<sha or empty>
 RESULT_ITERATIONS_USED=<int>
-RESULT_WINNING_HYPOTHESIS=<one-liner of leeg>
+RESULT_WINNING_HYPOTHESIS=<one-liner or empty>
 RESULT_NOTES=<max 200 chars>
-RESULT_TRIED_1=<hypothese>
-RESULT_TRIED_2=<hypothese>
+RESULT_TRIED_1=<hypothesis>
+RESULT_TRIED_2=<hypothesis>
 EXPERIMENT_RESULT_END
 ```
 
-**Spawn alle K agents in één bericht** (run_in_background: true) zodat ze parallel draaien.
+**Spawn all K agents in one message** (run_in_background: true) so they run in parallel.
 
-#### Stap c — Verzamel resultaten
+#### Step c — Collect results
 
-Per agent: parse `EXPERIMENT_RESULT_*` blok. Robuuste regel-parser:
+Per agent: parse `EXPERIMENT_RESULT_*` block. Robust line-parser:
 
 ```bash
-# Extract block between markers, dan grep per key
+# Extract block between markers, then grep per key
 BLOCK=$(echo "$AGENT_OUTPUT" | sed -n '/EXPERIMENT_RESULT_START/,/EXPERIMENT_RESULT_END/p')
 BRANCH=$(echo "$BLOCK" | grep -E '^RESULT_BRANCH=' | head -1 | cut -d= -f2-)
 BEST_SCORE=$(echo "$BLOCK" | grep -E '^RESULT_BEST_SCORE=' | head -1 | cut -d= -f2-)
 BEST_SHA=$(echo "$BLOCK" | grep -E '^RESULT_BEST_SHA=' | head -1 | cut -d= -f2-)
 WINNING=$(echo "$BLOCK" | grep -E '^RESULT_WINNING_HYPOTHESIS=' | head -1 | cut -d= -f2-)
-# Hypothesen-lijst: alle RESULT_TRIED_N regels, in volgorde
+# Hypotheses list: all RESULT_TRIED_N lines, in order
 TRIED=$(echo "$BLOCK" | grep -E '^RESULT_TRIED_[0-9]+=' | cut -d= -f2-)
 ```
 
-Lege `RESULT_BEST_SCORE` of marker-blok ontbreekt → behandel als `discarded`, log `notes: "agent returned no result"`.
+Empty `RESULT_BEST_SCORE` or missing marker block → treat as `discarded`, log `notes: "agent returned no result"`.
 
-Voor elk resultaat:
+For each result:
 
-**Verbetering ten opzichte van parent:**
+**Improvement relative to parent:**
 
 ```
 improved = (direction == "minimize" && best_score < parent_score) ||
            (direction == "maximize" && best_score > parent_score)
 ```
 
-**Verbeterd:**
+**Improved:**
 
-- Status `kept`. Append node aan `tree.json`:
+- Status `kept`. Append node to `tree.json`:
   ```json
   {
     "id": "exp_{short-id}",
@@ -508,20 +508,20 @@ improved = (direction == "minimize" && best_score < parent_score) ||
     "hypotheses_tried": [...]
   }
   ```
-- Behoud worktree (mogelijk parent in volgende ronde).
+- Keep worktree (possibly parent in next round).
 
-**Niet verbeterd of gate gefaald:**
+**Not improved or gate failed:**
 
-- Status `discarded`. Append node met `status: "discarded"`.
-- Ruim worktree op:
+- Status `discarded`. Append node with `status: "discarded"`.
+- Clean up worktree:
   ```bash
   git worktree remove --force "$EXP_PATH"
   git branch -D "$EXP_BRANCH" 2>/dev/null
   ```
 
-**Append `hypotheses_tried` van álle agents** (winners + losers) aan globale lijst — voorkomt herhaling in volgende rondes.
+**Append `hypotheses_tried` from ALL agents** (winners + losers) to global list — prevents repetition in next rounds.
 
-**Schrijf `runs/{NNNN}.json`** (NNNN = ronde, zero-padded):
+**Write `runs/{NNNN}.json`** (NNNN = round, zero-padded):
 
 ```json
 {
@@ -537,48 +537,48 @@ improved = (direction == "minimize" && best_score < parent_score) ||
 }
 ```
 
-#### Stap d — Stall check
+#### Step d — Stall check
 
 ```
-NEW_BEST = best score over alle "kept" nodes in tree
-if NEW_BEST verbeterd t.o.v. BEST_SCORE_PRE_RONDE:
+NEW_BEST = best score across all "kept" nodes in tree
+if NEW_BEST improved compared to BEST_SCORE_PRE_ROUND:
   BEST_SCORE = NEW_BEST
   STALL_COUNT = 0
 else:
   STALL_COUNT += 1
   if STALL_COUNT >= stall_threshold:
-    break # naar FASE 5
+    break # to PHASE 5
 ```
 
-#### Stap e — Continue prompt
+#### Step e — Continue prompt
 
-Na elke ronde, **AskUserQuestion** (Auto-mode: skip = continue):
+After each round, **AskUserQuestion** (Auto-mode: skip = continue):
 
 ```yaml
-header: "Volgende ronde?"
-question: "Ronde {N} klaar. Beste score: {best}. Doorgaan?"
+header: "Next round?"
+question: "Round {N} done. Best score: {best}. Continue?"
 options:
   - label: "Continue (Recommended)"
-  - label: "Stop nu, kies winner"
+  - label: "Stop now, pick winner"
   - label: "Adjust budget"
-    description: "Verhoog/verlaag agents of iteraties"
+    description: "Increase/decrease agents or iterations"
 multiSelect: false
 ```
 
-"Adjust budget" → follow-up vragen, update spec.json, ga door.
+"Adjust budget" → follow-up questions, update spec.json, continue.
 
-`ROUND++`, ga naar Stap a.
+`ROUND++`, go to Step a.
 
-### FASE 5: Pick Winner
+### PHASE 5: Pick Winner
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-Lees `tree.json`, sorteer alle `kept` nodes op score (richting). Toon top-3:
+Read `tree.json`, sort all `kept` nodes by score (direction). Show top-3:
 
 ```
 TOP BRANCHES:
   1. exp_r03_p01_a1b2 — score {x} (Δ {improvement}, {commits} commits, {files} files)
-     Hypothese: "..."
+     Hypothesis: "..."
   2. ...
   3. ...
 ```
@@ -587,16 +587,16 @@ TOP BRANCHES:
 
 ```yaml
 header: "Winner"
-question: "Welke branch wil je behouden?"
+question: "Which branch do you want to keep?"
 options:
   - label: "Top branch (Recommended)"
-  - label: "Tweede branch"
-  - label: "Derde branch"
-  - label: "Geen — losers opruimen, niets mergen"
+  - label: "Second branch"
+  - label: "Third branch"
+  - label: "None — clean up losers, don't merge anything"
 multiSelect: false
 ```
 
-**Voor de gekozen winner:**
+**For the chosen winner:**
 
 ```bash
 WINNER_BRANCH="optimize/{run-id}/exp_{id}"
@@ -604,7 +604,7 @@ TARGET_BRANCH="optimize/{run-id}/winner"
 git branch "$TARGET_BRANCH" "$WINNER_BRANCH"
 ```
 
-NIET mergen naar default branch — user reviewt zelf via PR/merge.
+Do NOT merge to default branch — user reviews themselves via PR/merge.
 
 **Cleanup losers:**
 
@@ -618,13 +618,13 @@ while read -r BR; do
 done < .project/optimize/{run-id}/branches.txt
 ```
 
-Behoud de winner-worktree zodat user direct kan inspecteren.
+Keep the winner-worktree so user can inspect directly.
 
-### FASE 6: Sync + Report
+### PHASE 6: Sync + Report
 
-> **Todo**: markeer FASE 5 → `completed`, FASE 6 → `in_progress`.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 6 → `in_progress`.
 
-**Append aan `.project/project.json`** onder `optimization_runs[]` (schema in [shared/DASHBOARD.md](../shared/DASHBOARD.md) sectie `optimization_runs`):
+**Append to `.project/project.json`** under `optimization_runs[]` (schema in [shared/DASHBOARD.md](../shared/DASHBOARD.md) section `optimization_runs`):
 
 ```json
 {
@@ -644,11 +644,11 @@ Behoud de winner-worktree zodat user direct kan inspecteren.
 }
 ```
 
-`stopped_reason` waarden: `stall` | `wallclock` | `user` | `no_improvement`.
+`stopped_reason` values: `stall` | `wallclock` | `user` | `no_improvement`.
 
-Als `optimization_runs[]` veld nog niet bestaat: maak aan met dit als enige entry. Append-only — dedup op `run_id` zodat re-runs van dezelfde skill niet duplicaten produceren.
+If `optimization_runs[]` field does not yet exist: create with this as the only entry. Append-only — dedup on `run_id` so re-runs of the same skill don't produce duplicates.
 
-**Schrijf `runs/final.json`** (signaleert: deze run is klaar):
+**Write `runs/final.json`** (signals: this run is done):
 
 ```json
 {
@@ -666,9 +666,9 @@ rm -f .project/session/active-optimize-{run-id}.json
 rm -f .project/session/pre-skill-sha.txt
 ```
 
-Bij gestashed work: stash list tonen → user kiest pop.
+If work was stashed: show stash list → user chooses pop.
 
-**Display rapport (ASCII tabel):**
+**Display report (ASCII table):**
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -678,8 +678,8 @@ Metric:        {metric} ({direction})
 Baseline:      {baseline}
 Final:         {best_score}
 Improvement:   {improvement_pct}%
-Rondes:        {N}
-Experimenten:  {kept} kept / {discarded} discarded
+Rounds:        {N}
+Experiments:   {kept} kept / {discarded} discarded
 Winner:        {winner_branch}
 
 TOP 3 HYPOTHESES (kept):
@@ -690,23 +690,23 @@ TOP 3 HYPOTHESES (kept):
 Next steps:
   1. git checkout {winner_branch} → inspect changes
   2. git diff {default_branch}..{winner_branch}
-  3. /core-commit → bij goedkeuring branch mergen via PR
-  4. /dev-optimize → nog een run met andere metric
+  3. /core-commit → merge branch via PR when approved
+  4. /dev-optimize → another run with different metric
 ```
 
-> **Todo**: markeer FASE 6 → `completed`. Alle 7 fases moeten nu `completed` zijn.
+> **Todo**: mark PHASE 6 → `completed`. All 7 phases must now be `completed`.
 
 ## Edge Cases
 
-- **Geen testsuite (geen `npm test`)**: gate is no-op. Waarschuw dat subagents tests kunnen breken zonder detectie. Gebruik strikt scope om risk te beperken.
-- **Worktree disk-vol**: detecteer ENOSPC bij `git worktree add` → abort, ruim losers op, verlaag `subagents_per_round`.
-- **Subagent timeout / crash**: behandel als `discarded`, log `notes: "agent timeout"`.
-- **Cyclic improvement** (score oscilleert): de diversity filter in Stap a voorkomt dat je dezelfde edits blijft proberen via verschillende parents.
-- **Pre-existing failing tests**: gate faalt op baseline → abort vóór de loop. User moet eerst tests groen maken.
-- **Auto-mode zonder gebruiker beschikbaar**: alle prompts gebruiken defaults, run draait zelfstandig tot stall.
+- **No test suite (no `npm test`)**: gate is no-op. Warn that subagents can break tests without detection. Use strict scope to limit risk.
+- **Worktree disk-full**: detect ENOSPC at `git worktree add` → abort, clean up losers, lower `subagents_per_round`.
+- **Subagent timeout / crash**: treat as `discarded`, log `notes: "agent timeout"`.
+- **Cyclic improvement** (score oscillates): the diversity filter in Step a prevents trying the same edits repeatedly via different parents.
+- **Pre-existing failing tests**: gate fails on baseline → abort before the loop. User must fix tests first.
+- **Auto-mode without user available**: all prompts use defaults, run operates autonomously until stall.
 
 ## Rationale
 
-Waarom geen externe `evo-hq-cli` dep? Volgens plan: volledige controle, geen Python tool-install vereist, naadloze integratie met `.project/` en bestaande pipeline-conventies. De prijs: tree search v1 = greedy met diversiteit (geen full backtrack-search). Toereikend voor alle bedoelde use cases (bundle/coverage/latency).
+Why no external `evo-hq-cli` dep? Per plan: full control, no Python tool-install required, seamless integration with `.project/` and existing pipeline conventions. The trade-off: tree search v1 = greedy with diversity (no full backtrack-search). Sufficient for all intended use cases (bundle/coverage/latency).
 
-Waarom standalone (niet in pipeline)? Optimize is geen feature-build maar een meet-driven verbeter-cyclus. Werkt op bestaande code, niet op een feature in DOING-status.
+Why standalone (not in pipeline)? Optimize is not a feature-build but a metric-driven improvement cycle. Works on existing code, not on a feature in DOING-status.

@@ -40,4 +40,4 @@ Language: Nederlands
 
 ## Project Context
 
-Lees `.project/project.json` bij sessiestart voor actuele project context (stack, features, endpoints, entities). Voor runtime context (architecture, patterns, learnings): `.project/project-context.json`. Voor het volledige concept document: `.project/project-concept.md`. Skills houden dit automatisch bij na elke build/refactor/test.
+Read `.project/project.json` at session start for current project context (stack, features, endpoints, entities). For runtime context (architecture, patterns, learnings): `.project/project-context.json`. For the full concept document: `.project/project-concept.md`. Skills keep this updated after each build/refactor/test.

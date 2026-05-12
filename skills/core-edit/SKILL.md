@@ -95,10 +95,10 @@ Confirm with a short "Klopt dit?" in plain text before proceeding. Only use AskU
 - **Pass paths, not content**: if the skill spawns 2+ sub-agents that read project files — suggest passing a `<reference-paths>` block with categorized paths instead of file contents. See `shared/SKILL-PATTERNS.md`
 - **Git safety gates**: if the skill performs git mutations — suggest adding explicit state re-reads after mutations and safety gates before risky operations. See `shared/SKILL-PATTERNS.md`
 - **Next steps**: if the skill is part of a pipeline — suggest adding a `Next steps:` block to the completion output. See `shared/SKILL-PATTERNS.md`
-- **Project bootstrapping**: if the skill expects `.project/` files — suggest checking existence in FASE 0. See `shared/SKILL-PATTERNS.md`
+- **Project bootstrapping**: if the skill expects `.project/` files — suggest checking existence in PHASE 0. See `shared/SKILL-PATTERNS.md`
 - **Agent context block**: if the skill spawns agents that need project knowledge — suggest using the standardized `PROJECT_CONTEXT` block. See `shared/SKILL-PATTERNS.md`
 - **Dynamic multi-select**: if the skill uses AskUserQuestion (multi-select) with dynamic options (count depends on runtime context, feature lists, or agent output) — check if the user needs holistic comparison (→ plain-text list + free-form parse) or independent picks (→ modal with cap=7, split per category). See `shared/SKILL-PATTERNS.md` § Modal Option Cap.
-- **Task tracking**: if the skill has 5+ fases and risk of context compaction (verify, debug, refactor, build, multi-stage setup) — suggest adding a seed-blok (`TaskCreate` with all phases at start) + inline transitiemarkers (`> **Todo**: markeer FASE X → completed, FASE Y → in_progress.`) at each phase header. Reference: `dev-build/SKILL.md` for full pattern. See `shared/SKILL-PATTERNS.md` § Task Tracking.
+- **Task tracking**: if the skill has 5+ fases and risk of context compaction (verify, debug, refactor, build, multi-stage setup) — suggest adding a seed-blok (`TaskCreate` with all phases at start) + inline transitiemarkers (`> **Todo**: markeer PHASE X → completed, PHASE Y → in_progress.`) at each phase header. Reference: `dev-build/SKILL.md` for full pattern. See `shared/SKILL-PATTERNS.md` § Task Tracking.
 
 Only suggest these if they add genuine value — not every skill needs them.
 
@@ -246,7 +246,7 @@ When editing an agent (`agents/*.md`), keep the `description` field short (max ~
 
 ### Delete
 
-Use **AskUserQuestion** for confirmation with "Annuleren" as recommended option (destructive action).
+Use **AskUserQuestion** for confirmation with "Cancel" as recommended option (destructive action).
 
 **If per-skill links:** remove link first (`unlink` on macOS, `cmd //c "rmdir"` on Windows), then delete from shared library.
 

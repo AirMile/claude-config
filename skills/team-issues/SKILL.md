@@ -25,34 +25,34 @@ Import issues from a team tracker into your local backlog. Smart-splits multi-ar
 >
 > TaskCreate with phases:
 >
-> - FASE 0: Pre-flight + tracker detection
-> - FASE 1: Issue intake
-> - FASE 2: Dedup + selectie
-> - FASE 3: Smart split analyse
-> - FASE 4: User confirmation
-> - FASE 5: Fragment confirm + checkpoint
-> - FASE 6: Write to backlog
-> - FASE 7: Output
+> - PHASE 0: Pre-flight + tracker detection
+> - PHASE 1: Issue intake
+> - PHASE 2: Dedup + selection
+> - PHASE 3: Smart split analysis
+> - PHASE 4: User confirmation
+> - PHASE 5: Fragment confirm + checkpoint
+> - PHASE 6: Write to backlog
+> - PHASE 7: Output
 
-### FASE 0: Pre-flight + tracker detection
+### PHASE 0: Pre-flight + tracker detection
 
-> **Todo**: markeer FASE 0 → `in_progress`.
+> **Todo**: mark PHASE 0 → `in_progress`.
 
 1. Read `.project/project.json`:
-   - Check `team.tracker` — als gezet, gebruik dat.
-   - Als niet gezet: probeer `gh repo view --json nameWithOwner` (succes → `tracker = "github"`).
-   - Als dat ook faalt, of als `--paste` flag aanwezig → `tracker = "paste"`.
-   - Sla tracker op in `project.json#team.tracker` als die nog ontbrak.
+   - Check `team.tracker` — if set, use that.
+   - If not set: try `gh repo view --json nameWithOwner` (success → `tracker = "github"`).
+   - If that also fails, or if `--paste` flag is present → `tracker = "paste"`.
+   - Save tracker to `project.json#team.tracker` if it was missing.
 
 2. Read `.project/backlog.html` → parse `<script id="backlog-data">` JSON → `data`.
 
-3. Als argument een getal is (bijv. `/team-issues 42`) → sla op als `directIssueId`, skip FASE 1 en 2.
+3. If argument is a number (e.g. `/team-issues 42`) → store as `directIssueId`, skip PHASE 1 and 2.
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-### FASE 1: Issue intake
+### PHASE 1: Issue intake
 
-> **Todo**: markeer FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 1 → `in_progress`.
 
 **GitHub:**
 
@@ -62,8 +62,8 @@ gh issue list --state open --json number,title,body,labels,assignees,url,updated
 
 Extra filters:
 
-- `--mine` flag → voeg `--assignee @me` toe
-- `--label <label>` arg → voeg `--label <label>` toe
+- `--mine` flag → add `--assignee @me`
+- `--label <label>` arg → add `--label <label>`
 
 **Jira / Linear / paste:**
 
@@ -71,31 +71,31 @@ AskUserQuestion:
 
 ```yaml
 header: "Issue intake"
-question: "Plak de issue URL of beschrijving hieronder."
+question: "Paste the issue URL or description below."
 options:
-  - label: "URL plakken"
-    description: "Bijv. https://company.atlassian.net/browse/JIRA-456"
-  - label: "Tekst plakken"
-    description: "Titel + body — eerste regel wordt de titel"
+  - label: "Paste URL"
+    description: "E.g. https://company.atlassian.net/browse/JIRA-456"
+  - label: "Paste text"
+    description: "Title + body — first line becomes the title"
 multiSelect: false
 ```
 
-Vraag daarna om de inhoud via freetext. Parse:
+Then ask for the content via free text. Parse:
 
-- URL → extraheer `id` via regex (`/([A-Z]+-\d+)/` of `/(\d+)$/`), `type` uit domein
-- Body → eerste regel = title, rest = body
+- URL → extract `id` via regex (`/([A-Z]+-\d+)/` or `/(\d+)$/`), `type` from domain
+- Body → first line = title, rest = body
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-### FASE 2: Dedup + selectie
+### PHASE 2: Dedup + selection
 
-> **Todo**: markeer FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 2 → `in_progress`.
 
-Filter al-geïmporteerde issues — een issue geldt als geïmporteerd zodra **één** backlog-item `externalRef.id === issue.id && externalRef.type === tracker` heeft. Toon die niet opnieuw in de selectie.
+Filter already-imported issues — an issue is considered imported as soon as **one** backlog item has `externalRef.id === issue.id && externalRef.type === tracker`. Do not show those again in the selection.
 
-Als `directIssueId` gezet is → selecteer direct dat issue en skip de multi-select.
+If `directIssueId` is set → select that issue directly and skip the multi-select.
 
-Anders: toon AskUserQuestion (multiSelect=true) met per issue:
+Otherwise: show AskUserQuestion (multiSelect=true) with per issue:
 
 ```
 #42  Implement OAuth login        [enhancement, P1]  — @miles
@@ -103,33 +103,33 @@ Anders: toon AskUserQuestion (multiSelect=true) met per issue:
 #35  Add dashboard export         [feature, P2]
 ```
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
-### FASE 3: Smart split analyse
+### PHASE 3: Smart split analysis
 
-> **Todo**: markeer FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 3 → `in_progress`.
 
-Per gekozen issue: analyseer body inline voor split-signalen.
+Per selected issue: analyze body inline for split signals.
 
-**Detect-signalen (in volgorde van betrouwbaarheid):**
+**Detection signals (in order of reliability):**
 
 1. Headings (`## Frontend`, `## Backend`, `## Database`, `## API`, `## Tests`, `## Mobile`)
-2. Labeled lijsten (`- [ ] API endpoint`, `- [ ] UI component`)
-3. Keyword clusters in bullet-points (`page`, `endpoint`, `migration`, `schema`, `component`, `test`)
-4. Lengte: body > 500 chars met ≥3 alinea-breaks → mogelijk splitsbaar
+2. Labeled lists (`- [ ] API endpoint`, `- [ ] UI component`)
+3. Keyword clusters in bullet points (`page`, `endpoint`, `migration`, `schema`, `component`, `test`)
+4. Length: body > 500 chars with ≥3 paragraph breaks → possibly splittable
 
-**Type-mapping per fragment:**
+**Type mapping per fragment:**
 
-| Signaal                            | Voorgesteld type  | Track    |
+| Signal                             | Suggested type    | Track    |
 | ---------------------------------- | ----------------- | -------- |
-| Frontend / UI / page / component   | PAGE of COMPONENT | Frontend |
-| Backend / API / endpoint / service | API of FEATURE    | Dev      |
+| Frontend / UI / page / component   | PAGE or COMPONENT | Frontend |
+| Backend / API / endpoint / service | API or FEATURE    | Dev      |
 | Database / migration / schema      | FEATURE           | Dev      |
 | Tests / test coverage              | FEATURE           | Dev      |
 | Bug fix                            | BUG               | Dev      |
-| Onbekend / gemengd                 | FEATURE           | Dev      |
+| Unknown / mixed                    | FEATURE           | Dev      |
 
-**ASCII diagram:** genereer een visuele split-boom voor de user zodat ze in één oogopslag zien wat voorgesteld wordt:
+**ASCII diagram:** generate a visual split tree for the user so they can see at a glance what is proposed:
 
 ```
 Issue #42: Implement OAuth login
@@ -138,47 +138,47 @@ Issue #42: Implement OAuth login
 └── oauth-tests       FEATURE · Dev    · P2
 ```
 
-Bij één enkel fragment → sla de boom over, ga direct naar FASE 4 single-todo path.
+For a single fragment → skip the tree, go directly to PHASE 4 single-todo path.
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-### FASE 4: User confirmation per issue
+### PHASE 4: User confirmation per issue
 
-> **Todo**: markeer FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 4 → `in_progress`.
 
 AskUserQuestion (single select):
 
 ```yaml
-header: "Import aanpak"
-question: "Hoe wil je dit issue importeren?"
+header: "Import approach"
+question: "How do you want to import this issue?"
 options:
   - label: "Smart split (Recommended)"
-    description: "Meerdere todos op basis van de analyse"
+    description: "Multiple todos based on the analysis"
   - label: "Single todo"
-    description: "Één backlog-item voor het hele issue"
-  - label: "Overslaan"
-    description: "Importeer dit issue niet"
+    description: "One backlog item for the entire issue"
+  - label: "Skip"
+    description: "Do not import this issue"
 multiSelect: false
 ```
 
-**Smart split:** ga naar FASE 5.
+**Smart split:** go to PHASE 5.
 
-**Single todo:** vraag via gecombineerde AskUserQuestion:
+**Single todo:** ask via combined AskUserQuestion:
 
 ```yaml
-# Vraag 1
+# Question 1
 header: "Priority"
-question: "Welke prioriteit?"
+question: "Which priority?"
 options:
-  - label: "P1 (Recommended)", description: "Hoogste prioriteit"
-  - label: "P2", description: "Belangrijk, niet blokkerend"
-  - label: "P3", description: "Als er tijd is"
-  - label: "P4", description: "Parkeren voor later"
+  - label: "P1 (Recommended)", description: "Highest priority"
+  - label: "P2", description: "Important, not blocking"
+  - label: "P3", description: "When there's time"
+  - label: "P4", description: "Park for later"
 multiSelect: false
 
-# Vraag 2
+# Question 2
 header: "Type"
-question: "Type item?"
+question: "Item type?"
 options:
   - label: "FEATURE (Recommended)"
   - label: "BUG"
@@ -188,21 +188,21 @@ options:
 multiSelect: false
 ```
 
-Ga dan direct naar FASE 6 (write).
+Then go directly to PHASE 6 (write).
 
-**Overslaan:** ga naar volgende gekozen issue (loop terug naar FASE 3 als nog issues wachten).
+**Skip:** go to next selected issue (loop back to PHASE 3 if more issues are waiting).
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-### FASE 5: Fragment confirm + checkpoint
+### PHASE 5: Fragment confirm + checkpoint
 
-> **Todo**: markeer FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 5 → `in_progress`.
 
-Toon de split-voorstellen als multi-select (default: all checked):
+Show the split proposals as multi-select (default: all checked):
 
 ```yaml
-header: "Fragmenten"
-question: "Welke fragments importeer je?"
+header: "Fragments"
+question: "Which fragments do you want to import?"
 options:
   - label: "oauth-login · PAGE · Frontend · P1"
   - label: "oauth-callback · API · Dev · P1"
@@ -210,14 +210,14 @@ options:
 multiSelect: true
 ```
 
-Per geselecteerd fragment: toon gecombineerde confirm voor `type` + `phase` (pre-filled met voorstel, user kan overrulen).
+Per selected fragment: show combined confirm for `type` + `phase` (pre-filled with proposal, user can override).
 
-**Interview checkpoint** (vóór FASE 6 schrijft):
+**Interview checkpoint** (before PHASE 6 writes):
 
-Toon summary table van alles wat geïmporteerd wordt:
+Show summary table of everything being imported:
 
 ```
-IMPORT OVERZICHT
+IMPORT OVERVIEW
 ════════════════════════════════════════════════════
 Issue  #42 · Implement OAuth login (github)
   oauth-login       PAGE    · Frontend · P1
@@ -233,25 +233,25 @@ AskUserQuestion:
 
 ```yaml
 header: "Confirm import"
-question: "Klopt dit overzicht? Items worden naar de backlog geschreven."
+question: "Does this overview look correct? Items will be written to the backlog."
 options:
-  - label: "Ja, importeren (Recommended)"
-  - label: "Aanpassen"
-    description: "Ga terug naar selectie"
+  - label: "Yes, import (Recommended)"
+  - label: "Adjust"
+    description: "Go back to selection"
 multiSelect: false
 ```
 
-> **Todo**: markeer FASE 5 → `completed`, FASE 6 → `in_progress`.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 6 → `in_progress`.
 
-### FASE 6: Write to backlog
+### PHASE 6: Write to backlog
 
-> **Todo**: markeer FASE 6 → `in_progress`.
+> **Todo**: mark PHASE 6 → `in_progress`.
 
-Per geaccepteerd todo: insert in `data.features[]` (na dedup-check op `name`):
+Per accepted todo: insert into `data.features[]` (after dedup check on `name`):
 
 ```json
 {
-  "name": "{kebab-case van title of fragment-label}",
+  "name": "{kebab-case of title or fragment label}",
   "type": "{type}",
   "status": "TODO",
   "phase": "{phase}",
@@ -260,7 +260,7 @@ Per geaccepteerd todo: insert in `data.features[]` (na dedup-check op `name`):
   "externalRef": {
     "type": "{github|jira|linear}",
     "id": "{issue id}",
-    "url": "{url of null bij paste zonder URL}",
+    "url": "{url or null for paste without URL}",
     "labels": ["{label.name}"],
     "split": "{frontend|backend|tests|null}"
   },
@@ -268,20 +268,20 @@ Per geaccepteerd todo: insert in `data.features[]` (na dedup-check op `name`):
 }
 ```
 
-Schrijf `data.updated` naar vandaag (`YYYY-MM-DD`).
+Write `data.updated` to today (`YYYY-MM-DD`).
 
-Schrijf `project.json#team.tracker` als dat nog niet gezet was.
+Write `project.json#team.tracker` if it was not yet set.
 
-Edit het JSON-blok in `backlog.html` — houd `<script>` tags intact.
+Edit the JSON block in `backlog.html` — keep `<script>` tags intact.
 
-> **Todo**: markeer FASE 6 → `completed`, FASE 7 → `in_progress`.
+> **Todo**: mark PHASE 6 → `completed`, PHASE 7 → `in_progress`.
 
-### FASE 7: Output
+### PHASE 7: Output
 
-> **Todo**: markeer FASE 7 → `in_progress`.
+> **Todo**: mark PHASE 7 → `in_progress`.
 
 ```
-GEÏMPORTEERD
+IMPORTED
 
   Issue #42: Implement OAuth login (github)
     oauth-login       P1 · PAGE    · Frontend track
@@ -299,25 +299,25 @@ GEÏMPORTEERD
   - /frontend-design oauth-login   (start frontend pipeline)
 ```
 
-> **Todo**: markeer FASE 7 → `completed`.
+> **Todo**: mark PHASE 7 → `completed`.
 
 ## Restrictions
 
-- Smart split is **suggestie** — gebruiker bepaalt finaal welke fragmenten geïmporteerd worden
-- Geen bidirectionele sync — issue-updates in de tracker worden niet automatisch verwerkt in de backlog
-- Één issue tegelijk smart-splitten — geen bulk-split van meerdere issues in één keer
-- Dedup op `externalRef.id` + tracker — een issue dat al (deels) geïmporteerd is verschijnt niet opnieuw in de selectie
-- Schrijf GEEN code, voer GEEN git-commando's uit
+- Smart split is a **suggestion** — the user decides which fragments are ultimately imported
+- No bidirectional sync — issue updates in the tracker are not automatically reflected in the backlog
+- Smart-split one issue at a time — no bulk-split of multiple issues at once
+- Dedup on `externalRef.id` + tracker — an issue that is already (partially) imported does not appear again in the selection
+- Do NOT write code, do NOT run git commands
 
 ## Tracker-support matrix
 
-| Tracker | Methode    | ID-formaat |
+| Tracker | Method     | ID format  |
 | ------- | ---------- | ---------- |
 | GitHub  | `gh` CLI   | `#123`     |
 | Jira    | paste-flow | `PROJ-456` |
 | Linear  | paste-flow | `ABC-789`  |
 
-Native Jira/Linear integratie (API/MCP) is out of scope voor v1. Zie `shared/TEAM.md` voor Jira/Linear handmatige workflow.
+Native Jira/Linear integration (API/MCP) is out of scope for v1. See `shared/TEAM.md` for Jira/Linear manual workflow.
 
 ### Terminal Formatting
 
@@ -326,4 +326,4 @@ Native Jira/Linear integratie (API/MCP) is out of scope voor v1. Zie `shared/TEA
 
 ### Language
 
-Follow the Language Policy in CLAUDE.md (instructies Nederlands, technische termen Engels).
+Follow `skills/shared/LANGUAGE.md` for output language rules.

@@ -1,67 +1,67 @@
 # Research Flow
 
-Protocol voor library/tool research wanneer geen tier-1 module beschikbaar is. Gebruikt Context7 voor docs en WebSearch voor sentiment, dan presenteert 3 best-fit opties.
+Protocol for library/tool research when no tier-1 module is available. Uses Context7 for docs and WebSearch for sentiment, then presents 3 best-fit options.
 
 ---
 
-## Stap 1: User intent
+## Step 1: User intent
 
-Vraag de user (vrije tekst, geen modal) wat ze precies zoeken. Voorbeeld:
+Ask the user (free text, no modal) what exactly they are looking for. Example:
 
-> Geef de naam of categorie van wat je wilt installeren. Bijvoorbeeld: "een animation library", "Framer Motion", "auth voor Next.js", "een datepicker met range support".
+> Enter the name or category of what you want to install. For example: "an animation library", "Framer Motion", "auth for Next.js", "a datepicker with range support".
 
-Parse de input naar:
+Parse the input into:
 
-- **Library naam** (als specifiek genoemd, bv. "Framer Motion")
-- **Category** (als generiek, bv. "animation")
-- **Constraints** (compatibiliteit, framework, size, etc.)
+- **Library name** (if specifically named, e.g. "Framer Motion")
+- **Category** (if generic, e.g. "animation")
+- **Constraints** (compatibility, framework, size, etc.)
 
 ---
 
-## Stap 2: Context7 query
+## Step 2: Context7 query
 
-### 2a. Bij specifieke library
+### 2a. For specific library
 
 ```
-mcp__context7__resolve-library-id(libraryName: "{naam}")
-→ kies eerste match met hoogste trust score
+mcp__context7__resolve-library-id(libraryName: "{name}")
+→ choose first match with highest trust score
 mcp__context7__query-docs(context7CompatibleLibraryID: "{id}", query: "installation setup {framework}")
 ```
 
-### 2b. Bij category-only
+### 2b. For category-only
 
-Zoek 3 kandidaten via WebSearch eerst (zie Stap 3), dan voor elk:
+Find 3 candidates via WebSearch first (see Step 3), then for each:
 
 ```
 mcp__context7__resolve-library-id(libraryName: "{candidate}")
 mcp__context7__query-docs(...)
 ```
 
-Doel: actuele install-stappen + recente versie + framework compatibility.
+Goal: current install steps + recent version + framework compatibility.
 
 ---
 
-## Stap 3: WebSearch sentiment
+## Step 3: WebSearch sentiment
 
 ```
 WebSearch("best {category} library {framework} 2026")
 WebSearch("{candidate} vs alternatives {framework}")
 ```
 
-Filter resultaten:
+Filter results:
 
-- Recent (laatste 12 maanden bij voorkeur)
-- Bronnen: GitHub stars/issues, Reddit, dev.to, blog posts van bekende devs
-- Negatieve signalen: "deprecated", "unmaintained", "abandoned", laatste release > 18 mnd
+- Recent (last 12 months preferred)
+- Sources: GitHub stars/issues, Reddit, dev.to, blog posts from known developers
+- Negative signals: "deprecated", "unmaintained", "abandoned", last release > 18 months
 
 ---
 
-## Stap 4: Trade-off matrix
+## Step 4: Trade-off matrix
 
-Bouw een tabel voor 3 best-fit kandidaten:
+Build a table for 3 best-fit candidates:
 
 ```
-| Optie     | Bundle  | Weekly DLs | Last release | DX score | Stack fit |
+| Option    | Bundle  | Weekly DLs | Last release | DX score | Stack fit |
 | --------- | ------- | ---------- | ------------ | -------- | --------- |
 | {opt 1}   | {kb}    | {N}        | {date}       | {1-5}    | {1-5}     |
 | {opt 2}   | ...     | ...        | ...          | ...      | ...       |
@@ -69,35 +69,35 @@ Bouw een tabel voor 3 best-fit kandidaten:
 ```
 
 **DX score** (subjective, 1-5): TypeScript support, docs quality, API ergonomics
-**Stack fit**: hoe goed past het bij gedetecteerde framework + reeds geïnstalleerde libs
+**Stack fit**: how well it fits the detected framework + already installed libs
 
 ---
 
-## Stap 5: Presenteer + recommend
+## Step 5: Present + recommend
 
 ```yaml
 header: "Research result"
-question: "Drie best-fit opties voor {category} ({framework}). Welke wil je?"
+question: "Three best-fit options for {category} ({framework}). Which do you want?"
 options:
-  - label: "{best pick} (Recommended)", description: "{1-line waarom + key trade-off}"
-  - label: "{alternative 1}", description: "{1-line + waarom je dit zou kiezen}"
-  - label: "{alternative 2}", description: "{1-line + waarom je dit zou kiezen}"
-  - label: "Annuleren", description: "Geen install, terug naar FASE 2"
+  - label: "{best pick} (Recommended)", description: "{1-line why + key trade-off}"
+  - label: "{alternative 1}", description: "{1-line + why you'd choose this}"
+  - label: "{alternative 2}", description: "{1-line + why you'd choose this}"
+  - label: "Cancel", description: "No install, back to PHASE 2"
 multiSelect: false
 ```
 
 **Recommendation logic**:
 
-- Voorkeur stack-fit ≥ 4
-- Tie-breaker: hoogste DX score
-- Tie-breaker 2: kleinere bundle
-- Negatieve signalen (deprecated/abandoned) → uitsluiten
+- Prefer stack-fit ≥ 4
+- Tie-breaker: highest DX score
+- Tie-breaker 2: smaller bundle
+- Negative signals (deprecated/abandoned) → exclude
 
 ---
 
-## Stap 6: Genereer install-stappen
+## Step 6: Generate install steps
 
-Bij user-keuze, query Context7 nogmaals voor exact installation:
+On user choice, query Context7 again for exact installation:
 
 ```
 mcp__context7__query-docs(
@@ -106,20 +106,20 @@ mcp__context7__query-docs(
 )
 ```
 
-Distilleer naar:
+Distill to:
 
-1. **Install command** (welke packages, dev vs prod)
-2. **Config files** (welke files te bewerken, welke entries)
+1. **Install command** (which packages, dev vs prod)
+2. **Config files** (which files to edit, which entries)
 3. **Boilerplate** (provider wrappers, root setup, etc.)
 4. **Optional gitignore entries**
 
-Voer uit per FASE 5 in SKILL.md.
+Execute as per PHASE 5 in SKILL.md.
 
 ---
 
 ## Edge cases
 
-- **Geen Context7 match**: skip Context7, gebruik alleen WebSearch + library website docs
-- **Conflict met bestaande lib**: warn en vraag bevestiging (bv. installing Tailwind als StyleX al aanwezig is)
-- **Framework incompatibel**: abort met suggestie van compatible alternative
-- **Library is paid/closed source**: meld dit expliciet voor user keuze
+- **No Context7 match**: skip Context7, use only WebSearch + library website docs
+- **Conflict with existing lib**: warn and ask for confirmation (e.g. installing Tailwind if StyleX is already present)
+- **Framework incompatible**: abort with suggestion of compatible alternative
+- **Library is paid/closed source**: report this explicitly before user choice

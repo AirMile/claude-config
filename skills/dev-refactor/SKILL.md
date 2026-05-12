@@ -35,12 +35,12 @@ This rule exists because refactoring external files risks breaking other feature
 ## When to Use
 
 - After `/dev-verify` completes (features in DONE status)
-- When `.project/features/{name}/feature.json` exists met `tests` sectie
+- When `.project/features/{name}/feature.json` exists with `tests` section
 - NOT for: fixing bugs (/dev-verify), adding features (/dev-define), planning (/dev-define)
 
 ## Input
 
-Reads `.project/features/{feature-name}/feature.json` — unified feature file met requirements, architecture, files, build, tests secties.
+Reads `.project/features/{feature-name}/feature.json` — unified feature file with requirements, architecture, files, build, tests sections.
 
 ## Output Structure
 
@@ -55,7 +55,7 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
 .claude/research/
 ├── stack-baseline.md          ← EXISTING: library conventions/patterns/pitfalls
 │                                 (React hooks, Tailwind v4, GSAP cleanup, etc.)
-│                                 Read in FASE 2 for research decision
+│                                 Read in PHASE 2 for research decision
 │
 └── refactor-patterns.md       ← NEW: stack-specific code smells & anti-patterns
                                   Generated via Context7 on first refactor
@@ -67,26 +67,26 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
 
 ## Workflow
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 6 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgotten phases.
 
-1. FASE 0: Batch Context Loading + Refactor Patterns
-2. FASE 1: Parallel Three-Lens Analysis + Triage
-3. FASE 2: Aggregated Research Decision
-4. FASE 3: Combined Plan + Single Approval
-5. FASE 4: Apply + Test Per Feature
-6. FASE 5: Batch Completion
+1. PHASE 0: Batch Context Loading + Refactor Patterns
+2. PHASE 1: Parallel Three-Lens Analysis + Triage
+3. PHASE 2: Aggregated Research Decision
+4. PHASE 3: Combined Plan + Single Approval
+5. PHASE 4: Apply + Test Per Feature
+6. PHASE 5: Batch Completion
 
-### FASE 0: Batch Context Loading + Refactor Patterns
+### PHASE 0: Batch Context Loading + Refactor Patterns
 
-> **Todo**: roep `TaskCreate` aan met de 6 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Read backlog for pipeline status:**
 
-   Read `.project/backlog.html` (if exists), parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`):
+   Read `.project/backlog.html` (if exists), parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`):
    - Filter DONE features: `data.features.filter(f => f.status === "DONE" && !f.shipped)`
-   - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` sectie
+   - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` section
    - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
-   - Filter small-items: `data.features.filter(f => f.status === "DONE" && !f.shipped && !fs.existsSync('.project/features/' + f.name + '/feature.json'))` — items zonder pipeline (CHANGE/BUG/PAGE/COMPONENT/etc)
+   - Filter small-items: `data.features.filter(f => f.status === "DONE" && !f.shipped && !fs.existsSync('.project/features/' + f.name + '/feature.json'))` — items without pipeline (CHANGE/BUG/PAGE/COMPONENT/etc)
 
 2. **Determine feature queue:**
 
@@ -96,69 +96,69 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
 
    **b) No feature name** (`/dev-refactor`):
 
-   **b0) UI-queue detectie (eerst checken):**
+   **b0) UI-queue detection (check first):**
    - `queued = data.features.filter(f => f.transition === "refactoring" && f.status === "DONE" && !f.shipped)`
-   - Als `queued.length > 0`:
+   - If `queued.length > 0`:
      - **AskUserQuestion**:
        - header: "Queue"
-       - question: "{N} features zijn via de backlog-UI gemarkeerd voor refactor: {names}. Gebruiken als queue?"
+       - question: "{N} features have been marked for refactor via the backlog UI: {names}. Use as queue?"
        - options:
-         - label: "Ja, gebruik queue (Recommended)", description: "{names}" → `feature_queue = queued`, `mode = "feature"`, spring naar **stap 3** (worktree-switch)
-         - label: "Nee, kies andere scope" → ga door naar b1 hieronder
+         - label: "Yes, use queue (Recommended)", description: "{names}" → `feature_queue = queued`, `mode = "feature"`, jump to **step 3** (worktree-switch)
+         - label: "No, choose different scope" → continue to b1 below
        - multiSelect: false
-   - Als `queued.length == 0` → ga direct door naar b1 hieronder.
+   - If `queued.length == 0` → continue directly to b1 below.
 
-   **b1) Scope-selectie** (als geen UI-queue of user koos "andere scope"):
+   **b1) Scope selection** (if no UI-queue or user chose "different scope"):
    - Present scope selection via **AskUserQuestion**:
      - header: "Scope"
-     - question: "Wat wil je refactoren?"
+     - question: "What do you want to refactor?"
      - options:
-       - label: "Nog niet gerefactorde features (Recommended)", description: "{N} features: {feature1}, {feature2}, ..."
-       - label: "Kleine items check (CHANGE/BUG/etc)", description: "{K} kleine items zonder pipeline: {item1}, {item2}, ... — lichte conventie-check, mark als shipped na approval"
-       - label: "Alle DONE features", description: "Alle {M} DONE features, inclusief eerder gerefactorde"
-       - label: "Hele codebase", description: "Scan alle source files, niet feature-gebonden"
+       - label: "Not yet refactored features (Recommended)", description: "{N} features: {feature1}, {feature2}, ..."
+       - label: "Small items check (CHANGE/BUG/etc)", description: "{K} small items without pipeline: {item1}, {item2}, ... — light convention check, mark as shipped after approval"
+       - label: "All DONE features", description: "All {M} DONE features, including previously refactored"
+       - label: "Entire codebase", description: "Scan all source files, not feature-bound"
      - multiSelect: false
-   - If "Nog niet gerefactorde features" → feature queue = unrefactored DONE features, mode = `feature`
-   - If "Kleine items check" → **small-items mode** (see below), mode = `small-items`
-   - If "Alle DONE features" → feature queue = all DONE features, mode = `feature`
-   - If "Hele codebase" → **codebase mode** (see below)
-   - If 0 unrefactored features: toon "Alle features zijn al gerefactord" in de optie beschrijving
-   - If 0 small-items: toon "Geen kleine items wachten op check" in de optie beschrijving
+   - If "Not yet refactored features" → feature queue = unrefactored DONE features, mode = `feature`
+   - If "Small items check" → **small-items mode** (see below), mode = `small-items`
+   - If "All DONE features" → feature queue = all DONE features, mode = `feature`
+   - If "Entire codebase" → **codebase mode** (see below)
+   - If 0 unrefactored features: show "All features have already been refactored" in the option description
+   - If 0 small-items: show "No small items waiting for check" in the option description
 
-   **c) "recent"**: find most recently modified `feature.json` with `tests` sectie, queue = `[that feature]`, mode = `feature`
+   **c) "recent"**: find most recently modified `feature.json` with `tests` section, queue = `[that feature]`, mode = `feature`
 
-   **Small-items mode** (`--small-items` of via keuze):
-   - Item queue = alle `data.features` met `status === "DONE" && !shipped && !feature.json`
-   - Voor elk item: bepaal scope via git log — zoek commits met item-naam in commit message: `git log --oneline --grep="{item.name}" -- {src/}`
-   - Als geen commits gevonden: log waarschuwing "Geen commits gevonden voor {name} — skip of handmatig controleren", skip het item
-   - Scope files = alle files gewijzigd in die commits: `git diff {first_hash}^..{last_hash} --name-only`
-   - Scope rule voor small-items: **alleen files uit de commit-scope mogen geïnspecteerd worden** (geen pipeline files lijst, maar commit-diff scope)
+   **Small-items mode** (`--small-items` or via choice):
+   - Item queue = all `data.features` with `status === "DONE" && !shipped && !feature.json`
+   - For each item: determine scope via git log — find commits with item name in commit message: `git log --oneline --grep="{item.name}" -- {src/}`
+   - If no commits found: log warning "No commits found for {name} — skip or check manually", skip the item
+   - Scope files = all files changed in those commits: `git diff {first_hash}^..{last_hash} --name-only`
+   - Scope rule for small-items: **only files from the commit-scope may be inspected** (no pipeline files list, but commit-diff scope)
 
-   **Small-items FASE-routing** (sla FASE 0 stap 3-5 over, spring direct naar FASE 1):
-   - FASE 1: één lichte Quality-lens Explore agent per item (niet Reuse/Efficiency — die zijn feature-pipeline specifiek). Input: commit-diff + `shared/RULES.md` + `shared/PATTERNS.md` + stack-baseline
-   - FASE 2: skip
-   - FASE 3: gecombineerde approval voor alle items die de check passeren: "X items: CLEAN. Mark als shipped?" (één AskUserQuestion, default = Ja)
-   - FASE 4: skip — geen code-edits bij lichte check (alleen code-edits als Quality-lens HIGH findings heeft, dan normaal apply flow)
-   - FASE 5: schrijf `shipped = true`, `shippedAt`, append naar `project.json.recentChanges[]`
+   **Small-items PHASE-routing** (skip PHASE 0 steps 3-5, jump directly to PHASE 1):
+   - PHASE 1: one light Quality-lens Explore agent per item (not Reuse/Efficiency — those are feature-pipeline specific). Input: commit-diff + `shared/RULES.md` + `shared/PATTERNS.md` + stack-baseline
+   - PHASE 2: skip
+   - PHASE 3: combined approval for all items that pass the check: "X items: CLEAN. Mark as shipped?" (one AskUserQuestion, default = Yes)
+   - PHASE 4: skip — no code edits for light check (only code edits if Quality-lens has HIGH findings, then normal apply flow)
+   - PHASE 5: write `shipped = true`, `shippedAt`, append to `project.json.recentChanges[]`
 
-   **Codebase mode** ("Hele codebase"):
-   - Pipeline files = alle source bestanden uit project (detecteer `src/` of equivalent uit `project-context.json` `context.structure`, of CLAUDE.md)
+   **Codebase mode** ("Entire codebase"):
+   - Pipeline files = all source files from project (detect `src/` or equivalent from `project-context.json` `context.structure`, or CLAUDE.md)
    - Exclude: `node_modules/`, `.project/`, test files, config files
-   - Geen feature.json schrijven — resultaat opslaan in `.project/session/codebase-refactor.json`
+   - No feature.json writing — save result in `.project/session/codebase-refactor.json`
    - Commit message: `refactor(codebase): {summary}`
-   - Skip FASE 5 feature.json/backlog updates — alleen commit + rapport
+   - Skip PHASE 5 feature.json/backlog updates — only commit + report
 
 3. **Worktree switch** (single-mode only):
 
-   Als `feature_queue.length == 1` en niet in codebase-mode: voer de procedure in `shared/WORKTREE.md` uit met de feature-name. Switcht automatisch naar `worktree-{feature-name}` als die bestaat. Bij FAIL: stop met de melding uit WORKTREE.md.
+   If `feature_queue.length == 1` and not in codebase-mode: execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL: stop with the message from WORKTREE.md.
 
-   Batch-mode (queue > 1) of codebase-mode: skip — blijf op main, refactor over al-gemergede code.
+   Batch-mode (queue > 1) or codebase-mode: skip — stay on main, refactor over already-merged code.
 
 4. **Load ALL feature docs for every feature in queue:**
 
-   For each feature, read `feature.json` — bevat requirements, architecture, files, build, tests secties.
+   For each feature, read `feature.json` — contains requirements, architecture, files, build, tests sections.
 
-   Validate `tests` sectie exists in `feature.json` for each feature. If missing → remove from queue and warn.
+   Validate `tests` section exists in `feature.json` for each feature. If missing → remove from queue and warn.
 
 5. **Build pipeline files list per feature:**
 
@@ -166,38 +166,38 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file m
    - Parse `files[]` array (each entry has `path`, `type`, `action`)
    - Store as `pipeline_files[feature_name]`
 
-6. **Load project conventions + learnings** (optioneel):
+6. **Load project conventions + learnings** (optional):
 
-Lees `.project/project-context.json` (als bestaat). Extract `context.patterns`.
+Read `.project/project-context.json` (if exists). Extract `context.patterns`.
 
 **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
 ```
 scopes: [component]
 pitfall-prefix: true
-current-feature: <feature-name als feature-mode, anders "none">
+current-feature: <feature-name if feature-mode, otherwise "none">
 ```
 
-Als beschikbaar: voeg toe aan Explore agent prompt in FASE 1 onder
-`PROJECT CONVENTIONS:` sectie (patterns) en `KNOWN PITFALLS:` sectie (pitfall-prefix + component-scoped). Helpt agents onderscheid maken tussen
-"intentioneel project pattern" en "code smell", en voorkomt herintroductie van bekende bugs. Eén van de patterns kan een
-`Code maturity: ...` string zijn (zie `shared/DASHBOARD.md` voorbeelden) die
-de refactor-agressie stuurt — die wordt automatisch meegegeven omdat hij deel
-uitmaakt van `patterns`.
+If available: add to Explore agent prompt in PHASE 1 under
+`PROJECT CONVENTIONS:` section (patterns) and `KNOWN PITFALLS:` section (pitfall-prefix + component-scoped). Helps agents distinguish between
+"intentional project pattern" and "code smell", and prevents re-introduction of known bugs. One of the patterns may be a
+`Code maturity: ...` string (see `shared/DASHBOARD.md` examples) that
+steers refactor aggressiveness — it is automatically included because it is part
+of `patterns`.
 
-7. **Build pipeline diff per feature** (optioneel, skip voor codebase-mode):
+7. **Build pipeline diff per feature** (optional, skip for codebase-mode):
 
-Voor elke feature met een bekend build-startmoment: bouw een diff-string die agents als focus-hint krijgen.
+For each feature with a known build start time: build a diff string to give agents as a focus hint.
 
 ```bash
-# Bepaal begin van feature-werk
+# Determine start of feature work
 first_hash=$(git log --since="{feature.build.startedAt}" --pretty=format:"%H" -- {pipeline_files} | tail -1)
 
-# Diff van die commit tot nu, gescoped tot pipeline files
+# Diff from that commit to now, scoped to pipeline files
 [ -n "$first_hash" ] && git diff ${first_hash}^..HEAD -- {pipeline_files} > /tmp/diff-{feature}.patch
 ```
 
-Opslaan als `pipeline_diff[feature_name]`. Als diff leeg is of `startedAt` ontbreekt: skip — agent ziet dan alleen de volledige files.
+Store as `pipeline_diff[feature_name]`. If diff is empty or `startedAt` is missing: skip — agent then only sees the full files.
 
 8. **Load or generate refactor-patterns.md:**
 
@@ -268,33 +268,33 @@ git status --porcelain | sort > .project/session/pre-skill-status.txt
 echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
-### FASE 1: Parallel Three-Lens Analysis + Triage
+### PHASE 1: Parallel Three-Lens Analysis + Triage
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-**Goal:** Per feature drie focused Explore agents parallel (reuse / quality / efficiency), dan merge + triage naar CLEAN vs HAS_FINDINGS.
+**Goal:** Per feature three focused Explore agents in parallel (reuse / quality / efficiency), then merge + triage into CLEAN vs HAS_FINDINGS.
 
-**Waarom drie lenses:** één monolithische prompt met 6 categorieën verdunt focus en produceert noise. Drie aparte lenses geven scherpere findings per domein. Geleerd uit `/simplify`-runs — zie plan in `.claude/plans/` (2026-04).
+**Why three lenses:** one monolithic prompt with 6 categories dilutes focus and produces noise. Three separate lenses give sharper findings per domain. Learned from `/simplify` runs — see plan in `.claude/plans/` (2026-04).
 
-**Lens-definities** (zie ook `shared/PATTERNS.md` als aanwezig):
+**Lens definitions** (see also `shared/PATTERNS.md` if present):
 
-- **Reuse lens**: DRY binnen pipeline files, duplicatie met bestaande helpers/utilities in de codebase, inline logica die bestaande lib/stdlib kan gebruiken, extract-opportunities
-- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dode code, redundante state, leaky abstractions, RULES.md violations, stack-specific anti-patterns, Design Token violations (T101–T105 uit `shared/TOKENS.md` — alleen frontend files: `.tsx`/`.jsx`/`.vue`/`.svelte`)
+- **Reuse lens**: DRY within pipeline files, duplication with existing helpers/utilities in the codebase, inline logic that existing lib/stdlib can replace, extract-opportunities
+- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dead code, redundant state, leaky abstractions, RULES.md violations, stack-specific anti-patterns, Design Token violations (T101–T105 from `shared/TOKENS.md` — frontend files only: `.tsx`/`.jsx`/`.vue`/`.svelte`)
 - **Efficiency lens**: missed concurrency (Promise.all), N+1, hot-path bloat, memory leaks, unbounded maps, TOCTOU, overly broad ops, no-op recurring updates
 
-Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe security-review bestaat `dev-owasp`).
+Security stays in Quality-lens (a separate security-agent is overkill; for deep security review `dev-owasp` exists).
 
-1. **Bepaal lens-strategie per feature:**
-   - `pipeline_files[feature].length < 4` → **single-lens mode**: één gecombineerde agent met alle drie lenses in de prompt (splitten levert te weinig signaal voor te veel token-overhead)
-   - `length >= 4` → **three-lens mode**: drie agents parallel per feature
+1. **Determine lens strategy per feature:**
+   - `pipeline_files[feature].length < 4` → **single-lens mode**: one combined agent with all three lenses in the prompt (splitting yields too little signal for too much token overhead)
+   - `length >= 4` → **three-lens mode**: three agents in parallel per feature
 
-   **Concurrency-budget:** max 10 concurrent agents totaal. Als `sum(lens_count_per_feature) > 10`: batch features in groepen. Bijv. 5 features × 3 lenses = 15 → batch 3 features eerst (9 agents), dan de rest.
+   **Concurrency budget:** max 10 concurrent agents total. If `sum(lens_count_per_feature) > 10`: batch features in groups. E.g. 5 features × 3 lenses = 15 → batch 3 features first (9 agents), then the rest.
 
-   **Model-default:** alle lens-agents draaien op Sonnet. Haiku-switch voor Reuse-lens is een toekomstige optimalisatie — niet activeren zonder A/B-meting op finding-kwaliteit.
+   **Model default:** all lens-agents run on Sonnet. Haiku-switch for Reuse-lens is a future optimization — do not activate without A/B measurement on finding quality.
 
-2. **Launch agents IN PARALLEL** volgens lens-strategie (zie `shared/SKILL-PATTERNS.md#parallel-dispatch` voor dispatch-criteria en integratie-stappen).
+2. **Launch agents IN PARALLEL** according to lens strategy (see `shared/SKILL-PATTERNS.md#parallel-dispatch` for dispatch criteria and integration steps).
 
-   **Universele prompt-header** (elke lens, elke mode krijgt deze):
+   **Universal prompt header** (every lens, every mode receives this):
 
    ````
    Feature: {feature-name}
@@ -302,8 +302,8 @@ Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe s
    {list of pipeline_files paths}
 
    {if pipeline_diff[feature] exists:}
-   FOCUS HINT — deze regels zijn nieuw/gewijzigd in deze feature; scan
-   met voorrang (maar rapporteer issues in andere regels óók):
+   FOCUS HINT — these lines are new/changed in this feature; scan
+   with priority (but also report issues in other lines):
    ```diff
    {pipeline_diff[feature]}
    ````
@@ -311,21 +311,21 @@ Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe s
    {/if}
 
    PROJECT CONVENTIONS:
-   {context.patterns of "niet beschikbaar — gebruik CLAUDE.md als fallback"}
-   Als een pattern consistent is met project conventions → NIET rapporteren.
-   Let op: een pattern met prefix "Code maturity:" geeft aan hoe agressief je mag refactoren — respecteer de daarin genoemde houding (bv. geen over-abstractions voor student/prototype projecten).
+   {context.patterns or "not available — use CLAUDE.md as fallback"}
+   If a pattern is consistent with project conventions → do NOT report.
+   Note: a pattern with prefix "Code maturity:" indicates how aggressively to refactor — respect the attitude described there (e.g. no over-abstractions for student/prototype projects).
 
    DISCIPLINE:
-   - Max 500 woorden output. Kort, scherp, direct.
-   - Geen nitpicks. Alleen issues met duidelijke, concrete fix.
-   - Skip false positives expliciet (noem ze niet eens).
-   - Formaat per finding: `[IMPACT|CATEGORY] file:line — probleem — concrete fix in 1 zin`
-   - Geen "Geen X gevonden" regels voor lege categorieën.
-   - Alleen pipeline files scannen — externe files negeren.
+   - Max 500 words output. Short, sharp, direct.
+   - No nitpicks. Only issues with a clear, concrete fix.
+   - Skip false positives explicitly (don't even mention them).
+   - Format per finding: `[IMPACT|CATEGORY] file:line — problem description — concrete fix in 1 sentence`
+   - No "No X found" lines for empty categories.
+   - Only scan pipeline files — ignore external files.
 
    ```
 
-   **Lens-specifieke body** — kies één van drie (of alle drie gecombineerd in single-lens mode):
+   **Lens-specific body** — choose one of three (or all three combined in single-lens mode):
 
    **(A) REUSE lens body:**
 
@@ -333,17 +333,17 @@ Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe s
 
    LENS: Reuse
 
-   Scan voor:
-   - Duplicate code blocks (>5 regels identiek binnen pipeline files)
-   - Vergelijkbare logica patronen (>70% gelijkheid, 3+ locaties)
-   - Inline logica die een bestaande helper/utility/stdlib kan vervangen
-   - Herhaalde conditionals, copy-paste met kleine variatie
+   Scan for:
+   - Duplicate code blocks (>5 lines identical within pipeline files)
+   - Similar logic patterns (>70% similarity, 3+ locations)
+   - Inline logic that an existing helper/utility/stdlib can replace
+   - Repeated conditionals, copy-paste with minor variation
 
-   VOORBEELDEN:
-   ✓ Report: 3 tools met identieke JSON.stringify({text, sources}) wrapping → extract `formatResult()` helper
-   ✓ Report: hand-rolled `lstrip/rstrip + regex` waar `path.basename()` bestaat
-   ✗ Skip: twee functies met 3 vergelijkbare regels (te klein voor abstractie, zeker bij `Code maturity: student`)
-   ✗ Skip: abstractie die maar 2× gebruikt wordt en de call-sites niet duidelijker maakt
+   EXAMPLES:
+   ✓ Report: 3 tools with identical JSON.stringify({text, sources}) wrapping → extract `formatResult()` helper
+   ✓ Report: hand-rolled `lstrip/rstrip + regex` where `path.basename()` exists
+   ✗ Skip: two functions with 3 similar lines (too small for abstraction, especially with `Code maturity: student`)
+   ✗ Skip: abstraction that is only used 2× and doesn't make the call sites clearer
 
    ```
 
@@ -353,44 +353,44 @@ Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe s
 
    LENS: Quality
 
-   Scan voor:
+   Scan for:
    SECURITY:
    - Injection: exec(, eval(, new Function, os.system
    - XSS: .innerHTML =, dangerouslySetInnerHTML, document.write
-   - Deserialization: pickle.loads op untrusted data
+   - Deserialization: pickle.loads on untrusted data
    - GitHub Actions: ${{ github.event. in run: commands
 
    CLARITY & QUALITY:
-   - Control-flow smells: nested 3+ niveaus, ternary chains (a ? x : b ? y), dense one-liners → early returns / if-else / guards / lookup table
-   - Names encode units/ownership/lifetime: `timeoutMs` niet `t`, `rawHtml` vs `safeHtml`, `userIdOwned` niet `id`. Primitives zonder unit in naam = smell.
-   - Dode code / unused exports
-   - Onnodige comments (WHAT ipv WHY, task-references, narrating)
-   - Redundante state (state die afgeleid kan worden)
-   - Stringly-typed code waar constants/enums bestaan
-   - Error-handling smells: over-defensive try/catch rond code die niet kan falen, OF silent swallowing (catch {}, `?? ""` dat missing data verbergt, unwrap zonder trace)
-   - Leaky abstractions / internal details geëxposed
-   - RULES.md violations — Algemeen + TypeScript secties (R007-R009, T001-T203)
-   - Stack-specific anti-patterns uit refactor-patterns.md
+   - Control-flow smells: nested 3+ levels, ternary chains (a ? x : b ? y), dense one-liners → early returns / if-else / guards / lookup table
+   - Names encode units/ownership/lifetime: `timeoutMs` not `t`, `rawHtml` vs `safeHtml`, `userIdOwned` not `id`. Primitives without unit in name = smell.
+   - Dead code / unused exports
+   - Unnecessary comments (WHAT instead of WHY, task-references, narrating)
+   - Redundant state (state that can be derived)
+   - Stringly-typed code where constants/enums exist
+   - Error-handling smells: over-defensive try/catch around code that can't fail, OR silent swallowing (catch {}, `?? ""` that hides missing data, unwrap without trace)
+   - Leaky abstractions / internal details exposed
+   - RULES.md violations — General + TypeScript sections (R007-R009, T001-T203)
+   - Stack-specific anti-patterns from refactor-patterns.md
 
-   COLD-READER (kan een nieuwe lezer dit begrijpen zonder 3 files open te zetten?):
-   - Locality of behavior: non-triviale regel vereist >2 file-jumps om intent te snappen → relocate of rename inline
-   - God-object params: functie neemt Request/Context/Session maar leest <3 velden → destructure of expliciete primitieve params
-   - Mixed abstraction levels: SQL + business-rule + HTTP-header mangling in één functie → splits policy van mechanism
-   - Shallow abstractions: helper waarvan signature even complex is als body, 1 caller, geen naming-win → inline
-   - Cognitive overload: >5 mutable locals+flags+loop-indices live in deepste blok → splits functie of bundel state in record
-   - Cross-file decision-duplication: dezelfde enum/switch-ladder in 3+ plaatsen → 1 source of truth (NB: overlap met Reuse-lens → dedup bij merge in FASE 1 stap 4)
+   COLD-READER (can a new reader understand this without opening 3 files?):
+   - Locality of behavior: non-trivial line requires >2 file-jumps to understand intent → relocate or rename inline
+   - God-object params: function takes Request/Context/Session but reads <3 fields → destructure or explicit primitive params
+   - Mixed abstraction levels: SQL + business-rule + HTTP-header mangling in one function → split policy from mechanism
+   - Shallow abstractions: helper whose signature is as complex as body, 1 caller, no naming-win → inline
+   - Cognitive overload: >5 mutable locals+flags+loop-indices live in deepest block → split function or bundle state in record
+   - Cross-file decision-duplication: the same enum/switch-ladder in 3+ places → 1 source of truth (NB: overlap with Reuse-lens → dedup during merge in PHASE 1 step 4)
 
-   VOORBEELDEN:
-   ✓ Report: `msg.constructor.name === "HumanMessage"` i.p.v. `isHumanMessage(msg)` typeguard
-   ✓ Report: dode exported functie zonder callers (leeg body met TODO-comment)
-   ✓ Report: 4-niveau nested if/else waar early-returns het vlak maken
-   ✓ Report: `function charge(ctx)` leest alleen `ctx.userId` + `ctx.amount` → `charge(userId, amount)`
+   EXAMPLES:
+   ✓ Report: `msg.constructor.name === "HumanMessage"` instead of `isHumanMessage(msg)` typeguard
+   ✓ Report: dead exported function without callers (empty body with TODO-comment)
+   ✓ Report: 4-level nested if/else where early-returns make it flat
+   ✓ Report: `function charge(ctx)` reads only `ctx.userId` + `ctx.amount` → `charge(userId, amount)`
    ✓ Report: `const t = 5000` → `const timeoutMs = 5000`
-   ✓ Report: 7 mutable locals in één loop-body, lezer verliest overzicht → extract state-record of splits loop
-   ✗ Skip: comment die een niet-obvious invariant uitlegt (WHY is waardevol)
-   ✗ Skip: expliciete intermediate variabele i.p.v. inline expression (clarity > compact, naming als documentatie)
-   ✗ Skip: thin adapter aan framework-seam (middleware, Express handler) — shallowness IS de taak
-   ✗ Skip: context-param waar framework-contract het vereist (middleware signature)
+   ✓ Report: 7 mutable locals in one loop-body, reader loses overview → extract state-record or split loop
+   ✗ Skip: comment explaining a non-obvious invariant (WHY is valuable)
+   ✗ Skip: explicit intermediate variable instead of inline expression (clarity > compact, naming as documentation)
+   ✗ Skip: thin adapter at framework-seam (middleware, Express handler) — shallowness IS the task
+   ✗ Skip: context-param where framework-contract requires it (middleware signature)
 
    ```
 
@@ -400,30 +400,30 @@ Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe s
 
    LENS: Efficiency
 
-   Scan voor:
-   - Missed concurrency: onafhankelijke awaits sequentieel i.p.v. Promise.all
-   - N+1: loops met DB/API calls per iteratie
-   - Hot-path bloat: blocking werk op startup of per-request/per-render
-   - Memory leaks: unbounded Maps/arrays, ontbrekende cleanup, event listener leaks
+   Scan for:
+   - Missed concurrency: independent awaits sequential instead of Promise.all
+   - N+1: loops with DB/API calls per iteration
+   - Hot-path bloat: blocking work on startup or per-request/per-render
+   - Memory leaks: unbounded Maps/arrays, missing cleanup, event listener leaks
    - Recurring no-op updates in polling/intervals/event handlers
-   - Unnecessary existence checks (TOCTOU: pre-check file/resource voor je 'm gebruikt)
-   - Overly broad: hele files lezen als stuk volstaat, alle items laden om er één te filteren
-   - Redundante computations / repeated file reads
+   - Unnecessary existence checks (TOCTOU: pre-check file/resource before using it)
+   - Overly broad: reading entire files when a portion suffices, loading all items to filter one
+   - Redundant computations / repeated file reads
 
-   VOORBEELDEN:
+   EXAMPLES:
    ✓ Report: `for (const c of chars) await loadBackstory(c)` → `Promise.all(chars.map(loadBackstory))`
-   ✓ Report: `userStore` Map die per-user groeit zonder TTL/LRU
-   ✓ Report: `similaritySearch(q, 8).filter(...).slice(0, 3)` → filter-callback arg van de store
-   ✗ Skip: O(n) loop over 5-item array (micro-optimization zonder impact)
-   ✗ Skip: JSON.stringify in een niet-hot-path debug log
+   ✓ Report: `userStore` Map that grows per-user without TTL/LRU
+   ✓ Report: `similaritySearch(q, 8).filter(...).slice(0, 3)` → filter-callback arg of the store
+   ✗ Skip: O(n) loop over 5-item array (micro-optimization without impact)
+   ✗ Skip: JSON.stringify in a non-hot-path debug log
 
    ```
 
-   **Single-lens mode** (feature met <4 files): voeg alle drie bodies samen onder één agent, behoud DISCIPLINE-regels. Eén output-blok met alle findings.
+   **Single-lens mode** (feature with <4 files): combine all three bodies under one agent, keep DISCIPLINE rules. One output block with all findings.
 
    ```
 
-3. **Output format** (elke lens-agent retourneert):
+3. **Output format** (each lens-agent returns):
 
    ```
    ANALYSIS_START
@@ -433,41 +433,41 @@ Security blijft in Quality-lens (aparte security-agent is overkill; voor diepe s
    ARCHITECTURE: libs={list} | patterns={list} | uncovered={list or "-"}
 
    FINDINGS:
-   - [HIGH|SEC] path/to/file.js:42 — probleem-omschrijving — concrete fix
-   - [MED|DRY] a.js:10 ↔ b.js:55 — probleem — fix
-   - [LOW|CLARITY] c.js:120 — probleem — fix
+   - [HIGH|SEC] path/to/file.js:42 — problem description — concrete fix
+   - [MED|DRY] a.js:10 ↔ b.js:55 — problem — fix
+   - [LOW|CLARITY] c.js:120 — problem — fix
 
    SKIPPED (balance):
-   - path:line — korte rationale waarom bewust niet gerapporteerd
+   - path:line — brief rationale for why deliberately not reported
 
    POSITIVES:
    - observation
    ANALYSIS_END
    ```
 
-   **Impact-tags:** `HIGH` (security, breaking bug, memory leak), `MED` (DRY, efficiency, clarity op hot-path), `LOW` (cosmetisch, micro-clarity).
-   **Category-tags:** `SEC`, `DRY`, `EFF`, `CLARITY`, `OVERENG`, `STACK`.
+   **Impact tags:** `HIGH` (security, breaking bug, memory leak), `MED` (DRY, efficiency, clarity on hot-path), `LOW` (cosmetic, micro-clarity).
+   **Category tags:** `SEC`, `DRY`, `EFF`, `CLARITY`, `OVERENG`, `STACK`.
 
 4. **Merge lens-outputs per feature:**
 
-   Voor three-lens features: combineer de drie FINDINGS-lijsten tot één lijst. Dedup op `file:line + fix` (zelfde issue door meerdere lenses gespot → 1 entry, categorie-tags mergen).
+   For three-lens features: combine the three FINDINGS-lists into one list. Dedup on `file:line + fix` (same issue spotted by multiple lenses → 1 entry, category-tags merged).
 
-   STATUS per feature = `CLEAN` als alle drie lenses `CLEAN`, anders `HAS_FINDINGS`.
+   STATUS per feature = `CLEAN` if all three lenses are `CLEAN`, otherwise `HAS_FINDINGS`.
 
 5. **Parsing agent results:**
 
    Per agent:
-   1. Zoek `ANALYSIS_START..ANALYSIS_END` in TaskOutput
-   2. Als truncated: Grep in output-file, Read met offset
+   1. Find `ANALYSIS_START..ANALYSIS_END` in TaskOutput
+   2. If truncated: Grep in output-file, Read with offset
    3. Extract STATUS + FINDINGS + SKIPPED
 
 6. **Triage:**
    - **CLEAN**: STATUS = CLEAN (0 findings merged)
    - **HAS_FINDINGS**: 1+ findings merged
 
-   CLEAN features → **early-exit**, skip FASE 2-4.
+   CLEAN features → **early-exit**, skip PHASE 2-4.
 
-7. **If ALL features CLEAN** → jump direct naar FASE 5 (geen approval).
+7. **If ALL features CLEAN** → jump directly to PHASE 5 (no approval).
 
 **Output:**
 
@@ -491,9 +491,9 @@ Summary: {clean_count} clean, {findings_count} with findings
 
 ---
 
-### FASE 2: Aggregated Research Decision
+### PHASE 2: Aggregated Research Decision
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
 **Goal:** One research decision for all affected features combined (not per-feature).
 
@@ -518,7 +518,7 @@ Summary: {clean_count} clean, {findings_count} with findings
    | Complex security concerns (auth, crypto, injection)    | YES — research security best practices  |
    | No stack baseline exists at all                        | YES — research core stack patterns      |
 
-   **If research NOT needed** → proceed directly to FASE 3.
+   **If research NOT needed** → proceed directly to PHASE 3.
 
    **If research needed** → spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to do all research in an isolated context. This keeps Context7 results out of the main session.
 
@@ -602,11 +602,11 @@ Refactor patterns updated: {yes/no}
 
 ---
 
-### FASE 3: Combined Plan + Single Approval
+### PHASE 3: Combined Plan + Single Approval
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
-**Goal:** One plan combining ALL findings from ALL affected features, one user approval (tenzij `--quick` pad).
+**Goal:** One plan combining ALL findings from ALL affected features, one user approval (unless `--quick` path).
 
 **Steps:**
 
@@ -614,34 +614,34 @@ Refactor patterns updated: {yes/no}
 
    Combine all findings from all HAS_FINDINGS features:
    - **Cross-feature deduplication**: same pattern in multiple files → 1 plan item with multiple locations
-   - Each improvement gets impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW (mapped van `[IMPACT|CATEGORY]` tags uit FASE 1 findings)
+   - Each improvement gets impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW (mapped from `[IMPACT|CATEGORY]` tags from PHASE 1 findings)
    - Sort: HIGH first (security, breaking bug, memory leak), then MED (performance, DRY, efficiency), then LOW (clarity, quality, simplification)
    - **Only pipeline files** may be included
    - Group by feature for clarity
 
 2. **Aggregate SKIPPED (balance) entries** from all lens-agents per feature.
 
-   Dedup op `file:line + rationale`. Deze lijst toont de user wat de skill bewust **niet** wil fixen — zodat ze kunnen overriden ("fix die toch wel").
+   Dedup on `file:line + rationale`. This list shows the user what the skill deliberately **does not** want to fix — so they can override ("fix that one anyway").
 
-3. **Evaluate `--quick` auto-apply pad:**
+3. **Evaluate `--quick` auto-apply path:**
 
    **Trigger:**
-   - Expliciet: `/dev-refactor --quick {feature}` in gebruikersinput
-   - Auto-detect: ALL van deze condities tegelijk waar:
-     - Queue bevat precies 1 feature
-     - 0 HIGH-findings (geen SEC, geen breaking-risk)
-     - ≤ 5 total findings (na dedup)
-     - Geen uncovered libraries in ARCHITECTURE-blok
-     - Geen `Code maturity: library` pattern in `context.patterns` — library-projecten krijgen altijd approval
+   - Explicit: `/dev-refactor --quick {feature}` in user input
+   - Auto-detect: ALL of these conditions true at the same time:
+     - Queue contains exactly 1 feature
+     - 0 HIGH-findings (no SEC, no breaking-risk)
+     - ≤ 5 total findings (after dedup)
+     - No uncovered libraries in ARCHITECTURE block
+     - No `Code maturity: library` pattern in `context.patterns` — library projects always get approval
 
-   **Gedrag bij quick-pad:**
-   - Skip de AskUserQuestion in stap 5
-   - Toon het plan + SKIPPED-lijst als informatieve output
-   - Spring direct naar FASE 4 met scope = "Alles toepassen"
-   - FASE 5 commit-message prefixt `refactor(quick)` i.p.v. `refactor(batch)`/`refactor({feature})`
-   - Toon "revert"-hint in de completion-output: `Revert: /rewind <hash>` met saved_hash uit FASE 4
+   **Behavior on quick path:**
+   - Skip the AskUserQuestion in step 5
+   - Show the plan + SKIPPED-list as informational output
+   - Jump directly to PHASE 4 with scope = "Apply all"
+   - PHASE 5 commit message prefixes `refactor(quick)` instead of `refactor(batch)`/`refactor({feature})`
+   - Show "revert" hint in the completion output: `Revert: /rewind <hash>` with saved_hash from PHASE 4
 
-   Bij elke expliciete `--quick` die niet aan auto-condities voldoet: **vallen terug** op normale approval-flow + warn in output waarom (bv. "--quick genegeerd: 2 HIGH findings gevonden").
+   For every explicit `--quick` that does not meet auto-conditions: **fall back** to normal approval-flow + warn in output why (e.g. "--quick ignored: 2 HIGH findings found").
 
 4. **Present improvements with before/after code:**
 
@@ -667,10 +667,10 @@ Refactor patterns updated: {yes/no}
    3. 🟡 {file}:{line} — {issue} → {fix}
       ...
 
-   ── Bewust niet gefixt ──
-   - {file:line} {pattern} — {korte rationale}
-   - {file:line} {pattern} — {korte rationale}
-   (skip deze sectie als 0 SKIPPED entries)
+   ── Deliberately not fixed ──
+   - {file:line} {pattern} — {brief rationale}
+   - {file:line} {pattern} — {brief rationale}
+   (skip this section if 0 SKIPPED entries)
 
    ──────────────────
 
@@ -680,49 +680,49 @@ Refactor patterns updated: {yes/no}
 
    Per-feature rollback: YES (feature A succeeds, B fails → only B rolled back)
 
-   {if quick-pad active:}
-   ⚡ QUICK MODE — approval wordt overgeslagen, directe apply.
-      Revert achteraf via /rewind.
+   {if quick-path active:}
+   ⚡ QUICK MODE — approval skipped, applying directly.
+      Revert afterwards via /rewind.
    ```
 
-5. **Ask for scope** (skip deze stap in quick-mode):
+5. **Ask for scope** (skip this step in quick-mode):
 
    Use **AskUserQuestion** tool:
    - header: "Scope"
-   - question: "Welke verbeteringen wil je toepassen? ({M} totaal across {N} features)"
+   - question: "Which improvements do you want to apply? ({M} total across {N} features)"
    - options:
-     - label: "Alles toepassen (Recommended)", description: "Alle {M} verbeteringen in {N} features"
-     - label: "Alleen HIGH + MED", description: "{X+Y} verbeteringen, skip LOW"
-     - label: "Alleen HIGH", description: "{X} verbeteringen, alleen security/breaking"
-     - label: "Per feature kiezen", description: "Selecteer per feature welke verbeteringen je wilt"
-     - label: "Ook Bewust-niet-gefixt erbij", description: "Voeg de {K} SKIPPED items toe aan de plan"
+     - label: "Apply all (Recommended)", description: "All {M} improvements in {N} features"
+     - label: "Only HIGH + MED", description: "{X+Y} improvements, skip LOW"
+     - label: "Only HIGH", description: "{X} improvements, security/breaking only"
+     - label: "Choose per feature", description: "Select which improvements you want per feature"
+     - label: "Include deliberately-not-fixed too", description: "Add the {K} SKIPPED items to the plan"
    - multiSelect: false
 
-   **If "Per feature kiezen":**
+   **If "Choose per feature":**
 
    ```
-   Features met findings:
+   Features with findings:
 
    1. {feature-1}: {N} findings ({HIGH}/{MED}/{LOW})
    2. {feature-2}: {N} findings ({HIGH}/{MED}/{LOW})
    ...
    ```
 
-   Vraag: "Welke features wil je refactoren? Geef nummers (bv. `1, 3` of `alles`)."
+   Ask: "Which features do you want to refactor? Give numbers (e.g. `1, 3` or `all`)."
 
-   Parse → approved-set. Lege input of "geen" → alle features krijgen CLEAN status.
+   Parse → approved-set. Empty input or "none" → all features get CLEAN status.
 
-   **If "Ook Bewust-niet-gefixt erbij"** → toon SKIPPED-lijst in tweede AskUserQuestion (multiSelect) zodat user specifiek kan kiezen welke alsnog mee moeten, en promoteer die naar improvements.
+   **If "Include deliberately-not-fixed too"** → show SKIPPED-list in second AskUserQuestion (multiSelect) so user can specifically choose which ones to include after all, and promote those to improvements.
 
-   Only approved features proceed to FASE 4. Non-selected features get CLEAN status.
+   Only approved features proceed to PHASE 4. Non-selected features get CLEAN status.
 
-   De user kan ook "Annuleren" via de ingebouwde "Other" optie → EXIT met "Refactor geannuleerd door gebruiker".
+   The user can also "Cancel" via the built-in "Other" option → EXIT with "Refactor cancelled by user".
 
 ---
 
-### FASE 4: Apply + Test Per Feature
+### PHASE 4: Apply + Test Per Feature
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
 **Goal:** Apply approved improvements and test, with per-feature rollback isolation.
 
@@ -823,41 +823,41 @@ IMPROVEMENTS APPLIED
 
 ---
 
-### FASE 5: Batch Completion
+### PHASE 5: Batch Completion
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
 **Goal:** Proportional documentation, single backlog update, single commit.
 
 1. **Write feature.json per feature** (read-modify-write):
 
-   Als N > 1 features: lees alle `.project/features/{name}/feature.json` parallel, muteer elk in memory, schrijf alle parallel terug.
+   If N > 1 features: read all `.project/features/{name}/feature.json` in parallel, mutate each in memory, write all back in parallel.
 
-   Voeg `refactor` sectie toe per feature:
+   Add `refactor` section per feature:
 
-   **Altijd aanwezig in refactor:** `status`, `improvements` (object met categorieën), `decisions[]`, `positiveObservations[]`, `failureAnalysis`, `pendingImprovements[]`.
+   **Always present in refactor:** `status`, `improvements` (object with categories), `decisions[]`, `positiveObservations[]`, `failureAnalysis`, `pendingImprovements[]`.
 
    **Per status variant:**
-   - CLEAN: `refactor.status = "CLEAN"`, lege `improvements`, alleen `positiveObservations`
-   - REFACTORED: `refactor.status = "REFACTORED"`, gevulde `improvements` per categorie, `decisions` met rationale
+   - CLEAN: `refactor.status = "CLEAN"`, empty `improvements`, only `positiveObservations`
+   - REFACTORED: `refactor.status = "REFACTORED"`, populated `improvements` per category, `decisions` with rationale
    - ROLLED_BACK: `refactor.status = "ROLLED_BACK"`, `failureAnalysis` (markdown string), `pendingImprovements[]`
 
    **Update top-level feature status:**
-   - CLEAN: `status: "DONE"` (ongewijzigd)
-   - REFACTORED: `status: "DONE"` (ongewijzigd)
-   - ROLLED_BACK: `status: "DONE"` (ongewijzigd — refactor.status documenteert de rollback)
+   - CLEAN: `status: "DONE"` (unchanged)
+   - REFACTORED: `status: "DONE"` (unchanged)
+   - ROLLED_BACK: `status: "DONE"` (unchanged — refactor.status documents the rollback)
 
-   Bestaande secties NIET overschrijven.
+   Do NOT overwrite existing sections.
 
-1b. **Learning extraction** — voor features met status REFACTORED of CLEAN:
+1b. **Learning extraction** — for features with status REFACTORED or CLEAN:
 
-Lees de zojuist geschreven `feature.json.refactor` per feature:
+Read the just-written `feature.json.refactor` per feature:
 
-- REFACTORED: evalueer `decisions[]` → type `pattern`, source `extracted`; en `positiveObservations[]` → type `observation`, source `inferred`
-- CLEAN: evalueer `positiveObservations[]` → type `observation`, source `inferred`
-- ROLLED_BACK: overslaan (`failureAnalysis` is narratief proza, niet atomair)
+- REFACTORED: evaluate `decisions[]` → type `pattern`, source `extracted`; and `positiveObservations[]` → type `observation`, source `inferred`
+- CLEAN: evaluate `positiveObservations[]` → type `observation`, source `inferred`
+- ROLLED_BACK: skip (`failureAnalysis` is narrative prose, not atomic)
 
-**Filter**: alleen items die relevant zijn buiten deze feature. Skip lokale refactor-logistiek ("moved helper to utils.js"). Richtlijn: als een decision of observation ook zinvol is voor een ander project of feature → extracteer; anders skip.
+**Filter**: only items that are relevant outside this feature. Skip local refactor-logistics ("moved helper to utils.js"). Guideline: if a decision or observation is also meaningful for another project or feature → extract; otherwise skip.
 
 **Schema:**
 
@@ -871,64 +871,64 @@ Lees de zojuist geschreven `feature.json.refactor` per feature:
 }
 ```
 
-Geen `pitfall` type — refactor ontdekt geen bugs.
+No `pitfall` type — refactor does not discover bugs.
 
-**Dedup** via Jaccard(0.55) — zelfde logica als dev-verify Step 3b. Geen learnings gevonden → skip stilletjes.
+**Dedup** via Jaccard(0.55) — same logic as dev-verify Step 3b. No learnings found → skip silently.
 
-Append naar `project-context.json` → `learnings[]` (wordt geschreven in stap 2 parallel sync).
+Append to `project-context.json` → `learnings[]` (written in step 2 parallel sync).
 
-2. **Parallel sync** (backlog + dashboard + conditionele context sync) — volg `shared/SYNC.md` 3-File Sync Pattern, skill-specifieke mutaties hieronder:
+2. **Parallel sync** (backlog + dashboard + conditional context sync) — follow `shared/SYNC.md` 3-File Sync Pattern, skill-specific mutations below:
 
-   Lees parallel (skip als niet bestaat):
+   Read in parallel (skip if not exists):
    - `.project/backlog.html`
    - `.project/project.json`
    - `.project/project-context.json`
 
-   Muteer in memory:
+   Mutate in memory:
 
-   **Backlog** (zie `shared/BACKLOG.md`): status blijft `"DONE"` voor alle features (CLEAN, REFACTORED, en ROLLED_BACK). Zet per feature het `refactor` veld én — bij success — het `shipped` veld:
-   - CLEAN of REFACTORED → `f.refactor = "REFACTORED"`, `f.shipped = true`, `f.shippedAt = <ISO-date>`, `f.shippedSha = <git-sha>` (zie hieronder), verwijder `transition` (als aanwezig)
-   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"`, verwijder `transition` (als aanwezig) (shipped blijft false — item blijft in "Wacht op refactor" zone)
+   **Backlog** (see `shared/BACKLOG.md`): status stays `"DONE"` for all features (CLEAN, REFACTORED, and ROLLED_BACK). Set per feature the `refactor` field and — on success — the `shipped` field:
+   - CLEAN or REFACTORED → `f.refactor = "REFACTORED"`, `f.shipped = true`, `f.shippedAt = <ISO-date>`, `f.shippedSha = <git-sha>` (see below), remove `transition` (if present)
+   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"`, remove `transition` (if present) (shipped stays false — item remains in "Waiting for refactor" zone)
 
-   **Git sha voor shippedSha:**
+   **Git sha for shippedSha:**
 
    ```bash
    git rev-parse HEAD
    ```
 
-   Gebruik de HEAD sha na de auto-commit van FASE 5.3.
+   Use the HEAD sha after the auto-commit from PHASE 5.3.
 
-   Zet `data.updated` naar huidige datum.
+   Set `data.updated` to current date.
 
-   **Dashboard** (zie `shared/DASHBOARD.md`):
-   - Als packages gewijzigd (toegevoegd/verwijderd): merge naar `stack.packages`
-   - Als endpoints gewijzigd: merge naar `endpoints`
-   - Als data entities gewijzigd: merge naar `data.entities`
-   - `features` array: status blijft `"DONE"`; zet `refactor` veld analoog aan backlog; zet ook `shipped`, `shippedAt`, `shippedSha` voor CLEAN/REFACTORED features
-   - **Small-items mode**: voeg shipped items toe aan `recentChanges[]` array (maak aan als niet bestaat): `{ name, type, description, shipped: true, shippedAt }`
+   **Dashboard** (see `shared/DASHBOARD.md`):
+   - If packages changed (added/removed): merge to `stack.packages`
+   - If endpoints changed: merge to `endpoints`
+   - If data entities changed: merge to `data.entities`
+   - `features` array: status stays `"DONE"`; set `refactor` field analogous to backlog; also set `shipped`, `shippedAt`, `shippedSha` for CLEAN/REFACTORED features
+   - **Small-items mode**: add shipped items to `recentChanges[]` array (create if not exists): `{ name, type, description, shipped: true, shippedAt }`
 
-   **Context sync (conditioneel, schrijf naar `project-context.json`)** — alleen als REFACTORED features structurele wijzigingen bevatten:
+   **Context sync (conditional, write to `project-context.json`)** — only if REFACTORED features contain structural changes:
 
-   Trigger als ANY: bestanden hernoemd/verplaatst, nieuwe bestanden via extractie, patterns fundamenteel gewijzigd.
-   Skip als: alleen interne code quality, performance zonder structurele impact.
+   Trigger if ANY: files renamed/moved, new files via extraction, patterns fundamentally changed.
+   Skip if: only internal code quality, performance without structural impact.
 
-   Wanneer getriggerd (in project-context.json):
-   - `context.structure` → overwrite full tree met gewijzigde file paths
+   When triggered (in project-context.json):
+   - `context.structure` → overwrite full tree with changed file paths
    - Extracted components/hooks → add to structure tree
-   - `context.patterns` → merge gewijzigde patterns
-   - `context.updated` → huidige datum
-   - `architecture.components` → update bestaande componenten (status, src, test, `connects_to[]` als typed edges `{ to, type }` — zie `shared/DASHBOARD.md` Edge waarden), voeg nieuwe toe als componenten zijn hernoemd/gesplitst. Volg component-first model uit `shared/DASHBOARD.md`.
+   - `context.patterns` → merge changed patterns
+   - `context.updated` → current date
+   - `architecture.components` → update existing components (status, src, test, `connects_to[]` as typed edges `{ to, type }` — see `shared/DASHBOARD.md` Edge values), add new ones if components were renamed/split. Follow component-first model from `shared/DASHBOARD.md`.
    - Quality: only project-specific, non-obvious, one line per item
-   - Log: `context: {N} updates ({keys touched})` of `context: no updates needed`
+   - Log: `context: {N} updates ({keys touched})` or `context: no updates needed`
 
-   Schrijf parallel terug:
+   Write back in parallel:
    - Edit `backlog.html` (keep `<script>` tags intact)
    - Write `project.json` (stack, features, endpoints, data)
-   - Write `project-context.json` (context, architecture — maak aan als niet bestaat)
+   - Write `project-context.json` (context, architecture — create if not exists)
 
 3. **Scoped auto-commit** (only this skill's changes):
 
-   Compare current git status with baseline from FASE 0:
+   Compare current git status with baseline from PHASE 0:
 
    ```bash
    git status --porcelain | sort > /tmp/current-status.txt
@@ -965,19 +965,19 @@ Append naar `project-context.json` → `learnings[]` (wordt geschreven in stap 2
 
    Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
-3b. **Feature archivering** (alleen features met `feature.json`, niet kleine items zonder pipeline):
+3b. **Feature archiving** (only features with `feature.json`, not small items without pipeline):
 
-Voor elke CLEAN of REFACTORED feature waarvan `.project/features/{name}/feature.json` bestaat:
+For each CLEAN or REFACTORED feature where `.project/features/{name}/feature.json` exists:
 
 ```bash
 mkdir -p .project/features/archive
 mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 ```
 
-- `{shippedAt-date}` = de datum uit het zojuist geschreven `shippedAt` veld (YYYY-MM-DD formaat)
-- Meerdere features in één run → elk naar eigen archive-dir
-- ROLLED_BACK features: niet archiveren (blijven in `.project/features/`)
-- Skip als feature-dir al niet bestaat (idempotent)
+- `{shippedAt-date}` = the date from the just-written `shippedAt` field (YYYY-MM-DD format)
+- Multiple features in one run → each to its own archive-dir
+- ROLLED_BACK features: do not archive (stay in `.project/features/`)
+- Skip if feature-dir no longer exists (idempotent)
 
 4. **Show completion:**
 
@@ -996,22 +996,22 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
    Refactoring complete. Features remain in DONE status.
 
    Next steps:
-     1. /dev-define {next-feature} → volgende feature uit backlog
-     2. /project-plan → backlog herzien als scope gewijzigd is
+     1. /dev-define {next-feature} → next feature from backlog
+     2. /project-plan → revise backlog if scope has changed
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-   **Worktree integration hint** — voeg één extra regel toe aan het completion-blok als beide voorwaarden waar zijn:
-   1. Single-mode (queue.length == 1, niet codebase-mode)
-   2. Huidige branch matcht `worktree-*` pattern (`git branch --show-current`)
+   **Worktree integration hint** — add one extra line to the completion block if both conditions are true:
+   1. Single-mode (queue.length == 1, not codebase-mode)
+   2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
    Append:
 
    ```
-   💡 Run /core-merge {feature-name} om te integreren naar main/develop
+   💡 Run /core-merge {feature-name} to integrate into main/develop
    ```
 
-> **Todo**: markeer FASE 5 → `completed`.
+> **Todo**: mark PHASE 5 → `completed`.
 
 ---
 
@@ -1046,9 +1046,9 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 
 **git checkout fails for feature files** → report manual recovery steps:
 
-1. Show the `saved_hash` from FASE 4 step 1
+1. Show the `saved_hash` from PHASE 4 step 1
 2. List all `modified_files[feature_name]` and `created_files[feature_name]`
-3. Suggest: "Gebruik `/rewind` in Claude Code om terug te gaan naar een eerder punt"
+3. Suggest: "Use `/rewind` in Claude Code to go back to an earlier point"
 4. STOP — do not attempt destructive recovery commands
 
 ## Restrictions
@@ -1064,8 +1064,8 @@ This skill must NEVER:
 - Over-simplify code by removing helpful abstractions or combining too many concerns
 - Prioritize fewer lines over readability (explicit > compact)
 - Create "clever" solutions that are hard to understand or debug
-- Skip user approval at FASE 3 (unless 0 findings across all features)
-- Skip test verification in FASE 4
+- Skip user approval at PHASE 3 (unless 0 findings across all features)
+- Skip test verification in PHASE 4
 - Proceed if tests fail without analyzing failure type first (stale test vs regression)
 - Apply improvements without user scope selection
 - Run Explore agents sequentially when multiple features are in the queue (use parallel)
@@ -1076,7 +1076,7 @@ This skill must ALWAYS:
 - Enforce the pipeline_files scope boundary at every phase
 - Launch Explore agents in parallel for batch analysis (max 10 concurrent)
 - Triage features into CLEAN vs HAS_FINDINGS after analysis
-- Early-exit CLEAN features (skip FASE 2-4)
+- Early-exit CLEAN features (skip PHASE 2-4)
 - Use refactor-patterns.md for stack-aware analysis (generate on first run, cache thereafter)
 - Aggregate research decisions across all features (1 decision, not N)
 - Present ONE combined plan with ONE user approval for all features

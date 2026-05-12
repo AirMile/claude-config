@@ -60,7 +60,7 @@ If `### Stack` section not found, fallback to file detection:
 ## Usage in Commands
 
 ```markdown
-## FASE 0: Load Context
+## PHASE 0: Load Context
 
 1. Read `CLAUDE.md`
 2. Parse `## Project` → `### Stack` section

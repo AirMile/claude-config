@@ -1,24 +1,24 @@
 # Learnings Load Protocol
 
-Gedeeld protocol voor het laden van learnings als context bij architecturale skills. Skills refereren hiernaar i.p.v. eigen filterlogica te dupliceren.
+Shared protocol for loading learnings as context in architectural skills. Skills reference this instead of duplicating their own filter logic.
 
 > **Schema**: `learnings[]` in `project-context.json`. Velden: `date`, `feature`, `type`, `source`, `author?`, `summary`. Zie [DASHBOARD.md](DASHBOARD.md).
 
 ---
 
-## Wanneer laden
+## When to load
 
-Skills laden learnings tijdens hun **context-load fase** (typisch FASE 0 of een vroege FASE waarin architectuur-context wordt opgebouwd). Lezen is goedkoop — geen LLM-tokens, alleen file-reads.
+Skills load learnings during their **context-load phase** (typically PHASE 0 or an early PHASE where architecture context is being built). Reading is cheap — no LLM tokens, only file reads.
 
-## Drie scopes
+## Three scopes
 
-Elke skill specificeert één of meer scopes. Geen wildcards — expliciet kiezen.
+Each skill specifies one or more scopes. No wildcards — choose explicitly.
 
 ### Scope: `component`
 
-Filter learnings die matchen op de huidige feature/component naam. Twee stappen, gecombineerd.
+Filter learnings that match the current feature/component name. Two steps, combined.
 
-**Stap 1 — substring match op `feature` veld:**
+**Step 1 — substring match op `feature` veld:**
 
 ```
 substrMatches = learnings.filter(l =>
@@ -27,7 +27,7 @@ substrMatches = learnings.filter(l =>
 )
 ```
 
-**Stap 2 — summary-keyword match (fallback):**
+**Step 2 — summary-keyword match (fallback):**
 
 ```
 featureTokens = currentFeature.split(/[-\s]/).filter(t => t.length >= 3)
@@ -38,21 +38,21 @@ keywordMatches = learnings
   .slice(0, 5)
 ```
 
-`featureTokens`: split op `-` en spatie, filter tokens < 3 chars. Voorbeelden: `"auth-login"` → `["auth", "login"]`, `"jwt-refresh"` → `["jwt", "refresh"]`, `"db-migration"` → `["migration"]` (db < 3 → skip).
+`featureTokens`: split on `-` and space, filter tokens < 3 chars. Examples: `"auth-login"` → `["auth", "login"]`, `"jwt-refresh"` → `["jwt", "refresh"]`, `"db-migration"` → `["migration"]` (db < 3 → skip).
 
-**Combineer:**
+**Combine:**
 
 ```
 matches = [...substrMatches, ...keywordMatches]
-  .sort desc op date
+  .sort desc by date
   .slice(0, 10)
 ```
 
-Sorteer desc op `date`. Cap op 10 entries totaal.
+Sort desc by `date`. Cap at 10 entries total.
 
-**Use case**: feature-specifieke patterns en pitfalls die direct relevant zijn voor de huidige werkfeature.
+**Use case**: feature-specific patterns and pitfalls that are directly relevant to the current working feature.
 
-**Gebruikt door**: `dev-build`, `dev-refactor`, `dev-define`, `frontend-design`.
+**Used by**: `dev-build`, `dev-refactor`, `dev-define`, `frontend-design`.
 
 ### Scope: `architectural`
 
@@ -65,11 +65,11 @@ matches = learnings.filter(l =>
 )
 ```
 
-Sorteer desc op `date`. Cap op 15 entries.
+Sort desc by `date`. Cap at 15 entries.
 
-**Use case**: bij architectuur-beslissingen wil je zien welke patterns het project al gebruikt om consistent te blijven.
+**Use case**: when making architecture decisions you want to see which patterns the project already uses to stay consistent.
 
-**Gebruikt door**: `project-plan`, `thinking-decide`.
+**Used by**: `project-plan`, `thinking-decide`.
 
 ### Scope: `pitfall-prefix`
 
@@ -82,15 +82,15 @@ matches = learnings
   .slice(0, 5)
 ```
 
-**Use case**: korte recap van recente bugs als prefix bij elke skill die context laadt. Dit is wat [dev-build](../dev-build/SKILL.md) al doet — nu shared.
+**Use case**: brief recap of recent bugs as a prefix in every skill that loads context. This is what [dev-build](../dev-build/SKILL.md) already does — now shared.
 
-**Gebruikt door**: prefix bij elke skill die deze loader gebruikt. Niet een aparte scope-keuze maar een default-on prefix die je kunt uitschakelen met `pitfall-prefix: false`.
+**Used by**: prefix in every skill that uses this loader. Not a separate scope choice but a default-on prefix you can disable with `pitfall-prefix: false`.
 
 ---
 
 ## Output format
 
-Skill ontvangt een ascii-blok dat in z'n context-output past:
+Skill receives an ASCII block that fits in its context output:
 
 ```
 LEARNINGS CONTEXT
@@ -109,36 +109,36 @@ Architectural patterns (project-wide):
   [2026-04-15] pattern — Input validation via zod schemas in services laag
 ```
 
-Secties die leeg zijn (geen matches) → weglaten, niet "0 entries" tonen.
+Empty sections (no matches) → omit, do not show "0 entries".
 
 ---
 
-## Skill-specifieke configuratie
+## Skill-specific configuration
 
-Elke skill specificeert in z'n SKILL.md:
+Each skill specifies in its SKILL.md:
 
 ```
 Load learnings via shared/LEARNINGS-LOAD.md:
 - scopes: [component, architectural]
 - pitfall-prefix: true
-- current-feature: <kebab-case naam, of "none" voor non-feature skills>
+- current-feature: <kebab-case name, or "none" for non-feature skills>
 ```
 
-`pitfall-prefix` defaultt op `true` — alleen expliciet uitzetten als de skill echt geen pitfall-context nodig heeft.
+`pitfall-prefix` defaults to `true` — only explicitly disable if the skill genuinely does not need pitfall context.
 
 ---
 
 ## Edge cases
 
-- **Geen `project-context.json`**: skip alle scopes — geen output.
-- **Lege `learnings[]`**: skip alle project-scopes.
-- **Geen `current-feature` opgegeven**: skip `component` scope. Andere scopes blijven.
-- **Worktree-aware**: lees `project-context.json` uit main worktree (volgens [SYNC.md](SYNC.md) Worktree-aware Pad Resolutie).
+- **No `project-context.json`**: skip all scopes — no output.
+- **Empty `learnings[]`**: skip all project scopes.
+- **No `current-feature` specified**: skip `component` scope. Other scopes remain.
+- **Worktree-aware**: read `project-context.json` from main worktree (per [SYNC.md](SYNC.md) Worktree-aware Path Resolution).
 
 ---
 
-## Implementatie-noot
+## Implementation note
 
-Dit is een **read-only** protocol. Geen mutaties aan `learnings[]` — dat blijft de verantwoordelijkheid van schrijver-skills (`dev-verify`, `dev-refactor` (FASE 5), `project-pull`, `core-setup --mode=mature`).
+This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-verify`, `dev-refactor` (PHASE 5), `project-pull`, `core-setup --mode=mature`).
 
-Skill kan inline lezen + filteren (geen aparte tool nodig), of als de skill een agent gebruikt: agent prompt bevat al gefilterde learnings (niet de hele lijst).
+Skill can read + filter inline (no separate tool needed), or if the skill uses an agent: agent prompt already contains filtered learnings (not the full list).

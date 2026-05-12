@@ -1,6 +1,6 @@
 # Completeness Patterns
 
-Patterns for matching requirements against code diffs. Used by the Explore agent in FASE 0.5.
+Patterns for matching requirements against code diffs. Used by the Explore agent in PHASE 0.5.
 
 ## Matching Strategy
 

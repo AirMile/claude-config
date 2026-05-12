@@ -13,7 +13,7 @@ metadata:
 
 ## Overview
 
-FASE 2 of the gamedev workflow: plan -> define -> **build** -> test -> refactor
+PHASE 2 of the gamedev workflow: plan -> define -> **build** -> test -> refactor
 
 The build phase implements features from requirements using technique mapping: TDD for logic/calculations, Implementation First for visual/scene setup, Implementation Only for pure visual/config without testable logic. It generates tests, iterates through RED-GREEN-REFACTOR cycles, and syncs codebase understanding.
 
@@ -83,27 +83,27 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 ## Process
 
-**Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 10 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 10 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. If context compaction occurs, the task list remains visible — no risk of forgetting phases.
 
-1. FASE 0: Load Context
-2. FASE 1: Technique Mapping
-3. FASE 2: Generate Tests (TDD Requirements)
-4. FASE 3: Build Cycle
-5. FASE 3a: Full Regression Gate
-6. FASE 3b: Integration Tests + Playtest
-7. FASE 4: Wat hebben we gebouwd?
-8. FASE 4b: Project Sync
-9. FASE 5: Completion
-10. FASE 6: Scoped Commit
+1. PHASE 0: Load Context
+2. PHASE 1: Technique Mapping
+3. PHASE 2: Generate Tests (TDD Requirements)
+4. PHASE 3: Build Cycle
+5. PHASE 3a: Full Regression Gate
+6. PHASE 3b: Integration Tests + Playtest
+7. PHASE 4: What Did We Build?
+8. PHASE 4b: Project Sync
+9. PHASE 5: Completion
+10. PHASE 6: Scoped Commit
 
-### FASE 0: Load Context
+### PHASE 0: Load Context
 
-> **Todo**: roep `TaskCreate` aan met de 10 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 10 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **If no feature name provided — check backlog:**
-   - Read `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`)
+   - Read `.project/backlog.html`, parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`)
    - Filter defined features: `data.features.filter(f => f.status === "DEFINED")`
-   - Eerste defined feature is de suggested next feature
+   - First defined feature is the suggested next feature
    - Use **AskUserQuestion** with backlog-suggested feature:
      ```
      Backlog suggests: {feature-name}
@@ -120,20 +120,20 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
      Continuing without baseline...
      ```
 
-3. **Project context** (optioneel, skip als niet bestaat):
+3. **Project context** (optional, skip if not present):
 
-   Lees `.project/project.json`. Extract:
-   - `stack` — framework, language, packages (fallback voor architecture-baseline)
-   - `data.entities` — bestaand data model (voorkomt conflicten)
+   Read `.project/project.json`. Extract:
+   - `stack` — framework, language, packages (fallback for architecture-baseline)
+   - `data.entities` — existing data model (prevents conflicts)
 
-   Lees `.project/project-context.json` (als bestaat). Extract:
-   - `context.structure` — waar bestanden horen (map structuur)
-   - `context.patterns` — bestaande code patterns om te volgen
-   - `architecture` — huidige architectuur diagram en beschrijving
+   Read `.project/project-context.json` (if present). Extract:
+   - `context.structure` — where files belong (directory structure)
+   - `context.patterns` — existing code patterns to follow
+   - `architecture` — current architecture diagram and description
 
    **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
 
-   Configuratie:
+   Configuration:
 
    ```
    scopes: [component]
@@ -141,86 +141,86 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    current-feature: <feature-name>
    ```
 
-   Toon de geladen output. Pitfall-prefix sectie + component-scoped patterns geven context voor de build (geen constraint — bij twijfel ga uit van root cause, niet pattern-match).
+   Display the loaded output. The pitfall-prefix section and component-scoped patterns provide context for the build (not a constraint — when in doubt, assume root cause, don't pattern-match).
 
-   Bewaar de geladen learnings voor FASE 1 (Technique Mapping).
+   Store the loaded learnings for PHASE 1 (Technique Mapping).
 
-   Als project.json niet bestaat → ga door zonder (backwards compatible).
+   If project.json does not exist → continue without it (backwards compatible).
 
-   **Stel PROJECT_CONTEXT samen** (wordt meegegeven aan technique execution in FASE 2/3):
+   **Compose PROJECT_CONTEXT** (passed to technique execution in PHASE 2/3):
 
-   Bouw selectief op basis van `feature.json` → `files[]` paden:
-   - `Structure` en `Patterns` → altijd meenemen (compact)
-   - `Entities` → alleen als feature scenes/resources met data raakt
+   Build selectively based on `feature.json` → `files[]` paths:
+   - `Structure` and `Patterns` → always include (compact)
+   - `Entities` → only if the feature touches scenes/resources with data
 
    ```
    PROJECT CONTEXT:
-   Structure: {context.structure of "niet beschikbaar"}
-   Patterns: {context.patterns of "niet beschikbaar"}
-   Entities: {data.entities of "niet beschikbaar" — skip als feature geen data raakt}
+   Structure: {context.structure or "not available"}
+   Patterns: {context.patterns or "not available"}
+   Entities: {data.entities or "not available" — skip if feature has no data impact}
    ```
 
 4. **Load feature.json:**
 
-   **Ready queue** (alleen als geen feature-naam via CLI opgegeven):
+   **Ready queue** (only if no feature name provided via CLI):
 
-   Parse `.project/backlog.html`. Bereken per DEFINED feature of alle `dependencies[]` `status === "DONE"` hebben (of dep-lijst leeg is). Toon vóór de feature-selectie:
+   Parse `.project/backlog.html`. Calculate per DEFINED feature whether all `dependencies[]` have `status === "DONE"` (or the dependency list is empty). Display before feature selection:
 
    ```
-   Ready om te bouwen:
-     ✓ jump-mechanic     P1  (geen deps)
+   Ready to build:
+     ✓ jump-mechanic     P1  (no deps)
      ✓ enemy-ai          P2  deps: [pathfinding ✓]
 
-   Geblokkeerd:
-     ✗ boss-fight        P1  wacht op: [enemy-ai — DOING]
+   Blocked:
+     ✗ boss-fight        P1  waiting on: [enemy-ai — DOING]
    ```
 
-   - Toon "Geblokkeerd" sectie alleen als er geblokkeerde features zijn
-   - Als geen DEFINED features bestaan → "Geen features klaar om te bouwen." → exit
+   - Show "Blocked" section only if there are blocked features
+   - If no DEFINED features exist → "No features ready to build." → exit
 
    If no feature name provided:
-   1. Parse `.project/backlog.html` (zie `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion** (ready features bovenaan)
-   2. Fallback: list `.project/features/` met `feature.json`, let user select
+   1. Parse `.project/backlog.html` (see `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion** (ready features at top)
+   2. Fallback: list `.project/features/` with `feature.json`, let user select
 
-   Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`. Als `clarifications[]` aanwezig: behandel als harde constraints tijdens implementatie (gray-area beslissingen van de user).
+   Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`. If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions made by the user).
 
-   Niet gevonden → exit: "Run `/game-define` eerst."
+   Not found → exit: "Run `/game-define` first."
 
    **Dependency check:**
 
-   Skip als geen `depends[]` of leeg.
-   1. Parse `.project/backlog.html`. Niet gevonden → skip.
-   2. Per dependency: status moet `"DONE"` zijn.
-   3. Blockers gevonden → **AskUserQuestion**:
-      - "Stop — werk eerst {dep} af (Recommended)" / "Toch doorgaan"
-      - Stop → exit. Doorgaan → continue.
+   Skip if no `depends[]` or empty.
+   1. Parse `.project/backlog.html`. Not found → skip.
+   2. Per dependency: status must be `"DONE"`.
+   3. Blockers found → **AskUserQuestion**:
+      - "Stop — finish {dep} first (Recommended)" / "Continue anyway"
+      - Stop → exit. Continue → continue.
 
-   **Workspace setup** (optioneel):
+   **Workspace setup** (optional):
 
-   Alleen tonen als we NIET al in een worktree zitten:
-   1. Check: `git rev-parse --show-toplevel` vs eerste pad uit `git worktree list --porcelain`
-      → Verschillend: al in worktree → skip
+   Only show if we are NOT already in a worktree:
+   1. Check: `git rev-parse --show-toplevel` vs first path from `git worktree list --porcelain`
+      → Different: already in worktree → skip
    2. AskUserQuestion:
       ```yaml
       header: "Workspace"
-      question: "Wil je in een worktree werken voor deze build?"
+      question: "Do you want to work in a worktree for this build?"
       options:
-        - label: "Nee, huidige directory (Recommended)"
-          description: "Werk op de huidige branch"
-        - label: "Ja, worktree aanmaken"
-          description: "Geïsoleerde workspace — ideaal bij parallel werken"
+        - label: "No, current directory (Recommended)"
+          description: "Work on the current branch"
+        - label: "Yes, create worktree"
+          description: "Isolated workspace — ideal for parallel work"
       multiSelect: false
       ```
-   3. Ja → `EnterWorktree(name: "{feature-name}")`
+   3. Yes → `EnterWorktree(name: "{feature-name}")`
 
-   > **Branch-naming**: `EnterWorktree` maakt branch `worktree-{feature-name}` (NIET `{feature-name}`). Vervolgskills (`game-verify`, `game-debug`, `game-refactor` single-mode) detecteren deze worktree automatisch via `shared/WORKTREE.md` en switchen erin. Voor merge/cleanup gebruik je `/core-merge` of handmatig `git worktree remove --force` + `git branch -D worktree-{feature-name}`.
+   > **Branch naming**: `EnterWorktree` creates branch `worktree-{feature-name}` (NOT `{feature-name}`). Follow-up skills (`game-verify`, `game-debug`, `game-refactor` single-mode) auto-detect this worktree via `shared/WORKTREE.md` and switch into it. For merge/cleanup use `/core-merge` or manually `git worktree remove --force` + `git branch -D worktree-{feature-name}`.
 
-   **Tag backlog card als actief** (direct na feature laden):
+   **Tag backlog card as active** (immediately after loading feature):
 
-   Lees `.project/backlog.html` (als bestaat), parse JSON (zie `shared/BACKLOG.md`).
-   Zoek feature op naam → zet `"status": "DOING"`, `"stage": "building"`, `data.updated` naar nu (overgang DEFINED → DOING bij build-start).
-   Schrijf terug via Edit (keep `<script>` tags intact).
-   De card verhuist naar DOING-kolom met stage `building`.
+   Read `.project/backlog.html` (if present), parse JSON (see `shared/BACKLOG.md`).
+   Find feature by name → set `"status": "DOING"`, `"stage": "building"`, `data.updated` to now (transition DEFINED → DOING on build start).
+   Write back via Edit (keep `<script>` tags intact).
+   The card moves to the DOING column with stage `building`.
 
 5. **Read implementation order:**
 
@@ -259,30 +259,30 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 ```bash
 mkdir -p .project/session
-# Cleanup stale session state from previous crashed runs (>1 dag oud)
+# Cleanup stale session state from previous crashed runs (>1 day old)
 find .project/session -maxdepth 1 \( -name "active-*.json" -o -name "pre-skill-*.txt" \) -mtime +1 -delete 2>/dev/null
 git status --porcelain | sort > .project/session/pre-skill-status.txt
 echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
-**Risk-check (alleen als backlog feature `risk >= 4`):**
+**Risk check (only if backlog feature `risk >= 4`):**
 
-Als de geladen backlog-feature een `risk`-score van 4 of 5 heeft, toon deze waarschuwing vóór FASE 1:
+If the loaded backlog feature has a `risk` score of 4 or 5, show this warning before PHASE 1:
 
 ```
-⚠ HOOG RISICO — Complexiteit {risk}/5
+⚠ HIGH RISK — Complexity {risk}/5
 
-Overweeg vóór de bouw:
-- Zijn alle dependencies beschikbaar (status DONE)?
-- Is de feature-definitie volledig (alle REQs helder)?
-- Bouw in kleine stappen — commit na elke werkende REQ
+Consider before building:
+- Are all dependencies available (status DONE)?
+- Is the feature definition complete (all REQs clear)?
+- Build in small steps — commit after each working REQ
 ```
 
-### FASE 1: Technique Mapping
+### PHASE 1: Technique Mapping
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-**REMOVED filter**: Requirements met `deltaOp === "REMOVED"` overslaan — geen technique toewijzen, niet tonen in technique map tabel.
+**REMOVED filter**: Requirements with `deltaOp === "REMOVED"` are skipped — do not assign a technique, do not show in technique map table.
 
 Per requirement, assign a technique: **TDD**, **Implementation First**, or **Implementation Only**.
 
@@ -305,17 +305,17 @@ Per requirement, assign a technique: **TDD**, **Implementation First**, or **Imp
 - Audio setup (AudioStreamPlayer nodes)
 - UI layout and theme configuration
 
-**Implementation Only** (geen tests — alleen wanneer automated tests geen waarde toevoegen):
+**Implementation Only** (no tests — only when automated tests add no value):
 
-- Pure visual/particle effects zonder logic (bijv. screen shake, particle colors)
+- Pure visual/particle effects without logic (e.g. screen shake, particle colors)
 - Audio configuration (volume, bus assignment)
 - Static scene configuration (camera, lighting, environment setup)
-- Prototype code (explicit markering)
-- Verplichte reden: `visual-only`, `config-only`, of `prototype`
+- Prototype code (explicit marking)
+- Mandatory reason: `visual-only`, `config-only`, or `prototype`
 
 See `techniques/implementation-first.md` for the full Implementation First process.
 
-**Pitfall overlap check**: voor elke requirement, vergelijk met de pitfall-lijst uit FASE 0. Bij duidelijke thematische overlap (zelfde domein, zelfde type bug-risico) → log expliciet welke pitfall geraakt wordt en hoe deze build het voorkomt. Geen forcing — alleen markeren waar relevant.
+**Pitfall overlap check**: for each requirement, compare against the pitfall list from PHASE 0. On clear thematic overlap (same domain, same type of bug risk) → explicitly log which pitfall is triggered and how this build prevents it. No forcing — only mark where relevant.
 
 #### Assignment
 
@@ -335,13 +335,13 @@ IMPLEMENTATION ONLY:
 
 Proceed automatically — do NOT confirm with the user. The decision logic above is deterministic enough to auto-assign. Display the mapping for visibility, then continue to the next phase.
 
-### FASE 2: Generate Tests (TDD Requirements)
+### PHASE 2: Generate Tests (TDD Requirements)
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
 #### Step 0: Load GUT patterns
 
-Read `references/gut-conventions.md` voor test file structure, assertions en mock patronen. Geen sub-agent nodig — patronen zijn lokaal beschikbaar.
+Read `references/gut-conventions.md` for test file structure, assertions and mock patterns. No sub-agent needed — patterns are available locally.
 
 #### Step 1: Generate Test Stubs
 
@@ -383,7 +383,7 @@ func test_req003_{snake_case_description}() -> void:
 **Output:**
 
 ```
-FASE 2 COMPLETE
+PHASE 2 COMPLETE
 
 Tests generated: {count} (TDD requirements only)
 Status: All PENDING
@@ -391,17 +391,17 @@ Status: All PENDING
 Ready for TDD cycle.
 ```
 
-### FASE 3: Build Cycle
+### PHASE 3: Build Cycle
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
-Two tracks run based on technique mapping from FASE 1.
+Two tracks run based on technique mapping from PHASE 1.
 
 #### Track A: TDD Requirements
 
 ##### Sequential TDD Loop
 
-Use the IMPLEMENTATION ORDER determined in FASE 0 (no re-analysis needed).
+Use the IMPLEMENTATION ORDER determined in PHASE 0 (no re-analysis needed).
 
 ```
 implemented := []
@@ -610,7 +610,7 @@ For each Implementation Only requirement (in dependency order):
 1. **Implement directly** based on requirements and architecture from feature.json
 2. **Add debug hooks** (same rules as TDD track)
 3. **NO tests** — skip test generation entirely
-4. **Update feature.json**: zet `requirements[].status` → `"built"`, voeg `technique: "implementation-only"` en `skipTestReason` toe (`visual-only`, `config-only`, of `prototype`)
+4. **Update feature.json**: set `requirements[].status` → `"built"`, add `technique: "implementation-only"` and `skipTestReason` (`visual-only`, `config-only`, or `prototype`)
 5. Log: `IMPL-ONLY: REQ-{xxx} implemented (reason: {skipTestReason})`
 
 **Loop completion:**
@@ -628,54 +628,54 @@ Files created:
 ...
 ```
 
-### FASE 3a: Full Regression Gate
+### PHASE 3a: Full Regression Gate
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 3a → `in_progress`.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 3a → `in_progress`.
 
 **Goal:** Verify that the new feature hasn't broken existing features.
 
-Na succesvolle afronding van alle tracks, run de **volledige GUT test suite** (niet alleen de huidige feature):
+After successful completion of all tracks, run the **full GUT test suite** (not just the current feature):
 
 ```bash
 "{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit
 ```
 
-Parse output met dezelfde regels als alle test runs (zie Test Output Parsing).
+Parse output with the same rules as all test runs (see Test Output Parsing).
 
-**PASS:** Alle tests slagen — ga door naar FASE 3b.
+**PASS:** All tests pass — continue to PHASE 3b.
 
 ```
-REGRESSION CHECK: {total}/{total} PASS — geen regressies
+REGRESSION CHECK: {total}/{total} PASS — no regressions
 ```
 
-**FAIL:** Andere feature tests falen — dit is een gate.
+**FAIL:** Other feature tests fail — this is a gate.
 
 ```
 REGRESSION CHECK: {passed}/{total} PASS
-REGRESSIES GEVONDEN:
+REGRESSIONS FOUND:
 - test_{other_feature}.test_xxx: {reason}
 - test_{other_feature}.test_yyy: {reason}
 
-Bestanden overlap: {lijst van bestanden die zowel door deze feature als de falende feature worden gebruikt}
+File overlap: {list of files used by both this feature and the failing feature}
 ```
 
-Bij regressie:
+On regression:
 
-1. Analyseer of de huidige feature de regressie veroorzaakt (check gedeelde bestanden/signals)
-2. Als JA: fix de regressie voordat je doorgaat. Re-run full suite na fix.
-3. Als NEE (pre-existing failure): waarschuw gebruiker, laat kiezen via AskUserQuestion:
-   - "Fix eerst de regressie (Recommended)" / "Toch doorgaan (regressie was er al voor deze build)"
-4. Max 2 fix-pogingen. Daarna: rapporteer als blocker en laat gebruiker beslissen.
+1. Analyze whether the current feature caused the regression (check shared files/signals)
+2. If YES: fix the regression before continuing. Re-run full suite after fix.
+3. If NO (pre-existing failure): warn user, let them choose via AskUserQuestion:
+   - "Fix regression first (Recommended)" / "Continue anyway (regression existed before this build)"
+4. Max 2 fix attempts. After that: report as blocker and let user decide.
 
-**Skip condition:** Als er geen andere test-bestanden bestaan (eerste feature), skip met:
+**Skip condition:** If no other test files exist (first feature), skip with:
 
 ```
-REGRESSION CHECK: overgeslagen (geen eerdere features met tests)
+REGRESSION CHECK: skipped (no prior features with tests)
 ```
 
-### FASE 3b: Integration Tests + Playtest (PARALLEL)
+### PHASE 3b: Integration Tests + Playtest (PARALLEL)
 
-> **Todo**: markeer FASE 3a → `completed`, FASE 3b → `in_progress`.
+> **Todo**: mark PHASE 3a → `completed`, PHASE 3b → `in_progress`.
 
 These two tasks have NO dependencies on each other - run them in parallel.
 
@@ -736,7 +736,7 @@ get_debug_output()
 
 #### Playtest Checklist + Scene
 
-Build `tests.checklist[]` data for feature.json (written in FASE 4b):
+Build `tests.checklist[]` data for feature.json (written in PHASE 4b):
 
 ```json
 {
@@ -744,15 +744,11 @@ Build `tests.checklist[]` data for feature.json (written in FASE 4b):
     "checklist": [
       {
         "id": 1,
-        "title": "{wat te verifiëren}",
+        "title": "{what to verify}",
         "type": "MANUAL",
         "requirementId": "REQ-001",
-        "steps": [
-          "open game",
-          "gebruik ability op vijand",
-          "observeer schade-effect"
-        ],
-        "expected": "vijand toont damage number, health bar daalt",
+        "steps": ["open game", "use ability on enemy", "observe damage effect"],
+        "expected": "enemy shows damage number, health bar decreases",
         "status": "pending"
       }
     ]
@@ -762,13 +758,13 @@ Build `tests.checklist[]` data for feature.json (written in FASE 4b):
 
 Include both automated test results and manual playtest items in the checklist. Automated items get `type: "AUTO"`, manual playtest items get `type: "MANUAL"`.
 
-Richtlijnen voor checklist items:
+Guidelines for checklist items:
 
-- Schrijf steps als SPELER ACTIES (beweeg naar, druk op, gebruik ability), niet als code
-- Expected = wat de speler ZOU ZIEN/HOREN (visueel effect, geluid, UI update)
-- Voeg GEEN item toe dat "run GUT tests" is — unit tests zijn al gedekt door de build
-- MANUAL items: beschrijf concrete gameplay-interacties
-- AUTO items: beschrijf wat de integration test scene verifieert
+- Write steps as PLAYER ACTIONS (move to, press, use ability), not as code
+- Expected = what the player WOULD SEE/HEAR (visual effect, sound, UI update)
+- Do NOT add an item that says "run GUT tests" — unit tests are already covered by the build
+- MANUAL items: describe concrete gameplay interactions
+- AUTO items: describe what the integration test scene verifies
 
 **Create playtest scene** at `.project/features/{feature-name}/playtest_scene.tscn`:
 
@@ -823,89 +819,89 @@ func get_log_summary() -> String:
     return summary
 ```
 
-### FASE 4: Wat hebben we gebouwd?
+### PHASE 4: What Did We Build?
 
-> **Todo**: markeer FASE 3b → `completed`, FASE 4 → `in_progress`.
+> **Todo**: mark PHASE 3b → `completed`, PHASE 4 → `in_progress`.
 
-**STOP — ga NIET door naar de sync zonder deze fase volledig af te ronden.**
+**STOP — do NOT proceed to sync without completing this phase fully.**
 
-Display een visuele separator:
+Display a visual separator:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-WAT HEBBEN WE GEBOUWD?
+WHAT DID WE BUILD?
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**Stap 1 — Uitleg displayen (verplicht, niet overslaan)**
+**Step 1 — Display explanation (mandatory, do not skip)**
 
-De gebruiker moet begrijpen hoe de feature werkt voor goede beslissingen in test- en refactor-fases. Display de volgende uitleg alsof je het aan een student uitlegt:
+The user needs to understand how the feature works to make good decisions in the test and refactor phases. Display the following explanation as if you are explaining it to a student:
 
-- **Wat doet het?**: 1-2 zinnen zoals je het aan een vriend zou uitleggen. Beschrijf wat de speler ziet en kan doen — geen technische termen.
-- **Voorbeeld**: 1 concreet gameplay scenario in 2-3 zinnen. "Stel je voor: je drukt op X, je karakter doet Y, je ziet Z op het scherm."
-- **Hoe werkt het?**: 1 ASCII diagram dat het hele verhaal vertelt. Kies het meest relevante type (scene tree, signal flow, of state diagram). Gebruik box-drawing characters (┌─┐│└─┘) en pijlen (→ ← ↓ ↑). Max 15 regels. De gebruiker moet het diagram kunnen lezen zonder uitleg ernaast.
+- **What does it do?**: 1-2 sentences as you would explain to a friend. Describe what the player sees and can do — no technical terms.
+- **Example**: 1 concrete gameplay scenario in 2-3 sentences. "Imagine: you press X, your character does Y, you see Z on screen."
+- **How does it work?**: 1 ASCII diagram that tells the whole story. Choose the most relevant type (scene tree, signal flow, or state diagram). Use box-drawing characters (┌─┐│└─┘) and arrows (→ ← ↓ ↑). Max 15 lines. The user should be able to read the diagram without additional explanation.
 
-**Stap 2 — Begripscheck (verplicht, niet overslaan)**
+**Step 2 — Comprehension check (mandatory, do not skip)**
 
-**AskUserQuestion** direct na de uitleg:
+**AskUserQuestion** directly after the explanation:
 
-Vraag: "Snap je hoe de feature werkt?"
-Opties: "Ja, helder" / "Leg het uitgebreider uit" / "Ik heb een vraag"
+Question: "Do you understand how the feature works?"
+Options: "Yes, clear" / "Explain in more detail" / "I have a question"
 
-Follow-up loop tot "Ja, helder". Sla uitleg op als `build.explanation` in feature.json (targeted Edit).
+Follow-up loop until "Yes, clear". Save explanation as `build.explanation` in feature.json (targeted Edit).
 
-### FASE 4b: Project Sync
+### PHASE 4b: Project Sync
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 4b → `in_progress`.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 4b → `in_progress`.
 
-Volg `shared/SYNC.md` 3-File Sync Pattern. Skill-specifieke mutaties hieronder.
+Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations below.
 
-Lees parallel (skip als niet bestaat):
+Read in parallel (skip if not present):
 
 - `.project/features/{feature-name}/feature.json`
 - `.project/backlog.html`
 - `.project/project.json`
 - `.project/project-context.json`
 
-Muteer in memory:
+Mutate in memory:
 
-**feature.json**: `status → "DOING"`, `stage → "built"`, `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]` (status: "pending"). Bestaande secties NIET overschrijven.
+**feature.json**: `status → "DOING"`, `stage → "built"`, `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]` (status: "pending"). Do NOT overwrite existing sections.
 
-**Backlog** (zie `shared/BACKLOG.md`): `stage → "built"`, `data.updated` → nu. Status blijft `"DOING"`.
+**Backlog** (see `shared/BACKLOG.md`): `stage → "built"`, `data.updated` → now. Status stays `"DOING"`.
 
-**Context** (in `project-context.json`, zie `shared/DASHBOARD.md` → `context`): identify new scenes (.tscn), scripts (.gd) with class names, signals, resources (.tres). Update `context.structure` (overwrite), `context.patterns` (merge signals, autoloads, conventions), `context.updated`. Skip als geen structurele impact.
+**Context** (in `project-context.json`, see `shared/DASHBOARD.md` → `context`): identify new scenes (.tscn), scripts (.gd) with class names, signals, resources (.tres). Update `context.structure` (overwrite), `context.patterns` (merge signals, autoloads, conventions), `context.updated`. Skip if no structural impact.
 
-**Dashboard** (zie `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`. Als feature niet bestaat: push met `{ name, status: "DOING", stage: "built", summary, created }`.
+**Dashboard** (see `shared/DASHBOARD.md`): feature status → `"DOING"`, stage → `"built"`. If feature does not exist: push with `{ name, status: "DOING", stage: "built", summary, created }`.
 
-**Architecture** (in `project-context.json`, **volg component-first model uit `shared/DASHBOARD.md`**): update `architecture.components[]` — gebouwde componenten `status: "planned"` → `"done"`, vul `description` (korte functionele beschrijving, max 200 chars — wat doet dit component?), `src`, `test`, `connects_to` (typed edges `{ to, type }` — `calls` voor signal emits/method calls, `reads`/`writes` voor autoload/state IO, `depends_on` voor scene-tree parent of resource references), `feature` (huidige feature naam). Nieuwe componenten: push met alle velden inclusief `feature`. Als `layers`/`components` niet bestaan EN meerdere scenes/signals → genereer initiële architecture met layers + components. Skip als geen structurele impact. Log: `architecture: updated` of `architecture: no updates needed`.
+**Architecture** (in `project-context.json`, **follow component-first model from `shared/DASHBOARD.md`**): update `architecture.components[]` — built components `status: "planned"` → `"done"`, fill `description` (short functional description, max 200 chars — what does this component do?), `src`, `test`, `connects_to` (typed edges `{ to, type }` — `calls` for signal emits/method calls, `reads`/`writes` for autoload/state IO, `depends_on` for scene-tree parent or resource references), `feature` (current feature name). New components: push with all fields including `feature`. If `layers`/`components` do not exist AND multiple scenes/signals → generate initial architecture with layers + components. Skip if no structural impact. Log: `architecture: updated` or `architecture: no updates needed`.
 
-**Learning extraction** (na feature.json sync): schrijf naar `project-context.json learnings[]` (append-only, identiek formaat als `game-verify`/`game-refactor`):
+**Learning extraction** (after feature.json sync): write to `project-context.json learnings[]` (append-only, identical format to `game-verify`/`game-refactor`):
 
-- `build.decisions[]` → `type: "pattern"` (architecturale keuze gemaakt)
-- `build.blockers[]` waar de blocker opgelost is (niet meer BLOCKED aan einde build) → `type: "pitfall"`
+- `build.decisions[]` → `type: "pattern"` (architectural choice made)
+- `build.blockers[]` where the blocker was resolved (no longer BLOCKED at end of build) → `type: "pitfall"`
 
 ```json
 {
   "date": "...",
-  "feature": "{naam}",
+  "feature": "{name}",
   "type": "pattern|pitfall",
   "source": "extracted",
   "summary": "..."
 }
 ```
 
-Alleen schrijven als er decisions of opgeloste blockers aanwezig zijn — geen lege entries.
+Only write if decisions or resolved blockers are present — no empty entries.
 
-Schrijf parallel terug:
+Write in parallel:
 
 - Write `feature.json`
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Write `project.json`
-- Write `project-context.json` (als context/architecture gewijzigd)
+- Write `project-context.json` (if context/architecture changed)
 
-### FASE 5: Completion
+### PHASE 5: Completion
 
-> **Todo**: markeer FASE 4b → `completed`, FASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4b → `completed`, PHASE 5 → `in_progress`.
 
 #### Output summary
 
@@ -924,30 +920,30 @@ Created files:
 - scenes/...
 ```
 
-### FASE 6: Scoped Commit
+### PHASE 6: Scoped Commit
 
-> **Todo**: markeer FASE 5 → `completed`, FASE 6 → `in_progress`.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 6 → `in_progress`.
 
-**Stap 0: Pre-commit gdlint check** (GDScript):
+**Step 0: Pre-commit gdlint check** (GDScript):
 
-- Check of `gdlint` beschikbaar is: `command -v gdlint`
-- Niet beschikbaar → skip stilzwijgend
-- Geen `.gd` bestanden gewijzigd → skip
+- Check if `gdlint` is available: `command -v gdlint`
+- Not available → skip silently
+- No `.gd` files changed → skip
 
-Bij beschikbaar: run op gewijzigde `.gd` bestanden van deze build:
+If available: run on changed `.gd` files from this build:
 
 ```bash
 timeout 60 gdlint $(git diff --name-only $(cat .project/session/pre-skill-status.txt) 2>/dev/null | grep '\.gd$') 2>&1
 ```
 
-- **PASS** → toon `DIAGNOSTICS: PASS`, door naar commit-flow
-- **FAIL** → toon errors (max 30 regels) + AskUserQuestion:
-  - `"Fix eerst (Recommended)"` — stop FASE 6, geen commit
-  - `"Toch committen"` — door; voeg `[diagnostics-warnings]` toe aan commit message
+- **PASS** → show `DIAGNOSTICS: PASS`, continue to commit flow
+- **FAIL** → show errors (max 30 lines) + AskUserQuestion:
+  - `"Fix first (Recommended)"` — stop PHASE 6, no commit
+  - `"Commit anyway"` — continue; add `[diagnostics-warnings]` to commit message
 
 **Scoped auto-commit** (only this skill's changes):
 
-Compare current git status with baseline from FASE 0:
+Compare current git status with baseline from PHASE 0:
 
 ```bash
 git status --porcelain | sort > /tmp/current-status.txt
@@ -977,38 +973,38 @@ Tests: {passed}/{total} PASS
 Files created: {count}
 
 Next steps:
-  1. /game-verify {feature} → playtest verificatie
-  2. /game-debug → als er onverwachte failures zijn
+  1. /game-verify {feature} → playtest verification
+  2. /game-debug → if there are unexpected failures
 ```
 
-**Worktree reminder** — voeg één extra blok toe aan de output als de huidige branch matcht `worktree-*` pattern (`git branch --show-current`):
+**Worktree reminder** — add one extra block to the output if the current branch matches the `worktree-*` pattern (`git branch --show-current`):
 
 ```
-💡 Worktree actief: {worktree_path}
-   Volgende skills (/game-verify, /game-refactor, /game-debug) starten in een NIEUWE chat —
-   ze detecteren deze worktree automatisch en switchen erin.
-   Voor merge/cleanup: /core-merge {feature}
+💡 Worktree active: {worktree_path}
+   Next skills (/game-verify, /game-refactor, /game-debug) start in a NEW chat —
+   they auto-detect this worktree and switch into it.
+   For merge/cleanup: /core-merge {feature}
 ```
 
-> **Todo**: markeer FASE 6 → `completed`. Alle 10 fases moeten nu `completed` zijn.
+> **Todo**: mark PHASE 6 → `completed`. All 10 phases must now be `completed`.
 
 ## References
 
-Just-In-Time `Read()` deze tijdens specifieke fases — niet vooraf laden.
+Read these Just-In-Time during specific phases — do not load upfront.
 
-| File                            | Wanneer laden                                                             |
-| ------------------------------- | ------------------------------------------------------------------------- |
-| `references/gut-conventions.md` | FASE 2 — bij genereren van test files (file structure, assertions, mocks) |
-| `references/gut-commands.md`    | FASE 3, 3a, 3b — bij draaien van GUT tests                                |
-| `references/troubleshooting.md` | FASE 3 — bij test failures of build blockers                              |
+| File                            | When to load                                                             |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| `references/gut-conventions.md` | PHASE 2 — when generating test files (file structure, assertions, mocks) |
+| `references/gut-commands.md`    | PHASE 3, 3a, 3b — when running GUT tests                                 |
+| `references/troubleshooting.md` | PHASE 3 — on test failures or build blockers                             |
 
-> Completion claims vereisen verse output (R009 — zie `../shared/RULES.md`)
+> Completion claims require fresh output (R009 — see `../shared/RULES.md`)
 
 ## Path Resolution
 
-`{godot_executable}` in commands wordt opgelost via `paths.yaml`:
+`{godot_executable}` in commands is resolved via `paths.yaml`:
 
 - macOS: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Windows: `C:\Godot\Godot_v4.4.1-stable_win64.exe`
 
-Override: env var `CLAUDE_GODOT_EXECUTABLE` of `.claude/paths.local.yaml`. Canonical defaults staan in [skills/project-add/paths.yaml](skills/project-add/paths.yaml).
+Override: env var `CLAUDE_GODOT_EXECUTABLE` or `.claude/paths.local.yaml`. Canonical defaults are in [skills/project-add/paths.yaml](skills/project-add/paths.yaml).

@@ -1,33 +1,33 @@
 # Coding Rules
 
-Coding standards met severity categorieën voor validation.
+Coding standards with severity categories for validation.
 
-> **Scope:** Algemeen en TypeScript secties gelden voor alle projecten.
-> React/Next.js en HTML/CSS secties zijn frontend-specifiek.
-
----
-
-## Rule Categorieën
-
-| Categorie     | Severity | Actie bij Violation        |
-| ------------- | -------- | -------------------------- |
-| **MUST_DO**   | CRITICAL | Blokkeert deployment/merge |
-| **SHOULD_DO** | HIGH     | Vereist justificatie       |
-| **AVOID**     | MEDIUM   | Prefereer alternatieven    |
+> **Scope:** General and TypeScript sections apply to all projects.
+> React/Next.js and HTML/CSS sections are frontend-specific.
 
 ---
 
-## Algemeen
+## Rule Categories
+
+| Category      | Severity | Action on Violation     |
+| ------------- | -------- | ----------------------- |
+| **MUST_DO**   | CRITICAL | Blocks deployment/merge |
+| **SHOULD_DO** | HIGH     | Requires justification  |
+| **AVOID**     | MEDIUM   | Prefer alternatives     |
+
+---
+
+## General
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                                           | Rationale   | Check                                                     |
-| ---- | ---------------------------------------------- | ----------- | --------------------------------------------------------- |
-| R007 | Alle async functies handlen errors             | Reliability | try/catch of .catch() op promises                         |
-| R008 | Geen secrets in client code                    | Security    | Geen API keys, tokens in frontend bundles                 |
-| R009 | Voltooiing-claims onderbouwen met verse output | Reliability | Run test/command opnieuw, lees output, refereer expliciet |
+| ID   | Rule                                     | Rationale   | Check                                                     |
+| ---- | ---------------------------------------- | ----------- | --------------------------------------------------------- |
+| R007 | All async functions handle errors        | Reliability | try/catch or .catch() on promises                         |
+| R008 | No secrets in client code                | Security    | No API keys, tokens in frontend bundles                   |
+| R009 | Back completion claims with fresh output | Reliability | Run test/command again, read output, reference explicitly |
 
-#### Voorbeelden
+#### Examples
 
 **R007** Async error handling
 
@@ -51,7 +51,7 @@ async function fetchUser(id: string) {
 }
 ```
 
-**R008** Geen secrets in client code
+**R008** No secrets in client code
 
 ```ts
 // ✗ Incorrect
@@ -66,21 +66,21 @@ fetch(`https://api.example.com/data?key=${API_KEY}`);
 
 **R009** Evidence Before Claims
 
-Voor elke claim van "klaar", "werkt", "fixed", "passed", "ready":
+For every claim of "done", "works", "fixed", "passed", "ready":
 
-1. **Identify**: welk commando/test/screenshot bewijst de claim?
-2. **Execute**: run het vers — geen cached/eerdere output gebruiken
-3. **Read**: volledige output, exit code, foutentelling
-4. **Claim only after**: refereer expliciet aan de output ("3/3 tests passed in run X")
+1. **Identify**: which command/test/screenshot proves the claim?
+2. **Execute**: run it fresh — do not use cached/previous output
+3. **Read**: full output, exit code, error count
+4. **Claim only after**: reference the output explicitly ("3/3 tests passed in run X")
 
 Anti-patterns:
 
-- `"Should work"` / `"probably fine"` / `"looks good"` zonder verificatie
-- `"Done!"` / `"Great!"` voordat exit code gelezen is
-- Hergebruiken van eerdere passing output na nieuwe edits
-- Geparafraseerde claim ("ziet er goed uit") zonder onderliggend bewijs
+- `"Should work"` / `"probably fine"` / `"looks good"` without verification
+- `"Done!"` / `"Great!"` before exit code has been read
+- Reusing previous passing output after new edits
+- Paraphrased claim ("looks fine") without underlying evidence
 
-Geldt ook voor delegatie: voor je een subagent-rapport accepteert, controleer dat het rapport zelf bewijs bevat (commando + output), niet alleen "succeeded".
+Also applies to delegation: before accepting a subagent report, verify that the report itself contains evidence (command + output), not just "succeeded".
 
 ---
 
@@ -91,12 +91,12 @@ Geldt ook voor delegatie: voor je een subagent-rapport accepteert, controleer da
 | ID   | Rule                | Check                                 |
 | ---- | ------------------- | ------------------------------------- |
 | T001 | Strict mode enabled | `tsconfig.json` strict: true          |
-| T002 | Geen implicit any   | Explicit types                        |
+| T002 | No implicit any     | Explicit types                        |
 | T003 | Null checks         | Optional chaining, nullish coalescing |
 
-#### Voorbeelden
+#### Examples
 
-**T002** Geen implicit any
+**T002** No implicit any
 
 ```ts
 // ✗ Incorrect
@@ -122,11 +122,11 @@ const city = user?.address?.city ?? "Unknown";
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                               | Rationale                 |
-| ---- | ---------------------------------- | ------------------------- |
-| T101 | Discriminated unions voor variants | Type narrowing            |
-| T102 | Readonly waar mogelijk             | Immutability              |
-| T103 | Generics voor herbruikbare code    | Type safety + flexibility |
+| ID   | Rule                              | Rationale                 |
+| ---- | --------------------------------- | ------------------------- |
+| T101 | Discriminated unions for variants | Type narrowing            |
+| T102 | Readonly where possible           | Immutability              |
+| T103 | Generics for reusable code        | Type safety + flexibility |
 
 ### AVOID (Medium)
 
@@ -134,24 +134,24 @@ const city = user?.address?.city ?? "Unknown";
 | ---- | ------------------------ | ---------------------------- |
 | T201 | Type assertions (`as`)   | Type guards                  |
 | T202 | Non-null assertion (`!`) | Optional chaining            |
-| T203 | Enums                    | Const objects of union types |
+| T203 | Enums                    | Const objects or union types |
 
 ---
 
-## React/Next.js Rules (frontend-specifiek)
+## React/Next.js Rules (frontend-specific)
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                                     | Rationale          | Check                                                             |
-| ---- | ---------------------------------------- | ------------------ | ----------------------------------------------------------------- |
-| R001 | Gebruik semantic HTML elements           | Accessibility, SEO | `<button>` i.p.v. `<div onClick>`, `<nav>`, `<main>`, `<article>` |
-| R002 | Alle images hebben alt text              | Accessibility      | `<img alt="...">` of `alt=""` voor decoratief                     |
-| R003 | Geen inline styles voor theming          | Maintainability    | Gebruik CSS variables/tokens, geen `style={{color: '#fff'}}`      |
-| R004 | Form inputs hebben labels                | Accessibility      | `<label>` gekoppeld via `htmlFor` of wrapping                     |
-| R005 | Interactive elements keyboard accessible | Accessibility      | `tabIndex`, `onKeyDown` waar nodig, native elements preferred     |
-| R006 | Error boundaries voor async components   | Reliability        | Wrap async/suspense met ErrorBoundary                             |
+| ID   | Rule                                     | Rationale          | Check                                                                 |
+| ---- | ---------------------------------------- | ------------------ | --------------------------------------------------------------------- |
+| R001 | Use semantic HTML elements               | Accessibility, SEO | `<button>` instead of `<div onClick>`, `<nav>`, `<main>`, `<article>` |
+| R002 | All images have alt text                 | Accessibility      | `<img alt="...">` or `alt=""` for decorative                          |
+| R003 | No inline styles for theming             | Maintainability    | Use CSS variables/tokens, not `style={{color: '#fff'}}`               |
+| R004 | Form inputs have labels                  | Accessibility      | `<label>` linked via `htmlFor` or wrapping                            |
+| R005 | Interactive elements keyboard accessible | Accessibility      | `tabIndex`, `onKeyDown` where needed, native elements preferred       |
+| R006 | Error boundaries for async components    | Reliability        | Wrap async/suspense with ErrorBoundary                                |
 
-#### Voorbeelden
+#### Examples
 
 **R001** Semantic HTML
 
@@ -165,7 +165,7 @@ const city = user?.address?.city ?? "Unknown";
 <nav>...</nav>
 ```
 
-**R003** Geen inline styles
+**R003** No inline styles
 
 ```jsx
 // ✗ Incorrect
@@ -175,7 +175,7 @@ const city = user?.address?.city ?? "Unknown";
 <h1 className="text-foreground text-2xl">Title</h1>
 ```
 
-> Zie `shared/TOKENS.md` voor canonical token-namen, fallback CSS vars, en violation patterns (T101–T105).
+> See `shared/TOKENS.md` for canonical token names, fallback CSS vars, and violation patterns (T101–T105).
 
 **R004** Form labels
 
@@ -214,48 +214,48 @@ const city = user?.address?.city ?? "Unknown";
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                                  | Rationale       | Alternative                                         |
-| ---- | ------------------------------------- | --------------- | --------------------------------------------------- |
-| R101 | Prefereer composition over props      | Flexibility     | `children` en slots i.p.v. config objects           |
-| R102 | Separate presentational/container     | Testability     | UI components puur, logic in hooks/containers       |
-| R103 | Gebruik design tokens voor spacing    | Consistency     | `var(--spacing-4)` i.p.v. `16px`                    |
-| R104 | Mobile-first responsive design        | Performance     | `min-width` media queries                           |
-| R105 | Named exports voor tree-shaking       | Bundle size     | `export function X` i.p.v. `export default`         |
-| R106 | Colocate styles met components        | Maintainability | `Component.module.css` naast `Component.tsx`        |
-| R107 | Types/interfaces expliciet exporteren | DX              | `export interface Props` in eigen file of component |
-| R108 | Components >100 regels splitsen       | Maintainability | Extract subcomponents of hooks                      |
+| ID   | Rule                               | Rationale       | Alternative                                       |
+| ---- | ---------------------------------- | --------------- | ------------------------------------------------- |
+| R101 | Prefer composition over props      | Flexibility     | `children` and slots instead of config objects    |
+| R102 | Separate presentational/container  | Testability     | UI components pure, logic in hooks/containers     |
+| R103 | Use design tokens for spacing      | Consistency     | `var(--spacing-4)` instead of `16px`              |
+| R104 | Mobile-first responsive design     | Performance     | `min-width` media queries                         |
+| R105 | Named exports for tree-shaking     | Bundle size     | `export function X` instead of `export default`   |
+| R106 | Colocate styles with components    | Maintainability | `Component.module.css` next to `Component.tsx`    |
+| R107 | Explicitly export types/interfaces | DX              | `export interface Props` in own file or component |
+| R108 | Split components >100 lines        | Maintainability | Extract subcomponents or hooks                    |
 
 ### AVOID (Medium)
 
-| ID   | Pattern                              | Alternative                     | Reden                        |
-| ---- | ------------------------------------ | ------------------------------- | ---------------------------- |
-| R201 | CSS-in-JS voor theming               | CSS variables + Tailwind        | Runtime overhead, SSR issues |
-| R202 | Over-generic types (`any`, `object`) | Specifieke discriminated unions | Type safety                  |
-| R203 | Deep nesting (>3 levels)             | Flatten met composition         | Readability, complexity      |
-| R204 | Prop drilling (>2 levels)            | Context of composition          | Maintainability              |
-| R205 | Direct DOM manipulation              | React refs of state             | Consistency, bugs            |
-| R206 | Index als key in lists               | Stabiele unique IDs             | Re-render bugs               |
-| R207 | useEffect voor derived state         | useMemo of compute in render    | Performance, bugs            |
-| R208 | Barrel exports in large codebases    | Direct imports                  | Tree-shaking, circular deps  |
+| ID   | Pattern                              | Alternative                   | Reason                       |
+| ---- | ------------------------------------ | ----------------------------- | ---------------------------- |
+| R201 | CSS-in-JS for theming                | CSS variables + Tailwind      | Runtime overhead, SSR issues |
+| R202 | Over-generic types (`any`, `object`) | Specific discriminated unions | Type safety                  |
+| R203 | Deep nesting (>3 levels)             | Flatten with composition      | Readability, complexity      |
+| R204 | Prop drilling (>2 levels)            | Context or composition        | Maintainability              |
+| R205 | Direct DOM manipulation              | React refs or state           | Consistency, bugs            |
+| R206 | Index as key in lists                | Stable unique IDs             | Re-render bugs               |
+| R207 | useEffect for derived state          | useMemo or compute in render  | Performance, bugs            |
+| R208 | Barrel exports in large codebases    | Direct imports                | Tree-shaking, circular deps  |
 
 ---
 
-## HTML/CSS Rules (frontend-specifiek)
+## HTML/CSS Rules (frontend-specific)
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                                 | Check                                   |
-| ---- | ------------------------------------ | --------------------------------------- |
-| H001 | Valid HTML structure                 | DOCTYPE, html, head, body               |
-| H002 | Eén h1 per pagina                    | SEO, accessibility                      |
-| H003 | Heading hierarchy (h1→h2→h3)         | Geen h3 voor h2                         |
-| H004 | Color contrast ≥4.5:1 voor tekst     | WCAG AA                                 |
-| H005 | Color contrast ≥3:1 voor UI          | Borders, icons                          |
-| H006 | Touch targets ≥44x44px               | Mobile accessibility                    |
-| H007 | Geen interleaved layout reads/writes | Forced reflow prevention                |
-| H008 | Geen scrollTop-driven animation      | Scroll Timeline of IntersectionObserver |
+| ID   | Rule                               | Check                                   |
+| ---- | ---------------------------------- | --------------------------------------- |
+| H001 | Valid HTML structure               | DOCTYPE, html, head, body               |
+| H002 | One h1 per page                    | SEO, accessibility                      |
+| H003 | Heading hierarchy (h1→h2→h3)       | No h3 before h2                         |
+| H004 | Color contrast ≥4.5:1 for text     | WCAG AA                                 |
+| H005 | Color contrast ≥3:1 for UI         | Borders, icons                          |
+| H006 | Touch targets ≥44x44px             | Mobile accessibility                    |
+| H007 | No interleaved layout reads/writes | Forced reflow prevention                |
+| H008 | No scrollTop-driven animation      | Scroll Timeline or IntersectionObserver |
 
-#### Voorbeelden
+#### Examples
 
 **H003** Heading hierarchy
 
@@ -270,7 +270,7 @@ const city = user?.address?.city ?? "Unknown";
 <h3>Subsection</h3>
 ```
 
-**H007** Geen interleaved layout reads/writes
+**H007** No interleaved layout reads/writes
 
 ```js
 // ✗ Incorrect - forces reflow per iteration
@@ -286,7 +286,7 @@ elements.forEach((el, i) => {
 });
 ```
 
-**H008** Geen scrollTop-driven animation
+**H008** No scrollTop-driven animation
 
 ```css
 /* ✗ Incorrect (JS) */
@@ -311,58 +311,58 @@ elements.forEach((el, i) => {
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                                                 | Rationale               |
-| ---- | ---------------------------------------------------- | ----------------------- |
-| H101 | Gebruik CSS custom properties                        | Theming, consistency    |
-| H102 | Logical properties (inline/block)                    | Internationalization    |
-| H103 | Prefer flexbox/grid over floats                      | Modern, maintainable    |
-| H104 | Mobile-first breakpoints                             | Performance             |
-| H105 | Animate alleen compositor props (transform, opacity) | Performance             |
-| H106 | Max 200ms voor interaction feedback animaties        | Responsiveness          |
-| H107 | Respecteer prefers-reduced-motion                    | Accessibility           |
-| H108 | text-balance voor headings, text-pretty voor body    | Typography              |
-| H109 | tabular-nums voor data tables                        | Alignment               |
-| H110 | h-dvh i.p.v. h-screen                                | Mobile viewport         |
-| H111 | Vast z-index scale (10/20/30/40/50)                  | Maintainability         |
-| H112 | size-\* voor vierkante elementen                     | Conciseness             |
-| H113 | Loading buttons: disabled + spinner tijdens async    | Prevent double submit   |
-| H114 | Confirmation dialog voor destructieve acties         | Prevent accidental loss |
-| H115 | `overscroll-behavior: contain` op modals/drawers     | Scroll leak prevention  |
-| H116 | Stagger 50-100ms per item bij animated lists/grids   | Smooth visual rhythm    |
+| ID   | Rule                                               | Rationale               |
+| ---- | -------------------------------------------------- | ----------------------- |
+| H101 | Use CSS custom properties                          | Theming, consistency    |
+| H102 | Logical properties (inline/block)                  | Internationalization    |
+| H103 | Prefer flexbox/grid over floats                    | Modern, maintainable    |
+| H104 | Mobile-first breakpoints                           | Performance             |
+| H105 | Animate only compositor props (transform, opacity) | Performance             |
+| H106 | Max 200ms for interaction feedback animations      | Responsiveness          |
+| H107 | Respect prefers-reduced-motion                     | Accessibility           |
+| H108 | text-balance for headings, text-pretty for body    | Typography              |
+| H109 | tabular-nums for data tables                       | Alignment               |
+| H110 | h-dvh instead of h-screen                          | Mobile viewport         |
+| H111 | Fixed z-index scale (10/20/30/40/50)               | Maintainability         |
+| H112 | size-\* for square elements                        | Conciseness             |
+| H113 | Loading buttons: disabled + spinner during async   | Prevent double submit   |
+| H114 | Confirmation dialog for destructive actions        | Prevent accidental loss |
+| H115 | `overscroll-behavior: contain` on modals/drawers   | Scroll leak prevention  |
+| H116 | Stagger 50-100ms per item in animated lists/grids  | Smooth visual rhythm    |
 
 ### AVOID (Medium)
 
-| ID   | Pattern                                               | Alternative                            |
-| ---- | ----------------------------------------------------- | -------------------------------------- |
-| H201 | `!important` in stylesheets                           | Specificity management                 |
-| H202 | Magic numbers                                         | Design tokens                          |
-| H203 | ID selectors voor styling                             | Class selectors                        |
-| H204 | Deep selector nesting (>3)                            | BEM of flat selectors                  |
-| H205 | Grote `blur()`/`backdrop-filter` op zichtbare content | Kleine blur, kort, eenmalig            |
-| H206 | `will-change` buiten actieve animatie blokken         | Tijdelijk via JS toevoegen/verwijderen |
-| H207 | `letter-spacing` wijzigen zonder expliciete vraag     | Design discipline                      |
-| H208 | Layout properties animeren op grote surfaces          | `transform` gebruiken                  |
-| H209 | Gradients/glow zonder expliciete vraag                | Tailwind default shadows               |
+| ID   | Pattern                                             | Alternative                   |
+| ---- | --------------------------------------------------- | ----------------------------- |
+| H201 | `!important` in stylesheets                         | Specificity management        |
+| H202 | Magic numbers                                       | Design tokens                 |
+| H203 | ID selectors for styling                            | Class selectors               |
+| H204 | Deep selector nesting (>3)                          | BEM or flat selectors         |
+| H205 | Large `blur()`/`backdrop-filter` on visible content | Small blur, brief, one-time   |
+| H206 | `will-change` outside active animation blocks       | Add/remove temporarily via JS |
+| H207 | Changing `letter-spacing` without explicit request  | Design discipline             |
+| H208 | Animating layout properties on large surfaces       | Use `transform`               |
+| H209 | Gradients/glow without explicit request             | Tailwind default shadows      |
 
 ---
 
-## Accessibility Rules (frontend-specifiek)
+## Accessibility Rules (frontend-specific)
 
-> **Note:** Complementeert bestaande a11y-gerelateerde rules: R001 (semantic HTML), R002 (alt text),
-> R004 (form labels), R005 (keyboard accessible), H004 (tekst contrast), H005 (UI contrast), H006 (touch targets).
+> **Note:** Complements existing a11y-related rules: R001 (semantic HTML), R002 (alt text),
+> R004 (form labels), R005 (keyboard accessible), H004 (text contrast), H005 (UI contrast), H006 (touch targets).
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                                           | Check                                         |
-| ---- | ---------------------------------------------- | --------------------------------------------- |
-| A001 | Accessible name voor alle interactive controls | aria-label, aria-labelledby, of visible text  |
-| A002 | Geen div/span als button zonder full support   | role + tabIndex + onKeyDown vereist           |
-| A003 | Modals trappen focus                           | Focus mag niet buiten open dialog             |
-| A004 | Focus restore na dialog close                  | Focus terug naar trigger element              |
-| A005 | Zichtbare focus indicator                      | Geen outline: none zonder focus-visible       |
-| A006 | ARIA state synchronisatie                      | aria-expanded/selected matcht component state |
+| ID   | Rule                                         | Check                                          |
+| ---- | -------------------------------------------- | ---------------------------------------------- |
+| A001 | Accessible name for all interactive controls | aria-label, aria-labelledby, or visible text   |
+| A002 | No div/span as button without full support   | role + tabIndex + onKeyDown required           |
+| A003 | Modals trap focus                            | Focus must not escape open dialog              |
+| A004 | Focus restore after dialog close             | Focus back to trigger element                  |
+| A005 | Visible focus indicator                      | No outline: none without focus-visible         |
+| A006 | ARIA state synchronization                   | aria-expanded/selected matches component state |
 
-#### Voorbeelden
+#### Examples
 
 **A001** Accessible name
 
@@ -371,10 +371,10 @@ elements.forEach((el, i) => {
 <button><IconTrash /></button>
 
 // ✓ Correct
-<button aria-label="Verwijder item"><IconTrash /></button>
+<button aria-label="Delete item"><IconTrash /></button>
 ```
 
-**A002** Geen div-as-button
+**A002** No div-as-button
 
 ```jsx
 // ✗ Incorrect
@@ -383,7 +383,7 @@ elements.forEach((el, i) => {
 // ✓ Correct (native element preferred)
 <button onClick={handleClick} className="card">Open</button>
 
-// ✓ Acceptable (als native element niet mogelijk is)
+// ✓ Acceptable (when native element is not possible)
 <div
   role="button"
   tabIndex={0}
@@ -408,10 +408,10 @@ elements.forEach((el, i) => {
 </dialog>
 ```
 
-**A006** ARIA state synchronisatie
+**A006** ARIA state synchronization
 
 ```jsx
-// ✗ Incorrect - aria-expanded niet in sync
+// ✗ Incorrect - aria-expanded not in sync
 <button onClick={() => setOpen(!open)}>Menu</button>
 <nav className={open ? 'visible' : 'hidden'}>...</nav>
 
@@ -422,31 +422,31 @@ elements.forEach((el, i) => {
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                                       | Rationale                       |
-| ---- | ------------------------------------------ | ------------------------------- |
-| A101 | Error messages linked via aria-describedby | Screen readers announcen error  |
-| A102 | Required fields met aria-required          | Aangekondigd bij focus          |
-| A103 | aria-live voor dynamische error messages   | Wijzigingen worden voorgelezen  |
-| A104 | Loading states met aria-busy               | Voorkomt voortijdige interactie |
+| ID   | Rule                                       | Rationale                      |
+| ---- | ------------------------------------------ | ------------------------------ |
+| A101 | Error messages linked via aria-describedby | Screen readers announce error  |
+| A102 | Required fields with aria-required         | Announced on focus             |
+| A103 | aria-live for dynamic error messages       | Changes are read aloud         |
+| A104 | Loading states with aria-busy              | Prevents premature interaction |
 
-#### Voorbeelden
+#### Examples
 
 **A101** Error message linking
 
 ```jsx
 // ✗ Incorrect
 <input id="email" />
-<span className="text-error">Ongeldig email</span>
+<span className="text-error">Invalid email</span>
 
 // ✓ Correct
 <input id="email" aria-describedby="email-error" aria-invalid={!!error} />
-<span id="email-error" className="text-error">Ongeldig email</span>
+<span id="email-error" className="text-error">Invalid email</span>
 ```
 
-**A103** Live region voor errors
+**A103** Live region for errors
 
 ```jsx
-// ✗ Incorrect - screen reader mist dynamische error
+// ✗ Incorrect - screen reader misses dynamic error
 {
   error && <div className="error">{error}</div>;
 }
@@ -457,77 +457,77 @@ elements.forEach((el, i) => {
 </div>;
 ```
 
-### SHOULD_DO (High) — vervolg
+### SHOULD_DO (High) — continued
 
-| ID   | Rule                                           | Check                                                                           |
-| ---- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
-| A007 | Tab-volgorde logisch door de hele pagina       | `playwright-cli press Tab` loop → volgorde volgt DOM / visuele flow             |
-| A008 | Alle interactieve elementen bereikbaar via Tab | Geen `tabindex=-1` op bereikbare buttons/links zonder programmatisch focus mgmt |
-| A009 | Geen keyboard focus trap buiten modals         | `playwright-cli press Tab` loop → focus eindigt op body of cycling, niet hangen |
+| ID   | Rule                                       | Check                                                                        |
+| ---- | ------------------------------------------ | ---------------------------------------------------------------------------- |
+| A007 | Logical tab order throughout the page      | `playwright-cli press Tab` loop → order follows DOM / visual flow            |
+| A008 | All interactive elements reachable via Tab | No `tabindex=-1` on reachable buttons/links without programmatic focus mgmt  |
+| A009 | No keyboard focus trap outside modals      | `playwright-cli press Tab` loop → focus ends on body or cycling, not hanging |
 
 ### AVOID (Medium)
 
-| ID   | Pattern                                     | Alternative                         |
-| ---- | ------------------------------------------- | ----------------------------------- |
-| A201 | tabindex > 0                                | Gebruik DOM volgorde voor tab order |
-| A202 | aria-label op niet-interactive elementen    | Visuele tekst of sr-only span       |
-| A203 | Focus outline verwijderen zonder vervanging | focus-visible met custom ring       |
+| ID   | Pattern                                    | Alternative                    |
+| ---- | ------------------------------------------ | ------------------------------ |
+| A201 | tabindex > 0                               | Use DOM order for tab order    |
+| A202 | aria-label on non-interactive elements     | Visible text or sr-only span   |
+| A203 | Removing focus outline without replacement | focus-visible with custom ring |
 
 ---
 
 ## Error State Rules (E-series)
 
-> **Scope:** Validatie van hoe de app reageert op fout-scenarios — 404, offline, slow connection. Getest via `/frontend-check` scope "Error states".
+> **Scope:** Validation of how the app responds to error scenarios — 404, offline, slow connection. Tested via `/frontend-check` scope "Error states".
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                       | Check                                                                                |
-| ---- | -------------------------- | ------------------------------------------------------------------------------------ |
-| E001 | Custom 404-pagina aanwezig | `playwright-cli goto /niet-bestaande-route` → app-404 rendert (niet browser-default) |
-| E002 | Offline UI aanwezig        | `page.context().setOffline(true)` → custom offline state rendert                     |
+| ID   | Rule                    | Check                                                                             |
+| ---- | ----------------------- | --------------------------------------------------------------------------------- |
+| E001 | Custom 404 page present | `playwright-cli goto /non-existing-route` → app-404 renders (not browser-default) |
+| E002 | Offline UI present      | `page.context().setOffline(true)` → custom offline state renders                  |
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                                    | Rationale                               |
-| ---- | --------------------------------------- | --------------------------------------- |
-| E101 | Loading skeleton bij slow connection    | `route()` throttle → skeleton zichtbaar |
-| E102 | Error-pagina met navigatie terug naar / | Gebruiker kan altijd terugnavigeren     |
+| ID   | Rule                                 | Rationale                             |
+| ---- | ------------------------------------ | ------------------------------------- |
+| E101 | Loading skeleton on slow connection  | `route()` throttle → skeleton visible |
+| E102 | Error page with navigation back to / | User can always navigate back         |
 
 ---
 
 ## Flow Rules (F-series)
 
-> **Scope:** Validatie van navigatie-journeys gedefinieerd in `design.flows[]`. Getest via `/frontend-check` scope "Flow".
+> **Scope:** Validation of navigation journeys defined in `design.flows[]`. Tested via `/frontend-check` scope "Flow".
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                                         | Check                                                                    |
-| ---- | -------------------------------------------- | ------------------------------------------------------------------------ |
-| F001 | Flow navigeert zonder errors door alle staps | Elke step in `design.flows[].steps` laadt zonder 404/runtime error/crash |
+| ID   | Rule                                            | Check                                                                     |
+| ---- | ----------------------------------------------- | ------------------------------------------------------------------------- |
+| F001 | Flow navigates without errors through all steps | Each step in `design.flows[].steps` loads without 404/runtime error/crash |
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                                        | Check                                                             |
-| ---- | ------------------------------------------- | ----------------------------------------------------------------- |
-| F002 | Alle flow-pages gemapped in context.routing | Elke page-name in `steps[]` heeft een overeenkomend route in JSON |
+| ID   | Rule                                     | Check                                                         |
+| ---- | ---------------------------------------- | ------------------------------------------------------------- |
+| F002 | All flow-pages mapped in context.routing | Each page-name in `steps[]` has a corresponding route in JSON |
 
 ---
 
-## Performance Rules (frontend-specifiek)
+## Performance Rules (frontend-specific)
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                           | Check                                                                      |
-| ---- | ------------------------------ | -------------------------------------------------------------------------- |
-| P001 | Lighthouse score >= 90 per cat | `npx lighthouse` output alle categorieën ≥ 90                              |
-| P002 | Geen render-blocking resources | Geen sync `<script>` of `<link>` in `<head>` die FCP blokkeren             |
-| P003 | Images geoptimaliseerd         | WebP/AVIF, width/height attributen, lazy loading                           |
-| P004 | Geen JS runtime errors op load | `playwright-cli console error` → geen uncaught exceptions of import-fouten |
-| P005 | Geen failed kritieke requests  | `playwright-cli requests` → geen 4xx/5xx op same-origin/API endpoints      |
+| ID   | Rule                           | Check                                                                    |
+| ---- | ------------------------------ | ------------------------------------------------------------------------ |
+| P001 | Lighthouse score >= 90 per cat | `npx lighthouse` output all categories ≥ 90                              |
+| P002 | No render-blocking resources   | No sync `<script>` or `<link>` in `<head>` that block FCP                |
+| P003 | Images optimized               | WebP/AVIF, width/height attributes, lazy loading                         |
+| P004 | No JS runtime errors on load   | `playwright-cli console error` → no uncaught exceptions or import errors |
+| P005 | No failed critical requests    | `playwright-cli requests` → no 4xx/5xx on same-origin/API endpoints      |
 
-#### Voorbeelden
+#### Examples
 
-**P002** Geen render-blocking resources
+**P002** No render-blocking resources
 
 ```html
 <!-- ✗ Incorrect -->
@@ -548,7 +548,7 @@ elements.forEach((el, i) => {
 </head>
 ```
 
-**P003** Images geoptimaliseerd
+**P003** Images optimized
 
 ```jsx
 // ✗ Incorrect
@@ -573,39 +573,39 @@ elements.forEach((el, i) => {
 | P102 | LCP < 2.5s                            | Perceived load speed                               |
 | P103 | INP < 200ms                           | Input responsiveness                               |
 | P104 | Bundle < 200KB/route (gzipped)        | Load performance                                   |
-| P105 | Code splitting per route              | Alleen laden wat nodig                             |
-| P106 | Font loading strategy (swap/optional) | Geen FOIT                                          |
-| P107 | Third-party scripts async/defer       | Geen main thread block                             |
+| P105 | Code splitting per route              | Only load what is needed                           |
+| P106 | Font loading strategy (swap/optional) | No FOIT                                            |
+| P107 | Third-party scripts async/defer       | No main thread block                               |
 | P108 | Payloads < 500KB per resource         | `playwright-cli requests` → compression/splitting  |
-| P109 | Static assets met cache headers       | `response-headers <i>` → `cache-control` of `etag` |
+| P109 | Static assets with cache headers      | `response-headers <i>` → `cache-control` or `etag` |
 
 ### AVOID (Medium)
 
-| ID   | Pattern                          | Alternative                            |
-| ---- | -------------------------------- | -------------------------------------- |
-| P201 | Full library imports             | Tree-shaking, named imports            |
-| P202 | Synchrone data loading in render | Suspense, React Query, SWR             |
-| P203 | Ongecomprimeerde images          | WebP/AVIF met build-time optimalisatie |
+| ID   | Pattern                            | Alternative                            |
+| ---- | ---------------------------------- | -------------------------------------- |
+| P201 | Full library imports               | Tree-shaking, named imports            |
+| P202 | Synchronous data loading in render | Suspense, React Query, SWR             |
+| P203 | Uncompressed images                | WebP/AVIF with build-time optimization |
 
 ---
 
-## Responsive Rules (H-series uitbreiding)
+## Responsive Rules (H-series extension)
 
-> **Note:** Uitbreiding op bestaande H-series in HTML/CSS Rules sectie.
+> **Note:** Extension of existing H-series in HTML/CSS Rules section.
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                                       | Rationale            |
-| ---- | ------------------------------------------ | -------------------- |
-| H117 | Geen horizontaal scroll bij 320px viewport | Minimale viewport    |
-| H118 | Touch targets in thumb-zone bereikbaar     | Mobile ergonomics    |
-| H119 | Viewport meta tag aanwezig                 | Responsive rendering |
-| H120 | Geen fixed-width containers die breken     | Fluid layout         |
-| H121 | Body font >= 16px op mobiel                | Leesbaar zonder zoom |
+| ID   | Rule                                   | Rationale             |
+| ---- | -------------------------------------- | --------------------- |
+| H117 | No horizontal scroll at 320px viewport | Minimum viewport      |
+| H118 | Touch targets reachable in thumb-zone  | Mobile ergonomics     |
+| H119 | Viewport meta tag present              | Responsive rendering  |
+| H120 | No fixed-width containers that break   | Fluid layout          |
+| H121 | Body font >= 16px on mobile            | Readable without zoom |
 
-#### Voorbeelden
+#### Examples
 
-**H117** Geen horizontaal scroll bij 320px
+**H117** No horizontal scroll at 320px
 
 ```css
 /* ✗ Incorrect */
@@ -623,7 +623,7 @@ elements.forEach((el, i) => {
 **H119** Viewport meta tag
 
 ```html
-<!-- ✗ Incorrect — ontbreekt -->
+<!-- ✗ Incorrect — missing -->
 <head>
   <title>App</title>
 </head>
@@ -637,24 +637,24 @@ elements.forEach((el, i) => {
 
 ---
 
-## Data Integration Rules (R-series uitbreiding)
+## Data Integration Rules (R-series extension)
 
-> **Note:** Uitbreiding op bestaande R-series in React/Next.js Rules sectie.
+> **Note:** Extension of existing R-series in React/Next.js Rules section.
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                          | Check                                        |
-| ---- | ----------------------------- | -------------------------------------------- |
-| R109 | Loading state voor async data | Skeleton/Spinner zichtbaar tijdens laden     |
-| R110 | Error state voor async data   | Error UI bij API failure, niet lege pagina   |
-| R111 | Type-safe API responses       | Zod schema of TypeScript interface validatie |
+| ID   | Rule                         | Check                                         |
+| ---- | ---------------------------- | --------------------------------------------- |
+| R109 | Loading state for async data | Skeleton/Spinner visible during loading       |
+| R110 | Error state for async data   | Error UI on API failure, not empty page       |
+| R111 | Type-safe API responses      | Zod schema or TypeScript interface validation |
 
-#### Voorbeelden
+#### Examples
 
 **R109** Loading state
 
 ```jsx
-// ✗ Incorrect — geen loading feedback
+// ✗ Incorrect — no loading feedback
 function UserList() {
   const { data } = useQuery({ queryKey: ["users"], queryFn: fetchUsers });
   return (
@@ -704,11 +704,11 @@ const data = UserSchema.parse(await res.json());
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                           | Rationale               |
-| ---- | ------------------------------ | ----------------------- |
-| R112 | Geen hardcoded API URLs        | Env variables gebruiken |
-| R113 | Stale data strategy            | staleTime, revalidation |
-| R114 | Optimistic updates waar nuttig | Perceived performance   |
+| ID   | Rule                            | Rationale               |
+| ---- | ------------------------------- | ----------------------- |
+| R112 | No hardcoded API URLs           | Use env variables       |
+| R113 | Stale data strategy             | staleTime, revalidation |
+| R114 | Optimistic updates where useful | Perceived performance   |
 
 ---
 
@@ -716,12 +716,12 @@ const data = UserSchema.parse(await res.json());
 
 ### Pre-Wireframe Validation
 
-Check deze rules in requirements/specifications:
+Check these rules in requirements/specifications:
 
 ```
 WIREFRAME PRE-CHECK
 ───────────────────
-[ ] R001 - Semantic elements gepland
+[ ] R001 - Semantic elements planned
 [ ] R004 - Form labels in spec
 [ ] R005 - Keyboard nav considered
 [ ] H002 - Heading hierarchy defined
@@ -730,61 +730,61 @@ WIREFRAME PRE-CHECK
 
 ### Post-Wireframe Validation
 
-Verify in gegenereerde HTML:
+Verify in generated HTML:
 
 ```
 WIREFRAME POST-CHECK
 ────────────────────
 [ ] H001 - Valid HTML structure
-[ ] H002 - Eén h1 aanwezig
+[ ] H002 - One h1 present
 [ ] H003 - Heading hierarchy correct
 [ ] R001 - Semantic elements used
-[ ] R002 - Alt text waar nodig
+[ ] R002 - Alt text where needed
 [ ] H006 - Touch targets adequate
 ```
 
 ### Pre-Style Validation
 
-Check voordat styling begint:
+Check before styling begins:
 
 ```
 STYLE PRE-CHECK
 ───────────────
 [ ] project.json#theme populated
-[ ] Required tokens aanwezig
+[ ] Required tokens present
 [ ] No conflicting styles
 ```
 
 ### Post-Style Validation
 
-Verify in gegenereerde CSS:
+Verify in generated CSS:
 
 ```
 STYLE POST-CHECK
 ────────────────
-[ ] R003 - Geen inline styles voor theming
-[ ] R103 - Design tokens gebruikt
+[ ] R003 - No inline styles for theming
+[ ] R103 - Design tokens used
 [ ] H001 - Valid CSS syntax
 [ ] H101 - CSS variables defined
-[ ] H201 - Geen !important
-[ ] H202 - Geen magic numbers
+[ ] H201 - No !important
+[ ] H202 - No magic numbers
 ```
 
 ### Pre-Component Validation
 
-Check voordat components gemaakt worden:
+Check before components are created:
 
 ```
 COMPONENT PRE-CHECK
 ───────────────────
-[ ] Style tokens beschikbaar
+[ ] Style tokens available
 [ ] Types defined
 [ ] Props interface clear
 ```
 
 ### Post-Component Validation
 
-Verify in gegenereerde components:
+Verify in generated components:
 
 ```
 COMPONENT POST-CHECK
@@ -794,7 +794,7 @@ COMPONENT POST-CHECK
 [ ] R004 - Labels
 [ ] R005 - Keyboard accessible
 [ ] R101 - Composition pattern
-[ ] R102 - Presentational puur
+[ ] R102 - Presentational pure
 [ ] R105 - Named export
 [ ] T001 - TypeScript strict
 [ ] T002 - No implicit any
@@ -802,51 +802,51 @@ COMPONENT POST-CHECK
 
 ### Accessibility Validation
 
-Check bij accessibility audits en na component generatie:
+Check during accessibility audits and after component generation:
 
 ```
 A11Y CHECK
 ──────────
-[ ] A001 - Alle interactive controls hebben accessible name
-[ ] A002 - Geen div/span-as-button zonder full keyboard support
-[ ] A003 - Modals/dialogs trappen focus
-[ ] A005 - Focus indicators zichtbaar
-[ ] A006 - ARIA states gesynchroniseerd
-[ ] A007 - Tab-volgorde logisch (full keyboard test — /frontend-check --scope=a11y)
-[ ] A008 - Alle interactieve elementen bereikbaar via Tab
-[ ] A009 - Geen keyboard focus trap buiten modals
-[ ] R001 - Semantic elements gebruikt
-[ ] R004 - Form labels aanwezig
-[ ] H004 - Tekst contrast voldoende
+[ ] A001 - All interactive controls have accessible name
+[ ] A002 - No div/span-as-button without full keyboard support
+[ ] A003 - Modals/dialogs trap focus
+[ ] A005 - Focus indicators visible
+[ ] A006 - ARIA states synchronized
+[ ] A007 - Tab order logical (full keyboard test — /frontend-check --scope=a11y)
+[ ] A008 - All interactive elements reachable via Tab
+[ ] A009 - No keyboard focus trap outside modals
+[ ] R001 - Semantic elements used
+[ ] R004 - Form labels present
+[ ] H004 - Text contrast sufficient
 [ ] H006 - Touch targets adequate
 ```
 
 ### Responsive Validation
 
-Check bij responsive audits:
+Check during responsive audits:
 
 ```
 RESPONSIVE CHECK
 ────────────────
-[ ] H117 - Geen horizontaal scroll bij 320px
+[ ] H117 - No horizontal scroll at 320px
 [ ] H118 - Touch targets in thumb-zone
-[ ] H119 - Viewport meta tag aanwezig
-[ ] H120 - Geen fixed-width die breekt
-[ ] H121 - Body font >= 16px mobiel
+[ ] H119 - Viewport meta tag present
+[ ] H120 - No fixed-width that breaks
+[ ] H121 - Body font >= 16px mobile
 [ ] H104 - Mobile-first breakpoints
 [ ] H006 - Touch targets ≥ 44x44px
 ```
 
 ### Performance Validation
 
-Check bij performance audits:
+Check during performance audits:
 
 ```
 PERFORMANCE CHECK
 ─────────────────
-[ ] P001 - Lighthouse >= 90 per categorie
-[ ] P002 - Geen render-blocking resources
-[ ] P003 - Images geoptimaliseerd
+[ ] P001 - Lighthouse >= 90 per category
+[ ] P002 - No render-blocking resources
+[ ] P003 - Images optimized
 [ ] P101 - CLS < 0.1
 [ ] P102 - LCP < 2.5s
 [ ] P103 - INP < 200ms
@@ -855,15 +855,15 @@ PERFORMANCE CHECK
 
 ### Data Integration Validation
 
-Check bij data hookup:
+Check during data hookup:
 
 ```
 DATA CHECK
 ──────────
-[ ] R109 - Loading states aanwezig
-[ ] R110 - Error states aanwezig
+[ ] R109 - Loading states present
+[ ] R110 - Error states present
 [ ] R111 - Type-safe API responses
-[ ] R112 - Geen hardcoded API URLs
+[ ] R112 - No hardcoded API URLs
 [ ] R007 - Async error handling
 ```
 
@@ -871,21 +871,21 @@ DATA CHECK
 
 ## Severity Mapping
 
-### Voor Validation Reports
+### For Validation Reports
 
 ```
 CRITICAL (blocks merge):
-- Alle MUST_DO violations
+- All MUST_DO violations
 - Security issues (R008)
 - Accessibility blockers (R001, R002, R004, R005, H004, H006, A001-A006, A009)
 
 HIGH (requires review):
-- Alle SHOULD_DO violations
+- All SHOULD_DO violations
 - Performance concerns
 - Maintainability issues
 
 MEDIUM (advisory):
-- Alle AVOID patterns
+- All AVOID patterns
 - Style preferences
 - Optimization suggestions
 ```
@@ -912,7 +912,7 @@ Status: [PASS ≥90% | REVIEW 70-89% | FAIL <70%]
 
 ## Auto-Fix Suggestions
 
-### Safe Auto-Fixes (kan automatisch)
+### Safe Auto-Fixes (can be applied automatically)
 
 | Rule | Auto-Fix                                         |
 | ---- | ------------------------------------------------ |
@@ -923,7 +923,7 @@ Status: [PASS ≥90% | REVIEW 70-89% | FAIL <70%]
 | A001 | Add `aria-label` to icon-only buttons            |
 | A201 | Replace `tabindex="N"` (N>0) with `tabindex="0"` |
 
-### Guided Fixes (met user confirmation)
+### Guided Fixes (with user confirmation)
 
 | Rule | Guidance                                                 |
 | ---- | -------------------------------------------------------- |
@@ -935,7 +935,7 @@ Status: [PASS ≥90% | REVIEW 70-89% | FAIL <70%]
 | A003 | Wrap dialog content in focus trap, show pattern          |
 | A101 | Link error messages via aria-describedby                 |
 
-### Manual Fixes (alleen instructions)
+### Manual Fixes (instructions only)
 
 | Rule | Instructions                                |
 | ---- | ------------------------------------------- |
@@ -947,33 +947,33 @@ Status: [PASS ≥90% | REVIEW 70-89% | FAIL <70%]
 
 ---
 
-## Pipelines (twee gescheiden tracks)
+## Pipelines (two separate tracks)
 
-**Frontend pipeline (uiterlijk):**
+**Frontend pipeline (appearance):**
 
 ```
-Path A — Build met Claude Code:
+Path A — Build with Claude Code:
 /frontend-design (Build) → /frontend-check
 
-Path B — Brief voor Claude Design / Figma:
-/frontend-design (Brief) → [extern design] → /frontend-convert → /frontend-check
+Path B — Brief for Claude Design / Figma:
+/frontend-design (Brief) → [external design] → /frontend-convert → /frontend-check
 ```
 
-- Werkt standalone — geen dev-pipeline vereist
-- Past in: design-system werk, static sites, portfolio's, alles zonder business-logic features
-- Output: code direct naar repo (Build) of markdown handoff (Brief)
-- PAGE/COMPONENT TODO's leven uitsluitend op de **Frontend track** in de backlog
-- `/frontend-check` PASS is terminaal voor frontend cards — geen refactor-stap
-- Cross-pipeline koppeling loopt uitsluitend via `feature.json#frontend.linkedEntities[]` en `dependencies[]`
+- Works standalone — no dev-pipeline required
+- Fits: design-system work, static sites, portfolios, everything without business-logic features
+- Output: code directly to repo (Build) or markdown handoff (Brief)
+- PAGE/COMPONENT TODOs live exclusively on the **Frontend track** in the backlog
+- `/frontend-check` PASS is terminal for frontend cards — no refactor step
+- Cross-pipeline coupling runs exclusively via `feature.json#frontend.linkedEntities[]` and `dependencies[]`
 
-**Dev pipeline (functionaliteit):**
+**Dev pipeline (functionality):**
 `/project-plan → /dev-define → /dev-build → /dev-verify → /dev-refactor`
 
-- Werkt standalone — geen frontend-design vereist
-- Past in: features met logic/state/tests, ook backend-only
-- `/dev-build` leest `design.pages[]/design.components[]` als visuele spec-bron indien aanwezig
-- FEATURE/API/UI/etc. TODO's leven uitsluitend op de **Dev track** in de backlog
+- Works standalone — no frontend-design required
+- Fits: features with logic/state/tests, also backend-only
+- `/dev-build` reads `design.pages[]/design.components[]` as visual spec source if present
+- FEATURE/API/UI/etc. TODOs live exclusively on the **Dev track** in the backlog
 
-**Cross-pipeline koppeling:**
+**Cross-pipeline coupling:**
 
-Een card is óf frontend (PAGE/COMPONENT) óf dev — nooit beide. Voor pages/components met handler-props zonder implementatie: gap-discovery (`/frontend-design`, `/frontend-convert`) suggereert een apart FEATURE-todo op de Dev track. De relatie wordt bijgehouden via `feature.json#frontend.linkedEntities[]`.
+A card is either frontend (PAGE/COMPONENT) or dev — never both. For pages/components with handler-props without implementation: gap-discovery (`/frontend-design`, `/frontend-convert`) suggests a separate FEATURE-todo on the Dev track. The relationship is tracked via `feature.json#frontend.linkedEntities[]`.

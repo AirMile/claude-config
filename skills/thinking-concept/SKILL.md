@@ -38,80 +38,80 @@ The output is a structured markdown document that can be used as input for `/thi
      Source: .project/project-concept.md
      Title: {concept title from H1}
 
-     Er bestaat al een concept.
+     An existing concept was found.
      ```
 
    - Use AskUserQuestion:
      ```yaml
-     header: "Bestaand Concept"
-     question: "Wat wil je doen?"
+     header: "Existing Concept"
+     question: "What do you want to do?"
      options:
-       - label: "Bewerken (Recommended)", description: "Pas het bestaande concept aan"
-       - label: "Sync met project", description: "Verrijk concept met wat er al gebouwd/gepland is"
-       - label: "Nieuw concept", description: "Begin opnieuw met een nieuw idee"
+       - label: "Edit (Recommended)", description: "Modify the existing concept"
+       - label: "Sync with project", description: "Enrich concept with what has already been built/planned"
+       - label: "New concept", description: "Start fresh with a new idea"
      multiSelect: false
      ```
-   - **If "Bewerken":**
+   - **If "Edit":**
      - Load existing concept
-     - Ask: "Wat wil je aanpassen aan dit concept?"
+     - Ask: "What do you want to change about this concept?"
      - Proceed to Step 2 with existing content as context
-   - **If "Sync met project":**
+   - **If "Sync with project":**
      - Proceed to Step 1c (Project Sync)
-   - **If "Nieuw concept":**
+   - **If "New concept":**
      - Ignore existing file (will be overwritten on save)
      - Proceed with normal flow below
 
 **Step 1a: Scope Check**
 
-Na de concept-detectie, check ook voor bredere scope:
+After concept detection, also check for broader scope:
 
-1. Check of `.project/backlog.html` bestaat
-2. Check of `.project/features/` mappen bevat
-3. Glob voor pagina-bestanden (`app/**/page.tsx`, `src/pages/**/*.tsx`)
+1. Check if `.project/backlog.html` exists
+2. Check if `.project/features/` contains folders
+3. Glob for page files (`app/**/page.tsx`, `src/pages/**/*.tsx`)
 
-Als scope-context gevonden EN project.json concept al geladen:
+If scope context found AND project.json concept already loaded:
 
 ```yaml
 header: "Scope"
-question: "Waarover wil je nadenken?"
+question: "What do you want to think about?"
 options:
-  - label: "Concept (Recommended)", description: "Werk met project.json concept"
-  - label: "Feature uit backlog", description: "Focus op een specifieke feature"
-  - label: "Pagina / UX flow", description: "Focus op layout, UX of user flow"
-  - label: "Los idee", description: "Standalone idee, niet gekoppeld aan het project"
+  - label: "Concept (Recommended)", description: "Work with project.json concept"
+  - label: "Feature from backlog", description: "Focus on a specific feature"
+  - label: "Page / UX flow", description: "Focus on layout, UX or user flow"
+  - label: "Standalone idea", description: "Standalone idea, not linked to the project"
 multiSelect: false
 ```
 
-**If "Feature uit backlog":**
+**If "Feature from backlog":**
 
-- Lees `.project/backlog.html`, parse JSON uit `<script id="backlog-data">` blok (zie `shared/BACKLOG.md`), toon features met status TODO of DEF
-- AskUserQuestion om feature te kiezen
-- Laad `01-define.md` (als die bestaat) als input-context
-- Laad bestaande `thinking.md` (als die bestaat) als vorige thinking output
-- Geen define? Gebruik feature-beschrijving uit backlog
+- Read `.project/backlog.html`, parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`), show features with status TODO or DEF
+- AskUserQuestion to choose feature
+- Load `01-define.md` (if it exists) as input context
+- Load existing `thinking.md` (if it exists) as previous thinking output
+- No define? Use feature description from backlog
 
-**If "Pagina / UX flow":**
+**If "Page / UX flow":**
 
-- Glob voor pagina-bestanden in het project
-- AskUserQuestion om pagina te kiezen, of laat gebruiker een UX flow beschrijven
-- Laad pagina-bestand als input-context
-- Check `.project/thinking/{naam}.md` voor eerdere thinking output
+- Glob for page files in the project
+- AskUserQuestion to choose page, or let user describe a UX flow
+- Load page file as input context
+- Check `.project/thinking/{name}.md` for previous thinking output
 
-**If "Los idee":**
+**If "Standalone idea":**
 
-- Negeer het geladen concept — dit idee staat los van het project
-- Vraag: "Beschrijf je idee in een paar zinnen"
-- Check `.project/thinking/` voor eerdere losse ideeën
+- Ignore the loaded concept — this idea is independent of the project
+- Ask: "Describe your idea in a few sentences"
+- Check `.project/thinking/` for previous standalone ideas
 - Proceed to Step 2 with user's input
 
-**Output-pad volgt automatisch de scope:**
+**Output path follows scope automatically:**
 
-- Scope = concept → schrijf naar `.project/project-concept.md` + update project.json metadata (name, pitch)
-- Scope = feature → schrijf naar `.project/features/{naam}/thinking.md`
-- Scope = pagina/UX → schrijf naar `.project/thinking/{onderwerp}.md`
-- Scope = los idee → schrijf naar `.project/thinking/{onderwerp}.md`
+- Scope = concept → write to `.project/project-concept.md` + update project.json metadata (name, pitch)
+- Scope = feature → write to `.project/features/{name}/thinking.md`
+- Scope = page/UX → write to `.project/thinking/{topic}.md`
+- Scope = standalone idea → write to `.project/thinking/{topic}.md`
 
-**Step 1c: Project Sync (if "Sync met project" chosen)**
+**Step 1c: Project Sync (if "Sync with project" chosen)**
 
 Enrich the existing concept with features/functionality that exist in the project but are not yet described in the concept document.
 
@@ -169,29 +169,29 @@ Use AskUserQuestion:
 
 ```yaml
 header: "Gaps"
-question: "Welke items wil je aan het concept toevoegen?"
+question: "Which items do you want to add to the concept?"
 options:
-  - label: "Alle gaps (Recommended)", description: "Voeg alle {count} ontbrekende items toe"
-  - label: "Selecteer items", description: "Kies per item wat je wil toevoegen"
-  - label: "Geen, alleen bekijken", description: "Sluit sync af zonder wijzigingen"
+  - label: "All gaps (Recommended)", description: "Add all {count} missing items"
+  - label: "Select items", description: "Choose per item what to add"
+  - label: "None, just view", description: "Close sync without changes"
 multiSelect: false
 ```
 
-**If "Selecteer items":** toon de gaps als genummerde lijst:
+**If "Select items":** show the gaps as a numbered list:
 
 ```
-Gaps ({N} totaal):
+Gaps ({N} total):
 
 1. {gap-1}: {context}
 2. {gap-2}: {context}
 ...
 ```
 
-Vraag: "Welke gaps wil je toevoegen? Geef nummers (bv. `1, 3, 5`) of `alle`."
+Ask: "Which gaps do you want to add? Give numbers (e.g. `1, 3, 5`) or `all`."
 
-Parse → selected-set, integreer alleen die items.
+Parse → selected-set, integrate only those items.
 
-**If "Geen":** show the analysis as informational output and end.
+**If "None":** show the analysis as informational output and end.
 
 **4. Integrate into concept:**
 
@@ -201,10 +201,10 @@ Parse → selected-set, integreer alleen die items.
 
 ```yaml
 header: "Concept Update"
-question: "Concept bijwerken met de geselecteerde items?"
+question: "Update concept with the selected items?"
 options:
-  - label: "Ja, update concept (Recommended)", description: "Schrijf het bijgewerkte concept"
-  - label: "Aanpassen", description: "Pas de integratie aan voordat je schrijft"
+  - label: "Yes, update concept (Recommended)", description: "Write the updated concept"
+  - label: "Adjust", description: "Adjust the integration before writing"
 multiSelect: false
 ```
 
@@ -221,8 +221,8 @@ Source: {backlog: X, codebase: Y}
 File: .project/project-concept.md
 
 Next steps:
-- /thinking-critique - Analyseer het bijgewerkte concept
-- /thinking-brainstorm - Brainstorm over de nieuwe onderdelen
+- /thinking-critique - Analyze the updated concept
+- /thinking-brainstorm - Brainstorm on the new components
 ```
 
 **Step 1b: Source selection (if no concept found)**
@@ -232,31 +232,31 @@ Next steps:
 Use AskUserQuestion:
 
 ```yaml
-header: "Bron"
-question: "Waar wil je beginnen?"
+header: "Source"
+question: "Where do you want to start?"
 options:
-  - label: "Chat context gebruiken (Recommended)", description: "Gebruik wat er in dit gesprek is besproken als startpunt"
-  - label: "Nieuw idee typen", description: "Beschrijf een nieuw idee"
-  - label: "Obsidian zoeken", description: "Zoek een bestaand idee in je Obsidian vault"
+  - label: "Use chat context (Recommended)", description: "Use what has been discussed in this conversation as starting point"
+  - label: "Type new idea", description: "Describe a new idea"
+  - label: "Search Obsidian", description: "Search for an existing idea in your Obsidian vault"
 multiSelect: false
 ```
 
-**If "Chat context gebruiken":**
+**If "Use chat context":**
 
 Process using Chat Context flow (see below).
 
-**If "Nieuw idee typen":**
-Ask: "Wat is je idee? Beschrijf het in 1-2 zinnen."
+**If "Type new idea":**
+Ask: "What is your idea? Describe it in 1-2 sentences."
 
-**If "Obsidian zoeken":**
+**If "Search Obsidian":**
 
-1. Ask: "Waar zoek je naar?" (or use inline argument if provided)
+1. Ask: "What are you looking for?" (or use inline argument if provided)
 2. Search Obsidian: `mcp__obsidian__search_notes(query={search term}, limit=3)`
 3. If relevant match found in `Ideas/`:
    - Present matches using AskUserQuestion:
      ```yaml
-     header: "Obsidian Idee"
-     question: "Welk idee wil je gebruiken?"
+     header: "Obsidian Idea"
+     question: "Which idea do you want to use?"
      options:
        - label: "{match 1 title}", description: "{path}"
        - label: "{match 2 title}", description: "{path}"
@@ -271,17 +271,17 @@ Ask: "Wat is je idee? Beschrijf het in 1-2 zinnen."
 
 1. Search Obsidian: `mcp__obsidian__search_notes(query={argument}, limit=3)`
 2. If relevant match found in `Ideas/`:
-   - Show: "Er is een bestaand idee in Obsidian: **{title}** (`{path}`)"
+   - Show: "There is an existing idea in Obsidian: **{title}** (`{path}`)"
    - Use AskUserQuestion:
      ```yaml
      header: "Obsidian Match"
-     question: "Wil je dit bestaande idee als startpunt gebruiken?"
+     question: "Do you want to use this existing idea as a starting point?"
      options:
-       - label: "Ja, gebruik als basis (Recommended)", description: "Laad het Obsidian idee en werk er verder aan"
-       - label: "Nee, nieuw concept", description: "Begin opnieuw met het getypte idee"
+       - label: "Yes, use as basis (Recommended)", description: "Load the Obsidian idea and continue working on it"
+       - label: "No, new concept", description: "Start fresh with the typed idea"
      multiSelect: false
      ```
-   - **If "Ja":** Read the note with `mcp__obsidian__read_note()`, load as starting context, track `obsidian_source_path` for later save-back
+   - **If "Yes":** Read the note with `mcp__obsidian__read_note()`, load as starting context, track `obsidian_source_path` for later save-back
 3. If no matches anywhere: acknowledge briefly and proceed to Step 2.
 
 **Chat Context flow:**
@@ -302,14 +302,14 @@ Ask: "Wat is je idee? Beschrijf het in 1-2 zinnen."
 4. Use AskUserQuestion to confirm:
    ```yaml
    header: "Context Check"
-   question: "Klopt deze samenvatting van het gesprek?"
+   question: "Does this summary of the conversation look right?"
    options:
-     - label: "Ja, klopt (Recommended)", description: "Gebruik dit als input"
-     - label: "Aanpassen", description: "Ik wil de samenvatting bijwerken"
+     - label: "Yes, correct (Recommended)", description: "Use this as input"
+     - label: "Adjust", description: "I want to update the summary"
    multiSelect: false
    ```
 5. If confirmed: use as input concept and proceed to Step 2
-6. If "Aanpassen": ask what to change, update summary, confirm again
+6. If "Adjust": ask what to change, update summary, confirm again
 7. If insufficient context in conversation: inform user and fall back to manual input
 
 ### Step 2: Explore and Expand
@@ -321,14 +321,14 @@ Develop the idea through rounds of concrete, clickable questions. Rounds are sug
 1. Determine idea type (creative concept, product, service, etc)
 2. Plan questions for the first round
 
-**Ronde 1 - Fundament (3-4 vragen parallel):**
+**Round 1 - Foundation (3-4 questions in parallel):**
 
 Formulate 3-4 fundamental questions about the idea. Present ALL questions in a single message, each as a separate AskUserQuestion:
 
 ```yaml
 # Question 1
-header: "Doelgroep"
-question: "Voor wie is dit bedoeld?"
+header: "Target Audience"
+question: "Who is this intended for?"
 options:
   - label: "{specific audience A} (Recommended)", description: "{why this fits}"
   - label: "{specific audience B}", description: "{why this fits}"
@@ -337,15 +337,15 @@ multiSelect: false
 
 # Question 2
 header: "Scope"
-question: "Hoe groot zie je dit?"
+question: "How large do you see this?"
 options:
   - label: "{scope option A} (Recommended)", description: "{what this means}"
   - label: "{scope option B}", description: "{what this means}"
 multiSelect: false
 
 # Question 3
-header: "Kernervaring"
-question: "Wat is het belangrijkste gevoel/resultaat?"
+header: "Core Experience"
+question: "What is the most important feeling/result?"
 options:
   - label: "{experience A} (Recommended)", description: "{concrete example}"
   - label: "{experience B}", description: "{concrete example}"
@@ -353,8 +353,8 @@ options:
 multiSelect: true
 
 # Question 4 (optional)
-header: "Sessiemodel"
-question: "Hoe ziet een typische sessie eruit?"
+header: "Session Model"
+question: "What does a typical session look like?"
 options:
   - label: "{session type A} (Recommended)", description: "{details}"
   - label: "{session type B}", description: "{details}"
@@ -366,21 +366,21 @@ multiSelect: false
 **After each round**, use AskUserQuestion:
 
 ```yaml
-header: "Verdieping"
-question: "Wil je nog meer aspecten uitwerken?"
+header: "Deeper Dive"
+question: "Do you want to explore more aspects?"
 options:
-  - label: "Nog een ronde (Recommended)", description: "Verdiep nog meer aspecten van het idee"
-  - label: "Door naar samenvatting", description: "Er is genoeg context voor een goed concept"
+  - label: "Another round (Recommended)", description: "Explore more aspects of the idea"
+  - label: "Proceed to summary", description: "There is enough context for a good concept"
 multiSelect: false
 ```
 
-- **If "Nog een ronde":** formulate 2-4 targeted follow-up questions based on gaps from previous rounds
-- **If "Door naar samenvatting":** proceed to Step 3
+- **If "Another round":** formulate 2-4 targeted follow-up questions based on gaps from previous rounds
+- **If "Proceed to summary":** proceed to Step 3
 
 **Follow-up round focus areas:**
 
 - Features/mechanics specifics
-- Differentiatie (what makes it unique)
+- Differentiation (what makes it unique)
 - Style/atmosphere/tone
 - Motivation system or engagement model
 - Any direction the user showed interest in
@@ -391,11 +391,11 @@ The user may respond to questions in unexpected ways — asking their own questi
 
 **Further rounds:**
 
-Same pattern: present the "Verdieping" AskUserQuestion after each round. As rounds progress, switch the recommended option to "Door naar samenvatting" when enough context has been gathered (typically after 2-3 rounds).
+Same pattern: present the "Deeper Dive" AskUserQuestion after each round. As rounds progress, switch the recommended option to "Proceed to summary" when enough context has been gathered (typically after 2-3 rounds).
 
 **Question rules:**
 
-- NEVER use meta-options ("Beantwoord vragen", "Minder vragen")
+- NEVER use meta-options ("Answer questions", "Fewer questions")
 - Each question = separate AskUserQuestion with concrete, clickable options
 - Options are specific to THIS idea, not generic
 - Recommended option = most likely answer based on context so far
@@ -407,27 +407,27 @@ Same pattern: present the "Verdieping" AskUserQuestion after each round. As roun
 - Help articulate what's in the user's head
 - Save criticism or expansion for later--this phase is pure idea capture
 
-### CHECKPOINT: Idee Samenvatting
+### CHECKPOINT: Idea Summary
 
-Na de vraagrondes, presenteer een gestructureerd overzicht van alle verzamelde input voordat de synthese begint:
+After the question rounds, present a structured overview of all gathered input before synthesis begins:
 
-| Aspect       | Waarde                                  |
-| ------------ | --------------------------------------- |
-| Onderwerp    | {idee titel/onderwerp}                  |
-| Scope        | {concept / feature / pagina / los idee} |
-| Doelgroep    | {uit ronde 1}                           |
-| Kernervaring | {uit ronde 1}                           |
-| Verdiepingen | {samenvatting van follow-up rondes}     |
+| Aspect          | Value                                   |
+| --------------- | --------------------------------------- |
+| Topic           | {idea title/topic}                      |
+| Scope           | {concept / feature / page / standalone} |
+| Target Audience | {from round 1}                          |
+| Core Experience | {from round 1}                          |
+| Deeper Dives    | {summary of follow-up rounds}           |
 
-Vraag via AskUserQuestion: "Klopt dit overzicht voordat we samenvatten?"
+Ask via AskUserQuestion: "Does this overview look right before we summarize?"
 
-- "Ga door naar samenvatting (Recommended)" — door naar synthese
-- "Nog een ronde" — terug naar Step 2 voor extra vragen
-- "Aanpassen" — corrigeer specifiek punt
+- "Proceed to summary (Recommended)" — proceed to synthesis
+- "Another round" — back to Step 2 for extra questions
+- "Adjust" — correct a specific point
 
 ### Enter Plan Mode
 
-Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 3. Steps 3-4 (synthese + output-generatie) draaien in plan mode; het concept-document (Step 4) wordt naar de plan file geschreven ter review.
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 3. Steps 3-4 (synthesis + output generation) run in plan mode; the concept document (Step 4) is written to the plan file for review.
 
 ---
 
@@ -438,20 +438,20 @@ Volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry-protocol vóór Step 3.
 3. Use AskUserQuestion for confirmation:
    ```yaml
    options:
-     - label: "Klopt, genereer output (Recommended)", description: "Samenvatting is correct, ga door naar markdown output"
-     - label: "Aanpassen", description: "Ik wil iets wijzigen of toevoegen"
-     - label: "Opnieuw samenvatten", description: "Maak een nieuwe samenvatting"
+     - label: "Correct, generate output (Recommended)", description: "Summary is correct, proceed to markdown output"
+     - label: "Adjust", description: "I want to change or add something"
+     - label: "Re-summarize", description: "Create a new summary"
    multiSelect: false
    ```
 4. Incorporate feedback if needed
 5. Repeat until user confirms
 6. **Depth guard:** If the confirmed summary covers fewer than 3 distinct content aspects (e.g. only has title + vague description), suggest returning to Step 2 for an additional round:
    ```yaml
-   header: "Verdieping nodig"
-   question: "De samenvatting is nog vrij dun. Wil je nog een ronde vragen doen voor meer diepgang?"
+   header: "More depth needed"
+   question: "The summary is still quite thin. Do you want another question round for more depth?"
    options:
-     - label: "Ja, extra ronde (Recommended)", description: "Terug naar Step 2 voor meer details"
-     - label: "Nee, ga door", description: "Genereer output met huidige inhoud"
+     - label: "Yes, extra round (Recommended)", description: "Back to Step 2 for more details"
+     - label: "No, continue", description: "Generate output with current content"
    multiSelect: false
    ```
 
@@ -481,36 +481,36 @@ For product ideas (apps, services, businesses):
 - No "Here's your document:" framing
 - Proper markdown formatting (# for title, ## for sections)
 
-**Einde denkfase**: volg [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit-protocol — schrijf het concept-document naar de plan file, dan `ExitPlanMode`. Na approval gaat de skill door met Step 5 (output bestemming en `.project/`-writes).
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the concept document to the plan file, then `ExitPlanMode`. After approval the skill continues with Step 5 (output destination and `.project/` writes).
 
 ### Step 5: Output Destination
 
 After generating the markdown content, determine output destination based on scope.
 
-**If scope = feature of pagina (uit Step 1a):**
+**If scope = feature or page (from Step 1a):**
 
-Sla automatisch op bij de scope-locatie:
+Save automatically to the scope location:
 
-- Scope = feature → schrijf naar `.project/features/{naam}/thinking.md`
-- Scope = pagina/UX → maak `.project/thinking/` aan indien nodig, schrijf naar `.project/thinking/{onderwerp}.md`
+- Scope = feature → write to `.project/features/{name}/thinking.md`
+- Scope = page/UX → create `.project/thinking/` if needed, write to `.project/thinking/{topic}.md`
 
 ```
 THINKING OUTPUT SAVED
 
-File: {output-pad}
-Scope: {feature:{naam} | pagina:{onderwerp}}
+File: {output-path}
+Scope: {feature:{name} | page:{topic}}
 ```
 
-**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+**Dashboard sync — thinking log** (see `shared/DASHBOARD.md`):
 
-1. Read `.project/project.json` (skip als niet bestaat)
-2. Schrijf volledige markdown naar `.project/thinking/{today}-idea-{slug}.md`
-3. Push naar `thinking` array:
+1. Read `.project/project.json` (skip if not present)
+2. Write full markdown to `.project/thinking/{today}-idea-{slug}.md`
+3. Push to `thinking` array:
    ```json
    {
      "type": "idea",
      "date": "{today}",
-     "title": "{concept titel}",
+     "title": "{concept title}",
      "summary": "{key insight, max 200 chars}",
      "file": ".project/thinking/{today}-idea-{slug}.md",
      "source": "/thinking-concept"
@@ -518,42 +518,42 @@ Scope: {feature:{naam} | pagina:{onderwerp}}
    ```
 4. Write `.project/project.json`
 
-Vraag daarna optioneel:
+Then optionally ask:
 
 ```yaml
 header: "Concept"
-question: "Wil je dit ook opslaan als project concept?"
+question: "Do you also want to save this as the project concept?"
 options:
-  - label: "Nee (Recommended)", description: "Output is opgeslagen bij de scope"
-  - label: "Ja, ook naar concept", description: "Update ook project-concept.md"
+  - label: "No (Recommended)", description: "Output is saved at the scope location"
+  - label: "Yes, also to concept", description: "Also update project-concept.md"
 multiSelect: false
 ```
 
-If "Ja": Write het volledige concept document als plain markdown naar `.project/project-concept.md`. Update ook project.json: Read `.project/project.json` (of maak aan met {}), set `concept.name` (H1 titel), `concept.pitch` (eerste alinea, 1-2 zinnen), `concept.conceptFile = "project-concept.md"`. Verwijder `concept.content` als die bestaat (gemigreerd naar .md). Write terug.
+If "Yes": Write the full concept document as plain markdown to `.project/project-concept.md`. Also update project.json: Read `.project/project.json` (or create with {}), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
 
-**If scope = los idee (uit Step 1a):**
+**If scope = standalone idea (from Step 1a):**
 
-Sla op naar `.project/thinking/{today}-idea-{slug}.md`:
+Save to `.project/thinking/{today}-idea-{slug}.md`:
 
-1. Maak `.project/thinking/` aan indien nodig
-2. Schrijf naar `.project/thinking/{today}-idea-{slug}.md`
+1. Create `.project/thinking/` if needed
+2. Write to `.project/thinking/{today}-idea-{slug}.md`
 
 ```
 THINKING OUTPUT SAVED
 
 File: .project/thinking/{today}-idea-{slug}.md
-Scope: los idee
+Scope: standalone idea
 ```
 
-**Dashboard sync — thinking log** (zie `shared/DASHBOARD.md`):
+**Dashboard sync — thinking log** (see `shared/DASHBOARD.md`):
 
-1. Read `.project/project.json` (skip als niet bestaat)
-2. Push naar `thinking` array (file is al geschreven hierboven):
+1. Read `.project/project.json` (skip if not present)
+2. Push to `thinking` array (file already written above):
    ```json
    {
      "type": "idea",
      "date": "{today}",
-     "title": "{concept titel}",
+     "title": "{concept title}",
      "summary": "{key insight, max 200 chars}",
      "file": ".project/thinking/{today}-idea-{slug}.md",
      "source": "/thinking-concept"
@@ -561,38 +561,38 @@ Scope: los idee
    ```
 3. Write `.project/project.json`
 
-Vraag daarna:
+Then ask:
 
 ```yaml
 header: "Obsidian"
-question: "Wil je dit idee ook opslaan naar Obsidian?"
+question: "Do you also want to save this idea to Obsidian?"
 options:
-  - label: "Nee (Recommended)", description: "Output is opgeslagen in .project/thinking/"
-  - label: "Ja, naar Obsidian", description: "Sla ook op als Idea note in Obsidian vault"
+  - label: "No (Recommended)", description: "Output is saved in .project/thinking/"
+  - label: "Yes, to Obsidian", description: "Also save as Idea note in Obsidian vault"
 multiSelect: false
 ```
 
-If "Ja, naar Obsidian": volg de Obsidian save flow (zie hieronder bij "Opslaan naar Obsidian").
+If "Yes, to Obsidian": follow the Obsidian save flow (see below under "Save to Obsidian").
 
-**If scope = concept (default) of geen scope gekozen:**
+**If scope = concept (default) or no scope chosen:**
 
 Use AskUserQuestion:
 
 ```yaml
 header: "Output"
-question: "Wat wil je met het concept doen?"
+question: "What do you want to do with the concept?"
 options:
-  - label: "Opslaan naar concept (Recommended)", description: "Opslaan naar project-concept.md voor verder gebruik"
-  - label: "Opslaan naar Obsidian", description: "Opslaan als permanente Idea note in je Obsidian vault"
-  - label: "Kopieer naar clipboard", description: "Kopieer markdown naar clipboard (niet opslaan)"
+  - label: "Save to concept (Recommended)", description: "Save to project-concept.md for further use"
+  - label: "Save to Obsidian", description: "Save as permanent Idea note in your Obsidian vault"
+  - label: "Copy to clipboard", description: "Copy markdown to clipboard (don't save)"
 multiSelect: false
 ```
 
-**If "Opslaan naar concept":**
+**If "Save to concept":**
 
 1. Create `.project/` folder if it doesn't exist
-2. Write het volledige concept document als plain markdown naar `.project/project-concept.md`
-3. Update ook project.json: Read `.project/project.json` (of maak aan met `{}`), set `concept.name` (H1 titel), `concept.pitch` (eerste alinea, 1-2 zinnen), `concept.conceptFile = "project-concept.md"`. Verwijder `concept.content` als die bestaat (gemigreerd naar .md). Write terug.
+2. Write the full concept document as plain markdown to `.project/project-concept.md`
+3. Also update project.json: Read `.project/project.json` (or create with `{}`), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
 4. Confirm:
 
    ```
@@ -602,16 +602,16 @@ multiSelect: false
    Name: {concept.name}
 
    Next steps:
-   - /thinking-critique - Kritisch analyseren en versterken
-   - /thinking-brainstorm - Creatief uitbreiden en variaties
-   - /project-plan - Omzetten naar feature backlog
+   - /thinking-critique - Critically analyze and strengthen
+   - /thinking-brainstorm - Creatively expand and create variations
+   - /project-plan - Convert to feature backlog
    ```
 
-**Concept-scope output is geïntegreerd in `project-concept.md`.** Geen losse `.project/thinking/*.md` voor concept-scope en geen `concept.thinking[]` append — het levende document is de bron. Update `concept.name` en `concept.pitch` in `project.json` als metadata wijzigt.
+**Concept-scope output is integrated into `project-concept.md`.** No separate `.project/thinking/*.md` for concept-scope and no `concept.thinking[]` append — the living document is the source. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
 
-**If "Opslaan naar Obsidian":**
+**If "Save to Obsidian":**
 
-1. Also save concept: Write het volledige concept document naar `.project/project-concept.md`. Update `.project/project.json` (of maak aan met `{}`): set `concept.name`, `concept.pitch` (eerste alinea), `concept.conceptFile = "project-concept.md"`. Verwijder `concept.content` als die bestaat.
+1. Also save concept: Write the full concept document to `.project/project-concept.md`. Update `.project/project.json` (or create with `{}`): set `concept.name`, `concept.pitch` (first paragraph), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists.
 2. Detect category from content:
    - Game-related → `game`
    - App/service/tool → `app`
@@ -653,12 +653,12 @@ multiSelect: false
    Status: seed
 
    Next steps:
-   - /thinking-critique - Kritisch analyseren en versterken
-   - /thinking-brainstorm - Creatief uitbreiden en variaties
-   - /project-plan - Omzetten naar feature backlog
+   - /thinking-critique - Critically analyze and strengthen
+   - /thinking-brainstorm - Creatively expand and create variations
+   - /project-plan - Convert to feature backlog
    ```
 
-**If "Kopieer naar clipboard":**
+**If "Copy to clipboard":**
 
 1. Wrap output in a code block with `markdown` language tag for copy button
 2. Display the content — user copies via the code block's copy button
@@ -675,7 +675,7 @@ multiSelect: false
 
 **AskUserQuestion:**
 
-- NEVER use meta-options ("Beantwoord vragen", "Minder vragen")
+- NEVER use meta-options ("Answer questions", "Fewer questions")
 - Each question = separate AskUserQuestion with concrete options
 - Options specific to the idea, not generic
 - `multiSelect: true` when multiple answers are valid

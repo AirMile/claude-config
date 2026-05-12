@@ -26,17 +26,17 @@ Alles buiten deze set wordt afgehandeld via `references/research-flow.md`.
 
 **Fase tracking** — eerste actie van de skill: roep `TaskCreate` aan met deze 7 items (status `pending`), daarna gebruik `TaskUpdate` om per fase `in_progress` te zetten aan begin en `completed` aan einde. Bij context compaction blijft de task list zichtbaar — geen risico op vergeten fases.
 
-1. FASE 0: Pre-flight
-2. FASE 1: Inspect Overlay
-3. FASE 2: Verdere Installs
-4. FASE 3: Categorie-keuze
-5. FASE 4: Optie-keuze
-6. FASE 5: Install + Verify
-7. FASE 6: Rapport
+1. PHASE 0: Pre-flight
+2. PHASE 1: Inspect Overlay
+3. PHASE 2: Verdere Installs
+4. PHASE 3: Categorie-keuze
+5. PHASE 4: Optie-keuze
+6. PHASE 5: Install + Verify
+7. PHASE 6: Rapport
 
-## FASE 0: Pre-flight
+## PHASE 0: Pre-flight
 
-> **Todo**: roep `TaskCreate` aan met de 7 fase-items (zie boven). Markeer FASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: roep `TaskCreate` aan met de 7 fase-items (zie boven). Markeer PHASE 0 → `in_progress` via `TaskUpdate`.
 
 ### 0.0 Argument Detection
 
@@ -45,11 +45,11 @@ Als de skill is aangeroepen met een argument (bv. `/core-setup tailwind`):
 1. Match argument (case-insensitive) tegen tier-1 module namen:
    `inspect-overlay`, `tailwind`, `shadcn-ui`, `vitest`, `playwright`, `biome`, `eslint-prettier`, `zustand`, `tanstack-query`, `react-hook-form-zod`
 
-2. **Match gevonden** → sla module op als `direct_module`, skip FASE 1-3, ga direct naar FASE 4 Pad A na FASE 0.1-0.2.
+2. **Match gevonden** → sla module op als `direct_module`, skip PHASE 1-3, ga direct naar PHASE 4 Pad A na PHASE 0.1-0.2.
 
-3. **Geen match** → behandel als vrije tekst voor research mode: sla op als `direct_research`, skip FASE 1-3, ga direct naar FASE 4 Pad B na FASE 0.1-0.2.
+3. **Geen match** → behandel als vrije tekst voor research mode: sla op als `direct_research`, skip PHASE 1-3, ga direct naar PHASE 4 Pad B na PHASE 0.1-0.2.
 
-4. **Geen argument** → normale flow (FASE 1-3 doorlopen).
+4. **Geen argument** → normale flow (PHASE 1-3 doorlopen).
 
 ### 0.1 Framework Detection
 
@@ -73,11 +73,11 @@ Sla framework + package manager op voor latere fases.
 
 ### 0.3 Flow Diagram
 
-Genereer een ASCII flowchart die het pad door deze mode toont op basis van het gedetecteerde framework. Toon FASE 1 → FASE 2 → loop tot FASE 6.
+Genereer een ASCII flowchart die het pad door deze mode toont op basis van het gedetecteerde framework. Toon PHASE 1 → PHASE 2 → loop tot PHASE 6.
 
 ### 0.4 Stack-keys mapping
 
-Bij elke succesvolle install schrijft FASE 5 stap 5b de module-keuze naar `project.json`:
+Bij elke succesvolle install schrijft PHASE 5 stap 5b de module-keuze naar `project.json`:
 
 | Module              | project.json key                        |
 | ------------------- | --------------------------------------- |
@@ -92,13 +92,13 @@ Bij elke succesvolle install schrijft FASE 5 stap 5b de module-keuze naar `proje
 | react-hook-form-zod | `stack.forms = "react-hook-form-zod"`   |
 | inspect-overlay     | (geen — dev-only tool)                  |
 
-`stack.packages[]` wordt **afgeleid uit `package.json`** na de install — niet uit een hardcoded lijst (zie FASE 5 stap 5a). Dit werkt automatisch correct voor elke library, inclusief research-mode en multi-package installs (shadcn-ui, eslint+prettier).
+`stack.packages[]` wordt **afgeleid uit `package.json`** na de install — niet uit een hardcoded lijst (zie PHASE 5 stap 5a). Dit werkt automatisch correct voor elke library, inclusief research-mode en multi-package installs (shadcn-ui, eslint+prettier).
 
 ---
 
-## FASE 1: Inspect Overlay (altijd)
+## PHASE 1: Inspect Overlay (altijd)
 
-> **Todo**: markeer FASE 0 → `completed`, FASE 1 → `in_progress`.
+> **Todo**: markeer PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
 ### 1.1 Overlay Status
 
@@ -147,13 +147,13 @@ Controls (alleen bij install):
   Escape                         wis pins / uit
 ```
 
-Bij **Skip** → direct door naar FASE 2.
+Bij **Skip** → direct door naar PHASE 2.
 
 ---
 
-## FASE 2: Verdere Installs?
+## PHASE 2: Verdere Installs?
 
-> **Todo**: markeer FASE 1 → `completed`, FASE 2 → `in_progress`.
+> **Todo**: markeer PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
 ```yaml
 header: "Doorgaan?"
@@ -164,21 +164,21 @@ options:
 multiSelect: false
 ```
 
-Bij **Nee** → FASE 6.
+Bij **Nee** → PHASE 6.
 
 ---
 
-## Pre-FASE 3: Stack snapshot
+## Pre-PHASE 3: Stack snapshot
 
-Lees `.project/project.json#stack` (als het bestand bestaat). Cache het object voor gebruik in FASE 3 categorie-prompts.
+Lees `.project/project.json#stack` (als het bestand bestaat). Cache het object voor gebruik in PHASE 3 categorie-prompts.
 
 Skip silent als `project.json` ontbreekt — render dan de standaard categorie-prompt zonder slot-status.
 
 ---
 
-## FASE 3: Categorie-keuze
+## PHASE 3: Categorie-keuze
 
-> **Todo**: markeer FASE 2 → `completed`, FASE 3 → `in_progress`.
+> **Todo**: markeer PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
 Render de prompt op basis van de gecachte stack-snapshot:
 
@@ -226,9 +226,9 @@ multiSelect: false
 
 ---
 
-## FASE 4: Optie-keuze
+## PHASE 4: Optie-keuze
 
-> **Todo**: markeer FASE 3 → `completed`, FASE 4 → `in_progress`.
+> **Todo**: markeer PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
 ### Pad A — Tier-1 module beschikbaar voor categorie
 
@@ -253,7 +253,7 @@ Volg install/teardown stappen. Detect of al geïnstalleerd → bied install / te
 
 ### Pad B — Research mode
 
-Bij **"Other (research)"** in FASE 3 of **"Andere library (research)"** in FASE 4:
+Bij **"Other (research)"** in PHASE 3 of **"Andere library (research)"** in PHASE 4:
 
 ```
 Read("references/research-flow.md")
@@ -269,11 +269,11 @@ Volg het research-protocol:
 
 ---
 
-## FASE 5: Install + Verify
+## PHASE 5: Install + Verify
 
-> **Todo**: markeer FASE 4 → `completed`, FASE 5 → `in_progress`.
+> **Todo**: markeer PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-0. **State check** — raadpleeg de "Detection" sectie van de setup-guide (al geladen in FASE 4 Pad A). Bepaal tri-state:
+0. **State check** — raadpleeg de "Detection" sectie van de setup-guide (al geladen in PHASE 4 Pad A). Bepaal tri-state:
 
    | State                          | Actie                              |
    | ------------------------------ | ---------------------------------- |
@@ -308,7 +308,7 @@ Volg het research-protocol:
    Modules zonder NPM-install (inspect-overlay) voegen niets toe aan package.json →
    diff is leeg → no-op, geen speciale uitzondering nodig.
 
-   b. Voor tier-1 modules: schrijf de specifieke `stack.{key}` uit de FASE 0.4 mapping-tabel.
+   b. Voor tier-1 modules: schrijf de specifieke `stack.{key}` uit de PHASE 0.4 mapping-tabel.
    - Waarde al gelijk → skip (idempotent).
    - Andere waarde aanwezig:
 
@@ -361,13 +361,13 @@ Volg het research-protocol:
      - `stack-overwrite: "ask"`
      - `inferred-stack:` stack-object na stap a+b
 
-6. **Loop** — terug naar FASE 2.
+6. **Loop** — terug naar PHASE 2.
 
 ---
 
-## FASE 6: Rapport
+## PHASE 6: Rapport
 
-> **Todo**: markeer FASE 5 → `completed`, FASE 6 → `in_progress`.
+> **Todo**: markeer PHASE 5 → `completed`, PHASE 6 → `in_progress`.
 
 ASCII tabel met sessie-resultaat:
 
@@ -394,7 +394,7 @@ CLAUDE.md:       {M} secties bijgewerkt / al compleet / n.v.t.
 2. `/frontend-design` → mock-driven UI design met nieuwe stack
 3. `/frontend-check` → kwaliteitscheck na meerdere installs
 
-> **Todo**: markeer FASE 6 → `completed`.
+> **Todo**: markeer PHASE 6 → `completed`.
 
 ---
 
@@ -403,15 +403,15 @@ CLAUDE.md:       {M} secties bijgewerkt / al compleet / n.v.t.
 This mode must **NEVER**:
 
 - Edit project source code beyond install configuration
-- Skip the inspect overlay question in FASE 1 **tenzij** een argument meegegeven is (FASE 0.0)
-- Continue to FASE 5 zonder duidelijke user keuze
+- Skip the inspect overlay question in PHASE 1 **tenzij** een argument meegegeven is (PHASE 0.0)
+- Continue to PHASE 5 zonder duidelijke user keuze
 - Install dependencies zonder package manager match (bv. `npm install` in een pnpm project)
 
 This mode must **ALWAYS**:
 
-- Detect framework + package manager in FASE 0 (altijd, ook bij argument shortcut)
-- Check argument in FASE 0.0 voor inspect overlay vraag
-- Loop terug naar FASE 2 na elke install (incrementeel model)
-- Detecteer tri-state per module in FASE 5 stap 0 (already-configured / installed-not-configured / not-installed)
+- Detect framework + package manager in PHASE 0 (altijd, ook bij argument shortcut)
+- Check argument in PHASE 0.0 voor inspect overlay vraag
+- Loop terug naar PHASE 2 na elke install (incrementeel model)
+- Detecteer tri-state per module in PHASE 5 stap 0 (already-configured / installed-not-configured / not-installed)
 - Derive `stack.packages[]` uit `package.json` na install — nooit uit hardcoded lijsten
 - Gebruik research-flow voor alles buiten tier-1 set
