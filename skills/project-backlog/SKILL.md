@@ -16,7 +16,7 @@ Start, stop, or check the local backlog/dashboard server. Serves all project bac
 
 ## Trigger
 
-`/project-backlog` — optioneel argument: `stop`
+`/project-backlog` — optional argument: `stop`
 
 ## Platform
 

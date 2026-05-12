@@ -165,7 +165,7 @@ Render the mind map as an ASCII tree using box-drawing characters. The tree make
                                       └─ [Sub-branch]
 
   Connecties: [Branch 1:Sub-X] ←→ [Branch 3:Sub-Y]
-  Gaps: [Branch 2] heeft nog weinig diepte
+  Gaps: [Branch 2] has little depth so far
 ```
 
 **Example — game concept:**

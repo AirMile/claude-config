@@ -18,7 +18,7 @@ Remove a skill safely by scanning all references, showing impact, updating depen
 **If name provided** (`/core-delete thinking-brainstorm`):
 
 1. Verify `.claude/skills/[name]/SKILL.md` exists
-2. If not found → show error: "Skill `[name]` niet gevonden." and list available skills
+2. If not found → show error: "Skill `[name]` not found." and list available skills
 
 **If no name** (`/core-delete`):
 

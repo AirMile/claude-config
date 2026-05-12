@@ -1,6 +1,6 @@
 # GUT Test Conventions
 
-Reference voor test file structuur, assertions en mocks. Geladen Just-In-Time door `/game-build` tijdens test generation.
+Reference for test file structure, assertions, and mocks. Loaded Just-In-Time by `/game-build` during test generation.
 
 ## Test File Structure
 

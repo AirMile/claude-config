@@ -178,4 +178,4 @@ Wanneer `feature.json` een `build` sectie heeft (dev-build is voltooid, tests be
 | E2E user flow        | navigate → fill_form → submit → verify redirect + success      |
 | Cross-page flow      | actie pagina A → navigeer B → verify state carries over        |
 | API integratie chain | curl POST (create) → curl GET (verify) → curl DELETE (cleanup) |
-| Cross-requirement    | complete flow A → verify dat flow B correct beïnvloed is       |
+| Cross-requirement    | complete flow A → verify that flow B is correctly affected     |

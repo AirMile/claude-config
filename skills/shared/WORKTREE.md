@@ -41,13 +41,13 @@ expected_path = "{main_root}/.claude/worktrees/{feature-name}"
 
 ### Step 4: Decide and act
 
-| current_root       | registered | Action                                                                                                                                         |
-| ------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| == `expected_path` | yes        | **Skip** — already in the right worktree                                                                                                       |
-| == `main_root`     | yes        | Call `EnterWorktree(path: expected_path)` to switch                                                                                            |
-| other worktree     | yes        | **FAIL** — print: "Je zit in worktree {pwd}, deze skill is voor feature {feature-name}. Exit eerst via ExitWorktree(action: keep) en restart." |
-| == `main_root`     | no         | **Continue** — no worktree was used for this feature, run on current branch                                                                    |
-| == `expected_path` | no         | **Continue cautiously** — pwd matches but not registered (rare race condition)                                                                 |
+| current_root       | registered | Action                                                                                                                                          |
+| ------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| == `expected_path` | yes        | **Skip** — already in the right worktree                                                                                                        |
+| == `main_root`     | yes        | Call `EnterWorktree(path: expected_path)` to switch                                                                                             |
+| other worktree     | yes        | **FAIL** — print: "You are in worktree {pwd}, this skill is for feature {feature-name}. Exit first via ExitWorktree(action: keep) and restart." |
+| == `main_root`     | no         | **Continue** — no worktree was used for this feature, run on current branch                                                                     |
+| == `expected_path` | no         | **Continue cautiously** — pwd matches but not registered (rare race condition)                                                                  |
 
 ### Step 5: Continue with skill PHASE 0
 

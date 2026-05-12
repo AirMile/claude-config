@@ -1,16 +1,16 @@
 # Biome Setup
 
-**Status:** stub — full guide te genereren via Context7 query.
+**Status:** stub — full guide to be generated via Context7 query.
 
 **Conflict check:** If ESLint/Prettier is already installed, ask whether it should be replaced. Biome is a unified replacement.
 
 ## Detection
 
-| State                          | Conditie                                                               |
-| ------------------------------ | ---------------------------------------------------------------------- |
-| `already-installed-configured` | `@biomejs/biome` in devDependencies EN `biome.json` aanwezig           |
-| `installed-not-configured`     | `@biomejs/biome` in devDependencies MAAR `biome.json` ontbreekt        |
-| `not-installed`                | `@biomejs/biome` niet in devDependencies EN `biome.json` niet aanwezig |
+| State                          | Condition                                                            |
+| ------------------------------ | -------------------------------------------------------------------- |
+| `already-installed-configured` | `@biomejs/biome` in devDependencies AND `biome.json` present         |
+| `installed-not-configured`     | `@biomejs/biome` in devDependencies BUT `biome.json` missing         |
+| `not-installed`                | `@biomejs/biome` not in devDependencies AND `biome.json` not present |
 
 ## Install (via Context7)
 
@@ -22,7 +22,7 @@ mcp__context7__query-docs(
 )
 ```
 
-Volg Context7 output voor:
+Follow Context7 output for:
 
 1. Install: `npm install -D --save-exact @biomejs/biome`
 2. Init: `npx biome init`
@@ -36,10 +36,10 @@ Volg Context7 output voor:
 ## Teardown
 
 1. Uninstall `@biomejs/biome`
-2. Verwijder `biome.json`
-3. Verwijder lint/format scripts uit `package.json`
-4. Optioneel: re-install ESLint/Prettier (apart traject)
+2. Remove `biome.json`
+3. Remove lint/format scripts from `package.json`
+4. Optional: re-install ESLint/Prettier (separate process)
 
 ## Notes
 
-Biome is veel sneller dan ESLint+Prettier (Rust-based). Geen plugins ecosystem zo groot als ESLint, maar volstaat voor de meeste projecten.
+Biome is much faster than ESLint+Prettier (Rust-based). Plugin ecosystem is not as large as ESLint, but sufficient for most projects.

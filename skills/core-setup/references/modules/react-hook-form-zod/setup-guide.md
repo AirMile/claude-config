@@ -1,16 +1,16 @@
 # React Hook Form + Zod Setup
 
-**Status:** stub — full guide te genereren via Context7 query.
+**Status:** stub — full guide to be generated via Context7 query.
 
 ## Detection
 
-| State           | Conditie                                        |
-| --------------- | ----------------------------------------------- |
-| `installed`     | `react-hook-form` EN `zod` in dependencies      |
-| `not-installed` | `react-hook-form` of `zod` niet in dependencies |
+| State           | Condition                                      |
+| --------------- | ---------------------------------------------- |
+| `installed`     | `react-hook-form` AND `zod` in dependencies    |
+| `not-installed` | `react-hook-form` or `zod` not in dependencies |
 
-Geen apart configuratiebestand — `installed` geldt als `already-installed-configured` voor PHASE 5 stap 0.
-Bridge package `@hookform/resolvers` is optioneel; aanwezigheid verandert state niet.
+No separate config file — `installed` counts as `already-installed-configured` for PHASE 5 step 0.
+Bridge package `@hookform/resolvers` is optional; its presence does not change state.
 
 ## Install (via Context7)
 
@@ -22,25 +22,25 @@ mcp__context7__query-docs(
 )
 ```
 
-Volg Context7 output voor:
+Follow Context7 output for:
 
 1. Install: `react-hook-form`, `zod`, `@hookform/resolvers`
-2. Voorbeeld form template met:
-   - Zod schema definitie
+2. Example form template with:
+   - Zod schema definition
    - `useForm({ resolver: zodResolver(schema) })`
-   - Field components met `register` + error display
+   - Field components with `register` + error display
 3. Inferred TypeScript types via `z.infer<typeof schema>`
 
 ## Framework specifics
 
 - **shadcn-ui present**: use `<Form>` components from shadcn that wrap RHF
-- **Server Actions (Next.js)**: combineer met server-side zod parse voor double validation
+- **Server Actions (Next.js)**: combine with server-side zod parse for double validation
 
 ## Teardown
 
-1. Uninstall alle drie packages
-2. Vervang form code door alternatief (HTML forms, andere lib)
+1. Uninstall all three packages
+2. Replace form code with alternative (HTML forms, other lib)
 
 ## Notes
 
-Zod is dual-use: gebruikt voor RHF resolver én voor server-side validation. Houd schemas in shared `lib/schemas/` voor herbruikbaarheid.
+Zod is dual-use: used for RHF resolver and for server-side validation. Keep schemas in shared `lib/schemas/` for reusability.

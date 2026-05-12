@@ -1,5 +1,5 @@
 extends Node
-## Memory benchmark: peak static memory in MB tijdens N seconden simulatie.
+## Memory benchmark: peak static memory in MB during N seconds of simulation.
 ## Print "SCORE=<peak_mb>" en quit. Lower is better.
 ## Substitueer: {DURATION_FRAMES}, {SCENE_TO_LOAD}.
 

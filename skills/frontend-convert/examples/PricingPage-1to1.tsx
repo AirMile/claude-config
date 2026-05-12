@@ -1,4 +1,4 @@
-// GOLD STANDARD — 1:1 modus
+// GOLD STANDARD — 1:1 mode
 // Faithfully reproduces the source visual. Hardcoded values are expected.
 // See source-description.md for the original visual this was converted from.
 // DEMONSTRATES: R001 (semantic HTML), R002 (alt text), R004 (aria-labels),
@@ -31,7 +31,7 @@ function PricingToggle({
   readonly onToggle: () => void;
 }) {
   return (
-    // SOURCE: toggle layout exact van bron
+    // SOURCE: toggle layout exactly from source
     <div className="flex items-center justify-center gap-4 mt-8">
       <span
         className={`text-[16px] ${!isYearly ? "font-semibold text-[#1A202C]" : "text-[#718096]"}`}
@@ -56,7 +56,7 @@ function PricingToggle({
       >
         Yearly
       </span>
-      {/* SOURCE: badge exact — #F6E05E achtergrond, #744210 tekst */}
+      {/* SOURCE: badge exact — #F6E05E background, #744210 text */}
       {isYearly && (
         <span className="bg-[#F6E05E] text-[#744210] text-[12px] font-bold px-2 py-0.5 rounded-full">
           -20%
@@ -78,7 +78,7 @@ function PricingTier({
   const displayPrice = isYearly ? yearlyPrice : price;
 
   return (
-    // SOURCE: highlighted tier krijgt #EBF4FF achtergrond + ring
+    // SOURCE: highlighted tier gets #EBF4FF background + ring
     <article
       className={`rounded-lg p-8 ${
         highlighted ? "bg-[#EBF4FF] ring-2 ring-[#3182CE]" : "bg-white"
@@ -87,7 +87,7 @@ function PricingTier({
       <h3 className="text-[24px] font-bold text-[#1A202C]">{name}</h3>
       <p className="mt-2 text-[16px] text-[#718096]">{description}</p>
 
-      {/* SOURCE: prijs exact — 48px, weight 800 */}
+      {/* SOURCE: price exact — 48px, weight 800 */}
       <p className="mt-6">
         <span className="text-[48px] font-extrabold text-[#1A202C]">
           ${displayPrice}
@@ -95,7 +95,7 @@ function PricingTier({
         <span className="text-[16px] text-[#718096]">/month</span>
       </p>
 
-      {/* SOURCE: feature lijst met groene checkmarks (#38A169) */}
+      {/* SOURCE: feature list with green checkmarks (#38A169) */}
       <ul className="mt-8 space-y-3" role="list">
         {features.map((feature) => (
           <li
@@ -119,7 +119,7 @@ function PricingTier({
         ))}
       </ul>
 
-      {/* SOURCE: CTA blauw (#3182CE), highlighted variant donkerder (#2B6CB0) */}
+      {/* SOURCE: CTA blue (#3182CE), highlighted variant darker (#2B6CB0) */}
       <button
         className={`mt-8 w-full py-3 text-[16px] font-semibold uppercase tracking-wide rounded-lg transition-colors ${
           highlighted
@@ -137,7 +137,7 @@ export default function PricingPage({ tiers }: PricingPageProps) {
   const [isYearly, setIsYearly] = useState(false);
 
   return (
-    // SOURCE: achtergrond #F7FAFC, volledige pagina layout
+    // SOURCE: background #F7FAFC, full page layout
     <main className="min-h-screen bg-[#F7FAFC]">
       <section className="max-w-5xl mx-auto px-6 py-20 text-center">
         {/* SOURCE: heading exact — 36px, weight 800, tight tracking */}
@@ -153,7 +153,7 @@ export default function PricingPage({ tiers }: PricingPageProps) {
           onToggle={() => setIsYearly(!isYearly)}
         />
 
-        {/* SOURCE: 3-kolom grid, responsive naar 1 kolom op mobiel */}
+        {/* SOURCE: 3-column grid, responsive to 1 column on mobile */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
           {tiers.map((tier) => (
             <PricingTier key={tier.name} {...tier} isYearly={isYearly} />

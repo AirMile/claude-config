@@ -1,6 +1,6 @@
-// GOLD STANDARD — Inspiratie modus
-// Zelfde bron als PricingPage-1to1.tsx, maar gemapped naar project THEME.md tokens.
-// Geen hardcoded kleuren of spacing — alleen standaard Tailwind classes + theme extensies.
+// GOLD STANDARD — Inspiration mode
+// Same source as PricingPage-1to1.tsx, but mapped to project THEME.md tokens.
+// No hardcoded colors or spacing — only standard Tailwind classes + theme extensions.
 // See source-description.md for the original visual this was converted from.
 // DEMONSTRATES: R001 (semantic HTML), R002 (alt text), R004 (aria-labels),
 // T002 (typed props), H101 (theme tokens), R103 (standard spacing)
@@ -10,17 +10,17 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-// TOKEN MAPPING (bron → project theme):
-// #2D3748 → bg-surface-dark     (header/footer achtergrond)
-// #F7FAFC → bg-surface           (pagina achtergrond)
+// TOKEN MAPPING (source → project theme):
+// #2D3748 → bg-surface-dark     (header/footer background)
+// #F7FAFC → bg-surface           (page background)
 // #EBF4FF → bg-primary/5         (highlighted tier)
-// #3182CE → bg-primary           (CTA, accenten)
+// #3182CE → bg-primary           (CTA, accents)
 // #2B6CB0 → bg-primary-dark      (hover states)
-// #1A202C → text-foreground       (primaire tekst)
-// #718096 → text-muted-foreground (secundaire tekst)
+// #1A202C → text-foreground       (primary text)
+// #718096 → text-muted-foreground (secondary text)
 // #38A169 → text-success          (checkmarks)
-// #F6E05E → bg-warning            (badge achtergrond)
-// #744210 → text-warning-dark     (badge tekst)
+// #F6E05E → bg-warning            (badge background)
+// #744210 → text-warning-dark     (badge text)
 
 interface PricingTierProps {
   readonly name: string;
@@ -43,7 +43,7 @@ function PricingToggle({
   readonly onToggle: () => void;
 }) {
   return (
-    // TOKEN: spacing via standaard Tailwind scale, niet arbitrary values
+    // TOKEN: spacing via standard Tailwind scale, not arbitrary values
     <div className="flex items-center justify-center gap-4 mt-8">
       <span
         className={cn(
@@ -97,7 +97,7 @@ function PricingTier({
   const displayPrice = isYearly ? yearlyPrice : price;
 
   return (
-    // TOKEN: bg-primary/5 ipv hardcoded #EBF4FF, ring-primary ipv ring-[#3182CE]
+    // TOKEN: bg-primary/5 instead of hardcoded #EBF4FF, ring-primary instead of ring-[#3182CE]
     <article
       className={cn(
         "rounded-lg p-8",
@@ -107,7 +107,7 @@ function PricingTier({
       <h3 className="text-2xl font-bold text-foreground">{name}</h3>
       <p className="mt-2 text-base text-muted-foreground">{description}</p>
 
-      {/* TOKEN: text-5xl ipv text-[48px] — standaard Tailwind scale */}
+      {/* TOKEN: text-5xl instead of text-[48px] — standard Tailwind scale */}
       <p className="mt-6">
         <span className="text-5xl font-extrabold text-foreground">
           ${displayPrice}
@@ -161,7 +161,7 @@ export default function PricingPage({ tiers }: PricingPageProps) {
     // TOKEN: bg-surface (was #F7FAFC)
     <main className="min-h-screen bg-surface">
       <section className="max-w-5xl mx-auto px-6 py-20 text-center">
-        {/* TOKEN: standaard Tailwind text-4xl ipv text-[36px] */}
+        {/* TOKEN: standard Tailwind text-4xl instead of text-[36px] */}
         <h1 className="text-4xl font-extrabold tracking-tight text-foreground">
           Simple, transparent pricing
         </h1>
@@ -174,7 +174,7 @@ export default function PricingPage({ tiers }: PricingPageProps) {
           onToggle={() => setIsYearly(!isYearly)}
         />
 
-        {/* Zelfde layout structuur als bron, maar met theme tokens */}
+        {/* Same layout structure as source, but with theme tokens */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
           {tiers.map((tier) => (
             <PricingTier key={tier.name} {...tier} isYearly={isYearly} />

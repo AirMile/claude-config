@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -162,7 +162,7 @@
           <input
             class="top-nav-search"
             id="search-input"
-            placeholder="Zoeken..."
+            placeholder="Search..."
             oninput="render()"
           />
           <div class="type-pills" id="type-pills"></div>
@@ -175,13 +175,13 @@
     <!-- Modal: add/edit -->
     <div class="modal-overlay" id="modal">
       <div class="modal">
-        <h3 id="modal-title">Card toevoegen</h3>
+        <h3 id="modal-title">Add card</h3>
 
-        <label for="field-name">Naam</label>
-        <input type="text" id="field-name" placeholder="feature-naam" />
+        <label for="field-name">Name</label>
+        <input type="text" id="field-name" placeholder="feature-name" />
 
-        <label for="field-desc">Beschrijving</label>
-        <textarea id="field-desc" placeholder="Korte beschrijving"></textarea>
+        <label for="field-desc">Description</label>
+        <textarea id="field-desc" placeholder="Short description"></textarea>
 
         <div class="modal-row">
           <div>
@@ -203,7 +203,7 @@
             </select>
           </div>
           <div>
-            <label for="field-phase">Prioriteit</label>
+            <label for="field-phase">Priority</label>
             <select id="field-phase">
               <option value="P1">P1</option>
               <option value="P2">P2</option>
@@ -213,14 +213,12 @@
           </div>
         </div>
 
-        <label for="field-dep"
-          >Dependencies (komma-gescheiden, optioneel)</label
-        >
+        <label for="field-dep">Dependencies (comma-separated, optional)</label>
         <input type="text" id="field-dep" placeholder="feature-a, feature-b" />
 
         <div class="modal-buttons">
-          <button class="btn-cancel" onclick="closeModal()">Annuleren</button>
-          <button class="btn-save" id="modal-save">Opslaan</button>
+          <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+          <button class="btn-save" id="modal-save">Save</button>
         </div>
       </div>
     </div>
@@ -228,19 +226,18 @@
     <!-- Modal: delete confirm -->
     <div class="modal-overlay" id="delete-modal">
       <div class="modal">
-        <h3>Card verwijderen</h3>
+        <h3>Delete card</h3>
         <p
           style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px"
         >
-          Weet je zeker dat je
-          <strong id="delete-name" style="color: var(--text)"></strong> wilt
-          verwijderen?
+          Are you sure you want to delete
+          <strong id="delete-name" style="color: var(--text)"></strong>?
         </p>
         <div class="modal-buttons">
           <button class="btn-cancel" onclick="closeDeleteModal()">
-            Annuleren
+            Cancel
           </button>
-          <button class="btn-danger" id="delete-confirm">Verwijderen</button>
+          <button class="btn-danger" id="delete-confirm">Delete</button>
         </div>
       </div>
     </div>
@@ -263,7 +260,7 @@
         DEFINED: "To build",
         DOING: "To verify",
         DONE: "To refactor",
-        CANCELLED: "Gearchiveerd",
+        CANCELLED: "Archived",
       };
 
       const TRANSITION_LABELS_FRONTEND = {
@@ -404,7 +401,7 @@
             });
             if (!res.ok) throw new Error("save failed");
           } catch {
-            toast("Server niet bereikbaar — start: node serve-backlog.js");
+            toast("Server not reachable — start: node serve-backlog.js");
           }
         }, 300);
       }
@@ -453,7 +450,7 @@
         row.setAttribute("aria-expanded", "true");
         panel.hidden = false;
         if (!panel.dataset.loaded) {
-          panel.innerHTML = '<div class="bk-diff-loading">Laden…</div>';
+          panel.innerHTML = '<div class="bk-diff-loading">Loading…</div>';
           const basePath = location.pathname.replace(
             /\/(backlog|dashboard)\/?$/,
             "",
@@ -468,16 +465,16 @@
             panel.innerHTML = renderDiff(d, row.dataset.path);
             panel.dataset.loaded = "1";
           } catch (e) {
-            panel.innerHTML = `<div class="bk-diff-error">Kon diff niet laden: ${esc(e.message)}</div>`;
+            panel.innerHTML = `<div class="bk-diff-error">Could not load diff: ${esc(e.message)}</div>`;
           }
         }
       }
 
       function renderDiff(d, filePath = "") {
         if (!d.git)
-          return '<div class="bk-diff-empty">Geen git-repo — diff niet beschikbaar.</div>';
+          return '<div class="bk-diff-empty">No git repo — diff not available.</div>';
         if (!d.tracked && !d.working)
-          return '<div class="bk-diff-empty">Bestand nog niet getrackt door git.</div>';
+          return '<div class="bk-diff-empty">File not yet tracked by git.</div>';
         const hasWorking = !!d.working;
         const hasRecent = !!d.recent;
         const showLabels = hasWorking && hasRecent;
@@ -492,14 +489,14 @@
         }
         if (hasRecent) {
           const label = showLabels
-            ? '<div class="bk-diff-label">Recente commits</div>'
+            ? '<div class="bk-diff-label">Recent commits</div>'
             : "";
           sections.push(
             `<div class="bk-diff-section">${label}${formatGitLog(d.recent, filePath)}</div>`,
           );
         }
         if (!sections.length)
-          return '<div class="bk-diff-empty">Geen wijzigingen gevonden.</div>';
+          return '<div class="bk-diff-empty">No changes found.</div>';
         return sections.join("");
       }
 
@@ -697,11 +694,11 @@
               await navigator.clipboard.writeText(cmd);
               const lbl = btn.querySelector(".action-label");
               const orig = lbl.textContent;
-              lbl.textContent = "Gekopieerd";
+              lbl.textContent = "Copied";
               setTimeout(() => {
                 lbl.textContent = orig;
               }, 1500);
-              toast("Gekopieerd: " + cmd);
+              toast("Copied: " + cmd);
             });
           });
         }
@@ -772,7 +769,7 @@
             }).length;
             blockedSuffix =
               blockedCount > 0
-                ? ` <span class="header-blocked-count">(${blockedCount} geblokkeerd)</span>`
+                ? ` <span class="header-blocked-count">(${blockedCount} blocked)</span>`
                 : "";
           }
 
@@ -786,7 +783,7 @@
                 ? "game"
                 : "dev";
             const cmd = `/${cmdPrefix}-${batchSkill}`;
-            batchBtnHtml = `<button class="group-batch-btn" data-cmd="${cmd}" title="Kopieer ${cmd}" aria-label="Kopieer ${cmd}">
+            batchBtnHtml = `<button class="group-batch-btn" data-cmd="${cmd}" title="Copy ${cmd}" aria-label="Copy ${cmd}">
                   <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
                   <span>batch (${items.length})</span>
                  </button>`;
@@ -794,7 +791,7 @@
 
           const addBtnHtml =
             status === "TODO"
-              ? `<button class="group-add-btn" data-cmd="/project-todo" title="Kopieer /project-todo" aria-label="Voeg todo toe">
+              ? `<button class="group-add-btn" data-cmd="/project-todo" title="Copy /project-todo" aria-label="Add todo">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
                  </button>`
               : "";
@@ -807,7 +804,7 @@
               e.stopPropagation();
               const cmd = addBtn.dataset.cmd;
               navigator.clipboard.writeText(cmd).then(() => {
-                toast(`Gekopieerd: ${cmd}`);
+                toast(`Copied: ${cmd}`);
               });
               return;
             }
@@ -831,7 +828,7 @@
                   render();
                 }
                 toast(
-                  `Gekopieerd: ${cmd}${targets.length ? ` — ${targets.length} gemarkeerd` : ""}`,
+                  `Copied: ${cmd}${targets.length ? ` — ${targets.length} marked` : ""}`,
                 );
               });
               return;
@@ -939,7 +936,7 @@
           const archHeader = document.createElement("div");
           archHeader.className = "group-header";
           archHeader.dataset.status = "CANCELLED";
-          archHeader.innerHTML = `<h2>${esc("Gearchiveerd")} (${cancelledItems.length})</h2>`;
+          archHeader.innerHTML = `<h2>${esc("Archived")} (${cancelledItems.length})</h2>`;
           archHeader.addEventListener("click", () => {
             archSection.classList.toggle("collapsed");
           });
@@ -953,7 +950,7 @@
           archSection.appendChild(archBody);
           board.appendChild(archSection);
 
-          sidebarHtml += `<a href="#cancelled-section" class="sb-cancelled" data-status="CANCELLED" style="opacity:0.45;font-size:11px">${esc("Gearchiveerd")} (${cancelledItems.length})</a>`;
+          sidebarHtml += `<a href="#cancelled-section" class="sb-cancelled" data-status="CANCELLED" style="opacity:0.45;font-size:11px">${esc("Archived")} (${cancelledItems.length})</a>`;
         }
 
         // Build sidebar
@@ -993,7 +990,7 @@
         if (isBlocked) {
           metaHtml += `<span class="dep-blocked-label">blocked by</span>`;
           unresolvedDeps.forEach((dep) => {
-            metaHtml += `<span class="dep-icon" title="Wacht op ${esc(dep)}">${esc(dep)}</span>`;
+            metaHtml += `<span class="dep-icon" title="Waiting for ${esc(dep)}">${esc(dep)}</span>`;
           });
         }
         if (f.auto && f.status !== "DONE") {
@@ -1003,7 +1000,7 @@
           ? f.gaps.filter((g) => g.status === "pending").length
           : 0;
         if (pendingGaps > 0) {
-          metaHtml += `<span class="gap-badge" title="${pendingGaps} ongekoppelde handler${pendingGaps > 1 ? "s" : ""} — run /frontend-design ${f.name} om te koppelen">⚠ ${pendingGaps} gap${pendingGaps > 1 ? "s" : ""}</span>`;
+          metaHtml += `<span class="gap-badge" title="${pendingGaps} unlinked handler${pendingGaps > 1 ? "s" : ""} — run /frontend-design ${f.name} to link">⚠ ${pendingGaps} gap${pendingGaps > 1 ? "s" : ""}</span>`;
         }
         if (f.status === "DONE" && f.refactor) {
           if (f.refactor === "ROLLED_BACK") {
@@ -1018,7 +1015,7 @@
           const refLabel = refType === "github" ? `#${refId}` : refId;
           metaHtml +=
             `<a class="card-ref-link card-ref-${esc(refType)}" href="${esc(f.externalRef.url)}" target="_blank" rel="noopener" title="${esc(f.externalRef.url)}">${esc(refLabel)}</a>` +
-            `<button class="card-ref-copy" data-copy="${esc(f.externalRef.url)}" title="Kopieer issue-URL">⎘</button>`;
+            `<button class="card-ref-copy" data-copy="${esc(f.externalRef.url)}" title="Copy issue URL">⎘</button>`;
         } else if (f.github_issue) {
           const ghNum = f.github_issue.match(/\/(\d+)$/);
           metaHtml += `<a class="card-gh-link" href="${esc(f.github_issue)}" target="_blank" rel="noopener" title="${esc(f.github_issue)}">#${ghNum ? ghNum[1] : "?"}</a>`;
@@ -1039,7 +1036,7 @@
         const copyTitle = copyCmd || f.name;
 
         const actionBtnHtml = isActive
-          ? `<button class="row-annuleer-btn" title="Annuleer">
+          ? `<button class="row-annuleer-btn" title="Cancel">
               <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 2l12 12M14 2L2 14"/></svg>
              </button>`
           : `<button class="row-copy-btn ${typeInfo.cls}" title="${copyTitle}" data-cmd="${copyCmd || ""}">
@@ -1053,23 +1050,23 @@
               ? `<button class="row-menu-item row-outsource-btn" data-cmd="/team-outsource ${esc(f.name)}">→ Outsource</button>`
               : "";
             return (
-              `<button class="row-menu-item row-edit-btn">✎ Bewerken</button>` +
+              `<button class="row-menu-item row-edit-btn">✎ Edit</button>` +
               outsourceItem +
-              `<button class="row-menu-item row-cancel-btn">○ Archiveren</button>` +
-              `<button class="row-menu-item row-delete-btn row-menu-item--danger">✕ Verwijderen</button>`
+              `<button class="row-menu-item row-cancel-btn">○ Archive</button>` +
+              `<button class="row-menu-item row-delete-btn row-menu-item--danger">✕ Delete</button>`
             );
           }
           if (f.status === "CANCELLED") {
             return (
-              `<button class="row-menu-item row-restore-btn">↩ Herstellen</button>` +
-              `<button class="row-menu-item row-delete-btn row-menu-item--danger">✕ Definitief verwijderen</button>`
+              `<button class="row-menu-item row-restore-btn">↩ Restore</button>` +
+              `<button class="row-menu-item row-delete-btn row-menu-item--danger">✕ Delete permanently</button>`
             );
           }
           return "";
         })();
         const editDeleteHtml = menuItemsHtml
           ? `<div class="row-menu-wrap">
-               <button class="row-menu-btn" title="Acties" aria-haspopup="menu" aria-expanded="false">⋯</button>
+               <button class="row-menu-btn" title="Actions" aria-haspopup="menu" aria-expanded="false">⋯</button>
                <div class="row-menu" role="menu" hidden>${menuItemsHtml}</div>
              </div>`
           : "";
@@ -1121,7 +1118,7 @@
                 syncJSON();
                 render();
               }
-              toast("Gekopieerd: " + cmd);
+              toast("Copied: " + cmd);
             });
           });
         }
@@ -1131,7 +1128,7 @@
           refCopyBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             navigator.clipboard.writeText(refCopyBtn.dataset.copy).then(() => {
-              toast("URL gekopieerd");
+              toast("URL copied");
             });
           });
         }
@@ -1142,7 +1139,7 @@
             e.stopPropagation();
             const cmd = outsourceBtn.dataset.cmd;
             navigator.clipboard.writeText(cmd).then(() => {
-              toast("Gekopieerd: " + cmd);
+              toast("Copied: " + cmd);
             });
           });
         }
@@ -1165,7 +1162,7 @@
               found.item.status = "CANCELLED";
               syncJSON();
               render();
-              toast(f.name + " gearchiveerd");
+              toast(f.name + " archived");
             }
           });
         if (restoreBtn)
@@ -1176,7 +1173,7 @@
               found.item.status = "TODO";
               syncJSON();
               render();
-              toast(f.name + " hersteld naar TODO");
+              toast(f.name + " restored to TODO");
             }
           });
 
@@ -1260,10 +1257,10 @@
               html += `<div class="expand-section"><div class="expand-label">Dependencies</div><div class="expand-deps">${f.dependencies.map((d) => `<span class="expand-dep">${esc(d)}</span>`).join("")}</div></div>`;
             }
             if (f.source) {
-              html += `<div class="expand-section"><div class="expand-label">Bron</div><div class="expand-summary">${esc(f.source)}</div></div>`;
+              html += `<div class="expand-section"><div class="expand-label">Source</div><div class="expand-summary">${esc(f.source)}</div></div>`;
             }
             if (f.date) {
-              html += `<div class="expand-section"><div class="expand-label">Datum</div><div class="expand-summary">${esc(f.date)}</div></div>`;
+              html += `<div class="expand-section"><div class="expand-label">Date</div><div class="expand-summary">${esc(f.date)}</div></div>`;
             }
           } else if (status === "DEFINED") {
             if (f.dependencies && f.dependencies.length > 0) {
@@ -1370,7 +1367,7 @@
 
           if (!html) {
             html =
-              '<div class="empty">Geen details beschikbaar — gebruik ⋮ voor acties</div>';
+              '<div class="empty">No details available — use ⋮ for actions</div>';
           }
 
           expandEl.innerHTML = html;
@@ -1416,14 +1413,14 @@
       function openAddModal(status) {
         editingName = null;
         addToStatus = status;
-        document.getElementById("modal-title").textContent = "Card toevoegen";
+        document.getElementById("modal-title").textContent = "Add card";
         document.getElementById("field-name").value = "";
         document.getElementById("field-desc").value = "";
         document.getElementById("field-type").value = "FEATURE";
         document.getElementById("field-phase").value = "P1";
         document.getElementById("field-dep").value = "";
         document.getElementById("field-name").disabled = false;
-        document.getElementById("modal-save").textContent = "Toevoegen";
+        document.getElementById("modal-save").textContent = "Add";
         document.getElementById("modal").classList.add("active");
         document.getElementById("field-name").focus();
       }
@@ -1433,7 +1430,7 @@
         if (!found) return;
         editingName = name;
         addToStatus = null;
-        document.getElementById("modal-title").textContent = "Card bewerken";
+        document.getElementById("modal-title").textContent = "Edit card";
         document.getElementById("field-name").value = found.item.name;
         document.getElementById("field-desc").value =
           found.item.description || "";
@@ -1443,7 +1440,7 @@
           found.item.dependencies || []
         ).join(", ");
         document.getElementById("field-name").disabled = false;
-        document.getElementById("modal-save").textContent = "Opslaan";
+        document.getElementById("modal-save").textContent = "Save";
         document.getElementById("modal").classList.add("active");
         document.getElementById("field-name").focus();
       }
@@ -1475,7 +1472,7 @@
           found.item.type = type;
           found.item.phase = phase;
           found.item.dependencies = deps;
-          toast(name + " bijgewerkt");
+          toast(name + " updated");
         } else {
           data.features.push({
             name,
@@ -1485,7 +1482,7 @@
             description: desc,
             dependencies: deps,
           });
-          toast(name + " toegevoegd");
+          toast(name + " added");
         }
 
         syncJSON();
@@ -1524,7 +1521,7 @@
           syncJSON();
           closeDeleteModal();
           render();
-          toast(name + " verwijderd");
+          toast(name + " deleted");
         });
 
       document
@@ -1598,7 +1595,7 @@
     <button
       id="back-to-top"
       onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
-      title="Naar boven"
+      title="Back to top"
     >
       ↑
     </button>

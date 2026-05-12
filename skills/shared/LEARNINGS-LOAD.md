@@ -73,7 +73,7 @@ Sort desc by `date`. Cap at 15 entries.
 
 ### Scope: `pitfall-prefix`
 
-Laatste 5 pitfalls (alle types `pitfall`, sorted desc op `date`), independent van feature-scope.
+Last 5 pitfalls (all types `pitfall`, sorted desc by `date`), independent of feature scope.
 
 ```
 matches = learnings

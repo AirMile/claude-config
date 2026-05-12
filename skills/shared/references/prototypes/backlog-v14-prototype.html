@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -532,8 +532,8 @@
       <header>
         <h1>E-commerce Dashboard</h1>
         <p>
-          Dashboard voor product management, orders, analytics en klantenbeheer.
-          Next.js + Prisma + Stripe.
+          Dashboard for product management, orders, analytics and customer
+          management. Next.js + Prisma + Stripe.
         </p>
       </header>
 
@@ -546,7 +546,7 @@
             >
             <a href="/prototypes/dashboard-v3-prototype.html">Dashboard</a>
             <span class="nav-spacer"></span>
-            <button class="nav-search" title="Zoeken">
+            <button class="nav-search" title="Search">
               <svg
                 width="14"
                 height="14"
@@ -581,35 +581,35 @@
           type: "FEATURE",
           phase: "P2",
           status: "TODO",
-          description: "Orderlijst met statusfilters en zoekfunctie",
+          description: "Order list with status filters and search",
         },
         {
           name: "stripe-integration",
           type: "INTEGRATION",
           phase: "P2",
           status: "TODO",
-          description: "Stripe checkout en webhook afhandeling",
+          description: "Stripe checkout and webhook handling",
         },
         {
           name: "analytics-dashboard",
           type: "INTEGRATION",
           phase: "P3",
           status: "TODO",
-          description: "Revenue grafieken, top producten, conversie",
+          description: "Revenue charts, top products, conversion",
         },
         {
           name: "dark-mode",
           type: "UI",
           phase: "P3",
           status: "TODO",
-          description: "Toggle met systeemvoorkeur detectie",
+          description: "Toggle with system preference detection",
         },
         {
           name: "performance-optimization",
           type: "REFACTOR",
           phase: "P3",
           status: "TODO",
-          description: "Image optimalisatie, lazy loading, bundle splitting",
+          description: "Image optimization, lazy loading, bundle splitting",
         },
         {
           name: "order-processing",
@@ -630,7 +630,7 @@
           type: "FEATURE",
           phase: "P1",
           status: "DEFINED",
-          description: "Producttabel met zoeken, filters en paginering",
+          description: "Product table with search, filters and pagination",
           requirements: 8,
           depends: "dashboard-layout",
         },
@@ -639,7 +639,7 @@
           type: "FEATURE",
           phase: "P2",
           status: "DEFINED",
-          description: "Product-editpagina met rich text editor",
+          description: "Product edit page with rich text editor",
           requirements: 5,
           depends: "api-products",
         },
@@ -649,13 +649,13 @@
           phase: "P1",
           status: "DOING",
           stage: "built",
-          description: "Sidebar nav, header met user menu, content area",
+          description: "Sidebar nav, header with user menu, content area",
           tests: "12/14",
           files: [
             {
               path: "src/components/layout/NavBar.tsx",
               action: "ADDED",
-              purpose: "Sticky top nav met user menu",
+              purpose: "Sticky top nav with user menu",
               snippet: `export function NavBar() {
   const { data: session } = useSession();
   return (
@@ -673,12 +673,12 @@
             {
               path: "src/components/layout/Sidebar.tsx",
               action: "ADDED",
-              purpose: "Collapsible sidebar met nav-links",
+              purpose: "Collapsible sidebar with nav links",
             },
             {
               path: "src/app/(dashboard)/layout.tsx",
               action: "ADDED",
-              purpose: "Wrapper layout voor dashboard routes",
+              purpose: "Wrapper layout for dashboard routes",
             },
           ],
         },
@@ -688,8 +688,8 @@
           phase: "P2",
           status: "DOING",
           stage: "defining",
-          description: "CRUD endpoints voor producten met image upload",
-          subStage: "FASE 2 (requirements)",
+          description: "CRUD endpoints for products with image upload",
+          subStage: "PHASE 2 (requirements)",
           files: [
             {
               path: "src/app/api/products/route.ts",
@@ -722,7 +722,7 @@
           refactor: "REFACTORED",
           shipped: true,
           shippedAt: daysAgo(12),
-          description: "Next.js app router setup met pagina structuur",
+          description: "Next.js app router setup with page structure",
         },
         {
           name: "auth-pages",
@@ -731,14 +731,14 @@
           status: "DONE",
           date: "17 Feb",
           refactor: "ROLLED_BACK",
-          description: "Login, registratie en wachtwoord-reset flows",
+          description: "Login, registration and password-reset flows",
           failureAnalysis:
             "Refactor extracted shared validation helper, but JWT tests regressed because token expiry semantics changed. Rolled back.",
           files: [
             {
               path: "src/app/(auth)/login/page.tsx",
               action: "ADDED",
-              purpose: "Login form met NextAuth credentials",
+              purpose: "Login form with NextAuth credentials",
               snippet: `"use client";
 export default function LoginPage() {
   const router = useRouter();
@@ -755,12 +755,12 @@ export default function LoginPage() {
             {
               path: "src/app/(auth)/register/page.tsx",
               action: "ADDED",
-              purpose: "Registratie form",
+              purpose: "Registration form",
             },
             {
               path: "src/app/(auth)/reset-password/page.tsx",
               action: "ADDED",
-              purpose: "Wachtwoord-reset flow",
+              purpose: "Password-reset flow",
             },
           ],
         },
@@ -771,12 +771,12 @@ export default function LoginPage() {
           status: "DONE",
           date: "17 Feb",
           refactor: null,
-          description: "JWT authenticatie endpoints met refresh tokens",
+          description: "JWT authentication endpoints with refresh tokens",
           files: [
             {
               path: "src/app/api/auth/[...nextauth]/route.ts",
               action: "ADDED",
-              purpose: "NextAuth config met credentials provider",
+              purpose: "NextAuth config with credentials provider",
               snippet: `export const authOptions = {
   providers: [
     Credentials({
@@ -813,10 +813,10 @@ export default function LoginPage() {
       };
 
       const PHASE_TIPS = {
-        P1: "Must — kernfunctionaliteit",
-        P2: "Should — belangrijk maar niet kritiek",
-        P3: "Could — leuke toevoeging",
-        P4: "Maybe — nog niet zeker",
+        P1: "Must — core functionality",
+        P2: "Should — important but not critical",
+        P3: "Could — nice addition",
+        P4: "Maybe — not yet certain",
       };
 
       function esc(s) {
@@ -853,12 +853,12 @@ export default function LoginPage() {
           );
         } else if (f.status === "DONE" && !f.refactor) {
           extra.push(
-            `<span class="badge" style="opacity:.7">niet gerefactored</span>`,
+            `<span class="badge" style="opacity:.7">not refactored</span>`,
           );
         }
         return `
           <div class="row" onclick="openModal('${esc(f.name)}')" onmouseenter="setHovered('${esc(copyValue)}')" onmouseleave="setHovered(null)">
-            <button class="copy-btn" onclick="event.stopPropagation();copyText('${esc(copyValue)}')" title="Kopieer (C)">⎘</button>
+            <button class="copy-btn" onclick="event.stopPropagation();copyText('${esc(copyValue)}')" title="Copy (C)">⎘</button>
             <span class="row-name">${esc(f.name)}</span>
             ${typeBadge}
             ${extra.join(" ")}
@@ -913,7 +913,7 @@ export default function LoginPage() {
           ? `<span class="group-hint">${opts.hint}</span>`
           : "";
         const copyBtn = opts.copyText
-          ? `<button class="section-copy-btn" onclick="event.stopPropagation();copyText('${esc(opts.copyText)}')" title="Batch kopieer">⎘ ${esc(opts.copyText)}</button>`
+          ? `<button class="section-copy-btn" onclick="event.stopPropagation();copyText('${esc(opts.copyText)}')" title="Batch copy">⎘ ${esc(opts.copyText)}</button>`
           : "";
         const content =
           body ||
@@ -1090,7 +1090,7 @@ export default function LoginPage() {
                       <span class="fm-action ${file.action.toLowerCase()}">${actionIcon[file.action] || "·"}</span>
                       <span class="fm-path">${esc(file.path)}</span>
                       <span class="fm-purpose">${esc(file.purpose || "")}</span>
-                      ${file.snippet ? `<button class="fm-snippet-btn" onclick="toggleSnippet(this)" title="Code tonen">{ }</button>` : ""}
+                      ${file.snippet ? `<button class="fm-snippet-btn" onclick="toggleSnippet(this)" title="Show code">{ }</button>` : ""}
                     </div>
                     ${file.snippet ? `<div class="fm-snippet-body" style="display:none"><pre class="fm-snippet-pre"><code>${esc(file.snippet)}</code></pre></div>` : ""}
                   </div>`,
@@ -1153,7 +1153,7 @@ export default function LoginPage() {
 
       function copyText(text) {
         navigator.clipboard.writeText(text).catch(() => {});
-        toast("Gekopieerd: " + text);
+        toast("Copied: " + text);
       }
 
       document.addEventListener("keydown", (e) => {

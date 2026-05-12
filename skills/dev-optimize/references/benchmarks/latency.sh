@@ -1,7 +1,7 @@
 #!/bin/bash
 # API latency benchmark — p95 ms via wrk tegen lokale server.
 # Print één regel: SCORE=<float in ms>
-# Vereist: wrk in PATH, server draaiend op $URL.
+# Requires: wrk in PATH, server running on $URL.
 set -euo pipefail
 
 URL="${URL:-http://localhost:3000/api/health}"
@@ -9,13 +9,13 @@ DURATION="${DURATION:-10}"
 CONNECTIONS="${CONNECTIONS:-50}"
 
 if ! command -v wrk >/dev/null 2>&1; then
-  echo "wrk niet geïnstalleerd. Installeer via brew install wrk / apt install wrk." >&2
+  echo "wrk not installed. Install via brew install wrk / apt install wrk." >&2
   echo "SCORE=999999"
   exit 1
 fi
 
 if ! curl -sf "$URL" >/dev/null 2>&1; then
-  echo "Server niet bereikbaar op $URL — start server eerst." >&2
+  echo "Server not reachable at $URL — start the server first." >&2
   echo "SCORE=999999"
   exit 1
 fi

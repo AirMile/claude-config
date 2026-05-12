@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -553,8 +553,8 @@
       <header>
         <h1>E-commerce Dashboard</h1>
         <p>
-          Internal admin voor productcatalogus, orders, analytics en
-          klantbeheer.
+          Internal admin for product catalog, orders, analytics and customer
+          management.
         </p>
       </header>
       <div class="layout">
@@ -566,7 +566,7 @@
               >Dashboard</a
             >
             <span class="nav-spacer"></span>
-            <button class="nav-search" title="Zoeken">
+            <button class="nav-search" title="Search">
               <svg
                 width="14"
                 height="14"
@@ -621,14 +621,14 @@
           name: "routing",
           type: "FEATURE",
           summary:
-            "App router geconfigureerd met nested layouts, loading/error states en type-safe route helpers.",
+            "App router configured with nested layouts, loading/error states and type-safe route helpers.",
           refactor: "REFACTORED",
           shippedAt: daysAgo(12),
           files: [
             {
               path: "src/app/layout.tsx",
               action: "ADDED",
-              purpose: "Root layout met nav + auth context",
+              purpose: "Root layout with nav + auth context",
               snippet: `import { Inter } from "next/font/google";
       import { SessionProvider } from "@/components/auth/SessionProvider";
       import { NavBar } from "@/components/layout/NavBar";
@@ -651,7 +651,7 @@
             {
               path: "src/app/page.tsx",
               action: "ADDED",
-              purpose: "Dashboard startpagina",
+              purpose: "Dashboard home page",
               snippet: `import { redirect } from "next/navigation";
       import { getServerSession } from "next-auth";
       import { authOptions } from "@/lib/auth";
@@ -694,8 +694,7 @@
         {
           name: "add-loading-skeletons",
           type: "CHANGE",
-          summary:
-            "Skeleton loaders toegevoegd aan product list en order table.",
+          summary: "Skeleton loaders added to product list and order table.",
           shippedAt: daysAgo(8),
         },
       ];
@@ -705,11 +704,11 @@
           {
             name: "NavBar",
             description:
-              "Sticky top nav met user menu en actieve route highlight",
+              "Sticky top nav with user menu and active route highlight",
           },
           {
             name: "PageShell",
-            description: "Container met sidebar + main content slot",
+            description: "Container with sidebar + main content slot",
           },
         ],
         auth: [
@@ -725,7 +724,7 @@
         feature: [
           {
             name: "ProductTable",
-            description: "Sortable + filterable product list met paginering",
+            description: "Sortable + filterable product list with pagination",
           },
           {
             name: "OrderStatusBadge",
@@ -733,17 +732,17 @@
           },
           {
             name: "KpiCard",
-            description: "Stat card met trend indicator",
+            description: "Stat card with trend indicator",
           },
         ],
         shared: [
           {
             name: "DataTable",
-            description: "Generieke gesorteerde tabel met kolom-config",
+            description: "Generic sorted table with column config",
           },
           {
             name: "EmptyState",
-            description: "Lege lijst placeholder met CTA",
+            description: "Empty list placeholder with CTA",
           },
         ],
       };
@@ -751,47 +750,46 @@
       const PAGES = [
         {
           name: "/dashboard",
-          purpose: "KPI-overzicht: revenue, orders, conversie",
+          purpose: "KPI overview: revenue, orders, conversion",
         },
-        { name: "/products", purpose: "Productcatalogus met zoek + filters" },
-        { name: "/products/:id", purpose: "Product-editpagina met rich text" },
-        { name: "/orders", purpose: "Orderlijst met statusfilters" },
-        { name: "/orders/:id", purpose: "Orderdetail met timeline" },
-        { name: "/login", purpose: "Inlogpagina" },
+        { name: "/products", purpose: "Product catalog with search + filters" },
+        { name: "/products/:id", purpose: "Product edit page with rich text" },
+        { name: "/orders", purpose: "Order list with status filters" },
+        { name: "/orders/:id", purpose: "Order detail with timeline" },
+        { name: "/login", purpose: "Login page" },
       ];
 
       const FLOWS = [
         {
-          name: "Product aanmaken",
-          steps: ["Klik + nieuw", "Formulier invullen", "Opslaan → detail"],
+          name: "Create product",
+          steps: ["Click + new", "Fill in form", "Save → detail"],
           description: "3 steps, no intermediate storage",
         },
         {
-          name: "Order verwerken",
-          steps: ["Selecteer order", "Update status", "Bevestig met reden"],
-          description: "Inline actie zonder aparte pagina",
+          name: "Process order",
+          steps: ["Select order", "Update status", "Confirm with reason"],
+          description: "Inline action without separate page",
         },
         {
           name: "Checkout",
-          steps: ["Cart", "Betaling (Stripe)", "Bevestigingsmail"],
-          description: "Klant-flow, niet admin",
+          steps: ["Cart", "Payment (Stripe)", "Confirmation email"],
+          description: "Customer flow, not admin",
         },
       ];
 
       const PRINCIPLES = [
         {
           name: "Admin-first",
-          description:
-            "Optimaliseer voor power users — dichte tabellen boven kaarten",
+          description: "Optimize for power users — dense tables over cards",
         },
         {
-          name: "Expliciete acties",
-          description: "Geen auto-save; elk opslaan is een bewuste handeling",
+          name: "Explicit actions",
+          description: "No auto-save; every save is a deliberate action",
         },
         {
-          name: "Status altijd zichtbaar",
+          name: "Status always visible",
           description:
-            "Order- en productstatus altijd in beeld, nooit verborgen in hover",
+            "Order and product status always visible, never hidden in hover",
         },
       ];
 
@@ -799,31 +797,30 @@
         {
           title: "JWT in httpOnly cookie",
           date: daysAgo(58),
-          rationale: "Beschermt tegen XSS — token nooit in localStorage",
+          rationale: "Protects against XSS — token never in localStorage",
         },
         {
-          title: "Prisma als ORM",
+          title: "Prisma as ORM",
           date: daysAgo(72),
-          rationale: "Type-safe queries + automatische migraties",
+          rationale: "Type-safe queries + automatic migrations",
         },
         {
-          title: "Server Components voor datalijsten",
+          title: "Server Components for data lists",
           date: daysAgo(40),
-          rationale:
-            "Geen client-side hydration voor tabellen → snellere first load",
+          rationale: "No client-side hydration for tables → faster first load",
         },
       ];
 
       const THINKING_NOTES = [
         {
-          title: "Multi-currency buiten scope MVP",
+          title: "Multi-currency out of MVP scope",
           date: daysAgo(30),
-          body: "Stripe multi-currency vereist currency-per-product opslag en wisselkoers-sync. Uitgesteld naar v2.",
+          body: "Stripe multi-currency requires currency-per-product storage and exchange rate sync. Deferred to v2.",
         },
         {
           title: "Realtime orders via SSE vs WebSocket",
           date: daysAgo(18),
-          body: "SSE eenvoudiger voor unidirectionele push (server → client). WebSocket alleen als reactieve updates nodig zijn.",
+          body: "SSE simpler for unidirectional push (server → client). WebSocket only when reactive updates are needed.",
         },
       ];
 
@@ -831,12 +828,12 @@
         {
           title: "Next.js RSC hydration boundary",
           date: daysAgo(14),
-          body: "Client components in RSC context vereisen expliciete 'use client'. Props van Server → Client moeten serialiseerbaar zijn.",
+          body: "Client components in RSC context require explicit 'use client'. Props from Server → Client must be serializable.",
         },
         {
           title: "Prisma N+1 in nested includes",
           date: daysAgo(22),
-          body: "Gebruik select in plaats van include bij grote nested relaties. findMany + select is 3× sneller in testdata.",
+          body: "Use select instead of include for large nested relations. findMany + select is 3× faster on test data.",
         },
       ];
 
@@ -844,32 +841,32 @@
         {
           method: "GET",
           route: "/api/products",
-          purpose: "Product list met paginering + filters",
+          purpose: "Product list with pagination + filters",
         },
         {
           method: "POST",
           route: "/api/products",
-          purpose: "Nieuw product aanmaken",
+          purpose: "Create new product",
         },
         {
           method: "PUT",
           route: "/api/products/:id",
-          purpose: "Product updaten",
+          purpose: "Update product",
         },
         {
           method: "DELETE",
           route: "/api/products/:id",
-          purpose: "Product verwijderen",
+          purpose: "Delete product",
         },
         {
           method: "GET",
           route: "/api/orders",
-          purpose: "Orderoverzicht met statusfilter",
+          purpose: "Order overview with status filter",
         },
         {
           method: "PUT",
           route: "/api/orders/:id/status",
-          purpose: "Order status updaten",
+          purpose: "Update order status",
         },
         {
           method: "ALL",
@@ -1104,7 +1101,7 @@
           (f) => `
                 <div class="row">
                   <span class="row-name">${esc(f.name)}</span>
-                  <span class="row-meta" style="flex:1">${esc(f.description)} · ${f.steps.length} stappen</span>
+                  <span class="row-meta" style="flex:1">${esc(f.description)} · ${f.steps.length} steps</span>
                 </div>`,
         ).join("");
         const principlesHtml = PRINCIPLES.map(
@@ -1153,7 +1150,7 @@
           (f) => `
                 <div class="row">
                   <span class="row-name">${esc(f.name)}</span>
-                  <span class="row-meta" style="flex:1">${esc(f.description)} · ${f.steps.length} stappen</span>
+                  <span class="row-meta" style="flex:1">${esc(f.description)} · ${f.steps.length} steps</span>
                 </div>`,
         ).join("");
         const principlesHtml = PRINCIPLES.map(
@@ -1164,7 +1161,7 @@
                 </div>`,
         ).join("");
         return (
-          subSection("Beslissingen", DECISIONS.length, decisionsHtml) +
+          subSection("Decisions", DECISIONS.length, decisionsHtml) +
           subSection("Thinking", THINKING_NOTES.length, thinkingHtml) +
           subSection("Learnings", LEARNINGS.length, learningsHtml) +
           subSection("Flows", FLOWS.length, flowsHtml) +
@@ -1213,7 +1210,7 @@
           )
           .join("");
         return (
-          subSection("Kleuren", allColors.length, colorsHtml) +
+          subSection("Colors", allColors.length, colorsHtml) +
           subSection("Type", THEME.type.length, typeHtml) +
           subSection("Spacing", THEME.spacing.length, spacingHtml)
         );
@@ -1384,7 +1381,7 @@
                             <span class="fm-action ${file.action.toLowerCase()}">${actionIcon[file.action] || "·"}</span>
                             <span class="fm-path">${esc(file.path)}</span>
                             <span class="fm-purpose">${esc(file.purpose || "")}</span>
-                            ${file.snippet ? `<button class="fm-snippet-btn" onclick="toggleSnippet(this)" title="Code tonen">{ }</button>` : ""}
+                            ${file.snippet ? `<button class="fm-snippet-btn" onclick="toggleSnippet(this)" title="Show code">{ }</button>` : ""}
                           </div>
                           ${file.snippet ? `<div class="fm-snippet-body" style="display:none"><pre class="fm-snippet-pre"><code>${esc(file.snippet)}</code></pre></div>` : ""}
                         </div>`,

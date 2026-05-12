@@ -40,7 +40,7 @@ When designing, ask:
 // Testbaar
 function processOrder(order, paymentGateway) {}
 
-// Niet testbaar
+// Not testable
 function processOrder(order) {
   const gateway = new StripeGateway();
 }
@@ -52,7 +52,7 @@ function processOrder(order) {
 // Testbaar
 function calculateDiscount(cart): Discount {}
 
-// Niet testbaar
+// Not testable
 function applyDiscount(cart): void {
   cart.total -= discount;
 }

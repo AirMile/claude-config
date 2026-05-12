@@ -1,15 +1,15 @@
 # TanStack Query Setup
 
-**Status:** stub — full guide te genereren via Context7 query.
+**Status:** stub — full guide to be generated via Context7 query.
 
 ## Detection
 
-| State           | Conditie                                     |
-| --------------- | -------------------------------------------- |
-| `installed`     | `@tanstack/react-query` in dependencies      |
-| `not-installed` | `@tanstack/react-query` niet in dependencies |
+| State           | Condition                                   |
+| --------------- | ------------------------------------------- |
+| `installed`     | `@tanstack/react-query` in dependencies     |
+| `not-installed` | `@tanstack/react-query` not in dependencies |
 
-Geen apart configuratiebestand — `installed` geldt als `already-installed-configured` voor PHASE 5 stap 0.
+No separate config file — `installed` counts as `already-installed-configured` for PHASE 5 step 0.
 
 ## Install (via Context7)
 
@@ -21,24 +21,24 @@ mcp__context7__query-docs(
 )
 ```
 
-Volg Context7 output voor:
+Follow Context7 output for:
 
-1. Install: `@tanstack/react-query` + optioneel `@tanstack/react-query-devtools`
-2. `QueryClient` setup met defaults (staleTime, retry, etc.)
+1. Install: `@tanstack/react-query` + optional `@tanstack/react-query-devtools`
+2. `QueryClient` setup with defaults (staleTime, retry, etc.)
 3. `QueryClientProvider` in root layout / app entry
-4. Optional: hydration boundary voor Next.js Server Components
+4. Optional: hydration boundary for Next.js Server Components
 
 ## Framework specifics
 
 - **Next.js (App Router)**: use `HydrationBoundary` for server-prefetched data
-- **Vite (SPA)**: simpel `QueryClientProvider` in `main.tsx`
+- **Vite (SPA)**: simple `QueryClientProvider` in `main.tsx`
 
 ## Teardown
 
 1. Uninstall TanStack Query packages
-2. Verwijder `QueryClientProvider` uit root
-3. Vervang `useQuery` / `useMutation` calls door fetch alternatief (handmatig)
+2. Remove `QueryClientProvider` from root
+3. Replace `useQuery` / `useMutation` calls with fetch alternative (manual)
 
 ## Notes
 
-Voor mutations: configureer `queryClient.invalidateQueries` patterns. Voor type-safety: combineer met OpenAPI/tRPC client als die in de stack zit.
+For mutations: configure `queryClient.invalidateQueries` patterns. For type-safety: combine with OpenAPI/tRPC client if present in the stack.

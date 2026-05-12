@@ -170,14 +170,14 @@ http
       // Security: no path traversal
       if (projectDir.includes("..")) {
         res.writeHead(400);
-        res.end("Ongeldig pad");
+        res.end("Invalid path");
         return;
       }
 
       const projectPath = path.join(PROJECTS_ROOT, projectDir);
       if (!fs.existsSync(projectPath)) {
         res.writeHead(404);
-        res.end("Project niet gevonden: " + esc(projectDir));
+        res.end("Project not found: " + esc(projectDir));
         return;
       }
 
@@ -652,7 +652,7 @@ http
 
         if (featureName.includes("..")) {
           res.writeHead(400);
-          res.end("Ongeldig pad");
+          res.end("Invalid path");
           return;
         }
 
@@ -729,7 +729,7 @@ http
 
         if (!result) {
           res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Feature niet gevonden" }));
+          res.end(JSON.stringify({ error: "Feature not found" }));
           return;
         }
 
@@ -745,18 +745,18 @@ http
         const rel = assetUrl.searchParams.get("path");
         if (!rel || rel.includes("..")) {
           res.writeHead(400);
-          res.end("Ongeldig pad");
+          res.end("Invalid path");
           return;
         }
         if (!/^\.project\/(snapshots|screenshots)\//.test(rel)) {
           res.writeHead(403);
-          res.end("Pad niet toegestaan");
+          res.end("Path not allowed");
           return;
         }
         const absAsset = path.join(projectPath, rel);
         if (!fs.existsSync(absAsset)) {
           res.writeHead(404);
-          res.end("Niet gevonden");
+          res.end("Not found");
           return;
         }
         const ext = path.extname(absAsset).toLowerCase();
@@ -769,7 +769,7 @@ http
         }[ext];
         if (!mime) {
           res.writeHead(415);
-          res.end("Ongeldig type");
+          res.end("Invalid type");
           return;
         }
         res.writeHead(200, {
@@ -789,7 +789,7 @@ http
 
         if (!relPath) {
           res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "path parameter verplicht" }));
+          res.end(JSON.stringify({ error: "path parameter required" }));
           return;
         }
 
@@ -803,7 +803,7 @@ http
           resolvedPath !== projectPath
         ) {
           res.writeHead(403, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Toegang geweigerd" }));
+          res.end(JSON.stringify({ error: "Access denied" }));
           return;
         }
 
@@ -836,13 +836,13 @@ http
         var fileExt = path.extname(resolvedPath).toLowerCase();
         if (!ALLOWED_EXTS.includes(fileExt)) {
           res.writeHead(403, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Bestandstype niet toegestaan" }));
+          res.end(JSON.stringify({ error: "File type not allowed" }));
           return;
         }
 
         if (!fs.existsSync(resolvedPath)) {
           res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Bestand niet gevonden" }));
+          res.end(JSON.stringify({ error: "File not found" }));
           return;
         }
 
@@ -895,13 +895,13 @@ http
         const relPath = parts.slice(2).join("/");
         if (relPath.includes("..")) {
           res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Ongeldig pad" }));
+          res.end(JSON.stringify({ error: "Invalid path" }));
           return;
         }
         const filePath = path.join(projectPath, relPath);
         if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
           res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Bestand niet gevonden" }));
+          res.end(JSON.stringify({ error: "File not found" }));
           return;
         }
         try {
@@ -942,7 +942,7 @@ http
 
           if (!candidates.length) {
             res.writeHead(500, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "VS Code CLI niet gevonden" }));
+            res.end(JSON.stringify({ error: "VS Code CLI not found" }));
             return;
           }
 
@@ -965,7 +965,7 @@ http
         const relPath = parts.slice(2).join("/");
         if (relPath.includes("..")) {
           res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Ongeldig pad" }));
+          res.end(JSON.stringify({ error: "Invalid path" }));
           return;
         }
         const isGit = fs.existsSync(path.join(projectPath, ".git"));

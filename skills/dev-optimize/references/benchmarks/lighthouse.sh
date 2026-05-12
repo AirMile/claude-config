@@ -7,7 +7,7 @@ set -euo pipefail
 URL="${URL:-http://localhost:4173}"
 CATEGORY="${CATEGORY:-performance}"
 
-# Build + preview-server in achtergrond opstarten als nog niet draaiend
+# Start build + preview server in background if not already running
 if ! curl -sf "$URL" >/dev/null 2>&1; then
   npm run build >/dev/null 2>&1
   npx --yes serve -s dist -l 4173 >/dev/null 2>&1 &

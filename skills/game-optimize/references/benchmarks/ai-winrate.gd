@@ -1,15 +1,15 @@
 extends Node
 ## AI win-rate benchmark: simuleer N matches, print percentage wins.
-## Print "SCORE=<winrate_pct>" en quit. Higher is better.
-## Substitueer: {MATCH_COUNT}, {AI_RUNNER_SCRIPT_PATH}.
+## Print "SCORE=<winrate_pct>" and quit. Higher is better.
+## Substitute: {MATCH_COUNT}, {AI_RUNNER_SCRIPT_PATH}.
 ##
-## Vereist: een script op AI_RUNNER_SCRIPT_PATH dat een functie heeft:
-##   func run_match(seed: int) -> bool   # true = AI wint
-## Zo niet aanwezig: maak deze in je project of pas dit benchmark aan.
+## Requires: a script at AI_RUNNER_SCRIPT_PATH that has a function:
+##   func run_match(seed: int) -> bool   # true = AI wins
+## If not present: create it in your project or adapt this benchmark.
 
 const MATCH_COUNT: int = {MATCH_COUNT}
 const AI_RUNNER_SCRIPT_PATH: String = "{AI_RUNNER_SCRIPT_PATH}"
-const FIXED_SEED_BASE: int = 42  # determinisme — verander niet per run
+const FIXED_SEED_BASE: int = 42  # determinism — do not change per run
 
 func _ready() -> void:
 	var runner_script: Script = load(AI_RUNNER_SCRIPT_PATH)

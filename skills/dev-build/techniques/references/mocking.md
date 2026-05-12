@@ -1,33 +1,33 @@
-# Mocking Richtlijnen
+# Mocking Guidelines
 
-## Wanneer mocken
+## When to mock
 
-Mock alleen op **system boundaries**:
+Mock only at **system boundaries**:
 
-- Externe APIs (payment, email, third-party services)
-- Databases (soms — prefer test DB)
+- External APIs (payment, email, third-party services)
+- Databases (sometimes — prefer test DB)
 - Time / randomness
-- File system (soms)
+- File system (sometimes)
 
-## Wanneer NIET mocken
+## When NOT to mock
 
-- Eigen modules en classes
-- Interne collaborators
-- Alles wat je zelf beheert
+- Own modules and classes
+- Internal collaborators
+- Everything you own yourself
 
-**Rode vlag:** als je een mock schrijft voor code die je team heeft geschreven, test je waarschijnlijk implementation details.
+**Red flag:** if you write a mock for code your team wrote, you are probably testing implementation details.
 
 ## Dependency Injection
 
-Pass externe dependencies in, maak ze niet intern aan:
+Pass external dependencies in, don't create them internally:
 
 ```typescript
-// Testbaar — mock paymentClient in tests
+// Testable — mock paymentClient in tests
 function processPayment(order, paymentClient) {
   return paymentClient.charge(order.total);
 }
 
-// Niet testbaar — hardcoded dependency
+// Not testable — hardcoded dependency
 function processPayment(order) {
   const client = new StripeClient(process.env.STRIPE_KEY);
   return client.charge(order.total);
@@ -36,7 +36,7 @@ function processPayment(order) {
 
 ## SDK-style interfaces
 
-Maak specifieke functies per externe operatie, niet één generieke fetcher:
+Create specific functions per external operation, not one generic fetcher:
 
 ```typescript
 // Good — every function is independently mockable
@@ -46,14 +46,14 @@ const api = {
   createOrder: (data) => fetch("/orders", { method: "POST", body: data }),
 };
 
-// Slecht — mock vereist conditionele logica
+// Bad — mock requires conditional logic
 const api = {
   fetch: (endpoint, options) => fetch(endpoint, options),
 };
 ```
 
-Voordelen SDK-style:
+SDK-style advantages:
 
-- Elke mock retourneert één specifieke shape
-- Geen conditionele logica in test setup
+- Each mock returns one specific shape
+- No conditional logic in test setup
 - Type safety per endpoint

@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <title>Dashboard</title>
     <script src="/lib/themes.js"></script>
-    <link rel="stylesheet" href="/css/dashboard.css?v=7" />
+    <link rel="stylesheet" href="/css/dashboard.css?v=8" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
@@ -23,12 +23,12 @@
     <script id="dashboard-data" type="application/json">
       {
         "concept": {
-          "name": "Voorbeeld Project",
-          "content": "# Voorbeeld Project\n\nEen voorbeeld project om het dashboard te demonstreren.\n\n## Core Concept\n\nDit is een demo van het project dashboard met alle secties.\n\n## Doelgroep\n\nDevelopers en designers.\n\n## Scope\n\nIn scope: dashboard UI. Uit scope: productie deployment."
+          "name": "Example Project",
+          "content": "# Example Project\n\nA sample project to demonstrate the dashboard.\n\n## Core Concept\n\nThis is a demo of the project dashboard with all sections.\n\n## Target audience\n\nDevelopers and designers.\n\n## Scope\n\nIn scope: dashboard UI. Out of scope: production deployment."
         },
         "architecture": {
           "diagram": "graph TD\n  Client[Browser Client] --> Gateway[API Gateway]\n  Gateway --> Auth[Auth Service]\n  Gateway --> App[App Service]\n  App --> DB[(PostgreSQL)]\n  App --> Cache[(Redis Cache)]\n  Auth --> DB\n  App --> Queue[Message Queue]\n  Queue --> Worker[Background Worker]\n  Worker --> DB",
-          "description": "## Overzicht\n\nHet systeem volgt een service-georiënteerde architectuur met een centrale API gateway.\n\n## Componenten\n\n- **API Gateway** — Routing, rate limiting, request validation\n- **Auth Service** — JWT authenticatie, sessie management\n- **App Service** — Core business logic\n- **Background Worker** — Async taken via message queue"
+          "description": "## Overview\n\nThe system follows a service-oriented architecture with a central API gateway.\n\n## Components\n\n- **API Gateway** — Routing, rate limiting, request validation\n- **Auth Service** — JWT authentication, session management\n- **App Service** — Core business logic\n- **Background Worker** — Async tasks via message queue"
         },
         "theme": {
           "colors": {
@@ -239,10 +239,10 @@
     <!-- Modal -->
     <div class="modal-overlay" id="modal">
       <div class="modal">
-        <h3 id="modal-title">Bewerken</h3>
+        <h3 id="modal-title">Edit</h3>
         <div id="modal-body"></div>
         <div class="modal-buttons">
-          <button class="btn-cancel" onclick="closeModal()">Annuleren</button>
+          <button class="btn-cancel" onclick="closeModal()">Cancel</button>
           <button
             class="btn-danger"
             id="modal-delete"
@@ -252,7 +252,7 @@
             Verwijderen
           </button>
           <button class="btn-save" id="modal-save" onclick="handleModalSave()">
-            Opslaan
+            Save
           </button>
         </div>
       </div>
@@ -265,7 +265,7 @@
     <div class="diagram-lightbox" id="diagram-lightbox">
       <div class="diagram-lightbox-toolbar">
         <span class="diagram-lightbox-hint"
-          >Scroll om te zoomen &middot; Sleep om te pannen</span
+          >Scroll to zoom &middot; Drag to pan</span
         >
         <button class="diagram-lightbox-close" onclick="closeDiagramLightbox()">
           &times;
@@ -291,7 +291,7 @@
           <button
             class="modal-close"
             onclick="closeFeatureModal()"
-            title="Sluiten"
+            title="Close"
           >
             ✕
           </button>
@@ -448,9 +448,9 @@
               body: JSON.stringify(data),
             });
             if (!res.ok) throw new Error("save failed");
-            toast("Opgeslagen");
+            toast("Saved");
           } catch {
-            toast("Server niet bereikbaar");
+            toast("Server not reachable");
           }
         }, 300);
       }
@@ -479,8 +479,8 @@
           ? "none"
           : "";
         document.querySelector("#modal .btn-cancel").textContent = isReadOnly
-          ? "Sluiten"
-          : "Annuleren";
+          ? "Close"
+          : "Cancel";
         document.getElementById("modal").classList.add("active");
         if (isReadOnly) {
           document.querySelector("#modal .modal").style.maxWidth = ctx.wide
@@ -653,7 +653,7 @@
         return `
           <div class="section-header">
             <h2>Concept</h2>
-            <button class="header-icon-btn" onclick="editConcept()" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+            <button class="header-icon-btn" onclick="editConcept()" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
           <div class="concept-content">${md(c.content)}</div>`;
       }
@@ -733,7 +733,7 @@
           src: c.src || [],
           test: c.test || [],
           status: c.status || "done",
-          group: c.layer || "Overig",
+          group: c.layer || "Other",
           endpoints: (c.endpoints || []).map((p) => {
             const parts = p.trim().split(/\s+/);
             const hasMethod =
@@ -824,7 +824,7 @@
         );
         if (!card) {
           chip.classList.add("code-card-conn--dead");
-          chip.title = "Geen card gevonden voor dit component";
+          chip.title = "No card found for this component";
           return;
         }
         card.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -901,8 +901,8 @@
         layers.forEach((l) => (layerOrder[l.name] = l.order || 99));
 
         const sortedGroups = Object.keys(grouped).sort((a, b) => {
-          if (a === "Overig") return 1;
-          if (b === "Overig") return -1;
+          if (a === "Other") return 1;
+          if (b === "Other") return -1;
           const oa = layerOrder[a];
           const ob = layerOrder[b];
           if (oa !== undefined && ob !== undefined) return oa - ob;
@@ -928,7 +928,7 @@
         const counts = [];
         if (c.src.length)
           counts.push(
-            `<span title="${c.src.length} bronbestand${c.src.length > 1 ? "en" : ""}">${c.src.length} src</span>`,
+            `<span title="${c.src.length} source file${c.src.length > 1 ? "s" : ""}">${c.src.length} src</span>`,
           );
         if (c.test.length)
           counts.push(
@@ -950,15 +950,15 @@
           hasConn;
 
         const connectionsHtml = hasConn
-          ? `<div class="code-card-section"><h4>Verbindingen</h4><div class="code-card-connections">
-              ${renderConnGroup(conn.from, "from", "Ontvangt van")}
-              ${renderConnGroup(conn.to, "to", "Stuurt naar")}
+          ? `<div class="code-card-section"><h4>Connections</h4><div class="code-card-connections">
+              ${renderConnGroup(conn.from, "from", "Receives from")}
+              ${renderConnGroup(conn.to, "to", "Sends to")}
             </div></div>`
           : "";
 
         const filesHtml =
           c.src.length || c.test.length
-            ? `<div class="code-card-section"><h4>Bestanden</h4><div class="code-card-files">
+            ? `<div class="code-card-section"><h4>Files</h4><div class="code-card-files">
               ${c.src.map((f) => renderFileChip(f, false)).join("")}
               ${c.test.map((f) => renderFileChip(f, true)).join("")}
             </div></div>`
@@ -971,7 +971,7 @@
           : "";
 
         const entitiesHtml = c.entities.length
-          ? `<div class="code-card-section"><h4>Entiteiten</h4><div class="code-card-entities">
+          ? `<div class="code-card-section"><h4>Entities</h4><div class="code-card-entities">
               ${c.entities.map((e) => `<span class="code-card-entity">${esc(e.name)}</span>`).join("")}
             </div></div>`
           : "";
@@ -1006,11 +1006,11 @@
           .then(({ svg }) => {
             el.innerHTML = svg;
             el.style.cursor = "pointer";
-            el.title = "Klik om fullscreen te openen";
+            el.title = "Click to open fullscreen";
             el.onclick = () => openDiagramLightbox();
           })
           .catch((err) => {
-            el.innerHTML = `<div class="architecture-error">Diagram fout: ${esc(err.message || String(err))}</div>`;
+            el.innerHTML = `<div class="architecture-error">Diagram error: ${esc(err.message || String(err))}</div>`;
           });
       }
 
@@ -1048,8 +1048,8 @@
         // Toolbar: filter toggle + optional diagram toggle
         const filterToggle = hasPlanned
           ? `<div class="arch-toggle">
-              <button data-scope="all" class="${_diagramShowAll ? "active" : ""}" onclick="toggleDiagramScope(true)">Alles</button>
-              <button data-scope="built" class="${!_diagramShowAll ? "active" : ""}" onclick="toggleDiagramScope(false)">Gebouwd</button>
+              <button data-scope="all" class="${_diagramShowAll ? "active" : ""}" onclick="toggleDiagramScope(true)">All</button>
+              <button data-scope="built" class="${!_diagramShowAll ? "active" : ""}" onclick="toggleDiagramScope(false)">Built</button>
             </div>`
           : "";
 
@@ -1233,7 +1233,7 @@
           : "";
         const layersJson = a.layers ? JSON.stringify(a.layers, null, 2) : "";
         openModal(
-          "Components bewerken",
+          "Edit components",
           `
           <label>Data Flow</label>
           <input id="f-arch-dataflow" type="text" value="${esc(a.dataFlow || "")}" placeholder="Request → API → Service → Database" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-size:13px" />
@@ -1241,7 +1241,7 @@
           <textarea id="f-arch-layers" rows="4" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"name":"API Laag","order":1}]'>${esc(layersJson)}</textarea>
           <label>Components (JSON)</label>
           <textarea id="f-arch-components" rows="16" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"name":"...","layer":"...","status":"done","connects_to":[{"to":"OtherComponent","type":"calls"}]}]'>${esc(compJson)}</textarea>
-          <label>Mermaid Diagram (optioneel)</label>
+          <label>Mermaid Diagram (optional)</label>
           <textarea id="f-arch-diagram" rows="6" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5">${esc(a.diagram || "")}</textarea>
         `,
           {
@@ -1456,22 +1456,68 @@
           </div>`
           : "";
 
-        // ── Modes ──
+        // ── Mode Palette ──
         const modes = t.modes || {};
         const modeKeys = Object.keys(modes);
+
+        function parseModeVars(cssString) {
+          const primitives = {};
+          const primSrc = t.cssVars || "";
+          for (const m of primSrc.matchAll(/(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g)) {
+            primitives[m[1].trim()] = m[2].trim();
+          }
+          const result = [];
+          for (const m of cssString.matchAll(
+            /(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g,
+          )) {
+            const token = m[1].trim();
+            let value = m[2].trim();
+            const varRef = value.match(/^var\((--[\w-]+)\)$/);
+            if (varRef && primitives[varRef[1]]) value = primitives[varRef[1]];
+            result.push({ token, value });
+          }
+          return result;
+        }
+
+        function renderModeSwatches(vars) {
+          if (!vars.length)
+            return '<p style="color:var(--text-dim);font-size:13px">No CSS variables defined in this mode.</p>';
+          return `<div class="sg-palette">${vars
+            .map(
+              (v) => `
+            <div class="sg-color">
+              <div class="sg-color-swatch" style="background:${esc(v.value)}"></div>
+              <div class="sg-color-info">
+                <div class="sg-color-token">${esc(v.token)}</div>
+                <div class="sg-color-value">${esc(v.value)}</div>
+              </div>
+            </div>`,
+            )
+            .join("")}</div>`;
+        }
+
         const modesHtml = modeKeys.length
           ? `
           <div class="sg-section">
-            <div class="sg-section-title">Theme Modes</div>
-            ${modeKeys
+            <div class="sg-section-title">Mode Palette</div>
+            ${
+              modeKeys.length > 1
+                ? `<div class="sg-mode-tabs">${modeKeys
+                    .map(
+                      (k, i) =>
+                        `<button class="sg-mode-tab${i === 0 ? " active" : ""}" data-mode="${esc(k)}">${esc(k.charAt(0).toUpperCase() + k.slice(1))}</button>`,
+                    )
+                    .join("")}</div>`
+                : ""
+            }
+            <div class="sg-mode-panels">${modeKeys
               .map(
-                (k) => `
-              <div style="margin-bottom:12px">
-                <span class="tag" style="margin-bottom:6px;display:inline-block">${esc(k)}</span>
-                <div class="code-block">${esc(modes[k])}</div>
+                (k, i) => `
+              <div class="sg-mode-panel${i === 0 ? " active" : ""}" data-mode-panel="${esc(k)}">
+                ${renderModeSwatches(parseModeVars(modes[k]))}
               </div>`,
               )
-              .join("")}
+              .join("")}</div>
           </div>`
           : "";
 
@@ -1487,11 +1533,11 @@
         return `
           <div class="section-header"><h2>Design System</h2></div>
           ${colorsHtml}
+          ${modesHtml}
           ${specimensHtml}
           ${radiusHtml}
           ${motionHtml}
           ${interactionsHtml}
-          ${modesHtml}
           ${cssHtml}`;
       }
 
@@ -1553,7 +1599,7 @@
               ? `
             <div class="sub-heading">Packages</div>
             <table class="data-table">
-              <thead><tr><th>Naam</th><th>Versie</th><th>Doel</th></tr></thead>
+              <thead><tr><th>Name</th><th>Version</th><th>Purpose</th></tr></thead>
               <tbody>${pkgs}</tbody>
             </table>`
               : ""
@@ -1565,9 +1611,9 @@
       function editConcept() {
         const c = data.concept;
         openModal(
-          "Concept bewerken",
+          "Edit concept",
           `
-          <label>Naam</label>
+          <label>Name</label>
           <input type="text" id="f-name" value="${esc(c.name)}" />
           <label>Concept (Markdown)</label>
           <textarea id="f-content" rows="20" style="font-family:var(--font-mono);font-size:12px;line-height:1.5">${esc(c.content)}</textarea>
@@ -1594,8 +1640,8 @@
               "Stack Research",
               `
               <div class="empty-state" style="margin:0">
-                <p>Geen research beschikbaar.</p>
-                <p style="color:var(--text-dim)">Wordt gegenereerd door <code>/core-setup</code> Phase 7</p>
+                <p>No research available.</p>
+                <p style="color:var(--text-dim)">Generated by <code>/core-setup</code> Phase 7</p>
               </div>
             `,
               { readOnly: true },
@@ -1641,7 +1687,7 @@
             .catch(() => {
               configCache = "";
             });
-          return '<div style="padding:40px;color:var(--text-dim)">Laden...</div>';
+          return '<div style="padding:40px;color:var(--text-dim)">Loading...</div>';
         }
 
         if (configEditing) {
@@ -1649,8 +1695,8 @@
             <div class="section-header">
               <h2>CLAUDE.md</h2>
               <div style="display:flex;gap:8px">
-                <button id="config-save" class="edit-btn edit-btn--accent">Opslaan</button>
-                <button id="config-cancel" class="edit-btn">Annuleren</button>
+                <button id="config-save" class="edit-btn edit-btn--accent">Save</button>
+                <button id="config-cancel" class="edit-btn">Cancel</button>
               </div>
             </div>
             <textarea id="config-editor" style="width:100%;min-height:500px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;tab-size:2">${esc(configCache)}</textarea>`;
@@ -1660,17 +1706,17 @@
           return `
             <div class="section-header">
               <h2>CLAUDE.md</h2>
-              <button id="config-create" class="edit-btn edit-btn--accent">+ Aanmaken</button>
+              <button id="config-create" class="edit-btn edit-btn--accent">+ Create</button>
             </div>
             <div class="empty-state">
-              <p>Geen CLAUDE.md gevonden</p>
+              <p>No CLAUDE.md found</p>
             </div>`;
         }
 
         return `
           <div class="section-header">
             <h2>CLAUDE.md</h2>
-            <button id="config-edit" class="header-icon-btn" title="Bewerken"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+            <button id="config-edit" class="header-icon-btn" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
           <div class="research-content">${md(configCache)}</div>`;
       }
@@ -1714,7 +1760,7 @@
                 render();
               }
             })
-            .catch((err) => alert("Opslaan mislukt: " + err.message));
+            .catch((err) => alert("Save failed: " + err.message));
           return;
         }
       });
@@ -1769,7 +1815,7 @@
                 : "";
           html += `<div class="fm-section fm-screenshot-section">
             ${smokeBadge}
-            <img src="${src}" alt="Smoke render — ${esc(detail.name || "")}" loading="lazy" class="fm-screenshot-img" onclick="this.classList.toggle('fm-screenshot-zoom')" onerror="this.outerHTML='<div class=\\'fm-screenshot-missing\\'>Screenshot niet gevonden</div>'">
+            <img src="${src}" alt="Smoke render — ${esc(detail.name || "")}" loading="lazy" class="fm-screenshot-img" onclick="this.classList.toggle('fm-screenshot-zoom')" onerror="this.outerHTML='<div class=\\'fm-screenshot-missing\\'>Screenshot not found</div>'">
           </div>`;
         }
 
@@ -1955,7 +2001,7 @@
 
         const arch = detail.architecture || {};
         if (arch.componentTree || (arch.interfaces && arch.interfaces.length)) {
-          html += `<div class="fm-section"><h4>Architectuur</h4>`;
+          html += `<div class="fm-section"><h4>Architecture</h4>`;
           if (arch.componentTree)
             html += `<pre class="fm-tree">${esc(arch.componentTree)}</pre>`;
           if (arch.interfaces && arch.interfaces.length) {
@@ -1995,7 +2041,7 @@
         if (!modal) return;
 
         title.textContent = name;
-        body.innerHTML = '<div class="fm-loading">Laden…</div>';
+        body.innerHTML = '<div class="fm-loading">Loading…</div>';
         modal.classList.add("active");
 
         let detail = featureDetailCache[name];
@@ -2016,7 +2062,7 @@
 
         body.innerHTML = detail
           ? buildFeatureDetailHtml(detail)
-          : '<p style="color:var(--text-dim)">Geen feature.json gevonden.</p>';
+          : '<p style="color:var(--text-dim)">No feature.json found.</p>';
       }
 
       async function toggleDashFeature(summaryEl, name) {
@@ -2034,7 +2080,7 @@
         if (expandEl.dataset.loaded) return;
 
         expandEl.innerHTML =
-          '<div style="padding:12px 0 4px;color:var(--text-dim);font-size:12px">Laden…</div>';
+          '<div style="padding:12px 0 4px;color:var(--text-dim);font-size:12px">Loading…</div>';
         let detail = featureDetailCache[name];
         if (!detail) {
           try {
@@ -2061,7 +2107,7 @@
           expandEl.dataset.loaded = "1";
         } else {
           expandEl.innerHTML =
-            '<div style="padding:8px 0;color:var(--text-dim);font-size:12px">Geen detail beschikbaar.</div>';
+            '<div style="padding:8px 0;color:var(--text-dim);font-size:12px">No detail available.</div>';
           expandEl.dataset.loaded = "1";
         }
       }
@@ -2080,7 +2126,7 @@
         row.setAttribute("aria-expanded", "true");
         panel.hidden = false;
         if (!panel.dataset.loaded) {
-          panel.innerHTML = '<div class="bk-diff-loading">Laden…</div>';
+          panel.innerHTML = '<div class="bk-diff-loading">Loading…</div>';
           const basePath = location.pathname.replace(
             /\/(backlog|dashboard)\/?$/,
             "",
@@ -2095,16 +2141,16 @@
             panel.innerHTML = renderDiff(d, row.dataset.path);
             panel.dataset.loaded = "1";
           } catch (e) {
-            panel.innerHTML = `<div class="bk-diff-error">Kon diff niet laden: ${esc(String(e))}</div>`;
+            panel.innerHTML = `<div class="bk-diff-error">Could not load diff: ${esc(String(e))}</div>`;
           }
         }
       }
 
       function renderDiff(d, filePath = "") {
         if (!d.git)
-          return '<div class="bk-diff-empty">Geen git-repo — diff niet beschikbaar.</div>';
+          return '<div class="bk-diff-empty">No git repo — diff not available.</div>';
         if (!d.tracked && !d.working)
-          return '<div class="bk-diff-empty">Bestand nog niet getrackt door git.</div>';
+          return '<div class="bk-diff-empty">File not yet tracked by git.</div>';
         const hasWorking = !!d.working;
         const hasRecent = !!d.recent;
         const showLabels = hasWorking && hasRecent;
@@ -2119,14 +2165,14 @@
         }
         if (hasRecent) {
           const label = showLabels
-            ? '<div class="bk-diff-label">Recente commits</div>'
+            ? '<div class="bk-diff-label">Recent commits</div>'
             : "";
           sections.push(
             `<div class="bk-diff-section">${label}${formatGitLog(d.recent, filePath)}</div>`,
           );
         }
         if (!sections.length)
-          return '<div class="bk-diff-empty">Geen wijzigingen gevonden.</div>';
+          return '<div class="bk-diff-empty">No changes found.</div>';
         return sections.join("");
       }
 
@@ -2261,8 +2307,8 @@
             );
             const thumbHtml = isFrontend
               ? screenshotPath
-                ? `<img class="feat-thumb" src="/${project}/asset?path=${encodeURIComponent(screenshotPath)}${thumbCb ? "&v=" + thumbCb : ""}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'feat-thumb feat-thumb--placeholder\\' title=\\'Geen smoke-render beschikbaar\\'>⊟</div>'">`
-                : `<div class="feat-thumb feat-thumb--placeholder" title="Geen smoke-render beschikbaar">⊟</div>`
+                ? `<img class="feat-thumb" src="/${project}/asset?path=${encodeURIComponent(screenshotPath)}${thumbCb ? "&v=" + thumbCb : ""}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'feat-thumb feat-thumb--placeholder\\' title=\\'No smoke render available\\'>⊟</div>'">`
+                : `<div class="feat-thumb feat-thumb--placeholder" title="No smoke render available">⊟</div>`
               : "";
             const rowClass = isFrontend
               ? "feat-row feat-row--frontend"
@@ -2328,12 +2374,16 @@
           .slice()
           .sort((a, b) => (a.date < b.date ? 1 : -1));
         const groups = [
-          { type: "pattern", label: "Patterns", desc: "Architecturale keuzes" },
+          {
+            type: "pattern",
+            label: "Patterns",
+            desc: "Architectural decisions",
+          },
           { type: "pitfall", label: "Pitfalls", desc: "Bewezen bugs" },
           {
             type: "observation",
             label: "Observations",
-            desc: "Cross-feature inferenties",
+            desc: "Cross-feature inferences",
           },
         ];
 
@@ -2590,7 +2640,7 @@
         });
 
         if (!results.length) {
-          return `<div class="sr-empty">Geen resultaten voor <strong>${esc(q)}</strong></div>`;
+          return `<div class="sr-empty">No results for <strong>${esc(q)}</strong></div>`;
         }
 
         const groups = {};
@@ -2701,7 +2751,7 @@
         if (!contentEl.querySelector(".content-toolbar")) {
           const toolbar = document.createElement("div");
           toolbar.className = "content-toolbar";
-          toolbar.innerHTML = `<input id="dash-search" class="content-toolbar-search" placeholder="Zoeken..." oninput="render()" />`;
+          toolbar.innerHTML = `<input id="dash-search" class="content-toolbar-search" placeholder="Search..." oninput="render()" />`;
           contentEl.appendChild(toolbar);
         }
 
@@ -2725,6 +2775,23 @@
         }
 
         sectionsEl.onclick = (e) => {
+          const modeTab = e.target.closest(".sg-mode-tab");
+          if (modeTab) {
+            const tabsEl = modeTab.closest(".sg-mode-tabs");
+            const panelsEl = tabsEl.nextElementSibling;
+            tabsEl
+              .querySelectorAll(".sg-mode-tab")
+              .forEach((t) => t.classList.toggle("active", t === modeTab));
+            panelsEl
+              .querySelectorAll(".sg-mode-panel")
+              .forEach((p) =>
+                p.classList.toggle(
+                  "active",
+                  p.dataset.modePanel === modeTab.dataset.mode,
+                ),
+              );
+            return;
+          }
           if (e.target.closest("button, a, input, select, textarea")) return;
           const learningsH3 = e.target.closest(".learnings-group > h3");
           if (learningsH3) {
@@ -2858,7 +2925,7 @@
     <button
       id="back-to-top"
       onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
-      title="Naar boven"
+      title="Back to top"
     >
       ↑
     </button>

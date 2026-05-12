@@ -44,7 +44,7 @@ Scan the conversation above for unique skill invocations (slash commands like `/
 
 - **Two or more unique skills** → use **AskUserQuestion**:
   - header: "Skill"
-  - question: "Welke skill uit deze conversation wil je auditen?"
+  - question: "Which skill from this conversation do you want to audit?"
   - options: one per detected skill, in order of most-recent invocation first; the first option gets "(Recommended)" appended to its label
   - multiSelect: false
 
