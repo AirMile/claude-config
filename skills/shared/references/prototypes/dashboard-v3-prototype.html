@@ -719,7 +719,7 @@
           },
           {
             name: "ProtectedRoute",
-            description: "Redirect naar /login als geen sessie",
+            description: "Redirect to /login when no session",
           },
         ],
         feature: [
@@ -764,7 +764,7 @@
         {
           name: "Product aanmaken",
           steps: ["Klik + nieuw", "Formulier invullen", "Opslaan → detail"],
-          description: "3 stappen, geen tussenopslag",
+          description: "3 steps, no intermediate storage",
         },
         {
           name: "Order verwerken",
@@ -988,8 +988,8 @@
         if (!features.length && !changes.length) {
           return `
                   <div class="empty-state">
-                    <p>Nog geen shipped features.</p>
-                    <p style="margin-top:6px">Run <code>/dev-refactor</code> om features te promoten naar het Dashboard.</p>
+                    <p>No shipped features yet.</p>
+                    <p style="margin-top:6px">Run <code>/dev-refactor</code> to promote features to the Dashboard.</p>
                   </div>`;
         }
 

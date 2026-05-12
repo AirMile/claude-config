@@ -23,7 +23,7 @@ Reusable Playwright CLI patterns for visual validation, accessibility checks, an
 | `browser_run_code`                 | `playwright-cli run-code "async page => { ... }"`                                           | Return value inline                  |
 | —                                  | `playwright-cli state-save [path]` / `state-load [path]`                                    | Storage state (cookies + LS) on disk |
 | —                                  | `playwright-cli console [error\|warning\|info]`                                             | Console messages inline              |
-| —                                  | `playwright-cli requests` / `request <i>` / `response-headers <i>`                          | Network requests sinds page load     |
+| —                                  | `playwright-cli requests` / `request <i>` / `response-headers <i>`                          | Network requests since page load     |
 
 > **Snapshot strategy**: `--filename` → tree on disk, link only returned (token-efficient, for batch). Without flag → tree inline (for direct analysis of 1-2 routes).
 
@@ -106,8 +106,8 @@ question: "Playwright CLI not available. How to proceed?"
 options:
   - label: "Continue without visuals (Recommended)"
     description: "Skip browser checks, continue workflow"
-  - label: "Installeer via /core-setup"
-    description: "Run /core-setup playwright — installeert daemon + runner + config"
+  - label: "Install via /core-setup"
+    description: "Run /core-setup playwright — installs daemon + runner + config"
   - label: "Cancel"
     description: "Stop workflow"
 ```
@@ -202,9 +202,9 @@ URL: http://localhost:3000/dashboard
 ACCESSIBILITY ANALYSIS
 ──────────────────────
 1. playwright-cli open [url]
-2. playwright-cli snapshot    ← inline tree voor directe analyse
+2. playwright-cli snapshot    ← inline tree for direct analysis
 
-Parse snapshot voor:
+Parse snapshot for:
 - heading: H1 count (H002 rule)
 - button: Interactive element count
 - link: Navigation elements
@@ -292,7 +292,7 @@ Per viewport:
 1. playwright-cli resize [vp] 900
 2. playwright-cli run-code "async page => { await page.waitForTimeout(1000); }"
 3. playwright-cli screenshot --filename=.project/screenshots/vp[vp].png
-4. playwright-cli snapshot --filename=.project/snapshots/vp[vp].yml  ← alleen als tree nodig
+4. playwright-cli snapshot --filename=.project/snapshots/vp[vp].yml  ← only if tree needed
 5. playwright-cli eval "() => ({ hasOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth, overflowElements: Array.from(document.querySelectorAll('*')).filter(el => { const rect = el.getBoundingClientRect(); return rect.right > document.documentElement.clientWidth; }).map(el => ({ tag: el.tagName, class: el.className, width: el.getBoundingClientRect().width })).slice(0, 10) })"
 
 After all viewports:
@@ -420,7 +420,7 @@ async (page) => {
     deviceScaleFactor: 2,
     colorScheme: "dark",
   });
-  // ... zelfde navigatie + screenshot met '-dark' suffix
+  // ... same navigation + screenshot with '-dark' suffix
 };
 ```
 
@@ -435,38 +435,38 @@ For flows that do multiple screenshots/checks on pages behind a login. Log in on
 ```
 AUTH STATE FLOW
 ───────────────
-1. Eerste sessie — login + state-save:
+1. First session — login + state-save:
    playwright-cli open [login-url]
-   playwright-cli snapshot                              ← refs ophalen
+   playwright-cli snapshot                              ← get refs
    playwright-cli fill [email-ref] "[email]"
    playwright-cli fill [password-ref] "[password]"
    playwright-cli click [submit-ref]
    playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
-   playwright-cli state-save .project/auth-state.json   ← cookies + localStorage op disk
+   playwright-cli state-save .project/auth-state.json   ← cookies + localStorage to disk
 
-2. Volgende sessies — state-load:
+2. Subsequent sessions — state-load:
    playwright-cli state-load .project/auth-state.json
    playwright-cli goto [authed-url]
    ...
 
-3. Of via run-code newContext (HiDPI/dark variants):
+3. Or via run-code newContext (HiDPI/dark variants):
    newContext({ storageState: '.project/auth-state.json', deviceScaleFactor: 2, ... })
 
-4. Cleanup aan einde flow:
-   rm .project/auth-state.json    ← geen credentials op disk laten
+4. Cleanup at end of flow:
+   rm .project/auth-state.json    ← don't leave credentials on disk
 ```
 
 ### Constraints
 
 - **State file lifecycle**: always clean up at end of skill run (state contains session tokens).
-- **Locatie**: `.project/auth-state.json` (gitignored). Niet committen.
+- **Location**: `.project/auth-state.json` (gitignored). Do not commit.
 - **Validity**: state expires when cookies expire — on failure: re-login + state-save.
 
 ---
 
 ## Use Cases: Console Error Inspection
 
-Voor het detecteren van client-side JS errors die niet zichtbaar zijn in screenshot of snapshot. Een pagina kan visueel correct zijn maar runtime crashen — `console error` vangt dat.
+For detecting client-side JS errors that are not visible in screenshot or snapshot. A page can look visually correct but crash at runtime — `console error` catches that.
 
 ### Sequence
 
@@ -475,25 +475,25 @@ CONSOLE INSPECTION
 ──────────────────
 1. playwright-cli goto [url]
 2. playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
-3. playwright-cli console error                ← alleen errors (geen warnings/info)
-4. Parse output → indien errors: noteer als finding
+3. playwright-cli console error                ← errors only (no warnings/info)
+4. Parse output → if errors: record as finding
 ```
 
-### Filter Strategie
+### Filter Strategy
 
 | Min-level | Use case                                                    |
 | --------- | ----------------------------------------------------------- |
-| `error`   | Default voor audit/verification — alleen blokkerende issues |
-| `warning` | A11y libs (React/axe) — pakt missing-aria-label warnings op |
-| `info`    | Debugging — zelden nuttig in skills, veel ruis              |
+| `error`   | Default for audit/verification — blocking issues only       |
+| `warning` | A11y libs (React/axe) — catches missing-aria-label warnings |
+| `info`    | Debugging — rarely useful in skills, a lot of noise         |
 
 ### Noise Mitigation
 
-Veel apps loggen non-critical warnings in dev-mode (HMR, deprecation notices). Voor stabiele detectie:
+Many apps log non-critical warnings in dev-mode (HMR, deprecation notices). For stable detection:
 
-- Filter op `error` level standaard
-- Filter console-output tegen onderstaande patronen; alles wat overblijft is een echte finding
-- Bij twijfel: noteer count + voorbeeld, laat user beslissen
+- Filter on `error` level by default
+- Filter console output against the patterns below; anything remaining is a real finding
+- When in doubt: record count + example, let the user decide
 
 **Default Ignore Patterns (regex, case-insensitive)**
 
@@ -511,7 +511,7 @@ React Router (Future|v7)           # React Router future-flag warnings
 
 ## Use Cases: Network Inspection
 
-Voor het auditen van failed requests, payload-grootte, missing cache headers, en het valideren of content-API's daadwerkelijk content terugstuurden (vs fallback).
+For auditing failed requests, payload size, missing cache headers, and validating whether content APIs actually returned content (vs fallback).
 
 ### Sequence
 
@@ -520,21 +520,21 @@ NETWORK INSPECTION
 ──────────────────
 1. playwright-cli goto [url]
 2. playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
-3. playwright-cli requests                     ← lijst alle requests, genummerd
+3. playwright-cli requests                     ← list all requests, numbered
 4. Per relevant index:
    playwright-cli response-headers [idx]       ← cache, content-type, status
-   playwright-cli response-body [idx]          ← inhoud (text inline, binary → file)
+   playwright-cli response-body [idx]          ← content (text inline, binary → file)
 ```
 
 ### Audit Patterns
 
-| Pattern                | Detectie                                                                  |
-| ---------------------- | ------------------------------------------------------------------------- |
-| Failed requests        | `requests` → filter status 4xx/5xx                                        |
-| Large payloads         | `requests` → filter size > 500KB                                          |
-| Missing cache headers  | `response-headers <i>` → check `cache-control`, `etag` op static assets   |
-| Render-blocking        | `requests` order + timing — long-running CSS/JS vóór LCP                  |
-| Content endpoint check | `request <i>` op kritieke API → 200 + body bevat verwachte content (S003) |
+| Pattern                | Detectie                                                                    |
+| ---------------------- | --------------------------------------------------------------------------- |
+| Failed requests        | `requests` → filter status 4xx/5xx                                          |
+| Large payloads         | `requests` → filter size > 500KB                                            |
+| Missing cache headers  | `response-headers <i>` → check `cache-control`, `etag` on static assets     |
+| Render-blocking        | `requests` order + timing — long-running CSS/JS before LCP                  |
+| Content endpoint check | `request <i>` on critical API → 200 + body contains expected content (S003) |
 
 ### Token Efficiency
 
@@ -542,107 +542,107 @@ NETWORK INSPECTION
 
 ---
 
-## Daemon vs Runner — Beslisboom
+## Daemon vs Runner — Decision Tree
 
 ```
-Wat heb je nodig?
+What do you need?
 │
-├── Snel iets inspecteren, screenshot/snapshot maken, console/network kijken,
-│   multi-viewport scans uitvoeren, ad-hoc validatie?
-│   → DAEMON (playwright-cli)   — geen test-files, directe output
+├── Quickly inspect something, take a screenshot/snapshot, check console/network,
+│   run multi-viewport scans, ad-hoc validation?
+│   → DAEMON (playwright-cli)   — no test files, direct output
 │
-└── Een van deze vijf features?
+└── One of these five features?
     │
     ├── Pixel-baseline visual regression  →  toHaveScreenshot()
-    ├── A11y-tree assertion met fail bij regressie  →  toMatchAriaSnapshot()
-    ├── Debug-timeline na failure  →  --trace on + show-trace
+    ├── A11y-tree assertion with fail on regression  →  toMatchAriaSnapshot()
+    ├── Debug timeline after failure  →  --trace on + show-trace
     ├── First-class browser assertions  →  expect(page).toHaveURL() / toHaveText() etc.
-    └── Persistente acceptance/regression specs  →  .spec.ts bestand
-    → RUNNER (@playwright/test)   — zie sectie hieronder
+    └── Persistent acceptance/regression specs  →  .spec.ts file
+    → RUNNER (@playwright/test)   — see section below
 ```
 
 ---
 
 ## Runner Mode (@playwright/test)
 
-Gebruik de runner **alleen** voor de vijf features hierboven. Daemon blijft default.
+Use the runner **only** for the five features above. Daemon remains the default.
 
 ### Pre-flight
 
 ```bash
-# Check runner beschikbaar
-npx playwright --version 2>/dev/null || echo "niet beschikbaar"
+# Check runner available
+npx playwright --version 2>/dev/null || echo "not available"
 
-# Als niet beschikbaar: installeer lokaal (dev dependency)
+# If not available: install locally (dev dependency)
 npm install --save-dev @playwright/test
 npx playwright install chromium --with-deps
 ```
 
 ### On-the-fly Spec Pattern
 
-Skills genereren een tijdelijke spec — geen permanente `tests/`-conventie in het project.
+Skills generate a temporary spec — no permanent `tests/` convention in the project.
 
-**1. Genereer config (eenmalig per skill-run)**
+**1. Generate config (once per skill-run)**
 
 ```typescript
-// .project/playwright-runs/playwright.config.ts  (tijdelijk, gitignored)
+// .project/playwright-runs/playwright.config.ts  (temporary, gitignored)
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
-  testDir: ".", // spec staat naast config
+  testDir: ".", // spec lives next to config
   snapshotDir: "./__screenshots__", // baselines in .project/playwright-runs/__screenshots__/
   use: {
-    baseURL: "http://localhost:3000", // aanpassen aan actieve dev server
+    baseURL: "http://localhost:3000", // adjust to active dev server
     trace: "retain-on-failure", // always trace on failure
   },
   reporter: [["json", { outputFile: "./results.json" }]],
 });
 ```
 
-**2. Genereer spec**
+**2. Generate spec**
 
 ```typescript
-// .project/playwright-runs/{skill}-{slug}.spec.ts  (tijdelijk, gitignored)
+// .project/playwright-runs/{skill}-{slug}.spec.ts  (temporary, gitignored)
 import { test, expect } from "@playwright/test";
 
-test("{beschrijving}", async ({ page }) => {
-  await page.goto("{pad}");
+test("{description}", async ({ page }) => {
+  await page.goto("{path}");
   await page.waitForLoadState("networkidle");
 
-  // Visual regression (eerste run maakt baseline aan):
-  await expect(page).toHaveScreenshot("{naam}.png", {
-    mask: [page.locator("{dynamisch-element}")], // mask time/date/ads
-    maxDiffPixelRatio: 0.02, // 2% tolerantie voor anti-aliasing
+  // Visual regression (first run creates baseline):
+  await expect(page).toHaveScreenshot("{name}.png", {
+    mask: [page.locator("{dynamic-element}")], // mask time/date/ads
+    maxDiffPixelRatio: 0.02, // 2% tolerance for anti-aliasing
   });
 
   // A11y-tree assertion:
   await expect(page.locator("main")).toMatchAriaSnapshot(`
-    - heading "{verwachte titel}" [level=1]
+    - heading "{expected title}" [level=1]
     - navigation
     - main
   `);
 });
 ```
 
-**3. Draai de runner**
+**3. Run the runner**
 
 ```bash
-# Eerste run — maak baselines aan:
+# First run — create baselines:
 npx playwright test .project/playwright-runs/{spec}.spec.ts \
   --config=.project/playwright-runs/playwright.config.ts \
   --update-snapshots
 
-# Volgende runs — vergelijk met baselines:
+# Subsequent runs — compare with baselines:
 npx playwright test .project/playwright-runs/{spec}.spec.ts \
   --config=.project/playwright-runs/playwright.config.ts
 
-# Bij failure — open trace:
+# On failure — open trace:
 npx playwright show-trace .project/playwright-runs/test-results/*/trace.zip
 ```
 
-**4. Parseer resultaat**
+**4. Parse result**
 
 ```bash
-# results.json bevat: passed/failed/timedOut counts + per-test details
+# results.json contains: passed/failed/timedOut counts + per-test details
 cat .project/playwright-runs/results.json | python3 -c "
 import json, sys
 r = json.load(sys.stdin)
@@ -657,40 +657,40 @@ for s in suites:
 **5. Cleanup**
 
 ```bash
-# Bij success: verwijder spec + config, bewaar baselines
+# On success: delete spec + config, keep baselines
 rm -f .project/playwright-runs/{spec}.spec.ts
 rm -f .project/playwright-runs/playwright.config.ts
 rm -rf .project/playwright-runs/test-results/   # playwright output dir
 
-# Bij failure: bewaar alles voor debugging
+# On failure: keep everything for debugging
 # Baselines always stay at: .project/playwright-runs/__screenshots__/
 ```
 
 ### Baseline Management
 
-| Situatie                         | Actie                                               |
-| -------------------------------- | --------------------------------------------------- |
-| Eerste run (geen baseline)       | `--update-snapshots` → maakt baseline aan           |
-| Bewuste stijlwijziging           | `--update-snapshots` → update baseline              |
-| Onverwacht verschil              | Bekijk diff in `test-results/` of via `show-report` |
-| Dynamische content (datums, ads) | Mask via `{ mask: [page.locator('...')] }`          |
+| Situation                    | Action                                            |
+| ---------------------------- | ------------------------------------------------- |
+| First run (no baseline)      | `--update-snapshots` → creates baseline           |
+| Intentional style change     | `--update-snapshots` → update baseline            |
+| Unexpected diff              | View diff in `test-results/` or via `show-report` |
+| Dynamic content (dates, ads) | Mask via `{ mask: [page.locator('...')] }`        |
 
-### Trace Debuggen
+### Trace Debugging
 
 ```bash
 # Trace is automatically saved on failure (retain-on-failure in config)
-# Vind trace-bestand:
+# Find trace file:
 ls .project/playwright-runs/test-results/*/trace.zip
 
-# Open interactieve viewer:
+# Open interactive viewer:
 npx playwright show-trace .project/playwright-runs/test-results/{slug}/trace.zip
 ```
 
 ---
 
-## Use Cases: Emulatie Snippets
+## Use Cases: Emulation Snippets
 
-Combineer deze opties in `browser.newContext({ ... })` (daemon via `run-code`) of in `playwright.config.ts` `use:` (runner).
+Combine these options in `browser.newContext({ ... })` (daemon via `run-code`) or in `playwright.config.ts` `use:` (runner).
 
 ### prefers-reduced-motion
 
@@ -698,7 +698,7 @@ Combineer deze opties in `browser.newContext({ ... })` (daemon via `run-code`) o
 // Daemon: playwright-cli run-code "async page => { ... }"
 async (page) => {
   const ctx = await page.context().browser().newContext({
-    reducedMotion: "reduce", // 'no-preference' om expliciet te resetten
+    reducedMotion: "reduce", // 'no-preference' to explicitly reset
   });
   const p = await ctx.newPage();
   await p.goto("{url}");
@@ -710,7 +710,7 @@ async (page) => {
 ```
 
 ```typescript
-// Runner: playwright.config.ts use-blok
+// Runner: playwright.config.ts use-block
 use: {
   reducedMotion: "reduce";
 }
@@ -722,7 +722,7 @@ use: {
 // Daemon
 async (page) => {
   const ctx = await page.context().browser().newContext({
-    forcedColors: "active", // simuleert Windows High Contrast Mode
+    forcedColors: "active", // simulates Windows High Contrast Mode
   });
   const p = await ctx.newPage();
   await p.goto("{url}");
@@ -749,14 +749,14 @@ async (page) => {
 };
 ```
 
-### HiDPI + colorScheme (referentie)
+### HiDPI + colorScheme (reference)
 
 For HiDPI 2× retina and dark/light mode snippets: see **Use Cases: HiDPI Screenshots** above — those patterns are identical, use `newContext({ deviceScaleFactor: 2, colorScheme: 'dark' })`.
 
-### Combinaties
+### Combinations
 
 ```javascript
-// HiDPI + dark + reduced motion + auth — alles samen
+// HiDPI + dark + reduced motion + auth — all combined
 async (page) => {
   const ctx = await page
     .context()
@@ -766,7 +766,7 @@ async (page) => {
       deviceScaleFactor: 2,
       colorScheme: "dark",
       reducedMotion: "reduce",
-      storageState: ".project/auth-state.json", // alleen als auth gebruikt
+      storageState: ".project/auth-state.json", // only if auth is used
     });
   const p = await ctx.newPage();
   await p.goto("{url}");

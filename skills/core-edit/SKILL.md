@@ -79,7 +79,7 @@ I understand you want to:
 - [specific change 2]
 ```
 
-Confirm with a short "Klopt dit?" in plain text before proceeding. Only use AskUserQuestion if there's a genuine ambiguous choice between distinct options.
+Confirm with a short "Confirm?" in plain text before proceeding. Only use AskUserQuestion if there's a genuine ambiguous choice between distinct options.
 
 ### Step 3: Show Preview
 

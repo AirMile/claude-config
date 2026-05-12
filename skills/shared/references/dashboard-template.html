@@ -419,13 +419,13 @@
               setTimeout(() => (el.style.color = orig), 1000);
             } else {
               el.style.color = "var(--danger)";
-              toast("Fout: " + (d.error || "onbekend"));
+              toast("Error: " + (d.error || "unknown"));
               setTimeout(() => (el.style.color = orig), 2000);
             }
           })
           .catch(() => {
             el.style.color = "var(--danger)";
-            toast("Kon VS Code niet bereiken");
+            toast("Could not reach VS Code");
             setTimeout(() => (el.style.color = orig), 2000);
           });
       }
@@ -645,10 +645,10 @@
           return `
             <div class="section-header">
               <h2>Concept</h2>
-              <button class="edit-btn edit-btn--accent" onclick="editConcept()">+ Toevoegen</button>
+              <button class="edit-btn edit-btn--accent" onclick="editConcept()">+ Add</button>
             </div>
-            <div class="empty-state"><p>Nog geen concept gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/project-plan</code></p></div>`;
+            <div class="empty-state"><p>No concept defined yet.</p>
+            <p style="color:var(--text-dim)">Automatically filled by <code>/project-plan</code></p></div>`;
         }
         return `
           <div class="section-header">
@@ -1041,8 +1041,8 @@
         if (!hasCards && !hasDiagram) {
           return `
             <div class="section-header"><h2>Architecture</h2></div>
-            <div class="empty-state"><p>Nog geen componenten gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Wordt gevuld door <code>/dev-define</code></p></div>`;
+            <div class="empty-state"><p>No components defined yet.</p>
+            <p style="color:var(--text-dim)">Filled by <code>/dev-define</code></p></div>`;
         }
 
         // Toolbar: filter toggle + optional diagram toggle
@@ -1288,8 +1288,8 @@
         if (!hasData) {
           return `
             <div class="section-header"><h2>Design System</h2></div>
-            <div class="empty-state"><p>Nog geen design tokens gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Design tokens, modes, CSS variables — beheerd via <code>/frontend-tokens</code></p></div>`;
+            <div class="empty-state"><p>No design tokens defined yet.</p>
+            <p style="color:var(--text-dim)">Design tokens, modes, CSS variables — managed via <code>/frontend-tokens</code></p></div>`;
         }
 
         // ── Colors ──
@@ -1503,8 +1503,8 @@
             <div class="section-header">
               <h2>Stack</h2>
             </div>
-            <div class="empty-state"><p>Nog geen stack gedefinieerd.</p>
-            <p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/project-plan</code></p></div>`;
+            <div class="empty-state"><p>No stack defined yet.</p>
+            <p style="color:var(--text-dim)">Automatically filled by <code>/project-plan</code></p></div>`;
         }
         const fields = [
           ["Framework", s.framework],
@@ -1615,8 +1615,8 @@
           openModal("Stack Research", content, { readOnly: true, wide: true });
         } catch (e) {
           openModal(
-            "Fout",
-            `<p>Kon research niet laden: ${esc(e.message)}</p>`,
+            "Error",
+            `<p>Could not load research: ${esc(e.message)}</p>`,
             { readOnly: true },
           );
         }
@@ -2244,8 +2244,8 @@
           return `
             <div class="section-header"><h2>Features</h2></div>
             <div class="empty-state">
-              <p>Nog geen shipped features.</p>
-              <p style="color:var(--text-dim)">Run <code>/dev-refactor</code> om features te promoten naar het dashboard.</p>
+              <p>No shipped features yet.</p>
+              <p style="color:var(--text-dim)">Run <code>/dev-refactor</code> to promote features to the dashboard.</p>
             </div>`;
         }
 
@@ -2385,7 +2385,7 @@
           ${
             hasContent
               ? `${learningsSections}${principlesSection}`
-              : `<div class="empty-state"><p>Nog geen knowledge vastgelegd.</p><p style="color:var(--text-dim)">Wordt automatisch gevuld door <code>/dev-verify</code> of <code>/game-verify</code></p></div>`
+              : `<div class="empty-state"><p>No knowledge captured yet.</p><p style="color:var(--text-dim)">Automatically filled by <code>/dev-verify</code> or <code>/game-verify</code></p></div>`
           }
         `;
       }

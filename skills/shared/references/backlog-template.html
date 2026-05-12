@@ -428,13 +428,13 @@
               setTimeout(() => (el.style.color = orig), 1000);
             } else {
               el.style.color = "var(--danger)";
-              toast("Fout: " + (d.error || "onbekend"));
+              toast("Error: " + (d.error || "unknown"));
               setTimeout(() => (el.style.color = orig), 2000);
             }
           })
           .catch(() => {
             el.style.color = "var(--danger)";
-            toast("Kon VS Code niet bereiken");
+            toast("Could not reach VS Code");
             setTimeout(() => (el.style.color = orig), 2000);
           });
       }
@@ -628,7 +628,7 @@
           if (f.status === "DEFINED")
             return { cmd: `/frontend-convert ${f.name}` };
           if (f.status === "DOING") return { cmd: `/frontend-check ${f.name}` };
-          return null; // DONE: geen knop
+          return null; // DONE: no button
         }
 
         // One-shot: THEME/A11Y/PERF — alleen TODO

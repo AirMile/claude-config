@@ -8,7 +8,7 @@
 
 import { useState } from "react";
 
-// SOURCE: exact overgenomen uit bron — geen token mapping in 1:1 modus
+// SOURCE: copied verbatim from source — no token mapping in 1:1 mode
 
 interface PricingTierProps {
   readonly name: string;

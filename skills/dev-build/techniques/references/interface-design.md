@@ -1,40 +1,40 @@
-# Interface Design voor Testbaarheid
+# Interface Design for Testability
 
 ## Deep vs Shallow Modules
 
-Uit "A Philosophy of Software Design":
+From "A Philosophy of Software Design":
 
-**Deep module** = kleine interface + veel implementatie (goed)
+**Deep module** = small interface + much implementation (good)
 
 ```
 ┌─────────────────────┐
-│   Small Interface   │  ← Weinig methods, simpele params
+│   Small Interface   │  ← Few methods, simple params
 ├─────────────────────┤
 │                     │
-│  Deep Implementation│  ← Complexe logica verborgen
+│  Deep Implementation│  ← Complex logic hidden
 │                     │
 └─────────────────────┘
 ```
 
-**Shallow module** = grote interface + weinig implementatie (vermijd)
+**Shallow module** = large interface + little implementation (avoid)
 
 ```
 ┌─────────────────────────────────┐
-│       Large Interface           │  ← Veel methods, complexe params
+│       Large Interface           │  ← Many methods, complex params
 ├─────────────────────────────────┤
-│  Thin Implementation            │  ← Geeft alleen door
+│  Thin Implementation            │  ← Just passes through
 └─────────────────────────────────┘
 ```
 
-Bij het ontwerpen, vraag:
+When designing, ask:
 
-- Kan ik het aantal methods verminderen?
-- Kan ik de parameters versimpelen?
-- Kan ik meer complexiteit verbergen?
+- Can I reduce the number of methods?
+- Can I simplify the parameters?
+- Can I hide more complexity?
 
-## Drie regels voor testbaarheid
+## Three rules for testability
 
-### 1. Accepteer dependencies, maak ze niet aan
+### 1. Accept dependencies, don't create them
 
 ```typescript
 // Testbaar
@@ -46,7 +46,7 @@ function processOrder(order) {
 }
 ```
 
-### 2. Retourneer resultaten, vermijd side effects
+### 2. Return results, avoid side effects
 
 ```typescript
 // Testbaar
@@ -58,8 +58,8 @@ function applyDiscount(cart): void {
 }
 ```
 
-### 3. Klein oppervlak
+### 3. Small surface area
 
-- Minder methods = minder tests nodig
-- Minder parameters = simpelere test setup
-- Minder public API = minder kans op misbruik
+- Fewer methods = fewer tests needed
+- Fewer parameters = simpler test setup
+- Fewer public API = less chance of misuse

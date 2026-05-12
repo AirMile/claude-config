@@ -1,6 +1,6 @@
 ---
 name: project-remove
-description: Remove a registered project — optionally delete the folder. Master config blijft intact. Use with /project-remove.
+description: Remove a registered project — optionally delete the folder. Master config stays intact. Use with /project-remove.
 metadata:
   author: mileszeilstra
   version: 1.1.0
@@ -9,93 +9,93 @@ metadata:
 
 # Project Remove
 
-Verwijdert een project met veilige link removal (target blijft intact).
+Removes a project with safe link removal (target stays intact).
 
 ## Trigger
 
-`/project-remove [naam]` of `/project-remove`
+`/project-remove [name]` or `/project-remove`
 
 ## Process
 
-### PHASE 1: Project Selectie
+### PHASE 1: Project Selection
 
-**Als geen naam gegeven:**
+**If no name given:**
 
-1. Scan `{projects_root}` voor projecten met .claude/ links
-2. Toon lijst via AskUserQuestion
+1. Scan `{projects_root}` for projects with .claude/ links
+2. Show list via AskUserQuestion
 
 ```yaml
-question: "Welk project wil je verwijderen?"
+question: "Which project do you want to remove?"
 header: "Project"
 options:
-  - label: "[project-naam-1]"
-    description: "{projects_root}/[project-naam-1]"
-  - label: "[project-naam-2]"
-    description: "{projects_root}/[project-naam-2]"
-  # ... dynamisch gegenereerd
+  - label: "[project-name-1]"
+    description: "{projects_root}/[project-name-1]"
+  - label: "[project-name-2]"
+    description: "{projects_root}/[project-name-2]"
+  # ... dynamically generated
 multiSelect: false
 ```
 
-### PHASE 2: Validatie
+### PHASE 2: Validation
 
-**Check dat project bestaat:**
+**Check that project exists:**
 
 ```bash
-test -d "{projects_root}/[naam]"
-test -f "{projects_root}/[naam]/.claude/settings.local.json"
+test -d "{projects_root}/[name]"
+test -f "{projects_root}/[name]/.claude/settings.local.json"
 ```
 
 **Safety checks:**
 
-- NOOIT claude-config zelf verwijderen
-- Waarschuw als uncommitted changes
+- NEVER remove claude-config itself
+- Warn if uncommitted changes
 
 ```bash
-cd "{projects_root}/[naam]" && git status --porcelain
+cd "{projects_root}/[name]" && git status --porcelain
 ```
 
-### PHASE 3: Bevestiging
+### PHASE 3: Confirmation
 
 ```yaml
-question: "Weet je zeker dat je [naam] wilt verwijderen?"
-header: "Bevestig"
+question: "Are you sure you want to remove [name]?"
+header: "Confirm"
 options:
-  - label: "Ja, verwijder project"
-    description: "Verwijdert project folder. Master config blijft intact."
-  - label: "Nee, annuleer"
-    description: "Geen wijzigingen"
+  - label: "Yes, remove project"
+    description: "Removes project folder. Master config stays intact."
+  - label: "No, cancel"
+    description: "No changes"
 multiSelect: false
 ```
 
 ### PHASE 4: Project Folder Removal
 
-**Vraag:**
+**Question:**
 
 ```yaml
-question: "Wil je de project folder verwijderen?"
+question: "Do you want to remove the project folder?"
 header: "Folder"
 options:
-  - label: "Ja, verwijder alles (Recommended)"
-    description: "Verwijdert {projects_root}/[naam] volledig"
-  - label: "Nee, behoud folder"
-    description: "Alleen links verwijderd, rest blijft"
+  - label: "Yes, remove everything (Recommended)"
+    description: "Removes {projects_root}/[name] completely"
+  - label: "No, keep folder"
+    description: "Only links removed, rest stays intact"
 multiSelect: false
 ```
 
-**Als ja:**
+**If yes:**
 
 ```bash
-rm -rf "{projects_root}/[naam]"
+rm -rf "{projects_root}/[name]"
 ```
 
-### PHASE 6: Afronden
+### PHASE 6: Wrap Up
 
 **Output:**
 
 ```
-Project [naam] verwijderd
+Project [name] removed
 
-- Project folder: [verwijderd/behouden]
+- Project folder: [removed/kept]
 - Master config: intact
 ```
 
@@ -105,29 +105,29 @@ Project [naam] verwijderd
 | ----------------- | ---------------- | --------------- | ---------------------- |
 | `{projects_root}` | `$HOME/projects` | `C:\Projects`   | `CLAUDE_PROJECTS_ROOT` |
 
-**Resolution order (eerste match wint):**
+**Resolution order (first match wins):**
 
 1. Environment variable
-2. `.claude/paths.local.yaml` (lokaal per project, niet in git)
+2. `.claude/paths.local.yaml` (local per project, not in git)
 3. `skills/project-add/paths.yaml` (canonical defaults)
 
 ## Restrictions
 
-- Kan NOOIT claude-config verwijderen (hard check)
-- Verwijdert alleen projecten met link-based setup
+- Can NEVER remove claude-config (hard check)
+- Only removes projects with link-based setup
 - Always asks for confirmation
 - Link removal is always safe (target intact)
 
 ## Safety Notes
 
-**WAAROM unlink/rmdir en niet rm -rf op links:**
+**WHY unlink/rmdir and not rm -rf on links:**
 
-- `unlink` (macOS) en `rmdir` (Windows) verwijderen alleen de link pointer
-- `rm -rf` of `del /s` volgt de link en verwijdert TARGET bestanden
-- Dit zou de master config vernietigen!
+- `unlink` (macOS) and `rmdir` (Windows) remove only the link pointer
+- `rm -rf` or `del /s` follows the link and removes TARGET files
+- This would destroy the master config!
 
 **Recovery:**
 
-- Als project per ongeluk verwijderd: `git clone` + `/project-add`
-- Als links per ongeluk verwijderd: maak opnieuw met `ln -s` (macOS) of `mklink /J` (Windows)
-- Als master config beschadigd: restore van backup/git
+- If project accidentally removed: `git clone` + `/project-add`
+- If links accidentally removed: recreate with `ln -s` (macOS) or `mklink /J` (Windows)
+- If master config corrupted: restore from backup/git

@@ -1064,13 +1064,13 @@ export default function LoginPage() {
             refactorBlock = `
               <div class="modal-section">
                 <h3>Refactor</h3>
-                <p>✓ Quality pass complete${f.shipped ? " — gepromoot naar Dashboard" : ""}.</p>
+                <p>✓ Quality pass complete${f.shipped ? " — promoted to Dashboard" : ""}.</p>
               </div>`;
           } else {
             refactorBlock = `
               <div class="modal-section">
                 <h3>Refactor</h3>
-                <p>Nog niet gedraaid. <code>/dev-refactor ${esc(f.name)}</code> analyseert en stelt verbeteringen voor.</p>
+                <p>Not yet run. <code>/dev-refactor ${esc(f.name)}</code> analyzes and suggests improvements.</p>
               </div>`;
           }
         }

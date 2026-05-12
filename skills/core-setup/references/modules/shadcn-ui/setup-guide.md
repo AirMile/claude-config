@@ -1,17 +1,17 @@
 # shadcn-ui Setup
 
-**Status:** stub — full guide te genereren via Context7 query.
+**Status:** stub — generate full guide via Context7 query.
 
-**Prerequisite:** Tailwind CSS moet geïnstalleerd zijn. Check `tailwindcss` in dependencies; zo niet, run eerst Tailwind module.
+**Prerequisite:** Tailwind CSS must be installed. Check `tailwindcss` in dependencies; if not, run the Tailwind module first.
 
 ## Detection
 
-| State                          | Conditie                                   |
-| ------------------------------ | ------------------------------------------ |
-| `already-installed-configured` | `components.json` aanwezig in project root |
-| `not-installed`                | `components.json` niet aanwezig            |
+| State                          | Condition                                 |
+| ------------------------------ | ----------------------------------------- |
+| `already-installed-configured` | `components.json` present in project root |
+| `not-installed`                | `components.json` not present             |
 
-shadcn-ui installeert geen NPM package — de CLI copieert componenten. Geen `installed-not-configured` toestand: als `components.json` er is, is shadcn geïnitialiseerd.
+shadcn-ui does not install an NPM package — the CLI copies components. No `installed-not-configured` state: if `components.json` is present, shadcn is initialized.
 
 ## Install (via Context7)
 
@@ -23,23 +23,23 @@ mcp__context7__query-docs(
 )
 ```
 
-Volg de Context7 output voor:
+Follow the Context7 output for:
 
-1. `npx shadcn@latest init` (interactieve init)
+1. `npx shadcn@latest init` (interactive init)
 2. Path aliases setup in `tsconfig.json` / `vite.config`
-3. Eerste componenten toevoegen via `npx shadcn@latest add button`
+3. Add first components via `npx shadcn@latest add button`
 
 ## Framework specifics
 
-- **Next.js**: heeft eerste-class support in init wizard
-- **Vite**: vereist extra path-alias config
+- **Next.js**: has first-class support in init wizard
+- **Vite**: requires extra path-alias config
 
 ## Teardown
 
-1. Verwijder `components.json`
-2. Verwijder `components/ui/` directory
-3. Verwijder Radix dependencies die alleen door shadcn gebruikt werden
-4. Verwijder utility helpers (`lib/utils.ts`)
+1. Remove `components.json`
+2. Remove `components/ui/` directory
+3. Remove Radix dependencies that were only used by shadcn
+4. Remove utility helpers (`lib/utils.ts`)
 
 ## Notes
 

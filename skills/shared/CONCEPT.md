@@ -35,7 +35,7 @@ With every selection-style modal or `→ Claude recommends:` line when `CONCEPT_
 - Filter opties die duidelijk niet bij het concept-domein passen
 - Stem defaults af op het domein (consumer SaaS, internal tool, mobile, game, etc.)
 
-Bij `present: false`: geen concept-referentie in de aanbevelingstekst.
+When `present: false`: omit concept reference in recommendation text.
 
 ## Writing
 

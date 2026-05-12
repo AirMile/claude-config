@@ -2,12 +2,13 @@
 name: frontend-tokens
 description: >-
   Design token management — color, typography, spacing, motion, and interaction
-  tokens. Use with /frontend-tokens to create, update, or manage design tokens.
-reads: [devinfo.handoff]
-writes: [devinfo.handoff, devinfo.tokenDrift]
+  tokens. Use with /frontend-tokens to create, update, or manage design tokens,
+  or whenever a backlog task with type THEME and transition "defining" is detected.
+reads: [backlog.html]
+writes: [project.json#theme, backlog.html, devinfo.tokenDrift]
 metadata:
   author: mileszeilstra
-  version: 3.3.0
+  version: 3.5.0
   category: frontend
 ---
 
@@ -21,7 +22,7 @@ Manages the project design system: creating, viewing, updating design tokens, an
 
 This command manages the `theme` section in `.project/project.json` which contains design tokens (colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars). It can automatically extract tokens from existing Tailwind or CSS configuration.
 
-**Output locatie:** `.project/project.json` → `theme` sectie
+**Output location:** `.project/project.json` → `theme` section
 
 **References:**
 
@@ -39,7 +40,7 @@ This command manages the `theme` section in `.project/project.json` which contai
 
 ## Theme JSON Schema
 
-De `theme` sectie in `project.json` volgt dit schema:
+The `theme` section in `project.json` follows this schema:
 
 ```json
 {
@@ -267,6 +268,12 @@ Handoff: [✓|✗] [data available | not applicable]
 Conflicts: [✓|✗] project.json theme - [empty | has data (will warn) | file missing]
 ```
 
+**4. Backlog Task Check**
+
+See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `type === "THEME" && transition === "defining"`.
+
+→ Show: `Backlog: ✓ Task picked up — {taskName}` or `Backlog: ✓ No matching task in backlog (standalone run)`
+
 **Pre-flight Summary:**
 
 ```
@@ -276,6 +283,7 @@ PRE-FLIGHT RESULT
 Directory:  [✓ PASS | ✗ FAIL]
 Session:    [✓ PASS | ✗ FAIL]
 Conflicts:  [✓ PASS | ⚠ WARNING | ✗ FAIL]
+Backlog:    [✓ Task picked up — {taskName} | ✓ Standalone run]
 
 Status: [→ Ready to proceed | ⚠ Warning: {issue} | ✗ Cannot proceed]
 ════════════════════════════════════════════════
@@ -581,7 +589,7 @@ multiSelect: false
 - Retain accent colors but increase lightness (~10-15%) for readability on dark background
 - **If OKLCH colors:** adjust only the L-component (e.g. `oklch(0.15 0.02 260)` → `oklch(0.90 0.02 260)` for background-inversion); C and H stay the same for color consistency
 - Genereer `.dark` CSS block naast `:root`
-- Toon preview (zelfde als Mode Comparison)
+- Show preview (same as Mode Comparison)
 
 **If "Manual":**
 
@@ -615,43 +623,28 @@ Provide your dark mode colors (hex values):
 header: "Motion"
 question: "Motion tokens for animations and transitions?"
 options:
-  - label: "Defaults (Recommended)", description: "Standard durations (100/200/300/500ms) + smooth easings"
+  - label: "Smooth (Recommended)", description: "100/200/300/500ms + ease-out-quart — neutral, suitable for most apps"
+  - label: "Snappy", description: "75/150/200/350ms + ease-out-expo — direct, suits calculators/dashboards"
   - label: "Custom", description: "Specify custom durations and easing curves"
   - label: "No motion tokens", description: "Skip (can be added later via Update)"
-  - label: "Explain question", description: "Explain what motion tokens are"
 multiSelect: false
 ```
 
-**If "Defaults":**
+**If "Smooth":**
 
-Generate standard motion tokens based on `shared/DESIGN.md`:
+Generate: durations (100/200/300/500ms), easings: `ease-out` (cubic-bezier(0.25, 1, 0.5, 1)), `ease-in` (cubic-bezier(0.7, 0, 0.84, 0)), `ease-in-out` (cubic-bezier(0.65, 0, 0.35, 1)).
 
-- Durations: `duration-instant` (100ms), `duration-fast` (200ms), `duration-normal` (300ms), `duration-slow` (500ms)
-- Easings: `ease-out` (cubic-bezier(0.25, 1, 0.5, 1)), `ease-in` (cubic-bezier(0.7, 0, 0.84, 0)), `ease-in-out` (cubic-bezier(0.65, 0, 0.35, 1))
+**If "Snappy":**
 
-```yaml
-header: "Motion Tokens"
-question: "Do these motion tokens look right?"
-options:
-  - label: "Yes, continue (Recommended)", description: "Go to Step 7"
-  - label: "Custom", description: "Specify custom durations/easings"
-multiSelect: false
-```
+Generate: durations (75/150/200/350ms), easings: `ease-out` (cubic-bezier(0.16, 1, 0.3, 1)), `ease-in` (cubic-bezier(0.7, 0, 0.84, 0)), `ease-in-out` (cubic-bezier(0.65, 0, 0.35, 1)).
 
 **If "Custom":**
 
 ```
 Provide your motion preferences:
 
-1. Speed preference?
-   → "snappy" (shorter durations: 75/150/200/350ms)
-   → "smooth" (standard: 100/200/300/500ms)
-   → "relaxed" (longer durations: 150/250/400/600ms)
-
-2. Easing style?
-   → "smooth" (ease-out-quart — default)
-   → "snappy" (ease-out-expo — confident, direct)
-   → "custom" (custom cubic-bezier values)
+1. Durations (e.g. 75/150/200/350ms or 100/200/300/500ms)
+2. Easing curves (cubic-bezier values for ease-out, ease-in, ease-in-out)
 ```
 
 **If "No motion tokens":**
@@ -826,7 +819,6 @@ options:
   - label: "Done", description: "Return to conversation"
   - label: "Update", description: "Make changes"
   - label: "Export", description: "Show as CSS variables"
-  - label: "Visual Preview", description: "Open theme preview in browser"
 multiSelect: false
 ```
 
@@ -841,24 +833,6 @@ options:
   - label: "Update", description: "Make changes"
   - label: "Export", description: "Show as CSS variables"
 multiSelect: false
-```
-
-**If "Visual Preview":**
-
-```
-THEME PREVIEW
-═════════════
-
-Generating preview page...
-
-1. Create temporary preview HTML:
-   - Inject CSS variables from project.json theme.cssVars
-   - Include color swatches, typography samples, spacing demo
-
-2. Open in default browser:
-   start [temp-path]/theme-preview.html
-
-(If dark mode configured: include toggle button in preview)
 ```
 
 ---
@@ -1058,48 +1032,22 @@ multiSelect: false
 - → Go to PHASE X: Post-flight Validation
 - → Go to X.6: Theme Infrastructure Sync
 
-#### Mode Comparison
-
-After mode configuration, show side-by-side comparison:
+**Mode diff preview (inline table):**
 
 ```
-MODE COMPARISON
-═══════════════
-
-1. Generate comparison HTML:
-   - Left panel: Light mode
-   - Right panel: Dark mode
-   - Same content in both
-
-2. Open in default browser:
-   start [temp-path]/mode-comparison.html
-
-Layout: [Light Mode] | [Dark Mode] side-by-side
+MODE DIFFERENCES
+────────────────────────────────
+Background:  oklch(light-L ...) ↔ oklch(dark-L ...)
+Foreground:  oklch(light-L ...) ↔ oklch(dark-L ...)
+Primary:     oklch(light-L ...) ↔ oklch(dark-L ...)
+Accent:      oklch(light-L ...) ↔ oklch(dark-L ...)
 ```
 
-**Output:**
-
-```
-MODE COMPARISON READY
-─────────────────────
-Colors compared:
-  Background: #ffffff ↔ #1a1a2e
-  Foreground: #1a1a2e ↔ #f5f5f5
-  Primary:    #3B82F6 ↔ #60A5FA
-  ...
-
-Contrast check:
-  Primary on background: 4.8:1 ✓ (AA pass)
-  Text on background: 7.2:1 ✓ (AAA pass)
-
-Opening comparison in browser...
-```
-
-**AskUserQuestion (after preview opens):**
+**AskUserQuestion:**
 
 ```yaml
 header: "Mode Preview"
-question: "Review the light/dark comparison in browser. Satisfied?"
+question: "Satisfied with the light/dark mode differences?"
 options:
   - label: "Yes, save (Recommended)", description: "Confirm mode configuration"
   - label: "Adjust", description: "Modify colors"
@@ -1411,6 +1359,10 @@ Remaining:            {R} hardcoded values (manual review recommended)
 
 ## Output Format
 
+**After successful Create/Update/Extract/Modes**, if PHASE 0 identified a backlog task:
+
+See `shared/BACKLOG.md → Lifecycle Protocol → Write`. Set `status: "DONE"`, remove `transition`.
+
 **After successful action:**
 
 ```
@@ -1430,6 +1382,9 @@ Location: .project/project.json (theme section)
 | Interactions | {N} (focusRing, hover, active) |
 | Modes | {light/dark/both} |
 | CSS Vars | {present/missing} |
+
+{If backlog task was found and marked DONE:}
+Backlog: ✓ Task "{taskName}" → DONE
 
 Theme tokens ready in project.json for downstream consumption.
 
@@ -1476,71 +1431,6 @@ Next steps:
 | Invalid JSON     | Re-generate file      | Show parse error             |
 
 > **Note:** Rollback is handled by Claude Code's built-in "Rewind" function.
-
----
-
-## DevInfo Integration
-
-> See also: `skills/shared/DEVINFO.md` for the full specification.
-
-### Session Initialization
-
-At skill start:
-
-```json
-{
-  "currentSkill": {
-    "name": "frontend-tokens",
-    "phase": "PREFLIGHT",
-    "startedAt": "ISO timestamp"
-  }
-}
-```
-
-### Progress Updates
-
-Update devinfo on every phase transition:
-
-- `PREFLIGHT` → `ACTION_SELECT`
-- `ACTION_SELECT` → `CREATE|UPDATE|EXTRACT|MODES|DELETE`
-- `CONFIRM` → `POSTFLIGHT`
-- `POSTFLIGHT` → `COMPLETE`
-
-### Design Sync
-
-Update `.project/project.json` → `design.principles` with concrete design system decisions:
-
-1. Read `project.json` → `design.principles` (skip if design section doesn't exist)
-2. Generate principle entries from the created/updated theme:
-   - Spacing: e.g., `{ "name": "{base}px spacing scale", "description": "Base unit {base}px, scale: {scale values}" }`
-   - Typography: e.g., `{ "name": "Font: {heading} + {body}", "description": "Headings: {heading family}, Body: {body family}" }`
-   - Colors: e.g., `{ "name": "Color palette: {scheme}", "description": "Primary: {main color}, Accent: {accent color}" }`
-3. Merge on `name` — add new principles, never overwrite existing user-defined principles
-4. Write `project.json` (only mutate `design.principles`)
-
-### Completion Handoff
-
-On successful completion:
-
-```json
-{
-  "handoff": {
-    "from": "frontend-tokens",
-    "to": null,
-    "data": {
-      "themeLocation": ".project/project.json#theme",
-      "preset": "Anthropic Style | Custom",
-      "tokens": {
-        "colors": 12,
-        "typography": 3,
-        "spacing": 9
-      },
-      "modes": ["light", "dark"],
-      "cssVarsPresent": true
-    }
-  }
-}
-```
 
 ---
 
@@ -1597,3 +1487,4 @@ This command must **ALWAYS**:
 - Run the Website Sync check after Create/Update (PHASE Y)
 - Update DevInfo on phase transitions
 - JSON integrity check: other sections unchanged after write
+- Follow `shared/BACKLOG.md → Lifecycle Protocol` for backlog tasks (read on PHASE 0, write status on success, no abort write needed)

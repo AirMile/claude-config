@@ -91,10 +91,10 @@ Type: [Skill only / Skill + resources]
 Use **AskUserQuestion** tool:
 
 - header: "Confirm"
-- question: "Klopt deze samenvatting?"
+- question: "Does this summary look right?"
 - options:
-  - label: "Ja, ga door (Recommended)", description: "Summary is correct, continue"
-  - label: "Nee, aanpassen", description: "Ik wil iets wijzigen"
+  - label: "Yes, continue (Recommended)", description: "Summary is correct, continue"
+  - label: "No, adjust", description: "I want to change something"
 - multiSelect: false
 
 ### Step 2: Select Resource Types (Conditional)

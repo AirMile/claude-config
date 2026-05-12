@@ -106,7 +106,7 @@ Assign COVERED when ALL of the following are true:
 - **Post-build mode is active** (feature.json has `build` section)
 - **Baseline passes** (npm test → all green)
 - **Build tests already verify the HTTP/function contract** for this item (`httpContractTested: true` from Explore agent)
-- **No meaningful delta** beyond what build tests cover (`delta: "geen"`)
+- **No meaningful delta** beyond what build tests cover (`delta: "none"`)
 
 COVERED items:
 
@@ -157,19 +157,19 @@ NOT COVERED (even when build tests exist):
 
 Wanneer `feature.json` een `build` sectie heeft (dev-build is voltooid, tests bestaan al):
 
-**Principe:** dev-build tests verifiëren per-requirement logica (unit niveau). dev-verify schrijft acceptance tests vanuit de spec en verifieert geïntegreerd gedrag (E2E). Bestaande test suite draaien is een baseline gate, geen test item.
+**Principle:** dev-build tests verify per-requirement logic (unit level). dev-verify writes acceptance tests from the spec and verifies integrated behavior (E2E). Running the existing test suite is a baseline gate, not a test item.
 
 **Override regels:**
 
-| Originele Classificatie               | Post-Build Override       | Conditie                                           |
-| ------------------------------------- | ------------------------- | -------------------------------------------------- |
-| Any (httpContractTested + geen delta) | **COVERED**               | Build tests dekken HTTP contract, geen extra delta |
-| AUTO/CLI "Existing test suite"        | AUTO/BROWSER              | Feature heeft UI, delta bestaat                    |
-| AUTO/CLI "Existing test suite"        | AUTO/CLI "API integratie" | Pure API feature, delta bestaat                    |
-| AUTO/CLI (specifiek command)          | Ongewijzigd               | Build, typecheck, file state                       |
-| AUTO/BROWSER                          | Ongewijzigd               | Al E2E verificatie                                 |
-| MANUAL                                | Ongewijzigd               | Subjectief oordeel                                 |
-| Integration scenario (5c)             | AUTO (never COVERED)      | Cross-req is always new verification               |
+| Originele Classificatie             | Post-Build Override       | Conditie                                        |
+| ----------------------------------- | ------------------------- | ----------------------------------------------- |
+| Any (httpContractTested + no delta) | **COVERED**               | Build tests cover HTTP contract, no extra delta |
+| AUTO/CLI "Existing test suite"      | AUTO/BROWSER              | Feature heeft UI, delta bestaat                 |
+| AUTO/CLI "Existing test suite"      | AUTO/CLI "API integratie" | Pure API feature, delta bestaat                 |
+| AUTO/CLI (specifiek command)        | Ongewijzigd               | Build, typecheck, file state                    |
+| AUTO/BROWSER                        | Ongewijzigd               | Al E2E verificatie                              |
+| MANUAL                              | Ongewijzigd               | Subjectief oordeel                              |
+| Integration scenario (5c)           | AUTO (never COVERED)      | Cross-req is always new verification            |
 
 **Post-build specifieke patronen:**
 

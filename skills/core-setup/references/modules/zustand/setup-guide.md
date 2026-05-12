@@ -1,15 +1,15 @@
 # Zustand Setup
 
-**Status:** stub — full guide te genereren via Context7 query.
+**Status:** stub — full guide to be generated via Context7 query.
 
 ## Detection
 
-| State           | Conditie                       |
-| --------------- | ------------------------------ |
-| `installed`     | `zustand` in dependencies      |
-| `not-installed` | `zustand` niet in dependencies |
+| State           | Condition                     |
+| --------------- | ----------------------------- |
+| `installed`     | `zustand` in dependencies     |
+| `not-installed` | `zustand` not in dependencies |
 
-Geen apart configuratiebestand — `installed` geldt als `already-installed-configured` voor PHASE 5 stap 0.
+No separate config file — `installed` counts as `already-installed-configured` for PHASE 5 step 0.
 
 ## Install (via Context7)
 
@@ -21,16 +21,16 @@ mcp__context7__query-docs(
 )
 ```
 
-Volg Context7 output voor:
+Follow Context7 output for:
 
 1. Install: `zustand`
-2. Eerste store template: `src/stores/{store-name}.ts`
+2. First store template: `src/stores/{store-name}.ts`
 3. TypeScript pattern (use of `create<State>()` curried form)
-4. Optioneel: persist middleware, devtools middleware
+4. Optional: persist middleware, devtools middleware
 
 ## Framework specifics
 
-- **Next.js**: zorg voor SSR-veilige hydration (zustand v4+ werkt out-of-the-box; check `useStore` boundary)
+- **Next.js**: ensure SSR-safe hydration (zustand v4+ works out-of-the-box; check `useStore` boundary)
 
 ## Teardown
 

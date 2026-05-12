@@ -166,7 +166,7 @@ Behavior of `learning-extractor` agent differs per skill:
 ### `project-pull` (signal-triggered)
 
 - **Input**: lijst paden van getriggerde files
-- **Scope**: alleen die files lezen, geen wider scan
+- **Scope**: read only those files, no wider scan
 - **Output**: 0-5 patterns/pitfalls
 - **Cap**: max 5 entries
 

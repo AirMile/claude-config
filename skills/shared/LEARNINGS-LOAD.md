@@ -56,7 +56,7 @@ Sort desc by `date`. Cap at 10 entries total.
 
 ### Scope: `architectural`
 
-Filter op type `pattern` met source `synced` of `extracted` (geen `inferred` — die zijn cross-feature observaties, te vaag voor architectuurkeuzes).
+Filter by type `pattern` with source `synced` or `extracted` (exclude `inferred` — those are cross-feature observations, too broad for architecture choices).
 
 ```
 matches = learnings.filter(l =>

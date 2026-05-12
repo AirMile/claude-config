@@ -89,10 +89,10 @@ window.generateTaskBrief = async function (f) {
   if (f.dependency) {
     var depFound =
       typeof findItem !== "undefined" ? findItem(f.dependency) : null;
-    var depStatus = depFound ? depFound.item.status : "onbekend";
+    var depStatus = depFound ? depFound.item.status : "unknown";
     lines.push("### Dependencies");
     lines.push(
-      "- Afhankelijk van: **" + f.dependency + "** (status: " + depStatus + ")",
+      "- Depends on: **" + f.dependency + "** (status: " + depStatus + ")",
     );
     lines.push("");
   }
