@@ -18,11 +18,14 @@ git clone https://github.com/<your-username>/claude-config.git
 cd claude-config
 # then inside Claude Code:
 /core-bootstrap        # one-time per machine — deploys CLAUDE.md, settings.json, keybindings, statusline + 4 global symlinks
-/project-add           # once per project — creates .claude/ and .project/
-/core-setup            # auto-detects greenfield/mature/audit/resync; re-invokable with `install <module>`
 ```
 
-Run `/core-update` periodically to pull the latest version and rebuild composed global files. For manual setup without Claude Code, see [`local/README.md`](local/README.md).
+Per project, **pick one entry point**:
+
+- Already inside a project directory → run `/core-setup` directly. Auto-detects greenfield/mature, re-invokable later (`audit`, `resync`, `install <module>`).
+- Creating or cloning a fresh project → run `/project-add` from anywhere. Sets up `.claude/` + `.project/`, optionally clones a GitHub repo, then hands off to `/core-setup`.
+
+Run `/core-update` periodically to pull the latest claude-config version and rebuild composed global files. For manual setup without Claude Code, see [`local/README.md`](local/README.md).
 
 **Recommended Claude Code settings** — `/model opusplan` (runtime) and `"effortLevel": "high"` in `~/.claude/settings.json`. Multiple skills (`dev-define`, `shared/PLAN-MODE.md`) lean on `opusplan` for their thinking phases. `/core-bootstrap` asks for your Claude plan and tailors the advice — the defaults above are tuned for **Max 5x**; Pro / Max 10x get different guidance.
 
