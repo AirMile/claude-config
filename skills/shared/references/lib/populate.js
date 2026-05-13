@@ -9,10 +9,13 @@ function populateFromProject(projectDir, dashData) {
   var changed = false;
 
   // ── Concept: load from project-concept.md (new split format) ──
-  const conceptEmpty = !dashData.concept || !dashData.concept.content;
+  // Prefer the file over inline content when conceptFile is set (split format)
+  // or when content is empty (legacy fallback).
   const conceptMdSplit = path.join(projectPath, ".project/project-concept.md");
+  const shouldLoadConceptFile =
+    dashData.concept?.conceptFile || !dashData.concept?.content;
 
-  if (conceptEmpty && fs.existsSync(conceptMdSplit)) {
+  if (shouldLoadConceptFile && fs.existsSync(conceptMdSplit)) {
     try {
       const md = fs.readFileSync(conceptMdSplit, "utf8");
       if (!dashData.concept) dashData.concept = {};
@@ -28,11 +31,7 @@ function populateFromProject(projectDir, dashData) {
   // ── Concept: migrate from legacy .project/concept.md ──
   const conceptFile = path.join(projectPath, ".project/concept.md");
 
-  if (
-    conceptEmpty &&
-    !dashData.concept?.content &&
-    fs.existsSync(conceptFile)
-  ) {
+  if (!dashData.concept?.content && fs.existsSync(conceptFile)) {
     try {
       const md = fs.readFileSync(conceptFile, "utf8");
       if (!dashData.concept) dashData.concept = {};
