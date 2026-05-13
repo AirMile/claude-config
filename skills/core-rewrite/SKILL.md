@@ -3,11 +3,11 @@ name: core-rewrite
 description: >-
   Rewrite freewritten text in a specific writing style, or check text against a style without rewriting.
   Use with /core-rewrite [style] [text], /core-rewrite [style] @path, or /core-rewrite check [style] [text|@path].
-  Available styles: personal, clear, portfolio, insights.
+  Styles are loaded dynamically from ~/.claude/styles/*.md — add your own style files there.
 argument-hint: "[check?] [style] [text|@path]"
 user-invocable: true
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.1.0
   category: core
 ---
@@ -29,23 +29,26 @@ The argument can take these forms:
 Detection order:
 
 1. If first token equals `check`: set `mode = "check"`, shift it off. Otherwise `mode = "rewrite"`.
-2. Next token: match against known styles `personal`, `clear`, `portfolio`, `insights`. On match, set `style` and shift it off. Otherwise `style = null`.
-3. Remaining argument: if it starts with `@`, read the file at that path and use its content as `text`. Otherwise treat the remainder as `text`.
+2. Discover available styles:
+   ```bash
+   # Primary: user-owned styles
+   ls ~/.claude/styles/*.md 2>/dev/null | xargs -I{} basename {} .md
+   # Fallback if directory is empty or doesn't exist:
+   ls "$CONFIG_REPO/skills/shared/styles/style-*.md" 2>/dev/null | xargs -I{} basename {} .md | sed 's/^style-//'
+   ```
+   If no styles are found, output: "No styles configured. Add style files to `~/.claude/styles/` — see `skills/shared/styles/style-example.md` for the format." Then stop.
+3. Next token: match against discovered style names. On match, set `style` and shift it off. Otherwise `style = null`.
+4. Remaining argument: if it starts with `@`, read the file at that path and use its content as `text`. Otherwise treat the remainder as `text`.
 
-If `style` is null, ask:
+If `style` is null, ask (present the discovered style names as options, using the first non-header line of each style file as its description):
 
 ```yaml
 header: "Style"
-question: "Welke schrijfstijl?"
+question: "Which writing style?"
 options:
-  - label: "Personal"
-    description: "Persoonlijke ik-voice. Schrijf alsof je het iemand vertelt aan tafel. Voor blogs, posts, notes."
-  - label: "Clear"
-    description: "Objectief in Miles-stijl. Sprekend-vertellend, geen 'ik'. Voor README's, docs, uitleg."
-  - label: "Portfolio"
-    description: "Direct, actief, toont niet claimt. Professioneel maar natuurlijk. Voor demo/showcase."
-  - label: "Insights"
-    description: "Analytisch, data-verweven, zelfverzekerd. Claim-bewijs-conclusie."
+  - label: "{style-name}"
+    description: "{first non-header line from the style file}"
+  # … one entry per discovered style
 multiSelect: false
 ```
 
@@ -53,12 +56,20 @@ If `text` is null, ask the user to provide it (no fixed format — accept whatev
 
 ## 2. Load Style Profile
 
-```
-Read("../shared/styles/_anti-patterns.md")
-Read("../shared/styles/style-{style}.md")
+Load the style file for the selected style:
+
+```bash
+# Primary: user-owned styles
+STYLE_FILE="$HOME/.claude/styles/style-{style}.md"
+# Fallback:
+STYLE_FILE="$CONFIG_REPO/skills/shared/styles/style-{style}.md"
 ```
 
-Both files are in force. Apply the shared anti-patterns AND the style-specific rules. The style file references `_anti-patterns.md` for its inherited rules — treat them as part of the profile.
+```
+Read(resolved STYLE_FILE path)
+```
+
+Apply all rules from the loaded style file strictly. The style file is the single source of truth — do not blend styles or add rules not in the profile.
 
 ## 3. Execute
 

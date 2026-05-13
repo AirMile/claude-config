@@ -1,21 +1,25 @@
 ---
 name: core-write
 description: >-
-  Write a text from scratch in a Miles writing style with guided context-gathering.
-  Detects style automatically based on text type (blog/post/note → personal, README/docs → clear, portfolio/showcase → portfolio, analyse/rapport → insights).
+  Write a text from scratch in your configured writing style with guided context-gathering.
+  Detects style automatically based on text type. Styles are loaded dynamically from ~/.claude/styles/*.md.
   Supports Quick (one question round), Standard (two rounds), and Full (with outline approval) flows.
   Use with /core-write [what to write].
 argument-hint: "[what to write]"
 user-invocable: true
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: core
 ---
 
 # Write
 
-Writing assistant that generates text in Miles style. Gathers context via questions, selects the appropriate guidance level automatically, and applies the chosen style strictly.
+Writing assistant that generates text in your configured style. Gathers context via questions, selects the appropriate guidance level automatically, and applies the chosen style strictly.
+
+Styles are loaded dynamically from `~/.claude/styles/*.md`. Add your own style files
+there to make them available. See `skills/shared/styles/style-example.md` for the
+format.
 
 ## 1. Parse Input
 
@@ -27,35 +31,23 @@ Analyze the argument for:
 
 If no argument: ask for text type and subject before continuing.
 
-## 2. Auto-Detect Style
+## 2. Discover and Select Style
 
-Match keywords in the argument against known types:
+Before presenting style options, discover available styles:
 
-| Keywords in argument                                      | Style     | Example                       |
-| --------------------------------------------------------- | --------- | ----------------------------- |
-| blog, post, note, essay, artikel, journal                 | personal  | "blog about my first project" |
-| README, docs, documentation, explanation, guide, tutorial | clear     | "README for draftgap"         |
-| portfolio, showcase, CV, demo-page, project-page          | portfolio | "portfolio text for draftgap" |
-| report, analysis, insights, deep dive, review             | insights  | "analysis of my development"  |
-
-No match found? Ask:
-
-```yaml
-header: "Style"
-question: "Which writing style?"
-options:
-  - label: "Personal"
-    description: "Personal first-person voice. Write as if telling someone across the table. For blogs, posts, notes."
-  - label: "Clear"
-    description: "Objective in Miles style. Conversational-narrative, no 'I'. For READMEs, docs, explanations."
-  - label: "Portfolio"
-    description: "Direct, active, shows don't tells. Professional but natural. For demo/showcase."
-  - label: "Insights"
-    description: "Analytical, data-woven, confident. Claim-evidence-conclusion."
-multiSelect: false
+```bash
+# Primary: user-owned styles
+ls ~/.claude/styles/*.md 2>/dev/null | xargs -I{} basename {} .md
+# Fallback if directory is empty or doesn't exist:
+ls "$CONFIG_REPO/skills/shared/styles/style-*.md" 2>/dev/null | xargs -I{} basename {} .md | sed 's/^style-//'
 ```
 
-Match found? Inform which style was detected and ask for confirmation:
+If no styles are found, output:
+
+> "No styles configured. Add style files to `~/.claude/styles/` — see `skills/shared/styles/style-example.md` for the format."
+> Then stop.
+
+Try to auto-detect a style by matching keywords in the argument against the discovered style names and any keyword hints in each style file's `## When to use` section. If a match is found, inform which style was detected and ask for confirmation:
 
 ```yaml
 header: "Style"
@@ -65,6 +57,18 @@ options:
     description: ""
   - label: "Choose a different style"
     description: ""
+multiSelect: false
+```
+
+No match found? Present the discovered style names as options (read the first line of each style file as its description):
+
+```yaml
+header: "Style"
+question: "Which writing style?"
+options:
+  - label: "{style-name}"
+    description: "{first non-header line from the style file}"
+  # … one entry per discovered style
 multiSelect: false
 ```
 
@@ -195,12 +199,20 @@ multiSelect: false
 
 ## 5. Write Draft
 
-```
-Read("../shared/styles/_anti-patterns.md")
-Read("../shared/styles/style-{style}.md")
+Load the style file for the selected style:
+
+```bash
+# Primary: user-owned styles
+STYLE_FILE="$HOME/.claude/styles/style-{style}.md"
+# Fallback:
+STYLE_FILE="$CONFIG_REPO/skills/shared/styles/style-{style}.md"
 ```
 
-Write the full text with all rules from both files strictly applied.
+```
+Read(resolved STYLE_FILE path)
+```
+
+Write the full text with all rules from the loaded style file strictly applied.
 
 Preserve:
 
@@ -214,9 +226,9 @@ Verify the draft before output. Silently:
 1. Loop through the draft sentence by sentence. Flag:
    - Sentences > 25 words
    - Em dashes
-   - Every forbidden word from `_anti-patterns.md` or the style-specific list
+   - Every forbidden word from the style-specific anti-patterns list
    - Three sentences of similar length in a row (no burstiness)
-   - Style-specific violations (panoramic opener for personal, marketing-speak for clear, etc.)
+   - Style-specific violations defined in the loaded style file
 2. Found violations: rewrite those sentences in place. Do not output the violations list.
 3. Repeat at most once if a rewrite introduces new problems. After two passes: accept remaining imperfection.
 
