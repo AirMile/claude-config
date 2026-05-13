@@ -92,6 +92,55 @@ Store the chosen label in `LANGUAGE_CHOICE` (e.g. `"Nederlands"`). If the user s
 
 ---
 
+## PHASE 0.5: Paths setup
+
+Write per-machine path configuration to `$CONFIG_REPO/.claude/paths.local.yaml`. Idempotent — skip if the file already exists unless `FORCE=true`.
+
+```bash
+# macOS/Linux
+PATHS_LOCAL="$CONFIG_REPO/.claude/paths.local.yaml"
+if [ -f "$PATHS_LOCAL" ] && [ "$FORCE" != "true" ]; then
+  PATHS_STATUS="already-exists"
+else
+  # Ask the user:
+  # "Where is your projects root? This is where /project-add creates new projects
+  #  and /project-switch navigates. (default: $HOME/projects — press Enter to accept)"
+  # Store input in PROJECTS_ROOT; if empty, use "$HOME/projects"
+
+  mkdir -p "$CONFIG_REPO/.claude"
+  cat > "$PATHS_LOCAL" <<EOF
+paths:
+  projects_root: "$PROJECTS_ROOT"
+  config_repo: "$CONFIG_REPO"
+EOF
+  PATHS_STATUS="written"
+fi
+```
+
+```powershell
+# Windows
+$pathsLocal = "$CONFIG_REPO\.claude\paths.local.yaml"
+if ((Test-Path $pathsLocal) -and -not $FORCE) {
+  $pathsStatus = "already-exists"
+} else {
+  # Ask the user:
+  # "Where is your projects root? (default: C:\Projects — press Enter to accept)"
+  # Store as $projectsRoot; if empty, use "C:\Projects"
+
+  # Ask the user:
+  # "Where is your Godot executable? (optional — press Enter to skip)"
+  # Store as $godotPath; if empty, omit from file
+
+  New-Item -ItemType Directory -Force -Path "$CONFIG_REPO\.claude" | Out-Null
+  $lines = @("paths:", "  projects_root: `"$projectsRoot`"", "  config_repo: `"$CONFIG_REPO`"")
+  if ($godotPath) { $lines += "  godot_executable: `"$godotPath`"" }
+  $lines -join "`n" | Set-Content $pathsLocal
+  $pathsStatus = "written"
+}
+```
+
+---
+
 ## PHASE 1: Copy user-files
 
 Copy 4 files to `~/.claude/`. **Skip if the destination already exists** unless `FORCE=true`. Create `~/.claude/` if it is missing.
@@ -307,12 +356,15 @@ Bootstrap complete
  ~/.claude/scripts/         already-exists
  Personal overlay           applied (2 items)
  Language                   English
+ Paths (paths.local.yaml)   written
 ══════════════════════════════════════════════════════
 ```
 
 Statuses: `placed` · `already-exists` · `forced-overwrite` · `linked` · `error: <reason>`
 
 For the Language row: show the chosen language, or `skipped (already set)` if `LANGUAGE_CHOICE=skip`.
+
+For the Paths row: show `written` / `already-exists` / `forced-overwrite`.
 
 For the Personal overlay row:
 

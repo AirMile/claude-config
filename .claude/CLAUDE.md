@@ -8,16 +8,17 @@ Personal Claude Code configuration: skills, agents, hooks, and scripts. Linked t
 
 Cross-platform: **Windows (primary)** and **macOS (optional)**.
 
-|               | Windows                                  | macOS                          |
-| ------------- | ---------------------------------------- | ------------------------------ |
-| Repo          | `C:\Projects\claude-config`              | `$HOME/projects/claude-config` |
-| Projects root | `C:\Projects`                            | `$HOME/projects`               |
-| Link          | `mklink /J` (junction)                   | `ln -sfn` (symlink)            |
-| Godot         | `/c/Godot/Godot_v4.4.1-stable_win64.exe` | n/a                            |
-| Shell         | PowerShell                               | bash/zsh                       |
+|               | Windows                | macOS/Linux         |
+| ------------- | ---------------------- | ------------------- |
+| Repo          | configurable           | configurable        |
+| Projects root | configurable           | configurable        |
+| Link          | `mklink /J` (junction) | `ln -sfn` (symlink) |
+| Godot         | configurable           | n/a                 |
+| Shell         | PowerShell             | bash/zsh            |
 
 **Rules:**
 
+- Run `/core-bootstrap` once per machine — it writes `.claude/paths.local.yaml` with your local paths
 - Use `{projects_root}` in skills, not hardcoded paths
 - `paths.yaml` contains per-platform defaults (override via env vars or `paths.local.yaml`)
 - **Path resolution:** env var (`CLAUDE_PROJECTS_ROOT`, `CLAUDE_CONFIG_REPO`, `CLAUDE_GODOT_EXECUTABLE`) → `.claude/paths.local.yaml` (per project, not in git) → `skills/project-add/paths.yaml` (canonical defaults)
