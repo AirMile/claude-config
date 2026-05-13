@@ -409,7 +409,7 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 | `/dev-define`   | Initial `layers` + `components` (status planned, no src/test) + `dataFlow`                     | During feature definition |
 | `/dev-build`    | Update `components`: status → done, fill `src`, `test`, `connects_to`, `endpoints`, `entities` | After build               |
 | `/dev-verify`   | Update `components`: confirm status done, add test files                                       | After test                |
-| `/project-pull` | Sync full `architecture` section on pull                                                       | On context sync           |
+| `/core-pull` | Sync full `architecture` section on pull                                                       | On context sync           |
 
 **Write strategy:**
 
@@ -722,7 +722,7 @@ Skills that consume thinking-output (such as `/dev-define`) read directly via Gr
 ```
 
 `type` values: `pattern` (architectural choice), `pitfall` (bug/gotcha), `observation` (cross-feature insight).
-`source` values: `extracted` (direct observation from code output or test result) | `inferred` (cross-feature pattern recognition or LLM inference) | `synced` (extracted from teammate code or mature codebase via project-pull / core-setup --mode=mature).
+`source` values: `extracted` (direct observation from code output or test result) | `inferred` (cross-feature pattern recognition or LLM inference) | `synced` (extracted from teammate code or mature codebase via core-pull / core-setup --mode=mature).
 `date` = extraction date. `feature` = source feature (kebab-case). For `synced` learnings without a structured feature: use primary directory (`auth`, `payments`). `summary` = max 200 chars.
 `author` = optional, only for `source === "synced"`. Mirrors `features[].author`.
 
@@ -734,7 +734,7 @@ Skills that consume thinking-output (such as `/dev-define`) read directly via Gr
 | `tests.fixSync[]`      | `pitfall`     | `extracted`     |
 | `observations[]`       | `observation` | `inferred`      |
 
-**Source mapping** (teammate / mature codebase, in project-pull / core-setup --mode=mature):
+**Source mapping** (teammate / mature codebase, in core-pull / core-setup --mode=mature):
 
 | Source                                           | learning.type              | learning.source |
 | ------------------------------------------------ | -------------------------- | --------------- |
@@ -746,7 +746,7 @@ Skills that consume thinking-output (such as `/dev-define`) read directly via Gr
 
 See [skills/shared/LEARNING-EXTRACTION.md](skills/shared/LEARNING-EXTRACTION.md) for heuristics and filters.
 
-Append-only log. Skills that complete features extract learnings automatically (see dev-verify PHASE 6, dev-refactor PHASE 5). `project-pull` (incremental) and `core-setup --mode=mature` (one-time) extract learnings from teammate/legacy code. `source` is required on new writes.
+Append-only log. Skills that complete features extract learnings automatically (see dev-verify PHASE 6, dev-refactor PHASE 5). `core-pull` (incremental) and `core-setup --mode=mature` (one-time) extract learnings from teammate/legacy code. `source` is required on new writes.
 
 **This replaces the dynamic CLAUDE.md sections** (`## Project structure`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md now only contains a reference to `project.json` for this context.
 
@@ -771,7 +771,7 @@ Append-only log. Skills that complete features extract learnings automatically (
 | -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                                   | On architecture definition / after build                                 |
 | `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`                | On build/refactor (structure, routing, patterns)                         |
-| `learnings`    | `/dev-verify`, `/dev-refactor`, `/game-verify`, `/project-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred) or teammate/legacy code (synced) |
+| `learnings`    | `/dev-verify`, `/dev-refactor`, `/game-verify`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred) or teammate/legacy code (synced) |
 
 ### Skill sync overview
 
@@ -791,7 +791,7 @@ Append-only log. Skills that complete features extract learnings automatically (
 | `/game-refactor`            | `features` (DONE)                                                   | `context`, `architecture` (write)                                 | PHASE 5 completion       |
 | `/dev-optimize`             | `optimization_runs` (append)                                        | —                                                                 | PHASE 6 completion       |
 | `/game-optimize`            | `optimization_runs` (append)                                        | —                                                                 | PHASE 6 completion       |
-| `/project-pull`             | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                 |
+| `/core-pull`             | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                 |
 | `/core-setup --mode=mature` | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | One-time on join         |
 
 ## Server

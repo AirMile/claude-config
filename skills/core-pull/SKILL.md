@@ -1,23 +1,23 @@
 ---
-name: project-pull
+name: core-pull
 description: >-
   Pull git changes, analyze diff, sync .project context, deep-analyze teammate
   code (features, entities, endpoints, architecture), and extract synced
-  learnings (pitfalls/patterns) from teammate commits. Use with /project-pull
-  or /project-pull --no-learn. For first-time onboarding to a mature repo:
+  learnings (pitfalls/patterns) from teammate commits. Use with /core-pull
+  or /core-pull --no-learn. For first-time onboarding to a mature repo:
   use /core-setup instead.
 argument-hint: "[remote/branch] [--no-learn]"
 metadata:
   author: claude-config
   version: 4.0.0
-  category: project
+  category: core
 ---
 
 # Pull
 
 Pull remote changes, analyze the diff, refresh `.project/` context, analyze teammate code for features, entities, endpoints and architecture, and extract synced learnings from teammate commits.
 
-**Trigger**: `/project-pull`, `/project-pull [remote/branch]`, or `/project-pull --no-learn`
+**Trigger**: `/core-pull`, `/core-pull [remote/branch]`, or `/core-pull --no-learn`
 
 **`--no-learn` flag**: Skip PHASE 4j (learning extraction). Use if you only want to sync context/architecture without generating learnings.
 
@@ -58,8 +58,8 @@ Pull remote changes, analyze the diff, refresh `.project/` context, analyze team
      - "Cancel" — "Stop, I'll fix this myself"
    - multiSelect: false
 
-   On "Stash": `git stash push -u -m "project-pull auto-stash"` (`-u` for untracked files). After successful pull in PHASE 1: `git stash apply` (NOT `pop`). On apply success → `git stash drop`. On conflict after apply → report and let user resolve. **NEVER drop the stash on conflict** — the stash remains as a safety net.
-   On "Commit first" → exit with instruction to run `/core-commit` and then `/project-pull`.
+   On "Stash": `git stash push -u -m "core-pull auto-stash"` (`-u` for untracked files). After successful pull in PHASE 1: `git stash apply` (NOT `pop`). On apply success → `git stash drop`. On conflict after apply → report and let user resolve. **NEVER drop the stash on conflict** — the stash remains as a safety net.
+   On "Commit first" → exit with instruction to run `/core-commit` and then `/core-pull`.
    On "Cancel" → exit.
 
 3. Check remote:
@@ -89,12 +89,12 @@ Pull remote changes, analyze the diff, refresh `.project/` context, analyze team
    - header: "Onboard?"
    - question: "This looks like a new codebase for you ({N} commits, no learnings). `/core-setup` builds base memory from conventions, patterns and pitfalls in existing code. Run now?"
    - options:
-     - "Yes, run /core-setup (Recommended)" — exit project-pull with instruction to start `/core-setup`
+     - "Yes, run /core-setup (Recommended)" — exit core-pull with instruction to start `/core-setup`
      - "No, just pull" — continue with PHASE 1
      - "Don't ask again for this project" — write `.project/session/onboard-dismissed` (empty marker file), continue with PHASE 1
    - multiSelect: false
 
-   On "Yes": exit with message `RUN /core-setup FOR BASE MEMORY (then re-run /project-pull for incremental updates)`. No pull/sync.
+   On "Yes": exit with message `RUN /core-setup FOR BASE MEMORY (then re-run /core-pull for incremental updates)`. No pull/sync.
 
 ### PHASE 1: Pull
 
@@ -110,7 +110,7 @@ Pull:
 git pull --rebase
 ```
 
-If conflicts → show conflicting files, exit with instruction to resolve conflicts and then re-run `/project-pull`.
+If conflicts → show conflicting files, exit with instruction to resolve conflicts and then re-run `/core-pull`.
 
 **Determine whether to continue:**
 

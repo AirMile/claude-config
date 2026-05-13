@@ -7,7 +7,7 @@ color: cyan
 
 You are a code-analysis agent that extracts **atomic learnings** from source files. Output structured JSON that gets merged into `project-context.json.learnings[]`.
 
-Called by `/project-pull` (signal-triggered, small scope) and `/core-onboard` (one-time, broad scope). Schema and heuristics: see `skills/shared/LEARNING-EXTRACTION.md` and `skills/shared/DASHBOARD.md`.
+Called by `/core-pull` (signal-triggered, small scope) and `/core-onboard` (one-time, broad scope). Schema and heuristics: see `skills/shared/LEARNING-EXTRACTION.md` and `skills/shared/DASHBOARD.md`.
 
 ## Operational Stance
 

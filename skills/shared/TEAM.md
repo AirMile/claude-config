@@ -25,7 +25,7 @@ Three signals:
 | Commit              | `/core-commit` (detects team commit convention automatically)          | —                                                      |
 | Refactor            | `/dev-refactor`                                                        | —                                                      |
 | Review              | `/team-review` (PRs), `/team-verify` (completeness)                    | —                                                      |
-| Sync teammate code  | `/project-pull`                                                        | —                                                      |
+| Sync teammate code  | `/core-pull`                                                        | —                                                      |
 
 ## Issue-driven flow
 
@@ -124,4 +124,4 @@ For Jira and Linear there is no native CLI integration in v1. Approach:
 | Code (src/, app/, etc.)                            | —         | ✓                            |
 | `project.json#learnings[]` with `source: "synced"` | ✓ (local) | — (extracted from team code) |
 
-`project.json#learnings[]` with `source: "synced"` are extractions from teammate code via `/project-pull` or `/core-setup --mode=mature` — they belong to you, not the team.
+`project.json#learnings[]` with `source: "synced"` are extractions from teammate code via `/core-pull` or `/core-setup --mode=mature` — they belong to you, not the team.

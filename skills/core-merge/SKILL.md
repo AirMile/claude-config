@@ -22,7 +22,7 @@ Integrate a finished feature branch (created via `EnterWorktree` in the build sk
 - You want to integrate the branch (PR, local merge, or push-only)
 - You want to clean up the worktree after merging
 
-Not for: regular commits (use `/core-commit`), pulling remote changes (use `/project-pull`), creating new branches.
+Not for: regular commits (use `/core-commit`), pulling remote changes (use `/core-pull`), creating new branches.
 
 ## PHASE 0: Pre-flight + State Detection
 

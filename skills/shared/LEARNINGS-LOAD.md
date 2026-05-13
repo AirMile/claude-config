@@ -139,6 +139,6 @@ Load learnings via shared/LEARNINGS-LOAD.md:
 
 ## Implementation note
 
-This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-verify`, `dev-refactor` (PHASE 5), `project-pull`, `core-setup --mode=mature`).
+This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-verify`, `dev-refactor` (PHASE 5), `core-pull`, `core-setup --mode=mature`).
 
 Skill can read + filter inline (no separate tool needed), or if the skill uses an agent: agent prompt already contains filtered learnings (not the full list).

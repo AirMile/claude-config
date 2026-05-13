@@ -54,7 +54,7 @@ See `shared/SYNC.md`, `shared/DASHBOARD.md`, and `shared/LEARNING-EXTRACTION.md`
    - question: "`.project/project-context.json` already has {N} learnings. Mature mode ONLY adds new entries (dedup on summary), but is intended as a first-time scan. Continue?"
    - options:
      - "Continue (Recommended)" — "Full scan, dedup against existing learnings"
-     - "Cancel" — "Prefer incremental pull via `/project-pull`"
+     - "Cancel" — "Prefer incremental pull via `/core-pull`"
    - multiSelect: false
 
    On cancel → exit.
@@ -234,7 +234,7 @@ Glob the project root for file tree. Build a compact structure string:
 
 - Exclude: `node_modules`, `.git`, `.project`, `dist`, `build`, `.next`, `vendor`, `__pycache__`, `.godot`
 - One-line comment per directory describing its purpose (generate from dir name + readme if available)
-- Format: identical to `project-pull` PHASE 3a / `DASHBOARD.md` `context.structure` schema
+- Format: identical to `core-pull` PHASE 3a / `DASHBOARD.md` `context.structure` schema
 
 Overwrite `context.structure` completely.
 
@@ -242,11 +242,11 @@ Overwrite `context.structure` completely.
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-Reuse logic from `project-pull` PHASE 4d/e/f, but on ALL source files (not just teammate-changed):
+Reuse logic from `core-pull` PHASE 4d/e/f, but on ALL source files (not just teammate-changed):
 
 **2a) Stack detection** from existing `project.json.stack.framework` or, if missing, from `package.json` dependencies / `requirements.txt` / `project.godot`. Write to `stack.framework`.
 
-**2b) Routes** — Glob all route files according to stack mapping (`project-pull` PHASE 3b table). Extract route patterns. Overwrite `context.routing`.
+**2b) Routes** — Glob all route files according to stack mapping (`core-pull` PHASE 3b table). Extract route patterns. Overwrite `context.routing`.
 
 **2c) Entities** — Glob model files (Mongoose/Prisma/Sequelize/Django/GDScript). Extract entities with source field. Merge to `data.entities[]`.
 
@@ -384,7 +384,7 @@ For each new entry from PHASE 3 + PHASE 4:
 - `project-context.json`: update `context.structure`, `context.routing`, `context.patterns`, `architecture.components`, append `learnings[]`
 - `context.updated` → today
 
-Skip-worktree recovery as in `project-pull` PHASE 0.
+Skip-worktree recovery as in `core-pull` PHASE 0.
 
 **5c) Save sync state**
 
@@ -392,7 +392,7 @@ Skip-worktree recovery as in `project-pull` PHASE 0.
 echo '{"lastSync":"<ISO timestamp>"}' > .project/session/sync-state.json
 ```
 
-Makes subsequent `/project-pull` runs incremental from now on.
+Makes subsequent `/core-pull` runs incremental from now on.
 
 ### PHASE 5.5: CLAUDE.md completeness check + migration
 
@@ -658,7 +658,7 @@ Mark PHASE 5.85 → `completed`.
 
 | Condition                             | Bullet                                     |
 | ------------------------------------- | ------------------------------------------ |
-| (none — always)                       | `/project-pull`                            |
+| (none — always)                       | `/core-pull`                            |
 | `concept.pitch` empty                 | `/project-seed`                            |
 | `features[]` empty                    | `/dev-define`                              |
 | frontend stack && `needsTheme = true` | `/frontend-tokens`                         |
@@ -709,7 +709,7 @@ Updated: {date}
 {if installed_in_session[] not empty}  Modules added: {installed_in_session[]}
 
 Next steps:
-  • /project-pull              — incremental updates (sync state is on)
+  • /core-pull              — incremental updates (sync state is on)
 {if concept.pitch empty}  • /project-seed   — fill in concept pitch
 {if features[] empty}     • /dev-define         — define the first feature
 {if frontend && needsTheme}  • /frontend-tokens — design tokens (color, typography, spacing)
@@ -732,7 +732,7 @@ Mark PHASE 6 → `completed`.
 
 ## Notes
 
-- Deliberately one-time: after a successful mature run, incremental changes are picked up by `/project-pull`.
+- Deliberately one-time: after a successful mature run, incremental changes are picked up by `/core-pull`.
 - LLM extraction costs ~25-50K tokens via Sonnet subagent. Without `--no-llm` flag this is default-on.
 - No author for LLM-inferred learnings: pattern is a codebase-wide observation.
 - Author === git user → skip (own work in own project — not a "synced" learning).
