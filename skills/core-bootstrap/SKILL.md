@@ -2,23 +2,20 @@
 name: core-bootstrap
 description: >-
   Bootstrap user-level ~/.claude/ (CLAUDE.md, settings.json, keybindings,
-  statusline) + global symlinks/junctions to the claude-config repo. One-time
-  per machine — idempotent, skips files that already exist unless --force. Use with
-  /core-bootstrap.
-argument-hint: "[--force]"
+  statusline) + global symlinks/junctions to the claude-config repo. Fully
+  idempotent — safe to re-run anytime; existing files are kept untouched.
+  Use with /core-bootstrap.
 metadata:
   author: claude-config
-  version: 1.2.0
+  version: 1.3.0
   category: core
 ---
 
 # Core Bootstrap Skill
 
-**Trigger**: `/core-bootstrap [--force]`
+**Trigger**: `/core-bootstrap`
 
-Bootstrap of the user-global Claude Code configuration. Deploys 4 user-files to `~/.claude/` and creates 4 global symlinks/junctions. One-time per machine after cloning the claude-config repo.
-
-`--force`: overwrites existing user-files (PHASE 1). Symlinks are always idempotent via `ln -sfn` / pre-check.
+Bootstrap of the user-global Claude Code configuration. Deploys 4 user-files to `~/.claude/` and creates 4 global symlinks/junctions. Fully idempotent — running again skips anything already in place, so it is always safe to re-run after a `git pull` or on a new machine. To replace a deployed file, delete it manually first, then re-run.
 
 ---
 
@@ -51,8 +48,6 @@ Validate that `$CONFIG_REPO/local/` exists. If not:
 
 Stop.
 
-Parse `--force` flag: if present, store `FORCE=true`.
-
 Check `jq` availability (advisory only — does not stop execution):
 
 ```bash
@@ -67,9 +62,9 @@ Check whether `~/.claude/CLAUDE.md` already contains a `Language:` setting:
 grep -q "Language:" "$HOME/.claude/CLAUDE.md" 2>/dev/null && echo "found" || echo "not-found"
 ```
 
-If `Language:` is found **and** `FORCE` is not set → store `LANGUAGE_CHOICE=skip` (language step skipped).
+If `Language:` is found → store `LANGUAGE_CHOICE=skip` (language step skipped — re-runs leave existing setting alone).
 
-If `Language:` is not found **or** `FORCE=true` → ask:
+If `Language:` is not found → ask:
 
 ```yaml
 header: "Language"
@@ -90,16 +85,59 @@ multiSelect: false
 
 Store the chosen label in `LANGUAGE_CHOICE` (e.g. `"Nederlands"`). If the user selects "English (Recommended)" → `LANGUAGE_CHOICE=skip` (template default, no patch needed).
 
+### Claude plan tier
+
+Check `$CONFIG_REPO/.claude/paths.local.yaml` for a persisted value first:
+
+```bash
+# macOS/Linux
+PLAN_TIER=""
+if [ -f "$CONFIG_REPO/.claude/paths.local.yaml" ]; then
+  PLAN_TIER=$(grep "claude_plan:" "$CONFIG_REPO/.claude/paths.local.yaml" | sed 's/.*claude_plan:[[:space:]]*//' | tr -d '"')
+fi
+```
+
+```powershell
+# Windows
+$planTier = ""
+$pathsLocal = "$CONFIG_REPO\.claude\paths.local.yaml"
+if (Test-Path $pathsLocal) {
+  $line = Select-String -Path $pathsLocal -Pattern "claude_plan:" | Select-Object -First 1
+  if ($line) { $planTier = ($line.Line -replace '.*claude_plan:\s*"?([^"]+)"?.*', '$1').Trim() }
+}
+```
+
+If `PLAN_TIER` is non-empty → skip the question (use persisted value, note it in PHASE 3 report as `<value> (saved)`).
+
+If `PLAN_TIER` is empty → ask:
+
+```yaml
+header: "Claude plan"
+question: "Which Claude plan are you on? (used to tailor the recommended-settings tip)"
+options:
+  - label: "Max 5x (Recommended baseline)"
+    description: 'Suggests /model opusplan + effortLevel:"high" — optimal balance'
+  - label: "Pro"
+    description: 'Suggests starting with /model sonnet + effortLevel:"medium" — Opus quota is tight'
+  - label: "Max 10x+"
+    description: 'Suggests /model opus or opusplan + effortLevel:"high" — quota headroom for heavier routes'
+  - label: "Skip"
+    description: "No plan-specific tip shown"
+multiSelect: false
+```
+
+Store the choice in `PLAN_TIER` (one of `max-5x`, `pro`, `max-10x`, `skip`). Write to `paths.local.yaml` in PHASE 0.5 (see below).
+
 ---
 
 ## PHASE 0.5: Paths setup
 
-Write per-machine path configuration to `$CONFIG_REPO/.claude/paths.local.yaml`. Idempotent — skip if the file already exists unless `FORCE=true`.
+Write per-machine path configuration to `$CONFIG_REPO/.claude/paths.local.yaml`. Idempotent — skip if the file already exists.
 
 ```bash
 # macOS/Linux
 PATHS_LOCAL="$CONFIG_REPO/.claude/paths.local.yaml"
-if [ -f "$PATHS_LOCAL" ] && [ "$FORCE" != "true" ]; then
+if [ -f "$PATHS_LOCAL" ]; then
   PATHS_STATUS="already-exists"
 else
   # Ask the user:
@@ -112,16 +150,28 @@ else
 paths:
   projects_root: "$PROJECTS_ROOT"
   config_repo: "$CONFIG_REPO"
+preferences:
+  claude_plan: "$PLAN_TIER"
 EOF
   PATHS_STATUS="written"
+fi
+
+# Backfill preferences block if file existed but predates plan-tier
+if [ "$PATHS_STATUS" = "already-exists" ] && ! grep -q "claude_plan:" "$PATHS_LOCAL" 2>/dev/null; then
+  printf '\npreferences:\n  claude_plan: "%s"\n' "$PLAN_TIER" >> "$PATHS_LOCAL"
 fi
 ```
 
 ```powershell
 # Windows
 $pathsLocal = "$CONFIG_REPO\.claude\paths.local.yaml"
-if ((Test-Path $pathsLocal) -and -not $FORCE) {
+if (Test-Path $pathsLocal) {
   $pathsStatus = "already-exists"
+  # Backfill preferences block if missing (old format)
+  $content = Get-Content $pathsLocal -Raw
+  if ($content -notmatch "claude_plan:") {
+    Add-Content $pathsLocal "`npreferences:`n  claude_plan: `"$planTier`""
+  }
 } else {
   # Ask the user:
   # "Where is your projects root? (default: C:\Projects — press Enter to accept)"
@@ -134,6 +184,7 @@ if ((Test-Path $pathsLocal) -and -not $FORCE) {
   New-Item -ItemType Directory -Force -Path "$CONFIG_REPO\.claude" | Out-Null
   $lines = @("paths:", "  projects_root: `"$projectsRoot`"", "  config_repo: `"$CONFIG_REPO`"")
   if ($godotPath) { $lines += "  godot_executable: `"$godotPath`"" }
+  $lines += @("preferences:", "  claude_plan: `"$planTier`"")
   $lines -join "`n" | Set-Content $pathsLocal
   $pathsStatus = "written"
 }
@@ -145,7 +196,7 @@ if ((Test-Path $pathsLocal) -and -not $FORCE) {
 
 ## PHASE 1: Copy user-files
 
-Copy 4 files to `~/.claude/`. **Skip if the destination already exists** unless `FORCE=true`. Create `~/.claude/` if it is missing.
+Copy 4 files to `~/.claude/`. **Skip if the destination already exists** — never overwrites. Create `~/.claude/` if it is missing.
 
 Report the outcome per file (for the PHASE 3 report):
 
@@ -172,9 +223,9 @@ declare -A FILES=(
 for dest_name in "${!FILES[@]}"; do
   src="${FILES[$dest_name]}"
   dest="$CLAUDE_DIR/$dest_name"
-  if [ ! -f "$dest" ] || [ "$FORCE" = "true" ]; then
+  if [ ! -f "$dest" ]; then
     cp "$src" "$dest"
-    # STATUS: placed (or forced-overwrite when FORCE)
+    # STATUS: placed
   else
     : # STATUS: already-exists
   fi
@@ -197,9 +248,9 @@ $files = @{
 foreach ($destName in $files.Keys) {
   $src  = $files[$destName]
   $dest = "$claudeDir\$destName"
-  if (-not (Test-Path $dest) -or $FORCE) {
+  if (-not (Test-Path $dest)) {
     Copy-Item $src $dest
-    # STATUS: placed (or forced-overwrite when FORCE)
+    # STATUS: placed
   } else {
     # STATUS: already-exists
   }
@@ -208,19 +259,33 @@ foreach ($destName in $files.Keys) {
 
 ### Language patch
 
-After copying CLAUDE.md (only if it was actually placed or force-overwritten, and `LANGUAGE_CHOICE` is not `skip`):
+After copying CLAUDE.md (only if it was actually placed, and `LANGUAGE_CHOICE` is not `skip`):
 
-Locate the `Language:` line in `~/.claude/CLAUDE.md` and replace the value with `LANGUAGE_CHOICE`.
+Patch the `Language:` line in `~/.claude/CLAUDE.md` **and** the `"language"` field in `~/.claude/settings.json` to keep them in sync.
 
 ```bash
-# macOS/Linux — replace Language: line in-place (portable: works on both BSD and GNU sed)
+# macOS/Linux — CLAUDE.md (portable sed)
 sed -i.bak "s/^Language:.*$/Language: $LANGUAGE_CHOICE/" "$HOME/.claude/CLAUDE.md" && rm -f "$HOME/.claude/CLAUDE.md.bak"
+
+# settings.json — prefer jq; fall back to sed
+SETTINGS="$HOME/.claude/settings.json"
+if command -v jq >/dev/null 2>&1; then
+  jq --arg lang "$LANGUAGE_CHOICE" '.language = $lang' "$SETTINGS" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
+else
+  sed -i.bak "s/\"language\":.*$/\"language\": \"$LANGUAGE_CHOICE\",/" "$SETTINGS" && rm -f "$SETTINGS.bak"
+fi
 ```
 
 ```powershell
-# Windows
+# Windows — CLAUDE.md
 (Get-Content "$env:USERPROFILE\.claude\CLAUDE.md") -replace '^Language:.*$', "Language: $LANGUAGE_CHOICE" |
   Set-Content "$env:USERPROFILE\.claude\CLAUDE.md"
+
+# settings.json
+$settings = "$env:USERPROFILE\.claude\settings.json"
+$json = Get-Content $settings -Raw | ConvertFrom-Json
+$json.language = $LANGUAGE_CHOICE
+$json | ConvertTo-Json -Depth 10 | Set-Content $settings
 ```
 
 **After copying**: show a brief reminder:
@@ -358,15 +423,18 @@ Bootstrap complete
  ~/.claude/scripts/         already-exists
  Personal overlay           applied (2 items)
  Language                   English
+ Claude plan                Max 5x
  Paths (paths.local.yaml)   written
 ══════════════════════════════════════════════════════
 ```
 
-Statuses: `placed` · `already-exists` · `forced-overwrite` · `linked` · `error: <reason>`
+Statuses: `placed` · `already-exists` · `linked` · `error: <reason>`
 
 For the Language row: show the chosen language, or `skipped (already set)` if `LANGUAGE_CHOICE=skip`.
 
-For the Paths row: show `written` / `already-exists` / `forced-overwrite`.
+For the Claude plan row: show the `PLAN_TIER` label (`Max 5x`, `Pro`, `Max 10x+`, or `skipped`).
+
+For the Paths row: show `written` / `already-exists`.
 
 For the Personal overlay row:
 
@@ -378,3 +446,35 @@ Closing tip (always show):
 
 > Next step: open a project and run `/core-setup` for project-internal setup.
 > To stay current with claude-config updates later: run `/core-update`.
+
+### Plan-tier recommended-settings tip
+
+Based on `PLAN_TIER` (from PHASE 0), show one of the following blocks. These settings are not auto-applied — they require a runtime `/model` choice and an explicit edit to `~/.claude/settings.json`.
+
+- **`max-5x`**:
+
+  ```
+  Recommended for Max 5x — optimal balance:
+    • Run /model opusplan      (Opus for plan, Sonnet for execution)
+    • Set "effortLevel": "high" in ~/.claude/settings.json
+    Multiple skills (dev-define, shared/PLAN-MODE.md) lean on opusplan.
+  ```
+
+- **`pro`**:
+
+  ```
+  Recommended for Pro — Opus quota is tight:
+    • Start with /model sonnet (or default)
+    • Use /model opusplan selectively for heavy planning sessions
+    • "effortLevel": "medium" or "high" depending on quota usage
+  ```
+
+- **`max-10x`**:
+
+  ```
+  Recommended for Max 10x+ — quota headroom:
+    • /model opus for full Opus, or /model opusplan for mixed routing
+    • Set "effortLevel": "high" in ~/.claude/settings.json
+  ```
+
+- **`skip`**: no plan-tier block shown.
