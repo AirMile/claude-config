@@ -7,7 +7,7 @@ description: >-
   /core-bootstrap.
 argument-hint: "[--force]"
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.1.0
   category: core
 ---
@@ -53,6 +53,12 @@ Stop.
 
 Parse `--force` flag: if present, store `FORCE=true`.
 
+Check `jq` availability (advisory only — does not stop execution):
+
+```bash
+command -v jq >/dev/null 2>&1 || echo "warn: jq not found — settings overlay merge will be skipped if personal/settings.overlay.json is present"
+```
+
 ### Language selection
 
 Check whether `~/.claude/CLAUDE.md` already contains a `Language:` setting:
@@ -72,7 +78,7 @@ options:
   - label: "English (Recommended)"
     description: "Claude responds in English"
   - label: "Nederlands"
-    description: "Claude antwoordt in het Nederlands"
+    description: "Claude responds in Dutch"
   - label: "Deutsch"
     description: "Claude antwortet auf Deutsch"
   - label: "Français"
@@ -82,7 +88,7 @@ options:
 multiSelect: false
 ```
 
-Store the chosen label in `LANGUAGE_CHOICE` (e.g. `"English"`). If the user selects "Nederlands" → `LANGUAGE_CHOICE=skip` (template default, no patch needed).
+Store the chosen label in `LANGUAGE_CHOICE` (e.g. `"Nederlands"`). If the user selects "English (Recommended)" → `LANGUAGE_CHOICE=skip` (template default, no patch needed).
 
 ---
 
@@ -174,6 +180,86 @@ Show this reminder only if settings.json was actually placed or overwritten.
 
 ---
 
+## PHASE 1.5: Personal overlay
+
+Apply user-specific customisations from `$CONFIG_REPO/personal/` (gitignored, optional).
+
+```bash
+# macOS/Linux
+PERSONAL_DIR="$CONFIG_REPO/personal"
+if [ -d "$PERSONAL_DIR" ]; then
+  OVERLAY_COUNT=0
+
+  # 1. CLAUDE.md overlay — append to base
+  if [ -f "$PERSONAL_DIR/CLAUDE.md.overlay" ]; then
+    cat "$PERSONAL_DIR/CLAUDE.md.overlay" >> "$HOME/.claude/CLAUDE.md"
+    OVERLAY_COUNT=$((OVERLAY_COUNT + 1))
+  fi
+
+  # 2. settings.overlay.json — deep-merge (right-wins) via jq
+  if [ -f "$PERSONAL_DIR/settings.overlay.json" ]; then
+    if command -v jq >/dev/null 2>&1; then
+      jq -s '.[0] * .[1]' "$HOME/.claude/settings.json" "$PERSONAL_DIR/settings.overlay.json" \
+        > "$HOME/.claude/settings.json.tmp" && mv "$HOME/.claude/settings.json.tmp" "$HOME/.claude/settings.json"
+      OVERLAY_COUNT=$((OVERLAY_COUNT + 1))
+    else
+      echo "warn: jq not found — skipping settings overlay merge"
+    fi
+  fi
+
+  # 3. styles/ — symlink to ~/.claude/styles/
+  if [ -d "$PERSONAL_DIR/styles" ]; then
+    ln -sfn "$PERSONAL_DIR/styles" "$HOME/.claude/styles"
+    OVERLAY_COUNT=$((OVERLAY_COUNT + 1))
+  fi
+
+  # STATUS: applied ($OVERLAY_COUNT items) if OVERLAY_COUNT > 0, else found-nothing
+else
+  # STATUS: not found (optional)
+fi
+```
+
+```powershell
+# Windows
+$personalDir = "$CONFIG_REPO\personal"
+$overlayCount = 0
+
+if (Test-Path $personalDir) {
+  # 1. CLAUDE.md overlay
+  $overlay = "$personalDir\CLAUDE.md.overlay"
+  if (Test-Path $overlay) {
+    Get-Content $overlay | Add-Content "$env:USERPROFILE\.claude\CLAUDE.md"
+    $overlayCount++
+  }
+
+  # 2. settings.overlay.json — deep-merge via jq
+  $settingsOverlay = "$personalDir\settings.overlay.json"
+  if (Test-Path $settingsOverlay) {
+    if (Get-Command jq -ErrorAction SilentlyContinue) {
+      $merged = jq -s '.[0] * .[1]' "$env:USERPROFILE\.claude\settings.json" $settingsOverlay
+      $merged | Set-Content "$env:USERPROFILE\.claude\settings.json"
+      $overlayCount++
+    } else {
+      Write-Warning "jq not found — skipping settings overlay merge"
+    }
+  }
+
+  # 3. styles/ — junction to ~/.claude/styles/
+  $stylesDir = "$personalDir\styles"
+  $stylesTarget = "$env:USERPROFILE\.claude\styles"
+  if ((Test-Path $stylesDir) -and (-not (Test-Path $stylesTarget))) {
+    cmd /c "mklink /J `"$stylesTarget`" `"$stylesDir`""
+    $overlayCount++
+  }
+
+  # STATUS: applied ($overlayCount items) if $overlayCount > 0, else found-nothing
+} else {
+  # STATUS: not found (optional)
+}
+```
+
+---
+
 ## PHASE 2: Global symlinks / junctions
 
 Link 4 directories: `agents`, `hooks`, `skills`, `scripts`. Skip if the link already exists (`-e` check, no overwrite).
@@ -219,6 +305,7 @@ Bootstrap complete
  ~/.claude/hooks/           already-exists
  ~/.claude/skills/          already-exists
  ~/.claude/scripts/         already-exists
+ Personal overlay           applied (2 items)
  Language                   English
 ══════════════════════════════════════════════════════
 ```
@@ -226,6 +313,12 @@ Bootstrap complete
 Statuses: `placed` · `already-exists` · `forced-overwrite` · `linked` · `error: <reason>`
 
 For the Language row: show the chosen language, or `skipped (already set)` if `LANGUAGE_CHOICE=skip`.
+
+For the Personal overlay row:
+
+- `personal/` does not exist → `not found (optional)`
+- `personal/` exists, `OVERLAY_COUNT > 0` → `applied (N items)`
+- `personal/` exists, `OVERLAY_COUNT = 0` → `found, nothing to apply`
 
 Closing tip (always show):
 
