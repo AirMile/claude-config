@@ -14,6 +14,9 @@ settings.local.json
 # Project state (project-specific, not shared)
 .project/
 
+# Personal overlay (user-owned, never commit to public repo)
+personal/
+
 # Playwright MCP artifacts
 .playwright-mcp/
 
