@@ -179,7 +179,7 @@ Always rebuild, regardless of whether any `local/` files changed. This keeps com
 ```bash
 # macOS/Linux
 cp "$CONFIG_REPO/local/CLAUDE.md.base" "$HOME/.claude/CLAUDE.md"
-sed -i '' "s/^Language:.*$/Language: $CURRENT_LANG/" "$HOME/.claude/CLAUDE.md"
+sed -i.bak "s/^Language:.*$/Language: $CURRENT_LANG/" "$HOME/.claude/CLAUDE.md" && rm -f "$HOME/.claude/CLAUDE.md.bak"
 ```
 
 ```powershell
@@ -201,7 +201,23 @@ cp "$CONFIG_REPO/local/settings.json.template" "$HOME/.claude/settings.json"
 Copy-Item "$CONFIG_REPO\local\settings.json.template" "$env:USERPROFILE\.claude\settings.json"
 ```
 
-### 3c. Apply personal overlay
+### 3c. Rebuild `~/.claude/keybindings.json` and `~/.claude/statusline-command.cjs`
+
+Simple overwrites — no merge needed, these files have no user customisation.
+
+```bash
+# macOS/Linux
+cp "$CONFIG_REPO/local/keybindings.json" "$HOME/.claude/keybindings.json"
+cp "$CONFIG_REPO/local/statusline-command.cjs" "$HOME/.claude/statusline-command.cjs"
+```
+
+```powershell
+# Windows
+Copy-Item "$CONFIG_REPO\local\keybindings.json" "$env:USERPROFILE\.claude\keybindings.json"
+Copy-Item "$CONFIG_REPO\local\statusline-command.cjs" "$env:USERPROFILE\.claude\statusline-command.cjs"
+```
+
+### 3d. Apply personal overlay
 
 ```bash
 # macOS/Linux
@@ -268,6 +284,8 @@ Update complete
  Skills / agents updated       7
  ~/.claude/CLAUDE.md           rebuilt
  ~/.claude/settings.json       rebuilt
+ ~/.claude/keybindings.json    rebuilt
+ ~/.claude/statusline-…        rebuilt
  Personal overlay              applied (2 items)
  Language                      Nederlands (preserved)
 ══════════════════════════════════════════════════════

@@ -162,8 +162,8 @@ After copying CLAUDE.md (only if it was actually placed or force-overwritten, an
 Locate the `Language:` line in `~/.claude/CLAUDE.md` and replace the value with `LANGUAGE_CHOICE`.
 
 ```bash
-# macOS/Linux — replace Language: line in-place
-sed -i '' "s/^Language:.*$/Language: $LANGUAGE_CHOICE/" "$HOME/.claude/CLAUDE.md"
+# macOS/Linux — replace Language: line in-place (portable: works on both BSD and GNU sed)
+sed -i.bak "s/^Language:.*$/Language: $LANGUAGE_CHOICE/" "$HOME/.claude/CLAUDE.md" && rm -f "$HOME/.claude/CLAUDE.md.bak"
 ```
 
 ```powershell
