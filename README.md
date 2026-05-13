@@ -86,16 +86,6 @@ All runtime artifacts live in a gitignored `.project/` directory per project:
 
 Run `/project-viewer` to serve all project backlogs and dashboards on `http://localhost:9876` — one local board across every project under `{projects_root}`. Stop with `/project-viewer stop`.
 
-## Hooks
-
-| Hook                   | Trigger                | What it does                                  |
-| ---------------------- | ---------------------- | --------------------------------------------- |
-| `format-on-save.cjs`   | PostToolUse Write/Edit | Runs Prettier (web) or gdformat (GDScript)    |
-| `prompt-timer.cjs`     | UserPromptSubmit       | Tracks prompt duration                        |
-| `security-reminder.py` | PreToolUse Write/Edit  | Surfaces security reminders on relevant edits |
-
-`local/statusline-command.cjs` provides a Claude Code statusline integration (copied by `/core-bootstrap`, not symlinked).
-
 ## Personal overlay
 
 Keep personal customisations (language preference, writing styles, opinionated defaults) separate from the public repo:
