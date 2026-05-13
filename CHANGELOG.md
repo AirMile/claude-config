@@ -10,6 +10,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `core-update`: pull latest claude-config + rebuild `~/.claude/CLAUDE.md` and `settings.json` from base + personal overlay; preserves Language preference
 - Personal overlay system (`personal/` directory, gitignored) — append `CLAUDE.md.overlay`, deep-merge `settings.overlay.json`, symlink `styles/`
 - `core-bootstrap`: PHASE 1.5 detects and applies personal overlays; jq availability check in PHASE 0
 - `core-write` / `core-rewrite`: dynamic style discovery from `~/.claude/styles/*.md`

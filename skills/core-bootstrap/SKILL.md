@@ -323,3 +323,4 @@ For the Personal overlay row:
 Closing tip (always show):
 
 > Next step: open a project and run `/core-setup` for project-internal setup.
+> To stay current with claude-config updates later: run `/core-update`.

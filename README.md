@@ -25,6 +25,8 @@ Skills are invoked as `/skill-name` in Claude Code. Agents run as isolated sub-p
 
 Clone the repo, then run `/core-bootstrap` to bootstrap `~/.claude/` — deploys CLAUDE.md, settings.json (incl. hooks), keybindings, statusline-command.cjs, and all four global symlinks. One-time per machine, idempotent. See [`local/README.md`](local/README.md) for the manual fallback.
 
+To keep claude-config up to date after the initial bootstrap, run `/core-update` periodically — it pulls the latest version and rebuilds your composed global files.
+
 ### 2. Register a project — `/project-add`
 
 Creates project structure (`.claude/`, `.project/`) and optionally clones a GitHub repo. Run once per project.
