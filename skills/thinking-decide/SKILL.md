@@ -9,7 +9,7 @@ description: >-
   counterargument, and delivers a confidence-rated recommendation. Not for
   trivial choices like naming or formatting.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: thinking
 ---

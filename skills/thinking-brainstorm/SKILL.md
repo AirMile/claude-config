@@ -2,7 +2,7 @@
 name: thinking-brainstorm
 description: Creatively expand ideas through interactive technique application. Generates variations, explores alternatives, pushes boundaries. Use with /thinking-brainstorm after /thinking-concept.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: thinking
 ---

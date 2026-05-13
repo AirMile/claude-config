@@ -9,7 +9,7 @@ reads:
   [backlog.status, feature.requirements, feature.files, feature.architecture]
 writes: [backlog.status]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.3.0
   category: frontend
 ---

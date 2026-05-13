@@ -4,7 +4,7 @@ description: Systematic debugging with reproduction-test-first workflow, root ca
 reads: [project-context.learnings, feature.requirements]
 writes: [project-context.learnings]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 3.0.0
   category: dev
 ---

@@ -6,7 +6,7 @@ description: >-
   Use with /marketing-screenshots [url] for Product Hunt, social media, landing
   pages, or documentation. Analyzes codebase to discover routes and features.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: marketing
 ---

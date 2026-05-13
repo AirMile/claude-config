@@ -3,7 +3,7 @@ name: core-export
 description: Export the project (whole repo, branch diff, recent commits, or a subfolder) as a single AI-friendly file via npx repomix for sharing with external AI tools or collaborators. Use with /core-export or /core-export [path]. Asks for scope, format, compression, and output destination, then writes to .project/exports/ with token count. Respects .gitignore and runs Secretlint scanning.
 argument-hint: "[path]"
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.1.0
   category: core
 ---

@@ -9,7 +9,7 @@ description: >-
 writes:
   [feature.requirements, feature.architecture, feature.files, backlog.status]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.6.0
   category: dev
 ---

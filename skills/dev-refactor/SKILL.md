@@ -4,7 +4,7 @@ description: Batch refactor code quality after testing with parallel analysis, d
 reads: [feature.build, feature.tests, backlog.status]
 writes: [feature.refactor, backlog.status, learnings]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.2.0
   category: dev
 ---

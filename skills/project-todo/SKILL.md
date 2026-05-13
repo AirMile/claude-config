@@ -7,7 +7,7 @@ description: >-
   project.json if missing. Use with /project-todo or /project-todo [description]
   when capturing a new idea for the project backlog.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: project
 ---

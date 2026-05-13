@@ -10,7 +10,7 @@ description: >-
 reads: [devinfo.handoff, backlog.status, feature.requirements, feature.files]
 writes: [devinfo.handoff, devinfo.tokenDrift]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.7.0
   category: frontend
 ---

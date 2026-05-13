@@ -9,7 +9,7 @@ description: >-
   playwright, vitest, shadcn-ui, biome, zustand, etc.). Use with /core-setup.
 argument-hint: "[--mode=greenfield|mature|audit|resync|install] [module] [--no-llm]"
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.0.0
   category: core
 ---

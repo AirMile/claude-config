@@ -6,7 +6,7 @@ description: >-
   for performance, quality, or bundle improvements where you can define a
   score. Standalone — not tied to a pipeline feature.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 0.1.0
   category: dev
 ---

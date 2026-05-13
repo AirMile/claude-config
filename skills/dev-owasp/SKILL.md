@@ -2,7 +2,7 @@
 name: dev-owasp
 description: Complete OWASP Top 10:2025 security audit with parallel agents. Use with /dev-owasp to scan for security vulnerabilities in web applications.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.0.0
   category: dev
 ---

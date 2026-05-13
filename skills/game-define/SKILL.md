@@ -3,7 +3,7 @@ name: game-define
 description: Define game feature requirements and architecture with structured output. Use with /game-define to create detailed game feature specifications before building.
 writes: [feature.requirements, backlog.stage]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.3.0
   category: game
 ---

@@ -5,7 +5,7 @@ description: >-
   Use with /project-backlog to serve kanban backlogs and dashboards across
   all projects via a single Node.js server.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 3.1.0
   category: project
 ---

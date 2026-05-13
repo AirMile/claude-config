@@ -7,7 +7,7 @@ description: >-
   Use with /marketing-research [topic] for product launches, content strategy,
   or competitive positioning.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: marketing
 ---

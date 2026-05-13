@@ -6,7 +6,7 @@ description: >-
 reads: [feature.build, feature.tests, backlog.stage]
 writes: [feature.refactor, backlog.stage]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.3.0
   category: game
 ---

@@ -2,7 +2,7 @@
 name: project-add
 description: Add project (new or clone existing) and register it in the multi-project setup. Use with /project-add.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: project
 ---

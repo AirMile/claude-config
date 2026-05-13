@@ -4,7 +4,7 @@ description: Adversarial verification — acceptance tests + fix loops. After ve
 reads: [feature.requirements, feature.build]
 writes: [feature.tests, backlog.status]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.2.1
   category: dev
 ---

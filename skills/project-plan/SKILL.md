@@ -2,7 +2,7 @@
 name: project-plan
 description: Transform idea or brainstorm output into a prioritized feature backlog. Auto-detects stack (web/game) from project.json. Use with /project-plan after /thinking-concept or /thinking-brainstorm to create implementation roadmaps.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: project
 ---

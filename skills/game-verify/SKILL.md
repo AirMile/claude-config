@@ -4,7 +4,7 @@ description: Human playtest verification with structured feedback and fix loop. 
 reads: [feature.requirements, feature.build, backlog.stage]
 writes: [feature.tests, backlog.stage]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.3.0
   category: game
 ---

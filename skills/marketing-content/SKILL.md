@@ -7,7 +7,7 @@ description: >-
   language from /marketing-research output. Use with /marketing-content [topic]
   for social posts, email subjects, ad headlines, or landing page sections.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: marketing
 ---

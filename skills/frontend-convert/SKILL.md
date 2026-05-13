@@ -9,7 +9,7 @@ description: >-
 argument-hint: "[file-path|url]"
 writes: [devinfo.handoff]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.6.0
   category: frontend
 ---

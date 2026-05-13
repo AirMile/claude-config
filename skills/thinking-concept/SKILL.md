@@ -2,7 +2,7 @@
 name: thinking-concept
 description: Develop and maintain project concepts through guided questions, structured synthesis, and project sync. Use with /thinking-concept for new ideas or to enrich existing concepts from backlog/codebase.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.1.0
   category: thinking
 ---

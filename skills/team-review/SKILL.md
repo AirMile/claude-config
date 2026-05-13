@@ -2,7 +2,7 @@
 name: team-review
 description: Code review for feature branches with bug detection, CLAUDE.md compliance, git history analysis, confidence scoring, and optional PR integration. Inline analysis with optional Context7 best-practice research.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 3.0.0
   category: team
 ---

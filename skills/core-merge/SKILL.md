@@ -3,7 +3,7 @@ name: core-merge
 description: Merge a feature worktree branch back to a target branch with optional push/PR creation and worktree cleanup. Use with /core-merge or /core-merge [feature-name]. Detects worktree state, offers squash/no-ff/PR-flow strategies, handles cleanup.
 argument-hint: "[feature-name]"
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: core
 ---

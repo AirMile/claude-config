@@ -87,7 +87,7 @@ Code research (from godot-code-researcher, if provided):
 4. Write the updated test file
 5. Run GUT to verify test FAILS:
    ```bash
-   "/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/{test_file}
+   "${CLAUDE_GODOT_EXECUTABLE:-/c/Godot/Godot_v4.4.1-stable_win64.exe}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/{test_file}
    ```
 6. Verify the failure is expected (class not found, method missing, etc.)
 7. Log: `RED: {test_name} - FAIL ({reason})`
@@ -107,7 +107,7 @@ Code research (from godot-code-researcher, if provided):
 4. Write MINIMAL implementation - just enough to pass
 5. Run GUT to verify test PASSES:
    ```bash
-   "/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/{test_file}
+   "${CLAUDE_GODOT_EXECUTABLE:-/c/Godot/Godot_v4.4.1-stable_win64.exe}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/{test_file}
    ```
 6. If test fails, iterate until it passes
 7. Log: `GREEN: {test_name} - PASS`
@@ -133,7 +133,7 @@ Code research (from godot-code-researcher, if provided):
 2. Apply refactoring changes
 3. Run GUT to verify test still PASSES:
    ```bash
-   "/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/{test_file}
+   "${CLAUDE_GODOT_EXECUTABLE:-/c/Godot/Godot_v4.4.1-stable_win64.exe}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/{test_file}
    ```
 4. If test fails, revert and try different refactoring
 5. Log: `REFACTOR: {test_name} - PASS (changes: {what was improved})`
@@ -226,13 +226,13 @@ If implementation fails after 3 attempts:
 
 ```bash
 # Run specific test file
-"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/test_{feature}.gd
+"${CLAUDE_GODOT_EXECUTABLE:-/c/Godot/Godot_v4.4.1-stable_win64.exe}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/test_{feature}.gd
 
 # Run specific test by name pattern
-"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gunit_test_name={pattern}
+"${CLAUDE_GODOT_EXECUTABLE:-/c/Godot/Godot_v4.4.1-stable_win64.exe}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gunit_test_name={pattern}
 
 # Run with verbose output (for debugging)
-"/c/Godot/Godot_v4.4.1-stable_win64.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -glog=3 -gtest=res://tests/test_{feature}.gd
+"${CLAUDE_GODOT_EXECUTABLE:-/c/Godot/Godot_v4.4.1-stable_win64.exe}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -glog=3 -gtest=res://tests/test_{feature}.gd
 ````
 
 ## GDScript Conventions

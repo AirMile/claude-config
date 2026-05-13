@@ -8,7 +8,7 @@ description: >
   Use with /school-learn [topic, URL, or file path].
 argument-hint: "[topic, URL, or file path]"
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: school
 ---

@@ -2,7 +2,7 @@
 name: thinking-critique
 description: Critically analyze ideas through structured techniques from multiple perspectives. Use with /thinking-critique to stress-test concepts before committing to implementation.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: thinking
 ---

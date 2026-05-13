@@ -4,7 +4,7 @@ description: >-
   Edit existing Claude Code skills with rename, delete, and resource management.
   Use with /core-edit to modify skill content, frontmatter, or resources.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: core
 ---
@@ -225,7 +225,7 @@ description: >- # MUST include WHAT + WHEN
 
 # RECOMMENDED
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: core # core|dev|frontend|game|project|story|team|thinking
 

@@ -4,7 +4,7 @@ description: Build features with technique mapping (TDD, Implementation First, o
 reads: [feature.requirements, backlog.stage]
 writes: [feature.requirements, feature.build, backlog.stage, learnings]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.7.0
   category: game
 ---

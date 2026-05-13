@@ -8,7 +8,7 @@ description: >-
   use /core-setup instead.
 argument-hint: "[remote/branch] [--no-learn]"
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 4.0.0
   category: project
 ---

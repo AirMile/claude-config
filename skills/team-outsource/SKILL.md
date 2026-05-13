@@ -9,7 +9,7 @@ description: >-
   See shared/TEAM.md for the full team-repo workflow.
 argument-hint: "[name] [--paste] [--tracker github|jira|linear]"
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: team
 ---

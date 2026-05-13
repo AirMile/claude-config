@@ -4,7 +4,7 @@ description: Build features with TDD or implementation-first per requirement. Us
 reads: [feature.requirements]
 writes: [feature.requirements, feature.build, backlog.status, learnings]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.8.0
   category: dev
 ---

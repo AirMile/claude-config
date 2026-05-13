@@ -30,7 +30,7 @@ disable-model-invocation: true
 reads: [feature.requirements, backlog.status]
 writes: [feature.requirements, feature.build, backlog.status]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.6.1
   category: dev
 ---

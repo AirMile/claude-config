@@ -2,7 +2,7 @@
 name: project-remove
 description: Remove a registered project — optionally delete the folder. Master config stays intact. Use with /project-remove.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.1.0
   category: project
 ---
