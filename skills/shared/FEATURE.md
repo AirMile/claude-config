@@ -263,7 +263,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 
   "suggestionsLog": [
     {
-      "skill": "project-plan",
+      "skill": "project-backlog",
       "type": "COMPONENT",
       "name": "Modal",
       "status": "accepted",
@@ -317,7 +317,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 - `observations` — findings, suggestions for other features
 - `tests.verificationCheckpoint` — acceptance criteria mapping result (gaps, mismatches, adjustments)
 
-**Added by reuse-discovery (dev-define, project-plan, dev-build, dev-verify):**
+**Added by reuse-discovery (dev-define, project-backlog, dev-build, dev-verify):**
 
 - `suggestionsLog[]` — maintained by all four pipeline skills that suggest COMPONENT/PAGE todos, and by `frontend-design`/`frontend-convert` for gap-discovery (direction-flag `frontend→dev`). Append-only. Schema: `{ skill, type, name, status: "accepted"|"rejected", at, direction? }`. Dedup key: `(name, skill)`. A proposal that was once rejected (`status: "rejected"`) is not re-proposed by the same skill, even if the trigger recurs. A new trigger from a different skill may re-propose (different detection source) — see dedupe logic in the individual skill docs.
 
@@ -325,7 +325,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 
 - `frontend.linkedEntities[]` — cross-pipeline traceability: which visual entities (components, pages) link their handler-props to this feature. Schema per item: `{ type: "component"|"page", name, prop }`. Read by `dev-build` to replace stub-handlers with real implementation after build.
 
-**Added by thinking-decide** (cross-phase, can occur at any time):
+**Added by project-decide** (cross-phase, can occur at any time):
 
 - `durableDecisions[]` — feature-scoped decisions with `decision`, `chosen`, `constraint` (forcing constraint), `rationale`, `rejected[]` (`{option, reason}`), `date`. Append-only — new entries are added, old ones stay. `constraint` and `rejected[]` are optional but strongly recommended for non-trivial decisions; they prevent rejected options from resurfacing as zombie proposals later.
 
@@ -374,7 +374,7 @@ pending → built → PASS
 | `/dev-build`       | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Reads clarifications as constraints                                | PHASE 4C |
 | `/dev-verify`      | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | PHASE 6  |
 | `/dev-refactor`    | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | PHASE 5  |
-| `/thinking-decide` | Append: `durableDecisions[]` with decision, chosen, constraint, rationale, rejected[], date (feature-scope only)                                         | Step 3   |
+| `/project-decide` | Append: `durableDecisions[]` with decision, chosen, constraint, rationale, rejected[], date (feature-scope only)                                         | Step 3   |
 | `/game-define`     | Creates feature.json (same as dev-define + clarifications, game-specific design fields)                                                                  | PHASE 4  |
 | `/game-build`      | Enriches: build, tests.checklist (playtest items), requirements. Reads clarifications as constraints                                                     | PHASE 5  |
 | `/game-verify`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | PHASE 6  |

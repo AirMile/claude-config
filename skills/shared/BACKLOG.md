@@ -19,7 +19,7 @@ The backlog is an interactive HTML list view with embedded JSON data. All skills
   "project": "Project name",
   "generated": "2026-01-15",
   "updated": "2026-01-20",
-  "source": "/project-plan",
+  "source": "/project-backlog",
   "overview": "Short description",
   "features": [
     {
@@ -82,7 +82,7 @@ The `audit` field is **frontend-track-specific** (type `PAGE` or `COMPONENT`). `
 
 ## Source field convention
 
-The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/dev-define"`, `"/frontend-design"`. Items with `source: "/project-todo"` are INDEPENDENT — `/project-plan` must never overwrite them during backlog-rebuild. Readers also accept the slash-less variant (`"project-todo"`) and legacy values (`"dev-todo"`) from existing items.
+The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/dev-define"`, `"/frontend-design"`. Items with `source: "/project-todo"` are INDEPENDENT — `/project-backlog` must never overwrite them during backlog-rebuild. Readers also accept the slash-less variant (`"project-todo"`) and legacy values (`"dev-todo"`) from existing items.
 
 ## Team context
 
@@ -142,13 +142,13 @@ TODO (To design) → DEFINED (To convert) → DOING (To audit) → DONE (Shipped
                         ↑ Path B only              ↑ Path A skips DEFINED
 ```
 
-| Status      | Label      | Set by                                                                        |
-| ----------- | ---------- | ----------------------------------------------------------------------------- |
-| `TODO`      | To design  | `/frontend-design` Capture, `/project-todo`, `/project-plan`, reuse-discovery |
-| `DEFINED`   | To convert | `/frontend-design` Brief (Path B — offline handoff)                           |
-| `DOING`     | To audit   | `/frontend-design` Build (Path A) or `/frontend-convert` (Path B)             |
-| `DONE`      | Shipped    | `/frontend-check` PASS (terminal — no refactor step)                          |
-| `CANCELLED` | Archived   | Manually via UI (○ button), restorable                                        |
+| Status      | Label      | Set by                                                                           |
+| ----------- | ---------- | -------------------------------------------------------------------------------- |
+| `TODO`      | To design  | `/frontend-design` Capture, `/project-todo`, `/project-backlog`, reuse-discovery |
+| `DEFINED`   | To convert | `/frontend-design` Brief (Path B — offline handoff)                              |
+| `DOING`     | To audit   | `/frontend-design` Build (Path A) or `/frontend-convert` (Path B)                |
+| `DONE`      | Shipped    | `/frontend-check` PASS (terminal — no refactor step)                             |
+| `CANCELLED` | Archived   | Manually via UI (○ button), restorable                                           |
 
 **Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
 
@@ -158,12 +158,12 @@ TODO (To design) → DEFINED (To convert) → DOING (To audit) → DONE (Shipped
 
 ### When to use which skill for PAGE/COMPONENT
 
-| Situation                                         | Skill                           |
-| ------------------------------------------------- | ------------------------------- |
-| Quick "just thought of something" addition        | `/project-todo`                 |
-| Full design (screenshot, Figma, brief)            | `/frontend-design` Capture      |
-| Bulk-init from concept or brainstorm output       | `/project-plan`                 |
-| Pattern detection during build (cross-page reuse) | `/project-plan` reuse-discovery |
+| Situation                                         | Skill                              |
+| ------------------------------------------------- | ---------------------------------- |
+| Quick "just thought of something" addition        | `/project-todo`                    |
+| Full design (screenshot, Figma, brief)            | `/frontend-design` Capture         |
+| Bulk-init from concept or brainstorm output       | `/project-backlog`                 |
+| Pattern detection during build (cross-page reuse) | `/project-backlog` reuse-discovery |
 
 All four routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. `/frontend-design` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/frontend-design` Build fills them in later.
 
@@ -177,7 +177,7 @@ TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refac
 
 | Status      | Label       | Set by                                 |
 | ----------- | ----------- | -------------------------------------- |
-| `TODO`      | To define   | `/project-todo`, `/project-plan`       |
+| `TODO`      | To define   | `/project-todo`, `/project-backlog`    |
 | `DEFINED`   | To build    | `/dev-define` (completion)             |
 | `DOING`     | To verify   | `/dev-build` (completion)              |
 | `DONE`      | To refactor | `/dev-verify` (completion)             |
@@ -323,12 +323,12 @@ Skills do **not** write to the backlog at start — saves a read+write roundtrip
 
 `feature.transition` — optional string, set by the dashboard, consumed by skills:
 
-| Value           | Dashboard sets when user copies prompt for      | Consumed by                                        |
-|-----------------|--------------------------------------------------|-----------------------------------------------------|
-| `"defining"`    | THEME setup or FEATURE definition prompt        | `frontend-tokens` (THEME) / `dev-define` (FEATURE) |
-| `"building"`    | Build prompt for a DEFINED feature              | `dev-build`                                         |
-| `"verifying"`   | Verify prompt for a DOING feature               | `dev-verify`                                        |
-| `"refactoring"` | Refactor prompt for a DONE+!shipped feature     | `dev-refactor`                                      |
+| Value           | Dashboard sets when user copies prompt for  | Consumed by                                        |
+| --------------- | ------------------------------------------- | -------------------------------------------------- |
+| `"defining"`    | THEME setup or FEATURE definition prompt    | `frontend-tokens` (THEME) / `dev-define` (FEATURE) |
+| `"building"`    | Build prompt for a DEFINED feature          | `dev-build`                                        |
+| `"verifying"`   | Verify prompt for a DOING feature           | `dev-verify`                                       |
+| `"refactoring"` | Refactor prompt for a DONE+!shipped feature | `dev-refactor`                                     |
 
 On successful completion the skill removes the `transition` field.
 
@@ -361,17 +361,17 @@ No backlog write — `transition` remains as set by the dashboard, user can re-c
 
 The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`. The FRONTEND pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"auditing"` — same pattern, different vocab.
 
-| Skill              | Filter                                                                       | New status on success              |
-|--------------------|------------------------------------------------------------------------------|------------------------------------|
-| `frontend-tokens`  | `type === "THEME" && transition === "defining"`                              | `"DONE"`                           |
-| `dev-define`       | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                        |
-| `dev-build`        | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                          |
-| `dev-verify`       | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                           |
-| `dev-refactor`     | `transition === "refactoring"`                                                | keep status, set `shipped: true`   |
-| `frontend-design`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DEFINED"`                        |
-| `frontend-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                          |
-| `frontend-check`   | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "auditing"`   | `"DONE"`, set `shipped: true`      |
-| `game-define`      | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                        |
-| `game-build`       | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                          |
-| `game-verify`      | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                           |
-| `game-refactor`    | `transition === "refactoring"`                                                | keep status, set `shipped: true`   |
+| Skill              | Filter                                                                       | New status on success            |
+| ------------------ | ---------------------------------------------------------------------------- | -------------------------------- |
+| `frontend-tokens`  | `type === "THEME" && transition === "defining"`                              | `"DONE"`                         |
+| `dev-define`       | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                      |
+| `dev-build`        | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                        |
+| `dev-verify`       | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                         |
+| `dev-refactor`     | `transition === "refactoring"`                                               | keep status, set `shipped: true` |
+| `frontend-design`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DEFINED"`                      |
+| `frontend-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                        |
+| `frontend-check`   | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "auditing"`   | `"DONE"`, set `shipped: true`    |
+| `game-define`      | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                      |
+| `game-build`       | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                        |
+| `game-verify`      | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                         |
+| `game-refactor`    | `transition === "refactoring"`                                               | keep status, set `shipped: true` |

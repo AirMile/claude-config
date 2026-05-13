@@ -39,7 +39,7 @@ This rule exists because refactoring external files risks breaking other feature
 
 - After `/game-verify` completes (features in DONE status)
 - When `.project/features/{name}/feature.json` exists with `tests` section
-- NOT for: fixing bugs (/game-verify), adding features (/game-define), planning (/project-plan)
+- NOT for: fixing bugs (/game-verify), adding features (/game-define), planning (/project-backlog)
 
 ## Input
 
@@ -888,7 +888,7 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 
    Next steps:
      1. /game-define {next-feature} → next feature from backlog
-     2. /project-plan → revisit backlog if scope has changed
+     2. /project-backlog → revisit backlog if scope has changed
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 

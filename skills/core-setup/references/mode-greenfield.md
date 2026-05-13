@@ -449,7 +449,7 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
    - Set `data.flags = { "hasConcept": true, "conceptPath": ".project/project-seed.md" }`
    - Set `data.source = "/core-setup"` and `data.updated` to current date
    - Edit JSON block back (script tags intact)
-   - This makes the `/project-plan` button appear in the backlog dashboard once there is a concept but no features yet.
+   - This makes the `/project-backlog` button appear in the backlog dashboard once there is a concept but no features yet.
 5. Create `.project/project-context.json` with `context` section (initial, updated by build/refactor skills):
    - `context.structure`: file tree of project (same format as previously in CLAUDE.md). Generate from actual file tree after Phase 3/4
    - `context.routing`: route patterns with arrow notation (only web projects with routing, otherwise empty array)
@@ -596,11 +596,11 @@ Then only relevant follow-up skills (no repetition of todos already in the backl
 
 - `/project-seed` — build out project concept with guided questions
 - `/project-brainstorm` — expand ideas via creative techniques
-- `/thinking-research` — research stack/market/competitors as input for planning
+- `/project-research` — research stack/market/competitors as input for planning
 
 **2. Plan — set up feature backlog:**
 
-- All stacks (web, game, CLI, etc.): `/project-plan` — convert ideas into a prioritized feature backlog (auto-detects stack)
+- All stacks (web, game, CLI, etc.): `/project-backlog` — convert ideas into a prioritized feature backlog (auto-detects stack)
 
 **3. Define + build first feature:**
 

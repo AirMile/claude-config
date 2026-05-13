@@ -29,7 +29,6 @@ PHASE 1 of the dev workflow: define → build → test.
 2. **If no name** (`/dev-define`):
 
    a) Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
-
    - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`, go to step 3.
    - Fallback: `data.features.find(f => f.status === "TODO")` (first TODO).
 
@@ -46,12 +45,12 @@ PHASE 1 of the dev workflow: define → build → test.
    header: "Concept without backlog"
    question: "There is a concept but no backlog yet. Do you want to generate a backlog first?"
    options:
-     - label: "Yes, first /project-plan (Recommended)", description: "Generate backlog from concept, then define features"
+     - label: "Yes, first /project-backlog (Recommended)", description: "Generate backlog from concept, then define features"
      - label: "No, define directly", description: "Define a standalone feature without a backlog"
    multiSelect: false
    ```
 
-   "Yes" → stop, show: `Run /project-plan to convert your concept into a backlog.`
+   "Yes" → stop, show: `Run /project-backlog to convert your concept into a backlog.`
    "No" → continue to option d.
 
    d) **No backlog, no concept (or direct define chosen):**

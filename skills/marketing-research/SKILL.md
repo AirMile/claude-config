@@ -18,7 +18,7 @@ Research marketing opportunities by analyzing trend signals, platform sentiment,
 
 **Trigger**: `/marketing-research` or `/marketing-research [topic]`
 
-Complementary to `/thinking-research` (concept validation) — this skill actively searches for marketing opportunities, timing windows, and messaging entry points.
+Complementary to `/project-research` (concept validation) — this skill actively searches for marketing opportunities, timing windows, and messaging entry points.
 
 ## PHASE 0: Scope Definition
 
@@ -233,9 +233,9 @@ Show next steps:
 ```
 Next steps:
 - /marketing-content  — write text variants based on these signals
-- /thinking-decide    — make a decision based on these insights
+- /project-decide    — make a decision based on these insights
 - /marketing-screenshots — marketing screenshots for launch
-- /project-plan       — feature backlog based on market insights
+- /project-backlog       — feature backlog based on market insights
 ```
 
 ## Guidelines

@@ -967,7 +967,7 @@ Path B — Brief for Claude Design / Figma:
 - Cross-pipeline coupling runs exclusively via `feature.json#frontend.linkedEntities[]` and `dependencies[]`
 
 **Dev pipeline (functionality):**
-`/project-plan → /dev-define → /dev-build → /dev-verify → /dev-refactor`
+`/project-backlog → /dev-define → /dev-build → /dev-verify → /dev-refactor`
 
 - Works standalone — no frontend-design required
 - Fits: features with logic/state/tests, also backend-only

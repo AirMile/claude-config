@@ -69,7 +69,7 @@ Sort desc by `date`. Cap at 15 entries.
 
 **Use case**: when making architecture decisions you want to see which patterns the project already uses to stay consistent.
 
-**Used by**: `project-plan`, `thinking-decide`.
+**Used by**: `project-backlog`, `project-decide`.
 
 ### Scope: `pitfall-prefix`
 

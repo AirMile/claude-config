@@ -6,7 +6,7 @@ Skills that generate UI code MUST use token names — never hardcoded color valu
 Token names are the stable contract. Values are supplied later by `/frontend-tokens`.
 
 > **Producer:** `/frontend-tokens` (writes `project.json#theme`)
-> **Consumers:** `dev-build`, `dev-verify`, `dev-refactor`, `dev-define`, `project-plan`, `frontend-design`, `frontend-convert`, `frontend-check`
+> **Consumers:** `dev-build`, `dev-verify`, `dev-refactor`, `dev-define`, `project-backlog`, `frontend-design`, `frontend-convert`, `frontend-check`
 
 ---
 

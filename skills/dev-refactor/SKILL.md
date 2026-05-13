@@ -998,7 +998,7 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 
    Next steps:
      1. /dev-define {next-feature} → next feature from backlog
-     2. /project-plan → revise backlog if scope has changed
+     2. /project-backlog → revise backlog if scope has changed
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 

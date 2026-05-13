@@ -253,7 +253,7 @@ Skills write to `context` after each build/refactor. CLAUDE.md refers to `projec
 `conceptFile` = reference to `.project/project-seed.md` (preferred format for new projects)
 `content` = legacy inline concept content. For new projects empty — full content lives in `project-seed.md`.
 
-The concept is a **living document**. Thinking-skills (`/project-seed`, `/project-brainstorm`, `/project-critique`, `/thinking-research`) integrate their concept-scope output directly into `project-seed.md` — there is no history log in `project.json`. `/project-plan` and `/dev-define` only read the current state of `project-seed.md` as concept context.
+The concept is a **living document**. Thinking-skills (`/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-research`) integrate their concept-scope output directly into `project-seed.md` — there is no history log in `project.json`. `/project-backlog` and `/dev-define` only read the current state of `project-seed.md` as concept context.
 
 ### Single source of truth
 
@@ -668,9 +668,9 @@ No deletion, no update — append only. For live status of a running run: see `.
 
 ### thinking-output
 
-Thinking-skills (`/thinking-decide`, `/thinking-research`, `/project-brainstorm`, `/project-critique`) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
+Thinking-skills (`/project-decide`, `/project-research`, `/project-brainstorm`, `/project-critique`) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
 
-Concept-scope thinking-output (`/project-seed`, `/project-brainstorm` concept, `/project-critique` concept, `/thinking-research` concept) integrates directly into `project-seed.md` — no history log in `project.json`.
+Concept-scope thinking-output (`/project-seed`, `/project-brainstorm` concept, `/project-critique` concept, `/project-research` concept) integrates directly into `project-seed.md` — no history log in `project.json`.
 
 Skills that consume thinking-output (such as `/dev-define`) read directly via Grep on `.project/thinking/*.md` for name matching.
 
@@ -756,10 +756,10 @@ Append-only log. Skills that complete features extract learnings automatically (
 
 | Section             | Written by                                                                                | When                                     |
 | ------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `concept`           | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-plan`              | On concept creation/iteration/plan       |
+| `concept`           | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-backlog`           | On concept creation/iteration/plan       |
 | `design`            | `/frontend-design`, `/frontend-tokens`                                                    | On design spec/page build/theme creation |
 | `theme`             | `/frontend-tokens`                                                                        | After theme create/update                |
-| `stack`             | `/core-setup`, `/project-plan`, `/dev-define`, `/dev-build`, `/frontend-design`           | On detection/new deps                    |
+| `stack`             | `/core-setup`, `/project-backlog`, `/dev-define`, `/dev-build`, `/frontend-design`        | On detection/new deps                    |
 | `data`              | `/dev-define`, `/game-define`                                                             | On entity definition                     |
 | `endpoints`         | `/dev-define`, `/dev-build`                                                               | On API definition / after build          |
 | `features`          | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build` | On status change (DOING/DONE)            |

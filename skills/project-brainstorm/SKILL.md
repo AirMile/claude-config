@@ -579,7 +579,7 @@ multiSelect: false
    Next steps:
    - /project-critique - Critically analyze and strengthen
    - /project-brainstorm - Another brainstorm round
-   - /project-plan - Convert to feature backlog
+   - /project-backlog - Convert to feature backlog
    ```
 
 **Concept-scope output is integrated into `project-seed.md`.** The chosen variant is processed into the living document — no separate `.project/thinking/*.md` for concept-scope, no `concept.thinking[]` append. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
@@ -608,7 +608,7 @@ multiSelect: false
    Next steps:
    - /project-critique - Critically analyze and strengthen
    - /project-brainstorm - Another brainstorm round
-   - /project-plan - Convert to feature backlog
+   - /project-backlog - Convert to feature backlog
    ```
 
 **If "Copy to clipboard":**

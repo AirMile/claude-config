@@ -62,28 +62,27 @@ CLAUDE.base.md    Template for per-project CLAUDE.md generation
 
 Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL-PATTERNS.md`](skills/shared/SKILL-PATTERNS.md) for conventions.
 
-| Category    | Skills                                                                               |
-| ----------- | ------------------------------------------------------------------------------------ |
-| `core`      | bootstrap, setup, create, edit, delete, audit, commit, export, merge, rewrite, write |
-| `dev`       | define, build, verify, debug, refactor, optimize, owasp                              |
-| `frontend`  | design, convert, check, tokens                                                       |
-| `game`      | define, build, verify, debug, refactor, optimize                                     |
-| `marketing` | research, content, screenshots                                                       |
-| `project`   | add, backlog, brainstorm, critique, plan, pull, remove, seed, switch, todo, tunnel   |
-| `school`    | learn                                                                                |
-| `team`      | issues, outsource, review, verify                                                    |
-| `thinking`  | decide, research                                                                     |
+| Category    | Skills                                                                                 |
+| ----------- | -------------------------------------------------------------------------------------- |
+| `core`      | bootstrap, setup, create, edit, delete, audit, commit, export, merge, rewrite, write   |
+| `dev`       | define, build, verify, debug, refactor, optimize, owasp                                |
+| `frontend`  | design, convert, check, tokens                                                         |
+| `game`      | define, build, verify, debug, refactor, optimize                                       |
+| `marketing` | research, content, screenshots                                                         |
+| `project`   | add, backlog, brainstorm, critique, pull, research, seed, switch, todo, tunnel, viewer |
+| `school`    | learn                                                                                  |
+| `team`      | issues, outsource, review, verify                                                      |
 
 ## Pipelines
 
 Skills chain together via `.project/project-seed.md` and `.project/project.json`. See [`skills/shared/PIPELINE.md`](skills/shared/PIPELINE.md) for canonical diagrams.
 
 **Planning entry point** (greenfield or mature project):
-`project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere)
+`project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere)
 
 - **Thin** (mature project / task assignment): `/project-seed` asks 3-5 focused questions → thin seed document
 - **Rich** (new product / game): `/project-seed` runs full intake → rich seed document
-- `project-plan` adapts backlog output to the richness of the seed — same flow, variable input depth
+- `project-backlog` adapts backlog output to the richness of the seed — same flow, variable input depth
 
 **Frontend**: `design` → [`convert`] → `check`
 **Marketing**: `research` → `content` → `screenshots`

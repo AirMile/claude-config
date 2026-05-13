@@ -14,7 +14,7 @@ Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and
                [/project-brainstorm] ──────────┤
                [/project-critique]  ───────────┤
                                                ▼
-                                    /project-plan ──→ backlog.html
+                                 /project-backlog ──→ backlog.html
                                                │
                                                ▼
                         /dev-define ──→ /dev-build ──→ /dev-verify ──→ [/dev-refactor]
@@ -40,16 +40,16 @@ Frontend items skip `defining/defined` — design captures pages/flows, brief ge
 
 ## Skill Registry
 
-| Skill        | Input                            | Output                      | Requires stage | Produces stage |
-| ------------ | -------------------------------- | --------------------------- | -------------- | -------------- |
-| project-plan | seed document / task description | backlog.html                | —              | —              |
-| project-todo | description                      | backlog item                | —              | —              |
-| dev-define   | backlog item / user reqs         | feature.json (req + arch)   | —              | defined        |
-| dev-build    | feature.json (defined)           | feature.json (code + tests) | defined        | built          |
-| dev-verify   | feature.json (built)             | feature.json (verified)     | built          | DONE           |
-| dev-refactor | feature.json (DONE)              | feature.json (DONE + ref)   | DONE           | DONE           |
-| dev-debug    | error / symptom                  | fix applied                 | —              | —              |
-| dev-owasp    | —                                | security report + fixes     | —              | —              |
+| Skill           | Input                            | Output                      | Requires stage | Produces stage |
+| --------------- | -------------------------------- | --------------------------- | -------------- | -------------- |
+| project-backlog | seed document / task description | backlog.html                | —              | —              |
+| project-todo    | description                      | backlog item                | —              | —              |
+| dev-define      | backlog item / user reqs         | feature.json (req + arch)   | —              | defined        |
+| dev-build       | feature.json (defined)           | feature.json (code + tests) | defined        | built          |
+| dev-verify      | feature.json (built)             | feature.json (verified)     | built          | DONE           |
+| dev-refactor    | feature.json (DONE)              | feature.json (DONE + ref)   | DONE           | DONE           |
+| dev-debug       | error / symptom                  | fix applied                 | —              | —              |
+| dev-owasp       | —                                | security report + fixes     | —              | —              |
 
 ---
 
@@ -79,10 +79,10 @@ pending → built → PASS / FAIL
 
 Not pipeline steps, but project-aware utilities. Callable standalone.
 
-| Skill           | Purpose                                             |
-| --------------- | --------------------------------------------------- |
-| project-add     | Register project + create symlinks to claude-config |
-| project-backlog | Local backlog/dashboard server (localhost:9876)     |
-| project-pull    | Git pull + `.project/` sync + learning extraction   |
-| project-remove  | Deregister project + cleanup                        |
-| project-tunnel  | Dev server + Cloudflare Tunnel                      |
+| Skill          | Purpose                                             |
+| -------------- | --------------------------------------------------- |
+| project-add    | Register project + create symlinks to claude-config |
+| project-viewer | Local backlog/dashboard server (localhost:9876)     |
+| project-pull   | Git pull + `.project/` sync + learning extraction   |
+| project-remove | Deregister project + cleanup                        |
+| project-tunnel | Dev server + Cloudflare Tunnel                      |

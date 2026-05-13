@@ -382,7 +382,7 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
 - **Combined steps** (e.g. "REQ-002 + REQ-003"): build as one unit. Technique = that of the first REQ in the combination.
 - **Already covered**: if a REQ already (partially) works due to an earlier REQ → only write tests, verify GREEN. Output: `RED: N/A (covered by REQ-XXX)`
 
-**On blocker:** log in feature.json `build.blockers[]`, mark BLOCKED, continue with other requirements. Suggest `/thinking-decide` for architectural blockers.
+**On blocker:** log in feature.json `build.blockers[]`, mark BLOCKED, continue with other requirements. Suggest `/project-decide` for architectural blockers.
 
 ### PHASE 2b: Regression Gate
 

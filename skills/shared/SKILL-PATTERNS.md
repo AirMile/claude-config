@@ -22,10 +22,10 @@ Generate an ASCII [diagram type] showing [what to visualize].
 | --------------------- | -------------------- | --------------------------- |
 | Architecture/layers   | Component diagram    | dev-define, frontend-design |
 | Multi-step workflow   | Flowchart            | dev-build, dev-verify       |
-| Feature decomposition | Tree                 | project-plan                |
+| Feature decomposition | Tree                 | project-backlog             |
 | State transitions     | State machine        | game-define                 |
 | Parallel processes    | Architecture diagram | team-review                 |
-| Decision flow         | Decision tree        | thinking-decide             |
+| Decision flow         | Decision tree        | project-decide             |
 
 **Placement:** After the phase where the relevant information is gathered, before execution continues.
 
@@ -199,7 +199,7 @@ Rules:
 
 **Rules:**
 
-- Skills that MAY create `.project/` without a check: `project-plan`, `project-todo`, `frontend-design`, `core-setup`
+- Skills that MAY create `.project/` without a check: `project-backlog`, `project-todo`, `frontend-design`, `core-setup`
 - All other skills: if `.project/` does not exist or is empty, show suggestion and stop
 - Do not silently `mkdir -p` the entire `.project/` structure — that is `core-setup`'s responsibility
 - `mkdir -p .project/features/{name}` and `mkdir -p .project/session` within an existing `.project/` is fine
@@ -339,10 +339,10 @@ PROJECT_CONTEXT_END
 
 **Rule:** Description must start with trigger conditions, not a workflow summary.
 
-| Good (✓)                                                                  | Bad (✗)                                                     |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `Use when implementation done and acceptance tests must verify spec`      | `Adversarial verification — tests + fix loops`              |
-| `Use with /dev-debug when feature has reported bugs to root-cause`        | `Debug methodology with systematic root-cause analysis`     |
+| Good (✓)                                                                 | Bad (✗)                                                     |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| `Use when implementation done and acceptance tests must verify spec`     | `Adversarial verification — tests + fix loops`              |
+| `Use with /dev-debug when feature has reported bugs to root-cause`       | `Debug methodology with systematic root-cause analysis`     |
 | `Use with /project-brainstorm to expand idea via interactive techniques` | `Creatively expand ideas through interactive technique app` |
 
 **Why:** Workflow summaries make Claude think it already knows the skill, so it skips the rest of SKILL.md. Trigger conditions clarify _when_ the skill is chosen, not _what_ it does.
@@ -531,13 +531,13 @@ multiSelect: false
 
 **Goal:** Detect reusable UI patterns during dev work and drop them as COMPONENT todos in the backlog.
 
-**Skills:** `dev-define` (keyword-scan requirements), `dev-build` (repeating JSX pattern), `project-plan` (cross-page pattern matching).
+**Skills:** `dev-define` (keyword-scan requirements), `dev-build` (repeating JSX pattern), `project-backlog` (cross-page pattern matching).
 
 #### Triggers (per skill)
 
 - **dev-define:** keyword-scan on UI element names in requirements (Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton). Also apply project-specific name prefixes.
 - **dev-build:** repeating JSX block after code-gen — ≥2x in the same file or ≥1x across multiple files of the same feature.
-- **project-plan:** cross-page UI pattern matching — group features on descriptions (List/table, Card, Form, Modal/dialog, Navigation). Threshold: 2+ PAGE/FEATURE features share the pattern.
+- **project-backlog:** cross-page UI pattern matching — group features on descriptions (List/table, Card, Form, Modal/dialog, Navigation). Threshold: 2+ PAGE/FEATURE features share the pattern.
 
 #### Resolution (batch)
 

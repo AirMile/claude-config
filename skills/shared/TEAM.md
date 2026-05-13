@@ -14,18 +14,18 @@ Three signals:
 
 ## Skills per phase
 
-| Phase               | Relevant                                                               | Less relevant in mature team repo                       |
-| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
-| Concept / discovery | (not your task — team already has a concept or backlog)                | `/project-seed`, `/project-plan` (greenfield tools) |
-| Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas) | —                                                       |
-| Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)     | —                                                       |
-| Define              | `/dev-define`, `/frontend-design`                                      | —                                                       |
-| Build               | `/dev-build`, `/frontend-design` Build, `/frontend-convert`            | —                                                       |
-| Test                | `/dev-verify`, `/frontend-check`                                       | —                                                       |
-| Commit              | `/core-commit` (detects team commit convention automatically)          | —                                                       |
-| Refactor            | `/dev-refactor`                                                        | —                                                       |
-| Review              | `/team-review` (PRs), `/team-verify` (completeness)                    | —                                                       |
-| Sync teammate code  | `/project-pull`                                                        | —                                                       |
+| Phase               | Relevant                                                               | Less relevant in mature team repo                      |
+| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------ |
+| Concept / discovery | (not your task — team already has a concept or backlog)                | `/project-seed`, `/project-backlog` (greenfield tools) |
+| Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas) | —                                                      |
+| Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)       | —                                                      |
+| Define              | `/dev-define`, `/frontend-design`                                      | —                                                      |
+| Build               | `/dev-build`, `/frontend-design` Build, `/frontend-convert`            | —                                                      |
+| Test                | `/dev-verify`, `/frontend-check`                                       | —                                                      |
+| Commit              | `/core-commit` (detects team commit convention automatically)          | —                                                      |
+| Refactor            | `/dev-refactor`                                                        | —                                                      |
+| Review              | `/team-review` (PRs), `/team-verify` (completeness)                    | —                                                      |
+| Sync teammate code  | `/project-pull`                                                        | —                                                      |
 
 ## Issue-driven flow
 

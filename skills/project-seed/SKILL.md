@@ -1,6 +1,6 @@
 ---
 name: project-seed
-description: "Transform any idea, concept, feature, or task assignment into a structured seed document. Use with /project-seed to feed /project-plan. Works for greenfield products, games, mature project features, and task assignments."
+description: "Transform any idea, concept, feature, or task assignment into a structured seed document. Use with /project-seed to feed /project-backlog. Works for greenfield products, games, mature project features, and task assignments."
 metadata:
   author: claude-config
   version: 1.2.0
@@ -11,7 +11,7 @@ metadata:
 
 Transform any idea, concept, feature, or task assignment into a structured seed document through targeted questions and synthesis. Works with any type of input — creative concepts (games, stories, art), product ideas (apps, services, businesses), feature requests, or task assignments. Can also sync existing seed documents with the current project state (backlog, codebase).
 
-The output is a structured markdown document that can be used as input for `/project-plan`, `/project-brainstorm`, or `/project-critique`.
+The output is a structured markdown document that can be used as input for `/project-backlog`, `/project-brainstorm`, or `/project-critique`.
 
 ## When to Use
 
@@ -653,7 +653,7 @@ multiSelect: false
    Next steps:
    - /project-critique - Critically analyze and strengthen
    - /project-brainstorm - Creatively expand and create variations
-   - /project-plan - Convert to feature backlog
+   - /project-backlog - Convert to feature backlog
    ```
 
 **Seed-scope output is integrated into `project-seed.md`.** No separate `.project/thinking/*.md` for concept-scope and no `concept.thinking[]` append — the living document is the source. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
@@ -704,7 +704,7 @@ multiSelect: false
    Next steps:
    - /project-critique - Critically analyze and strengthen
    - /project-brainstorm - Creatively expand and create variations
-   - /project-plan - Convert to feature backlog
+   - /project-backlog - Convert to feature backlog
    ```
 
 **If "Copy to clipboard":**

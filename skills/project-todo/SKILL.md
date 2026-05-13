@@ -21,7 +21,7 @@ Capture new backlog items, optionally flesh them out through 1-2 quick thinking 
 ## When to Use
 
 - User has a new feature, change, bug fix, improvement, mechanic, or content idea for an existing project
-- User wants to quickly capture an item without full `/project-plan`
+- User wants to quickly capture an item without full `/project-backlog`
 - User wants to think through an idea before adding to backlog
 
 NOT for: concept-level ideation (`/project-seed`), iterating on existing items (`/project-brainstorm`, `/project-critique`).
@@ -130,7 +130,7 @@ Check whether `.project/project.json` exists.
    question: "How do you want to proceed?"
    options:
      - label: "Run /project-seed first (Recommended)"
-       description: "Structure the feature before adding it — produces a seed document for /project-plan"
+       description: "Structure the feature before adding it — produces a seed document for /project-backlog"
      - label: "Add as todo anyway"
        description: "Add to backlog without extra planning"
    multiSelect: false
@@ -425,7 +425,7 @@ multiSelect: false
    }
    ```
 
-   The `source: "/project-todo"` field signals to `/project-plan` that this feature was added manually (INDEPENDENT) and must never be overwritten during a backlog rebuild.
+   The `source: "/project-todo"` field signals to `/project-backlog` that this feature was added manually (INDEPENDENT) and must never be overwritten during a backlog rebuild.
 
 4. **Update metadata:** set `data.updated` to current date (`YYYY-MM-DD`)
 

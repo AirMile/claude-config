@@ -74,12 +74,12 @@ The skill gathers requirements through targeted questions, optionally researches
    header: "Concept without backlog"
    question: "There is a concept but no backlog yet. Generate a backlog first?"
    options:
-     - label: "Yes, /project-plan first (Recommended)", description: "Generate backlog from concept, then define features"
+     - label: "Yes, /project-backlog first (Recommended)", description: "Generate backlog from concept, then define features"
      - label: "No, define directly", description: "Define a standalone feature without backlog"
    multiSelect: false
    ```
 
-   "Yes" → stop, show: `Run /project-plan to convert your concept into a backlog.`
+   "Yes" → stop, show: `Run /project-backlog to convert your concept into a backlog.`
    "No" → continue to option d.
 
    **d) No backlog, no concept (or user chose direct define):**
@@ -800,7 +800,7 @@ Data: {N} entities ({new} new)
 Stack: {N} packages ({new} new)
 
 Next steps:
-  1. /project-plan → generate backlog from concept (if no backlog yet)
+  1. /project-backlog → generate backlog from concept (if no backlog yet)
   2. /game-build {feature-name} → start implementation (if backlog already exists)
 ```
 
