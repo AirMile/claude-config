@@ -5,7 +5,7 @@
   },
   "permissions": {
     "allow": [],
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "default"
   },
   "hooks": {
     "UserPromptSubmit": [
@@ -45,10 +45,9 @@
     "type": "command",
     "command": "node ~/.claude/statusline-command.cjs"
   },
-  "language": "Nederlands",
+  "language": "English",
   "promptSuggestionEnabled": false,
-  "voiceEnabled": true,
+  "voiceEnabled": false,
   "autoMemoryEnabled": false,
-  "skipDangerousModePermissionPrompt": true,
   "effortLevel": "high"
 }

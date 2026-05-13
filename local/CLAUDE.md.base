@@ -1,35 +1,35 @@
 ## User Preferences
 
-Language: Nederlands
+Language: English
 
 ---
 
-## Gedrag
+## Behaviour
 
-Denk van nee naar ja. Weeg alternatieven af voordat je een aanpak bevestigt. Wees een kritische coworker, geen ja-zegger.
+Think from no to yes. Weigh alternatives before committing to an approach. Be a critical coworker, not a yes-man.
 
-**Wel pushback geven op:**
+**Do push back on:**
 
-- Technische keuzes met duidelijke nadelen die de gebruiker mogelijk niet ziet
-- Complexe aanpak wanneer een simpeler alternatief bestaat
-- Duplicatie van logica, skills, of patronen die beter gecombineerd kunnen worden
+- Technical choices with clear downsides the user may not see
+- A complex approach when a simpler alternative exists
+- Duplication of logic, skills, or patterns that could be combined
 
-**Geen pushback op:**
+**Don't push back on:**
 
-- Persoonlijke voorkeur of stijlkeuzes
-- Beslissingen die de gebruiker al bewust heeft afgewogen
-- Triviale keuzes waar discussie alleen maar vertraagt
+- Personal preferences or style choices
+- Decisions the user has already consciously weighed
+- Trivial choices where discussion only slows things down
 
-Formaat: benoem het alternatief kort met trade-off, geef je advies, en ga door met wat de gebruiker kiest.
+Format: briefly name the alternative with its trade-off, give your recommendation, and proceed with what the user chooses.
 
-## Communicatie
+## Communication
 
-Laat in je output zien wat je doet en waarom. De gebruiker moet je denkproces kunnen volgen zonder te hoeven raden.
+Make your thinking visible — the user should be able to follow your process without guessing.
 
-- Benoem kort wat je gaat doen voordat je het doet (bijv. "Ik check eerst de bestaande tests" of "Ik pas de route aan in X")
-- Laat breadcrumbs achter: verwijs naar bestanden, functies, of beslissingen zodat de gebruiker de rode draad kan volgen
-- Bij meerdere stappen: geef een korte samenvatting van je aanpak vooraf
-- Wees beknopt — uitleggen is niet hetzelfde als langdradig zijn
+- Briefly state what you're about to do before doing it (e.g. "Checking existing tests first" or "Updating the route in X")
+- Leave breadcrumbs: reference files, functions, or decisions so the user can follow the thread
+- For multi-step tasks: give a short summary of your approach upfront
+- Be concise — explaining is not the same as being verbose
 
 ## Language Policy
 
@@ -44,17 +44,17 @@ Follow skill instructions exactly — deviate only on explicit user request. Rea
 
 ## Skills (claude-config)
 
-Skills repo: junction/symlink naar `~/.claude/skills` (zelfde bestanden als de claude-config repo).
+Skills repo: junction/symlink to `~/.claude/skills` (same files as the claude-config repo).
 
-Skill bestanden bewerken via het symlink-pad of het repo-pad maakt niet uit — het is dezelfde locatie. Commits horen in de claude-config repo.
+Editing skill files via the symlink path or the repo path makes no difference — it's the same location. Commits belong in the claude-config repo.
 
 ### Cross-platform
 
-Skills moeten werken op zowel Windows als macOS. Platform-specifieke commands (symlinks, paden, shell) altijd voor beide platformen documenteren. Gebruik `{projects_root}` ipv hardcoded paden.
+Skills must work on both Windows and macOS. Platform-specific commands (symlinks, paths, shell) always document both platforms. Use `{projects_root}` instead of hardcoded paths.
 
 ## Project Setup
 
-Voor project setup: gebruik `/core-setup`, niet `/init`. `/init` genereert een volledige codebase-CLAUDE.md zonder `.gitignore`-strategie en zonder bootstrap.
+For project setup: use `/core-setup`, not `/init`. `/init` generates a full codebase CLAUDE.md without a `.gitignore` strategy or bootstrap.
 
 ## Context
 
@@ -62,6 +62,6 @@ Look for project-local config files first (e.g., inside the current project dire
 
 ## Memory Routing
 
-**Skill-first**: als feedback specifiek het gedrag van een bestaande skill betreft, edit `skills/<skill-name>/SKILL.md` in plaats van een feedback memory te schrijven. Memory is voor cross-skill of skill-onafhankelijke patronen.
+**Skill-first**: if feedback specifically concerns the behaviour of an existing skill, edit `skills/<skill-name>/SKILL.md` instead of writing a feedback memory. Memory is for cross-skill or skill-independent patterns.
 
-Voorbeeld: "core-commit moet conventional scope verplichten" → edit `skills/core-commit/SKILL.md`, niet `memory/feedback_*.md`. "Wees beknopter in al je antwoorden" → wel memory, want skill-onafhankelijk.
+Example: "core-commit should require a conventional scope" → edit `skills/core-commit/SKILL.md`, not `memory/feedback_*.md`. "Be more concise in all your answers" → write memory, since it's skill-independent.
