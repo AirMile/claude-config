@@ -8,7 +8,7 @@ description: >-
   assignee=@me. See shared/TEAM.md for the full team-repo workflow.
 argument-hint: "[number] [--mine] [--paste] [--label <label>]"
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.0.0
   category: team
 ---
@@ -98,7 +98,7 @@ If `directIssueId` is set → select that issue directly and skip the multi-sele
 Otherwise: show AskUserQuestion (multiSelect=true) with per issue:
 
 ```
-#42  Implement OAuth login        [enhancement, P1]  — @miles
+#42  Implement OAuth login        [enhancement, P1]  — @teammate
 #38  Fix signup validation error  [bug, P2]
 #35  Add dashboard export         [feature, P2]
 ```

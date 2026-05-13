@@ -7,7 +7,7 @@ description: >-
 reads: [backlog.html]
 writes: [project.json#theme, backlog.html, devinfo.tokenDrift]
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 3.5.0
   category: frontend
 ---
@@ -938,7 +938,7 @@ multiSelect: true
 - Read project.json → update only changed theme subsections → Write back
 - → Go to PHASE X: Post-flight Validation
 - → Go to X.6: Theme Infrastructure Sync (update CSS variables / Tailwind config with changed tokens)
-- → Go to PHASE Y: Website Sync (scan voor oude token waarden in componenten)
+- → Go to PHASE Y: Website Sync (scan for stale token values in components)
 
 ---
 

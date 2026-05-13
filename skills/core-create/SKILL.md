@@ -6,7 +6,7 @@ description: >-
   and scripts.
 argument-hint: "[name]"
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 1.1.0
   category: core
 ---
@@ -25,7 +25,7 @@ Required: `name` (kebab-case, matches folder) and `description` (WHAT + WHEN pat
 
 Optional Claude Code fields: `argument-hint`, `disable-model-invocation`, `user-invocable`, `allowed-tools`, `context: fork`, `agent`.
 
-Recommended: `metadata` with author (`mileszeilstra`), version, category (`core|dev|frontend|game|project|story|team|thinking`).
+Recommended: `metadata` with author (`your-username`), version, category (`core|dev|frontend|game|project|story|team|thinking`).
 
 ### Description Pattern
 

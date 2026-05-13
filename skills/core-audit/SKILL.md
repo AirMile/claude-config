@@ -6,7 +6,7 @@ description: >-
   internal walkthrough for deeper insights. Use with /core-audit — auto-selects
   the skill from chat context, hard-blocks if none was used.
 metadata:
-  author: mileszeilstra
+  author: claude-config
   version: 2.0.0
   category: core
 ---
@@ -107,7 +107,7 @@ Use **AskUserQuestion**:
   - label: "Extended with walkthrough", description: "Internal walkthrough first, then analysis with findings"
 - multiSelect: false
 
-## Step 3: Internal Walkthrough (only if "Uitgebreid met walkthrough")
+## Step 3: Internal Walkthrough (only if "Extended with walkthrough")
 
 **Skip to Step 4 if quick mode selected.**
 
