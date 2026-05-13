@@ -24,7 +24,7 @@ Capture new backlog items, optionally flesh them out through 1-2 quick thinking 
 - User wants to quickly capture an item without full `/project-plan`
 - User wants to think through an idea before adding to backlog
 
-NOT for: concept-level ideation (`/thinking-concept`), iterating on existing items (`/thinking-brainstorm`, `/thinking-critique`).
+NOT for: concept-level ideation (`/project-seed`), iterating on existing items (`/project-brainstorm`, `/project-critique`).
 
 ## Workflow
 
@@ -107,7 +107,41 @@ Check whether `.project/project.json` exists.
    - Argument provided (`/project-todo add-dash-ability`) → use as starting description
    - No argument (`/project-todo`) → ask the user directly: "What do you want to add to the backlog?" Wait for their answer.
 
-2. **Multi-item detection:**
+2. **Size check:**
+
+   Analyze the description for indicators of a large feature:
+   - Multiple components or layers involved
+   - Cross-cutting concern (affects multiple parts of the codebase)
+   - Unclear or unbounded scope
+   - Multiple phases mentioned
+   - Keywords: "redesign", "overhaul", "full", "entire", "system"
+
+   **If ≥2 indicators detected → show warning (plain text, no modal):**
+
+   ```
+   ⚠ This looks like a large feature that might benefit from planning first.
+   Consider running /project-seed to structure it before adding to the backlog.
+   ```
+
+   Then ask via AskUserQuestion:
+
+   ```yaml
+   header: "Large feature"
+   question: "How do you want to proceed?"
+   options:
+     - label: "Run /project-seed first (Recommended)"
+       description: "Structure the feature before adding it — produces a seed document for /project-plan"
+     - label: "Add as todo anyway"
+       description: "Add to backlog without extra planning"
+   multiSelect: false
+   ```
+
+   - **"Run /project-seed first"** → output `Run /project-seed to scope this feature first.`, stop.
+   - **"Add as todo anyway"** → continue normally.
+
+   **If fewer than 2 indicators:** skip this check entirely, no output.
+
+3. **Multi-item detection:**
 
    **[GAME MODE]:** skip this step. Multi-item split is a dev/frontend concept and does not apply to game types (MECHANIC/SYSTEM/CONTENT/POLISH/UI). Add game items one by one.
 
@@ -140,7 +174,7 @@ Check whether `.project/project.json` exists.
 
    **On "No" or no detection:** `items = [single item]`, process normally.
 
-3. **Backlog check:**
+4. **Backlog check:**
    - Read `.project/backlog.html`
    - **Not found** → create it:
      1. `mkdir -p .project`
@@ -171,14 +205,14 @@ Check whether `.project/project.json` exists.
          - label: "Add anyway (Recommended)"
            description: "Add with a different name"
          - label: "Expand item"
-           description: "Use /thinking-brainstorm or /thinking-critique on the existing item"
+           description: "Use /project-brainstorm or /project-critique on the existing item"
          - label: "Cancel"
            description: "Stop, add nothing"
        multiSelect: false
        ```
 
        - "Add anyway" → append suffix (e.g. `dash-ability-2`)
-       - "Expand item" → suggest `/thinking-brainstorm {name}` and stop
+       - "Expand item" → suggest `/project-brainstorm {name}` and stop
        - "Cancel" → stop
 
      **Multi-item (items.length > 1):**
@@ -464,7 +498,7 @@ multiSelect: false
      ```
    - Write `.project/project.json`
 
-   Do NOT write to `concept.content` or `project-concept.md` — those are owned by `/thinking-concept`.
+   Do NOT write to `concept.content` or `project-seed.md` — those are owned by `/project-seed`.
 
 ### PHASE 3: Output
 
@@ -495,8 +529,8 @@ TODO ADDED
 
   Backlog: .project/backlog.html
   Next steps:
-  - /thinking-brainstorm {name} - Deepen the idea with variations
-  - /thinking-critique {name} - Test the idea critically
+  - /project-brainstorm {name} - Deepen the idea with variations
+  - /project-critique {name} - Test the idea critically
   [If type is FEATURE, CHANGE, BUG, or API:]
   - /dev-define {name} - Start with requirements and building
   - /team-outsource {name} - Outsource to a teammate via GitHub/Jira/Linear
@@ -524,8 +558,8 @@ FEATURE ADDED
 
   Backlog: .project/backlog.html
   Next steps:
-  - /thinking-brainstorm {name} - Deepen the idea with variations
-  - /thinking-critique {name} - Test the idea critically
+  - /project-brainstorm {name} - Deepen the idea with variations
+  - /project-critique {name} - Test the idea critically
   - /game-define {name} - Start with requirements and architecture
 ```
 
@@ -536,7 +570,7 @@ FEATURE ADDED
 - Do NOT skip the priority and type questions
 - Max 3 items per batch during smart split
 - Thinking rounds: max 3 questions, no more
-- Do NOT write to `project-concept.md` or `concept.content` — only `/thinking-concept` may do that
+- Do NOT write to `project-seed.md` or `concept.content` — only `/project-seed` may do that
 
 ### Terminal Formatting
 

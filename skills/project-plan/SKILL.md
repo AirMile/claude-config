@@ -1,6 +1,6 @@
 ---
 name: project-plan
-description: Transform idea or brainstorm output into a prioritized feature backlog. Auto-detects stack (web/game) from project.json. Use with /project-plan after /thinking-concept or /thinking-brainstorm to create implementation roadmaps.
+description: Transform idea or brainstorm output into a prioritized feature backlog. Auto-detects stack (web/game) from project.json. Use with /project-plan after /project-seed or /project-brainstorm to create implementation roadmaps.
 metadata:
   author: claude-config
   version: 1.0.0
@@ -20,8 +20,8 @@ Transforms structured idea markdown into a prioritized feature backlog ready for
 
 Accepts markdown from:
 
-- `/thinking-concept` output
-- `/thinking-brainstorm` output
+- `/project-seed` output
+- `/project-brainstorm` output
 - Any structured concept markdown (web or game)
 
 ## Output
@@ -64,21 +64,21 @@ Accepts markdown from:
    - If `.project/` folder exists → continue to step 2
 
 2. **Check for existing files (only if .project exists):**
-   - Read `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader. Concept present as `CONCEPT_CONTEXT.present`.
+   - Read `SEED_CONTEXT` per `shared/SEED.md` Reader. Concept present as `SEED_CONTEXT.present`.
    - Check if `.project/backlog.html` exists
 
 3. **Scenario A: Both concept AND backlog exist**
-   - Use `CONCEPT_CONTEXT.markdown` as concept content
+   - Use `SEED_CONTEXT.markdown` as concept content
    - Read `backlog.html`
    - Analyze differences between concept and existing backlog
    - Check `data.features[]` in `backlog.html` for entries with `source: "project-todo"` or `source: "dev-todo"` or `source: "/core-setup"` or `source: "/dev-define"` or `source: "/dev-build"` or `source: "/dev-verify"` or `source: "/game-define"` or `source: "/game-build"` to identify independently-added features
-   - Compare `CONCEPT_CONTEXT.markdown` against existing backlog features (semantic match by name/description)
+   - Compare `SEED_CONTEXT.markdown` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
      ```
      EXISTING BACKLOG DETECTED
 
-     Concept: .project/project-concept.md
+     Concept: .project/project-seed.md
      Backlog: .project/backlog.html
 
      Feature changes detected:
@@ -119,13 +119,13 @@ Accepts markdown from:
      - Show detailed diff and exit
 
 4. **Scenario B: Only concept exists (no backlog)**
-   - Use `CONCEPT_CONTEXT.markdown` as concept content (already read in step 2)
+   - Use `SEED_CONTEXT.markdown` as concept content (already read in step 2)
    - Show confirmation:
 
      ```
      CONCEPT DETECTED
 
-     File: .project/project-concept.md
+     File: .project/project-seed.md
      Title: {extracted title}
 
      This concept will be used for the backlog.
@@ -150,7 +150,7 @@ Accepts markdown from:
      WARNING: Backlog exists but no concept found
 
      Backlog: .project/backlog.html
-     Concept: Not found — run /thinking-concept first
+     Concept: Not found — run /project-seed first
 
      A concept is required to update the backlog.
      ```
@@ -169,7 +169,7 @@ Accepts markdown from:
    - Ask user to paste concept:
      ```yaml
      header: "Input"
-     question: "Paste the output of /thinking-concept or /thinking-brainstorm"
+     question: "Paste the output of /project-seed or /project-brainstorm"
      options:
        - label: "I'll paste it below", description: "Type or paste your idea/brainstorm markdown"
        - label: "Load from file", description: "Load from an existing .md file"

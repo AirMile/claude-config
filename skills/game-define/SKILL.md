@@ -67,7 +67,7 @@ The skill gathers requirements through targeted questions, optionally researches
 
    **c) No backlog but concept exists:**
 
-   Read `CONCEPT_CONTEXT` per `shared/CONCEPT.md`. If `CONCEPT_CONTEXT.present`:
+   Read `SEED_CONTEXT` per `shared/SEED.md`. If `SEED_CONTEXT.present`:
    AskUserQuestion:
 
    ```yaml
@@ -142,7 +142,7 @@ Check: `.project/features/{feature-name}/feature.json` exists?
    - Glob + Grep for existing code that imports the feature name
    - Read `.project/project.json` → extract:
      - `stack` — framework, language, packages (fallback if architecture-baseline does not exist)
-     - `CONCEPT_CONTEXT.pitch` or first 2 sentences of `CONCEPT_CONTEXT.markdown` as feature context (see `shared/CONCEPT.md`)
+     - `SEED_CONTEXT.pitch` or first 2 sentences of `SEED_CONTEXT.markdown` as feature context (see `shared/SEED.md`)
      - `features[]` — existing features (prevents duplicates/overlap)
      - `data.entities` — existing data model
      - `thinking[]` — scan for entries with `newFeature` field matching the feature name (added via `/project-todo`). Load those as context.

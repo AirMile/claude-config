@@ -1,23 +1,24 @@
 ---
-name: thinking-concept
-description: Develop and maintain project concepts through guided questions, structured synthesis, and project sync. Use with /thinking-concept for new ideas or to enrich existing concepts from backlog/codebase.
+name: project-seed
+description: "Transform any idea, concept, feature, or task assignment into a structured seed document. Use with /project-seed to feed /project-plan. Works for greenfield products, games, mature project features, and task assignments."
 metadata:
   author: claude-config
-  version: 1.1.0
-  category: thinking
+  version: 1.2.0
+  category: project
 ---
 
-# Concept
+# Seed
 
-Develop ideas from initial concept to structured output through targeted questions and synthesis. Works with any type of idea--creative concepts (games, stories, art), product ideas (apps, services, businesses), or other conceptual work. Can also sync existing concepts with the current project state (backlog, codebase).
+Transform any idea, concept, feature, or task assignment into a structured seed document through targeted questions and synthesis. Works with any type of input — creative concepts (games, stories, art), product ideas (apps, services, businesses), feature requests, or task assignments. Can also sync existing seed documents with the current project state (backlog, codebase).
 
-The output is a structured markdown document that can be used as input for `/thinking-brainstorm` or `/thinking-critique`.
+The output is a structured markdown document that can be used as input for `/project-plan`, `/project-brainstorm`, or `/project-critique`.
 
 ## When to Use
 
-- User starts with `/thinking-concept` (with or without description)
+- User starts with `/project-seed` (with or without description)
 - User has a vague concept that needs articulation
 - User wants to develop a game, story, product, app, service, or creative project concept
+- User has a task assignment or large feature that needs scoping before planning
 
 ## Process
 
@@ -27,15 +28,15 @@ The output is a structured markdown document that can be used as input for `/thi
 
 1. Check if `.project/` folder exists
    - If folder does NOT exist → proceed to Step 1b (source selection)
-2. Check if `.project/project-concept.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
+2. Check if `.project/project-seed.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
 3. If concept exists AND no inline description provided:
-   - Read `.project/project-concept.md` for the full concept document. Extract title from first H1 heading.
+   - Read `.project/project-seed.md` for the full concept document. Extract title from first H1 heading.
    - Show confirmation:
 
      ```
-     EXISTING CONCEPT DETECTED
+     EXISTING SEED DETECTED
 
-     Source: .project/project-concept.md
+     Source: .project/project-seed.md
      Title: {concept title from H1}
 
      An existing concept was found.
@@ -78,6 +79,7 @@ options:
   - label: "Concept (Recommended)", description: "Work with project.json concept"
   - label: "Feature from backlog", description: "Focus on a specific feature"
   - label: "Page / UX flow", description: "Focus on layout, UX or user flow"
+  - label: "Assignment / Large Feature", description: "Scope a task assignment, large feature, or cross-cutting concern"
   - label: "Standalone idea", description: "Standalone idea, not linked to the project"
 multiSelect: false
 ```
@@ -104,12 +106,59 @@ multiSelect: false
 - Check `.project/thinking/` for previous standalone ideas
 - Proceed to Step 2 with user's input
 
+**If "Assignment / Large Feature":**
+
+Ask the following intake questions (present all in one message as separate AskUserQuestion calls):
+
+```yaml
+# Question 1
+header: "Assignment Goal"
+question: "What is the goal of this assignment?"
+options:
+  - label: "Type your goal", description: "Describe what needs to be achieved"
+multiSelect: false
+
+# Question 2
+header: "Existing Context"
+question: "What already exists in the codebase that's relevant?"
+options:
+  - label: "Nothing relevant yet", description: "This is greenfield within the project"
+  - label: "I'll describe it", description: "There are relevant existing parts"
+multiSelect: false
+
+# Question 3
+header: "Out of Scope"
+question: "What is explicitly out of scope for this assignment?"
+options:
+  - label: "Nothing specific yet", description: "No known exclusions"
+  - label: "I'll describe exclusions", description: "There are explicit out-of-scope items"
+multiSelect: false
+
+# Question 4
+header: "Constraints"
+question: "What are the constraints or dependencies?"
+options:
+  - label: "None known", description: "No blockers or hard constraints"
+  - label: "I'll describe them", description: "There are specific constraints or dependencies"
+multiSelect: false
+
+# Question 5
+header: "Definition of Done"
+question: "What does done look like for this assignment?"
+options:
+  - label: "I'll describe it", description: "What is the acceptance criterion?"
+multiSelect: false
+```
+
+After gathering answers, synthesize into a seed document. Output path: `.project/features/{slug}/thinking.md` or user can choose `.project/project-seed.md` directly.
+
 **Output path follows scope automatically:**
 
-- Scope = concept → write to `.project/project-concept.md` + update project.json metadata (name, pitch)
+- Scope = concept → write to `.project/project-seed.md` + update project.json metadata (name, pitch)
 - Scope = feature → write to `.project/features/{name}/thinking.md`
 - Scope = page/UX → write to `.project/thinking/{topic}.md`
 - Scope = standalone idea → write to `.project/thinking/{topic}.md`
+- Scope = assignment → write to `.project/features/{slug}/thinking.md` (or `.project/project-seed.md` on user choice)
 
 **Step 1c: Project Sync (if "Sync with project" chosen)**
 
@@ -117,7 +166,7 @@ Enrich the existing concept with features/functionality that exist in the projec
 
 **1. Gather project state:**
 
-- Read existing concept from `.project/project-concept.md`
+- Read existing concept from `.project/project-seed.md`
 - Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md`)
 - Collect all feature names, descriptions, and types from backlog
 - Read `.project/project.json` → extract `entities` (names, descriptions) and `endpoints` (paths, methods) if present
@@ -208,21 +257,21 @@ options:
 multiSelect: false
 ```
 
-**5. Write updated concept:**
+**5. Write updated seed:**
 
-- Write to `.project/project-concept.md`
+- Write to `.project/project-seed.md`
 - Update project.json metadata (concept.name, concept.pitch) if changed
 
 ```
-CONCEPT SYNCED
+SEED SYNCED
 
 Added: {count} items
 Source: {backlog: X, codebase: Y}
-File: .project/project-concept.md
+File: .project/project-seed.md
 
 Next steps:
-- /thinking-critique - Analyze the updated concept
-- /thinking-brainstorm - Brainstorm on the new components
+- /project-critique - Analyze the updated seed
+- /project-brainstorm - Brainstorm on the new components
 ```
 
 **Step 1b: Source selection (if no concept found)**
@@ -513,7 +562,7 @@ Scope: {feature:{name} | page:{topic}}
      "title": "{concept title}",
      "summary": "{key insight, max 200 chars}",
      "file": ".project/thinking/{today}-idea-{slug}.md",
-     "source": "/thinking-concept"
+     "source": "/project-seed"
    }
    ```
 4. Write `.project/project.json`
@@ -525,11 +574,11 @@ header: "Concept"
 question: "Do you also want to save this as the project concept?"
 options:
   - label: "No (Recommended)", description: "Output is saved at the scope location"
-  - label: "Yes, also to concept", description: "Also update project-concept.md"
+  - label: "Yes, also to concept", description: "Also update project-seed.md"
 multiSelect: false
 ```
 
-If "Yes": Write the full concept document as plain markdown to `.project/project-concept.md`. Also update project.json: Read `.project/project.json` (or create with {}), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
+If "Yes": Write the full concept document as plain markdown to `.project/project-seed.md`. Also update project.json: Read `.project/project.json` (or create with {}), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
 
 **If scope = standalone idea (from Step 1a):**
 
@@ -556,7 +605,7 @@ Scope: standalone idea
      "title": "{concept title}",
      "summary": "{key insight, max 200 chars}",
      "file": ".project/thinking/{today}-idea-{slug}.md",
-     "source": "/thinking-concept"
+     "source": "/project-seed"
    }
    ```
 3. Write `.project/project.json`
@@ -582,7 +631,7 @@ Use AskUserQuestion:
 header: "Output"
 question: "What do you want to do with the concept?"
 options:
-  - label: "Save to concept (Recommended)", description: "Save to project-concept.md for further use"
+  - label: "Save to concept (Recommended)", description: "Save to project-seed.md for further use"
   - label: "Save to Obsidian", description: "Save as permanent Idea note in your Obsidian vault"
   - label: "Copy to clipboard", description: "Copy markdown to clipboard (don't save)"
 multiSelect: false
@@ -591,27 +640,27 @@ multiSelect: false
 **If "Save to concept":**
 
 1. Create `.project/` folder if it doesn't exist
-2. Write the full concept document as plain markdown to `.project/project-concept.md`
-3. Also update project.json: Read `.project/project.json` (or create with `{}`), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
+2. Write the full concept document as plain markdown to `.project/project-seed.md`
+3. Also update project.json: Read `.project/project.json` (or create with `{}`), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
 4. Confirm:
 
    ```
-   CONCEPT SAVED
+   SEED SAVED
 
-   File: .project/project-concept.md
+   File: .project/project-seed.md
    Name: {concept.name}
 
    Next steps:
-   - /thinking-critique - Critically analyze and strengthen
-   - /thinking-brainstorm - Creatively expand and create variations
+   - /project-critique - Critically analyze and strengthen
+   - /project-brainstorm - Creatively expand and create variations
    - /project-plan - Convert to feature backlog
    ```
 
-**Concept-scope output is integrated into `project-concept.md`.** No separate `.project/thinking/*.md` for concept-scope and no `concept.thinking[]` append — the living document is the source. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
+**Seed-scope output is integrated into `project-seed.md`.** No separate `.project/thinking/*.md` for concept-scope and no `concept.thinking[]` append — the living document is the source. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
 
 **If "Save to Obsidian":**
 
-1. Also save concept: Write the full concept document to `.project/project-concept.md`. Update `.project/project.json` (or create with `{}`): set `concept.name`, `concept.pitch` (first paragraph), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists.
+1. Also save concept: Write the full concept document to `.project/project-seed.md`. Update `.project/project.json` (or create with `{}`): set `concept.name`, `concept.pitch` (first paragraph), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists.
 2. Detect category from content:
    - Game-related → `game`
    - App/service/tool → `app`
@@ -646,15 +695,15 @@ multiSelect: false
 8. Confirm:
 
    ```
-   CONCEPT SAVED TO OBSIDIAN
+   SEED SAVED TO OBSIDIAN
 
    File: Ideas/{subfolder}/{title}.md
    Category: {category}
    Status: seed
 
    Next steps:
-   - /thinking-critique - Critically analyze and strengthen
-   - /thinking-brainstorm - Creatively expand and create variations
+   - /project-critique - Critically analyze and strengthen
+   - /project-brainstorm - Creatively expand and create variations
    - /project-plan - Convert to feature backlog
    ```
 

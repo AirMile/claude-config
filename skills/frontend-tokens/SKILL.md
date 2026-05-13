@@ -153,7 +153,7 @@ If `.project/project.json` does not exist, create with the empty schema from `sh
   "concept": {
     "name": "",
     "pitch": "",
-    "conceptFile": "project-concept.md",
+    "conceptFile": "project-seed.md",
     "content": ""
   },
   "theme": {},

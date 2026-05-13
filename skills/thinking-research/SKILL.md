@@ -1,6 +1,6 @@
 ---
 name: thinking-research
-description: Multi-source research on concepts and ideas. Combines web search, documentation lookup, and codebase analysis into structured findings. Use with /thinking-research after /thinking-concept, /thinking-brainstorm, or /thinking-critique.
+description: Multi-source research on concepts and ideas. Combines web search, documentation lookup, and codebase analysis into structured findings. Use with /thinking-research after /project-seed, /project-brainstorm, or /project-critique.
 metadata:
   author: claude-config
   version: 1.3.0
@@ -19,7 +19,7 @@ Flow: extract research questions → auto-select technique → execute multi-sou
 
 **Auto-detect concept file:**
 
-1. Check if `.project/project-concept.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
+1. Check if `.project/project-seed.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
 2. If found AND no inline input provided:
    - Show concept name and ask confirmation:
      ```yaml
@@ -54,7 +54,7 @@ Scope-specific input:
 
 Output path follows scope:
 
-- concept → `.project/project-concept.md` + update project.json metadata (name, pitch)
+- concept → `.project/project-seed.md` + update project.json metadata (name, pitch)
 - feature → `.project/features/{name}/research.md`
 - page/UX or standalone idea → `.project/thinking/{topic}-research.md`
 
@@ -318,21 +318,21 @@ Include Competitive Landscape table and/or Technical Feasibility assessment wher
 Auto-save without extra questions:
 
 1. Write report to `.project/thinking/{concept-name}-research.md` (full report as user archive)
-2. Add `## Research Findings` section to `.project/project-concept.md` (this is what project-plan/dev-define see as context)
+2. Add `## Research Findings` section to `.project/project-seed.md` (this is what project-plan/dev-define see as context)
 3. Confirm:
 
 ```
 RESEARCH SAVED
 
 Report: .project/thinking/{concept-name}-research.md
-Concept: project-concept.md updated with key findings
+Concept: project-seed.md updated with key findings
 Applied techniques: {list}
 
 Want to also save to Obsidian? Let me know.
 
 Next steps:
-- /thinking-critique - Critically analyze with research context
-- /thinking-brainstorm - Creatively expand with new insights
+- /project-critique - Critically analyze with research context
+- /project-brainstorm - Creatively expand with new insights
 - /thinking-decide - Make a decision based on research
 - /project-plan - Convert to feature backlog
 ```
@@ -340,7 +340,7 @@ Next steps:
 **Scope = feature or page:**
 
 1. Write to scope path (`.project/features/{name}/research.md` or `.project/thinking/{topic}-research.md`)
-2. Optionally ask if key findings should also be added to `project-concept.md`
+2. Optionally ask if key findings should also be added to `project-seed.md`
 
 The markdown is the source of truth — no `project.json` `thinking[]` append. Skills that want to consume research (like `/dev-define`) read directly from `.project/thinking/*.md` or `.project/features/{name}/research.md`.
 

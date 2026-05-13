@@ -97,7 +97,7 @@ If ≥2 matches: show only the top 2 most relevant (highest keyword-overlap), no
 
 After the decision is established, check for project context:
 
-1. Check if `.project/project-concept.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
+1. Check if `.project/project-seed.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
 2. Check if `.project/backlog.html` exists
 3. Check if `.project/features/` contains folders
 
@@ -132,7 +132,7 @@ multiSelect: false
 
 **If "Project-wide":**
 
-- Load concept from `.project/project-concept.md` as background
+- Load concept from `.project/project-seed.md` as background
 - Decision is about the entire project
 
 **If "Standalone decision":**

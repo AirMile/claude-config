@@ -243,31 +243,31 @@ Skills write to `context` after each build/refactor. CLAUDE.md refers to `projec
 {
   "name": "Project Name",
   "pitch": "Short summary of the concept in 1-2 sentences.",
-  "conceptFile": "project-concept.md",
+  "conceptFile": "project-seed.md",
   "content": ""
 }
 ```
 
 `name` = short project name (for dashboard header)
 `pitch` = 1-2 sentence summary of the concept (for lightweight context loading by dev skills). Must always be filled — not dependent on fallback to `content`.
-`conceptFile` = reference to `.project/project-concept.md` (preferred format for new projects)
-`content` = legacy inline concept content. For new projects empty — full content lives in `project-concept.md`.
+`conceptFile` = reference to `.project/project-seed.md` (preferred format for new projects)
+`content` = legacy inline concept content. For new projects empty — full content lives in `project-seed.md`.
 
-The concept is a **living document**. Thinking-skills (`/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/thinking-research`) integrate their concept-scope output directly into `project-concept.md` — there is no history log in `project.json`. `/project-plan` and `/dev-define` only read the current state of `project-concept.md` as concept context.
+The concept is a **living document**. Thinking-skills (`/project-seed`, `/project-brainstorm`, `/project-critique`, `/thinking-research`) integrate their concept-scope output directly into `project-seed.md` — there is no history log in `project.json`. `/project-plan` and `/dev-define` only read the current state of `project-seed.md` as concept context.
 
 ### Single source of truth
 
-**NEVER populate both** `content` and `project-concept.md` at the same time. Rules for writes:
+**NEVER populate both** `content` and `project-seed.md` at the same time. Rules for writes:
 
-1. **New project** (preferred): create `.project/project-concept.md`, set `concept.conceptFile = "project-concept.md"`, keep `concept.content = ""`.
+1. **New project** (preferred): create `.project/project-seed.md`, set `seed.seedFile = "project-seed.md"`, keep `concept.content = ""`.
 2. **Legacy project** (existing inline `content`): leave as-is or migrate once (move `content` → `.md`, set `content = ""`).
-3. **On concept write**: first check if `project-concept.md` exists. If yes → write to .md, set `content = ""`. If not + legacy content → keep writing inline.
+3. **On concept write**: first check if `project-seed.md` exists. If yes → write to .md, set `content = ""`. If not + legacy content → keep writing inline.
 
-### project-concept.md
+### project-seed.md
 
 Full concept document as plain markdown (not JSON-escaped).
 
-**Read:** `Read .project/project-concept.md`
+**Read:** `Read .project/project-seed.md`
 **Write:** Write markdown directly. Also update `concept.name` and `concept.pitch` in project.json (so lightweight readers have current metadata).
 
 Dashboard server's `populateFromProject()` handles both formats — existing legacy projects continue to work.
@@ -668,9 +668,9 @@ No deletion, no update — append only. For live status of a running run: see `.
 
 ### thinking-output
 
-Thinking-skills (`/thinking-decide`, `/thinking-research`, `/thinking-brainstorm`, `/thinking-critique`) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
+Thinking-skills (`/thinking-decide`, `/thinking-research`, `/project-brainstorm`, `/project-critique`) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
 
-Concept-scope thinking-output (`/thinking-concept`, `/thinking-brainstorm` concept, `/thinking-critique` concept, `/thinking-research` concept) integrates directly into `project-concept.md` — no history log in `project.json`.
+Concept-scope thinking-output (`/project-seed`, `/project-brainstorm` concept, `/project-critique` concept, `/thinking-research` concept) integrates directly into `project-seed.md` — no history log in `project.json`.
 
 Skills that consume thinking-output (such as `/dev-define`) read directly via Grep on `.project/thinking/*.md` for name matching.
 
@@ -756,7 +756,7 @@ Append-only log. Skills that complete features extract learnings automatically (
 
 | Section             | Written by                                                                                | When                                     |
 | ------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `concept`           | `/thinking-concept`, `/thinking-brainstorm`, `/thinking-critique`, `/project-plan`        | On concept creation/iteration/plan       |
+| `concept`           | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-plan`              | On concept creation/iteration/plan       |
 | `design`            | `/frontend-design`, `/frontend-tokens`                                                    | On design spec/page build/theme creation |
 | `theme`             | `/frontend-tokens`                                                                        | After theme create/update                |
 | `stack`             | `/core-setup`, `/project-plan`, `/dev-define`, `/dev-build`, `/frontend-design`           | On detection/new deps                    |

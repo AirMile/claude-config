@@ -69,18 +69,24 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 | `frontend`  | design, convert, check, tokens                                                       |
 | `game`      | define, build, verify, debug, refactor, optimize                                     |
 | `marketing` | research, content, screenshots                                                       |
-| `project`   | add, remove, pull, switch, tunnel, backlog, plan, todo                               |
+| `project`   | add, backlog, brainstorm, critique, plan, pull, remove, seed, switch, todo, tunnel   |
 | `school`    | learn                                                                                |
 | `team`      | issues, outsource, review, verify                                                    |
-| `thinking`  | brainstorm, concept, critique, decide, research                                      |
+| `thinking`  | decide, research                                                                     |
 
 ## Pipelines
 
-Skills chain together in pipelines, handing off state via `.project/project.json`. See [`skills/shared/PIPELINE.md`](skills/shared/PIPELINE.md) for canonical diagrams.
+Skills chain together via `.project/project-seed.md` and `.project/project.json`. See [`skills/shared/PIPELINE.md`](skills/shared/PIPELINE.md) for canonical diagrams.
 
-- **Dev/Game**: `project-todo`/`project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere)
-- **Frontend**: `design` → [`convert`] → `check`
-- **Marketing**: `research` → `content` → `screenshots`
+**Planning entry point** (greenfield or mature project):
+`project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere)
+
+- **Thin** (mature project / task assignment): `/project-seed` asks 3-5 focused questions → thin seed document
+- **Rich** (new product / game): `/project-seed` runs full intake → rich seed document
+- `project-plan` adapts backlog output to the richness of the seed — same flow, variable input depth
+
+**Frontend**: `design` → [`convert`] → `check`
+**Marketing**: `research` → `content` → `screenshots`
 
 ## Agents
 

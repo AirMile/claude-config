@@ -1,15 +1,15 @@
 ---
-name: thinking-brainstorm
-description: Creatively expand ideas through interactive technique application. Generates variations, explores alternatives, pushes boundaries. Use with /thinking-brainstorm after /thinking-concept.
+name: project-brainstorm
+description: Creatively expand ideas through interactive technique application. Generates variations, explores alternatives, pushes boundaries. Use with /project-brainstorm after /project-seed.
 metadata:
   author: claude-config
   version: 1.0.0
-  category: thinking
+  category: project
 ---
 
 ## Overview
 
-This skill helps creatively expand and explore ideas through interactive application of brainstorming techniques. It works with any type of concept input - whether from `/thinking-concept`, existing documents, or other sources - and guides you through technique-by-technique exploration with questions and suggestions.
+This skill helps creatively expand and explore ideas through interactive application of brainstorming techniques. It works with any type of concept input - whether from `/project-seed`, existing documents, or other sources - and guides you through technique-by-technique exploration with questions and suggestions.
 
 The process is interactive: apply one technique at a time through Q&A, then choose to explore another technique or generate your final refined idea. The output is a clean markdown document of the refined idea, ready to use.
 
@@ -20,12 +20,12 @@ Trigger this skill when:
 - User wants to explore variations and alternatives of an idea
 - User wants to push boundaries and discover new possibilities
 - User has an idea and wants creative expansion
-- User starts with `/thinking-brainstorm` command
+- User starts with `/project-brainstorm` command
 
 Example triggers:
 
 - "/brainstorm" (followed by pasting idea)
-- "/thinking-brainstorm [paste /thinking-concept output]"
+- "/project-brainstorm [paste /project-seed output]"
 - "Let's brainstorm alternatives for this concept"
 - "Help me explore creative variations"
 
@@ -41,15 +41,15 @@ Example triggers:
 
 1. Check if `.project/` folder exists
    - If folder does NOT exist → check Obsidian (step 1b below)
-2. Check if `.project/project-concept.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
+2. Check if `.project/project-seed.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
 3. If exists AND no inline input provided:
-   - Read `.project/project-concept.md` for the full concept document. Extract title from first H1 heading.
+   - Read `.project/project-seed.md` for the full concept document. Extract title from first H1 heading.
    - Show confirmation:
 
      ```
      CONCEPT DETECTED
 
-     Source: .project/project-concept.md
+     Source: .project/project-seed.md
      Title: {concept title from H1}
 
      This concept will be used for brainstorming.
@@ -112,7 +112,7 @@ multiSelect: false
 
 **Output path follows scope automatically:**
 
-- Scope = concept → write to `.project/project-concept.md` + update project.json metadata (name, pitch)
+- Scope = concept → write to `.project/project-seed.md` + update project.json metadata (name, pitch)
 - Scope = feature → write to `.project/features/{name}/thinking.md`
 - Scope = page/UX → write to `.project/thinking/{topic}.md`
 - Scope = standalone idea → write to `.project/thinking/{topic}.md`
@@ -153,7 +153,7 @@ If the user provided an inline description/argument:
 
 1. Examine the input provided by user
 2. Determine input type:
-   - Output from `/thinking-concept` (structured markdown) → extract directly
+   - Output from `/project-seed` (structured markdown) → extract directly
    - Concept document (PRD, design doc, project brief) → extract core idea
    - Raw idea description → use as-is
    - Unclear/vague input → ask clarifying questions
@@ -186,7 +186,7 @@ If the user provided an inline description/argument:
    [concise idea summary]
    ```
 
-**Note:** This step should be quick for `/thinking-concept` output, more thorough for other inputs.
+**Note:** This step should be quick for `/project-seed` output, more thorough for other inputs.
 
 **Chat Context flow:**
 
@@ -486,7 +486,7 @@ Applied techniques: {list of techniques used}
      "file": ".project/thinking/{today}-brainstorm-{slug}.md",
      "variants": ["{variant 1}", "{variant 2}", "..."],
      "chosen": "{chosen variant}",
-     "source": "/thinking-brainstorm"
+     "source": "/project-brainstorm"
    }
    ```
 4. Write `.project/project.json`
@@ -498,11 +498,11 @@ header: "Concept"
 question: "Do you also want to save this as the project concept?"
 options:
   - label: "No (Recommended)", description: "Output is saved at the scope location"
-  - label: "Yes, also to concept", description: "Also update project-concept.md"
+  - label: "Yes, also to concept", description: "Also update project-seed.md"
 multiSelect: false
 ```
 
-If "Yes": Write the full concept document as plain markdown to `.project/project-concept.md`. Also update project.json: Read `.project/project.json` (or create with {}), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
+If "Yes": Write the full concept document as plain markdown to `.project/project-seed.md`. Also update project.json: Read `.project/project.json` (or create with {}), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
 
 **If scope = standalone idea (from Step 1a):**
 
@@ -532,7 +532,7 @@ Applied techniques: {list of techniques used}
      "file": ".project/thinking/{today}-brainstorm-{slug}.md",
      "variants": ["{variant 1}", "{variant 2}", "..."],
      "chosen": "{chosen variant}",
-     "source": "/thinking-brainstorm"
+     "source": "/project-brainstorm"
    }
    ```
 3. Write `.project/project.json`
@@ -558,7 +558,7 @@ Use AskUserQuestion:
 header: "Output"
 question: "What do you want to do with the expanded concept?"
 options:
-  - label: "Save to concept (Recommended)", description: "Update project-concept.md with expanded version"
+  - label: "Save to concept (Recommended)", description: "Update project-seed.md with expanded version"
   - label: "Save to Obsidian", description: "Save as permanent Idea note in your Obsidian vault"
   - label: "Copy to clipboard", description: "Copy markdown to clipboard (don't save)"
 multiSelect: false
@@ -566,27 +566,27 @@ multiSelect: false
 
 **If "Save to concept":**
 
-1. Write the full refined concept document as plain markdown to `.project/project-concept.md`
-2. Also update project.json: Read `.project/project.json` (or create with `{}`), set `concept.name` (title of refined idea), `concept.pitch` (first paragraph, 1-2 sentences), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
+1. Write the full refined concept document as plain markdown to `.project/project-seed.md`
+2. Also update project.json: Read `.project/project.json` (or create with `{}`), set `concept.name` (title of refined idea), `concept.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
 3. Confirm:
 
    ```
    CONCEPT UPDATED
 
-   File: .project/project-concept.md
+   File: .project/project-seed.md
    Applied techniques: {list of techniques used}
 
    Next steps:
-   - /thinking-critique - Critically analyze and strengthen
-   - /thinking-brainstorm - Another brainstorm round
+   - /project-critique - Critically analyze and strengthen
+   - /project-brainstorm - Another brainstorm round
    - /project-plan - Convert to feature backlog
    ```
 
-**Concept-scope output is integrated into `project-concept.md`.** The chosen variant is processed into the living document — no separate `.project/thinking/*.md` for concept-scope, no `concept.thinking[]` append. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
+**Concept-scope output is integrated into `project-seed.md`.** The chosen variant is processed into the living document — no separate `.project/thinking/*.md` for concept-scope, no `concept.thinking[]` append. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
 
 **If "Save to Obsidian":**
 
-1. Also save concept: Write the full concept document to `.project/project-concept.md`. Update `.project/project.json` (or create with `{}`): set `concept.name`, `concept.pitch` (first paragraph), `concept.conceptFile = "project-concept.md"`. Remove `concept.content` if it exists.
+1. Also save concept: Write the full concept document to `.project/project-seed.md`. Update `.project/project.json` (or create with `{}`): set `concept.name`, `concept.pitch` (first paragraph), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists.
 2. If concept was loaded from Obsidian (tracked via `obsidian_source_path`):
    - Overwrite: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
    - Update frontmatter status to `developing` via `mcp__obsidian__update_frontmatter()`
@@ -606,8 +606,8 @@ multiSelect: false
    Applied techniques: {list}
 
    Next steps:
-   - /thinking-critique - Critically analyze and strengthen
-   - /thinking-brainstorm - Another brainstorm round
+   - /project-critique - Critically analyze and strengthen
+   - /project-brainstorm - Another brainstorm round
    - /project-plan - Convert to feature backlog
    ```
 
@@ -623,7 +623,7 @@ multiSelect: false
 **Input Parsing:**
 
 - Be flexible - accept various input formats
-- Quick for `/thinking-concept` output, thorough for unclear input
+- Quick for `/project-seed` output, thorough for unclear input
 - Don't make assumptions - ask when unclear
 
 **Technique Selection:**

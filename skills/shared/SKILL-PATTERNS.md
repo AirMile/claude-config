@@ -343,7 +343,7 @@ PROJECT_CONTEXT_END
 | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `Use when implementation done and acceptance tests must verify spec`      | `Adversarial verification — tests + fix loops`              |
 | `Use with /dev-debug when feature has reported bugs to root-cause`        | `Debug methodology with systematic root-cause analysis`     |
-| `Use with /thinking-brainstorm to expand idea via interactive techniques` | `Creatively expand ideas through interactive technique app` |
+| `Use with /project-brainstorm to expand idea via interactive techniques` | `Creatively expand ideas through interactive technique app` |
 
 **Why:** Workflow summaries make Claude think it already knows the skill, so it skips the rest of SKILL.md. Trigger conditions clarify _when_ the skill is chosen, not _what_ it does.
 

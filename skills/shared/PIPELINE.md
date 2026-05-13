@@ -7,14 +7,19 @@ Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and
 ## Dev Pipeline
 
 ```
-         /project-todo ──┐
-                        ▼
-/project-plan ──→ backlog.html
-                        │
-                        ▼
-                 /dev-define ──→ /dev-build ──→ /dev-verify ──→ [/dev-refactor]
-                                      │              │
-                                      └── /dev-debug ◄┘
+/project-seed ─────────────────────────────────┐
+  (thin: task / assignment / large feature)     │
+  (rich: concept / product / game)              ▼
+                                        project-seed.md
+               [/project-brainstorm] ──────────┤
+               [/project-critique]  ───────────┤
+                                               ▼
+                                    /project-plan ──→ backlog.html
+                                               │
+                                               ▼
+                        /dev-define ──→ /dev-build ──→ /dev-verify ──→ [/dev-refactor]
+                                             │               │
+                                             └── /dev-debug ◄┘
 ```
 
 Standalone (dev): `/dev-owasp` (security audit).
@@ -35,16 +40,16 @@ Frontend items skip `defining/defined` — design captures pages/flows, brief ge
 
 ## Skill Registry
 
-| Skill        | Input                    | Output                      | Requires stage | Produces stage |
-| ------------ | ------------------------ | --------------------------- | -------------- | -------------- |
-| project-plan | concept / idea           | backlog.html                | —              | —              |
-| project-todo | description              | backlog item                | —              | —              |
-| dev-define   | backlog item / user reqs | feature.json (req + arch)   | —              | defined        |
-| dev-build    | feature.json (defined)   | feature.json (code + tests) | defined        | built          |
-| dev-verify   | feature.json (built)     | feature.json (verified)     | built          | DONE           |
-| dev-refactor | feature.json (DONE)      | feature.json (DONE + ref)   | DONE           | DONE           |
-| dev-debug    | error / symptom          | fix applied                 | —              | —              |
-| dev-owasp    | —                        | security report + fixes     | —              | —              |
+| Skill        | Input                            | Output                      | Requires stage | Produces stage |
+| ------------ | -------------------------------- | --------------------------- | -------------- | -------------- |
+| project-plan | seed document / task description | backlog.html                | —              | —              |
+| project-todo | description                      | backlog item                | —              | —              |
+| dev-define   | backlog item / user reqs         | feature.json (req + arch)   | —              | defined        |
+| dev-build    | feature.json (defined)           | feature.json (code + tests) | defined        | built          |
+| dev-verify   | feature.json (built)             | feature.json (verified)     | built          | DONE           |
+| dev-refactor | feature.json (DONE)              | feature.json (DONE + ref)   | DONE           | DONE           |
+| dev-debug    | error / symptom                  | fix applied                 | —              | —              |
+| dev-owasp    | —                                | security report + fixes     | —              | —              |
 
 ---
 

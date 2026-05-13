@@ -38,7 +38,7 @@ Read **immediately before editing** — do NOT rely on reads from earlier phases
 - `.project/backlog.html`
 - `.project/project.json`
 - `.project/project-context.json` (only if context/architecture/learnings changed — build/test/refactor skills)
-- `.project/project-concept.md` (only if concept changed — thinking/plan skills)
+- `.project/project-seed.md` (only if concept changed — thinking/plan skills)
 
 ### Step 2: Mutate in memory
 
@@ -73,9 +73,9 @@ Read `.project/project-context.json` (or create with `{}`). Merge per section:
 | `architecture` | Follow component-first model from `shared/DASHBOARD.md` (only when impacted). Update `components[]` (status, src, test). Merge `connects_to[]` on `to+type` combination (typed edges). Diagram optional → `.project/architecture.mmd`. |
 | `learnings`    | Dedup-key: `(type, normalized_summary, author ?? null)`. Normalize summary = lowercase + strip punctuation. New: push with required `source` field → existing: skip (append-only). `author` only when `source === "synced"`.           |
 
-**project-concept.md** (only for concept-writing skills):
+**project-seed.md** (only for concept-writing skills):
 
-Write the full concept document as plain markdown to `.project/project-concept.md`. Simultaneously update `concept.name` and `concept.pitch` in `project.json` (so lightweight readers have current metadata).
+Write the full concept document as plain markdown to `.project/project-seed.md`. Simultaneously update `concept.name` and `concept.pitch` in `project.json` (so lightweight readers have current metadata).
 
 ### Step 3: Write (parallel)
 

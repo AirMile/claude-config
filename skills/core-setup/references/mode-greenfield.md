@@ -72,31 +72,31 @@ Ask sequentially, one question per response:
 
 0. **Concept preflight** — check if concept data already exists before asking anything:
 
-   Read `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader.
+   Read `SEED_CONTEXT` per `shared/SEED.md` Reader.
 
-   **If `CONCEPT_CONTEXT.present`:**
+   **If `SEED_CONTEXT.present`:**
 
    Show AskUserQuestion (single-select):
    - header: "Concept"
-   - question: "There is already a concept (from /thinking-concept or /project-add). How do you want to continue?"
+   - question: "There is already a concept (from /project-seed or /project-add). How do you want to continue?"
    - options:
      - label: "Use existing concept (Recommended)" — description: "Skip Project description + Project name questions, read pitch/name from the existing files"
      - label: "Supplement with extra context" — description: "Show current concept, ask for a brief additional description to factor in"
      - label: "Start over" — description: "Ignore existing concept, ask both questions anyway (concept-md will not be overwritten later)"
    - multiSelect: false
 
-   **On "Use existing"**: store `concept.name` and `concept.pitch` as `PROJECT_NAME` / `PROJECT_PITCH`. Read `.project/project-concept.md` fully into `CONCEPT_CONTEXT`. Skip steps 1 and 2. Go directly to step 3 (Project type).
+   **On "Use existing"**: store `concept.name` and `concept.pitch` as `PROJECT_NAME` / `PROJECT_PITCH`. Read `.project/project-seed.md` fully into `SEED_CONTEXT`. Skip steps 1 and 2. Go directly to step 3 (Project type).
 
-   **On "Supplement"**: show the first 200 chars of `project-concept.md` as a context block, ask for an additional description (free-form), append in-memory to `PROJECT_PITCH` and `CONCEPT_CONTEXT`. Skip step 2 (name retained from concept).
+   **On "Supplement"**: show the first 200 chars of `project-seed.md` as a context block, ask for an additional description (free-form), append in-memory to `PROJECT_PITCH` and `SEED_CONTEXT`. Skip step 2 (name retained from concept).
 
-   **On "Start over"**: continue normally with steps 1 and 2. `CONCEPT_CONTEXT` remains empty.
+   **On "Start over"**: continue normally with steps 1 and 2. `SEED_CONTEXT` remains empty.
 
-   **No concept present**: continue normally with step 1. `CONCEPT_CONTEXT` remains empty.
+   **No concept present**: continue normally with step 1. `SEED_CONTEXT` remains empty.
 
-   **`CONCEPT_CONTEXT` as stack context** — for every selection-style question that follows (Project type, Tech stack, Suggestions per category): actively use `CONCEPT_CONTEXT`:
+   **`SEED_CONTEXT` as stack context** — for every selection-style question that follows (Project type, Tech stack, Suggestions per category): actively use `SEED_CONTEXT`:
    - Back up `→ Claude recommends:` with a concept-relevant reason ("Next.js — SSR for the SEO mentioned in the concept").
    - Tailor suggestions to the domain from the concept.
-   - No extra disk read needed — `CONCEPT_CONTEXT` is already in context.
+   - No extra disk read needed — `SEED_CONTEXT` is already in context.
 
 1. **Project description** — Show this block to the user and wait for a response:
 
@@ -107,7 +107,7 @@ Ask sequentially, one question per response:
 
    Briefly describe what your project does and who it is for.
 
-   → Tip: 1-3 sentences is enough — you can expand later via /thinking-concept.
+   → Tip: 1-3 sentences is enough — you can expand later via /project-seed.
 
    ---
    ```
@@ -429,10 +429,10 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
 2. Fill `concept` section (preferred: markdown file, not inline):
    - `name`: project name — use existing `concept.name` if filled, otherwise from user answers; do NOT overwrite if already filled
    - `pitch`: 1-2 sentence summary — use existing `concept.pitch` if filled, otherwise from user answers; do NOT overwrite if already filled
-   - `conceptFile`: `"project-concept.md"` — reference to the markdown file
+   - `conceptFile`: `"project-seed.md"` — reference to the markdown file
    - `content`: empty string `""` — NEVER also fill inline alongside `conceptFile`
    - Concept-md handling:
-     - **`.project/project-concept.md` exists with > 50 chars**: do NOT overwrite, do NOT append. The supplemental description from Phase 2 step 0 "Supplement" stays in-memory — only `/thinking-concept` writes to disk.
+     - **`.project/project-seed.md` exists with > 50 chars**: do NOT overwrite, do NOT append. The supplemental description from Phase 2 step 0 "Supplement" stays in-memory — only `/project-seed` writes to disk.
      - **Does not exist or < 50 chars**: create with `PROJECT_PITCH` (from Phase 2 answers or preflight) as plain markdown (what the project does, who for, core functionality). Does not need to be extensive — thinking/plan skills will expand this later.
 3. Fill `stack` section fully (OVERWRITE — core-setup is the first skill):
    - `framework`: from user answers (Phase 2 Q3/Q4)
@@ -446,7 +446,7 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
    4b. Init backlog with concept flag (all project types):
    - If `.project/backlog.html` does not exist: copy `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
    - Read `backlog.html` → parse `<script id="backlog-data">` JSON
-   - Set `data.flags = { "hasConcept": true, "conceptPath": ".project/project-concept.md" }`
+   - Set `data.flags = { "hasConcept": true, "conceptPath": ".project/project-seed.md" }`
    - Set `data.source = "/core-setup"` and `data.updated` to current date
    - Edit JSON block back (script tags intact)
    - This makes the `/project-plan` button appear in the backlog dashboard once there is a concept but no features yet.
@@ -588,14 +588,14 @@ Then only relevant follow-up skills (no repetition of todos already in the backl
 
 - Web/Backend/Fullstack/Mobile/Desktop/CLI: `/dev-define [new feature]` → `/dev-build [feature]`
 - Game: `/game-define [feature]` → `/game-build [feature]`
-- Expand concept: `/thinking-concept`, `/thinking-brainstorm`
+- Expand concept: `/project-seed`, `/project-brainstorm`
 
 **If `backlog_started = false` or no todos in backlog:**
 
 **1. Explore concept (optional, recommended for greenfield):**
 
-- `/thinking-concept` — build out project concept with guided questions
-- `/thinking-brainstorm` — expand ideas via creative techniques
+- `/project-seed` — build out project concept with guided questions
+- `/project-brainstorm` — expand ideas via creative techniques
 - `/thinking-research` — research stack/market/competitors as input for planning
 
 **2. Plan — set up feature backlog:**

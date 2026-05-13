@@ -81,7 +81,7 @@ See `shared/SYNC.md`, `shared/DASHBOARD.md`, and `shared/LEARNING-EXTRACTION.md`
    ```
 
    On "Switch to greenfield wizard":
-   - No separate data handoff needed — greenfield's Phase 2 step 0 (Concept preflight) reads `.project/project-concept.md` and `project.json#concept` from disk itself and shows the "Use existing / Supplement / Redo" modal.
+   - No separate data handoff needed — greenfield's Phase 2 step 0 (Concept preflight) reads `.project/project-seed.md` and `project.json#concept` from disk itself and shows the "Use existing / Supplement / Redo" modal.
    - Load `references/mode-greenfield.md` and exit this mature run.
 
 ### PHASE 0.4: .gitignore bootstrap
@@ -149,7 +149,7 @@ Learnings:    {existing_learning_count}
 Last sync:    {sync-state.json#lastSync or "never"}
 ```
 
-Read `CONCEPT_CONTEXT` per `shared/CONCEPT.md` Reader. Use this in PHASE 0.6 (Module Gap modal) and any follow-up suggestions: weigh the concept domain into defaults and recommendations.
+Read `SEED_CONTEXT` per `shared/SEED.md` Reader. Use this in PHASE 0.6 (Module Gap modal) and any follow-up suggestions: weigh the concept domain into defaults and recommendations.
 
 No modal here — visibility only. PHASE 0.6 below uses this snapshot directly for the Module Gap modal.
 
@@ -344,7 +344,7 @@ Assemble:
 ```
 concept.name       ← README H1 | package.json#name | dir name
 concept.pitch      ← README first paragraph | package.json#description | ""
-concept.conceptFile← "project-concept.md"
+seed.seedFile← "project-seed.md"
 stack.framework    ← PHASE 2a
 stack.language     ← PHASE 2a (derived from framework + package.json engines)
 stack.packages     ← PHASE 2f
@@ -357,11 +357,11 @@ Show one AskUserQuestion (multi-select) with each inferred field as a checkbox:
 - options: one checkbox per field with `label: "{field}: {value}"`, all checked by default
 - multiSelect: true
 
-For selected fields: write to `project.json`. Deselected fields remain empty (user fills in later via `/thinking-concept`).
+For selected fields: write to `project.json`. Deselected fields remain empty (user fills in later via `/project-seed`).
 
-Create `.project/project-concept.md` with the accepted pitch text as a starting point (plain markdown, no template).
+Create `.project/project-seed.md` with the accepted pitch text as a starting point (plain markdown, no template).
 
-If `.project/backlog.html` already exists (non-frontend projects that skip PHASE 5.7): read backlog.html → parse `<script id="backlog-data">` JSON → set `data.flags.hasConcept = true` + `data.flags.conceptPath = ".project/project-concept.md"` → edit back (keep script tags intact). This makes the `/project-plan` button appear in the backlog dashboard.
+If `.project/backlog.html` already exists (non-frontend projects that skip PHASE 5.7): read backlog.html → parse `<script id="backlog-data">` JSON → set `data.flags.hasConcept = true` + `data.flags.conceptPath = ".project/project-seed.md"` → edit back (keep script tags intact). This makes the `/project-plan` button appear in the backlog dashboard.
 
 ### PHASE 5: Sync
 
@@ -549,7 +549,7 @@ Mark PHASE 5.65 → `completed`.
 
 Create backlog from template `{skills_path}/shared/references/backlog-template.html` if missing. Skip if feature with name `setup-design-tokens` already exists (idempotent).
 
-Always set `data.flags.hasConcept = true` and `data.flags.conceptPath = ".project/project-concept.md"` in the backlog JSON block (even if the design-tokens item already existed). This makes the `/project-plan` button appear.
+Always set `data.flags.hasConcept = true` and `data.flags.conceptPath = ".project/project-seed.md"` in the backlog JSON block (even if the design-tokens item already existed). This makes the `/project-plan` button appear.
 
 No interactive modal — only show `Setup task added to backlog` in stdout. The PHASE 6 report "Next steps" section then automatically shows the `/frontend-tokens` bullet.
 
@@ -659,7 +659,7 @@ Mark PHASE 5.85 → `completed`.
 | Condition                             | Bullet                                     |
 | ------------------------------------- | ------------------------------------------ |
 | (none — always)                       | `/project-pull`                            |
-| `concept.pitch` empty                 | `/thinking-concept`                        |
+| `concept.pitch` empty                 | `/project-seed`                        |
 | `features[]` empty                    | `/dev-define`                              |
 | frontend stack && `needsTheme = true` | `/frontend-tokens`                         |
 | `installed_in_session[]` not empty    | show "Modules added: {list}" under Updated |
@@ -710,7 +710,7 @@ Updated: {date}
 
 Next steps:
   • /project-pull              — incremental updates (sync state is on)
-{if concept.pitch empty}  • /thinking-concept   — fill in concept pitch
+{if concept.pitch empty}  • /project-seed   — fill in concept pitch
 {if features[] empty}     • /dev-define         — define the first feature
 {if frontend && needsTheme}  • /frontend-tokens — design tokens (color, typography, spacing)
 ```
