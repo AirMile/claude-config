@@ -52,6 +52,7 @@ skills/           Slash commands, organized by category (see below)
 agents/           Sub-agent definitions (markdown with YAML frontmatter)
 hooks/            PostToolUse hooks (see Hooks section)
 local/            Portable configs for ~/.claude/ — copy, don't junction
+personal/         Personal overlay — gitignored, never committed (see Personal overlay)
 CLAUDE.base.md    Template for per-project CLAUDE.md generation
 ```
 
@@ -104,6 +105,52 @@ Sub-agents run in isolated context — used for parallelism, independent reasoni
 
 Works on both **Windows** (primary) and **macOS**. Skills use `{projects_root}` instead of hardcoded paths. `paths.yaml` holds per-platform defaults, overrideable via env vars or `paths.local.yaml`.
 
+## Prerequisites
+
+| Tool                               | Version | Required for                                                  |
+| ---------------------------------- | ------- | ------------------------------------------------------------- |
+| [Node.js](https://nodejs.org)      | 18+     | Hooks (format-on-save, prompt-timer), backlog server          |
+| Python 3                           | 3.8+    | Security-reminder hook                                        |
+| [git](https://git-scm.com)         | any     | Version control                                               |
+| [gh CLI](https://cli.github.com)   | any     | Team skills (team-review, team-issues, core-merge) — optional |
+| [jq](https://jqlang.github.io/jq/) | any     | Personal overlay settings merge — optional                    |
+
+## Install
+
+```bash
+# 1. Clone
+git clone https://github.com/<your-username>/claude-config.git
+cd claude-config
+
+# 2. Bootstrap — deploys CLAUDE.md, settings.json, keybindings, statusline + global symlinks
+# Run this inside Claude Code: /core-bootstrap
+```
+
+For manual setup without Claude Code, see [`local/README.md`](local/README.md).
+
+## Personal overlay
+
+Keep your personal customisations (language preference, writing styles, opinionated
+defaults) separate from the public repo in a `personal/` directory:
+
+```
+personal/                    ← gitignored, never committed
+  CLAUDE.md.overlay          ← appended to ~/.claude/CLAUDE.md after base
+  settings.overlay.json      ← deep-merged into settings.json (your values win)
+  styles/                    ← writing styles for core-write / core-rewrite
+```
+
+Bootstrap (`/core-bootstrap`) auto-detects `personal/` and applies overlays. Your
+`personal/` directory survives `git pull` safely — it is gitignored.
+
+See [`personal/README.md.template`](personal/README.md.template) for setup instructions.
+
+**Multi-device sync options:**
+
+- iCloud / OneDrive / Dropbox: place `personal/` in a cloud folder, symlink from the repo
+- Private git repo: host as a private GitHub repo, clone into `personal/`
+- Manual: copy across devices when needed
+
 ## License
 
-Personal configuration — not intended for distribution.
+MIT — see [LICENSE](LICENSE).

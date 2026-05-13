@@ -649,3 +649,23 @@ multiSelect: true
 ```
 
 **Single-select** (yes/no, pick one): `multiSelect: false`
+
+---
+
+## Forking & Personal Overlay
+
+The public repo ships with universal defaults. Personal customisations live in a
+gitignored `personal/` directory that sits inside the repo root but is never committed.
+
+```
+personal/
+  CLAUDE.md.overlay          ← appended to ~/.claude/CLAUDE.md after base
+  settings.overlay.json      ← deep-merged into ~/.claude/settings.json (your values win)
+  styles/                    ← writing styles for core-write / core-rewrite
+```
+
+`/core-bootstrap` auto-detects `personal/` and applies overlays. Safe across `git pull`.
+
+**For forks**: update `author:` in skill frontmatters to your own handle. Add your
+writing styles to `personal/styles/`. Override defaults in `personal/settings.overlay.json`.
+See [`personal/README.md.template`](../../personal/README.md.template) for the full setup guide.
