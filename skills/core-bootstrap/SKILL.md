@@ -8,7 +8,7 @@ description: >-
 argument-hint: "[--force]"
 metadata:
   author: claude-config
-  version: 1.1.0
+  version: 1.2.0
   category: core
 ---
 
@@ -138,6 +138,8 @@ if ((Test-Path $pathsLocal) -and -not $FORCE) {
   $pathsStatus = "written"
 }
 ```
+
+> **Note**: `paths.local.yaml` is read when skills run from within the claude-config repo. For machine-global path config across all projects, set env vars in your shell profile instead: `export CLAUDE_PROJECTS_ROOT="..."` and `export CLAUDE_CONFIG_REPO="..."`.
 
 ---
 

@@ -10,6 +10,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `core-bootstrap`: PHASE 0.5 writes `.claude/paths.local.yaml` with `projects_root` and `config_repo` (+ `godot_executable` on Windows); idempotent
 - `core-update`: pull latest claude-config + rebuild `~/.claude/CLAUDE.md` and `settings.json` from base + personal overlay; preserves Language preference
 - Personal overlay system (`personal/` directory, gitignored) — append `CLAUDE.md.overlay`, deep-merge `settings.overlay.json`, symlink `styles/`
 - `core-bootstrap`: PHASE 1.5 detects and applies personal overlays; jq availability check in PHASE 0
@@ -19,8 +20,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `CONTRIBUTING.md`: skill conventions, naming, commit style
 - `LICENSE`: MIT
 
+### Fixed
+
+- `skills/shared/references/lib/populate.js`: concept file now loaded when `conceptFile` flag is set, not only when `content` is empty
+- `core-bootstrap` / `core-update`: portable `sed -i.bak` for BSD and GNU compatibility
+- Three residual Dutch fragments translated in `core-create`, `dev-debug`, `shared/LEARNING-EXTRACTION.md`
+
 ### Changed
 
+- `.claude/CLAUDE.md`: Platform table genericized — hardcoded machine-specific paths replaced with "configurable via env var or `paths.local.yaml`"
 - `local/CLAUDE.md.base`: translated to English; `Language: English` default
 - `local/settings.json.template`: safe defaults — `defaultMode: default`, `voiceEnabled: false`; removed `skipDangerousModePermissionPrompt`
 - All skill/agent frontmatters: `author: mileszeilstra` → `author: claude-config`
