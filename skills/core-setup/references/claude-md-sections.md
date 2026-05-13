@@ -131,9 +131,9 @@ Read `.project/project.json` at session start for current project context (struc
 ## Real Example (Fullstack Next.js)
 
 ````markdown
-# evers-vgo
+# acme-project
 
-Corporate website voor Evers & Evers Vastgoedonderhoud.
+Corporate website for Acme Corp.
 
 ## Commands
 
@@ -147,9 +147,9 @@ npm run start    # Start production server
 
 ## Project
 
-**Name**: evers-vgo
+**Name**: acme-project
 **Type**: Fullstack (Next.js)
-**Description**: Corporate website voor Evers & Evers Vastgoedonderhoud.
+**Description**: Corporate website for Acme Corp.
 **Created**: 2026-02-03
 
 ### Stack
