@@ -26,7 +26,7 @@ Call **`EnterPlanMode`** after the input/setup phase and before the first analyt
 After the call:
 
 1. Via system-reminder you receive the path to the plan file. Note this path — the final output will be written there for review.
-2. Tools that keep working in plan mode: `AskUserQuestion`, `Read`, `Glob`, `Grep`, `WebSearch`, Context7 MCP, Obsidian MCP.
+2. Tools that keep working in plan mode: `AskUserQuestion`, `Read`, `Glob`, `Grep`, `WebSearch`, Context7 MCP.
 3. Tools that do NOT work until after exit: all file writes to `.project/` or project source.
 4. The plan file itself may be written during plan mode — that is the review channel.
 

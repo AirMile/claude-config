@@ -58,10 +58,6 @@ Output path follows scope:
 - feature → `.project/features/{name}/research.md`
 - page/UX or standalone idea → `.project/thinking/{topic}-research.md`
 
-**Obsidian fallback** — if no `.project/` folder exists:
-
-Search Obsidian with the inline argument. If match in `Ideas/`: ask if this serves as starting point. Track `obsidian_source_path` for save-back.
-
 **Other input** — if no concept found or user wants different input:
 
 Accept input from user (thinking output, document, description, or chat context). If unclear: ask 2-3 targeted questions. Confirm the concept summarized before proceeding.
@@ -309,7 +305,7 @@ Recommendations are always actor-specific (e.g. "for a B2B SaaS brand", "for a s
 
 Include Competitive Landscape table and/or Technical Feasibility assessment where relevant.
 
-**End of analysis phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the research report to the plan file, then `ExitPlanMode`. After approval the skill continues with Step 8 (Save & Sync, `.project/` writes and optional Obsidian).
+**End of analysis phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the research report to the plan file, then `ExitPlanMode`. After approval the skill continues with Step 8 (Save & Sync, `.project/` writes).
 
 ### Step 8: Save & Sync
 
@@ -328,8 +324,6 @@ Report: .project/thinking/{concept-name}-research.md
 Concept: project-seed.md updated with key findings
 Applied techniques: {list}
 
-Want to also save to Obsidian? Let me know.
-
 Next steps:
 - /project-critique - Critically analyze with research context
 - /project-brainstorm - Creatively expand with new insights
@@ -347,13 +341,9 @@ The markdown is the source of truth — no `project.json` `thinking[]` append. S
 **Scope = standalone idea:**
 
 1. Write to `.project/thinking/{topic}-research.md`
-2. Offer Obsidian save as option
+2. Offer "Copy to clipboard" per [`shared/CLIPBOARD.md`](../shared/CLIPBOARD.md)
 
 The markdown is the source of truth — no `project.json` `thinking[]` append.
-
-**Obsidian save flow** (when requested):
-
-If `obsidian_source_path` is known: write alongside the original idea. Otherwise: detect category, write to `Ideas/{subfolder}/{title} - Research.md` with frontmatter, and update `Home.md` recent ideas.
 
 ---
 

@@ -1,23 +1,23 @@
 ---
-name: school-learn
+name: dev-learn
 description: >
   Learn coding topics with understanding-first methods. Parses lesson URLs,
   topic names, file paths, or code snippets into core concepts. Teaches through
   6 comprehension methods, generates annotated educational code, and offers
-  optional practice phases. Tracks progress in Obsidian.
-  Use with /school-learn [topic, URL, or file path].
+  optional practice phases.
+  Use with /dev-learn [topic, URL, or file path].
 argument-hint: "[topic, URL, or file path]"
 metadata:
   author: claude-config
-  version: 1.0.0
-  category: school
+  version: 1.1.0
+  category: dev
 ---
 
 ## Overview
 
-Understanding-first learning skill for coding topics. Accepts lesson URLs (GitHub, docs), topic names, file paths, or pasted code. Breaks material into core concepts, teaches through comprehension methods, generates educational code with annotations, and offers optional hands-on practice. Auto quick mode for simple topics (1-2 concepts). Progress tracked in Obsidian `Academic/` folder.
+Understanding-first learning skill for coding topics. Accepts lesson URLs (GitHub, docs), topic names, file paths, or pasted code. Breaks material into core concepts, teaches through comprehension methods, generates educational code with annotations, and offers optional hands-on practice. Auto quick mode for simple topics (1-2 concepts). Final output can be copied to clipboard.
 
-Flow: parse input → identify concepts → [auto quick or full] → teach (method choice) → working example → practice (optional) → save to Obsidian.
+Flow: parse input → identify concepts → [auto quick or full] → teach (method choice) → working example → practice (optional) → copy summary to clipboard.
 
 ## Workflow
 
@@ -68,65 +68,7 @@ Classify the input to set smart defaults throughout the skill:
 | File path(s) or pasted code snippet                                          | `codebase`     | Default method → Architecture Walkthrough                 |
 | System design / architecture topic                                           | `architecture` | Default method → Architecture Walkthrough                 |
 
-Store `input_type` for use in Phase 2 (method default) and Phase 4 (Key Parts intensity).
-
-**Course detection:**
-
-Skip this step if `input_type` is `codebase` — default `course_folder` to project name (from `package.json` name, repo folder name, or ask user) and save under `Academic/Projects/` instead of a course folder.
-
-For all other input types:
-
-1. List existing Academic folders via `mcp__obsidian__list_directory(path="Academic")`
-2. If course code detected from URL: try to match against existing folders
-3. Ask via AskUserQuestion:
-
-```yaml
-header: "Course"
-question: "Which course does this topic belong to?"
-options:
-  - label: "{matched folder} (Recommended)", description: "Existing course in Academic/"
-  - label: "{other existing folder}", description: "Existing course"
-  - label: "Create new course", description: "Create a new folder in Academic/"
-multiSelect: false
-```
-
-If "Create new course": ask for folder name.
-
-Store `course_folder` and `topic_title` for Phase 6.
-
-**Existing note check (return-flow):**
-
-After determining `course_folder` and `topic_title`, check if a note already exists:
-
-1. Attempt `mcp__obsidian__read_note(path="Academic/{course_folder}/{topic_title}.md")`
-2. If note exists and has frontmatter with `confidence` and `status`:
-
-```
-PREVIOUS SESSION FOUND
-
-Topic: {topic_title}
-Last studied: {date}
-Confidence: {confidence}/5
-Method: {method}
-Open questions:
-{list from "Open Questions" section}
-```
-
-```yaml
-header: "Return"
-question: "You have studied this topic before. What do you want to do?"
-options:
-  - label: "Continue learning (Recommended)", description: "Focus on open questions and weak concepts from the previous session"
-  - label: "Start over", description: "Start from scratch — ignore previous session"
-  - label: "Different topic", description: "I want to learn a different topic"
-multiSelect: false
-```
-
-- **Continue learning**: Load previous concepts from the note's "Core Concepts" section. Mark previously understood concepts. Skip Phase 1 — go directly to Phase 2 with focus on open questions and concepts that lacked confidence. At save time (Phase 6): merge new learnings into existing note via `mcp__obsidian__patch_note` instead of overwrite.
-- **Start over**: Continue to Phase 1 as normal (overwrite at save time).
-- **Different topic**: Ask for new topic, restart Phase 0.
-
-3. If no note exists: continue to Phase 1 as normal.
+Store `input_type` for use in Phase 2 (method default) and Phase 4 (Key Parts intensity). Store `topic_title` for use in Phase 6.
 
 **Knowledge assessment (auto-research):**
 
@@ -301,7 +243,7 @@ If yes:
    - Review accuracy: did the user catch the deliberate issues?
    - Concept understanding: demonstrated through prompt precision
 
-### Phase 6: Save & Confidence
+### Phase 6: Confidence & Summary
 
 **Confidence self-assessment:**
 
@@ -316,65 +258,50 @@ options:
 multiSelect: false
 ```
 
-**Save to Obsidian:**
+**Build summary content:**
 
-Write note via `mcp__obsidian__write_note`:
+Compose a final markdown summary in the chat. Template (full mode):
 
-- **Path:** `Academic/{course_folder}/{topic_title}.md`
-- **Mode:** `overwrite`
-- **Frontmatter:**
-  ```yaml
-  status: learned | in-progress # based on confidence (4-5 = learned, 2-3 = in-progress)
-  date: "{YYYY-MM-DD}"
-  method: "{chosen method}"
-  confidence: { 1-5 }
-  tags: [school, { course_code }, { framework/language }]
-  source: "{URL or 'topic'}"
-  ```
-- **Content template (full mode):**
+```markdown
+# {Topic Title}
 
-  ```markdown
-  # {Topic Title}
+> {input_type} · confidence {N}/5 · method: {chosen method}
+> Source: {URL, file path, or "topic"}
 
-  ## Core Concepts
+## Core Concepts
 
-  {numbered list from Phase 1 with status markers}
+{numbered list from Phase 1 with status markers}
 
-  ## What I Learned
+## What I Learned
 
-  {key takeaways from the comprehension phase — 3-5 bullet points}
+{key takeaways from the comprehension phase — 3-5 bullet points}
 
-  ## Working Example
+## Working Example
 
-  {annotated code from Phase 3, condensed — keep annotations}
+{annotated code from Phase 3, condensed — keep annotations}
 
-  ## Open Questions
+## Open Questions
 
-  {anything still unclear or worth revisiting}
-  ```
+{anything still unclear or worth revisiting}
+```
 
-- **Content template (quick mode):**
+Quick-mode template:
 
-  ```markdown
-  # {Topic Title}
+```markdown
+# {Topic Title}
 
-  ## Summary
+## Summary
 
-  {concise explanation — what it is, how it works, when to use it}
+{concise explanation — what it is, how it works, when to use it}
 
-  ## Example
+## Example
 
-  {code example from the quick explanation}
-  ```
+{code example from the quick explanation}
+```
 
-**Cheatsheet accumulation (Syntax Explorer only):**
+**Copy to clipboard:**
 
-If Phase 2 method was Syntax Explorer, maintain a separate accumulating cheatsheet per language:
-
-1. Check if `Academic/{course_folder}/Cheatsheet - {language}.md` exists via `mcp__obsidian__read_note`
-2. If exists: append new patterns to the existing cheatsheet via `mcp__obsidian__patch_note` — add new entries under the relevant sections, skip duplicates
-3. If not exists: create via `mcp__obsidian__write_note` with frontmatter `{type: "cheatsheet", language: "{language}", tags: [school, cheatsheet, {course_code}]}` and initial content from the session's cheatsheet output
-4. Include link to cheatsheet in the topic note: `See also: [[Cheatsheet - {language}]]`
+Offer the option via `AskUserQuestion` and execute the platform command per [`shared/CLIPBOARD.md`](../shared/CLIPBOARD.md). User can paste into their note-taking app, doc, or wherever they keep learning logs.
 
 **Completion output:**
 
@@ -382,16 +309,13 @@ If Phase 2 method was Syntax Explorer, maintain a separate accumulating cheatshe
 LEARNED!
 
 Topic: {topic_title}
-Course: {course_folder}
 Method: {method used}
 Confidence: {N}/5
-Saved: Academic/{course_folder}/{topic_title}.md
-{If Syntax Explorer: "Cheatsheet: Academic/{course_folder}/Cheatsheet - {language}.md (created/updated)"}
+{If copied: "Copied to clipboard ({N} chars)."}
 {If practice done: "Practice: Key Parts {X/Y correct}, Direct & Review completed"}
 
 Next steps:
-- /school-learn [next topic] — learn the next topic
-- Review in Obsidian — re-read your notes for spaced repetition
+- /dev-learn [next topic] — learn the next topic
 ```
 
 ## Guidelines

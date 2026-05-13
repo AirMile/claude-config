@@ -122,7 +122,7 @@ Available projects:
  ─────────────────────────────────────────────────────────────────────────────────
  3. my-app               git    /Users/.../Projects/my-app
  4. website              git    /Users/.../Projects/website
- 5. obsidian-vault       vault  /Users/.../Documents/ObsidianVault
+ 5. scratch              dir    /Users/.../Documents/scratch
 ```
 
 Then print directly, without a modal:
@@ -282,13 +282,13 @@ On successful auto-switch: current Claude session closes within ~0.5s; new sessi
 | `projects_root` | `$HOME/projects` | `C:\Projects`   | `$HOME/projects` | `CLAUDE_PROJECTS_ROOT` |
 | `extra_paths`   | `[]`             | `[]`            | `[]`             | —                      |
 
-**Add your own vaults or bookmarks** via `paths.local.yaml` in your project:
+**Add your own bookmarks** via `paths.local.yaml` in your project:
 
 ```yaml
 paths:
   extra_paths:
-    - { name: "obsidian-vault", path: "$HOME/Documents/MyVault", type: "vault" }
+    - { name: "notes", path: "$HOME/Documents/Notes", type: "dir" }
     - { name: "scratch", path: "$HOME/scratch", type: "dir" }
 ```
 
-`type` is a display label (`git` / `vault` / `dir`). Paths that do not exist are silently skipped.
+`type` is a display label (`git` / `dir`). Paths that do not exist are silently skipped.

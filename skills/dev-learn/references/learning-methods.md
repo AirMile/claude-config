@@ -1,6 +1,6 @@
 # Learning Methods
 
-Protocols for each comprehension method used in Phase 2 of school-learn. Read the selected method's section and follow its steps.
+Protocols for each comprehension method used in Phase 2 of dev-learn. Read the selected method's section and follow its steps.
 
 ---
 

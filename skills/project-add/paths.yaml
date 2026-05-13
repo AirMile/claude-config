@@ -18,9 +18,9 @@ paths:
     godot_executable: "/Applications/Godot.app/Contents/MacOS/Godot"
 
     # Extra paths for /project-switch (bookmarks alongside git repos in projects_root)
-    # Override in paths.local.yaml with your own vault/scratch/etc.
+    # Override in paths.local.yaml with your own notes/scratch/etc.
     # extra_paths:
-    #   - { name: "obsidian-vault", path: "$HOME/Documents/MyVault", type: "vault" }
+    #   - { name: "notes", path: "$HOME/Documents/Notes", type: "dir" }
     #   - { name: "scratch", path: "$HOME/scratch", type: "dir" }
     extra_paths: []
 
@@ -36,7 +36,7 @@ paths:
 
     # Extra paths for /project-switch
     # extra_paths:
-    #   - { name: "obsidian-vault", path: "$env:USERPROFILE\\Documents\\MyVault", type: "vault" }
+    #   - { name: "notes", path: "$env:USERPROFILE\\Documents\\Notes", type: "dir" }
     extra_paths: []
 
   linux:

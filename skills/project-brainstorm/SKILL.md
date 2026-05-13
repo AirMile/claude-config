@@ -40,7 +40,7 @@ Example triggers:
 **Auto-detect concept file:**
 
 1. Check if `.project/` folder exists
-   - If folder does NOT exist → check Obsidian (step 1b below)
+   - If folder does NOT exist → proceed to manual input (below)
 2. Check if `.project/project-seed.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
 3. If exists AND no inline input provided:
    - Read `.project/project-seed.md` for the full concept document. Extract title from first H1 heading.
@@ -117,37 +117,23 @@ multiSelect: false
 - Scope = page/UX → write to `.project/thinking/{topic}.md`
 - Scope = standalone idea → write to `.project/thinking/{topic}.md`
 
-**Step 1b: Check Obsidian vault (if no concept found in project.json)**
+**Step 1b: Manual input fallback (if no concept found in project.json)**
 
-If the user provided an inline description/argument:
+If the user provided an inline description/argument, use it directly as the starting idea.
 
-1. Search Obsidian: `mcp__obsidian__search_notes(query={argument}, limit=3)`
-2. If relevant match found in `Ideas/`:
-   - Show: "There is an existing idea in Obsidian: **{title}** (`{path}`)"
-   - Use AskUserQuestion:
-     ```yaml
-     header: "Obsidian Match"
-     question: "Do you want to use this existing idea as a starting point?"
-     options:
-       - label: "Yes, use as basis (Recommended)", description: "Load the Obsidian idea and brainstorm on it"
-       - label: "No, different concept", description: "I want to use a different concept"
-       - label: "Chat context", description: "Use the conversation as starting point"
-     multiSelect: false
-     ```
-   - **If "Yes":** Read the note with `mcp__obsidian__read_note()`, load as starting concept, track `obsidian_source_path` for later save-back
-   - **If "Chat context":** Process using Chat Context flow (see below)
-3. If no match found:
-   - Use AskUserQuestion:
-     ```yaml
-     header: "Input"
-     question: "What do you want to brainstorm about?"
-     options:
-       - label: "Use chat context (Recommended)", description: "Use what has been discussed in this conversation"
-       - label: "Paste concept", description: "Paste or type an idea/concept"
-     multiSelect: false
-     ```
-   - If "Use chat context": process using Chat Context flow (see below)
-   - If "Paste concept": proceed to manual input below
+Otherwise, ask:
+
+```yaml
+header: "Input"
+question: "What do you want to brainstorm about?"
+options:
+  - label: "Use chat context (Recommended)", description: "Use what has been discussed in this conversation"
+  - label: "Paste concept", description: "Paste or type an idea/concept"
+multiSelect: false
+```
+
+- If "Use chat context": process using Chat Context flow (see below)
+- If "Paste concept": proceed to manual input below
 
 **If no concept in project.json OR user wants different input:**
 
@@ -537,19 +523,6 @@ Applied techniques: {list of techniques used}
    ```
 3. Write `.project/project.json`
 
-Then ask:
-
-```yaml
-header: "Obsidian"
-question: "Do you also want to save this idea to Obsidian?"
-options:
-  - label: "No (Recommended)", description: "Output is saved in .project/thinking/"
-  - label: "Yes, to Obsidian", description: "Also save as Idea note in Obsidian vault"
-multiSelect: false
-```
-
-If "Yes, to Obsidian": follow the Obsidian save flow (see below under "Save to Obsidian").
-
 **If scope = concept (default) or no scope chosen:**
 
 Use AskUserQuestion:
@@ -559,7 +532,6 @@ header: "Output"
 question: "What do you want to do with the expanded concept?"
 options:
   - label: "Save to concept (Recommended)", description: "Update project-seed.md with expanded version"
-  - label: "Save to Obsidian", description: "Save as permanent Idea note in your Obsidian vault"
   - label: "Copy to clipboard", description: "Copy markdown to clipboard (don't save)"
 multiSelect: false
 ```
@@ -584,37 +556,9 @@ multiSelect: false
 
 **Concept-scope output is integrated into `project-seed.md`.** The chosen variant is processed into the living document — no separate `.project/thinking/*.md` for concept-scope, no `concept.thinking[]` append. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
 
-**If "Save to Obsidian":**
-
-1. Also save concept: Write the full concept document to `.project/project-seed.md`. Update `.project/project.json` (or create with `{}`): set `concept.name`, `concept.pitch` (first paragraph), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists.
-2. If concept was loaded from Obsidian (tracked via `obsidian_source_path`):
-   - Overwrite: `mcp__obsidian__write_note(path=obsidian_source_path, content=..., mode="overwrite")`
-   - Update frontmatter status to `developing` via `mcp__obsidian__update_frontmatter()`
-3. If new concept (no Obsidian source):
-   - Detect category from content (game/app/story/website/other)
-   - Map to path: `Ideas/Games/`, `Ideas/Apps/`, `Ideas/Stories/`, `Ideas/Websites/`, `Ideas/Other/`
-   - Add frontmatter: `type: idea, category: {cat}, status: developing, created: {date}`
-   - Write: `mcp__obsidian__write_note(path="Ideas/{subfolder}/{title}.md")`
-4. Update Home.md: `mcp__obsidian__patch_note(path="Home.md", oldString="## Recent Ideas\n", newString="## Recent Ideas\n- [[{title}]]\n")`
-5. Confirm:
-
-   ```
-   CONCEPT SAVED TO OBSIDIAN
-
-   File: Ideas/{subfolder}/{title}.md
-   Status: developing
-   Applied techniques: {list}
-
-   Next steps:
-   - /project-critique - Critically analyze and strengthen
-   - /project-brainstorm - Another brainstorm round
-   - /project-backlog - Convert to feature backlog
-   ```
-
 **If "Copy to clipboard":**
 
-1. Wrap output in a code block with `markdown` language tag for copy button
-2. Display the content — user copies via the code block's copy button
+Follow [`shared/CLIPBOARD.md`](../shared/CLIPBOARD.md).
 
 ---
 
