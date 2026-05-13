@@ -824,8 +824,8 @@ Server: http://localhost:9876/{project-dir}
 | P4       | {count}  |
 | Total    | {count}  |
 
-Start development:
-/dev-define {first-P1-feature}
+View backlog:  /project-viewer
+Start building: /dev-define {first-P1-feature}
 ```
 
 **[GAME MODE]:**
@@ -845,8 +845,8 @@ Server: http://localhost:9876/{project-dir}
 | P4       | {count}  |
 | Total    | {count}  |
 
-Start development:
-/game-define {first-P1-feature}
+View backlog:  /project-viewer
+Start building: /game-define {first-P1-feature}
 ```
 
 ## Best Practices
