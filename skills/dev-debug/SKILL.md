@@ -375,10 +375,10 @@ Check runner beschikbaar: `npx playwright --version 2>/dev/null`.
 
 **"Skip" chosen (performance or production-data):** note `reproductionTest: { skipped: true, reason: "{reason}" }` and go to PHASE 8.
 
-### Step 2b: Playwright UI reproduction (alleen bij "visual baseline" keuze in Step 1)
+### Step 2b: Playwright UI reproduction (only with "visual baseline" choice in Step 1)
 
-Locatie: `test/regression/{slug}.spec.ts`
-Framework: `@playwright/test` — on-the-fly spec (zie `shared/PLAYWRIGHT.md → Runner Mode`).
+Location: `test/regression/{slug}.spec.ts`
+Framework: `@playwright/test` — on-the-fly spec (see `shared/PLAYWRIGHT.md → Runner Mode`).
 
 ```typescript
 // test/regression/{slug}.spec.ts

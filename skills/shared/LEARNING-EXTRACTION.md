@@ -222,7 +222,7 @@ Tokenization algorithm. Used for:
 
 **Dedup-key** voor `learnings[]`: `(type, normalize(summary), author ?? null)`.
 
-Match = exact tuple match. Geen Jaccard binnen één project (alleen cross-project in `core-promote-learnings`).
+Match = exact tuple match. No Jaccard within one project (only cross-project in `core-promote-learnings`).
 
 ---
 

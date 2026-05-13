@@ -104,11 +104,11 @@ Use **AskUserQuestion** tool:
 Use **AskUserQuestion** tool:
 
 - header: "Resources"
-- question: "Welke resource types zijn nodig?"
+- question: "Which resource types are needed?"
 - options:
-  - label: "Scripts", description: "Uitvoerbare scripts (Python, Bash, PowerShell)"
-  - label: "References", description: "Documentatie, schema's, referentiebestanden (.md)"
-  - label: "Templates/Assets", description: "Templates, afbeeldingen, fonts, voorbeeldbestanden"
+  - label: "Scripts", description: "Executable scripts (Python, Bash, PowerShell)"
+  - label: "References", description: "Documentation, schemas, reference files (.md)"
+  - label: "Templates/Assets", description: "Templates, images, fonts, example files"
 - multiSelect: true
 
 ### Step 3: Plan
