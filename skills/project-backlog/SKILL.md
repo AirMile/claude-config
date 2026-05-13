@@ -11,7 +11,7 @@ metadata:
 
 ## Overview
 
-This is the **bridge** between concept/brainstorm skills and the dev or game pipeline.
+This is the **bridge** between the seed document and the dev or game pipeline.
 Transforms structured idea markdown into a prioritized feature backlog ready for `/dev-define` (web) or `/game-define` (game).
 
 **Trigger**: `/project-backlog` or `/project-backlog [paste markdown]`

@@ -80,6 +80,7 @@ Skills chain together via `.project/project-seed.md` and `.project/project.json`
 **Planning entry point** (greenfield or mature project):
 `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere)
 
+- **Optional first**: `/project-research` gathers context (market, tech, codebase) to enrich the seed
 - **Thin** (mature project / task assignment): `/project-seed` asks 3-5 focused questions → thin seed document
 - **Rich** (new product / game): `/project-seed` runs full intake → rich seed document
 - `project-backlog` adapts backlog output to the richness of the seed — same flow, variable input depth
