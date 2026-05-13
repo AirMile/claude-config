@@ -24,6 +24,10 @@ paths:
     #   - { name: "scratch", path: "$HOME/scratch", type: "dir" }
     extra_paths: []
 
+    # Written by /core-bootstrap — not a default, per-machine only.
+    # preferences:
+    #   claude_plan: "max-5x"  # one of: pro, max-5x, max-10x, skip
+
   windows:
     # Root folder where projects are created
     projects_root: "C:\\Projects"
@@ -39,6 +43,10 @@ paths:
     #   - { name: "notes", path: "$env:USERPROFILE\\Documents\\Notes", type: "dir" }
     extra_paths: []
 
+    # Written by /core-bootstrap — not a default, per-machine only.
+    # preferences:
+    #   claude_plan: "max-5x"  # one of: pro, max-5x, max-10x, skip
+
   linux:
     # Root folder where projects are created
     projects_root: "$HOME/projects"
@@ -52,6 +60,10 @@ paths:
     # Extra paths for /project-switch
     extra_paths: []
 
+    # Written by /core-bootstrap — not a default, per-machine only.
+    # preferences:
+    #   claude_plan: "max-5x"  # one of: pro, max-5x, max-10x, skip
+
 # Resolution order (first match wins):
 # 1. Environment variable (CLAUDE_PROJECTS_ROOT, CLAUDE_CONFIG_REPO, CLAUDE_GODOT_EXECUTABLE)
 # 2. Local: .claude/paths.local.yaml (per project, per device)
@@ -62,4 +74,6 @@ paths:
 # paths:
 #   projects_root: "/home/user/code"
 #   config_repo: "/home/user/claude-config"
+# preferences:
+#   claude_plan: "max-5x"   # written automatically by /core-bootstrap
 # ```

@@ -8,25 +8,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [1.3.0] - 2026-05-14
+
 ### Added
 
 - `core-bootstrap`: Claude plan tier selection (Pro / Max 5x / Max 10x+) in PHASE 0; plan-aware `/model opusplan` + `effortLevel` tip in PHASE 3 report
 - `core-bootstrap`: persists `preferences.claude_plan` in `.claude/paths.local.yaml` — re-runs skip the question; old-format files get the block backfilled automatically
-
-### Removed
-
-- `core-export` skill — built-in `/export` in Claude Code covers the use case better
-
-### Changed
-
-- `core-bootstrap`: fully idempotent — `--force` flag removed; existing files are never overwritten (delete manually to re-deploy)
-- `core-bootstrap`: Language patch (PHASE 1) now also updates `"language"` in `~/.claude/settings.json` (jq preferred, sed fallback) to keep CLAUDE.md and settings.json in sync
-- `README.md`: collapsed 13 H2 sections to 6; structure tree moved to `<details>` block; intro condensed; recommended-settings note defers plan-specific advice to `/core-bootstrap`
-
----
-
-### Added (previously unreleased)
-
 - `core-bootstrap`: PHASE 0.5 writes `.claude/paths.local.yaml` with `projects_root` and `config_repo` (+ `godot_executable` on Windows); idempotent
 - `core-update`: pull latest claude-config + rebuild `~/.claude/CLAUDE.md` and `settings.json` from base + personal overlay; preserves Language preference
 - Personal overlay system (`personal/` directory, gitignored) — append `CLAUDE.md.overlay`, deep-merge `settings.overlay.json`, symlink `styles/`
@@ -45,6 +34,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `core-bootstrap`: fully idempotent — `--force` flag removed; existing files are never overwritten (delete manually to re-deploy)
+- `core-bootstrap`: Language patch (PHASE 1) now also updates `"language"` in `~/.claude/settings.json` (jq preferred, sed fallback) to keep CLAUDE.md and settings.json in sync
+- `README.md`: collapsed 13 H2 sections to 6; structure tree moved to `<details>` block; intro condensed; recommended-settings note defers plan-specific advice to `/core-bootstrap`
 - `.claude/CLAUDE.md`: Platform table genericized — hardcoded machine-specific paths replaced with "configurable via env var or `paths.local.yaml`"
 - `local/CLAUDE.md.base`: translated to English; `Language: English` default
 - `local/settings.json.template`: safe defaults — `defaultMode: default`, `voiceEnabled: false`; removed `skipDangerousModePermissionPrompt`
@@ -56,5 +48,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
+- `core-export` skill — built-in `/export` in Claude Code covers the use case better
 - `skills/shared/styles/style-portfolio.md`, `style-personal.md`, `style-clear.md`, `_anti-patterns.md` — personal styles; use `personal/styles/` instead
 - "Personal configuration — not intended for distribution" disclaimer from README

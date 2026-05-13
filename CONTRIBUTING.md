@@ -44,6 +44,15 @@ metadata:
 
 Update `author` to your own handle when publishing a fork.
 
+## Releases
+
+Skill-level versions (`metadata.version` in frontmatter) are per-skill. Repo releases are tagged `vX.Y.Z` when an `[Unreleased]` block is substantial:
+
+- **minor** (`X.Y+1.0`) — new skills, pipeline changes, new shared infra
+- **patch** (`X.Y.Z+1`) — fixes, small refinements, documentation
+
+To cut a release: update `CHANGELOG.md` (`[Unreleased]` → `[X.Y.Z] - YYYY-MM-DD`), commit, then `git tag -a vX.Y.Z -m "claude-config vX.Y.Z"`.
+
 ## Personal customisations
 
 Personal content (language preference, writing styles, opinionated defaults) belongs
