@@ -6,15 +6,15 @@ Personal Claude Code configuration: skills, agents, hooks, and scripts. Linked t
 
 ## Platform
 
-Cross-platform: **Windows (primary)** and **macOS (optional)**.
+Cross-platform: **macOS** and **Windows**.
 
-|               | Windows                | macOS/Linux         |
-| ------------- | ---------------------- | ------------------- |
-| Repo          | configurable           | configurable        |
-| Projects root | configurable           | configurable        |
-| Link          | `mklink /J` (junction) | `ln -sfn` (symlink) |
-| Godot         | configurable           | n/a                 |
-| Shell         | PowerShell             | bash/zsh            |
+|               | macOS/Linux         | Windows                |
+| ------------- | ------------------- | ---------------------- |
+| Repo          | configurable        | configurable           |
+| Projects root | configurable        | configurable           |
+| Link          | `ln -sfn` (symlink) | `mklink /J` (junction) |
+| Godot         | n/a                 | configurable           |
+| Shell         | bash/zsh            | PowerShell             |
 
 **Rules:**
 
@@ -39,7 +39,7 @@ CLAUDE.base.md    Template for per-project CLAUDE.md generation
 
 ## Skill Conventions
 
-- **Naming**: `{category}-{verb}` — lowercase, hyphen. Categories: core, dev, frontend, game, marketing, project, school, team, thinking
+- **Naming**: `{category}-{verb}` — lowercase, hyphen. Categories: core, dev, frontend, game, marketing, project, team
 - **Directory**: each skill = folder with `SKILL.md`, optionally `references/`, `scripts/`, `techniques/`
 - **Frontmatter**: metadata with author/version/category — use `disable-model-invocation: true` only if the skill must never be invokable via the Skill tool (also blocks user-triggered `/skill-name`)
 - **Pipeline handoff**: skills that touch shared state declare `reads:` / `writes:` in frontmatter — see `shared/DEVINFO.md` for namespaces. Validate with `python3 scripts/check-handoff.py`.

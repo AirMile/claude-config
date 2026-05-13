@@ -2,7 +2,7 @@
 
 > **改善 (Kaizen)** — _Good enough today, better tomorrow._
 
-A personal, versioned Claude Code setup — skills, agents, hooks, and project scaffolding linked into `~/.claude/` via junctions (Windows) or symlinks (macOS). Skills run as `/skill-name`; agents run isolated for parallelism or context isolation.
+A personal, versioned Claude Code setup — skills, hooks, and project scaffolding linked into `~/.claude/` via symlinks (macOS) or junctions (Windows). Skills run as `/skill-name`; a few delegate to isolated sub-agents under the hood.
 
 ```
 ~/.claude/skills/   →  junction/symlink to this repo's skills/
@@ -13,55 +13,63 @@ A personal, versioned Claude Code setup — skills, agents, hooks, and project s
 
 ## Quickstart
 
+**1. Clone the repo:**
+
 ```bash
 git clone https://github.com/<your-username>/claude-config.git
 cd claude-config
-# then inside Claude Code:
-/core-bootstrap        # one-time per machine — deploys CLAUDE.md, settings.json, keybindings, statusline + 4 global symlinks
 ```
 
-Per project, **pick one entry point**:
+**2. Bootstrap once per machine** (inside Claude Code):
 
-- Already inside a project directory → run `/core-setup` directly. Auto-detects greenfield/mature, re-invokable later (`audit`, `resync`, `install <module>`).
-- Creating or cloning a fresh project → run `/project-add` from anywhere. Sets up `.claude/` + `.project/`, optionally clones a GitHub repo, then hands off to `/core-setup`.
+```
+/core-bootstrap
+```
 
-Run `/core-update` periodically to pull the latest claude-config version and rebuild composed global files. For manual setup without Claude Code, see [`local/README.md`](local/README.md).
+Deploys `CLAUDE.md`, `settings.json`, `keybindings.json`, statusline + 4 global symlinks (`~/.claude/{skills,agents,hooks,scripts}`).
 
-**Recommended Claude Code settings** — `/model opusplan` (runtime) and `"effortLevel": "high"` in `~/.claude/settings.json`. Multiple skills (`dev-define`, `shared/PLAN-MODE.md`) lean on `opusplan` for their thinking phases. `/core-bootstrap` asks for your Claude plan and tailors the advice — the defaults above are tuned for **Max 5x**; Pro / Max 10x get different guidance.
+**3. Per project, pick one entry point:**
 
-`/core-setup` modes: `greenfield` (stack + CLAUDE.md + dashboard), `mature` (codebase scan + LLM learnings), `audit` (checklist, no mutations), `resync` (re-sync CLAUDE.md template), `install <module>` (incremental tooling — `tailwind`, `vitest`, `playwright`, `shadcn-ui`, `biome`, …).
+| Situation                                    | Run                                                            |
+| -------------------------------------------- | -------------------------------------------------------------- |
+| Already inside an existing project directory | `/core-setup` — auto-detects greenfield vs. mature             |
+| Creating or cloning a fresh project          | `/project-add` from anywhere — then hands off to `/core-setup` |
+
+`/core-setup` is re-invokable: `audit` (checklist), `resync` (refresh CLAUDE.md), `install <module>` (tailwind / vitest / playwright / shadcn-ui / biome / …).
+
+**4. Stay up to date:**
+
+```
+/core-update
+```
+
+Pulls the latest claude-config and rebuilds composed global files. For setup without Claude Code, see [`local/README.md`](local/README.md).
+
+### Recommended Claude Code settings
+
+`/model opusplan` + `"effortLevel": "high"` in `~/.claude/settings.json`. claude-config is built around this setup for token efficiency — Opus plans, Sonnet executes — not full-Opus runs. `/core-bootstrap` asks for your Claude plan and tunes the advice: the defaults are calibrated for **Max 5x**; Pro / Max 10x get different guidance.
 
 ## Skills & pipelines
 
 Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL-PATTERNS.md`](skills/shared/SKILL-PATTERNS.md) for conventions and [`skills/shared/PIPELINE.md`](skills/shared/PIPELINE.md) for canonical pipeline diagrams.
 
-| Category    | Skills                                                                                 |
-| ----------- | -------------------------------------------------------------------------------------- |
-| `core`      | bootstrap, setup, create, edit, delete, audit, commit, export, merge, rewrite, write   |
-| `dev`       | define, build, verify, debug, refactor, optimize, owasp                                |
-| `frontend`  | design, convert, check, tokens                                                         |
-| `game`      | define, build, verify, debug, refactor, optimize                                       |
-| `marketing` | research, content, screenshots                                                         |
-| `project`   | add, backlog, brainstorm, critique, pull, research, seed, switch, todo, tunnel, viewer |
-| `school`    | learn                                                                                  |
-| `team`      | issues, outsource, review, verify                                                      |
+| Category    | Skills                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| `core`      | audit, bootstrap, commit, create, delete, edit, merge, pull, rewrite, setup, update, write |
+| `dev`       | build, debug, define, learn, optimize, owasp, refactor, verify                             |
+| `frontend`  | check, convert, design, tokens                                                             |
+| `game`      | build, debug, define, optimize, refactor, verify                                           |
+| `marketing` | content, research, screenshots                                                             |
+| `project`   | add, backlog, brainstorm, critique, remove, research, seed, switch, todo, tunnel, viewer   |
+| `team`      | issues, outsource, review, verify                                                          |
 
 **Dev pipeline** — `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere). Optional `/project-research` enriches the seed with market/tech/codebase context.
 **Frontend** — `design` → [`convert`] → `check`.
 **Marketing** — `research` → `content` → `screenshots`.
 
-State handoff between skills lives in `.project/session/devinfo.json` (schema: [`shared/DEVINFO.md`](skills/shared/DEVINFO.md)).
+State handoff between skills lives in `.project/session/devinfo.json` (schema: [`shared/DEVINFO.md`](skills/shared/DEVINFO.md)). A handful of skills delegate parallel work to sub-agents in [`agents/`](agents/) (OWASP scanners, Godot researchers, fix-strategies, learning-extractor) — invisible to the user.
 
-## Agents & hooks
-
-Sub-agents run in isolated context for parallelism, independent reasoning, or large-context isolation.
-
-| Cluster              | Purpose                                             |
-| -------------------- | --------------------------------------------------- |
-| `fix-*` (3)          | Fix strategies — minimal, thorough, defensive       |
-| `owasp-*` (13)       | OWASP Top 10 scanners + remediation strategies      |
-| `godot-*` (4)        | Godot/GDScript researchers + TDD implementer        |
-| `learning-extractor` | Extract atomic patterns/pitfalls for project memory |
+## Hooks
 
 | Hook                   | Trigger                | What it does                                  |
 | ---------------------- | ---------------------- | --------------------------------------------- |
@@ -82,13 +90,22 @@ personal/                    ← gitignored, never committed
   styles/                    ← writing styles for core-write / core-rewrite
 ```
 
-`/core-bootstrap` auto-detects `personal/` and applies overlays. Survives `git pull` safely. See [`personal/README.md.template`](personal/README.md.template) for setup.
+**Setup is manual** — `/core-bootstrap` only _applies_ overlays, it doesn't create them. Bootstrap your `personal/` folder once:
 
-Multi-device sync: iCloud / OneDrive / Dropbox folder + symlink, private GitHub repo cloned into `personal/`, or manual copy.
+```bash
+mkdir -p personal/styles
+touch personal/CLAUDE.md.overlay personal/settings.overlay.json
+# Then edit the two files with your additions, or copy from the template:
+cp personal/README.md.template personal/README.md
+```
+
+The next `/core-bootstrap` (or `/core-update`) auto-detects the folder and merges it in. Survives `git pull` safely.
+
+Multi-device sync: iCloud / OneDrive / Dropbox folder + symlink into `personal/`, a private GitHub repo cloned into `personal/`, or manual copy.
 
 ## Cross-platform & prerequisites
 
-Works on **Windows** (primary) and **macOS**. Skills use `{projects_root}` instead of hardcoded paths; `paths.yaml` holds per-platform defaults, overrideable via env vars or `paths.local.yaml`.
+Cross-platform: **macOS** and **Windows**. Skills use `{projects_root}` instead of hardcoded paths; `paths.yaml` holds per-platform defaults, overrideable via env vars or `paths.local.yaml`.
 
 | Tool                               | Version | Required for                                                  |
 | ---------------------------------- | ------- | ------------------------------------------------------------- |
