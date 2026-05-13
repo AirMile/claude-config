@@ -105,3 +105,4 @@ Idempotent — skip if file already exists. No junction needed: `~/.claude/CLAUD
 - New skills: copy frontmatter structure from an existing skill in the same category
 - Test by actually running the skill
 - Dev/game pipeline sync: for structural changes to dev-pipeline skills (dev-define, dev-build, dev-verify, dev-debug, dev-refactor), check whether the game-pipeline counterpart (game-\*) needs the same change. Domain-specific content (Godot vs web, GUT vs browser) does not need to be synced.
+- Before tagging a release: run `python3 scripts/check-handoff.py` and `python3 scripts/check-dashboard-writers.py` — both must exit 0.

@@ -43,7 +43,7 @@ Deploys `CLAUDE.md`, `settings.json`, `keybindings.json`, statusline + 4 global 
 /core-update
 ```
 
-Pulls the latest claude-config and rebuilds composed global files. For setup without Claude Code, see [`local/README.md`](local/README.md).
+Pulls the latest claude-config and rebuilds composed global files. For setup without Claude Code, see [`local/README.md`](local/README.md). Release notes per version: [`CHANGELOG.md`](CHANGELOG.md).
 
 ### Recommended Claude Code settings
 
