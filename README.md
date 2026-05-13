@@ -63,11 +63,28 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 | `project`   | add, backlog, brainstorm, critique, remove, research, seed, switch, todo, tunnel, viewer   |
 | `team`      | issues, outsource, review, verify                                                          |
 
-**Dev pipeline** — `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere). Optional `/project-research` enriches the seed with market/tech/codebase context.
-**Frontend** — `design` → [`convert`] → `check`.
-**Marketing** — `research` → `content` → `screenshots`.
+| Pipeline    | Flow                                                                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dev`       | `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere) |
+| `game`      | `project-seed` → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere, Godot 4.x / GUT)                                |
+| `frontend`  | `frontend-design` → [`frontend-convert`] → `frontend-check`                                                                                            |
+| `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                   |
+
+Optional `/project-research` enriches the dev seed with market/tech/codebase context before backlog.
 
 State handoff between skills lives in `.project/session/devinfo.json` (schema: [`shared/DEVINFO.md`](skills/shared/DEVINFO.md)). A handful of skills delegate parallel work to sub-agents in [`agents/`](agents/) (OWASP scanners, Godot researchers, fix-strategies, learning-extractor) — invisible to the user.
+
+### Runtime state — backlog, dashboard, learnings
+
+All runtime artifacts live in a gitignored `.project/` directory per project:
+
+| Artifact  | Path                                        | Purpose                                                                                                                                                                                                                                                  |
+| --------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backlog   | `.project/backlog.html`                     | Status flow: TODO → DEFINED → DOING → DONE → shipped                                                                                                                                                                                                     |
+| Dashboard | `.project/project.json`                     | Context, features, stack, endpoints, entities (schema: [`shared/DASHBOARD.md`](skills/shared/DASHBOARD.md))                                                                                                                                              |
+| Learnings | `.project/project-context.json#learnings[]` | Pull-based memory — Auto Memory deliberately disabled for token efficiency. Build/refactor skills append; consumers load via [`shared/LEARNINGS-LOAD.md`](skills/shared/LEARNINGS-LOAD.md) with scope (`component` / `architectural` / `pitfall-prefix`) |
+
+Run `/project-viewer` to serve all project backlogs and dashboards on `http://localhost:9876` — one local board across every project under `{projects_root}`. Stop with `/project-viewer stop`.
 
 ## Hooks
 
