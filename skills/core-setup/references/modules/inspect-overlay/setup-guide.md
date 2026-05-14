@@ -2,14 +2,26 @@
 
 ## Detection
 
-| State                          | Condition                                                                                |
-| ------------------------------ | ---------------------------------------------------------------------------------------- |
-| `already-installed-configured` | Vite: `inspectOverlay` in `vite.config.*` · Next.js: `public/_inspect/client.js` present |
-| `not-installed`                | None of the above                                                                        |
+| State                          | Condition                                                                                                                                                |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `already-installed-configured` | Vite: `inspectOverlay` in `vite.config.*` · Next.js: `public/_inspect/client.js` present · Plain: `inspect-overlay-client.js` referenced in `index.html` |
+| `not-installed`                | None of the above                                                                                                                                        |
 
 No `installed-not-configured` state: inspect-overlay is a dev-only inject without an NPM package. `installed` implies `configured`.
 
 ## Pre-flight (continued)
+
+### Mode Selection (Full vs Degraded)
+
+The overlay always runs the same vanilla-JS client. The difference is whether each element carries `data-inspector-*` attrs (Babel-injected) for **exact `file:line` refs** (Full), or whether refs fall back to **`tag.class "text"`** (Degraded).
+
+| Framework                         | Available modes | Default                       |
+| --------------------------------- | --------------- | ----------------------------- |
+| Vite + React                      | Full / Degraded | Full (pin plugin-react@^5)    |
+| Next.js + React                   | Full / Degraded | Ask (Full disables Turbopack) |
+| Plain JS / static HTML / no React | Degraded only   | Degraded                      |
+
+Degraded refs look like `[button.btn.btn-primary "Save"]` — Claude grep's once on the classes/text to find source. Full refs look like `[src/components/Button.tsx:42:3]` — Claude reads the file directly. Both are wrapped in `[…]` for paste-context clarity.
 
 ### Dev Server Status
 
@@ -17,6 +29,7 @@ Determine the dev server port framework-aware:
 
 - **Vite**: read `vite.config.*` for `server.port`; fallback `5173`
 - **Next.js**: read `package.json` scripts for `--port` flag; fallback `3000`
+- **Plain**: no dev server detection — user picks any static server (`npx serve`, Live Server VS Code extension, `python -m http.server`)
 
 Check if that port is in use. Track for restart after setup.
 
@@ -151,13 +164,62 @@ If declined: degraded mode — skip Babel plugin, overlay works without file:lin
    ```
 6. Full mode: restart dev server after setup. Degraded mode: HMR picks up the change automatically
 
+## Setup — Plain JS / Static HTML
+
+Applies to: static HTML pages, vanilla-TS Vite templates, Vite/SvelteKit/Nuxt/Solid/Qwik projects without React, and anything else where you control an `index.html` (or root layout) and don't have a Babel/JSX pipeline.
+
+Always **Degraded mode** — refs look like `[button.btn.primary "Save"]` (tag + max 3 classes + 30 chars text), wrapped in `[…]`.
+
+Detection: `package.json` lacks `next`, `vite` may or may not be present, no `@vitejs/plugin-react`. An `index.html` exists at project root (or in `public/`, `src/`, depending on bundler).
+
+> **Note for Astro projects**: Astro ships with its own DevToolbar that overlaps this functionality. Ask the user before installing — if they already use the DevToolbar, skip inspect-overlay.
+
+### Install
+
+1. Copy `references/inspect-overlay-client.js` → project root (or `public/` for bundlers that serve from there)
+2. Add a script tag to `index.html` inside `<body>` — wrap in a dev-environment guard:
+
+   **Static HTML / no bundler:**
+
+   ```html
+   <script type="module" src="/inspect-overlay-client.js"></script>
+   ```
+
+   Place at the end of `<body>` so the DOM exists when the script runs. Remove before production deploy, or guard via a build-step that strips it.
+
+   **Vite (any template, including non-React):**
+
+   ```html
+   <script type="module">
+     if (import.meta.env.DEV) {
+       import("/inspect-overlay-client.js");
+     }
+   </script>
+   ```
+
+   Vite tree-shakes this in production builds automatically.
+
+   **Other bundlers (Parcel, Webpack, esbuild):** use the bundler's dev/prod env check or conditionally include via the dev server's HTML transformer.
+
+3. Add to `.gitignore` (if not already present):
+   ```
+   # Inspect overlay (synced from claude-config)
+   inspect-overlay-client.js
+   ```
+4. Reload the page (or restart dev server if running)
+
+### Verify Degraded Mode
+
+Open the page, press Ctrl+Shift+X / Cmd+Shift+X, click any element. Toast should appear with `Copied: <tag>.<class> "<text>"`. If no toast → check the browser console for the script-load (404 means the path is wrong, CORS means it's served from the wrong origin).
+
 ## Post-Setup Report
 
 Report overlay status:
 
 - Mode: Full (Babel) or Degraded
 - Controls: Ctrl+Shift+X (Win/Linux) or Cmd+Shift+X (Mac) to toggle
-- Server URL: tunnel URL if cloudflared running, else `localhost:<detected-port>` (5173 for Vite default, 3000 for Next.js default)
+- Server URL: tunnel URL if cloudflared running, else `localhost:<detected-port>` (5173 for Vite default, 3000 for Next.js default, user-chosen for plain JS)
+- Clipboard format: refs are wrapped in `[…]` — single click copies `[src/Button.tsx:42]` (Full) or `[button.btn "Save"]` (Degraded); multi-pin wraps each ref in its own brackets within the `--- 1/N ---` block
 
 Setup complete. Overlay is active — user can inspect elements and paste references into chat.
 
@@ -180,3 +242,9 @@ Only on explicit request ("remove the overlay", "cleanup inspect").
 3. Remove `<InspectOverlay />` and its import from root `layout.tsx`
 4. If full mode: delete `babel-plugin-inspector.js` and `.babelrc`, restart dev server (Turbopack resumes)
 5. If degraded mode: HMR removes overlay automatically
+
+**Plain JS / Static HTML:**
+
+1. Delete `inspect-overlay-client.js` from project root (or `public/`)
+2. Remove the `<script>` tag (or `import.meta.env.DEV` guard block) from `index.html`
+3. Reload the page

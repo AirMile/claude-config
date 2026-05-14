@@ -707,7 +707,7 @@ if (window.__inspectOverlayActive) {
 
   // --- Clipboard builder ---
   function buildClipboardText(el) {
-    return buildRef(el);
+    return "[" + buildRef(el) + "]";
   }
 
   function formatMultiClipboard(items) {

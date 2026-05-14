@@ -88,7 +88,7 @@ Run `/project-viewer` to serve all project backlogs and dashboards on `http://lo
 
 ## Inspect overlay
 
-A dev-only visual element-picker for React apps: click any element in the browser to copy a `file:line` reference, then paste it into Claude. Cuts the "find this component" round-trip out of frontend iteration. Works on **Vite** and **Next.js**.
+A dev-only visual element-picker: click any element in the browser to copy a bracketed reference like `[src/components/Button.tsx:42]`, then paste it into Claude. Cuts the "find this component" round-trip out of frontend iteration. Works on **Vite + React**, **Next.js**, and **plain JS / static HTML** (any DOM).
 
 **Install** (per project):
 
@@ -100,26 +100,27 @@ Adds the overlay files to your project root and `.gitignore`, wires up the plugi
 
 **Use** — keyboard-driven, no on-screen toggle:
 
-| Action                                     | Result                                              |
-| ------------------------------------------ | --------------------------------------------------- |
-| **Cmd+Shift+X** (macOS) / **Ctrl+Shift+X** | Toggle inspect mode on/off                          |
-| Hover                                      | Highlights the element under your cursor            |
-| Click                                      | Copies `src/components/Button.tsx:42` to clipboard  |
-| Shift+Click                                | Pin multiple elements (copies all refs together)    |
-| Drag                                       | Select a region — copies refs for everything inside |
-| Ctrl+Z                                     | Unpin the last selected element                     |
-| Escape                                     | Clear pins / exit inspect mode                      |
+| Action                                     | Result                                               |
+| ------------------------------------------ | ---------------------------------------------------- |
+| **Cmd+Shift+X** (macOS) / **Ctrl+Shift+X** | Toggle inspect mode on/off                           |
+| Hover                                      | Highlights the element under your cursor             |
+| Click                                      | Copies `[src/components/Button.tsx:42]` to clipboard |
+| Shift+Click                                | Pin multiple elements (copies all refs together)     |
+| Drag                                       | Select a region — copies refs for everything inside  |
+| Ctrl+Z                                     | Unpin the last selected element                      |
+| Escape                                     | Clear pins / exit inspect mode                       |
 
 Paste the ref into Claude as context — no more "where is that button defined?"
 
-**Modes**:
+**Modes** — Full = Babel injects `data-inspector-*` attrs → exact `file:line` refs; Degraded = no attrs → DOM-based refs (tag + class + visible text):
 
-| Mode         | Vite                                                     | Next.js                                      | Output                                      |
-| ------------ | -------------------------------------------------------- | -------------------------------------------- | ------------------------------------------- |
-| **Full**     | `@vitejs/plugin-react@^5` + `@react-dev-inspector/babel` | `.babelrc` with custom plugin (no Turbopack) | Exact `file:line` references                |
-| **Degraded** | `@vitejs/plugin-react@^6` (OXC blocks Babel)             | Default Turbopack setup                      | Element refs via CSS classes / visible text |
+| Stack                             | Mode available  | Sample clipboard output                   |
+| --------------------------------- | --------------- | ----------------------------------------- |
+| Vite + React                      | Full / Degraded | `[src/components/Button.tsx:42:3]`        |
+| Next.js + React                   | Full / Degraded | `[src/components/Button.tsx:42]`          |
+| Plain JS / static HTML / no React | Degraded only   | `[button.btn.btn-primary "Save changes"]` |
 
-Full mode trades faster builds (Turbopack on Next.js, OXC on Vite v6) for exact refs. `/core-setup install inspect-overlay` defaults to Full on Vite (pins v5) and asks on Next.js. Details: [`skills/core-setup/references/modules/inspect-overlay/setup-guide.md`](skills/core-setup/references/modules/inspect-overlay/setup-guide.md).
+Full mode trades faster builds (Turbopack on Next.js, OXC on Vite v6) for exact refs — `/core-setup install inspect-overlay` defaults to Full on Vite (pins `plugin-react@^5`) and asks on Next.js. Plain JS gets a one-shot script-tag install, always degraded. Details: [`skills/core-setup/references/modules/inspect-overlay/setup-guide.md`](skills/core-setup/references/modules/inspect-overlay/setup-guide.md).
 
 **Teardown**: `/core-setup` does not remove modules automatically — ask explicitly ("remove the inspect overlay") and it walks back the install steps.
 

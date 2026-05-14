@@ -56,10 +56,13 @@ If the skill was invoked with an argument (e.g. `/core-setup tailwind`):
 Check `package.json` dependencies:
 
 - `next` present → **Next.js**
-- `vite` present → **Vite**
+- `vite` present → **Vite** (further check: `@vitejs/plugin-react` → React-Vite, else → non-React Vite)
 - `astro` present → **Astro** (research mode only)
 - `nuxt` present → **Nuxt** (research mode only)
-- No match → abort: "No supported frontend framework detected."
+- No `package.json` framework match **but** an `index.html` exists at root → **Plain** (inspect-overlay only — other tier-1 modules skip)
+- No match and no `index.html` → abort: "No supported frontend framework detected."
+
+When framework is **Plain** or **non-React Vite**: only `inspect-overlay` is offered in PHASE 1, all other tier-1 modules are skipped (they assume React or a build toolchain that exists). Research-flow remains available for free-text input.
 
 ### 0.2 Package Manager Detection
 
