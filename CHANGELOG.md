@@ -8,6 +8,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `inspect-overlay`: plain JS / static HTML install path — script-tag injection covering static sites, vanilla-Vite templates, and non-React frameworks (Vue/Svelte/Solid/Qwik). Always degraded mode.
+- `inspect-overlay`: clipboard refs wrapped in `[…]` for clearer paste-context (single-click `[src/Button.tsx:42]`, multi-pin wraps each ref within the `--- 1/N ---` block).
+- `README`: `## Inspect overlay` section documenting install, controls, and Full vs Degraded modes per stack.
+- `README`: Pipelines table (dev / game / frontend / marketing) + `### Runtime state` sub-section introducing `/project-viewer`.
+- `README`: CHANGELOG link in Quickstart step 4.
+- `.claude/CLAUDE.md` + `CONTRIBUTING.md`: pre-tag validator step (`check-handoff.py` + `check-dashboard-writers.py`).
+
+### Changed
+
+- `mode-install.md` PHASE 0.1: framework detection adds `Plain` (no React/Next detected but `index.html` present) — only inspect-overlay is offered; PHASE 2-5 skipped.
+- `setup-guide.md`: section "Setup — Vite" renamed to "Setup — Vite + React" for disambiguation with the new Plain JS path.
+
+### Fixed
+
+- `README` inspect-overlay controls: removed false floating-🔍-button claim; added complete keyboard table (Shift+Click, Drag, Ctrl+Z, Escape).
+- `README`: removed `## Hooks` section — hooks are an implementation detail covered in `CLAUDE.md`.
+
 ---
 
 ## [1.3.0] - 2026-05-14

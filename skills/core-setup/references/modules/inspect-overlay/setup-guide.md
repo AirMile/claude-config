@@ -37,7 +37,7 @@ Check if that port is in use. Track for restart after setup.
 
 Report framework, plugin mode (Vite), overlay status, dev server status, and the detected port.
 
-## Setup — Vite
+## Setup — Vite + React
 
 ### Plugin Selection (critical for full mode)
 
@@ -166,7 +166,7 @@ If declined: degraded mode — skip Babel plugin, overlay works without file:lin
 
 ## Setup — Plain JS / Static HTML
 
-Applies to: static HTML pages, vanilla-TS Vite templates, Vite/SvelteKit/Nuxt/Solid/Qwik projects without React, and anything else where you control an `index.html` (or root layout) and don't have a Babel/JSX pipeline.
+Applies to: static HTML pages, vanilla-TS Vite templates, Vite/SvelteKit/Nuxt/Solid/Qwik projects without React, and anything else where you control an `index.html` (or root layout) and don't have a Babel/JSX pipeline. For Vite-without-React (Vue, Svelte, Solid, vanilla TS, etc.), use this path instead of the Vite + React path above.
 
 Always **Degraded mode** — refs look like `[button.btn.primary "Save"]` (tag + max 3 classes + 30 chars text), wrapped in `[…]`.
 

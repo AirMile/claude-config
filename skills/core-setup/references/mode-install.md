@@ -152,11 +152,17 @@ Controls (on install only):
 
 When **Skip** → go directly to PHASE 2.
 
+### 1.4 Framework Guard (Plain)
+
+When `framework === "plain"` (detected in PHASE 0.1), inspect-overlay is the only meaningful module — other tier-1 modules assume `npm install` and a React-or-bundler toolchain. After PHASE 1.3 completes (install or skip), jump directly to PHASE 6 (Report). Skip PHASE 2-5.
+
 ---
 
 ## PHASE 2: Further Installs?
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
+
+**Skip this phase entirely when `framework === "plain"`** — go directly to PHASE 6. The remaining tier-1 modules require a build toolchain that plain HTML lacks; offering them would lead to broken installs.
 
 ```yaml
 header: "Continue?"
