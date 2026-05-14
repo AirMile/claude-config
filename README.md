@@ -86,6 +86,36 @@ All runtime artifacts live in a gitignored `.project/` directory per project:
 
 Run `/project-viewer` to serve all project backlogs and dashboards on `http://localhost:9876` — one local board across every project under `{projects_root}`. Stop with `/project-viewer stop`.
 
+## Inspect overlay
+
+A dev-only visual element-picker for React apps: click any element in the browser to copy a `file:line` reference, then paste it into Claude. Cuts the "find this component" round-trip out of frontend iteration. Works on **Vite** and **Next.js**.
+
+**Install** (per project):
+
+```
+/core-setup install inspect-overlay
+```
+
+Adds the overlay files to your project root and `.gitignore`, wires up the plugin, and restarts the dev server.
+
+**Use**:
+
+- A floating 🔍 button appears bottom-right of your dev server
+- Click it or press **Cmd+Shift+X** (macOS) / **Ctrl+Shift+X** (Win/Linux) to toggle inspect mode
+- Hover highlights, click copies the reference (e.g. `src/components/Button.tsx:42`) to your clipboard
+- Paste into Claude as context — no more "where is that button defined?"
+
+**Modes**:
+
+| Mode         | Vite                                                     | Next.js                                      | Output                                      |
+| ------------ | -------------------------------------------------------- | -------------------------------------------- | ------------------------------------------- |
+| **Full**     | `@vitejs/plugin-react@^5` + `@react-dev-inspector/babel` | `.babelrc` with custom plugin (no Turbopack) | Exact `file:line` references                |
+| **Degraded** | `@vitejs/plugin-react@^6` (OXC blocks Babel)             | Default Turbopack setup                      | Element refs via CSS classes / visible text |
+
+Full mode trades faster builds (Turbopack on Next.js, OXC on Vite v6) for exact refs. `/core-setup install inspect-overlay` defaults to Full on Vite (pins v5) and asks on Next.js. Details: [`skills/core-setup/references/modules/inspect-overlay/setup-guide.md`](skills/core-setup/references/modules/inspect-overlay/setup-guide.md).
+
+**Teardown**: `/core-setup` does not remove modules automatically — ask explicitly ("remove the inspect overlay") and it walks back the install steps.
+
 ## Personal overlay
 
 Keep personal customisations (language preference, writing styles, opinionated defaults) separate from the public repo:
