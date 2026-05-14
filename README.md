@@ -98,12 +98,19 @@ A dev-only visual element-picker for React apps: click any element in the browse
 
 Adds the overlay files to your project root and `.gitignore`, wires up the plugin, and restarts the dev server.
 
-**Use**:
+**Use** — keyboard-driven, no on-screen toggle:
 
-- A floating 🔍 button appears bottom-right of your dev server
-- Click it or press **Cmd+Shift+X** (macOS) / **Ctrl+Shift+X** (Win/Linux) to toggle inspect mode
-- Hover highlights, click copies the reference (e.g. `src/components/Button.tsx:42`) to your clipboard
-- Paste into Claude as context — no more "where is that button defined?"
+| Action                                     | Result                                              |
+| ------------------------------------------ | --------------------------------------------------- |
+| **Cmd+Shift+X** (macOS) / **Ctrl+Shift+X** | Toggle inspect mode on/off                          |
+| Hover                                      | Highlights the element under your cursor            |
+| Click                                      | Copies `src/components/Button.tsx:42` to clipboard  |
+| Shift+Click                                | Pin multiple elements (copies all refs together)    |
+| Drag                                       | Select a region — copies refs for everything inside |
+| Ctrl+Z                                     | Unpin the last selected element                     |
+| Escape                                     | Clear pins / exit inspect mode                      |
+
+Paste the ref into Claude as context — no more "where is that button defined?"
 
 **Modes**:
 
