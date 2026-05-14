@@ -148,28 +148,43 @@ Skip if no `depends[]` or empty.
 
 **Workspace setup:**
 
-Only show if we are NOT already in a worktree:
+Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = "{feature-name}"`. The procedure auto-creates an isolated worktree and wires `.project/` symlinks. No AskUserQuestion needed — creation is automatic when no worktree exists for the feature yet. Skip if already in a worktree (procedure detects).
 
-1. Check: `git rev-parse --show-toplevel` vs first path from `git worktree list --porcelain`
-   → Different: already in worktree → skip
-2. AskUserQuestion:
-   ```yaml
-   header: "Workspace"
-   question: "Do you want to work in a worktree for this build?"
-   options:
-     - label: "No, current directory (Recommended)"
-       description: "Work on the current branch"
-     - label: "Yes, create worktree"
-       description: "Isolated workspace — ideal for parallel work"
-   multiSelect: false
-   ```
-3. Yes → `EnterWorktree(name: "{feature-name}")`
+**Mandatory output** (always log, never silent):
 
-> **Branch naming**: `EnterWorktree` creates branch `worktree-{feature-name}` (NOT `{feature-name}`). Follow-up skills (`dev-verify`, `dev-debug`, `dev-refactor` single-mode) detect this worktree automatically via `shared/WORKTREE.md` and switch into it. For merge/cleanup use `/core-merge` or manually `git worktree remove --force` + `git branch -D worktree-{feature-name}`.
+```
+WORKTREE: {absolute-path} ({created | reused | skipped: already-in-worktree})
+```
 
-**Tag backlog card as active** (immediately after loading feature):
+If the procedure did not run (e.g. no git repo, error), log `WORKTREE: not-applied ({reason})` instead. This line is non-negotiable — without it, the auditor cannot verify whether isolation was achieved.
 
-Read `.project/backlog.html` (if exists), find feature by name → set `"status": "DOING"`, remove `transition` field if present (not required), `updated` to current date (transition DEFINED → DOING at build start). Write back via Edit.
+**Pre-PHASE-1 gate** (hard check — shell-state verification):
+
+```bash
+CURRENT="$(pwd)"
+EXPECTED_SUFFIX="/.claude/worktrees/{feature-name}"
+if [[ "$CURRENT" == *"$EXPECTED_SUFFIX" ]]; then
+  echo "GATE: ok — inside worktree"
+elif grep -q "^WORKTREE: not-applied" <<< "$WORKTREE_LOG"; then
+  echo "GATE: ok — worktree explicitly skipped"
+else
+  echo "ABORT: PHASE 0 incomplete — not inside expected worktree and no 'WORKTREE: not-applied' marker found."
+  echo "Re-run /dev-build from the start; follow shared/WORKTREE.md → Auto-create worktree literally."
+  exit 1
+fi
+```
+
+| Condition                                           | Result                                                     |
+| --------------------------------------------------- | ---------------------------------------------------------- |
+| `pwd` ends with `/.claude/worktrees/{feature-name}` | Pass — worktree created and switched into                  |
+| `WORKTREE: not-applied (...)` was logged            | Pass — worktree intentionally skipped (no git repo / etc.) |
+| Otherwise                                           | ABORT — silent skip detected                               |
+
+This gate is falsifiable from shell state; it cannot be bypassed by skipping the prose log.
+
+**Clear backlog transition flag** (immediately after loading feature):
+
+Read `.project/backlog.html` (if exists), find feature by name → remove `transition` field if present (auto-pickup signal consumed), `updated` to current date. **Keep status as `"DEFINED"`** — the DEFINED → DOING transition happens in PHASE 3A on successful completion (per `shared/BACKLOG.md`: dev-build result-status = DOING at completion).
 
 **Signal active feature** (after backlog update):
 
@@ -382,7 +397,15 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
 - **Combined steps** (e.g. "REQ-002 + REQ-003"): build as one unit. Technique = that of the first REQ in the combination.
 - **Already covered**: if a REQ already (partially) works due to an earlier REQ → only write tests, verify GREEN. Output: `RED: N/A (covered by REQ-XXX)`
 
-**On blocker:** log in feature.json `build.blockers[]`, mark BLOCKED, continue with other requirements. Suggest `/project-decide` for architectural blockers.
+**On blocker:** log in feature.json `build.blockers[]`, mark BLOCKED, continue with other requirements.
+
+**On unexpected runtime/environment error** (test runner crashes, missing globals, broken APIs that should exist): do NOT immediately patch — root-cause first.
+
+1. **Identify the actual provider**: which package/runtime owns the failing API? Read `package.json`, check `node --version`, inspect the test runner config (e.g. `vitest.config.ts → environment`). Search the error string verbatim in node_modules to find which layer throws it.
+2. **Confirm the cause before mitigating**: state in one sentence which component is responsible (e.g. `Node 22 experimental webstorage shadows jsdom's localStorage`) — not which one you assume is responsible (`jsdom is broken`).
+3. **Then patch**, and record the confirmed cause in the learning (PHASE 3A → learnings). A learning that names the wrong layer will misdirect future builds.
+
+If root-cause cannot be confirmed within 2 attempts: log as blocker with `"cause": "unknown"` rather than guessing.
 
 ### PHASE 2b: Regression Gate
 
@@ -452,7 +475,7 @@ Guidelines:
 - Expected = observable result (response body, status code, visible effect)
 - Do NOT add "run npm test" items — unit tests are already covered by the build
 
-**Backlog**: `data.updated` → now. Status stays `"DOING"`.
+**Backlog**: find feature by name → set `"status": "DOING"` (transition DEFINED → DOING at successful build completion, per `shared/BACKLOG.md`), `data.updated` → now. This is the only place where DOING is written.
 
 **Context**: update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip if no structural impact.
 
@@ -566,7 +589,7 @@ Next steps:
 💡 Worktree active: {worktree_path}
    Next skills (/dev-verify, /dev-refactor, /dev-debug) start in a NEW chat —
    they detect this worktree automatically and switch into it.
-   For merge/cleanup: /core-merge {feature}
+   For merge/cleanup: /core-finalize {feature}
 ```
 
 > **Todo**: mark PHASE 3B → `completed`. All 6 phases should now be `completed`.

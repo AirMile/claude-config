@@ -3,7 +3,7 @@ name: project-backlog
 description: "Transform a seed document or task description into a prioritized feature backlog. Use with /project-backlog after /project-seed to create implementation roadmaps."
 metadata:
   author: claude-config
-  version: 1.1.0
+  version: 1.3.0
   category: project
 ---
 
@@ -71,7 +71,7 @@ Accepts markdown from:
    - Use `SEED_CONTEXT.markdown` as concept content
    - Read `backlog.html`
    - Analyze differences between concept and existing backlog
-   - Check `data.features[]` in `backlog.html` for entries with `source: "project-todo"` or `source: "dev-todo"` or `source: "/core-setup"` or `source: "/dev-define"` or `source: "/dev-build"` or `source: "/dev-verify"` or `source: "/game-define"` or `source: "/game-build"` to identify independently-added features
+   - Check `data.features[]` in `backlog.html` to identify INDEPENDENT features: a feature is INDEPENDENT when its `source` field exists AND is not `"/project-backlog"`. Features without a `source` field (or with `"/project-backlog"`) are concept-derived and may be updated or deprecated by this run.
    - Compare `SEED_CONTEXT.markdown` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
@@ -215,6 +215,10 @@ multiSelect: false
 
 - "No" → skip to PHASE 1
 - "Yes" → proceed to PHASE 0.5
+
+### Enter Plan Mode
+
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 0.5. PHASE 0.5 → PHASE 3 (research → feature extraction → dependencies → priority) run in plan mode; the final feature plan is written to the plan file for review.
 
 ### PHASE 0.5: Research (Optional)
 
@@ -710,6 +714,8 @@ P4:
 - {feature}: {reason}
 ```
 
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the feature plan (features table with type/risk/phase/dependencies + ASCII dependency tree + priority breakdown) to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 4 (HTML write + `.project/project.json` sync + server start).
+
 ### PHASE 4: Generate Backlog
 
 **Goal:** Write the interactive HTML kanban backlog.
@@ -738,6 +744,7 @@ P4:
          "status": "TODO",
          "phase": "P1|P2|P3|P4",
          "description": "{description}",
+         "source": "/project-backlog",
          "dependencies": ["{other-feature}"],
          "risk": "{1-5 from PHASE 1 risk-score}"
        }
@@ -762,6 +769,7 @@ P4:
          "status": "TODO",
          "phase": "P1|P2|P3|P4",
          "description": "{description}",
+         "source": "/project-backlog",
          "dependencies": ["{other-feature}"]
        }
      ],
@@ -781,8 +789,9 @@ P4:
    - For each existing backlog feature: preserve `status`, `stage`, `phase`, `date` from the current backlog
    - For MODIFIED features (TODO status): update `description` and `type` from new extraction
    - For MODIFIED features (DOING/DONE status): only enrich `description` if concept adds new insights — never overwrite
-   - For NEW features: add with `status: "TODO"`, `stage: null`
+   - For NEW features: add with `status: "TODO"`, `stage: null`, `source: "/project-backlog"`
    - For DEPRECATED features: keep in the array but set `status: "DEPRECATED"`
+   - For MODIFIED features: preserve existing `source` field; set `"/project-backlog"` only if missing
    - Set `updated` to current date, keep original `generated` date
    - INDEPENDENT features (added outside project-backlog): always preserve intact
 
@@ -794,7 +803,7 @@ P4:
 
    ```bash
    # Respects $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
-   curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node ~/.claude/skills/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
+   curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node --watch ~/.claude/skills/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
    ```
 
 5. **Update project dashboard** (see `shared/DASHBOARD.md`):

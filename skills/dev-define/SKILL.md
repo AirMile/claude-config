@@ -10,7 +10,7 @@ writes:
   [feature.requirements, feature.architecture, feature.files, backlog.status]
 metadata:
   author: claude-config
-  version: 2.6.0
+  version: 2.7.0
   category: dev
 ---
 
@@ -19,6 +19,13 @@ metadata:
 PHASE 1 of the dev workflow: define → build → test.
 
 **Trigger**: `/dev-define` or `/dev-define [feature-name]`
+
+## Constraints (apply to every phase)
+
+- **No implementation code anywhere.** Plan file en feature.json bevatten alleen type signatures, structuur, beslissingen. Function bodies, `(set, get) => ({...})` blocks, JSX, hook internals → `/dev-build`. Detail: zie PHASE 2 "Strict boundary."
+- **No requirements skipping** — every feature gets PHASE 1 extraction with acceptance criteria.
+- **No phase-jump without checkpoint** — user confirms scope (PHASE 1) before architecture; user approves plan (PHASE 2) before feature.json write.
+- **No skipping plan-mode calls** — `EnterPlanMode` at PHASE 0c, `ExitPlanMode` at end of PHASE 2. Required for model routers (e.g. `opusplan`).
 
 ## Workflow
 
@@ -63,51 +70,20 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 - **Not found** → continue to step 3 (normal flow).
 - **Found** → go to PHASE 0b (update-mode).
 
-3. **Project folder + context** (parallelize):
+3. **Setup + context load** (parallelize):
    - `mkdir -p .project/features/{feature-name}`
-   - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json`
-   - Glob + Grep for existing code that imports the feature name. With 0 matches: continue silently. With ≥1 match: briefly mention which files already reference the name.
-   - Read `.project/project.json` → extract:
-     - `stack` — framework, language, packages (fallback if stack-baseline.md does not exist)
-     - `SEED_CONTEXT.pitch` or first 2 sentences of `SEED_CONTEXT.markdown` as feature context (see `shared/SEED.md`)
-     - `features[]` — existing features (prevents duplicates/overlap)
-     - `endpoints` — existing API surface
-     - `data.entities` — existing data model
-     - `thinking[]` — scan for entries with `newFeature` field matching the feature name (added via `/project-todo`). Load those as context.
-     - `design.components[]` — existing component specs (used for reuse-discovery in PHASE 1)
-     - `design.pages[]` — existing page specs (used for reuse-discovery context)
-   - **Onboarding check** (evaluate immediately after project.json read):
-     - `project.json` not present → show: `⚠️ No project.json found. Consider running /core-setup first for better codebase context.`
-     - Present but empty (no `context`, `stack`, and `features`) → show: `ℹ️ project.json exists but lacks codebase context. /core-setup can fill this in.`
-     - Present with content → continue silently.
-     - Non-blocking — skill always continues.
-   - **Name-match on thinking markdown**: Grep `.project/thinking/*.md` for feature name (filename + content). With 1+ match: read the match(es) and use as input for PHASE 1 questions. The `.md` files are the source of truth for thinking output — no 7-day window anymore.
-   - **Backlog card → TODO**: Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">`. Find feature by name → keep `status: "TODO"`, set `date: "{date}"`. Not found → add to `data.features` with `phase: "P4"`, `status: "TODO"`. Set `data.updated` to today. Write back to `backlog.html`.
-   - Read `.project/project-context.json` (if exists) → extract:
-     - `context.patterns` — existing code patterns
-   - **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+   - `mkdir -p .project/sessions && echo '{"feature":"{feature-name}","skill":"define","startedAt":"<new Date().toISOString()>"}' > .project/sessions/active-{feature-name}.json`
+   - Glob + Grep for existing code that imports the feature name. ≥1 match: briefly mention files.
+   - Read `.project/project.json` — extract: `stack`, `concept.pitch` (or first 2 sentences of `concept.content`), `features[]`, `endpoints`, `data.entities`, `thinking[]` (filter by `newFeature` matching feature name), `design.components[]`, `design.pages[]`.
+   - **Onboarding check** (after project.json read): not present → warn `⚠️ No project.json found. Consider /core-setup.`; present but empty (no `context`, `stack`, `features`) → warn `ℹ️ project.json lacks codebase context. /core-setup can fill this in.`; present with content → continue silently. Non-blocking.
+   - Read `.project/project-context.json` (if exists) — extract `context.patterns`, `architecture.components[]`.
+   - Read `.claude/research/stack-baseline.md` (if not available, use `project.json.stack` as basis).
+   - **Backlog read-only**: Read `.project/backlog.html` for context only (feature `risk`, `dependencies`, `externalRef`). Mutations (status, date, `auto`-flag) happen in PHASE 4 — keeps all writes after `ExitPlanMode` per PHASE 0c plan-mode protocol.
 
-     ```
-     scopes: [component, architectural]
-     pitfall-prefix: true
-     current-feature: <feature-name>
-     ```
-
-     **Required output at ≥1 match** — show as separate chat block before PHASE 1 questions (not merged with past-decisions output):
-
-     ```
-     RELEVANT LEARNINGS
-     - [pattern] {summary} (from feature {feature})
-     - [pitfall] {summary} (from feature {feature})
-     ```
-
-     No matches → show nothing, continue silently.
-
-   - Read `.claude/research/stack-baseline.md` (convention/patterns detail — if not available, use `project.json.stack` as basis)
-   - **Past decisions scan** (two sources, both scoped):
-     - Feature-scope: Glob `.project/features/*/feature.json` → flatten all `durableDecisions[]`. Tag each entry with `[feature-X]`.
-     - Project-scope: Glob `.project/thinking/*-decision-*.md` → read first ~30 lines per file, extract `THINK:` line (title), `RECOMMENDATION:` line (chosen), and `CONSTRAINT` section. Tag each entry with `[project]`.
-     - Merge both sources. Filter relevant via keyword overlap between current feature name/concept and each decision's title, chosen, or constraint (≥2 substantive terms). Keep top 3 most relevant.
+4. **Optional context** (skip each item if results would be empty):
+   - **Thinking files**: Grep `.project/thinking/*.md` for feature name. Read matches as PHASE 1 input.
+   - **Past decisions**: only if `.project/features/` has any prior `feature.json`. Flatten `durableDecisions[]` from all prior features (tag `[feature-X]`) + scan `.project/thinking/*-decision-*.md` (extract `THINK:`, `RECOMMENDATION:`, `CONSTRAINT` from first 30 lines, tag `[project]`). Filter ≥2 keyword overlap with current feature. Keep top 3.
+   - **Learnings**: load via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md) (scopes: component, architectural; pitfall-prefix: true; current-feature: `<name>`). Show `RELEVANT LEARNINGS` block before PHASE 1 only on ≥1 match. No matches → silent.
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 
@@ -155,7 +131,9 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 
 ### PHASE 0c: Enter Plan Mode
 
-Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 1. PHASE 1 + 2 run in plan mode; all PHASE 2 design output is written to the plan file for review. All PHASE 0 setup writes are done at this point — file writes (feature.json, .project/\* updates) wait until after ExitPlanMode.
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 1. PHASE 1 + 2 run in plan mode; all PHASE 2 design output is written to the plan file for review.
+
+**Allowed writes before `EnterPlanMode`**: only `.project/sessions/active-{name}.json` and `mkdir` calls for the feature folder. All `.project/{backlog,project,project-context}.{html,json}` writes happen in PHASE 4, after `ExitPlanMode`.
 
 ---
 
@@ -303,38 +281,49 @@ No AskUserQuestion, no extra explanation. Then proceed directly to PHASE 2. Skip
 
 ### PHASE 2: Architecture
 
-**Output rule for this entire phase**: write the full architecture design **directly to the plan file** (Write/Edit, use the path from the PHASE 0c system-reminder). **Do not show design tables, file structures, interfaces, build sequence or test strategy inline in chat** — only a short progress marker (e.g. `Architecture designed: N components, M files, K build steps. Plan file updated.`).
+**Output rule for this entire phase**: write design **directly to the plan file** (Write/Edit, path from PHASE 0c system-reminder). **Do not show design output inline in chat** — only a short progress marker (e.g. `Architecture designed: N files, K build steps. Plan file updated.`).
 
-**Exception**: for visual features the ASCII wireframe may appear inline in an AskUserQuestion description — otherwise the user cannot review it before the final plan file write.
+**Strict boundary — design vs implementation**:
+
+- **Allowed in plan file**: type signatures (`interface X { ... }`, `type Y = ...`, function signatures `(input: X) => Y`), file/module structure, feature flow as `→` chain, dependency graph, build sequence, test strategy table, durable decisions.
+- **Forbidden in plan file**: function bodies, `(set, get) => ({...})` blocks, `set({...})` calls, helper implementations, JSX, hook internals — even as "skeleton" or "pseudo-code." That work belongs to `/dev-build`. If a code fence contains anything beyond type declarations: stop and rewrite as an English description.
+
+**Plan file vs feature.json — rolverdeling**:
+
+| Inhoud | Plan file | feature.json |
+|---|---|---|
+| Context / rationale / waarom | ✓ | — |
+| REQ-lijst (1-regel descriptions) | ✓ | ✓ |
+| Volledige acceptance criteria | — | ✓ (canonical) |
+| File structure tabel | ✓ | ✓ |
+| Type signatures (typescript fence) | ✓ | ✓ (`interfaces[].definition`) |
+| Build sequence samenvatting | ✓ | ✓ (canonical) |
+| Test strategy tabel | — | ✓ (canonical) |
+| Durable decisions met rationale | ✓ | ✓ (canonical) |
+| Verification steps | ✓ | — |
+| Out of scope | ✓ | — |
+
+**Exception**: for visual features the ASCII wireframe may appear inline in an AskUserQuestion description.
 
 Design in three steps:
 
 1. **Baseline check** (internally):
-   - Search `stack-baseline.md` for patterns relevant to this feature
-   - **Pattern found** → use as basis for design, skip research
-   - **Pattern not found** → inline research:
-     - Call `resolve-library-id` + `query-docs` via Context7 for library/framework patterns
-     - Call WebSearch for external APIs and services
-     - Focus: recommended patterns, state approach, file structure
-       After research: update `stack-baseline.md` with new patterns (append, do not overwrite)
-   - **No baseline file** → always execute research. Do NOT create baseline (that is /core-setup)
+   - Search `stack-baseline.md` for patterns relevant to this feature.
+   - **Pattern found** → use as basis, skip research.
+   - **Pattern not found** → inline research via Context7 (`resolve-library-id` + `query-docs`) + WebSearch for external APIs. After research: append new patterns to `stack-baseline.md`.
+   - **No baseline file** → always execute research. Do NOT create baseline (that is /core-setup).
 
-2. **Existing code** (internally): Glob + Read the most relevant files with similar patterns. This informs the design.
+2. **Existing code** (internally): Glob + Read the most relevant files with similar patterns.
 
-3. **Design** → write to plan file: feature flow, file structure, interfaces/types, design sketch (visual only), dependency analysis, build sequence, test strategy, AI-navigability decisions.
-   - **Feature flow**: compact `→` chain from trigger to output (conditional paths in `[brackets]`, parallel paths with `+`). Example: `User click → validate input → [cache hit → return] / [cache miss → fetch API + update cache] → render response`.
-   - **File structure**: create/modify table.
-   - **Interfaces/Types**: if relevant.
-   - **Design sketch**: only for visual features — ASCII wireframe (web/UI) or scene composition (3D/game). Consider: responsive breakpoints, loading state, empty state, error state. Confirm wireframe inline via AskUserQuestion (see exception above): "Is this visual design correct?" — "Yes (Recommended)" / "Adjust". For color references in wireframes/acceptance criteria: use token names (`bg-primary`, `text-foreground`) — no hex values. See `shared/TOKENS.md`.
-   - **Dependency analysis**: REQ→REQ relations.
-   - **Build sequence**: numbered implementation order. Combine REQs in the same step if they touch the same file and have no mutual dependencies.
+3. **Design** → write to plan file:
+   - **Feature flow**: compact `→` chain. Conditional paths in `[brackets]`, parallel with `+`.
+   - **File structure**: create/modify table (path, action, purpose, requirements).
+   - **Type signatures only**: `interface`, `type`, function signatures. No bodies. Wrap in a single ` ```typescript ` fence per module.
+   - **Design sketch**: visual features only — ASCII wireframe + states (loading/empty/error). Confirm inline via AskUserQuestion: "Is this visual design correct?" — "Yes (Recommended)" / "Adjust". Use token names (`bg-primary`, `text-foreground`), no hex. See `shared/TOKENS.md`.
+   - **Dependency analysis**: REQ→REQ relations (1 line each).
+   - **Build sequence**: numbered REQ-clusters, `dependsOn` pointers. Combine REQs touching the same file with no mutual dependencies.
    - **Test strategy**: REQ→testfile→description table.
-   - **AI-navigability** (evaluate after design, adjust file structure/interfaces where needed — skip for ≤3 files without new pattern):
-     - _Module exports_: Per new file: what is public, what is private? With >3 files in the same dir: consider barrel/index file.
-     - _Registries_: Multiple instances of the same concept (endpoints, commands, entities)? → Centralize in one file. Record in `architecture.registries[]`.
-     - _Structure_: Flat vs nested? Guideline: flat unless >10 files or clear subcategories. Follow existing project convention.
-     - _Test location_: Colocated or separate? Document in `testStrategy.location`.
-     - _Module boundaries_: Which modules import from which? Note forbidden imports at circular risk.
+   - **AI-navigability** (skip for ≤3 files without new pattern): module exports (public/private), registries for repeated concepts (centralize in one file, record in `architecture.registries[]`), flat vs nested structure, test colocation, forbidden imports at circular risk.
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 3 (writing feature.json).
 
@@ -461,9 +450,3 @@ Next: /dev-build {feature-name}
 
 Omit the `Next` line if the feature was not a backlog item and no concept is present — briefly note the absence of a backlog instead.
 
-## Restrictions
-
-- Do NOT write implementation code (that is /dev-build)
-- Do not skip requirements extraction
-- Do not proceed without user confirmation at checkpoints
-- Do not skip the `EnterPlanMode`/`ExitPlanMode` calls — these are needed for model routers (such as `opusplan`) to run thinking phases under a stronger model

@@ -5,7 +5,7 @@ reads: [feature.requirements, feature.build]
 writes: [feature.tests, backlog.status]
 metadata:
   author: claude-config
-  version: 2.2.1
+  version: 2.3.0
   category: dev
 ---
 
@@ -31,24 +31,25 @@ Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issue
 
 ## Workflow
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 12 items (status `pending`), then use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end. During context compaction the task list remains visible — no risk of missed phases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with the 5 mandatory phases (status `pending`):
 
 1. PHASE 0: Load Context and Classify
-2. PHASE 1: Automated Testing
-3. PHASE 1b: Parse Inline Feedback
-4. PHASE 2: Manual Walkthrough
-5. PHASE 2b: Combined Results
-6. PHASE 3: Categorize Issues
-7. PHASE 4: Fix Loop
-8. PHASE 5: Re-test
-9. PHASE 5b: Re-test Loop
-10. PHASE 5c: Regression Check
-11. PHASE 5d: Requirement Verification
-12. PHASE 6: Completion
+2. PHASE 1: Automated Testing (skip if no AUTO items — mark completed without work)
+3. PHASE 2b: Combined Results
+4. PHASE 5d: Requirement Verification
+5. PHASE 6: Completion
+
+Add fix-loop phases via `TaskCreate` ONLY when they will fire:
+- Inline feedback provided → add PHASE 1b before PHASE 2b
+- MANUAL items in classification → add PHASE 2 before PHASE 2b
+- FAILs in PHASE 2b → add PHASE 3, PHASE 4, PHASE 5, PHASE 5b
+- Any PHASE 4 fixes touched previously-PASS AUTO items → add PHASE 5c
+
+Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end. During context compaction the task list remains visible — no risk of missed phases.
 
 ### PHASE 0: Load Context and Classify
 
-> **Todo**: call `TaskCreate` with the 12 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 5 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Read backlog** — `.project/backlog.html`, parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
    - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "verifying")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`.
@@ -63,10 +64,11 @@ Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issue
 
    **COMPONENT detection** (after feature.json load): check whether `feature.type === "COMPONENT"` or backlog-item type is COMPONENT. If yes: set `IS_COMPONENT_VERIFY = true`. Look up demo-page: check whether `app/_dev/components/{name}/page.tsx` exists. Not found → exit: `"Demo-page not found. Run /dev-build {feature} again — this generates app/_dev/components/{name}/page.tsx."`. Dev server navigates to `/_dev/components/{name}` instead of the regular feature route.
 
-4. **Worktree switch** — execute the procedure in `shared/WORKTREE.md` with the feature-name. Switches automatically to `worktree-{feature-name}` if it exists. On FAIL (in a different worktree than the feature): stop with the message from WORKTREE.md.
+4. **Worktree switch** — execute the procedure in `shared/WORKTREE.md` with `feature-name` and `feature.status` (from Step 1). Switches automatically to `worktree-{feature-name}` if it exists. If no worktree exists but `feature.status === "DOING"`: WARN + AskUserQuestion (see WORKTREE.md → Step 4a: DOING-without-worktree warning). On FAIL (in a different worktree than the feature): stop with the message from WORKTREE.md.
 
 5. **Tag backlog + capture baseline:**
    - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
+   - Lint baseline (silent, for later delta): run project lint command (from `package.json` scripts: `lint` / `check` / `typecheck`), capture full output (file:line:rule keys) to `.project/session/pre-skill-lint.txt`. Failed lint at baseline → write output, do NOT block. Display nothing.
    - Session file: `echo '{"feature":"{name}","skill":"verify","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
 
 6. **Load stack & project context** — CLAUDE.md stack section + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Compose STACK_CONTEXT:
@@ -102,21 +104,31 @@ Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issue
      Format: `acceptance: [{ when, then }]` — each object = one test scenario.
      (e.g. "201 on success, 400 on >5, 409 on duplicate" = 3 scenarios).
 
+   Prefer short form. Full form costs main-context tokens.
+
    Return as:
    FEATURE_CONTEXT_START
    Existing tests: {paths, or "none"}
-   Per test item:
+
+   Per test item, choose ONE of two formats:
+
+   A) COVERED short form (when build test fully verifies the contract — httpContractTested: true AND delta === "none"):
+   - Item {N}: {title} — COVERED by {test-file:test-name}
+
+   B) FULL form (when httpContractTested: false OR delta !== "none" OR acceptance gap):
    - Item {N}: {title}
      Test data: {concrete values}
      Expected: {expected outcome}
      Recommended method: BROWSER | CLI
      Reason: {why}
-     Already covered: {what build tests verify}
-     httpContractTested: true/false (does the build test the HTTP/function contract?)
-     delta: {extra verification needed on top of build tests, or "none"}
+     Already covered: {what build tests verify, or "none"}
+     httpContractTested: true/false
+     delta: {extra verification needed, or "none"}
      acceptanceTests: [
        { scenario: "{test description}", method: "CLI", expected: "{expected}" }
      ]
+
+   Full form is only needed when the classifier (step 8d) must branch on per-item detail.
    FEATURE_CONTEXT_END
    ```
 
@@ -153,14 +165,6 @@ Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issue
    }
    ```
 
-   Display:
-
-   ```
-   POST-BUILD DETECTION: {testsTotal} existing tests ({tdd} TDD, {implFirst} impl-first)
-   Strategy: {isComponent → "COMPONENT demo-page verification (/_dev/components/{name})" | hasUI → "E2E browser verification" | isPureAPI → "API integration" | else → "Integration verification"}
-   Baseline: existing test suite as pre-check
-   ```
-
    c) Cross-requirement integration — Analyze `requirements[]`, identify combinations where output of one requirement is input for another. Max 3 scenarios, add as extra test items (not persisted to feature.json checklist). No logical combinations → skip.
 
    d) Per item, use Explore agent output:
@@ -169,8 +173,11 @@ Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issue
    - `httpContractTested: false` → classify based on steps/hasUI/isPureAPI per `references/test-classification.md`
    - Integration scenarios → always **AUTO** (never COVERED)
 
-   e) Display classification table with Type column (COVERED/AUTO/MANUAL) + reason.
-   Summary line: `COVERED: {n}  AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}`
+   e) Display:
+   - One-line summary: `COVERED: {n}  AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}`
+   - If `AUTO + MANUAL > 0`: show table with ONLY non-COVERED items (Type column + reason).
+   - If `AUTO + MANUAL == 0` AND `COVERED > 0`: skip table entirely.
+   - If ALL items are non-COVERED (no build tests cover any contract): show full table.
 
    f) With mixed types (COVERED + AUTO + MANUAL): show ASCII flowchart of the test execution flow. With only COVERED + AUTO/CLI: skip flowchart.
 
@@ -178,21 +185,15 @@ Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issue
 
    h) **Goal-backward verification + acceptance test planning:**
 
-   Map tests back to acceptance criteria and plan acceptance tests for gaps in one step:
-
-   | REQ   | Acceptance Criterion                  | Test Items  | Coverage | Acceptance Tests |
-   | ----- | ------------------------------------- | ----------- | -------- | ---------------- |
-   | REQ-1 | POST 201, 400 on >5, 409 on duplicate | unit: model | GAP      | 3 CLI tests      |
-   | REQ-2 | GET returns array, seeded defaults    | unit: seed  | GAP      | 2 CLI tests      |
-   | REQ-3 | Modal closes on click outside         | Item 2      | ✓        | —                |
-
-   **GAP**: requirement where builder's tests do not cover the acceptance criterion (test verifies internal methods/data structures instead of the criterion itself).
+   Internally map tests back to acceptance criteria. **GAP**: requirement where builder's tests verify internal methods/data structures instead of the acceptance criterion itself.
 
    Per GAP with CLI-testable acceptance tests (from Explore agent `acceptanceTests[]`): add to AUTO/CLI queue (PHASE 1) with `source: "acceptance"` marker.
    BROWSER and MANUAL gaps → add items via existing classification (step 7d).
 
-   No gaps → show `Acceptance mapping: {n}/{n} REQs covered` and proceed to PHASE 1.
-   CLI gaps found → display: `ACCEPTANCE TESTS: {n} test(s) planned for {m} requirements`
+   Display:
+   - No gaps → single line: `Acceptance mapping: {n}/{n} REQs covered`
+   - Gaps found → single line: `ACCEPTANCE TESTS: {n} test(s) planned for {m} requirement(s) — gaps: {REQ-ID list}`
+   - Show full GAP-only table ONLY if {m} >= 3 (helps user scan multiple gaps).
 
 9. **Dev server** (conditional):
 
@@ -223,7 +224,7 @@ Launch Agent to execute non-COVERED AUTO items in a separate context window.
 Agent prompt:
 
 ```
-Test the following items automatically via browser tools, bash commands, or integration tests.
+Test the following items automatically via Playwright runner specs, bash commands, or integration tests.
 Feature: {feature-name}
 {IF dev server running: Dev server: {url}}
 
@@ -239,12 +240,24 @@ ITEMS:
 
 INSTRUCTIONS:
 1. Execute steps via bash commands, Playwright runner specs, or write an integration test file
-2. For CLI items without running server: write an integration test (test/integration/{feature}.integration.test.js) that tests the service/function directly with mock dependencies and real DB
-3. For acceptance items (source: "acceptance"): write test in separate file (test/acceptance/{feature}.acceptance.test.js).
-   MUST use the project's test framework (vitest/jest/node:test — check package.json).
-   This ensures `npm test` picks them up as regression suite on future /dev-build runs.
+2. For CLI items without running server: write an integration test that tests the service/function directly with mock dependencies and real DB.
+
+   Path decision (check existing builder-test locations first):
+   - Builder tests are colocated (e.g. `src/foo/bar.test.ts` next to `bar.ts`) → write `{builder-test-dir}/{feature}.integration.test.{ext}` colocated.
+   - Builder tests live in a top-level `test/` or `__tests__/` directory → write `test/integration/{feature}.integration.test.{ext}`.
+   - No existing builder tests → default to `test/integration/{feature}.integration.test.js`.
+
+3. For acceptance items (source: "acceptance"): write test as a separate file using the project's test framework (vitest/jest/node:test — check package.json).
+
+   Path decision (check existing builder-test locations first):
+   - Builder tests are colocated (e.g. `src/foo/bar.test.ts` next to `bar.ts`) → write `{builder-test-dir}/{feature}.acceptance.test.{ext}` colocated alongside the builder test.
+   - Builder tests live in a top-level `test/` or `__tests__/` directory → write `test/acceptance/{feature}.acceptance.test.{ext}` (or `__tests__/acceptance/...`).
+   - No existing builder tests → default to `test/acceptance/{feature}.acceptance.test.{ext}`.
+
+   Goal: `npm test` picks up the acceptance file as part of the regression suite. Whichever path achieves that for THIS project is correct.
    Example: builder test `expect(countDocuments).toBeCalled` vs acceptance test `POST 6th → expect(res.status).toBe(400)`
-4. For BROWSER items: write a Playwright runner spec in test/acceptance/{feature}.spec.ts (NO MCP browser tools).
+
+4. For BROWSER items: write a Playwright runner spec in test/acceptance/{feature}.spec.ts (runner, NOT the playwright-cli daemon).
    Use the on-the-fly spec pattern: see shared/PLAYWRIGHT.md → Runner Mode.
    Runner availability check: `npx playwright --version 2>/dev/null`.
    Available → write spec with `expect(page)` assertions. For a11y criteria: use `toMatchAriaSnapshot()`.
@@ -341,8 +354,7 @@ BASELINE: npm test → PASS ({n}/{n})
 COVERED: {n} items (build tests cover contract)
 INTEGRATION: {n} scenarios → {n} PASS
 TOTAL: {n}/{n} PASS
-
-No fixes needed.
+{IF acceptance tests ran: Evaluation: {n}/{n} REQs PASS}
 ```
 
 **Full table** (with FAILs or no COVERED):
@@ -357,19 +369,20 @@ COMBINED RESULTS: {feature-name}
 With AUTO FAILs → AskUserQuestion: Trust auto results (Recommended) | Check manually.
 With SKIPs → AskUserQuestion: Accept (Recommended) | Test later.
 
-**Evaluation Score** (only show if acceptance tests were run):
+**Evaluation Score** (only show if acceptance tests were run AND ≥1 FAIL):
 
 ```
 EVALUATION: {feature-name}
 
 | REQ   | Acceptance Tests | Builder Tests | Verdict |
 | ----- | ---------------- | ------------- | ------- |
-| REQ-1 | 3/3 PASS         | 2/2 PASS      | PASS    |
 | REQ-2 | 1/2 PASS         | 1/1 PASS      | FAIL    |
 ```
 
+Show ONLY rows with verdict FAIL (or BLOCKED/UNCLEAR). All-PASS → already folded into compact block as `Evaluation: {n}/{n} REQs PASS` — no separate table.
+
 Acceptance test FAIL → issue type **SPEC**. Builder test FAIL → issue type **TESTABLE**.
-No acceptance tests run → skip table, categorize only on builder test FAILs.
+No acceptance tests run → skip entirely, categorize only on builder test FAILs.
 
 All PASS → PHASE 6. FAILs (SPEC or TESTABLE) → PHASE 3.
 
@@ -467,7 +480,7 @@ Loop back to PHASE 3. AUTO items → re-run in PHASE 5A. MANUAL items → re-tes
 
 > **Todo**: mark PHASE 5b → `completed`, PHASE 5c → `in_progress`.
 
-**Skip when:**
+**Skip silently (no user output) when:**
 
 - No fixes applied in PHASE 4
 - No previously-PASS AUTO items in PHASE 2b
@@ -527,7 +540,7 @@ Cross-check `feature.json` requirements against test results:
    - **UNCLEAR**: no test possible because acceptance criteria is too vague (e.g. "feels fast", "works well") — non-deterministic
    - **NO TEST**: no test in `checklist[]` with matching `requirementId` (no legitimate reason)
 
-4. **All requirements COVERED:** show compact summary, proceed to PHASE 6.
+4. **All requirements COVERED:** single line — `Requirement coverage: {n}/{n} REQs PASS`. No table. Proceed to PHASE 6.
 
 5. **With NO TEST, FAIL, BLOCKED or UNCLEAR requirements:**
 
@@ -561,7 +574,9 @@ Cross-check `feature.json` requirements against test results:
 
 > **Todo**: mark PHASE 5d → `completed`, PHASE 6 → `in_progress`.
 
-#### Step 1: Fix Sync (skip if no fixes)
+#### Step 1: Fix Sync
+
+Skip silently if no fixes in PHASE 4.
 
 Per fix in plain language:
 
@@ -578,20 +593,20 @@ Save fix sync to `feature.json` (tests.fixSync).
 
 #### Step 2: Observations
 
-**Skip when:** this session had no MANUAL items (pure automode — user checked nothing themselves, so nothing can have been noticed).
+Skip silently when this session had no MANUAL items (pure automode — user checked nothing themselves, so nothing can have been noticed).
 
 AskUserQuestion: No, all good (Recommended) | Yes, I noticed something.
 "Yes" → ask description, note for feature.json (observations[]).
 
 #### Step 3: 3-File Sync
 
-Skill-specific mutations:
+Update three files so the project state matches the verify result. **For feature.json: use a single Read → mutate-in-memory → Write cycle**, not per-field Edit calls.
 
-**feature.json:**
+**feature.json** — Read once, parse JSON, apply all mutations in memory, Write once:
 
 - `status` → `"DONE"`
-- `requirements[].status` → `"PASS"` / `"FAIL"` / `"BLOCKED"` / `"UNCLEAR"` per REQ (BLOCKED/UNCLEAR include `evidence` string)
-- `tests.checklist[].status` → `"PASS"` / `"FAIL"` / `"skip"` per item
+- Per `requirements[]` (skip `deltaOp === "REMOVED"`): `status` → `"PASS"` / `"FAIL"` / `"BLOCKED"` / `"UNCLEAR"` per REQ (BLOCKED/UNCLEAR include `evidence` string)
+- Per `tests.checklist[]`: `status` → `"PASS"` / `"FAIL"` / `"skip"` per item
 - `tests.finalStatus` → `"PASSED"` (all requirements PASS) / `"FAILED"` (≥1 FAIL) / `"PARTIAL"` (≥1 BLOCKED or UNCLEAR, 0 FAIL). PARTIAL signals incomplete verification; feature `status` remains `"DONE"`.
 - `tests.sessions[]` → append `{ "date": "YYYY-MM-DD", "pass": N, "fail": N, "skip": N }`
 - `tests.fixSync` → fix summaries (if fixes applied)
@@ -599,6 +614,10 @@ Skill-specific mutations:
 - `tests.verificationCheckpoint` → `{ "gaps": ["REQ-ID"], "mismatches": ["description"], "adjustments": "none|added|reworded" }`
 - `tests.evaluation` → per-REQ scores `[{ reqId, acceptancePass, acceptanceTotal, builderPass, builderTotal, verdict }]`
 - `tests.acceptanceTestFile` → path to written acceptance test file (persistent in codebase)
+
+Single Write replaces the entire file. Prevents drift across ~10 sequential Edits.
+
+**Verification**: parse feature.json once after writing — verify `status === "DONE"` + `tests.finalStatus` set. Display verification result ONLY if it fails.
 
 **PAGE-seeding (safety net — frontend projects only):**
 
@@ -711,12 +730,18 @@ No learnings found → skip step.
 - Python project (no package.json): check for `mypy.ini` or `[tool.mypy]` in `pyproject.toml`
 - No match found → skip silently
 
-On match: run found script(s) (multiple matches → parallel) via Bash tool with `timeout: 60000`
+On match: run found script(s) (multiple matches → parallel) via Bash tool with `timeout: 60000`. Compute:
+- baseline = set of error-keys (file:line:rule) from `.project/session/pre-skill-lint.txt` (written in PHASE 0 step 5)
+- current = set of error-keys from this run
+- new_errors = current \ baseline
 
-- **PASS** → show `DIAGNOSTICS: PASS`, proceed to git status compare
-- **FAIL** → show errors (max 30 lines) + AskUserQuestion:
-  - `"Fix first (Recommended)"` — stop Step 4, no commit; user fixes and restarts skill
+If new_errors is empty → show `DIAGNOSTICS: PASS`, proceed to git status compare.
+If new_errors not empty → show `DIAGNOSTICS: {len(new_errors)} new error(s) introduced` + file:line for each new error. AskUserQuestion:
+  - `"Fix now (Recommended)"` — stop Step 4, no commit; user fixes and restarts skill
   - `"Commit anyway"` — proceed; add `[diagnostics-warnings]` to commit message
+  - `"Abort"` — cancel commit entirely
+
+(Use set-diff of error-keys, not numeric delta — numeric delta produces false positives when errors shift line numbers due to surrounding edits.)
 
 Compare `git status --porcelain | sort` with `.project/session/pre-skill-status.txt`:
 
@@ -741,7 +766,7 @@ Adversarial verification complete.
 - Spec fixes: {specFixes} | Other fixes: {otherFixes} | Tests added: {count}"
 ```
 
-Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{name}.json`
+Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/pre-skill-lint.txt .project/session/active-{name}.json`
 
 **Output:**
 
@@ -753,11 +778,38 @@ VERIFY COMPLETE: {feature-name}
 | Acceptance Tests  | {pass}/{total} PASS |
 | Builder Tests     | {pass}/{total} PASS |
 | Spec Issues Fixed | {n}                 |
-
-Next steps:
-  1. /dev-refactor {feature} → optional code quality polish
-  2. /dev-define {next-feature} → pick up next feature
 ```
+
+Append a single Next step line (pick the most relevant — do NOT list multiple):
+- Worktree branch detected → `Next: /core-finalize {feature-name}`
+- No worktree + more items in backlog → `Next: /dev-define {next-feature}`
+- All else → omit Next line.
+
+(`/dev-refactor` is optional polish — mention only if specFixes > 0 OR otherFixes > 0.)
+
+**Optional PR offer** — show first, only if ALL true:
+
+1. Current branch matches `worktree-*` pattern (`git branch --show-current`)
+2. Feature is at `status: "DONE"` in backlog after this run
+3. `.project/project.json#team.mode === "team"` (absent → skip)
+4. `gh` on PATH AND `gh auth status` exit 0
+5. Clean tree (`git status --porcelain` empty)
+
+If all true → AskUserQuestion:
+
+```yaml
+header: "PR openen"
+question: "Push + PR openen voor worktree-{feature-name}?"
+options:
+  - label: "Ja, push + PR (Recommended)"
+    description: "Push the branch and open a PR via gh. Worktree stays until merged."
+  - label: "Nee, skip PR"
+    description: "Skip the PR; show the worktree hint instead."
+multiSelect: false
+```
+
+On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress the worktree hint below.
+On "Nee" or any precondition fail → fall through to the worktree hint.
 
 **Worktree integration hint** — add one extra line if both conditions are true:
 
@@ -767,7 +819,7 @@ Next steps:
 Append:
 
 ```
-💡 Feature done — run /core-merge {feature-name} to integrate to main/develop
+💡 Feature done — run /core-finalize {feature-name} to integrate to main/develop
 ```
 
 ---

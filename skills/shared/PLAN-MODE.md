@@ -71,6 +71,6 @@ Skills may optionally name specific tools used intensively in plan mode (e.g. "W
 
 ## Used by
 
-`dev-define`, `project-brainstorm`, `project-seed`, `project-critique`, `project-decide`, `project-research`
+`dev-define`, `project-backlog`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`
 
 Authoritative: `grep -rl "shared/PLAN-MODE.md" skills/*/SKILL.md`

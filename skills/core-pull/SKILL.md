@@ -33,6 +33,46 @@ Pull remote changes, analyze the diff, refresh `.project/` context, analyze team
 
 ### PHASE 0: Pre-flight
 
+0. **Worktree guard** — core-pull resets `.project/` via `git checkout -- .project/`, which destroys symlinks. Run only on the main checkout:
+
+   ```bash
+   main_root=$(git worktree list --porcelain | head -1 | awk '{print $2}')
+   current_root=$(git rev-parse --show-toplevel)
+   ```
+
+   If `current_root != main_root`: **exit** with message:
+
+   > "core-pull only runs on the main checkout. You are in worktree `{current_root}`. Run `ExitWorktree(action: keep)` first, then retry `/core-pull`."
+
+0a. **Open worktree check** — detect feature worktrees that share `.project/` via symlinks:
+
+```bash
+# macOS/Linux
+open_worktrees=$(git worktree list --porcelain | grep "^branch " | grep "refs/heads/worktree-" | sed 's|^branch refs/heads/||')
+```
+
+```powershell
+# Windows
+$openWorktrees = git worktree list --porcelain |
+  Select-String "^branch refs/heads/worktree-" |
+  ForEach-Object { ($_ -replace "branch refs/heads/", "").Trim() }
+```
+
+If `open_worktrees` is not empty → **AskUserQuestion**:
+
+```yaml
+header: "Open worktrees"
+question: "Open worktrees gevonden: {list}. core-pull reset `.project/` op main — dat wist de symlinks die worktree-state naar main schrijven. Wat wil je doen?"
+options:
+  - label: "Stop — merge open worktrees first (Recommended)"
+    description: "Run /core-finalize per open worktree, dan opnieuw /core-pull"
+  - label: "Continue anyway"
+    description: "Pull nu; worktree-state op main kan verloren gaan (worktree zelf blijft intact)"
+multiSelect: false
+```
+
+Bij "Continue anyway" → log waarschuwing in output en ga door naar stap 1.
+
 1. **Clean `.project/` files** (prevent local .project/ changes from interfering with stash/pull):
 
    ```bash
@@ -518,3 +558,17 @@ PULL COMPLETE (no project-context.json or project.json — run /core-setup to in
 Commits: {N} new
 Files:   {N} changed
 ```
+
+---
+
+**Team-mode hint** — append one line after any of the above report variants, only if ALL true:
+
+1. `project.json#team.mode === "solo"` or `team.mode` absent
+2. This pull brought in ≥1 commit from an author other than `git config user.email`
+
+```
+💡 Commits van andere contributors gedetecteerd — solo-mode is wellicht uitgegroeid.
+   Toggle naar team via backlog ⚙ of run /core-setup --mode=mature.
+```
+
+No prompt, no blocking — informational only. Does not appear when `team.mode === "team"`.

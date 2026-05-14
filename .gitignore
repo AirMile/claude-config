@@ -20,8 +20,9 @@ settings.local.json
 # Personal overlay (user-owned, never commit to public repo)
 personal/
 
-# Playwright MCP artifacts
+# Playwright artifacts
 .playwright-mcp/
+.playwright-cli/
 
 # Test screenshots
 *.png

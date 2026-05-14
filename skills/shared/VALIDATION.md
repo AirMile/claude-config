@@ -36,7 +36,7 @@ Confirmation: [✓|✗] [action] - [status]
 - [ ] Output directory exists or can be created
 - [ ] Write permissions available
 - [ ] No conflicting processes
-- [ ] MCP tools available (if needed)
+- [ ] context7 MCP available (if needed)
 ```
 
 **Implementation:**

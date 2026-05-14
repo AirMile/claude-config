@@ -69,8 +69,8 @@ Analyze the feature and plan your research strategy.
 
 **Research execution:**
 
-1. Use `mcp__Context7__resolve-library-id` with "godot" to find Godot docs
-2. Use `mcp__Context7__get-library-docs` with relevant topics:
+1. Use `mcp__context7__resolve-library-id` with "godot" to find Godot docs
+2. Use `mcp__context7__query-docs` with relevant topics:
    - "scene tree" for hierarchy patterns
    - "node types" for selection guidance
    - "{NodeType}" for specific node documentation

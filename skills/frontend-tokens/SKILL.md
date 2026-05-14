@@ -1317,6 +1317,29 @@ multiSelect: false
 
 **If "Show files":** Show file list with hardcoded value count per file, then re-ask with "Yes, restyle all" / "Select specific" / "No" options.
 
+### Y.3.5 Open Worktree Guard
+
+Website Sync modifies component files on main (codebase-mode, no single feature-name). Check for open feature worktrees that could conflict:
+
+```bash
+git worktree list --porcelain | grep "^branch " | grep "refs/heads/worktree-"
+```
+
+If any `worktree-*` branches appear → **AskUserQuestion**:
+
+```yaml
+header: "Open worktrees"
+question: "Open worktrees found: {list}. Website Sync modifies component files on main — this may create merge conflicts when these branches are integrated. What do you want to do?"
+options:
+  - label: "Stop — merge open worktrees first (Recommended)"
+    description: "Run /core-finalize for each open worktree, then re-run token sync"
+  - label: "Continue anyway"
+    description: "Modify component files on main now — you accept potential merge conflicts later"
+multiSelect: false
+```
+
+No open worktrees → proceed to Y.4.
+
 ### Y.4 Restyle Execution (if approved)
 
 **Step 1: Replace hardcoded values**

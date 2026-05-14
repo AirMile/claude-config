@@ -7,6 +7,7 @@
     <title>Backlog</title>
     <link rel="icon" type="image/svg+xml" href="/favicon-backlog.svg" />
     <script src="/lib/themes.js"></script>
+    <script src="/lib/settings-modal.js"></script>
     <link rel="stylesheet" href="/css/backlog.css" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
@@ -168,6 +169,8 @@
           />
           <div class="type-pills" id="type-pills"></div>
           <div class="action-btns" id="action-btns"></div>
+          <div id="open-worktrees-slot"></div>
+          <div class="top-nav-toggle" id="team-mode-toggle-slot"></div>
         </nav>
         <div id="board"></div>
       </main>
@@ -251,7 +254,33 @@
       const fileRaw = document.getElementById("backlog-data").textContent;
       let data = JSON.parse(fileRaw);
       if (!data.features) data.features = [];
+
+      // Hoist ephemeral server-injected state out of `data` so no save/sync
+      // path can ever drop it. Server re-injects on every GET; client never persists these.
+      let worktrees = data.worktrees || [];
+      let mainState = data.mainState || null;
+      delete data.worktrees;
+      delete data.mainState;
+
       let _trackFilter = "ALL"; // "ALL" | "FRONTEND" | "DEV"
+
+      // Wire up project settings modal (⚙ button auto-mounted by /lib/settings-modal.js)
+      if (window.SettingsModal) {
+        const _projectDir =
+          location.pathname.split("/").filter(Boolean)[0] || "";
+        window.SettingsModal.configure({
+          projectDir: _projectDir,
+          getMode: () => (data.team && data.team.mode) || "solo",
+          onSaved: (mode) => {
+            if (!data.team) data.team = {};
+            data.team.mode = mode;
+            render();
+          },
+        });
+        window.SettingsModal.mountToggle(
+          document.getElementById("team-mode-toggle-slot"),
+        );
+      }
 
       const STATUSES = ["TODO", "DEFINED", "DOING", "DONE"];
       const ARCHIVED_STATUSES = ["CANCELLED"];
@@ -380,9 +409,13 @@
 
       function syncJSON() {
         data.updated = new Date().toISOString().slice(0, 10);
+        // Defensive: worktrees/mainState are hoisted to module-level at init and
+        // never live on `data`. This strip is insurance in case someone assigns
+        // data.worktrees/.mainState — never write ephemeral state to DOM/disk.
+        const { worktrees: _wt, mainState: _ms, ...persistable } = data;
         const el = document.getElementById("backlog-data");
-        el.textContent = "\n" + JSON.stringify(data, null, 2) + "\n";
-        saveToDisk();
+        el.textContent = "\n" + JSON.stringify(persistable, null, 2) + "\n";
+        saveToDisk(persistable);
       }
 
       const SAVE_URL = (() => {
@@ -391,14 +424,14 @@
       })();
 
       let saveTimer = null;
-      function saveToDisk() {
+      function saveToDisk(payload) {
         clearTimeout(saveTimer);
         saveTimer = setTimeout(async () => {
           try {
             const res = await fetch(SAVE_URL, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(data),
+              body: JSON.stringify(payload ?? data),
             });
             if (!res.ok) throw new Error("save failed");
           } catch {
@@ -642,6 +675,65 @@
         return null;
       }
 
+      // ─── Open worktrees pill ──────────────────────────────────────────
+      function renderOpenWorktrees() {
+        const slot = document.getElementById("open-worktrees-slot");
+        if (!slot) return;
+        const wts = worktrees;
+        if (wts.length === 0) {
+          slot.innerHTML = "";
+          return;
+        }
+        const stateLabel = (w) => {
+          const parts = [];
+          if (w.ahead > 0) parts.push(`${w.ahead} ahead`);
+          if (w.dirty) parts.push("dirty");
+          if (w.prState) parts.push(`PR ${w.prState}`);
+          return parts.join(", ") || "open";
+        };
+        const isActionable = (w) => {
+          if (w.prState === "MERGED") return true;
+          const feat = (data.features || []).find(
+            (f) => f.name === w.feature || w.feature.startsWith(f.name + "-"),
+          );
+          if (!feat) return false;
+          return feat.shipped === true || feat.status === "shipped";
+        };
+        const actionHtml = (w) => {
+          if (w.prState === "OPEN")
+            return `<span class="owp-state-hint">⏳ Awaiting review</span>`;
+          if (isActionable(w))
+            return `<button class="owp-copy-btn" title="Copy command" data-cmd="${esc("/core-finalize " + w.feature)}">${w.prState === "MERGED" ? "🧹" : "⎇"} /core-finalize ${esc(w.feature)}</button>`;
+          return "";
+        };
+        const itemsHtml = wts
+          .map(
+            (w) =>
+              `<li class="owp-item" data-feature="${esc(w.feature)}">
+                <span class="owp-name">${esc(w.feature)}</span>
+                <span class="owp-state">${esc(stateLabel(w))}</span>
+                ${w.prUrl ? `<a class="owp-pr-link" href="${esc(w.prUrl)}" target="_blank">PR #${w.prNumber}</a>` : ""}
+                ${actionHtml(w)}
+              </li>`,
+          )
+          .join("");
+        slot.innerHTML = `
+          <details class="open-worktrees-pill">
+            <summary class="owp-summary">⎇ ${wts.length} worktree${wts.length > 1 ? "s" : ""}</summary>
+            <ul class="owp-list">${itemsHtml}</ul>
+          </details>`;
+        slot.querySelectorAll(".owp-copy-btn").forEach((btn) => {
+          btn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+              await navigator.clipboard.writeText(btn.dataset.cmd);
+              toast("Copied: " + btn.dataset.cmd);
+            } catch {}
+          });
+        });
+      }
+
       // ─── Render ─────────────────────────────────────────────────────
       function render() {
         // Update page header
@@ -682,7 +774,7 @@
               `<button class="action-btn action-plan" data-cmd="/project-plan" title="/project-plan">` +
               `<span class="action-icon">⊕</span><span class="action-label">Plan</span></button>`;
           }
-          if (data.team?.tracker) {
+          if (data.team?.mode === "team" && data.team?.tracker) {
             actionHtml +=
               `<button class="action-btn action-issues" data-cmd="/team-issues" title="/team-issues">` +
               `<span class="action-icon">↻</span><span class="action-label">Sync issues</span></button>`;
@@ -703,6 +795,8 @@
             });
           });
         }
+
+        renderOpenWorktrees();
 
         const searchTerm = (
           document.getElementById("search-input")?.value || ""
@@ -887,7 +981,7 @@
             label: "To build",
             status: "DEFINED",
             typeFilter: (t) => !isFrontendTrackType(t),
-            batchSkill: "build",
+            batchSkill: null,
             transitionLabels: TRANSITION_LABELS_DEV,
           },
           {
@@ -895,7 +989,7 @@
             label: "To verify",
             status: "DOING",
             typeFilter: (t) => !isFrontendTrackType(t),
-            batchSkill: "verify",
+            batchSkill: null,
             transitionLabels: TRANSITION_LABELS_DEV,
           },
           {
@@ -911,7 +1005,7 @@
             label: "To convert",
             status: "DEFINED",
             typeFilter: isFrontendTrackType,
-            batchSkill: "convert",
+            batchSkill: null,
             transitionLabels: TRANSITION_LABELS_FRONTEND,
           },
           {
@@ -919,7 +1013,7 @@
             label: "To audit",
             status: "DOING",
             typeFilter: isFrontendTrackType,
-            batchSkill: "audit",
+            batchSkill: null,
             transitionLabels: TRANSITION_LABELS_FRONTEND,
           },
         ];
@@ -1072,9 +1166,23 @@
              </div>`
           : "";
 
+        const wtMatch = worktrees.find(
+          (w) => f.name === w.feature || w.feature.startsWith(f.name + "-"),
+        );
+        const wtBadge = wtMatch
+          ? (() => {
+              const parts = [];
+              if (wtMatch.ahead > 0) parts.push(`${wtMatch.ahead} ahead`);
+              if (wtMatch.dirty) parts.push("dirty");
+              if (wtMatch.prState) parts.push(`PR ${wtMatch.prState}`);
+              return `<span class="row-worktree-badge" data-state="${esc(wtMatch.prState || "none")}" title="Worktree: ${esc(parts.join(", ") || "open")}">⎇</span>`;
+            })()
+          : "";
+
         row.innerHTML = `<div class="row-summary">
           ${actionBtnHtml}
           <span class="row-name">${esc(f.name)}</span>
+          ${wtBadge}
           ${isActive ? `<span class="row-transition-label">${esc(f.transition)}</span>` : ""}
           ${subLabel ? `<span class="row-sub-tag">${subLabel}</span>` : ""}
           ${f.description ? `<span class="row-desc">${esc(f.description)}</span>` : ""}

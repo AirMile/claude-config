@@ -122,7 +122,26 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
    If `feature_queue.length == 1` and not in codebase-mode: execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL: stop with the message from WORKTREE.md.
 
-   Batch-mode (queue > 1) or codebase-mode: skip — stay on main, refactor over already-merged code.
+   Batch-mode (queue > 1) or codebase-mode: check for open feature worktrees first:
+
+   ```bash
+   git worktree list --porcelain | grep "^branch " | grep "refs/heads/worktree-"
+   ```
+
+   If any `worktree-*` branches appear → **AskUserQuestion**:
+
+   ```yaml
+   header: "Open worktrees"
+   question: "Open worktrees found: {list}. Batch/codebase refactor on main may create merge conflicts when these are integrated. What do you want to do?"
+   options:
+     - label: "Stop — merge open worktrees first (Recommended)"
+       description: "Run /core-finalize for each open worktree, then re-run refactor"
+     - label: "Continue anyway"
+       description: "Refactor on main now — you accept potential merge conflicts later"
+   multiSelect: false
+   ```
+
+   No open worktrees → proceed on main.
 
 4. **Load feature.json for every feature in queue:**
 
@@ -892,15 +911,42 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-   **Worktree integration hint** — add one extra line to the completion block if both conditions are true:
-   1. Single-mode (queue.length == 1, not codebase-mode)
+   **PHASE Finalize** — run after commit, only if BOTH true:
+   1. Single-mode (`feature_queue.length == 1`, not codebase-mode)
    2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
-   Append:
+   **Step A — PR offer** (show only if ALL: `team.mode === "team"`, `gh` on PATH + `gh auth status` exit 0, clean tree):
 
+   ```yaml
+   header: "PR openen"
+   question: "Push + PR openen voor worktree-{feature-name}?"
+   options:
+     - label: "Ja, push + PR (Recommended)"
+       description: "Push the branch and open a PR via gh. Worktree stays until merged."
+     - label: "Nee, skip PR"
+       description: "Skip the PR; show finalize prompt instead."
+   multiSelect: false
    ```
-   💡 Run /core-merge {feature-name} to integrate into main/develop
+
+   On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
+   On "Nee" or any precondition fail → fall through to finalize prompt.
+
+   **Step B — Finalize prompt**: detect PR state:
+
+   ```bash
+   PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
+   PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
+   PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
+   PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
    ```
+
+   | PR_STATE                            | Action                                                                                                                                                                                                       |
+   | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+   | `OPEN`                              | Print: `"PR #{PR_NUMBER} is open: {PR_URL}. Run \`/core-finalize {feature-name}\` after review — cleanup auto-detects the merged PR."` No AskUserQuestion.                                                   |
+   | `MERGED`                            | AskUserQuestion: "PR #{PR_NUMBER} is gemerged. Cleanup nu? Worktree + branch worden verwijderd." → "Yes, cleanup nu (Recommended)" / "Keep open". Yes → `follow shared/FINALIZE.md with mode: cleanup-only`. |
+   | empty / `CLOSED` / `gh` unavailable | AskUserQuestion: "Feature '{feature-name}' afgerond. Finalize nu (merge naar main + cleanup)?" → "Yes, finalize nu (Recommended)" / "Keep open". Yes → `follow shared/FINALIZE.md with mode: solo`.          |
+
+   On any "Keep open" → print `💡 Run /core-finalize {feature-name} when ready`.
 
 > **Todo**: mark PHASE 5 → `completed`.
 

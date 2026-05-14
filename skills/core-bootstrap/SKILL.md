@@ -113,14 +113,14 @@ If `PLAN_TIER` is empty → ask:
 
 ```yaml
 header: "Claude plan"
-question: "Which Claude plan are you on? (used to tailor the recommended-settings tip)"
+question: "Which Claude plan are you on? (used to tailor the post-bootstrap tip)"
 options:
-  - label: "Max 5x (Recommended baseline)"
-    description: 'Suggests /model opusplan + effortLevel:"high" — optimal balance'
+  - label: "Max 5x"
+    description: 'Tip: /model opusplan + effortLevel:"high" — Opus inside plan mode, Sonnet for execution'
   - label: "Pro"
-    description: 'Suggests starting with /model sonnet + effortLevel:"medium" — Opus quota is tight'
+    description: 'Tip: /model sonnet + effortLevel:"medium" — Opus quota is tight on Pro'
   - label: "Max 10x+"
-    description: 'Suggests /model opus or opusplan + effortLevel:"high" — quota headroom for heavier routes'
+    description: 'Tip: /model opus + effortLevel:"high" — quota headroom for full-Opus runs'
   - label: "Skip"
     description: "No plan-specific tip shown"
 multiSelect: false
@@ -140,10 +140,13 @@ PATHS_LOCAL="$CONFIG_REPO/.claude/paths.local.yaml"
 if [ -f "$PATHS_LOCAL" ]; then
   PATHS_STATUS="already-exists"
 else
-  # Ask the user:
-  # "Where is your projects root? This is where /project-add creates new projects
-  #  and /project-switch navigates. (default: $HOME/projects — press Enter to accept)"
-  # Store input in PROJECTS_ROOT; if empty, use "$HOME/projects"
+  # Ask the user via AskUserQuestion (open text input — no default, no fallback):
+  #   header: "Projects root"
+  #   question: "What is the absolute path to your projects root? This is where
+  #              /project-add creates new projects and /project-switch navigates.
+  #              Example: /Users/you/projects or /Users/you/Documents/Projects"
+  # Validate: the path must exist as a directory. If not, re-ask.
+  # Store input in PROJECTS_ROOT (no fallback — the user must answer).
 
   mkdir -p "$CONFIG_REPO/.claude"
   cat > "$PATHS_LOCAL" <<EOF
@@ -173,12 +176,16 @@ if (Test-Path $pathsLocal) {
     Add-Content $pathsLocal "`npreferences:`n  claude_plan: `"$planTier`""
   }
 } else {
-  # Ask the user:
-  # "Where is your projects root? (default: C:\Projects — press Enter to accept)"
-  # Store as $projectsRoot; if empty, use "C:\Projects"
+  # Ask the user via AskUserQuestion (open text input — no default, no fallback):
+  #   header: "Projects root"
+  #   question: "What is the absolute path to your projects root?
+  #              Example: C:\Projects or C:\Users\you\Documents\Projects"
+  # Validate: the path must exist as a directory. If not, re-ask.
+  # Store as $projectsRoot (no fallback — the user must answer).
 
-  # Ask the user:
-  # "Where is your Godot executable? (optional — press Enter to skip)"
+  # Ask the user (optional):
+  #   header: "Godot executable"
+  #   question: "Where is your Godot executable? (optional — press Enter / leave empty to skip)"
   # Store as $godotPath; if empty, omit from file
 
   New-Item -ItemType Directory -Force -Path "$CONFIG_REPO\.claude" | Out-Null
@@ -190,7 +197,7 @@ if (Test-Path $pathsLocal) {
 }
 ```
 
-> **Note**: `paths.local.yaml` is read when skills run from within the claude-config repo. For machine-global path config across all projects, set env vars in your shell profile instead: `export CLAUDE_PROJECTS_ROOT="..."` and `export CLAUDE_CONFIG_REPO="..."`.
+> **Note**: `paths.local.yaml` is read by `serve-backlog.js` (and other shared tools) via `lib/config.js` fallback — so the backlog server finds your projects automatically after bootstrap without any env var setup. Setting env vars in your shell profile (`export CLAUDE_PROJECTS_ROOT="..."`) remains an override option but is no longer required.
 
 ---
 
@@ -447,34 +454,36 @@ Closing tip (always show):
 > Next step: open a project and run `/core-setup` for project-internal setup.
 > To stay current with claude-config updates later: run `/core-update`.
 
-### Plan-tier recommended-settings tip
+### Plan-tier tip
 
 Based on `PLAN_TIER` (from PHASE 0), show one of the following blocks. These settings are not auto-applied — they require a runtime `/model` choice and an explicit edit to `~/.claude/settings.json`.
+
+Skills don't depend on a specific model — they use **plan mode** (`shared/PLAN-MODE.md`), which any model router executes. `opusplan` is a router that runs Opus for plan-mode phases and Sonnet for execution; it benefits Max 5x users where the Opus quota is sufficient.
 
 - **`max-5x`**:
 
   ```
-  Recommended for Max 5x — optimal balance:
-    • Run /model opusplan      (Opus for plan, Sonnet for execution)
+  Tip for Max 5x:
+    • Run /model opusplan      (Opus inside plan mode, Sonnet for execution)
     • Set "effortLevel": "high" in ~/.claude/settings.json
-    Multiple skills (dev-define, shared/PLAN-MODE.md) lean on opusplan.
   ```
 
 - **`pro`**:
 
   ```
-  Recommended for Pro — Opus quota is tight:
-    • Start with /model sonnet (or default)
-    • Use /model opusplan selectively for heavy planning sessions
-    • "effortLevel": "medium" or "high" depending on quota usage
+  Tip for Pro — Opus quota is tight:
+    • Run /model sonnet (or leave default)
+    • Set "effortLevel": "medium" in ~/.claude/settings.json
+    Plan mode still works under Sonnet; no need for opusplan on Pro.
   ```
 
 - **`max-10x`**:
 
   ```
-  Recommended for Max 10x+ — quota headroom:
-    • /model opus for full Opus, or /model opusplan for mixed routing
+  Tip for Max 10x+ — quota headroom:
+    • Run /model opus (full Opus for everything)
     • Set "effortLevel": "high" in ~/.claude/settings.json
+    opusplan is also fine if you prefer mixed routing.
   ```
 
 - **`skip`**: no plan-tier block shown.

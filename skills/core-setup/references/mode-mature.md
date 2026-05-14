@@ -157,6 +157,47 @@ Remember the empty slots as `gap_slots[]` for use in PHASE 0.6.
 
 Mark PHASE 0.5 → `completed`.
 
+### PHASE 0.55: Team Mode Detection
+
+> **Todo**: mark PHASE 0.5 → `completed`, PHASE 0.55 → `in_progress`.
+
+**Goal:** detect whether this is a team repo and let the user confirm, then persist `team.mode` to `.project/project.json`.
+
+**Skip if** `.project/project.json` already has `team.mode` set (user made a deliberate choice before; do not overwrite).
+
+**Heuristics** (run all three; suggest `"team"` if all three are true, otherwise `"solo"`):
+
+```bash
+# 1. Multiple distinct commit authors?
+AUTHOR_COUNT=$(git log --format='%ae' | sort -u | wc -l | tr -d ' ')
+
+# 2. Remote configured?
+REMOTE=$(git remote | head -1)
+
+# 3. Recent commits by others (last 30 days)?
+GIT_USER=$(git config user.email)
+OTHERS=$(git log --since="30 days ago" --format='%ae' | grep -v "^${GIT_USER}$" | wc -l | tr -d ' ')
+```
+
+Suggest `"team"` if: `AUTHOR_COUNT > 1` AND `REMOTE != ""` AND `OTHERS > 0`. Otherwise suggest `"solo"`.
+
+**AskUserQuestion** (with detected value pre-selected as Recommended):
+
+```yaml
+header: "Project mode"
+question: "Is this a solo or team project? (detected: {detected_mode})"
+options:
+  - label: "{detected_mode == 'team' ? 'Team (Recommended)' : 'Team'}"
+    description: "Multiple contributors — enables /team-* skills, PR offer after verify/refactor, ⚙ toggle in backlog/dashboard."
+  - label: "{detected_mode == 'solo' ? 'Solo (Recommended)' : 'Solo'}"
+    description: "Only you commit here — no PR prompts, no team-* gating."
+multiSelect: false
+```
+
+Write confirmed value to `project.json#team.mode` (`"team"` or `"solo"`).
+
+Mark PHASE 0.55 → `completed`.
+
 ### PHASE 0.6: Module Gap Ask
 
 > **Todo**: mark PHASE 0.5 → `completed`, PHASE 0.6 → `in_progress`.
@@ -658,7 +699,7 @@ Mark PHASE 5.85 → `completed`.
 
 | Condition                             | Bullet                                     |
 | ------------------------------------- | ------------------------------------------ |
-| (none — always)                       | `/core-pull`                            |
+| (none — always)                       | `/core-pull`                               |
 | `concept.pitch` empty                 | `/project-seed`                            |
 | `features[]` empty                    | `/dev-define`                              |
 | frontend stack && `needsTheme = true` | `/frontend-tokens`                         |

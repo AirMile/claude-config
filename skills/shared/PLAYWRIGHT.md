@@ -266,12 +266,13 @@ playwright-cli -s=mysession close
 
 ## Cross-Skill References
 
-| Skill                   | Uses Playwright For                                 | Snapshot strategy   |
-| ----------------------- | --------------------------------------------------- | ------------------- |
-| `frontend-check`        | A11y tree analysis, focus validation (--scope=a11y) | Inline (1-2 routes) |
-| `frontend-convert`      | Screenshot capture + verification loop              | Screenshot only     |
-| `frontend-check`        | Multi-viewport, CWV, SEO render check, smoke, flow  | --filename (batch)  |
-| `marketing-screenshots` | HiDPI screenshots, dark mode variants               | run-code newContext |
+| Skill                   | Uses Playwright For                               | Snapshot strategy   |
+| ----------------------- | ------------------------------------------------- | ------------------- |
+| `frontend-check`        | A11y tree, focus, multi-viewport, CWV, SEO, smoke | Inline + --filename |
+| `frontend-convert`      | Screenshot capture + verification loop            | Screenshot only     |
+| `marketing-screenshots` | HiDPI screenshots, dark mode variants             | run-code newContext |
+| `dev-debug`             | Runtime-state inspectie, hypothesis-validatie     | eval (JSON inline)  |
+| `team-verify`           | Automated browser checks, runtime assertions      | Inline + eval       |
 
 ---
 

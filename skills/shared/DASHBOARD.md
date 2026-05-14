@@ -404,12 +404,12 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 
 #### Skills that write architecture
 
-| Skill           | What it writes                                                                                 | When                      |
-| --------------- | ---------------------------------------------------------------------------------------------- | ------------------------- |
-| `/dev-define`   | Initial `layers` + `components` (status planned, no src/test) + `dataFlow`                     | During feature definition |
-| `/dev-build`    | Update `components`: status → done, fill `src`, `test`, `connects_to`, `endpoints`, `entities` | After build               |
-| `/dev-verify`   | Update `components`: confirm status done, add test files                                       | After test                |
-| `/core-pull` | Sync full `architecture` section on pull                                                       | On context sync           |
+| Skill         | What it writes                                                                                 | When                      |
+| ------------- | ---------------------------------------------------------------------------------------------- | ------------------------- |
+| `/dev-define` | Initial `layers` + `components` (status planned, no src/test) + `dataFlow`                     | During feature definition |
+| `/dev-build`  | Update `components`: status → done, fill `src`, `test`, `connects_to`, `endpoints`, `entities` | After build               |
+| `/dev-verify` | Update `components`: confirm status done, add test files                                       | After test                |
+| `/core-pull`  | Sync full `architecture` section on pull                                                       | On context sync           |
 
 **Write strategy:**
 
@@ -541,13 +541,16 @@ Top-level string in `project.json` for the local dev URL (default `"http://local
 
 ### team
 
-Contains detections from `core-setup --mode=mature` (PHASE 0.4) and `core-commit` (PHASE 0.5) for team-repo awareness. Field is optional — absent means solo-mode (default behavior in all skills).
+Contains team-repo awareness fields. The `mode` field is the explicit toggle; all other fields are optional. Absent `team` block OR absent `mode` = `"solo"` (backwards compatible).
 
-| Field              | Values                                                               | Set by                     | Read by                                     |
-| ------------------ | -------------------------------------------------------------------- | -------------------------- | ------------------------------------------- |
-| `commitConvention` | `"conventional"` \| `"ticket-prefix"` \| `"bracket"` \| `"freeform"` | `/core-commit` PHASE 0.5   | `/core-commit` PHASE 4 (compose)            |
-| `ticketPrefix`     | string \| `null` (e.g. `"JIRA"`, `"PROJ"`)                           | `/core-commit` PHASE 0.5   | `/core-commit` PHASE 4 (compose)            |
-| `tracker`          | `"github"` \| `"jira"` \| `"linear"` \| `null`                       | `/team-issues` (first run) | `/team-issues` afterwards, backlog-template |
+| Field              | Values                                                               | Set by                                                                           | Read by                                                                                                                  |
+| ------------------ | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `mode`             | `"solo"` \| `"team"` (default `"solo"`)                              | `/core-setup` (greenfield asks, mature auto-detects), backlog/dashboard ⚙ toggle | `team-outsource` / `team-review` / `team-verify` (warn-gate), PR offer in refactor/verify, backlog action-btn visibility |
+| `commitConvention` | `"conventional"` \| `"ticket-prefix"` \| `"bracket"` \| `"freeform"` | `/core-commit` PHASE 0.5                                                         | `/core-commit` PHASE 4 (compose)                                                                                         |
+| `ticketPrefix`     | string \| `null` (e.g. `"JIRA"`, `"PROJ"`)                           | `/core-commit` PHASE 0.5                                                         | `/core-commit` PHASE 4 (compose)                                                                                         |
+| `tracker`          | `"github"` \| `"jira"` \| `"linear"` \| `null`                       | `/team-issues` (first run)                                                       | `/team-issues` afterwards, backlog action-btn                                                                            |
+
+**Backwards compatibility:** absent or unrecognized `mode` value → treat as `"solo"`. Do not error.
 
 ### architecture.routes (project-context.json)
 
@@ -668,7 +671,7 @@ No deletion, no update — append only. For live status of a running run: see `.
 
 ### thinking-output
 
-Thinking-skills (`/project-decide`, `/project-research`, `/project-brainstorm`, `/project-critique`) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
+Thinking-skills (`/project-research`, `/project-brainstorm`, `/project-critique`) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
 
 Concept-scope thinking-output (`/project-seed`, `/project-brainstorm` concept, `/project-critique` concept, `/project-research` concept) integrates directly into `project-seed.md` — no history log in `project.json`.
 
@@ -767,10 +770,10 @@ Append-only log. Skills that complete features extract learnings automatically (
 
 ### project-context.json sections
 
-| Section        | Written by                                                                                   | When                                                                     |
-| -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                                   | On architecture definition / after build                                 |
-| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`                | On build/refactor (structure, routing, patterns)                         |
+| Section        | Written by                                                                                | When                                                                     |
+| -------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                                | On architecture definition / after build                                 |
+| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`             | On build/refactor (structure, routing, patterns)                         |
 | `learnings`    | `/dev-verify`, `/dev-refactor`, `/game-verify`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred) or teammate/legacy code (synced) |
 
 ### Skill sync overview
@@ -791,7 +794,7 @@ Append-only log. Skills that complete features extract learnings automatically (
 | `/game-refactor`            | `features` (DONE)                                                   | `context`, `architecture` (write)                                 | PHASE 5 completion       |
 | `/dev-optimize`             | `optimization_runs` (append)                                        | —                                                                 | PHASE 6 completion       |
 | `/game-optimize`            | `optimization_runs` (append)                                        | —                                                                 | PHASE 6 completion       |
-| `/core-pull`             | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                 |
+| `/core-pull`                | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                 |
 | `/core-setup --mode=mature` | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | One-time on join         |
 
 ## Server
@@ -809,5 +812,5 @@ Start the server:
 
 ```bash
 # Respects $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
-curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node {skills_path}/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
+curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node --watch {skills_path}/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
 ```

@@ -18,6 +18,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 
 const {
   PROJECTS_ROOT,
@@ -40,6 +41,161 @@ const {
   esc,
 } = require("./lib/templates");
 const buildBacklogPatch = require("./lib/backlog-patches");
+
+// ── Worktree helpers ──
+
+const worktreeCache = {};
+const WORKTREE_CACHE_TTL = 30000;
+
+function parseWorktreeListPorcelain(output) {
+  const entries = [];
+  let current = null;
+  for (const line of output.split("\n")) {
+    if (line.startsWith("worktree ")) {
+      if (current) entries.push(current);
+      current = { path: line.slice(9).trim() };
+    } else if (line.startsWith("branch ")) {
+      if (current)
+        current.branch = line.slice(7).trim().replace("refs/heads/", "");
+    } else if (line === "") {
+      if (current) {
+        entries.push(current);
+        current = null;
+      }
+    }
+  }
+  if (current) entries.push(current);
+  return entries;
+}
+
+function getOpenWorktrees(projectRoot, forceRefresh) {
+  const now = Date.now();
+  if (
+    !forceRefresh &&
+    worktreeCache[projectRoot] &&
+    now - worktreeCache[projectRoot].ts < WORKTREE_CACHE_TTL
+  ) {
+    return worktreeCache[projectRoot].data;
+  }
+  try {
+    const raw = execSync("git worktree list --porcelain", {
+      cwd: projectRoot,
+      encoding: "utf8",
+      timeout: 5000,
+    });
+    const all = parseWorktreeListPorcelain(raw);
+    const secondary = all.slice(1); // skip main checkout
+
+    let mainBranch = "main";
+    try {
+      const branches = execSync("git branch -a", {
+        cwd: projectRoot,
+        encoding: "utf8",
+        timeout: 3000,
+      });
+      const m = branches.match(
+        /^[* ]+(?:remotes\/origin\/)?(main|master|develop|staging)$/m,
+      );
+      if (m) mainBranch = m[1];
+    } catch {}
+
+    const worktrees = secondary
+      .filter((w) => w.branch && w.branch.startsWith("worktree-"))
+      .map((w) => {
+        const feature = w.branch.replace(/^worktree-/, "");
+
+        let ahead = 0;
+        try {
+          ahead =
+            parseInt(
+              execSync(`git rev-list --count ${mainBranch}..${w.branch}`, {
+                cwd: projectRoot,
+                encoding: "utf8",
+                timeout: 3000,
+              }).trim(),
+              10,
+            ) || 0;
+        } catch {}
+
+        let dirty = false;
+        try {
+          dirty =
+            execSync("git status --porcelain", {
+              cwd: w.path,
+              encoding: "utf8",
+              timeout: 3000,
+            }).trim().length > 0;
+        } catch {}
+
+        let lastCommitAt = null;
+        try {
+          lastCommitAt = execSync(`git log -1 --format=%cI ${w.branch}`, {
+            cwd: projectRoot,
+            encoding: "utf8",
+            timeout: 3000,
+          }).trim();
+        } catch {}
+
+        let prState = null;
+        let prUrl = null;
+        let prNumber = null;
+        try {
+          const prRaw = execSync(
+            `gh pr list --head "${w.branch}" --state all --json number,url,state --limit 1`,
+            { cwd: projectRoot, encoding: "utf8", timeout: 8000 },
+          );
+          const prData = JSON.parse(prRaw);
+          if (prData.length > 0) {
+            prState = prData[0].state;
+            prUrl = prData[0].url;
+            prNumber = prData[0].number;
+          }
+        } catch {}
+
+        return {
+          feature,
+          branch: w.branch,
+          path: w.path,
+          ahead,
+          dirty,
+          lastCommitAt,
+          prState,
+          prUrl,
+          prNumber,
+        };
+      });
+
+    worktreeCache[projectRoot] = { ts: now, data: worktrees };
+    return worktrees;
+  } catch {
+    return [];
+  }
+}
+
+function getMainState(projectRoot) {
+  let dirty = false;
+  let behindOrigin = 0;
+  try {
+    dirty =
+      execSync("git status --porcelain", {
+        cwd: projectRoot,
+        encoding: "utf8",
+        timeout: 3000,
+      }).trim().length > 0;
+  } catch {}
+  try {
+    behindOrigin =
+      parseInt(
+        execSync("git rev-list --count HEAD..@{u}", {
+          cwd: projectRoot,
+          encoding: "utf8",
+          timeout: 3000,
+        }).trim(),
+        10,
+      ) || 0;
+  } catch {}
+  return { dirty, behindOrigin };
+}
 
 // Theme head injection (for existing backlogs that lack the theme tags)
 const themeHeadTags =
@@ -422,6 +578,18 @@ http
                 backlogData = JSON.stringify(parsedData, null, 2);
               }
             } catch {}
+            // Inject live worktree state (best-effort, never blocks render)
+            try {
+              if (!parsedData) parsedData = JSON.parse(backlogData);
+              const forceRefresh = url.searchParams.get("refresh") === "1";
+              const projectRoot = path.join(PROJECTS_ROOT, projectDir);
+              parsedData.worktrees = getOpenWorktrees(
+                projectRoot,
+                forceRefresh,
+              );
+              parsedData.mainState = getMainState(projectRoot);
+              backlogData = JSON.stringify(parsedData, null, 2);
+            } catch {}
             var startTag = '<script id="backlog-data" type="application/json">';
             var startIdx = html.indexOf(startTag) + startTag.length;
             var endIdx = html.indexOf("</script>", startIdx);
@@ -465,6 +633,10 @@ http
         req.on("end", function () {
           try {
             const jsonData = JSON.parse(body);
+            // Defensive fallback: client (backlog-template.html → syncJSON) already strips
+            // these before POSTing. This guard catches direct API calls or older clients.
+            delete jsonData.worktrees;
+            delete jsonData.mainState;
             const jsonStr = JSON.stringify(jsonData, null, 2);
 
             const html = fs.readFileSync(file, "utf8");
@@ -591,6 +763,58 @@ http
         return;
       }
 
+      // Settings: team-mode toggle (solo/team) — patches project.json#team.mode
+      if (
+        req.method === "POST" &&
+        parts[1] === "settings" &&
+        parts[2] === "team-mode" &&
+        parts.length === 3
+      ) {
+        var body = "";
+        req.on("data", function (chunk) {
+          body += chunk;
+        });
+        req.on("end", function () {
+          try {
+            const parsed = JSON.parse(body);
+            const mode = parsed && parsed.mode;
+            if (mode !== "solo" && mode !== "team") {
+              res.writeHead(400, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  error: 'mode must be "solo" or "team"',
+                }),
+              );
+              return;
+            }
+            const dashFile = path.join(projectPath, DASHBOARD_PATH);
+            var jsonData = {};
+            try {
+              jsonData = JSON.parse(fs.readFileSync(dashFile, "utf8"));
+            } catch {
+              jsonData = {};
+            }
+            if (!jsonData.team || typeof jsonData.team !== "object") {
+              jsonData.team = {};
+            }
+            jsonData.team.mode = mode;
+            const wsDir = path.dirname(dashFile);
+            if (!fs.existsSync(wsDir)) fs.mkdirSync(wsDir, { recursive: true });
+            fs.writeFileSync(
+              dashFile,
+              JSON.stringify(jsonData, null, 2),
+              "utf8",
+            );
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true, mode: mode }));
+          } catch (e) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: e.message }));
+          }
+        });
+        return;
+      }
+
       // Research files (stack-baseline.md, architecture-baseline.md)
       if (
         req.method === "GET" &&
@@ -670,13 +894,25 @@ http
           return;
         }
 
-        // Read feature.json (optional — Path A frontend cards may not have it)
-        const featurePath = path.join(
-          projectPath,
-          ".project/features",
-          featureName,
-        );
-        const featureJson = path.join(featurePath, "feature.json");
+        // Read feature.json (optional — Path A frontend cards may not have it).
+        // Live path first; fall back to archive (dev-refactor moves shipped features
+        // to .project/features/archive/{shippedAt-date}-{name}/feature.json).
+        const featuresDir = path.join(projectPath, ".project/features");
+        let featureJson = path.join(featuresDir, featureName, "feature.json");
+        if (!fs.existsSync(featureJson)) {
+          const archiveDir = path.join(featuresDir, "archive");
+          if (fs.existsSync(archiveDir)) {
+            try {
+              const suffix = "-" + featureName;
+              const match = fs
+                .readdirSync(archiveDir)
+                .find((d) => d.endsWith(suffix));
+              if (match) {
+                featureJson = path.join(archiveDir, match, "feature.json");
+              }
+            } catch {}
+          }
+        }
         let result = null;
         if (fs.existsSync(featureJson)) {
           try {

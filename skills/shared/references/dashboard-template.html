@@ -7,6 +7,7 @@
     <title>Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="/favicon-dashboard.svg" />
     <script src="/lib/themes.js"></script>
+    <script src="/lib/settings-modal.js"></script>
     <link rel="stylesheet" href="/css/dashboard.css?v=10" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
@@ -332,6 +333,21 @@
       const raw = document.getElementById("dashboard-data").textContent;
       let data = JSON.parse(raw);
       let modalContext = null;
+
+      // Wire up project settings modal (⚙ button auto-mounted by /lib/settings-modal.js)
+      if (window.SettingsModal) {
+        const _projectDir =
+          location.pathname.split("/").filter(Boolean)[0] || "";
+        window.SettingsModal.configure({
+          projectDir: _projectDir,
+          getMode: () => (data.team && data.team.mode) || "solo",
+          onSaved: (mode) => {
+            if (!data.team) data.team = {};
+            data.team.mode = mode;
+            if (typeof render === "function") render();
+          },
+        });
+      }
 
       function getDashSearch() {
         return (document.getElementById("dash-search")?.value || "")
@@ -2778,8 +2794,13 @@
         if (!contentEl.querySelector(".content-toolbar")) {
           const toolbar = document.createElement("div");
           toolbar.className = "content-toolbar";
-          toolbar.innerHTML = `<input id="dash-search" class="content-toolbar-search" placeholder="Search..." oninput="render()" />`;
+          toolbar.innerHTML = `<input id="dash-search" class="content-toolbar-search" placeholder="Search..." oninput="render()" /><div class="content-toolbar-mode-toggle" id="team-mode-toggle-slot"></div>`;
           contentEl.appendChild(toolbar);
+          if (window.SettingsModal && window.SettingsModal.mountToggle) {
+            window.SettingsModal.mountToggle(
+              toolbar.querySelector("#team-mode-toggle-slot"),
+            );
+          }
         }
 
         // Sections: replace on each render

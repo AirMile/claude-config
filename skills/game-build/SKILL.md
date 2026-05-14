@@ -196,32 +196,47 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
       - "Stop — finish {dep} first (Recommended)" / "Continue anyway"
       - Stop → exit. Continue → continue.
 
-   **Workspace setup** (optional):
+   **Workspace setup:**
 
-   Only show if we are NOT already in a worktree:
-   1. Check: `git rev-parse --show-toplevel` vs first path from `git worktree list --porcelain`
-      → Different: already in worktree → skip
-   2. AskUserQuestion:
-      ```yaml
-      header: "Workspace"
-      question: "Do you want to work in a worktree for this build?"
-      options:
-        - label: "No, current directory (Recommended)"
-          description: "Work on the current branch"
-        - label: "Yes, create worktree"
-          description: "Isolated workspace — ideal for parallel work"
-      multiSelect: false
-      ```
-   3. Yes → `EnterWorktree(name: "{feature-name}")`
+   Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = "{feature-name}"`. The procedure auto-creates an isolated worktree and wires `.project/` symlinks. No AskUserQuestion needed — creation is automatic when no worktree exists for the feature yet. Skip if already in a worktree (procedure detects).
 
-   > **Branch naming**: `EnterWorktree` creates branch `worktree-{feature-name}` (NOT `{feature-name}`). Follow-up skills (`game-verify`, `game-debug`, `game-refactor` single-mode) auto-detect this worktree via `shared/WORKTREE.md` and switch into it. For merge/cleanup use `/core-merge` or manually `git worktree remove --force` + `git branch -D worktree-{feature-name}`.
+   **Mandatory output** (always log, never silent):
 
-   **Tag backlog card as active** (immediately after loading feature):
+   ```
+   WORKTREE: {absolute-path} ({created | reused | skipped: already-in-worktree})
+   ```
+
+   If the procedure did not run (e.g. no git repo, error), log `WORKTREE: not-applied ({reason})` instead. This line is non-negotiable — without it, the auditor cannot verify whether isolation was achieved.
+
+   **Pre-PHASE-1 gate** (hard check — shell-state verification):
+
+   ```bash
+   CURRENT="$(pwd)"
+   EXPECTED_SUFFIX="/.claude/worktrees/{feature-name}"
+   if [[ "$CURRENT" == *"$EXPECTED_SUFFIX" ]]; then
+     echo "GATE: ok — inside worktree"
+   elif grep -q "^WORKTREE: not-applied" <<< "$WORKTREE_LOG"; then
+     echo "GATE: ok — worktree explicitly skipped"
+   else
+     echo "ABORT: PHASE 0 incomplete — not inside expected worktree and no 'WORKTREE: not-applied' marker found."
+     echo "Re-run /game-build from the start; follow shared/WORKTREE.md → Auto-create worktree literally."
+     exit 1
+   fi
+   ```
+
+   | Condition                                           | Result                                                     |
+   | --------------------------------------------------- | ---------------------------------------------------------- |
+   | `pwd` ends with `/.claude/worktrees/{feature-name}` | Pass — worktree created and switched into                  |
+   | `WORKTREE: not-applied (...)` was logged            | Pass — worktree intentionally skipped (no git repo / etc.) |
+   | Otherwise                                           | ABORT — silent skip detected                               |
+
+   This gate is falsifiable from shell state; it cannot be bypassed by skipping the prose log.
+
+   **Clear backlog transition flag** (immediately after loading feature):
 
    Read `.project/backlog.html` (if present), parse JSON (see `shared/BACKLOG.md`).
-   Find feature by name → set `"status": "DOING"`, `"stage": "building"`, remove `transition`, `data.updated` to now.
+   Find feature by name → remove `transition` field if present (auto-pickup signal consumed), `data.updated` to now. **Keep status as `"DEFINED"`** — the DEFINED → DOING transition happens in PHASE 3A on successful completion.
    Write back via Edit (keep `<script>` tags intact).
-   The card moves to the DOING column with stage `building`.
 
 5. **Read implementation order:**
 
@@ -456,6 +471,14 @@ FOR each TDD REQ-XXX in DEPENDENCY ORDER:
 
 All TDD requirements should be PASS before proceeding to Track B.
 If any requirement cannot pass, log as BLOCKED in feature.json build.blockers.
+
+**On unexpected runtime/environment error** (Godot crashes, GUT runner fails to start, missing autoloads, broken APIs that should exist): do NOT immediately patch — root-cause first.
+
+1. **Identify the actual provider**: which Godot version / GUT version / autoload owns the failing API? Check `project.godot` for `config/features`, check GUT version in `addons/gut/`, search the error string in Godot's output verbatim.
+2. **Confirm the cause before mitigating**: state in one sentence which component is responsible (e.g. `GUT 9.x removed assert_called_on_obj — use assert_called`) — not which one you assume is responsible.
+3. **Then patch**, and record the confirmed cause in the learning (PHASE 3A → learnings). A learning that names the wrong layer will misdirect future builds.
+
+If root-cause cannot be confirmed within 2 attempts: log as blocker with `"cause": "unknown"` rather than guessing.
 
 ##### RED-GREEN-REFACTOR per test:
 
@@ -868,7 +891,7 @@ Mutate in memory:
 
 **feature.json**: `status → "DOING"`, `stage → "built"`, `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]` (status: "pending"). Do NOT overwrite existing sections.
 
-**Backlog** (see `shared/BACKLOG.md`): `stage → "built"`, `data.updated` → now. Status stays `"DOING"`.
+**Backlog** (see `shared/BACKLOG.md`): find feature by name → set `"status": "DOING"` (transition DEFINED → DOING at successful build completion), `stage → "built"`, `data.updated` → now. This is the only place where DOING is written.
 
 **Context** (in `project-context.json`, see `shared/DASHBOARD.md` → `context`): identify new scenes (.tscn), scripts (.gd) with class names, signals, resources (.tres). Update `context.structure` (overwrite), `context.patterns` (merge signals, autoloads, conventions), `context.updated`. Skip if no structural impact.
 
@@ -984,7 +1007,7 @@ Next steps:
 💡 Worktree active: {worktree_path}
    Next skills (/game-verify, /game-refactor, /game-debug) start in a NEW chat —
    they auto-detect this worktree and switch into it.
-   For merge/cleanup: /core-merge {feature}
+   For merge/cleanup: /core-finalize {feature}
 ```
 
 > **Todo**: mark PHASE 6 → `completed`. All 10 phases must now be `completed`.

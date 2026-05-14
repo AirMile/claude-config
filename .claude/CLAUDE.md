@@ -85,7 +85,7 @@ State handoff between skills via `.project/session/devinfo.json` (schema: `share
 
 **Bootstrap** (once per machine, via `/core-bootstrap`):
 
-- `~/.claude/CLAUDE.md` ← `local/CLAUDE.md.base` (language policy, command rules, behavior rules)
+- `~/.claude/CLAUDE.md` ← `local/CLAUDE.md.base` (behaviour, communication, language policy, command rules, project setup, context fallback, skill routing)
 - `~/.claude/settings.json` ← `local/settings.json.template` (hooks, autoMemoryEnabled, statusLine, …)
 - `~/.claude/keybindings.json` ← `local/keybindings.json`
 - `~/.claude/statusline-command.cjs` ← `local/statusline-command.cjs`

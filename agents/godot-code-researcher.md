@@ -114,8 +114,8 @@ Analyze the context and plan your research strategy.
 **Research execution:**
 
 1. Execute planned Context7 queries using:
-   - `mcp__Context7__resolve-library-id` (find "godot" or "gdscript" library)
-   - `mcp__Context7__get-library-docs` (get documentation with topic filter)
+   - `mcp__context7__resolve-library-id` (find "godot" or "gdscript" library)
+   - `mcp__context7__query-docs` (get documentation with topic filter)
 2. Focus on Godot 4.x patterns (NOT Godot 3.x)
 3. Extract concrete, copy-pasteable code snippets
 4. Keep research fast (haiku model, called multiple times)

@@ -266,7 +266,7 @@ Skip Steps 5 and 6.
 
 ## Step 5: Plan Mode Refactor
 
-Compile all proposed changes into a single plan and present it via plan mode. The user's `opusplan` model uses Opus inside plan mode, which produces stronger refactor plans than inline Sonnet.
+Compile all proposed changes into a single plan and present it via plan mode. Model routers like `opusplan` upgrade plan-mode phases to Opus, which produces stronger refactor plans than inline Sonnet — but plan mode works under any model.
 
 **Refactor principles:**
 

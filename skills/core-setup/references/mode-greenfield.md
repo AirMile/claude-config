@@ -182,6 +182,21 @@ Ask sequentially, one question per response:
    - Accessibility: WCAG 2.1 AA, WCAG 2.1 A, Minimal
    - Responsive: Mobile-first, Desktop-first, Fixed width
 
+7. **Project mode** — AskUserQuestion (single-select):
+
+   ```yaml
+   header: "Project mode"
+   question: "Is this a solo or team project?"
+   options:
+     - label: "Solo (Recommended)"
+       description: "Only you commit here. Enables local-only flow — no PR offers, no team-* skill gating."
+     - label: "Team"
+       description: "Multiple contributors. Enables /team-* skills, automatic PR offer after /dev-verify and /dev-refactor, and team settings in backlog/dashboard."
+   multiSelect: false
+   ```
+
+   Store answer as `TEAM_MODE` (`"solo"` or `"team"`). Used in Phase 7b to write `team.mode`.
+
 ---
 
 ## CHECKPOINT: Interview Summary
@@ -434,7 +449,10 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
    - Concept-md handling:
      - **`.project/project-seed.md` exists with > 50 chars**: do NOT overwrite, do NOT append. The supplemental description from Phase 2 step 0 "Supplement" stays in-memory — only `/project-seed` writes to disk.
      - **Does not exist or < 50 chars**: create with `PROJECT_PITCH` (from Phase 2 answers or preflight) as plain markdown (what the project does, who for, core functionality). Does not need to be extensive — thinking/plan skills will expand this later.
-3. Fill `stack` section fully (OVERWRITE — core-setup is the first skill):
+3. Fill `team.mode` using the answer from Phase 2 step 7:
+   - `"solo"` or `"team"` depending on `TEAM_MODE`.
+   - If `.project/project.json` already existed and already has `team.mode` set → keep existing value (do NOT overwrite; user may have toggled via UI).
+4. Fill `stack` section fully (OVERWRITE — core-setup is the first skill):
    - `framework`: from user answers (Phase 2 Q3/Q4)
    - `language`: from user answers (Phase 2 Q4)
    - `styling`: from user answers (Phase 2 Q4/Q5)
@@ -442,21 +460,21 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
    - `auth`: from user answers (Phase 2 Q4/Q5)
    - `hosting`: from user answers (Phase 2 Q4/Q5)
    - `packages`: from generated package.json / project files
-4. Write `.project/project.json`
-   4b. Init backlog with concept flag (all project types):
+5. Write `.project/project.json`
+   5b. Init backlog with concept flag (all project types):
    - If `.project/backlog.html` does not exist: copy `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
    - Read `backlog.html` → parse `<script id="backlog-data">` JSON
    - Set `data.flags = { "hasConcept": true, "conceptPath": ".project/project-seed.md" }`
    - Set `data.source = "/core-setup"` and `data.updated` to current date
    - Edit JSON block back (script tags intact)
    - This makes the `/project-backlog` button appear in the backlog dashboard once there is a concept but no features yet.
-5. Create `.project/project-context.json` with `context` section (initial, updated by build/refactor skills):
+6. Create `.project/project-context.json` with `context` section (initial, updated by build/refactor skills):
    - `context.structure`: file tree of project (same format as previously in CLAUDE.md). Generate from actual file tree after Phase 3/4
    - `context.routing`: route patterns with arrow notation (only web projects with routing, otherwise empty array)
    - `context.patterns`: non-obvious patterns discovered during setup (path aliases, env config, etc.)
    - `context.updated`: current date
    - Write `.project/project-context.json`
-6. Set skip-worktree on all `.project/` files so local changes do not disturb git status/pull:
+7. Set skip-worktree on all `.project/` files so local changes do not disturb git status/pull:
    ```bash
    git add --sparse .project/
    git ls-files .project/ | xargs git update-index --skip-worktree

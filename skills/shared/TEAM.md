@@ -12,6 +12,8 @@ Three signals:
 
 `core-setup --mode=mature` detects this automatically and writes `CLAUDE.local.md` (not `CLAUDE.md`) so your configuration does not end up in the repo.
 
+> **Tweede gebruiker van deze heuristiek:** `core-setup/references/mode-mature.md` PHASE 0.55 gebruikt dezelfde drie signalen om `team.mode` in `project.json` voor te stellen. Als je de drempelwaarden aanpast, controleer dan ook PHASE 0.55.
+
 ## Skills per phase
 
 | Phase               | Relevant                                                               | Less relevant in mature team repo                      |
@@ -25,7 +27,7 @@ Three signals:
 | Commit              | `/core-commit` (detects team commit convention automatically)          | —                                                      |
 | Refactor            | `/dev-refactor`                                                        | —                                                      |
 | Review              | `/team-review` (PRs), `/team-verify` (completeness)                    | —                                                      |
-| Sync teammate code  | `/core-pull`                                                        | —                                                      |
+| Sync teammate code  | `/core-pull`                                                           | —                                                      |
 
 ## Issue-driven flow
 

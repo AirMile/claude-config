@@ -325,10 +325,6 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 
 - `frontend.linkedEntities[]` — cross-pipeline traceability: which visual entities (components, pages) link their handler-props to this feature. Schema per item: `{ type: "component"|"page", name, prop }`. Read by `dev-build` to replace stub-handlers with real implementation after build.
 
-**Added by project-decide** (cross-phase, can occur at any time):
-
-- `durableDecisions[]` — feature-scoped decisions with `decision`, `chosen`, `constraint` (forcing constraint), `rationale`, `rejected[]` (`{option, reason}`), `date`. Append-only — new entries are added, old ones stay. `constraint` and `rejected[]` are optional but strongly recommended for non-trivial decisions; they prevent rejected options from resurfacing as zombie proposals later.
-
 **Added by refactor:**
 
 - `refactor.status` — CLEAN, REFACTORED, or ROLLED_BACK
@@ -368,14 +364,13 @@ pending → built → PASS
 
 ## Which skills write to feature.json
 
-| Skill              | What they write to feature.json                                                                                                                          | When     |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `/dev-define`      | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                           | PHASE 3  |
-| `/dev-build`       | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Reads clarifications as constraints                                | PHASE 4C |
-| `/dev-verify`      | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | PHASE 6  |
-| `/dev-refactor`    | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | PHASE 5  |
-| `/project-decide` | Append: `durableDecisions[]` with decision, chosen, constraint, rationale, rejected[], date (feature-scope only)                                         | Step 3   |
-| `/game-define`     | Creates feature.json (same as dev-define + clarifications, game-specific design fields)                                                                  | PHASE 4  |
-| `/game-build`      | Enriches: build, tests.checklist (playtest items), requirements. Reads clarifications as constraints                                                     | PHASE 5  |
-| `/game-verify`     | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | PHASE 6  |
-| `/game-refactor`   | Enriches: refactor, status → DONE                                                                                                                        | PHASE 5  |
+| Skill            | What they write to feature.json                                                                                                                          | When     |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `/dev-define`    | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                           | PHASE 3  |
+| `/dev-build`     | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Reads clarifications as constraints                                | PHASE 4C |
+| `/dev-verify`    | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | PHASE 6  |
+| `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | PHASE 5  |
+| `/game-define`   | Creates feature.json (same as dev-define + clarifications, game-specific design fields)                                                                  | PHASE 4  |
+| `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements. Reads clarifications as constraints                                                     | PHASE 5  |
+| `/game-verify`   | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | PHASE 6  |
+| `/game-refactor` | Enriches: refactor, status → DONE                                                                                                                        | PHASE 5  |

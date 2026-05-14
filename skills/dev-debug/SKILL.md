@@ -58,22 +58,22 @@ Structured 11-phase debugging: context → intake → investigate → analyze �
 
 **Worktree switch** (only if active feature detected):
 
-If active feature found in previous step, run steps 1-3 from `shared/WORKTREE.md` (compute expected_path, check registered).
+If active feature found in previous step, follow `shared/WORKTREE.md → Switch into existing worktree` (Steps 0-4). Debug-mode replaces two of the hard Step 4 outcomes with AskUserQuestion (debug is ad-hoc, not a hard pipeline step):
 
-- Worktree exists and pwd == main_root → AskUserQuestion:
+- `main_root + registered` → AskUserQuestion instead of auto-switch:
   - header: "Worktree"
   - question: "Active feature '{name}' has worktree {short_path}. How to debug?"
   - options:
     - "Switch to worktree (Recommended)" → `EnterWorktree(path: expected_path)`
     - "Standalone on current branch" → skip switch
-- Worktree exists and pwd in different worktree than expected → AskUserQuestion (debug is ad-hoc, no hard fail):
+- `other worktree + registered` → AskUserQuestion instead of hard-fail:
   - header: "Worktree"
   - question: "You are in worktree {pwd_short}, active feature is '{name}' (worktree {expected_short}). How to proceed?"
   - options:
     - "Stay here and debug (Recommended)" → skip switch, debug on current worktree
     - "Switch to feature worktree" → `ExitWorktree(action: "keep")` + `EnterWorktree(path: expected_path)`
-    - "Switch to main" → `ExitWorktree(action: "keep")` (only if pwd is in a worktree created by this session; otherwise skip)
-- pwd == expected_path → already there, skip switch
+    - "Switch to main" → `ExitWorktree(action: "keep")` (only if currently in a worktree; otherwise skip)
+- `expected_path + registered` or `main_root + not registered` → follow WORKTREE.md as-is (already there / continue)
 - No active feature or no worktree → skip switch, debug runs standalone
 
 **Git baseline** (for scoped commit in PHASE 10):
@@ -270,6 +270,8 @@ Analyze:
 6. Determine most likely root cause
 7. Check FEATURE_REQUIREMENTS (from PHASE 0): does the root cause match a requirement that was incorrectly implemented? If so, mark as **spec-issue** — in PHASE 6 fix-thorough is recommended (minimal fixes the symptom, not the spec deviation).
 8. Identify knowledge gaps for PHASE 4
+
+**Runtime-state inspectie (UI-bugs):** voor hypothese-validatie waarbij DOM-snapshot of screenshot niet genoeg is — denk: state-store contents, computed styles, runtime-waarden, framework-internals. Gebruik `playwright-cli eval "() => ({ ... })"` voor synchrone JS-expressies, of `run-code` voor async patterns. Zie `shared/PLAYWRIGHT.md → Overview` voor de mapping en `Use Cases: Performance Measurement` voor een PerformanceObserver-voorbeeld.
 
 Present findings + hypothesis + confidence (high/medium/low) + spec-issue marking (yes/no) + research topics needed.
 

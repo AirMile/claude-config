@@ -25,7 +25,6 @@ Generate an ASCII [diagram type] showing [what to visualize].
 | Feature decomposition | Tree                 | project-backlog             |
 | State transitions     | State machine        | game-define                 |
 | Parallel processes    | Architecture diagram | team-review                 |
-| Decision flow         | Decision tree        | project-decide             |
 
 **Placement:** After the phase where the relevant information is gathered, before execution continues.
 

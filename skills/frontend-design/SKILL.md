@@ -1035,6 +1035,10 @@ multiSelect: false
 
 Store as `$TARGET_COMPONENT`. Store `$TARGET` = `$TARGET_PAGE` or `$TARGET_COMPONENT`.
 
+#### Step 2.5: Worktree setup
+
+Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = $TARGET`. Creates an isolated worktree for this build so generated code lands on a separate branch. Skip if already in a worktree (procedure detects).
+
 #### Step 3: Spec lookup (entity-agnostic)
 
 **If `$TARGET_TYPE = PAGE`:**

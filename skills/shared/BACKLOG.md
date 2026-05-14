@@ -6,6 +6,20 @@ The backlog is an interactive HTML list view with embedded JSON data. All skills
 **Template:** `{skills_path}/shared/references/backlog-template.html`
 **Server:** `{skills_path}/shared/references/serve-backlog.js` (port 9876)
 
+## Live runtime data
+
+`serve-backlog.js` injects two server-computed fields into the JSON payload on every `GET /{project}/backlog` request:
+
+- **`data.worktrees[]`** — open git worktrees for this project. Each entry: `{ feature, branch, path, ahead, dirty, lastCommitAt, prState, prUrl, prNumber }`. Computed from `git worktree list --porcelain` + optional `gh pr list`. Cached 30 s per project root; bust with `?refresh=1`.
+- **`data.mainState`** — `{ dirty, behindOrigin }` for the main checkout.
+
+**These fields are NOT persisted.** Skills must never write `worktrees` or `mainState` via `POST /backlog/save` — the server always re-derives them. If a `POST /save` payload accidentally includes them the server ignores them (it only replaces the `<script id="backlog-data">` block verbatim with whatever JSON it receives, so include = written to disk and persisted on the next re-inject). To be safe: strip both fields before saving.
+
+The backlog template (`backlog-template.html`) reads these fields to render:
+
+- A `⎇` badge on each feature card whose name matches a worktree `feature` field (exact or prefix match `feature.startsWith(name + '-')`).
+- A top-nav `⎇ N worktrees` disclosure pill listing all open worktrees with state and a click-to-copy `/core-finalize` command.
+
 ## Reading the backlog
 
 1. Read `.project/backlog.html`
@@ -28,7 +42,7 @@ The backlog is an interactive HTML list view with embedded JSON data. All skills
       "status": "TODO|DEFINED|DOING|DONE|CANCELLED",
       "phase": "P1|P2|P3|P4",
       "description": "Description",
-      "source": "concept|project-todo",
+      "source": "/project-backlog",
       "dependencies": ["other-feature"],
       "risk": "1-5|null",
       "date": "2026-01-15|null",
@@ -82,7 +96,11 @@ The `audit` field is **frontend-track-specific** (type `PAGE` or `COMPONENT`). `
 
 ## Source field convention
 
-The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/dev-define"`, `"/frontend-design"`. Items with `source: "/project-todo"` are INDEPENDENT — `/project-backlog` must never overwrite them during backlog-rebuild. Readers also accept the slash-less variant (`"project-todo"`) and legacy values (`"dev-todo"`) from existing items.
+The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/dev-define"`, `"/frontend-design"`.
+
+**Independent rule:** A feature is INDEPENDENT (never overwritten by `/project-backlog` during rebuild) when `source` is set to anything other than `"/project-backlog"`. Features without a `source` field, or with `"/project-backlog"`, are concept-derived and managed by `/project-backlog`.
+
+Readers also accept slash-less variants (`"project-todo"`) and legacy values (`"dev-todo"`) — both are still INDEPENDENT under the rule above.
 
 ## Team context
 
@@ -127,7 +145,7 @@ This reduces 6+ sequential round-trips to 2. Files are independent — no orderi
 4. Start the server if it is not running:
    ```bash
    # Respects $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
-   curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node {skills_path}/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
+   curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node --watch {skills_path}/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
    ```
 5. Show the URL: `http://localhost:9876/{project-dir}/backlog`
 

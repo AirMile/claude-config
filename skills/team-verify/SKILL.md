@@ -63,6 +63,21 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 > **Todo**: call `TaskCreate` with the 12 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
+0. **Team-mode gate.** Read `.project/project.json#team.mode`. If `"solo"` or absent → show AskUserQuestion (warn-only):
+
+   ```yaml
+   header: "Solo project"
+   question: "This project is marked solo (team.mode). /team-verify is meant for verifying teammate deliveries. Continue anyway?"
+   options:
+     - label: "Cancel (Recommended)"
+       description: "Exit. Toggle to team via the ⚙ button in the backlog or run /core-setup to mark this as a team project."
+     - label: "Yes, continue once"
+       description: "Proceed with verification for this single invocation."
+   multiSelect: false
+   ```
+
+   Cancel → exit. Continue → proceed with step 1.
+
 1. **Get branch and project info:**
 
    ```bash
@@ -439,7 +454,7 @@ Parse the agent output — only the structured `SCENARIOS_START...END` block and
 **Task agent prompt template:**
 
 ```
-Test the following items automatically via browser tools and bash commands.
+Test the following items automatically via playwright-cli daemon, bash commands, or integration tests.
 Dev server: {url}
 Feature: {feature-name}
 
@@ -457,7 +472,7 @@ ITEMS:
 INSTRUCTIONS:
 1. Navigate to the dev server URL and verify it is running
 2. For each item:
-   a. Execute the steps using MCP browser tools or bash commands
+   a. Execute the steps using browser tools (`playwright-cli` daemon — see `shared/PLAYWRIGHT.md`) or bash commands. For runtime-state assertions beyond DOM-snapshot (computed values, store contents, framework-internals), use `playwright-cli eval "() => ({ ... })"`.
    b. Analyze the result and determine PASS or FAIL with evidence
 3. If a browser tool fails for an item, mark as TOOL_ERROR
 

@@ -105,8 +105,8 @@ Analyze the requirements and plan your research strategy.
 **Research execution:**
 
 1. Execute planned Context7 queries using:
-   - `mcp__Context7__resolve-library-id` (to find GUT/Godot library)
-   - `mcp__Context7__get-library-docs` (to get documentation)
+   - `mcp__context7__resolve-library-id` (to find GUT/Godot library)
+   - `mcp__context7__query-docs` (to get documentation)
 2. For each query, note relevance score
 3. Extract GUT-specific patterns and assertions
 4. Identify common testing mistakes

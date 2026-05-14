@@ -327,7 +327,6 @@ Applied techniques: {list}
 Next steps:
 - /project-critique - Critically analyze with research context
 - /project-brainstorm - Creatively expand with new insights
-- /project-decide - Make a decision based on research
 - /project-backlog - Convert to feature backlog
 ```
 

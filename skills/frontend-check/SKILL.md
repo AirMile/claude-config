@@ -935,6 +935,16 @@ multiSelect: false
 
 ---
 
+### Worktree setup (before fix)
+
+Before writing any code fixes, follow `shared/WORKTREE.md → Auto-create worktree`:
+
+- Feature-name = targeted feature (from `targetType === "feature"` argument, or the backlog feature matched in PHASE 0)
+- If no feature match (URL/path targeting without backlog entry): skip worktree, fix on current branch
+- If already in a worktree: skip (procedure detects)
+
+---
+
 ## PHASE 3: Fix
 
 > **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
@@ -1073,6 +1083,59 @@ Next steps:
 ```
 
 > **Todo**: mark PHASE 4 → `completed`.
+
+---
+
+### PHASE 4.5: Team handoff
+
+Runs only when: feature-name is known (backlog feature targeted, not URL-only) and current branch matches `worktree-*` pattern.
+
+**Optional PR offer** — show first, only if ALL true:
+
+1. Current branch matches `worktree-*` pattern
+2. `.project/project.json#team.mode === "team"` (absent → skip)
+3. `gh` on PATH AND `gh auth status` exit 0
+4. Clean tree (`git status --porcelain` empty)
+5. Feature `shipped: true` (set in 4.3)
+
+If all true → AskUserQuestion:
+
+```yaml
+header: "PR openen"
+question: "Push + PR openen voor worktree-{feature-name}?"
+options:
+  - label: "Ja, push + PR (Recommended)"
+    description: "Push branch en open PR via gh. Worktree blijft tot merge."
+  - label: "Nee, skip PR"
+    description: "Skip PR; toon finalize prompt instead."
+multiSelect: false
+```
+
+On "Ja" → follow `shared/PR.md`. Print PR URL. Suppress finalize prompt below.
+On "Nee" or any precondition fail → fall through to finalize prompt (PHASE 5).
+
+---
+
+### PHASE 5: Finalize
+
+Runs only when: feature-name is known (backlog feature targeted, not URL-only) and current branch matches `worktree-*` pattern.
+
+Detect PR state:
+
+```bash
+PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
+PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
+PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
+PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
+```
+
+| PR_STATE                            | Action                                                                                                                                                                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `OPEN`                              | Print: `"PR #{PR_NUMBER} is open: {PR_URL}. Run \`/core-finalize {feature-name}\` after review — cleanup auto-detects the merged PR."` No AskUserQuestion.                                                   |
+| `MERGED`                            | AskUserQuestion: "PR #{PR_NUMBER} is gemerged. Cleanup nu? Worktree + branch worden verwijderd." → "Yes, cleanup nu (Recommended)" / "Keep open". Yes → `follow shared/FINALIZE.md with mode: cleanup-only`. |
+| empty / `CLOSED` / `gh` unavailable | AskUserQuestion: "Feature '{feature-name}' afgerond. Finalize nu (merge naar main + cleanup)?" → "Yes, finalize nu (Recommended)" / "Keep open". Yes → `follow shared/FINALIZE.md with mode: solo`.          |
+
+On any "Keep open" → print `💡 Run /core-finalize {feature-name} when ready`.
 
 ---
 

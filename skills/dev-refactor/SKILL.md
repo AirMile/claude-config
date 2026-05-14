@@ -5,7 +5,7 @@ reads: [feature.build, feature.tests, backlog.status]
 writes: [feature.refactor, backlog.status, learnings]
 metadata:
   author: claude-config
-  version: 2.2.0
+  version: 2.4.0
   category: dev
 ---
 
@@ -17,7 +17,7 @@ Optional quality step on completed features. Not a status-gate — features are 
 
 Batch-first architecture: analyzes ALL features in parallel via Explore agents, triages clean vs dirty, generates stack-aware refactor patterns via Context7, creates one combined plan with one approval, and applies changes with per-feature rollback.
 
-**Trigger**: `/dev-refactor` or `/dev-refactor {feature-name}`
+**Trigger**: `/dev-refactor`, `/dev-refactor {feature-name}`, or `/dev-refactor recent` (picks most recently modified feature.json with tests section)
 
 ## Scope Rule: Feature Files Only
 
@@ -29,8 +29,6 @@ Batch-first architecture: analyzes ALL features in parallel via Explore agents, 
 - **Exception:** New utility/helper files may be **created** if they exclusively extract code from pipeline files (e.g., extracting shared logic into a new `utils/` file). Existing external files may NEVER be modified.
 - If a pattern scan or research finding points to an external file → skip it, do not include in plan
 - If a DRY violation spans a pipeline file and an external file → only refactor the pipeline file side
-
-This rule exists because refactoring external files risks breaking other features and creates unpredictable side effects.
 
 ## When to Use
 
@@ -80,13 +78,45 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file w
 
 > **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
+**Pre-flight: detect `.project/` tracking mode** — determines whether `shippedSha` is meaningful:
+
+```bash
+if git check-ignore -q .project/project.json 2>/dev/null; then
+  echo "tracking: .project/ is gitignored — shippedSha will be skipped"
+  TRACKING_MODE="untracked"
+else
+  TRACKING_MODE="tracked"
+fi
+```
+
+If `TRACKING_MODE=untracked`:
+- PHASE 5 step 2: omit `shippedSha` field entirely (do not write `""`)
+- PHASE 5 step 3a: skip the entire backfill + commit step
+- Log once: `tracking: .project/ is gitignored — shippedSha skipped`
+
+**Step 0: Capture git baseline** — must run BEFORE worktree switch so subsequent comparison uses the same working tree:
+
+```bash
+mkdir -p .project/session
+git status --porcelain | sort > .project/session/pre-skill-status.txt
+echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+```
+
+After worktree switch in step 3: re-capture baseline in the worktree:
+
+```bash
+git status --porcelain | sort > .project/session/pre-skill-status-worktree.txt
+```
+
+PHASE 5.3 compares against `pre-skill-status-worktree.txt` if worktree-switch happened, otherwise against `pre-skill-status.txt`.
+
 1. **Read backlog for pipeline status:**
 
    Read `.project/backlog.html` (if exists), parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`):
    - Filter DONE features: `data.features.filter(f => f.status === "DONE" && !f.shipped)`
    - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` section
    - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
-   - Filter small-items: `data.features.filter(f => f.status === "DONE" && !f.shipped && !fs.existsSync('.project/features/' + f.name + '/feature.json'))` — items without pipeline (CHANGE/BUG/PAGE/COMPONENT/etc)
+   - Filter small-items: features with `status === "DONE" && !shipped` where `[ -f .project/features/{name}/feature.json ]` is false — items without pipeline (CHANGE/BUG/PAGE/COMPONENT/etc)
 
 2. **Determine feature queue:**
 
@@ -153,7 +183,26 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file w
 
    If `feature_queue.length == 1` and not in codebase-mode: execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL: stop with the message from WORKTREE.md.
 
-   Batch-mode (queue > 1) or codebase-mode: skip — stay on main, refactor over already-merged code.
+   Batch-mode (queue > 1) or codebase-mode: check for open feature worktrees first:
+
+   ```bash
+   git worktree list --porcelain | grep "^branch " | grep "refs/heads/worktree-"
+   ```
+
+   If any `worktree-*` branches appear → **AskUserQuestion**:
+
+   ```yaml
+   header: "Open worktrees"
+   question: "Open worktrees found: {list}. Batch/codebase refactor on main may create merge conflicts when these are integrated. What do you want to do?"
+   options:
+     - label: "Stop — finalize open worktrees first (Recommended)"
+       description: "Run /core-finalize for each open worktree, then re-run refactor"
+     - label: "Continue anyway"
+       description: "Refactor on main now — you accept potential merge conflicts later"
+   multiSelect: false
+   ```
+
+   No open worktrees → proceed on main.
 
 4. **Load ALL feature docs for every feature in queue:**
 
@@ -174,7 +223,7 @@ Read `.project/project-context.json` (if exists). Extract `context.patterns`.
 **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
 ```
-scopes: [component]
+scopes: [feature]
 pitfall-prefix: true
 current-feature: <feature-name if feature-mode, otherwise "none">
 ```
@@ -261,29 +310,17 @@ Features:
 
 ---
 
-9. **Capture git baseline** (for scoped commit at end of skill):
-
-```bash
-mkdir -p .project/session
-git status --porcelain | sort > .project/session/pre-skill-status.txt
-echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
-```
-
 ### PHASE 1: Parallel Three-Lens Analysis + Triage
 
 > **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-**Goal:** Per feature three focused Explore agents in parallel (reuse / quality / efficiency), then merge + triage into CLEAN vs HAS_FINDINGS.
-
-**Why three lenses:** one monolithic prompt with 6 categories dilutes focus and produces noise. Three separate lenses give sharper findings per domain. Learned from `/simplify` runs — see plan in `.claude/plans/` (2026-04).
+**Goal:** Per feature three focused Explore agents in parallel (reuse / quality / efficiency), then merge + triage into CLEAN vs HAS_FINDINGS. Security findings stay in the Quality lens; for deep security review use `/dev-owasp`.
 
 **Lens definitions** (see also `shared/PATTERNS.md` if present):
 
 - **Reuse lens**: DRY within pipeline files, duplication with existing helpers/utilities in the codebase, inline logic that existing lib/stdlib can replace, extract-opportunities
 - **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dead code, redundant state, leaky abstractions, RULES.md violations, stack-specific anti-patterns, Design Token violations (T101–T105 from `shared/TOKENS.md` — frontend files only: `.tsx`/`.jsx`/`.vue`/`.svelte`)
 - **Efficiency lens**: missed concurrency (Promise.all), N+1, hot-path bloat, memory leaks, unbounded maps, TOCTOU, overly broad ops, no-op recurring updates
-
-Security stays in Quality-lens (a separate security-agent is overkill; for deep security review `dev-owasp` exists).
 
 1. **Determine lens strategy per feature:**
    - `pipeline_files[feature].length < 4` → **single-lens mode**: one combined agent with all three lenses in the prompt (splitting yields too little signal for too much token overhead)
@@ -307,7 +344,7 @@ Security stays in Quality-lens (a separate security-agent is overkill; for deep 
    with priority (but also report issues in other lines):
    ```diff
    {pipeline_diff[feature]}
-   ````
+   ```
 
    {/if}
 
@@ -315,6 +352,9 @@ Security stays in Quality-lens (a separate security-agent is overkill; for deep 
    {context.patterns or "not available — use CLAUDE.md as fallback"}
    If a pattern is consistent with project conventions → do NOT report.
    Note: a pattern with prefix "Code maturity:" indicates how aggressively to refactor — respect the attitude described there (e.g. no over-abstractions for student/prototype projects).
+
+   KNOWN DECISIONS (skip findings that match these — already evaluated in a previous run):
+   {feature.json#refactor.decisions[] where action=SKIP, formatted as bullet list, or "none" if empty}
 
    DISCIPLINE:
    - Max 500 words output. Short, sharp, direct.
@@ -453,7 +493,11 @@ Security stays in Quality-lens (a separate security-agent is overkill; for deep 
 
    For three-lens features: combine the three FINDINGS-lists into one list. Dedup on `file:line + fix` (same issue spotted by multiple lenses → 1 entry, category-tags merged).
 
-   STATUS per feature = `CLEAN` if all three lenses are `CLEAN`, otherwise `HAS_FINDINGS`.
+   STATUS per feature is derived from the **merged FINDINGS list**, not from the agent's self-reported STATUS:
+   - 0 merged findings → `CLEAN`
+   - ≥1 merged findings → `HAS_FINDINGS`
+
+   If an agent reports `STATUS: CLEAN` but lists findings, the findings count wins (treat as HAS_FINDINGS). This prevents agents from suppressing legitimate findings via inconsistent self-rating.
 
 5. **Parsing agent results:**
 
@@ -799,14 +843,7 @@ Refactor patterns updated: {yes/no}
    ✗ {feature-name}: rolled back ({reason})
    ```
 
-**Non-breaking rule:**
-
-- No API signature changes
-- No database schema modifications
-- No breaking parameter changes
-- No removal of public methods/functions
-- Preserve all existing behavior
-- If breaking change needed → skip that improvement and note it
+**Non-breaking rule:** Skip improvements that change public signatures, schemas, or remove public APIs. If a breaking change is needed → note it and skip.
 
 **Output:**
 
@@ -843,6 +880,16 @@ IMPROVEMENTS APPLIED
    - REFACTORED: `refactor.status = "REFACTORED"`, populated `improvements` per category, `decisions` with rationale
    - ROLLED_BACK: `refactor.status = "ROLLED_BACK"`, `failureAnalysis` (markdown string), `pendingImprovements[]`
 
+   **Decision entry format** — one per balance-filter SKIP or applied improvement:
+
+   `{file:line} — {finding-summary} — {SKIP|APPLY} — {why}`
+
+   Examples:
+   - `src/stores/bankroll-store.ts:115 — redundant inner round2() — SKIP — intentional belt-and-suspenders against floating-point drift, see REQ-004`
+   - `src/utils/format.ts:23 — duplicate currency formatter — APPLY — extracted to shared/format.ts, 3 callers consolidated`
+
+   SKIP entries MUST be recorded so future refactor runs can dedup against them (agents see existing decisions in PROJECT CONVENTIONS and skip re-reporting).
+
    **Update top-level feature status:**
    - CLEAN: `status: "DONE"` (unchanged)
    - REFACTORED: `status: "DONE"` (unchanged)
@@ -852,7 +899,7 @@ IMPROVEMENTS APPLIED
 
 1b. **Learning extraction** — for features with status REFACTORED or CLEAN:
 
-Read the just-written `feature.json.refactor` per feature:
+Read the `refactor` section of the just-written `feature.json` per feature:
 
 - REFACTORED: evaluate `decisions[]` → type `pattern`, source `extracted`; and `positiveObservations[]` → type `observation`, source `inferred`
 - CLEAN: evaluate `positiveObservations[]` → type `observation`, source `inferred`
@@ -887,17 +934,9 @@ Append to `project-context.json` → `learnings[]` (written in step 2 parallel s
 
    Mutate in memory:
 
-   **Backlog** (see `shared/BACKLOG.md`): status stays `"DONE"` for all features (CLEAN, REFACTORED, and ROLLED_BACK). Set per feature the `refactor` field and — on success — the `shipped` field:
-   - CLEAN or REFACTORED → `f.refactor = "REFACTORED"`, `f.shipped = true`, `f.shippedAt = <ISO-date>`, `f.shippedSha = <git-sha>` (see below), remove `transition` (if present)
+   **Backlog** (see `shared/BACKLOG.md`): status stays `"DONE"` for all features (CLEAN, REFACTORED, and ROLLED_BACK). Set per feature the `refactor` field and — on success — the `shipped` field. Leave `shippedSha` EMPTY in this first pass — it's filled after step 3:
+   - CLEAN or REFACTORED → `f.refactor = "REFACTORED"`, `f.shipped = true`, `f.shippedAt = <ISO-date>`, `f.shippedSha = ""` (omit if `TRACKING_MODE=untracked`), remove `transition` (if present)
    - ROLLED_BACK → `f.refactor = "ROLLED_BACK"`, remove `transition` (if present) (shipped stays false — item remains in "Waiting for refactor" zone)
-
-   **Git sha for shippedSha:**
-
-   ```bash
-   git rev-parse HEAD
-   ```
-
-   Use the HEAD sha after the auto-commit from PHASE 5.3.
 
    Set `data.updated` to current date.
 
@@ -929,13 +968,15 @@ Append to `project-context.json` → `learnings[]` (written in step 2 parallel s
 
 3. **Scoped auto-commit** (only this skill's changes):
 
-   Compare current git status with baseline from PHASE 0:
+   Compare current git status with baseline from PHASE 0 (use `pre-skill-status-worktree.txt` if worktree-switch occurred, otherwise `pre-skill-status.txt`):
 
    ```bash
    git status --porcelain | sort > /tmp/current-status.txt
    ```
 
-   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
+   **Guard — nothing to commit:** if `diff <baseline> /tmp/current-status.txt` is empty AND there are no NEW staged files, skip the commit entirely. Log: `commit: skipped (no changes)`. Continue to step 3a.
+
+   Otherwise, categorize files:
    - **NEW** (only in current, not in baseline) → `git add` automatically
    - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
    - **PRE-EXISTING** (only in baseline) → do NOT stage
@@ -964,7 +1005,25 @@ Append to `project-context.json` → `learnings[]` (written in step 2 parallel s
    refactor({feature}): {summary}
    ```
 
-   Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+   Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/pre-skill-status-worktree.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+
+3a. **Backfill shippedSha** — skip entirely if `TRACKING_MODE=untracked`. Otherwise:
+
+```bash
+SHA=$(git rev-parse HEAD)
+```
+
+1. Read `backlog.html` + `project.json` again
+2. Replace empty `shippedSha: ""` for CLEAN/REFACTORED features with `SHA`
+3. Write back
+4. Stage and commit the patch:
+
+   ```bash
+   git add .project/backlog.html .project/project.json
+   git commit -m "chore(refactor): backfill shippedSha for {feature-list}"
+   ```
+
+If step 3 was skipped (nothing to commit), use the pre-skill HEAD as `SHA` — still create the backfill commit.
 
 3b. **Feature archiving** (only features with `feature.json`, not small items without pipeline):
 
@@ -999,18 +1058,79 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
    Next steps:
      1. /dev-define {next-feature} → next feature from backlog
      2. /project-backlog → revise backlog if scope has changed
+   {if current branch matches worktree-*:}
+     3. /core-finalize → merge worktree to main
+   {/if}
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-   **Worktree integration hint** — add one extra line to the completion block if both conditions are true:
-   1. Single-mode (queue.length == 1, not codebase-mode)
+   **PHASE Finalize** — run after commit, only if BOTH true:
+   1. Single-mode (`feature_queue.length == 1`, not codebase-mode)
    2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
-   Append:
+   **PR offer (team-mode only)** — show first, only if ALL true:
+   1. `.project/project.json#team.mode === "team"` (absent → skip)
+   2. `gh` on PATH AND `gh auth status` exit 0
+   3. Clean tree (`git status --porcelain` empty — just committed, should hold)
 
+   If all true → AskUserQuestion:
+
+   ```yaml
+   header: "PR openen"
+   question: "Push + PR openen voor worktree-{feature-name}?"
+   options:
+     - label: "Ja, push + PR (Recommended)"
+       description: "Push the branch and open a PR via gh. Worktree stays until merged."
+     - label: "Nee, skip PR"
+       description: "Skip the PR; show finalize prompt instead."
+   multiSelect: false
    ```
-   💡 Run /core-merge {feature-name} to integrate into main/develop
+
+   On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
+   On "Nee" or any precondition fail → fall through to finalize prompt.
+
+   **Finalize prompt** — detect PR state first:
+
+   ```bash
+   PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
+   PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
+   PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
+   PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
    ```
+
+   | PR_STATE                            | Action                                                                                                                                         |
+   | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `OPEN`                              | Print: `"PR #{PR_NUMBER} is open: {PR_URL}. Run \`/core-finalize {feature-name}\` zodra gemerged."` No prompt.                                 |
+   | `MERGED`                            | AskUserQuestion: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd." — Yes/Keep open (see below) |
+   | empty / `CLOSED` / `gh` unavailable | AskUserQuestion: "Feature '{feature-name}' afgerond. Finalize nu (merge naar main + cleanup)?" — Yes/Keep open (see below)                     |
+
+   ```yaml
+   # For MERGED state:
+   header: "PR merged — cleanup"
+   question: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd."
+   options:
+     - label: "Yes, cleanup nu (Recommended)"
+       description: "Follow shared/FINALIZE.md cleanup-only — verwijder worktree + branch"
+     - label: "Keep open"
+       description: "Worktree blijft staan (bv. voor follow-up commits); cleanup later via /core-finalize"
+   multiSelect: false
+   ```
+
+   ```yaml
+   # For empty/CLOSED state:
+   header: "Finalize"
+   question: "Feature '{feature-name}' afgerond (status: DONE). Finalize nu (merge naar main + cleanup)?"
+   options:
+     - label: "Yes, finalize nu (Recommended)"
+       description: "Follow shared/FINALIZE.md solo-mode — merge worktree naar main + cleanup"
+     - label: "Keep open"
+       description: "Worktree blijft open, finalize later via /core-finalize"
+   multiSelect: false
+   ```
+
+   On MERGED "Yes" → follow `shared/FINALIZE.md` with `mode: cleanup-only`.
+   On empty/CLOSED "Yes" → follow `shared/FINALIZE.md` with `mode: solo`.
+   On any "Keep open" → print `💡 Run /core-finalize {feature-name} when ready`.
 
 > **Todo**: mark PHASE 5 → `completed`.
 

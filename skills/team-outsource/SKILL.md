@@ -39,6 +39,21 @@ Create an external issue for a teammate based on a local backlog item or feature
 
 > **Todo**: mark PHASE 0 → `in_progress`.
 
+0. **Team-mode gate.** Read `.project/project.json#team.mode`. If `"solo"` or absent → show AskUserQuestion (warn-only):
+
+   ```yaml
+   header: "Solo project"
+   question: "This project is marked solo (team.mode). /team-outsource is meant for projects with multiple contributors. Continue anyway?"
+   options:
+     - label: "Cancel (Recommended)"
+       description: "Exit. Toggle to team via the ⚙ button in the backlog or run /core-setup to mark this as a team project."
+     - label: "Yes, continue once"
+       description: "Proceed with outsourcing for this single invocation."
+   multiSelect: false
+   ```
+
+   Cancel → exit. Continue → proceed with PHASE 0 step 1.
+
 1. Read `.project/project.json` → check `team.tracker`. Unknown → run `gh repo view --json nameWithOwner` (success → `tracker = "github"`). `--paste` flag present or `gh` fails → `tracker = "paste"`.
 2. Read `.project/backlog.html` → parse `<script id="backlog-data">` JSON → `data`.
 3. If argument `<name>` is set → search in `data.features` by exact name. No match → show "No item found with name `{name}`" + list of top-3 similar names and exit.

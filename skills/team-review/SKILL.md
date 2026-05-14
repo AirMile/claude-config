@@ -41,6 +41,21 @@ Not for:
 
 > **Todo**: call `TaskCreate` with the 7 phase items (see above). Mark Step 1 → `in_progress` via `TaskUpdate`.
 
+0. **Team-mode gate.** Read `.project/project.json#team.mode`. If `"solo"` or absent → show AskUserQuestion (warn-only):
+
+   ```yaml
+   header: "Solo project"
+   question: "This project is marked solo (team.mode). /team-review is meant for projects with multiple contributors. Continue anyway?"
+   options:
+     - label: "Cancel (Recommended)"
+       description: "Exit. Toggle to team via the ⚙ button in the backlog or run /core-setup to mark this as a team project."
+     - label: "Yes, continue once"
+       description: "Proceed with the review for this single invocation."
+   multiSelect: false
+   ```
+
+   Cancel → exit. Continue → proceed with step 1.
+
 1. Get current branch: `git branch --show-current`
 2. Validate not on main/master/develop — if so, stop with error message
 3. Find parent branch via merge-base: `git merge-base HEAD develop` (fallback to main/master)

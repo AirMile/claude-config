@@ -40,4 +40,12 @@ Language: Nederlands
 
 ## Project Context
 
-Read `.project/project.json` at session start for current project context (stack, features, endpoints, entities). For runtime context (architecture, patterns, learnings): `.project/project-context.json`. For the full seed document: `.project/project-seed.md`. Skills keep this updated after each build/refactor/test.
+**Memory-first lookup.** When the user asks something about this project (stack, features, endpoints, entities, architecture, patterns, decisions, learnings), consult `.project/` **before** running `grep`/`find` or reading source files:
+
+1. `.project/project.json` — stack, features, endpoints, entities, theme
+2. `.project/project-context.json` — architecture, patterns, learnings (via `skills/shared/LEARNINGS-LOAD.md`)
+3. `.project/project-seed.md` — original concept and scope
+
+**Scope.** Memory-first applies to project-level questions (stack, features, architecture, patterns, decisions, learnings). For code-level questions (specific function, line, bug, file lookup), use grep/Read directly — `.project/` won't help.
+
+Only fall back to reading source files when `.project/` doesn't cover the question. Skills keep these files updated after each build/refactor/test.

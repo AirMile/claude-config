@@ -1628,3 +1628,161 @@ body {
   background: var(--accent, #6366f1);
   color: #fff;
 }
+
+.top-nav-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Open worktrees pill ── */
+#open-worktrees-slot {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.open-worktrees-pill {
+  position: relative;
+}
+
+.owp-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  list-style: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.owp-summary::-webkit-details-marker {
+  display: none;
+}
+
+.owp-summary:hover {
+  background: var(--surface-hover);
+}
+
+.open-worktrees-pill[open] .owp-summary {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.owp-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  list-style: none;
+  margin: 0;
+  min-width: 260px;
+  padding: 6px 0;
+}
+
+.owp-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.owp-item + .owp-item {
+  border-top: 1px solid var(--border);
+}
+
+.owp-name {
+  font-weight: 600;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.owp-state {
+  color: var(--text-muted);
+  font-size: 11px;
+  flex: 1;
+}
+
+.owp-pr-link {
+  color: var(--accent);
+  font-size: 11px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.owp-pr-link:hover {
+  text-decoration: underline;
+}
+
+.owp-copy-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s;
+  width: 100%;
+  text-align: left;
+  margin-top: 2px;
+}
+
+.owp-copy-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.owp-state-hint {
+  font-size: 0.85em;
+  color: color-mix(in srgb, var(--text) 60%, transparent);
+  font-style: italic;
+  margin-top: 2px;
+  display: block;
+}
+
+/* ── Per-card worktree badge ── */
+.row-worktree-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.row-worktree-badge[data-state="OPEN"] {
+  background: color-mix(in srgb, #f59e0b 15%, transparent);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.row-worktree-badge[data-state="MERGED"] {
+  background: color-mix(in srgb, var(--done, #22c55e) 15%, transparent);
+  border-color: var(--done, #22c55e);
+  color: var(--done, #22c55e);
+}

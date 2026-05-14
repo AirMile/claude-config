@@ -88,6 +88,15 @@ body {
   padding: 12px 32px 12px 22px;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.content-toolbar-mode-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 .content-toolbar-search {
@@ -2216,7 +2225,9 @@ hr.divider {
   border-radius: 6px;
   font: inherit;
   font-size: 12px;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .sg-mode-tab:hover {

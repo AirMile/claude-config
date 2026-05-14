@@ -15,7 +15,7 @@ Each test item is classified as **COVERED**, **AUTO**, or **MANUAL** before test
 
 AUTO items have three sub-methods — the Task agent picks the best one per item:
 
-### AUTO/BROWSER (MCP browser tools)
+### AUTO/BROWSER (playwright-cli daemon)
 
 Assign AUTO/BROWSER when ALL of the following are true:
 
@@ -123,7 +123,7 @@ NOT COVERED (even when build tests exist):
 
 ### Auto Test Patterns Reference
 
-**BROWSER patterns** (MCP browser tools):
+**BROWSER patterns** (playwright-cli daemon):
 
 | Pattern               | Steps                                                                                                              |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------ |

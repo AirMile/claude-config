@@ -74,14 +74,14 @@ _Windows:_
 
 ```powershell
 $root = if ($env:CLAUDE_PROJECTS_ROOT) { $env:CLAUDE_PROJECTS_ROOT } else { "C:\Projects" }
-Start-Process -WindowStyle Hidden -FilePath node -ArgumentList "$env:USERPROFILE\.claude\skills\shared\references\serve-backlog.js","$root" -RedirectStandardOutput "$env:TEMP\backlog-server.log" -RedirectStandardError "$env:TEMP\backlog-server.err"
+Start-Process -WindowStyle Hidden -FilePath node -ArgumentList "--watch","$env:USERPROFILE\.claude\skills\shared\references\serve-backlog.js","$root" -RedirectStandardOutput "$env:TEMP\backlog-server.log" -RedirectStandardError "$env:TEMP\backlog-server.err"
 ```
 
 _macOS:_
 
 ```bash
 root="${CLAUDE_PROJECTS_ROOT:-$HOME/projects}"
-nohup node ~/.claude/skills/shared/references/serve-backlog.js "$root" > /tmp/backlog-server.log 2>&1 &
+nohup node --watch ~/.claude/skills/shared/references/serve-backlog.js "$root" > /tmp/backlog-server.log 2>&1 &
 ```
 
 Wait max 5 seconds for readiness (use the PHASE 0 check in a loop).

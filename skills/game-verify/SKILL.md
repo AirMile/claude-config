@@ -1300,6 +1300,30 @@ Next steps:
   2. /game-define {next-feature} → pick up next feature
 ```
 
+**Optional PR offer** — show first, only if ALL true:
+
+1. Current branch matches `worktree-*` pattern (`git branch --show-current`)
+2. Feature is set to `status: "DONE"` in backlog after this run
+3. `.project/project.json#team.mode === "team"` (absent → skip)
+4. `gh` on PATH AND `gh auth status` exit 0
+5. Clean tree (`git status --porcelain` empty)
+
+If all true → AskUserQuestion:
+
+```yaml
+header: "PR openen"
+question: "Push + PR openen voor worktree-{feature-name}?"
+options:
+  - label: "Ja, push + PR (Recommended)"
+    description: "Push the branch and open a PR via gh. Worktree stays until merged."
+  - label: "Nee, skip PR"
+    description: "Skip the PR; show the worktree hint instead."
+multiSelect: false
+```
+
+On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress the worktree hint below.
+On "Nee" or any precondition fail → fall through to the worktree hint.
+
 **Worktree integration hint** — append one extra line if both conditions are true:
 
 1. Current branch matches `worktree-*` pattern (`git branch --show-current`)
@@ -1308,7 +1332,7 @@ Next steps:
 Append:
 
 ```
-Feature done — run /core-merge {feature-name} to integrate into main/develop
+Feature done — run /core-finalize {feature-name} to integrate into main/develop
 ```
 
 ---

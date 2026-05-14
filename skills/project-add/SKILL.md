@@ -212,6 +212,7 @@ cat > "{projects_root}/[name]/.project/project.json" << 'ENDJSON'
   "data": { "entities": [] },
   "endpoints": [],
   "features": [],
+  "team": { "mode": "solo" },
   "thinking": []
 }
 ENDJSON
@@ -239,7 +240,7 @@ $projectJson = '{
   },
   "stack": { "framework": "", "language": "", "styling": "", "db": "", "auth": "", "hosting": "", "packages": [] },
   "data": { "entities": [] },
-  "endpoints": [], "features": [], "thinking": []
+  "endpoints": [], "features": [], "team": { "mode": "solo" }, "thinking": []
 }'
 Set-Content -Path "{projects_root}\[name]\.project\project.json" -Value $projectJson -Encoding UTF8
 
