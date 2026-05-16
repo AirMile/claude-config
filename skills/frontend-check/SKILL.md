@@ -1,9 +1,6 @@
 ---
 name: frontend-check
-description: >-
-  Check and fix performance (Lighthouse, CWV, bundle), SEO (Google), AEO (AI search),
-  accessibility (WCAG 2.1 AA), responsive design (multi-viewport), darkmode, error states,
-  smoke, and user flows in one unified hub. Use with /frontend-check.
+description: Check and fix performance, SEO, accessibility, and user flows. Use with /frontend-check.
 argument-hint: "[url | source-path | feature-name] [--scope=performance|seo|aeo|responsive|a11y|...]"
 reads:
   [backlog.status, feature.requirements, feature.files, feature.architecture]

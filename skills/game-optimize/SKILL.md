@@ -1,10 +1,6 @@
 ---
 name: game-optimize
-description: >-
-  Optimize a measurable metric (FPS, frame-time, memory, AI win-rate,
-  pathfinding speed) in a Godot 4.x project via parallel subagent experiments
-  in git worktrees. Use with /game-optimize for performance or balance tuning
-  where you can define a score. Standalone — not tied to a pipeline feature.
+description: Optimize Godot metrics via parallel worktree experiments. Use with /game-optimize.
 metadata:
   author: claude-config
   version: 0.1.0

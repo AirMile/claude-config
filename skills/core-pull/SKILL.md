@@ -1,11 +1,6 @@
 ---
 name: core-pull
-description: >-
-  Pull git changes, analyze diff, sync .project context, deep-analyze teammate
-  code (features, entities, endpoints, architecture), and extract synced
-  learnings (pitfalls/patterns) from teammate commits. Use with /core-pull
-  or /core-pull --no-learn. For first-time onboarding to a mature repo:
-  use /core-setup instead.
+description: Pull changes, sync context, and extract learnings. Use with /core-pull.
 argument-hint: "[remote/branch] [--no-learn]"
 metadata:
   author: claude-config

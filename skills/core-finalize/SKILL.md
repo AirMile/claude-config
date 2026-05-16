@@ -1,6 +1,6 @@
 ---
 name: core-finalize
-description: Finalize a feature worktree — solo-merge into main (no PR) or cleanup-only (after a merged PR). For orphan worktrees, recovery, or manual finalize outside a pipeline skill. Pipeline-end skills (dev-refactor, game-refactor, frontend-check) call finalize automatically.
+description: Merge or clean up a feature worktree. Use with /core-finalize.
 argument-hint: "[feature-name]"
 metadata:
   author: claude-config

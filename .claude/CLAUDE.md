@@ -42,6 +42,7 @@ CLAUDE.base.md    Template for per-project CLAUDE.md generation
 - **Naming**: `{category}-{verb}` — lowercase, hyphen. Categories: core, dev, frontend, game, marketing, project, team
 - **Directory**: each skill = folder with `SKILL.md`, optionally `references/`, `scripts/`, `techniques/`
 - **Frontmatter**: metadata with author/version/category — use `disable-model-invocation: true` only if the skill must never be invokable via the Skill tool (also blocks user-triggered `/skill-name`)
+- **Description**: one short sentence — `<Verb-phrase>. Use with /<skill-name>.` (target 40-80 chars). Descriptions count against `skillListingBudgetFraction` (~1% context budget) and get truncated if too long, breaking auto-routing. Only use a richer description when the skill genuinely auto-triggers from context (e.g. `frontend-tokens` on THEME backlog status).
 - **Pipeline handoff**: skills that touch shared state declare `reads:` / `writes:` in frontmatter — see `shared/DEVINFO.md` for namespaces. Validate with `python3 scripts/check-handoff.py`.
 - **Language**: skill/agent files in English (hard rule). Runtime output: from `CLAUDE.md § User Preferences → Language:`. See `skills/shared/LANGUAGE.md`.
 - **Phases**: PHASE 0 = pre-flight validation → execution → last phase = report (ASCII table)

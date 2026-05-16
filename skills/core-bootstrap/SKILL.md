@@ -1,10 +1,6 @@
 ---
 name: core-bootstrap
-description: >-
-  Bootstrap user-level ~/.claude/ (CLAUDE.md, settings.json, keybindings,
-  statusline) + global symlinks/junctions to the claude-config repo. Fully
-  idempotent — safe to re-run anytime; existing files are kept untouched.
-  Use with /core-bootstrap.
+description: Bootstrap ~/.claude/ config, symlinks, and settings. Use with /core-bootstrap.
 metadata:
   author: claude-config
   version: 1.3.0

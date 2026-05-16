@@ -1,11 +1,6 @@
 ---
 name: dev-learn
-description: >
-  Learn coding topics with understanding-first methods. Parses lesson URLs,
-  topic names, file paths, or code snippets into core concepts. Teaches through
-  6 comprehension methods, generates annotated educational code, and offers
-  optional practice phases.
-  Use with /dev-learn [topic, URL, or file path].
+description: Learn coding topics with guided comprehension methods. Use with /dev-learn.
 argument-hint: "[topic, URL, or file path]"
 metadata:
   author: claude-config

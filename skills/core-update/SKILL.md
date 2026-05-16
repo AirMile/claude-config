@@ -1,10 +1,6 @@
 ---
 name: core-update
-description: >-
-  Pull latest claude-config from git and rebuild ~/.claude/ composed files
-  (CLAUDE.md + settings.json) from base + personal overlay. Preserves
-  Language preference and personal/ customisations. Run periodically to stay
-  current. Use with /core-update. Requires /core-bootstrap to have run first.
+description: Pull latest claude-config and rebuild ~/.claude/ files. Use with /core-update.
 metadata:
   author: claude-config
   version: 1.0.0

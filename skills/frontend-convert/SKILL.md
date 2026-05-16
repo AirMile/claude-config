@@ -1,11 +1,6 @@
 ---
 name: frontend-convert
-description: >-
-  Convert visual input (screenshots, Figma exports, URLs, inspiration images)
-  into working pages or components. Three modes: 1:1 faithful copy,
-  inspiration-based using project theme tokens, or patch (surgical Edit on
-  existing component — only changed sections). Self-verifies with Playwright CLI
-  comparison loop. Use with /frontend-convert.
+description: Convert screenshots or URLs into working pages or components. Use with /frontend-convert.
 argument-hint: "[file-path|url]"
 writes: [devinfo.handoff]
 metadata:

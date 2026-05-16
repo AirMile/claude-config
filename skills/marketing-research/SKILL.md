@@ -1,11 +1,7 @@
 ---
 name: marketing-research
 argument-hint: "[topic]"
-description: >-
-  Marketing-focused trend and audience research. Identifies trend momentum,
-  platform sentiment, messaging opportunities, and campaign timing windows.
-  Use with /marketing-research [topic] for product launches, content strategy,
-  or competitive positioning.
+description: Research trends and audience signals for marketing. Use with /marketing-research.
 metadata:
   author: claude-config
   version: 1.0.0

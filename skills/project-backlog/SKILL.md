@@ -1,6 +1,6 @@
 ---
 name: project-backlog
-description: "Transform a seed document or task description into a prioritized feature backlog. Use with /project-backlog after /project-seed to create implementation roadmaps."
+description: Transform a seed into a prioritized feature backlog. Use with /project-backlog.
 metadata:
   author: claude-config
   version: 1.3.0

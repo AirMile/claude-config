@@ -1,6 +1,6 @@
 ---
 name: team-verify
-description: Verify teammate code delivery. Checks completeness against task brief (feature.json) or backlog TODO, generates tests inline, maps results to requirements. Use with /team-verify after teammate code delivery.
+description: Verify teammate code delivery against task brief. Use with /team-verify.
 metadata:
   author: claude-config
   version: 2.0.0

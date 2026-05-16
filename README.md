@@ -152,13 +152,13 @@ Multi-device sync: iCloud / OneDrive / Dropbox folder + symlink into `personal/`
 
 Cross-platform: **macOS** and **Windows**. Skills use `{projects_root}` instead of hardcoded paths; `paths.yaml` holds per-platform defaults, overrideable via env vars or `paths.local.yaml`.
 
-| Tool                               | Version | Required for                                                  |
-| ---------------------------------- | ------- | ------------------------------------------------------------- |
-| [Node.js](https://nodejs.org)      | 18+     | Hooks (format-on-save, prompt-timer), backlog server          |
-| Python 3                           | 3.8+    | Security-reminder hook                                        |
-| [git](https://git-scm.com)         | any     | Version control                                               |
-| [gh CLI](https://cli.github.com)   | any     | Team skills (team-review, team-issues, core-merge) — optional |
-| [jq](https://jqlang.github.io/jq/) | any     | Personal overlay settings merge — optional                    |
+| Tool                               | Version | Required for                                         |
+| ---------------------------------- | ------- | ---------------------------------------------------- |
+| [Node.js](https://nodejs.org)      | 18+     | Hooks (format-on-save, prompt-timer), backlog server |
+| Python 3                           | 3.8+    | Security-reminder hook                               |
+| [git](https://git-scm.com)         | any     | Version control                                      |
+| [gh CLI](https://cli.github.com)   | any     | Team skills (team-review, team-issues) — optional    |
+| [jq](https://jqlang.github.io/jq/) | any     | Personal overlay settings merge — optional           |
 
 <details>
 <summary>Repo layout</summary>

@@ -1,6 +1,6 @@
 ---
 name: project-switch
-description: List all git repos in {projects_root} plus any extra_paths bookmarks (vaults, scratch dirs, etc.) and automatically switch to the chosen project in the same terminal tab. Use with /project-switch or /project-switch <name> to quickly switch between projects with the correct CLAUDE.md, permissions, and skills-symlinks loaded.
+description: Switch between registered projects in the same terminal. Use with /project-switch.
 argument-hint: "[project-name|-]"
 metadata:
   author: claude-config

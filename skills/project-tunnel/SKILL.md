@@ -1,6 +1,6 @@
 ---
 name: project-tunnel
-description: Start dev server with Cloudflare Tunnel for external access. Use with /project-tunnel to expose local development environment via public URL.
+description: Expose local dev server via Cloudflare Tunnel. Use with /project-tunnel.
 metadata:
   author: claude-config
   version: 3.0.0

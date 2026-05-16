@@ -1,8 +1,6 @@
 ---
 name: core-edit
-description: >-
-  Edit existing Claude Code skills with rename, delete, and resource management.
-  Use with /core-edit to modify skill content, frontmatter, or resources.
+description: Edit existing Claude Code skills. Use with /core-edit.
 metadata:
   author: claude-config
   version: 1.0.0

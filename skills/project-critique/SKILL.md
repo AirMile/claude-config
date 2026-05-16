@@ -1,6 +1,6 @@
 ---
 name: project-critique
-description: Critically analyze ideas through structured techniques from multiple perspectives. Use with /project-critique to stress-test concepts before committing to implementation.
+description: Stress-test concepts via multi-perspective analysis. Use with /project-critique.
 metadata:
   author: claude-config
   version: 1.0.0

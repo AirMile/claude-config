@@ -1,11 +1,6 @@
 ---
 name: dev-define
-description: >-
-  Define feature requirements and architecture before the build phase. Use
-  with /dev-define [feature-name] to produce requirements, acceptance criteria,
-  and architecture from a backlog item or a fresh name. Also handles PAGE and
-  COMPONENT features from the backlog (functional pipeline, independent of
-  /frontend-design).
+description: Define feature requirements, criteria, and architecture. Use with /dev-define.
 writes:
   [feature.requirements, feature.architecture, feature.files, backlog.status]
 metadata:
@@ -22,53 +17,46 @@ PHASE 1 of the dev workflow: define → build → test.
 
 ## Constraints (apply to every phase)
 
-- **No implementation code anywhere.** Plan file en feature.json bevatten alleen type signatures, structuur, beslissingen. Function bodies, `(set, get) => ({...})` blocks, JSX, hook internals → `/dev-build`. Detail: zie PHASE 2 "Strict boundary."
+- **No implementation code anywhere.** Plan file and feature.json contain only type signatures, structure, decisions. Function bodies, `(set, get) => ({...})` blocks, JSX, hook internals → `/dev-build`. Detail: see PHASE 2 "Strict boundary."
 - **No requirements skipping** — every feature gets PHASE 1 extraction with acceptance criteria.
 - **No phase-jump without checkpoint** — user confirms scope (PHASE 1) before architecture; user approves plan (PHASE 2) before feature.json write.
-- **No skipping plan-mode calls** — `EnterPlanMode` at PHASE 0c, `ExitPlanMode` at end of PHASE 2. Required for model routers (e.g. `opusplan`).
+- **No skipping plan-mode calls** — `EnterPlanMode` at PHASE 0c, `ExitPlanMode` at end of PHASE 2 (PHASE 3+4 run after ExitPlanMode approval). Required for model routers (e.g. `opusplan`).
 
 ## Workflow
 
 ### PHASE 0: Feature Name & Context
 
-1. **If name provided** (`/dev-define auth`): use as feature name, go to step 2b.
+1. **Determine feature name.**
 
-2. **If no name** (`/dev-define`):
+   a) **Name provided** (`/dev-define auth`): use as feature name → go to step 2.
 
-   a) Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
-   - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`, go to step 3.
-   - Fallback: `data.features.find(f => f.status === "TODO")` (first TODO).
+   b) **No name provided** (`/dev-define`): pick from backlog → concept → suggestions in this order:
 
-   b) **If backlog feature found (fallback path):**
-   AskUserQuestion: "Next feature from backlog: **{name}**. Continue with this?"
-   - "{name} (Recommended)" / "Different feature"
-   - Backlog chosen → step 3. "Different feature" → option c.
+      - Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
+        - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`, go to step 2.
+        - Fallback: `data.features.find(f => f.status === "TODO")` (first TODO).
+      - **If backlog feature found (fallback path):**
+        AskUserQuestion: "Next feature from backlog: **{name}**. Continue with this?" — "{name} (Recommended)" / "Different feature". Backlog chosen → step 2. "Different feature" → next bullet.
+      - **No backlog but concept present:**
+        Read `SEED_CONTEXT` per `shared/SEED.md`. If `SEED_CONTEXT.present`:
+        ```yaml
+        header: "Concept without backlog"
+        question: "There is a concept but no backlog yet. Do you want to generate a backlog first?"
+        options:
+          - label: "Yes, first /project-backlog (Recommended)", description: "Generate backlog from concept, then define features"
+          - label: "No, define directly", description: "Define a standalone feature without a backlog"
+        multiSelect: false
+        ```
+        "Yes" → stop, show: `Run /project-backlog to convert your concept into a backlog.`
+        "No" → continue to next bullet.
+      - **No backlog, no concept (or direct-define chosen):**
+        Generate 3 suggestions from available signal in this order: (1) `project.json#features[]` with `status: "TODO"` or `"PLANNED"` (use feature `name` + `summary`); (2) if <3 found, scan `project.json#concept.goals[]` or `concept.pitch` for noun-phrases that could be features (e.g. "user authentication", "report export"); (3) if still <3, fallback to 3 generic next-step suggestions based on `stack.framework` (e.g. Next.js → "auth-flow", "api-route", "form-validation"). Show via AskUserQuestion: "Which feature do you want to define?" — each option label = kebab-case name, description = 1-line purpose. Selected name → step 2.
 
-   c) **No backlog but concept present:**
-   Read `SEED_CONTEXT` per `shared/SEED.md`. If `SEED_CONTEXT.present`:
-   AskUserQuestion:
+2. **Feature existence check** (before context load):
 
-   ```yaml
-   header: "Concept without backlog"
-   question: "There is a concept but no backlog yet. Do you want to generate a backlog first?"
-   options:
-     - label: "Yes, first /project-backlog (Recommended)", description: "Generate backlog from concept, then define features"
-     - label: "No, define directly", description: "Define a standalone feature without a backlog"
-   multiSelect: false
-   ```
-
-   "Yes" → stop, show: `Run /project-backlog to convert your concept into a backlog.`
-   "No" → continue to option d.
-
-   d) **No backlog, no concept (or direct define chosen):**
-   AskUserQuestion: "Which feature do you want to define?" with 3 suggestions relevant to the project.
-
-2b. **Feature existence check** (after name is determined, before context load):
-
-Check: `.project/features/{feature-name}/feature.json` exists?
-
-- **Not found** → continue to step 3 (normal flow).
-- **Found** → go to PHASE 0b (update-mode).
+   Check: `.project/features/{feature-name}/feature.json` exists?
+   - **Not found** → continue to step 3 (normal flow).
+   - **Found** → go to PHASE 0b (update-mode).
 
 3. **Setup + context load** (parallelize):
    - `mkdir -p .project/features/{feature-name}`
@@ -78,12 +66,12 @@ Check: `.project/features/{feature-name}/feature.json` exists?
    - **Onboarding check** (after project.json read): not present → warn `⚠️ No project.json found. Consider /core-setup.`; present but empty (no `context`, `stack`, `features`) → warn `ℹ️ project.json lacks codebase context. /core-setup can fill this in.`; present with content → continue silently. Non-blocking.
    - Read `.project/project-context.json` (if exists) — extract `context.patterns`, `architecture.components[]`.
    - Read `.claude/research/stack-baseline.md` (if not available, use `project.json.stack` as basis).
-   - **Backlog read-only**: Read `.project/backlog.html` for context only (feature `risk`, `dependencies`, `externalRef`). Mutations (status, date, `auto`-flag) happen in PHASE 4 — keeps all writes after `ExitPlanMode` per PHASE 0c plan-mode protocol.
+   - **Backlog read-only** (required — feeds the PHASE 1 risk-check + PHASE 3 externalRef passthrough): Read `.project/backlog.html`, parse JSON from `<script id="backlog-data">`, find the feature by name. Keep `risk`, `dependencies`, `externalRef` in memory for PHASE 1 and PHASE 3. Mutations (status, date, `auto` flag) happen in PHASE 4 — keeps all writes after `ExitPlanMode` per the PHASE 0c plan-mode protocol. Feature not in backlog → log `Backlog: ⓘ not present — risk-check skipped` and continue.
 
 4. **Optional context** (skip each item if results would be empty):
    - **Thinking files**: Grep `.project/thinking/*.md` for feature name. Read matches as PHASE 1 input.
-   - **Past decisions**: only if `.project/features/` has any prior `feature.json`. Flatten `durableDecisions[]` from all prior features (tag `[feature-X]`) + scan `.project/thinking/*-decision-*.md` (extract `THINK:`, `RECOMMENDATION:`, `CONSTRAINT` from first 30 lines, tag `[project]`). Filter ≥2 keyword overlap with current feature. Keep top 3.
-   - **Learnings**: load via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md) (scopes: component, architectural; pitfall-prefix: true; current-feature: `<name>`). Show `RELEVANT LEARNINGS` block before PHASE 1 only on ≥1 match. No matches → silent.
+   - **Past decisions**: only if `.project/features/` has any prior `feature.json`. Collect `durableDecisions[]` from all prior features (tag `[feature-X]`) + scan `.project/thinking/*-decision-*.md` (extract `THINK:`, `RECOMMENDATION:`, `CONSTRAINT` from first 30 lines, tag `[project]`). Filter ≥2 keyword overlap with current feature. Keep top 3.
+   - **Learnings**: scan `project-context.json#learnings[]` (and optionally `project.json#learnings[]`). Match: relevant if (a) summary shares ≥2 keywords with the current feature name or concept, OR (b) `feature` name matches a **direct** dependency AND `type === "pitfall"`. Rationale: keyword-match catches topical relevance; dependency-pitfalls catch lessons that bit us last time in code we're about to touch. Show `RELEVANT LEARNINGS` block before the first AskUserQuestion of PHASE 1 (max 5 entries, pitfalls first, then patterns) — only on ≥1 match. No match → silent. Extended matching: [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md).
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 
@@ -172,43 +160,24 @@ Show before the first AskUserQuestion. No action question — context only so qu
 
 **Question 1 (always): Core Function** — "What should this feature do?" with 2-3 options.
 
-**Questions 2-4 (adaptive)**: Cover the must-cover categories. Choose subcategories appropriate for the stack (patterns, visual/output, persistence, API design). Derive options from the baseline and existing code. Combine related questions in one AskUserQuestion call if they are logically connected (max 2 per call).
+**Questions 2-4 (adaptive)**: Cover the must-cover categories. Choose subcategories appropriate for the stack (patterns, visual/output, persistence, API design). Derive options from the baseline and existing code. Combine related questions in one AskUserQuestion call if they are logically connected (max 2 sub-questions per call — this is the number of questions within one call, not the total).
 
 **Question 5 (optional)**: Only for complex configuration or multiple approaches.
 
-**User-delegation**: if the user responds with "what do you think?" or similar, give a brief recommendation with trade-off and proceed with that choice.
+#### Clarification Round
 
-#### Follow-up Check
+After the initial questions, identify open branches: unaddressed edge cases, implicit assumptions, conflicts between answers, or ambiguous choices needing a design decision.
 
-After the initial questions, evaluate whether there are open branches:
+**Skip** if the feature is simple (≤5 expected REQs) AND no open branches.
 
-- Unaddressed edge cases in the answers
-- Implicit assumptions that haven't been confirmed
-- Conflicts between answers
+**Otherwise**: 1-2 AskUserQuestion calls covering up to 4 sub-questions total. Each sub-question is either:
+- **Factual follow-up** — "What happens if {edge case}?" with 2-3 outcome options
+- **Design choice** — concrete A vs B vs C, first option Recommended, include "Not relevant to scope" if applicable
 
-**Skip follow-up** if the feature is simple (≤5 expected REQs) AND there are no open branches.
-**Otherwise**: ask 1-2 targeted follow-up questions. Frame as "What happens if...?" or "How does this handle...?"
+Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` in the in-memory clarifications array (written to `feature.json#clarifications` if ≥1 entry).
 
-Max 2 extra questions, then proceed to extraction.
-
-#### Gray-Area Resolution
-
-**Skip** if the follow-up check found no open branches.
-
-**Otherwise**: for each identified open branch (max 3):
-
-1. Frame the ambiguity as a concrete choice via AskUserQuestion:
-   - Header: the open branch as a short sentence
-   - Options: 2-3 concrete approaches + "Not relevant to scope"
-   - First option = Recommended
-
-2. Record the choice as a clarification:
-   `{ "question": "{open branch}", "answer": "{chosen option}", "impact": "brief note on which requirement area this affects" }`
-
-**"Not relevant"** → record as scoped-out, not as a requirement.
-**>3 open branches** → handle remaining ones inline during requirement extraction as edge cases.
-
-Max 3 AskUserQuestion calls. Then proceed to extraction.
+**"Not relevant"** → scoped-out, not a requirement.
+**>4 open branches** → handle the remainder inline during requirement extraction as edge cases.
 
 #### Requirement Extraction + Checkpoint
 
@@ -222,7 +191,7 @@ Extract testable requirements **internally** (no table output to chat). Write ea
 - No overlap between requirements (two REQs describing the same thing)
 - Scope fits 1 feature (if >10 REQs → flag for PHASE 1b)
 
-Fix found gaps internally: add missing acceptance criteria, split overlapping REQs, add edge case REQs.
+Fill any gaps before proceeding: add missing acceptance criteria, split overlapping REQs, add edge-case REQs.
 
 **Short chat checkpoint** — show only a concise numbered list (REQ-ID + 1-line description, without category and without acceptance) so user can confirm scope is correct before architecture work:
 
@@ -235,24 +204,35 @@ REQ-002 — {1-line description}
 
 Confirm with user via AskUserQuestion: "Is this scope correct?"
 
-- "Yes, continue (Recommended)" — proceed to scope analysis + architecture
+- "Yes, continue (Recommended)" — proceed to PHASE 1b (scope analysis)
 - "Adjust" — back to relevant question
+
+**Note:** do not show the scope line ("SINGLE feature" / "RECOMMEND SPLIT") at this checkpoint — that belongs in PHASE 1b and follows after scope confirmation. Show the checkpoint purely as a REQ list + confirmation question.
+
+**Mid-flow scope expansion**: if the user introduces new scope after requirement extraction but before PHASE 2, treat it as an additional AskUserQuestion round and re-run the completeness self-check. New REQs are regular requirements (numbered sequentially), not clarifications.
 
 The full requirements table with acceptance criteria and the feature overview table are only written in the plan file (in PHASE 2), not inline in chat.
 
-#### Reuse-Discovery (optional — skip for COMPONENT features themselves)
+#### Reuse-Discovery (skip if current feature `type` is `COMPONENT` or project is not frontend)
 
-**When to run:** only if the current feature type is NOT `COMPONENT`, and it is a frontend project (stack.framework present).
+Scan the extracted requirements (description + acceptance) for UI-element keywords: Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton. Apply project-specific prefixes too.
 
-Follow [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) for the canonical protocol.
+**Self-reference filter (always apply):** skip a match if the kebab-cased keyword appears in the current feature name (e.g. feature `kelly-slider` → skip "Slider" match, feature `event-modal` → skip "Modal" match). Prevents self-dependencies.
 
-**Trigger:** keyword scan on UI element names in requirements text — Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton. Also apply project-specific name prefixes. Add items in-memory (carried forward to PHASE 4 sync); also append kebab-name to current feature's `dependencies[]`.
+**On 1+ remaining match:**
+1. Per match: kebab-case the name (e.g. "Select" → `currency-select` with context prefix when available).
+2. Append to the in-memory `discoveredComponents[]` (carried to PHASE 4 sync).
+3. Append the kebab-name to the current feature's `dependencies[]`.
 
 **Source:** `"/dev-define"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
+
+For the shared sync implementation of `discoveredComponents` in PHASE 4, see [shared/SKILL-PATTERNS.md#reuse-discovery](../shared/SKILL-PATTERNS.md#reuse-discovery).
 
 ---
 
 ### PHASE 1b: Scope Analysis & Feature Splitting
+
+**Run immediately after the scope confirmation from PHASE 1.** Count `requirements.length`:
 
 **≤6 requirements**: ALWAYS show one line inline to the user:
 
@@ -281,45 +261,44 @@ No AskUserQuestion, no extra explanation. Then proceed directly to PHASE 2. Skip
 
 ### PHASE 2: Architecture
 
-**Output rule for this entire phase**: write design **directly to the plan file** (Write/Edit, path from PHASE 0c system-reminder). **Do not show design output inline in chat** — only a short progress marker (e.g. `Architecture designed: N files, K build steps. Plan file updated.`).
+**Output rule for this entire phase**: write design **directly to the plan file** (Write/Edit, path from PHASE 0c system-reminder). **Do not show design output inline in chat** — only a short progress marker (e.g. `Architecture designed: N files, K build steps. Plan file updated.`). **Exception**: for visual features the ASCII wireframe may appear inline in an AskUserQuestion description (see "Design sketch" in step 3).
 
 **Strict boundary — design vs implementation**:
 
 - **Allowed in plan file**: type signatures (`interface X { ... }`, `type Y = ...`, function signatures `(input: X) => Y`), file/module structure, feature flow as `→` chain, dependency graph, build sequence, test strategy table, durable decisions.
 - **Forbidden in plan file**: function bodies, `(set, get) => ({...})` blocks, `set({...})` calls, helper implementations, JSX, hook internals — even as "skeleton" or "pseudo-code." That work belongs to `/dev-build`. If a code fence contains anything beyond type declarations: stop and rewrite as an English description.
 
-**Plan file vs feature.json — rolverdeling**:
+**Plan file vs feature.json — role split**:
 
-| Inhoud | Plan file | feature.json |
+| Content | Plan file | feature.json |
 |---|---|---|
-| Context / rationale / waarom | ✓ | — |
-| REQ-lijst (1-regel descriptions) | ✓ | ✓ |
-| Volledige acceptance criteria | — | ✓ (canonical) |
-| File structure tabel | ✓ | ✓ |
+| Context / rationale / why | ✓ | — |
+| REQ list (1-line descriptions) | ✓ | ✓ |
+| Full acceptance criteria | — | ✓ (canonical) |
+| File structure table | ✓ | ✓ |
 | Type signatures (typescript fence) | ✓ | ✓ (`interfaces[].definition`) |
-| Build sequence samenvatting | ✓ | ✓ (canonical) |
-| Test strategy tabel | — | ✓ (canonical) |
-| Durable decisions met rationale | ✓ | ✓ (canonical) |
+| Build sequence summary | ✓ | ✓ (canonical) |
+| Test strategy table | — | ✓ (canonical) |
+| Durable decisions with rationale | ✓ | ✓ (canonical) |
 | Verification steps | ✓ | — |
 | Out of scope | ✓ | — |
-
-**Exception**: for visual features the ASCII wireframe may appear inline in an AskUserQuestion description.
 
 Design in three steps:
 
 1. **Baseline check** (internally):
    - Search `stack-baseline.md` for patterns relevant to this feature.
-   - **Pattern found** → use as basis, skip research.
-   - **Pattern not found** → inline research via Context7 (`resolve-library-id` + `query-docs`) + WebSearch for external APIs. After research: append new patterns to `stack-baseline.md`.
-   - **No baseline file** → always execute research. Do NOT create baseline (that is /core-setup).
+   - **Pattern found** → use as basis, skip research. Show: `Baseline: ✓ pattern hit — {pattern-name}`. In PHASE 3: omit the `research` field in feature.json entirely (baseline hit is not research).
+   - **Pattern not found** → inline research via Context7 (`resolve-library-id` + `query-docs`) + WebSearch for external APIs. Show: `Baseline: ⚙ research via Context7 — {topic}`. After research: append new patterns to `stack-baseline.md`. In PHASE 3: write `research: { sources[], findings[] }` to feature.json — only for actually executed lookups.
+   - **No baseline file** → always execute research. Show: `Baseline: ⓘ missing — inline research`. Do NOT create baseline (that is /core-setup). PHASE 3 gets `research` as described above.
 
 2. **Existing code** (internally): Glob + Read the most relevant files with similar patterns.
 
 3. **Design** → write to plan file:
    - **Feature flow**: compact `→` chain. Conditional paths in `[brackets]`, parallel with `+`.
    - **File structure**: create/modify table (path, action, purpose, requirements).
+   - **Routes registration** (frontend projects with `stack.framework` only): every `page`/`route` file from the file structure table — regardless of action (CREATE or MODIFY) — gets an entry in `feature.architecture.routes[]` with `{ path, file, action, requirements[] }`. **Skip entirely** if the file structure contains no page/route files (e.g. pure component or utility features) — omit the `routes[]` field from feature.json in that case. This is canonical; `project-context.json#context.routing` is derived from it in PHASE 4 (add for CREATE, leave unchanged for MODIFY).
    - **Type signatures only**: `interface`, `type`, function signatures. No bodies. Wrap in a single ` ```typescript ` fence per module.
-   - **Design sketch**: visual features only — ASCII wireframe + states (loading/empty/error). Confirm inline via AskUserQuestion: "Is this visual design correct?" — "Yes (Recommended)" / "Adjust". Use token names (`bg-primary`, `text-foreground`), no hex. See `shared/TOKENS.md`.
+   - **Design sketch**: visual features only — ASCII wireframe + states (loading/empty/error). Confirm inline via AskUserQuestion: "Is this visual design correct?" — "Yes (Recommended)" / "Adjust". **Wait for user confirmation before continuing; no implicit 'Yes'.** Use token names (`bg-primary`, `text-foreground`), no hex. See `shared/TOKENS.md`.
    - **Dependency analysis**: REQ→REQ relations (1 line each).
    - **Build sequence**: numbered REQ-clusters, `dependsOn` pointers. Combine REQs touching the same file with no mutual dependencies.
    - **Test strategy**: REQ→testfile→description table.
@@ -344,10 +323,12 @@ Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` f
 | `apiContract`               | backend only                                                                                                                                                                              |
 | `buildSequence`             | always                                                                                                                                                                                    |
 | `testStrategy`              | always (optional `location` field)                                                                                                                                                        |
-| `clarifications`            | only include if gray-area resolution produced at least 1 answer — otherwise OMIT field (no empty array)                                                                                   |
+| `clarifications`            | only include if the clarification round (PHASE 1 Clarification Round) produced at least 1 answer — otherwise OMIT the field. Contains **only** clarification-round entries (factual follow-ups + design choices), not the main questions from PHASE 1 steps 1-5; those belong in `choices[]`.                                    |
 | `durableDecisions`          | with >3 requirements — decisions that apply across all REQs                                                                                                                               |
 | `research`                  | only if research was performed                                                                                                                                                            |
 | `externalRef`               | only if the backlog item had this field — copy 1:1 (`type`, `id`, `url`, `labels`, `split`). Traceability to external issue tracker for downstream skills (`/dev-build`, `/core-commit`). |
+
+**`deltaOp` on requirements**: only write in update-mode (PHASE 0b). On a fresh definition: omit `deltaOp` and `previousDescription` entirely. PHASE 0b adds these when requirements are updated via add/modify/remove.
 
 **`durableDecisions`** — decisions that do NOT change during the build:
 
@@ -357,8 +338,6 @@ Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` f
 - External service boundaries
 - Route structures / URL patterns (for routing features)
 - Auth/authz approach (for auth features)
-
-Only include if there are actually cross-requirement decisions. Skip for simple features (≤3 REQs).
 
 **`buildSequence`** structure — dev-build iterates this directly:
 
@@ -383,37 +362,44 @@ Only include if there are actually cross-requirement decisions. Skip for simple 
 
 Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations below.
 
-Read in parallel **directly before editing** (skip if not exists) — do NOT rely on reads from earlier phases (Prettier/linters can modify files in between):
+Read in parallel **directly before editing** (skip if not exists) — do NOT rely on reads from earlier phases:
 
 - `.project/backlog.html`
 - `.project/project.json`
 - `.project/project-context.json`
 
-Mutate in memory:
+Apply the following mutations in memory, then batch-write at the end of the phase.
 
-**Backlog** (see `shared/BACKLOG.md`):
+#### Mutations on `backlog.html` (see `shared/BACKLOG.md`)
 
-- Find feature → set `status: "DEFINED"`, remove `transition` (if present). Not found → add to `data.features` with `phase: "P4"`, `status: "DEFINED"`.
+- Find feature → set `status: "DEFINED"`, `definedAt: <ISO>`, `auto: true`, remove `transition` (if present) — all three in one write. Not found → add to `data.features` with `phase: "P4"`, `status: "DEFINED"`, `auto: true`.
 - **Dependencies**: If during PHASE 1 or PHASE 2 external feature dependencies were identified (other features that must be DONE first), merge those into `dependencies[]`. Never remove existing values — only add. If nothing new found: leave field unchanged.
 - Set `data.updated` to today.
 
-**Dashboard** (see `shared/DASHBOARD.md`):
+#### Mutations on `project.json` (see `shared/DASHBOARD.md`)
 
-- Update feature in `features` array: status → `"DEFINED"`, update summary
+- Update feature in `features` array: status → `"DEFINED"`, update summary.
 - Merge per entity type (always check for existing before push):
   - **Data entities** (optional — only if feature introduces domain entities): check on name → new: push with fields/relations → existing: merge new fields. If feature has no entities (UI-only, refactor, utility): skip this update, log `Skipped data.entities: no entities`.
   - **Endpoints**: check on method+path → new: push with `status: "planned"`, `auth: "public" | "user" | "admin"` (default `"public"`, use `"user"` if JWT/session required, `"admin"` if role-check required; omit `auth` field for projects without auth) → existing: skip
-  - **Routes** in `.project/project-context.json` → `architecture.routes[]`: for each new page route in this feature → check on `path` → new: push `{ path, purpose, feature: "<feature-name>" }` + `auth` field only if project has auth → existing: update `purpose` if changed. Skip for non-frontend features (pure API/utility).
   - **Stack packages**: check on name → new: push `{ name, version, purpose }` → existing: skip
   - **Features**: check on name → new: push `{ name, status: "DEFINED", summary, created }` → existing: update status
-  - **Architecture** in `.project/project-context.json`: generate/update `architecture` section if project has multiple components/modules. **Follow component-first model from `shared/DASHBOARD.md`**:
-    - `layers`: optional — define layers with `{ name, order }` if project uses explicit layer naming (e.g. API Layer order 1, Data Layer order 3). Skip if project does not use this.
-    - `dataFlow`: one-line summary of the request flow
-    - `components`: per component `{ name, layer, description, status, connects_to }`. New feature components → `status: "planned"`. Existing built components → `status: "done"`. External services → `status: "external"`. `connects_to`: array of typed edges `{ to, type }` where `type` is one of `calls` | `reads` | `writes` | `depends_on` (see `shared/DASHBOARD.md` Edge fields for mapping)
-    - Merge strategy: check if component `name` already exists → no: push → yes: merge (overwrite status, merge `connects_to[]` with dedup on `to+type` combination)
-    - Optional: generate Mermaid diagram to `.project/architecture.mmd` for visual context
-    - Skip for single-file feature without architectural impact
-  - **Context** in `.project/project-context.json`: update `context.structure` and `context.routing` if the feature adds new files or routes. **Note**: structure/routing are JSON-escaped strings — for large changes use Write instead of Edit to avoid escaping issues.
+
+#### Mutations on `project-context.json` (see `shared/DASHBOARD.md`)
+
+- **Routes** in `architecture.routes[]`: for each new page route in this feature → check on `path` → new: push `{ path, purpose, feature: "<feature-name>" }` + `auth` field only if project has auth → existing: update `purpose` if changed. Skip for non-frontend features (pure API/utility).
+- **Architecture**: generate/update `architecture` section if project has multiple components/modules. **Follow the component-first model from `shared/DASHBOARD.md`**:
+  - `layers`: optional — define layers with `{ name, order }` if project uses explicit layer naming (e.g. API Layer order 1, Data Layer order 3). Skip if project does not use this.
+  - `dataFlow`: one-line summary of the request flow
+  - `components`: per component `{ name, layer, description, status, connects_to }`. New feature components → `status: "planned"`. Existing built components → `status: "done"`. External services → `status: "external"`. `connects_to`: array of typed edges `{ to, type }` where `type` is one of `calls` | `reads` | `writes` | `depends_on` (see `shared/DASHBOARD.md` Edge fields for mapping)
+  - Merge strategy: check if component `name` already exists → no: push → yes: merge (overwrite status, merge `connects_to[]` with dedup on `to+type` combination)
+  - Mermaid diagram: generate `.project/architecture.mmd` only when the feature adds ≥3 new components AND introduces ≥2 cross-component edges (`calls` / `reads` / `writes` / `depends_on`) that are not obvious from the textual `components[]` list. Otherwise skip — the JSON is the source of truth.
+  - Skip the entire Architecture mutation for a single-file feature without architectural impact.
+- **Context**:
+  - `context.structure`: scan `feature.files[]` for new top-level directories under `src/` (e.g. `src/components/onboarding/`, `src/lib/payments/`). For each new directory not yet in `context.structure`: add a new line with path + 1-line description of the feature purpose.
+  - `context.routing`: source is `feature.architecture.routes[]`. For each entry with `action: "CREATE"`: add `{path} → {file}` line. Entries with `action: "MODIFY"` leave `context.routing` unchanged (route already exists).
+  - **Note**: structure/routing are JSON-escaped strings — for large changes use Write instead of Edit to avoid escaping issues.
+  - **Edit strategy**: do one Read directly before the first Edit, then perform all `project-context.json` mutations back-to-back without an intermediate Read. With ≥3 independent Edits on the same file: build the full object in memory and use one Write instead of separate Edits — prevents "File has been modified since read" errors from tool-hash mismatches.
 
 **PAGE-seeding** (frontend projects only — skip for pure API/backend/game features):
 
@@ -431,9 +417,9 @@ Write back in parallel:
 
 **Auto-build marking** (after sync):
 
-Read backlog again, find feature, set `"auto": true`, write back via Edit. No user prompt — always mark auto so the card gets an AUTO badge and the clipboard has the correct `/dev-build` command.
+Combine the auto flag with the status write above — no separate second write. The backlog mutation in one script: `status: "DEFINED"`, `definedAt: <ISO>`, `auto: true` together. No user prompt — always mark auto so the card gets an AUTO badge and the clipboard has the correct `/dev-build` command.
 
-Clean up: `rm -f .project/session/active-{feature-name}.json`
+Clean up: `rm -f .project/sessions/active-{feature-name}.json`
 
 **Output:**
 
@@ -449,4 +435,3 @@ Next: /dev-build {feature-name}
 ```
 
 Omit the `Next` line if the feature was not a backlog item and no concept is present — briefly note the absence of a backlog instead.
-

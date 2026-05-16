@@ -1,6 +1,6 @@
 ---
 name: project-seed
-description: "Transform any idea, concept, feature, or task assignment into a structured seed document. Use with /project-seed to feed /project-backlog. Works for greenfield products, games, mature project features, and task assignments."
+description: Transform any idea into a structured seed document. Use with /project-seed.
 metadata:
   author: claude-config
   version: 1.2.0

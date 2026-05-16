@@ -1,6 +1,6 @@
 ---
 name: dev-refactor
-description: Batch refactor code quality after testing with parallel analysis, dynamic stack-aware patterns, and early-exit for clean features. Use with /dev-refactor to improve code structure, naming, and patterns.
+description: Batch refactor code quality after testing. Use with /dev-refactor.
 reads: [feature.build, feature.tests, backlog.status]
 writes: [feature.refactor, backlog.status, learnings]
 metadata:
@@ -72,26 +72,30 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file w
 3. PHASE 2: Aggregated Research Decision
 4. PHASE 3: Combined Plan + Single Approval
 5. PHASE 4: Apply + Test Per Feature
-6. PHASE 5: Batch Completion
+6. PHASE 5: Batch Completion (feature.json writes → learnings → sync → commit → archive)
 
 ### PHASE 0: Batch Context Loading + Refactor Patterns
 
 > **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
-**Pre-flight: detect `.project/` tracking mode** — determines whether `shippedSha` is meaningful:
+**Pre-flight: detect `.project/` tracking mode** — determines whether `shippedSha` is meaningful.
+
+Check whether any `.project/` files are actually tracked by git (the directory may be in `.gitignore` while individual files remain tracked from before the rule):
 
 ```bash
-if git check-ignore -q .project/project.json 2>/dev/null; then
-  echo "tracking: .project/ is gitignored — shippedSha will be skipped"
-  TRACKING_MODE="untracked"
-else
+if git ls-files .project/ --error-unmatch 2>/dev/null | head -1 | grep -q .; then
   TRACKING_MODE="tracked"
+else
+  echo "tracking: no .project/ files are tracked — shippedSha will be skipped"
+  TRACKING_MODE="untracked"
 fi
 ```
 
+Implication for PHASE 5 step 4: files under `.project/` may need `git add -f` even when `TRACKING_MODE=tracked` (see step 4 for handling).
+
 If `TRACKING_MODE=untracked`:
-- PHASE 5 step 2: omit `shippedSha` field entirely (do not write `""`)
-- PHASE 5 step 3a: skip the entire backfill + commit step
+- PHASE 5 step 3: omit `shippedSha` field entirely (do not write `""`)
+- PHASE 5 step 5: skip the entire backfill + commit step
 - Log once: `tracking: .project/ is gitignored — shippedSha skipped`
 
 **Step 0: Capture git baseline** — must run BEFORE worktree switch so subsequent comparison uses the same working tree:
@@ -100,6 +104,7 @@ If `TRACKING_MODE=untracked`:
 mkdir -p .project/session
 git status --porcelain | sort > .project/session/pre-skill-status.txt
 echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+# Batch mode (queue > 1): use active-batch-{date}.json instead — single active file per run is best-effort tracking only
 ```
 
 After worktree switch in step 3: re-capture baseline in the worktree:
@@ -108,7 +113,7 @@ After worktree switch in step 3: re-capture baseline in the worktree:
 git status --porcelain | sort > .project/session/pre-skill-status-worktree.txt
 ```
 
-PHASE 5.3 compares against `pre-skill-status-worktree.txt` if worktree-switch happened, otherwise against `pre-skill-status.txt`.
+PHASE 5.4 compares against `pre-skill-status-worktree.txt` if worktree-switch happened, otherwise against `pre-skill-status.txt`.
 
 1. **Read backlog for pipeline status:**
 
@@ -193,10 +198,10 @@ PHASE 5.3 compares against `pre-skill-status-worktree.txt` if worktree-switch ha
 
    ```yaml
    header: "Open worktrees"
-   question: "Open worktrees found: {list}. Batch/codebase refactor on main may create merge conflicts when these are integrated. What do you want to do?"
+   question: "Open worktrees found: {list}. Normally /dev-verify closes these — these are leftovers (verify skipped, or 'Keep open' chosen). Batch refactor on main may cause merge conflicts when they're integrated later. What do you want to do?"
    options:
      - label: "Stop — finalize open worktrees first (Recommended)"
-       description: "Run /core-finalize for each open worktree, then re-run refactor"
+       description: "Run /core-finalize for each leftover worktree, then re-run refactor"
      - label: "Continue anyway"
        description: "Refactor on main now — you accept potential merge conflicts later"
    multiSelect: false
@@ -240,14 +245,23 @@ of `patterns`.
 For each feature with a known build start time: build a diff string to give agents as a focus hint.
 
 ```bash
-# Determine start of feature work
-first_hash=$(git log --since="{feature.build.startedAt}" --pretty=format:"%H" -- {pipeline_files} | tail -1)
+# Determine start of feature work — widen by one day because --since=YYYY-MM-DD
+# excludes commits from that exact date (same-day builds return empty diff otherwise)
+start_date=$(date -d "{feature.build.startedAt} -1 day" +%Y-%m-%d 2>/dev/null || \
+             date -v-1d -j -f "%Y-%m-%d" "{feature.build.startedAt}" +%Y-%m-%d)
+first_hash=$(git log --since="$start_date" --pretty=format:"%H" -- {pipeline_files} | tail -1)
 
 # Diff from that commit to now, scoped to pipeline files
 [ -n "$first_hash" ] && git diff ${first_hash}^..HEAD -- {pipeline_files} > /tmp/diff-{feature}.patch
 ```
 
-Store as `pipeline_diff[feature_name]`. If diff is empty or `startedAt` is missing: skip — agent then only sees the full files.
+**Fallback if diff is empty** (same-day build+refactor, or no startedAt): grep commits by feature name in subject line:
+
+```bash
+first_hash=$(git log --oneline --grep="{feature-name}" --pretty=format:"%H" -- {pipeline_files} | tail -1)
+```
+
+Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing: skip — agent then only sees the full files.
 
 8. **Load or generate refactor-patterns.md:**
 
@@ -361,8 +375,6 @@ Features:
    - No nitpicks. Only issues with a clear, concrete fix.
    - Skip false positives explicitly (don't even mention them).
    - Format per finding: `[IMPACT|CATEGORY] file:line — problem description — concrete fix in 1 sentence`
-   - No "No X found" lines for empty categories.
-   - Only scan pipeline files — ignore external files.
 
    ```
 
@@ -700,7 +712,7 @@ Refactor patterns updated: {yes/no}
    ── {feature-1} ──
 
    1. 🔴 {file}:{line} — {issue} → {fix}
-      Before: {code snippet}
+      Before: {code snippet}   ← extract via: sed -n '{start},{end}p' {file}  (max 20 lines; do NOT Read the whole file)
       After:  {proposed change}
 
    2. 🟡 {file}:{line} — {issue} → {fix}
@@ -732,7 +744,7 @@ Refactor patterns updated: {yes/no}
 
 5. **Ask for scope** (skip this step in quick-mode):
 
-   Use **AskUserQuestion** tool:
+   Use **AskUserQuestion** tool (max 4 options — tool limit):
    - header: "Scope"
    - question: "Which improvements do you want to apply? ({M} total across {N} features)"
    - options:
@@ -740,8 +752,9 @@ Refactor patterns updated: {yes/no}
      - label: "Only HIGH + MED", description: "{X+Y} improvements, skip LOW"
      - label: "Only HIGH", description: "{X} improvements, security/breaking only"
      - label: "Choose per feature", description: "Select which improvements you want per feature"
-     - label: "Include deliberately-not-fixed too", description: "Add the {K} SKIPPED items to the plan"
    - multiSelect: false
+
+   The built-in "Other" option handles: (a) cancel — exit with "Refactor cancelled by user"; (b) SKIPPED items — if user requests inclusion of SKIPPED items via Other, run a second AskUserQuestion (multiSelect) with the SKIPPED list and promote selected entries to improvements.
 
    **If "Choose per feature":**
 
@@ -757,11 +770,7 @@ Refactor patterns updated: {yes/no}
 
    Parse → approved-set. Empty input or "none" → all features get CLEAN status.
 
-   **If "Include deliberately-not-fixed too"** → show SKIPPED-list in second AskUserQuestion (multiSelect) so user can specifically choose which ones to include after all, and promote those to improvements.
-
    Only approved features proceed to PHASE 4. Non-selected features get CLEAN status.
-
-   The user can also "Cancel" via the built-in "Other" option → EXIT with "Refactor cancelled by user".
 
 ---
 
@@ -796,11 +805,21 @@ Refactor patterns updated: {yes/no}
 
    Initialize empty lists: `modified_files[feature_name] = []`, `created_files[feature_name] = []`
 
+   **Shared files**: detect files that appear in multiple features' pipelines (`shared_files = intersection(pipeline_files[this_feature], pipeline_files[already_applied_features])`). Snapshot each shared file BEFORE editing:
+
+   ```bash
+   for file in {shared_files_for_this_feature}; do
+     cp "$file" "/tmp/refactor-snapshot-{feature_name}-$(basename $file)"
+   done
+   ```
+
+   Rollback for shared files uses the snapshot, not `git checkout` (which would also undo preceding features' accepted changes to that file).
+
    b. **Apply improvements using Edit tool:**
    - Follow priority order strictly
    - **Re-read each file immediately before editing** (prevents "File has not been read yet" errors)
    - Group edits by file: read file → apply ALL edits for that file → move to next file
-   - **Only modify files in pipeline_files list** — assert before each edit
+   - **Pipeline scope only** (see "Scope Rule" top of skill) — assert before each edit
    - Keep changes non-breaking
    - Track: `modified_files[feature_name] = [list of existing files changed]`
    - Track: `created_files[feature_name] = [list of new files created]`
@@ -825,8 +844,14 @@ Refactor patterns updated: {yes/no}
      **Per-feature rollback (only this feature, not others):**
 
      ```bash
-     git checkout -- {modified_files[feature_name]}
+     # Files unique to this feature — restore via git:
+     git checkout -- {unique_files_for_this_feature}
      rm -f {created_files[feature_name]}
+
+     # Files shared with already-applied features — restore from snapshot (not git, to preserve prior feature's edits):
+     for file in {shared_files_for_this_feature}; do
+       cp "/tmp/refactor-snapshot-{feature_name}-$(basename $file)" "$file"
+     done
      ```
 
      Mark feature as ROLLED_BACK with reason. Continue to next feature.
@@ -897,7 +922,9 @@ IMPROVEMENTS APPLIED
 
    Do NOT overwrite existing sections.
 
-1b. **Learning extraction** — for features with status REFACTORED or CLEAN:
+2. **Learning extraction** [checkpoint — easy to skip; complete before moving to step 3] — for features with status REFACTORED or CLEAN:
+
+> Confirm `learnings[]` was appended to project-context.json (or log "no learnings — skip") before continuing to step 3.
 
 Read the `refactor` section of the just-written `feature.json` per feature:
 
@@ -923,9 +950,9 @@ No `pitfall` type — refactor does not discover bugs.
 
 **Dedup** via Jaccard(0.55) — same logic as dev-verify Step 3b. No learnings found → skip silently.
 
-Append to `project-context.json` → `learnings[]` (written in step 2 parallel sync).
+Append to `project-context.json` → `learnings[]` (written in step 3 parallel sync).
 
-2. **Parallel sync** (backlog + dashboard + conditional context sync) — follow `shared/SYNC.md` 3-File Sync Pattern, skill-specific mutations below:
+3. **Parallel sync** (backlog + dashboard + conditional context sync) — follow `shared/SYNC.md` 3-File Sync Pattern, skill-specific mutations below:
 
    Read in parallel (skip if not exists):
    - `.project/backlog.html`
@@ -934,7 +961,7 @@ Append to `project-context.json` → `learnings[]` (written in step 2 parallel s
 
    Mutate in memory:
 
-   **Backlog** (see `shared/BACKLOG.md`): status stays `"DONE"` for all features (CLEAN, REFACTORED, and ROLLED_BACK). Set per feature the `refactor` field and — on success — the `shipped` field. Leave `shippedSha` EMPTY in this first pass — it's filled after step 3:
+   **Backlog** (see `shared/BACKLOG.md`): status stays `"DONE"` for all features (CLEAN, REFACTORED, and ROLLED_BACK). Set per feature the `refactor` field and — on success — the `shipped` field. Leave `shippedSha` EMPTY in this first pass — it's filled after step 5:
    - CLEAN or REFACTORED → `f.refactor = "REFACTORED"`, `f.shipped = true`, `f.shippedAt = <ISO-date>`, `f.shippedSha = ""` (omit if `TRACKING_MODE=untracked`), remove `transition` (if present)
    - ROLLED_BACK → `f.refactor = "ROLLED_BACK"`, remove `transition` (if present) (shipped stays false — item remains in "Waiting for refactor" zone)
 
@@ -966,7 +993,7 @@ Append to `project-context.json` → `learnings[]` (written in step 2 parallel s
    - Write `project.json` (stack, features, endpoints, data)
    - Write `project-context.json` (context, architecture — create if not exists)
 
-3. **Scoped auto-commit** (only this skill's changes):
+4. **Scoped auto-commit** (only this skill's changes):
 
    Compare current git status with baseline from PHASE 0 (use `pre-skill-status-worktree.txt` if worktree-switch occurred, otherwise `pre-skill-status.txt`):
 
@@ -974,7 +1001,7 @@ Append to `project-context.json` → `learnings[]` (written in step 2 parallel s
    git status --porcelain | sort > /tmp/current-status.txt
    ```
 
-   **Guard — nothing to commit:** if `diff <baseline> /tmp/current-status.txt` is empty AND there are no NEW staged files, skip the commit entirely. Log: `commit: skipped (no changes)`. Continue to step 3a.
+   **Guard — nothing to commit:** if `diff <baseline> /tmp/current-status.txt` is empty AND there are no NEW staged files, skip the commit entirely. Log: `commit: skipped (no changes)`. Continue to step 5.
 
    Otherwise, categorize files:
    - **NEW** (only in current, not in baseline) → `git add` automatically
@@ -982,6 +1009,8 @@ Append to `project-context.json` → `learnings[]` (written in step 2 parallel s
    - **PRE-EXISTING** (only in baseline) → do NOT stage
 
    If baseline file doesn't exist, fall back to `git add -A`.
+
+   **Tracked-but-gitignored files**: `.project/` files (backlog.html, project.json, project-context.json, feature.json) are often tracked by git even when `.project/` appears in `.gitignore` (committed before the rule was added). `git add` on these files fails with "ignored by .gitignore". Use `git add -f` for any path under `.project/`. Detection: if `git add <path>` exits non-zero with this error → retry with `-f`.
 
    ```bash
    git commit -m "$(cat <<'EOF'
@@ -1007,7 +1036,7 @@ Append to `project-context.json` → `learnings[]` (written in step 2 parallel s
 
    Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/pre-skill-status-worktree.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
-3a. **Backfill shippedSha** — skip entirely if `TRACKING_MODE=untracked`. Otherwise:
+5. **Backfill shippedSha** — skip entirely if `TRACKING_MODE=untracked`. Otherwise:
 
 ```bash
 SHA=$(git rev-parse HEAD)
@@ -1023,9 +1052,9 @@ SHA=$(git rev-parse HEAD)
    git commit -m "chore(refactor): backfill shippedSha for {feature-list}"
    ```
 
-If step 3 was skipped (nothing to commit), use the pre-skill HEAD as `SHA` — still create the backfill commit.
+If step 4 was skipped (nothing to commit), use the pre-skill HEAD as `SHA` — still create the backfill commit.
 
-3b. **Feature archiving** (only features with `feature.json`, not small items without pipeline):
+6. **Feature archiving** (only features with `feature.json`, not small items without pipeline):
 
 For each CLEAN or REFACTORED feature where `.project/features/{name}/feature.json` exists:
 
@@ -1039,7 +1068,7 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 - ROLLED_BACK features: do not archive (stay in `.project/features/`)
 - Skip if feature-dir no longer exists (idempotent)
 
-4. **Show completion:**
+7. **Show completion:**
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1058,79 +1087,25 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
    Next steps:
      1. /dev-define {next-feature} → next feature from backlog
      2. /project-backlog → revise backlog if scope has changed
-   {if current branch matches worktree-*:}
-     3. /core-finalize → merge worktree to main
-   {/if}
+   {worktree finalize is handled automatically by the PHASE Finalize prompt below — no manual step needed}
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-   **PHASE Finalize** — run after commit, only if BOTH true:
+   **PHASE Finalize** — **skip entirely if `feature_queue.length > 1` (batch mode)**. Run only if BOTH:
    1. Single-mode (`feature_queue.length == 1`, not codebase-mode)
    2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
-   **PR offer (team-mode only)** — show first, only if ALL true:
-   1. `.project/project.json#team.mode === "team"` (absent → skip)
-   2. `gh` on PATH AND `gh auth status` exit 0
-   3. Clean tree (`git status --porcelain` empty — just committed, should hold)
+   **Team-mode PR offer**: if `.project/project.json#team.mode === "team"` AND `gh` available AND clean tree → ask "Push + PR openen voor worktree-{feature-name}?" (Yes/No). On Yes → follow `shared/PR.md`; print URL; skip finalize prompt.
 
-   If all true → AskUserQuestion:
+   **Finalize prompt** — detect PR state via `gh pr list --head $(git branch --show-current) --state all --json state,number,url --limit 1 2>/dev/null`:
 
-   ```yaml
-   header: "PR openen"
-   question: "Push + PR openen voor worktree-{feature-name}?"
-   options:
-     - label: "Ja, push + PR (Recommended)"
-       description: "Push the branch and open a PR via gh. Worktree stays until merged."
-     - label: "Nee, skip PR"
-       description: "Skip the PR; show finalize prompt instead."
-   multiSelect: false
-   ```
+   | PR_STATE                       | Action                                                                                |
+   | ------------------------------ | ------------------------------------------------------------------------------------- |
+   | `OPEN`                         | Print `PR #N is open: {URL}. Run /core-finalize {name} zodra gemerged.`               |
+   | `MERGED`                       | Ask "PR #N merged. Cleanup nu?" → Yes: `shared/FINALIZE.md mode: cleanup-only`       |
+   | empty / `CLOSED` / no gh       | Ask "Feature afgerond. Finalize nu?" → Yes: `shared/FINALIZE.md mode: solo`          |
 
-   On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
-   On "Nee" or any precondition fail → fall through to finalize prompt.
-
-   **Finalize prompt** — detect PR state first:
-
-   ```bash
-   PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
-   PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
-   PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
-   PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
-   ```
-
-   | PR_STATE                            | Action                                                                                                                                         |
-   | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-   | `OPEN`                              | Print: `"PR #{PR_NUMBER} is open: {PR_URL}. Run \`/core-finalize {feature-name}\` zodra gemerged."` No prompt.                                 |
-   | `MERGED`                            | AskUserQuestion: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd." — Yes/Keep open (see below) |
-   | empty / `CLOSED` / `gh` unavailable | AskUserQuestion: "Feature '{feature-name}' afgerond. Finalize nu (merge naar main + cleanup)?" — Yes/Keep open (see below)                     |
-
-   ```yaml
-   # For MERGED state:
-   header: "PR merged — cleanup"
-   question: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd."
-   options:
-     - label: "Yes, cleanup nu (Recommended)"
-       description: "Follow shared/FINALIZE.md cleanup-only — verwijder worktree + branch"
-     - label: "Keep open"
-       description: "Worktree blijft staan (bv. voor follow-up commits); cleanup later via /core-finalize"
-   multiSelect: false
-   ```
-
-   ```yaml
-   # For empty/CLOSED state:
-   header: "Finalize"
-   question: "Feature '{feature-name}' afgerond (status: DONE). Finalize nu (merge naar main + cleanup)?"
-   options:
-     - label: "Yes, finalize nu (Recommended)"
-       description: "Follow shared/FINALIZE.md solo-mode — merge worktree naar main + cleanup"
-     - label: "Keep open"
-       description: "Worktree blijft open, finalize later via /core-finalize"
-   multiSelect: false
-   ```
-
-   On MERGED "Yes" → follow `shared/FINALIZE.md` with `mode: cleanup-only`.
-   On empty/CLOSED "Yes" → follow `shared/FINALIZE.md` with `mode: solo`.
-   On any "Keep open" → print `💡 Run /core-finalize {feature-name} when ready`.
+   Op "Keep open" in beide gevallen → print `💡 Run /core-finalize {name} when ready`.
 
 > **Todo**: mark PHASE 5 → `completed`.
 
@@ -1177,6 +1152,7 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 This skill must NEVER:
 
 - Read pipeline source files directly in the main conversation (always use Explore agent)
+  EXCEPTION: in PHASE 3 step 4, populate `--- Before ---` blocks via `sed -n '{start},{end}p' {file}` or a line-range Grep — extract ONLY the specific lines for the finding (max 20 lines). Do NOT use the Read tool on the full pipeline file.
 - Pass full file contents to research agents (pass structured analysis from Explore agent)
 - Analyze, plan, or modify files outside pipeline_files (extracted from feature.json)
 - Include external file findings in any plan
@@ -1205,7 +1181,6 @@ This skill must ALWAYS:
 - Apply per-feature rollback (feature A succeeds, feature B fails → only B rolled back)
 - Write proportional documentation (compact for CLEAN, full for REFACTORED)
 - Make a single commit for all features
-- Re-read each file immediately before editing (prevents "File has not been read yet" errors)
 - Group edits by file: read file → apply ALL edits for that file → next file
 - Run full test suite after applying changes per feature
 - Analyze test failures before rollback (distinguish stale tests from regressions)

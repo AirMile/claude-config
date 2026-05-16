@@ -1,12 +1,6 @@
 ---
 name: team-outsource
-description: >-
-  Outsource a backlog item or defined feature to a teammate by creating an issue
-  in GitHub, Jira, or Linear. Generates a tailored brief from feature.json or
-  backlog data, assigns the teammate, and writes externalRef back so the local
-  item links to the external issue. Use /team-outsource <name> for a specific item,
-  /team-outsource to browse and pick, or /team-outsource --paste for Jira/Linear.
-  See shared/TEAM.md for the full team-repo workflow.
+description: Outsource a feature to a teammate via issue tracker. Use with /team-outsource.
 argument-hint: "[name] [--paste] [--tracker github|jira|linear]"
 metadata:
   author: claude-config

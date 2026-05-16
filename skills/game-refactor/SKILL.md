@@ -1,8 +1,6 @@
 ---
 name: game-refactor
-description: >-
-  Batch refactor code quality for Godot projects after testing with parallel
-  analysis and GDScript-aware patterns. Use with /game-refactor after /game-verify.
+description: Batch refactor Godot code quality after testing. Use with /game-refactor.
 reads: [feature.build, feature.tests, backlog.stage]
 writes: [feature.refactor, backlog.stage]
 metadata:
@@ -132,10 +130,10 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
    ```yaml
    header: "Open worktrees"
-   question: "Open worktrees found: {list}. Batch/codebase refactor on main may create merge conflicts when these are integrated. What do you want to do?"
+   question: "Open worktrees found: {list}. Normally /game-verify closes these — these are leftovers (verify skipped, or 'Keep open' chosen). Batch refactor on main may cause merge conflicts when they're integrated later. What do you want to do?"
    options:
-     - label: "Stop — merge open worktrees first (Recommended)"
-       description: "Run /core-finalize for each open worktree, then re-run refactor"
+     - label: "Stop — finalize open worktrees first (Recommended)"
+       description: "Run /core-finalize for each leftover worktree, then re-run refactor"
      - label: "Continue anyway"
        description: "Refactor on main now — you accept potential merge conflicts later"
    multiSelect: false

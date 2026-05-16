@@ -1,19 +1,17 @@
 ---
 name: dev-verify
-description: Adversarial verification — acceptance tests + fix loops. After verify, the code is good. Use with /dev-verify after /dev-build.
+description: Run adversarial acceptance tests and fix loops. Use with /dev-verify.
 reads: [feature.requirements, feature.build]
 writes: [feature.tests, backlog.status]
 metadata:
   author: claude-config
-  version: 2.3.0
+  version: "2.3.0"
   category: dev
 ---
 
 # Verify
 
 Verify phase: define → build → **verify**
-
-Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issues. After verify the feature is done.
 
 **Trigger**: `/dev-verify {feature-name}` or `/dev-verify {feature-name} {feedback}`
 
@@ -25,7 +23,6 @@ Adversarial evaluator: writes acceptance tests from spec, runs them, fixes issue
 /dev-verify user-registration Everything works except...    # free text (skips automation)
 ```
 
-> Feedback categorization table: see PHASE 3.
 > Classification criteria: `references/test-classification.md`
 > Code quality rules: `../shared/RULES.md` (R007-R009)
 
@@ -44,6 +41,7 @@ Add fix-loop phases via `TaskCreate` ONLY when they will fire:
 - MANUAL items in classification → add PHASE 2 before PHASE 2b
 - FAILs in PHASE 2b → add PHASE 3, PHASE 4, PHASE 5, PHASE 5b
 - Any PHASE 4 fixes touched previously-PASS AUTO items → add PHASE 5c
+- All PASS + worktree branch detected → add PHASE Finalize at end
 
 Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end. During context compaction the task list remains visible — no risk of missed phases.
 
@@ -52,13 +50,18 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 > **Todo**: call `TaskCreate` with the 5 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Read backlog** — `.project/backlog.html`, parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
-   - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "verifying")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`.
-   - Fallback: filter `status === "DOING"`. No feature name → suggest via AskUserQuestion.
+
+   Resolve the active feature in this precedence order:
+   - **Arg provided + matches a verifying feature** → use the arg. Show: `Backlog: ✓ Task picked up — {name}`.
+   - **Arg provided + no match** → use the arg name verbatim (legacy / out-of-band feature).
+   - **No arg + exactly one feature has `transition === "verifying"`** → auto-select that feature. Show: `Backlog: ✓ Task picked up — {name}`.
+   - **No arg + multiple verifying features** → AskUserQuestion to choose; recommend the most-recently-updated one.
+   - **No arg + no verifying feature** → fallback to `status === "DOING"`; still none → suggest via AskUserQuestion.
 
 2. **Parse input:**
-   - Feature name only → proceed to classification
-   - Feature name + inline feedback → skip to PHASE 1b
-   - Feature name + free text → skip to PHASE 1b
+   - Feature name only → proceed to classification (continue at Step 3).
+   - Feature name + inline feedback → skip to PHASE 1b.
+   - Feature name + free text → skip to PHASE 1b.
 
 3. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`. No checklist → exit: run `/dev-build` first.
 
@@ -120,7 +123,6 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
      Test data: {concrete values}
      Expected: {expected outcome}
      Recommended method: BROWSER | CLI
-     Reason: {why}
      Already covered: {what build tests verify, or "none"}
      httpContractTested: true/false
      delta: {extra verification needed, or "none"}
@@ -134,7 +136,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
 8. **Classify and plan test execution:**
 
-   a) Baseline check: `npm test 2>&1 | tail -20` (or project-specific command).
+   a) Baseline check: `npm test 2>&1 | tail -20` (or project-specific command). (can run in parallel with the Explore agent in Step 7 to save time)
    Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n})`
 
    b) Detect post-build mode:
@@ -269,7 +271,7 @@ INSTRUCTIONS:
 6. TOOL_ERROR (runner fails or CLI errors) → mark as TOOL_ERROR
 
 POST-BUILD: baseline already GREEN. Focus on INTEGRATION and ACCEPTANCE, not unit logic.
-Do NOT re-run npm test.
+Do NOT re-run the full baseline test suite just to verify it stays green. Run only the new test files you wrote.
 
 RESULT FORMAT:
 AUTOMATED_RESULTS_START
@@ -352,7 +354,7 @@ TEST RESULT: {feature-name} (POST-BUILD)
 
 BASELINE: npm test → PASS ({n}/{n})
 COVERED: {n} items (build tests cover contract)
-INTEGRATION: {n} scenarios → {n} PASS
+ACCEPTANCE + INTEGRATION: {n} scenarios → {n} PASS
 TOTAL: {n}/{n} PASS
 {IF acceptance tests ran: Evaluation: {n}/{n} REQs PASS}
 ```
@@ -392,15 +394,23 @@ All PASS → PHASE 6. FAILs (SPEC or TESTABLE) → PHASE 3.
 
 > **Todo**: mark PHASE 2b → `completed`, PHASE 3 → `in_progress`.
 
-Per FAIL: categorize as SPEC/TESTABLE/MEASURABLE/SUBJECTIVE (see table above).
-SPEC → from acceptance test failures (criterion not covered by implementation).
-SUBJECTIVE → AskUserQuestion for clarification, then re-categorize.
+Per FAIL: pick exactly one category.
+
+| Category    | Trigger                                                           | Examples                                     |
+| ----------- | ----------------------------------------------------------------- | -------------------------------------------- |
+| SPEC        | Acceptance test fails — criterion not covered by implementation   | Missing validation, wrong format, off-by-one |
+| TESTABLE    | Builder test fails — implementation is wrong                      | Logic bug, wrong return value, race          |
+| MEASURABLE  | Failure has a numeric/visual threshold (timing, CSS, layout)      | Slow render, wrong color, layout-shift       |
+| SUBJECTIVE  | Criterion is vague ("feels fast", "looks good") — ask user        | UX impressions, taste-level disagreements    |
+
+SUBJECTIVE → AskUserQuestion for clarification, then re-categorize as one of the other three.
 
 Technique mapping:
 
 - **SPEC** (acceptance criterion not covered) → **Implementation First** (criterion is clear, fix is concrete) + write/update acceptance test
-- Validatie, business logic, edge cases, race conditions → **TDD**
-- CRUD wiring, config, imports, routing → **Implementation First**
+- **TESTABLE** validatie, business logic, edge cases, race conditions → **TDD**
+- **TESTABLE** CRUD wiring, config, imports, routing → **Implementation First**
+- **MEASURABLE** → **Direct Fix** (config tweak, no test loop)
 - Default → TDD
 
 Display technique map:
@@ -507,17 +517,29 @@ Regressions: {n} | Stable: {n}
 
 ### PHASE 5d: Requirement Verification
 
-> **Todo**: mark PHASE 5c → `completed`, PHASE 5d → `in_progress`.
+> **Todo**: mark the previously-active phase → `completed` and PHASE 5d → `in_progress`. (Previously-active is PHASE 2b for the all-PASS happy path, or PHASE 5c if fixes ran.)
 
 **Skip when:** All tests FAIL (coverage check pointless on catastrophic failures).
 
-Cross-check `feature.json` requirements against test results:
+Cross-check `feature.json` requirements against test results.
 
 1. **Load requirement → test mapping:**
    - Per `requirements[]` entry (id, description, status) — **skip entries with `deltaOp === "REMOVED"`**
    - Look up matching `tests.checklist[]` entries via `requirementId`
 
-2. **Build coverage matrix:**
+2. **Classify per requirement** (before rendering anything):
+   - **COVERED**: at least 1 test with matching `requirementId` AND status `PASS`
+   - **FAIL**: at least 1 test matching but status `FAIL`
+   - **BLOCKED**: test does not exist or fails due to external dependency (service down, missing API key, missing fixture)
+   - **UNCLEAR**: no test possible because acceptance criteria is too vague — non-deterministic
+   - **NO TEST**: no test in `checklist[]` with matching `requirementId` (no legitimate reason)
+
+3. **All requirements COVERED** (no FAIL/BLOCKED/UNCLEAR/NO TEST) — STOP HERE:
+   - Output one line only: `Requirement coverage: {n}/{n} REQs PASS`.
+   - Do NOT render the matrix below.
+   - Proceed to PHASE 6.
+
+4. **Any uncovered requirement** — render the matrix:
 
    ```
    REQUIREMENT COVERAGE: {feature-name}
@@ -532,15 +554,6 @@ Cross-check `feature.json` requirements against test results:
    Coverage: {covered}/{total} requirements ({percentage}%)
    Non-testable: BLOCKED={n} UNCLEAR={n} (needs re-opening)
    ```
-
-3. **Classify per requirement:**
-   - **COVERED**: at least 1 test with matching `requirementId` AND status `PASS`
-   - **FAIL**: at least 1 test matching but status `FAIL`
-   - **BLOCKED**: test does not exist or fails due to external dependency (service down, missing API key, missing fixture)
-   - **UNCLEAR**: no test possible because acceptance criteria is too vague (e.g. "feels fast", "works well") — non-deterministic
-   - **NO TEST**: no test in `checklist[]` with matching `requirementId` (no legitimate reason)
-
-4. **All requirements COVERED:** single line — `Requirement coverage: {n}/{n} REQs PASS`. No table. Proceed to PHASE 6.
 
 5. **With NO TEST, FAIL, BLOCKED or UNCLEAR requirements:**
 
@@ -751,6 +764,20 @@ Compare `git status --porcelain | sort` with `.project/session/pre-skill-status.
 
 Baseline not found → fallback `git add -A`.
 
+**Worktree split-commit** — when running inside a worktree (`current_root != main_root`),
+`.project/` is a set of symlinks back to the main repo. Staging via the worktree
+fails with `pathspec is beyond a symbolic link`. Resolve by splitting the commit:
+
+1. App-code changes (tests, source files in the worktree branch) → stage + commit
+   inside the worktree as normal.
+2. `.project/` changes (feature.json, backlog.html, project-context.json) → stage
+   and commit on main via `git -C {main_root} add -f .project/...` and
+   `git -C {main_root} commit -m "..."`.
+
+Use the same commit message body for both, but a distinct subject:
+- Worktree: `verify({feature}): {N} requirements verified (...)`
+- Main:     `verify({feature}): sync backlog + feature.json + project-context`
+
 **Variables** (count per PHASE 0 classification):
 
 - `{acceptance}` = number of acceptance tests written in PHASE 1 (source: "acceptance")
@@ -781,19 +808,65 @@ VERIFY COMPLETE: {feature-name}
 ```
 
 Append a single Next step line (pick the most relevant — do NOT list multiple):
-- Worktree branch detected → `Next: /core-finalize {feature-name}`
+- Worktree finalized in PHASE Finalize → `Next: /dev-refactor {feature-name}` (optional polish on main)
+- User chose "Keep open" → omit Next line (finalize prompt already explained the path)
 - No worktree + more items in backlog → `Next: /dev-define {next-feature}`
 - All else → omit Next line.
 
-(`/dev-refactor` is optional polish — mention only if specFixes > 0 OR otherFixes > 0.)
+Refactor is optional. Skip if scope was small and the feature is clean.
 
-**Optional PR offer** — show first, only if ALL true:
+---
 
-1. Current branch matches `worktree-*` pattern (`git branch --show-current`)
-2. Feature is at `status: "DONE"` in backlog after this run
-3. `.project/project.json#team.mode === "team"` (absent → skip)
-4. `gh` on PATH AND `gh auth status` exit 0
-5. Clean tree (`git status --porcelain` empty)
+## Example Flows
+
+```
+# Pure API (fast path, no gaps, no worktree)
+/dev-verify api-routes
+→ PHASE 0: 6 COVERED + 3 integration AUTO/CLI, acceptance: 0 gaps
+→ PHASE 1: 3 integration → 3 PASS
+→ PHASE 2b: Compact → 9/9 PASS, evaluation: all REQs PASS
+→ PHASE 6: commit
+→ Next: /dev-define {next-feature}
+
+# API feature with acceptance test gaps (in worktree)
+/dev-verify slider-presets
+→ PHASE 0: 6 REQs, builder tests cover unit logic
+→ PHASE 0 step 8h: 8 acceptance tests planned (HTTP contract gaps)
+→ PHASE 1: write acceptance tests + run → 6 PASS, 2 FAIL
+→ PHASE 2b: REQ-002, REQ-005 FAIL on acceptance
+→ PHASE 3-4: 2 SPEC issues → Implementation First fixes
+→ PHASE 5: re-test → all PASS
+→ PHASE 6: evaluation + commit (acceptance tests persistent)
+→ PHASE Finalize: solo-merge → worktree removed
+→ Next: /dev-refactor slider-presets
+
+# UI feature with fixes (in worktree, keep open for PR)
+/dev-verify user-registration
+→ PHASE 0: 2 COVERED + 1 AUTO/BROWSER + 1 MANUAL + 2 acceptance → tunnel
+→ PHASE 1: AUTO/BROWSER → FAIL, acceptance → 1 FAIL
+→ PHASE 2: Manual → PASS
+→ PHASE 3-4: 1 SPEC + 1 TESTABLE → fixes
+→ PHASE 5: Re-test → all PASS
+→ PHASE 6: Fix sync + evaluation + commit
+→ PHASE Finalize: PR open → Keep open (PR merges on GitHub)
+```
+
+> **Todo**: mark PHASE 6 → `completed`.
+
+---
+
+### PHASE Finalize
+
+> **Todo**: mark PHASE 6 → `completed`, PHASE Finalize → `in_progress`.
+
+**Run only if BOTH true:**
+1. All test items PASS (no open fix-loop items)
+2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
+
+**PR offer (team-mode only)** — show first, only if ALL true:
+1. `.project/project.json#team.mode === "team"` (absent → skip)
+2. `gh` on PATH AND `gh auth status` exit 0
+3. Clean tree (`git status --porcelain` empty)
 
 If all true → AskUserQuestion:
 
@@ -804,54 +877,54 @@ options:
   - label: "Ja, push + PR (Recommended)"
     description: "Push the branch and open a PR via gh. Worktree stays until merged."
   - label: "Nee, skip PR"
-    description: "Skip the PR; show the worktree hint instead."
+    description: "Skip the PR; show finalize prompt instead."
 multiSelect: false
 ```
 
-On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress the worktree hint below.
-On "Nee" or any precondition fail → fall through to the worktree hint.
+On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
+On "Nee" or any precondition fail → fall through to finalize prompt.
 
-**Worktree integration hint** — add one extra line if both conditions are true:
+**Finalize prompt** — detect PR state first:
 
-1. Current branch matches `worktree-*` pattern (`git branch --show-current`)
-2. Feature is at `status: "DONE"` in backlog after this run
-
-Append:
-
-```
-💡 Feature done — run /core-finalize {feature-name} to integrate to main/develop
+```bash
+PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
+PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
+PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
+PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
 ```
 
----
+| PR_STATE                            | Action                                                                                                                                         |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPEN`                              | Print: `"PR #{PR_NUMBER} is open: {PR_URL}. Run \`/core-finalize {feature-name}\` zodra gemerged."` No prompt.                                 |
+| `MERGED`                            | AskUserQuestion: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd." — Yes/Keep open (see below) |
+| empty / `CLOSED` / `gh` unavailable | AskUserQuestion: "Feature '{feature-name}' afgerond. Finalize nu (merge naar main + cleanup)?" — Yes/Keep open (see below)                     |
 
-## Example Flows
-
-```
-# Pure API (fast path, no gaps)
-/dev-verify api-routes
-→ PHASE 0: 6 COVERED + 3 integration AUTO/CLI, acceptance: 0 gaps
-→ PHASE 1: 3 integration → 3 PASS
-→ PHASE 2b: Compact → 9/9 PASS, evaluation: all REQs PASS
-→ PHASE 6: commit
-
-# API feature with acceptance test gaps
-/dev-verify slider-presets
-→ PHASE 0: 6 REQs, builder tests cover unit logic
-→ PHASE 0 step 8h: 8 acceptance tests planned (HTTP contract gaps)
-→ PHASE 1: write acceptance tests + run → 6 PASS, 2 FAIL
-→ PHASE 2b: REQ-002, REQ-005 FAIL on acceptance
-→ PHASE 3-4: 2 SPEC issues → Implementation First fixes
-→ PHASE 5: re-test → all PASS
-→ PHASE 6: evaluation + commit (acceptance tests persistent)
-
-# UI feature with fixes
-/dev-verify user-registration
-→ PHASE 0: 2 COVERED + 1 AUTO/BROWSER + 1 MANUAL + 2 acceptance → tunnel
-→ PHASE 1: AUTO/BROWSER → FAIL, acceptance → 1 FAIL
-→ PHASE 2: Manual → PASS
-→ PHASE 3-4: 1 SPEC + 1 TESTABLE → fixes
-→ PHASE 5: Re-test → all PASS
-→ PHASE 6: Fix sync + evaluation + commit
+```yaml
+# For MERGED state:
+header: "PR merged — cleanup"
+question: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd."
+options:
+  - label: "Yes, cleanup nu (Recommended)"
+    description: "Follow shared/FINALIZE.md cleanup-only — verwijder worktree + branch"
+  - label: "Keep open"
+    description: "Worktree blijft staan (bv. voor follow-up commits); cleanup later via /core-finalize"
+multiSelect: false
 ```
 
-> **Todo**: mark PHASE 6 → `completed`.
+```yaml
+# For empty/CLOSED state:
+header: "Finalize"
+question: "Feature '{feature-name}' afgerond (status: DONE). Finalize nu (merge naar main + cleanup)?"
+options:
+  - label: "Yes, finalize nu (Recommended)"
+    description: "Follow shared/FINALIZE.md solo-mode — merge worktree naar main + cleanup"
+  - label: "Keep open"
+    description: "Worktree blijft open, finalize later via /core-finalize"
+multiSelect: false
+```
+
+On MERGED "Yes" → follow `shared/FINALIZE.md` with `mode: cleanup-only`.
+On empty/CLOSED "Yes" → follow `shared/FINALIZE.md` with `mode: solo`.
+On any "Keep open" → print `💡 Run /core-finalize {feature-name} when ready`.
+
+> **Todo**: mark PHASE Finalize → `completed`.

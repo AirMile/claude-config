@@ -1,6 +1,6 @@
 ---
 name: game-define
-description: Define game feature requirements and architecture with structured output. Use with /game-define to create detailed game feature specifications before building.
+description: Define Godot feature requirements and architecture. Use with /game-define.
 writes: [feature.requirements, backlog.stage]
 metadata:
   author: claude-config

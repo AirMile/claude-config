@@ -1,6 +1,6 @@
 ---
 name: core-delete
-description: Safely delete skills with deep reference scanning and dependency updates. Use with /core-delete to remove a skill and clean up all references.
+description: Safely delete a skill and clean up references. Use with /core-delete.
 metadata:
   author: claude-config
   version: 1.0.0

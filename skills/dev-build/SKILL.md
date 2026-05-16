@@ -1,17 +1,17 @@
 ---
 name: dev-build
-description: Build features with TDD or implementation-first per requirement. Use with /dev-build or /dev-build [feature-name] after /dev-define. For PAGE/COMPONENT features dev-build reads design.pages[]/design.components[] as visual spec source if present.
+description: Build features with TDD or implementation-first. Use with /dev-build.
 reads: [feature.requirements]
 writes: [feature.requirements, feature.build, backlog.status, learnings]
 metadata:
   author: claude-config
-  version: 1.8.0
+  version: 1.9.1
   category: dev
 ---
 
 # Build
 
-**PHASE 2** of the dev workflow: define -> **build** -> test
+**PHASE 2** of the dev workflow: define → **build** → verify → finalize
 
 Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD, Implementation First, or Implementation Only), builds sequentially.
 
@@ -64,6 +64,14 @@ git -C "$REPO" rev-parse HEAD > "$REPO/.project/session/pre-skill-sha.txt"
 
 **Detect stack:** read CLAUDE.md `### Stack` section + `.claude/research/stack-baseline.md` (if available). Fallback: `project.json.stack`.
 
+**Test-runner pre-flight** (skip if no `package.json` or no TDD-capable stack detected):
+
+Verify the stack's standard component-test packages are installed and that the test setup file imports `@testing-library/jest-dom` (without it `toBeInTheDocument` / `toHaveAttribute` fail silently with "Invalid Chai property").
+
+Missing → **AskUserQuestion**: "Install + add import (Recommended)" — installs missing packages and patches setup file. "Skip and continue" — TDD steps that need these will fail.
+
+Output: `TEST-DEPS: ok | patched ({list}) | skipped`.
+
 **Project context** (skip if not present):
 
 Read `.project/project.json` and `.project/project-context.json`. Use for:
@@ -73,8 +81,6 @@ Read `.project/project.json` and `.project/project-context.json`. Use for:
 - Code patterns to follow
 - Learnings from earlier features
 - `theme.cssVars` — present and non-empty: log `"Theme loaded"`. Empty or missing: log `"Theme empty — fallback defaults (shared/TOKENS.md) will be used"`.
-
-**Token-bootstrap safety net** (only if `feature.hasUI === true` or `IS_COMPONENT_BUILD === true`): execute the Bootstrap Procedure from `shared/TOKENS.md`. Fully idempotent — guards skip automatically if Tailwind is missing or `tokens.css` already exists.
 
 **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
 
@@ -89,22 +95,6 @@ current-feature: <feature-name>
 Display the loaded output. The pitfall-prefix section + component-scoped patterns provide context for the build (not a constraint — when in doubt assume root cause, don't pattern-match).
 
 Store the loaded learnings for PHASE 1 (Technique Mapping).
-
-**COMPONENT Build Detection** (after feature.json load):
-
-If `feature.type === "COMPONENT"` (or backlog item type is COMPONENT):
-
-1. Determine `COMPONENT_SCOPE`:
-   - Check `feature.json#architecture.scope` or top-level `scope` field
-   - Fallback: check `project.json#design.components[]` — match on name → read `scope`
-   - Fallback: ask user via AskUserQuestion: `"What is the scope of this component?"` (atomic/section/layout)
-
-2. Determine `COMPONENT_OUTPUT_PATH` based on scope and framework (see PHASE 2):
-   - `atomic` → `src/components/ui/{Name}.tsx`
-   - `section` → `src/components/{Name}.tsx`
-   - `layout` → `src/components/{Name}.tsx` (+ auto-patch `app/layout.tsx` after build)
-
-3. Store as `IS_COMPONENT_BUILD = true`, `COMPONENT_SCOPE`, `COMPONENT_OUTPUT_PATH`.
 
 **Load feature:**
 
@@ -136,6 +126,12 @@ Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `t
 
 Not found → exit: "Run `/dev-define` first."
 
+**COMPONENT Build Detection** (immediately after feature.json load):
+
+If `feature.type === "COMPONENT"` (or backlog item type is COMPONENT) → load `COMPONENT-BUILD.md` and follow its "Detection" section to determine `IS_COMPONENT_BUILD`, `COMPONENT_SCOPE`, `COMPONENT_OUTPUT_PATH`. Otherwise set `IS_COMPONENT_BUILD = false` and skip all COMPONENT-specific blocks in later phases.
+
+**Token-bootstrap safety net** (only if `feature.hasUI === true` or `IS_COMPONENT_BUILD === true`): execute the Bootstrap Procedure from `shared/TOKENS.md`. Fully idempotent — guards skip automatically if Tailwind is missing or `tokens.css` already exists.
+
 **Dependency check:**
 
 Skip if no `depends[]` or empty.
@@ -156,33 +152,40 @@ Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = "{feat
 WORKTREE: {absolute-path} ({created | reused | skipped: already-in-worktree})
 ```
 
-If the procedure did not run (e.g. no git repo, error), log `WORKTREE: not-applied ({reason})` instead. This line is non-negotiable — without it, the auditor cannot verify whether isolation was achieved.
+If the procedure did not run (e.g. no git repo, error), log `WORKTREE: not-applied ({reason})` **and** write the marker file so the gate below can detect the skip:
+
+```bash
+echo "not-applied: {reason}" > "$REPO/.project/session/worktree-status.txt"
+```
+
+For successful create/reuse, also write the marker (so reruns can short-circuit):
+
+```bash
+echo "active: $(pwd)" > "$REPO/.project/session/worktree-status.txt"
+```
+
+This line is non-negotiable — without it, the auditor cannot verify whether isolation was achieved.
 
 **Pre-PHASE-1 gate** (hard check — shell-state verification):
 
 ```bash
 CURRENT="$(pwd)"
 EXPECTED_SUFFIX="/.claude/worktrees/{feature-name}"
+MARKER="$REPO/.project/session/worktree-status.txt"
 if [[ "$CURRENT" == *"$EXPECTED_SUFFIX" ]]; then
   echo "GATE: ok — inside worktree"
-elif grep -q "^WORKTREE: not-applied" <<< "$WORKTREE_LOG"; then
-  echo "GATE: ok — worktree explicitly skipped"
+elif [[ -f "$MARKER" ]] && grep -q "^not-applied" "$MARKER"; then
+  echo "GATE: ok — worktree explicitly skipped ($(cat "$MARKER"))"
 else
-  echo "ABORT: PHASE 0 incomplete — not inside expected worktree and no 'WORKTREE: not-applied' marker found."
+  echo "ABORT: PHASE 0 incomplete — not inside expected worktree and no 'not-applied' marker found at $MARKER."
   echo "Re-run /dev-build from the start; follow shared/WORKTREE.md → Auto-create worktree literally."
   exit 1
 fi
 ```
 
-| Condition                                           | Result                                                     |
-| --------------------------------------------------- | ---------------------------------------------------------- |
-| `pwd` ends with `/.claude/worktrees/{feature-name}` | Pass — worktree created and switched into                  |
-| `WORKTREE: not-applied (...)` was logged            | Pass — worktree intentionally skipped (no git repo / etc.) |
-| Otherwise                                           | ABORT — silent skip detected                               |
+Clean up `$MARKER` together with the other session files in PHASE 3B.
 
-This gate is falsifiable from shell state; it cannot be bypassed by skipping the prose log.
-
-**Clear backlog transition flag** (immediately after loading feature):
+**Clear backlog transition flag** (before PHASE 1):
 
 Read `.project/backlog.html` (if exists), find feature by name → remove `transition` field if present (auto-pickup signal consumed), `updated` to current date. **Keep status as `"DEFINED"`** — the DEFINED → DOING transition happens in PHASE 3A on successful completion (per `shared/BACKLOG.md`: dev-build result-status = DOING at completion).
 
@@ -230,7 +233,13 @@ Assign per requirement:
 - **Implementation First**: CRUD, middleware, config, wiring
 - **Implementation Only**: pure styling/layout, visual/particle effects, static content, env config, prototype code — only when automated tests add no value. Required reason: `visual-only`, `config-only`, or `prototype`
 
-**Pitfall overlap check**: for each requirement, compare against the pitfall list from PHASE 0. On clear thematic overlap (same domain, same type of bug risk) → explicitly log which pitfall is touched and how this build avoids it. No forcing — only flag where relevant.
+**Pitfall overlap check**: for each requirement, compare against the pitfall list from PHASE 0. On clear thematic overlap (same domain, same type of bug risk):
+
+1. **Log** the pitfall and the affected REQ in the technique map output
+2. **State the concrete mitigation in 1 sentence** before writing code for that REQ (e.g., "Use `currencyDisplay: 'narrowSymbol'` in `Intl.NumberFormat` to avoid 'US$' output")
+3. **Define verification marker**: name the literal API/option/pattern (or grep regex) that proves the mitigation is in the code. For non-grep checks (type-level, runtime), state the verification command. This marker is consumed in **PHASE 2 step 5 (Pitfall verification)** after each Write.
+
+No forcing on irrelevant pitfalls — only on clear thematic overlap.
 
 Display technique map as a table. Proceed automatically — do NOT confirm with the user.
 
@@ -238,123 +247,16 @@ Display technique map as a table. Proceed automatically — do NOT confirm with 
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-**COMPONENT output path routing** (only if `IS_COMPONENT_BUILD = true`):
-
-Override `feature.json files[]` paths with the definitive output paths based on `COMPONENT_SCOPE`:
-
-| Scope     | Main component file            | Demo page                             |
-| --------- | ------------------------------ | ------------------------------------- |
-| `atomic`  | `src/components/ui/{Name}.tsx` | `app/_dev/components/{name}/page.tsx` |
-| `section` | `src/components/{Name}.tsx`    | `app/_dev/components/{name}/page.tsx` |
-| `layout`  | `src/components/{Name}.tsx`    | `app/_dev/components/{name}/page.tsx` |
-
-Generate the demo page alongside the component file. The demo page shows a variant matrix of all `variants × sizes × states`:
-
-```tsx
-// app/_dev/components/{name}/page.tsx (gitignored via _dev/)
-export default function {Name}Demo() {
-  return (
-    <main aria-label="{Name} demo">
-      {variants.map(v => sizes.map(s => states.map(state => (
-        <{Name} key={`${v}-${s}-${state}`} variant={v} size={s} {...stateProps[state]}>
-          {v}/{s}/{state}
-        </{Name}>
-      ))))}
-    </main>
-  );
-}
-```
-
-Add `app/_dev/` to `.gitignore` if not already there (check first):
-
-```bash
-grep -q "_dev/" .gitignore 2>/dev/null || echo "app/_dev/" >> .gitignore
-```
-
-**Variant visual spec (G1 — only if component has >1 variant):**
-
-Condition: `feature.json.requirements` contains `cva(...)` with more than one variant key or more than one value per key. Skip for 1-variant components.
-
-**Pre-flight (Playwright runner)**: Check `package.json` for `@playwright/test` devDep. If missing:
-
-```yaml
-header: "Playwright runner"
-question: "Variant visual specs require @playwright/test. How to proceed?"
-options:
-  - label: "Run /core-setup playwright (Recommended)"
-    description: "Installs daemon + runner + base config"
-  - label: "Skip variant specs"
-    description: "Skip this step, continue with build"
-multiSelect: false
-```
-
-On **Skip** → jump to "Layout auto-patch" section below.
-
-Generate `.project/playwright-runs/component-{name}.spec.ts`:
-
-```typescript
-import { test, expect } from "@playwright/test";
-
-const variants = { variants_array }; // e.g. ['default', 'destructive', 'outline']
-const sizes = { sizes_array }; // e.g. ['sm', 'md', 'lg'] — [] if no size variant
-
-test.beforeEach(async ({ page }) => {
-  await page.goto("http://localhost:3000/_dev/components/{name}");
-  await page.waitForLoadState("networkidle");
-});
-
-for (const variant of variants) {
-  for (const size of sizes.length ? sizes : [null]) {
-    const label = size ? `${variant}-${size}` : variant;
-    test(`{name} — ${label}`, async ({ page }) => {
-      const selector = size
-        ? `[data-variant="${variant}"][data-size="${size}"]`
-        : `[data-variant="${variant}"]`;
-      await expect(page.locator(selector).first()).toHaveScreenshot(
-        `{name}-${label}.png`,
-        { maxDiffPixelRatio: 0.02 },
-      );
-    });
-  }
-}
-```
-
-Generate `.project/playwright-runs/playwright.config.ts` (see `shared/PLAYWRIGHT.md → Runner Mode`).
-
-First run (create baseline):
-`npx playwright test .project/playwright-runs/component-{name}.spec.ts --update-snapshots`
-
-Subsequent runs (regression check):
-`npx playwright test .project/playwright-runs/component-{name}.spec.ts`
-→ FAIL = visual regression in a specific variant/size combination.
-
-Display after first successful run:
-
-```
-VARIANT VISUAL SPEC
-  Component:  {Name}
-  Variants:   {N} ({variant names})
-  Sizes:      {M} ({size names}) / n/a
-  Spec:       .project/playwright-runs/component-{name}.spec.ts
-  Baselines:  .project/playwright-runs/__screenshots__/ ({N×M} PNGs)
-```
-
-**Layout auto-patch** (only if `COMPONENT_SCOPE === "layout"`):
-
-After generating the component file: add import + render to `app/layout.tsx` (or framework equivalent). Conflict detection: check if the component name is already imported. On conflict → show diff and ask user via AskUserQuestion: "Patch (Recommended)" | "Apply manually". No conflict → patch directly. Display:
-
-```
-AUTO-PATCH layout.tsx: import {Name} from "{path}" added + <{Name} /> in render.
-```
+**COMPONENT-only steps** (only if `IS_COMPONENT_BUILD = true`): follow `COMPONENT-BUILD.md` → "Phase 2 steps" (output path routing, demo page generation, variant visual spec G1, layout auto-patch). Skip entirely for FEATURE builds.
 
 For each buildSequence step:
 
-**REMOVED filter per step**: filter `step.requirements` → remove IDs where `feature.json.requirements[id].deltaOp === "REMOVED"`. If step is empty after filter → skip step, continue to next.
+**REMOVED filter per step**: filter `step.requirements` per REMOVED filter (see PHASE 1). If step is empty after filter → skip step, continue to next.
 
 **Parallel build check** (per step with >1 requirement):
 
 1. Check file overlap: compare `files[]` where `requirements` arrays overlap between REQs in this step
-2. **No overlap** → launch Agent per REQ (max 3 parallel). Each agent receives: technique file content, relevant source files from feature.json `files[]`, stack context (CLAUDE.md ### Stack), earlier SYNC notes from this build
+2. **No overlap** → launch Agent per REQ (max 3 parallel). Each agent receives: technique file content, relevant source files from feature.json `files[]`, stack context (CLAUDE.md ### Stack), earlier SYNC notes from this build, **plus the full content of any files created in earlier steps of this build that this REQ may need to import** (read them with the Read tool and pass the content inline — SYNC one-liners are not enough for the agent to know exact export names and signatures)
 3. **Overlap** → build sequentially (steps below)
 4. Parse agent results via `BUILD_RESULT_START...BUILD_RESULT_END` markers, update feature.json per REQ
 
@@ -376,14 +278,18 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
    - **TDD** → `Read(".claude/skills/dev-build/techniques/tdd.md")`
    - **Implementation First** → `Read(".claude/skills/dev-build/techniques/implementation-first.md")`
    - **Implementation Only** → no file loaded (technique = no tests; `skipTestReason` must be filled in)
-2. **Read existing code**: read all files from feature.json `files[]` that have `action: "modify"`, plus 1 existing test file for setup/teardown patterns (before/after hooks, DB lifecycle, import conventions).
+2. **Read existing code**:
+   - All files from feature.json `files[]` that have `action: "modify"`
+   - **All files from feature.json `files[]` that have `action: "create"` AND were built in an earlier step of this build** — needed to know exact exports/types/signatures to import (prevents inline-redefine of types/utilities already created)
+   - 1 existing test file for setup/teardown patterns (before/after hooks, DB lifecycle, import conventions)
 3. Execute technique workflow
 4. **Stack-aware enforcement**:
    - **Code clarity**: descriptive names over comments. Do use comments for: non-obvious "why" decisions, workarounds, compatibility notes. Follow existing project comment style.
    - **Code rules**: follow `shared/RULES.md` — General (R007-R009) + stack-specific sections. When in doubt: MUST_DO rules always, SHOULD_DO rules unless deliberate deviation with reason.
    - **Token enforcement** (only for `.tsx`/`.jsx`/`.vue`/`.svelte` — skip for API routes, tests, config): always use token names (`bg-primary`, `text-foreground`) — never hex literals or `bg-[#hex]`. Theme empty → use fallback defaults from `shared/TOKENS.md`. Run a grep after each Write for T101 (`#[0-9a-fA-F]{3,8}`) and T102 (`bg-\[#`, `text-\[#`) on the generated file — replace violations directly before output.
-5. **Update feature.json** after each REQ: set `requirements[].status` → `"built"` and add `technique` + `syncNote`. For Implementation Only: also add `skipTestReason` (`visual-only`, `config-only`, or `prototype`). This preserves progress during context compaction.
-6. Output per requirement:
+5. **Pitfall verification** (only if PHASE 1 flagged a pitfall for this REQ): run the `grep -q '<marker>' <file>` check stated in the technique map. Output `PITFALL-CHECK REQ-XXX: <pitfall> → PRESENT | ABSENT`. ABSENT → log as deviation in `build.decisions[]` with rationale (intentional or oversight).
+6. **Update feature.json** after each REQ: set `requirements[].status` → `"built"` and add `technique` + `syncNote`. For Implementation Only: also add `skipTestReason` (`visual-only`, `config-only`, or `prototype`). This preserves progress during context compaction.
+7. Output per requirement:
    ```
    REQ-XXX: {description}
    Technique: {TDD | Implementation First | Implementation Only}
@@ -491,9 +397,7 @@ Follow [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery
 
 **Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `PAGE`
 
-**COMPONENT design sync** (only if `IS_COMPONENT_BUILD = true`):
-
-After successful build: update `project.json#design.components[]` — find by name, set `status: "BLT"`. Not found → add with status `"BLT"`, scope `COMPONENT_SCOPE`. Also update `project-context.json#components[]` inventory: check by name → new: push `{ name, src: COMPONENT_OUTPUT_PATH, exports: ["{Name}"], variants, sizes }` → existing: update `src`.
+**COMPONENT-only sync** (only if `IS_COMPONENT_BUILD = true`): follow `COMPONENT-BUILD.md` → "Phase 3A steps" (design.components[] status BLT, project-context components inventory, PAGE suggestions via Link/router scan).
 
 **Sub-component Reuse-Discovery** (frontend projects only):
 
@@ -502,14 +406,6 @@ Follow [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discove
 **Trigger:** repeating JSX block after code-gen — ≥2× in the same file or ≥1× across multiple files of the same feature. Candidates: clear visual/functional unit with its own props and rendering.
 
 **Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
-
-**PAGE suggestions via COMPONENT links** (only if `IS_COMPONENT_BUILD = true`):
-
-Follow [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) for the canonical protocol.
-
-**Trigger (COMPONENT→route):** scan `<Link href="...">` and `router.push(...)` in generated files. Candidate if route does not appear in `design.pages[]` or `backlog.html`. Resolution: per route AskUserQuestion "Yes, add PAGE todo (Recommended)" / "Skip".
-
-**Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `PAGE`
 
 **Learning extraction** (after feature.json sync): write to `project-context.json learnings[]` (append-only, identical format as `dev-verify`/`dev-refactor`):
 
@@ -567,7 +463,7 @@ Categorize each file:
 git -C "$REPO" commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
 ```
 
-Clean up: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/active-{feature-name}.json"`
+Clean up: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/active-{feature-name}.json" "$REPO/.project/session/worktree-status.txt"`
 
 **Output:**
 
@@ -577,19 +473,27 @@ BUILD COMPLETE: {feature}
 Techniques: TDD ({n}), Implementation First ({n}), Implementation Only ({n})
 Tests: {passed}/{total} PASS
 Files created: {count} | modified: {count}
+```
 
+**Next steps block** — check whether the current branch matches the `worktree-*` pattern (`git -C "$REPO" branch --show-current`), then print exactly ONE variant:
+
+**Variant A — worktree active:**
+
+```
+Next steps (start in a NEW chat — worktree auto-detected):
+  1. /dev-verify {feature}    → hybrid acceptance verification
+  2. /core-finalize {feature} → merge worktree to main when verify is green
+  ?. /dev-debug               → only on unexpected failures
+
+💡 Worktree: {worktree_path}
+```
+
+**Variant B — no worktree (built on main or detached):**
+
+```
 Next steps:
-  1. /dev-verify {feature} → hybrid test verification
-  2. /dev-debug → if there are unexpected failures
-```
-
-**Worktree reminder** — add one extra block to the output if the current branch matches the `worktree-*` pattern (`git -C "$REPO" branch --show-current`):
-
-```
-💡 Worktree active: {worktree_path}
-   Next skills (/dev-verify, /dev-refactor, /dev-debug) start in a NEW chat —
-   they detect this worktree automatically and switch into it.
-   For merge/cleanup: /core-finalize {feature}
+  1. /dev-verify {feature} → hybrid acceptance verification
+  ?. /dev-debug            → only on unexpected failures
 ```
 
 > **Todo**: mark PHASE 3B → `completed`. All 6 phases should now be `completed`.

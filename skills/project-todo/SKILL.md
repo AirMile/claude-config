@@ -1,11 +1,6 @@
 ---
 name: project-todo
-description: >-
-  Add new backlog items (features, changes, bugs, refactors, pages, components,
-  scenes, scripts, a11y, performance) — single or smart-split multi-item for
-  cross-domain descriptions. Auto-detects stack (web/game) and initialises
-  project.json if missing. Use with /project-todo or /project-todo [description]
-  when capturing a new idea for the project backlog.
+description: Add new backlog items to the project. Use with /project-todo.
 metadata:
   author: claude-config
   version: 1.0.0

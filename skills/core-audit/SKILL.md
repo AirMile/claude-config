@@ -1,10 +1,6 @@
 ---
 name: core-audit
-description: >-
-  Analyze and refine a skill that was invoked earlier in this conversation.
-  Detects redundancy, dead paths, ambiguity, and poor structure. Optional
-  internal walkthrough for deeper insights. Use with /core-audit — auto-selects
-  the skill from chat context, hard-blocks if none was used.
+description: Analyze and refine a skill invoked in this conversation. Use with /core-audit.
 metadata:
   author: claude-config
   version: 2.0.0

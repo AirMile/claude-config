@@ -1,6 +1,6 @@
 ---
 name: game-build
-description: Build features with technique mapping (TDD, Implementation First, or Implementation Only) for Godot 4.x. Use with /game-build after /game-define.
+description: Build Godot features with TDD or implementation-first. Use with /game-build.
 reads: [feature.requirements, backlog.stage]
 writes: [feature.requirements, feature.build, backlog.stage, learnings]
 metadata:

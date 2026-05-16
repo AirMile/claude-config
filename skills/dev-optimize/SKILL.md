@@ -1,10 +1,6 @@
 ---
 name: dev-optimize
-description: >-
-  Optimize a measurable metric (bundle size, Lighthouse, coverage, latency)
-  via parallel subagent experiments in git worktrees. Use with /dev-optimize
-  for performance, quality, or bundle improvements where you can define a
-  score. Standalone — not tied to a pipeline feature.
+description: Optimize a measurable metric via parallel worktree experiments. Use with /dev-optimize.
 metadata:
   author: claude-config
   version: 0.1.0

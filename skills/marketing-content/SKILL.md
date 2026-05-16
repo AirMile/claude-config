@@ -1,11 +1,7 @@
 ---
 name: marketing-content
 argument-hint: "[topic]"
-description: >-
-  Turn marketing research signals into concrete text variants per format and
-  platform. Grounded in trend trajectories, sentiment conflicts, and audience
-  language from /marketing-research output. Use with /marketing-content [topic]
-  for social posts, email subjects, ad headlines, or landing page sections.
+description: Generate marketing text variants per format and platform. Use with /marketing-content.
 metadata:
   author: claude-config
   version: 1.0.0

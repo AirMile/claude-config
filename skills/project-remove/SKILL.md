@@ -1,6 +1,6 @@
 ---
 name: project-remove
-description: Remove a registered project — optionally delete the folder. Master config stays intact. Use with /project-remove.
+description: Remove a registered project from the setup. Use with /project-remove.
 metadata:
   author: claude-config
   version: 1.1.0

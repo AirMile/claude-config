@@ -1,6 +1,6 @@
 ---
 name: dev-debug
-description: Systematic debugging with reproduction-test-first workflow, root cause analysis, and 3 fix strategies. Use for runtime errors, build failures, unexpected behavior, or test failures.
+description: Debug with reproduction-test workflow and 3 fix strategies. Use with /dev-debug.
 reads: [project-context.learnings, feature.requirements]
 writes: [project-context.learnings]
 metadata:

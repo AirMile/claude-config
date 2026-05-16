@@ -1,6 +1,6 @@
 ---
 name: project-brainstorm
-description: Creatively expand ideas through interactive technique application. Generates variations, explores alternatives, pushes boundaries. Use with /project-brainstorm after /project-seed.
+description: Expand ideas through interactive technique application. Use with /project-brainstorm.
 metadata:
   author: claude-config
   version: 1.0.0

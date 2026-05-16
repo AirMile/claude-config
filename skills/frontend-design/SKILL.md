@@ -1,17 +1,11 @@
 ---
 name: frontend-design
-description: >-
-  Design spec management for pages and components — Claude Design brief generator + in-Claude-Code
-  code generator for PAGE and COMPONENT features. Capture mode manages pages, flows, design principles
-  and components in project.json — including screenshot-import (single/multi) and checkpoint-restore.
-  Brief mode generates markdown briefs for Claude Design (page or component). Build mode generates
-  working code for PAGE/COMPONENT features with status DEF without visual reference material.
-  Works standalone — no dev-pipeline needed. Use with /frontend-design [name] or /frontend-design.
+description: Manage design specs and generate PAGE/COMPONENT code. Use with /frontend-design.
 reads: [devinfo.handoff, backlog.status, feature.requirements, feature.files]
 writes: [devinfo.handoff, devinfo.tokenDrift]
 metadata:
   author: claude-config
-  version: 2.7.0
+  version: 2.8.2
   category: frontend
 ---
 
@@ -156,11 +150,14 @@ ACTION_SELECT → RESTORE (populated, history exists)
 CREATE → CONFIRM
 IMPORT → CONFIRM
 BUILD → BUILD_ENTITY (choose PAGE or COMPONENT)
-BUILD_ENTITY → BUILD_COMPLETE (smoke success)
-BUILD_ENTITY → BUILD_REFINE (smoke fail → "Refine")
-BUILD_ENTITY → ACTION_SELECT (smoke fail → "Fix manually" or max retries reached)
-BUILD_REFINE → BUILD_ENTITY (re-run smoke — max 3 rounds)
-BUILD_REFINE → ACTION_SELECT ("Fix manually" or "Accept as-is")
+BUILD_ENTITY → DESIGN_DIRECTION
+DESIGN_DIRECTION → ALTERNATIVES_SELECT (≥2 variants or sections)
+DESIGN_DIRECTION → BUILD_CODE (single-variant / stateless — skip alternatives)
+ALTERNATIVES_SELECT → BUILD_CODE (layout chosen)
+BUILD_CODE → BUILD_VERIFY (post-write checks pass)
+BUILD_CODE → ACTION_SELECT (post-write check failed → "Fix manually")
+BUILD_VERIFY → BUILD_COMPLETE ($VERIFY_STATUS = PASS or SKIPPED)
+BUILD_VERIFY → ACTION_SELECT ($VERIFY_STATUS = FAIL → "Fix manually")
 VIEW → ACTION_SELECT ("Edit")
 VIEW → [*] ("Done")
 PAGE_ROUTE → CONFIRM
@@ -987,7 +984,7 @@ Generates working code for PAGE or COMPONENT features with `status: DEF` and no 
 
 See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "designing"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`) and skip entity/candidate selection modals.
 
-On successful code generation: remove `transition`, set `status: "DEFINED"`. See `shared/BACKLOG.md → Lifecycle Protocol → Write`.
+On successful code generation: remove `transition`, set `status: "DOING"`, `stage: "built"`. Handled by Step 10d — this description is informational only.
 
 #### Step 1: Entity selection
 
@@ -1015,7 +1012,7 @@ Store chosen entity type as `$TARGET_TYPE` (PAGE or COMPONENT).
 header: "Build — choose page"
 question: "Which page do you want to build?"
 options:
-  - label: "{kebab-name}", description: "{description} — {route-pattern}"
+  - label: "{name}", description: "{description} — {route-pattern}"
   # max 4, rest via Other
 multiSelect: false
 ```
@@ -1035,17 +1032,21 @@ multiSelect: false
 
 Store as `$TARGET_COMPONENT`. Store `$TARGET` = `$TARGET_PAGE` or `$TARGET_COMPONENT`.
 
-#### Step 2.5: Worktree setup
+#### Step 3: Worktree setup
 
 Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = $TARGET`. Creates an isolated worktree for this build so generated code lands on a separate branch. Skip if already in a worktree (procedure detects).
 
-#### Step 3: Spec lookup (entity-agnostic)
+#### Step 4: Spec lookup (entity-agnostic)
 
 **If `$TARGET_TYPE = PAGE`:**
 
 1. Look up `.project/features/{$TARGET}/feature.json` → read as spec source (primary).
 2. Fallback: `design.pages[]` filtered by name matching `$TARGET`.
-3. If both empty → AskUserQuestion: "Briefly describe the page: purpose, sections, actions." → store as inline spec and write to `design.pages[]` for later reuse.
+3. If both empty → ask three structured questions:
+   1. **Purpose + sections**: "What does this page do? List the sections needed (one per line)."
+   2. **Primary action**: "What is the single most important action a user performs here?" — free text
+   3. **States**: multi-select — `default` / `loading` / `empty` / `error` / `authenticated-only`
+   → save answers as inline spec and write to `design.pages[]` for later reuse.
 
 Show spec:
 
@@ -1060,7 +1061,11 @@ Routes:   {route-patterns}
 
 1. Look up `.project/features/{$TARGET}/feature.json` → read as spec source (primary).
 2. Fallback: `design.components[]` filtered by name matching `$TARGET`.
-3. If both empty → AskUserQuestion: "Briefly describe the component: purpose, variants, props." → store as inline spec and write to `design.components[]` for later reuse.
+3. If both empty → ask three structured questions:
+   1. **States**: multi-select — `default` / `hover` / `disabled` / `loading` / `error` / `active` / `checked`
+   2. **Props**: "Which props does this component accept? (one per line, e.g. `label`, `onClick`, `disabled?`)"
+   3. **Required interaction**: single-select — `keyboard only` / `pointer only` / `both`
+   → save answers as inline spec and write to `design.components[]` for later reuse.
 
 Show spec:
 
@@ -1082,20 +1087,94 @@ options:
 multiSelect: false
 ```
 
-#### Step 4: Generate (entity-aware)
+#### Step 5: Design Direction
+
+Three short questions that lock the visual direction before code generation. Answers stored as `$DESIGN_DIRECTION` and injected into the Build Plan (Step 7).
+
+```yaml
+header: "Tone"
+question: "Which tone fits {$TARGET}?"
+options:
+  - label: "Sober", description: "Reserved, information-first — no decorative elements"
+  - label: "Bold", description: "Strong contrast, dominant typography, assertive spacing"
+  - label: "Playful", description: "Rounded shapes, softer palette, motion accents"
+  - label: "Minimal", description: "Maximum whitespace, single accent, no ornamentation"
+multiSelect: false
+```
+
+```yaml
+header: "Density"
+question: "How dense should the layout of {$TARGET} be?"
+options:
+  - label: "Compact", description: "Tight padding, small font sizes — information-dense"
+  - label: "Comfortable (Recommended)", description: "Standard spacing — balanced readability"
+  - label: "Spacious", description: "Generous padding, large touch targets — simple content"
+multiSelect: false
+```
+
+Derive primary-affordance options from the spec (`$TARGET`): list up to 4 clearly distinct interaction or perception goals (e.g. "color shift on value change", "numeric readout", "proximity threshold marker", "drag animation"). If the spec is too sparse to derive options: skip this question.
+
+```yaml
+header: "Primary affordance"
+question: "Which element should dominate the user's attention in {$TARGET}?"
+options:
+  - label: "{affordance-1}", description: "{derived from spec}"
+  - label: "{affordance-2}", description: "{derived from spec}"
+  # max 4 options — always derived from spec, never generic
+multiSelect: false
+```
+
+Store as `$DESIGN_DIRECTION = { tone, density, primaryAffordance }`.
+
+#### Step 6: Design Alternatives
+
+Only for PAGE entities or COMPONENTs with ≥2 variants or sections. Skip for single-variant, stateless components.
+
+Spawn 2 Plan-agents **parallel** with opposing constraints on `$DESIGN_DIRECTION`:
+
+- **Agent 1 constraint:** `"Maximize {$DESIGN_DIRECTION.primaryAffordance} — every visual decision supports this single goal. Tone: {tone}. Density: {density}."`
+- **Agent 2 constraint:** `"Invert hierarchy — treat the secondary goal as the hero. Suppress {primaryAffordance} in favour of context/navigation. Tone: {tone}. Density: {density}."`
+
+Each agent produces:
+1. An ASCII wireframe (max 30 lines)
+2. A 2-sentence rationale
+
+Present as 3 options (original plan from Step 4 + 2 alternatives). Use `preview` field for the ASCII wireframes:
+
+```yaml
+header: "Design choice"
+question: "Three approaches for {$TARGET} — choose one or describe a combination."
+options:
+  - label: "Original plan"
+    description: "{spec-derived layout overview}"
+    preview: "{ascii wireframe of original}"
+  - label: "Option A — maximize {primaryAffordance}"
+    description: "{agent-1 rationale}"
+    preview: "{agent-1 ascii wireframe}"
+  - label: "Option B — inverted hierarchy"
+    description: "{agent-2 rationale}"
+    preview: "{agent-2 ascii wireframe}"
+multiSelect: false
+```
+
+Store as `$CHOSEN_LAYOUT`. Inject into Step 7 code generation as layout-direction override.
+
+If user selects "Other" (combination): ask what to take from which option → synthesize into `$CHOSEN_LAYOUT`.
+
+#### Step 7: Generate (entity-aware)
 
 Consult `../shared/CODEGEN.md` for full patterns. Output path determined by entity type and scope:
 
-| Entity              | Output-pad                                           | Sub-output                          |
+| Entity              | Output path                                          | Sub-output                          |
 | ------------------- | ---------------------------------------------------- | ----------------------------------- |
-| PAGE                | `app/{route}/page.tsx` (of framework-equivalent)     | `app/{route}/_components/{Sub}.tsx` |
+| PAGE                | `app/{route}/page.tsx`                               | `app/{route}/_components/{Sub}.tsx` |
 | COMPONENT (atomic)  | `src/components/ui/{Name}.tsx`                       | —                                   |
 | COMPONENT (section) | `src/components/{Name}.tsx`                          | —                                   |
 | COMPONENT (layout)  | `src/components/{Name}.tsx` + patch `app/layout.tsx` | Demo page (see below)               |
 
-**Auto-patch for layout components:** if `scope: layout`, Build adds an import + render statement to `app/layout.tsx` (or framework equivalent). For `appliesTo: route-group:X`: patch in `app/(X)/layout.tsx`. Detect existing imports before patching — show conflict warning on duplicate and ask for confirmation.
+**Auto-patch for layout components:** if `scope: layout`, Build adds an import + render statement to `app/layout.tsx`. For `appliesTo: route-group:X`: patch in `app/(X)/layout.tsx`. Detect existing imports before patching — show conflict warning on duplicate and ask for confirmation.
 
-**Demo page for COMPONENT:** generate `app/_dev/components/{name}/page.tsx` (gitignored) showing all variants × sizes × states — used for smoke-render in Step 4b.
+**Demo page for COMPONENT:** generate `app/_dev/components/{name}/page.tsx` (gitignored) showing all variants × sizes × states — used for verification in Step 9.
 
 ```tsx
 // Auto-generated — gitignored
@@ -1132,41 +1211,29 @@ Caveats:      {missing deps, missing tokens, auto-patch layout, etc. — or "non
 
 ```yaml
 header: "Build plan"
-question: "Is this plan correct? Then I'll generate the code."
+question: "Plan correct? Files will be written immediately after approval."
 options:
-  - label: "Generate (Recommended)", description: "Plan is correct, write the files"
-  - label: "Adjust plan", description: "I want to change something"
+  - label: "Write files (Recommended)", description: "Plan is correct — generate and write now"
+  - label: "Adjust plan", description: "I want to change something — update the plan and come back"
+  - label: "Cancel", description: "Stop this build"
 multiSelect: false
 ```
 
-After confirmation — generate code:
+After approval — generate and write immediately:
 
-- Semantic HTML layout (PAGE) or cva component (COMPONENT) based on spec
-- Reuse existing components where matching (import from their paths in `components[]`)
-- Tailwind/CSS classes via theme tokens — **no raw hex** (`#…`) or arbitrary color-values (`bg-[#…]`)
+- Semantic HTML layout (PAGE) or cva component (COMPONENT) based on spec + `$CHOSEN_LAYOUT`
+- Reuse existing components where applicable (import via their paths in `components[]`)
+- Tailwind/CSS classes via theme tokens — no raw hex values, no arbitrary color values (`bg-[#…]`)
 - Images: only `/placeholder.svg?w={W}&h={H}` (PAGE only) — never external CDN URLs
 - Accessibility: `<main>`, `<section>`, `aria-label`, skip-nav (PAGE); correct ARIA attributes (COMPONENT)
 
-```yaml
-header: "Write"
-question: "Write files?"
-options:
-  - label: "Write files (Recommended)", description: "Apply files to disk"
-  - label: "Adjust before writing", description: "Change something before writing"
-multiSelect: false
-```
+#### Step 8: Post-write checks
 
-Write files after confirmation.
+**Hex post-pass** — across generated files:
 
-#### Step 4: Post-write checks + smoke render
-
-**4a. Static checks** (no dev server needed — run directly after file write):
-
-**Hex post-pass** — scan every generated `.tsx`/`.vue`/`.svelte`/`.css` file:
-
-- Forbidden: `#[0-9a-fA-F]{3,8}` in `className`-strings of inline-style props (outside `//` and `/* */` comments)
-- Forbidden: arbitrary Tailwind color-values `bg-[#`, `text-[#`, `border-[#`
-- Forbidden: external placeholder-URLs (`images.unsplash.com`, `picsum.photos`, `placehold.co`, `fakeimg.pl`)
+- `#[0-9a-fA-F]{3,8}` in `className` or inline-style props (outside `//` and `/* */` comments)
+- Arbitrary Tailwind color values (`bg-[#`, `text-[#`, `border-[#`)
+- External placeholder URLs (`images.unsplash.com`, `picsum.photos`, `placehold.co`, `fakeimg.pl`)
 
 On match → show violation + AskUserQuestion:
 
@@ -1180,164 +1247,39 @@ options:
 multiSelect: false
 ```
 
-**Unknown-import scan** — scan every generated file for `from ['"](.+?)['"]`:
+**Unknown-import scan** — for each `from ['"](.+?)['"]` in generated files:
 
-- Relative imports (`./`, `../`, `@/`): check if file exists in project structure
-- Bare imports: check presence in `package.json`
-- On unresolved imports → show list, note as missing dependency in completion report
+- Relative (`./`, `../`, `@/`): verify file exists in project structure
+- Bare: verify presence in `package.json`
+- On unresolved → show list, note as missing dependency in completion report
 
-**4b. Smoke render** (requires dev server):
+#### Step 9: Hand off to /frontend-check (optional)
 
-Check availability: `curl -s http://localhost:{port}` (port from `project.json` or CLAUDE.md).
-
-If dev server not available: skip 4b entirely with message `"Dev server unreachable — open manually."`. Proceed to Step 5.
-
-If available:
-
-**Route determination per entity type:**
-
-- `$TARGET_TYPE = PAGE` → navigate to the page route.
-- `$TARGET_TYPE = COMPONENT` → navigate to `/_dev/components/{$TARGET}` (the demo page).
-
-**Basic smoke checks (daemon):**
-
-1. **Check 1 — Console errors**: 0 fatal errors (`playwright-cli console error` filtered against default ignore patterns)
-2. **Check 2 — Layout intact**: body height > 100px, width > 200px
-3. **Check 3 — Tokens loaded**: computed style of `--color-primary` or equivalent is not an empty string
-4. **Check 4 — Layout collapse**: iterates through `<main>` direct children; fails if ≥1 element has `offsetHeight === 0` or `offsetWidth === 0`
-5. **Check 5 — Variant matrix (COMPONENT only)**: checks if `<main>` contains ≥ `{variants.length × sizes.length}` child blocks
-
-**Multi-viewport screenshots (daemon — always run):**
-
-Capture at 375 (mobile) and 1440 (desktop). Per viewport:
-
-```
-playwright-cli open {url}
-playwright-cli resize 375 900
-playwright-cli run-code "async p => { await p.waitForTimeout(500); }"
-playwright-cli screenshot --filename=.project/wireframes/{$TARGET}-375.png
-playwright-cli resize 1440 900
-playwright-cli run-code "async p => { await p.waitForTimeout(500); }"
-playwright-cli screenshot --filename=.project/wireframes/{$TARGET}-1440.png
-playwright-cli close
-```
-
-**Dark/light screenshots (daemon — if `project.json#theme.modes.dark` exists):**
-
-```
-playwright-cli run-code "async page => {
-  const ctx = await page.context().browser().newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });
-  const p = await ctx.newPage();
-  await p.goto('{url}');
-  await p.waitForLoadState('networkidle');
-  await p.screenshot({ path: '.project/wireframes/{$TARGET}-dark.png' });
-  await ctx.close();
-}"
-```
-
-**A11y smoke (mandatory — auto-install if missing):**
-
-Check if `@axe-core/playwright` is available: `node -e "require('@axe-core/playwright')" 2>/dev/null`.
-
-- **Available**: run axe via `playwright-cli run-code`. Fail on `critical`, show `serious` as warning.
-- **Not available**: AskUserQuestion:
-  ```yaml
-  header: "axe-core"
-  question: "@axe-core/playwright is not installed. A11y check is required for Build smoke."
-  options:
-    - label: "Install now (Recommended)"
-      description: "npm install --save-dev @axe-core/playwright — then re-run"
-    - label: "Skip (once)"
-      description: "Note as missing dep in report, continue"
-  ```
-  On "Install now": `npm install --save-dev @axe-core/playwright`, then run the axe check. On "Skip": note as `MISSING_DEP: @axe-core/playwright` in report.
-
-**Aria-snapshot baseline (runner — after daemon checks):**
-
-Generate an on-the-fly runner spec for aria-snapshot assertion. First run creates baseline; subsequent runs fail on structural regression. See `shared/PLAYWRIGHT.md → Runner Mode` for the full on-the-fly pattern.
-
-```typescript
-// .project/playwright-runs/design-{$TARGET}.spec.ts  (temporary)
-import { test, expect } from "@playwright/test";
-test("aria snapshot — {$TARGET}", async ({ page }) => {
-  await page.goto("{url}");
-  await page.waitForLoadState("networkidle");
-  await expect(page.locator("main")).toMatchAriaSnapshot();
-  // baseline: .project/playwright-runs/__screenshots__/design-{$TARGET}-main-aria.yaml
-});
-```
-
-Run: `npx playwright test .project/playwright-runs/design-{$TARGET}.spec.ts --config=.project/playwright-runs/playwright.config.ts [--update-snapshots on first run]`
-
-If runner not available (`npx playwright --version` fails): skip aria-snapshot, note as `SKIPPED: runner not available`.
-
-```
-SMOKE CHECKS: {$TARGET} ({$TARGET_TYPE})
-──────────────────────────────────────────────────
-✓ Console errors       0 fatal
-✓ Layout intact        body 1024×768
-✓ Tokens loaded        --color-primary OK
-✓ Section collapse     0 collapsed
-✓ Multi-viewport       375px OK · 1440px OK
-✓ Dark mode            .project/wireframes/{$TARGET}-dark.png  (only if dark mode enabled)
-✓ Variant matrix       6/6 variants visible  (COMPONENT only)
-✓ axe a11y             0 critical
-✓ Aria snapshot        baseline created / no regression
-──────────────────────────────────────────────────
-```
-
-**4c. On failure:**
+After Step 8 passes, offer a one-question handoff:
 
 ```yaml
-header: "Smoke check failed"
-question: "Check failed: {description}. How to proceed?"
+header: "Verify"
+question: "Build complete. Run /frontend-check on {$TARGET}?"
 options:
-  - label: "Refine (Recommended)", description: "Describe what needs to change — I'll only edit that section"
-  - label: "Fix manually", description: "I'll fix it myself"
-  - label: "Open in convert", description: "/frontend-convert patch for visual rework (PAGE only)"
-  - label: "Skip verification", description: "Continue without verifying"
+  - label: "Yes (Recommended)", description: "Smoke, a11y, responsive, darkmode via /frontend-check"
+  - label: "Skip", description: "Mark build done — verify later"
 multiSelect: false
 ```
 
-**Refine loop** (on "Refine" — max 3 rounds):
+If "Yes": invoke `/frontend-check {$TARGET}` (feature-target mode picks up `files[]` + routes from `feature.json`). Capture frontend-check's exit status:
 
-1. AskUserQuestion: "Which section?" — show `<main>` direct children as options
-2. AskUserQuestion: "What needs to change?" — free text
-3. Edit on **only** that section (never Write on entire file)
-4. Re-run checks 4b
-5. On persistent failure after 3 rounds → AskUserQuestion: "Fix manually | Open in convert | Accept as-is"
+- All critical findings resolved or none found → `$VERIFY_STATUS = "PASS"`
+- Critical findings remain after user chose "Fix manually" or "Open in convert" → `$VERIFY_STATUS = "FAIL"`, store short reason in `$VERIFY_ERROR`
 
-**On "Open in convert"** (PAGE only — COMPONENT has no convert flow):
+If "Skip": `$VERIFY_STATUS = "SKIPPED"`. Note in devinfo that verification is pending.
 
-Write to `.project/session/devinfo.json`:
+Step 10 reads `$VERIFY_STATUS` to set `feature.audit.buildSmokeStatus`.
 
-```json
-{
-  "handoff": {
-    "source": "build-incomplete",
-    "target": "{$TARGET}",
-    "files": ["{generated-file-1}", "{generated-file-2}"],
-    "failedChecks": ["{check-name-1}", "{check-name-2}"],
-    "reason": "smoke-fail",
-    "buildScreenshot": "{screenshot-pad of null}",
-    "timestamp": "{ISO-timestamp}"
-  }
-}
-```
+#### Step 10: Backlog sync + Block inventory + Drift cleanup
 
-```
-BUILD INCOMPLETE: {$TARGET}
+10a–10c run unconditionally after Step 8 succeeds — they are static analyses on `$GENERATED_FILES`. Only 10d (Backlog sync) reads `$VERIFY_STATUS` to decide the final feature stage. 10e (Gap-discovery) runs always.
 
-Failed checks:    {lijst}
-Files written:    {pad-1, pad-2}
-Handoff saved:    devinfo.handoff (source: build-incomplete)
-
-Next:  /frontend-convert {$TARGET}   (auto-detected handoff → patch mode)
-```
-
-#### Step 5: Backlog sync + Block inventory + Drift cleanup
-
-**5a. Block inventory** (only on smoke PASS):
+**10a. Block inventory**:
 
 Parse all `$GENERATED_FILES` → filter on component paths (`_components/`, `src/components/`, `app/components/`). Skip page files (`page.tsx`, `+page.svelte`, route-level files). Per component file:
 
@@ -1350,7 +1292,7 @@ Parse all `$GENERATED_FILES` → filter on component paths (`_components/`, `src
    - New → append
 5. Read `.project/project-context.json` → update `components[]` → Write back (only if changes)
 
-**5b. Bidirectional linking** (only on smoke PASS):
+**10b. Bidirectional linking**:
 
 Parse imports from all `$GENERATED_FILES`:
 
@@ -1377,27 +1319,30 @@ Parse imports from all `$GENERATED_FILES`:
 
 Write `project.json#design` back after sync.
 
-**5c. TokenDrift cleanup** (on smoke PASS):
+**10c. TokenDrift cleanup**:
 
 Read `.project/session/devinfo.json` → check `tokenDrift.affectedFeatures`. If `{$TARGET}` is in it: remove from the list. If list is then empty: set `tokenDrift.resolved = true`. Write back.
 
-**5d. Backlog sync**:
+**10d. Backlog sync**:
 
 Parse `backlog.html` → match on `name === {$TARGET}`:
 
-- Smoke success → `feature.status = "DOING"` + `feature.audit.buildScreenshot = {path}` + `feature.audit.buildSmokeStatus = "PASS"`
-- Smoke fail → backlog status **unchanged** (stays TODO or DEFINED). Set `feature.audit.buildSmokeStatus = "FAIL"` + `feature.audit.buildSmokeError = {short reason}`.
-- Smoke skip → backlog status **unchanged**. Set `feature.audit.buildSmokeStatus = "SKIPPED"`.
+Map `$VERIFY_STATUS` (from Step 9) to backlog state:
 
-Update `data.updated` only on smoke success. Edit back to `backlog.html`.
+- `"PASS"` → `feature.status = "DOING"` + `delete feature.transition` + `feature.stage = "built"` + `feature.audit.buildSmokeStatus = "PASS"` + `data.updated = today`
+- `"SKIPPED"` → identical to PASS but `feature.audit.buildSmokeStatus = "SKIPPED"`
+- `"FAIL"` → backlog status **unchanged** (code not confirmed working). Set `feature.audit.buildSmokeStatus = "FAIL"` + `feature.audit.buildSmokeError = $VERIFY_ERROR`
+- **No match or no backlog** → silent skip. Add to completion report: `Backlog: feature not found — skipping`.
 
-Store block inventory counters as `$INV_NEW`, `$INV_UPDATED`, `$INV_CONFLICTS` for use in Step 6.
+Edit back to `backlog.html` (keep `<script>` tags intact, see `shared/BACKLOG.md → Lifecycle Protocol → Write`).
 
-**5e. Gap-discovery** (always, regardless of smoke status):
+Store block inventory counters as `$INV_NEW`, `$INV_UPDATED`, `$INV_CONFLICTS` for use in Step 11.
+
+**10e. Gap-discovery** (always, regardless of verification status):
 
 Follow [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery), Trigger C (Build post code-gen): scan `$GENERATED_FILES` for stub handlers and show AskUserQuestion per found gap. If no gaps: skip step.
 
-#### Step 6: Completion report
+#### Step 11: Completion report
 
 ```
 BUILD COMPLETE: {$TARGET} ({$TARGET_TYPE})
@@ -1411,24 +1356,10 @@ Components:       {reused components}
 Block inventory:  +{$INV_NEW} new, ~{$INV_UPDATED} updated, !{$INV_CONFLICTS} conflict
 Linked:           {uses/usedIn sync — or "n/a"}
 Missing deps:     {list or "none"}
-Smoke render:     {PASS | FAIL | SKIPPED}
-Screenshot:       {path or n/a}
+Verification:     {$VERIFY_STATUS}
+Verify error:     {$VERIFY_ERROR}   (only shown when $VERIFY_STATUS = "FAIL")
 Gaps:             {N linked | M created | K pending | "none"}
 ```
-
-Ask after report:
-
-```yaml
-header: "Continue with audit?"
-question: "/frontend-check {$TARGET} checks A11Y, tokens and responsive behavior."
-options:
-  - label: "Yes, audit now (Recommended)", description: "Run frontend-check inline"
-  - label: "Later", description: "Status stays DOING — /frontend-check {$TARGET} is ready in the backlog"
-multiSelect: false
-```
-
-On "Yes": read `frontend-check/SKILL.md` and run PHASE 0–4 inline for `{$TARGET}`.
-On "Later": end — backlog shows DOING status with next-step `/frontend-check {$TARGET}`.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: project-viewer
-description: "Start, stop, or check the local backlog board server on localhost:9876."
+description: Start, stop, or check the local backlog board server. Use with /project-viewer.
 metadata:
   author: claude-config
   version: 3.2.0
@@ -24,9 +24,12 @@ Detect platform:
 
 Projects root (first match wins):
 
-- Env var `CLAUDE_PROJECTS_ROOT` (override for non-default locations)
-- **Windows fallback**: `C:\Projects`
-- **macOS fallback**: `$HOME/projects`
+1. Env var `CLAUDE_PROJECTS_ROOT`
+2. `<config_repo>/.claude/paths.local.yaml` → veld `projects_root` (geschreven door `/core-bootstrap`)
+3. **Windows fallback**: `C:\Projects`
+4. **macOS fallback**: `$HOME/projects`
+
+`config_repo` = parent van de gederefereerde symlink/junction `~/.claude/skills`.
 
 Server-script pad: `~/.claude/skills/shared/references/serve-backlog.js`
 
@@ -49,6 +52,48 @@ curl -s http://localhost:9876/ > /dev/null 2>&1 && echo RUNNING || echo STOPPED
 Store result as `SERVER_RUNNING`.
 
 ### PHASE 1: Execute action
+
+Resolve `$root` first (altijd, ook als server al draait):
+
+_Windows:_
+
+```powershell
+function Resolve-ProjectsRoot {
+  if ($env:CLAUDE_PROJECTS_ROOT) { return $env:CLAUDE_PROJECTS_ROOT }
+  $skillsLink = Get-Item "$env:USERPROFILE\.claude\skills" -ErrorAction SilentlyContinue
+  if ($skillsLink -and $skillsLink.Target) {
+    $repo = Split-Path -Parent $skillsLink.Target
+    $yaml = Join-Path $repo ".claude\paths.local.yaml"
+    if (Test-Path $yaml) {
+      $line = Select-String -Path $yaml -Pattern '^\s*projects_root:\s*"?([^"\r\n]+)"?' | Select-Object -First 1
+      if ($line) { return $line.Matches[0].Groups[1].Value.Trim().TrimEnd('"') }
+    }
+  }
+  return "C:\Projects"
+}
+$root = Resolve-ProjectsRoot
+```
+
+_macOS:_
+
+```bash
+resolve_projects_root() {
+  if [ -n "$CLAUDE_PROJECTS_ROOT" ]; then printf '%s' "$CLAUDE_PROJECTS_ROOT"; return; fi
+  local repo
+  repo="$(cd "$HOME/.claude/skills" 2>/dev/null && pwd -P | sed 's|/[^/]*$||')"
+  local yaml="$repo/.claude/paths.local.yaml"
+  if [ -f "$yaml" ]; then
+    local v
+    v=$(awk -F'"' '/^[[:space:]]*projects_root:/ {print $2; exit}' "$yaml")
+    if [ -n "$v" ]; then
+      v="${v/#\~/$HOME}"; v="${v/#\$HOME/$HOME}"
+      printf '%s' "$v"; return
+    fi
+  fi
+  printf '%s' "$HOME/projects"
+}
+root="$(resolve_projects_root)"
+```
 
 **If argument `stop`:**
 
@@ -73,14 +118,12 @@ Confirm result. If no server was running → report that.
 _Windows:_
 
 ```powershell
-$root = if ($env:CLAUDE_PROJECTS_ROOT) { $env:CLAUDE_PROJECTS_ROOT } else { "C:\Projects" }
 Start-Process -WindowStyle Hidden -FilePath node -ArgumentList "--watch","$env:USERPROFILE\.claude\skills\shared\references\serve-backlog.js","$root" -RedirectStandardOutput "$env:TEMP\backlog-server.log" -RedirectStandardError "$env:TEMP\backlog-server.err"
 ```
 
 _macOS:_
 
 ```bash
-root="${CLAUDE_PROJECTS_ROOT:-$HOME/projects}"
 nohup node --watch ~/.claude/skills/shared/references/serve-backlog.js "$root" > /tmp/backlog-server.log 2>&1 &
 ```
 
@@ -90,19 +133,18 @@ If not reachable after 5s → show error message + last lines from the log file.
 
 ### PHASE 2: Show result
 
-Scan projects in the projects root (directories containing a `.project/` subdirectory):
+Scan projects in the projects root (directories containing a `.project/` subdirectory).
+Use `$root` uit PHASE 1 (al resolved).
 
 _Windows:_
 
 ```powershell
-$root = if ($env:CLAUDE_PROJECTS_ROOT) { $env:CLAUDE_PROJECTS_ROOT } else { "C:\Projects" }
 Get-ChildItem -Path $root -Directory | Where-Object { Test-Path "$($_.FullName)\.project" } | Select-Object -ExpandProperty Name
 ```
 
 _macOS:_
 
 ```bash
-root="${CLAUDE_PROJECTS_ROOT:-$HOME/projects}"
 for d in "$root"/*/; do [ -d "$d/.project" ] && basename "$d"; done
 ```
 
@@ -126,10 +168,11 @@ Determine which URL to copy (context-aware):
 - If cwd is directly under the projects root and that subdirectory contains `.project/` → use `http://localhost:9876/{project-name}` (dashboard of current project)
 - Otherwise → use `http://localhost:9876` (server root)
 
+Use `$root` uit PHASE 1 (al resolved).
+
 **Windows (PowerShell):**
 
 ```powershell
-$root = if ($env:CLAUDE_PROJECTS_ROOT) { $env:CLAUDE_PROJECTS_ROOT } else { "C:\Projects" }
 $cwd = (Get-Location).Path
 $url = "http://localhost:9876"
 if ($cwd -like "$root\*") {
@@ -144,7 +187,6 @@ $url
 **macOS (bash):**
 
 ```bash
-root="${CLAUDE_PROJECTS_ROOT:-$HOME/projects}"
 cwd="$PWD"
 url="http://localhost:9876"
 if [[ "$cwd" == "$root"/* ]]; then

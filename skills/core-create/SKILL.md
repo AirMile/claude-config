@@ -1,9 +1,6 @@
 ---
 name: core-create
-description: >-
-  Create new Claude Code skills interactively with optional resource bundling.
-  Use with /core-create. Handles SKILL.md generation, frontmatter, references,
-  and scripts.
+description: Create new Claude Code skills interactively. Use with /core-create.
 argument-hint: "[name]"
 metadata:
   author: claude-config

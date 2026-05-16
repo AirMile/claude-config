@@ -1,9 +1,6 @@
 ---
 name: core-rewrite
-description: >-
-  Rewrite freewritten text in a specific writing style, or check text against a style without rewriting.
-  Use with /core-rewrite [style] [text], /core-rewrite [style] @path, or /core-rewrite check [style] [text|@path].
-  Styles are loaded dynamically from ~/.claude/styles/*.md — add your own style files there.
+description: Rewrite text in a configured writing style. Use with /core-rewrite.
 argument-hint: "[check?] [style] [text|@path]"
 user-invocable: true
 metadata:

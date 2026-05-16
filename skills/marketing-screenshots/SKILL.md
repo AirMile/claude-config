@@ -1,10 +1,7 @@
 ---
 name: marketing-screenshots
 argument-hint: "[url]"
-description: >-
-  Generate marketing-quality screenshots of a web app via Playwright CLI.
-  Use with /marketing-screenshots [url] for Product Hunt, social media, landing
-  pages, or documentation. Analyzes codebase to discover routes and features.
+description: Generate marketing-quality app screenshots via Playwright. Use with /marketing-screenshots.
 metadata:
   author: claude-config
   version: 1.0.0

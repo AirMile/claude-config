@@ -1,6 +1,6 @@
 ---
 name: core-commit
-description: Analyze staged git changes and generate conventional commit messages. Use with /core-commit. Detects rebase/merge state, validates changes, follows project conventions.
+description: Generate conventional commit messages from staged changes. Use with /core-commit.
 metadata:
   author: claude-config
   version: 1.0.0

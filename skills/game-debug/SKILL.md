@@ -1,9 +1,6 @@
 ---
 name: game-debug
-description: >-
-  Systematic debugging for Godot projects with reproduction-test-first workflow,
-  root cause analysis, and 3 fix strategies. Use for runtime errors, physics
-  bugs, signal issues, or scene tree problems.
+description: Debug Godot projects with root cause analysis. Use with /game-debug.
 reads: [project-context.learnings, feature.requirements]
 writes: [project-context.learnings]
 metadata:

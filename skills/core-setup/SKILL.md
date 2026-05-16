@@ -1,12 +1,6 @@
 ---
 name: core-setup
-description: >-
-  Project setup hub — auto-detects whether a project is greenfield or mature
-  and routes to the matching flow. Greenfield: interactive wizard (stack,
-  CLAUDE.md, dashboard init). Mature: full codebase scan + LLM learnings +
-  CLAUDE.md sync. Also Audit, Resync, and Install modes. Install mode:
-  incrementally add tools/libraries via `/core-setup [module]` (tailwind,
-  playwright, vitest, shadcn-ui, biome, zustand, etc.). Use with /core-setup.
+description: Project setup hub (greenfield, mature, or install module). Use with /core-setup.
 argument-hint: "[--mode=greenfield|mature|audit|resync|install] [module] [--no-llm]"
 metadata:
   author: claude-config

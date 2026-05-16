@@ -1,6 +1,6 @@
 # Shared PR Creation Flow
 
-Single source of truth for `gh pr create` in the claude-config pipeline. Used by `core-finalize` (also: `/core-merge`) and the optional PR offer at the end of `dev-refactor`, `game-refactor`, `dev-verify`, `game-verify`.
+Single source of truth for `gh pr create` in the claude-config pipeline. Used by `core-finalize` and the optional PR offer at the end of `dev-refactor`, `game-refactor`, `dev-verify`, `game-verify`.
 
 ## Detection
 

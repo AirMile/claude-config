@@ -1,6 +1,6 @@
 ---
 name: project-add
-description: Add project (new or clone existing) and register it in the multi-project setup. Use with /project-add.
+description: Add or clone a project into the multi-project setup. Use with /project-add.
 metadata:
   author: claude-config
   version: 1.0.0

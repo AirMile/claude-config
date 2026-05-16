@@ -1,10 +1,6 @@
 ---
 name: core-write
-description: >-
-  Write a text from scratch in your configured writing style with guided context-gathering.
-  Detects style automatically based on text type. Styles are loaded dynamically from ~/.claude/styles/*.md.
-  Supports Quick (one question round), Standard (two rounds), and Full (with outline approval) flows.
-  Use with /core-write [what to write].
+description: Write text from scratch in your configured style. Use with /core-write.
 argument-hint: "[what to write]"
 user-invocable: true
 metadata:

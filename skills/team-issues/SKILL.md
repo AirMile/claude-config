@@ -1,11 +1,6 @@
 ---
 name: team-issues
-description: >-
-  Import issues from GitHub, Jira, or Linear into the local backlog. Smart-splits
-  larger issues into multiple frontend/dev todos based on body analysis. Use /team-issues
-  to browse GitHub issues, /team-issues <number> to import a specific issue,
-  /team-issues --paste for Jira/Linear paste flow, /team-issues --mine to filter on
-  assignee=@me. See shared/TEAM.md for the full team-repo workflow.
+description: Import GitHub/Jira/Linear issues into the local backlog. Use with /team-issues.
 argument-hint: "[number] [--mine] [--paste] [--label <label>]"
 metadata:
   author: claude-config

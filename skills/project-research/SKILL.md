@@ -1,6 +1,6 @@
 ---
 name: project-research
-description: Multi-source research on concepts and ideas. Combines web search, documentation lookup, and codebase analysis into structured findings. Use with /project-research after /project-seed, /project-brainstorm, or /project-critique.
+description: Multi-source research combining web, docs, and codebase. Use with /project-research.
 metadata:
   author: claude-config
   version: 1.3.0

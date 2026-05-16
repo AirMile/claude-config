@@ -1,6 +1,6 @@
 ---
 name: game-verify
-description: Human playtest verification with structured feedback and fix loop. Use with /game-verify after /game-build for manual testing of game features.
+description: Human playtest verification with structured feedback. Use with /game-verify.
 reads: [feature.requirements, feature.build, backlog.stage]
 writes: [feature.tests, backlog.stage]
 metadata:
@@ -133,6 +133,9 @@ Now TESTABLE -> TDD fix loop
 8. PHASE 5c: Regression Check
 9. PHASE 5d: Requirement Verification
 10. PHASE 6: Completion
+
+Add conditionally via `TaskCreate`:
+- All PASS + worktree branch detected → add PHASE Finalize at end
 
 ### PHASE 0: Load Context
 
@@ -1300,41 +1303,6 @@ Next steps:
   2. /game-define {next-feature} → pick up next feature
 ```
 
-**Optional PR offer** — show first, only if ALL true:
-
-1. Current branch matches `worktree-*` pattern (`git branch --show-current`)
-2. Feature is set to `status: "DONE"` in backlog after this run
-3. `.project/project.json#team.mode === "team"` (absent → skip)
-4. `gh` on PATH AND `gh auth status` exit 0
-5. Clean tree (`git status --porcelain` empty)
-
-If all true → AskUserQuestion:
-
-```yaml
-header: "PR openen"
-question: "Push + PR openen voor worktree-{feature-name}?"
-options:
-  - label: "Ja, push + PR (Recommended)"
-    description: "Push the branch and open a PR via gh. Worktree stays until merged."
-  - label: "Nee, skip PR"
-    description: "Skip the PR; show the worktree hint instead."
-multiSelect: false
-```
-
-On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress the worktree hint below.
-On "Nee" or any precondition fail → fall through to the worktree hint.
-
-**Worktree integration hint** — append one extra line if both conditions are true:
-
-1. Current branch matches `worktree-*` pattern (`git branch --show-current`)
-2. Feature is set to `status: "DONE"` in backlog after this run
-
-Append:
-
-```
-Feature done — run /core-finalize {feature-name} to integrate into main/develop
-```
-
 ---
 
 ## Output Structure
@@ -1484,3 +1452,79 @@ This skill must ALWAYS:
 Override: env var `CLAUDE_GODOT_EXECUTABLE` or `.claude/paths.local.yaml`. Canonical defaults are in [skills/project-add/paths.yaml](skills/project-add/paths.yaml).
 
 > **Todo**: mark PHASE 6 → `completed`.
+
+---
+
+### PHASE Finalize
+
+> **Todo**: mark PHASE 6 → `completed`, PHASE Finalize → `in_progress`.
+
+**Run only if BOTH true:**
+1. All test items PASS (no open fix-loop items)
+2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
+
+**PR offer (team-mode only)** — show first, only if ALL true:
+1. `.project/project.json#team.mode === "team"` (absent → skip)
+2. `gh` on PATH AND `gh auth status` exit 0
+3. Clean tree (`git status --porcelain` empty)
+
+If all true → AskUserQuestion:
+
+```yaml
+header: "PR openen"
+question: "Push + PR openen voor worktree-{feature-name}?"
+options:
+  - label: "Ja, push + PR (Recommended)"
+    description: "Push the branch and open a PR via gh. Worktree stays until merged."
+  - label: "Nee, skip PR"
+    description: "Skip the PR; show finalize prompt instead."
+multiSelect: false
+```
+
+On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
+On "Nee" or any precondition fail → fall through to finalize prompt.
+
+**Finalize prompt** — detect PR state first:
+
+```bash
+PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
+PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
+PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
+PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
+```
+
+| PR_STATE                            | Action                                                                                                                                         |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPEN`                              | Print: `"PR #{PR_NUMBER} is open: {PR_URL}. Run \`/core-finalize {feature-name}\` zodra gemerged."` No prompt.                                 |
+| `MERGED`                            | AskUserQuestion: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd." — Yes/Keep open (see below) |
+| empty / `CLOSED` / `gh` unavailable | AskUserQuestion: "Feature '{feature-name}' afgerond. Finalize nu (merge naar main + cleanup)?" — Yes/Keep open (see below)                     |
+
+```yaml
+# For MERGED state:
+header: "PR merged — cleanup"
+question: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd."
+options:
+  - label: "Yes, cleanup nu (Recommended)"
+    description: "Follow shared/FINALIZE.md cleanup-only — verwijder worktree + branch"
+  - label: "Keep open"
+    description: "Worktree blijft staan (bv. voor follow-up commits); cleanup later via /core-finalize"
+multiSelect: false
+```
+
+```yaml
+# For empty/CLOSED state:
+header: "Finalize"
+question: "Feature '{feature-name}' afgerond (status: DONE). Finalize nu (merge naar main + cleanup)?"
+options:
+  - label: "Yes, finalize nu (Recommended)"
+    description: "Follow shared/FINALIZE.md solo-mode — merge worktree naar main + cleanup"
+  - label: "Keep open"
+    description: "Worktree blijft open, finalize later via /core-finalize"
+multiSelect: false
+```
+
+On MERGED "Yes" → follow `shared/FINALIZE.md` with `mode: cleanup-only`.
+On empty/CLOSED "Yes" → follow `shared/FINALIZE.md` with `mode: solo`.
+On any "Keep open" → print `💡 Run /core-finalize {feature-name} when ready`.
+
+> **Todo**: mark PHASE Finalize → `completed`.
