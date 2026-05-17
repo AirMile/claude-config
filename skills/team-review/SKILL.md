@@ -41,7 +41,7 @@ Not for:
 
 > **Todo**: call `TaskCreate` with the 7 phase items (see above). Mark Step 1 → `in_progress` via `TaskUpdate`.
 
-0. **Team-mode gate.** Read `.project/project.json#team.mode`. If `"solo"` or absent → show AskUserQuestion (warn-only):
+0. **Team-mode gate.** Read `TEAM_MODE` via `shared/PROJECT-MODE.md` read pattern. If `"solo"` or absent → show AskUserQuestion (warn-only):
 
    ```yaml
    header: "Solo project"

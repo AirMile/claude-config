@@ -1022,7 +1022,7 @@ Read these Just-In-Time during specific phases — do not load upfront.
 | `references/gut-commands.md`    | PHASE 3, 3a, 3b — when running GUT tests                                 |
 | `references/troubleshooting.md` | PHASE 3 — on test failures or build blockers                             |
 
-> Completion claims require fresh output (R009 — see `../shared/RULES.md`)
+> Completion claims require fresh output (R009 — see `../shared/CODING-RULES.md`)
 
 ## Path Resolution
 

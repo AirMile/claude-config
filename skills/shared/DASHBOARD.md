@@ -87,6 +87,7 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
   },
   "optimization_runs": [],
   "team": {
+    "mode": "solo",
     "commitConvention": "conventional|ticket-prefix|bracket|freeform",
     "ticketPrefix": null,
     "tracker": "github|jira|linear|null",

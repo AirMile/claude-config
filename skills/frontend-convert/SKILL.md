@@ -17,7 +17,7 @@ Convert visual input into working code. Accepts screenshots, Figma exports, webs
 
 ## References
 
-- `../shared/RULES.md` — React/TypeScript coding rules
+- `../shared/FRONTEND-RULES.md` — React/TypeScript coding rules
 - `../shared/PATTERNS.md` — Component patterns (compound, render props, etc.)
 - `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
 - `../shared/CODEGEN.md` — Block inventory, token mapping, output structure, a11y scaffold, cva pattern (shared with frontend-design Build route)
@@ -392,7 +392,7 @@ Generate the page and components based on the source image.
 
 **Rules:**
 
-- Follow `shared/RULES.md`: React/Next.js Rules, HTML/CSS Rules, Accessibility Rules (A-series)
+- Follow `shared/FRONTEND-RULES.md`: React/Next.js Rules, HTML/CSS Rules, Accessibility Rules (A-series)
 - Follow `shared/PATTERNS.md`: Component Patterns, Layout Patterns
 - Use `cn()` for className composition — create `src/lib/utils.ts` if not present
 - TypeScript strict mode with proper interfaces
@@ -581,7 +581,7 @@ Compare source image vs generated screenshot. Analyze:
 - Typography (heading sizes, weight, alignment)
 - Component rendering (all sections visible, no blank areas, no error overlays)
 - Missing elements (anything in source not present in output)
-- **Runtime errors** (from step 5 — JS errors indicate broken hydration or missing imports, even if nothing looks wrong visually; report as **P004** findings — see RULES.md)
+- **Runtime errors** (from step 5 — JS errors indicate broken hydration or missing imports, even if nothing looks wrong visually; report as **P004** findings — see FRONTEND-RULES.md)
 
 **Assessment:**
 
@@ -764,7 +764,7 @@ This skill must **ALWAYS**:
 - Resolve visual input before any code generation
 - Confirm mode (1:1 vs inspiration) with user
 - Confirm token mapping with user in inspiration mode
-- Follow `shared/RULES.md` (React/Next.js, HTML/CSS, A-series) and `shared/PATTERNS.md` (Component, Layout)
+- Follow `shared/FRONTEND-RULES.md` (React/Next.js, HTML/CSS, A-series) and `shared/PATTERNS.md` (Component, Layout)
 - Detect and match the project's framework
 - Run the Playwright verification loop (unless tools unavailable)
 - Update DevInfo for downstream skill handoff

@@ -913,7 +913,7 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
    1. Single-mode (`feature_queue.length == 1`, not codebase-mode)
    2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
-   **Step A — PR offer** (show only if ALL: `team.mode === "team"`, `gh` on PATH + `gh auth status` exit 0, clean tree):
+   **Step A — PR offer** (show only if ALL: `TEAM_MODE === "team"` (read via `shared/PROJECT-MODE.md`), `gh` on PATH + `gh auth status` exit 0, clean tree):
 
    ```yaml
    header: "PR openen"
@@ -929,22 +929,9 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
    On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
    On "Nee" or any precondition fail → fall through to finalize prompt.
 
-   **Step B — Finalize prompt**: detect PR state:
+   **Step B — Finalize prompt**: follow `shared/FINALIZE.md → Finalize Offer Decision`.
 
-   ```bash
-   PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
-   PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
-   PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
-   PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
-   ```
-
-   | PR_STATE                            | Action                                                                                                                                                                                                       |
-   | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-   | `OPEN`                              | Print: `"PR #{PR_NUMBER} is open: {PR_URL}. Run \`/core-finalize {feature-name}\` after review — cleanup auto-detects the merged PR."` No AskUserQuestion.                                                   |
-   | `MERGED`                            | AskUserQuestion: "PR #{PR_NUMBER} is gemerged. Cleanup nu? Worktree + branch worden verwijderd." → "Yes, cleanup nu (Recommended)" / "Keep open". Yes → `follow shared/FINALIZE.md with mode: cleanup-only`. |
-   | empty / `CLOSED` / `gh` unavailable | AskUserQuestion: "Feature '{feature-name}' afgerond. Finalize nu (merge naar main + cleanup)?" → "Yes, finalize nu (Recommended)" / "Keep open". Yes → `follow shared/FINALIZE.md with mode: solo`.          |
-
-   On any "Keep open" → print `💡 Run /core-finalize {feature-name} when ready`.
+   On "Keep open" → print `💡 Run /game-refactor {feature-name} on this worktree when ready`.
 
 > **Todo**: mark PHASE 5 → `completed`.
 

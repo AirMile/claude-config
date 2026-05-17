@@ -1,10 +1,10 @@
 ---
 name: game-define
 description: Define Godot feature requirements and architecture. Use with /game-define.
-writes: [feature.requirements, backlog.stage]
+writes: [feature.requirements, backlog.stage, concept.seed]
 metadata:
   author: claude-config
-  version: 2.3.0
+  version: 2.4.0
   category: game
 ---
 
@@ -203,7 +203,7 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 
 7. Skip PHASE 1b (feature splitting) unless the number of requirements after update exceeds 6 and there are clear clusters.
 
-8. Go to PHASE 2 for ADDED and MODIFIED requirements only. For PHASE 5 write: **merge** delta into existing `feature.json` — do not overwrite fully. Preserve existing `build`, `tests` and UNCHANGED requirements. `buildSequence`: remove steps that are empty after REMOVED-filtering; add new steps for ADDED requirements (from PHASE 2 architecture output); leave existing steps for UNCHANGED requirements unchanged.
+8. Go to PHASE 2 for ADDED and MODIFIED requirements only. For PHASE 5 write: **merge** delta into existing `feature.json` — do not overwrite fully. Preserve existing `build`, `tests` and UNCHANGED requirements. `buildSequence`: remove steps that are empty after REMOVED-filtering; add new steps for ADDED requirements (from PHASE 2 architecture output); leave existing steps for UNCHANGED requirements unchanged. The Seed Alignment Check at the end of PHASE 3 still runs — update-mode can drift just as easily as a fresh define.
 
 ---
 
@@ -721,25 +721,36 @@ IMPLEMENTATION ORDER:
 3. REQ-003 (after REQ-002)
 ```
 
+**Seed Alignment Check** (last step in PHASE 3, before writing feature.json):
+
+Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ
+descriptions + `acceptance[].then` + `durableDecisions[]` from PHASE 1 and PHASE 3.
+This skill is NOT in plan mode — drift table and proposed rewrite go inline in
+chat for user review before PHASE 4. On "Yes" → carry `seedUpdateApproved: true`
+to PHASE 5. On "Skip" → carry `seedDrift[]` to PHASE 4 (written to
+`feature.json#seedDrift`). `source: "/game-define"`, `ref: "REQ-NNN"` where
+applicable.
+
 ### PHASE 4: Write feature.json
 
 Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema):
 
-| Field                       | Condition                                                                           |
-| --------------------------- | ----------------------------------------------------------------------------------- |
-| `name`, `created`, `status` | always (status = `"DEFINED"`, no stage — waiting for `/game-build`)                 |
-| `summary`                   | always                                                                              |
-| `depends`                   | always (empty array if none)                                                        |
-| `choices`                   | always (user answers)                                                               |
-| `requirements`              | always (each REQ with `status: "pending"`)                                          |
-| `files`                     | always (normalized: `path`, `type`, `action`, `purpose`, `requirements`)            |
-| `architecture`              | always (`componentTree`, `interfaces`)                                              |
-| `design`                    | only for visual features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`) |
-| `buildSequence`             | always                                                                              |
-| `testStrategy`              | always                                                                              |
-| `clarifications`            | only if gray-area resolution was performed                                          |
-| `durableDecisions`          | with >3 requirements — decisions that apply across all REQs                         |
-| `research`                  | only if research was done                                                           |
+| Field                       | Condition                                                                                                                                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`, `created`, `status` | always (status = `"DEFINED"`, no stage — waiting for `/game-build`)                                                                                                                                    |
+| `summary`                   | always                                                                                                                                                                                                 |
+| `depends`                   | always (empty array if none)                                                                                                                                                                           |
+| `choices`                   | always (user answers)                                                                                                                                                                                  |
+| `requirements`              | always (each REQ with `status: "pending"`)                                                                                                                                                             |
+| `files`                     | always (normalized: `path`, `type`, `action`, `purpose`, `requirements`)                                                                                                                               |
+| `architecture`              | always (`componentTree`, `interfaces`)                                                                                                                                                                 |
+| `design`                    | only for visual features (`wireframe`, `components`, `sceneLayout`, `gameplayFlow`)                                                                                                                    |
+| `buildSequence`             | always                                                                                                                                                                                                 |
+| `testStrategy`              | always                                                                                                                                                                                                 |
+| `clarifications`            | only if gray-area resolution was performed                                                                                                                                                             |
+| `durableDecisions`          | with >3 requirements — decisions that apply across all REQs                                                                                                                                            |
+| `research`                  | only if research was done                                                                                                                                                                              |
+| `seedDrift`                 | only if PHASE 3 Seed Alignment Check ran and user chose "Skip" — array of `{ category, seedSays, featureDecides, source: "/game-define", ref? }`. Omit when seed was updated or no drift was detected. |
 
 **`durableDecisions`** — decisions that do NOT change during the build:
 
@@ -784,6 +795,15 @@ Write back in parallel:
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Write `project.json` (stack, features, data)
 - Write `project-context.json` (if architecture changed)
+
+**Mutations on `project-seed.md`** (only if `seedUpdateApproved: true`):
+
+- Skip if PHASE 3 ended with "Skip" or no drift was detected.
+- Write the rewritten content (reviewed inline by the user in PHASE 3 before this sync phase) to `.project/project-seed.md` — full file overwrite.
+- Update `project.json#concept.pitch` if the new pitch differs. Update `concept.name` only if the H1 title changed.
+- Log: `Seed: ✓ updated — N section(s) rewritten`.
+
+This write runs in parallel with the existing back-writes.
 
 **Auto-build marking** (after sync):
 

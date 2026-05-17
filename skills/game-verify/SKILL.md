@@ -66,7 +66,7 @@ This skill activates in these scenarios:
 Everything works except puddle is too small and there's no sound
 ```
 
-> Code quality rules: `../shared/RULES.md` (R009)
+> Code quality rules: `../shared/CODING-RULES.md` (R009)
 
 ## Feedback Categorization
 
@@ -135,6 +135,7 @@ Now TESTABLE -> TDD fix loop
 10. PHASE 6: Completion
 
 Add conditionally via `TaskCreate`:
+
 - All PASS + worktree branch detected → add PHASE Finalize at end
 
 ### PHASE 0: Load Context
@@ -1460,11 +1461,13 @@ Override: env var `CLAUDE_GODOT_EXECUTABLE` or `.claude/paths.local.yaml`. Canon
 > **Todo**: mark PHASE 6 → `completed`, PHASE Finalize → `in_progress`.
 
 **Run only if BOTH true:**
+
 1. All test items PASS (no open fix-loop items)
 2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
 **PR offer (team-mode only)** — show first, only if ALL true:
-1. `.project/project.json#team.mode === "team"` (absent → skip)
+
+1. `TEAM_MODE === "team"` — read via `shared/PROJECT-MODE.md` read pattern (absent → skip)
 2. `gh` on PATH AND `gh auth status` exit 0
 3. Clean tree (`git status --porcelain` empty)
 
@@ -1484,20 +1487,7 @@ multiSelect: false
 On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
 On "Nee" or any precondition fail → fall through to finalize prompt.
 
-**Finalize prompt** — detect PR state first:
-
-```bash
-PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
-PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
-PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
-PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
-```
-
-| PR_STATE                            | Action                                                                                                                                         |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OPEN`                              | Print: `"PR #{PR_NUMBER} is open: {PR_URL}. Run \`/core-finalize {feature-name}\` zodra gemerged."` No prompt.                                 |
-| `MERGED`                            | AskUserQuestion: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd." — Yes/Keep open (see below) |
-| empty / `CLOSED` / `gh` unavailable | AskUserQuestion: "Feature '{feature-name}' afgerond. Finalize nu (merge naar main + cleanup)?" — Yes/Keep open (see below)                     |
+**Finalize prompt** — follow `shared/FINALIZE.md → Finalize Offer Decision`. AskUserQuestion-modals voor MERGED en empty/CLOSED state (solo mode, of MERGED ongeacht mode):
 
 ```yaml
 # For MERGED state:
@@ -1507,24 +1497,24 @@ options:
   - label: "Yes, cleanup nu (Recommended)"
     description: "Follow shared/FINALIZE.md cleanup-only — verwijder worktree + branch"
   - label: "Keep open"
-    description: "Worktree blijft staan (bv. voor follow-up commits); cleanup later via /core-finalize"
+    description: "Worktree blijft staan voor follow-up commits"
 multiSelect: false
 ```
 
 ```yaml
-# For empty/CLOSED state:
+# For solo / empty/CLOSED state:
 header: "Finalize"
 question: "Feature '{feature-name}' afgerond (status: DONE). Finalize nu (merge naar main + cleanup)?"
 options:
   - label: "Yes, finalize nu (Recommended)"
     description: "Follow shared/FINALIZE.md solo-mode — merge worktree naar main + cleanup"
   - label: "Keep open"
-    description: "Worktree blijft open, finalize later via /core-finalize"
+    description: "Worktree blijft open, finalize later via /game-refactor"
 multiSelect: false
 ```
 
 On MERGED "Yes" → follow `shared/FINALIZE.md` with `mode: cleanup-only`.
 On empty/CLOSED "Yes" → follow `shared/FINALIZE.md` with `mode: solo`.
-On any "Keep open" → print `💡 Run /core-finalize {feature-name} when ready`.
+On any "Keep open" → print `💡 Run /game-refactor {feature-name} on this worktree when ready`.
 
 > **Todo**: mark PHASE Finalize → `completed`.

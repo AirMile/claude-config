@@ -39,13 +39,13 @@ Use the detected package manager:
 
 ```bash
 # npm
-npm install --save-dev @playwright/test
+npm install --save-dev @playwright/test @axe-core/playwright
 # pnpm
-pnpm add -D @playwright/test
+pnpm add -D @playwright/test @axe-core/playwright
 # yarn
-yarn add -D @playwright/test
+yarn add -D @playwright/test @axe-core/playwright
 # bun
-bun add -d @playwright/test
+bun add -d @playwright/test @axe-core/playwright
 ```
 
 Then download browsers (Chromium only for dev — smaller, faster):

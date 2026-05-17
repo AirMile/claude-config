@@ -10,11 +10,12 @@ Pipeline skills that touch shared state declare this explicitly via `reads:` and
 
 ### Namespaces
 
-| Prefix           | File                                                 | Usage                       |
-| ---------------- | ---------------------------------------------------- | --------------------------- |
-| `feature.*`      | `.project/features/{name}/feature.json` (top-level)  | dev-pipeline, game-pipeline |
-| `backlog.status` | `.project/backlog.html` (feature status transitions) | dev-pipeline, game-pipeline |
-| `devinfo.*`      | `.project/session/devinfo.json` (top-level key)      | frontend-pipeline           |
+| Prefix           | File                                                 | Usage                                                                                |
+| ---------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `feature.*`      | `.project/features/{name}/feature.json` (top-level)  | dev-pipeline, game-pipeline                                                          |
+| `backlog.status` | `.project/backlog.html` (feature status transitions) | dev-pipeline, game-pipeline                                                          |
+| `concept.*`      | `.project/project-seed.md` + `project.json#concept`  | project-seed (owner), dev-define / game-define / project-backlog (conditional write) |
+| `devinfo.*`      | `.project/session/devinfo.json` (top-level key)      | frontend-pipeline                                                                    |
 
 ### Granularity
 

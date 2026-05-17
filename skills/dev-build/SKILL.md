@@ -1,7 +1,7 @@
 ---
 name: dev-build
 description: Build features with TDD or implementation-first. Use with /dev-build.
-reads: [feature.requirements]
+reads: [feature.requirements, feature.architecture, feature.files]
 writes: [feature.requirements, feature.build, backlog.status, learnings]
 metadata:
   author: claude-config
@@ -11,7 +11,7 @@ metadata:
 
 # Build
 
-**PHASE 2** of the dev workflow: define → **build** → verify → finalize
+**PHASE 2** of the dev workflow: define → **build** → verify → refactor (optional)
 
 Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD, Implementation First, or Implementation Only), builds sequentially.
 
@@ -68,7 +68,7 @@ git -C "$REPO" rev-parse HEAD > "$REPO/.project/session/pre-skill-sha.txt"
 
 Verify the stack's standard component-test packages are installed and that the test setup file imports `@testing-library/jest-dom` (without it `toBeInTheDocument` / `toHaveAttribute` fail silently with "Invalid Chai property").
 
-Missing → **AskUserQuestion**: "Install + add import (Recommended)" — installs missing packages and patches setup file. "Skip and continue" — TDD steps that need these will fail.
+Missing → auto-install (default) if `package.json` already contains `vitest`, `jest`, or `playwright` as a key anywhere in its content (project uses a test framework → install missing sub-packages silently). Otherwise → **AskUserQuestion**: "Install + add import (Recommended)" / "Skip and continue". Skip → TDD steps that need these will fail.
 
 Output: `TEST-DEPS: ok | patched ({list}) | skipped`.
 
@@ -185,6 +185,25 @@ fi
 
 Clean up `$MARKER` together with the other session files in PHASE 3B.
 
+**Symlink integrity gate** (hard check — `.project/` writes must reach main):
+
+```bash
+MP="$(git worktree list --porcelain | head -1 | awk '{print $2}')/.project"
+WT_PROJ="$(pwd)/.project"
+FAILED=()
+for f in backlog.html features project.json project-context.json; do
+  if ! { [ -L "$WT_PROJ/$f" ] && [ -e "$WT_PROJ/$f" ]; }; then
+    FAILED+=("$f")
+  fi
+done
+if [ ${#FAILED[@]} -ne 0 ]; then
+  echo "ABORT: worktree .project/ symlinks broken/missing: ${FAILED[*]}"
+  echo "Re-run shared/WORKTREE.md → ## Shared .project/ via symlink to repair, then resume."
+  exit 1
+fi
+echo "GATE: ok — .project/ symlinks intact"
+```
+
 **Clear backlog transition flag** (before PHASE 1):
 
 Read `.project/backlog.html` (if exists), find feature by name → remove `transition` field if present (auto-pickup signal consumed), `updated` to current date. **Keep status as `"DEFINED"`** — the DEFINED → DOING transition happens in PHASE 3A on successful completion (per `shared/BACKLOG.md`: dev-build result-status = DOING at completion).
@@ -285,7 +304,7 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
 3. Execute technique workflow
 4. **Stack-aware enforcement**:
    - **Code clarity**: descriptive names over comments. Do use comments for: non-obvious "why" decisions, workarounds, compatibility notes. Follow existing project comment style.
-   - **Code rules**: follow `shared/RULES.md` — General (R007-R009) + stack-specific sections. When in doubt: MUST_DO rules always, SHOULD_DO rules unless deliberate deviation with reason.
+   - **Code rules**: follow `shared/CODING-RULES.md` — General (R007-R009) + TypeScript. When in doubt: MUST_DO rules always, SHOULD_DO rules unless deliberate deviation with reason. Frontend projects: also `shared/FRONTEND-RULES.md`.
    - **Token enforcement** (only for `.tsx`/`.jsx`/`.vue`/`.svelte` — skip for API routes, tests, config): always use token names (`bg-primary`, `text-foreground`) — never hex literals or `bg-[#hex]`. Theme empty → use fallback defaults from `shared/TOKENS.md`. Run a grep after each Write for T101 (`#[0-9a-fA-F]{3,8}`) and T102 (`bg-\[#`, `text-\[#`) on the generated file — replace violations directly before output.
 5. **Pitfall verification** (only if PHASE 1 flagged a pitfall for this REQ): run the `grep -q '<marker>' <file>` check stated in the technique map. Output `PITFALL-CHECK REQ-XXX: <pitfall> → PRESENT | ABSENT`. ABSENT → log as deviation in `build.decisions[]` with rationale (intentional or oversight).
 6. **Update feature.json** after each REQ: set `requirements[].status` → `"built"` and add `technique` + `syncNote`. For Implementation Only: also add `skipTestReason` (`visual-only`, `config-only`, or `prototype`). This preserves progress during context compaction.
@@ -481,9 +500,10 @@ Files created: {count} | modified: {count}
 
 ```
 Next steps (start in a NEW chat — worktree auto-detected):
-  1. /dev-verify {feature}    → hybrid acceptance verification
-  2. /core-finalize {feature} → merge worktree to main when verify is green
-  ?. /dev-debug               → only on unexpected failures
+  1. /dev-verify {feature}    → hybrid acceptance verification (auto-finalizes worktree on green)
+  2. /dev-refactor {feature}  → optional polish after verify (runs on main)
+  ?. /dev-debug               → only on unexpected build failures
+  ?. /core-finalize {feature} → recovery only — when verify was skipped or interrupted
 
 💡 Worktree: {worktree_path}
 ```
@@ -492,8 +512,9 @@ Next steps (start in a NEW chat — worktree auto-detected):
 
 ```
 Next steps:
-  1. /dev-verify {feature} → hybrid acceptance verification
-  ?. /dev-debug            → only on unexpected failures
+  1. /dev-verify {feature}   → hybrid acceptance verification
+  2. /dev-refactor {feature} → optional polish after verify
+  ?. /dev-debug              → only on unexpected build failures
 ```
 
 > **Todo**: mark PHASE 3B → `completed`. All 6 phases should now be `completed`.

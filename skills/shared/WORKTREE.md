@@ -75,6 +75,29 @@ $dirty = if (Test-Path "$WT_PATH") {
 $symlinkOk = if ((Test-Path "$WT_PATH\.project\backlog.html") -and (Test-Path "$WT_PATH\.project\features")) { "yes" } else { "no" }
 ```
 
+**Pre-existing-orphan check** — `$WT_PATH` exists on disk but git knows no worktree there. Classic residue from a prior session that couldn't clean up (see `shared/FINALIZE.md → Cleanup Procedure` orphan-dir scenario).
+
+```bash
+if [ -d "$WT_PATH" ] \
+   && ! git worktree list --porcelain 2>/dev/null | grep -q "^worktree $WT_PATH$"; then
+  ORPHAN_DETECTED=1
+fi
+```
+
+`ORPHAN_DETECTED=1` → AskUserQuestion (bypass of the regular collision matrix):
+
+- header: "Orphan directory"
+- question: "`$WT_PATH` exists on disk but git knows no worktree there (residue from a previous session). What do you want to do?"
+- options:
+  - "Cleanup + create fresh (Recommended)" — run `lsof +D "$WT_PATH"` pre-check first (same as FINALIZE.md); if no cwd-holders: `rm -rf "$WT_PATH"`; on success proceed to no-collision `EnterWorktree`; on failure abort with path hint
+  - "Cancel" — exit skill; user inspects manually
+
+On "Cleanup + create fresh" with cwd-holders → AskUserQuestion:
+- "Stop and close shells (Recommended)" — exit skill
+- "Continue anyway (orphan directory may persist)" — proceed with `rm -rf`
+
+After successful cleanup → skip rest of Step 1, go directly to no-collision `EnterWorktree`.
+
 **Collision decision matrix:**
 
 | BRANCH_OK    | DIRTY | SYMLINK_OK | Action                                                                                                                |
@@ -114,9 +137,78 @@ multiSelect: false
 ```
 
 - **Reuse** → `EnterWorktree(path: "{main_root}/.claude/worktrees/{feature-name}")` (skip create, go to Step 4)
-- **Destroy** → `git worktree remove --force "{main_root}/.claude/worktrees/{feature-name}"` + `git branch -D worktree-{feature-name}` → continue to no-collision path
+- **Destroy** → run **Destroy procedure** below, then continue to no-collision path
 - **Rename** → ask user for suffix, then `EnterWorktree(name: "{feature-name}-{suffix}")` (go to Step 4 with adjusted name)
 - **Cancel** → exit skill
+
+#### Destroy procedure
+
+Recreates a fresh worktree at the same path → the old directory MUST be fully gone before continuing, otherwise `EnterWorktree` collides.
+
+0. **Branch-state safety** — guard against silent data-loss when the branch has commits that never reached the integration branch:
+
+   ```bash
+   # UNMERGED is already computed in the collision-context block above; reuse it.
+   if [ "${UNMERGED:-0}" -gt 0 ] 2>/dev/null; then
+     UNMERGED_WARN=1
+   fi
+   ```
+
+   `UNMERGED_WARN=1` → AskUserQuestion:
+
+   - header: "Unmerged commits"
+   - question: "Branch `worktree-{feature-name}` has `{UNMERGED}` commit(s) not on `{default_branch}`. Destroy will force-delete the branch and lose them. Continue?"
+   - options:
+     - "Cancel (Recommended)" — return to the collision modal; user picks Reuse/Rename or commits/pushes first
+     - "Continue — discard {UNMERGED} commits" — proceed to Step 1 (pre-remove cwd-check)
+
+   `UNMERGED == 0` → skip silently, continue to Step 1.
+
+1. **Pre-remove cwd-check** — same `lsof +D` detection as `shared/FINALIZE.md → Cleanup Procedure`:
+
+   ```bash
+   lsof +D "{main_root}/.claude/worktrees/{feature-name}" 2>/dev/null \
+     | awk 'NR>1 && $4=="cwd" {print $1, $2, $9}' | sort -u
+   ```
+
+   Any line → AskUserQuestion:
+
+   - header: "Other shells in worktree"
+   - question: "Process(es) `{names}` (PID `{pids}`) have cwd inside the worktree you want to destroy. Removing now will leave the empty directory on disk and block recreate. Close those shells first?"
+   - options:
+     - "Stop and close shells (Recommended)" — exit skill; user closes shells, re-runs
+     - "Cancel destroy — pick Reuse/Rename instead" — return to the collision modal
+
+2. **Switch shell out of the worktree** — guarantee the Bash subshell doesn't hold a cwd-handle:
+
+   ```bash
+   cd "{main_root}" || { echo "ABORT: main root {main_root} unreachable"; exit 1; }
+   ```
+
+3. **Remove**:
+
+   ```bash
+   git worktree remove --force "{main_root}/.claude/worktrees/{feature-name}"
+   git branch -D worktree-{feature-name}
+   ```
+
+4. **Post-remove residue check** — recreate-path is stricter than finalize (residue blocks the next step):
+
+   ```bash
+   if [ -d "{main_root}/.claude/worktrees/{feature-name}" ]; then
+     if [ -z "$(ls -A "{main_root}/.claude/worktrees/{feature-name}" 2>/dev/null)" ]; then
+       rmdir "{main_root}/.claude/worktrees/{feature-name}" 2>/dev/null \
+         || { echo "ABORT: empty directory remains but rmdir failed — another process holds cwd. Close it and retry."; exit 1; }
+     else
+       echo "ABORT: leftover files in {main_root}/.claude/worktrees/{feature-name}: $(ls -A "{main_root}/.claude/worktrees/{feature-name}" | head -3 | tr '\n' ' '). Investigate and remove manually before recreating."
+       exit 1
+     fi
+   fi
+   ```
+
+   Abort instead of warn — the next `EnterWorktree` would fail anyway on a non-empty path; failing fast with a clear message beats a confusing downstream error.
+
+5. Continue to the no-collision path (`EnterWorktree(name: "{feature-name}")`).
 
 **If no collision** → `EnterWorktree(name: "{feature-name}")` → creates `{main_root}/.claude/worktrees/{feature-name}` with branch `worktree-{feature-name}`.
 
@@ -156,6 +248,9 @@ MP="{main_root}/.project"
 # macOS/Linux — ensure .project dir exists in worktree, then symlink shared paths
 mkdir -p "$WT/.project/session"
 
+# Remove any ad-hoc nested symlink (.project/.project) that a prior session may have created
+rm -f "$WT/.project/.project"
+
 rm -f "$WT/.project/backlog.html"
 rm -rf "$WT/.project/features" "$WT/.project/wireframes" \
        "$WT/.project/screenshots" "$WT/.project/thinking"
@@ -168,6 +263,19 @@ ln -sfn "$MP/screenshots"           "$WT/.project/screenshots"
 ln -sfn "$MP/thinking"              "$WT/.project/thinking"
 ln -sfn "$MP/project.json"          "$WT/.project/project.json"
 ln -sfn "$MP/project-context.json"  "$WT/.project/project-context.json"
+
+# Assert: all required symlinks must resolve — fail loudly instead of silently passing with broken links
+WIRE_FAILED=()
+for f in backlog.html features project.json project-context.json; do
+  if ! { [ -L "$WT/.project/$f" ] && [ -e "$WT/.project/$f" ]; }; then
+    WIRE_FAILED+=("$f")
+  fi
+done
+if [ ${#WIRE_FAILED[@]} -ne 0 ]; then
+  echo "ERROR: symlink wire-up failed for: ${WIRE_FAILED[*]}"
+  echo "Check permissions on $WT/.project/ and that $MP exists."
+  exit 1
+fi
 ```
 
 ```powershell
@@ -315,6 +423,12 @@ expected_path = "{main_root}/.claude/worktrees/{feature-name}"
 | == `main_root`     | no         | If caller provides `feature.status === "DOING"` → **WARN + AskUserQuestion** (see Step 4a). Otherwise → **Continue** silently — no worktree was used for this feature, run on current branch |
 | == `expected_path` | no         | **Continue cautiously** — pwd matches but not registered (rare race condition)                                                                                                               |
 
+#### Step 4.5: Repair shared `.project/` (idempotent)
+
+When `EnterWorktree` was just called in Step 4 (i.e. `current_root` changed to `expected_path`), immediately follow `## Shared .project/ via symlink` to re-wire the symlinks before the calling skill's PHASE 0 continues. The wire-up is fully idempotent — `ln -sfn` overwrites stale copies, `rm -f`/`rm -rf` of file-copies is safe. **Skip if** `current_root` was already `expected_path` at the start of Step 4 (no switch occurred) AND the verify-block in `### Verify symlink integrity` passes.
+
+This ensures that any skill using Switch finds healthy symlinks before its first backlog write, even if a prior session (or a `/core-pull` run inside the worktree) silently destroyed them.
+
 #### Step 4a: DOING-without-worktree warning
 
 Triggers when: caller passed `feature.status === "DOING"`, `current_root == main_root`, no `worktree-{feature-name}` branch exists.
@@ -373,11 +487,16 @@ Skip **Auto-create** when:
 
 ### Cleanup
 
-Neither procedure removes worktrees. Use `/core-finalize` to integrate and clean up at end-of-feature, or remove manually:
+Neither auto-create procedure removes worktrees. Use `/core-finalize` (delegates to `shared/FINALIZE.md → Cleanup Procedure`) for the canonical flow — it includes pre-remove cwd-check, cwd-switch to main root, and post-remove residue detection.
+
+Manual fallback (only when `/core-finalize` is unavailable — does **not** include the full hardening, may leave orphan directory):
 
 ```bash
-git worktree remove --force {worktree_path}
+cd "{main_root}"  # ensure shell is out of the worktree
+git worktree remove --force "{worktree_path}"
 git branch -D worktree-{feature}
+[ -d "{worktree_path}" ] && rmdir "{worktree_path}" 2>/dev/null \
+  || echo "Manual cleanup needed: rmdir {worktree_path} (close shells holding cwd first)"
 ```
 
 The symlinked `.project/` paths are plain filesystem links — removing the worktree directory removes them too. No extra cleanup needed for the symlinks.

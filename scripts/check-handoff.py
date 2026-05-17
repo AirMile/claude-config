@@ -16,7 +16,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
-LIST_RE = re.compile(r"^(reads|writes):\s*\[(.*?)\]\s*$", re.MULTILINE)
+LIST_RE = re.compile(r"^(reads|writes):\s*\[([^\]]*)\]", re.MULTILINE)
 
 
 def parse_frontmatter(path: Path) -> tuple[set[str], set[str]]:

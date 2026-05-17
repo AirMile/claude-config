@@ -1,7 +1,7 @@
 ---
 name: dev-refactor
-description: Batch refactor code quality after testing. Use with /dev-refactor.
-reads: [feature.build, feature.tests, backlog.status]
+description: Batch refactor code quality across DONE features after testing — improves DRY, efficiency, and clarity without changing behavior. Use when the user runs /dev-refactor, asks to "clean up", "refactor", or "tidy" finished features, or when backlog features have transition=refactoring.
+reads: [feature.build, feature.tests, feature.files, backlog.status, learnings]
 writes: [feature.refactor, backlog.status, learnings]
 metadata:
   author: claude-config
@@ -47,22 +47,6 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file w
 └── feature.json           # Enriched: refactor section, status updated
 ```
 
-## Two Research Layers
-
-```
-.claude/research/
-├── stack-baseline.md          ← EXISTING: library conventions/patterns/pitfalls
-│                                 (React hooks, Tailwind v4, GSAP cleanup, etc.)
-│                                 Read in PHASE 2 for research decision
-│
-└── refactor-patterns.md       ← NEW: stack-specific code smells & anti-patterns
-                                  Generated via Context7 on first refactor
-                                  Reused on subsequent refactors
-```
-
-**stack-baseline.md** = "how to use these libraries correctly" (conventions)
-**refactor-patterns.md** = "what mistakes to look for in code using these libraries" (anti-patterns)
-
 ## Workflow
 
 **Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgotten phases.
@@ -94,6 +78,7 @@ fi
 Implication for PHASE 5 step 4: files under `.project/` may need `git add -f` even when `TRACKING_MODE=tracked` (see step 4 for handling).
 
 If `TRACKING_MODE=untracked`:
+
 - PHASE 5 step 3: omit `shippedSha` field entirely (do not write `""`)
 - PHASE 5 step 5: skip the entire backfill + commit step
 - Log once: `tracking: .project/ is gitignored — shippedSha skipped`
@@ -135,11 +120,12 @@ PHASE 5.4 compares against `pre-skill-status-worktree.txt` if worktree-switch ha
    - `queued = data.features.filter(f => f.transition === "refactoring" && f.status === "DONE" && !f.shipped)` (see `shared/BACKLOG.md → Lifecycle Protocol`)
    - If `queued.length > 0`:
      - Show: `Backlog: ✓ Task picked up — {names}`
-     - **AskUserQuestion**:
+     - **Auto-select if `queued.length <= 3`**: set `feature_queue = queued`, `mode = "feature"`, log `Queue: auto-selected {names}`, jump to **step 3** (worktree-switch). No prompt needed — small queue is always the right choice.
+     - **AskUserQuestion only if `queued.length > 3`**:
        - header: "Queue"
-       - question: "{N} features have been marked for refactor via the backlog UI: {names}. Use as queue?"
+       - question: "{N} features marked for refactor: {names}. Use as queue?"
        - options:
-         - label: "Yes, use queue (Recommended)", description: "{names}" → `feature_queue = queued`, `mode = "feature"`, jump to **step 3** (worktree-switch)
+         - label: "Yes, use queue (Recommended)", description: "{names}" → `feature_queue = queued`, `mode = "feature"`, jump to **step 3**
          - label: "No, choose different scope" → continue to b1 below
        - multiSelect: false
    - If `queued.length == 0` → continue directly to b1 below.
@@ -171,7 +157,7 @@ PHASE 5.4 compares against `pre-skill-status-worktree.txt` if worktree-switch ha
    - Scope rule for small-items: **only files from the commit-scope may be inspected** (no pipeline files list, but commit-diff scope)
 
    **Small-items PHASE-routing** (skip PHASE 0 steps 3-5, jump directly to PHASE 1):
-   - PHASE 1: one light Quality-lens Explore agent per item (not Reuse/Efficiency — those are feature-pipeline specific). Input: commit-diff + `shared/RULES.md` + `shared/PATTERNS.md` + stack-baseline
+   - PHASE 1: one light Quality-lens Explore agent per item (not Reuse/Efficiency — those are feature-pipeline specific). Input: commit-diff + `shared/CODING-RULES.md` + (frontend files) `shared/FRONTEND-RULES.md` + `shared/PATTERNS.md` + stack-baseline
    - PHASE 2: skip
    - PHASE 3: combined approval for all items that pass the check: "X items: CLEAN. Mark as shipped?" (one AskUserQuestion, default = Yes)
    - PHASE 4: skip — no code edits for light check (only code edits if Quality-lens has HIGH findings, then normal apply flow)
@@ -187,6 +173,27 @@ PHASE 5.4 compares against `pre-skill-status-worktree.txt` if worktree-switch ha
 3. **Worktree switch** (single-mode only):
 
    If `feature_queue.length == 1` and not in codebase-mode: execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL: stop with the message from WORKTREE.md.
+
+   **Symlink integrity gate** (hard check — only when inside a worktree after the switch):
+
+   ```bash
+   MAIN_ROOT="$(git worktree list --porcelain | head -1 | awk '{print $2}')"
+   if [ "$(git rev-parse --show-toplevel)" != "$MAIN_ROOT" ]; then
+     WT_PROJ="$(pwd)/.project"
+     FAILED=()
+     for f in backlog.html features project.json project-context.json; do
+       if ! { [ -L "$WT_PROJ/$f" ] && [ -e "$WT_PROJ/$f" ]; }; then
+         FAILED+=("$f")
+       fi
+     done
+     if [ ${#FAILED[@]} -ne 0 ]; then
+       echo "ABORT: worktree .project/ symlinks broken/missing: ${FAILED[*]}"
+       echo "Re-run shared/WORKTREE.md → ## Shared .project/ via symlink to repair, then resume."
+       exit 1
+     fi
+     echo "GATE: ok — .project/ symlinks intact"
+   fi
+   ```
 
    Batch-mode (queue > 1) or codebase-mode: check for open feature worktrees first:
 
@@ -281,46 +288,9 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
      → Log: "Refactor patterns generated via Context7 ({N} libraries)"
    ```
 
-   **Format for refactor-patterns.md:**
+   **Format for refactor-patterns.md:** sections per library → `## {Library}` → `### Performance/Security/Code Organization Anti-patterns` → `- {pattern}: {description} — {what to look for}`. Header: `<!-- Generated via Context7 for: {stack list} -->`.
 
-   ```markdown
-   # Refactor Patterns
-
-   <!-- Generated via Context7 for: {stack list} -->
-   <!-- Regenerate: delete this file and run /dev-refactor -->
-
-   ## {Library Name}
-
-   ### Performance Anti-patterns
-
-   - {pattern}: {description} — {what to look for in code}
-
-   ### Security Anti-patterns
-
-   - {pattern}: {description} — {what to look for in code}
-
-   ### Code Organization Anti-patterns
-
-   - {pattern}: {description} — {what to look for in code}
-   ```
-
-**Output:**
-
-```
-BATCH CONTEXT LOADED
-
-| Metric | Value |
-|--------|-------|
-| Features in queue | {N} |
-| Total pipeline files | {sum across all features} |
-| Refactor patterns | {cached / generated via Context7} |
-
-Features:
-{for each feature:}
-- {name}: {M} pipeline files
-
-→ Starting parallel analysis...
-```
+**Output:** Log feature count, file count, refactor-patterns source (cached/generated), then → Starting parallel analysis...
 
 ---
 
@@ -333,7 +303,7 @@ Features:
 **Lens definitions** (see also `shared/PATTERNS.md` if present):
 
 - **Reuse lens**: DRY within pipeline files, duplication with existing helpers/utilities in the codebase, inline logic that existing lib/stdlib can replace, extract-opportunities
-- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dead code, redundant state, leaky abstractions, RULES.md violations, stack-specific anti-patterns, Design Token violations (T101–T105 from `shared/TOKENS.md` — frontend files only: `.tsx`/`.jsx`/`.vue`/`.svelte`)
+- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dead code, redundant state, leaky abstractions, `CODING-RULES.md` violations (+ `FRONTEND-RULES.md` for frontend files), stack-specific anti-patterns, Design Token violations (T101–T105 from `shared/TOKENS.md` — frontend files only: `.tsx`/`.jsx`/`.vue`/`.svelte`)
 - **Efficiency lens**: missed concurrency (Promise.all), N+1, hot-path bloat, memory leaks, unbounded maps, TOCTOU, overly broad ops, no-op recurring updates
 
 1. **Determine lens strategy per feature:**
@@ -342,7 +312,7 @@ Features:
 
    **Concurrency budget:** max 10 concurrent agents total. If `sum(lens_count_per_feature) > 10`: batch features in groups. E.g. 5 features × 3 lenses = 15 → batch 3 features first (9 agents), then the rest.
 
-   **Model default:** all lens-agents run on Sonnet. Haiku-switch for Reuse-lens is a future optimization — do not activate without A/B measurement on finding quality.
+   **Model default:** all lens-agents run on Sonnet.
 
 2. **Launch agents IN PARALLEL** according to lens strategy (see `shared/SKILL-PATTERNS.md#parallel-dispatch` for dispatch criteria and integration steps).
 
@@ -378,128 +348,29 @@ Features:
 
    ```
 
-   **Lens-specific body** — choose one of three (or all three combined in single-lens mode):
+   **Lens-specific body**: read `references/lens-prompts.md` → section `## REUSE`, `## QUALITY`, or `## EFFICIENCY` for this lens and insert the full section content after the universal header. In single-lens mode (feature <4 files): include all three sections combined under one agent.
 
-   **(A) REUSE lens body:**
-
-   ```
-
-   LENS: Reuse
-
-   Scan for:
-   - Duplicate code blocks (>5 lines identical within pipeline files)
-   - Similar logic patterns (>70% similarity, 3+ locations)
-   - Inline logic that an existing helper/utility/stdlib can replace
-   - Repeated conditionals, copy-paste with minor variation
-
-   EXAMPLES:
-   ✓ Report: 3 tools with identical JSON.stringify({text, sources}) wrapping → extract `formatResult()` helper
-   ✓ Report: hand-rolled `lstrip/rstrip + regex` where `path.basename()` exists
-   ✗ Skip: two functions with 3 similar lines (too small for abstraction, especially with `Code maturity: student`)
-   ✗ Skip: abstraction that is only used 2× and doesn't make the call sites clearer
-
-   ```
-
-   **(B) QUALITY lens body:**
-
-   ```
-
-   LENS: Quality
-
-   Scan for:
-   SECURITY:
-   - Injection: exec(, eval(, new Function, os.system
-   - XSS: .innerHTML =, dangerouslySetInnerHTML, document.write
-   - Deserialization: pickle.loads on untrusted data
-   - GitHub Actions: ${{ github.event. in run: commands
-
-   CLARITY & QUALITY:
-   - Control-flow smells: nested 3+ levels, ternary chains (a ? x : b ? y), dense one-liners → early returns / if-else / guards / lookup table
-   - Names encode units/ownership/lifetime: `timeoutMs` not `t`, `rawHtml` vs `safeHtml`, `userIdOwned` not `id`. Primitives without unit in name = smell.
-   - Dead code / unused exports
-   - Unnecessary comments (WHAT instead of WHY, task-references, narrating)
-   - Redundant state (state that can be derived)
-   - Stringly-typed code where constants/enums exist
-   - Error-handling smells: over-defensive try/catch around code that can't fail, OR silent swallowing (catch {}, `?? ""` that hides missing data, unwrap without trace)
-   - Leaky abstractions / internal details exposed
-   - RULES.md violations — General + TypeScript sections (R007-R009, T001-T203)
-   - Stack-specific anti-patterns from refactor-patterns.md
-
-   COLD-READER (can a new reader understand this without opening 3 files?):
-   - Locality of behavior: non-trivial line requires >2 file-jumps to understand intent → relocate or rename inline
-   - God-object params: function takes Request/Context/Session but reads <3 fields → destructure or explicit primitive params
-   - Mixed abstraction levels: SQL + business-rule + HTTP-header mangling in one function → split policy from mechanism
-   - Shallow abstractions: helper whose signature is as complex as body, 1 caller, no naming-win → inline
-   - Cognitive overload: >5 mutable locals+flags+loop-indices live in deepest block → split function or bundle state in record
-   - Cross-file decision-duplication: the same enum/switch-ladder in 3+ places → 1 source of truth (NB: overlap with Reuse-lens → dedup during merge in PHASE 1 step 4)
-
-   EXAMPLES:
-   ✓ Report: `msg.constructor.name === "HumanMessage"` instead of `isHumanMessage(msg)` typeguard
-   ✓ Report: dead exported function without callers (empty body with TODO-comment)
-   ✓ Report: 4-level nested if/else where early-returns make it flat
-   ✓ Report: `function charge(ctx)` reads only `ctx.userId` + `ctx.amount` → `charge(userId, amount)`
-   ✓ Report: `const t = 5000` → `const timeoutMs = 5000`
-   ✓ Report: 7 mutable locals in one loop-body, reader loses overview → extract state-record or split loop
-   ✗ Skip: comment explaining a non-obvious invariant (WHY is valuable)
-   ✗ Skip: explicit intermediate variable instead of inline expression (clarity > compact, naming as documentation)
-   ✗ Skip: thin adapter at framework-seam (middleware, Express handler) — shallowness IS the task
-   ✗ Skip: context-param where framework-contract requires it (middleware signature)
-
-   ```
-
-   **(C) EFFICIENCY lens body:**
-
-   ```
-
-   LENS: Efficiency
-
-   Scan for:
-   - Missed concurrency: independent awaits sequential instead of Promise.all
-   - N+1: loops with DB/API calls per iteration
-   - Hot-path bloat: blocking work on startup or per-request/per-render
-   - Memory leaks: unbounded Maps/arrays, missing cleanup, event listener leaks
-   - Recurring no-op updates in polling/intervals/event handlers
-   - Unnecessary existence checks (TOCTOU: pre-check file/resource before using it)
-   - Overly broad: reading entire files when a portion suffices, loading all items to filter one
-   - Redundant computations / repeated file reads
-
-   EXAMPLES:
-   ✓ Report: `for (const c of chars) await loadBackstory(c)` → `Promise.all(chars.map(loadBackstory))`
-   ✓ Report: `userStore` Map that grows per-user without TTL/LRU
-   ✓ Report: `similaritySearch(q, 8).filter(...).slice(0, 3)` → filter-callback arg of the store
-   ✗ Skip: O(n) loop over 5-item array (micro-optimization without impact)
-   ✗ Skip: JSON.stringify in a non-hot-path debug log
-
-   ```
-
-   **Single-lens mode** (feature with <4 files): combine all three bodies under one agent, keep DISCIPLINE rules. One output block with all findings.
-
-   ```
+   ````
 
 3. **Output format** (each lens-agent returns):
 
    ```
    ANALYSIS_START
    FEATURE: {name}
-   LENS: reuse | quality | efficiency | combined
-   STATUS: CLEAN | HAS_FINDINGS
+   LENS: reuse|quality|efficiency|combined
+   STATUS: CLEAN|HAS_FINDINGS
    ARCHITECTURE: libs={list} | patterns={list} | uncovered={list or "-"}
-
    FINDINGS:
-   - [HIGH|SEC] path/to/file.js:42 — problem description — concrete fix
+   - [HIGH|SEC] path/file.js:42 — problem — fix
    - [MED|DRY] a.js:10 ↔ b.js:55 — problem — fix
-   - [LOW|CLARITY] c.js:120 — problem — fix
-
    SKIPPED (balance):
-   - path:line — brief rationale for why deliberately not reported
-
+   - path:line — rationale
    POSITIVES:
    - observation
    ANALYSIS_END
    ```
 
-   **Impact tags:** `HIGH` (security, breaking bug, memory leak), `MED` (DRY, efficiency, clarity on hot-path), `LOW` (cosmetic, micro-clarity).
-   **Category tags:** `SEC`, `DRY`, `EFF`, `CLARITY`, `OVERENG`, `STACK`.
+   Impact: `HIGH` (security/breaking/memleak), `MED` (DRY/efficiency/clarity-hotpath), `LOW` (cosmetic). Category: `SEC|DRY|EFF|CLARITY|OVERENG|STACK`.
 
 4. **Merge lens-outputs per feature:**
 
@@ -526,25 +397,7 @@ Features:
 
 7. **If ALL features CLEAN** → jump directly to PHASE 5 (no approval).
 
-**Output:**
-
-```
-PARALLEL ANALYSIS COMPLETE
-
-| Feature | Pipeline Files | Status | Findings |
-|---------|---------------|--------|----------|
-| {name1} | {N} | CLEAN | 0 |
-| {name2} | {M} | HAS_FINDINGS | {X} |
-| ... | ... | ... | ... |
-
-Summary: {clean_count} clean, {findings_count} with findings
-
-{if all clean:}
-→ All features clean! Skipping to completion...
-
-{if has findings:}
-→ Proceeding with {findings_count} feature(s) to research decision...
-```
+**Output:** Table per feature (name, files, CLEAN/HAS_FINDINGS, finding count) + summary. If all clean → jump to PHASE 5.
 
 ---
 
@@ -588,74 +441,13 @@ Summary: {clean_count} clean, {findings_count} with findings
    | Quality        | Complex abstractions or unclear patterns            |
    | Error handling | Missing error handling in critical paths            |
 
-   Agent prompt — include only domains identified as needed:
-
-   ```
-   Research best practices for a refactoring task.
-
-   Tech stack: {from CLAUDE.md}
-   Stack baseline: {from stack-baseline.md, or "none"}
-
-   Aggregated analysis:
-   {ANALYSIS_START..ANALYSIS_END blocks from all HAS_FINDINGS features}
-
-   {If security domain needed:}
-   SECURITY:
-   - resolve-library-id + query-docs for: {relevant frameworks}
-   - Focus: input validation, auth patterns, injection prevention, OWASP
-
-   {If performance domain needed:}
-   PERFORMANCE:
-   - resolve-library-id + query-docs for: {relevant frameworks}
-   - Focus: N+1 queries, caching, eager loading, indexing, resource usage
-
-   {If quality domain needed:}
-   QUALITY:
-   - resolve-library-id + query-docs for: {relevant frameworks}
-   - Focus: design patterns, SOLID, DRY, complexity reduction
-
-   {If error-handling domain needed:}
-   ERROR HANDLING:
-   - resolve-library-id + query-docs for: {relevant frameworks}
-   - Focus: exception patterns, retry logic, graceful degradation
-
-   RETURN FORMAT:
-   RESEARCH_START
-   Security: {3-5 bullet points: vulnerabilities found, best practices, framework features}
-   Performance: {3-5 bullet points: optimization patterns, caching strategies, query fixes}
-   Quality: {3-5 bullet points: design patterns, refactoring approaches, conventions}
-   Error handling: {3-5 bullet points: exception patterns, resilience, logging}
-   RESEARCH_END
-
-   Only include sections for domains you were asked to research.
-   ```
+   Agent prompt structure: "Research best practices for a refactoring task. Tech stack: {CLAUDE.md}. Stack baseline: {stack-baseline.md or 'none'}. Aggregated analysis: {ANALYSIS_START..ANALYSIS_END blocks}. Per domain needed — Security/Performance/Quality/Error handling: use resolve-library-id + query-docs, focus on relevant anti-patterns. Return: RESEARCH_START / {domain}: {3-5 bullets} / RESEARCH_END (only included domains)."
 
    **If uncovered libraries found** → also update refactor-patterns.md:
    - Context7 query for each uncovered library
    - Append new sections to existing refactor-patterns.md
 
-**Output:**
-
-Parse the agent's `RESEARCH_START...END` block. Display:
-
-```
-RESEARCH DECISION
-
-| Source | Libraries Covered |
-|--------|------------------|
-| stack-baseline.md | {list} |
-| refactor-patterns.md | {list} |
-| Uncovered | {list or "none"} |
-
-{if no research:}
-Research: Skipped (existing knowledge sufficient)
-
-{if research:}
-Research: Explore agent ({domains researched})
-Refactor patterns updated: {yes/no}
-
-→ Ready for combined plan.
-```
+**Output:** Parse `RESEARCH_START...RESEARCH_END`. Log libraries covered (baseline/patterns/uncovered) + research domains used. → Ready for combined plan.
 
 ---
 
@@ -696,51 +488,13 @@ Refactor patterns updated: {yes/no}
    - Show the plan + SKIPPED-list as informational output
    - Jump directly to PHASE 4 with scope = "Apply all"
    - PHASE 5 commit message prefixes `refactor(quick)` instead of `refactor(batch)`/`refactor({feature})`
-   - Show "revert" hint in the completion output: `Revert: /rewind <hash>` with saved_hash from PHASE 4
+   - Show "revert" hint in the completion output: `Revert: git reset --hard <hash>` with saved_hash from PHASE 4
 
    For every explicit `--quick` that does not meet auto-conditions: **fall back** to normal approval-flow + warn in output why (e.g. "--quick ignored: 2 HIGH findings found").
 
 4. **Present improvements with before/after code:**
 
-   ```
-   REFACTOR PLAN ({N} features, {M} improvements)
-
-   🔴 HIGH: [X] improvements (security, breaking risk)
-   🟡 MED: [Y] improvements (performance, DRY, efficiency)
-   🟢 LOW: [Z] improvements (clarity, simplification)
-
-   ── {feature-1} ──
-
-   1. 🔴 {file}:{line} — {issue} → {fix}
-      Before: {code snippet}   ← extract via: sed -n '{start},{end}p' {file}  (max 20 lines; do NOT Read the whole file)
-      After:  {proposed change}
-
-   2. 🟡 {file}:{line} — {issue} → {fix}
-      Before: {code snippet}
-      After:  {proposed change}
-
-   ── {feature-2} ──
-
-   3. 🟡 {file}:{line} — {issue} → {fix}
-      ...
-
-   ── Deliberately not fixed ──
-   - {file:line} {pattern} — {brief rationale}
-   - {file:line} {pattern} — {brief rationale}
-   (skip this section if 0 SKIPPED entries)
-
-   ──────────────────
-
-   Files to be modified: [count]
-   - {file1} ([N] changes) — {feature}
-   - {file2} ([M] changes) — {feature}
-
-   Per-feature rollback: YES (feature A succeeds, B fails → only B rolled back)
-
-   {if quick-path active:}
-   ⚡ QUICK MODE — approval skipped, applying directly.
-      Revert afterwards via /rewind.
-   ```
+   Show `REFACTOR PLAN ({N} features, {M} improvements)` — group by feature, each improvement as `🔴/🟡/🟢 {file}:{line} — {issue} → {fix}` with before/after snippet (extract via `sed -n '{start},{end}p'`, max 20 lines). Include "Deliberately not fixed" section for SKIPPED entries. Footer: files to be modified + "Per-feature rollback: YES".
 
 5. **Ask for scope** (skip this step in quick-mode):
 
@@ -756,21 +510,7 @@ Refactor patterns updated: {yes/no}
 
    The built-in "Other" option handles: (a) cancel — exit with "Refactor cancelled by user"; (b) SKIPPED items — if user requests inclusion of SKIPPED items via Other, run a second AskUserQuestion (multiSelect) with the SKIPPED list and promote selected entries to improvements.
 
-   **If "Choose per feature":**
-
-   ```
-   Features with findings:
-
-   1. {feature-1}: {N} findings ({HIGH}/{MED}/{LOW})
-   2. {feature-2}: {N} findings ({HIGH}/{MED}/{LOW})
-   ...
-   ```
-
-   Ask: "Which features do you want to refactor? Give numbers (e.g. `1, 3` or `all`)."
-
-   Parse → approved-set. Empty input or "none" → all features get CLEAN status.
-
-   Only approved features proceed to PHASE 4. Non-selected features get CLEAN status.
+   **If "Choose per feature":** List numbered features with finding counts. Ask for numbers via text input (e.g. `1, 3` or `all`). Non-selected → CLEAN status.
 
 ---
 
@@ -870,19 +610,7 @@ Refactor patterns updated: {yes/no}
 
 **Non-breaking rule:** Skip improvements that change public signatures, schemas, or remove public APIs. If a breaking change is needed → note it and skip.
 
-**Output:**
-
-```
-IMPROVEMENTS APPLIED
-
-| Feature | Status | Improvements | Files Modified |
-|---------|--------|-------------|----------------|
-| {name1} | APPLIED | {N} | {M} |
-| {name2} | APPLIED | {N} | {M} |
-| {name3} | ROLLED_BACK | 0 | 0 ({reason}) |
-
-→ Documenting results...
-```
+**Output:** Table per feature (name, APPLIED/ROLLED_BACK, improvement count, files modified). → Documenting results...
 
 ---
 
@@ -922,137 +650,50 @@ IMPROVEMENTS APPLIED
 
    Do NOT overwrite existing sections.
 
-2. **Learning extraction** [checkpoint — easy to skip; complete before moving to step 3] — for features with status REFACTORED or CLEAN:
+2. **Learning extraction** [checkpoint] — REFACTORED/CLEAN only (skip ROLLED_BACK):
+   - REFACTORED: `decisions[]` → `pattern/extracted`; `positiveObservations[]` → `observation/inferred`
+   - CLEAN: `positiveObservations[]` → `observation/inferred`
+   - Filter: cross-feature relevance only. No `pitfall` type — refactor does not discover bugs.
+   - Schema/dedup: same as dev-verify completion-sync.md § Step 3b (Jaccard 0.55).
+   - Append to `project-context.json → learnings[]` (written in step 3). Log confirmation or "no learnings — skip".
 
-> Confirm `learnings[]` was appended to project-context.json (or log "no learnings — skip") before continuing to step 3.
+3. **Parallel sync** — follow `shared/SYNC.md` 3-File Sync Pattern. Read backlog.html + project.json + project-context.json in parallel.
 
-Read the `refactor` section of the just-written `feature.json` per feature:
+   **Backlog**: per feature → CLEAN/REFACTORED: `f.refactor="REFACTORED"`, `f.shipped=true`, `f.shippedAt`, `f.shippedSha=""` (omit if untracked), remove `transition`. ROLLED_BACK: `f.refactor="ROLLED_BACK"`, remove `transition`. Set `data.updated`.
 
-- REFACTORED: evaluate `decisions[]` → type `pattern`, source `extracted`; and `positiveObservations[]` → type `observation`, source `inferred`
-- CLEAN: evaluate `positiveObservations[]` → type `observation`, source `inferred`
-- ROLLED_BACK: skip (`failureAnalysis` is narrative prose, not atomic)
+   **Dashboard**: merge changed packages/endpoints/entities. Features: set `refactor`/`shipped`/`shippedAt`/`shippedSha` analogous. Small-items mode: add to `recentChanges[]`.
 
-**Filter**: only items that are relevant outside this feature. Skip local refactor-logistics ("moved helper to utils.js"). Guideline: if a decision or observation is also meaningful for another project or feature → extract; otherwise skip.
+   **Context sync** (only if structural changes: files renamed/moved/extracted, patterns fundamentally changed): update `context.structure`, `context.patterns`, `context.updated`, `architecture.components` (see `shared/DASHBOARD.md` for edge types). Log `context: {N} updates` or `context: no updates needed`.
 
-**Schema:**
-
-```json
-{
-  "date": "YYYY-MM-DD",
-  "feature": "{feature-name}",
-  "type": "pattern|observation",
-  "source": "extracted|inferred",
-  "summary": "Max 200 chars"
-}
-```
-
-No `pitfall` type — refactor does not discover bugs.
-
-**Dedup** via Jaccard(0.55) — same logic as dev-verify Step 3b. No learnings found → skip silently.
-
-Append to `project-context.json` → `learnings[]` (written in step 3 parallel sync).
-
-3. **Parallel sync** (backlog + dashboard + conditional context sync) — follow `shared/SYNC.md` 3-File Sync Pattern, skill-specific mutations below:
-
-   Read in parallel (skip if not exists):
-   - `.project/backlog.html`
-   - `.project/project.json`
-   - `.project/project-context.json`
-
-   Mutate in memory:
-
-   **Backlog** (see `shared/BACKLOG.md`): status stays `"DONE"` for all features (CLEAN, REFACTORED, and ROLLED_BACK). Set per feature the `refactor` field and — on success — the `shipped` field. Leave `shippedSha` EMPTY in this first pass — it's filled after step 5:
-   - CLEAN or REFACTORED → `f.refactor = "REFACTORED"`, `f.shipped = true`, `f.shippedAt = <ISO-date>`, `f.shippedSha = ""` (omit if `TRACKING_MODE=untracked`), remove `transition` (if present)
-   - ROLLED_BACK → `f.refactor = "ROLLED_BACK"`, remove `transition` (if present) (shipped stays false — item remains in "Waiting for refactor" zone)
-
-   Set `data.updated` to current date.
-
-   **Dashboard** (see `shared/DASHBOARD.md`):
-   - If packages changed (added/removed): merge to `stack.packages`
-   - If endpoints changed: merge to `endpoints`
-   - If data entities changed: merge to `data.entities`
-   - `features` array: status stays `"DONE"`; set `refactor` field analogous to backlog; also set `shipped`, `shippedAt`, `shippedSha` for CLEAN/REFACTORED features
-   - **Small-items mode**: add shipped items to `recentChanges[]` array (create if not exists): `{ name, type, description, shipped: true, shippedAt }`
-
-   **Context sync (conditional, write to `project-context.json`)** — only if REFACTORED features contain structural changes:
-
-   Trigger if ANY: files renamed/moved, new files via extraction, patterns fundamentally changed.
-   Skip if: only internal code quality, performance without structural impact.
-
-   When triggered (in project-context.json):
-   - `context.structure` → overwrite full tree with changed file paths
-   - Extracted components/hooks → add to structure tree
-   - `context.patterns` → merge changed patterns
-   - `context.updated` → current date
-   - `architecture.components` → update existing components (status, src, test, `connects_to[]` as typed edges `{ to, type }` — see `shared/DASHBOARD.md` Edge values), add new ones if components were renamed/split. Follow component-first model from `shared/DASHBOARD.md`.
-   - Quality: only project-specific, non-obvious, one line per item
-   - Log: `context: {N} updates ({keys touched})` or `context: no updates needed`
-
-   Write back in parallel:
-   - Edit `backlog.html` (keep `<script>` tags intact)
-   - Write `project.json` (stack, features, endpoints, data)
-   - Write `project-context.json` (context, architecture — create if not exists)
+   Write back in parallel: Edit backlog.html (keep `<script>` tags), Write project.json, Write project-context.json.
 
 4. **Scoped auto-commit** (only this skill's changes):
 
-   Compare current git status with baseline from PHASE 0 (use `pre-skill-status-worktree.txt` if worktree-switch occurred, otherwise `pre-skill-status.txt`):
+   Compare `git status --porcelain | sort` with baseline from PHASE 0 (`pre-skill-status-worktree.txt` if worktree-switch, else `pre-skill-status.txt`). Guard: skip commit if diff is empty + no new staged files.
 
-   ```bash
-   git status --porcelain | sort > /tmp/current-status.txt
-   ```
+   Stage: NEW → `git add`, OVERLAP → AskUserQuestion (Include/Skip), PRE-EXISTING → skip. `.project/` files: use `git add -f` (may be gitignored-but-tracked). Fallback: `git add -A` if no baseline.
 
-   **Guard — nothing to commit:** if `diff <baseline> /tmp/current-status.txt` is empty AND there are no NEW staged files, skip the commit entirely. Log: `commit: skipped (no changes)`. Continue to step 5.
+   Batch commit: `refactor(batch): {summary}` with per-feature lines (REFACTORED/CLEAN/ROLLED_BACK). Single-feature: `refactor({feature}): {summary}`.
 
-   Otherwise, categorize files:
-   - **NEW** (only in current, not in baseline) → `git add` automatically
-   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
-   - **PRE-EXISTING** (only in baseline) → do NOT stage
-
-   If baseline file doesn't exist, fall back to `git add -A`.
-
-   **Tracked-but-gitignored files**: `.project/` files (backlog.html, project.json, project-context.json, feature.json) are often tracked by git even when `.project/` appears in `.gitignore` (committed before the rule was added). `git add` on these files fails with "ignored by .gitignore". Use `git add -f` for any path under `.project/`. Detection: if `git add <path>` exits non-zero with this error → retry with `-f`.
-
-   ```bash
-   git commit -m "$(cat <<'EOF'
-   refactor(batch): {summary}
-
-   {N} features analyzed, {clean} clean, {refactored} refactored, {rolled_back} rolled back
-
-   {for each REFACTORED feature:}
-   - {feature}: {improvement count} improvements ({categories})
-   {for each CLEAN feature:}
-   - {feature}: clean (no changes needed)
-   {for each ROLLED_BACK feature:}
-   - {feature}: rolled back ({reason})
-   EOF
-   )"
-   ```
-
-   For single-feature commits, use the existing format:
-
-   ```
-   refactor({feature}): {summary}
-   ```
-
-   Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/pre-skill-status-worktree.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+   Clean up session files after commit.
 
 5. **Backfill shippedSha** — skip entirely if `TRACKING_MODE=untracked`. Otherwise:
 
-```bash
-SHA=$(git rev-parse HEAD)
-```
+   ```bash
+   SHA=$(git rev-parse HEAD)
+   ```
 
-1. Read `backlog.html` + `project.json` again
-2. Replace empty `shippedSha: ""` for CLEAN/REFACTORED features with `SHA`
-3. Write back
-4. Stage and commit the patch:
+   a. Read `backlog.html` + `project.json` again
+   b. Replace empty `shippedSha: ""` for CLEAN/REFACTORED features with `SHA`
+   c. Write back
+   d. Stage and commit:
 
    ```bash
    git add .project/backlog.html .project/project.json
    git commit -m "chore(refactor): backfill shippedSha for {feature-list}"
    ```
 
-If step 4 was skipped (nothing to commit), use the pre-skill HEAD as `SHA` — still create the backfill commit.
+   If the PHASE 5 step-4 commit was skipped (nothing to commit), use the pre-skill HEAD as `SHA` — still create the backfill commit.
 
 6. **Feature archiving** (only features with `feature.json`, not small items without pipeline):
 
@@ -1068,44 +709,9 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 - ROLLED_BACK features: do not archive (stay in `.project/features/`)
 - Skip if feature-dir no longer exists (idempotent)
 
-7. **Show completion:**
+7. **Show completion:** Print `REFACTOR COMPLETE` with per-feature ✓/✗ lines (name, status, improvement count). Next steps: /dev-define → next feature, /project-backlog → revise scope.
 
-   ```
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   REFACTOR COMPLETE
-
-   {N} feature(s) processed:
-   {for each CLEAN feature:}
-   ✓ {name} — clean (no changes needed)
-   {for each REFACTORED feature:}
-   ✓ {name} — {improvement-count} improvements applied
-   {for each ROLLED_BACK feature:}
-   ✗ {name} — rolled back ({reason})
-
-   Refactoring complete. Features remain in DONE status.
-
-   Next steps:
-     1. /dev-define {next-feature} → next feature from backlog
-     2. /project-backlog → revise backlog if scope has changed
-   {worktree finalize is handled automatically by the PHASE Finalize prompt below — no manual step needed}
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ```
-
-   **PHASE Finalize** — **skip entirely if `feature_queue.length > 1` (batch mode)**. Run only if BOTH:
-   1. Single-mode (`feature_queue.length == 1`, not codebase-mode)
-   2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
-
-   **Team-mode PR offer**: if `.project/project.json#team.mode === "team"` AND `gh` available AND clean tree → ask "Push + PR openen voor worktree-{feature-name}?" (Yes/No). On Yes → follow `shared/PR.md`; print URL; skip finalize prompt.
-
-   **Finalize prompt** — detect PR state via `gh pr list --head $(git branch --show-current) --state all --json state,number,url --limit 1 2>/dev/null`:
-
-   | PR_STATE                       | Action                                                                                |
-   | ------------------------------ | ------------------------------------------------------------------------------------- |
-   | `OPEN`                         | Print `PR #N is open: {URL}. Run /core-finalize {name} zodra gemerged.`               |
-   | `MERGED`                       | Ask "PR #N merged. Cleanup nu?" → Yes: `shared/FINALIZE.md mode: cleanup-only`       |
-   | empty / `CLOSED` / no gh       | Ask "Feature afgerond. Finalize nu?" → Yes: `shared/FINALIZE.md mode: solo`          |
-
-   Op "Keep open" in beide gevallen → print `💡 Run /core-finalize {name} when ready`.
+   **PHASE Finalize** (single-mode only — skip if `feature_queue.length > 1`): follow `shared/FINALIZE.md → Finalize Offer Decision` (TEAM_MODE + PR-state dispatch). Team mode never auto-solo-merges.
 
 > **Todo**: mark PHASE 5 → `completed`.
 
@@ -1144,45 +750,5 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 
 1. Show the `saved_hash` from PHASE 4 step 1
 2. List all `modified_files[feature_name]` and `created_files[feature_name]`
-3. Suggest: "Use `/rewind` in Claude Code to go back to an earlier point"
+3. Suggest: `git reset --hard <saved_hash>` to restore to the pre-refactor state
 4. STOP — do not attempt destructive recovery commands
-
-## Restrictions
-
-This skill must NEVER:
-
-- Read pipeline source files directly in the main conversation (always use Explore agent)
-  EXCEPTION: in PHASE 3 step 4, populate `--- Before ---` blocks via `sed -n '{start},{end}p' {file}` or a line-range Grep — extract ONLY the specific lines for the finding (max 20 lines). Do NOT use the Read tool on the full pipeline file.
-- Pass full file contents to research agents (pass structured analysis from Explore agent)
-- Analyze, plan, or modify files outside pipeline_files (extracted from feature.json)
-- Include external file findings in any plan
-- Proceed without existing tests section in feature.json
-- Make breaking changes (API, schema, parameter changes)
-- Over-simplify code by removing helpful abstractions or combining too many concerns
-- Prioritize fewer lines over readability (explicit > compact)
-- Create "clever" solutions that are hard to understand or debug
-- Skip user approval at PHASE 3 (unless 0 findings across all features)
-- Skip test verification in PHASE 4
-- Proceed if tests fail without analyzing failure type first (stale test vs regression)
-- Apply improvements without user scope selection
-- Run Explore agents sequentially when multiple features are in the queue (use parallel)
-- Create disproportionate documentation for clean features
-
-This skill must ALWAYS:
-
-- Enforce the pipeline_files scope boundary at every phase
-- Launch Explore agents in parallel for batch analysis (max 10 concurrent)
-- Triage features into CLEAN vs HAS_FINDINGS after analysis
-- Early-exit CLEAN features (skip PHASE 2-4)
-- Use refactor-patterns.md for stack-aware analysis (generate on first run, cache thereafter)
-- Aggregate research decisions across all features (1 decision, not N)
-- Present ONE combined plan with ONE user approval for all features
-- Deduplicate cross-feature findings (same pattern → 1 plan item)
-- Apply per-feature rollback (feature A succeeds, feature B fails → only B rolled back)
-- Write proportional documentation (compact for CLEAN, full for REFACTORED)
-- Make a single commit for all features
-- Group edits by file: read file → apply ALL edits for that file → next file
-- Run full test suite after applying changes per feature
-- Analyze test failures before rollback (distinguish stale tests from regressions)
-- Apply balance filter: skip findings where the "fix" reduces readability for a cold reader (someone seeing the code for the first time)
-- Check CLAUDE.md and `.project/project.json` context for project-specific conventions during analysis

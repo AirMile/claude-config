@@ -1,6 +1,36 @@
 # Shared Finalize Flow
 
-Single source of truth for finalizing a feature worktree — either solo-merge (no PR) or cleanup-only (after a merged PR). Used by `core-finalize`, and by the **PHASE Finalize** sections in `dev-refactor`, `game-refactor`, and `frontend-check`.
+Single source of truth for finalizing a feature worktree — either solo-merge (no PR) or cleanup-only (after a merged PR). Used by `core-finalize`, and by the **PHASE Finalize** sections in `dev-verify`, `dev-refactor`, `game-verify`, `game-refactor`, and `frontend-check`.
+
+## Finalize Offer Decision
+
+Skills die opportunistisch finalize aanbieden (`dev-verify`, `dev-refactor`, `game-verify`, `game-refactor`, `frontend-check`) consulteren deze matrix om te beslissen of/hoe ze de gebruiker prompten. Verschilt van de Detection-matrix hieronder: dit gaat over **of we vragen**, niet over **wat finalize uitvoert**.
+
+Read `TEAM_MODE` + detect PR state:
+
+```bash
+TEAM_MODE=$(jq -r '.team.mode // "solo"' .project/project.json 2>/dev/null || echo "solo")
+PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
+PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
+PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
+PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
+```
+
+Dispatch:
+
+| TEAM_MODE | PR_STATE                    | Action                                                                                                                                 |
+| --------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| solo      | `OPEN`                      | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.                                 |
+| solo      | `MERGED`                    | AskUserQuestion cleanup ("Cleanup nu? Worktree + branch verwijderen.") → `FINALIZE.md` mode `cleanup-only`.                             |
+| solo      | empty / `CLOSED` / no-gh   | AskUserQuestion finalize ("Finalize nu — merge naar main + cleanup?") → `FINALIZE.md` mode `solo`.                                     |
+| team      | `OPEN`                      | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.                                 |
+| team      | `MERGED`                    | AskUserQuestion cleanup → `FINALIZE.md` mode `cleanup-only`.                                                                           |
+| team      | empty / `CLOSED`            | Print `"Team project: geen PR gevonden. Push + open PR via /team-review."` Halt — geen auto-merge.                                     |
+| team      | no-gh                       | Print `"Team mode maar \`gh\` niet beschikbaar — run \`gh auth login\` of toggle solo in backlog ⚙."` Halt.                           |
+
+On "Keep open" (alleen mogelijk in solo paths of team `MERGED`) → print `💡 Run /core-finalize {feature-name} when ready`.
+
+---
 
 ## Entry Contract
 
@@ -15,17 +45,30 @@ Single source of truth for finalizing a feature worktree — either solo-merge (
 
 ## Detection (auto mode only)
 
+Read `TEAM_MODE` first (see `shared/PROJECT-MODE.md`):
+
+```bash
+TEAM_MODE=$(jq -r '.team.mode // "solo"' .project/project.json 2>/dev/null || echo "solo")
+```
+
+Then detect PR state:
+
 ```bash
 gh pr list --head "worktree-{feature-name}" --state all --json number,url,state --limit 1 2>/dev/null
 ```
 
-| PR state         | Mode                                                                                                                              |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `MERGED`         | `cleanup-only`                                                                                                                    |
-| `OPEN`           | **Halt** — print `"PR #{n} ({url}) is still open. Merge it on GitHub first, then run /core-finalize {feature-name} again."` Exit. |
-| empty / `CLOSED` | `solo`                                                                                                                            |
+Combined decision matrix (`TEAM_MODE` × PR state):
 
-If `gh` is unavailable: fall back to `solo` (user can always push/PR manually before running).
+| TEAM_MODE | PR state             | Action                                                                                                                                       |
+| --------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| solo      | `MERGED`             | `cleanup-only`                                                                                                                               |
+| solo      | `OPEN`               | **Halt** — print `"PR #{n} ({url}) is still open. Merge it on GitHub first, then run /core-finalize {feature-name} again."` Exit.            |
+| solo      | empty / `CLOSED`     | `solo` (merge locally)                                                                                                                       |
+| solo      | `gh` unavailable     | `solo` (fall-through — user can push/PR manually)                                                                                            |
+| team      | `MERGED`             | `cleanup-only`                                                                                                                               |
+| team      | `OPEN`               | **Halt** — print `"PR #{n} ({url}) is still open. Merge it on GitHub first."` Exit.                                                          |
+| team      | empty / `CLOSED`     | **No auto-merge** — print `"Team project: no PR found. Push + open PR via /team-review, or toggle to solo in the backlog ⚙ if working alone."` Exit. |
+| team      | `gh` unavailable     | **Halt** — print `"Team mode but \`gh\` is unavailable. Run \`gh auth login\` or toggle to solo in the backlog ⚙."` Exit.                   |
 
 ## Branch Resolution
 
@@ -122,10 +165,51 @@ Run when `mode = solo`.
 
 Run after solo-merge OR directly when `mode = cleanup-only`.
 
+**Pre-remove cwd-check** — verify no other process has its working directory inside the worktree:
+
+```bash
+lsof +D "{worktree_path}" 2>/dev/null | awk 'NR>1 && $4=="cwd" {print $1, $2, $9}' | sort -u
+```
+
+Any line → AskUserQuestion:
+
+- header: "Other shells in worktree"
+- question: "Process(es) `{names}` (PID `{pids}`) have their working directory in `{worktree_path}`. Removing now will leave the empty directory on disk. Close those shells first?"
+- options:
+  - "Stop and close shells (Recommended)" — exit cleanup; user closes shells, re-runs finalize
+  - "Continue anyway" — proceed; expect leftover empty directory
+
+**Switch shell out of the worktree** — before remove, change the active Bash directory to the main checkout so no subshell holds a cwd-handle:
+
+```bash
+cd "{main_root}" || { echo "ABORT: main root {main_root} unreachable"; exit 1; }
+```
+
+> **Self-finalize scenario**: when this Claude Code session was launched with its working directory **inside** the worktree (e.g. user opened a shell in `{worktree_path}` and started Claude there), the Claude **parent process** still holds a cwd-handle even after this `cd`. `git worktree remove` will succeed but `rmdir` typically fails → the empty directory remains on disk. The Output Report's `Worktree: orphan-dir:` status surfaces this; the user can either ignore it (cosmetic remnant) or close this Claude session and start a new one in `{main_root}`.
+
+**Remove**:
+
 ```bash
 git worktree remove --force "{worktree_path}"
 git branch -d {source_branch}
 ```
+
+**Post-remove directory check**:
+
+```bash
+if [ -d "{worktree_path}" ]; then
+  if [ -z "$(ls -A "{worktree_path}" 2>/dev/null)" ]; then
+    rmdir "{worktree_path}" 2>/dev/null && WORKTREE_RESULT="removed (clean)" \
+      || WORKTREE_RESULT="orphan-dir: {worktree_path} (rmdir failed — close shells holding cwd, then: rmdir {worktree_path})"
+  else
+    WORKTREE_RESULT="orphan-dir: {worktree_path} (non-empty: $(ls -A "{worktree_path}" | head -3 | tr '\n' ' '))"
+  fi
+else
+  WORKTREE_RESULT="removed (clean)"
+fi
+```
+
+`WORKTREE_RESULT` feeds the `Worktree:` line in the Output Report below.
 
 If `git branch -d` fails (unmerged commits): use `git branch -D` after confirming with user.
 
@@ -148,15 +232,32 @@ Branch:    {source_branch} → {deleted | kept}
 Target:    {target}                              (solo-merge only)
 Merge:     {sha}                                 (solo-merge only)
 PR:        {pr_url}                              (cleanup-only only)
-Worktree:  removed
+Worktree:  {WORKTREE_RESULT}
 ```
+
+When `WORKTREE_RESULT` starts with `orphan-dir:` → also print:
+
+```
+⚠ Worktree directory remained on disk. Close any shells with cwd in {worktree_path}, then run:
+  rmdir {worktree_path}
+```
+
+Also detect ghost cwd via `[ "$(pwd)" != "{main_root}" ] && [ ! -d "$(pwd)" ]`. If true → also print:
+
+```
+💡 This Claude session was started inside the worktree directory.
+   Its working directory is now a ghost. Start a fresh session in:
+   {main_root}
+```
+
+> **Scope of `Merge: {sha}`**: informational only — surfaces the merge commit for the user. Do NOT write it to `backlog.html` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys are set exclusively by `/dev-refactor` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). Skills consuming this report (`dev-verify`, `game-verify`, `frontend-check`, `core-finalize`) MUST treat the SHA as display-only.
 
 For cleanup-only with PR context:
 
 ```
 ✅ Cleanup complete: {source_branch} was merged via PR #{n}.
 
-   Worktree: removed
+   Worktree: {WORKTREE_RESULT}
    Branch:   {deleted | kept}
 ```
 
@@ -167,7 +268,7 @@ For solo-merge:
 
    Source:  {source_branch}
    Push:    {pushed to origin/{target} | skipped}
-   Worktree: removed
+   Worktree: {WORKTREE_RESULT}
 ```
 
 ## Failure Modes
@@ -178,5 +279,6 @@ For solo-merge:
 | Merge conflict                   | Show files, exit with manual-resolve instructions                                          |
 | Branch not found                 | Fail with open worktree list                                                               |
 | `git branch -d` fails (unmerged) | Confirm `git branch -D` with user                                                          |
-| `gh pr list` unavailable         | Fall back to `solo` mode                                                                   |
+| `gh` unavailable (solo project)  | Fall back to `solo` mode                                                                   |
+| `gh` unavailable (team project)  | Halt — print install hint (see Detection matrix)                                           |
 | Push rejected                    | AskUserQuestion: "Pull --rebase first (Recommended)" / "Force push (dangerous)" / "Cancel" |

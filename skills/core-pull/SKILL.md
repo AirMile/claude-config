@@ -558,7 +558,7 @@ Files:   {N} changed
 
 **Team-mode hint** — append one line after any of the above report variants, only if ALL true:
 
-1. `project.json#team.mode === "solo"` or `team.mode` absent
+1. `TEAM_MODE === "solo"` or absent — read via `shared/PROJECT-MODE.md` read pattern
 2. This pull brought in ≥1 commit from an author other than `git config user.email`
 
 ```

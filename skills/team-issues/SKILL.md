@@ -33,6 +33,21 @@ Import issues from a team tracker into your local backlog. Smart-splits multi-ar
 
 > **Todo**: mark PHASE 0 → `in_progress`.
 
+0. **Team-mode gate.** Read `.project/project.json#team.mode` (see `shared/PROJECT-MODE.md`). If `"solo"` or absent → show AskUserQuestion (warn-only):
+
+   ```yaml
+   header: "Solo project"
+   question: "This project is marked solo (team.mode). /team-issues is meant for projects with multiple contributors. Continue anyway?"
+   options:
+     - label: "Cancel (Recommended)"
+       description: "Exit. Toggle to team via the ⚙ button in the backlog or run /core-setup to mark this as a team project."
+     - label: "Yes, continue once"
+       description: "Proceed with issue import for this single invocation."
+   multiSelect: false
+   ```
+
+   Cancel → exit. Continue → proceed with PHASE 0 step 1.
+
 1. Read `.project/project.json`:
    - Check `team.tracker` — if set, use that.
    - If not set: try `gh repo view --json nameWithOwner` (success → `tracker = "github"`).

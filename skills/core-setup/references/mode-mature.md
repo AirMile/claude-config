@@ -161,6 +161,8 @@ Mark PHASE 0.5 → `completed`.
 
 > **Todo**: mark PHASE 0.5 → `completed`, PHASE 0.55 → `in_progress`.
 
+> Parallel met greenfield step 0.5 (`mode-greenfield.md` regel 101). Schrijfdoel + leespatroon voor skills: zie `shared/PROJECT-MODE.md`.
+
 **Goal:** detect whether this is a team repo and let the user confirm, then persist `team.mode` to `.project/project.json`.
 
 **Skip if** `.project/project.json` already has `team.mode` set (user made a deliberate choice before; do not overwrite).
@@ -561,6 +563,38 @@ Follow setup-guide fully. For Vite: Babel-mode. For Next.js: full Babel mode (wa
 Add `inspect-overlay` to `installed_in_session[]`.
 
 **Condition not triggered or "Skip":** no action.
+
+### playwright-toolchain (mature opt-in)
+
+**Detect:**
+
+- `stack.type` is `Web Frontend` or `Fullstack` (from project.json)
+- `@playwright/test` is missing from `devDependencies` in `package.json`
+
+Both conditions true → show AskUserQuestion:
+
+```yaml
+header: "Playwright toolchain"
+question: "Frontend-skills verwachten playwright-cli + @axe-core/playwright voor smoke-checks. Dit project heeft het nog niet. Installeren?"
+options:
+  - label: "Installeer (Aanbevolen)"
+    description: "playwright-cli (globaal) + @playwright/test + @axe-core/playwright (devDeps)"
+  - label: "Overslaan"
+    description: "Niet installeren — smoke-checks in frontend-design zullen gefaald melden"
+multiSelect: false
+```
+
+**On "Installeer" or "Let Claude decide":**
+
+```bash
+npm install -g @playwright/cli@latest
+npx @playwright/cli install chromium
+{pkgmgr} install --save-dev @playwright/test @axe-core/playwright
+```
+
+Add `playwright-toolchain` to `installed_in_session[]`.
+
+**Condition not triggered or "Overslaan":** no action.
 
 Do not expand to other libraries — tier-1 modules with a stack slot go through PHASE 0.6/5.8. PHASE 5.65 is exclusively for dev-tools without a stack slot.
 

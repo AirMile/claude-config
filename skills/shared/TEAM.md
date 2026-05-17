@@ -2,6 +2,8 @@
 
 Guidance for using claude-config in team repos where colleagues do not use claude-config. The backlog and dashboard are personal artifacts — the team uses its own tracker.
 
+> **Read pattern for skills** — see `shared/PROJECT-MODE.md` for the canonical `TEAM_MODE` read, gate templates, and the full skill-category list.
+
 ## When are you in a team repo?
 
 Three signals:

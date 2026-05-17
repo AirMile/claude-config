@@ -1,9 +1,11 @@
 ---
 name: project-backlog
 description: Transform a seed into a prioritized feature backlog. Use with /project-backlog.
+reads: [backlog.status]
+writes: [backlog.status, concept.seed]
 metadata:
   author: claude-config
-  version: 1.3.0
+  version: 1.4.0
   category: project
 ---
 
@@ -714,6 +716,16 @@ P4:
 - {feature}: {reason}
 ```
 
+**Seed Alignment Check** (last step in PHASE 3, before ExitPlanMode):
+
+Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: new features
+added, features marked INDEPENDENT/CANCELLED/DEPRECATED, and significant priority
+reshuffles from this run. This skill is in plan mode — drift table and proposed
+rewrite go into the plan file alongside the feature plan. On "Yes" → carry
+`seedUpdateApproved: true` to PHASE 4. On "Skip" → carry `seedDrift[]` to PHASE 4
+(written to `backlog.html#data.seedDrift[]`). `source: "/project-backlog"`,
+`ref: "feature:{name}"` where applicable.
+
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the feature plan (features table with type/risk/phase/dependencies + ASCII dependency tree + priority breakdown) to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 4 (HTML write + `.project/project.json` sync + server start).
 
 ### PHASE 4: Generate Backlog
@@ -806,7 +818,12 @@ P4:
    curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node --watch ~/.claude/skills/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
    ```
 
-5. **Update project dashboard** (see `shared/DASHBOARD.md`):
+5. **Seed mutations** (parallel with dashboard update):
+   - **If `seedUpdateApproved: true`:** Write the rewritten content (from the plan file's `## Proposed seed update` section, reviewed in plan mode) to `.project/project-seed.md` — full file overwrite. Update `project.json#concept.pitch` if the new pitch differs; update `concept.name` only if H1 title changed. Log: `Seed: ✓ updated — N section(s) rewritten`.
+   - **If `seedUpdateApproved: false` AND `seedDrift[]` non-empty:** Write drift entries into the backlog JSON data object as `data.seedDrift[]` (merge with existing entries if any). Each entry follows the schema from `shared/SEED.md` § Drift entry schema.
+   - **If no drift detected:** skip silently.
+
+6. **Update project dashboard** (see `shared/DASHBOARD.md`):
 
    If concept info is available from input:
    1. Read `.project/project.json` (or create new with empty schema)

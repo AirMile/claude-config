@@ -38,13 +38,13 @@ gh pr list --head {source-branch} --state all --json number,url,state --limit 1
 
 When called from `dev-refactor`, `game-refactor`, `dev-verify`, `game-verify` — all must hold. If any fails → fall through to caller's worktree-integration hint.
 
-| Check                      | Command                                             | Fail behaviour        |
-| -------------------------- | --------------------------------------------------- | --------------------- |
-| `gh` available + authed    | See Detection above (`GH_AVAILABLE == 0`)           | fall through silently |
-| On a `worktree-*` branch   | `git branch --show-current \| grep -q '^worktree-'` | fall through silently |
-| `team.mode === "team"`     | read `.project/project.json#team.mode`              | fall through silently |
-| Clean working tree         | `git status --porcelain` returns empty              | fall through silently |
-| (verify only) Feature DONE | `backlog status === "DONE"` after this run          | fall through silently |
+| Check                      | Command                                                                          | Fail behaviour        |
+| -------------------------- | -------------------------------------------------------------------------------- | --------------------- |
+| `gh` available + authed    | See Detection above (`GH_AVAILABLE == 0`)                                        | fall through silently |
+| On a `worktree-*` branch   | `git branch --show-current \| grep -q '^worktree-'`                              | fall through silently |
+| `team.mode === "team"`     | Read via `shared/PROJECT-MODE.md` read pattern (`TEAM_MODE`)                    | fall through silently |
+| Clean working tree         | `git status --porcelain` returns empty                                           | fall through silently |
+| (verify only) Feature DONE | `backlog status === "DONE"` after this run                                       | fall through silently |
 
 ## Title Composition
 

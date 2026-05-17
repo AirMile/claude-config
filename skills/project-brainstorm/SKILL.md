@@ -3,7 +3,7 @@ name: project-brainstorm
 description: Expand ideas through interactive technique application. Use with /project-brainstorm.
 metadata:
   author: claude-config
-  version: 1.0.0
+  version: 1.1.0
   category: project
 ---
 
@@ -66,6 +66,22 @@ Example triggers:
      ```
    - If "Yes": proceed with loaded concept
    - If "Different concept": ask user to paste input
+
+**Accumulated drift (load after concept detection, concept-scope only):**
+
+If scope is or may become concept-scope: scan for deferred drift entries:
+
+1. Glob `.project/features/*/feature.json` — collect all `seedDrift[]` entries where `resolved` is absent or falsy into `accumulatedDrift[]`.
+2. If `.project/backlog.html` exists: parse `data.seedDrift[]` (see `shared/BACKLOG.md`) and append to `accumulatedDrift[]`.
+3. Deduplicate by `detectedAt`.
+
+If `accumulatedDrift[]` is non-empty, include a one-line note in the technique-selection summary:
+
+```
+ℹ Deferred drift: {N} item(s) from {sources} — will be reconciled if you save to concept.
+```
+
+Pass `accumulatedDrift[]` into the chosen technique's prompt context so generated expansions incorporate the known divergence.
 
 **Step 1a: Scope Check**
 
@@ -490,6 +506,8 @@ multiSelect: false
 
 If "Yes": Write the full concept document as plain markdown to `.project/project-seed.md`. Also update project.json: Read `.project/project.json` (or create with {}), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
 
+Then reconcile drift: if `accumulatedDrift[]` is non-empty, remove those entries from their source arrays (from each `feature.json#seedDrift[]` and from `backlog.html#data.seedDrift[]`). Log: `Reconciled {N} drift item(s) from {sources}.`
+
 **If scope = standalone idea (from Step 1a):**
 
 Save to `.project/thinking/{today}-brainstorm-{slug}.md`:
@@ -540,7 +558,8 @@ multiSelect: false
 
 1. Write the full refined concept document as plain markdown to `.project/project-seed.md`
 2. Also update project.json: Read `.project/project.json` (or create with `{}`), set `concept.name` (title of refined idea), `concept.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
-3. Confirm:
+3. Reconcile drift: if `accumulatedDrift[]` is non-empty, remove those entries from their source arrays (from each `feature.json#seedDrift[]` and from `backlog.html#data.seedDrift[]`). Log: `Reconciled {N} drift item(s) from {sources}.`
+4. Confirm:
 
    ```
    CONCEPT UPDATED

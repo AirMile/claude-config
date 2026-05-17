@@ -173,6 +173,10 @@ Enrich the existing concept with features/functionality that exist in the projec
 - Scan codebase for routes/pages:
   - Glob `app/**/page.tsx`, `src/pages/**/*.tsx`, `src/routes/**/*.tsx`
   - Glob `app/**/route.ts`, `src/api/**/*.ts` (API routes)
+- **Accumulated drift from prior skill runs:**
+  - Glob `.project/features/*/feature.json` → collect all `seedDrift[]` entries (skip features where array is absent or empty)
+  - Check `backlog.html#data.seedDrift[]` if present
+  - Carry as `driftEntries[]` in memory for the gap-detection step
 
 **2. Detect gaps:**
 
@@ -194,23 +198,28 @@ Backlog features: {count}
 Codebase routes: {count found}
 Entities: {count from project.json}
 Endpoints: {count from project.json}
+Deferred drift: {count from driftEntries[]}
 
 GAPS DETECTED:
 
-| #  | Source   | Name              | Type    | In Concept |
-| -- | -------- | ----------------- | ------- | ---------- |
-| 1  | Backlog  | {feature-name}    | FEATURE | No         |
-| 2  | Backlog  | {feature-name}    | PAGE    | No         |
-| 3  | Codebase | /api/webhooks     | API     | No         |
-| 4  | Backlog  | {feature-name}    | UI      | Partial    |
-| 5  | Entity   | User              | DATA    | No         |
-| 6  | Endpoint | POST /api/auth    | API     | Partial    |
-| .. | ...      | ...               | ...     | ...        |
+| #  | Source            | Name              | Type    | In Concept                    |
+| -- | ----------------- | ----------------- | ------- | ----------------------------- |
+| 1  | Backlog           | {feature-name}    | FEATURE | No                            |
+| 2  | Backlog           | {feature-name}    | PAGE    | No                            |
+| 3  | Codebase          | /api/webhooks     | API     | No                            |
+| 4  | Backlog           | {feature-name}    | UI      | Partial                       |
+| 5  | Entity            | User              | DATA    | No                            |
+| 6  | Endpoint          | POST /api/auth    | API     | Partial                       |
+| 7  | /dev-define drift | {featureDecides}  | drift   | drift — {category}            |
+| 8  | /project-backlog drift | {featureDecides} | drift | drift — {category}          |
+| .. | ...               | ...               | ...     | ...                           |
 
 ALREADY COVERED:
 - {feature described in both concept and backlog}
 - {feature described in both concept and backlog}
 ```
+
+Drift rows (source = `/dev-define drift`, `/game-define drift`, `/project-backlog drift`) originate from deferred `seedDrift[]` entries — decisions that already happened in earlier skill runs and were explicitly skipped. Show `seedSays` in the `Name` column and `featureDecides` as context so the user understands what changed.
 
 **3. Select gaps to integrate:**
 
@@ -261,12 +270,16 @@ multiSelect: false
 
 - Write to `.project/project-seed.md`
 - Update project.json metadata (concept.name, concept.pitch) if changed
+- **Drift cleanup** — for each `driftEntries[]` item that was selected and integrated:
+  - If from `feature.json#seedDrift[]`: remove the entry from the array (rewrite `feature.json`). If the array is empty after cleanup, omit the field.
+  - If from `backlog.html#data.seedDrift[]`: remove the entry from the array (rewrite backlog JSON block).
+  - Not integrated (user skipped): leave intact for a future sync.
 
 ```
 SEED SYNCED
 
 Added: {count} items
-Source: {backlog: X, codebase: Y}
+Source: {backlog: X, codebase: Y, drift: Z}
 File: .project/project-seed.md
 
 Next steps:

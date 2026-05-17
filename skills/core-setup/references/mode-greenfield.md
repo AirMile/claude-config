@@ -98,6 +98,21 @@ Ask sequentially, one question per response:
    - Tailor suggestions to the domain from the concept.
    - No extra disk read needed — `SEED_CONTEXT` is already in context.
 
+0.5. **Project mode** — AskUserQuestion (single-select). Ask this early so downstream questions (tech stack suggestions, tracker prompts, commit convention defaults) can use the answer:
+
+   ```yaml
+   header: "Project mode"
+   question: "Is this a solo or team project?"
+   options:
+     - label: "Solo (Recommended)"
+       description: "Only you commit here. Enables local-only flow — no PR offers, no team-* skill gating."
+     - label: "Team"
+       description: "Multiple contributors. Enables /team-* skills, automatic PR offer after /dev-verify and /dev-refactor, and team settings in backlog/dashboard."
+   multiSelect: false
+   ```
+
+   Store answer as `TEAM_MODE` (`"solo"` or `"team"`). Written to `project.json#team.mode` in Phase 7b.
+
 1. **Project description** — Show this block to the user and wait for a response:
 
    ```
@@ -182,20 +197,7 @@ Ask sequentially, one question per response:
    - Accessibility: WCAG 2.1 AA, WCAG 2.1 A, Minimal
    - Responsive: Mobile-first, Desktop-first, Fixed width
 
-7. **Project mode** — AskUserQuestion (single-select):
-
-   ```yaml
-   header: "Project mode"
-   question: "Is this a solo or team project?"
-   options:
-     - label: "Solo (Recommended)"
-       description: "Only you commit here. Enables local-only flow — no PR offers, no team-* skill gating."
-     - label: "Team"
-       description: "Multiple contributors. Enables /team-* skills, automatic PR offer after /dev-verify and /dev-refactor, and team settings in backlog/dashboard."
-   multiSelect: false
-   ```
-
-   Store answer as `TEAM_MODE` (`"solo"` or `"team"`). Used in Phase 7b to write `team.mode`.
+7. **Project mode** — already answered in step 0.5 above. `TEAM_MODE` is already set. Used in Phase 7b to write `team.mode`.
 
 ---
 
@@ -385,6 +387,32 @@ Install dev tools that are framework-conditional and require no user input. No m
 **Track for Phase 9 Summary** whether the overlay was installed (yes/no + framework).
 
 **No project.json update needed** — inspect-overlay is dev-only, no `stack.*` key.
+
+### playwright-toolchain
+
+**Trigger:** `stack.type` is `Web Frontend` or `Fullstack` (from Phase 2.3/2.4).
+
+Skills zoals `/frontend-design Build` en `/frontend-check` dragen `playwright-cli` (daemon) en `@axe-core/playwright` (a11y) nodig voor smoke-checks. Auto-installeer zodat skills direct werken op een nieuw project.
+
+| Conditie | Actie |
+| -------- | ----- |
+| frontend of fullstack stack | Auto-install — geen modal, geen bevestiging |
+| game / CLI / backend-only / mobile / desktop | Overslaan — geen output |
+
+**Installatie (geen modal):**
+
+```bash
+# Daemon (globaal)
+npm install -g @playwright/cli@latest
+npx @playwright/cli install chromium
+
+# Runner + a11y helper (devDeps)
+{pkgmgr} install --save-dev @playwright/test @axe-core/playwright
+```
+
+**Track voor Phase 9 Summary**: of playwright-toolchain geïnstalleerd is (ja/nee).
+
+**Geen project.json update nodig** — playwright is dev-only, geen `stack.*` key.
 
 ---
 

@@ -33,7 +33,7 @@ Create an external issue for a teammate based on a local backlog item or feature
 
 > **Todo**: mark PHASE 0 → `in_progress`.
 
-0. **Team-mode gate.** Read `.project/project.json#team.mode`. If `"solo"` or absent → show AskUserQuestion (warn-only):
+0. **Team-mode gate.** Read `TEAM_MODE` via `shared/PROJECT-MODE.md` read pattern. If `"solo"` or absent → show AskUserQuestion (warn-only):
 
    ```yaml
    header: "Solo project"

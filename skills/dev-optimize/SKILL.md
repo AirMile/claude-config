@@ -373,7 +373,7 @@ NOW_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-Initialize `ROUND=1`, `STALL_COUNT=0`, `BEST_SCORE=baseline`.
+Initialize `ROUND=1`, `STALL_COUNT=0`, `BEST_SCORE=baseline`, `ORPHAN_LOG=()`.
 
 **Per round:**
 
@@ -509,10 +509,18 @@ improved = (direction == "minimize" && best_score < parent_score) ||
 **Not improved or gate failed:**
 
 - Status `discarded`. Append node with `status: "discarded"`.
-- Clean up worktree:
+- Clean up worktree (batch-mode hardening — no interactive prompts):
   ```bash
+  cd "$MAIN_ROOT" 2>/dev/null
   git worktree remove --force "$EXP_PATH"
   git branch -D "$EXP_BRANCH" 2>/dev/null
+  if [ -d "$EXP_PATH" ]; then
+    if [ -z "$(ls -A "$EXP_PATH" 2>/dev/null)" ]; then
+      rmdir "$EXP_PATH" 2>/dev/null || ORPHAN_LOG+=("$EXP_PATH (rmdir failed)")
+    else
+      ORPHAN_LOG+=("$EXP_PATH (non-empty)")
+    fi
+  fi
   ```
 
 **Append `hypotheses_tried` from ALL agents** (winners + losers) to global list — prevents repetition in next rounds.
@@ -602,14 +610,22 @@ git branch "$TARGET_BRANCH" "$WINNER_BRANCH"
 
 Do NOT merge to default branch — user reviews themselves via PR/merge.
 
-**Cleanup losers:**
+**Cleanup losers** (batch-mode hardening):
 
 ```bash
+cd "$MAIN_ROOT" 2>/dev/null
 while read -r BR; do
   if [ "$BR" != "$WINNER_BRANCH" ]; then
     WT_PATH=".project/optimize/{run-id}/worktrees/$(basename "$BR" | sed 's@.*/@@')"
     git worktree remove --force "$WT_PATH" 2>/dev/null
     git branch -D "$BR" 2>/dev/null
+    if [ -d "$WT_PATH" ]; then
+      if [ -z "$(ls -A "$WT_PATH" 2>/dev/null)" ]; then
+        rmdir "$WT_PATH" 2>/dev/null || ORPHAN_LOG+=("$WT_PATH (rmdir failed)")
+      else
+        ORPHAN_LOG+=("$WT_PATH (non-empty)")
+      fi
+    fi
   fi
 done < .project/optimize/{run-id}/branches.txt
 ```
@@ -653,6 +669,14 @@ If `optimization_runs[]` field does not yet exist: create with this as the only 
   "winner_branch": "...",
   "stats": { ... }
 }
+```
+
+If `ORPHAN_LOG` non-empty → print before cleanup:
+
+```
+⚠ Optimize-run left {N} orphan worktree director(ies):
+  {list — one path per line}
+Close any processes holding cwd in those paths, then: rmdir <path>
 ```
 
 **Cleanup session:**

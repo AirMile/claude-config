@@ -20,7 +20,8 @@ Unified check & fix hub for performance, SEO, AEO (AI search optimization), resp
 ## References
 
 - `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
-- `../shared/RULES.md` — General (R009), P-series (performance), S-series (SEO), A-series (accessibility), H-series (responsive/HTML)
+- `../shared/CODING-RULES.md` — General (R009)
+- `../shared/FRONTEND-RULES.md` — P-series (performance), A-series (accessibility), H-series (responsive/HTML), E-series, F-series
 - `../shared/DESIGN.md` — Anti-patterns (AI design tells), motion timing, interaction states
 - `../shared/PLAYWRIGHT.md` — Playwright CLI: CWV measurement, multi-viewport captures, overflow detection
 - `../shared/PATTERNS.md` — Code splitting, memoization patterns
@@ -1090,7 +1091,7 @@ Runs only when: feature-name is known (backlog feature targeted, not URL-only) a
 **Optional PR offer** — show first, only if ALL true:
 
 1. Current branch matches `worktree-*` pattern
-2. `.project/project.json#team.mode === "team"` (absent → skip)
+2. `TEAM_MODE === "team"` — read via `shared/PROJECT-MODE.md` read pattern (absent → skip)
 3. `gh` on PATH AND `gh auth status` exit 0
 4. Clean tree (`git status --porcelain` empty)
 5. Feature `shipped: true` (set in 4.3)
@@ -1117,20 +1118,7 @@ On "Nee" or any precondition fail → fall through to finalize prompt (PHASE 5).
 
 Runs only when: feature-name is known (backlog feature targeted, not URL-only) and current branch matches `worktree-*` pattern.
 
-Detect PR state:
-
-```bash
-PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
-PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
-PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
-PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
-```
-
-| PR_STATE                            | Action                                                                                                                                                                                                       |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `OPEN`                              | Print: `"PR #{PR_NUMBER} is open: {PR_URL}. Run \`/core-finalize {feature-name}\` after review — cleanup auto-detects the merged PR."` No AskUserQuestion.                                                   |
-| `MERGED`                            | AskUserQuestion: "PR #{PR_NUMBER} is gemerged. Cleanup nu? Worktree + branch worden verwijderd." → "Yes, cleanup nu (Recommended)" / "Keep open". Yes → `follow shared/FINALIZE.md with mode: cleanup-only`. |
-| empty / `CLOSED` / `gh` unavailable | AskUserQuestion: "Feature '{feature-name}' afgerond. Finalize nu (merge naar main + cleanup)?" → "Yes, finalize nu (Recommended)" / "Keep open". Yes → `follow shared/FINALIZE.md with mode: solo`.          |
+Follow `shared/FINALIZE.md → Finalize Offer Decision`.
 
 On any "Keep open" → print `💡 Run /core-finalize {feature-name} when ready`.
 
@@ -1154,7 +1142,7 @@ This skill must **ALWAYS**:
 - Tag CWV impact per performance finding
 - Use Context7 for framework-specific optimization patterns
 - Follow mobile-first approach for responsive fixes
-- Follow rules from RULES.md (P-series, S-series, H-series, E-series, F-series)
+- Follow rules from `shared/FRONTEND-RULES.md` (P-series, H-series, E-series, F-series, A-series)
 - Update DevInfo at each phase transition
 - Use Playwright for render validation (S003), responsive captures, smoke, flow and error states
 - Clean up `.project/auth-state.json` at the end of every run where auth was used

@@ -1,11 +1,18 @@
 ---
 name: dev-define
 description: Define feature requirements, criteria, and architecture. Use with /dev-define.
+reads: [backlog.status, feature.requirements]
 writes:
-  [feature.requirements, feature.architecture, feature.files, backlog.status]
+  [
+    feature.requirements,
+    feature.architecture,
+    feature.files,
+    backlog.status,
+    concept.seed,
+  ]
 metadata:
   author: claude-config
-  version: 2.7.0
+  version: 2.8.0
   category: dev
 ---
 
@@ -31,26 +38,25 @@ PHASE 1 of the dev workflow: define → build → test.
    a) **Name provided** (`/dev-define auth`): use as feature name → go to step 2.
 
    b) **No name provided** (`/dev-define`): pick from backlog → concept → suggestions in this order:
-
-      - Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
-        - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`, go to step 2.
-        - Fallback: `data.features.find(f => f.status === "TODO")` (first TODO).
-      - **If backlog feature found (fallback path):**
-        AskUserQuestion: "Next feature from backlog: **{name}**. Continue with this?" — "{name} (Recommended)" / "Different feature". Backlog chosen → step 2. "Different feature" → next bullet.
-      - **No backlog but concept present:**
-        Read `SEED_CONTEXT` per `shared/SEED.md`. If `SEED_CONTEXT.present`:
-        ```yaml
-        header: "Concept without backlog"
-        question: "There is a concept but no backlog yet. Do you want to generate a backlog first?"
-        options:
-          - label: "Yes, first /project-backlog (Recommended)", description: "Generate backlog from concept, then define features"
-          - label: "No, define directly", description: "Define a standalone feature without a backlog"
-        multiSelect: false
-        ```
-        "Yes" → stop, show: `Run /project-backlog to convert your concept into a backlog.`
-        "No" → continue to next bullet.
-      - **No backlog, no concept (or direct-define chosen):**
-        Generate 3 suggestions from available signal in this order: (1) `project.json#features[]` with `status: "TODO"` or `"PLANNED"` (use feature `name` + `summary`); (2) if <3 found, scan `project.json#concept.goals[]` or `concept.pitch` for noun-phrases that could be features (e.g. "user authentication", "report export"); (3) if still <3, fallback to 3 generic next-step suggestions based on `stack.framework` (e.g. Next.js → "auth-flow", "api-route", "form-validation"). Show via AskUserQuestion: "Which feature do you want to define?" — each option label = kebab-case name, description = 1-line purpose. Selected name → step 2.
+   - Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
+     - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`, go to step 2.
+     - Fallback: `data.features.find(f => f.status === "TODO")` (first TODO).
+   - **If backlog feature found (fallback path):**
+     AskUserQuestion: "Next feature from backlog: **{name}**. Continue with this?" — "{name} (Recommended)" / "Different feature". Backlog chosen → step 2. "Different feature" → next bullet.
+   - **No backlog but concept present:**
+     Read `SEED_CONTEXT` per `shared/SEED.md`. If `SEED_CONTEXT.present`:
+     ```yaml
+     header: "Concept without backlog"
+     question: "There is a concept but no backlog yet. Do you want to generate a backlog first?"
+     options:
+       - label: "Yes, first /project-backlog (Recommended)", description: "Generate backlog from concept, then define features"
+       - label: "No, define directly", description: "Define a standalone feature without a backlog"
+     multiSelect: false
+     ```
+     "Yes" → stop, show: `Run /project-backlog to convert your concept into a backlog.`
+     "No" → continue to next bullet.
+   - **No backlog, no concept (or direct-define chosen):**
+     Generate 3 suggestions from available signal in this order: (1) `project.json#features[]` with `status: "TODO"` or `"PLANNED"` (use feature `name` + `summary`); (2) if <3 found, scan `project.json#concept.goals[]` or `concept.pitch` for noun-phrases that could be features (e.g. "user authentication", "report export"); (3) if still <3, fallback to 3 generic next-step suggestions based on `stack.framework` (e.g. Next.js → "auth-flow", "api-route", "form-validation"). Show via AskUserQuestion: "Which feature do you want to define?" — each option label = kebab-case name, description = 1-line purpose. Selected name → step 2.
 
 2. **Feature existence check** (before context load):
 
@@ -111,7 +117,7 @@ PHASE 1 of the dev workflow: define → build → test.
 
 7. Skip PHASE 1b (feature splitting) unless the number of requirements after update exceeds 6 and there are clear clusters.
 
-8. Go to PHASE 2 for ADDED and MODIFIED requirements only. UNCHANGED requirements do not need re-architecture, unless MODIFIED requirements have architectural impact (ask user).
+8. Go to PHASE 2 for ADDED and MODIFIED requirements only. UNCHANGED requirements do not need re-architecture, unless MODIFIED requirements have architectural impact (ask user). The Seed Alignment Check at the end of PHASE 2 still runs — update-mode can drift just as easily as a fresh define.
 
 9. At PHASE 3 write: **merge** delta into existing `feature.json` — do not overwrite completely. Keep existing `architecture`, `apiContract`, `design`, `testStrategy`, `durableDecisions`, `research` and UNCHANGED requirements intact (unless MODIFIED requirements have architectural impact — ask user). `buildSequence`: remove steps that are empty after REMOVED-filtering; add new steps for ADDED requirements (from PHASE 2 architecture output); leave existing steps for UNCHANGED requirements untouched.
 
@@ -171,6 +177,7 @@ After the initial questions, identify open branches: unaddressed edge cases, imp
 **Skip** if the feature is simple (≤5 expected REQs) AND no open branches.
 
 **Otherwise**: 1-2 AskUserQuestion calls covering up to 4 sub-questions total. Each sub-question is either:
+
 - **Factual follow-up** — "What happens if {edge case}?" with 2-3 outcome options
 - **Design choice** — concrete A vs B vs C, first option Recommended, include "Not relevant to scope" if applicable
 
@@ -220,6 +227,7 @@ Scan the extracted requirements (description + acceptance) for UI-element keywor
 **Self-reference filter (always apply):** skip a match if the kebab-cased keyword appears in the current feature name (e.g. feature `kelly-slider` → skip "Slider" match, feature `event-modal` → skip "Modal" match). Prevents self-dependencies.
 
 **On 1+ remaining match:**
+
 1. Per match: kebab-case the name (e.g. "Select" → `currency-select` with context prefix when available).
 2. Append to the in-memory `discoveredComponents[]` (carried to PHASE 4 sync).
 3. Append the kebab-name to the current feature's `dependencies[]`.
@@ -270,18 +278,18 @@ No AskUserQuestion, no extra explanation. Then proceed directly to PHASE 2. Skip
 
 **Plan file vs feature.json — role split**:
 
-| Content | Plan file | feature.json |
-|---|---|---|
-| Context / rationale / why | ✓ | — |
-| REQ list (1-line descriptions) | ✓ | ✓ |
-| Full acceptance criteria | — | ✓ (canonical) |
-| File structure table | ✓ | ✓ |
-| Type signatures (typescript fence) | ✓ | ✓ (`interfaces[].definition`) |
-| Build sequence summary | ✓ | ✓ (canonical) |
-| Test strategy table | — | ✓ (canonical) |
-| Durable decisions with rationale | ✓ | ✓ (canonical) |
-| Verification steps | ✓ | — |
-| Out of scope | ✓ | — |
+| Content                            | Plan file | feature.json                  |
+| ---------------------------------- | --------- | ----------------------------- |
+| Context / rationale / why          | ✓         | —                             |
+| REQ list (1-line descriptions)     | ✓         | ✓                             |
+| Full acceptance criteria           | —         | ✓ (canonical)                 |
+| File structure table               | ✓         | ✓                             |
+| Type signatures (typescript fence) | ✓         | ✓ (`interfaces[].definition`) |
+| Build sequence summary             | ✓         | ✓ (canonical)                 |
+| Test strategy table                | —         | ✓ (canonical)                 |
+| Durable decisions with rationale   | ✓         | ✓ (canonical)                 |
+| Verification steps                 | ✓         | —                             |
+| Out of scope                       | ✓         | —                             |
 
 Design in three steps:
 
@@ -304,29 +312,39 @@ Design in three steps:
    - **Test strategy**: REQ→testfile→description table.
    - **AI-navigability** (skip for ≤3 files without new pattern): module exports (public/private), registries for repeated concepts (centralize in one file, record in `architecture.registries[]`), flat vs nested structure, test colocation, forbidden imports at circular risk.
 
+**Seed Alignment Check** (last step in PHASE 2, before ExitPlanMode):
+
+Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ
+descriptions + `acceptance[].then` + `durableDecisions[]`. This skill is in plan
+mode at this point — drift table and proposed rewrite go into the plan file. On
+"Yes" → carry `seedUpdateApproved: true` to PHASE 4. On "Skip" → carry
+`seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`).
+`source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
+
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 3 (writing feature.json).
 
 ### PHASE 3: Write feature.json
 
 Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema):
 
-| Field                       | Condition                                                                                                                                                                                 |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`, `created`, `status` | always (status = `"DEFINED"`, no stage — wait for `/dev-build`)                                                                                                                           |
-| `summary`                   | always                                                                                                                                                                                    |
-| `depends`                   | always (empty array if none)                                                                                                                                                              |
-| `choices`                   | always (user answers)                                                                                                                                                                     |
-| `requirements`              | always (each REQ with `status: "pending"`, `acceptance: [{when, then}]`)                                                                                                                  |
-| `files`                     | always (normalized: `path`, `type`, `action`, `purpose`, `requirements`)                                                                                                                  |
-| `architecture`              | always (`componentTree`, `interfaces`, optional `registries[]`)                                                                                                                           |
-| `design`                    | visual features only                                                                                                                                                                      |
-| `apiContract`               | backend only                                                                                                                                                                              |
-| `buildSequence`             | always                                                                                                                                                                                    |
-| `testStrategy`              | always (optional `location` field)                                                                                                                                                        |
-| `clarifications`            | only include if the clarification round (PHASE 1 Clarification Round) produced at least 1 answer — otherwise OMIT the field. Contains **only** clarification-round entries (factual follow-ups + design choices), not the main questions from PHASE 1 steps 1-5; those belong in `choices[]`.                                    |
-| `durableDecisions`          | with >3 requirements — decisions that apply across all REQs                                                                                                                               |
-| `research`                  | only if research was performed                                                                                                                                                            |
-| `externalRef`               | only if the backlog item had this field — copy 1:1 (`type`, `id`, `url`, `labels`, `split`). Traceability to external issue tracker for downstream skills (`/dev-build`, `/core-commit`). |
+| Field                       | Condition                                                                                                                                                                                                                                                                                     |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`, `created`, `status` | always (status = `"DEFINED"`, no stage — wait for `/dev-build`)                                                                                                                                                                                                                               |
+| `summary`                   | always                                                                                                                                                                                                                                                                                        |
+| `depends`                   | always (empty array if none)                                                                                                                                                                                                                                                                  |
+| `choices`                   | always (user answers)                                                                                                                                                                                                                                                                         |
+| `requirements`              | always (each REQ with `status: "pending"`, `acceptance: [{when, then}]`)                                                                                                                                                                                                                      |
+| `files`                     | always (normalized: `path`, `type`, `action`, `purpose`, `requirements`)                                                                                                                                                                                                                      |
+| `architecture`              | always (`componentTree`, `interfaces`, optional `registries[]`)                                                                                                                                                                                                                               |
+| `design`                    | visual features only                                                                                                                                                                                                                                                                          |
+| `apiContract`               | backend only                                                                                                                                                                                                                                                                                  |
+| `buildSequence`             | always                                                                                                                                                                                                                                                                                        |
+| `testStrategy`              | always (optional `location` field)                                                                                                                                                                                                                                                            |
+| `clarifications`            | only include if the clarification round (PHASE 1 Clarification Round) produced at least 1 answer — otherwise OMIT the field. Contains **only** clarification-round entries (factual follow-ups + design choices), not the main questions from PHASE 1 steps 1-5; those belong in `choices[]`. |
+| `durableDecisions`          | with >3 requirements — decisions that apply across all REQs                                                                                                                                                                                                                                   |
+| `research`                  | only if research was performed                                                                                                                                                                                                                                                                |
+| `externalRef`               | only if the backlog item had this field — copy 1:1 (`type`, `id`, `url`, `labels`, `split`). Traceability to external issue tracker for downstream skills (`/dev-build`, `/core-commit`).                                                                                                     |
+| `seedDrift`                 | only if PHASE 2 Seed Alignment Check ran and user chose "Skip" — array of `{ category, seedSays, featureDecides, requirementRef? }`. Omit when seed was updated (drift resolved) or no drift was detected.                                                                                    |
 
 **`deltaOp` on requirements**: only write in update-mode (PHASE 0b). On a fresh definition: omit `deltaOp` and `previousDescription` entirely. PHASE 0b adds these when requirements are updated via add/modify/remove.
 
@@ -414,6 +432,15 @@ Write back in parallel:
 - Edit `backlog.html` (keep `<script>` tags intact)
 - Edit `project.json` (features, endpoints, data, stack — use Edit for targeted changes, not Write)
 - Edit/Write `project-context.json` (if architecture or context changed — Write for large diagram changes)
+
+#### Mutations on `project-seed.md` (only if `seedUpdateApproved: true`)
+
+- Skip if PHASE 2 ended with "Skip" or no drift was detected.
+- Write the rewritten content (from the plan file's `## Proposed seed update` section) to `.project/project-seed.md` — full file overwrite; content was reviewed and approved in plan mode.
+- Update `project.json#concept.pitch` if the new pitch differs. Update `concept.name` only if the H1 title in the rewrite changed.
+- Log: `Seed: ✓ updated — N section(s) rewritten`.
+
+This write runs in parallel with the existing back-writes (`backlog.html`, `project.json`, `project-context.json`).
 
 **Auto-build marking** (after sync):
 
