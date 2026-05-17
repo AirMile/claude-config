@@ -85,28 +85,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
 4. **Worktree switch** — execute the procedure in `shared/WORKTREE.md` with `feature-name` and `feature.status` (from Step 1). Switches automatically to `worktree-{feature-name}` if it exists. If no worktree exists but `feature.status === "DOING"`: WARN + AskUserQuestion (see WORKTREE.md → Step 4a: DOING-without-worktree warning). On FAIL (in a different worktree than the feature): stop with the message from WORKTREE.md.
 
-4b. **Symlink integrity gate** — `.project/` writes must reach main. Detect + auto-repair broken/missing symlinks; only ABORT when repair itself fails.
-
-   Detect (skip if not in a worktree):
-
-   ```bash
-   MAIN_ROOT="$(git worktree list --porcelain | head -1 | awk '{print $2}')"
-   if [ "$(git rev-parse --show-toplevel)" != "$MAIN_ROOT" ]; then
-     WT_PROJ="$(pwd)/.project"
-     FAILED=()
-     for f in backlog.html features project.json project-context.json; do
-       if ! { [ -L "$WT_PROJ/$f" ] && [ -e "$WT_PROJ/$f" ]; }; then
-         FAILED+=("$f")
-       fi
-     done
-   fi
-   ```
-
-   `FAILED` non-empty → auto-repair by running `shared/WORKTREE.md → ## Shared .project/ via symlink` (the `rm -f` + `ln -sfn` block is idempotent; safe to re-apply). Display: `GATE: auto-repaired .project/ symlinks ({list})`.
-
-   Repair itself fails (any `ln -sfn` returns non-zero, or post-repair re-check finds remaining `FAILED`) → ABORT: `"Symlink repair failed for: {list}. Check permissions on {worktree}/.project/."`
-
-   Guards the DOING → DONE backlog write in `references/completion-sync.md`. Skipped on main checkout (Switch decision matrix may legitimately leave us in main when no worktree exists for the feature).
+4b. **Symlink integrity gate** — follow `shared/WORKTREE.md → Symlink Integrity Gate (post-switch auto-repair)`. Guards the DOING → DONE backlog write in `references/completion-sync.md`.
 
 5. **Tag backlog + capture baseline:**
    - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
@@ -129,6 +108,18 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    Entities: {data.entities or "not available"}
    ```
 
+6b. **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
+
+    Configuration:
+
+    ```
+    scopes: [component]
+    pitfall-prefix: true
+    current-feature: <feature-name>
+    ```
+
+    Display the loaded output. Store pitfall-prefix block as `KNOWN_PITFALLS` for step 7. Pitfalls inform regression-class test cases — tests that explicitly guard against anti-patterns fixed in earlier features. If no pitfalls: `KNOWN_PITFALLS = ""` (graceful degradation — omit block from step 7 prompt).
+
 7. **Gather test data** via Explore agent on **Sonnet** (`model: "sonnet"`) — zero source file reads in main context:
 
    ```
@@ -136,6 +127,8 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    Feature file: .project/features/{feature-name}/feature.json
 
    {STACK_CONTEXT}
+
+   {KNOWN_PITFALLS}
 
    Read feature.json (checklist + requirements + build section). Search in source code for:
    - Validation rules, API endpoints relevant to test items
@@ -145,6 +138,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
      Determine which acceptance test(s) would verify each scenario.
      Format: `acceptance: [{ when, then }]` — each object = one test scenario.
      (e.g. "201 on success, 400 on >5, 409 on duplicate" = 3 scenarios).
+     If the REQ has `errorScenarios[]`: use those directly as adversarial test scenarios — do NOT re-infer fail-paths from acceptance prose.
 
    Prefer short form. Full form costs main-context tokens.
 
@@ -247,7 +241,6 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    ```
 
    Launch procedure (when launch is required):
-
    1. Resolve the dev command in this precedence:
       - `feature.json` → `build.runCommand` (per-feature override)
       - `.project/project.json` → `scripts.dev` (project default)

@@ -18,15 +18,15 @@ PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
 
 Dispatch:
 
-| TEAM_MODE | PR_STATE                    | Action                                                                                                                                 |
-| --------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| solo      | `OPEN`                      | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.                                 |
-| solo      | `MERGED`                    | AskUserQuestion cleanup ("Cleanup nu? Worktree + branch verwijderen.") → `FINALIZE.md` mode `cleanup-only`.                             |
-| solo      | empty / `CLOSED` / no-gh   | AskUserQuestion finalize ("Finalize nu — merge naar main + cleanup?") → `FINALIZE.md` mode `solo`.                                     |
-| team      | `OPEN`                      | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.                                 |
-| team      | `MERGED`                    | AskUserQuestion cleanup → `FINALIZE.md` mode `cleanup-only`.                                                                           |
-| team      | empty / `CLOSED`            | Print `"Team project: geen PR gevonden. Push + open PR via /team-review."` Halt — geen auto-merge.                                     |
-| team      | no-gh                       | Print `"Team mode maar \`gh\` niet beschikbaar — run \`gh auth login\` of toggle solo in backlog ⚙."` Halt.                           |
+| TEAM_MODE | PR_STATE                 | Action                                                                                                      |
+| --------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| solo      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.      |
+| solo      | `MERGED`                 | AskUserQuestion cleanup ("Cleanup nu? Worktree + branch verwijderen.") → `FINALIZE.md` mode `cleanup-only`. |
+| solo      | empty / `CLOSED` / no-gh | AskUserQuestion finalize ("Finalize nu — merge naar main + cleanup?") → `FINALIZE.md` mode `solo`.          |
+| team      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.      |
+| team      | `MERGED`                 | AskUserQuestion cleanup → `FINALIZE.md` mode `cleanup-only`.                                                |
+| team      | empty / `CLOSED`         | Print `"Team project: geen PR gevonden. Push + open PR via /team-review."` Halt — geen auto-merge.          |
+| team      | no-gh                    | Print `"Team mode maar \`gh\` niet beschikbaar — run \`gh auth login\` of toggle solo in backlog ⚙."` Halt. |
 
 On "Keep open" (alleen mogelijk in solo paths of team `MERGED`) → print `💡 Run /core-finalize {feature-name} when ready`.
 
@@ -59,16 +59,16 @@ gh pr list --head "worktree-{feature-name}" --state all --json number,url,state 
 
 Combined decision matrix (`TEAM_MODE` × PR state):
 
-| TEAM_MODE | PR state             | Action                                                                                                                                       |
-| --------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| solo      | `MERGED`             | `cleanup-only`                                                                                                                               |
-| solo      | `OPEN`               | **Halt** — print `"PR #{n} ({url}) is still open. Merge it on GitHub first, then run /core-finalize {feature-name} again."` Exit.            |
-| solo      | empty / `CLOSED`     | `solo` (merge locally)                                                                                                                       |
-| solo      | `gh` unavailable     | `solo` (fall-through — user can push/PR manually)                                                                                            |
-| team      | `MERGED`             | `cleanup-only`                                                                                                                               |
-| team      | `OPEN`               | **Halt** — print `"PR #{n} ({url}) is still open. Merge it on GitHub first."` Exit.                                                          |
-| team      | empty / `CLOSED`     | **No auto-merge** — print `"Team project: no PR found. Push + open PR via /team-review, or toggle to solo in the backlog ⚙ if working alone."` Exit. |
-| team      | `gh` unavailable     | **Halt** — print `"Team mode but \`gh\` is unavailable. Run \`gh auth login\` or toggle to solo in the backlog ⚙."` Exit.                   |
+| TEAM_MODE | PR state         | Action                                                                                                                                               |
+| --------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| solo      | `MERGED`         | `cleanup-only`                                                                                                                                       |
+| solo      | `OPEN`           | **Halt** — print `"PR #{n} ({url}) is still open. Merge it on GitHub first, then run /core-finalize {feature-name} again."` Exit.                    |
+| solo      | empty / `CLOSED` | `solo` (merge locally)                                                                                                                               |
+| solo      | `gh` unavailable | `solo` (fall-through — user can push/PR manually)                                                                                                    |
+| team      | `MERGED`         | `cleanup-only`                                                                                                                                       |
+| team      | `OPEN`           | **Halt** — print `"PR #{n} ({url}) is still open. Merge it on GitHub first."` Exit.                                                                  |
+| team      | empty / `CLOSED` | **No auto-merge** — print `"Team project: no PR found. Push + open PR via /team-review, or toggle to solo in the backlog ⚙ if working alone."` Exit. |
+| team      | `gh` unavailable | **Halt** — print `"Team mode but \`gh\` is unavailable. Run \`gh auth login\` or toggle to solo in the backlog ⚙."` Exit.                            |
 
 ## Branch Resolution
 
@@ -179,13 +179,17 @@ Any line → AskUserQuestion:
   - "Stop and close shells (Recommended)" — exit cleanup; user closes shells, re-runs finalize
   - "Continue anyway" — proceed; expect leftover empty directory
 
-**Switch shell out of the worktree** — before remove, change the active Bash directory to the main checkout so no subshell holds a cwd-handle:
+**Switch session and shell out of the worktree** — before remove, exit the worktree in both Claude's session context AND the bash subshell so no cwd-handle remains:
 
-```bash
-cd "{main_root}" || { echo "ABORT: main root {main_root} unreachable"; exit 1; }
-```
+1. If `git rev-parse --show-toplevel` != `{main_root}` → call `ExitWorktree(action: keep)`. This moves the Claude Code session back to the main checkout so the chat does not stay attached to the soon-to-be-deleted directory. (`keep` because the worktree is removed below via `git worktree remove`, not via `ExitWorktree`.)
 
-> **Self-finalize scenario**: when this Claude Code session was launched with its working directory **inside** the worktree (e.g. user opened a shell in `{worktree_path}` and started Claude there), the Claude **parent process** still holds a cwd-handle even after this `cd`. `git worktree remove` will succeed but `rmdir` typically fails → the empty directory remains on disk. The Output Report's `Worktree: orphan-dir:` status surfaces this; the user can either ignore it (cosmetic remnant) or close this Claude session and start a new one in `{main_root}`.
+2. Change the active bash directory so no subshell holds a cwd-handle:
+
+   ```bash
+   cd "{main_root}" || { echo "ABORT: main root {main_root} unreachable"; exit 1; }
+   ```
+
+> **Self-finalize fallback**: if `ExitWorktree` was unavailable or failed (rare), the Claude parent process can still hold a cwd-handle. `git worktree remove` then succeeds but `rmdir` may fail, leaving an empty directory. The Output Report's `Worktree: orphan-dir:` status surfaces this — user can ignore (cosmetic) or restart the session in `{main_root}`.
 
 **Remove**:
 
@@ -245,9 +249,8 @@ When `WORKTREE_RESULT` starts with `orphan-dir:` → also print:
 Also detect ghost cwd via `[ "$(pwd)" != "{main_root}" ] && [ ! -d "$(pwd)" ]`. If true → also print:
 
 ```
-💡 This Claude session was started inside the worktree directory.
-   Its working directory is now a ghost. Start a fresh session in:
-   {main_root}
+💡 Bash cwd is a ghost (worktree was removed but a subshell didn't follow).
+   Start a fresh terminal in: {main_root}
 ```
 
 > **Scope of `Merge: {sha}`**: informational only — surfaces the merge commit for the user. Do NOT write it to `backlog.html` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys are set exclusively by `/dev-refactor` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). Skills consuming this report (`dev-verify`, `game-verify`, `frontend-check`, `core-finalize`) MUST treat the SHA as display-only.

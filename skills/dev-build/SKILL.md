@@ -30,18 +30,23 @@ Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), a
 
 ## Process
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgetting phases.
+**Schema preload** — TaskCreate/TaskUpdate zijn deferred tools; aanroepen zonder schema-load mislukt. Allereerste actie van de skill:
+
+1. Call `ToolSearch query="select:TaskCreate,TaskUpdate"` — laadt beide schemas.
+2. Direct daarna: `TaskCreate` aanroepen met de 6 items hieronder (status `pending`). Gebruik `TaskUpdate` om elke PHASE `in_progress` te zetten bij start en `completed` bij einde. Tijdens context compaction blijft de takenlijst zichtbaar — geen risico op vergeten phases.
+
+Phases:
 
 1. PHASE 0: Context Loading
 2. PHASE 1: Technique Mapping
 3. PHASE 2: Execute Build
-4. PHASE 2b: Regression Gate
+4. PHASE 2b: Regression Gate + Diagnostics
 5. PHASE 3A: Project Sync
 6. PHASE 3B: Scoped Commit
 
 ### PHASE 0: Context Loading
 
-> **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"`, then `TaskCreate` with the 6 phase items. Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 **Capture git baseline** (first action):
 
@@ -66,9 +71,30 @@ git -C "$REPO" rev-parse HEAD > "$REPO/.project/session/pre-skill-sha.txt"
 
 **Test-runner pre-flight** (skip if no `package.json` or no TDD-capable stack detected):
 
-Verify the stack's standard component-test packages are installed and that the test setup file imports `@testing-library/jest-dom` (without it `toBeInTheDocument` / `toHaveAttribute` fail silently with "Invalid Chai property").
+Verify packages are resolvable and the setup file imports `@testing-library/jest-dom` (without it `toBeInTheDocument` / `toHaveAttribute` fail silently with "Invalid Chai property"). **Do not run the test suite** — the first real run is the regression gate in PHASE 2b.
 
-Missing → auto-install (default) if `package.json` already contains `vitest`, `jest`, or `playwright` as a key anywhere in its content (project uses a test framework → install missing sub-packages silently). Otherwise → **AskUserQuestion**: "Install + add import (Recommended)" / "Skip and continue". Skip → TDD steps that need these will fail.
+**Skip entirely** for non-JS stacks (no `package.json`) or backend-only Node stacks without a component-testing framework.
+
+```bash
+# Detecteer setup-file (vitest, jest, of generieke locaties)
+SETUP=$(ls vitest.setup.* jest.setup.* src/test-setup.* setup-tests.* 2>/dev/null | head -1)
+# Check jest-dom: geïmporteerd in setup-file én installeerbaar
+[ -n "$SETUP" ] && grep -q "@testing-library/jest-dom" "$SETUP" \
+  || echo "MISSING: @testing-library/jest-dom import not found in setup file"
+node -e "require.resolve('@testing-library/jest-dom')" 2>&1 || echo "MISSING: @testing-library/jest-dom"
+
+# Stack-aware component-library check (gebruikt de al gedetecteerde stack)
+# React   → @testing-library/react
+# Vue     → @testing-library/vue
+# Svelte  → @testing-library/svelte
+# Angular → @testing-library/angular
+# Overig/backend → sla over
+node -e "require.resolve('@testing-library/{framework}')" 2>&1 || echo "MISSING: @testing-library/{framework}"
+```
+
+Vervang `{framework}` met de waarde uit de stack-detectie hierboven. Als geen component-framework gevonden → sla de framework-check over.
+
+Missing → auto-install (default) if `package.json` already contains `vitest`, `jest`, or `playwright` as a key anywhere in its content. Otherwise → **AskUserQuestion**: "Install + add import (Recommended)" / "Skip and continue".
 
 Output: `TEST-DEPS: ok | patched ({list}) | skipped`.
 
@@ -185,30 +211,9 @@ fi
 
 Clean up `$MARKER` together with the other session files in PHASE 3B.
 
-**Symlink integrity gate** (hard check — `.project/` writes must reach main):
+Follow `shared/WORKTREE.md → Symlink Integrity Gate (post-switch auto-repair)`.
 
-```bash
-MP="$(git worktree list --porcelain | head -1 | awk '{print $2}')/.project"
-WT_PROJ="$(pwd)/.project"
-FAILED=()
-for f in backlog.html features project.json project-context.json; do
-  if ! { [ -L "$WT_PROJ/$f" ] && [ -e "$WT_PROJ/$f" ]; }; then
-    FAILED+=("$f")
-  fi
-done
-if [ ${#FAILED[@]} -ne 0 ]; then
-  echo "ABORT: worktree .project/ symlinks broken/missing: ${FAILED[*]}"
-  echo "Re-run shared/WORKTREE.md → ## Shared .project/ via symlink to repair, then resume."
-  exit 1
-fi
-echo "GATE: ok — .project/ symlinks intact"
-```
-
-**Clear backlog transition flag** (before PHASE 1):
-
-Read `.project/backlog.html` (if exists), find feature by name → remove `transition` field if present (auto-pickup signal consumed), `updated` to current date. **Keep status as `"DEFINED"`** — the DEFINED → DOING transition happens in PHASE 3A on successful completion (per `shared/BACKLOG.md`: dev-build result-status = DOING at completion).
-
-**Signal active feature** (after backlog update):
+**Signal active feature**:
 
 ```bash
 echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
@@ -307,7 +312,7 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
    - **Code rules**: follow `shared/CODING-RULES.md` — General (R007-R009) + TypeScript. When in doubt: MUST_DO rules always, SHOULD_DO rules unless deliberate deviation with reason. Frontend projects: also `shared/FRONTEND-RULES.md`.
    - **Token enforcement** (only for `.tsx`/`.jsx`/`.vue`/`.svelte` — skip for API routes, tests, config): always use token names (`bg-primary`, `text-foreground`) — never hex literals or `bg-[#hex]`. Theme empty → use fallback defaults from `shared/TOKENS.md`. Run a grep after each Write for T101 (`#[0-9a-fA-F]{3,8}`) and T102 (`bg-\[#`, `text-\[#`) on the generated file — replace violations directly before output.
 5. **Pitfall verification** (only if PHASE 1 flagged a pitfall for this REQ): run the `grep -q '<marker>' <file>` check stated in the technique map. Output `PITFALL-CHECK REQ-XXX: <pitfall> → PRESENT | ABSENT`. ABSENT → log as deviation in `build.decisions[]` with rationale (intentional or oversight).
-6. **Update feature.json** after each REQ: set `requirements[].status` → `"built"` and add `technique` + `syncNote`. For Implementation Only: also add `skipTestReason` (`visual-only`, `config-only`, or `prototype`). This preserves progress during context compaction.
+6. **Track REQ progress in transcript** via the SYNC line — feature.json is enriched in bulk in PHASE 3A. For Implementation Only: note `skipTestReason` (`visual-only`, `config-only`, or `prototype`) in the SYNC line so PHASE 3A can write it.
 7. Output per requirement:
    ```
    REQ-XXX: {description}
@@ -332,45 +337,55 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
 
 If root-cause cannot be confirmed within 2 attempts: log as blocker with `"cause": "unknown"` rather than guessing.
 
-### PHASE 2b: Regression Gate
+### PHASE 2b: Regression Gate + Diagnostics
 
 > **Todo**: mark PHASE 2 → `completed`, PHASE 2b → `in_progress`.
 
-After successful completion of all requirements, run the **full test suite** with timeout (hanging tests = FAIL). Including acceptance tests from earlier `/dev-verify` runs (`test/acceptance/*.test.js`) — these protect against spec regressions.
+After successful completion of all requirements, run the **full test suite and pre-commit diagnostics in parallel** (two independent Bash tool calls in a single assistant message):
 
-Use the Bash tool with `timeout: 300000` parameter (milliseconds) — not the shell `timeout` command (doesn't work on macOS).
+**Parallel call 1 — regression gate** (Bash `timeout: 300000` — not shell `timeout`, doesn't work on macOS):
 
-**PASS:** All tests pass → proceed to PHASE 3A.
+```bash
+npm run test -- --run 2>&1 | tail -8
+```
+
+Including acceptance tests from earlier `/dev-verify` runs (`test/acceptance/*.test.js`) — these protect against spec regressions.
+
+**Parallel call 2 — scoped diagnostics** (Bash `timeout: 60000`):
+
+Compute the set of source files changed since baseline and run linter only on those. `tsc --noEmit` always runs globally (no scope possible):
+
+```bash
+PRE_SHA=$(cat "$REPO/.project/session/pre-skill-sha.txt")
+SCOPED=$(git -C "$REPO" diff --name-only "$PRE_SHA" HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' 2>/dev/null)
+[ -z "$SCOPED" ] && SCOPED=$(git -C "$REPO" diff --name-only "$PRE_SHA" -- '*.ts' '*.tsx' '*.js' '*.jsx')
+[ -n "$SCOPED" ] && npx biome check --write $SCOPED 2>&1 | tail -3
+npx tsc --noEmit 2>&1 | head -20
+```
+
+Wait for both calls to complete, then evaluate:
+
+**Regression PASS** (all tests pass):
 
 ```
 REGRESSION CHECK: {total}/{total} PASS — no regressions
 ```
 
-**FAIL:** Other feature tests fail — this is a gate.
+**Regression FAIL** — gate:
 
 ```
 REGRESSION CHECK: {passed}/{total} PASS
 REGRESSIONS FOUND:
 - {test_file}.{test_name}: {reason}
 
-File overlap: {list of files referenced by both this feature
-and the failing tests}
+File overlap: {list of files referenced by both this feature and the failing tests}
 ```
 
-On regression:
+On regression: (1) analyze if this build caused it — yes → fix + re-run; no → AskUserQuestion "Fix first (Recommended)" / "Continue anyway". Max 2 fix attempts → blocker.
 
-1. Analyze whether the current feature caused the regression (check shared files/imports)
-2. If YES: fix the regression before continuing. Re-run full suite after fix.
-3. If NO (pre-existing failure): warn the user, let them choose via AskUserQuestion:
-   - "Fix the regression first (Recommended)" — "Prevents the regression from carrying into /dev-verify"
-   - "Continue anyway" — "Regression existed before this build"
-4. Max 2 fix attempts. After that: report as blocker and let user decide.
+**Diagnostics FAIL** → display errors (max 30 lines) + AskUserQuestion "Fix first (Recommended)" / "Commit anyway".
 
-**Skip:** If no test files exist, no test runner configured, or stack not recognized.
-
-```
-REGRESSION CHECK: skipped ({reason})
-```
+**Skip** (no test files, no runner, or stack unrecognized): `REGRESSION CHECK: skipped ({reason})`
 
 ### PHASE 3A: Project Sync
 
@@ -400,7 +415,7 @@ Guidelines:
 - Expected = observable result (response body, status code, visible effect)
 - Do NOT add "run npm test" items — unit tests are already covered by the build
 
-**Backlog**: find feature by name → set `"status": "DOING"` (transition DEFINED → DOING at successful build completion, per `shared/BACKLOG.md`), `data.updated` → now. This is the only place where DOING is written.
+**Backlog**: find feature by name → set `"status": "DOING"`, remove `transition` field if present (auto-pickup signal consumed), `data.updated` → now. This is the only place where the backlog is mutated during the build.
 
 **Context**: update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip if no structural impact.
 
@@ -443,24 +458,15 @@ Follow [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discove
 
 Only write if decisions or resolved blockers are present — no empty entries.
 
+**Atomic write rule**: collect all `project-context.json` mutations (components, context.patterns, learnings) in memory first, then issue a **single Write** (or at most 2 Edits for non-overlapping regions). Do NOT issue separate Edit calls per section — each hook-fire and round-trip adds ~15s.
+
 ### PHASE 3B: Scoped Commit
 
 > **Todo**: mark PHASE 3A → `completed`, PHASE 3B → `in_progress`.
 
 **Strategy**: stage only files created or modified by this build. Leave pre-existing dirty files untouched.
 
-**Step 0: Pre-commit diagnostics** (stack-aware):
-
-- Read `package.json` → check `scripts` for keys matching `typecheck|type-check|tsc|lint`
-- Python project (no package.json): check for `mypy.ini` or `[tool.mypy]` in `pyproject.toml`
-- No match found → skip silently
-
-On match: run found script(s) (multiple matches → parallel) via Bash tool with `timeout: 60000`:
-
-- **PASS** → display `DIAGNOSTICS: PASS`, proceed to git status
-- **FAIL** → display errors (max 30 lines) + AskUserQuestion:
-  - `"Fix first (Recommended)"` — stop PHASE 3C, no commit; user fixes errors and restarts the skill
-  - `"Commit anyway"` — proceed to git add + commit; add `[diagnostics-warnings]` to commit message
+Diagnostics ran in PHASE 2b — if both gates passed there, proceed directly to staging.
 
 ```bash
 git -C "$REPO" status --porcelain
@@ -517,7 +523,7 @@ Next steps:
   ?. /dev-debug              → only on unexpected build failures
 ```
 
-> **Todo**: mark PHASE 3B → `completed`. All 6 phases should now be `completed`.
+> **Todo**: mark PHASE 3B → `completed`.
 
 ## Test Output Parsing
 

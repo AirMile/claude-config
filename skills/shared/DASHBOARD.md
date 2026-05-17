@@ -730,13 +730,17 @@ Skills that consume thinking-output (such as `/dev-define`) read directly via Gr
 `date` = extraction date. `feature` = source feature (kebab-case). For `synced` learnings without a structured feature: use primary directory (`auth`, `payments`). `summary` = max 200 chars.
 `author` = optional, only for `source === "synced"`. Mirrors `features[].author`.
 
-**Source mapping** (own work, in dev-verify / game-verify):
+**Source mapping** (own work, in dev-verify / game-verify / dev-refactor / game-refactor):
 
-| Source in feature.json | learning.type | learning.source |
-| ---------------------- | ------------- | --------------- |
-| `build.decisions[]`    | `pattern`     | `extracted`     |
-| `tests.fixSync[]`      | `pitfall`     | `extracted`     |
-| `observations[]`       | `observation` | `inferred`      |
+| Source in feature.json                        | learning.type | learning.source |
+| --------------------------------------------- | ------------- | --------------- |
+| `build.decisions[]`                           | `pattern`     | `extracted`     |
+| `tests.fixSync[]`                             | `pitfall`     | `extracted`     |
+| `observations[]`                              | `observation` | `inferred`      |
+| `refactor.decisions[]` (APPLY, cross-cutting) | `pitfall`     | `inferred`      |
+| `refactor.decisions[]` (APPLY, overig)        | `pattern`     | `extracted`     |
+| `refactor.decisions[]` (SKIP, cross-feature)  | `pattern`     | `inferred`      |
+| `refactor.positiveObservations[]`             | `observation` | `inferred`      |
 
 **Source mapping** (teammate / mature codebase, in core-pull / core-setup --mode=mature):
 

@@ -46,6 +46,7 @@ CLAUDE.base.md    Template for per-project CLAUDE.md generation
 - **Pipeline handoff**: skills that touch shared state declare `reads:` / `writes:` in frontmatter — see `shared/DEVINFO.md` for namespaces. Validate with `python3 scripts/check-handoff.py`.
 - **Language**: skill/agent files in English (hard rule). Runtime output: from `CLAUDE.md § User Preferences → Language:`. See `skills/shared/LANGUAGE.md`.
 - **Phases**: PHASE 0 = pre-flight validation → execution → last phase = report (ASCII table)
+- **Lazy reference loading**: SKILL.md is a workflow skeleton. Blocks ≥30 lines that are conditionally executed (branch fires only-when-X), static templates/agent-prompts, or end-of-flow phases go into `references/{descriptive-name}.md`. Replace inline with a `> **Todo**: Read '.claude/skills/{skill}/references/{file}.md'` transition marker. Token efficiency: the reference file is only loaded in sessions where that phase actually fires. Canonical pattern: `skills/shared/SKILL-PATTERNS.md § Lazy Reference Loading`.
 - **AskUserQuestion**: first option = recommended, multiSelect default true
 - **Shared infra** (`skills/shared/*`): read-only single source of truth — reference, don't duplicate
 
@@ -107,3 +108,4 @@ Idempotent — skip if file already exists. No junction needed: `~/.claude/CLAUD
 - Test by actually running the skill
 - Dev/game pipeline sync: for structural changes to dev-pipeline skills (dev-define, dev-build, dev-verify, dev-debug, dev-refactor), check whether the game-pipeline counterpart (game-\*) needs the same change. Domain-specific content (Godot vs web, GUT vs browser) does not need to be synced.
 - Before tagging a release: run `python3 scripts/check-handoff.py` and `python3 scripts/check-dashboard-writers.py` — both must exit 0.
+- New skills forecasted >500 lines: apply lazy-reference-loading before committing — see `skills/shared/SKILL-PATTERNS.md § Lazy Reference Loading`.

@@ -93,6 +93,7 @@ fi
   - "Cancel" — exit skill; user inspects manually
 
 On "Cleanup + create fresh" with cwd-holders → AskUserQuestion:
+
 - "Stop and close shells (Recommended)" — exit skill
 - "Continue anyway (orphan directory may persist)" — proceed with `rm -rf`
 
@@ -155,7 +156,6 @@ Recreates a fresh worktree at the same path → the old directory MUST be fully 
    ```
 
    `UNMERGED_WARN=1` → AskUserQuestion:
-
    - header: "Unmerged commits"
    - question: "Branch `worktree-{feature-name}` has `{UNMERGED}` commit(s) not on `{default_branch}`. Destroy will force-delete the branch and lose them. Continue?"
    - options:
@@ -172,7 +172,6 @@ Recreates a fresh worktree at the same path → the old directory MUST be fully 
    ```
 
    Any line → AskUserQuestion:
-
    - header: "Other shells in worktree"
    - question: "Process(es) `{names}` (PID `{pids}`) have cwd inside the worktree you want to destroy. Removing now will leave the empty directory on disk and block recreate. Close those shells first?"
    - options:
@@ -210,15 +209,59 @@ Recreates a fresh worktree at the same path → the old directory MUST be fully 
 
 5. Continue to the no-collision path (`EnterWorktree(name: "{feature-name}")`).
 
-**If no collision** → `EnterWorktree(name: "{feature-name}")` → creates `{main_root}/.claude/worktrees/{feature-name}` with branch `worktree-{feature-name}`.
+**If no collision** — verify the current branch is up-to-date before creating the worktree (avoids a rebase step after switch):
 
-#### Step 3: Set up shared `.project/` (see section below)
+```bash
+DEFAULT=$(git -C "$main_root" symbolic-ref --short HEAD 2>/dev/null || echo main)
+LOCAL_HEAD=$(git -C "$main_root" rev-parse "$DEFAULT")
+REMOTE_HEAD=$(git -C "$main_root" rev-parse "origin/$DEFAULT" 2>/dev/null || echo "")
+if [ -n "$REMOTE_HEAD" ] && [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
+  echo "BASE: local $DEFAULT ($LOCAL_HEAD) differs from origin/$DEFAULT — worktree will branch from local HEAD"
+fi
+```
 
-After `EnterWorktree` (or Destroy→recreate), follow `## Shared .project/ via symlink` to wire the new worktree's `.project/` to main.
+Then `EnterWorktree(name: "{feature-name}")` — creates `{main_root}/.claude/worktrees/{feature-name}` branching from the **current local HEAD** of `$DEFAULT`, with branch `worktree-{feature-name}`.
+
+#### Step 3: Set up shared `.project/` and verify — one Bash call
+
+After `EnterWorktree` (or Destroy→recreate), run symlink setup + integrity check + gate + session file in **a single Bash block** (combine `## Shared .project/ via symlink`, `### Verify symlink integrity`, and the skill's gate/session-file commands to minimise round-trips):
+
+```bash
+# Example for dev-build — adapt session payload per skill
+WT="{main_root}/.claude/worktrees/{feature-name}"
+MP="{main_root}/.project"
+
+mkdir -p "$WT/.project/session"
+rm -f "$WT/.project/.project"
+rm -f "$WT/.project/backlog.html"
+rm -rf "$WT/.project/features" "$WT/.project/wireframes" "$WT/.project/screenshots" "$WT/.project/thinking"
+rm -f "$WT/.project/project.json" "$WT/.project/project-context.json"
+ln -sfn "$MP/backlog.html"         "$WT/.project/backlog.html"
+ln -sfn "$MP/features"             "$WT/.project/features"
+ln -sfn "$MP/wireframes"           "$WT/.project/wireframes"
+ln -sfn "$MP/screenshots"          "$WT/.project/screenshots"
+ln -sfn "$MP/thinking"             "$WT/.project/thinking"
+ln -sfn "$MP/project.json"         "$WT/.project/project.json"
+ln -sfn "$MP/project-context.json" "$WT/.project/project-context.json"
+
+# Integrity check
+FAILED=()
+for f in backlog.html features project.json project-context.json; do
+  { [ -L "$WT/.project/$f" ] && [ -e "$WT/.project/$f" ]; } || FAILED+=("$f")
+done
+[ ${#FAILED[@]} -gt 0 ] && echo "ERROR: symlinks failed: ${FAILED[*]}" && exit 1
+echo "GATE: ok — .project/ symlinks intact"
+
+# Gate: verify inside worktree
+[[ "$(pwd)" == *"/.claude/worktrees/{feature-name}" ]] && echo "GATE: ok — inside worktree" || echo "ABORT: not inside worktree"
+
+# Session file
+echo '{"feature":"{feature-name}","skill":"{skill-name}","startedAt":"{ISO}"}' > "$WT/.project/session/active-{feature-name}.json"
+```
 
 #### Step 4: Continue with skill PHASE 0
 
-Proceed with the rest of the skill's PHASE 0 (backlog tag, session file, etc.).
+Proceed with the rest of the skill's PHASE 0 (display overview, risk check, etc.).
 
 ---
 
@@ -386,6 +429,28 @@ In skip cases: do not run any of the steps below. Continue the calling skill's P
 
 Run after the feature-name is known. Before any state-mutating operations (backlog tag updates, session-file writes, commits).
 
+#### Fast-path: no worktree branch
+
+Before running any git worktree calls, check whether a worktree branch even exists:
+
+```bash
+# macOS/Linux
+if ! git show-ref --verify --quiet "refs/heads/worktree-{feature-name}"; then
+  echo "worktree: no worktree-{feature-name} branch — continuing on current branch"
+  # SKIP Steps 0–4. Proceed directly to Step 5 of the calling skill's PHASE 0.
+fi
+
+# Windows (PowerShell)
+if (-not (git show-ref --verify --quiet "refs/heads/worktree-{feature-name}")) {
+  Write-Output "worktree: no worktree-{feature-name} branch — continuing on current branch"
+  # SKIP Steps 0–4. Proceed directly to Step 5 of the calling skill's PHASE 0.
+}
+```
+
+`git show-ref` is a single ref-lookup (~1 ms). When no worktree was ever created for this feature (typical for DONE features that were built directly on main), this skips the full `git worktree prune` + `git worktree list` + path-compare sequence.
+
+**Skip this fast-path if** the caller checks `.project/backlog.html` for `feature.status === "DOING"` — that path requires the DOING-without-worktree warning in Step 4a. In that case, continue to Steps 0–4.
+
 #### Step 0: Prune stale registrations
 
 ```bash
@@ -462,6 +527,60 @@ multiSelect: false
 #### Step 5: Continue with skill PHASE 0
 
 After successful switch (or skip, or warn-continue), proceed with the rest of the skill's PHASE 0.
+
+---
+
+## Symlink Integrity Gate (post-switch auto-repair)
+
+Run this gate after every worktree switch (single-mode) or before any state mutation (batch/codebase-mode). Ensures `.project/` writes from the worktree reach main.
+
+### Single-mode (after worktree switch)
+
+Detect + auto-repair broken/missing symlinks. Only ABORT when repair itself fails.
+
+```bash
+MAIN_ROOT="$(git worktree list --porcelain | head -1 | awk '{print $2}')"
+if [ "$(git rev-parse --show-toplevel)" != "$MAIN_ROOT" ]; then
+  WT_PROJ="$(pwd)/.project"
+  FAILED=()
+  for f in backlog.html features project.json project-context.json; do
+    if ! { [ -L "$WT_PROJ/$f" ] && [ -e "$WT_PROJ/$f" ]; }; then
+      FAILED+=("$f")
+    fi
+  done
+fi
+```
+
+`FAILED` non-empty → **auto-repair**: follow `## Shared .project/ via symlink` (the `rm -f` + `ln -sfn` block is idempotent; safe to re-apply). Display: `GATE: auto-repaired .project/ symlinks ({list})`.
+
+Repair itself fails (any `ln -sfn` returns non-zero, or post-repair re-check finds remaining `FAILED`) → ABORT: `"Symlink repair failed for: {list}. Check permissions on {worktree}/.project/."`
+
+`FAILED` empty → display: `GATE: ok — .project/ symlinks intact`
+
+Skip entire gate when not in a worktree (`current_root == MAIN_ROOT`).
+
+### Batch-mode or codebase-mode
+
+Check for open feature worktrees first (no symlink check needed — running on main):
+
+```bash
+git worktree list --porcelain | grep "^branch " | grep "refs/heads/worktree-"
+```
+
+If any `worktree-*` branches appear → **AskUserQuestion**:
+
+```yaml
+header: "Open worktrees"
+question: "Open worktrees found: {list}. Normally /dev-verify or /game-verify closes these — these are leftovers (verify skipped, or 'Keep open' chosen). Batch refactor on main may cause merge conflicts when they're integrated later. What do you want to do?"
+options:
+  - label: "Stop — finalize open worktrees first (Recommended)"
+    description: "Run /core-finalize for each leftover worktree, then re-run the skill"
+  - label: "Continue anyway"
+    description: "Run on main now — you accept potential merge conflicts later"
+multiSelect: false
+```
+
+No open worktrees → proceed on main.
 
 ---
 

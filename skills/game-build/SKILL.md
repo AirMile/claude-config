@@ -230,6 +230,8 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    | `WORKTREE: not-applied (...)` was logged            | Pass — worktree intentionally skipped (no git repo / etc.) |
    | Otherwise                                           | ABORT — silent skip detected                               |
 
+   **Symlink integrity gate** — follow `shared/WORKTREE.md → Symlink Integrity Gate (post-switch auto-repair)`. Skip if `WORKTREE: not-applied` was logged.
+
    This gate is falsifiable from shell state; it cannot be bypassed by skipping the prose log.
 
    **Clear backlog transition flag** (immediately after loading feature):

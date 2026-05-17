@@ -1,0 +1,162 @@
+# PHASE 0: Input Detection
+
+**Goal:** Auto-detect concept and existing backlog, determine action.
+
+**Process:**
+
+1. **Check if .project folder exists:**
+   - If `.project/` folder does NOT exist → go directly to Scenario D (ask for input)
+   - If `.project/` folder exists → continue to step 2
+
+2. **Check for existing files (only if .project exists):**
+   - Read `SEED_CONTEXT` per `shared/SEED.md` Reader. Concept present as `SEED_CONTEXT.present`.
+   - Check if `.project/backlog.html` exists
+
+3. **Scenario A: Both concept AND backlog exist**
+   - Use `SEED_CONTEXT.markdown` as concept content
+   - Read `backlog.html`
+   - Analyze differences between concept and existing backlog
+   - Check `data.features[]` in `backlog.html` to identify INDEPENDENT features: a feature is INDEPENDENT when its `source` field exists AND is not `"/project-backlog"`. Features without a `source` field (or with `"/project-backlog"`) are concept-derived and may be updated or deprecated by this run.
+   - Compare `SEED_CONTEXT.markdown` against existing backlog features (semantic match by name/description)
+   - Show comparison:
+
+     ```
+     EXISTING BACKLOG DETECTED
+
+     Concept: .project/project-seed.md
+     Backlog: .project/backlog.html
+
+     Feature changes detected:
+     - NEW: {list of features in concept but not in backlog}
+     - MODIFIED: {list of features in both but with changed description/scope}
+     - INDEPENDENT: {list of features in backlog added independently — not from concept}
+     - REMOVED: {list of features in backlog, not in concept, AND not independently added}
+     - UNCHANGED: {count} features
+
+     Protected features (not affected by update):
+     - DOING: {list with current stage}
+     - DONE: {list}
+     ```
+
+   - Use AskUserQuestion:
+     ```yaml
+     header: "Backlog Update"
+     question: "A backlog already exists. What do you want to do?"
+     options:
+       - label: "Update backlog (Recommended)", description: "Add new features, keep DOING/DONE features and manual changes"
+       - label: "New backlog", description: "Start fresh, ignore old backlog"
+       - label: "Cancel", description: "Review differences first, do nothing"
+     multiSelect: false
+     ```
+   - **If "Update backlog":**
+     - **Merge rules by feature status:**
+       - **DOING/DONE features** (protected): preserve status, stage, priority, date, and notes. Only enrich description if concept provides new insights — never overwrite.
+       - **TODO features (modified)**: update description/scope from concept, preserve priority and notes
+       - **New features**: add as TODO with auto-assigned priority (user reviews in PHASE 3)
+       - **Removed TODO features**: mark as deprecated (don't delete)
+       - **Removed DOING/DONE features**: show warning and ask user whether to keep or deprecate — these represent in-progress work that may still be relevant
+       - **INDEPENDENT features**: always preserve unchanged — these are not derived from concept. Keep status, stage, priority, date, and description intact. Never deprecate or remove.
+     - Continue to PHASE 1 with update mode
+   - **If "New backlog":**
+     - Use concept as input, ignore existing backlog
+     - Continue to PHASE 1 with create mode
+   - **If "Cancel":**
+     - Show detailed diff and exit
+
+4. **Scenario B: Only concept exists (no backlog)**
+   - Use `SEED_CONTEXT.markdown` as concept content (already read in step 2)
+   - Show confirmation:
+
+     ```
+     CONCEPT DETECTED
+
+     File: .project/project-seed.md
+     Title: {extracted title}
+
+     This concept will be used for the backlog.
+     ```
+
+   - Use AskUserQuestion:
+     ```yaml
+     header: "Load Concept"
+     question: "Do you want to generate a backlog from this concept?"
+     options:
+       - label: "Yes, generate backlog (Recommended)", description: "Use project concept"
+       - label: "Different concept", description: "I want to use a different concept"
+     multiSelect: false
+     ```
+   - If "Yes": proceed with loaded concept to PHASE 1
+   - If "Different concept": go to Scenario D
+
+5. **Scenario C: Only backlog exists (no concept)**
+   - Show warning:
+
+     ```
+     WARNING: Backlog exists but no concept found
+
+     Backlog: .project/backlog.html
+     Concept: Not found — run /project-seed first
+
+     A concept is required to update the backlog.
+     ```
+
+   - Use AskUserQuestion:
+     ```yaml
+     header: "No Concept"
+     question: "What do you want to do?"
+     options:
+       - label: "Paste concept", description: "Paste a new concept to update the backlog"
+       - label: "View backlog", description: "Open the existing backlog"
+     multiSelect: false
+     ```
+
+6. **Scenario D: No .project folder OR neither file exists**
+   - Ask user to paste concept:
+     ```yaml
+     header: "Input"
+     question: "Paste the output of /project-seed or /project-brainstorm"
+     options:
+       - label: "I'll paste it below", description: "Type or paste your idea/brainstorm markdown"
+       - label: "Load from file", description: "Load from an existing .md file"
+     multiSelect: false
+     ```
+
+7. **If markdown provided inline (overrides auto-detection):**
+   - Parse the provided markdown
+   - Extract core concept and features
+   - Continue to PHASE 1
+
+8. **Validate input:**
+   - Check for recognizable structure (title, sections)
+   - If unclear, ask clarifying questions
+
+**Output:**
+
+```
+INPUT LOADED
+
+Source: [project.json concept | inline | custom file]
+Mode: [CREATE | UPDATE]
+Title: {extracted title}
+Sections: {count}
+```
+
+**Research offer:**
+
+Use AskUserQuestion:
+
+```yaml
+header: "Research"
+question: "Do you want to do research before extracting features?"
+options:
+  - label: "No, extract directly (Recommended)"
+    description: "Proceed to feature extraction"
+  - label: "Yes, do research"
+    description: "Analyze codebase, framework docs (Context7), and web examples for better feature extraction"
+multiSelect: false
+```
+
+**Response handling:**
+
+- "No" → skip to PHASE 1
+- "Yes" → proceed to PHASE 0.5

@@ -12,7 +12,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 2.8.0
+  version: 2.11.0
   category: dev
 ---
 
@@ -31,7 +31,18 @@ PHASE 1 of the dev workflow: define → build → test.
 
 ## Workflow
 
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 3 items
+(status `pending`), then use `TaskUpdate` to set each phase to `in_progress` at the
+start and `completed` at the end. During context compaction the task list remains
+visible — no risk of forgetting phases.
+
+1. PHASE 0+1: Setup, Context & Requirements
+2. PHASE 2: Architecture
+3. PHASE 3+4: feature.json + Sync
+
 ### PHASE 0: Feature Name & Context
+
+> **Todo**: call `TaskCreate` with the 3 phase items (see above). Mark PHASE 0+1 → `in_progress` via `TaskUpdate`.
 
 1. **Determine feature name.**
 
@@ -76,54 +87,18 @@ PHASE 1 of the dev workflow: define → build → test.
 
 4. **Optional context** (skip each item if results would be empty):
    - **Thinking files**: Grep `.project/thinking/*.md` for feature name. Read matches as PHASE 1 input.
-   - **Past decisions**: only if `.project/features/` has any prior `feature.json`. Collect `durableDecisions[]` from all prior features (tag `[feature-X]`) + scan `.project/thinking/*-decision-*.md` (extract `THINK:`, `RECOMMENDATION:`, `CONSTRAINT` from first 30 lines, tag `[project]`). Filter ≥2 keyword overlap with current feature. Keep top 3.
+   - **Past decisions**: only if `.project/features/` has any prior `feature.json`. Sort prior feature.json files by `created`/`definedAt` desc — take the **5 most recent**. Collect `durableDecisions[]` from those (tag `[feature-X]`). Scan `.project/thinking/*-decision-*.md` sorted by mtime desc — take the **5 most recent** (extract `THINK:`, `RECOMMENDATION:`, `CONSTRAINT` from first 30 lines, tag `[project]`). Filter ≥2 keyword overlap with current feature. Keep top 3.
    - **Learnings**: scan `project-context.json#learnings[]` (and optionally `project.json#learnings[]`). Match: relevant if (a) summary shares ≥2 keywords with the current feature name or concept, OR (b) `feature` name matches a **direct** dependency AND `type === "pitfall"`. Rationale: keyword-match catches topical relevance; dependency-pitfalls catch lessons that bit us last time in code we're about to touch. Show `RELEVANT LEARNINGS` block before the first AskUserQuestion of PHASE 1 (max 5 entries, pitfalls first, then patterns) — only on ≥1 match. No match → silent. Extended matching: [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md).
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 
-1. Read `.project/features/{feature-name}/feature.json`.
-
-2. Show existing requirements summary:
-
-   | ID      | Description (first 60 chars) | Status  |
-   | ------- | ---------------------------- | ------- |
-   | REQ-001 | {description}                | pending |
-
-3. AskUserQuestion: "Feature **{name}** already exists with {N} requirements. What do you want to change?"
-
-   ```yaml
-   header: "Update-mode"
-   options:
-     - label: "Add requirements (Recommended)", description: "New requirements via PHASE 1 flow, numbered from REQ-{N+1}"
-     - label: "Modify requirements", description: "Reword existing requirements or adjust acceptance"
-     - label: "Remove requirements", description: "Remove requirements from scope (soft-delete)"
-     - label: "Multiple of the above", description: "Combination of add, modify, and/or remove"
-   multiSelect: false
-   ```
-
-4. Process delta based on choice:
-   - **Add**: Run through PHASE 1 Requirements Gathering for new requirements only. Number from `REQ-{N+1}`.
-   - **Modify**: Ask which REQ-IDs. Per REQ: show current description + acceptance, ask for new version. Use format `[{ when, then }]` per scenario.
-   - **Remove**: Ask which REQ-IDs. Mark with `deltaOp: "REMOVED"` — do not physically remove from array. Also: remove the REQ-ID from all `buildSequence[].requirements[]` arrays; if a step becomes empty afterwards → remove the step.
-   - **Multiple**: Combine the above flows in one round.
-
-5. Save `deltaOp` per requirement:
-   - Unchanged: `"deltaOp": "UNCHANGED"`
-   - New: `"deltaOp": "ADDED"`
-   - Modified: `"deltaOp": "MODIFIED"` + `"previousDescription": "{original text}"`
-   - Removed: `"deltaOp": "REMOVED"` (stays in array, not built or tested)
-
-6. **Status-reset**: if feature `status` was `"DOING"` → reset to `"DEFINED"` in `feature.json` and backlog.
-
-7. Skip PHASE 1b (feature splitting) unless the number of requirements after update exceeds 6 and there are clear clusters.
-
-8. Go to PHASE 2 for ADDED and MODIFIED requirements only. UNCHANGED requirements do not need re-architecture, unless MODIFIED requirements have architectural impact (ask user). The Seed Alignment Check at the end of PHASE 2 still runs — update-mode can drift just as easily as a fresh define.
-
-9. At PHASE 3 write: **merge** delta into existing `feature.json` — do not overwrite completely. Keep existing `architecture`, `apiContract`, `design`, `testStrategy`, `durableDecisions`, `research` and UNCHANGED requirements intact (unless MODIFIED requirements have architectural impact — ask user). `buildSequence`: remove steps that are empty after REMOVED-filtering; add new steps for ADDED requirements (from PHASE 2 architecture output); leave existing steps for UNCHANGED requirements untouched.
+> **Todo**: if feature.json exists → Read `.claude/skills/dev-define/references/update-mode.md` and follow that flow, then continue to PHASE 0c.
 
 ---
 
 ### PHASE 0c: Enter Plan Mode
+
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
 Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 1. PHASE 1 + 2 run in plan mode; all PHASE 2 design output is written to the plan file for review.
 
@@ -174,12 +149,11 @@ Show before the first AskUserQuestion. No action question — context only so qu
 
 After the initial questions, identify open branches: unaddressed edge cases, implicit assumptions, conflicts between answers, or ambiguous choices needing a design decision.
 
-**Skip** if the feature is simple (≤5 expected REQs) AND no open branches.
+**Skip** if ≤6 expected REQs.
 
-**Otherwise**: 1-2 AskUserQuestion calls covering up to 4 sub-questions total. Each sub-question is either:
+**Otherwise** (>6 REQs OR an open architecture-changing choice — storage strategy, route shape, auth model, data model boundary, external service contract): 1 AskUserQuestion call covering up to 3 sub-questions. Each sub-question must be a **design choice** — concrete A vs B vs C that affects architecture. First option Recommended. Include "Not relevant to scope" if applicable.
 
-- **Factual follow-up** — "What happens if {edge case}?" with 2-3 outcome options
-- **Design choice** — concrete A vs B vs C, first option Recommended, include "Not relevant to scope" if applicable
+Edge cases (validation rules, input notation, format defaults, error messages) → add inline as acceptance criterion or "Out of scope" entry. No AskUserQuestion.
 
 Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` in the in-memory clarifications array (written to `feature.json#clarifications` if ≥1 entry).
 
@@ -200,21 +174,23 @@ Extract testable requirements **internally** (no table output to chat). Write ea
 
 Fill any gaps before proceeding: add missing acceptance criteria, split overlapping REQs, add edge-case REQs.
 
-**Short chat checkpoint** — show only a concise numbered list (REQ-ID + 1-line description, without category and without acceptance) so user can confirm scope is correct before architecture work:
+**Error scenarios extraction** (internal, do NOT show to user): for each REQ with user input, external API call, or validation logic — extract `errorScenarios[]`:
+
+- Each entry: `{ when: "{trigger condition}", then: "{observable error result}" }`
+- Limit to plausible fail-paths already implied by the acceptance criteria (no invention)
+- Skip entirely if REQ has no plausible error path (pure derivation, idempotent read, state display) — omit field from that REQ
+- Written to `feature.json#requirements[].errorScenarios[]` in PHASE 3
+
+**Short chat checkpoint** — show only a concise numbered list (REQ-ID + 1-line description, without category and without acceptance):
 
 ```
 REQ-001 — {1-line description}
 REQ-002 — {1-line description}
 ...
-({N} requirements; full acceptance + overview follows in plan file)
 ```
 
-Confirm with user via AskUserQuestion: "Is this scope correct?"
-
-- "Yes, continue (Recommended)" — proceed to PHASE 1b (scope analysis)
-- "Adjust" — back to relevant question
-
-**Note:** do not show the scope line ("SINGLE feature" / "RECOMMEND SPLIT") at this checkpoint — that belongs in PHASE 1b and follows after scope confirmation. Show the checkpoint purely as a REQ list + confirmation question.
+- **≤6 REQs**: append `Scope: {N} requirements — SINGLE feature, continuing.` and proceed directly to PHASE 2. No AskUserQuestion, skip PHASE 1b.
+- **>6 REQs**: confirm via AskUserQuestion "Is this scope correct?" — "Yes, continue (Recommended)" / "Adjust → back to relevant question". Then proceed to PHASE 1b.
 
 **Mid-flow scope expansion**: if the user introduces new scope after requirement extraction but before PHASE 2, treat it as an additional AskUserQuestion round and re-run the completeness self-check. New REQs are regular requirements (numbered sequentially), not clarifications.
 
@@ -242,13 +218,7 @@ For the shared sync implementation of `discoveredComponents` in PHASE 4, see [sh
 
 **Run immediately after the scope confirmation from PHASE 1.** Count `requirements.length`:
 
-**≤6 requirements**: ALWAYS show one line inline to the user:
-
-```
-Scope: {N} requirements — SINGLE feature
-```
-
-No AskUserQuestion, no extra explanation. Then proceed directly to PHASE 2. Skip cluster analysis.
+**≤6 requirements**: scope-line already shown in PHASE 1 checkpoint. Proceed directly to PHASE 2. Skip cluster analysis.
 
 **7-10 requirements**: cluster on dependencies. ≥2 clusters with ≤2 cross-deps → RECOMMEND SPLIT.
 
@@ -269,6 +239,8 @@ No AskUserQuestion, no extra explanation. Then proceed directly to PHASE 2. Skip
 
 ### PHASE 2: Architecture
 
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
+
 **Output rule for this entire phase**: write design **directly to the plan file** (Write/Edit, path from PHASE 0c system-reminder). **Do not show design output inline in chat** — only a short progress marker (e.g. `Architecture designed: N files, K build steps. Plan file updated.`). **Exception**: for visual features the ASCII wireframe may appear inline in an AskUserQuestion description (see "Design sketch" in step 3).
 
 **Strict boundary — design vs implementation**:
@@ -278,18 +250,21 @@ No AskUserQuestion, no extra explanation. Then proceed directly to PHASE 2. Skip
 
 **Plan file vs feature.json — role split**:
 
-| Content                            | Plan file | feature.json                  |
-| ---------------------------------- | --------- | ----------------------------- |
-| Context / rationale / why          | ✓         | —                             |
-| REQ list (1-line descriptions)     | ✓         | ✓                             |
-| Full acceptance criteria           | —         | ✓ (canonical)                 |
-| File structure table               | ✓         | ✓                             |
-| Type signatures (typescript fence) | ✓         | ✓ (`interfaces[].definition`) |
-| Build sequence summary             | ✓         | ✓ (canonical)                 |
-| Test strategy table                | —         | ✓ (canonical)                 |
-| Durable decisions with rationale   | ✓         | ✓ (canonical)                 |
-| Verification steps                 | ✓         | —                             |
-| Out of scope                       | ✓         | —                             |
+| Content                            | Plan file | feature.json                             |
+| ---------------------------------- | --------- | ---------------------------------------- |
+| Context / rationale / why          | ✓         | —                                        |
+| REQ list (1-line descriptions)     | ✓         | —                                        |
+| Full acceptance criteria           | —         | ✓ (canonical)                            |
+| File structure table               | ✓         | ✓                                        |
+| Type signatures (typescript fence) | —         | ✓ (`interfaces[].definition`)            |
+| Build sequence                     | —         | ✓ (canonical)                            |
+| Test strategy table                | —         | ✓ (canonical)                            |
+| Dependency analysis                | —         | — (derived from buildSequence.dependsOn) |
+| Durable decisions (1-line each)    | ✓         | ✓ (canonical with full rationale)        |
+| AI-navigability                    | —         | ✓ (`architecture.registries[]`)          |
+| Feature flow (→ chain)             | ✓         | —                                        |
+| Verification steps                 | ✓         | —                                        |
+| Out of scope                       | ✓         | —                                        |
 
 Design in three steps:
 
@@ -304,13 +279,11 @@ Design in three steps:
 3. **Design** → write to plan file:
    - **Feature flow**: compact `→` chain. Conditional paths in `[brackets]`, parallel with `+`.
    - **File structure**: create/modify table (path, action, purpose, requirements).
-   - **Routes registration** (frontend projects with `stack.framework` only): every `page`/`route` file from the file structure table — regardless of action (CREATE or MODIFY) — gets an entry in `feature.architecture.routes[]` with `{ path, file, action, requirements[] }`. **Skip entirely** if the file structure contains no page/route files (e.g. pure component or utility features) — omit the `routes[]` field from feature.json in that case. This is canonical; `project-context.json#context.routing` is derived from it in PHASE 4 (add for CREATE, leave unchanged for MODIFY).
-   - **Type signatures only**: `interface`, `type`, function signatures. No bodies. Wrap in a single ` ```typescript ` fence per module.
+   - **Routes registration** (frontend projects with `stack.framework` only): only `page`/`route` files with `action: CREATE` get an entry in `feature.architecture.routes[]` with `{ path, file, action, requirements[] }`. MODIFY-only route files: skip — `project-context.json#context.routing` leaves existing routes unchanged in PHASE 4. **Skip entirely** if no CREATE route/page files — omit the `routes[]` field from feature.json.
    - **Design sketch**: visual features only — ASCII wireframe + states (loading/empty/error). Confirm inline via AskUserQuestion: "Is this visual design correct?" — "Yes (Recommended)" / "Adjust". **Wait for user confirmation before continuing; no implicit 'Yes'.** Use token names (`bg-primary`, `text-foreground`), no hex. See `shared/TOKENS.md`.
-   - **Dependency analysis**: REQ→REQ relations (1 line each).
-   - **Build sequence**: numbered REQ-clusters, `dependsOn` pointers. Combine REQs touching the same file with no mutual dependencies.
-   - **Test strategy**: REQ→testfile→description table.
-   - **AI-navigability** (skip for ≤3 files without new pattern): module exports (public/private), registries for repeated concepts (centralize in one file, record in `architecture.registries[]`), flat vs nested structure, test colocation, forbidden imports at circular risk.
+   - **Durable decisions** (1-line each for plan-file review): full rationale and canonical form go to feature.json in PHASE 3.
+   - **feature.json-only** — do NOT write to plan file: type signatures, dependency analysis, build sequence, test strategy. These are canonical in feature.json (PHASE 3) and not needed for plan-mode review.
+   - **AI-navigability** (skip if ≤6 files AND no new registry): when applicable, identify new registries and record them in `architecture.registries[]` (written to feature.json in PHASE 3). Omit module-export lists, colocation notes, and import constraints — covered by project conventions.
 
 **Seed Alignment Check** (last step in PHASE 2, before ExitPlanMode):
 
@@ -325,60 +298,15 @@ mode at this point — drift table and proposed rewrite go into the plan file. O
 
 ### PHASE 3: Write feature.json
 
-Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema):
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/dev-define/references/feature-json-schema.md` for the full field table, deltaOp rules, durableDecisions categories, and buildSequence structure.
 
-| Field                       | Condition                                                                                                                                                                                                                                                                                     |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`, `created`, `status` | always (status = `"DEFINED"`, no stage — wait for `/dev-build`)                                                                                                                                                                                                                               |
-| `summary`                   | always                                                                                                                                                                                                                                                                                        |
-| `depends`                   | always (empty array if none)                                                                                                                                                                                                                                                                  |
-| `choices`                   | always (user answers)                                                                                                                                                                                                                                                                         |
-| `requirements`              | always (each REQ with `status: "pending"`, `acceptance: [{when, then}]`)                                                                                                                                                                                                                      |
-| `files`                     | always (normalized: `path`, `type`, `action`, `purpose`, `requirements`)                                                                                                                                                                                                                      |
-| `architecture`              | always (`componentTree`, `interfaces`, optional `registries[]`)                                                                                                                                                                                                                               |
-| `design`                    | visual features only                                                                                                                                                                                                                                                                          |
-| `apiContract`               | backend only                                                                                                                                                                                                                                                                                  |
-| `buildSequence`             | always                                                                                                                                                                                                                                                                                        |
-| `testStrategy`              | always (optional `location` field)                                                                                                                                                                                                                                                            |
-| `clarifications`            | only include if the clarification round (PHASE 1 Clarification Round) produced at least 1 answer — otherwise OMIT the field. Contains **only** clarification-round entries (factual follow-ups + design choices), not the main questions from PHASE 1 steps 1-5; those belong in `choices[]`. |
-| `durableDecisions`          | with >3 requirements — decisions that apply across all REQs                                                                                                                                                                                                                                   |
-| `research`                  | only if research was performed                                                                                                                                                                                                                                                                |
-| `externalRef`               | only if the backlog item had this field — copy 1:1 (`type`, `id`, `url`, `labels`, `split`). Traceability to external issue tracker for downstream skills (`/dev-build`, `/core-commit`).                                                                                                     |
-| `seedDrift`                 | only if PHASE 2 Seed Alignment Check ran and user chose "Skip" — array of `{ category, seedSays, featureDecides, requirementRef? }`. Omit when seed was updated (drift resolved) or no drift was detected.                                                                                    |
-
-**`deltaOp` on requirements**: only write in update-mode (PHASE 0b). On a fresh definition: omit `deltaOp` and `previousDescription` entirely. PHASE 0b adds these when requirements are updated via add/modify/remove.
-
-**`durableDecisions`** — decisions that do NOT change during the build:
-
-- Persistence strategy (which storage API, which format)
-- ID generation and idempotency contract
-- Key data models and their relations
-- External service boundaries
-- Route structures / URL patterns (for routing features)
-- Auth/authz approach (for auth features)
-
-**`buildSequence`** structure — dev-build iterates this directly:
-
-```json
-[
-  {
-    "step": 1,
-    "requirements": ["REQ-001"],
-    "description": "...",
-    "dependsOn": []
-  },
-  {
-    "step": 2,
-    "requirements": ["REQ-002", "REQ-003"],
-    "description": "...",
-    "dependsOn": [1]
-  }
-]
-```
+Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema). Field conditions, deltaOp rules, durableDecisions categories, and buildSequence structure: see `references/feature-json-schema.md`.
 
 ### PHASE 4: Sync
 
-Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations below.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/dev-define/references/phase4-sync.md` for mutation details per file.
+
+Follow `shared/SYNC.md` 3-File Sync Pattern. Mutation details for backlog.html, project.json, and project-context.json: see `references/phase4-sync.md`.
 
 Read in parallel **directly before editing** (skip if not exists) — do NOT rely on reads from earlier phases:
 
@@ -386,38 +314,7 @@ Read in parallel **directly before editing** (skip if not exists) — do NOT rel
 - `.project/project.json`
 - `.project/project-context.json`
 
-Apply the following mutations in memory, then batch-write at the end of the phase.
-
-#### Mutations on `backlog.html` (see `shared/BACKLOG.md`)
-
-- Find feature → set `status: "DEFINED"`, `definedAt: <ISO>`, `auto: true`, remove `transition` (if present) — all three in one write. Not found → add to `data.features` with `phase: "P4"`, `status: "DEFINED"`, `auto: true`.
-- **Dependencies**: If during PHASE 1 or PHASE 2 external feature dependencies were identified (other features that must be DONE first), merge those into `dependencies[]`. Never remove existing values — only add. If nothing new found: leave field unchanged.
-- Set `data.updated` to today.
-
-#### Mutations on `project.json` (see `shared/DASHBOARD.md`)
-
-- Update feature in `features` array: status → `"DEFINED"`, update summary.
-- Merge per entity type (always check for existing before push):
-  - **Data entities** (optional — only if feature introduces domain entities): check on name → new: push with fields/relations → existing: merge new fields. If feature has no entities (UI-only, refactor, utility): skip this update, log `Skipped data.entities: no entities`.
-  - **Endpoints**: check on method+path → new: push with `status: "planned"`, `auth: "public" | "user" | "admin"` (default `"public"`, use `"user"` if JWT/session required, `"admin"` if role-check required; omit `auth` field for projects without auth) → existing: skip
-  - **Stack packages**: check on name → new: push `{ name, version, purpose }` → existing: skip
-  - **Features**: check on name → new: push `{ name, status: "DEFINED", summary, created }` → existing: update status
-
-#### Mutations on `project-context.json` (see `shared/DASHBOARD.md`)
-
-- **Routes** in `architecture.routes[]`: for each new page route in this feature → check on `path` → new: push `{ path, purpose, feature: "<feature-name>" }` + `auth` field only if project has auth → existing: update `purpose` if changed. Skip for non-frontend features (pure API/utility).
-- **Architecture**: generate/update `architecture` section if project has multiple components/modules. **Follow the component-first model from `shared/DASHBOARD.md`**:
-  - `layers`: optional — define layers with `{ name, order }` if project uses explicit layer naming (e.g. API Layer order 1, Data Layer order 3). Skip if project does not use this.
-  - `dataFlow`: one-line summary of the request flow
-  - `components`: per component `{ name, layer, description, status, connects_to }`. New feature components → `status: "planned"`. Existing built components → `status: "done"`. External services → `status: "external"`. `connects_to`: array of typed edges `{ to, type }` where `type` is one of `calls` | `reads` | `writes` | `depends_on` (see `shared/DASHBOARD.md` Edge fields for mapping)
-  - Merge strategy: check if component `name` already exists → no: push → yes: merge (overwrite status, merge `connects_to[]` with dedup on `to+type` combination)
-  - Mermaid diagram: generate `.project/architecture.mmd` only when the feature adds ≥3 new components AND introduces ≥2 cross-component edges (`calls` / `reads` / `writes` / `depends_on`) that are not obvious from the textual `components[]` list. Otherwise skip — the JSON is the source of truth.
-  - Skip the entire Architecture mutation for a single-file feature without architectural impact.
-- **Context**:
-  - `context.structure`: scan `feature.files[]` for new top-level directories under `src/` (e.g. `src/components/onboarding/`, `src/lib/payments/`). For each new directory not yet in `context.structure`: add a new line with path + 1-line description of the feature purpose.
-  - `context.routing`: source is `feature.architecture.routes[]`. For each entry with `action: "CREATE"`: add `{path} → {file}` line. Entries with `action: "MODIFY"` leave `context.routing` unchanged (route already exists).
-  - **Note**: structure/routing are JSON-escaped strings — for large changes use Write instead of Edit to avoid escaping issues.
-  - **Edit strategy**: do one Read directly before the first Edit, then perform all `project-context.json` mutations back-to-back without an intermediate Read. With ≥3 independent Edits on the same file: build the full object in memory and use one Write instead of separate Edits — prevents "File has been modified since read" errors from tool-hash mismatches.
+Apply the mutations from `references/phase4-sync.md` in memory, then batch-write at the end of the phase.
 
 **PAGE-seeding** (frontend projects only — skip for pure API/backend/game features):
 
@@ -462,3 +359,5 @@ Next: /dev-build {feature-name}
 ```
 
 Omit the `Next` line if the feature was not a backlog item and no concept is present — briefly note the absence of a backlog instead.
+
+> **Todo**: mark PHASE 4 → `completed`.

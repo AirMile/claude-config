@@ -4,7 +4,7 @@ description: Define Godot feature requirements and architecture. Use with /game-
 writes: [feature.requirements, backlog.stage, concept.seed]
 metadata:
   author: claude-config
-  version: 2.4.0
+  version: 2.7.0
   category: game
 ---
 
@@ -33,7 +33,15 @@ The skill gathers requirements through targeted questions, optionally researches
 
 ## Workflow
 
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 3 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. During context compaction the task list remains visible — no risk of forgotten phases.
+
+1. PHASE 0+1: Setup, Context & Requirements
+2. PHASE 2+3: Architecture Check & Design
+3. PHASE 4+5: feature.json + Sync
+
 ### PHASE 0: Feature Name + Context
+
+> **Todo**: call `TaskCreate` with the 3 phase items (see above). Mark PHASE 0+1 → `in_progress` via `TaskUpdate`.
 
 1. **If name provided** (`/game-define abilities`):
    - Use provided name as feature name
@@ -161,53 +169,19 @@ Check: `.project/features/{feature-name}/feature.json` exists?
      - Present but empty (no `context`, `stack`, or `features`) → show: `ℹ️ project.json exists but is missing codebase context. /core-setup can fill this in.`
      - Present with content → proceed silently.
    - **Past decisions scan** (two sources, both scope):
-     - Feature-scope: Glob `.project/features/*/feature.json` → flatten all `durableDecisions[]`. Tag each entry with `[feature-X]`.
-     - Project-scope: Glob `.project/thinking/*-decision-*.md` → read first ~30 lines per file, extract `THINK:` line (title), `AANBEVELING:` line (chosen), and `CONSTRAINT` section. Tag each entry with `[project]`.
+     - Feature-scope: Glob `.project/features/*/feature.json` sorted by `created`/`definedAt` desc — take **5 most recent**. Flatten their `durableDecisions[]`. Tag each entry with `[feature-X]`.
+     - Project-scope: Glob `.project/thinking/*-decision-*.md` sorted by mtime desc — take **5 most recent**. Read first ~30 lines per file, extract `THINK:` line (title), `AANBEVELING:` line (chosen), and `CONSTRAINT` section. Tag each entry with `[project]`.
      - Merge both sources. Filter relevant via keyword-overlap between current feature name/concept and each decision's title, chosen, or constraint (≥2 substantive terms). Keep top 3 most-relevant.
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 
-1. Read `.project/features/{feature-name}/feature.json`.
-
-2. Show existing requirements summary:
-
-   | ID      | Description (first 60 chars) | Status  |
-   | ------- | ---------------------------- | ------- |
-   | REQ-001 | {description}                | pending |
-
-3. AskUserQuestion: "Feature **{name}** already exists with {N} requirements. What do you want to change?"
-
-   ```yaml
-   header: "Update-mode"
-   options:
-     - label: "Add requirements (Recommended)", description: "New requirements, numbered from REQ-{N+1}"
-     - label: "Edit requirements", description: "Reformulate existing requirements or adjust acceptance"
-     - label: "Remove requirements", description: "Remove requirements from scope (soft-delete)"
-     - label: "Multiple of the above", description: "Combination of add, edit and/or remove"
-   multiSelect: false
-   ```
-
-4. Process delta based on choice:
-   - **Add**: Run through PHASE 1 Requirements Gathering for the new requirements only. Number from `REQ-{N+1}`.
-   - **Edit**: Ask which REQ-IDs. Per REQ: show current description + acceptance, ask for new version. Use format `[{ when, then }]` per scenario.
-   - **Remove**: Ask which REQ-IDs. Mark with `deltaOp: "REMOVED"` — do not physically delete from the array. Also: remove the REQ-ID from all `buildSequence[].requirements[]` arrays; if a step becomes empty → remove the step.
-   - **Multiple**: Combine the above flows in one round.
-
-5. Save `deltaOp` per requirement:
-   - Unchanged: `"deltaOp": "UNCHANGED"`
-   - New: `"deltaOp": "ADDED"`
-   - Modified: `"deltaOp": "MODIFIED"` + `"previousDescription": "{original text}"`
-   - Removed: `"deltaOp": "REMOVED"` (stays in array, is not built or tested)
-
-6. **Status-reset**: if feature `status` was `"DOING"` → reset to `"DEFINED"` in `feature.json` and backlog.
-
-7. Skip PHASE 1b (feature splitting) unless the number of requirements after update exceeds 6 and there are clear clusters.
-
-8. Go to PHASE 2 for ADDED and MODIFIED requirements only. For PHASE 5 write: **merge** delta into existing `feature.json` — do not overwrite fully. Preserve existing `build`, `tests` and UNCHANGED requirements. `buildSequence`: remove steps that are empty after REMOVED-filtering; add new steps for ADDED requirements (from PHASE 2 architecture output); leave existing steps for UNCHANGED requirements unchanged. The Seed Alignment Check at the end of PHASE 3 still runs — update-mode can drift just as easily as a fresh define.
+> **Todo**: Read `.claude/skills/game-define/references/update-mode.md` for the full update-mode flow.
 
 ---
 
 ### PHASE 1: Requirements Gathering
+
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
 **Risk-check (only if `feature.risk >= 4`):**
 
@@ -273,29 +247,19 @@ After the initial questions, evaluate whether there are open branches:
 - Implicit assumptions that have not been confirmed
 - Conflicts between answers
 
-**≤3 requirements expected**: skip follow-up, go to extraction.
-**>3 requirements expected**: ask 1-2 targeted follow-up questions about the most important open branch. Frame as "What happens if...?" or "How does this handle...?"
-
-Max 2 extra questions, then proceed to extraction.
+**≤6 requirements expected**: skip follow-up, go to extraction.
+**>6 requirements expected**: ask 1 targeted follow-up question about the most important open branch. Frame as a design choice (scene structure, state machine approach, signal boundary). Edge cases (parameter ranges, input behavior, defaults) → inline as acceptance criterion. No AskUserQuestion.
 
 #### Gray-Area Resolution
 
-**Skip** if the follow-up check found no open branches.
+**Skip** if ≤6 requirements expected OR follow-up check found no open branches.
 
-**Otherwise**: for each identified open branch (max 3):
+**Otherwise** (>6 REQs with an open architecture-changing choice — scene ownership, resource schema, signal boundary): 1 AskUserQuestion call, max 3 sub-questions. Each must be a concrete A vs B choice affecting architecture. First option = Recommended. Include "Not relevant for scope" if applicable.
 
-1. Frame the ambiguity as a concrete choice via AskUserQuestion:
-   - Header: the open branch as a short phrase
-   - Options: 2-3 concrete approaches + "Not relevant for scope"
-   - First option = Recommended
-
-2. Record the choice as a clarification:
-   `{ "question": "{open branch}", "answer": "{chosen option}", "impact": "brief note on which requirement area this affects" }`
+Record each as: `{ "question": "{open branch}", "answer": "{chosen option}", "impact": "brief note on which requirement area this affects" }`
 
 **"Not relevant"** → record as scoped-out, not as a requirement.
 **>3 open branches** → handle remaining ones inline during requirement extraction as edge cases.
-
-Max 3 AskUserQuestion calls. Then proceed to extraction.
 
 #### Requirement Extraction
 
@@ -334,22 +298,31 @@ Only relevant edge cases — not every requirement has them. Skip for simple fea
 
 Tuning levers are stored in `feature.json` per requirement as `tuningLevers[]`.
 
-**Confirm with user** via **AskUserQuestion**:
+**Error scenarios** (for REQs with validation, boundary checks, or fail-paths): extract `errorScenarios[]` alongside tuning levers:
 
-- header: "Requirements"
-- question: "Agree with these requirements?"
-- options:
-  - label: "Agree (Recommended)", description: "Requirements are complete and correct"
-  - label: "Edit", description: "I want to change or add requirements"
-  - label: "Start over", description: "Discard everything and ask new questions"
-- multiSelect: false
+- Each entry: `{ when: "{trigger condition}", then: "{observable error result}" }`
+- Examples: out-of-bounds input, simultaneous conflicting triggers, resource at zero/max
+- Skip if REQ has no plausible error path — omit field from that REQ
+- Stored in `feature.json` per requirement as `errorScenarios[]`
 
-**If "Edit"** → ask what to change, update requirements table, re-confirm.
-**If "Start over"** → restart PHASE 1 from Question 1.
+**Confirm with user:**
+
+- **≤6 REQs**: show requirements table, append `Scope: {N} requirements — SINGLE feature, continuing.` and proceed to PHASE 2. No AskUserQuestion.
+- **>6 REQs**: confirm via AskUserQuestion:
+  - header: "Requirements"
+  - question: "Agree with these requirements?"
+  - options:
+    - label: "Agree (Recommended)", description: "Requirements are complete and correct"
+    - label: "Edit", description: "I want to change or add requirements"
+    - label: "Start over", description: "Discard everything and ask new questions"
+  - multiSelect: false
+
+  **If "Edit"** → ask what to change, update requirements table, re-confirm.
+  **If "Start over"** → restart PHASE 1 from Question 1.
 
 ### CHECKPOINT: Requirements Summary
 
-After the requirements table confirmation, present a complete overview:
+Only run if >6 REQs (≤6: already handled above). Present a complete overview:
 
 | Aspect        | Value                       |
 | ------------- | --------------------------- |
@@ -372,148 +345,13 @@ Ask via AskUserQuestion:
 
 ### PHASE 1b: Scope Analysis & Feature Splitting
 
-**Goal:** Analyze gathered requirements and decide whether to keep as a single feature or split into multiple sub-features for optimal build execution.
+**Condition:** Only run if requirement count exceeds 6 or there are clear independent clusters.
 
-**Steps:**
-
-1. **Analyze requirement scope:**
-
-   Count requirements and map dependency graph from PHASE 1 output.
-
-   ```
-   SCOPE ANALYSIS:
-
-   Total requirements: {count}
-   Categories: {list of unique categories}
-   Dependency depth: {max chain length}
-   ```
-
-2. **Identify dependency clusters:**
-
-   Group requirements that depend on each other into clusters:
-   - Requirements with direct dependencies → same cluster
-   - Requirements with no cross-dependencies → separate clusters
-   - Single isolated requirements → own cluster or attach to nearest related cluster
-
-3. **Apply decision logic:**
-
-   ```
-   IF requirements ≤ 6 AND single category/concern:
-     → SINGLE feature (continue normally)
-
-   IF requirements 7-10:
-     → EVALUATE: check if ≥2 natural clusters exist with ≤2 cross-dependencies
-     → If clusters found: RECOMMEND SPLIT
-     → If tightly coupled: SINGLE feature
-
-   IF requirements > 10:
-     → RECOMMEND SPLIT (unless linear dependency chain with single concern)
-   ```
-
-4. **If SINGLE feature:**
-
-   ```
-   ✓ Scope analysis: SINGLE FEATURE
-
-   Requirements: {count}
-   Reason: {e.g., "tightly coupled, single concern", "≤6 requirements"}
-
-   → Continuing to architecture design.
-   ```
-
-   Proceed to PHASE 2.
-
-5. **If SPLIT recommended:**
-
-   Show proposed split:
-
-   ```
-   SPLIT RECOMMENDATION:
-
-   Requirements: {count} → {n} sub-features
-
-   1. {feature-name}-{sub1} (REQ-001, REQ-002, REQ-003)
-      Focus: {description of this group's concern}
-
-   2. {feature-name}-{sub2} (REQ-004, REQ-005)
-      Focus: {description of this group's concern}
-
-   Build order: {sub1} → {sub2}
-   Cross-dependencies: {list or "none"}
-   ```
-
-   Use **AskUserQuestion** for confirmation:
-   - header: "Feature Split"
-   - question: "Agree with this split?"
-   - options:
-     - label: "Agree (Recommended)", description: "Split into {n} sub-features"
-     - label: "Edit", description: "I want to change the grouping"
-     - label: "Keep as one feature", description: "No split, everything in one feature"
-   - multiSelect: false
-
-   **Response Handling:**
-   - Agree → proceed with split
-   - Edit → ask which requirements should move where, regenerate split
-   - Keep as one feature → proceed as SINGLE feature to PHASE 2
-
-6. **Execute split (if approved):**
-
-   a. Create parent documentation:
-
-   Write `.project/features/{feature-name}/00-split.md`:
-
-   ````markdown
-   # Feature Split: {Feature Name}
-
-   **Created:** {date}
-   **Status:** split
-   **Original requirements:** {count}
-   **Sub-features:** {count}
-
-   ## Split Decision
-
-   Reason: {why split was recommended}
-
-   ## Sub-features
-
-   | #   | Sub-feature   | Requirements              | Focus   |
-   | --- | ------------- | ------------------------- | ------- |
-   | 1   | {name}-{sub1} | REQ-001, REQ-002, REQ-003 | {focus} |
-   | 2   | {name}-{sub2} | REQ-004, REQ-005          | {focus} |
-
-   ## Build Order
-
-   1. {name}-{sub1} (base, no dependencies)
-   2. {name}-{sub2} (after {sub1})
-
-   ## Commands
-
-   ```
-   /game-build {name}-{sub1}
-   /game-build {name}-{sub2}
-   ```
-   ````
-
-   b. Create sub-feature project folders:
-
-   ```bash
-   mkdir -p .project/features/{feature-name}-{sub1}
-   mkdir -p .project/features/{feature-name}-{sub2}
-   ```
-
-   c. Continue PHASE 2-5 for EACH sub-feature sequentially:
-   - Re-number requirements per sub-feature (REQ-001, REQ-002, etc.)
-   - Each sub-feature gets its own architecture, scene layout, and feature.json
-   - Use build order: complete all PHASEs for sub-feature 1 before starting sub-feature 2
-
-7. **Update backlog (split only):**
-
-   If `.project/backlog.html` exists:
-   - Replace original feature entry with sub-feature entries
-   - Each sub-feature gets its own line in the backlog
-   - Add `(split from {original-name})` annotation
+> **Todo**: Read `.claude/skills/game-define/references/feature-splitting.md` for full scope analysis logic and split execution steps.
 
 ### PHASE 2: Architecture Check (Automatic)
+
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
 **Goal:** Automatically determine whether research is needed based on the architecture-baseline.
 
@@ -664,6 +502,8 @@ PHASE 2b: N/A — non-visual feature
 
 ### PHASE 3: Architecture Design
 
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
+
 Design based on requirements (and research if done). Generate an ASCII state machine of the core gameplay loop (states + transitions + triggers) alongside the scene tree:
 
 **Scene Tree:**
@@ -733,6 +573,8 @@ applicable.
 
 ### PHASE 4: Write feature.json
 
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
+
 Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema):
 
 | Field                       | Condition                                                                                                                                                                                              |
@@ -761,68 +603,11 @@ Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` f
 
 ### PHASE 5: Sync
 
-Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations below.
+Follow `shared/SYNC.md` 3-File Sync Pattern.
 
-Read in parallel **directly before editing** (skip if not present) — do NOT rely on reads from earlier phases (Prettier/linters may have modified files in the meantime):
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`. Read `.claude/skills/game-define/references/phase5-sync.md` for Godot-specific backlog/dashboard/seed mutations.
 
-- `.project/backlog.html`
-- `.project/project.json`
-- `.project/project-context.json`
-
-Mutate in memory:
-
-**Backlog** (see `shared/BACKLOG.md`):
-
-- Find feature: `data.features.find(f => f.name === "{feature-name}")`
-- Found → set `.status = "DEFINED"`, remove `.stage` and `.transition` (no stage in DEFINED column) and set `.date = "{current date}"`
-- Not found → add: `{ "name": "{feature}", "type": "FEATURE", "status": "DEFINED", "phase": "P4", "description": "{from feature.json summary}", "dependencies": [], "source": "/game-define" }`
-- Set `data.updated` to current date
-
-**Dashboard** (see `shared/DASHBOARD.md`):
-
-- **Data entities** (optional — only if feature introduces domain entities): for each entity check whether `data.entities` already has an entry with that name → no: push with fields/relations → yes: merge new fields. If feature has no entities (UI-only scene, pure gameplay, utility): skip, log `Skipped data.entities: no entities`.
-- **Stack**: if Godot plugins/assets → check `stack.packages` by name → no: push `{ name, version, purpose }`
-- **Features**: check by name → no: push `{ name, status: "DEFINED", summary, depends: [], created }` → yes: update status to `"DEFINED"`, remove `stage`
-- **Architecture** in `.project/project-context.json`: generate/update if feature has a scene tree and/or signals. **Follow component-first model from `shared/DASHBOARD.md`**:
-  - `layers`: define layers with `{ name, order }` (e.g. Scenes order 1, Systems order 2, Resources order 3)
-  - `dataFlow`: one-line summary of the scene/signal flow
-  - `components`: per component `{ name, layer, description, status, connects_to }`. Scene tree as components. `connects_to[]` as typed edges `{ to, type }` (`calls` for signal emits/method calls, `reads`/`writes` for shared state or autoloads, `depends_on` for scene-tree parent or resource references). All features DOING → `status: "planned"`, existing → `"done"`
-  - Merge strategy: check whether component `name` already exists → no: push → yes: merge
-  - Skip if feature is too small (single node without signals)
-
-Write back in parallel:
-
-- Edit `backlog.html` (keep `<script>` tags intact)
-- Write `project.json` (stack, features, data)
-- Write `project-context.json` (if architecture changed)
-
-**Mutations on `project-seed.md`** (only if `seedUpdateApproved: true`):
-
-- Skip if PHASE 3 ended with "Skip" or no drift was detected.
-- Write the rewritten content (reviewed inline by the user in PHASE 3 before this sync phase) to `.project/project-seed.md` — full file overwrite.
-- Update `project.json#concept.pitch` if the new pitch differs. Update `concept.name` only if the H1 title changed.
-- Log: `Seed: ✓ updated — N section(s) rewritten`.
-
-This write runs in parallel with the existing back-writes.
-
-**Auto-build marking** (after sync):
-
-Read backlog again, find feature, set `"auto": true`, write back via Edit. No user prompt — always mark auto so the card gets an AUTO-badge and the clipboard gets the correct `/game-build` command.
-
-Clean up: `rm -f .project/session/active-{feature-name}.json`
-
-**Output:**
-
-```
-DASHBOARD SYNCED
-
-Data: {N} entities ({new} new)
-Stack: {N} packages ({new} new)
-
-Next steps:
-  1. /project-backlog → generate backlog from concept (if no backlog yet)
-  2. /game-build {feature-name} → start implementation (if backlog already exists)
-```
+> **Todo**: mark PHASE 5 → `completed`.
 
 ## Best Practices
 

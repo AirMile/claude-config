@@ -257,6 +257,42 @@ visible — no risk of forgetting phases.
 
 ---
 
+## Lazy Reference Loading
+
+**When:** A skill has ≥30-line blocks that are (1) conditional on a runtime branch, (2) static templates/schemas, or (3) end-of-flow phases only needed in the last 1–2 phases. Loading them inline bloats the context even when the block is irrelevant for the current run.
+
+**Extract when at least one is true:**
+
+1. **Branch with dead-path cost** — block belongs to one of N paths, only 1 fires per run (e.g., update-mode, queue-selection, intake-per-type)
+2. **Static template/schema** — agent prompt template, JSON schema table, or lookup table that is pure reference data, not execution flow
+3. **End-of-flow phase** — completion/sync block only relevant in the last 1–2 phases
+4. **Minimum size** — ≥30 lines. Below that threshold the Read call overhead isn't worth it.
+
+**Where to put files:**
+
+- `references/` — lookup data, templates, conditional branches, end-of-flow phases
+- `techniques/` — mutually-exclusive workflow alternatives (e.g. TDD vs implementation-first, where the user picks one)
+
+**How to wire it** — Read directive inline in the TaskUpdate transition marker of the phase that needs it:
+
+```markdown
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/{skill}/references/{name}.md`.
+```
+
+For conditional branches (read only when condition is met):
+
+```markdown
+> **Todo**: if update-mode detected → Read `.claude/skills/{skill}/references/update-mode.md` and follow that flow; otherwise continue inline.
+```
+
+**Naming:** Use `references/{descriptive-name}.md` — not `phase-N.md`. Renaming phases won't force a rename of the file.
+
+**Examples:** `dev-verify/references/completion-sync.md` (end-of-flow sync, 237 lines) and `dev-build/techniques/tdd.md` (mutually-exclusive workflow, loaded on demand in PHASE 2).
+
+**Skip for:** Short inline phases (<30 lines), blocks that always run AND are always needed (no conditional savings), skills with fewer than 5 phases.
+
+---
+
 ## Git Safety Gates
 
 **When:** A skill performs git mutations (commit, push, checkout, merge, rebase).
