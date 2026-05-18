@@ -5,7 +5,7 @@ reads: [feature.requirements, feature.build, backlog.stage]
 writes: [feature.tests, backlog.stage]
 metadata:
   author: claude-config
-  version: 2.3.0
+  version: 2.4.0
   category: game
 ---
 
@@ -261,55 +261,9 @@ Add conditionally via `TaskCreate`:
 
    -> Exit skill
 
-6b. **Post-Build Baseline Check** (if `build` section exists in feature.json)
+6b. **Post-Build Baseline Check** — only if `build` section exists in feature.json.
 
-Two checks before playtest:
-
-**Check 1: Full GUT Regression Suite**
-
-Run the full GUT test suite to verify all features still work:
-
-```bash
-"{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit
-```
-
-Parse output (same rules as game-build: PASS 1 line, FAIL max 10 lines).
-
-```
-BASELINE: full suite → {passed}/{total} PASS
-```
-
-On failures:
-
-- Distinguish failures from the CURRENT feature vs OTHER features
-- Current feature fails → warn, continue with playtest (this is what we're going to test)
-- Other feature fails → warn:
-
-  ```
-  ⚠ REGRESSION: {N} tests from other features failing
-  - test_{other}.test_xxx: {reason}
-  ```
-
-  Use AskUserQuestion:
-  - "Continue with playtest (Recommended)" — "Regressions are reported but don't block the test"
-  - "Stop — fix regressions first" — "Fix the other features before testing this one"
-
-If GUT is not available or no test files found → skip with: `BASELINE: skipped (no GUT tests found)`
-
-**Check 2: Integration Test Scene**
-
-Re-run the integration test scene as an additional check:
-
-```bash
-"{godot_executable}" --headless --path . -s res://tests/scenes/test_{feature}_runtime.tscn
-```
-
-Parse output for `FINAL:PASS` or `FINAL:FAIL`.
-
-Display: `BASELINE: integration tests → {PASS|FAIL}`
-On FAIL: warn ("Integration tests failing — possible regression since build"), show failed tests, continue with playtest.
-
-If integration test scene does not exist → skip, no output.
+> **Todo**: if `feature.json` has a `build` section → read `.claude/skills/game-verify/references/phase-0b-baseline-check.md` and run both baseline checks before continuing.
 
 6c. **Cross-Requirement Gameplay Scenarios** (if `build` section exists and 2+ requirements)
 
@@ -603,203 +557,7 @@ FAILED: 2 items (3, 4)
 
 ### PHASE 3: Fix Loop
 
-> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
-
-**Goal:** Fix all issues using appropriate method for each type.
-
-**Process for each issue (in order):**
-
-#### For TESTABLE Issues: TDD Fix Loop
-
-**Step 0: Assess Fix Complexity**
-
-Before fixing, determine if research is needed:
-
-| Complexity | Example                         | Research? |
-| ---------- | ------------------------------- | --------- |
-| Simple     | Change a number value           | No        |
-| Medium     | Add new property/method         | No        |
-| Complex    | Refactor signal flow, add state | Yes       |
-
-**Complexity indicators:**
-
-```
-SIMPLE (no research):
-- "puddle radius 50 -> 100"       -> Just change the value
-- "damage too low"                -> Just increase the value
-- "missing sound"                 -> Just add AudioStreamPlayer
-- "animation speed wrong"         -> Just adjust the speed
-
-COMPLEX (offer research):
-- "ability doesn't chain correctly"    -> Signal flow issue
-- "state machine not transitioning"    -> State logic issue
-- "cooldown resets unexpectedly"       -> Timer/state interaction
-- "collision not detecting properly"   -> Physics layer issue
-- "node references breaking"           -> Scene tree / lifecycle issue
-```
-
-**If complex fix detected:**
-
-Use AskUserQuestion tool:
-
-- header: "Research"
-- question: "This is a complex fix ({brief issue description}). Do you want to research Godot patterns?"
-- options:
-  - label: "Yes, research (Recommended)", description: "Research best approach"
-  - label: "No, fix directly", description: "Fix without research"
-- multiSelect: false
-
-**If research requested:**
-
-```
-Task(subagent_type="godot-code-researcher", prompt="
-Feature: {feature-name}
-Fix needed: {description of issue}
-
-Current code:
-{relevant code snippet}
-
-Problem: {what's wrong}
-Goal: {what should happen}
-
-Research GDScript patterns for this fix.
-")
-```
-
-Use research findings to inform the fix implementation below.
-
-**Step 1-5: TDD Fix** (potentially informed by research)
-
-1. **Generate test based on feedback:**
-
-   ```
-   GENERATING TEST for item {N}
-
-   Issue: {description}
-   Expected: {concrete value from feedback}
-   ```
-
-2. **Write test file:**
-
-   ```gdscript
-   # tests/test_{feature}_{item}.gd
-   extends GutTest
-
-   func test_{specific_behavior}() -> void:
-       # Arrange
-       var {object} = {setup}
-
-       # Act
-       var result = {action}
-
-       # Assert
-       assert_eq(result, {expected_value}, "{description}")
-   ```
-
-3. **Run test (expect FAIL):**
-
-   ```bash
-   "{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gtest=res://tests/test_{feature}_{item}.gd
-   ```
-
-   **If test PASSES (unexpected):**
-
-   ```
-   UNEXPECTED: Test already passes
-
-   The test passes with current code.
-   Possible causes:
-   - Issue was already fixed
-   - Test doesn't capture the real problem
-   - Feedback was based on old version
-   ```
-
-   Use AskUserQuestion tool:
-   - header: "Test Passed"
-   - question: "The test already passes. What do you want to do?"
-   - options:
-     - label: "Skip (Recommended)", description: "Item appears already fixed, move to next"
-     - label: "Adjust test", description: "The test is incorrect, I will provide new values"
-     - label: "Check manually", description: "Stop and check this manually"
-   - multiSelect: false
-
-   **If test FAILS (expected):**
-
-   ```
-   TEST FAILS (expected)
-
-   Test: test_{specific_behavior}
-   Expected: {expected_value}
-   Actual: {actual_value}
-
-   -> Implementing fix...
-   ```
-
-4. **Implement fix:**
-   - Locate relevant code
-   - Make minimal change to satisfy test
-   - Document what was changed
-
-5. **Run test again (expect PASS):**
-
-   ```
-   TEST PASSES
-
-   Item {N} fixed via TDD.
-   Change: {description of fix}
-   File: {file:line}
-   ```
-
-6. **If test still fails after fix:**
-   - Analyze why
-   - Try alternative approach
-   - Max 3 attempts before asking user
-
-#### For MEASURABLE Issues: Direct Fix
-
-1. **Identify code location:**
-
-   ```
-   DIRECT FIX for item {N}
-
-   Issue: {description}
-   Location: {file:line}
-   Current value: {current}
-   ```
-
-2. **Apply fix directly:**
-   - Adjust value/property
-   - No test possible (subjective/feel)
-   - Document the change
-
-3. **Result:**
-
-   ```
-   FIXED (cannot auto-verify)
-
-   Change: {what was changed}
-   From: {old value}
-   To: {new value}
-   File: {file:line}
-
-   Needs manual re-test.
-   ```
-
-**After all issues processed:**
-
-```
-FIX LOOP COMPLETE
-
-| # | Type | Status | Change |
-|---|------|--------|--------|
-| 3 | TESTABLE | FIXED (test passes) | Puddle radius 50->100 |
-| 4 | MEASURABLE | FIXED (needs re-test) | Added cast sound |
-
-New tests added: 1
-Files modified: 2
-
--> Generating re-test checklist...
-```
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Skip if all items PASS. Otherwise read `.claude/skills/game-verify/references/phase-3-fix-loop.md` for the full TESTABLE and MEASURABLE fix instructions.
 
 ---
 
@@ -830,3 +588,16 @@ Files modified: 2
 ### PHASE 6: Completion
 
 > **Todo**: mark PHASE 5d → `completed`, PHASE 6 → `in_progress`. Read `.claude/skills/game-verify/references/completion-finalize.md` for fix sync, parallel sync, learning extraction, commit, and PHASE Finalize.
+
+## References
+
+Read these Just-In-Time during specific phases — do not load upfront.
+
+| File                                    | When to load                                                                     |
+| --------------------------------------- | -------------------------------------------------------------------------------- |
+| `references/phase-0b-baseline-check.md` | PHASE 0 step 6b — only if feature.json has a `build` section                     |
+| `references/debug-analysis.md`          | PHASE 1b — debug output capture and issue correlation                            |
+| `references/phase-3-fix-loop.md`        | PHASE 3 — TESTABLE TDD fix loop and MEASURABLE direct fix (only when FAIL items) |
+| `references/retest-loop.md`             | PHASE 4 + 5 — re-test checklist generation and re-test loop                      |
+| `references/regression-requirements.md` | PHASE 5c + 5d — GUT regression check and requirement coverage matrix             |
+| `references/completion-finalize.md`     | PHASE 6 — fix sync, parallel sync, learning extraction, commit, finalize         |
