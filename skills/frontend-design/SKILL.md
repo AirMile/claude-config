@@ -48,7 +48,11 @@ The `design` section in `project.json` follows this schema:
       "sections": ["hero", "metrics-grid", "activity-feed"],
       "flows": ["login → dashboard", "dashboard → settings"],
       "uses": [],
-      "notes": ""
+      "notes": "",
+      "transitions": {
+        "route": null,
+        "sectionReveal": null
+      }
     }
   ],
   "flows": [
@@ -77,7 +81,15 @@ The `design` section in `project.json` follows this schema:
       "props": ["label", "icon?", "onClick", "disabled?"],
       "slots": [],
       "usedIn": [],
-      "notes": ""
+      "notes": "",
+      "motion": {
+        "onHover": null,
+        "onPress": null,
+        "onEnter": "entrance.float-in",
+        "onExit": "exit.fade-out",
+        "onSuccess": null,
+        "onError": null
+      }
     }
   ]
 }
@@ -214,8 +226,9 @@ For each page/flow/principle/component:
 1. Find by `name` in existing array
 2. If not found: push new item
 3. If found: update fields (purpose, status, sections, flows, notes, steps, description, scope, appliesTo, variants, sizes, states, props, slots)
-4. Never auto-delete items (only via explicit "Delete" route)
-5. `pages[].uses[]` and `components[].usedIn[]` are auto-maintained by Build post-pass — never overwrite during merge
+4. **MERGE on key** for `components[].motion{}` and `pages[].transitions{}` — never auto-delete, only add/update keys
+5. Never auto-delete items (only via explicit "Delete" route)
+6. `pages[].uses[]` and `components[].usedIn[]` are auto-maintained by Build post-pass — never overwrite during merge
 
 ---
 

@@ -10,6 +10,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `frontend-animations`: new skill — animation pack management with five packs (None / Subtle / Standard / Expressive / Playful), iOS/Apple easings, spring physics tokens (gentle/smooth/snappy/bouncy), named choreography compositions, and glass surface system. Writes `project.json#theme.motion.pack/spring/choreography/surfaces` via delta-write.
+- `frontend-animations/references/packs.md`: complete JSON deltas for all five packs.
+- `frontend-animations/references/ios-easings.md`: six canonical iOS/Apple cubic-bezier curves + three iOS duration tokens with provenance.
+- `frontend-animations/references/spring-math.md`: spring physics conversion algorithm + per-library mapping table (React/Vue/Svelte/Solid/vanilla).
+- `frontend-animations/references/choreography.md`: named composition library (entrance.float-in, success.pulse, success.confetti, attention.wiggle, error.shake, press.squeeze, loading.bob, route.ios-push, modal.ios-sheet, list.stagger-reveal, surface.tilt).
+- `frontend-animations/references/preview-template.html`: swatch gallery populated at runtime to `.project/animation-preview.html`.
+- `shared/DESIGN.md`: Glass surfaces opt-in section + Animation packs section; glassmorphism and bounce anti-patterns now conditional on opt-in flags.
+- `shared/FRONTEND-RULES.md`: H205/H209 conditionalized; new rules H122, P110, A105.
+- `shared/TOKENS.md`: iOS easing CSS vars, spring CSS var pairs, glass surface tokens, violation IDs T106/T107/T108.
+- `shared/PATTERNS.md`: Motion patterns section — eight patterns including spring-press, glass-card, ios-modal-drawer, prefers-reduced-motion-fallback.
+- `frontend-check/references/scan-motion.md`: Motion audit — seven checks M001–M007.
+- `frontend-convert/examples/apple-style.md`: Expressive pack conversion example.
+
+### Changed
+
+- `shared/DASHBOARD.md`: `theme` schema extended with `motion.pack/axes/spring/choreography` and `surfaces`; merge strategy updated to DELTA-WRITE.
+- `frontend-tokens/SKILL.md`: completeness check notes `motion.pack` owned by `/frontend-animations`; Next steps updated.
+- `frontend-design/SKILL.md`: component schema gains `motion{}` field; page schema gains `transitions{}` field.
+- `frontend-design/references/route-brief.md`: Motion plan block added to brief.
+- `frontend-convert/SKILL.md`: SOURCE ANALYSIS template adds "Motion intent" field.
+- `frontend-convert/references/generate-template.md`: reads `theme.motion.pack` and `$MOTION_INTENT` for output.
+- `frontend-check/SKILL.md`: "Motion" scope added.
+- `dev-build/SKILL.md`: Token-styled UI rule reads `theme.motion.pack` and applies transition tokens.
+- `dev-verify/SKILL.md`: pre-walkthrough hint adds motion-pack advisory.
+- `README.md`: frontend pipeline updated to include `/frontend-animations`.
+
 - `inspect-overlay`: plain JS / static HTML install path — script-tag injection covering static sites, vanilla-Vite templates, and non-React frameworks (Vue/Svelte/Solid/Qwik). Always degraded mode.
 - `inspect-overlay`: clipboard refs wrapped in `[…]` for clearer paste-context (single-click `[src/Button.tsx:42]`, multi-pin wraps each ref within the `--- 1/N ---` block).
 - `README`: `## Inspect overlay` section documenting install, controls, and Full vs Degraded modes per stack.

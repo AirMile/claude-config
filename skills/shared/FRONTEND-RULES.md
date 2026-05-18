@@ -201,17 +201,18 @@ elements.forEach((el, i) => {
 
 ### AVOID (Medium)
 
-| ID   | Pattern                                             | Alternative                   |
-| ---- | --------------------------------------------------- | ----------------------------- |
-| H201 | `!important` in stylesheets                         | Specificity management        |
-| H202 | Magic numbers                                       | Design tokens                 |
-| H203 | ID selectors for styling                            | Class selectors               |
-| H204 | Deep selector nesting (>3)                          | BEM or flat selectors         |
-| H205 | Large `blur()`/`backdrop-filter` on visible content | Small blur, brief, one-time   |
-| H206 | `will-change` outside active animation blocks       | Add/remove temporarily via JS |
-| H207 | Changing `letter-spacing` without explicit request  | Design discipline             |
-| H208 | Animating layout properties on large surfaces       | Use `transform`               |
-| H209 | Gradients/glow without explicit request             | Tailwind default shadows      |
+| ID   | Pattern                                                                                              | Alternative                                         |
+| ---- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| H201 | `!important` in stylesheets                                                                          | Specificity management                              |
+| H202 | Magic numbers                                                                                        | Design tokens                                       |
+| H203 | ID selectors for styling                                                                             | Class selectors                                     |
+| H204 | Deep selector nesting (>3)                                                                           | BEM or flat selectors                               |
+| H205 | Large `blur()`/`backdrop-filter` on visible content **unless `theme.surfaces.glass.enabled = true`** | Enable via `/frontend-animations` or remove         |
+| H206 | `will-change` outside active animation blocks                                                        | Add/remove temporarily via JS                       |
+| H207 | Changing `letter-spacing` without explicit request                                                   | Design discipline                                   |
+| H208 | Animating layout properties on large surfaces                                                        | Use `transform`                                     |
+| H209 | Gradients/glow without explicit request **unless `theme.motion.pack` is `expressive` or `playful`**  | Tailwind default shadows, or enable pack            |
+| H122 | Motion classes (`transition-*`, `animate-*`) that don't match the active `theme.motion.pack`         | Use token-based classes from `/frontend-animations` |
 
 ---
 
@@ -336,11 +337,12 @@ elements.forEach((el, i) => {
 
 ### AVOID (Medium)
 
-| ID   | Pattern                                    | Alternative                    |
-| ---- | ------------------------------------------ | ------------------------------ |
-| A201 | tabindex > 0                               | Use DOM order for tab order    |
-| A202 | aria-label on non-interactive elements     | Visible text or sr-only span   |
-| A203 | Removing focus outline without replacement | focus-visible with custom ring |
+| ID   | Pattern                                                       | Alternative                                                                                  |
+| ---- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| A201 | tabindex > 0                                                  | Use DOM order for tab order                                                                  |
+| A202 | aria-label on non-interactive elements                        | Visible text or sr-only span                                                                 |
+| A203 | Removing focus outline without replacement                    | focus-visible with custom ring                                                               |
+| A105 | Choreography tokens without `prefers-reduced-motion` fallback | Wrap `@keyframes` / `transition` in reduced-motion media query; degrade to opacity-only fade |
 
 ---
 
@@ -436,17 +438,18 @@ elements.forEach((el, i) => {
 
 ### SHOULD_DO (High)
 
-| ID   | Rule                                  | Rationale                                          |
-| ---- | ------------------------------------- | -------------------------------------------------- |
-| P101 | CLS < 0.1                             | Visual stability                                   |
-| P102 | LCP < 2.5s                            | Perceived load speed                               |
-| P103 | INP < 200ms                           | Input responsiveness                               |
-| P104 | Bundle < 200KB/route (gzipped)        | Load performance                                   |
-| P105 | Code splitting per route              | Only load what is needed                           |
-| P106 | Font loading strategy (swap/optional) | No FOIT                                            |
-| P107 | Third-party scripts async/defer       | No main thread block                               |
-| P108 | Payloads < 500KB per resource         | `playwright-cli requests` → compression/splitting  |
-| P109 | Static assets with cache headers      | `response-headers <i>` → `cache-control` or `etag` |
+| ID   | Rule                                      | Rationale                                          |
+| ---- | ----------------------------------------- | -------------------------------------------------- |
+| P101 | CLS < 0.1                                 | Visual stability                                   |
+| P102 | LCP < 2.5s                                | Perceived load speed                               |
+| P103 | INP < 200ms                               | Input responsiveness                               |
+| P104 | Bundle < 200KB/route (gzipped)            | Load performance                                   |
+| P105 | Code splitting per route                  | Only load what is needed                           |
+| P106 | Font loading strategy (swap/optional)     | No FOIT                                            |
+| P107 | Third-party scripts async/defer           | No main thread block                               |
+| P108 | Payloads < 500KB per resource             | `playwright-cli requests` → compression/splitting  |
+| P109 | Static assets with cache headers          | `response-headers <i>` → `cache-control` or `etag` |
+| P110 | `backdrop-filter` on elements > 60vh tall | Scoped to smaller overlay surfaces only            |
 
 ### AVOID (Medium)
 

@@ -67,7 +67,7 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `dev`       | `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere) |
 | `game`      | `project-seed` → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere, Godot 4.x / GUT)                                |
-| `frontend`  | `frontend-design` → [`frontend-convert`] → `frontend-check`                                                                                            |
+| `frontend`  | [`/frontend-tokens`] → [`/frontend-animations`] → `frontend-design` → [`frontend-convert`] → `frontend-check`                                          |
 | `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                   |
 
 Optional `/project-research` enriches the dev seed with market/tech/codebase context before backlog.

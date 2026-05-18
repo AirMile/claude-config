@@ -970,3 +970,273 @@ Organism → Compound component pattern
 Template → Slot pattern
 Page → Full pattern integration
 ```
+
+---
+
+## Motion Patterns
+
+Managed by `/frontend-animations`. Use when `theme.motion.pack` is set. All patterns include `prefers-reduced-motion` fallback.
+
+### Spring Press
+
+**When:** Interactive cards, buttons, or list items needing tactile feedback. Requires Playful or Expressive pack.
+
+```css
+/* Pure CSS — static approximation */
+.spring-press {
+  transition: transform var(--spring-snappy-duration)
+    var(--spring-snappy-bezier);
+}
+.spring-press:active {
+  transform: scale(0.94);
+}
+@media (prefers-reduced-motion: reduce) {
+  .spring-press {
+    transition: none;
+  }
+}
+```
+
+```tsx
+// React — motion.dev (uses real spring physics)
+import { motion } from "motion/react";
+import springTokens from "@/tokens/spring.json";
+
+<motion.button
+  whileTap={{ scale: 0.94 }}
+  transition={{ type: "spring", ...springTokens.snappy }}
+>
+  Press me
+</motion.button>;
+```
+
+---
+
+### Hover Elevate
+
+**When:** Cards or list items that benefit from depth cue on hover. Standard pack and above.
+
+```css
+.hover-elevate {
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+.hover-elevate:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hover-elevate:hover {
+    transform: none;
+  }
+}
+```
+
+---
+
+### View Transition Route
+
+**When:** Navigating between pages in an SPA. Expressive pack. Uses the browser View Transitions API.
+
+```tsx
+// Next.js App Router
+import { useRouter } from "next/navigation";
+
+function navigateWithTransition(href: string) {
+  if (!document.startViewTransition) {
+    router.push(href);
+    return;
+  }
+  document.startViewTransition(() => router.push(href));
+}
+```
+
+```css
+/* Matching CSS — pairs with ease-ios-spring */
+::view-transition-old(root) {
+  animation: 350ms var(--ease-ios-in) both fade-out-slide;
+}
+::view-transition-new(root) {
+  animation: 500ms var(--ease-ios-spring) both fade-in-slide;
+}
+@keyframes fade-out-slide {
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+@keyframes fade-in-slide {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
+  }
+}
+```
+
+---
+
+### List Stagger Reveal
+
+**When:** Lists, grids, or feeds that enter viewport. Standard pack and above.
+
+```css
+.stagger-item {
+  animation: stagger-in var(--duration-normal) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@keyframes stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stagger-item {
+    animation: none;
+    opacity: 1;
+  }
+}
+```
+
+```tsx
+// React — assign CSS custom property for index
+{
+  items.map((item, i) => (
+    <li
+      key={item.id}
+      className="stagger-item"
+      style={{ "--i": i } as React.CSSProperties}
+    >
+      {item.name}
+    </li>
+  ));
+}
+```
+
+---
+
+### Success Pulse
+
+**When:** Confirming a completed action (save, submit, payment). Playful pack; opt-in per component via `design.components[i].motion.onSuccess: "success.pulse"`.
+
+```css
+.success-pulse {
+  animation: success-pulse 500ms var(--spring-bouncy-bezier) both;
+}
+@keyframes success-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 4px
+      color-mix(in oklch, var(--color-success) 30%, transparent);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .success-pulse {
+    animation: none;
+  }
+}
+```
+
+---
+
+### Glass Card (opt-in)
+
+**When:** `theme.surfaces.glass.enabled = true` (Expressive pack). Navigation bars, sheets, modals over rich backgrounds.
+
+```css
+.glass-card {
+  background: var(--surface-glass-tint);
+  border: var(--surface-glass-border);
+  border-radius: var(--rounded-xl);
+
+  @supports (backdrop-filter: blur()) {
+    backdrop-filter: blur(var(--surface-glass-blur))
+      saturate(var(--surface-glass-saturation));
+  }
+}
+```
+
+Rules (see DESIGN.md Glass Surfaces section): max one per viewport, never on elements > 60vh, always with solid fallback.
+
+---
+
+### iOS Modal Drawer
+
+**When:** Bottom sheet or side drawer on mobile. Expressive pack. Matches native iOS sheet feel.
+
+```css
+.ios-drawer {
+  transform: translateY(100%);
+  transition: transform var(--duration-ios-modal) var(--ease-ios-spring);
+}
+.ios-drawer[data-open="true"] {
+  transform: translateY(0);
+}
+.ios-drawer[data-open="false"] {
+  transform: translateY(100%);
+  transition-timing-function: var(--ease-ios-in);
+  transition-duration: calc(var(--duration-ios-modal) * 0.75);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ios-drawer {
+    transition: none;
+  }
+}
+```
+
+---
+
+### prefers-reduced-motion Fallback (canonical wrapper)
+
+**When:** Any custom `@keyframes` or choreography token. Always wrap.
+
+```css
+/* Declare animation freely */
+.animated-element {
+  animation: my-animation 300ms var(--ease-out) both;
+}
+
+/* Suppress spatial movement — keep opacity for functional feedback */
+@media (prefers-reduced-motion: reduce) {
+  .animated-element {
+    animation: fade-only 150ms ease both;
+  }
+}
+
+@keyframes my-animation {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fade-only {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+```

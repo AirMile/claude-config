@@ -310,6 +310,8 @@ Unclear feedback → AskUserQuestion: Re-enter (Recommended) | Continue per item
 ```
 💡 Visual polish (spacing, exact colors, borders) is post-verify — tweak via browser inspect after this run.
    Focus this verify on: functionality, accessibility, smoke (does it load + work).
+   Motion: verify interactive elements animate per the active pack ({theme.motion.pack or "none"}) —
+   buttons/cards transition on hover/press, modals/drawers use the correct easing, reduced-motion is respected.
 ```
 
 Show setup once (e.g. "Open {tunnel_url}"). Per MANUAL item:

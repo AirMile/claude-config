@@ -113,7 +113,7 @@ multiSelect: false
 header: "Scope"
 question: "Which checks do you want to run?"
 options:
-  - label: "Everything (Recommended)", description: "Performance + SEO + AEO + A11Y + Responsive + Darkmode + Error states + Smoke + Flow + Token Architecture + Dark mode compliance + Responsive coverage"
+  - label: "Everything (Recommended)", description: "Performance + SEO + AEO + A11Y + Responsive + Darkmode + Error states + Smoke + Flow + Token Architecture + Dark mode compliance + Responsive coverage + Motion"
   - label: "I'll choose myself", description: "Select specific checks"
 multiSelect: false
 ```
@@ -136,6 +136,7 @@ options:
   - label: "Token Architecture", description: "Audit design token usage — semantic var() refs, hardcoded colors"
   - label: "Dark mode compliance", description: "Static code audit — dark: classes present where dark mode is configured"
   - label: "Responsive coverage", description: "Static code audit — responsive prefixes present in multi-viewport components"
+  - label: "Motion", description: "Animation pack compliance — motion tokens used, glass-without-flag, missing transitions, reduced-motion fallbacks"
 multiSelect: true
 ```
 

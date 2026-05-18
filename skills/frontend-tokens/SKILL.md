@@ -344,12 +344,13 @@ THEME STATUS
   [✓|✗] breakpoints
   [✓|✗] borderRadius
   [✓|✗] shadows
-  [✓|✗] motion
+  [✓|✗] motion (durations + easings — base layer only)
   [✓|✗] interactions
   [✓|✗] modes
   [✓|✗] cssVars
 
 Complete: {N}/10 sections
+Note: motion.pack / motion.spring / motion.choreography / surfaces are managed by /frontend-animations — not counted here
 ════════════════════════════════════════════════
 ```
 
@@ -495,11 +496,12 @@ Backlog: ✓ Task "{taskName}" → DONE
 Theme tokens ready in project.json for downstream consumption.
 
 Next steps:
-  1. /frontend-design {page} → build a page with these tokens
-  2. /frontend-convert → convert a design with these tokens
-  3. /frontend-tokens → view or update tokens later
-  4. /frontend-check → check performance and SEO
-  5. /frontend-check --scope=a11y → accessibility audit
+  1. /frontend-animations → set an animation pack (iOS/Apple, spring physics, glass surfaces)
+  2. /frontend-design {page} → build a page with these tokens
+  3. /frontend-convert → convert a design with these tokens
+  4. /frontend-tokens → view or update tokens later
+  5. /frontend-check → check performance and SEO
+  6. /frontend-check --scope=a11y → accessibility audit
 ```
 
 ---

@@ -14,14 +14,18 @@ Token names are the stable contract. Values are supplied later by `/frontend-tok
 
 Use these names in generated Tailwind classes and CSS variables:
 
-| Category      | Token names                                                                                                              |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Colors        | `primary`, `foreground`, `background`, `surface`, `border`, `muted`, `accent`                                            |
-| Semantic      | `success`, `warning`, `error`, `info`                                                                                    |
-| Typography    | `text-display`, `text-title-l`, `text-title-m`, `text-title-s`, `text-body-l`, `text-body-m`, `text-body-s`, `text-code` |
-| Spacing       | `spacing-1` through `spacing-12` (4px base: spacing-1=4px, spacing-4=16px, spacing-8=32px)                               |
-| Motion        | `duration-instant` (100ms), `duration-fast` (200ms), `duration-normal` (300ms), `duration-slow` (500ms)                  |
-| Motion easing | `ease-out`, `ease-in`, `ease-in-out`                                                                                     |
+| Category      | Token names                                                                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Colors        | `primary`, `foreground`, `background`, `surface`, `border`, `muted`, `accent`                                                                |
+| Semantic      | `success`, `warning`, `error`, `info`                                                                                                        |
+| Typography    | `text-display`, `text-title-l`, `text-title-m`, `text-title-s`, `text-body-l`, `text-body-m`, `text-body-s`, `text-code`                     |
+| Spacing       | `spacing-1` through `spacing-12` (4px base: spacing-1=4px, spacing-4=16px, spacing-8=32px)                                                   |
+| Motion        | `duration-instant` (100ms), `duration-fast` (200ms), `duration-normal` (300ms), `duration-slow` (500ms)                                      |
+| Motion easing | `ease-out`, `ease-in`, `ease-in-out`                                                                                                         |
+| iOS easings   | `ease-ios-default`, `ease-ios-out`, `ease-ios-in`, `ease-ios-spring`, `ease-ios-snappy`, `ease-ios-bouncy`                                   |
+| Spring tokens | `spring-gentle`, `spring-smooth`, `spring-snappy`, `spring-bouncy`                                                                           |
+| Choreography  | `entrance.float-in`, `exit.fade-out`, `success.pulse`, `success.confetti`, `attention.wiggle`, `error.shake`, `press.squeeze`, `loading.bob` |
+| Glass surface | `surface-glass-blur`, `surface-glass-tint`, `surface-glass-border` (only when `theme.surfaces.glass.enabled = true`)                         |
 
 These map 1:1 to what `/frontend-tokens` produces in `project.json#theme`. Match naming exactly.
 
@@ -62,6 +66,35 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* iOS / Apple easings (Expressive pack — /frontend-animations) */
+  --ease-ios-default: cubic-bezier(0.42, 0, 0.58, 1);
+  --ease-ios-out: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-ios-in: cubic-bezier(0.42, 0, 1, 1);
+  --ease-ios-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-ios-snappy: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-ios-bouncy: cubic-bezier(0.5, 1.6, 0.4, 0.8);
+
+  /* Spring CSS approximations (static-render fallbacks — /frontend-animations) */
+  --spring-gentle-duration: 600ms;
+  --spring-gentle-bezier: cubic-bezier(0.33, 1, 0.68, 1);
+  --spring-smooth-duration: 500ms;
+  --spring-smooth-bezier: cubic-bezier(0.32, 1, 0.68, 1);
+  --spring-snappy-duration: 420ms;
+  --spring-snappy-bezier: cubic-bezier(0.4, 1.15, 0.7, 1.05);
+  --spring-bouncy-duration: 700ms;
+  --spring-bouncy-bezier: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Glass surface tokens (only emitted when surfaces.glass.enabled = true) */
+  --surface-glass-blur: 20px;
+  --surface-glass-saturation: 180%;
+  --surface-glass-tint: color-mix(
+    in oklch,
+    var(--color-surface) 70%,
+    transparent
+  );
+  --surface-glass-border: 1px solid
+    color-mix(in oklch, var(--color-foreground) 8%, transparent);
 
   /* Typography sizes (fluid clamp scaling) */
   --text-display: clamp(2.5rem, 5vw + 1rem, 4rem);
@@ -126,11 +159,28 @@ transitionDuration: {
   fast:    'var(--duration-fast)',
   normal:  'var(--duration-normal)',
   slow:    'var(--duration-slow)',
+  // Spring durations (Expressive/Playful pack — /frontend-animations)
+  'spring-gentle': 'var(--spring-gentle-duration)',
+  'spring-smooth': 'var(--spring-smooth-duration)',
+  'spring-snappy': 'var(--spring-snappy-duration)',
+  'spring-bouncy': 'var(--spring-bouncy-duration)',
 },
 transitionTimingFunction: {
   out:    'var(--ease-out)',
   in:     'var(--ease-in)',
   'in-out': 'var(--ease-in-out)',
+  // iOS easings (Expressive pack — /frontend-animations)
+  'ios-default': 'var(--ease-ios-default)',
+  'ios-out':     'var(--ease-ios-out)',
+  'ios-in':      'var(--ease-ios-in)',
+  'ios-spring':  'var(--ease-ios-spring)',
+  'ios-snappy':  'var(--ease-ios-snappy)',
+  'ios-bouncy':  'var(--ease-ios-bouncy)',
+  // Spring bezier approximations (static CSS fallback)
+  'spring-gentle': 'var(--spring-gentle-bezier)',
+  'spring-smooth': 'var(--spring-smooth-bezier)',
+  'spring-snappy': 'var(--spring-snappy-bezier)',
+  'spring-bouncy': 'var(--spring-bouncy-bezier)',
 },
 ```
 
@@ -142,13 +192,16 @@ For Tailwind v4 (CSS-first): `--color-*` custom properties in `:root` are picked
 
 Detect and reject these patterns in generated and reviewed UI code:
 
-| ID   | Pattern                                   | Severity | Fix                                 |
-| ---- | ----------------------------------------- | -------- | ----------------------------------- |
-| T101 | `#[0-9a-fA-F]{3,8}` in JSX/className/CSS  | HIGH     | `var(--color-{nearest-token})`      |
-| T102 | `bg-\[#`, `text-\[#`, `border-\[#` in JSX | HIGH     | `bg-{token}`, `text-{token}`, etc.  |
-| T103 | `style={{\s*color:\s*['"\`]#` in JSX      | HIGH     | className with token class          |
-| T104 | `p-\[\d+px\]`, `gap-\[\d+px\]` arbitrary  | MEDIUM   | `p-{n}` / `gap-{n}` nearest spacing |
-| T105 | `oklch(`, `hsl(`, `rgb(` literals in JSX  | HIGH     | `var(--color-{nearest-token})`      |
+| ID   | Pattern                                                               | Severity | Fix                                                     |
+| ---- | --------------------------------------------------------------------- | -------- | ------------------------------------------------------- |
+| T101 | `#[0-9a-fA-F]{3,8}` in JSX/className/CSS                              | HIGH     | `var(--color-{nearest-token})`                          |
+| T102 | `bg-\[#`, `text-\[#`, `border-\[#` in JSX                             | HIGH     | `bg-{token}`, `text-{token}`, etc.                      |
+| T103 | `style={{\s*color:\s*['"\`]#` in JSX                                  | HIGH     | className with token class                              |
+| T104 | `p-\[\d+px\]`, `gap-\[\d+px\]` arbitrary                              | MEDIUM   | `p-{n}` / `gap-{n}` nearest spacing                     |
+| T105 | `oklch(`, `hsl(`, `rgb(` literals in JSX                              | HIGH     | `var(--color-{nearest-token})`                          |
+| T106 | Hardcoded `transition: 300ms` / `duration: 200ms` literals in JSX/CSS | MEDIUM   | `var(--duration-{token})` or spring token               |
+| T107 | Hardcoded `cubic-bezier(...)` literal in JSX/CSS                      | MEDIUM   | `var(--ease-{token})` or `var(--spring-{token}-bezier)` |
+| T108 | `backdrop-filter` used when `theme.surfaces.glass.enabled !== true`   | HIGH     | Enable via `/frontend-animations` or remove             |
 
 **Check scope:** only `.tsx`, `.jsx`, `.vue`, `.svelte`, `.css`, `.scss`. Skip test files, JSON, config files.
 

@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Animation Preview — {{PACK_NAME}}</title>
+    <style>
+      /* ── Token placeholders — replaced by route-apply logic ── */
+      :root {
+        --pack-name: "{{PACK_NAME}}";
+
+        /* Base motion */
+        --duration-instant: {{DURATION_INSTANT}};
+        --duration-fast: {{DURATION_FAST}};
+        --duration-normal: {{DURATION_NORMAL}};
+        --duration-slow: {{DURATION_SLOW}};
+        --ease-out: {{EASE_OUT}};
+        --ease-in: {{EASE_IN}};
+        --ease-in-out: {{EASE_IN_OUT}};
+
+        /* Springs */
+        --spring-gentle-duration: {{SPRING_GENTLE_DURATION}};
+        --spring-gentle-bezier: {{SPRING_GENTLE_BEZIER}};
+        --spring-smooth-duration: {{SPRING_SMOOTH_DURATION}};
+        --spring-smooth-bezier: {{SPRING_SMOOTH_BEZIER}};
+        --spring-snappy-duration: {{SPRING_SNAPPY_DURATION}};
+        --spring-snappy-bezier: {{SPRING_SNAPPY_BEZIER}};
+        --spring-bouncy-duration: {{SPRING_BOUNCY_DURATION}};
+        --spring-bouncy-bezier: {{SPRING_BOUNCY_BEZIER}};
+
+        /* iOS easings */
+        --ease-ios-default: {{EASE_IOS_DEFAULT}};
+        --ease-ios-out: {{EASE_IOS_OUT}};
+        --ease-ios-in: {{EASE_IOS_IN}};
+        --ease-ios-spring: {{EASE_IOS_SPRING}};
+        --ease-ios-snappy: {{EASE_IOS_SNAPPY}};
+        --ease-ios-bouncy: {{EASE_IOS_BOUNCY}};
+        --duration-ios-fast: {{DURATION_IOS_FAST}};
+        --duration-ios-default: {{DURATION_IOS_DEFAULT}};
+        --duration-ios-modal: {{DURATION_IOS_MODAL}};
+
+        /* Glass */
+        --surface-glass-blur: {{SURFACE_GLASS_BLUR}};
+        --surface-glass-saturation: {{SURFACE_GLASS_SATURATION}};
+        --surface-glass-tint: {{SURFACE_GLASS_TINT}};
+        --surface-glass-border: {{SURFACE_GLASS_BORDER}};
+
+        /* Preview UI tokens */
+        --bg: #0f0f13;
+        --surface: #1a1a24;
+        --surface2: #22222e;
+        --fg: #f0f0f8;
+        --muted: #888899;
+        --accent: #6366f1;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --radius: 12px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        padding: 2rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+      }
+      .subtitle {
+        color: var(--muted);
+        margin-bottom: 2rem;
+        font-size: 0.875rem;
+      }
+      h2 {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin: 2rem 0 1rem;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+      }
+      .swatch {
+        background: var(--surface);
+        border: 1px solid #ffffff10;
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        cursor: pointer;
+        user-select: none;
+      }
+      .swatch-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 0.5rem;
+        font-family: ui-monospace, monospace;
+      }
+      .swatch-value {
+        font-size: 0.7rem;
+        color: #ffffff40;
+        font-family: ui-monospace, monospace;
+        margin-bottom: 1rem;
+        word-break: break-all;
+      }
+      .demo-box {
+        width: 48px;
+        height: 48px;
+        background: var(--accent);
+        border-radius: 10px;
+        margin: 0 auto;
+      }
+
+      /* ── Demo animations ── */
+
+      /* Duration swatches */
+      .demo-duration {
+        background: var(--accent);
+        height: 4px;
+        border-radius: 2px;
+        width: 0;
+        transition: width var(--dur, 300ms) var(--ease-out);
+      }
+      .swatch:hover .demo-duration {
+        width: 100%;
+      }
+
+      /* Easing swatches */
+      .demo-ease {
+        width: 40px;
+        height: 40px;
+        background: var(--accent);
+        border-radius: 8px;
+        transition: transform var(--ease-dur, 400ms) var(--ease-fn, ease);
+      }
+      .swatch:hover .demo-ease {
+        transform: translateX(80px);
+      }
+
+      /* Spring swatches */
+      .demo-spring {
+        width: 40px;
+        height: 40px;
+        background: var(--accent);
+        border-radius: 8px;
+        transition: transform var(--spring-dur, 500ms) var(--spring-fn, ease);
+      }
+      .swatch:hover .demo-spring {
+        transform: scale(1.4);
+      }
+
+      /* Choreography swatches */
+      .demo-choreography {
+        width: 40px;
+        height: 40px;
+        background: var(--success);
+        border-radius: 8px;
+        margin: 0 auto;
+      }
+
+      /* Glass swatch */
+      .demo-glass {
+        height: 80px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+        position: relative;
+        overflow: hidden;
+      }
+      .demo-glass-card {
+        position: absolute;
+        inset: 12px;
+        border-radius: 6px;
+        background: var(--surface-glass-tint, rgba(255, 255, 255, 0.1));
+        border: var(--surface-glass-border, 1px solid rgba(255, 255, 255, 0.15));
+        backdrop-filter: blur(var(--surface-glass-blur, 12px))
+          saturate(var(--surface-glass-saturation, 150%));
+      }
+
+      /* Choreography animations */
+      @keyframes float-in-demo {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes success-pulse-demo {
+        0% {
+          transform: scale(1);
+        }
+        40% {
+          transform: scale(1.2);
+          box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.3);
+        }
+        100% {
+          transform: scale(1);
+          box-shadow: none;
+        }
+      }
+      @keyframes wiggle-demo {
+        0%,
+        100% {
+          transform: rotate(0deg);
+        }
+        20% {
+          transform: rotate(-8deg);
+        }
+        40% {
+          transform: rotate(8deg);
+        }
+        60% {
+          transform: rotate(-4deg);
+        }
+        80% {
+          transform: rotate(4deg);
+        }
+      }
+      @keyframes shake-demo {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        20% {
+          transform: translateX(-8px);
+        }
+        40% {
+          transform: translateX(8px);
+        }
+        60% {
+          transform: translateX(-4px);
+        }
+        80% {
+          transform: translateX(4px);
+        }
+      }
+      @keyframes bob-demo {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+      @keyframes squeeze-demo {
+        0% {
+          transform: scale(1);
+        }
+        40% {
+          transform: scale(0.85);
+        }
+        70% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .play-btn {
+        display: block;
+        width: 100%;
+        margin-top: 0.75rem;
+        padding: 0.4rem 0;
+        background: #ffffff10;
+        border: none;
+        border-radius: 6px;
+        color: var(--fg);
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: background 150ms ease;
+      }
+      .play-btn:hover {
+        background: #ffffff20;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .demo-duration,
+        .demo-ease,
+        .demo-spring {
+          transition: none !important;
+        }
+        .demo-choreography {
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Animation Preview</h1>
+    <p class="subtitle">
+      Pack: <strong>{{PACK_NAME}}</strong> &nbsp;·&nbsp; Stack:
+      <strong>{{STACK_TYPE}}</strong> &nbsp;·&nbsp; Hover swatches to preview
+      motion
+    </p>
+
+    <!-- ── Duration swatches ── -->
+    <h2>Durations</h2>
+    <div class="grid">
+      <div class="swatch">
+        <div class="swatch-label">duration-instant</div>
+        <div class="swatch-value">{{DURATION_INSTANT}}</div>
+        <div class="demo-duration" style="--dur: var(--duration-instant)"></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-label">duration-fast</div>
+        <div class="swatch-value">{{DURATION_FAST}}</div>
+        <div class="demo-duration" style="--dur: var(--duration-fast)"></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-label">duration-normal</div>
+        <div class="swatch-value">{{DURATION_NORMAL}}</div>
+        <div class="demo-duration" style="--dur: var(--duration-normal)"></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-label">duration-slow</div>
+        <div class="swatch-value">{{DURATION_SLOW}}</div>
+        <div class="demo-duration" style="--dur: var(--duration-slow)"></div>
+      </div>
+    </div>
+
+    <!-- ── Base easing swatches ── -->
+    <h2>Base Easings</h2>
+    <div class="grid">
+      <div class="swatch">
+        <div class="swatch-label">ease-out</div>
+        <div class="swatch-value">{{EASE_OUT}}</div>
+        <div
+          class="demo-ease"
+          style="--ease-fn: var(--ease-out); --ease-dur: var(--duration-normal)"
+        ></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-label">ease-in</div>
+        <div class="swatch-value">{{EASE_IN}}</div>
+        <div
+          class="demo-ease"
+          style="--ease-fn: var(--ease-in); --ease-dur: var(--duration-normal)"
+        ></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-label">ease-in-out</div>
+        <div class="swatch-value">{{EASE_IN_OUT}}</div>
+        <div
+          class="demo-ease"
+          style="
+            --ease-fn: var(--ease-in-out);
+            --ease-dur: var(--duration-normal);
+          "
+        ></div>
+      </div>
+    </div>
+
+    <!-- ── iOS easing swatches (Expressive/Playful only) ── -->
+    <div id="ios-section" style="display: {{IOS_DISPLAY}}">
+      <h2>iOS / Apple Easings</h2>
+      <div class="grid">
+        <div class="swatch">
+          <div class="swatch-label">ease-ios-default</div>
+          <div class="swatch-value">cubic-bezier(0.42, 0, 0.58, 1)</div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-ios-default);
+              --ease-dur: var(--duration-ios-default);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-ios-spring</div>
+          <div class="swatch-value">cubic-bezier(0.32, 0.72, 0, 1)</div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-ios-spring);
+              --ease-dur: var(--duration-ios-modal);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-ios-snappy</div>
+          <div class="swatch-value">
+            cubic-bezier(0.175, 0.885, 0.32, 1.275)
+          </div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-ios-snappy);
+              --ease-dur: var(--duration-ios-fast);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-ios-bouncy</div>
+          <div class="swatch-value">cubic-bezier(0.5, 1.6, 0.4, 0.8)</div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-ios-bouncy);
+              --ease-dur: var(--duration-ios-default);
+            "
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Spring swatches ── -->
+    <div id="spring-section" style="display: {{SPRING_DISPLAY}}">
+      <h2>Spring Tokens</h2>
+      <div class="grid">
+        <div class="swatch">
+          <div class="swatch-label">spring-gentle</div>
+          <div class="swatch-value">k=170 c=26 m=1 · 600ms</div>
+          <div
+            class="demo-spring"
+            style="
+              --spring-fn: var(--spring-gentle-bezier);
+              --spring-dur: var(--spring-gentle-duration);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">spring-smooth</div>
+          <div class="swatch-value">k=220 c=28 m=1 · 500ms</div>
+          <div
+            class="demo-spring"
+            style="
+              --spring-fn: var(--spring-smooth-bezier);
+              --spring-dur: var(--spring-smooth-duration);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">spring-snappy</div>
+          <div class="swatch-value">k=300 c=25 m=1 · 420ms</div>
+          <div
+            class="demo-spring"
+            style="
+              --spring-fn: var(--spring-snappy-bezier);
+              --spring-dur: var(--spring-snappy-duration);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">spring-bouncy</div>
+          <div class="swatch-value">k=380 c=18 m=1 · 700ms</div>
+          <div
+            class="demo-spring"
+            style="
+              --spring-fn: var(--spring-bouncy-bezier);
+              --spring-dur: var(--spring-bouncy-duration);
+            "
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Choreography swatches ── -->
+    <h2>Choreography</h2>
+    <div class="grid">
+      <div class="swatch">
+        <div class="swatch-label">entrance.float-in</div>
+        <div class="swatch-value">opacity + translateY</div>
+        <div
+          id="float-in-box"
+          class="demo-choreography"
+          style="opacity: 0; transform: translateY(12px)"
+        ></div>
+        <button
+          class="play-btn"
+          onclick="
+            playAnimation(
+              'float-in-box',
+              'float-in-demo',
+              '300ms',
+              'var(--ease-out)',
+            )
+          "
+        >
+          ▶ Play
+        </button>
+      </div>
+      <div class="swatch">
+        <div class="swatch-label">success.pulse</div>
+        <div class="swatch-value">scale + ring flash</div>
+        <div
+          id="pulse-box"
+          class="demo-choreography"
+          style="background: var(--success)"
+        ></div>
+        <button
+          class="play-btn"
+          onclick="
+            playAnimation(
+              'pulse-box',
+              'success-pulse-demo',
+              '500ms',
+              'cubic-bezier(0.34, 1.56, 0.64, 1)',
+            )
+          "
+        >
+          ▶ Play
+        </button>
+      </div>
+      <div class="swatch">
+        <div class="swatch-label">error.shake</div>
+        <div class="swatch-value">horizontal shake</div>
+        <div
+          id="shake-box"
+          class="demo-choreography"
+          style="background: #ef4444"
+        ></div>
+        <button
+          class="play-btn"
+          onclick="playAnimation('shake-box', 'shake-demo', '350ms', 'linear')"
+        >
+          ▶ Play
+        </button>
+      </div>
+      <div class="swatch" style="display: {{PLAYFUL_DISPLAY}}">
+        <div class="swatch-label">attention.wiggle</div>
+        <div class="swatch-value">rotation wiggle</div>
+        <div
+          id="wiggle-box"
+          class="demo-choreography"
+          style="background: var(--warning)"
+        ></div>
+        <button
+          class="play-btn"
+          onclick="
+            playAnimation(
+              'wiggle-box',
+              'wiggle-demo',
+              '400ms',
+              'var(--spring-bouncy-bezier)',
+            )
+          "
+        >
+          ▶ Play
+        </button>
+      </div>
+      <div class="swatch">
+        <div class="swatch-label">loading.bob</div>
+        <div class="swatch-value">infinite vertical bob</div>
+        <div
+          id="bob-box"
+          class="demo-choreography"
+          style="
+            background: var(--muted);
+            animation: bob-demo 1.2s ease-in-out infinite;
+          "
+        ></div>
+      </div>
+      <div class="swatch" style="display: {{PLAYFUL_DISPLAY}}">
+        <div class="swatch-label">press.squeeze</div>
+        <div class="swatch-value">bouncy compress</div>
+        <div
+          id="squeeze-box"
+          class="demo-choreography"
+          style="background: var(--accent)"
+        ></div>
+        <button
+          class="play-btn"
+          onclick="
+            playAnimation(
+              'squeeze-box',
+              'squeeze-demo',
+              '500ms',
+              'var(--spring-bouncy-bezier)',
+            )
+          "
+        >
+          ▶ Play
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Glass surface swatch ── -->
+    <div id="glass-section" style="display: {{GLASS_DISPLAY}}">
+      <h2>Glass Surface</h2>
+      <div class="grid">
+        <div class="swatch">
+          <div class="swatch-label">surfaces.glass</div>
+          <div class="swatch-value">
+            blur={{SURFACE_GLASS_BLUR}} · sat={{SURFACE_GLASS_SATURATION}}
+          </div>
+          <div class="demo-glass">
+            <div class="demo-glass-card"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function playAnimation(id, name, duration, easing) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+          return;
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.animation = "none";
+        el.style.opacity = "";
+        el.style.transform = "";
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            el.style.animation = `${name} ${duration} ${easing} both`;
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

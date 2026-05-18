@@ -124,6 +124,13 @@ Properties: [design properties with direct CSS mapping — note only what is vis
               shadow → box-shadow: [value(s)]
               opacity → opacity: [value(s)]
               rotation → transform: rotate([value(s)])]
+Motion intent: [detected motion/animation cues — note what is present:
+                transitions: [elements with visible transition/animation frames]
+                hover states: [if hover variants shown: element → effect]
+                animated: [elements labeled "animated" or with motion arrows/paths]
+                glass/blur: [backdrop-filter surfaces visible?]
+                spring/bounce: [bouncy or elastic motion implied?]
+                → store as $MOTION_INTENT (description string or "none detected")]
 
 ════════════════════════════════════════════════════════════
 ```

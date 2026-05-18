@@ -31,21 +31,21 @@ Patterns that scream "an AI made this". Actively avoid these.
 
 ### Layout
 
-| Avoid                               | Why                                   | Alternative                                          |
-| ----------------------------------- | ------------------------------------- | ---------------------------------------------------- |
-| Cards in cards                      | Visual noise, unclear hierarchy       | Spacing + typography for hierarchy within cards      |
-| Identical card grids for everything | Repetitive, no visual tension         | Vary layout: list, masonry, featured + grid          |
-| Everything centered                 | Feels like a template, no rhythm      | Left-align text, center only heroes and CTAs         |
-| Glassmorphism without reason        | Decoration without function           | Use depth only where it serves information hierarchy |
-| Hero with metric cards              | The same dashboard pattern everywhere | Design from the specific use case                    |
+| Avoid                                                       | Why                                   | Alternative                                                                              |
+| ----------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Cards in cards                                              | Visual noise, unclear hierarchy       | Spacing + typography for hierarchy within cards                                          |
+| Identical card grids for everything                         | Repetitive, no visual tension         | Vary layout: list, masonry, featured + grid                                              |
+| Everything centered                                         | Feels like a template, no rhythm      | Left-align text, center only heroes and CTAs                                             |
+| Glassmorphism without `theme.surfaces.glass.enabled = true` | Decoration without function           | Use depth only where it serves information hierarchy — opt in via `/frontend-animations` |
+| Hero with metric cards                                      | The same dashboard pattern everywhere | Design from the specific use case                                                        |
 
 ### Motion
 
-| Avoid                      | Why                            | Alternative                                         |
-| -------------------------- | ------------------------------ | --------------------------------------------------- |
-| Bounce/elastic easing      | Feels 2015, tacky              | Smooth deceleration: `ease-out-quart`               |
-| Animation without purpose  | Distracting, slows interaction | Animate only when it adds information               |
-| Animate everything at once | Animation fatigue              | Stagger, or animate only the most important element |
+| Avoid                                      | Why                            | Alternative                                                                               |
+| ------------------------------------------ | ------------------------------ | ----------------------------------------------------------------------------------------- |
+| Bounce/elastic easing outside Playful pack | Feels 2015, tacky              | Smooth deceleration: `ease-out-quart` — or opt in via `/frontend-animations` Playful pack |
+| Animation without purpose                  | Distracting, slows interaction | Animate only when it adds information                                                     |
+| Animate everything at once                 | Animation fatigue              | Stagger, or animate only the most important element                                       |
 
 ---
 
@@ -325,3 +325,59 @@ Choose one term and stick with it:
 ### Undo > Confirm
 
 Undo is better than confirmation dialogs — users click through confirmations. Use confirm only for truly irreversible or high-cost actions.
+
+---
+
+## Glass Surfaces (Apple-style opt-in)
+
+Glassmorphism is an **opt-in design system choice**, not a default. Enable via `/frontend-animations` → Expressive pack (sets `theme.surfaces.glass.enabled = true`).
+
+When enabled, apply iOS HIG rules strictly:
+
+| Rule                 | Guidance                                                                                     |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| **Overlay only**     | Glass surfaces on sheets, navigation bars, popovers, modals — never on body backgrounds      |
+| **Text contrast**    | Minimum 4.5:1 against the least-favorable backdrop color the glass can sit over              |
+| **Fallback**         | Always emit `@supports (backdrop-filter: blur())` with solid `var(--color-surface)` fallback |
+| **Scale limit**      | No `backdrop-filter` on elements > 60vh tall (mobile performance)                            |
+| **One per viewport** | At most one actively blurring surface visible at a time                                      |
+| **Reduced motion**   | Glass surfaces retain blur; only transitions are suppressed under `prefers-reduced-motion`   |
+
+```css
+.glass-card {
+  background: var(--surface-glass-tint);
+  border: var(--surface-glass-border);
+  border-radius: var(--rounded-lg);
+
+  @supports (backdrop-filter: blur()) {
+    backdrop-filter: blur(var(--surface-glass-blur))
+      saturate(var(--surface-glass-saturation));
+  }
+}
+```
+
+When `theme.surfaces.glass.enabled = false` (default), treat any `backdrop-filter` usage as a T108 violation.
+
+---
+
+## Animation Packs
+
+Managed by `/frontend-animations`. Packs are composites — they set motion vocabulary, spring physics, choreography richness, and surface style as one coherent choice.
+
+| Pack                     | Feel       | Key traits                                                      |
+| ------------------------ | ---------- | --------------------------------------------------------------- |
+| **None**                 | Static     | No transitions beyond color changes                             |
+| **Subtle**               | Calm       | hover-lift 1px, press-scale 0.98, fades, ease-out               |
+| **Standard** _(default)_ | Polished   | + stagger reveals, modal slides, route fades                    |
+| **Expressive**           | Apple-like | iOS easings, spring physics, glass surfaces, view transitions   |
+| **Playful**              | Whimsical  | + bouncy springs, success-pulse, attention.wiggle, celebrations |
+
+**Anti-clichés for Playful pack:**
+
+- Wiggle/bounce only on user-initiated success or attention moments — never on every hover
+- `success.confetti`: max 30 particles, GPU `transform/opacity` only, auto-disabled under `prefers-reduced-motion`
+- No "AI sparkle" purple gradient bursts on success
+- No drop-shadows on text (still banned regardless of pack)
+- Particle effects: max one moment per page, auto-cleanup after 2s
+
+**All choreography tokens** auto-wrap in `@media (prefers-reduced-motion: reduce)` with opacity-only fade fallback. Spring physics degrade to `var(--ease-out)` at `0.01ms` duration.

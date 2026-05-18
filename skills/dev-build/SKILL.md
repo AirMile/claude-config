@@ -179,6 +179,7 @@ multiSelect: false
 - Use semantic HTML, form controls, and layout structure appropriate to the feature.
 - Use token-based Tailwind classes: `bg-background`, `text-foreground`, `bg-primary`, `text-primary-foreground`, `rounded-md`, `p-4`, `gap-4`, semantic headings (`text-2xl font-semibold`). Read `project.json#theme` for token names; if empty → fall back to defaults from `shared/TOKENS.md`.
 - T101/T102 still enforced — no hex literals or `bg-[#hex]` values.
+- **Motion:** Read `project.json#theme.motion.pack`. If set and not `"none"`: apply `transition-transform duration-fast ease-out` + hover lift + active scale to all interactive elements (buttons, cards, links). For Expressive/Playful packs: use `var(--ease-ios-spring)` and `var(--spring-snappy-bezier)` via inline CSS or token classes. If `motion.dev`/`framer-motion` detected in `package.json`: use `<motion.*>` with spring token values (`stiffness/damping/mass` from `theme.motion.spring[]`). Always wrap choreography in `@media (prefers-reduced-motion: reduce)` fallback. T106/T107 enforced — no hardcoded ms or cubic-bezier literals.
 - `/frontend-design` is optional: run it on-demand for layout reshaping (sidebar/hero/grid). No marker comment on generated files.
 
 **Dependency check:**

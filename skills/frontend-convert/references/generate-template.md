@@ -36,6 +36,21 @@ Check `theme.modes.dark` in `project.json`. If present (`$HAS_DARK_MODE = true`)
 
 If `theme.modes.dark` is missing: no `dark:` classes — do not add them speculatively.
 
+**Motion / transitions:**
+
+Check `theme.motion.pack` in `project.json`. Store as `$MOTION_PACK`.
+
+- If `$MOTION_PACK` is empty or `"none"`: no transition classes beyond `transition-colors` on interactive elements.
+- If `$MOTION_PACK` is `"subtle"` or `"standard"`: add `transition-transform duration-fast ease-out` + hover `translateY(-1px)` / active `scale(0.97)` on cards and buttons.
+- If `$MOTION_PACK` is `"expressive"` or `"playful"`: use iOS-easing CSS vars (`var(--ease-ios-spring)`, `var(--spring-snappy-bezier)`) for interactive elements; apply `entrance.float-in` choreography to primary content blocks.
+
+Also factor in `$MOTION_INTENT` from SOURCE ANALYSIS:
+
+- If `$MOTION_INTENT` describes glass/blur and `theme.surfaces.glass.enabled = true`: apply `.glass-card` pattern (see `shared/PATTERNS.md`).
+- If `$MOTION_INTENT` describes animations but `$MOTION_PACK` is empty: note in Generation Summary "Motion intent detected — run /frontend-animations to set a pack."
+
+All motion classes must wrap choreography in `@media (prefers-reduced-motion: reduce)` fallback (see `shared/PATTERNS.md § prefers-reduced-motion Fallback`).
+
 **Responsive layout:**
 
 If `$RESPONSIVE_VIEWPORTS` shows multiple viewports: use Tailwind responsive prefixes systematically (mobile-first).

@@ -62,8 +62,32 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
     "colors": [],
     "fonts": { "headings": "", "body": "", "mono": "" },
     "spacing": "",
-    "motion": { "durations": [], "easings": [] },
+    "motion": {
+      "durations": [],
+      "easings": [],
+      "pack": "",
+      "axes": {
+        "expressiveness": "",
+        "springiness": "",
+        "tempo": "normal",
+        "surfaces": "flat"
+      },
+      "spring": [],
+      "choreography": {}
+    },
     "interactions": { "focusRing": {}, "hover": {}, "active": {} },
+    "surfaces": {
+      "glass": {
+        "enabled": false,
+        "blur": "20px",
+        "saturation": "180%",
+        "tint": "",
+        "border": "",
+        "vibrancy": false,
+        "fallback": "solid"
+      },
+      "elevation": []
+    },
     "modes": [],
     "cssVars": ""
   },
@@ -103,18 +127,18 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
 
 ## Merge strategy per section
 
-| Section             | Strategy            | Notes                                                               |
-| ------------------- | ------------------- | ------------------------------------------------------------------- |
-| `concept`           | **OVERWRITE**       | `name`+`pitch`+`content` overwritten, `thinking` is APPEND          |
-| `architecture`      | **OVERWRITE**       | Diagram + description fully overwritten                             |
-| `design`            | **MERGE on `name`** | Pages/flows/principles/components merged on name, never auto-delete |
-| `theme`             | **OVERWRITE**       | Fully overwritten by `/frontend-tokens`                             |
-| `stack`             | **MERGE**           | Add packages, do not overwrite existing ones                        |
-| `data`              | **MERGE**           | Add entities/fields/relations per entity                            |
-| `endpoints`         | **MERGE**           | Add or update status, do not delete                                 |
-| `features`          | **MERGE on `name`** | Update status, add new ones, do not delete                          |
-| `context`           | **MERGE per key**   | Update structure/routing/patterns individually                      |
-| `optimization_runs` | **APPEND**          | Append-only log, dedup on `run_id`. Never delete.                   |
+| Section             | Strategy            | Notes                                                                                                                                                                                      |
+| ------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `concept`           | **OVERWRITE**       | `name`+`pitch`+`content` overwritten, `thinking` is APPEND                                                                                                                                 |
+| `architecture`      | **OVERWRITE**       | Diagram + description fully overwritten                                                                                                                                                    |
+| `design`            | **MERGE on `name`** | Pages/flows/principles/components merged on name, never auto-delete                                                                                                                        |
+| `theme`             | **DELTA-WRITE**     | Base tokens overwritten by `/frontend-tokens`; `motion.pack/spring/choreography` and `surfaces` delta-written by `/frontend-animations` (only owned keys, never touches base token fields) |
+| `stack`             | **MERGE**           | Add packages, do not overwrite existing ones                                                                                                                                               |
+| `data`              | **MERGE**           | Add entities/fields/relations per entity                                                                                                                                                   |
+| `endpoints`         | **MERGE**           | Add or update status, do not delete                                                                                                                                                        |
+| `features`          | **MERGE on `name`** | Update status, add new ones, do not delete                                                                                                                                                 |
+| `context`           | **MERGE per key**   | Update structure/routing/patterns individually                                                                                                                                             |
+| `optimization_runs` | **APPEND**          | Append-only log, dedup on `run_id`. Never delete.                                                                                                                                          |
 
 ### Stack merge
 
@@ -422,7 +446,12 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 
 ### theme
 
-**Design system source of truth.** `theme` contains all design tokens (colors, typography, spacing, borderRadius, shadows, modes, motion, interactions, cssVars). The dashboard UI renders this as the "Design System" section. Manage via `/frontend-tokens`.
+**Design system source of truth.** `theme` contains all design tokens (colors, typography, spacing, borderRadius, shadows, modes, motion, interactions, cssVars) plus animation packs, spring physics, choreography, and surface effects. The dashboard UI renders this as the "Design System" section.
+
+**Skill ownership:**
+
+- Base tokens (colors, typography, spacing, shadows, motion.durations, motion.easings, interactions): managed by `/frontend-tokens`
+- Animation packs + springs + choreography + surfaces: managed by `/frontend-animations` (delta-writes only; never touches base token fields)
 
 ```json
 {
@@ -473,6 +502,94 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
       "usage": "Cards"
     }
   ],
+  "motion": {
+    "durations": [
+      {
+        "token": "duration-fast",
+        "value": "200ms",
+        "usage": "Tooltip, hover state"
+      }
+    ],
+    "easings": [
+      {
+        "token": "ease-out",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "usage": "Elements entering"
+      }
+    ],
+    "pack": "standard",
+    "axes": {
+      "expressiveness": "standard",
+      "springiness": "smooth",
+      "tempo": "normal",
+      "surfaces": "flat"
+    },
+    "spring": [
+      {
+        "token": "spring-snappy",
+        "stiffness": 300,
+        "damping": 25,
+        "mass": 1,
+        "cssApprox": "cubic-bezier(0.4, 1.15, 0.7, 1.05)",
+        "cssDuration": "420ms",
+        "usage": "Press, tap feedback"
+      }
+    ],
+    "choreography": {
+      "entrance": "entrance.float-in",
+      "exit": "exit.fade-out",
+      "success": null
+    }
+  },
+  "interactions": {
+    "focusRing": {
+      "width": "2px",
+      "color": "var(--color-accent-primary)",
+      "offset": "2px"
+    },
+    "hover": {
+      "transition": "var(--duration-fast) var(--ease-out)",
+      "transform": "translateY(-1px)"
+    },
+    "active": { "transform": "scale(0.98)" }
+  },
+  "surfaces": {
+    "glass": {
+      "enabled": false,
+      "blur": "20px",
+      "saturation": "180%",
+      "tint": "color-mix(in oklch, var(--color-surface) 70%, transparent)",
+      "border": "1px solid color-mix(in oklch, var(--color-foreground) 8%, transparent)",
+      "vibrancy": false,
+      "fallback": "solid"
+    },
+    "elevation": [
+      {
+        "token": "elevation-1",
+        "shadow": "shadow-sm",
+        "tint": "none",
+        "usage": "Resting cards"
+      },
+      {
+        "token": "elevation-2",
+        "shadow": "shadow-md",
+        "tint": "surface-raised",
+        "usage": "Hover, dropdowns"
+      },
+      {
+        "token": "elevation-3",
+        "shadow": "shadow-lg",
+        "tint": "surface-overlay",
+        "usage": "Modals, popovers"
+      },
+      {
+        "token": "elevation-4",
+        "shadow": "shadow-xl",
+        "tint": "surface-floating",
+        "usage": "Toasts, command-K"
+      }
+    ]
+  },
   "modes": {
     "light": ":root { --background: #fff; --foreground: #1a1a2e; }",
     "dark": ".dark { --background: #1a1a2e; --foreground: #fff; }"
@@ -483,6 +600,7 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 
 `cssVars` = complete CSS variables export (for consumption by other skills)
 `modes` = light/dark mode CSS (object with mode name as key)
+`motion.pack` + `motion.axes` + `motion.spring[]` + `motion.choreography{}` + `surfaces{}` = managed by `/frontend-animations`
 Other fields = structured tokens per category
 
 ### stack
