@@ -1,6 +1,6 @@
 ---
 name: frontend-design
-description: Manage design specs and generate PAGE/COMPONENT code. Use with /frontend-design. Auto-triggers when a backlog task with type PAGE or COMPONENT and transition "designing" is detected.
+description: Use with /frontend-design. Auto-triggers on PAGE/COMPONENT backlog tasks with transition "designing".
 reads: [devinfo.handoff, backlog.status, feature.requirements, feature.files]
 writes: [devinfo.handoff, devinfo.tokenDrift]
 metadata:
@@ -446,57 +446,7 @@ If "Edit": loop back to PHASE 1 (ACTION_SELECT with populated-state options).
 
 ### Route: Page (Add/Edit Page)
 
-#### Step 1: Choice
-
-```yaml
-header: "Page"
-question: "What do you want to do?"
-options:
-  - label: "Add new page (Recommended)", description: "Add a page to the design spec"
-  - label: "Edit existing", description: "Edit an existing page"
-multiSelect: false
-```
-
-#### If "Add new page":
-
-```yaml
-header: "New Page"
-question: "Describe the page: name, purpose, and which sections/content it needs."
-options:
-  - label: "I'll type it out", description: "Free description"
-multiSelect: false
-```
-
-Parse description into structured page object. Show preview, proceed to PHASE 3 (Confirm).
-
-#### If "Edit existing":
-
-Show existing pages as options (dynamically generated):
-
-```yaml
-header: "Edit"
-question: "Which page do you want to edit?"
-options:
-  - label: "{page1.name}", description: "{page1.purpose} ({page1.status}) — {N} sections"
-  - label: "{page2.name}", description: "{page2.purpose} ({page2.status}) — {N} sections"
-  # ... max 4 options, rest via "Other"
-multiSelect: false
-```
-
-Then ask what to change:
-
-```yaml
-header: "Edit: {page-name}"
-question: "What do you want to update?"
-options:
-  - label: "Purpose", description: "Current: {purpose}"
-  - label: "Sections", description: "Current: {sections joined}"
-  - label: "Status", description: "Current: {status}"
-  - label: "Notes", description: "Current: {notes or 'empty'}"
-multiSelect: true
-```
-
-Process updates, proceed to PHASE 3 (Confirm).
+> **Todo**: Read `.claude/skills/frontend-design/references/route-page.md` for the add/edit page flow.
 
 ---
 
@@ -560,88 +510,13 @@ multiSelect: false
 
 ### Route: Delete (Delete Item)
 
-```yaml
-header: "Delete"
-question: "What do you want to delete?"
-options:
-  - label: "Page", description: "A page from the design spec"
-  - label: "Component", description: "A component from the design spec"
-  - label: "Flow", description: "A user flow"
-  - label: "Principle", description: "A design principle"
-multiSelect: false
-```
-
-Show items of selected type as options. After selection, confirm with safety pattern:
-
-```yaml
-header: "Confirm Deletion"
-question: "Are you sure you want to delete '{item-name}'?"
-options:
-  - label: "No, cancel (Recommended)", description: "Keep item"
-  - label: "Yes, remove", description: "Permanently remove"
-multiSelect: false
-```
-
-**Cross-reference check:** When deleting a page, check if it's referenced in any flows. If so, warn:
-
-```
-⚠ Page "{page}" is used in flow(s): {flow-names}.
-  These flow steps will be orphaned.
-```
-
-Proceed to PHASE 3 (Confirm).
+> **Todo**: Read `.claude/skills/frontend-design/references/route-delete.md` for the deletion flow with cross-reference check.
 
 ---
 
 ### Route: Restore (Restore Checkpoint)
 
-#### Step 1: Load Checkpoints
-
-Read `.project/session/design-history.json`.
-
-- If the file does not exist or is empty → show message and stop:
-  ```
-  ℹ No checkpoints available. Changes are only saved after the first write.
-  ```
-
-#### Step 2: Choose Checkpoint
-
-Show the 4 most recent checkpoints as options:
-
-```yaml
-header: "Restore"
-question: "Which checkpoint do you want to restore?"
-options:
-  - label: "{HH:mm DD-MM}", description: "{trigger} — {N} pages, {M} flows"
-  # max 4 entries
-multiSelect: false
-```
-
-#### Step 3: Show Diff
-
-```
-RESTORE PREVIEW
-════════════════════════════════════════════════
-Current: {N} pages, {M} flows, {P} principles
-Restore: {N} pages, {M} flows, {P} principles
-
-Removed:  {page/flow names that are gone in checkpoint}
-Added:    {page/flow names that are new in checkpoint}
-════════════════════════════════════════════════
-```
-
-#### Step 4: Confirm + Write
-
-```yaml
-header: "Restore"
-question: "Are you sure you want to restore to this checkpoint?"
-options:
-  - label: "No, cancel (Recommended)", description: "Keep current state"
-  - label: "Yes, restore", description: "Overwrite current design spec"
-multiSelect: false
-```
-
-On "Yes": write `snapshot` from the chosen checkpoint back to `project.json → design`. Go directly to PHASE X.1 (Write) + PHASE X.2 (Validate) — skip X.0.
+> **Todo**: Read `.claude/skills/frontend-design/references/route-restore.md` for checkpoint load, diff preview, and restore flow.
 
 ---
 
