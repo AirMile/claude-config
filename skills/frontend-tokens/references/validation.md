@@ -435,7 +435,7 @@ Skills reference this pattern in their pre-flight:
 ```markdown
 ### 0.X Project State (optional)
 
-Run Project State Detection (see `shared/VALIDATION.md`).
+Run Project State Detection (see `frontend-tokens/references/validation.md`).
 Show snapshot. Adapt behavior based on available state.
 ```
 

@@ -508,7 +508,7 @@ Next steps:
 
 ## Error Recovery
 
-> See also: `skills/shared/VALIDATION.md` for general recovery patterns.
+> See also: `skills/frontend-tokens/references/validation.md` for general recovery patterns.
 
 ### Extraction Failures
 
@@ -567,7 +567,7 @@ Other skills consume theme data as follows:
 
 - `skills/frontend-tokens/references/THEME_TEMPLATE.md` - Reference for token categories and naming conventions
 - `skills/shared/DASHBOARD.md` - project.json schema and merge strategy
-- `skills/shared/VALIDATION.md` - Pre/post-flight validation templates
+- `skills/frontend-tokens/references/validation.md` - Pre/post-flight validation templates
 - `skills/shared/DEVINFO.md` - Session state tracking
 
 ---
