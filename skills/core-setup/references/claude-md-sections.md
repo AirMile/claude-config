@@ -20,15 +20,14 @@ This is the standard CLAUDE.md structure. All pipeline skills expect these secti
 ## User Preferences
 
 Language: English
+Explanation Level: Intermediate
 ```
 
-**Note**: This section should be at the top of CLAUDE.md. All skills read this section to determine user's preferred language for output. Supported languages:
+**Note**: This section should be at the top of CLAUDE.md. All skills read this section to determine user's preferred language and explanation depth for output. When a project-level value is set, it overrides the global `~/.claude/CLAUDE.md` default.
 
-- English (default)
-- Nederlands
-- Deutsch
-- Français
-- Español
+Supported languages: English (default), Nederlands, Deutsch, Français, Español.
+
+Supported explanation levels: Beginner, Novice, Intermediate (default), Expert. See `skills/shared/EXPLANATION.md` for behavior per level.
 
 ---
 

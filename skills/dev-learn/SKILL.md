@@ -123,6 +123,8 @@ If 3+ concepts → full mode:
 
 ### Phase 2: Comprehension (Method Choice)
 
+Read `skills/shared/EXPLANATION.md` to calibrate term introductions, analogies, and code-explanation depth to the user's `Explanation Level:` before producing any teach content.
+
 Read `references/learning-methods.md` for the selected method's protocol.
 
 Present method choice via AskUserQuestion. Mark the default as "(Recommended)" based on `input_type` from Phase 0:

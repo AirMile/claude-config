@@ -3,6 +3,7 @@
 ## User Preferences
 
 Language: Nederlands
+Explanation Level: Intermediate
 
 ---
 

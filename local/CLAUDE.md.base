@@ -1,6 +1,7 @@
 ## User Preferences
 
 Language: English
+Explanation Level: Intermediate
 
 ---
 
@@ -30,6 +31,7 @@ Announce strategic direction (which path, which file, which trade-off) before ac
 - Leave breadcrumbs: reference files, functions, or decisions so the user can follow the thread
 - For multi-step tasks: give a short summary of your approach upfront
 - Be concise — explaining is not the same as being verbose
+- Calibrate jargon, analogies, and detail depth to `User Preferences → Explanation Level:` — see `skills/shared/EXPLANATION.md`
 
 ## Language Policy
 

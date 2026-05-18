@@ -53,7 +53,28 @@ Applies to: Project description, Project name, Tech stack, Suggestions (per cate
 
 1. **Language selection** — AskUserQuestion (single-select):
    - Options: English, Nederlands, Deutsch, Français, Español
-   - Store for Phase 6 (CLAUDE.md `## User Preferences`)
+   - Store as `LANG_CHOICE` for Phase 6 (CLAUDE.md `## User Preferences`)
+
+1b. **Explanation Level** — AskUserQuestion (single-select):
+
+```yaml
+header: "Explanation Level"
+question: "How should Claude calibrate jargon and explanation depth for this project?"
+options:
+  - label: "Same as global (Recommended)"
+    description: "Inherit from ~/.claude/CLAUDE.md — no project override written."
+  - label: "Intermediate"
+    description: "Standard. Jargon ok, no extra scaffolding."
+  - label: "Beginner"
+    description: "Every non-trivial term explained. Analogies always used. Good for stacks you're learning."
+  - label: "Novice"
+    description: "Framework-specific jargon explained. Analogies when helpful."
+  - label: "Expert"
+    description: "Compact. Assumes full stack familiarity."
+multiSelect: false
+```
+
+Store as `EXPLANATION_CHOICE`. If "Same as global" → `EXPLANATION_CHOICE=skip` (nothing written to project CLAUDE.md; global default inherited).
 
 2. **MCP servers** — Check installed via `claude mcp list`. Install missing (user scope):
 
@@ -100,18 +121,18 @@ Ask sequentially, one question per response:
 
 0.5. **Project mode** — AskUserQuestion (single-select). Ask this early so downstream questions (tech stack suggestions, tracker prompts, commit convention defaults) can use the answer:
 
-   ```yaml
-   header: "Project mode"
-   question: "Is this a solo or team project?"
-   options:
-     - label: "Solo (Recommended)"
-       description: "Only you commit here. Enables local-only flow — no PR offers, no team-* skill gating."
-     - label: "Team"
-       description: "Multiple contributors. Enables /team-* skills, automatic PR offer after /dev-verify and /dev-refactor, and team settings in backlog/dashboard."
-   multiSelect: false
-   ```
+```yaml
+header: "Project mode"
+question: "Is this a solo or team project?"
+options:
+  - label: "Solo (Recommended)"
+    description: "Only you commit here. Enables local-only flow — no PR offers, no team-* skill gating."
+  - label: "Team"
+    description: "Multiple contributors. Enables /team-* skills, automatic PR offer after /dev-verify and /dev-refactor, and team settings in backlog/dashboard."
+multiSelect: false
+```
 
-   Store answer as `TEAM_MODE` (`"solo"` or `"team"`). Written to `project.json#team.mode` in Phase 7b.
+Store answer as `TEAM_MODE` (`"solo"` or `"team"`). Written to `project.json#team.mode` in Phase 7b.
 
 1. **Project description** — Show this block to the user and wait for a response:
 
@@ -394,10 +415,10 @@ Install dev tools that are framework-conditional and require no user input. No m
 
 Skills zoals `/frontend-design Build` en `/frontend-check` dragen `playwright-cli` (daemon) en `@axe-core/playwright` (a11y) nodig voor smoke-checks. Auto-installeer zodat skills direct werken op een nieuw project.
 
-| Conditie | Actie |
-| -------- | ----- |
-| frontend of fullstack stack | Auto-install — geen modal, geen bevestiging |
-| game / CLI / backend-only / mobile / desktop | Overslaan — geen output |
+| Conditie                                     | Actie                                       |
+| -------------------------------------------- | ------------------------------------------- |
+| frontend of fullstack stack                  | Auto-install — geen modal, geen bevestiging |
+| game / CLI / backend-only / mobile / desktop | Overslaan — geen output                     |
 
 **Installatie (geen modal):**
 
@@ -420,13 +441,13 @@ npx @playwright/cli install chromium
 
 > **Todo**: mark Phase 5b → `completed`, Phase 6 → `in_progress`.
 
-Update `## User Preferences` with language from Phase 1.
+Update `## User Preferences` with language and explanation level from Phase 1.
 
 Generate CLAUDE.md following the **canonical structure** from `references/claude-md-sections.md`. This is the single source of truth — all pipeline skills (dev-build auto-sync) expect these section names.
 
 **Section rules:**
 
-- `## User Preferences`: Always. Language from Phase 1.
+- `## User Preferences`: Always. Language from Phase 1. Explanation Level from Phase 1b — omit the line if `EXPLANATION_CHOICE=skip`.
 - `## Frontend Edit Rules`: Only for frontend/fullstack projects (keep the marker block from `CLAUDE.base.md`).
 - `## Commands`: Always. Auto-detect from package manifest scripts.
 - `## Project` / `### Stack`: Always. Pipeline skills read `### Stack` for stack detection.

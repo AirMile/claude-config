@@ -81,6 +81,35 @@ multiSelect: false
 
 Store the chosen label in `LANGUAGE_CHOICE` (e.g. `"Nederlands"`). If the user selects "English (Recommended)" → `LANGUAGE_CHOICE=skip` (template default, no patch needed).
 
+### Explanation Level selection
+
+Check whether `~/.claude/CLAUDE.md` already contains an `Explanation Level:` setting:
+
+```bash
+grep -q "Explanation Level:" "$HOME/.claude/CLAUDE.md" 2>/dev/null && echo "found" || echo "not-found"
+```
+
+If `Explanation Level:` is found → store `EXPLANATION_CHOICE=skip` (step skipped — re-runs leave existing setting alone).
+
+If `Explanation Level:` is not found → ask:
+
+```yaml
+header: "Explanation Level"
+question: "How should Claude calibrate jargon and explanation depth by default?"
+options:
+  - label: "Intermediate (Recommended)"
+    description: "Standard depth. Jargon ok, no extra scaffolding. Good default for most stacks."
+  - label: "Beginner"
+    description: "Every non-trivial term explained. Analogies always used. Good for stacks you're learning from scratch."
+  - label: "Novice"
+    description: "Framework-specific jargon explained. Analogies when helpful. Between Beginner and standard."
+  - label: "Expert"
+    description: "Compact. Assumes full stack familiarity. No term introductions or analogies."
+multiSelect: false
+```
+
+Store the chosen label in `EXPLANATION_CHOICE` (e.g. `"Beginner"`). If the user selects "Intermediate (Recommended)" → `EXPLANATION_CHOICE=skip` (template default, no patch needed).
+
 ### Claude plan tier
 
 Check `$CONFIG_REPO/.claude/paths.local.yaml` for a persisted value first:
@@ -291,6 +320,23 @@ $json.language = $LANGUAGE_CHOICE
 $json | ConvertTo-Json -Depth 10 | Set-Content $settings
 ```
 
+### Explanation Level patch
+
+After copying CLAUDE.md (only if it was actually placed, and `EXPLANATION_CHOICE` is not `skip`):
+
+Patch the `Explanation Level:` line in `~/.claude/CLAUDE.md`.
+
+```bash
+# macOS/Linux — CLAUDE.md
+sed -i.bak "s/^Explanation Level:.*$/Explanation Level: $EXPLANATION_CHOICE/" "$HOME/.claude/CLAUDE.md" && rm -f "$HOME/.claude/CLAUDE.md.bak"
+```
+
+```powershell
+# Windows — CLAUDE.md
+(Get-Content "$env:USERPROFILE\.claude\CLAUDE.md") -replace '^Explanation Level:.*$', "Explanation Level: $EXPLANATION_CHOICE" |
+  Set-Content "$env:USERPROFILE\.claude\CLAUDE.md"
+```
+
 **After copying**: show a brief reminder:
 
 > `settings.json copied — verify that hook paths are correct for your platform (see local/README.md).`
@@ -426,6 +472,7 @@ Bootstrap complete
  ~/.claude/scripts/         already-exists
  Personal overlay           applied (2 items)
  Language                   English
+ Explanation Level          Intermediate
  Claude plan                Max 5x
  Paths (paths.local.yaml)   written
 ══════════════════════════════════════════════════════
@@ -433,7 +480,17 @@ Bootstrap complete
 
 Statuses: `placed` · `already-exists` · `linked` · `error: <reason>`
 
-For the Language row: show the chosen language, or `skipped (already set)` if `LANGUAGE_CHOICE=skip`.
+For the Language row: show the chosen language, or the current value with `(already set)` suffix if `LANGUAGE_CHOICE=skip`. Read the current value via:
+
+```bash
+CURRENT_LANG=$(grep "^Language:" "$HOME/.claude/CLAUDE.md" | sed 's/^Language:[[:space:]]*//')
+```
+
+For the Explanation Level row: show the chosen level, or the current value with `(already set)` suffix if `EXPLANATION_CHOICE=skip`. Read the current value via:
+
+```bash
+CURRENT_EXPL=$(grep "^Explanation Level:" "$HOME/.claude/CLAUDE.md" | sed 's/^Explanation Level:[[:space:]]*//')
+```
 
 For the Claude plan row: show the `PLAN_TIER` label (`Max 5x`, `Pro`, `Max 10x+`, or `skipped`).
 
