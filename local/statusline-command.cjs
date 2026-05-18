@@ -2,7 +2,7 @@
 const { execSync } = require("child_process");
 const path = require("path");
 
-const CTX_THRESHOLD = 0;
+const CTX_THRESHOLD = 80_000;
 const SESSION_THRESHOLD = 30;
 const WEEK_THRESHOLD = 30;
 const HIDDEN_BRANCHES = new Set(["main", "master"]);
@@ -13,7 +13,8 @@ function formatDuration(epochSec) {
   const totalMin = Math.floor(ms / 60_000);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  if (h === 1 && m === 0) return "60m";
+  return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
 }
 
 function formatBranch(branch, worktree) {
@@ -22,9 +23,13 @@ function formatBranch(branch, worktree) {
   return branch;
 }
 
-function formatCtx(used) {
-  if (used == null || used < CTX_THRESHOLD) return null;
-  return `${Math.floor(used)}%`;
+function formatCtx(ctx) {
+  const pct = ctx?.used_percentage;
+  const size = ctx?.context_window_size;
+  if (pct == null || size == null) return null;
+  const tokens = Math.round((pct / 100) * size);
+  if (tokens < CTX_THRESHOLD) return null;
+  return `${Math.round(tokens / 1000)}k`;
 }
 
 function formatSession(rl) {
@@ -33,7 +38,8 @@ function formatSession(rl) {
   if (fh.used_percentage < SESSION_THRESHOLD) return null;
   const pct = Math.round(fh.used_percentage);
   const dur = formatDuration(fh.resets_at);
-  return dur ? `session ${pct}% · ${dur}` : `session ${pct}%`;
+  if (!dur) return null;
+  return `session ${pct}% · ${dur}`;
 }
 
 function formatWeekDuration(epochSec) {
@@ -51,7 +57,8 @@ function formatWeek(rl) {
   if (sd.used_percentage < WEEK_THRESHOLD) return null;
   const pct = Math.round(sd.used_percentage);
   const dur = formatWeekDuration(sd.resets_at);
-  return dur ? `week ${pct}% · ${dur}` : `week ${pct}%`;
+  if (!dur) return null;
+  return `week ${pct}% · ${dur}`;
 }
 
 let input = "";
@@ -75,7 +82,7 @@ process.stdin.on("end", () => {
   if (fb) location.push(fb);
   const sessionStr = formatSession(data.rate_limits);
   const weekStr = formatWeek(data.rate_limits);
-  const ctxStr = formatCtx(data.context_window?.used_percentage);
+  const ctxStr = formatCtx(data.context_window);
   if (ctxStr) location.push(ctxStr);
   if (sessionStr) location.push(sessionStr);
   if (weekStr) location.push(weekStr);
