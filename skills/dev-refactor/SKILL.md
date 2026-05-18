@@ -1,6 +1,6 @@
 ---
 name: dev-refactor
-description: Batch refactor code quality across DONE features after testing — improves DRY, efficiency, and clarity without changing behavior. Use when the user runs /dev-refactor, asks to "clean up", "refactor", or "tidy" finished features, or when backlog features have transition=refactoring.
+description: Batch refactor DONE features for DRY and clarity. Use with /dev-refactor. Auto-triggers on transition=refactoring.
 reads: [feature.build, feature.tests, feature.files, backlog.status, learnings]
 writes: [feature.refactor, backlog.status, learnings]
 metadata:
