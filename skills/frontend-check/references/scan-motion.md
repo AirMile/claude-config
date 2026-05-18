@@ -45,7 +45,7 @@ Grep for `backdrop-filter` in all component/page files.
 - If `theme.surfaces.glass.enabled !== true` AND any match found → FAIL
 - If `theme.surfaces.glass.enabled = true` → run M004 instead
 
-**Fail message:** "`backdrop-filter` used but `theme.surfaces.glass.enabled` is false. Enable via `/frontend-animations → Expressive pack` or remove the backdrop-filter."
+**Fail message:** "`backdrop-filter` used but `theme.surfaces.glass.enabled` is false. Enable via `/frontend-animations → Apple pack` (or Playful) or remove the backdrop-filter."
 
 ---
 

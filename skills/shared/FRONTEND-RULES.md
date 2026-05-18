@@ -211,7 +211,7 @@ elements.forEach((el, i) => {
 | H206 | `will-change` outside active animation blocks                                                        | Add/remove temporarily via JS                       |
 | H207 | Changing `letter-spacing` without explicit request                                                   | Design discipline                                   |
 | H208 | Animating layout properties on large surfaces                                                        | Use `transform`                                     |
-| H209 | Gradients/glow without explicit request **unless `theme.motion.pack` is `expressive` or `playful`**  | Tailwind default shadows, or enable pack            |
+| H209 | Gradients/glow without explicit request **unless `theme.motion.pack` is `apple` or `playful`**       | Tailwind default shadows, or enable pack            |
 | H122 | Motion classes (`transition-*`, `animate-*`) that don't match the active `theme.motion.pack`         | Use token-based classes from `/frontend-animations` |
 
 ---

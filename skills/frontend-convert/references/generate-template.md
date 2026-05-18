@@ -41,8 +41,9 @@ If `theme.modes.dark` is missing: no `dark:` classes — do not add them specula
 Check `theme.motion.pack` in `project.json`. Store as `$MOTION_PACK`.
 
 - If `$MOTION_PACK` is empty or `"none"`: no transition classes beyond `transition-colors` on interactive elements.
-- If `$MOTION_PACK` is `"subtle"` or `"standard"`: add `transition-transform duration-fast ease-out` + hover `translateY(-1px)` / active `scale(0.97)` on cards and buttons.
-- If `$MOTION_PACK` is `"expressive"` or `"playful"`: use iOS-easing CSS vars (`var(--ease-ios-spring)`, `var(--spring-snappy-bezier)`) for interactive elements; apply `entrance.float-in` choreography to primary content blocks.
+- If `$MOTION_PACK` is `"subtle"`: add `transition-transform duration-fast ease-[var(--ease-expo-out)]` + hover `translateY(-1px)` / active `scale(0.98)` on cards and buttons.
+- If `$MOTION_PACK` is `"standard"`: add `transition-transform duration-[var(--duration-md-short4)] ease-[var(--ease-md-emphasized)]` + hover `translateY(-2px)` / active `scale(0.97)`; apply `entrance.float-in` choreography to primary content blocks.
+- If `$MOTION_PACK` is `"apple"` or `"playful"`: use iOS-easing CSS vars (`var(--ease-ios-spring)`, `var(--spring-snappy-bezier)`) for interactive elements; apply `entrance.float-in` choreography to primary content blocks.
 
 Also factor in `$MOTION_INTENT` from SOURCE ANALYSIS:
 

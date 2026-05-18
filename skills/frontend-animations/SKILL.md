@@ -1,8 +1,8 @@
 ---
 name: frontend-animations
 description: >-
-  Animation pack management — iOS/Apple easings, spring physics, choreography,
-  and glass surfaces. Use with /frontend-animations.
+  Animation pack management — multi-source easings (Apple/Material/Fluent/Carbon),
+  spring physics, choreography, and glass surfaces. Use with /frontend-animations.
 reads: [project.json#theme, backlog.html]
 writes:
   [
@@ -23,26 +23,30 @@ metadata:
 
 Manages animation packs, spring physics tokens, choreography compositions, and surface effects (glass/vibrancy). Layers on top of the base motion tokens set by `/frontend-tokens`.
 
-**Keywords**: animation, motion, pack, spring, iOS, Apple, glass, vibrancy, choreography, micro-interactions, easing, whimsical, playful, expressive, transitions, hover, press, entrance, delight
+**Keywords**: animation, motion, pack, spring, iOS, Apple, Material, Fluent, Carbon, glass, vibrancy, choreography, micro-interactions, easing, whimsical, playful, transitions, hover, press, entrance, delight
 
 ## Overview
 
 This skill owns four sub-sections in `project.json#theme`:
 
-| Owned section           | Description                                                             |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `motion.pack`           | Active pack name: `none \| subtle \| standard \| expressive \| playful` |
-| `motion.axes`           | Pack config vector: `{expressiveness, springiness, tempo, surfaces}`    |
-| `motion.spring[]`       | Spring physics tokens with CSS approximations                           |
-| `motion.choreography{}` | Named animation compositions per interaction type                       |
-| `theme.surfaces{}`      | Glass/vibrancy opt-in + elevation system                                |
+| Owned section           | Description                                                          |
+| ----------------------- | -------------------------------------------------------------------- |
+| `motion.pack`           | Active pack name: `none \| subtle \| standard \| apple \| playful`   |
+| `motion.axes`           | Pack config vector: `{expressiveness, springiness, tempo, surfaces}` |
+| `motion.spring[]`       | Spring physics tokens with CSS approximations                        |
+| `motion.choreography{}` | Named animation compositions per interaction type                    |
+| `theme.surfaces{}`      | Glass/vibrancy opt-in + elevation system                             |
 
 **Does NOT touch:** `motion.durations`, `motion.easings`, `interactions` — those are owned by `/frontend-tokens`.
 
 **References:**
 
-- `skills/frontend-animations/references/packs.md` — Pack definitions (source of truth)
-- `skills/frontend-animations/references/ios-easings.md` — Canonical iOS/Apple easing curves
+- `skills/frontend-animations/references/packs.md` — Pack definitions + source credits (source of truth)
+- `skills/frontend-animations/references/ios-easings.md` — Apple iOS/macOS easing curves (Apple pack)
+- `skills/frontend-animations/references/material-motion.md` — Material Design 3 curves + duration scale (Standard pack)
+- `skills/frontend-animations/references/fluent-motion.md` — Microsoft Fluent 2 curves (Customize opt-in)
+- `skills/frontend-animations/references/carbon-motion.md` — IBM Carbon entrance/exit curves (Customize opt-in)
+- `skills/frontend-animations/references/web-baseline.md` — Linear/GitHub/Vercel curves (Subtle pack)
 - `skills/frontend-animations/references/spring-math.md` — Spring physics conversion + library mapping
 - `skills/frontend-animations/references/choreography.md` — Named compositions per pack
 - `skills/shared/DESIGN.md` — Glass surfaces rules, animation pack anti-clichés, motion timing
@@ -193,6 +197,12 @@ stateDiagram-v2
 4. Store as $STACK_TYPE, $HAS_MOTION_LIB (true/false), $CURRENT_PACK
 ```
 
+**PACK RENAME CHECK:** Before MIGRATE_OFFER — if `motion.pack === "expressive"`:
+
+> "Your project uses the old pack name `expressive`. This has been renamed to `apple` to avoid confusion with Material Design 3's own Expressive mode. Rename now? (Yes — updates only `theme.motion.pack`, all other keys stay identical)"
+
+If user confirms: delta-write `theme.motion.pack = "apple"` and continue to ACTION_SELECT.
+
 **MIGRATE_OFFER:** When `motion.pack` is absent but `motion.durations[]` or `motion.easings[]` exist:
 
 > "Your project has base motion tokens but no animation pack. Want me to infer the closest pack from your existing tokens and set it up?
@@ -202,8 +212,9 @@ Infer closest pack:
 
 - No `easings[]` → None
 - easings contain only `ease-out/in/in-out` → Subtle
-- Has `ease-out-expo` or custom snappy curves → Standard
-- Has `ease-ios-spring` or spring tokens → Expressive
+- Has `ease-expo-out` or `ease-cubic-out` → Subtle
+- Has `ease-md-emphasized` or M3 tokens → Standard
+- Has `ease-ios-spring` or spring tokens → Apple
 
 ---
 
@@ -227,7 +238,7 @@ Generate `.project/animation-preview.html` from `references/preview-template.htm
 
 ### Apply to codebase
 
-Emit CSS-vars delta into `theme.cssVars` for all spring, iOS-easing, and surface tokens. Coordinate with frontend-tokens: read current `theme.cssVars`, append the new `--spring-*`, `--ease-ios-*`, `--surface-glass-*` blocks, write back.
+Emit CSS-vars delta into `theme.cssVars` for all pack tokens (spring, easings, durations, surfaces). Coordinate with frontend-tokens: read current `theme.cssVars`, append the new `--spring-*`, `--ease-ios-*`, `--ease-md-*`, `--surface-glass-*`, `--duration-md-*` blocks per active pack, write back.
 
 > **Todo:** Read `skills/frontend-animations/references/route-apply.md`
 
@@ -236,10 +247,11 @@ Emit CSS-vars delta into `theme.cssVars` for all spring, iOS-easing, and surface
 Display current pack state as a summary table:
 
 ```
-Pack:           expressive
+Pack:           apple
+Source:         Apple iOS/macOS HIG (see ios-easings.md)
 Axes:           expressiveness=expressive · springiness=snappy · tempo=normal · surfaces=glass
-Springs:        spring-gentle · spring-smooth · spring-snappy · spring-bouncy
-iOS easings:    ease-ios-default · ease-ios-out · ease-ios-in · ease-ios-spring · ease-ios-snappy · ease-ios-bouncy
+Springs:        spring-gentle · spring-smooth · spring-snappy
+Easings:        ease-ios-default · ease-ios-out · ease-ios-in · ease-ios-spring · ease-ios-snappy · ease-ios-bouncy
 Choreography:   entrance=entrance.float-in · exit=exit.fade-out · success=success.pulse · ...
 Glass surfaces: enabled=true · blur=20px · vibrancy=false
 Stack:          React (motion.dev detected)

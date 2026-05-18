@@ -2,7 +2,7 @@
 
 Named animation compositions available per pack. Each composition is a named preset that `design.components[i].motion.*` can reference.
 
-**Pack availability:** None=❌ Subtle=⬤ Standard=⬤ Expressive=⬤ Playful=⬤
+**Pack availability:** None=❌ Subtle=⬤ Standard=⬤ Apple=⬤ Playful=⬤
 
 ---
 
@@ -479,5 +479,265 @@ function useTilt(maxDeg = 6) {
   }, [maxDeg]);
 
   return ref;
+}
+```
+
+---
+
+## Material Design 3 Compositions
+
+Source: `material-motion.md`. Available in **Standard** and **Playful** packs. Fluent reveal available via Customize opt-in.
+
+### `material.container-transform` — Standard+
+
+An element morphs into a larger surface (card → fullscreen, FAB → dialog). Uses `layoutId` for shared layout animation in motion.dev; CSS approach requires position calculation.
+
+```tsx
+// React — motion.dev (shared layout animation)
+import { motion, LayoutGroup } from "motion/react";
+
+function ContainerTransform({
+  items,
+}: {
+  items: { id: string; title: string }[];
+}) {
+  const [selected, setSelected] = React.useState<string | null>(null);
+  return (
+    <LayoutGroup>
+      {items.map((item) => (
+        <motion.div
+          key={item.id}
+          layoutId={item.id}
+          onClick={() => setSelected(item.id)}
+          transition={{ duration: 0.45, ease: [0.2, 0, 0, 1] }} // ease-md-emphasized
+          className="card cursor-pointer rounded-xl overflow-hidden"
+        />
+      ))}
+      {selected && (
+        <motion.div
+          layoutId={selected}
+          transition={{ duration: 0.45, ease: [0.2, 0, 0, 1] }}
+          className="fixed inset-4 z-50 rounded-2xl bg-surface"
+          onClick={() => setSelected(null)}
+        />
+      )}
+    </LayoutGroup>
+  );
+}
+```
+
+```css
+/* CSS-only expand-in-place approximation */
+.container-source {
+  transition:
+    border-radius var(--duration-md-long1) var(--ease-md-emphasized),
+    transform var(--duration-md-long1) var(--ease-md-emphasized);
+}
+@media (prefers-reduced-motion: reduce) {
+  .container-source {
+    transition: opacity 150ms ease;
+  }
+}
+```
+
+---
+
+### `material.shared-axis-x` — Standard+
+
+Horizontal peer navigation (tabs, swipe left/right). Outgoing slides left, incoming slides from right (forward) or vice versa (back). Use Y for parent/child, Z for depth/forward-back.
+
+```tsx
+function SharedAxisX({
+  children,
+  routeKey,
+  direction = "forward",
+}: {
+  children: React.ReactNode;
+  routeKey: string;
+  direction?: "forward" | "back";
+}) {
+  const offset = direction === "forward" ? 80 : -80;
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={routeKey}
+        initial={{ opacity: 0, x: offset }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -offset }}
+        transition={{ duration: 0.45, ease: [0.05, 0.7, 0.1, 1] }} // ease-md-emphasized-decelerate
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+```
+
+```css
+/* CSS-only via View Transitions API */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root) {
+  animation: md-slide-out var(--duration-md-long1)
+    var(--ease-md-emphasized-accelerate) both;
+}
+::view-transition-new(root) {
+  animation: md-slide-in var(--duration-md-long1)
+    var(--ease-md-emphasized-decelerate) both;
+}
+@keyframes md-slide-out {
+  to {
+    transform: translateX(-80px);
+    opacity: 0;
+  }
+}
+@keyframes md-slide-in {
+  from {
+    transform: translateX(80px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
+  }
+}
+```
+
+---
+
+### `material.fade-through` — Standard+
+
+Transition between incongruent content (different categories, unrelated screens). Outgoing fades fully before incoming fades in — no spatial movement.
+
+```tsx
+function FadeThrough({
+  children,
+  routeKey,
+}: {
+  children: React.ReactNode;
+  routeKey: string;
+}) {
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={routeKey}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{
+          exit: { duration: 0.09, ease: [0.3, 0, 0.8, 0.15] }, // ease-md-emphasized-accelerate
+          enter: { duration: 0.21, ease: [0.05, 0.7, 0.1, 1], delay: 0.09 }, // ease-md-emphasized-decelerate
+        }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+```
+
+```css
+.fade-through-exit {
+  animation: fade-out 90ms cubic-bezier(0.3, 0, 0.8, 0.15) forwards;
+}
+.fade-through-enter {
+  animation: fade-in 210ms cubic-bezier(0.05, 0.7, 0.1, 1) 90ms both;
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-through-exit,
+  .fade-through-enter {
+    animation: none;
+    opacity: 1;
+  }
+}
+```
+
+---
+
+## Fluent Compositions
+
+Source: `fluent-motion.md`. Available via **Customize → Add easings from other systems** (any pack).
+
+### `fluent.reveal` — Customize opt-in
+
+Side panel or navigation drawer slides in from edge. Enter: decelerate curve (ease-fluent-decelerate). Exit: accelerate curve (ease-fluent-accelerate) — always faster than entrance.
+
+```tsx
+function FluentPanel({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.aside
+          initial={{ x: "-100%", opacity: 0 }}
+          animate={{
+            x: 0,
+            opacity: 1,
+            transition: {
+              x: { duration: 0.3, ease: [0.1, 0.9, 0.2, 1] }, // ease-fluent-decelerate
+              opacity: { duration: 0.15, ease: [0.1, 0.9, 0.2, 1] },
+            },
+          }}
+          exit={{
+            x: "-100%",
+            opacity: 0,
+            transition: {
+              x: { duration: 0.1, ease: [0.7, 0, 1, 0.5] }, // ease-fluent-accelerate
+              opacity: { duration: 0.1 },
+            },
+          }}
+          className="fixed left-0 top-0 h-full w-72 bg-surface shadow-xl z-40"
+        >
+          {children}
+        </motion.aside>
+      )}
+    </AnimatePresence>
+  );
+}
+```
+
+```css
+.fluent-panel {
+  transform: translateX(-100%);
+  opacity: 0;
+  transition:
+    transform var(--duration-fluent-slow, 300ms)
+      var(--ease-fluent-decelerate, cubic-bezier(0.1, 0.9, 0.2, 1)),
+    opacity var(--duration-fluent-fast, 150ms)
+      var(--ease-fluent-decelerate, cubic-bezier(0.1, 0.9, 0.2, 1));
+}
+.fluent-panel[data-open="true"] {
+  transform: translateX(0);
+  opacity: 1;
+}
+.fluent-panel[data-open="false"] {
+  transition:
+    transform var(--duration-fluent-faster, 100ms)
+      var(--ease-fluent-accelerate, cubic-bezier(0.7, 0, 1, 0.5)),
+    opacity var(--duration-fluent-faster, 100ms) ease-in;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fluent-panel {
+    transition: opacity 150ms ease;
+    transform: none;
+  }
 }
 ```

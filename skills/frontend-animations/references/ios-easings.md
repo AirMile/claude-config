@@ -1,8 +1,10 @@
 # iOS / Apple Easing Reference
 
-Canonical cubic-bezier values for the Expressive and Playful packs. These match Apple's documented animation curves from iOS/macOS HIG, WWDC sessions, and SwiftUI documentation.
+Canonical cubic-bezier values for the Apple and Playful packs. These match Apple's documented animation curves from iOS/macOS HIG, WWDC sessions, and SwiftUI documentation.
 
-Used by the Create route when setting `motion.pack = "expressive"` or `"playful"`. Values are added to `motion.easings[]` in `project.json`.
+Used by the Create route when setting `motion.pack = "apple"` or `"playful"`. Values are added to `motion.easings[]` in `project.json`.
+
+**Other sources:** For Material Design 3, see `material-motion.md`. For Fluent 2, see `fluent-motion.md`. For IBM Carbon, see `carbon-motion.md`. For Linear/GitHub/Vercel baseline, see `web-baseline.md`.
 
 ---
 

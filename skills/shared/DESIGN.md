@@ -330,7 +330,7 @@ Undo is better than confirmation dialogs — users click through confirmations. 
 
 ## Glass Surfaces (Apple-style opt-in)
 
-Glassmorphism is an **opt-in design system choice**, not a default. Enable via `/frontend-animations` → Expressive pack (sets `theme.surfaces.glass.enabled = true`).
+Glassmorphism is an **opt-in design system choice**, not a default. Enable via `/frontend-animations` → Apple pack (sets `theme.surfaces.glass.enabled = true`). Also enabled by the Playful pack.
 
 When enabled, apply iOS HIG rules strictly:
 
@@ -369,7 +369,7 @@ Managed by `/frontend-animations`. Packs are composites — they set motion voca
 | **None**                 | Static     | No transitions beyond color changes                             |
 | **Subtle**               | Calm       | hover-lift 1px, press-scale 0.98, fades, ease-out               |
 | **Standard** _(default)_ | Polished   | + stagger reveals, modal slides, route fades                    |
-| **Expressive**           | Apple-like | iOS easings, spring physics, glass surfaces, view transitions   |
+| **Apple**                | Apple-like | iOS easings, spring physics, glass surfaces, view transitions   |
 | **Playful**              | Whimsical  | + bouncy springs, success-pulse, attention.wiggle, celebrations |
 
 **Anti-clichés for Playful pack:**

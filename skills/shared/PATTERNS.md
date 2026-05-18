@@ -979,7 +979,7 @@ Managed by `/frontend-animations`. Use when `theme.motion.pack` is set. All patt
 
 ### Spring Press
 
-**When:** Interactive cards, buttons, or list items needing tactile feedback. Requires Playful or Expressive pack.
+**When:** Interactive cards, buttons, or list items needing tactile feedback. Requires Apple or Playful pack.
 
 ```css
 /* Pure CSS — static approximation */
@@ -1037,7 +1037,7 @@ import springTokens from "@/tokens/spring.json";
 
 ### View Transition Route
 
-**When:** Navigating between pages in an SPA. Expressive pack. Uses the browser View Transitions API.
+**When:** Navigating between pages in an SPA. Apple pack. Uses the browser View Transitions API.
 
 ```tsx
 // Next.js App Router
@@ -1159,7 +1159,7 @@ function navigateWithTransition(href: string) {
 
 ### Glass Card (opt-in)
 
-**When:** `theme.surfaces.glass.enabled = true` (Expressive pack). Navigation bars, sheets, modals over rich backgrounds.
+**When:** `theme.surfaces.glass.enabled = true` (Apple or Playful pack). Navigation bars, sheets, modals over rich backgrounds.
 
 ```css
 .glass-card {
@@ -1180,7 +1180,7 @@ Rules (see DESIGN.md Glass Surfaces section): max one per viewport, never on ele
 
 ### iOS Modal Drawer
 
-**When:** Bottom sheet or side drawer on mobile. Expressive pack. Matches native iOS sheet feel.
+**When:** Bottom sheet or side drawer on mobile. Apple pack. Matches native iOS sheet feel.
 
 ```css
 .ios-drawer {
@@ -1237,6 +1237,268 @@ Rules (see DESIGN.md Glass Surfaces section): max one per viewport, never on ele
   }
   to {
     opacity: 1;
+  }
+}
+```
+
+---
+
+### Material Container Transform
+
+**When:** An element morphs into a larger surface — e.g. a card expanding to fullscreen, FAB → dialog. Standard or Playful pack. Source: `material-motion.md`.
+
+```tsx
+// React — motion.dev shared layout animation
+import { motion, LayoutGroup } from "motion/react";
+
+function ContainerTransform({
+  items,
+}: {
+  items: { id: string; title: string }[];
+}) {
+  const [selected, setSelected] = React.useState<string | null>(null);
+  return (
+    <LayoutGroup>
+      {items.map((item) => (
+        <motion.div
+          key={item.id}
+          layoutId={item.id}
+          onClick={() => setSelected(item.id)}
+          transition={{ duration: 0.45, ease: [0.2, 0, 0, 1] }}
+          className="card cursor-pointer rounded-xl overflow-hidden"
+        />
+      ))}
+      {selected && (
+        <motion.div
+          layoutId={selected}
+          transition={{ duration: 0.45, ease: [0.2, 0, 0, 1] }}
+          className="fixed inset-4 z-50 rounded-2xl bg-surface"
+          onClick={() => setSelected(null)}
+        />
+      )}
+    </LayoutGroup>
+  );
+}
+```
+
+```css
+/* CSS approach — for simple expand-in-place */
+.container-source {
+  transition:
+    border-radius var(--duration-md-long1) var(--ease-md-emphasized),
+    transform var(--duration-md-long1) var(--ease-md-emphasized);
+}
+@media (prefers-reduced-motion: reduce) {
+  .container-source {
+    transition: opacity 150ms ease;
+  }
+}
+```
+
+---
+
+### Material Shared Axis
+
+**When:** Route transitions between related screens. Axis encodes navigation relationship — X = peer navigation (tabs), Y = parent/child, Z = depth (forward/back). Standard pack. Source: `material-motion.md`.
+
+```tsx
+// Shared Axis X — horizontal peer navigation (tabs, swipe)
+function SharedAxisX({
+  children,
+  routeKey,
+  direction = "forward",
+}: {
+  children: React.ReactNode;
+  routeKey: string;
+  direction?: "forward" | "back";
+}) {
+  const offset = direction === "forward" ? 80 : -80;
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={routeKey}
+        initial={{ opacity: 0, x: offset }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -offset }}
+        transition={{
+          duration: 0.45,
+          ease: [0.05, 0.7, 0.1, 1], // ease-md-emphasized-decelerate
+        }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+```
+
+```css
+/* CSS-only via View Transitions API */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: md-slide-out var(--duration-md-long1)
+    var(--ease-md-emphasized-accelerate) both;
+}
+::view-transition-new(root) {
+  animation: md-slide-in var(--duration-md-long1)
+    var(--ease-md-emphasized-decelerate) both;
+}
+
+@keyframes md-slide-out {
+  to {
+    transform: translateX(-80px);
+    opacity: 0;
+  }
+}
+@keyframes md-slide-in {
+  from {
+    transform: translateX(80px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
+  }
+}
+```
+
+---
+
+### Material Fade Through
+
+**When:** Transitioning between incongruent content — different categories, unrelated screens. Outgoing fades out completely before incoming fades in; no spatial movement. Standard pack. Source: `material-motion.md`.
+
+```tsx
+function FadeThrough({
+  children,
+  routeKey,
+}: {
+  children: React.ReactNode;
+  routeKey: string;
+}) {
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={routeKey}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{
+          exit: { duration: 0.09, ease: [0.3, 0, 0.8, 0.15] }, // ease-md-emphasized-accelerate
+          enter: { duration: 0.21, ease: [0.05, 0.7, 0.1, 1], delay: 0.09 }, // ease-md-emphasized-decelerate
+        }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+```
+
+```css
+/* CSS-only fade through */
+.fade-through-exit {
+  animation: fade-out 90ms cubic-bezier(0.3, 0, 0.8, 0.15) forwards;
+}
+.fade-through-enter {
+  animation: fade-in 210ms cubic-bezier(0.05, 0.7, 0.1, 1) 90ms both;
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-through-exit,
+  .fade-through-enter {
+    animation: none;
+    opacity: 1;
+  }
+}
+```
+
+---
+
+### Fluent Reveal
+
+**When:** A panel, side navigation, or command surface slides in from an edge. Directional — enter with decelerate curve, exit with accelerate curve (fast-out). Available via Customize opt-in for any pack. Source: `fluent-motion.md`.
+
+```tsx
+function FluentPanel({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.aside
+          initial={{ x: "-100%", opacity: 0 }}
+          animate={{
+            x: 0,
+            opacity: 1,
+            transition: {
+              x: { duration: 0.3, ease: [0.1, 0.9, 0.2, 1] }, // ease-fluent-decelerate
+              opacity: { duration: 0.15, ease: [0.1, 0.9, 0.2, 1] },
+            },
+          }}
+          exit={{
+            x: "-100%",
+            opacity: 0,
+            transition: {
+              x: { duration: 0.1, ease: [0.7, 0, 1, 0.5] }, // ease-fluent-accelerate
+              opacity: { duration: 0.1 },
+            },
+          }}
+          className="fixed left-0 top-0 h-full w-72 bg-surface shadow-xl z-40"
+        >
+          {children}
+        </motion.aside>
+      )}
+    </AnimatePresence>
+  );
+}
+```
+
+```css
+/* CSS-only Fluent panel */
+.fluent-panel {
+  transform: translateX(-100%);
+  opacity: 0;
+  transition:
+    transform var(--duration-fluent-slow, 300ms)
+      var(--ease-fluent-decelerate, cubic-bezier(0.1, 0.9, 0.2, 1)),
+    opacity var(--duration-fluent-fast, 150ms)
+      var(--ease-fluent-decelerate, cubic-bezier(0.1, 0.9, 0.2, 1));
+}
+.fluent-panel[data-open="true"] {
+  transform: translateX(0);
+  opacity: 1;
+}
+.fluent-panel[data-open="false"] {
+  transition:
+    transform var(--duration-fluent-faster, 100ms)
+      var(--ease-fluent-accelerate, cubic-bezier(0.7, 0, 1, 0.5)),
+    opacity var(--duration-fluent-faster, 100ms) ease-in;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fluent-panel {
+    transition: opacity 150ms ease;
+    transform: none;
   }
 }
 ```

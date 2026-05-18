@@ -67,13 +67,49 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
-  /* iOS / Apple easings (Expressive pack — /frontend-animations) */
+  /* iOS / Apple easings (Apple pack — /frontend-animations) */
   --ease-ios-default: cubic-bezier(0.42, 0, 0.58, 1);
   --ease-ios-out: cubic-bezier(0.25, 0.1, 0.25, 1);
   --ease-ios-in: cubic-bezier(0.42, 0, 1, 1);
   --ease-ios-spring: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-ios-snappy: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-ios-bouncy: cubic-bezier(0.5, 1.6, 0.4, 0.8);
+
+  /* Material Design 3 easings (Standard pack — /frontend-animations) */
+  --ease-md-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-md-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-md-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-md-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-md-legacy: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Material Design 3 duration scale (Standard pack — /frontend-animations) */
+  --duration-md-short2: 100ms;
+  --duration-md-short3: 150ms;
+  --duration-md-short4: 200ms;
+  --duration-md-medium1: 250ms;
+  --duration-md-medium2: 300ms;
+  --duration-md-long1: 450ms;
+  --duration-md-long2: 500ms;
+
+  /* Material 3 spring CSS approximations */
+  --spring-md-spatial-duration: 300ms;
+  --spring-md-spatial-bezier: cubic-bezier(0.2, 0, 0, 1);
+  --spring-md-effects-duration: 400ms;
+  --spring-md-effects-bezier: cubic-bezier(0.34, 1.26, 0.64, 1);
+
+  /* Web baseline easings (Subtle pack — /frontend-animations) */
+  --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-cubic-out: cubic-bezier(0.33, 1, 0.68, 1);
+
+  /* Fluent 2 / Carbon easings (Customize opt-in — /frontend-animations) */
+  --ease-fluent-decelerate: cubic-bezier(0.1, 0.9, 0.2, 1);
+  --ease-fluent-accelerate: cubic-bezier(0.7, 0, 1, 0.5);
+  --ease-fluent-max: cubic-bezier(0.8, 0, 0.78, 1);
+  --ease-fluent-easy-ease: cubic-bezier(0.33, 0, 0.67, 1);
+  --ease-carbon-entrance: cubic-bezier(0, 0, 0.38, 0.9);
+  --ease-carbon-exit: cubic-bezier(0.2, 0, 1, 0.9);
+  --ease-carbon-standard: cubic-bezier(0.2, 0, 0.38, 0.9);
+  --ease-carbon-expressive: cubic-bezier(0.4, 0.14, 0.3, 1);
 
   /* Spring CSS approximations (static-render fallbacks — /frontend-animations) */
   --spring-gentle-duration: 600ms;
@@ -159,17 +195,35 @@ transitionDuration: {
   fast:    'var(--duration-fast)',
   normal:  'var(--duration-normal)',
   slow:    'var(--duration-slow)',
-  // Spring durations (Expressive/Playful pack — /frontend-animations)
+  // Spring durations (Apple/Playful pack — /frontend-animations)
   'spring-gentle': 'var(--spring-gentle-duration)',
   'spring-smooth': 'var(--spring-smooth-duration)',
   'spring-snappy': 'var(--spring-snappy-duration)',
   'spring-bouncy': 'var(--spring-bouncy-duration)',
+  // Material Design 3 duration scale (Standard pack — /frontend-animations)
+  'md-short2':       'var(--duration-md-short2)',
+  'md-short3':       'var(--duration-md-short3)',
+  'md-short4':       'var(--duration-md-short4)',
+  'md-medium1':      'var(--duration-md-medium1)',
+  'md-medium2':      'var(--duration-md-medium2)',
+  'md-long1':        'var(--duration-md-long1)',
+  'md-long2':        'var(--duration-md-long2)',
+  'spring-md-spatial': 'var(--spring-md-spatial-duration)',
+  'spring-md-effects': 'var(--spring-md-effects-duration)',
 },
 transitionTimingFunction: {
-  out:    'var(--ease-out)',
-  in:     'var(--ease-in)',
+  out:      'var(--ease-out)',
+  in:       'var(--ease-in)',
   'in-out': 'var(--ease-in-out)',
-  // iOS easings (Expressive pack — /frontend-animations)
+  // Web baseline easings (Subtle pack — /frontend-animations)
+  'expo-out':  'var(--ease-expo-out)',
+  'cubic-out': 'var(--ease-cubic-out)',
+  // Material Design 3 easings (Standard pack — /frontend-animations)
+  'md-emphasized':            'var(--ease-md-emphasized)',
+  'md-emphasized-decelerate': 'var(--ease-md-emphasized-decelerate)',
+  'md-emphasized-accelerate': 'var(--ease-md-emphasized-accelerate)',
+  'md-standard':              'var(--ease-md-standard)',
+  // iOS easings (Apple pack — /frontend-animations)
   'ios-default': 'var(--ease-ios-default)',
   'ios-out':     'var(--ease-ios-out)',
   'ios-in':      'var(--ease-ios-in)',
@@ -177,10 +231,12 @@ transitionTimingFunction: {
   'ios-snappy':  'var(--ease-ios-snappy)',
   'ios-bouncy':  'var(--ease-ios-bouncy)',
   // Spring bezier approximations (static CSS fallback)
-  'spring-gentle': 'var(--spring-gentle-bezier)',
-  'spring-smooth': 'var(--spring-smooth-bezier)',
-  'spring-snappy': 'var(--spring-snappy-bezier)',
-  'spring-bouncy': 'var(--spring-bouncy-bezier)',
+  'spring-gentle':     'var(--spring-gentle-bezier)',
+  'spring-smooth':     'var(--spring-smooth-bezier)',
+  'spring-snappy':     'var(--spring-snappy-bezier)',
+  'spring-bouncy':     'var(--spring-bouncy-bezier)',
+  'spring-md-spatial': 'var(--spring-md-spatial-bezier)',
+  'spring-md-effects': 'var(--spring-md-effects-bezier)',
 },
 ```
 

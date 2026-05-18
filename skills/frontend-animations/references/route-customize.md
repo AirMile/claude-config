@@ -78,7 +78,25 @@ If Yes: show multi-select of available compositions with their pack requirements
 
 ---
 
-## Step 4 — Preview offer + confirm + write
+## Step 4 — Add easings from other systems (optional)
+
+> "Want to add easings from another design system? These are injected into `motion.easings[]` without changing your pack. Available: Material 3 · Fluent 2 · IBM Carbon · skip"
+
+Present multi-select. For each selected source, lazy-load the corresponding reference file and inject the tokens:
+
+| Selection  | Reference file       | Tokens added to `motion.easings[]`                                                                         |
+| ---------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Material 3 | `material-motion.md` | `ease-md-emphasized`, `ease-md-emphasized-decelerate`, `ease-md-emphasized-accelerate`, `ease-md-standard` |
+| Fluent 2   | `fluent-motion.md`   | `ease-fluent-decelerate`, `ease-fluent-accelerate`, `ease-fluent-max`, `ease-fluent-easy-ease`             |
+| IBM Carbon | `carbon-motion.md`   | `ease-carbon-entrance`, `ease-carbon-exit`, `ease-carbon-standard`, `ease-carbon-expressive`               |
+
+Also inject corresponding CSS vars into `theme.cssVars` (merge, no overwrite of existing).
+
+> **Note**: These easings are available in `shared/TOKENS.md` as canonical names. Use them via `var(--ease-md-emphasized)` etc. after injection.
+
+---
+
+## Step 5 — Preview offer + confirm + write
 
 Same as route-create.md Steps 4–5.
 
@@ -88,4 +106,5 @@ Write:
 2. Recompute `motion.spring[]` from springiness axis (merge — only update tokens that changed)
 3. Update `motion.choreography{}` from expressiveness axis + any manual overrides
 4. Update `surfaces.*` from surfaces axis
-5. Re-emit CSS vars (call route-apply.md)
+5. Inject any additional easings from Step 4 into `motion.easings[]` (merge by token name)
+6. Re-emit CSS vars (call route-apply.md)

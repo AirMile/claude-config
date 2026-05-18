@@ -4,7 +4,9 @@ Conversion algorithm, canonical spring tokens, and per-library mapping table.
 
 ---
 
-## The Four Spring Tokens
+## Spring Tokens per Source
+
+### Apple pack — custom iOS-tuned springs
 
 | Token           | k (stiffness) | c (damping) | m (mass) | ζ (ratio) | Duration | cssApprox                            | Use                         |
 | --------------- | ------------- | ----------- | -------- | --------- | -------- | ------------------------------------ | --------------------------- |
@@ -14,6 +16,19 @@ Conversion algorithm, canonical spring tokens, and per-library mapping table.
 | `spring-bouncy` | 380           | 18          | 1        | 0.46      | 700ms    | `cubic-bezier(0.34, 1.56, 0.64, 1)`  | Success pulse, Playful pack |
 
 `ζ < 1` = underdamped (some overshoot). `ζ = 1` = critically damped (no overshoot, fastest settle). `ζ > 1` = overdamped (slow, no overshoot).
+
+### Material Design 3 — documented spring presets (Standard / Playful pack)
+
+Source: m3.material.io/styles/motion — publicly specified spring parameters.
+
+| Token               | k (stiffness) | c (damping) | m (mass) | ζ (ratio) | Duration | cssApprox                           | Use                                      |
+| ------------------- | ------------- | ----------- | -------- | --------- | -------- | ----------------------------------- | ---------------------------------------- |
+| `spring-md-spatial` | 800           | 51          | 1        | 0.90      | 300ms    | `cubic-bezier(0.2, 0, 0, 1)`        | Large spatial: container morph, drawer   |
+| `spring-md-effects` | 380           | 31          | 1        | 0.80      | 400ms    | `cubic-bezier(0.34, 1.26, 0.64, 1)` | Effects: elevation change, ripple, color |
+
+> **Damping coefficient c**: `c = 2 × ζ × sqrt(k × m)`. Spatial: `c = 2 × 0.9 × sqrt(800) ≈ 50.9`, rounded to 51. Effects: `c = 2 × 0.8 × sqrt(380) ≈ 31.2`, rounded to 31.
+>
+> **Motion library usage** (React / motion.dev): `{ type: "spring", stiffness: 800, damping: 51, mass: 1 }` (spatial), `{ stiffness: 380, damping: 31, mass: 1 }` (effects).
 
 ---
 

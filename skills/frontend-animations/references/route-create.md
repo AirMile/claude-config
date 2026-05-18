@@ -27,21 +27,22 @@ Present a single-select:
 Which animation pack do you want?
 
 ○ None           — No transitions beyond color changes
-○ Subtle         — Hover-lift, press-scale, smooth fades
-● Standard       — + stagger reveals, modal slides, route fades (Recommended for new projects)
-○ Expressive     — iOS/Apple easings, spring physics, glass surfaces
-○ Playful        — + bouncy springs, success celebrations, wiggle, tilt
+○ Subtle         — Hover-lift, press-scale, smooth fades (source: Linear/GitHub/Vercel)
+● Standard       — + stagger reveals, modal slides, route fades — Material Design 3 (Recommended)
+○ Apple          — iOS/Apple easings, spring physics, glass surfaces — Apple iOS/macOS HIG
+○ Playful        — + bouncy springs, success celebrations, wiggle, tilt — Apple + M3 Expressive
 
-Note: Glass surfaces (Expressive/Playful) can be disabled after selection without changing the pack.
+Note: Glass surfaces (Apple/Playful) can be disabled after selection without changing the pack.
+Note: Fluent 2 and IBM Carbon curves are available via Customize → "Add easings from other systems".
 ```
 
 Store selection as `$CHOSEN_PACK`.
 
 ---
 
-## Step 3 — Glass opt-in confirmation (Expressive/Playful only)
+## Step 3 — Glass opt-in confirmation (Apple/Playful only)
 
-If `$CHOSEN_PACK` is `expressive` or `playful`:
+If `$CHOSEN_PACK` is `apple` or `playful`:
 
 > "This pack enables glass/vibrancy surfaces (`surfaces.glass.enabled = true`). Glass is applied to overlays and navigation bars — not body backgrounds. You can disable it at any time without changing the pack.
 >
@@ -67,7 +68,7 @@ Display the pack delta summary:
 ```
 Pack:        {chosen_pack}
 Springs:     {n} tokens
-iOS easings: {n} (Expressive/Playful only)
+Pack easings: {n} (Apple/Playful: iOS curves · Standard: M3 curves · Subtle: expo-out/cubic-out)
 Glass:       {enabled/disabled}
 Stack:       {stack_type} — {motion_lib or "CSS only"}
 
@@ -78,8 +79,8 @@ On Yes:
 
 1. Read `packs.md` — load the delta for `$CHOSEN_PACK`
 2. Delta-write to `project.json#theme` (only owned keys — see SKILL.md § Read/Write Protocol)
-3. Add iOS easings to `motion.easings[]` if Expressive/Playful (merge, no dedup by token name)
-4. Add iOS durations to `motion.durations[]` if Expressive/Playful (merge)
+3. Add pack easings to `motion.easings[]` per pack delta (see `packs.md` — merge, no dedup by token name)
+4. Add pack durations to `motion.durations[]` per pack delta (merge)
 5. Call Apply route logic to emit CSS vars (see route-apply.md)
 6. Run post-flight report
 
