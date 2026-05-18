@@ -1,7 +1,7 @@
 ---
 name: marketing-screenshots
 argument-hint: "[url]"
-description: Generate marketing-quality app screenshots via Playwright. Use with /marketing-screenshots.
+description: Generate marketing screenshots via Playwright. Use with /marketing-screenshots.
 metadata:
   author: claude-config
   version: 1.0.0

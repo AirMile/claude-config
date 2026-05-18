@@ -1,6 +1,6 @@
 ---
 name: frontend-convert
-description: Convert screenshots or URLs into working pages or components. Use with /frontend-convert.
+description: Convert screenshots or URLs into working pages. Use with /frontend-convert.
 argument-hint: "[file-path|url]"
 writes: [devinfo.handoff]
 metadata:

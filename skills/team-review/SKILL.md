@@ -1,6 +1,6 @@
 ---
 name: team-review
-description: Code review feature branches with bug detection and scoring. Use with /team-review.
+description: Code review feature branches with scoring. Use with /team-review.
 metadata:
   author: claude-config
   version: 3.0.0

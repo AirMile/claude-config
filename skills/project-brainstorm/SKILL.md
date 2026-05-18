@@ -1,6 +1,6 @@
 ---
 name: project-brainstorm
-description: Expand ideas through interactive technique application. Use with /project-brainstorm.
+description: Explore ideas using brainstorm techniques. Use with /project-brainstorm.
 metadata:
   author: claude-config
   version: 1.1.0

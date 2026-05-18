@@ -1,6 +1,6 @@
 ---
 name: frontend-check
-description: Check and fix performance, SEO, accessibility, and user flows. Use with /frontend-check.
+description: Audit and fix performance, SEO, and accessibility. Use with /frontend-check.
 argument-hint: "[url | source-path | feature-name] [--scope=performance|seo|aeo|responsive|a11y|...]"
 reads:
   [backlog.status, feature.requirements, feature.files, feature.architecture]

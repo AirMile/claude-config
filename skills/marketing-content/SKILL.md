@@ -1,7 +1,7 @@
 ---
 name: marketing-content
 argument-hint: "[topic]"
-description: Generate marketing text variants per format and platform. Use with /marketing-content.
+description: Generate marketing copy variants per format. Use with /marketing-content.
 metadata:
   author: claude-config
   version: 1.0.0
