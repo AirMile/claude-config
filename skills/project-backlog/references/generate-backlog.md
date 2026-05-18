@@ -24,6 +24,7 @@
          "name": "{feature-name}",
          "type": "FEATURE|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|PAGE-GAP",
          "status": "TODO",
+         "transition": "designing",
          "phase": "P1|P2|P3|P4",
          "description": "{description}",
          "source": "/project-backlog",
@@ -34,6 +35,8 @@
      "notes": "{Any notes or considerations}"
    }
    ```
+
+   **`transition` field rule:** only set `transition: "designing"` on items with `type === "PAGE"` or `type === "COMPONENT"`. All other types (FEATURE, API, etc.) must have `transition` absent — the dashboard sets it when the user copies the define/build prompt.
 
    **[GAME MODE]:**
 

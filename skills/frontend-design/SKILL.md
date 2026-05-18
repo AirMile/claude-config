@@ -1,6 +1,6 @@
 ---
 name: frontend-design
-description: Manage design specs and generate PAGE/COMPONENT code. Use with /frontend-design.
+description: Manage design specs and generate PAGE/COMPONENT code. Use with /frontend-design. Auto-triggers when a backlog task with type PAGE or COMPONENT and transition "designing" is detected.
 reads: [devinfo.handoff, backlog.status, feature.requirements, feature.files]
 writes: [devinfo.handoff, devinfo.tokenDrift]
 metadata:
@@ -15,7 +15,7 @@ Three modes:
 
 1. **Capture** — manages the project design specification (pages, user flows, design principles, components) in `.project/project.json` → `design`. Can be called iteratively.
 2. **Brief** — generates a markdown brief based on the design spec + block inventory from the dev-pipeline + tokens + patterns. Paste the output into Claude Design as context. The visual work happens there; the handoff bundle from Claude Design goes back to Claude Code (`/frontend-convert`). Supports page-briefs and component-briefs.
-3. **Build** — generates working code for backlog features (PAGE or COMPONENT) with `status: DEF` for which no visual reference material is available. Reuses tokens + spec + existing components. For visual input (screenshot/Figma/URL): use `/frontend-convert`.
+3. **Build** — generates working code for PAGE or COMPONENT features. Accepts: backlog items with `transition: "designing"` (from `/project-backlog` or `/project-todo`) and design spec entries with `status: "DEF"`. For PAGE entities: shows a composition menu to select which features and components appear on the screen (including not-yet-built features rendered as TODO-markers). For visual input (screenshot/Figma/URL): use `/frontend-convert`.
 
 **Related skills:** `/frontend-tokens` · `/frontend-convert` · `/core-setup` · `/frontend-check`
 
@@ -383,7 +383,9 @@ multiSelect: false
 
 Detect first:
 
-- `$HAS_BUILD_CANDIDATES` (true/false): are there PAGE or COMPONENT features with `status: DEF` on the backlog for which no visual reference exists in `.project/wireframes/` or `design.pages[]/design.components[].screenshots[]`?
+- `$HAS_BUILD_CANDIDATES` (true/false): are there PAGE or COMPONENT items ready to build? True if **either**:
+  - `design.pages[]` or `design.components[]` has an entry with `status: "DEF"` and no visual reference in `.project/wireframes/` or `.screenshots[]`, **or**
+  - `backlog.html` has a feature with `(type === "PAGE" || type === "COMPONENT") && transition === "designing"` (newly created by `/project-backlog` or `/project-todo`).
 - `$HAS_PAGE_CANDIDATES` (true/false): subset of the above, PAGE type only.
 - `$HAS_COMPONENT_CANDIDATES` (true/false): subset of the above, COMPONENT type only.
 
@@ -506,7 +508,7 @@ Process updates, proceed to PHASE 3 (Confirm).
 
 ### Route: Build (In-Claude-Code Code Generation)
 
-> **Todo**: Read `.claude/skills/frontend-design/references/route-build.md` for the full build flow: entity selection, spec lookup, design direction, alternatives, code generation, post-write checks, backlog sync, and block inventory.
+> **Todo**: Read `.claude/skills/frontend-design/references/route-build.md` for the full build flow: entity selection, spec lookup, page composition, layout archetype, code generation, post-write checks, backlog sync, and block inventory.
 
 **Trigger:** only reachable if `$HAS_BUILD_CANDIDATES = true` (detected in PHASE 1). Steps 0–11 are in the reference file above.
 

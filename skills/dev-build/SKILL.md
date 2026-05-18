@@ -152,11 +152,34 @@ Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `t
 
 Not found → exit: "Run `/dev-define` first."
 
-**COMPONENT Build Detection** (immediately after feature.json load):
+**COMPONENT detection** (immediately after feature.json load):
 
-If `feature.type === "COMPONENT"` (or backlog item type is COMPONENT) → load `COMPONENT-BUILD.md` and follow its "Detection" section to determine `IS_COMPONENT_BUILD`, `COMPONENT_SCOPE`, `COMPONENT_OUTPUT_PATH`. Otherwise set `IS_COMPONENT_BUILD = false` and skip all COMPONENT-specific blocks in later phases.
+If `feature.type === "COMPONENT"` (or backlog item type is COMPONENT): set `IS_COMPONENT_BUILD = true`. Otherwise: `IS_COMPONENT_BUILD = false`.
 
-**Token-bootstrap safety net** (only if `feature.hasUI === true` or `IS_COMPONENT_BUILD === true`): execute the Bootstrap Procedure from `shared/TOKENS.md`. Fully idempotent — guards skip automatically if Tailwind is missing or `tokens.css` already exists.
+**Token-bootstrap safety net** (only if `feature.hasUI === true` or `IS_COMPONENT_BUILD = true`): execute the Bootstrap Procedure from `shared/TOKENS.md`. Fully idempotent — guards skip automatically if Tailwind is missing or `tokens.css` already exists.
+
+**Token-theme guard** (only when `feature.hasUI === true` or `IS_COMPONENT_BUILD = true`): after Bootstrap Procedure completes, read `project.json#theme.colors[]`. If absent or empty:
+
+```yaml
+header: "Theme tokens"
+question: "Geen design tokens gevonden. /dev-build genereert UI met token-classes die zonder thema unstyled blijven. Hoe verder?"
+options:
+  - label: "Run /frontend-tokens first (Recommended)", description: "Zet kleuren + spacing tokens op, daarna /dev-build opnieuw"
+  - label: "Continue with fallback defaults", description: "Gebruik defaults uit shared/TOKENS.md (neutrale gray-scale)"
+  - label: "Cancel", description: "Stop deze build"
+multiSelect: false
+```
+
+- "Run /frontend-tokens first" → exit: `Run /frontend-tokens, then /dev-build {feature} again.`
+- "Continue with fallback defaults" → set `$USE_FALLBACK_TOKENS = true`; Token-styled UI rule uses `shared/TOKENS.md` defaults.
+- "Cancel" → exit.
+
+**Token-styled UI rule** (applies to both `feature.hasUI === true` FEATURE builds and all COMPONENT builds): dev-build writes functional, presentably-styled UI using the project's design tokens. This is sufficient for `/dev-verify` manual checks; polish details via browser inspect + commit without re-running `/frontend-design`.
+
+- Use semantic HTML, form controls, and layout structure appropriate to the feature.
+- Use token-based Tailwind classes: `bg-background`, `text-foreground`, `bg-primary`, `text-primary-foreground`, `rounded-md`, `p-4`, `gap-4`, semantic headings (`text-2xl font-semibold`). Read `project.json#theme` for token names; if empty → fall back to defaults from `shared/TOKENS.md`.
+- T101/T102 still enforced — no hex literals or `bg-[#hex]` values.
+- `/frontend-design` is optional: run it on-demand for layout reshaping (sidebar/hero/grid). No marker comment on generated files.
 
 **Dependency check:**
 
@@ -166,7 +189,7 @@ Skip if no `depends[]` or empty.
 2. Per dependency: status must be `"DONE"`.
 3. Blockers found → **AskUserQuestion**:
    - "Stop — finish {dep} first (Recommended)" / "Continue anyway"
-   - Stop → exit. Continue → proceed.
+   - Stop → exit with message: `Run /dev-build {dep}` (for FEATURE or COMPONENT deps) or `Run /frontend-design {dep}` (for PAGE deps). Continue → proceed.
 
 **Workspace setup:**
 
@@ -415,7 +438,17 @@ Guidelines:
 - Expected = observable result (response body, status code, visible effect)
 - Do NOT add "run npm test" items — unit tests are already covered by the build
 
-**Backlog**: find feature by name → set `"status": "DOING"`, remove `transition` field if present (auto-pickup signal consumed), `data.updated` → now. This is the only place where the backlog is mutated during the build.
+**Backlog**: find feature by name → set `"status": "DOING"`, remove `transition` field if present (auto-pickup signal consumed), `data.updated` → now.
+
+**Page-dependency sync** (only when `feature.pageHint[]` is non-empty AND `feature.type in ["FEATURE", "COMPONENT"]`):
+
+For each `pageName` in `feature.pageHint[]`:
+
+- Find `data.features[name===pageName]` in `backlog.html` (type must be `"PAGE"`).
+- If found: add `{feature-name}` to `page.dependencies[]` (dedupe). Write back to backlog.html.
+- If not found: silent skip (PAGE may not be in backlog yet — `/frontend-design` Route:Page will create it later).
+
+Add to completion report when ≥1 update: `Page deps: {N} PAGEs updated ({comma-separated names})`
 
 **Context**: update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip if no structural impact.
 
@@ -423,13 +456,13 @@ Guidelines:
 
 **Routes** (`architecture.routes[]`): confirm routes that were actually implemented during the build — verify `auth` field matches the actual middleware/guard (`"public" | "user" | "admin"`), update `purpose` if the page can now be described better. New routes that emerged during the build: push `{ path, purpose, auth, feature }`. Endpoints in `endpoints[]` with actual auth check: migrate `auth: false` → `"public"` and `auth: true` → `"user"` (or `"admin"` for role check).
 
-**PAGE seeding** (safety net — frontend projects only):
+**PAGE seeding** (warning-only — frontend projects only):
 
-Follow [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery) for the canonical protocol.
+Scan for new page routes (same patterns as dev-define): `app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`. Skip candidates already seeded by dev-define: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`.
 
-**Trigger (safety net):** same patterns as dev-define. Skip candidates already seeded by dev-define: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`. Resolution: batch "Yes" / "No".
+If new route patterns found and not in backlog: log `⚠ Detected new route patterns: {list}. Run /dev-define on the affected feature or /frontend-design <name> to add them to the backlog.`
 
-**Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `PAGE`
+Do NOT write to backlog.html — `/dev-define` is the sole author of PAGE entries from the dev track (see `SKILL-PATTERNS.md → Page-Discovery` doctrine).
 
 **COMPONENT-only sync** (only if `IS_COMPONENT_BUILD = true`): follow `COMPONENT-BUILD.md` → "Phase 3A steps" (design.components[] status BLT, project-context components inventory, PAGE suggestions via Link/router scan).
 

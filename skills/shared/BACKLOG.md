@@ -8,18 +8,9 @@ The backlog is an interactive HTML list view with embedded JSON data. All skills
 
 ## Live runtime data
 
-`serve-backlog.js` injects two server-computed fields into the JSON payload on every `GET /{project}/backlog` request:
+`serve-backlog.js` injects one server-computed field into the JSON payload on every `GET /{project}/backlog` request:
 
-- **`data.worktrees[]`** — open git worktrees for this project. Each entry: `{ feature, branch, path, ahead, dirty, lastCommitAt, prState, prUrl, prNumber }`. Computed from `git worktree list --porcelain` + optional `gh pr list`. Cached 30 s per project root; bust with `?refresh=1`.
-- **`data.mainState`** — `{ dirty, behindOrigin }` for the main checkout.
 - **`data.seedDrift[]`** — deferred seed-drift entries from `/project-backlog` runs where the user chose "Skip — leave seed as-is" at the Seed Alignment Check. Each entry: `{ category, seedSays, featureDecides, source, ref, detectedAt }` (see `shared/SEED.md § Alignment Check § Drift entry schema`). `category` ∈ `{ "contradiction", "new-direction", "scope-expansion" }`. `source` is always `"/project-backlog"` for entries on this array. Consumed by `/project-seed § Sync`, `/project-brainstorm`, and `/project-critique` on concept-scope save — first successful seed rewrite removes the processed entries. Optional; absent on backlogs that never deferred drift. Strip before saving if accidentally included in a payload.
-
-**These fields are NOT persisted.** Skills must never write `worktrees` or `mainState` via `POST /backlog/save` — the server always re-derives them. If a `POST /save` payload accidentally includes them the server ignores them (it only replaces the `<script id="backlog-data">` block verbatim with whatever JSON it receives, so include = written to disk and persisted on the next re-inject). To be safe: strip both fields before saving.
-
-The backlog template (`backlog-template.html`) reads these fields to render:
-
-- A `⎇` badge on each feature card whose name matches a worktree `feature` field (exact or prefix match `feature.startsWith(name + '-')`).
-- A top-nav `⎇ N worktrees` disclosure pill listing all open worktrees with state and a click-to-copy `/core-finalize` command.
 
 ## Reading the backlog
 
@@ -57,6 +48,8 @@ The backlog template (`backlog-template.html`) reads these fields to render:
         "scopes": ["<scope-name>"],
         "findings": { "critical": "<N>", "warnings": "<N>", "passed": "<N>" }
       },
+      "transition": "designing|converting|auditing|defining|building|verifying|refactoring|null",
+      "pageHint": ["page-name"],
       "externalRef": {
         "type": "github|jira|linear",
         "id": "<issue/ticket id>",
@@ -184,7 +177,7 @@ TODO (To design) → DEFINED (To convert) → DOING (To audit) → DONE (Shipped
 | Bulk-init from concept or brainstorm output       | `/project-backlog`                 |
 | Pattern detection during build (cross-page reuse) | `/project-backlog` reuse-discovery |
 
-All four routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. `/frontend-design` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/frontend-design` Build fills them in later.
+All four routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT`, `status=TODO`, and **`transition: "designing"`**. The `transition` field enables `/frontend-design` to auto-detect these items without a manual dashboard click. `/frontend-design` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/frontend-design` Build fills them in later.
 
 ### Dev track (FEATURE/API/UI/REFACTOR/BUG/etc.)
 
@@ -260,6 +253,7 @@ Schema when creating:
   "name": "button",
   "type": "COMPONENT",
   "status": "TODO",
+  "transition": "designing",
   "phase": "P3",
   "description": "Primary action trigger with primary/ghost/destructive variants",
   "source": "/frontend-design",
@@ -267,6 +261,14 @@ Schema when creating:
   "dependencies": []
 }
 ```
+
+**`pageHint` field** (optional, on any FEATURE/API/etc. type): list of PAGE names this feature surfaces on. Set by `/dev-define` during requirements sparring. Read by `/frontend-design` Build to pre-populate the page-composition selection menu.
+
+```json
+{ "name": "cart-total", "type": "FEATURE", "pageHint": ["checkout", "cart"] }
+```
+
+**Bidirectional link convention:** PAGE task `dependencies[]` ↔ FEATURE `pageHint[]`. When `/frontend-design` Build composes a PAGE, it writes the selected feature names into `page.dependencies[]`. When `/dev-define` spars on page placement, it writes the page name(s) into `feature.pageHint[]`.
 
 **scope field on backlog item** (mirrors `design.components[].scope`):
 

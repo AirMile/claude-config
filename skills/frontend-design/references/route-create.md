@@ -76,29 +76,6 @@ PAGES
 ════════════════════════════════════════════════
 ```
 
-#### Step 2b: Design Alternatives (optional)
-
-For pages with ≥3 sections, offer:
-
-```yaml
-header: "Alternatives"
-question: "Do you want to compare alternative layouts for {page-name}?"
-options:
-  - label: "No, continue (Recommended)", description: "Current layout is fine"
-  - label: "Yes, 2 alternatives", description: "Generate 2 radically different section layouts"
-multiSelect: false
-```
-
-**If "Yes":** spawn 2 agents in parallel, each with a different constraint:
-
-- Agent 1: "Minimize sections — max 2, combine where possible"
-- Agent 2: "Maximize focus — each section has one purpose"
-
-Present the 3 options (original + 2 alternatives) as ASCII wireframes.
-User chooses via AskUserQuestion which layout, or combines elements.
-
-For pages with <3 sections: skip this step.
-
 ```yaml
 header: "Pages"
 question: "Are these pages correct?"

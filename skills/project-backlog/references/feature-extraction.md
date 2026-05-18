@@ -239,8 +239,14 @@ Use AskUserQuestion:
 
 **Response handling:**
 
-- "Yes, this is correct" → proceed to PHASE 2
+- "Yes, this is correct" → proceed to Page-Discovery
 - "Adjust features" → ask what to change (add/remove/edit name/type/description/risk), apply changes, show updated table, re-ask
 - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 
 **Loop until user confirms features are correct.**
+
+---
+
+**[WEB MODE] Page-Discovery (always — after feature review confirms):**
+
+> **Todo**: Read `.claude/skills/project-backlog/references/page-discovery.md` and follow the Page-Discovery flow before proceeding to PHASE 2.

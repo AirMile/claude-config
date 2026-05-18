@@ -99,7 +99,7 @@ Resolved: [N]/[total] findings
 
 ### 4.3 Backlog Completion Sync
 
-If a backlog item was tagged as "testing" in PHASE 0:
+If a backlog item was tagged as "testing" in PHASE 0 **and** no unresolved CRITICAL findings remain after re-audit:
 
 1. Read `.project/backlog.html` → parse JSON
 2. Find the feature → set `status: "DONE"`, remove `stage` and `transition` fields, `data.updated` to today

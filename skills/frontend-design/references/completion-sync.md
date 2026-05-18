@@ -16,11 +16,13 @@ After defining pages, sync them to the backlog:
        "name": "{kebab-case-name}",
        "type": "PAGE",
        "status": "TODO",
+       "transition": "designing",
        "phase": "P3",
        "description": "{page.purpose}",
        "dependencies": []
      }
      ```
+     Track this item in `$NEW_ITEMS[]` for the handoff prompt.
    - **Found**: skip (don't overwrite existing items)
 4. Set `data.updated` to today's date
 5. Write back via Edit (keep `<script>` tags intact)
@@ -77,8 +79,9 @@ CHANGES THIS SESSION
 | Flows      | {M}   | {flow names joined}                |
 | Principles | {P}   | {principle names joined}           |
 
-Backlog: {X} new PAGE items added
+Backlog: {X} new PAGE items added (transition: designing)
   {list of added page names}
+Seed:  {only when X > 0} .project/project-seed.md may be outdated — update manually if needed.
 
 Next steps:
   1. /frontend-design       → add more pages/flows (iterative)
@@ -90,3 +93,17 @@ Next steps:
 
 ═══════════════════════════════════════════════════════════════
 ```
+
+## Handoff Prompt (after report, only when `$NEW_ITEMS[]` is non-empty)
+
+```yaml
+header: "Continue"
+question: "New items added to backlog. Build one now?"
+options:
+  - label: "Later (Recommended)", description: "Items are queued in backlog with transition: designing — build when ready"
+  - label: "Build {$NEW_ITEMS[0].name}", description: "Start Build route for this item now"
+multiSelect: false
+```
+
+"Build {name}" → continue with `route-build.md` flow using `$TARGET = $NEW_ITEMS[0].name` and `$TARGET_TYPE = $NEW_ITEMS[0].type`.
+"Later" → end skill.

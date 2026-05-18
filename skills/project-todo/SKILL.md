@@ -413,12 +413,15 @@ multiSelect: false
      "name": "{kebab-case-name}",
      "type": "{chosen type}",
      "status": "TODO",
+     "transition": "designing",
      "phase": "{chosen priority}",
      "description": "{description — sharpened if thinking rounds were done}",
      "source": "/project-todo",
      "dependencies": []
    }
    ```
+
+   **`transition` rule:** only include `"transition": "designing"` when `type === "PAGE"` or `type === "COMPONENT"`. Omit the field entirely for all other types (FEATURE, API, THEME, etc.).
 
    The `source: "/project-todo"` field signals to `/project-backlog` that this feature was added manually (INDEPENDENT) and must never be overwritten during a backlog rebuild.
 

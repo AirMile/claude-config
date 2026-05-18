@@ -29,14 +29,35 @@ Standalone (dev): `/dev-owasp` (security audit).
 ## Frontend Pipeline
 
 ```
-/frontend-design (capture) ──→ /frontend-design (brief) ──→ Claude Design ──→ handoff → /dev-build
+/project-backlog ──► PAGE/COMPONENT tasks (transition: "designing")
                                       │
-                                      └─→ /frontend-convert (visual → code)
-                                      └─→ /frontend-check (post-build checks — incl. --scope=a11y)
-                                      └─→ [/core-setup [module]] (tools + libraries, incl. element picker)
+                                      ▼
+                     /frontend-design (Build) ──► compose: select features + components
+                          │                           │
+                          │                           └── "+ new component/feature" → /project-todo (smart-todo)
+                          │
+                          └─→ /frontend-design (brief) ──→ Claude Design ──→ handoff
+                          └─→ /frontend-convert (visual → code)
+                          └─→ /frontend-check (post-build checks — incl. --scope=a11y)
 ```
 
-Frontend items skip `defining/defined` — design captures pages/flows, brief generates context for Claude Design, handoff bundle returns to `/dev-build` as `building`.
+**Recommended order: build dev-features first, then compose PAGEs.**
+
+PAGE-design gets a selection menu showing all features (any status) + existing components. Features not yet DONE render as TODO-markers in the generated code — refinement pass after build completes.
+
+Frontend items skip `defining/defined` — design captures pages/flows, Build generates code directly.
+
+## Cross-track rules
+
+| Item type            | Responsible skill                                                          | The other track must not                   |
+| -------------------- | -------------------------------------------------------------------------- | ------------------------------------------ |
+| FEATURE (data/logic) | dev-define → dev-build                                                     | frontend-design builds it                  |
+| FEATURE (with UI)    | dev-define → dev-build (token-styled UI — functional + presentably styled) | dev-build writes styled/designed UI        |
+| COMPONENT            | dev-define → dev-build (token-styled) → frontend-design (optional layout)  | dev-build writes styled/designed component |
+| PAGE                 | frontend-design                                                            | dev-build builds it                        |
+| THEME                | frontend-tokens                                                            | —                                          |
+
+**dev-build** delivers: data layer, hooks, API, types, tests + token-styled UI (semantic HTML + design tokens). Pages and components are testable via `/dev-verify`. `/frontend-design` is optional for layout reshaping (sidebar/hero/grid).
 
 ---
 
@@ -86,6 +107,6 @@ Not pipeline steps, but project-aware utilities. Callable standalone.
 | -------------- | --------------------------------------------------- |
 | project-add    | Register project + create symlinks to claude-config |
 | project-viewer | Local backlog/dashboard server (localhost:9876)     |
-| core-pull   | Git pull + `.project/` sync + learning extraction   |
+| core-pull      | Git pull + `.project/` sync + learning extraction   |
 | project-remove | Deregister project + cleanup                        |
 | project-tunnel | Dev server + Cloudflare Tunnel                      |

@@ -81,7 +81,10 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
    Output with valid JSON containing `tests.checklist[]` → write it to main's `.project/features/{feature-name}/feature.json` (creates the file from the committed worktree state) and proceed. No worktree, or `git show` empty/invalid → exit: run `/dev-build` first.
 
-   **COMPONENT detection** (after feature.json load): check whether `feature.type === "COMPONENT"` or backlog-item type is COMPONENT. If yes: set `IS_COMPONENT_VERIFY = true`. Look up demo-page: check whether `app/_dev/components/{name}/page.tsx` exists. Not found → exit: `"Demo-page not found. Run /dev-build {feature} again — this generates app/_dev/components/{name}/page.tsx."`. Dev server navigates to `/_dev/components/{name}` instead of the regular feature route.
+   **COMPONENT detection** (after feature.json load): check whether `feature.type === "COMPONENT"` or backlog-item type is COMPONENT. If yes: set `IS_COMPONENT_VERIFY = true`. Resolve render context in this order:
+   1. Grep `app/**/page.tsx` for an import matching `{PascalName}` — first match → navigate to that route.
+   2. Demo-page fallback: check whether `app/_dev/components/{name}/page.tsx` exists → navigate to `/_dev/components/{name}`.
+   3. Neither found → exit: `"No render context for {name}. Options: (a) run /dev-build {feature} to generate a demo-page, or (b) run /frontend-design {pageHint} to design a page that uses this component."`
 
 4. **Worktree switch** — execute the procedure in `shared/WORKTREE.md` with `feature-name` and `feature.status` (from Step 1). Switches automatically to `worktree-{feature-name}` if it exists. If no worktree exists but `feature.status === "DOING"`: WARN + AskUserQuestion (see WORKTREE.md → Step 4a: DOING-without-worktree warning). On FAIL (in a different worktree than the feature): stop with the message from WORKTREE.md.
 
@@ -301,6 +304,13 @@ Unclear feedback → AskUserQuestion: Re-enter (Recommended) | Continue per item
 > **Todo**: mark PHASE 1b → `completed`, PHASE 2 → `in_progress`.
 
 **When:** there are MANUAL items.
+
+**For UI features (`hasUI === true`):** show once before the first item:
+
+```
+💡 Visual polish (spacing, exact colors, borders) is post-verify — tweak via browser inspect after this run.
+   Focus this verify on: functionality, accessibility, smoke (does it load + work).
+```
 
 Show setup once (e.g. "Open {tunnel_url}"). Per MANUAL item:
 

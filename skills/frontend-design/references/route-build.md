@@ -12,6 +12,11 @@ On successful code generation: remove `transition`, set `status: "DOING"`, `stag
 
 #### Step 1: Entity selection
 
+Build candidates come from two sources (merge, deduplicate on name):
+
+1. `design.pages[]` / `design.components[]` with `status: "DEF"` and no visual reference in `.project/wireframes/` or `.screenshots[]`.
+2. `backlog.html` features with `(type === "PAGE" || type === "COMPONENT") && transition === "designing"`.
+
 Show only type options for which candidates are available:
 
 ```yaml
@@ -19,8 +24,8 @@ header: "Build — what to build?"
 question: "Which type do you want to generate?"
 # If both PAGE and COMPONENT candidates:
 options:
-  - label: "PAGE (Recommended)", description: "{X} page(s) with status DEF available"
-  - label: "COMPONENT", description: "{Y} component(s) with status DEF available"
+  - label: "PAGE (Recommended)", description: "{X} page(s) ready to build"
+  - label: "COMPONENT", description: "{Y} component(s) ready to build"
 # If only PAGE candidates: skip choice, proceed directly with PAGE
 # If only COMPONENT candidates: skip choice, proceed directly with COMPONENT
 multiSelect: false
@@ -30,7 +35,7 @@ Store chosen entity type as `$TARGET_TYPE` (PAGE or COMPONENT).
 
 #### Step 2: Choose candidate
 
-**If `$TARGET_TYPE = PAGE`:** show all PAGE features with `status: DEF` on the backlog for which no visual reference exists:
+**If `$TARGET_TYPE = PAGE`:** show merged candidate list (design.pages[] DEF + backlog PAGE with transition=designing):
 
 ```yaml
 header: "Build — choose page"
@@ -43,7 +48,7 @@ multiSelect: false
 
 Store as `$TARGET_PAGE`.
 
-**If `$TARGET_TYPE = COMPONENT`:** show all COMPONENT features with `status: DEF`:
+**If `$TARGET_TYPE = COMPONENT`:** show merged candidate list:
 
 ```yaml
 header: "Build — choose component"
@@ -111,80 +116,35 @@ options:
 multiSelect: false
 ```
 
-#### Step 5: Design Direction
+#### Step 4b: Page Composition (PAGE entities only — skip for COMPONENT)
 
-Three short questions that lock the visual direction before code generation. Answers stored as `$DESIGN_DIRECTION` and injected into the Build Plan (Step 7).
+> **Todo**: Read `.claude/skills/frontend-design/references/page-compose.md` and follow the composition flow. Store result as `$COMPOSITION`.
+
+---
+
+#### Step 5: Layout Archetype
+
+Single question that determines the structural layout before code generation. Answered once; stored as `$CHOSEN_LAYOUT`.
+
+**PAGE:**
 
 ```yaml
-header: "Tone"
-question: "Which tone fits {$TARGET}?"
+header: "Layout"
+question: "Which layout archetype fits {$TARGET}?"
 options:
-  - label: "Sober", description: "Reserved, information-first — no decorative elements"
-  - label: "Bold", description: "Strong contrast, dominant typography, assertive spacing"
-  - label: "Playful", description: "Rounded shapes, softer palette, motion accents"
-  - label: "Minimal", description: "Maximum whitespace, single accent, no ornamentation"
+  - label: "Single column", description: "Stacked sections, full-width — ideal for long-form content or forms"
+  - label: "Sidebar", description: "Navigation or filters sidebar + main content area"
+  - label: "Hero + grid", description: "Hero banner at the top + responsive card or list grid below"
+  - label: "Split screen", description: "Two equal panels side-by-side — auth / onboarding / comparison"
+  - label: "Dashboard grid", description: "Multi-section grid with stats, charts, or lists"
 multiSelect: false
 ```
 
-```yaml
-header: "Density"
-question: "How dense should the layout of {$TARGET} be?"
-options:
-  - label: "Compact", description: "Tight padding, small font sizes — information-dense"
-  - label: "Comfortable (Recommended)", description: "Standard spacing — balanced readability"
-  - label: "Spacious", description: "Generous padding, large touch targets — simple content"
-multiSelect: false
-```
+**COMPONENT:** skip this step. Layout is determined by the component's spec (`scope`, `variants`). Go directly to Step 7.
 
-Derive primary-affordance options from the spec (`$TARGET`): list up to 4 clearly distinct interaction or perception goals (e.g. "color shift on value change", "numeric readout", "proximity threshold marker", "drag animation"). If the spec is too sparse to derive options: skip this question.
+Store as `$CHOSEN_LAYOUT`.
 
-```yaml
-header: "Primary affordance"
-question: "Which element should dominate the user's attention in {$TARGET}?"
-options:
-  - label: "{affordance-1}", description: "{derived from spec}"
-  - label: "{affordance-2}", description: "{derived from spec}"
-  # max 4 options — always derived from spec, never generic
-multiSelect: false
-```
-
-Store as `$DESIGN_DIRECTION = { tone, density, primaryAffordance }`.
-
-#### Step 6: Design Alternatives
-
-Only for PAGE entities or COMPONENTs with ≥2 variants or sections. Skip for single-variant, stateless components.
-
-Spawn 2 Plan-agents **parallel** with opposing constraints on `$DESIGN_DIRECTION`:
-
-- **Agent 1 constraint:** `"Maximize {$DESIGN_DIRECTION.primaryAffordance} — every visual decision supports this single goal. Tone: {tone}. Density: {density}."`
-- **Agent 2 constraint:** `"Invert hierarchy — treat the secondary goal as the hero. Suppress {primaryAffordance} in favour of context/navigation. Tone: {tone}. Density: {density}."`
-
-Each agent produces:
-
-1. An ASCII wireframe (max 30 lines)
-2. A 2-sentence rationale
-
-Present as 3 options (original plan from Step 4 + 2 alternatives). Use `preview` field for the ASCII wireframes:
-
-```yaml
-header: "Design choice"
-question: "Three approaches for {$TARGET} — choose one or describe a combination."
-options:
-  - label: "Original plan"
-    description: "{spec-derived layout overview}"
-    preview: "{ascii wireframe of original}"
-  - label: "Option A — maximize {primaryAffordance}"
-    description: "{agent-1 rationale}"
-    preview: "{agent-1 ascii wireframe}"
-  - label: "Option B — inverted hierarchy"
-    description: "{agent-2 rationale}"
-    preview: "{agent-2 ascii wireframe}"
-multiSelect: false
-```
-
-Store as `$CHOSEN_LAYOUT`. Inject into Step 7 code generation as layout-direction override.
-
-If user selects "Other" (combination): ask what to take from which option → synthesize into `$CHOSEN_LAYOUT`.
+---
 
 #### Step 7: Generate (entity-aware)
 
@@ -226,6 +186,7 @@ export default function {Name}Demo() {
 BUILD PLAN: {$TARGET} ({$TARGET_TYPE})
 ═══════════════════════════════════════════════════════════════
 Structure:    {output paths — one line per file}
+Layout:       {$CHOSEN_LAYOUT — or "n/a" for COMPONENT}
 Tokens used:  {token names to be used}
 Blocks reused: {imports from components[] — or "none"}
 Images:       {placeholder strategy or "n/a"}
@@ -359,6 +320,20 @@ Map `$VERIFY_STATUS` (from Step 9) to backlog state:
 - `"FAIL"` → backlog status **unchanged** (code not confirmed working). Set `feature.audit.buildSmokeStatus = "FAIL"` + `feature.audit.buildSmokeError = $VERIFY_ERROR`
 - **No match or no backlog** → silent skip. Add to completion report: `Backlog: feature not found — skipping`.
 
+**10d.1. Composition persistence** (PAGE only, `$TARGET_TYPE === "PAGE"` and `$VERIFY_STATUS !== "FAIL"`):
+
+For the matched page entry in `data.features[]`:
+
+- Set `dependencies` to union of existing `dependencies[]` and all names from `$COMPOSITION.features` + `$COMPOSITION.components`.
+
+For each name in `$COMPOSITION.features[].name`:
+
+- Glob `.project/features/*/feature.json` → find where `feature.name === name`.
+- Read file, add `$TARGET` to `pageHint[]` (dedupe), write back.
+- No feature.json found for this name → skip silently (pageHint gets written when `/dev-define` runs).
+
+Store `$COMP_FEAT_COUNT = len($COMPOSITION.features)`, `$COMP_COMP_COUNT = len($COMPOSITION.components)`, `$PAGEHINT_COUNT = number of feature.json files updated`.
+
 Edit back to `backlog.html` (keep `<script>` tags intact, see `shared/BACKLOG.md → Lifecycle Protocol → Write`).
 
 Store block inventory counters as `$INV_NEW`, `$INV_UPDATED`, `$INV_CONFLICTS` for use in Step 11.
@@ -384,4 +359,7 @@ Missing deps:     {list or "none"}
 Verification:     {$VERIFY_STATUS}
 Verify error:     {$VERIFY_ERROR}   (only shown when $VERIFY_STATUS = "FAIL")
 Gaps:             {N linked | M created | K pending | "none"}
+Page deps:        +{$COMP_FEAT_COUNT} feature deps, {$COMP_COMP_COUNT} component deps   (PAGE only)
+pageHint:         {$PAGEHINT_COUNT} features updated   (PAGE only)
+Next:             /frontend-check {$TARGET} — moves PAGE to DONE on PASS   (PAGE only, when $VERIFY_STATUS != FAIL)
 ```

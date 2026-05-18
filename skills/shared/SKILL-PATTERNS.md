@@ -620,12 +620,14 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected). "Skip" → log all 
 
 **Goal:** Detect new page routes during dev work and drop them as standalone PAGE todos in the backlog so they go through the design → convert → check pipeline.
 
-**Skills:** `dev-define` (post-architecture seed), `dev-build` (post-codegen safety net + COMPONENT→route suggestions).
+**Skills:** `dev-define` (sole writer — post-architecture seed), `frontend-design completion-sync` (sole writer — user-driven page creation), `dev-build` (warning-only safety net + COMPONENT→route suggestions — does NOT write to backlog).
+
+> **Doctrine:** `/dev-define` and `/frontend-design completion-sync` are the only skills that create PAGE entries in `backlog.html`. `/dev-build` only logs a warning when it detects route patterns not yet in the backlog.
 
 #### Triggers (per skill)
 
 - **dev-define:** scan `feature.json#architecture.routes[]` for stack-specific page patterns (`app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`); scan `feature.json#files[]` for suffixes `Page`, `Screen`, `View`.
-- **dev-build (safety net):** identical patterns as dev-define. Skip candidates already seeded by dev-define: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`.
+- **dev-build (safety net):** identical patterns as dev-define. Skip candidates already seeded by dev-define: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`. **Warning-only — no write.**
 - **dev-build (COMPONENT→route):** scan `<Link href="...">` and `router.push(...)` in generated component files. Candidate if route does not appear in `project.json#design.pages[]` or `backlog.html`.
 
 #### Resolution
@@ -633,10 +635,10 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected). "Skip" → log all 
 AskUserQuestion (wording per skill — see skill files for exact options):
 
 - **dev-define:** batch — "Add a PAGE todo per page?" — options: "Yes, all" / "Selection" / "No".
-- **dev-build (safety net):** batch — "Add for design → convert → check?" — "Yes" / "No".
+- **dev-build (safety net):** log warning only — `⚠ Detected new route patterns: {list}. Run /dev-define or /frontend-design <name>.` No AskUserQuestion. No write.
 - **dev-build (COMPONENT→route):** per route — "PAGE todo for {route}?" — "Yes" / "Skip".
 
-**Persist per accepted page:**
+**Persist per accepted page** (dev-define and frontend-design only):
 
 1. Run dedup order (see above — name check; type PAGE skips inventory check; suggestionsLog check on rejected status).
 2. Push to `data.features[]`:
@@ -656,6 +658,104 @@ AskUserQuestion (wording per skill — see skill files for exact options):
 3. Log in `feature.json#suggestionsLog[]` (accepted, `direction: "dev→frontend"`, `type: "PAGE"`).
 
 Per rejected proposal: log in `suggestionsLog[]` (rejected).
+
+---
+
+### Smart-Todo Creation
+
+**Direction:** frontend → backlog (or dev → backlog)
+
+**Goal:** During PAGE composition or feature definition, allow skills to discover and create new backlog items (COMPONENT or FEATURE) inline — without leaving the current flow.
+
+**Skills:** `frontend-design` (Build — page-compose step), `dev-define` (pageHint sparring — new PAGE).
+
+#### Trigger
+
+- **frontend-design Build (PAGE):** user selects `"+ new component"` or `"+ new feature"` in the page-composition selection menu.
+- **dev-define:** user answers `"+ new PAGE"` in the pageHint sparring question (no existing PAGE matches the feature's target route).
+
+#### Resolution
+
+**For "+ new component" (from frontend-design):**
+
+```yaml
+header: "New component"
+question: "Describe the new component:"
+options:
+  - label: "Quick add — I'll name it", description: "Provide kebab-case name + 1-line description"
+multiSelect: false
+```
+
+Ask name + description (free text). Then:
+
+1. Run dedup order (see BACKLOG.md § Writing the backlog).
+2. Push to `backlog.html#data.features[]`:
+   ```json
+   {
+     "name": "{kebab-name}",
+     "type": "COMPONENT",
+     "status": "TODO",
+     "transition": "designing",
+     "phase": "P2",
+     "description": "{user description}",
+     "source": "/frontend-design",
+     "scope": "atomic",
+     "dependencies": ["{current-page-name}"]
+   }
+   ```
+3. Add to `project.json#design.components[]`: `{ name, purpose: description, status: "IDEA", scope: "atomic" }`.
+4. Return the new component name to the composition selection so it appears in the current list.
+
+**For "+ new feature" (from frontend-design):**
+
+```yaml
+header: "New feature"
+question: "Describe the new feature this page needs:"
+options:
+  - label: "Quick add — I'll name it", description: "Provide kebab-case name + 1-line description"
+multiSelect: false
+```
+
+1. Run dedup order.
+2. Push to `backlog.html#data.features[]`:
+   ```json
+   {
+     "name": "{kebab-name}",
+     "type": "FEATURE",
+     "status": "TODO",
+     "phase": "P2",
+     "description": "{user description}",
+     "source": "/frontend-design",
+     "pageHint": ["{current-page-name}"]
+   }
+   ```
+3. Return the new feature name to the composition selection.
+
+**For "+ new PAGE" (from dev-define pageHint sparring):**
+
+1. Run dedup order.
+2. Push to `backlog.html#data.features[]`:
+   ```json
+   {
+     "name": "{kebab-page-name}",
+     "type": "PAGE",
+     "status": "TODO",
+     "transition": "designing",
+     "phase": "P2",
+     "description": "Page for feature {current-feature}. Route: {route-hint}",
+     "source": "/dev-define",
+     "dependencies": ["{current-feature}"],
+     "parentFeature": "{current-feature}",
+     "auto": true
+   }
+   ```
+3. Return the new page name to the pageHint answer so `feature.json#pageHint[]` includes it.
+
+#### Notes
+
+- All smart-todo items are **user-confirmed before write** (they appear inline in the composition menu and the user chooses to add them).
+- Write happens as part of the parent skill's backlog-sync step — not a separate intermediate write.
+- `source` tag always reflects the originating skill so it is treated as INDEPENDENT (preserved across `/project-backlog` rebuilds).
 
 ---
 
