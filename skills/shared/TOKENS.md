@@ -106,6 +106,14 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --ease-fluent-accelerate: cubic-bezier(0.7, 0, 1, 0.5);
   --ease-fluent-max: cubic-bezier(0.8, 0, 0.78, 1);
   --ease-fluent-easy-ease: cubic-bezier(0.33, 0, 0.67, 1);
+  /* Fluent 2 duration tokens (Customize opt-in — /frontend-animations) */
+  --duration-fluent-ultra-fast: 50ms;
+  --duration-fluent-faster: 100ms;
+  --duration-fluent-fast: 150ms;
+  --duration-fluent-normal: 200ms;
+  --duration-fluent-slow: 300ms;
+  --duration-fluent-slower: 400ms;
+  --duration-fluent-ultra-slow: 500ms;
   --ease-carbon-entrance: cubic-bezier(0, 0, 0.38, 0.9);
   --ease-carbon-exit: cubic-bezier(0.2, 0, 1, 0.9);
   --ease-carbon-standard: cubic-bezier(0.2, 0, 0.38, 0.9);
@@ -210,6 +218,14 @@ transitionDuration: {
   'md-long2':        'var(--duration-md-long2)',
   'spring-md-spatial': 'var(--spring-md-spatial-duration)',
   'spring-md-effects': 'var(--spring-md-effects-duration)',
+  // Fluent 2 duration scale (Customize opt-in — /frontend-animations)
+  'fluent-ultra-fast': 'var(--duration-fluent-ultra-fast)',
+  'fluent-faster':     'var(--duration-fluent-faster)',
+  'fluent-fast':       'var(--duration-fluent-fast)',
+  'fluent-normal':     'var(--duration-fluent-normal)',
+  'fluent-slow':       'var(--duration-fluent-slow)',
+  'fluent-slower':     'var(--duration-fluent-slower)',
+  'fluent-ultra-slow': 'var(--duration-fluent-ultra-slow)',
 },
 transitionTimingFunction: {
   out:      'var(--ease-out)',

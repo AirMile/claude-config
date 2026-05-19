@@ -1502,3 +1502,164 @@ function FluentPanel({
   }
 }
 ```
+
+---
+
+### `carbon.data-row-reveal`
+
+**When to use:** Data tables, list views, or dashboards where rows enter and leave independently. Asymmetric entrance/exit gives the UI a sense of directionality — rows arrive with deceleration (user can read them), leave with acceleration (gets out of the way fast). **Not** for full-page route transitions or element morphs — use `material.shared-axis` for those.
+
+**Condition:** `motion.easings[]` contains `ease-carbon-entrance` (added via Customize → IBM Carbon).
+
+> Reference: `skills/frontend-animations/references/carbon-motion.md`
+
+```tsx
+// React — motion.dev
+import { AnimatePresence, motion } from "motion/react";
+
+function DataTable({ rows }: { rows: Row[] }) {
+  return (
+    <table>
+      <tbody>
+        <AnimatePresence>
+          {rows.map((row, i) => (
+            <motion.tr
+              key={row.id}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 8 }}
+              transition={{
+                enter: {
+                  duration: 0.15,
+                  ease: [0, 0, 0.38, 0.9],
+                  delay: i * 0.04,
+                },
+                exit: { duration: 0.11, ease: [0.2, 0, 1, 0.9] },
+              }}
+            >
+              {/* row cells */}
+            </motion.tr>
+          ))}
+        </AnimatePresence>
+      </tbody>
+    </table>
+  );
+}
+```
+
+```css
+/* Use entrance curve on enter, exit curve on leave — never the same curve
+   for both directions. This asymmetry is the core Carbon motion rule. */
+.data-row {
+  opacity: 0;
+  transform: translateX(-8px);
+  animation: carbon-row-enter 150ms cubic-bezier(0, 0, 0.38, 0.9) forwards;
+}
+.data-row.leaving {
+  animation: carbon-row-exit 110ms cubic-bezier(0.2, 0, 1, 0.9) forwards;
+}
+
+@keyframes carbon-row-enter {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes carbon-row-exit {
+  to {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+
+.data-row:nth-child(1) {
+  animation-delay: 0ms;
+}
+.data-row:nth-child(2) {
+  animation-delay: 40ms;
+}
+.data-row:nth-child(3) {
+  animation-delay: 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .data-row,
+  .data-row.leaving {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+```
+
+---
+
+### `carbon.notification-stack`
+
+**When to use:** Toast / notification systems where messages slide in from the side and stack vertically. Each notification uses Carbon entrance on appear and Carbon exit on dismiss.
+
+**Condition:** `motion.easings[]` contains `ease-carbon-entrance`.
+
+```tsx
+// React — motion.dev
+import { AnimatePresence, motion } from "motion/react";
+
+function NotificationStack({ notifications }: { notifications: Toast[] }) {
+  return (
+    <div className="fixed bottom-4 right-4 flex flex-col gap-2">
+      <AnimatePresence>
+        {notifications.map((n) => (
+          <motion.div
+            key={n.id}
+            initial={{ opacity: 0, x: 48, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 48, scale: 0.96 }}
+            transition={{
+              enter: { duration: 0.24, ease: [0, 0, 0.38, 0.9] },
+              exit: { duration: 0.11, ease: [0.2, 0, 1, 0.9] },
+            }}
+            className="rounded-lg bg-surface shadow-lg px-4 py-3"
+          >
+            {n.message}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+```
+
+```css
+.notification {
+  animation: carbon-notify-enter 240ms cubic-bezier(0, 0, 0.38, 0.9) forwards;
+}
+.notification.dismissing {
+  animation: carbon-notify-exit 110ms cubic-bezier(0.2, 0, 1, 0.9) forwards;
+}
+
+@keyframes carbon-notify-enter {
+  from {
+    opacity: 0;
+    transform: translateX(48px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+@keyframes carbon-notify-exit {
+  to {
+    opacity: 0;
+    transform: translateX(48px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification,
+  .notification.dismissing {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+```

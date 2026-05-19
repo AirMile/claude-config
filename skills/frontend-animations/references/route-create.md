@@ -19,6 +19,37 @@ If `package.json` absent: assume vanilla.
 
 ---
 
+## Step 1.5 — Decision guide (optional)
+
+If the user hasn't expressed a pack preference, offer a quick decision prompt before the enum:
+
+> "Not sure which pack fits your project? Answer one question:
+>
+> **What type of app is this?**
+>
+> 1. Productivity SaaS / dashboard / internal tool
+> 2. Mobile-flavored / iOS-style consumer app
+> 3. Marketing site or landing page with personality
+> 4. Enterprise / data-heavy / B2B (tables, forms, dense UI)
+> 5. Windows 11 / Electron / Teams add-in
+> 6. Skip — I'll pick directly"
+
+Respond with a suggestion (not a hard lock — user can override at Step 2):
+
+| Answer | Suggestion                                                   |
+| ------ | ------------------------------------------------------------ |
+| 1      | **Standard** (Material 3 defaults, snappy, professional)     |
+| 2      | **Apple** (iOS springs, glass surfaces, native feel)         |
+| 3      | **Playful** (bouncy springs, celebrations, tilt effects)     |
+| 4      | **Standard** + Customize → add IBM Carbon easings afterwards |
+| 5      | **Subtle** + Customize → add Fluent 2 easings afterwards     |
+| 6      | Proceed directly to Step 2                                   |
+
+Show the suggestion as a one-liner: "Sounds like **Standard** fits best — you can confirm or change below."
+Then continue to Step 2.
+
+---
+
 ## Step 2 — Pack selection
 
 Present a single-select:

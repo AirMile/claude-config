@@ -39,6 +39,39 @@
         --duration-ios-default: {{DURATION_IOS_DEFAULT}};
         --duration-ios-modal: {{DURATION_IOS_MODAL}};
 
+        /* Material Design 3 (Standard/Playful pack) */
+        --ease-md-emphasized: {{EASE_MD_EMPHASIZED}};
+        --ease-md-emphasized-decelerate: {{EASE_MD_EMPHASIZED_DECELERATE}};
+        --ease-md-emphasized-accelerate: {{EASE_MD_EMPHASIZED_ACCELERATE}};
+        --ease-md-standard: {{EASE_MD_STANDARD}};
+        --duration-md-short2: {{DURATION_MD_SHORT2}};
+        --duration-md-short3: {{DURATION_MD_SHORT3}};
+        --duration-md-short4: {{DURATION_MD_SHORT4}};
+        --duration-md-medium1: {{DURATION_MD_MEDIUM1}};
+        --duration-md-medium2: {{DURATION_MD_MEDIUM2}};
+        --duration-md-long1: {{DURATION_MD_LONG1}};
+        --spring-md-spatial-duration: {{SPRING_MD_SPATIAL_DURATION}};
+        --spring-md-spatial-bezier: {{SPRING_MD_SPATIAL_BEZIER}};
+        --spring-md-effects-duration: {{SPRING_MD_EFFECTS_DURATION}};
+        --spring-md-effects-bezier: {{SPRING_MD_EFFECTS_BEZIER}};
+
+        /* Fluent 2 (Customize opt-in) */
+        --ease-fluent-decelerate: {{EASE_FLUENT_DECELERATE}};
+        --ease-fluent-accelerate: {{EASE_FLUENT_ACCELERATE}};
+        --ease-fluent-max: {{EASE_FLUENT_MAX}};
+        --ease-fluent-easy-ease: {{EASE_FLUENT_EASY_EASE}};
+        --duration-fluent-fast: {{DURATION_FLUENT_FAST}};
+        --duration-fluent-normal: {{DURATION_FLUENT_NORMAL}};
+        --duration-fluent-slow: {{DURATION_FLUENT_SLOW}};
+
+        /* IBM Carbon (Customize opt-in) */
+        --ease-carbon-entrance: {{EASE_CARBON_ENTRANCE}};
+        --ease-carbon-exit: {{EASE_CARBON_EXIT}};
+
+        /* Web baseline (Subtle pack) */
+        --ease-expo-out: {{EASE_EXPO_OUT}};
+        --ease-cubic-out: {{EASE_CUBIC_OUT}};
+
         /* Glass */
         --surface-glass-blur: {{SURFACE_GLASS_BLUR}};
         --surface-glass-saturation: {{SURFACE_GLASS_SATURATION}};
@@ -302,6 +335,20 @@
     </style>
   </head>
   <body>
+    <!--
+      POPULATE LOGIC (route-create Step 4 / route-apply):
+      Each section's display placeholder is set at populate-time:
+        {{IOS_DISPLAY}}      → "block" if any easing in motion.easings[].token startsWith "ease-ios-"
+        {{MATERIAL_DISPLAY}} → "block" if pack is "standard" or "playful"
+        {{FLUENT_DISPLAY}}   → "block" if any easing startsWith "ease-fluent-"
+        {{CARBON_DISPLAY}}   → "block" if any easing startsWith "ease-carbon-"
+        {{WEB_DISPLAY}}      → "block" if pack is "subtle"
+        {{SPRING_DISPLAY}}   → "block" if any spring token exists in theme.motion.spring[]
+        {{GLASS_DISPLAY}}    → "block" if surfaces.glass.enabled = true
+        {{PLAYFUL_DISPLAY}}  → "block" if pack is "playful"
+      Set to "none" to hide the section. Each section is independent — a Customize-Fluent
+      project shows Fluent + its base pack sections; Apple shows iOS + Spring sections.
+    -->
     <h1>Animation Preview</h1>
     <p class="subtitle">
       Pack: <strong>{{PACK_NAME}}</strong> &nbsp;·&nbsp; Stack:
@@ -366,7 +413,7 @@
       </div>
     </div>
 
-    <!-- ── iOS easing swatches (Expressive/Playful only) ── -->
+    <!-- ── iOS easing swatches (Apple/Playful pack) ── -->
     <div id="ios-section" style="display: {{IOS_DISPLAY}}">
       <h2>iOS / Apple Easings</h2>
       <div class="grid">
@@ -419,6 +466,88 @@
       </div>
     </div>
 
+    <!-- ── Material Design 3 easing swatches (Standard/Playful pack) ── -->
+    <div
+      id="material-section"
+      data-pack-tokens="ease-md"
+      style="display: {{MATERIAL_DISPLAY}}"
+    >
+      <h2>Material Design 3 Easings</h2>
+      <div class="grid">
+        <div class="swatch">
+          <div class="swatch-label">ease-md-emphasized</div>
+          <div class="swatch-value">cubic-bezier(0.2, 0, 0, 1)</div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-md-emphasized);
+              --ease-dur: var(--duration-md-medium2);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-md-emphasized-decelerate</div>
+          <div class="swatch-value">cubic-bezier(0.05, 0.7, 0.1, 1)</div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-md-emphasized-decelerate);
+              --ease-dur: var(--duration-md-medium2);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-md-emphasized-accelerate</div>
+          <div class="swatch-value">cubic-bezier(0.3, 0, 0.8, 0.15)</div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-md-emphasized-accelerate);
+              --ease-dur: var(--duration-md-short4);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-md-standard</div>
+          <div class="swatch-value">cubic-bezier(0.2, 0, 0, 1)</div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-md-standard);
+              --ease-dur: var(--duration-md-medium1);
+            "
+          ></div>
+        </div>
+      </div>
+      <h2>Material Design 3 Springs</h2>
+      <div class="grid">
+        <div class="swatch">
+          <div class="swatch-label">spring-md-spatial</div>
+          <div class="swatch-value">k=800 ζ=0.9 · 300ms · container morph</div>
+          <div
+            class="demo-spring"
+            style="
+              --spring-fn: var(--spring-md-spatial-bezier);
+              --spring-dur: var(--spring-md-spatial-duration);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">spring-md-effects</div>
+          <div class="swatch-value">
+            k=380 ζ=0.8 · 400ms · elevation / ripple
+          </div>
+          <div
+            class="demo-spring"
+            style="
+              --spring-fn: var(--spring-md-effects-bezier);
+              --spring-dur: var(--spring-md-effects-duration);
+            "
+          ></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Spring swatches ── -->
     <div id="spring-section" style="display: {{SPRING_DISPLAY}}">
       <h2>Spring Tokens</h2>
@@ -464,6 +593,153 @@
             style="
               --spring-fn: var(--spring-bouncy-bezier);
               --spring-dur: var(--spring-bouncy-duration);
+            "
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Fluent 2 easing swatches (Customize opt-in) ── -->
+    <div
+      id="fluent-section"
+      data-pack-tokens="ease-fluent"
+      style="display: {{FLUENT_DISPLAY}}"
+    >
+      <h2>Fluent 2 Easings</h2>
+      <div class="grid">
+        <div class="swatch">
+          <div class="swatch-label">ease-fluent-decelerate</div>
+          <div class="swatch-value">cubic-bezier(0.1, 0.9, 0.2, 1) · enter</div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-fluent-decelerate);
+              --ease-dur: var(--duration-fluent-slow, 300ms);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-fluent-accelerate</div>
+          <div class="swatch-value">cubic-bezier(0.7, 0, 1, 0.5) · exit</div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-fluent-accelerate);
+              --ease-dur: var(--duration-fluent-fast, 150ms);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-fluent-max</div>
+          <div class="swatch-value">
+            cubic-bezier(0.8, 0, 0.78, 1) · high-emphasis
+          </div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-fluent-max);
+              --ease-dur: var(--duration-fluent-normal, 200ms);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-fluent-easy-ease</div>
+          <div class="swatch-value">
+            cubic-bezier(0.33, 0, 0.67, 1) · symmetric
+          </div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-fluent-easy-ease);
+              --ease-dur: var(--duration-fluent-normal, 200ms);
+            "
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── IBM Carbon easing swatches (Customize opt-in) ── -->
+    <div
+      id="carbon-section"
+      data-pack-tokens="ease-carbon"
+      style="display: {{CARBON_DISPLAY}}"
+    >
+      <h2>IBM Carbon Easings</h2>
+      <div class="grid">
+        <div class="swatch">
+          <div class="swatch-label">ease-carbon-entrance</div>
+          <div class="swatch-value">
+            cubic-bezier(0, 0, 0.38, 0.9) · elements entering
+          </div>
+          <div
+            class="demo-ease"
+            style="--ease-fn: var(--ease-carbon-entrance); --ease-dur: 150ms"
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-carbon-exit</div>
+          <div class="swatch-value">
+            cubic-bezier(0.2, 0, 1, 0.9) · elements leaving
+          </div>
+          <div
+            class="demo-ease"
+            style="--ease-fn: var(--ease-carbon-exit); --ease-dur: 110ms"
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-carbon-standard</div>
+          <div class="swatch-value">
+            cubic-bezier(0.2, 0, 0.38, 0.9) · in-page UI
+          </div>
+          <div
+            class="demo-ease"
+            style="--ease-fn: var(--ease-carbon-standard); --ease-dur: 150ms"
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-carbon-expressive</div>
+          <div class="swatch-value">
+            cubic-bezier(0.4, 0.14, 0.3, 1) · editorial
+          </div>
+          <div
+            class="demo-ease"
+            style="--ease-fn: var(--ease-carbon-expressive); --ease-dur: 240ms"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Web baseline easing swatches (Subtle pack) ── -->
+    <div
+      id="web-section"
+      data-pack-tokens="ease-web"
+      style="display: {{WEB_DISPLAY}}"
+    >
+      <h2>Web Baseline Easings</h2>
+      <div class="grid">
+        <div class="swatch">
+          <div class="swatch-label">ease-expo-out</div>
+          <div class="swatch-value">
+            cubic-bezier(0.16, 1, 0.3, 1) · Linear / SaaS
+          </div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-expo-out);
+              --ease-dur: var(--duration-normal, 300ms);
+            "
+          ></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-label">ease-cubic-out</div>
+          <div class="swatch-value">
+            cubic-bezier(0.33, 1, 0.68, 1) · GitHub / Vercel
+          </div>
+          <div
+            class="demo-ease"
+            style="
+              --ease-fn: var(--ease-cubic-out);
+              --ease-dur: var(--duration-fast, 200ms);
             "
           ></div>
         </div>

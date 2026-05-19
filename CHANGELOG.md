@@ -19,13 +19,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `frontend-animations/references/carbon-motion.md`: IBM Carbon entrance/exit curve pair, six productive/expressive duration tokens, data-table row reveal and notification patterns.
 - `frontend-animations/references/web-baseline.md`: Linear/GitHub/Vercel/Stripe observed-in-the-wild curves (ease-expo-out, ease-cubic-out), hover and dropdown patterns, skeleton shimmer.
 - `frontend-animations/references/choreography.md`: named composition library (entrance.float-in, success.pulse, success.confetti, attention.wiggle, error.shake, press.squeeze, loading.bob, route.ios-push, modal.ios-sheet, list.stagger-reveal, surface.tilt) + Material 3 container-transform / shared-axis / fade-through + Fluent reveal.
-- `frontend-animations/references/preview-template.html`: swatch gallery populated at runtime to `.project/animation-preview.html`.
+- `frontend-animations/references/preview-template.html`: swatch gallery populated at runtime to `.project/animation-preview.html`; now conditionally renders five source-specific sections (iOS, Material 3, Fluent 2, IBM Carbon, web baseline) based on `motion.easings[]` token prefixes — Standard-pack preview shows Material rows, Apple-pack shows iOS rows.
 - `shared/DESIGN.md`: Glass surfaces opt-in section + Animation packs section; glassmorphism and bounce anti-patterns now conditional on opt-in flags.
 - `shared/FRONTEND-RULES.md`: H205/H209 conditionalized; new rules H122, P110, A105.
-- `shared/TOKENS.md`: iOS/Apple, Material 3, Fluent 2, Carbon, and web-baseline easing CSS vars; spring CSS var pairs; M3 duration scale; glass surface tokens; violation IDs T106/T107/T108.
-- `shared/PATTERNS.md`: Motion patterns section — twelve patterns including spring-press, glass-card, ios-modal-drawer, prefers-reduced-motion-fallback, material.container-transform, material.shared-axis, material.fade-through, fluent.reveal.
+- `shared/TOKENS.md`: iOS/Apple, Material 3, Fluent 2, Carbon, and web-baseline easing CSS vars; spring CSS var pairs; M3 duration scale; Fluent 2 duration scale (`--duration-fluent-ultra-fast` → `--duration-fluent-ultra-slow`, seven tokens); glass surface tokens; violation IDs T106/T107/T108.
+- `shared/PATTERNS.md`: Motion patterns section — fourteen patterns including spring-press, glass-card, ios-modal-drawer, prefers-reduced-motion-fallback, material.container-transform, material.shared-axis, material.fade-through, fluent.reveal, carbon.data-row-reveal, carbon.notification-stack.
 - `frontend-check/references/scan-motion.md`: Motion audit — seven checks M001–M007.
 - `frontend-convert/examples/apple-style.md`: Apple pack conversion example.
+- `frontend-animations/references/route-create.md`: Step 1.5 decision guide — five-question app-type prompt that suggests a pack and optional Customize step before the enum.
 
 ### Changed
 
@@ -41,10 +42,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `README.md`: frontend pipeline updated to include `/frontend-animations`.
 - `frontend-animations/SKILL.md`: pack enum updated (`expressive` → `apple`); PHASE 0 pack-rename migration check; references section extended with four new source files; Customize route extended with "Add easings from other systems" step.
 - `frontend-animations/references/packs.md`: Standard pack adopts Material Design 3 (ease-md-_ + spring-md-spatial/effects + duration-md-_ subset); Subtle pack adopts web baseline (ease-expo-out/cubic-out); Apple pack (renamed from `expressive`) retains iOS curves; Playful pack gains spring-md-spatial + ease-md-emphasized; source credits per pack header.
-- `frontend-animations/references/route-create.md`: pack options show source credits; Step 3 condition updated to `apple/playful`; write logic pack-agnostic.
+- `frontend-animations/references/route-create.md`: pack options show source credits; Step 1.5 decision guide added; Step 3 condition updated to `apple/playful`; write logic pack-agnostic.
 - `frontend-animations/references/route-customize.md`: new Step 4 "Add easings from other systems" — injects Fluent 2 / Carbon / Material 3 easings into `motion.easings[]` without changing active pack.
-- `shared/TOKENS.md`: Material 3 duration scale (14 tokens), Material 3 easings (ease-md-_), Material 3 spring CSS vars, web-baseline easings (ease-expo-out/cubic-out), Fluent 2 easings (ease-fluent-_), Carbon easings (ease-carbon-\*) added to `:root` block and Tailwind config.
-- `shared/PATTERNS.md`: spring-press / view-transition-route / glass-card / ios-modal-drawer conditions updated to `apple/playful`; four new patterns: material.container-transform, material.shared-axis, material.fade-through, fluent.reveal.
+- `shared/TOKENS.md`: Material 3 duration scale (14 tokens), Material 3 easings (ease-md-_), Material 3 spring CSS vars, web-baseline easings (ease-expo-out/cubic-out), Fluent 2 easings (ease-fluent-_) + seven Fluent duration tokens, Carbon easings (ease-carbon-\*) added to `:root` block and Tailwind config.
+- `shared/PATTERNS.md`: spring-press / view-transition-route / glass-card / ios-modal-drawer conditions updated to `apple/playful`; six new patterns: material.container-transform, material.shared-axis, material.fade-through, fluent.reveal, carbon.data-row-reveal, carbon.notification-stack.
+
+### Fixed
+
+- `frontend-animations/references/route-apply.md`: iOS easing gate corrected (`expressive` → `apple`); added per-pack emit blocks for Material Design 3 (standard/playful), web baseline (subtle), and Customize-injected Fluent/Carbon easings — Standard-pack projects now correctly receive `--ease-md-*`, `--duration-md-*`, `--spring-md-*` vars in `theme.cssVars`. Added `/* End animation pack */` close-sentinel for deterministic re-emit.
+- `shared/TOKENS.md`: `--duration-fluent-*` seven duration tokens added (previously referenced in `PATTERNS.md:fluent.reveal` with fallback values but never declared).
+- `frontend-check/references/scan-motion.md`: M001 regex extended to catch `transition: all 0.3s ease`, seconds-syntax durations (`0.3s`), and `transition-duration` property — the most common hardcoding patterns were previously missed.
 
 - `inspect-overlay`: plain JS / static HTML install path — script-tag injection covering static sites, vanilla-Vite templates, and non-React frameworks (Vue/Svelte/Solid/Qwik). Always degraded mode.
 - `inspect-overlay`: clipboard refs wrapped in `[…]` for clearer paste-context (single-click `[src/Button.tsx:42]`, multi-pin wraps each ref within the `--- 1/N ---` block).

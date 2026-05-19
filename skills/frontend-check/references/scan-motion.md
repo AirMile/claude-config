@@ -14,14 +14,21 @@ Animation pack compliance audit. Fires when scope includes "Motion".
 
 Grep `.tsx`, `.jsx`, `.vue`, `.svelte`, `.css`, `.scss` for:
 
-- `transition:\s*\d+ms` — hardcoded duration
+- `transition:\s*\d+ms` — hardcoded milliseconds duration (e.g. `transition: 300ms`)
+- `transition:\s*\d+(\.\d+)?s\b` — hardcoded seconds duration (e.g. `transition: 0.3s`)
+- `transition:\s*all\b` — transition-all shorthand (e.g. `transition: all 0.3s ease`) — catches the most common hardcoding pattern
+- `transition-duration:\s*\d+(\.\d+)?(s|ms)\b` — hardcoded transition-duration property
 - `cubic-bezier\(` — hardcoded easing literal
 - `animation-duration:\s*\d+` — hardcoded animation duration
 
-Skip: test files, `*.config.*`, `tokens.css`, generated `theme.cssVars` output.
+Skip: test files, `*.config.*`, `tokens.css`, generated `theme.cssVars` output. Also skip `transition-property: all;` without a duration on the same line (not a violation — setting property list only).
 
 **Pass:** No matches.
-**Fail:** List each file:line with the matched literal and the suggested token (`var(--duration-fast)` / `var(--ease-out)` / `var(--spring-snappy-bezier)`).
+**Fail:** List each file:line with the matched literal and the suggested token:
+
+- Hardcoded duration → `var(--duration-fast)` / `var(--duration-md-medium1)` (pack-appropriate)
+- `transition: all 0.3s` → split into `transition-property: transform, opacity` + `transition-duration: var(--duration-fast)` + `transition-timing-function: var(--ease-out)`
+- Hardcoded `cubic-bezier(...)` → `var(--ease-ios-spring)` / `var(--ease-md-emphasized)` (nearest canonical)
 
 ---
 

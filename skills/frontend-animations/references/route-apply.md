@@ -23,18 +23,18 @@ If `motion.pack` is empty: abort. Run Create first.
 
 ## Step 2 — Build animation CSS vars block
 
-Construct the following string based on current token state:
+Construct the following string based on current token state. Emit only the blocks that apply to the active pack and injected easings.
 
 ```
 /* Animation pack: {pack} — managed by /frontend-animations */
 
-/* Spring tokens */
+/* Spring tokens (all active springs from theme.motion.spring[]) */
 {for each spring in theme.motion.spring[]:}
 --{token}-duration: {cssDuration};
 --{token}-bezier: {cssApprox};
 
-/* iOS easings (Expressive/Playful only) */
-{if pack is expressive or playful:}
+/* iOS easings (Apple / Playful pack) */
+{if pack is "apple" or "playful":}
 --ease-ios-default: cubic-bezier(0.42, 0, 0.58, 1);
 --ease-ios-out: cubic-bezier(0.25, 0.1, 0.25, 1);
 --ease-ios-in: cubic-bezier(0.42, 0, 1, 1);
@@ -44,6 +44,45 @@ Construct the following string based on current token state:
 --duration-ios-fast: 200ms;
 --duration-ios-default: 350ms;
 --duration-ios-modal: 500ms;
+
+/* Material Design 3 easings + durations (Standard / Playful pack) */
+{if pack is "standard" or "playful":}
+--ease-md-emphasized: cubic-bezier(0.2, 0, 0, 1);
+--ease-md-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+--ease-md-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+--ease-md-standard: cubic-bezier(0.2, 0, 0, 1);
+--duration-md-short2: 100ms;
+--duration-md-short3: 150ms;
+--duration-md-short4: 200ms;
+--duration-md-medium1: 250ms;
+--duration-md-medium2: 300ms;
+--duration-md-long1: 450ms;
+
+/* Web baseline easings (Subtle pack) */
+{if pack is "subtle":}
+--ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+--ease-cubic-out: cubic-bezier(0.33, 1, 0.68, 1);
+
+/* Customize-injected easings (any pack, added via Customize route) */
+{for each easing in motion.easings[] not already emitted above:}
+  lookup canonical CSS var value from token name using table:
+    ease-fluent-decelerate    → cubic-bezier(0.1, 0.9, 0.2, 1)
+    ease-fluent-accelerate    → cubic-bezier(0.7, 0, 1, 0.5)
+    ease-fluent-max           → cubic-bezier(0.8, 0, 0.78, 1)
+    ease-fluent-easy-ease     → cubic-bezier(0.33, 0, 0.67, 1)
+    ease-carbon-entrance      → cubic-bezier(0, 0, 0.38, 0.9)
+    ease-carbon-exit          → cubic-bezier(0.2, 0, 1, 0.9)
+    ease-carbon-standard      → cubic-bezier(0.2, 0, 0.38, 0.9)
+    ease-carbon-expressive    → cubic-bezier(0.4, 0.14, 0.3, 1)
+  emit: --{token}: {value};
+  if token starts with "ease-fluent-": also emit all duration-fluent-* once:
+    --duration-fluent-ultra-fast: 50ms;
+    --duration-fluent-faster: 100ms;
+    --duration-fluent-fast: 150ms;
+    --duration-fluent-normal: 200ms;
+    --duration-fluent-slow: 300ms;
+    --duration-fluent-slower: 400ms;
+    --duration-fluent-ultra-slow: 500ms;
 
 /* Tempo multiplier (applied to base durations) */
 {if axes.tempo !== "normal":}
@@ -58,6 +97,8 @@ Construct the following string based on current token state:
 --surface-glass-saturation: {saturation};
 --surface-glass-tint: {tint};
 --surface-glass-border: {border};
+
+/* End animation pack */
 ```
 
 Tempo multipliers: slow = 1.25×, normal = 1× (no override), fast = 0.75×.
@@ -71,9 +112,9 @@ The existing `theme.cssVars` was written by `/frontend-tokens` and contains colo
 
 Algorithm:
 
-1. Remove any existing animation block (identified by the comment `/* Animation pack:` ... next `*/` at the end of a block)
-2. Append the new animation block to the end of the `:root { ... }` closing brace, inside it
-3. Write back to `theme.cssVars`
+1. Remove any existing animation block — identified by the open marker `/* Animation pack:` through the close marker `/* End animation pack */` (inclusive). This sentinel pair makes re-emit idempotent.
+2. Append the new animation block to the end of the `:root { ... }` closing brace, inside it.
+3. Write back to `theme.cssVars`.
 
 ```
 Before:
@@ -108,11 +149,14 @@ If `theme.cssVars` is empty or missing a `:root {}` block: write the animation v
 
 ```
 ✓ CSS vars emitted
-  Springs:     {list of --spring-* vars added}
-  iOS easings: {added / not applicable}
-  Glass vars:  {added / not applicable}
-  Tempo:       {override applied / normal (no override)}
-  Location:    project.json#theme.cssVars
+  Springs:           {list of --spring-* vars added}
+  iOS easings:       {added / not applicable}
+  Material easings:  {added / not applicable}
+  Web baseline:      {added / not applicable}
+  Customize-injected:{list of token names, or "none"}
+  Glass vars:        {added / not applicable}
+  Tempo:             {override applied / normal (no override)}
+  Location:          project.json#theme.cssVars
 ```
 
 ---
