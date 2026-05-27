@@ -1,6 +1,6 @@
 ---
 name: project-backlog
-description: Transform a seed into a prioritized feature backlog. Use with /project-backlog.
+description: Transform a seed into a prioritized feature backlog (create or update mode, with page-discovery for web). Use with /project-backlog.
 reads: [backlog.status]
 writes: [backlog.status, concept.seed]
 metadata:
@@ -63,6 +63,8 @@ Accepts markdown from:
 
 Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 0.5. PHASE 0.5 → PHASE 3 (research → feature extraction → dependencies → priority) run in plan mode; the final feature plan is written to the plan file for review.
 
+**Review consolidation rule:** the interactive PHASE 2 dependency review and PHASE 3 priority review (AskUserQuestion blocks) run interactively in plan mode by default. For larger backlogs (> 15 features) they MAY be consolidated into the final `ExitPlanMode` approval — in that case show the dependency table inline in chat before writing the plan file (so the user sees it once outside the plan format) and put the full priority breakdown in the plan file. State explicitly in chat: "Reviews consolidated into ExitPlanMode (N features > 15)."
+
 ### PHASE 0.5: Research (Optional)
 
 > **Todo**: Read `.claude/skills/project-backlog/references/research.md`
@@ -105,7 +107,7 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE
 
 3. **Detect circular dependencies:**
    - If found, suggest how to break the cycle
-   - Ask user for resolution if unclear
+   - If unclear, ask the user.
 
 4. **[WEB MODE] Detect broken dependencies (CANCELLED):**
    - If a feature depends on a feature with `status: "CANCELLED"`, mark as broken:
@@ -143,8 +145,7 @@ Dependency tree:
 
    **Response handling:**
    - "Yes, this is correct" → proceed to PHASE 3
-   - "Adjust dependencies" → ask what to change (add/remove/reorder), update graph, show updated table, re-ask
-   - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
+   - Anything else (including AskUserQuestion's built-in "Other") → parse the change request (add/remove/reorder), update graph, show updated table, re-ask
 
    **Loop until user confirms dependencies are correct.**
 
@@ -183,14 +184,11 @@ Dependency tree:
    - options:
      - label: "Yes, this is correct (Recommended)", description: "Priorities are correct, generate backlog"
      - label: "Move features", description: "Move one or more features to a different priority"
-     - label: "Adjust", description: "Other changes to priorities"
    - multiSelect: false
 
    **Response handling:**
    - "Yes, this is correct" → proceed to PHASE 4
-   - "Move features" → ask which features and target priority, update table, re-ask
-   - "Adjust" → let user describe changes, apply, show updated prioritization, re-ask
-   - "Other" → parse user's freeform input, apply changes, re-ask
+   - Anything else (Move features, freeform via "Other") → apply the change (move features between priorities, or apply described changes), show updated prioritization, re-ask
 
    **Loop until user confirms prioritization is correct.**
 
@@ -229,34 +227,6 @@ rewrite go into the plan file alongside the feature plan. On "Yes" → carry
 
 > **Todo**: Read `.claude/skills/project-backlog/references/generate-backlog.md`
 
-## Best Practices
-
-### Feature Granularity
-
-- Too big: Hard to estimate, long feedback loops
-- Too small: Overhead, dependency hell
-- Right size: 1-3 days of work, testable independently
-
-### Dependencies
-
-- Minimize cross-dependencies
-- Prefer vertical slices over horizontal layers
-- Base systems first, content last
-
-### P1 Scope
-
-**[WEB MODE]:**
-
-- Functional > Feature-complete
-- Core user flow first
-- Polish is P3
-
-**[GAME MODE]:**
-
-- Playable > Feature-complete
-- Core loop first
-- Polish is P3
-
 ## Example
 
 **[WEB MODE] Input:** E-commerce dashboard idea markdown
@@ -285,32 +255,4 @@ P3:
 12. performance-optimization (REFACTOR)
 
 Start: /dev-define routing
-```
-
-**[GAME MODE] Input:** Elemental Clash idea markdown
-
-```
-BACKLOG CREATED
-
-File: .project/backlog.html
-
-P1:
-1. player-movement (CORE)
-2. basic-combat (MECHANIC)
-3. health-system (MECHANIC)
-4. ability-system (MECHANIC)
-5. element-water (CONTENT)
-
-P2:
-6. element-fire (CONTENT)
-7. element-earth (CONTENT)
-8. element-air (CONTENT)
-9. ability-draft (MECHANIC)
-
-P3:
-10. round-system (MECHANIC)
-11. ui-hud (UI)
-12. screen-shake (POLISH)
-
-Start: /game-define player-movement
 ```

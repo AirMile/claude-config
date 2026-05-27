@@ -24,7 +24,6 @@
          "name": "{feature-name}",
          "type": "FEATURE|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|PAGE-GAP",
          "status": "TODO",
-         "transition": "designing",
          "phase": "P1|P2|P3|P4",
          "description": "{description}",
          "source": "/project-backlog",
@@ -36,7 +35,7 @@
    }
    ```
 
-   **`transition` field rule:** only set `transition: "designing"` on items with `type === "PAGE"` or `type === "COMPONENT"`. All other types (FEATURE, API, etc.) must have `transition` absent — the dashboard sets it when the user copies the define/build prompt.
+   **`transition` field rule:** NEVER write `transition` in the initial backlog data — regardless of feature type. The dashboard sets `transition` dynamically when the user clicks the copy-skill button on a card, and clears it when the cancel (annuleer) button is used. Pre-setting it makes cards appear "actively in progress" before any user action and replaces the copy button with a cancel button, breaking the entry-point UX.
 
    **[GAME MODE]:**
 
@@ -92,7 +91,7 @@
    ```
 
 5. **Seed mutations** (parallel with dashboard update):
-   - **If `seedUpdateApproved: true`:** Write the rewritten content (from the plan file's `## Proposed seed update` section, reviewed in plan mode) to `.project/project-seed.md` — full file overwrite. Update `project.json#concept.pitch` if the new pitch differs; update `concept.name` only if H1 title changed. Log: `Seed: ✓ updated — N section(s) rewritten`.
+   - **If `seedUpdateApproved: true`:** Write the rewritten content (from the plan file's `## Proposed seed update` section, reviewed in plan mode) to `.project/project-seed.md` — full file overwrite. Update `project.json#seed.pitch` if the new pitch differs; update `seed.name` only if H1 title changed. Log: `Seed: ✓ updated — N section(s) rewritten`.
    - **If `seedUpdateApproved: false` AND `seedDrift[]` non-empty:** Write drift entries into the backlog JSON data object as `data.seedDrift[]` (merge with existing entries if any). Each entry follows the schema from `shared/SEED.md` § Drift entry schema.
    - **If no drift detected:** skip silently.
 

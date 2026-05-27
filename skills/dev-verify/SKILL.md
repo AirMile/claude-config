@@ -5,7 +5,7 @@ reads: [feature.requirements, feature.build, learnings]
 writes: [feature.tests, backlog.status]
 metadata:
   author: claude-config
-  version: "2.5.0"
+  version: "2.6.0"
   category: dev
 ---
 
@@ -412,11 +412,9 @@ SUBJECTIVE → AskUserQuestion for clarification, then re-categorize as one of t
 
 Technique mapping:
 
-- **SPEC** (acceptance criterion not covered) → **Implementation First** (criterion is clear, fix is concrete) + write/update acceptance test
-- **TESTABLE** validatie, business logic, edge cases, race conditions → **TDD**
-- **TESTABLE** CRUD wiring, config, imports, routing → **Implementation First**
-- **MEASURABLE** → **Direct Fix** (config tweak, no test loop)
-- Default → TDD
+- **SPEC / TESTABLE** → **Fix** — reproduce the failure with a failing test (RED), then fix (GREEN). For SPEC items the failing test is the acceptance test (write/update it).
+- **MEASURABLE** → **Direct Fix** — config/styling/timing tweak, no test loop.
+- Default → Fix
 
 Display technique map:
 
@@ -430,31 +428,20 @@ Display technique map:
 
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-#### TDD Fix
+#### Fix
 
 Complex issues → AskUserQuestion: Research via Context7 (Recommended) | Fix directly.
 
-TDD: test → red → fix → green. Max 3 attempts, then ask user.
+Reproduce the failure with a test (RED), then fix (GREEN). Max 3 attempts, then ask user. For SPEC items the reproducing test is the acceptance test.
 
 ```
 [FIX] Item {N}: {title}
-Technique: TDD | Type: {AUTO|MANUAL}
+Technique: Fix | Type: {AUTO|MANUAL}
 RED: FAIL ({what})  GREEN: PASS
 SYNC: Root cause: {file:line}. Fix: {approach}. Impact: {scope}.
 ```
 
 Test already passes → AskUserQuestion: Skip (Recommended) | Adjust test | Check manually.
-
-#### Implementation First Fix
-
-Fix → write test → verify PASS. Max 3 attempts.
-
-```
-[FIX] Item {N}: {title}
-Technique: Implementation First | Type: {AUTO|MANUAL}
-IMPLEMENTED: {what}  TESTED: PASS
-SYNC: Root cause: {file:line}. Fix: {approach}. Impact: {scope}.
-```
 
 #### MEASURABLE: Direct Fix
 

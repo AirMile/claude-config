@@ -28,7 +28,7 @@ Cross-platform: **macOS** and **Windows**.
 ## Structure
 
 ```
-skills/           50 skills in 9 categories
+skills/           49 skills in 9 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (each with SKILL.md)
 agents/           21 sub-agent definitions (.md with YAML frontmatter)
@@ -67,7 +67,7 @@ Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 **Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere)
 **Game**: `project-seed` → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere, Godot 4.x / GUT)
-**Frontend**: `frontend-design` → [`frontend-convert`] → `frontend-check`
+**Frontend**: `frontend-design` (design/build/convert — incl. sketch/wireframe/Figma/Canva → high-fi code) → `frontend-check`
 **Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`
 
 State handoff between skills via `.project/session/devinfo.json` (schema: `shared/DEVINFO.md`).

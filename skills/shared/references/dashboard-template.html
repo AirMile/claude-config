@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon-dashboard.svg" />
     <script src="/lib/themes.js"></script>
     <script src="/lib/settings-modal.js"></script>
-    <link rel="stylesheet" href="/css/dashboard.css?v=10" />
+    <link rel="stylesheet" href="/css/dashboard.css?v=15" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
@@ -24,7 +24,7 @@
   <body>
     <script id="dashboard-data" type="application/json">
       {
-        "concept": {
+        "seed": {
           "name": "Example Project",
           "content": "# Example Project\n\nA sample project to demonstrate the dashboard.\n\n## Core Concept\n\nThis is a demo of the project dashboard with all sections.\n\n## Target audience\n\nDevelopers and designers.\n\n## Scope\n\nIn scope: dashboard UI. Out of scope: production deployment."
         },
@@ -302,6 +302,24 @@
       </div>
     </div>
 
+    <!-- Styleguide overlay -->
+    <div id="styleguide-overlay" class="sg-overlay" hidden>
+      <style id="sg-tokens-scope"></style>
+      <button
+        class="sg-overlay-close-floating"
+        onclick="closeStyleguide()"
+        title="Close (Esc)"
+        aria-label="Close styleguide"
+      >
+        ✕
+      </button>
+      <div class="sg-overlay-body">
+        <div class="sg-overlay-inner" id="sg-overlay-inner">
+          <div class="sg-overlay-content" id="sg-overlay-content"></div>
+        </div>
+      </div>
+    </div>
+
     <script>
       // ─── Markdown ─────────────────────────────────────────
       function slugify(text) {
@@ -361,12 +379,12 @@
         { id: "learnings", label: "Knowledge" },
         { id: "theme", label: "Design System" },
         { id: "stack", label: "Stack" },
-        { id: "concept", label: "Concept" },
+        { id: "seed", label: "Seed" },
         { id: "config", label: "Config" },
       ];
 
       const EMPTY = {
-        concept: {
+        seed: {
           name: "",
           content: "",
         },
@@ -656,23 +674,23 @@
 
       // ─── Section Renderers ──────────────────────────────────
 
-      function renderConcept() {
-        const c = data.concept;
+      function renderSeed() {
+        const c = data.seed;
         if (!c.name && !c.content) {
           return `
             <div class="section-header">
-              <h2>Concept</h2>
-              <button class="edit-btn edit-btn--accent" onclick="editConcept()">+ Add</button>
+              <h2>Seed</h2>
+              <button class="edit-btn edit-btn--accent" onclick="editSeed()">+ Add</button>
             </div>
-            <div class="empty-state"><p>No concept defined yet.</p>
-            <p style="color:var(--text-dim)">Automatically filled by <code>/project-plan</code></p></div>`;
+            <div class="empty-state"><p>No seed defined yet.</p>
+            <p style="color:var(--text-dim)">Run <code>/project-seed</code> to define it</p></div>`;
         }
         return `
           <div class="section-header">
-            <h2>Concept</h2>
-            <button class="header-icon-btn" onclick="editConcept()" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+            <h2>Seed</h2>
+            <button class="header-icon-btn" onclick="editSeed()" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
-          <div class="concept-content">${md(c.content)}</div>`;
+          <div class="seed-content">${md(c.content)}</div>`;
       }
 
       let _diagramRenderId = 0;
@@ -1293,126 +1311,310 @@
         );
       }
 
-      function renderTheme() {
-        const t = data.theme;
+      // ─── Styleguide helpers ────────────────────────────────
+      function parseModeVars(cssString, t) {
+        const primitives = {};
+        const primSrc = (t || {}).cssVars || "";
+        for (const m of primSrc.matchAll(/(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g)) {
+          primitives[m[1].trim()] = m[2].trim();
+        }
+        const result = [];
+        for (const m of cssString.matchAll(/(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g)) {
+          const token = m[1].trim();
+          let value = m[2].trim();
+          const varRef = value.match(/^var\((--[\w-]+)\)$/);
+          if (varRef && primitives[varRef[1]]) value = primitives[varRef[1]];
+          result.push({ token, value });
+        }
+        return result;
+      }
+
+      function renderModeSwatches(vars, compact) {
+        if (!vars.length)
+          return '<p style="color:var(--text-dim);font-size:13px">No CSS variables defined in this mode.</p>';
+        const NON_COLOR = new Set([
+          "--radius",
+          "--font-sans",
+          "--font-mono",
+          "--font-serif",
+          "--font-heading",
+        ]);
+        const GROUPS = [
+          { label: "Base", keys: ["--background", "--foreground"] },
+          {
+            label: "Surfaces",
+            keys: [
+              "--card",
+              "--card-foreground",
+              "--popover",
+              "--popover-foreground",
+            ],
+          },
+          {
+            label: "Actions",
+            keys: [
+              "--primary",
+              "--primary-foreground",
+              "--secondary",
+              "--secondary-foreground",
+              "--accent",
+              "--accent-foreground",
+            ],
+          },
+          {
+            label: "States",
+            keys: [
+              "--muted",
+              "--muted-foreground",
+              "--destructive",
+              "--destructive-foreground",
+            ],
+          },
+          { label: "Form", keys: ["--border", "--input", "--ring"] },
+        ];
+        const groups = compact ? GROUPS.slice(0, 2) : GROUPS;
+        const varMap = new Map(vars.map((v) => [v.token, v]));
+        const assigned = new Set();
+        function swatch(v) {
+          return `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(v.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(v.token)}</div><div class="sg-color-value">${esc(v.value)}</div></div></div>`;
+        }
+        let html = "";
+        for (const g of groups) {
+          const gv = g.keys.map((k) => varMap.get(k)).filter(Boolean);
+          if (!gv.length) continue;
+          gv.forEach((v) => assigned.add(v.token));
+          html += `<div class="sg-mode-group"><div class="sg-mode-group-label">${g.label}</div><div class="sg-palette">${gv.map(swatch).join("")}</div></div>`;
+        }
+        if (!compact) {
+          const rest = vars.filter(
+            (v) => !assigned.has(v.token) && !NON_COLOR.has(v.token),
+          );
+          if (rest.length)
+            html += `<div class="sg-mode-group"><div class="sg-mode-group-label">Other</div><div class="sg-palette">${rest.map(swatch).join("")}</div></div>`;
+        }
+        return (
+          html ||
+          '<p style="color:var(--text-dim);font-size:13px">No color variables defined in this mode.</p>'
+        );
+      }
+
+      function renderSpringCurveSvg(spring) {
+        const stiffness = spring.stiffness || 300;
+        const damping = spring.damping || 25;
+        const mass = spring.mass || 1;
+        const W = 200,
+          H = 56,
+          dt = 0.016;
+        let x = 0,
+          v = 0;
+        const pts = [0];
+        for (let i = 0; i < 120; i++) {
+          const f = -stiffness * (x - 1) - damping * v;
+          v += (f / mass) * dt;
+          x += v * dt;
+          pts.push(x);
+          if (i > 10 && Math.abs(x - 1) < 0.002 && Math.abs(v) < 0.002) break;
+        }
+        const n = pts.length;
+        const minY = Math.min(0, ...pts);
+        const maxY = Math.max(1, ...pts);
+        const range = maxY - minY || 1;
+        const tx = (i) => ((i / (n - 1)) * (W - 8) + 4).toFixed(1);
+        const ty = (y) => (H - 4 - ((y - minY) / range) * (H - 8)).toFixed(1);
+        let path = `M ${tx(0)} ${ty(pts[0])}`;
+        for (let i = 1; i < n; i++) path += ` L ${tx(i)} ${ty(pts[i])}`;
+        const tLine = ty(1);
+        return `<svg class="sg-spring-curve" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><line x1="4" y1="${tLine}" x2="${W - 4}" y2="${tLine}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+      }
+
+      function renderStyleguideFull(t) {
         const colors = t.colors || {};
         const typo = t.typography || {};
         const families = typo.families || {};
-        const hasColors = Object.values(colors).some(
-          (arr) => arr && arr.length,
-        );
-        const hasData = hasColors || families.heading || families.body;
-        if (!hasData) {
-          return `
-            <div class="section-header"><h2>Design System</h2></div>
-            <div class="empty-state"><p>No design tokens defined yet.</p>
-            <p style="color:var(--text-dim)">Design tokens, modes, CSS variables — managed via <code>/frontend-tokens</code></p></div>`;
+        const sizes = typo.sizes || [];
+        const motion = t.motion || {};
+        const durations = motion.durations || [];
+        const easings = motion.easings || [];
+        const springs = motion.spring || [];
+        const axes = motion.axes || {};
+        const choreography =
+          motion.choreography &&
+          typeof motion.choreography === "object" &&
+          !Array.isArray(motion.choreography)
+            ? motion.choreography
+            : null;
+        const modes = t.modes || {};
+        const modeKeys = Object.keys(modes);
+        const surfaces = t.surfaces || {};
+        const glass = surfaces.glass || null;
+        const elevation = surfaces.elevation || [];
+        const shadows = t.shadows || [];
+        const spacingScale = (t.spacing || {}).scale || [];
+        const radii = t.borderRadius || [];
+        const ixn = t.interactions || {};
+        let html = "";
+
+        // Page header — title, pack badge, mode toggle (product-styled, not dashboard chrome)
+        const pack = motion.pack || "";
+        const packLabels = {
+          apple: "Apple",
+          standard: "Standard",
+          subtle: "Subtle",
+          playful: "Playful",
+        };
+        const packLabel =
+          packLabels[pack] ||
+          (pack ? pack.charAt(0).toUpperCase() + pack.slice(1) : "");
+        const packBadgeHtml = packLabel
+          ? `<span class="sg-pack-badge sg-pack-badge--${esc(pack)}">${esc(packLabel)}</span>`
+          : "";
+        const modeToggleHtml =
+          modeKeys.length > 1
+            ? `<button id="sg-overlay-mode-btn" class="sg-page-mode-btn" onclick="toggleStyleguideMode(this)">Dark</button>`
+            : "";
+        html += `<header class="sg-page-header"><h1 class="sg-page-title">Design System</h1><div class="sg-page-meta">${packBadgeHtml}${modeToggleHtml}</div></header>`;
+
+        // Colors
+        const hasColors =
+          Object.values(colors).some((a) => a && a.length) || modeKeys.length;
+        if (hasColors) {
+          const brandHtml =
+            colors.accent && colors.accent.length
+              ? `<div class="sg-mode-group"><div class="sg-mode-group-label">Brand</div><div class="sg-palette">${colors.accent.map((c) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(c.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(c.token)}</div><div class="sg-color-value">${esc(c.value)}</div>${c.usage ? `<div class="sg-color-usage">${esc(c.usage)}</div>` : ""}</div></div>`).join("")}</div></div>`
+              : "";
+          const statusHtml =
+            colors.semantic && colors.semantic.length
+              ? `<div class="sg-mode-group"><div class="sg-mode-group-label">Status</div><div class="sg-palette">${colors.semantic.map((c) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(c.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(c.token)}</div><div class="sg-color-value">${esc(c.value)}</div>${c.usage ? `<div class="sg-color-usage">${esc(c.usage)}</div>` : ""}</div></div>`).join("")}</div></div>`
+              : "";
+          const modesHtml = modeKeys.length
+            ? `<div class="sg-mode-panels">${modeKeys.map((k, i) => `<div class="sg-mode-panel${i === 0 ? " active" : ""}" data-mode-panel="${esc(k)}">${renderModeSwatches(parseModeVars(modes[k], t), false)}</div>`).join("")}</div>`
+            : "";
+          html += `<div class="sg-section"><div class="sg-section-title">Colors</div>${modesHtml}${brandHtml}${statusHtml}</div>`;
         }
 
-        // ── Colors (primitives rendered inside the Colors section below mode tabs) ──
-        const brandHtml =
-          colors.accent && colors.accent.length
-            ? `<div class="sg-mode-group"><div class="sg-mode-group-label">Brand</div><div class="sg-palette">${colors.accent.map((c) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(c.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(c.token)}</div><div class="sg-color-value">${esc(c.value)}</div>${c.usage ? `<div class="sg-color-usage">${esc(c.usage)}</div>` : ""}</div></div>`).join("")}</div></div>`
-            : "";
-        const statusHtml =
-          colors.semantic && colors.semantic.length
-            ? `<div class="sg-mode-group"><div class="sg-mode-group-label">Status</div><div class="sg-palette">${colors.semantic.map((c) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(c.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(c.token)}</div><div class="sg-color-value">${esc(c.value)}</div>${c.usage ? `<div class="sg-color-usage">${esc(c.usage)}</div>` : ""}</div></div>`).join("")}</div></div>`
-            : "";
-
-        // ── Typography ──
+        // Typography
         const specimenEntries = [
           { label: "Heading", family: families.heading },
           { label: "Body", family: families.body },
           { label: "Mono", family: families.mono },
         ].filter((e) => e.family);
+        if (specimenEntries.length || sizes.length) {
+          const specHtml = specimenEntries.length
+            ? `<div class="sg-font-specimens">${specimenEntries.map((e) => `<div class="sg-font-card"><div class="sg-font-specimen" style="font-family:${esc(e.family)}">Aa</div><div class="sg-font-name">${esc(e.label)}</div><div class="sg-font-family">${esc(e.family)}</div></div>`).join("")}</div>`
+            : "";
+          const rampHtml = sizes.length
+            ? `<div class="sg-type-ramp">${sizes.map((s) => `<div class="sg-type-ramp-row"><div class="sg-type-ramp-meta"><div class="sg-type-ramp-token">${esc(s.token)}</div><div class="sg-type-ramp-size">${esc(s.size)}${s.lineHeight ? ` / ${esc(s.lineHeight)}` : ""}</div></div><div class="sg-type-ramp-preview" style="font-size:${esc(s.size)}${families.body ? `;font-family:${esc(families.body)}` : ""}">The quick brown fox</div></div>`).join("")}</div>`
+            : "";
+          html += `<div class="sg-section"><div class="sg-section-title">Typography</div>${specHtml}${rampHtml}</div>`;
+        }
 
-        const specimensHtml = specimenEntries.length
-          ? `
-          <div class="sg-section">
-            <div class="sg-section-title">Typography</div>
-            <div class="sg-font-specimens">${specimenEntries
-              .map(
-                (e) => `
-              <div class="sg-font-card">
-                <div class="sg-font-specimen" style="font-family:${esc(e.family)}">Aa</div>
-                <div class="sg-font-name">${esc(e.label)}</div>
-                <div class="sg-font-family">${esc(e.family)}</div>
-              </div>`,
-              )
-              .join("")}</div>
-          </div>`
-          : "";
+        // Spacing
+        if (spacingScale.length) {
+          const maxPx =
+            spacingScale.reduce(
+              (m, s) => Math.max(m, parseInt(s.value) || 0),
+              64,
+            ) || 64;
+          html += `<div class="sg-section"><div class="sg-section-title">Spacing</div><div class="sg-spacing-strip">${spacingScale
+            .map((s) => {
+              const px = parseInt(s.value) || 4;
+              const h = Math.max(4, Math.round((px / maxPx) * 64));
+              return `<div class="sg-spacing-block"><div class="sg-spacing-rect" style="height:${h}px"></div><div class="sg-spacing-tick">${esc(s.value)}</div></div>`;
+            })
+            .join("")}</div></div>`;
+        }
 
-        // ── Border Radius ──
-        const radii = t.borderRadius || [];
-        const radiusHtml = radii.length
-          ? `
-          <div class="sg-section">
-            <div class="sg-section-title">Border Radius</div>
-            <div class="sg-radius-grid">${radii
-              .map(
-                (r) => `
-              <div class="sg-radius-item">
-                <div class="sg-radius-box" style="border-radius:${esc(r.value)}"></div>
-                <div class="sg-radius-label">${esc(r.token)}<br>${esc(r.value)}</div>
-              </div>`,
-              )
-              .join("")}</div>
-          </div>`
-          : "";
+        // Border Radius
+        if (radii.length) {
+          html += `<div class="sg-section"><div class="sg-section-title">Border Radius</div><div class="sg-radius-grid">${radii.map((r) => `<div class="sg-radius-item"><div class="sg-radius-box" style="border-radius:${esc(r.value)}"></div><div class="sg-radius-label">${esc(r.token)}<br>${esc(r.value)}</div></div>`).join("")}</div></div>`;
+        }
 
-        // ── Motion ──
-        const motion = t.motion || {};
-        const durations = motion.durations || [];
-        const easings = motion.easings || [];
-        const maxMs =
-          durations.reduce(
-            (m, d) => Math.max(m, parseInt(d.value) || 0),
-            500,
-          ) || 500;
-        const motionHtml =
-          durations.length || easings.length
-            ? `
-          <div class="sg-section">
-            <div class="sg-section-title">Motion</div>
-            ${
-              durations.length
-                ? `<div class="sg-motion-sub">Durations</div>
-              <div class="sg-spacing-scale">
-                ${durations
-                  .map(
-                    (d) => `
-                <div class="sg-spacing-row">
-                  <div class="sg-spacing-label">${esc(d.token)}</div>
-                  <div class="sg-duration-bar" style="width:${Math.round(((parseInt(d.value) || 0) / maxMs) * 100)}%"></div>
-                  <div class="sg-spacing-value">${esc(d.value)}${d.usage ? ` — ${esc(d.usage)}` : ""}</div>
-                </div>`,
-                  )
-                  .join("")}
-              </div>`
-                : ""
-            }
-            ${
-              easings.length
-                ? `<div class="sg-motion-sub" style="margin-top:12px">Easings</div>
-              <div class="sg-easing-list">
-                ${easings
-                  .map(
-                    (e) => `
-                <div class="sg-easing-row">
-                  <span class="sg-easing-token">${esc(e.token)}</span>
-                  <span class="sg-easing-value">${esc(e.value)}${e.usage ? ` <span class="sg-easing-usage">— ${esc(e.usage)}</span>` : ""}</span>
-                </div>`,
-                  )
-                  .join("")}
-              </div>`
-                : ""
-            }
-          </div>`
+        // Shadows
+        if (shadows.length) {
+          html += `<div class="sg-section"><div class="sg-section-title">Shadows</div><div class="sg-shadow-list">${shadows.map((s) => `<div class="sg-shadow-row"><span class="sg-shadow-token">${esc(s.token)}</span><div class="sg-shadow-preview" style="box-shadow:${esc(s.value)}"></div><span class="sg-shadow-meta">${esc(s.value)}</span></div>`).join("")}</div></div>`;
+        }
+
+        // Elevation
+        if (elevation.length) {
+          html += `<div class="sg-section"><div class="sg-section-title">Elevation</div><div class="sg-elevation-grid">${elevation.map((e) => `<div class="sg-elevation-card" style="box-shadow:${esc(e.shadow || e.value || "")}"><div class="sg-elevation-label">${esc(e.token || e.level || "")}</div>${e.usage ? `<div class="sg-elevation-usage">${esc(e.usage)}</div>` : ""}</div>`).join("")}</div></div>`;
+        }
+
+        // Glass Surface
+        if (glass && glass.enabled) {
+          const blurVal = glass.blur || "16px";
+          const satVal = glass.saturation || "180%";
+          const tintVal = glass.tint || "rgba(255,255,255,0.08)";
+          const borderVal = glass.border || "rgba(255,255,255,0.15)";
+          html += `<div class="sg-section"><div class="sg-section-title">Glass Surface</div><div class="sg-glass-card"><div class="sg-glass-bg"></div><div class="sg-glass-layer" style="background:${esc(tintVal)};backdrop-filter:blur(${esc(blurVal)}) saturate(${esc(satVal)});-webkit-backdrop-filter:blur(${esc(blurVal)}) saturate(${esc(satVal)});border-color:${esc(borderVal)}"><div style="font-size:13px;font-weight:600;margin-bottom:6px">Glass surface</div><div class="sg-glass-meta"><span>blur: ${esc(blurVal)}</span><span>saturation: ${esc(satVal)}</span><span>tint: ${esc(tintVal)}</span>${glass.vibrancy ? `<span>vibrancy: ${esc(glass.vibrancy)}</span>` : ""}</div></div></div></div>`;
+        }
+
+        // Motion
+        const hasMotion =
+          durations.length ||
+          easings.length ||
+          springs.length ||
+          choreography ||
+          Object.keys(axes).length;
+        if (hasMotion) {
+          const pack = motion.pack || "";
+          const packLabels = {
+            apple: "Apple",
+            standard: "Standard",
+            subtle: "Subtle",
+            playful: "Playful",
+          };
+          const packLabel =
+            packLabels[pack] ||
+            (pack ? pack.charAt(0).toUpperCase() + pack.slice(1) : "");
+          const packBadge = packLabel
+            ? ` <span class="sg-pack-badge sg-pack-badge--${esc(pack)}" style="margin-left:6px">${esc(packLabel)}</span>`
             : "";
 
-        // ── Interactions ──
-        const ixn = t.interactions || {};
+          const axesHtml = Object.keys(axes).length
+            ? `<div class="sg-axes-row">${Object.entries(axes)
+                .map(([k, v]) => {
+                  const pct =
+                    typeof v === "number"
+                      ? Math.round(v * 100)
+                      : parseInt(v) || 50;
+                  return `<div class="sg-axis-item"><div class="sg-axis-label">${esc(k)}</div><div class="sg-axis-track"><div class="sg-axis-fill" style="width:${pct}%"></div></div><div class="sg-axis-value">${pct}%</div></div>`;
+                })
+                .join("")}</div>`
+            : "";
+
+          const maxMs =
+            durations.reduce(
+              (m, d) => Math.max(m, parseInt(d.value) || 0),
+              500,
+            ) || 500;
+          const durHtml = durations.length
+            ? `<div class="sg-motion-sub">Durations</div><div class="sg-spacing-scale" style="margin-bottom:16px">${durations.map((d) => `<div class="sg-spacing-row"><div class="sg-spacing-label">${esc(d.token)}</div><div class="sg-duration-bar" style="width:${Math.round(((parseInt(d.value) || 0) / maxMs) * 100)}%"></div><div class="sg-spacing-value">${esc(d.value)}${d.usage ? ` — ${esc(d.usage)}` : ""}</div></div>`).join("")}</div><div class="sg-motion-sub">Live demos — click to play</div><div class="sg-anim-demo-grid">${durations.map((d) => `<div class="sg-anim-demo-card" data-dur="${esc(d.value)}" data-ease=""><div class="sg-anim-demo-box"></div><div class="sg-anim-demo-label">${esc(d.token)}<br>${esc(d.value)}</div></div>`).join("")}</div>`
+            : "";
+
+          const easHtml = easings.length
+            ? `<div class="sg-motion-sub" style="margin-top:16px">Easings</div><div class="sg-easing-list" style="margin-bottom:14px">${easings.map((e) => `<div class="sg-easing-row"><span class="sg-easing-token">${esc(e.token)}</span><span class="sg-easing-value">${esc(e.value)}${e.usage ? ` <span class="sg-easing-usage">— ${esc(e.usage)}</span>` : ""}</span></div>`).join("")}</div><div class="sg-motion-sub">Easing demos — click to play</div><div class="sg-anim-demo-grid">${easings.map((e) => `<div class="sg-anim-demo-card" data-dur="" data-ease="${esc(e.value)}"><div class="sg-anim-demo-box"></div><div class="sg-anim-demo-label">${esc(e.token)}</div></div>`).join("")}</div>`
+            : "";
+
+          const springHtml = springs.length
+            ? `<div class="sg-motion-sub" style="margin-top:16px">Springs</div><div class="sg-spring-grid">${springs.map((s) => `<div class="sg-spring-card"><div class="sg-spring-label">${esc(s.token)}</div><div class="sg-spring-meta">stiffness: ${esc(String(s.stiffness || ""))} · damping: ${esc(String(s.damping || ""))} · mass: ${esc(String(s.mass || ""))}</div>${renderSpringCurveSvg(s)}</div>`).join("")}</div>`
+            : "";
+
+          const choreoHtml =
+            choreography && Object.keys(choreography).length
+              ? `<div class="sg-motion-sub" style="margin-top:16px">Choreography</div><div class="sg-choreo-grid">${Object.entries(
+                  choreography,
+                )
+                  .map(
+                    ([k, v]) =>
+                      `<div class="sg-choreo-row"><span class="sg-choreo-key">${esc(k)}</span><span class="sg-choreo-value">${esc(typeof v === "string" ? v : JSON.stringify(v))}</span></div>`,
+                  )
+                  .join("")}</div>`
+              : "";
+
+          html += `<div class="sg-section"><div class="sg-section-title">Motion${packBadge}</div>${axesHtml}${durHtml}${easHtml}${springHtml}${choreoHtml}</div>`;
+        }
+
+        // Interactions
         const ixnEntries = [
           ixn.focusRing && {
             label: "Focus Ring",
@@ -1438,150 +1640,265 @@
               ixn.active.transform && `transform: ${ixn.active.transform}`,
             ].filter(Boolean),
           },
-        ].filter((e) => e && e.parts.length);
-        const interactionsHtml = ixnEntries.length
-          ? `
-          <div class="sg-section">
-            <div class="sg-section-title">Interactions</div>
-            <div class="sg-interaction-list">
-              ${ixnEntries
-                .map(
-                  (e) => `
-              <div class="sg-interaction-row">
-                <span class="sg-interaction-label">${esc(e.label)}</span>
-                <span class="sg-interaction-value">${e.parts.map((p) => `<code>${esc(p)}</code>`).join("")}</span>
-              </div>`,
-                )
-                .join("")}
-            </div>
-          </div>`
+        ].filter((e) => e && e.parts && e.parts.length);
+        if (ixnEntries.length) {
+          html += `<div class="sg-section"><div class="sg-section-title">Interactions</div><div class="sg-interaction-list">${ixnEntries.map((e) => `<div class="sg-interaction-row"><span class="sg-interaction-label">${esc(e.label)}</span><span class="sg-interaction-value">${e.parts.map((p) => `<code>${esc(p)}</code>`).join("")}</span></div>`).join("")}</div></div>`;
+        }
+
+        return (
+          html ||
+          '<p style="color:var(--text-dim)">No design system data available.</p>'
+        );
+      }
+
+      function buildAliasCss(t) {
+        const typo = (t.typography || {}).families || {};
+        const radii = t.borderRadius || [];
+        const baseRadius =
+          radii.find((r) => /md|base|default/i.test(r.token))?.value ||
+          radii[1]?.value ||
+          radii[0]?.value;
+        return `#sg-overlay-inner {
+  --bg: var(--background, #0d1117);
+  --surface: var(--card, #161b22);
+  --surface-hover: var(--secondary, #1c2333);
+  --text: var(--foreground, #e6edf3);
+  --text-muted: var(--muted-foreground, #8b949e);
+  --text-dim: var(--muted-foreground, #6e7681);
+  --border: var(--border, #30363d);
+  --accent: var(--primary, #58a6ff);
+  --danger: var(--destructive, #f85149);
+  ${typo.heading ? `--font-heading: ${typo.heading};` : ""}
+  ${typo.body ? `--font-body: ${typo.body};` : ""}
+  ${typo.mono ? `--font-mono: ${typo.mono};` : ""}
+  ${baseRadius ? `--radius-product: ${baseRadius};` : ""}
+  font-family: ${typo.body ? `${typo.body}, ` : ""}inherit;
+  color: var(--text);
+  background: var(--bg);
+}`;
+      }
+
+      function openStyleguide() {
+        const t = data.theme;
+        const overlay = document.getElementById("styleguide-overlay");
+        if (!overlay) return;
+
+        // Scope and inject product CSS vars + dashboard-token alias bridge
+        const scopeEl = document.getElementById("sg-tokens-scope");
+        if (scopeEl) {
+          const scoped = (s) =>
+            (s || "")
+              .replace(/:root\s*\{/g, "#sg-overlay-inner {")
+              .replace(/\.dark\s*\{/g, '#sg-overlay-inner[data-mode="dark"] {');
+
+          scopeEl.textContent =
+            scoped(t.cssVars) +
+            "\n" +
+            scoped((t.modes || {}).light || "") +
+            "\n" +
+            buildAliasCss(t);
+        }
+
+        // Render full content (page-header with title/pack/mode-toggle is part of the render)
+        const contentEl = document.getElementById("sg-overlay-content");
+        try {
+          if (contentEl) contentEl.innerHTML = renderStyleguideFull(t);
+        } catch (err) {
+          console.error("renderStyleguideFull error:", err);
+          if (contentEl)
+            contentEl.innerHTML = `<p style="color:var(--danger,#e53);padding:24px">Render error: ${err.message}</p>`;
+        }
+
+        // Reset mode state on inner wrapper
+        const innerEl = document.getElementById("sg-overlay-inner");
+        if (innerEl) innerEl.removeAttribute("data-mode");
+
+        // Show with fade (void offsetHeight forces reflow so the transition fires)
+        overlay.hidden = false;
+        void overlay.offsetHeight;
+        overlay.classList.add("sg-overlay--open");
+        document.body.classList.add("sg-overlay-open");
+      }
+
+      function closeStyleguide() {
+        const overlay = document.getElementById("styleguide-overlay");
+        if (!overlay || overlay.hidden) return;
+        overlay.classList.remove("sg-overlay--open");
+        setTimeout(() => {
+          overlay.hidden = true;
+        }, 200);
+        document.body.classList.remove("sg-overlay-open");
+      }
+
+      function toggleStyleguideMode(btn) {
+        const t = data.theme;
+        const innerEl = document.getElementById("sg-overlay-inner");
+        const scopeEl = document.getElementById("sg-tokens-scope");
+        if (!innerEl || !scopeEl) return;
+
+        const isDark = innerEl.dataset.mode === "dark";
+        const nextMode = isDark ? "light" : "dark";
+        if (isDark) {
+          innerEl.removeAttribute("data-mode");
+        } else {
+          innerEl.dataset.mode = "dark";
+        }
+
+        // Update button label (btn may be the inline-onclick arg or fetched from DOM)
+        const modeBtn = btn || document.getElementById("sg-overlay-mode-btn");
+        if (modeBtn) {
+          modeBtn.textContent = isDark ? "Dark" : "Light";
+          modeBtn.classList.toggle("active-mode", !isDark);
+        }
+
+        // Re-inject tokens: base + mode override + alias bridge (same order as openStyleguide)
+        const scoped = (s) =>
+          (s || "")
+            .replace(/:root\s*\{/g, "#sg-overlay-inner {")
+            .replace(/\.dark\s*\{/g, '#sg-overlay-inner[data-mode="dark"] {');
+
+        scopeEl.textContent =
+          scoped(t.cssVars) +
+          "\n" +
+          scoped((t.modes || {})[nextMode] || "") +
+          "\n" +
+          buildAliasCss(t);
+
+        // Sync colors-panels with the new mode
+        innerEl.querySelectorAll(".sg-mode-panel").forEach((p) => {
+          p.classList.toggle("active", p.dataset.modePanel === nextMode);
+        });
+      }
+
+      function runAnimDemo(card, duration, easing) {
+        const box = card.querySelector(".sg-anim-demo-box");
+        if (!box) return;
+        const dur = duration || "300ms";
+        const ease = easing || "ease";
+        box.style.transition = "none";
+        box.style.transform = "translateX(0) scale(1)";
+        box.style.opacity = "0.6";
+        void box.offsetHeight;
+        box.style.transition = `transform ${dur} ${ease}, opacity ${dur} ${ease}`;
+        box.style.transform = "translateX(28px) scale(0.85)";
+        box.style.opacity = "1";
+        const ms = parseInt(dur) || 300;
+        setTimeout(() => {
+          box.style.transform = "translateX(0) scale(1)";
+          box.style.opacity = "0.6";
+        }, ms + 60);
+      }
+
+      function renderTheme() {
+        const t = data.theme;
+        const colors = t.colors || {};
+        const typo = t.typography || {};
+        const families = typo.families || {};
+        const motion = t.motion || {};
+        const modes = t.modes || {};
+        const hasColors = Object.values(colors).some(
+          (arr) => arr && arr.length,
+        );
+        const hasModes = Object.keys(modes).length > 0;
+        const hasData =
+          hasColors || hasModes || families.heading || families.body;
+        if (!hasData) {
+          return `
+            <div class="section-header"><h2>Design System</h2></div>
+            <div class="empty-state"><p>No design tokens defined yet.</p>
+            <p style="color:var(--text-dim)">Design tokens, modes, CSS variables — managed via <code>/frontend-tokens</code></p></div>`;
+        }
+
+        // Pack badge
+        const pack = motion.pack || "";
+        const packLabels = {
+          apple: "Apple",
+          standard: "Standard",
+          subtle: "Subtle",
+          playful: "Playful",
+        };
+        const packLabel =
+          packLabels[pack] ||
+          (pack ? pack.charAt(0).toUpperCase() + pack.slice(1) : "");
+        const packBadge = packLabel
+          ? `<span class="sg-pack-badge sg-pack-badge--${esc(pack)}">${esc(packLabel)}</span>`
           : "";
 
-        // ── Mode Palette ──
-        const modes = t.modes || {};
+        // Compact colors: 8 key swatches from first mode
         const modeKeys = Object.keys(modes);
-
-        function parseModeVars(cssString) {
-          const primitives = {};
-          const primSrc = t.cssVars || "";
-          for (const m of primSrc.matchAll(/(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g)) {
-            primitives[m[1].trim()] = m[2].trim();
-          }
-          const result = [];
-          for (const m of cssString.matchAll(
-            /(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g,
-          )) {
-            const token = m[1].trim();
-            let value = m[2].trim();
-            const varRef = value.match(/^var\((--[\w-]+)\)$/);
-            if (varRef && primitives[varRef[1]]) value = primitives[varRef[1]];
-            result.push({ token, value });
-          }
-          return result;
-        }
-
-        function renderModeSwatches(vars) {
-          if (!vars.length)
-            return '<p style="color:var(--text-dim);font-size:13px">No CSS variables defined in this mode.</p>';
-          const NON_COLOR = new Set([
-            "--radius",
-            "--font-sans",
-            "--font-mono",
-            "--font-serif",
-            "--font-heading",
-          ]);
-          const GROUPS = [
-            { label: "Base", keys: ["--background", "--foreground"] },
-            {
-              label: "Surfaces",
-              keys: [
-                "--card",
-                "--card-foreground",
-                "--popover",
-                "--popover-foreground",
-              ],
-            },
-            {
-              label: "Actions",
-              keys: [
-                "--primary",
-                "--primary-foreground",
-                "--secondary",
-                "--secondary-foreground",
-                "--accent",
-                "--accent-foreground",
-              ],
-            },
-            {
-              label: "States",
-              keys: [
-                "--muted",
-                "--muted-foreground",
-                "--destructive",
-                "--destructive-foreground",
-              ],
-            },
-            { label: "Form", keys: ["--border", "--input", "--ring"] },
+        let compactColorsHtml = "";
+        if (modeKeys.length) {
+          const vars = parseModeVars(modes[modeKeys[0]], t);
+          const COMPACT_KEYS = [
+            "--background",
+            "--foreground",
+            "--primary",
+            "--primary-foreground",
+            "--secondary",
+            "--accent",
+            "--muted",
+            "--destructive",
           ];
-          const varMap = new Map(vars.map((v) => [v.token, v]));
-          const assigned = new Set();
-          function swatch(v) {
-            return `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(v.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(v.token)}</div><div class="sg-color-value">${esc(v.value)}</div></div></div>`;
+          const vm = new Map(vars.map((v) => [v.token, v]));
+          const cv = COMPACT_KEYS.map((k) => vm.get(k))
+            .filter(Boolean)
+            .slice(0, 8);
+          if (cv.length) {
+            compactColorsHtml = `<div class="sg-section"><div class="sg-section-title">Colors</div><div class="sg-palette">${cv.map((v) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(v.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(v.token)}</div><div class="sg-color-value">${esc(v.value)}</div></div></div>`).join("")}</div></div>`;
           }
-          let html = "";
-          for (const g of GROUPS) {
-            const gv = g.keys.map((k) => varMap.get(k)).filter(Boolean);
-            if (!gv.length) continue;
-            gv.forEach((v) => assigned.add(v.token));
-            html += `<div class="sg-mode-group"><div class="sg-mode-group-label">${g.label}</div><div class="sg-palette">${gv.map(swatch).join("")}</div></div>`;
+        } else if (hasColors) {
+          const swatches = [
+            ...(colors.accent || []).slice(0, 4),
+            ...(colors.semantic || []).slice(0, 4),
+          ];
+          if (swatches.length) {
+            compactColorsHtml = `<div class="sg-section"><div class="sg-section-title">Colors</div><div class="sg-palette">${swatches.map((c) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(c.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(c.token)}</div><div class="sg-color-value">${esc(c.value)}</div></div></div>`).join("")}</div></div>`;
           }
-          const rest = vars.filter(
-            (v) => !assigned.has(v.token) && !NON_COLOR.has(v.token),
-          );
-          if (rest.length)
-            html += `<div class="sg-mode-group"><div class="sg-mode-group-label">Other</div><div class="sg-palette">${rest.map(swatch).join("")}</div></div>`;
-          return (
-            html ||
-            '<p style="color:var(--text-dim);font-size:13px">No color variables defined in this mode.</p>'
-          );
         }
 
-        const modesHtml = modeKeys.length
-          ? `
-          <div class="sg-section">
-            <div class="sg-section-title">Colors</div>
-            ${
-              modeKeys.length > 1
-                ? `<div class="sg-mode-tabs">${modeKeys
-                    .map(
-                      (k, i) =>
-                        `<button class="sg-mode-tab${i === 0 ? " active" : ""}" data-mode="${esc(k)}">${esc(k.charAt(0).toUpperCase() + k.slice(1))}</button>`,
-                    )
-                    .join("")}</div>`
-                : ""
-            }
-            <div class="sg-mode-panels">${modeKeys
-              .map(
-                (k, i) => `
-              <div class="sg-mode-panel${i === 0 ? " active" : ""}" data-mode-panel="${esc(k)}">
-                ${renderModeSwatches(parseModeVars(modes[k]))}
-              </div>`,
-              )
-              .join("")}</div>
-            ${brandHtml}
-            ${statusHtml}
-          </div>`
-          : brandHtml || statusHtml
-            ? `<div class="sg-section"><div class="sg-section-title">Colors</div>${brandHtml}${statusHtml}</div>`
+        // Type specimens
+        const specimenEntries = [
+          { label: "Heading", family: families.heading },
+          { label: "Body", family: families.body },
+          { label: "Mono", family: families.mono },
+        ].filter((e) => e.family);
+        const specimensHtml = specimenEntries.length
+          ? `<div class="sg-section"><div class="sg-section-title">Typography</div><div class="sg-font-specimens">${specimenEntries.map((e) => `<div class="sg-font-card"><div class="sg-font-specimen" style="font-family:${esc(e.family)}">Aa</div><div class="sg-font-name">${esc(e.label)}</div><div class="sg-font-family">${esc(e.family)}</div></div>`).join("")}</div></div>`
+          : "";
+
+        // Compact radius (max 4)
+        const radii = (t.borderRadius || []).slice(0, 4);
+        const compactRadiusHtml = radii.length
+          ? `<div><div class="sg-section-title" style="margin-bottom:10px">Radius</div><div class="sg-radius-grid">${radii.map((r) => `<div class="sg-radius-item"><div class="sg-radius-box" style="border-radius:${esc(r.value)}"></div><div class="sg-radius-label">${esc(r.token)}<br>${esc(r.value)}</div></div>`).join("")}</div></div>`
+          : "";
+
+        // Compact durations
+        const durations = motion.durations || [];
+        const maxMs =
+          durations.reduce(
+            (m, d) => Math.max(m, parseInt(d.value) || 0),
+            500,
+          ) || 500;
+        const compactDurHtml = durations.length
+          ? `<div><div class="sg-section-title" style="margin-bottom:10px">Motion</div><div class="sg-spacing-scale">${durations.map((d) => `<div class="sg-spacing-row"><div class="sg-spacing-label">${esc(d.token)}</div><div class="sg-duration-bar" style="width:${Math.round(((parseInt(d.value) || 0) / maxMs) * 100)}%"></div><div class="sg-spacing-value">${esc(d.value)}</div></div>`).join("")}</div></div>`
+          : "";
+
+        const compactRowHtml =
+          compactRadiusHtml || compactDurHtml
+            ? `<div class="sg-compact-row">${compactRadiusHtml}${compactDurHtml}</div>`
             : "";
 
         return `
-          <div class="section-header"><h2>Design System</h2></div>
-          ${modesHtml}
+          <div class="section-header">
+            <h2 style="display:inline">Design System</h2>
+            <span style="display:inline-flex;align-items:center;gap:8px;margin-left:10px;vertical-align:middle">
+              ${packBadge}
+              <button class="sg-open-btn" onclick="openStyleguide()">Open full styleguide ↗</button>
+            </span>
+          </div>
+          ${compactColorsHtml}
           ${specimensHtml}
-          ${radiusHtml}
-          ${motionHtml}
-          ${interactionsHtml}`;
+          ${compactRowHtml}`;
       }
 
       function renderStack() {
@@ -1651,22 +1968,20 @@
 
       // ─── Edit Modals ───────────────────────────────────────
 
-      function editConcept() {
-        const c = data.concept;
+      function editSeed() {
+        const c = data.seed;
         openModal(
-          "Edit concept",
+          "Edit seed",
           `
           <label>Name</label>
           <input type="text" id="f-name" value="${esc(c.name)}" />
-          <label>Concept (Markdown)</label>
+          <label>Seed (Markdown)</label>
           <textarea id="f-content" rows="20" style="font-family:var(--font-mono);font-size:12px;line-height:1.5">${esc(c.content)}</textarea>
         `,
           {
             onSave() {
-              data.concept.name = document
-                .getElementById("f-name")
-                .value.trim();
-              data.concept.content = document.getElementById("f-content").value;
+              data.seed.name = document.getElementById("f-name").value.trim();
+              data.seed.content = document.getElementById("f-content").value;
             },
           },
         );
@@ -1780,7 +2095,7 @@
         }
 
         if (e.target.id === "config-create") {
-          configCache = "# " + (data.concept.name || "Project") + "\n\n";
+          configCache = "# " + (data.seed.name || "Project") + "\n\n";
           configEditing = true;
           render();
           return;
@@ -2492,7 +2807,7 @@
 
       const renderers = {
         features: renderFeatures,
-        concept: renderConcept,
+        seed: renderSeed,
         architecture: renderArchitecture,
         stack: renderStack,
         theme: renderTheme,
@@ -2713,7 +3028,7 @@
       }
 
       function render() {
-        const projectName = data.concept.name || data.name || "Dashboard";
+        const projectName = data.seed.name || data.name || "Dashboard";
         document.title = projectName + " — Dashboard";
 
         // Layout
@@ -2759,17 +3074,14 @@
           data.stack &&
           (data.stack.framework || data.stack.language)
         );
-        const hasConcept = !!(
-          data.concept &&
-          (data.concept.name || data.concept.content)
-        );
+        const hasSeed = !!(data.seed && (data.seed.name || data.seed.content));
         const hasFeatures = (data.features || []).some((f) => f.shipped);
         const hiddenSections = {};
         if (!hasTheme) hiddenSections.theme = true;
         if (!hasLearnings) hiddenSections.learnings = true;
         if (!hasArchitecture) hiddenSections.architecture = true;
         if (!hasStack) hiddenSections.stack = true;
-        if (!hasConcept) hiddenSections.concept = true;
+        if (!hasSeed) hiddenSections.seed = true;
         if (!hasFeatures) hiddenSections.features = true;
 
         const visibleTabs = TABS.filter((t) => !hiddenSections[t.id]);
@@ -2958,6 +3270,10 @@
         }
       });
       document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeStyleguide();
+          return;
+        }
         if (e.key === "Enter" || e.key === " ") {
           const row = document.activeElement?.closest?.(
             ".fm-file-row[data-path]",
@@ -2968,6 +3284,20 @@
           }
         }
       });
+      // One-time: delegated clicks inside styleguide overlay
+      document
+        .getElementById("sg-overlay-content")
+        ?.addEventListener("click", (e) => {
+          const card = e.target.closest(".sg-anim-demo-card");
+          if (card) {
+            runAnimDemo(
+              card,
+              card.dataset.dur || null,
+              card.dataset.ease || null,
+            );
+            return;
+          }
+        });
       render();
     </script>
     <button

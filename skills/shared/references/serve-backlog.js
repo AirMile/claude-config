@@ -571,7 +571,7 @@ http
                     parsedData.project = projJson.name || projectDir;
                   if (!parsedData.overview)
                     parsedData.overview =
-                      projJson.subtitle || projJson.concept || "";
+                      projJson.subtitle || projJson.seed?.pitch || "";
                 } else if (!parsedData.project) {
                   parsedData.project = projectDir;
                 }
@@ -694,23 +694,17 @@ http
           try {
             const jsonData = JSON.parse(body);
 
-            // Split concept.content to project-concept.md if conceptFile is set
-            if (jsonData.concept && jsonData.concept.conceptFile) {
-              const conceptMdPath = path.join(
-                projectPath,
-                ".project/project-concept.md",
-              );
-              if (jsonData.concept.content) {
-                const conceptDir = path.join(projectPath, ".project");
-                if (!fs.existsSync(conceptDir))
-                  fs.mkdirSync(conceptDir, { recursive: true });
-                fs.writeFileSync(
-                  conceptMdPath,
-                  jsonData.concept.content,
-                  "utf8",
-                );
+            // Split seed.content to .md file if seedFile is set
+            const seedMdName = jsonData.seed?.seedFile;
+            if (jsonData.seed && seedMdName) {
+              const seedMdPath = path.join(projectPath, ".project", seedMdName);
+              if (jsonData.seed.content) {
+                const seedDir = path.join(projectPath, ".project");
+                if (!fs.existsSync(seedDir))
+                  fs.mkdirSync(seedDir, { recursive: true });
+                fs.writeFileSync(seedMdPath, jsonData.seed.content, "utf8");
                 // Keep only metadata in project.json
-                delete jsonData.concept.content;
+                delete jsonData.seed.content;
               }
             }
 

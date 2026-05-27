@@ -76,7 +76,7 @@ Read `.project/features/<name>/feature.json` if it exists.
 | `feature.json#summary`      | Issue-body lead paragraph                                |
 | `feature.json#requirements` | Acceptance criteria as numbered list                     |
 | `feature.json#architecture` | Implementation hints (file paths, components, endpoints) |
-| `feature.json#technique`    | Suggested approach (TDD / Implementation First)          |
+| `feature.json#technique`    | Suggested approach (TDD / Implementation Only)           |
 | backlog-item `description`  | Fallback if feature.json is missing (TODO items)         |
 
 For DEFINED items with feature.json → store `briefSource = "feature"`. For TODO without feature.json → `briefSource = "backlog"`.
@@ -129,7 +129,7 @@ Set default based on `briefSource`:
 
 ## Approach
 
-{technique: TDD / Implementation First / etc.}
+{technique: TDD / Implementation Only / etc.}
 ```
 
 **User story:**

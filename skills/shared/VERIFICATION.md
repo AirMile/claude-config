@@ -1,6 +1,6 @@
 # Visual Verification
 
-Shared screenshot-compare-fix loop pattern. Used by `frontend-convert` (PHASE 3) and `frontend-design` (PHASE 3.6). See `PLAYWRIGHT.md` for CLI details and error recovery.
+Shared screenshot-compare-fix loop pattern. Used by `frontend-design` (Convert route PHASE 3 and Build route PHASE 3.6). See `PLAYWRIGHT.md` for CLI details and error recovery.
 
 ---
 

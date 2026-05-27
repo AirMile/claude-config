@@ -1,6 +1,6 @@
 # CODEGEN — Shared Code Generation Patterns
 
-Shared patterns for `frontend-convert` (PHASE 2.1/2.2) and `frontend-design` (Build route). Each skill contains skill-specific logic inline; this file covers only shared, stack-agnostic patterns.
+Shared patterns for `frontend-design` (Build route and Convert route PHASE 2.1/2.2). Each route contains route-specific logic inline; this file covers only shared, stack-agnostic patterns.
 
 ---
 

@@ -419,14 +419,14 @@ Session:    [✓ devinfo from {skill} | ✗ new session]
 
 ### Graceful Degradation per State
 
-| Missing State | Impact                                    | Degradation                                       |
-| ------------- | ----------------------------------------- | ------------------------------------------------- |
-| No theme      | Skills use Tailwind defaults              | Suggest `/frontend-tokens` in next steps          |
-| No design     | Skills ask user for page/flow info inline | Suggest `/frontend-design` in next steps          |
-| No code       | Build/iterate skills cannot run           | Suggest `/frontend-design` or `/frontend-convert` |
-| No backlog    | Feature tracking skipped                  | Non-blocking, no action needed                    |
-| No dev server | Playwright verification skipped           | Skills offer to start one, or skip visual checks  |
-| No session    | No handoff data from previous skill       | Skills start fresh, ask user for context          |
+| Missing State | Impact                                    | Degradation                                      |
+| ------------- | ----------------------------------------- | ------------------------------------------------ |
+| No theme      | Skills use Tailwind defaults              | Suggest `/frontend-tokens` in next steps         |
+| No design     | Skills ask user for page/flow info inline | Suggest `/frontend-design` in next steps         |
+| No code       | Build/iterate skills cannot run           | Suggest `/frontend-design`                       |
+| No backlog    | Feature tracking skipped                  | Non-blocking, no action needed                   |
+| No dev server | Playwright verification skipped           | Skills offer to start one, or skip visual checks |
+| No session    | No handoff data from previous skill       | Skills start fresh, ask user for context         |
 
 ### Usage in Skills
 

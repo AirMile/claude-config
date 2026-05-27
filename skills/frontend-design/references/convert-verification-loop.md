@@ -1,6 +1,6 @@
 # PHASE 3: Visual Verification Loop
 
-Self-verify by comparing the source image against a Playwright CLI screenshot of the generated output. Max 3 rounds. See `../shared/VERIFICATION.md` for the generic loop pattern, round management, and code quality checks.
+Self-verify by comparing the source image against a Playwright CLI screenshot of the generated output. Max 3 rounds. See `skills/shared/VERIFICATION.md` for the generic loop pattern, round management, and code quality checks.
 
 ### 3.0 Pre-flight
 
@@ -27,14 +27,14 @@ VERIFICATION ROUND [N]/3
 2. `playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"` (allow hydration)
 3. `playwright-cli screenshot --filename=.project/verify-round-[N].png`
 4. `Read .project/verify-round-[N].png` → capture generated page
-5. `playwright-cli console error` → check for runtime JS errors (see `../shared/PLAYWRIGHT.md` → Console Error Inspection)
+5. `playwright-cli console error` → check for runtime JS errors (see `skills/shared/PLAYWRIGHT.md` → Console Error Inspection)
    → Filter output against PLAYWRIGHT.md → Default Ignore Patterns before reporting; only unfiltered lines become findings.
 
 **Runner verification (round 1 only — create or compare baseline):**
 
 Check runner available: `npx playwright --version 2>/dev/null`.
 
-If available → generate on-the-fly spec (see `shared/PLAYWRIGHT.md → Runner Mode`):
+If available → generate on-the-fly spec (see `skills/shared/PLAYWRIGHT.md → Runner Mode`):
 
 ```typescript
 // .project/playwright-runs/convert-{slug}-r1.spec.ts  (temporary)
@@ -133,7 +133,7 @@ After the first visual verification, scan all generated files:
 
 - Arbitrary color values: `bg-[#hex]`, `text-[#hex]`, `border-[#hex]` etc. — must use theme tokens (H101)
 - Arbitrary spacing: `p-[16px]`, `gap-[24px]`, `mt-[32px]` etc. — must use standard Tailwind scale (R103)
-- Reference: compare with `./examples/PricingPage-inspiration.tsx` — no arbitrary values at all
+- Reference: compare with `../examples/PricingPage-inspiration.tsx` — no arbitrary values at all
 
 On violations: include as fixes in step 3.3 alongside visual discrepancies. Add to the ROUND assessment:
 

@@ -33,7 +33,14 @@ Verify packages are resolvable and the setup file imports `@testing-library/jest
 
 ```bash
 # Detecteer setup-file (vitest, jest, of generieke locaties)
-SETUP=$(ls vitest.setup.* jest.setup.* src/test-setup.* setup-tests.* 2>/dev/null | head -1)
+# Glob covers: root (vitest.setup.*, jest.setup.*, setup-tests.*),
+# src/test-setup.*, src/test/setup.*, tests/setup.*, test/setup.*
+SETUP=$(ls vitest.setup.* jest.setup.* src/test-setup.* setup-tests.* \
+          src/test/setup.* tests/setup.* test/setup.* 2>/dev/null | head -1)
+# Fallback: read setupFiles uit vitest.config.* als ls leeg is
+if [ -z "$SETUP" ] && [ -f vitest.config.ts ]; then
+  SETUP=$(grep -oE "setupFiles[^']*'[^']+'" vitest.config.ts 2>/dev/null | grep -oE "'[^']+'" | tr -d "'" | head -1)
+fi
 # Check jest-dom: geïmporteerd in setup-file én installeerbaar
 [ -n "$SETUP" ] && grep -q "@testing-library/jest-dom" "$SETUP" \
   || echo "MISSING: @testing-library/jest-dom import not found in setup file"

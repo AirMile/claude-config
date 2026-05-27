@@ -75,7 +75,7 @@ Read `.project/project-context.json` (or create with `{}`). Merge per section:
 
 **project-seed.md** (only for concept-writing skills):
 
-Write the full concept document as plain markdown to `.project/project-seed.md`. Simultaneously update `concept.name` and `concept.pitch` in `project.json` (so lightweight readers have current metadata).
+Write the full concept document as plain markdown to `.project/project-seed.md`. Simultaneously update `seed.name` and `seed.pitch` in `project.json` (so lightweight readers have current metadata).
 
 ### Step 3: Write (parallel)
 
@@ -117,12 +117,12 @@ The generic read pattern, backlog-update format, merge logic, and write pattern 
 
 Frontend skills follow the same sync protocol with the same stages as dev skills (`building/built/testing`). Difference: frontend items do not use `feature.json` — status is tracked only in backlog + `project.json` `features[]`.
 
-| Skill               | Backlog mutation                              | project.json mutation                             |
-| ------------------- | --------------------------------------------- | ------------------------------------------------- |
-| `/frontend-design`  | Creates batch PAGE TODOs                      | `design` (pages, flows, principles), `features[]` |
-| `/frontend-design`  | DOING + `building` → `built`                  | `stack.packages`, `design.pages`, `features[]`    |
-| `/frontend-convert` | DOING + `building` → `built`                  | `features[]`                                      |
-| `/frontend-check`   | `testing` → DONE                              | `features[]`                                      |
-| `/frontend-check`   | A11Y scope: `testing` → DONE + new A11Y TODOs | `features[]`                                      |
+| Skill              | Backlog mutation                              | project.json mutation                             |
+| ------------------ | --------------------------------------------- | ------------------------------------------------- |
+| `/frontend-design` | Creates batch PAGE TODOs                      | `design` (pages, flows, principles), `features[]` |
+| `/frontend-design` | DOING + `building` → `built`                  | `stack.packages`, `design.pages`, `features[]`    |
+| `/frontend-design` | DOING + `building` → `built` (Convert route)  | `features[]`                                      |
+| `/frontend-check`  | `testing` → DONE                              | `features[]`                                      |
+| `/frontend-check`  | A11Y scope: `testing` → DONE + new A11Y TODOs | `features[]`                                      |
 
 Frontend items skip `defining/defined` — `/frontend-design` (capture-mode) creates items as TODO, and `/dev-build` picks them up directly as `building` after Claude Design handoff.

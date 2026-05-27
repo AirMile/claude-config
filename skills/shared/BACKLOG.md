@@ -158,7 +158,7 @@ TODO (To design) → DEFINED (To convert) → DOING (To audit) → DONE (Shipped
 | ----------- | ---------- | -------------------------------------------------------------------------------- |
 | `TODO`      | To design  | `/frontend-design` Capture, `/project-todo`, `/project-backlog`, reuse-discovery |
 | `DEFINED`   | To convert | `/frontend-design` Brief (Path B — offline handoff)                              |
-| `DOING`     | To audit   | `/frontend-design` Build (Path A) or `/frontend-convert` (Path B)                |
+| `DOING`     | To audit   | `/frontend-design` Build (Path A) or `/frontend-design` Convert route (Path B)   |
 | `DONE`      | Shipped    | `/frontend-check` PASS (terminal — no refactor step)                             |
 | `CANCELLED` | Archived   | Manually via UI (○ button), restorable                                           |
 
@@ -170,12 +170,13 @@ TODO (To design) → DEFINED (To convert) → DOING (To audit) → DONE (Shipped
 
 ### When to use which skill for PAGE/COMPONENT
 
-| Situation                                         | Skill                              |
-| ------------------------------------------------- | ---------------------------------- |
-| Quick "just thought of something" addition        | `/project-todo`                    |
-| Full design (screenshot, Figma, brief)            | `/frontend-design` Capture         |
-| Bulk-init from concept or brainstorm output       | `/project-backlog`                 |
-| Pattern detection during build (cross-page reuse) | `/project-backlog` reuse-discovery |
+| Situation                                               | Skill                                                                     |
+| ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Quick "just thought of something" addition              | `/project-todo`                                                           |
+| Full design (screenshot, Figma, brief)                  | `/frontend-design` Capture                                                |
+| Bulk-init from concept or brainstorm output             | `/project-backlog`                                                        |
+| Pattern detection during build (cross-page reuse)       | `/project-backlog` reuse-discovery                                        |
+| Convert existing card from sketch/wireframe/Figma/Canva | `/frontend-design` (paste sketch/URL, or board ⋯ → "Convert from sketch") |
 
 All four routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT`, `status=TODO`, and **`transition: "designing"`**. The `transition` field enables `/frontend-design` to auto-detect these items without a manual dashboard click. `/frontend-design` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/frontend-design` Build fills them in later.
 
@@ -285,11 +286,11 @@ TODO (To design) → DOING (To audit) → DONE (Shipped)       ← Path A
 TODO (To design) → DEFINED (To convert) → DOING → DONE     ← Path B
 ```
 
-| Step    | Skill               | Output                                                  |
-| ------- | ------------------- | ------------------------------------------------------- |
-| Design  | `/frontend-design`  | code (Build) or brief (Brief) + demo-page for COMPONENT |
-| Convert | `/frontend-convert` | code from brief (Path B only)                           |
-| Audit   | `/frontend-check`   | A11Y + tokens + responsive — terminal, sets `shipped`   |
+| Step    | Skill              | Output                                                  |
+| ------- | ------------------ | ------------------------------------------------------- |
+| Design  | `/frontend-design` | code (Build) or brief (Brief) + demo-page for COMPONENT |
+| Convert | `/frontend-design` | code from visual input — Convert route (Path B)         |
+| Audit   | `/frontend-check`  | A11Y + tokens + responsive — terminal, sets `shipped`   |
 
 **`/frontend-check` PASS is terminal** — no refactor step. Item ships directly to Dashboard.
 
@@ -382,17 +383,17 @@ No backlog write — `transition` remains as set by the dashboard, user can re-c
 
 The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`. The FRONTEND pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"auditing"` — same pattern, different vocab.
 
-| Skill              | Filter                                                                       | New status on success            |
-| ------------------ | ---------------------------------------------------------------------------- | -------------------------------- |
-| `frontend-tokens`  | `type === "THEME" && transition === "defining"`                              | `"DONE"`                         |
-| `dev-define`       | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                      |
-| `dev-build`        | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                        |
-| `dev-verify`       | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                         |
-| `dev-refactor`     | `transition === "refactoring"`                                               | keep status, set `shipped: true` |
-| `frontend-design`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DEFINED"`                      |
-| `frontend-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                        |
-| `frontend-check`   | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "auditing"`   | `"DONE"`, set `shipped: true`    |
-| `game-define`      | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                      |
-| `game-build`       | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                        |
-| `game-verify`      | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                         |
-| `game-refactor`    | `transition === "refactoring"`                                               | keep status, set `shipped: true` |
+| Skill             | Filter                                                                       | New status on success            |
+| ----------------- | ---------------------------------------------------------------------------- | -------------------------------- |
+| `frontend-tokens` | `type === "THEME" && transition === "defining"`                              | `"DONE"`                         |
+| `dev-define`      | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                      |
+| `dev-build`       | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                        |
+| `dev-verify`      | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                         |
+| `dev-refactor`    | `transition === "refactoring"`                                               | keep status, set `shipped: true` |
+| `frontend-design` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DEFINED"`                      |
+| `frontend-design` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                        |
+| `frontend-check`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "auditing"`   | `"DONE"`, set `shipped: true`    |
+| `game-define`     | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                      |
+| `game-build`      | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                        |
+| `game-verify`     | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                         |
+| `game-refactor`   | `transition === "refactoring"`                                               | keep status, set `shipped: true` |

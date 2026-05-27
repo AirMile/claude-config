@@ -271,7 +271,7 @@ visible — no risk of forgetting phases.
 **Where to put files:**
 
 - `references/` — lookup data, templates, conditional branches, end-of-flow phases
-- `techniques/` — mutually-exclusive workflow alternatives (e.g. TDD vs implementation-first, where the user picks one)
+- `techniques/` — mutually-exclusive workflow alternatives (e.g. TDD vs implementation-only, where the model picks one)
 
 **How to wire it** — Read directive inline in the TaskUpdate transition marker of the phase that needs it:
 
@@ -522,7 +522,7 @@ If no gaps/candidates found: skip this step entirely (no prompt).
 
 **Goal:** Detect stub handlers and action verbs in generated frontend code that have no linked FEATURE in the backlog.
 
-**Skills:** `frontend-design` (Triggers A/B/C), `frontend-convert` (Trigger C).
+**Skills:** `frontend-design` (Triggers A/B/C — Build and Convert routes).
 
 #### Triggers
 

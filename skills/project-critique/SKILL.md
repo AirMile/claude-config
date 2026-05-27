@@ -331,7 +331,7 @@ options:
 multiSelect: false
 ```
 
-If "Yes": Write the full concept document as plain markdown to `.project/project-seed.md`. Also update project.json: Read `.project/project.json` (or create with {}), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
+If "Yes": Write the full concept document as plain markdown to `.project/project-seed.md`. Also update project.json: Read `.project/project.json` (or create with {}), set `seed.name` (H1 title), `seed.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `seed.content` if it exists (migrated to .md). Write back.
 
 Then reconcile drift: if `accumulatedDrift[]` is non-empty, remove those entries from their source arrays (from each `feature.json#seedDrift[]` and from `backlog.html#data.seedDrift[]`). Log: `Reconciled {N} drift item(s) from {sources}.`
 
@@ -382,7 +382,7 @@ multiSelect: false
 **If "Save to concept":**
 
 1. Write the full refined concept document as plain markdown to `.project/project-seed.md`
-2. Also update project.json: Read `.project/project.json` (or create with `{}`), set `concept.name` (title from refined content), `concept.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
+2. Also update project.json: Read `.project/project.json` (or create with `{}`), set `seed.name` (title from refined content), `seed.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `seed.content` if it exists (migrated to .md). Write back.
 3. Reconcile drift: if `accumulatedDrift[]` is non-empty, remove those entries from their source arrays (from each `feature.json#seedDrift[]` and from `backlog.html#data.seedDrift[]`). Log: `Reconciled {N} drift item(s) from {sources}.`
 4. Confirm:
 
@@ -398,7 +398,7 @@ multiSelect: false
    - /project-backlog - Convert to feature backlog
    ```
 
-**Concept-scope output is integrated into `project-seed.md`.** Critique adjustments are processed into the living document — no separate `.project/thinking/*.md` for concept-scope, no `concept.thinking[]` append. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
+**Concept-scope output is integrated into `project-seed.md`.** Critique adjustments are processed into the living document — no separate `.project/thinking/*.md` for concept-scope, no `seed.thinking[]` append. Update `seed.name` and `seed.pitch` in `project.json` if metadata changes.
 
 **If "Copy to clipboard":**
 

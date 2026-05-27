@@ -24,7 +24,7 @@ Three signals:
 | Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas) | —                                                      |
 | Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)       | —                                                      |
 | Define              | `/dev-define`, `/frontend-design`                                      | —                                                      |
-| Build               | `/dev-build`, `/frontend-design` Build, `/frontend-convert`            | —                                                      |
+| Build               | `/dev-build`, `/frontend-design` Build, `/frontend-design` Convert     | —                                                      |
 | Test                | `/dev-verify`, `/frontend-check`                                       | —                                                      |
 | Commit              | `/core-commit` (detects team commit convention automatically)          | —                                                      |
 | Refactor            | `/dev-refactor`                                                        | —                                                      |

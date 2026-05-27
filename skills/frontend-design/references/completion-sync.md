@@ -87,7 +87,7 @@ Next steps:
   1. /frontend-design       → add more pages/flows (iterative)
   2. /frontend-tokens       → design tokens and colors based on principles
   3. /frontend-design       → generate Claude Design brief (brief-mode)
-  4. /frontend-convert      → convert an existing design to code
+  4. /frontend-design       → convert an existing design to code (paste sketch/URL)
   5. /frontend-check        → performance/SEO audit (if flows defined: Flow scope also available)
   6. /frontend-check --scope=a11y → accessibility audit
 

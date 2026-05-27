@@ -496,7 +496,7 @@ multiSelect: false
      ```
    - Write `.project/project.json`
 
-   Do NOT write to `concept.content` or `project-seed.md` — those are owned by `/project-seed`.
+   Do NOT write to `seed.content` or `project-seed.md` — those are owned by `/project-seed`.
 
 ### PHASE 3: Output
 
@@ -568,7 +568,7 @@ FEATURE ADDED
 - Do NOT skip the priority and type questions
 - Max 3 items per batch during smart split
 - Thinking rounds: max 3 questions, no more
-- Do NOT write to `project-seed.md` or `concept.content` — only `/project-seed` may do that
+- Do NOT write to `project-seed.md` or `seed.content` — only `/project-seed` may do that
 
 ### Terminal Formatting
 

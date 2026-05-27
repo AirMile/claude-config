@@ -147,7 +147,7 @@ Path A — Build with Claude Code:
 /frontend-design (Build) → /frontend-check
 
 Path B — Brief for Claude Design / Figma:
-/frontend-design (Brief) → [external design] → /frontend-convert → /frontend-check
+/frontend-design (Brief) → [external design] → /frontend-design (Convert) → /frontend-check
 ```
 
 - Works standalone — no dev-pipeline required
@@ -167,4 +167,4 @@ Path B — Brief for Claude Design / Figma:
 
 **Cross-pipeline coupling:**
 
-A card is either frontend (PAGE/COMPONENT) or dev — never both. For pages/components with handler-props without implementation: gap-discovery (`/frontend-design`, `/frontend-convert`) suggests a separate FEATURE-todo on the Dev track. The relationship is tracked via `feature.json#frontend.linkedEntities[]`.
+A card is either frontend (PAGE/COMPONENT) or dev — never both. For pages/components with handler-props without implementation: gap-discovery (`/frontend-design` Build/Convert routes) suggests a separate FEATURE-todo on the Dev track. The relationship is tracked via `feature.json#frontend.linkedEntities[]`.

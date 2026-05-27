@@ -13,12 +13,12 @@ Check with explicit user approval. All other skills are read-only consumers.
 Run this once at the start of the relevant phase:
 
 1. Read `.project/project-seed.md` if it exists → `md_content`
-2. Read `.project/project.json#concept` → extract `name`, `pitch`
+2. Read `.project/project.json#seed` → extract `name`, `pitch`
 
 Output: `SEED_CONTEXT` with:
 
-- `name` — from `project.json#concept.name` (can be empty)
-- `pitch` — from `project.json#concept.pitch` (can be empty)
+- `name` — from `project.json#seed.name` (can be empty)
+- `pitch` — from `project.json#seed.pitch` (can be empty)
 - `markdown` — full contents of `project-seed.md` (empty if file does not exist)
 - `present` — `true` if `markdown.length > 50` OR `pitch` is non-empty
 
@@ -102,7 +102,7 @@ multiSelect: false
 
 ### Resolution outcomes
 
-- **Yes** → generate inline rewrite of `project-seed.md` (preserve unaffected sections verbatim, rewrite only drifted sections); derive updated `concept.pitch` (1–2 sentences) if stale. In plan-mode skills: append proposed full file to plan file under `## Proposed seed update` heading for review. Carry `seedUpdateApproved: true` to sync phase.
+- **Yes** → generate inline rewrite of `project-seed.md` (preserve unaffected sections verbatim, rewrite only drifted sections); derive updated `seed.pitch` (1–2 sentences) if stale. In plan-mode skills: append proposed full file to plan file under `## Proposed seed update` heading for review. Carry `seedUpdateApproved: true` to sync phase.
 - **Skip** → record drift items as `seedDrift[]` (each entry per the schema below) and persist in the skill's primary artifact (`feature.json#seedDrift[]` or `backlog.html#data.seedDrift[]`). Picked up later by `/project-seed § Sync`, `/project-brainstorm` (concept-scope save), or `/project-critique` (concept-scope save) — first one to successfully rewrite the seed clears the matching entries. Carry `seedUpdateApproved: false`.
 - **Adjust** → loop on item selection, regenerate rewrite, re-prompt.
 

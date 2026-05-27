@@ -83,6 +83,26 @@ Store as `EXPLANATION_CHOICE`. If "Same as global" → `EXPLANATION_CHOICE=skip`
    claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
    ```
 
+   **Figma MCP (optional)** — Ask via AskUserQuestion if the project involves Figma designs:
+
+   ```yaml
+   header: "Figma MCP"
+   question: "Will this project use Figma designs (e.g. Figma → code work)?"
+   options:
+     - label: "No (Recommended)", description: "Skip Figma MCP — keep context window lean"
+     - label: "Yes, add Figma MCP", description: "Install Figma MCP server for design data queries"
+   multiSelect: false
+   ```
+
+   If "Yes": print install instructions:
+
+   ```
+   To install Figma MCP, run:
+     claude mcp add --transport sse figma https://mcp.figma.com/mcp
+
+   After installation, re-open this session so the MCP tools load.
+   ```
+
 ---
 
 ## Phase 2: Collect Project Info
@@ -106,9 +126,9 @@ Ask sequentially, one question per response:
      - label: "Start over" — description: "Ignore existing concept, ask both questions anyway (concept-md will not be overwritten later)"
    - multiSelect: false
 
-   **On "Use existing"**: store `concept.name` and `concept.pitch` as `PROJECT_NAME` / `PROJECT_PITCH`. Read `.project/project-seed.md` fully into `SEED_CONTEXT`. Skip steps 1 and 2. Go directly to step 3 (Project type).
+   **On "Use existing"**: store `seed.name` and `seed.pitch` as `PROJECT_NAME` / `PROJECT_PITCH`. Read `.project/project-seed.md` fully into `SEED_CONTEXT`. Skip steps 1 and 2. Go directly to step 3 (Project type).
 
-   **On "Supplement"**: show the first 200 chars of `project-seed.md` as a context block, ask for an additional description (free-form), append in-memory to `PROJECT_PITCH` and `SEED_CONTEXT`. Skip step 2 (name retained from concept).
+   **On "Supplement"**: show the first 200 chars of `project-seed.md` as a context block, ask for an additional description (free-form), append in-memory to `PROJECT_PITCH` and `SEED_CONTEXT`. Skip step 2 (name retained from seed).
 
    **On "Start over"**: continue normally with steps 1 and 2. `SEED_CONTEXT` remains empty.
 
@@ -490,11 +510,11 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
 **Steps:**
 
 1. First check if `.project/project.json` already exists (e.g. from an initial commit). If yes: read + merge instead of overwriting. If no: create with the full empty schema from `shared/DASHBOARD.md`
-2. Fill `concept` section (preferred: markdown file, not inline):
-   - `name`: project name — use existing `concept.name` if filled, otherwise from user answers; do NOT overwrite if already filled
-   - `pitch`: 1-2 sentence summary — use existing `concept.pitch` if filled, otherwise from user answers; do NOT overwrite if already filled
-   - `conceptFile`: `"project-seed.md"` — reference to the markdown file
-   - `content`: empty string `""` — NEVER also fill inline alongside `conceptFile`
+2. Fill `seed` section (preferred: markdown file, not inline):
+   - `name`: project name — use existing `seed.name` if filled, otherwise from user answers; do NOT overwrite if already filled
+   - `pitch`: 1-2 sentence summary — use existing `seed.pitch` if filled, otherwise from user answers; do NOT overwrite if already filled
+   - `seedFile`: `"project-seed.md"` — reference to the markdown file
+   - `content`: empty string `""` — NEVER also fill inline alongside `seedFile`
    - Concept-md handling:
      - **`.project/project-seed.md` exists with > 50 chars**: do NOT overwrite, do NOT append. The supplemental description from Phase 2 step 0 "Supplement" stays in-memory — only `/project-seed` writes to disk.
      - **Does not exist or < 50 chars**: create with `PROJECT_PITCH` (from Phase 2 answers or preflight) as plain markdown (what the project does, who for, core functionality). Does not need to be extensive — thinking/plan skills will expand this later.
@@ -510,10 +530,10 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
    - `hosting`: from user answers (Phase 2 Q4/Q5)
    - `packages`: from generated package.json / project files
 5. Write `.project/project.json`
-   5b. Init backlog with concept flag (all project types):
+   5b. Init backlog with seed flag (all project types):
    - If `.project/backlog.html` does not exist: copy `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
    - Read `backlog.html` → parse `<script id="backlog-data">` JSON
-   - Set `data.flags = { "hasConcept": true, "conceptPath": ".project/project-seed.md" }`
+   - Set `data.flags = { "hasSeed": true, "seedPath": ".project/project-seed.md" }`
    - Set `data.source = "/core-setup"` and `data.updated` to current date
    - Edit JSON block back (script tags intact)
    - This makes the `/project-backlog` button appear in the backlog dashboard once there is a concept but no features yet.

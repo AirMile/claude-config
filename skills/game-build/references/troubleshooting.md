@@ -38,7 +38,7 @@ If implementation is blocked:
 **Cause:** Signals may not be connected in the test scene context.
 **Solution:** Ensure signals are connected in `_ready()` or via the editor. The `debug_listener.gd` captures signals — check its output for missed connections.
 
-### Implementation First verification test fails
+### Scene structure test fails
 
-**Cause:** Scene structure doesn't match what the verification test expects.
-**Solution:** Check node names and paths in the verification test match the actual scene tree. Use `print_tree_pretty()` to debug scene structure.
+**Cause:** Scene structure doesn't match what the test expects.
+**Solution:** Check node names and paths in the test match the actual scene tree. Use `print_tree_pretty()` to debug scene structure.

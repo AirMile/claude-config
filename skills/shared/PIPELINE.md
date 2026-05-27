@@ -29,7 +29,14 @@ Standalone (dev): `/dev-owasp` (security audit).
 ## Frontend Pipeline
 
 ```
-/project-backlog ──► PAGE/COMPONENT tasks (transition: "designing")
+/project-backlog ──► THEME tasks (transition: "defining")
+                                      │
+                                      ▼
+                     /frontend-tokens ──► design tokens + motion packs (Apple/Material/Fluent/Carbon),
+                          │              spring physics, choreography, glass surfaces
+                          │              → writes project.json#theme + devinfo.tokenDrift
+                          ▼
+/project-backlog ──► PAGE/COMPONENT tasks (transition: "designing" | "converting")
                                       │
                                       ▼
                      /frontend-design (Build) ──► compose: select features + components
@@ -37,8 +44,11 @@ Standalone (dev): `/dev-owasp` (security audit).
                           │                           └── "+ new component/feature" → /project-todo (smart-todo)
                           │
                           └─→ /frontend-design (brief) ──→ Claude Design ──→ handoff
-                          └─→ /frontend-convert (visual → code)
-                          └─→ /frontend-check (post-build checks — incl. --scope=a11y)
+                          └─→ /frontend-design (visual → code — Convert route)
+                          └─→ clears devinfo.tokenDrift.affectedFeatures on completion
+                          │
+                          ▼
+                     /frontend-check (transition: "auditing") ──► perf/SEO/A11Y/responsive/motion audit
 ```
 
 **Recommended order: build dev-features first, then compose PAGEs.**
@@ -55,7 +65,7 @@ Frontend items skip `defining/defined` — design captures pages/flows, Build ge
 | FEATURE (with UI)    | dev-define → dev-build (token-styled UI — functional + presentably styled) | dev-build writes styled/designed UI        |
 | COMPONENT            | dev-define → dev-build (token-styled) → frontend-design (optional layout)  | dev-build writes styled/designed component |
 | PAGE                 | frontend-design                                                            | dev-build builds it                        |
-| THEME                | frontend-tokens                                                            | —                                          |
+| THEME                | frontend-tokens (incl. motion packs)                                       | —                                          |
 
 **dev-build** delivers: data layer, hooks, API, types, tests + token-styled UI (semantic HTML + design tokens). Pages and components are testable via `/dev-verify`. `/frontend-design` is optional for layout reshaping (sidebar/hero/grid).
 

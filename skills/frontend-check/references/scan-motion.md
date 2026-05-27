@@ -2,7 +2,7 @@
 
 Animation pack compliance audit. Fires when scope includes "Motion".
 
-**Prerequisites:** Read `project.json#theme.motion.pack` and `theme.surfaces.glass.enabled` before running any check. If `motion.pack` is empty → report "No animation pack set — run `/frontend-animations` first" and skip checks M002/M006/M007.
+**Prerequisites:** Read `project.json#theme.motion.pack` and `theme.surfaces.glass.enabled` before running any check. If `motion.pack` is empty → report "No animation pack set — run `/frontend-tokens → Motion Pack` first" and skip checks M002/M006/M007.
 
 ---
 
@@ -52,7 +52,7 @@ Grep for `backdrop-filter` in all component/page files.
 - If `theme.surfaces.glass.enabled !== true` AND any match found → FAIL
 - If `theme.surfaces.glass.enabled = true` → run M004 instead
 
-**Fail message:** "`backdrop-filter` used but `theme.surfaces.glass.enabled` is false. Enable via `/frontend-animations → Apple pack` (or Playful) or remove the backdrop-filter."
+**Fail message:** "`backdrop-filter` used but `theme.surfaces.glass.enabled` is false. Enable via `/frontend-tokens → Motion Pack → Apple` (or Playful) or remove the backdrop-filter."
 
 ---
 
@@ -158,5 +158,5 @@ Runtime checks:
   [✓|✗] M007  Reduced-motion runtime                {pass / violations}
 
 Issues: {n HIGH} HIGH · {n MEDIUM} MEDIUM
-Fix:    /frontend-animations → Customize / Apply to codebase
+Fix:    /frontend-tokens → Motion Pack → Customize / Apply to codebase
 ```

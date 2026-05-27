@@ -4,7 +4,7 @@
 
 1. Check if `.project/` folder exists
    - If folder does NOT exist → proceed to Step 1b (source selection)
-2. Check if `.project/project-seed.md` exists (primary) or `.project/project.json` has non-empty `concept.content` (legacy fallback)
+2. Check if `.project/project-seed.md` exists (primary) or `.project/project.json` has non-empty `seed.content` (legacy fallback)
 3. If concept exists AND no inline description provided:
    - Read `.project/project-seed.md` for the full concept document. Extract title from first H1 heading.
    - Show confirmation:
@@ -29,9 +29,24 @@
      multiSelect: false
      ```
    - **If "Edit":**
-     - Load existing concept
-     - Ask: "What do you want to change about this concept?"
-     - Proceed to Step 2 with existing content as context
+     - Load existing concept from `.project/project-seed.md` (or `seed.content` legacy)
+     - If `seed.scope` is already set in project.json, use it as default for the question below
+     - Ask scope confirmation via AskUserQuestion:
+
+       ```yaml
+       header: "Scope"
+       question: "Is this still a concept document, or has the work shifted?"
+       options:
+         - label: "Still a concept (Recommended)", description: "Edit/expand the existing concept"
+         - label: "Implementation project", description: "Now driven by a design/Figma/spec — switch to implementation scope"
+         - label: "Feature scoping", description: "Now scoping a specific feature instead of the whole concept"
+       multiSelect: false
+       ```
+
+     - Set active scope from the answer; write to `seed.scope` on save
+     - Ask: "What do you want to change about this {scope} document?"
+     - Proceed to Step 2 with existing content as context AND the confirmed scope
+
    - **If "Sync with project":**
      - Proceed to Step 1c (Project Sync)
    - **If "New concept":**
@@ -53,6 +68,7 @@ header: "Scope"
 question: "What do you want to think about?"
 options:
   - label: "Concept (Recommended)", description: "Work with project.json concept"
+  - label: "Implementation project", description: "Existing design/spec/Figma → scope document for build"
   - label: "Feature from backlog", description: "Focus on a specific feature"
   - label: "Page / UX flow", description: "Focus on layout, UX or user flow"
   - label: "Assignment / Large Feature", description: "Scope a task assignment, large feature, or cross-cutting concern"
@@ -128,9 +144,42 @@ multiSelect: false
 
 After gathering answers, synthesize into a seed document. Output path: `.project/features/{slug}/thinking.md` or user can choose `.project/project-seed.md` directly.
 
+**If "Implementation project":**
+
+- Ask the user to share the source: Figma URL, design file, spec document, or screenshot
+- If a Figma URL is provided:
+  - Check the available tools list for any `mcp__figma__*` or `mcp__*figma*` tool — if present, use it to query the design (pages, components, frames)
+  - If no Figma MCP tool is detected, offer installation via AskUserQuestion:
+
+    ```yaml
+    header: "Figma MCP"
+    question: "Figma URL detected but no Figma MCP available. Install it now?"
+    options:
+      - label: "Yes, install Figma MCP (Recommended)", description: "Adds Figma MCP server — design data becomes queryable"
+      - label: "Skip — use screenshots", description: "Continue without MCP; ask user for screenshots or page list"
+    multiSelect: false
+    ```
+
+    If "Yes": print install instructions and pause the flow:
+
+    ```
+    To install Figma MCP, run:
+      claude mcp add --transport sse figma https://mcp.figma.com/mcp
+
+    Then re-run /project-seed after the MCP is loaded.
+    ```
+
+    If "Skip": fall back to WebFetch on the public Figma URL (authenticated URLs will fail), or ask the user for screenshots or a page list
+
+- Read `package.json` if a repo exists to extract `dependencies` keys (framework, CMS, animation libs) for the Tech Stack question — pre-fill the answer instead of asking blind
+- Probe for: pages/screens in scope, stack confirmation, and known open design questions (annotations, TBDs from the design)
+- Proceed to Step 2 with `scope=implementation` (uses the implementation Round 1 template)
+- Output path: `.project/project-seed.md` — treat the implementation scope as the project concept, update `project.json` `seed.name` and `seed.pitch` accordingly
+
 **Output path follows scope automatically:**
 
 - Scope = concept → write to `.project/project-seed.md` + update project.json metadata (name, pitch)
+- Scope = implementation → write to `.project/project-seed.md` + update project.json metadata (name, pitch)
 - Scope = feature → write to `.project/features/{name}/thinking.md`
 - Scope = page/UX → write to `.project/thinking/{topic}.md`
 - Scope = standalone idea → write to `.project/thinking/{topic}.md`
@@ -245,7 +294,7 @@ multiSelect: false
 **5. Write updated seed:**
 
 - Write to `.project/project-seed.md`
-- Update project.json metadata (concept.name, concept.pitch) if changed
+- Update project.json metadata (seed.name, seed.pitch) if changed
 - **Drift cleanup** — for each `driftEntries[]` item that was selected and integrated:
   - If from `feature.json#seedDrift[]`: remove the entry from the array (rewrite `feature.json`). If the array is empty after cleanup, omit the field.
   - If from `backlog.html#data.seedDrift[]`: remove the entry from the array (rewrite backlog JSON block).
@@ -263,27 +312,42 @@ Next steps:
 - /project-brainstorm - Brainstorm on the new components
 ```
 
-**Step 1b: Source selection (if no concept found)**
+**Step 1b: Source + scope selection (if no concept found)**
 
 **If no description provided:**
 
-Use AskUserQuestion:
+Use two AskUserQuestion calls in a single message:
 
 ```yaml
+# Question 1: source
 header: "Source"
 question: "Where do you want to start?"
 options:
-  - label: "Use chat context (Recommended)", description: "Use what has been discussed in this conversation as starting point"
-  - label: "Type new idea", description: "Describe a new idea"
+  - label: "Use chat context (Recommended)", description: "Use what has been discussed in this conversation"
+  - label: "Type new idea", description: "Describe a new idea from scratch"
+  - label: "Have a design/spec", description: "Figma, screenshots, or specification document to implement"
+multiSelect: false
+
+# Question 2: scope
+header: "Scope"
+question: "What type of project is this?"
+options:
+  - label: "New concept (Recommended)", description: "An idea or product to articulate"
+  - label: "Implementation project", description: "Existing design → code scope document"
+  - label: "Feature scoping", description: "Scope a feature or assignment"
 multiSelect: false
 ```
 
-**If "Use chat context":**
+Set active scope from the answer for use in Step 2 question selection and the `seed.scope` field on save.
+
+**If "Use chat context" or source = chat:**
 
 Process using Chat Context flow (see below).
 
 **If "Type new idea":**
 Ask: "What is your idea? Describe it in 1-2 sentences."
+
+**If "Have a design/spec":** Proceed as Implementation project (see Step 1a handler for "Implementation project").
 
 **If description provided (inline argument):**
 

@@ -1,11 +1,11 @@
 ---
 name: dev-build
-description: Build features with TDD or implementation-first. Use with /dev-build.
+description: "Build features test-first with TDD. Use with /dev-build, or when the user asks to implement a defined feature."
 reads: [feature.requirements, feature.architecture, feature.files]
 writes: [feature.requirements, feature.build, backlog.status, learnings]
 metadata:
   author: claude-config
-  version: 1.9.1
+  version: 1.12.0
   category: dev
 ---
 
@@ -13,7 +13,7 @@ metadata:
 
 **PHASE 2** of the dev workflow: define → **build** → verify → refactor (optional)
 
-Auto-detects stack from CLAUDE.md, selects technique per requirement (TDD, Implementation First, or Implementation Only), builds sequentially.
+Auto-detects stack from CLAUDE.md, assigns TDD to all testable requirements; Implementation Only only when automated tests add no value (visual/config/prototype).
 
 **Trigger**: `/dev-build` or `/dev-build [feature-name]`
 
@@ -56,9 +56,14 @@ Phases:
 
 Assign per requirement:
 
-- **TDD**: validation rules, business logic, calculations, complex conditions, testable math
-- **Implementation First**: CRUD, middleware, config, wiring
-- **Implementation Only**: pure styling/layout, visual/particle effects, static content, env config, prototype code — only when automated tests add no value. Required reason: `visual-only`, `config-only`, or `prototype`
+- **TDD** (default): validation rules, business logic, calculations, complex conditions, CRUD, middleware, config wiring — anything with testable behavior.
+- **Implementation Only**: no automated test — only when tests add no value.
+
+| Reason        | When                                                        |
+| ------------- | ----------------------------------------------------------- |
+| `visual-only` | Pure styling, layout, CSS, visual effects, particles        |
+| `config-only` | Env vars, route registration, package config, static assets |
+| `prototype`   | Deliberately temporary code, throwaway MVP                  |
 
 **Pitfall overlap check**: for each requirement, compare against the pitfall list from PHASE 0. On clear thematic overlap (same domain, same type of bug risk):
 
@@ -90,7 +95,7 @@ For each buildSequence step:
    ```
    BUILD_RESULT_START
    REQ: {id}
-   Technique: {TDD | Implementation First | Implementation Only}
+   Technique: {TDD | Implementation Only}
    Status: {GREEN | BLOCKED}
    Files modified: {list}
    Files created: {list}
@@ -103,8 +108,7 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
 
 1. Load technique:
    - **TDD** → `Read(".claude/skills/dev-build/techniques/tdd.md")`
-   - **Implementation First** → `Read(".claude/skills/dev-build/techniques/implementation-first.md")`
-   - **Implementation Only** → no file loaded (technique = no tests; `skipTestReason` must be filled in)
+   - **Implementation Only** → no file loaded. Workflow: implement, verify manually, no automated test. Output: `IMPLEMENTED: {what} / TESTED: SKIPPED ({reason})`. Set `skipTestReason` in SYNC line.
 2. **Read existing code**:
    - All files from feature.json `files[]` that have `action: "modify"`
    - **All files from feature.json `files[]` that have `action: "create"` AND were built in an earlier step of this build** — needed to know exact exports/types/signatures to import (prevents inline-redefine of types/utilities already created)
@@ -120,7 +124,7 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
 7. Output per requirement:
    ```
    REQ-XXX: {description}
-   Technique: {TDD | Implementation First | Implementation Only}
+   Technique: {TDD | Implementation Only}
    {technique-specific output}
    SYNC: {pattern/concept} in {file(s)} — {what, why, what depends on it}
    Progress: {done}/{total}
@@ -140,6 +144,18 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
 3. **Then patch**, and record the confirmed cause in the learning (PHASE 3A → learnings). A learning that names the wrong layer will misdirect future builds.
 
 If root-cause cannot be confirmed within 2 attempts: log as blocker with `"cause": "unknown"` rather than guessing.
+
+**On `npm install ERESOLVE`** (peer-dep conflict during dependency add/upgrade):
+
+1. **Read the error verbatim** — `Found: pkg@X / peer: pkg@Y` lines tell you exactly which versions clash.
+2. **Identify which package needs to move**:
+   - If the requested package is the one with the strict peer dep → look for an older compatible release that matches the installed peer.
+   - If the existing package is the holdout → check whether upgrading it is appropriate (e.g. its major version is now out of date for the project's framework version).
+3. **Decide and execute**:
+   - Compatible older version of requested pkg exists → install with that version.
+   - Upgrade of existing pkg is the right move → upgrade it + matching peer-deps in one `npm install` call. Note the upgrade in `build.decisions[]` (type: `pitfall` — see PHASE 3A).
+   - Neither option is clean → log as blocker with `cause: "peer-dep-deadlock"`, skip the dependent REQ.
+4. **`--legacy-peer-deps` is a last resort** — only after a documented decision in `build.decisions[]`, never as the first reflex. It bypasses the conflict but doesn't resolve it.
 
 ### PHASE 2b: Regression Gate + Diagnostics
 
@@ -163,7 +179,17 @@ Compute the set of source files changed since baseline and run linter only on th
 PRE_SHA=$(cat "$REPO/.project/session/pre-skill-sha.txt")
 SCOPED=$(git -C "$REPO" diff --name-only "$PRE_SHA" HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' 2>/dev/null)
 [ -z "$SCOPED" ] && SCOPED=$(git -C "$REPO" diff --name-only "$PRE_SHA" -- '*.ts' '*.tsx' '*.js' '*.jsx')
-[ -n "$SCOPED" ] && npx biome check --write $SCOPED 2>&1 | tail -3
+
+# Detect linter from package.json (biome → eslint → none). Skip if no SCOPED files.
+if [ -n "$SCOPED" ]; then
+  if node -e "const d=require('$REPO/package.json'); const all={...d.dependencies,...d.devDependencies}; if(!('@biomejs/biome' in all)) process.exit(1)" 2>/dev/null; then
+    npx biome check --write $SCOPED 2>&1 | tail -3
+  elif node -e "const d=require('$REPO/package.json'); const all={...d.dependencies,...d.devDependencies}; if(!('eslint' in all)) process.exit(1)" 2>/dev/null; then
+    npx eslint --fix $SCOPED 2>&1 | tail -5
+  else
+    echo "LINT: skipped (no biome or eslint in package.json)"
+  fi
+fi
 npx tsc --noEmit 2>&1 | head -20
 ```
 
@@ -257,8 +283,12 @@ Follow [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discove
 
 **Learning extraction** (after feature.json sync): write to `project-context.json learnings[]` (append-only, identical format as `dev-verify`/`dev-refactor`):
 
-- `build.decisions[]` → `type: "pattern"` (architectural choice made)
-- `build.blockers[]` where the blocker is resolved (no longer BLOCKED at end of build) → `type: "pitfall"`
+Each `build.decisions[]` entry maps to either `pattern` or `pitfall` based on its content:
+
+- **`type: "pattern"`** — architectural/structural choices that future builds should reuse (e.g. "centralised env-loader via assertEnv()", "RHF + Zod for forms").
+- **`type: "pitfall"`** — version pins, peer-dep workarounds, package upgrades forced by ecosystem mismatch, or "don't do X because Y" guidance (e.g. "next-sanity@9 incompatible with Next 15 — use v10+").
+
+`build.blockers[]` where the blocker is resolved (no longer BLOCKED at end of build) → always `type: "pitfall"`.
 
 ```json
 {
@@ -283,6 +313,7 @@ Only write if decisions or resolved blockers are present — no empty entries.
 Diagnostics ran in PHASE 2b — if both gates passed there, proceed directly to staging.
 
 ```bash
+# $REPO is set in PHASE 0 (see references/context-loading.md → "Capture git baseline")
 git -C "$REPO" status --porcelain
 ```
 
@@ -299,7 +330,7 @@ Categorize each file:
 4. **.project/ files** (project.json, backlog.html, project-context.json) → try to add. If skip-worktree or sparse-checkout blocks this: accept and continue (these files are updated locally but won't be committed).
 
 ```bash
-git -C "$REPO" commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first)"
+git -C "$REPO" commit -m "build({feature}): {n} requirements ({tdd} TDD, {only} impl-only)"
 ```
 
 Clean up: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/active-{feature-name}.json" "$REPO/.project/session/worktree-status.txt"`
@@ -309,7 +340,7 @@ Clean up: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/sess
 ```
 BUILD COMPLETE: {feature}
 ========================
-Techniques: TDD ({n}), Implementation First ({n}), Implementation Only ({n})
+Techniques: TDD ({n}), Implementation Only ({n})
 Tests: {passed}/{total} PASS
 Files created: {count} | modified: {count}
 ```

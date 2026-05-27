@@ -37,7 +37,7 @@ Write back in parallel:
 
 - Skip if PHASE 3 ended with "Skip" or no drift was detected.
 - Write the rewritten content (reviewed inline by the user in PHASE 3 before this sync phase) to `.project/project-seed.md` — full file overwrite.
-- Update `project.json#concept.pitch` if the new pitch differs. Update `concept.name` only if the H1 title changed.
+- Update `project.json#seed.pitch` if the new pitch differs. Update `seed.name` only if the H1 title changed.
 - Log: `Seed: ✓ updated — N section(s) rewritten`.
 
 This write runs in parallel with the existing back-writes.

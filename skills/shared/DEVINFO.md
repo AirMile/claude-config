@@ -1,6 +1,6 @@
 # Session Tracking
 
-Lightweight session state for cross-skill coordination. Pipeline skills use the files below. Frontend pipeline skills also use `.project/session/devinfo.json` for handoff data between skills (e.g. `frontend-design` → `frontend-convert`).
+Lightweight session state for cross-skill coordination. Pipeline skills use the files below. Frontend pipeline skills also use `.project/session/devinfo.json` for handoff data (e.g. the `frontend-design` Build route → Convert route self-handoff).
 
 ---
 
@@ -124,7 +124,7 @@ rm -f .project/session/pre-skill-sha.txt .project/session/active-FEATURE_NAME.js
 
 ### `devinfo.handoff` — Build Incomplete
 
-Written by `frontend-design` (Build route) when user chooses "Open in convert" after smoke-failure. Read by `frontend-convert` PHASE 0.0.
+Written by `frontend-design` (Build route) when user chooses "Open in convert" after smoke-failure. Read by `frontend-design` router PHASE 0.2 (self-handoff to Convert route).
 
 ```json
 {
@@ -143,15 +143,15 @@ Written by `frontend-design` (Build route) when user chooses "Open in convert" a
 }
 ```
 
-`source` values: `"build-incomplete"` (from Build-route failure). Other `source` values come from `frontend-convert` itself (see PHASE 4.1).
+`source` values: `"build-incomplete"` (from Build-route failure). Other `source` values come from `frontend-design` Convert route (see PHASE 4.1).
 
-**Cleanup:** `frontend-convert` PHASE 4.1 after success → set `devinfo.handoff = null`. If handoff is older than 24h: `frontend-convert` PHASE 0.0 shows staleness warning.
+**Cleanup:** `frontend-design` Convert route PHASE 4.1 after success → set `devinfo.handoff = null`. If handoff is older than 24h: router PHASE 0.2 shows staleness warning.
 
 ---
 
 ### `devinfo.tokenDrift` — Token Drift Log
 
-Written by `frontend-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `frontend-design` (Step 5), `frontend-convert` (PHASE 4.1), and `dev-verify`/`dev-refactor` (if feature is in `affectedFeatures`).
+Written by `frontend-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `frontend-design` (Step 5 and Convert route PHASE 4.1), and `dev-verify`/`dev-refactor` (if feature is in `affectedFeatures`).
 
 ```json
 {

@@ -7,7 +7,7 @@ Update `.project/session/devinfo.json`:
 ```json
 {
   "handoff": {
-    "from": "frontend-convert",
+    "from": "frontend-design",
     "to": null,
     "data": {
       "inputType": "screenshot | url | image",
@@ -23,7 +23,7 @@ Update `.project/session/devinfo.json`:
 }
 ```
 
-**Handoff cleanup** (if session started via PHASE 0.0 handoff): set `devinfo.handoff = null`.
+**Handoff cleanup** (if session started via PHASE 0.2 build-incomplete handoff): set `devinfo.handoff = null`.
 
 **TokenDrift cleanup** (if page scope): read `devinfo.tokenDrift.affectedFeatures` → remove the current page name if present → if list is empty: `tokenDrift.resolved = true`. Write back.
 
@@ -37,7 +37,7 @@ If page scope and backlog exists:
 
 ### 4.3 Gap-Discovery
 
-Trigger C — scan all generated/updated component files for stub handlers. Follow [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery). **Source:** `"/frontend-convert"` · **Direction:** `"frontend→dev"` · **Type:** `FEATURE`. If no gaps: skip this step.
+Trigger C — scan all generated/updated component files for stub handlers. Follow [Discovery — Gap-Discovery](../../shared/SKILL-PATTERNS.md#gap-discovery). **Source:** `"/frontend-design"` · **Direction:** `"frontend→dev"` · **Type:** `FEATURE`. If no gaps: skip this step.
 
 ### 4.4 Completion Report
 
@@ -46,7 +46,7 @@ CONVERT COMPLETE
 ═══════════════════════════════════════════════════════════
 
 Source:       [file path | URL | pasted image]
-Mode:         [1:1 copy | Inspiration]
+Mode:         [1:1 copy | Inspiration | Sketch → high-fi]
 Framework:    [detected framework]
 Verification: [N] rounds, [High | Medium | Low] match
 Code quality: [PASS | [N] violations fixed]

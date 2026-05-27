@@ -4,7 +4,7 @@ description: Define Godot feature requirements and architecture. Use with /game-
 writes: [feature.requirements, backlog.stage, concept.seed]
 metadata:
   author: claude-config
-  version: 2.7.0
+  version: 3.0.0
   category: game
 ---
 
@@ -35,13 +35,13 @@ The skill gathers requirements through targeted questions, optionally researches
 
 **Phase tracking** — first action of the skill: call `TaskCreate` with these 3 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. During context compaction the task list remains visible — no risk of forgotten phases.
 
-1. PHASE 0+1: Setup, Context & Requirements
+1. PHASE 0+1a+1b: Setup, Context, Interview & Requirements
 2. PHASE 2+3: Architecture Check & Design
 3. PHASE 4+5: feature.json + Sync
 
 ### PHASE 0: Feature Name + Context
 
-> **Todo**: call `TaskCreate` with the 3 phase items (see above). Mark PHASE 0+1 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 3 phase items (see above). Mark PHASE 0+1a+1b → `in_progress` via `TaskUpdate`.
 
 1. **If name provided** (`/game-define abilities`):
    - Use provided name as feature name
@@ -92,17 +92,7 @@ The skill gathers requirements through targeted questions, optionally researches
 
    **d) No backlog, no concept (or user chose direct define):**
 
-   Use **AskUserQuestion** tool:
-   - header: "Feature Name"
-   - question: "Which game feature do you want to define? Pick a suggestion or type your own feature name via 'Other'."
-   - options:
-     - label: "Ability System", description: "Player abilities and element-based powers"
-     - label: "Player Movement", description: "Movement, controls, physics"
-     - label: "Combat System", description: "Damage, health, knockback"
-     - label: "UI System", description: "HUD, menus, ability selection"
-   - multiSelect: false
-
-   The user can type any feature name via the built-in "Other" option.
+   Ask openly: "Which gameplay aspect do you want to work on?" — no preset options. Use the user's answer as the feature name (kebab-case it if needed).
 
 **Tag backlog card as active** (immediately after feature name determination):
 
@@ -179,13 +169,13 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 
 ---
 
-### PHASE 1: Requirements Gathering
+### PHASE 1a: Interview
 
-> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
+> **Todo**: Read `.claude/skills/game-define/references/phase1a-interview.md` for the full interview protocol — dimension checklist, tone rules, one-question-at-a-time flow, escape-hatch, and adaptive stop condition.
 
 **Risk-check (only if `feature.risk >= 4`):**
 
-If the loaded backlog feature has a `risk` score of 4 or 5, show this warning before the first question:
+If the loaded backlog feature has a `risk` score of 4 or 5, show this warning before opening the interview:
 
 ```
 ⚠ HIGH RISK — Complexity {risk}/5
@@ -204,62 +194,25 @@ PREVIOUSLY DECIDED (possibly relevant)
 - [feature-X] {decision} → chose {chosen} (constraint: {constraint})
 ```
 
-Show before the first AskUserQuestion. No action question — context only so that question-1 answers do not conflict with previously decided directions. If a current answer option directly conflicts, mention that briefly in the option description ("Deviates from {feature-X} decision").
+Show before the first interview question. No action required — context only, so interview answers don't conflict with previously decided directions.
 
-Ask 5 targeted questions using AskUserQuestion:
+**Interview opening**: "I see we're defining `{feature-name}`. Tell me first — what gameplay problem does this solve?"
 
-**Question 1: Core Function**
+Conduct an open interview — **no AskUserQuestion and no multiple-choice options in this phase**. Ask one open question at a time. Paraphrase substantive answers to check understanding. Probe and follow up. Follow the dimension checklist and tone rules in `references/phase1a-interview.md`.
 
-- header: "Core Function"
-- question: "What should this feature do from the player's perspective?"
+**If the user cannot answer a dimension**: follow the escape-hatch protocol in `references/phase1a-interview.md § Handling "I Don't Know" Responses`.
 
-**Question 2: Game Mechanics**
+**End of interview**: when all relevant dimensions are covered, close with an explicit summary + confirmation: "I understood that {brief summary of gameplay goal, player experience, key mechanics, and scope boundaries} — is this correct, or am I missing something?" Proceed to PHASE 1b only after the user confirms.
 
-- header: "Mechanics"
-- question: "Which game mechanics are involved?"
-- options: Physics-based, Turn-based, Real-time, State-based
+---
 
-**Question 3: Player Interactions**
+### PHASE 1b: Requirements Synthesis
 
-- header: "Interactions"
-- question: "Which player interactions must this feature support?"
-- options: Input controls, Collision triggers, UI selection, Automatic
+> **Todo**: mark PHASE 0+1a+1b task still in progress — no TaskUpdate needed here.
 
-**Question 4: Visual Feedback**
+**Design choices** (only for architecture-changing forks — scene ownership, resource schema, signal boundary, state machine approach): if the interview revealed a concrete A vs B vs C choice, resolve via AskUserQuestion before extracting requirements. Include "Not relevant for scope" if applicable. Record each as `{ "question": "{open branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` (written to `feature.json#clarifications` if ≥1 entry). Edge cases → add directly as acceptance criteria.
 
-- header: "Visuals"
-- question: "Which visual feedback is needed?"
-- options: Sprite animations, Particles, UI updates, Screen effects
-
-**Question 5: Data Requirements**
-
-- header: "Data"
-- question: "Which data needs to be stored/managed?"
-- options: Stats/values, Inventory/collections, State persistence, Configuration
-
-**User delegation**: if the user responds with "what do you think?" or similar, give a brief recommendation with trade-off and continue with that choice.
-
-#### Follow-up check
-
-After the initial questions, evaluate whether there are open branches:
-
-- Undiscussed edge cases in the answers
-- Implicit assumptions that have not been confirmed
-- Conflicts between answers
-
-**≤6 requirements expected**: skip follow-up, go to extraction.
-**>6 requirements expected**: ask 1 targeted follow-up question about the most important open branch. Frame as a design choice (scene structure, state machine approach, signal boundary). Edge cases (parameter ranges, input behavior, defaults) → inline as acceptance criterion. No AskUserQuestion.
-
-#### Gray-Area Resolution
-
-**Skip** if ≤6 requirements expected OR follow-up check found no open branches.
-
-**Otherwise** (>6 REQs with an open architecture-changing choice — scene ownership, resource schema, signal boundary): 1 AskUserQuestion call, max 3 sub-questions. Each must be a concrete A vs B choice affecting architecture. First option = Recommended. Include "Not relevant for scope" if applicable.
-
-Record each as: `{ "question": "{open branch}", "answer": "{chosen option}", "impact": "brief note on which requirement area this affects" }`
-
-**"Not relevant"** → record as scoped-out, not as a requirement.
-**>3 open branches** → handle remaining ones inline during requirement extraction as edge cases.
+**>3 open forks** → handle the remainder inline during requirement extraction as edge cases.
 
 #### Requirement Extraction
 
@@ -314,36 +267,13 @@ Tuning levers are stored in `feature.json` per requirement as `tuningLevers[]`.
   - options:
     - label: "Agree (Recommended)", description: "Requirements are complete and correct"
     - label: "Edit", description: "I want to change or add requirements"
-    - label: "Start over", description: "Discard everything and ask new questions"
+    - label: "Start over", description: "Discard everything — restart PHASE 1a interview"
   - multiSelect: false
 
   **If "Edit"** → ask what to change, update requirements table, re-confirm.
-  **If "Start over"** → restart PHASE 1 from Question 1.
+  **If "Start over"** → restart PHASE 1a interview.
 
-### CHECKPOINT: Requirements Summary
-
-Only run if >6 REQs (≤6: already handled above). Present a complete overview:
-
-| Aspect        | Value                       |
-| ------------- | --------------------------- |
-| Feature       | {name}                      |
-| Core function | {from player's perspective} |
-| Mechanics     | {chosen mechanics}          |
-| Interactions  | {chosen interactions}       |
-| Visuals       | {chosen visual feedback}    |
-| Data          | {chosen data management}    |
-| Requirements  | {N} requirements            |
-
-Ask via AskUserQuestion:
-
-- header: "Requirements Summary"
-- question: "Does this overview look correct before we continue to architecture?"
-- options:
-  - label: "Continue (Recommended)", description: "On to scope analysis + architecture"
-  - label: "Edit", description: "Back to relevant question"
-- multiSelect: false
-
-### PHASE 1b: Scope Analysis & Feature Splitting
+### PHASE 1c: Scope Analysis & Feature Splitting
 
 **Condition:** Only run if requirement count exceeds 6 or there are clear independent clusters.
 
@@ -351,7 +281,7 @@ Ask via AskUserQuestion:
 
 ### PHASE 2: Architecture Check (Automatic)
 
-> **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
+> **Todo**: mark PHASE 0+1a+1b → `completed`, PHASE 2+3 → `in_progress`.
 
 **Goal:** Automatically determine whether research is needed based on the architecture-baseline.
 
@@ -611,7 +541,7 @@ Follow `shared/SYNC.md` 3-File Sync Pattern.
 
 ## Best Practices
 
-- Use AskUserQuestion for all structured choices
+- Use AskUserQuestion for architecture/design choices (PHASE 1b) — not for requirements gathering (PHASE 1a: open interview)
 - Extract testable requirements with REQ-IDs and acceptance criteria
 - Scene research is optional but recommended for complex features
 - Keep architecture focused on what's needed

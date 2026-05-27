@@ -21,10 +21,10 @@ If `$STATES` is non-empty: generate state variants alongside the happy path.
 
 All states follow the same `dark:` and responsive logic as the happy path.
 
-**Mode-specific** (see `./examples/` for gold standard examples per mode):
+**Mode-specific** (see `../examples/` for gold standard examples per mode):
 
-- **1:1 copy:** Match source colors, fonts, spacing as closely as possible. Use arbitrary Tailwind values (`bg-[#FF5733]`, `text-[20px]`) when no standard class matches. Prioritize visual fidelity. Reference: `./examples/PricingPage-1to1.tsx`
-- **Inspiration:** Use only theme tokens (from project.json) and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Reference: `./examples/PricingPage-inspiration.tsx`
+- **1:1 copy:** Match source colors, fonts, spacing as closely as possible. Use arbitrary Tailwind values (`bg-[#FF5733]`, `text-[20px]`) when no standard class matches. Prioritize visual fidelity. Reference: `../examples/PricingPage-1to1.tsx`
+- **Inspiration:** Use only theme tokens (from project.json) and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Reference: `../examples/PricingPage-inspiration.tsx`
 
 **Dark mode classes:**
 
@@ -48,7 +48,7 @@ Check `theme.motion.pack` in `project.json`. Store as `$MOTION_PACK`.
 Also factor in `$MOTION_INTENT` from SOURCE ANALYSIS:
 
 - If `$MOTION_INTENT` describes glass/blur and `theme.surfaces.glass.enabled = true`: apply `.glass-card` pattern (see `shared/PATTERNS.md`).
-- If `$MOTION_INTENT` describes animations but `$MOTION_PACK` is empty: note in Generation Summary "Motion intent detected — run /frontend-animations to set a pack."
+- If `$MOTION_INTENT` describes animations but `$MOTION_PACK` is empty: note in Generation Summary "Motion intent detected — run /frontend-tokens → Motion Pack to set a pack."
 
 All motion classes must wrap choreography in `@media (prefers-reduced-motion: reduce)` fallback (see `shared/PATTERNS.md § prefers-reduced-motion Fallback`).
 

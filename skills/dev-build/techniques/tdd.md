@@ -111,6 +111,43 @@ REFACTOR: PASS
 SYNC:    {pattern/concept} in {main file(s)} — {what it does and why this approach. What depends on it.}
 ```
 
+## Pitfalls
+
+### Testing module-level side effects (env-loaders, singletons, config)
+
+When a module **throws or computes on import** (e.g. `assertEnv()` at top level, a singleton client, a config object built from `process.env`), each test needs a fresh module instance. The module cache otherwise locks in the first import's state across all tests.
+
+**Doesn't work** — query-strings don't bypass the resolver:
+
+```ts
+delete process.env.PROJECT_ID;
+await import("./env?missing-project"); // ❌ same cached module, no throw
+```
+
+**Does work** — `vi.resetModules()` + per-test env-reset:
+
+```ts
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+describe("env-loader", () => {
+  const ORIGINAL_ENV = { ...process.env };
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env = { ...ORIGINAL_ENV };
+  });
+
+  it("throws when PROJECT_ID is missing", async () => {
+    delete process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+    await expect(import("./env")).rejects.toThrow(/PROJECT_ID/);
+  });
+});
+```
+
+For Jest: same pattern with `jest.resetModules()`.
+
+**When to apply:** the module body contains `process.env` reads, side-effectful initialisation, or singleton construction. Pure functions don't need this — top-level test-file imports are fine.
+
 ## References
 
 - [Mocking guidelines](references/mocking.md) — when to mock and when not to, DI patterns

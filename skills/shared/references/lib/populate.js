@@ -8,39 +8,20 @@ function populateFromProject(projectDir, dashData) {
   const projectPath = path.join(PROJECTS_ROOT, projectDir);
   var changed = false;
 
-  // ── Concept: load from project-concept.md (new split format) ──
-  // Prefer the file over inline content when conceptFile is set (split format)
-  // or when content is empty (legacy fallback).
-  const conceptMdSplit = path.join(projectPath, ".project/project-concept.md");
-  const shouldLoadConceptFile =
-    dashData.concept?.conceptFile || !dashData.concept?.content;
-
-  if (shouldLoadConceptFile && fs.existsSync(conceptMdSplit)) {
-    try {
-      const md = fs.readFileSync(conceptMdSplit, "utf8");
-      if (!dashData.concept) dashData.concept = {};
-
-      const titleMatch = md.match(/^#\s+(.+)$/m);
-      if (titleMatch && !dashData.concept.name)
-        dashData.concept.name = titleMatch[1].trim();
-      dashData.concept.content = md;
-      changed = true;
-    } catch {}
-  }
-
-  // ── Concept: migrate from legacy .project/concept.md ──
-  const conceptFile = path.join(projectPath, ".project/concept.md");
-
-  if (!dashData.concept?.content && fs.existsSync(conceptFile)) {
-    try {
-      const md = fs.readFileSync(conceptFile, "utf8");
-      if (!dashData.concept) dashData.concept = {};
-
-      const titleMatch = md.match(/^#\s+(.+)$/m);
-      if (titleMatch) dashData.concept.name = titleMatch[1].trim();
-      dashData.concept.content = md;
-      changed = true;
-    } catch {}
+  // ── Seed: load from seedFile ──
+  if (!dashData.seed?.content && dashData.seed?.seedFile) {
+    const seedPath = path.join(projectPath, ".project", dashData.seed.seedFile);
+    if (fs.existsSync(seedPath)) {
+      try {
+        const md = fs.readFileSync(seedPath, "utf8");
+        if (!dashData.seed) dashData.seed = {};
+        const titleMatch = md.match(/^#\s+(.+)$/m);
+        if (titleMatch && !dashData.seed.name)
+          dashData.seed.name = titleMatch[1].trim();
+        dashData.seed.content = md;
+        changed = true;
+      } catch {}
+    }
   }
 
   // ── Context + Architecture: load from project-context.json ──
@@ -253,8 +234,8 @@ function populateFromProject(projectDir, dashData) {
 
           // Project name
           const nameMatch = content.match(/config\/name\s*=\s*"([^"]*)"/);
-          if (nameMatch && dashData.concept && !dashData.concept.name) {
-            dashData.concept.name = nameMatch[1];
+          if (nameMatch && dashData.seed && !dashData.seed.name) {
+            dashData.seed.name = nameMatch[1];
           }
 
           // Autoloads as packages
@@ -441,12 +422,17 @@ function populateFromProject(projectDir, dashData) {
     } catch {}
   }
 
-  // Write back if populated
+  // Write back if populated — strip seed.content when .md file is canonical
   if (changed) {
     const dashFile = path.join(projectPath, DASHBOARD_PATH);
     const wsDir = path.dirname(dashFile);
     if (!fs.existsSync(wsDir)) fs.mkdirSync(wsDir, { recursive: true });
-    fs.writeFileSync(dashFile, JSON.stringify(dashData, null, 2), "utf8");
+
+    const toWrite = JSON.parse(JSON.stringify(dashData));
+    if (toWrite.seed && toWrite.seed.seedFile) {
+      delete toWrite.seed.content;
+    }
+    fs.writeFileSync(dashFile, JSON.stringify(toWrite, null, 2), "utf8");
   }
 
   return dashData;

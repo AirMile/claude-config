@@ -1,458 +1,200 @@
 ---
 name: frontend-tokens
 description: >-
-  Design token management — color, typography, spacing, motion, and interaction
-  tokens. Use with /frontend-tokens to create, update, or manage design tokens,
-  or whenever a backlog task with type THEME and transition "defining" is detected.
-reads: [backlog.html]
+  Design token + motion pack management — color, typography, spacing, motion
+  packs (Apple/Material/Fluent/Carbon), spring physics, choreography, glass
+  surfaces. Use with /frontend-tokens, or whenever a backlog task with type
+  THEME and transition "defining" is detected.
+reads: [backlog.html, project.json#theme]
 writes: [project.json#theme, backlog.html, devinfo.tokenDrift]
 metadata:
   author: claude-config
-  version: 3.5.0
+  version: 4.0.0
   category: frontend
 ---
 
 # Tokens
 
-Manages the project design system: creating, viewing, updating design tokens, and dark/light mode configuration. Includes motion tokens (durations, easings) and interaction tokens (focus ring, hover, active states).
+Manages the full design system: vocabulary tokens (colors, typography, spacing, breakpoints, borderRadius, shadows, base motion, interactions, modes, cssVars) **and** motion packs (animation pack, spring physics, choreography, glass surfaces). Output lives in `.project/project.json → theme`.
 
-**Keywords**: design tokens, theme, colors, typography, spacing, breakpoints, dark mode, light mode, tailwind, css variables, design system, brand colors, font families, motion, animation, easing, transitions, interactions, focus ring, hover states
+**Keywords:** animation, motion, pack, spring, iOS, Apple, Material, Fluent, Carbon, glass, vibrancy, choreography, micro-interactions, easing, playful, transitions, hover, press, entrance, delight, styleguide, PDF, brand intake
 
-## Overview
+**Related skills:** `/frontend-design` · `/frontend-check`
 
-This command manages the `theme` section in `.project/project.json` which contains design tokens (colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars). It can automatically extract tokens from existing Tailwind or CSS configuration.
+## References — Tokens
 
-**Output location:** `.project/project.json` → `theme` section
+- `references/THEME_TEMPLATE.md` — Token categories, naming conventions, JSON schema, Read/Write protocol
+- `references/phase-1-action-select.md` — Action selection menus (Tokens + Motion routes)
+- `../shared/DASHBOARD.md` — project.json full schema
+- `../shared/DESIGN.md` — Color advice, typography, motion anti-patterns, glass surface rules
+- `../shared/BACKLOG.md` — Backlog lifecycle protocol
+- External: `vercel-labs/web-interface-guidelines` — setup-context for Create route (see `references/route-create.md § Step 0`)
 
-**References:**
+## References — Motion
 
-- `skills/frontend-tokens/references/THEME_TEMPLATE.md` — Token categories and naming conventions
-- `skills/shared/DESIGN.md` — Anti-patterns, OKLCH color advice, typography, motion, interaction states
-
-## When to Use
-
-- Setting up a design system for a new project
-- Viewing or updating existing design tokens
-- Extracting tokens from Tailwind/CSS config
-- Adding or adjusting dark/light mode
-
----
-
-## Theme JSON Schema
-
-The `theme` section in `project.json` follows this schema:
-
-```json
-{
-  "colors": {
-    "main": [{ "token": "dark", "value": "#hex", "usage": "description" }],
-    "accent": [
-      { "token": "accent-primary", "value": "#hex", "usage": "description" }
-    ],
-    "semantic": [
-      { "token": "success", "value": "#hex", "usage": "description" }
-    ]
-  },
-  "typography": {
-    "families": {
-      "heading": "Font, fallback",
-      "body": "Font, fallback",
-      "mono": "Font, fallback"
-    },
-    "sizes": [
-      {
-        "token": "text-display",
-        "size": "3rem",
-        "lineHeight": "1.1",
-        "usage": "Hero headings"
-      },
-      {
-        "token": "text-title-l",
-        "size": "2rem",
-        "lineHeight": "1.2",
-        "usage": "Page titles"
-      },
-      {
-        "token": "text-body-m",
-        "size": "1rem",
-        "lineHeight": "1.5",
-        "usage": "Body text"
-      }
-    ]
-  },
-  "spacing": {
-    "base": "4px",
-    "scale": [{ "token": "spacing-4", "value": "16px", "usage": "description" }]
-  },
-  "breakpoints": [
-    { "token": "screen-md", "value": "768px", "target": "Tablets" }
-  ],
-  "borderRadius": [
-    { "token": "rounded-md", "value": "0.375rem", "usage": "description" }
-  ],
-  "shadows": [{ "token": "shadow-md", "value": "...", "usage": "Cards" }],
-  "motion": {
-    "durations": [
-      {
-        "token": "duration-fast",
-        "value": "200ms",
-        "usage": "Tooltip, hover state"
-      }
-    ],
-    "easings": [
-      {
-        "token": "ease-out",
-        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
-        "usage": "Elements entering"
-      }
-    ]
-  },
-  "interactions": {
-    "focusRing": {
-      "width": "2px",
-      "style": "solid",
-      "color": "var(--color-accent-primary)",
-      "offset": "2px"
-    },
-    "hover": {
-      "transition": "var(--duration-fast) var(--ease-out)",
-      "transform": "none"
-    },
-    "active": { "transform": "scale(0.98)" }
-  },
-  "modes": { "light": ":root { css }", "dark": ".dark { css }" },
-  "cssVars": ":root { full css vars export }"
-}
-```
-
-See `shared/DASHBOARD.md` for the complete `project.json` schema with all sections.
-
----
-
-## Read/Write Protocol
-
-### Reading
-
-1. Read `.project/project.json`
-2. Parse as JSON
-3. Use `theme` section (may be empty/undefined)
-
-### Writing
-
-1. Read `.project/project.json` (or create new with empty schema if it doesn't exist)
-2. Parse JSON
-3. Mutate ONLY the `theme` section (do NOT overwrite other sections)
-4. Write back as `JSON.stringify(data, null, 2)`
-
-### Creating a new file
-
-If `.project/project.json` does not exist, create with the empty schema from `shared/DASHBOARD.md`:
-
-```json
-{
-  "concept": {
-    "name": "",
-    "pitch": "",
-    "conceptFile": "project-seed.md",
-    "content": ""
-  },
-  "theme": {},
-  "stack": {
-    "framework": "",
-    "language": "",
-    "styling": "",
-    "db": "",
-    "auth": "",
-    "hosting": "",
-    "packages": []
-  },
-  "data": { "entities": [] },
-  "endpoints": [],
-  "decisions": []
-}
-```
-
-Then populate the `theme` section with the generated tokens.
+- `references/motion/packs.md` — Pack definitions + source credits (source of truth)
+- `references/motion/route-create.md` — Pick pack
+- `references/motion/route-customize.md` — Axis-by-axis customisation
+- `references/motion/route-apply.md` — Emit CSS vars to codebase
+- `references/motion/ios-easings.md` — Apple iOS/macOS easing curves (Apple pack)
+- `references/motion/material-motion.md` — Material Design 3 curves + duration scale (Standard pack)
+- `references/motion/fluent-motion.md` — Microsoft Fluent 2 curves (Customize opt-in)
+- `references/motion/carbon-motion.md` — IBM Carbon entrance/exit curves (Customize opt-in)
+- `references/motion/web-baseline.md` — Linear/GitHub/Vercel curves (Subtle pack)
+- `references/motion/spring-math.md` — Spring physics conversion + library mapping
+- `references/motion/choreography.md` — Named compositions per pack
+- `references/motion/preview-template.html` — Preview HTML template
 
 ---
 
 ## State Machine
 
-```mermaid
-stateDiagram-v2
-    [*] --> PREFLIGHT: /theme invoked
-
-    PREFLIGHT --> ACTION_SELECT: validation pass
-    PREFLIGHT --> ERROR: validation fail
-
-    ACTION_SELECT --> CREATE: "Create"
-    ACTION_SELECT --> VIEW: "View"
-    ACTION_SELECT --> UPDATE: "Update"
-    ACTION_SELECT --> EXTRACT: "Extract"
-    ACTION_SELECT --> MODES: "Modes"
-    ACTION_SELECT --> DELETE: "Delete"
-
-    CREATE --> CONFIRM: all steps complete
-    VIEW --> [*]: display only (no state change)
-    UPDATE --> CONFIRM: changes ready
-    EXTRACT --> CONFIRM: tokens parsed
-    MODES --> CONFIRM: mode configured
-    DELETE --> CONFIRM: user confirmed
-
-    CONFIRM --> POSTFLIGHT: user confirms "Yes"
-    CONFIRM --> ACTION_SELECT: user selects "Adjust"
-    CONFIRM --> [*]: user selects "Cancel"
-
-    POSTFLIGHT --> COMPLETE: validation pass
-    POSTFLIGHT --> RECOVER: validation fail
-
-    COMPLETE --> [*]
-
-    ERROR --> RECOVER
-    RECOVER --> PREFLIGHT: retry
-    RECOVER --> [*]: abort
 ```
+[*] → PREFLIGHT
 
-**State Descriptions:**
+PREFLIGHT → ACTION_SELECT   (pass)
+PREFLIGHT → ERROR           (fail)
 
-- **PREFLIGHT**: Validate resources and dependencies
-- **ACTION_SELECT**: User chooses CRUD operation
-- **CREATE/UPDATE/EXTRACT/MODES/DELETE**: Execute selected operation
-- **VIEW**: Read-only display (no state mutation)
-- **CONFIRM**: User reviews and confirms changes
-- **POSTFLIGHT**: Validate output
-- **COMPLETE**: Success, prepare handoff
-- **ERROR/RECOVER**: Handle failures
+ACTION_SELECT → TOKENS_CREATE         (route: Create)
+ACTION_SELECT → TOKENS_VIEW           (route: View)
+ACTION_SELECT → TOKENS_STYLEGUIDE     (route: Extract from styleguide — PDF / image / URL)
+ACTION_SELECT → TOKENS_UPDATE         (routes: Update / Extract from code / Modes / Delete)
+ACTION_SELECT → TOKENS_FILL_IN        (route: Fill-In — missing sections)
+ACTION_SELECT → MOTION_CREATE      (route: Motion Pack — pick pack)
+ACTION_SELECT → MOTION_CUSTOMIZE   (route: Motion — axis-by-axis)
+ACTION_SELECT → MOTION_PREVIEW     (route: Motion — generate preview HTML)
+ACTION_SELECT → MOTION_APPLY       (route: Motion — emit CSS vars)
+ACTION_SELECT → MOTION_VIEW        (route: Motion — display pack summary)
+ACTION_SELECT → MOTION_DELETE      (route: Motion — remove pack)
+
+TOKENS_* / MOTION_* → POSTFLIGHT → COMPLETE → [*]
+TOKENS_CREATE → MOTION_CREATE         (optional inline handoff via Step 9 — skips ACTION_SELECT)
+VIEW / MOTION_VIEW / MOTION_PREVIEW → [*]   (read-only, no state change)
+POSTFLIGHT → RECOVER → PREFLIGHT   (on failure)
+```
 
 ---
 
-## Workflow
-
-### PHASE 0: Pre-flight Validation
-
-**Run these checks BEFORE the workflow starts.**
+## PHASE 0: Pre-flight Validation
 
 ```
 PRE-FLIGHT CHECK
 ════════════════════════════════════════════════
 ```
 
-**1. Directory Check**
+1. **Directory** — verify `.project/` exists or create it.
+   → `Directory: [✓|✗] .project/ — [exists | created | error]`
+2. **Session** — read `.project/session/devinfo.json`.
+   → `Session: [✓] [New session | Continuing from {skill}]`
+3. **Conflict** (Create/Update) — read `.project/project.json` → check `theme` section.
+   → `Conflicts: [✓ empty | ⚠ has data | ✗ file missing]`
+   **Setup context age** (all routes except Create): if `theme.setupContext[]` has an entry with `appliedBy` starting with `"frontend-tokens@"`, compute `now − fetchedAt`. If > 180 days → print one non-blocking line: `⚠ Setup context is from {date} ({n} days old). Vercel guidelines may have evolved — consider re-running Create or syncing manually.`
+4. **Backlog** — per `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `type === "THEME" && transition === "defining"`.
+   → `Backlog: [✓ Task picked up — {taskName} | ✓ Standalone run]`
+5. **Pack rename check** — if `theme.motion.pack === "expressive"`:
+   > "Your project uses the old pack name `expressive`. This has been renamed to `apple`. Rename now? (Yes — updates only `theme.motion.pack`, all other keys stay identical)"
+   > If confirmed: write `theme.motion.pack = "apple"` and continue.
+6. **MIGRATE_OFFER** — if `theme.motion.pack` is absent but `motion.durations[]` or `motion.easings[]` exist:
+   > "Your project has base motion tokens but no animation pack. Pick a pack now?
+   > Options: Yes — let me recommend / No, start fresh / Skip (keep pack-less)"
 
-```bash
-# Verify .project/ exists or can be created
-```
-
-```
-Directory: [✓|✗] .project/ - [exists|created|error]
-```
-
-**2. Session Check**
-
-```bash
-# Check .project/session/devinfo.json
-```
-
-```
-Session: [✓|✗] [New session | Continuing from {skill}]
-Handoff: [✓|✗] [data available | not applicable]
-```
-
-**3. Conflict Check (for Create/Update)**
-
-```bash
-# Read .project/project.json → check if theme section is already populated
-```
-
-```
-Conflicts: [✓|✗] project.json theme - [empty | has data (will warn) | file missing]
-```
-
-**4. Backlog Task Check**
-
-See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `type === "THEME" && transition === "defining"`.
-
-→ Show: `Backlog: ✓ Task picked up — {taskName}` or `Backlog: ✓ No matching task in backlog (standalone run)`
-
-**Pre-flight Summary:**
+   If user picks "Yes — let me recommend":
+   - Strong signals (use directly): `ease-ios-*` or spring tokens → Apple · `ease-md-*` or Material tokens → Standard · `ease-fluent-*` → Customize from Fluent · `ease-carbon-*` → Customize from Carbon.
+   - Weak signals (ease-out/in/in-out alone are Tailwind defaults — they don't reveal project character): ask one question before recommending:
+     > "What character fits the project? Restrained corporate / Premium with motion / Playful / Material-style / Don't know — show me options."
+   - Map: Restrained → Subtle · Premium → Apple · Playful → Playful · Material → Standard · Don't know → show pack summary table from `references/motion/packs.md`.
+7. **Stack detection** — read `package.json` → detect motion library:
+   - `motion` or `framer-motion` → `$HAS_MOTION_LIB=true`, `$STACK_TYPE=motion.dev`
+   - `motion-v` → `$STACK_TYPE=motion-v`
+   - `svelte` → `$STACK_TYPE=svelte`
+   - None → `$HAS_MOTION_LIB=false`, `$STACK_TYPE=css`
 
 ```
 ════════════════════════════════════════════════
-PRE-FLIGHT RESULT
-════════════════════════════════════════════════
-Directory:  [✓ PASS | ✗ FAIL]
-Session:    [✓ PASS | ✗ FAIL]
-Conflicts:  [✓ PASS | ⚠ WARNING | ✗ FAIL]
-Backlog:    [✓ Task picked up — {taskName} | ✓ Standalone run]
-
-Status: [→ Ready to proceed | ⚠ Warning: {issue} | ✗ Cannot proceed]
+Status: [→ Ready | ⚠ Warning: {issue} | ✗ Cannot proceed]
 ════════════════════════════════════════════════
 ```
 
-**On Failure:**
-
-**AskUserQuestion:**
-
-```yaml
-header: "Pre-flight Failed"
-question: "Pre-flight check failed: {reason}. How would you like to proceed?"
-options:
-  - label: "Fix and retry (Recommended)", description: "Resolve the issue and try again"
-  - label: "Continue anyway", description: "Ignore warning and continue"
-  - label: "Cancel", description: "Stop workflow"
-multiSelect: false
-```
+On failure → AskUserQuestion: `"Fix and retry (Recommended)"` / `"Continue anyway"` / `"Cancel"`.
 
 ---
 
-### PHASE 1: Action Selection
+## PHASE 1: Action Selection
 
-**First check if project.json has a populated theme section:**
-
-```bash
-# Read .project/project.json → parse JSON → check theme section
-```
-
-**Design Principles Context (optional):**
-
-Check `.project/project.json` → `design.principles`. If principles exist, show them as context before action selection:
-
-```
-DESIGN PRINCIPLES AVAILABLE
-════════════════════════════════════════════════════════════════
-- {principle.name}: {principle.description}
-- {principle.name}: {principle.description}
-════════════════════════════════════════════════════════════════
-
-These principles are taken into account as suggestions for token choices.
-```
-
-Principles are advisory — use them to inform suggestions (e.g., if "Mobile-first" exists, suggest mobile-optimized breakpoints), but don't enforce.
-
-**If theme section contains DATA (not empty):**
-
-**Completeness check — run before the action menu is shown:**
-
-Check which of the 10 expected sections are present in `theme`. A section counts as "present" if the key exists AND is not an empty object `{}`, empty array `[]`, or empty string `""`.
-
-```
-THEME STATUS
-════════════════════════════════════════════════
-  [✓|✗] colors
-  [✓|✗] typography
-  [✓|✗] spacing
-  [✓|✗] breakpoints
-  [✓|✗] borderRadius
-  [✓|✗] shadows
-  [✓|✗] motion (durations + easings — base layer only)
-  [✓|✗] interactions
-  [✓|✗] modes
-  [✓|✗] cssVars
-
-Complete: {N}/10 sections
-Note: motion.pack / motion.spring / motion.choreography / surfaces are managed by /frontend-animations — not counted here
-════════════════════════════════════════════════
-```
-
-**If all sections present (N = 10):**
-
-**AskUserQuestion:**
-
-```yaml
-header: "Theme"
-question: "What would you like to do?"
-options:
-  - label: "View", description: "Show current design tokens"
-  - label: "Update", description: "Modify existing tokens"
-  - label: "Modes", description: "Manage dark/light mode"
-  - label: "Delete", description: "Remove theme data"
-multiSelect: false
-```
-
-**If sections are missing (N < 10):**
-
-**AskUserQuestion:**
-
-```yaml
-header: "Theme"
-question: "What would you like to do? (⚠ {10-N} sections missing: {missing_list})"
-options:
-  - label: "Fill in (Recommended)", description: "Add missing sections: {missing_list}"
-  - label: "View", description: "Show current design tokens"
-  - label: "Update", description: "Modify existing tokens"
-  - label: "Modes", description: "Manage dark/light mode"
-multiSelect: false
-```
-
-**If theme section is EMPTY or project.json does not exist:**
-
-**AskUserQuestion:**
-
-```yaml
-header: "Theme"
-question: "No theme found. What would you like to do?"
-options:
-  - label: "Create (Recommended)", description: "New theme with guided setup"
-  - label: "Extract", description: "Retrieve tokens from existing Tailwind/CSS"
-  - label: "Explain question", description: "Explain options"
-multiSelect: false
-```
+> **Todo**: Read `.claude/skills/frontend-tokens/references/phase-1-action-select.md`
 
 ---
 
-### PHASE 2: Action Execution
+## PHASE 2: Action Execution
 
-#### Route: Fill In (Missing Sections)
+### Tokens routes
 
-Targets only the missing sections. For each missing section, run the corresponding step from the Create route:
+#### Route: Fill-In (Missing Sections)
 
-| Missing Section | → Run Step                                                               |
-| --------------- | ------------------------------------------------------------------------ |
-| colors          | Step 1: Colors                                                           |
-| typography      | Step 2: Typography                                                       |
-| spacing         | Step 3: Spacing                                                          |
-| breakpoints     | Step 4: Breakpoints                                                      |
-| modes           | Step 5: Dark Mode                                                        |
-| motion          | Step 6: Motion                                                           |
-| interactions    | Step 7: Interactions                                                     |
-| borderRadius    | Generate defaults (0.125rem, 0.25rem, 0.375rem, 0.5rem, 0.75rem, 9999px) |
-| shadows         | Generate defaults (sm, md, lg, xl + glow with accent color)              |
-| cssVars         | Auto-generate from all present token data                                |
-
-Skip already-present sections. After filling in all missing sections:
-
-1. Regenereer `cssVars` om nieuw toegevoegde tokens te bevatten
-2. → Go to PHASE X: Post-flight Validation
-3. → Go to X.6: Theme Infrastructure Sync
-4. → Go to PHASE Y: Website Sync
-
----
+> **Todo**: Read `.claude/skills/frontend-tokens/references/route-fill-in.md`
 
 #### Route: Create (New Theme)
 
 > **Todo**: Read `.claude/skills/frontend-tokens/references/route-create.md`
 
----
-
 #### Route: View
 
 > **Todo**: Read `.claude/skills/frontend-tokens/references/route-view.md`
-
----
 
 #### Token Drift Check (shared helper)
 
 > **Todo**: Read `.claude/skills/frontend-tokens/references/token-drift.md`
 
----
+#### Route: Extract from styleguide (PDF / image / URL)
 
-#### Routes: Update, Extract, Modes, Delete
+> **Todo**: Read `.claude/skills/frontend-tokens/references/route-styleguide.md`
+
+#### Routes: Update, Extract from code, Modes, Delete
 
 > **Todo**: Read `.claude/skills/frontend-tokens/references/route-secondary.md`
 
+### Motion routes
+
+#### Route: Create / Pick Pack
+
+> **Todo**: Read `.claude/skills/frontend-tokens/references/motion/route-create.md`
+
+#### Route: Customize (axis-by-axis)
+
+> **Todo**: Read `.claude/skills/frontend-tokens/references/motion/route-customize.md`
+
+#### Route: Preview
+
+Generate `.project/animation-preview.html` from `references/motion/preview-template.html` populated with current `theme.motion` + `theme.surfaces` values. Open path for user.
+
+> **Todo**: Read `.claude/skills/frontend-tokens/references/motion/preview-template.html` and populate with current values.
+
+#### Route: Apply to codebase
+
+> **Todo**: Read `.claude/skills/frontend-tokens/references/motion/route-apply.md`
+
+#### Route: View (Motion)
+
+Display current pack state:
+
+```
+Pack:           {name}
+Source:         {source — see motion/packs.md}
+Axes:           expressiveness={x} · springiness={x} · tempo={x} · surfaces={x}
+Springs:        {n} tokens
+Easings:        {list}
+Choreography:   entrance={x} · exit={x} · success={x} · attention={x} · error={x}
+Glass surfaces: enabled={true/false} · blur={x} · vibrancy={true/false}
+Stack:          {stack type}
+```
+
+#### Route: Delete (Motion)
+
+Reset `motion.pack = ""`, `motion.axes = {}`, `motion.spring = []`, `motion.choreography = {}`, `surfaces.glass.enabled = false`. Prompt confirmation first.
+
 ---
 
-### PHASE X: Post-flight Validation + X.6 Theme Infrastructure Sync
+## PHASE X: Post-flight Validation + X.6 Theme Infrastructure Sync
 
 > **Todo**: Read `.claude/skills/frontend-tokens/references/postflight-validation.md`
 
@@ -466,133 +208,44 @@ Skip already-present sections. After filling in all missing sections:
 
 ## Output Format
 
-**After successful Create/Update/Extract/Modes**, if PHASE 0 identified a backlog task:
-
-See `shared/BACKLOG.md → Lifecycle Protocol → Write`. Set `status: "DONE"`, remove `transition`.
-
-**After successful action:**
+After successful Create/Update/Extract/Modes:
 
 ```
 THEME [CREATED/UPDATED/DELETED]
 
 Location: .project/project.json (theme section)
 
-| Category | Tokens |
-|----------|--------|
-| Colors | {N} (main: {n}, accent: {n}, semantic: {n}) |
-| Typography | {N} (families: {n}, sizes: {n}) |
-| Spacing | {N} |
-| Breakpoints | {N} |
-| Border Radius | {N} |
-| Shadows | {N} |
-| Motion | {N} (durations: {n}, easings: {n}) |
-| Interactions | {N} (focusRing, hover, active) |
-| Modes | {light/dark/both} |
-| CSS Vars | {present/missing} |
+| Category      | Tokens                                                      |
+| ------------- | ----------------------------------------------------------- |
+| Colors        | {N} (main: {n}, accent: {n}, semantic: {n})                 |
+| Typography    | {N} (families: {n}, sizes: {n})                             |
+| Spacing       | {N}                                                         |
+| Breakpoints   | {N}                                                         |
+| Border Radius | {N}                                                         |
+| Shadows       | {N}                                                         |
+| Motion        | {N} (durations: {n}, easings: {n})                          |
+| Motion Pack   | {pack name / none} (springs: {n}, choreography: {n})        |
+| Surfaces      | glass={enabled/disabled}                                    |
+| Interactions  | {N} (focusRing, hover, active)                              |
+| Modes         | {light/dark/both}                                           |
+| CSS Vars      | {present/missing}                                           |
 
-{If backlog task was found and marked DONE:}
-Backlog: ✓ Task "{taskName}" → DONE
-
-Theme tokens ready in project.json for downstream consumption.
+{Backlog: ✓ Task "{taskName}" → DONE}
 
 Next steps:
-  1. /frontend-animations → set an animation pack (iOS/Apple, spring physics, glass surfaces)
-  2. /frontend-design {page} → build a page with these tokens
-  3. /frontend-convert → convert a design with these tokens
-  4. /frontend-tokens → view or update tokens later
+  1. /frontend-design {page} → build a page with these tokens
+  2. /frontend-design → convert a sketch or design with these tokens
+  3. /frontend-tokens → motion pack → set spring physics, choreography, glass (if not yet done)
+  4. /frontend-tokens → Extract from styleguide (if you have a brand PDF or URL with remaining tokens)
   5. /frontend-check → check performance and SEO
   6. /frontend-check --scope=a11y → accessibility audit
 ```
 
 ---
 
-## Error Recovery
-
-> See also: `skills/frontend-tokens/references/validation.md` for general recovery patterns.
-
-### Extraction Failures
-
-| Error                      | Recovery                                  |
-| -------------------------- | ----------------------------------------- |
-| Config file not found      | Offer manual path input                   |
-| Parse error in config      | Show raw content, ask for format hint     |
-| No tokens found            | Offer defaults + manual input             |
-| Tailwind v3 vs v4 mismatch | Detect version, adjust parser accordingly |
-
-### Write Failures
-
-| Error                   | Recovery                           |
-| ----------------------- | ---------------------------------- |
-| Permission denied       | Suggest alternative path           |
-| Disk full               | Warn, suggest cleanup              |
-| Directory not creatable | Offer manual creation instructions |
-| JSON parse error        | Backup corrupt file, create new    |
-
-### Validation Failures
-
-| Error            | Auto-fix              | Manual                       |
-| ---------------- | --------------------- | ---------------------------- |
-| Invalid hex code | Suggest closest valid | Show invalid, ask correction |
-| Missing section  | Add with defaults     | Ask for values               |
-| Empty value      | Use default           | Ask for value                |
-| CSS syntax error | Re-generate cssVars   | Show error location          |
-| Invalid JSON     | Re-generate file      | Show parse error             |
-
-> **Note:** Rollback is handled by Claude Code's built-in "Rewind" function.
-
----
-
-## Cross-Skill Integration
-
-### Output Contract (theme → wireframe)
-
-This skill guarantees at completion:
-
-- `.project/project.json` contains a populated `theme` section
-- `theme` contains valid sections: colors, typography, spacing, breakpoints, borderRadius, shadows, modes, cssVars
-- `theme.cssVars` contains a syntactically valid CSS variables string
-- Handoff data available in devinfo
-
-### Consumption by Other Skills
-
-Other skills consume theme data as follows:
-
-- **CSS variables needed:** Read `project.json` → `theme.cssVars`
-- **Structured tokens needed:** Read `project.json` → `theme.colors`, `theme.typography`, etc.
-- **Mode-specific CSS:** Read `project.json` → `theme.modes.light` / `theme.modes.dark`
-
----
-
-## Resources
-
-- `skills/frontend-tokens/references/THEME_TEMPLATE.md` - Reference for token categories and naming conventions
-- `skills/shared/DASHBOARD.md` - project.json schema and merge strategy
-- `skills/frontend-tokens/references/validation.md` - Pre/post-flight validation templates
-- `skills/shared/DEVINFO.md` - Session state tracking
-
----
-
 ## Restrictions
 
-This command must **NEVER**:
-
-- Create a theme without confirmation
-- Overwrite an existing theme without a warning
-- Guess tokens without a source (config or user input)
-- Skip post-flight validation
-- Overwrite other sections in project.json (only mutate `theme`)
-- Restyle website code without explicit user confirmation
-- Perform a restyle without first scanning for hardcoded values
-
-This command must **ALWAYS**:
-
-- Run pre-flight validation
-- Use AskUserQuestion for all choices
-- Show current values during updates
-- Show a diff preview for changes
-- Ask for confirmation before destructive actions
-- Run post-flight validation
-- Run the Website Sync check after Create/Update (PHASE Y)
-- Update DevInfo on phase transitions
-- JSON integrity check: other sections unchanged after write
-- Follow `shared/BACKLOG.md → Lifecycle Protocol` for backlog tasks (read on PHASE 0, write status on success, no abort write needed)
+- Never create or overwrite a theme without user confirmation
+- Never skip pre-flight or post-flight validation
+- Only mutate `theme` in project.json — leave all other sections untouched
+- Run Website Sync (PHASE Y) after Create/Update; follow Backlog lifecycle protocol throughout

@@ -7,41 +7,60 @@ Only if "Token Architecture" is selected. Static code analysis — no Playwright
 **Step 1: Project.json check**
 
 ```bash
-# Read .project/project.json → check theme.colors.semantic[]
+# Read .project/project.json → check theme section
 ```
 
-If `project.json` is missing or `theme` is empty: stop scan with message `"No design tokens found in project.json — Token Architecture scan not runnable. Run /frontend-tokens first."` If `theme.colors.semantic[]` is present: store as `$SEMANTIC_TOKENS`.
+Three states:
 
-**Step 2: Scan CSS files for semantic raw hex**
+- **`.project/project.json` missing**: stop with `"No project workspace found — run /core-setup first."` Skip all sub-checks.
+- **`project.json` present, `theme` empty**: T101-T108 still run against source files. Reason: `shared/TOKENS.md § Fallback Values` defines fallback CSS vars that `dev-build` also uses on empty-theme projects — hardcoded values are therefore still violations. Skip TA001 only (requires semantic CSS vars). Show: `"Theme empty — auditing against fallback tokens (TA001 skipped, requires project theme)."`
+- **`theme` populated**: all checks run (T101-T108 + TA001). Continue.
 
-Grep CSS files (`.css`, `.scss`, globals, theme.css) for semantic token names with raw hex values:
+**Step 2: Anti-Hardcoding Violations scan (T101-T111)**
+
+See `shared/TOKENS.md § Anti-Hardcoding Violations` for the canonical rule table (T101-T111) and `§ Token → Class Mapping` for fix suggestions.
+
+Run each pattern against `.tsx`, `.jsx`, `.vue`, `.svelte`, `.css`, `.scss` (skip test files, JSON, config files — per `shared/TOKENS.md` check scope):
+
+| Rule | Grep pattern                                                                   | Files        |
+| ---- | ------------------------------------------------------------------------------ | ------------ |
+| T101 | `#[0-9a-fA-F]{3,8}` in className/JSX/CSS                                       | source + CSS |
+| T102 | `bg-\[#`, `text-\[#`, `border-\[#`                                             | source       |
+| T103 | `style=\{\{.*color.*#`                                                         | source       |
+| T104 | `[pmg]-\[\d+px\]`, `gap-\[\d+px\]`, `space-[xy]-\[\d+px\]`                     | source       |
+| T105 | `oklch(`, `hsl(`, `rgb(` literals                                              | source + CSS |
+| T106 | `transition:.*\d+ms`, `duration.*\d+ms` literals                               | source + CSS |
+| T107 | `cubic-bezier(` literals                                                       | source + CSS |
+| T108 | `backdrop-filter` when `theme.surfaces.glass.enabled !== true` in project.json | source + CSS |
+| T109 | `text-\[\d+`, `leading-\[\d+`, `tracking-\[`, `font-\[\d+`                     | source       |
+| T110 | `rounded-\[\d+`                                                                | source       |
+| T111 | `shadow-\[`                                                                    | source       |
+
+Per finding: emit canonical ID, file:line, matched pattern, severity, and fix from `shared/TOKENS.md § Token → Class Mapping`.
+
+**Step 3: CSS Architecture scan (TA001)**
+
+See `shared/TOKENS.md § CSS Architecture Violations` for TA001 definition.
+
+Grep `.css`, `.scss`, `globals.*`, `theme.css` for semantic CSS variables defined with raw values instead of `var()` references:
 
 ```bash
-# For each token in $SEMANTIC_TOKENS:
-# grep -n "--color-{token}:\s*#\|--color-{token}:\s*oklch\|--color-{token}:\s*rgb"
+grep -n "--color-[a-z].*:\s*\(#\|oklch\|rgb\|hsl\)" {css-files}
 ```
 
-- **T001 (HIGH)**: semantic CSS variable has raw hex instead of `var()` reference
-  `"--color-{token}: {raw-value} — use var(--color-{nearest-primitive})"`
-
-**Step 3: Scan component files for hardcoded colors**
-
-Grep `src/**/*.{tsx,jsx,astro,vue}` for hardcoded color values that bypass the token system:
-
-- Arbitrary Tailwind: `bg-[#hex]`, `text-[#hex]`, `border-[#hex]`
-- Inline styles: `style={{ color: '#hex', background: '#hex' }}`
-
-- **T101 (MEDIUM)**: hardcoded color value in component
-  `"{file}:{line} — {pattern}: use var(--color-{nearest-token}) or theme class"`
-  Only report if `project.json` has a populated theme.
+- **TA001 (HIGH)**: semantic CSS variable uses raw color value instead of a `var(--color-{primitive})` reference
+  `"{file}:{line} — --color-{token}: {raw-value} — use var(--color-{nearest-primitive})"`
 
 **Token Architecture Check Output:**
 
 ```
 TOKEN ARCHITECTURE
-  Token source:     [.project/project.json (N semantic tokens)]
-  CSS compliance:   [N/M semantic tokens use var() refs | N violations]
-  Hardcoded colors: [N components with hardcoded values | clean]
+  Token source:        [.project/project.json (theme present) | not available]
+  Color violations:    [T101-T103, T105 — N findings | clean]
+  Spacing violations:  [T104 — N findings | clean]
+  Motion literals:     [T106-T107 — N findings | clean]
+  Glass-without-flag:  [T108 — N findings | clean]
+  CSS architecture:    [TA001 — N findings | clean]
   Findings: [N] (H:[N] M:[N])
 ```
 

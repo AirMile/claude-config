@@ -8,7 +8,30 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING**: Renamed `concept` → `seed` throughout the dashboard, `project.json` schema, and all skill references. `project.json#concept` → `#seed`, `backlog.html#data.flags.hasConcept/conceptPath` → `hasSeed/seedPath`, `.project/project-concept.md` → `project-seed.md`. All skill references updated (`core-setup`, `shared/SEED.md`, `shared/SYNC.md`, `project-seed`, `project-brainstorm`, `project-critique`, `project-backlog`, `dev-define`, `game-define`, `project-todo`). Migration script: `scripts/migrate-concept-to-seed.cjs` (idempotent). Rationale: align data-field naming with the `/project-seed` skill.
+- `frontend-tokens` v4.0.0: **BREAKING** — merged `frontend-animations` into `frontend-tokens`. Motion Pack routes (pick pack, customize, preview, apply, view, delete) now live under `/frontend-tokens → Motion Pack`. All animation references moved to `skills/frontend-tokens/references/motion/`. `frontend-animations` skill removed. Auto-trigger via `THEME/defining` backlog transition now also covers motion pack setup. PHASE 0 expanded with pack-rename check, MIGRATE_OFFER, and stack detection. No delta-write boundary between skills anymore — `frontend-tokens` owns the full `theme` object. All cross-references updated.
+
 ### Added
+
+- `frontend-design` v2.11.0: Design route Build-fase krijgt external setup context (identiek aan Convert Step 0 — WebFetch Vercel-guidelines als JSX-bias). Build-conditioneel (Capture/Brief skippen de fetch). Schrijft `theme.setupContext[]` entry met `appliedBy: frontend-design@2.11.0` na succesvolle codegeneratie.
+- `frontend-tokens` v3.8.0: PHASE 0 staleness-check — niet-blokkerende waarschuwing wanneer `theme.setupContext` entry ouder dan 180 dagen is. Fires op alle routes behalve Create.
+- `frontend-design` v2.10.0: Convert route now includes Step 0 — WebFetch of `vercel-labs/web-interface-guidelines` as JSX-level bias context (tabular-nums, focus-visible, no transition:all, curly quotes, aria-label on icon buttons). Soft-fail on network error. DESIGN.md remains canon. Writes `theme.setupContext[]` entry on success.
+- `frontend-tokens` v3.7.1: traceability — Step 8 now appends-or-replaces `theme.setupContext[]` entry when Step 0 succeeded (`{source, url, fetchedAt, appliedBy}`). Summary block shows `Setup context` row. Schema documented in `shared/DASHBOARD.md`.
+- `frontend-tokens` v3.7.0: Create route now WebFetches `vercel-labs/web-interface-guidelines` as bias context (Step 0) for generating colors/typography/motion/interaction defaults. Soft-fail on network error. DESIGN.md remains project canon; Vercel serves as external authority only at setup time.
+- `frontend-tokens` v3.6.0: condensed `SKILL.md` from 598 → 166 lines via lazy-loading. Moved PHASE 1 action-selection (3 menu variants + completeness check) to new `references/phase-1-action-select.md`, Fill-In route to `references/route-fill-in.md`, JSON schema + Read/Write protocol to `references/THEME_TEMPLATE.md`. Removed Mermaid state machine, duplicate Resources blocks, verbose ALWAYS/NEVER list, and Output Contract prose. Behaviour and all 7 routes unchanged.
+- `frontend-design` v2.9.0: merged `frontend-convert` into `frontend-design` as a lazy-loaded Convert route (`references/route-convert.md`). Existing design body moved to `references/route-design.md`. `SKILL.md` is now a thin router (~174 lines) that dispatches on visual-input detection vs spec-entity name. A design session never loads convert content and vice versa.
+- `frontend-design/references/route-design.md`: full design-spec workflow (Capture/Brief/Build) extracted from the old SKILL.md skeleton.
+- `frontend-design/references/route-convert.md`: full visual-conversion workflow from `frontend-convert`.
+- `frontend-design/references/convert-patch-detection.md`, `convert-generate-template.md`, `convert-verification-loop.md`, `convert-completion.md`: convert sub-references migrated from `frontend-convert/references/`.
+- `frontend-design/examples/`: conversion examples migrated from `frontend-convert/examples/`.
+
+### Removed
+
+- `frontend-convert` skill (49 skills total). All `/frontend-convert` entry points now resolve to `/frontend-design`.
+
+### Added (previous)
 
 - `frontend-animations`: new skill — animation pack management with five packs (None / Subtle / Standard / Apple / Playful), multi-source easings (Apple iOS · Material Design 3 · Fluent 2 · IBM Carbon · web baseline), spring physics tokens, named choreography compositions, and glass surface system. Writes `project.json#theme.motion.pack/spring/choreography/surfaces` via delta-write.
 - `frontend-animations/references/packs.md`: complete JSON deltas for all five packs with source credits per pack.
@@ -29,6 +52,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `frontend-animations/references/route-create.md`: Step 1.5 decision guide — five-question app-type prompt that suggests a pack and optional Customize step before the enum.
 
 ### Changed
+
+- `frontend-design/SKILL.md`: PHASE 0.3 router gains backlog-transition lookup (new Step 3) — named arguments matching a backlog card with `transition === "converting"` now auto-route directly to the Convert route, skipping the Mode A menu. Honors the board's "⌅ Convert from sketch" intent without requiring an extra interaction.
 
 - `shared/DASHBOARD.md`: `theme` schema extended with `motion.pack/axes/spring/choreography` and `surfaces`; merge strategy updated to DELTA-WRITE.
 - `frontend-tokens/SKILL.md`: completeness check notes `motion.pack` owned by `/frontend-animations`; Next steps updated.

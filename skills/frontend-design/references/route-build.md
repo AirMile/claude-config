@@ -1,8 +1,14 @@
 # Route: Build (In-Claude-Code Code Generation)
 
-Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. See `../shared/CODEGEN.md` for the shared code-gen patterns also used by `frontend-convert`.
+Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. See `../shared/CODEGEN.md` for the shared code-gen patterns also used by the Convert route.
 
 **Trigger:** only reachable if `$HAS_BUILD_CANDIDATES = true` (detected in PHASE 1).
+
+**External setup context (fires on Build entry):**
+
+> **Todo**: Read `.claude/skills/shared/VERCEL-CONTEXT.md` — follow the Load Protocol, then apply the guidelines as a bias layer in Step 7.
+
+---
 
 #### Step 0: Backlog task pickup
 
@@ -337,6 +343,21 @@ Store `$COMP_FEAT_COUNT = len($COMPOSITION.features)`, `$COMP_COMP_COUNT = len($
 Edit back to `backlog.html` (keep `<script>` tags intact, see `shared/BACKLOG.md → Lifecycle Protocol → Write`).
 
 Store block inventory counters as `$INV_NEW`, `$INV_UPDATED`, `$INV_CONFLICTS` for use in Step 11.
+
+**10d.2. Setup context traceability** (only if external context fetched successfully, i.e. `$VERCEL_CONTEXT ≠ false`):
+
+Read `.project/project.json` → append-or-replace entry in `theme.setupContext[]` (key on `appliedBy`):
+
+```json
+{
+  "source": "vercel-labs/web-interface-guidelines",
+  "url": "https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md",
+  "fetchedAt": "<ISO-8601>",
+  "appliedBy": "frontend-design@2.11.0"
+}
+```
+
+Write back. Skip if `$VERCEL_CONTEXT = false`.
 
 **10e. Gap-discovery** (always, regardless of verification status):
 

@@ -15,7 +15,7 @@ metadata:
 
 Unified check & fix hub for performance, SEO, AEO (AI search optimization), responsive design, darkmode, error states, smoke, and user flows. Scan on all axes, get a combined report, fix by priority, verify with before/after comparison.
 
-**Related skills:** `/frontend-design` · `/frontend-tokens` · `/frontend-convert` · `/core-setup`
+**Related skills:** `/frontend-design` · `/frontend-tokens` · `/core-setup`
 
 ## References
 
@@ -133,7 +133,7 @@ options:
   - label: "Error states", description: "404, offline, slow-3G UI rendering"
   - label: "Smoke", description: "Quick multi-route health check (200 + render + no errors)"
   - label: "Flow", description: "Execute design.flows[] from project.json (navigation journeys)"
-  - label: "Token Architecture", description: "Audit design token usage — semantic var() refs, hardcoded colors"
+  - label: "Token Architecture", description: "Audit T101-T111 from shared/TOKENS.md (color, spacing, motion, glass, typography, radius, shadow) + TA001 (CSS-var raw hex in :root)"
   - label: "Dark mode compliance", description: "Static code audit — dark: classes present where dark mode is configured"
   - label: "Responsive coverage", description: "Static code audit — responsive prefixes present in multi-viewport components"
   - label: "Motion", description: "Animation pack compliance — motion tokens used, glass-without-flag, missing transitions, reduced-motion fallbacks"
@@ -486,9 +486,15 @@ FLOW
   Findings: [N]
 
 TOKEN ARCHITECTURE
-  Token source:     [project.json theme (N semantic tokens) | not available]
-  CSS compliance:   [N/N semantic tokens correct | N violations]
-  Hardcoded colors: [N components | clean]
+  Token source:        [project.json theme (N semantic tokens) | not available]
+  Color violations:    [T101-T103, T105 — N findings | clean]
+  Spacing violations:  [T104 — N findings | clean]
+  Motion literals:     [T106-T107 — N findings | clean]
+  Glass-without-flag:  [T108 — N findings | clean]
+  Typography:          [T109 — N findings | clean]
+  Radius:              [T110 — N findings | clean]
+  Shadow:              [T111 — N findings | clean]
+  CSS architecture:    [TA001 — N findings | clean]
   Findings: [N] (H:[N] M:[N])
 
 DARK MODE COMPLIANCE

@@ -6,7 +6,7 @@ Skills that generate UI code MUST use token names — never hardcoded color valu
 Token names are the stable contract. Values are supplied later by `/frontend-tokens`.
 
 > **Producer:** `/frontend-tokens` (writes `project.json#theme`)
-> **Consumers:** `dev-build`, `dev-verify`, `dev-refactor`, `dev-define`, `project-backlog`, `frontend-design`, `frontend-convert`, `frontend-check`
+> **Consumers:** `dev-build`, `dev-verify`, `dev-refactor`, `dev-define`, `project-backlog`, `frontend-design`, `frontend-check`
 
 ---
 
@@ -67,7 +67,7 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
-  /* iOS / Apple easings (Apple pack — /frontend-animations) */
+  /* iOS / Apple easings (Apple pack — /frontend-tokens) */
   --ease-ios-default: cubic-bezier(0.42, 0, 0.58, 1);
   --ease-ios-out: cubic-bezier(0.25, 0.1, 0.25, 1);
   --ease-ios-in: cubic-bezier(0.42, 0, 1, 1);
@@ -75,14 +75,14 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --ease-ios-snappy: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-ios-bouncy: cubic-bezier(0.5, 1.6, 0.4, 0.8);
 
-  /* Material Design 3 easings (Standard pack — /frontend-animations) */
+  /* Material Design 3 easings (Standard pack — /frontend-tokens) */
   --ease-md-emphasized: cubic-bezier(0.2, 0, 0, 1);
   --ease-md-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
   --ease-md-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
   --ease-md-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-md-legacy: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Material Design 3 duration scale (Standard pack — /frontend-animations) */
+  /* Material Design 3 duration scale (Standard pack — /frontend-tokens) */
   --duration-md-short2: 100ms;
   --duration-md-short3: 150ms;
   --duration-md-short4: 200ms;
@@ -97,16 +97,16 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --spring-md-effects-duration: 400ms;
   --spring-md-effects-bezier: cubic-bezier(0.34, 1.26, 0.64, 1);
 
-  /* Web baseline easings (Subtle pack — /frontend-animations) */
+  /* Web baseline easings (Subtle pack — /frontend-tokens) */
   --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-cubic-out: cubic-bezier(0.33, 1, 0.68, 1);
 
-  /* Fluent 2 / Carbon easings (Customize opt-in — /frontend-animations) */
+  /* Fluent 2 / Carbon easings (Customize opt-in — /frontend-tokens) */
   --ease-fluent-decelerate: cubic-bezier(0.1, 0.9, 0.2, 1);
   --ease-fluent-accelerate: cubic-bezier(0.7, 0, 1, 0.5);
   --ease-fluent-max: cubic-bezier(0.8, 0, 0.78, 1);
   --ease-fluent-easy-ease: cubic-bezier(0.33, 0, 0.67, 1);
-  /* Fluent 2 duration tokens (Customize opt-in — /frontend-animations) */
+  /* Fluent 2 duration tokens (Customize opt-in — /frontend-tokens) */
   --duration-fluent-ultra-fast: 50ms;
   --duration-fluent-faster: 100ms;
   --duration-fluent-fast: 150ms;
@@ -119,7 +119,7 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --ease-carbon-standard: cubic-bezier(0.2, 0, 0.38, 0.9);
   --ease-carbon-expressive: cubic-bezier(0.4, 0.14, 0.3, 1);
 
-  /* Spring CSS approximations (static-render fallbacks — /frontend-animations) */
+  /* Spring CSS approximations (static-render fallbacks — /frontend-tokens) */
   --spring-gentle-duration: 600ms;
   --spring-gentle-bezier: cubic-bezier(0.33, 1, 0.68, 1);
   --spring-smooth-duration: 500ms;
@@ -203,12 +203,12 @@ transitionDuration: {
   fast:    'var(--duration-fast)',
   normal:  'var(--duration-normal)',
   slow:    'var(--duration-slow)',
-  // Spring durations (Apple/Playful pack — /frontend-animations)
+  // Spring durations (Apple/Playful pack — /frontend-tokens)
   'spring-gentle': 'var(--spring-gentle-duration)',
   'spring-smooth': 'var(--spring-smooth-duration)',
   'spring-snappy': 'var(--spring-snappy-duration)',
   'spring-bouncy': 'var(--spring-bouncy-duration)',
-  // Material Design 3 duration scale (Standard pack — /frontend-animations)
+  // Material Design 3 duration scale (Standard pack — /frontend-tokens)
   'md-short2':       'var(--duration-md-short2)',
   'md-short3':       'var(--duration-md-short3)',
   'md-short4':       'var(--duration-md-short4)',
@@ -218,7 +218,7 @@ transitionDuration: {
   'md-long2':        'var(--duration-md-long2)',
   'spring-md-spatial': 'var(--spring-md-spatial-duration)',
   'spring-md-effects': 'var(--spring-md-effects-duration)',
-  // Fluent 2 duration scale (Customize opt-in — /frontend-animations)
+  // Fluent 2 duration scale (Customize opt-in — /frontend-tokens)
   'fluent-ultra-fast': 'var(--duration-fluent-ultra-fast)',
   'fluent-faster':     'var(--duration-fluent-faster)',
   'fluent-fast':       'var(--duration-fluent-fast)',
@@ -231,15 +231,15 @@ transitionTimingFunction: {
   out:      'var(--ease-out)',
   in:       'var(--ease-in)',
   'in-out': 'var(--ease-in-out)',
-  // Web baseline easings (Subtle pack — /frontend-animations)
+  // Web baseline easings (Subtle pack — /frontend-tokens)
   'expo-out':  'var(--ease-expo-out)',
   'cubic-out': 'var(--ease-cubic-out)',
-  // Material Design 3 easings (Standard pack — /frontend-animations)
+  // Material Design 3 easings (Standard pack — /frontend-tokens)
   'md-emphasized':            'var(--ease-md-emphasized)',
   'md-emphasized-decelerate': 'var(--ease-md-emphasized-decelerate)',
   'md-emphasized-accelerate': 'var(--ease-md-emphasized-accelerate)',
   'md-standard':              'var(--ease-md-standard)',
-  // iOS easings (Apple pack — /frontend-animations)
+  // iOS easings (Apple pack — /frontend-tokens)
   'ios-default': 'var(--ease-ios-default)',
   'ios-out':     'var(--ease-ios-out)',
   'ios-in':      'var(--ease-ios-in)',
@@ -264,18 +264,31 @@ For Tailwind v4 (CSS-first): `--color-*` custom properties in `:root` are picked
 
 Detect and reject these patterns in generated and reviewed UI code:
 
-| ID   | Pattern                                                               | Severity | Fix                                                     |
-| ---- | --------------------------------------------------------------------- | -------- | ------------------------------------------------------- |
-| T101 | `#[0-9a-fA-F]{3,8}` in JSX/className/CSS                              | HIGH     | `var(--color-{nearest-token})`                          |
-| T102 | `bg-\[#`, `text-\[#`, `border-\[#` in JSX                             | HIGH     | `bg-{token}`, `text-{token}`, etc.                      |
-| T103 | `style={{\s*color:\s*['"\`]#` in JSX                                  | HIGH     | className with token class                              |
-| T104 | `p-\[\d+px\]`, `gap-\[\d+px\]` arbitrary                              | MEDIUM   | `p-{n}` / `gap-{n}` nearest spacing                     |
-| T105 | `oklch(`, `hsl(`, `rgb(` literals in JSX                              | HIGH     | `var(--color-{nearest-token})`                          |
-| T106 | Hardcoded `transition: 300ms` / `duration: 200ms` literals in JSX/CSS | MEDIUM   | `var(--duration-{token})` or spring token               |
-| T107 | Hardcoded `cubic-bezier(...)` literal in JSX/CSS                      | MEDIUM   | `var(--ease-{token})` or `var(--spring-{token}-bezier)` |
-| T108 | `backdrop-filter` used when `theme.surfaces.glass.enabled !== true`   | HIGH     | Enable via `/frontend-animations` or remove             |
+| ID   | Pattern                                                                                      | Severity | Fix                                                                                          |
+| ---- | -------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------- |
+| T101 | `#[0-9a-fA-F]{3,8}` in JSX/className/CSS                                                     | HIGH     | `var(--color-{nearest-token})`                                                               |
+| T102 | `bg-\[#`, `text-\[#`, `border-\[#` in JSX                                                    | HIGH     | `bg-{token}`, `text-{token}`, etc.                                                           |
+| T103 | `style={{\s*color:\s*['"\`]#` in JSX                                                         | HIGH     | className with token class                                                                   |
+| T104 | `p-\[\d+px\]`, `gap-\[\d+px\]` arbitrary                                                     | MEDIUM   | `p-{n}` / `gap-{n}` nearest spacing                                                          |
+| T105 | `oklch(`, `hsl(`, `rgb(` literals in JSX                                                     | HIGH     | `var(--color-{nearest-token})`                                                               |
+| T106 | Hardcoded `transition: 300ms` / `duration: 200ms` literals in JSX/CSS                        | MEDIUM   | `var(--duration-{token})` or spring token                                                    |
+| T107 | Hardcoded `cubic-bezier(...)` literal in JSX/CSS                                             | MEDIUM   | `var(--ease-{token})` or `var(--spring-{token}-bezier)`                                      |
+| T108 | `backdrop-filter` used when `theme.surfaces.glass.enabled !== true`                          | HIGH     | Enable via `/frontend-tokens` or remove                                                      |
+| T109 | `text-\[\d+(px\|rem)\]`, `leading-\[\d+(px\|rem)\]`, `tracking-\[`, `font-\[\d+\]` arbitrary | MEDIUM   | `text-{size}` / `leading-{size}` / `tracking-{size}` / `font-{weight}` preset or theme token |
+| T110 | `rounded-\[\d+(px\|rem)\]` arbitrary radius                                                  | MEDIUM   | `rounded-{sm,md,lg,xl,2xl,3xl,full}` Tailwind preset                                         |
+| T111 | `shadow-\[[^\]]+\]` arbitrary shadow                                                         | MEDIUM   | `shadow-{sm,md,lg,xl,2xl}` Tailwind preset                                                   |
 
 **Check scope:** only `.tsx`, `.jsx`, `.vue`, `.svelte`, `.css`, `.scss`. Skip test files, JSON, config files.
+
+## CSS Architecture Violations
+
+Violations in CSS/SCSS files (`:root` / `.dark` blocks) — separate from JSX anti-hardcoding:
+
+| ID    | Pattern                                                                                                        | Severity | Fix                                   |
+| ----- | -------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------- |
+| TA001 | `--color-{semantic}: #hex` / `oklch(` / `rgb(` in `:root` or `@theme {}` instead of `var(--color-{primitive})` | HIGH     | Reference primitive token via `var()` |
+
+**Check scope:** `.css`, `.scss`, `globals.*`, `theme.css`. Only semantic variables (those named after a role, not a primitive — e.g. `--color-primary`, `--color-background`). Matches both Tailwind v3 (`:root`) and Tailwind v4 (`@theme {}`) layouts.
 
 ---
 
@@ -283,33 +296,42 @@ Detect and reject these patterns in generated and reviewed UI code:
 
 When replacing hardcoded values, map to nearest token by visual role (not exact hex equality):
 
-| Hardcoded                             | → Tailwind class  | → CSS var                 |
-| ------------------------------------- | ----------------- | ------------------------- |
-| `bg-[#0d1117]`, `bg-[#1a1a2e]`        | `bg-background`   | `var(--color-background)` |
-| `bg-[#f9fafb]`, `bg-white`            | `bg-surface`      | `var(--color-surface)`    |
-| `bg-[#3B82F6]`, `bg-blue-500`         | `bg-primary`      | `var(--color-primary)`    |
-| `text-[#1a1a2e]`, `text-gray-900`     | `text-foreground` | `var(--color-foreground)` |
-| `text-[#6b7280]`, `text-gray-500`     | `text-muted`      | `var(--color-muted)`      |
-| `border-[#e5e7eb]`, `border-gray-200` | `border-border`   | `var(--color-border)`     |
-| `p-[16px]`                            | `p-4`             | —                         |
-| `gap-[32px]`                          | `gap-8`           | —                         |
-| `style={{ color: '#...' }}`           | className + token | —                         |
+| Hardcoded                             | → Tailwind class           | → CSS var                 |
+| ------------------------------------- | -------------------------- | ------------------------- |
+| `bg-[#0d1117]`, `bg-[#1a1a2e]`        | `bg-background`            | `var(--color-background)` |
+| `bg-[#f9fafb]`, `bg-white`            | `bg-surface`               | `var(--color-surface)`    |
+| `bg-[#3B82F6]`, `bg-blue-500`         | `bg-primary`               | `var(--color-primary)`    |
+| `text-[#1a1a2e]`, `text-gray-900`     | `text-foreground`          | `var(--color-foreground)` |
+| `text-[#6b7280]`, `text-gray-500`     | `text-muted`               | `var(--color-muted)`      |
+| `border-[#e5e7eb]`, `border-gray-200` | `border-border`            | `var(--color-border)`     |
+| `p-[16px]`                            | `p-4`                      | —                         |
+| `gap-[32px]`                          | `gap-8`                    | —                         |
+| `style={{ color: '#...' }}`           | className + token          | —                         |
+| `text-[14px]`, `leading-[20px]`       | `text-sm leading-tight`    | `var(--text-body-s)`      |
+| `text-[16px]`, `leading-[24px]`       | `text-base leading-normal` | `var(--text-body-m)`      |
+| `font-[700]`                          | `font-bold`                | —                         |
+| `tracking-[0.04em]`                   | `tracking-wide`            | —                         |
+| `rounded-[4px]`                       | `rounded-sm`               | —                         |
+| `rounded-[8px]`                       | `rounded-md`               | —                         |
+| `rounded-[12px]`                      | `rounded-lg`               | —                         |
+| `shadow-[0_1px_2px_...]`              | `shadow-sm`                | —                         |
+| `shadow-[0_4px_12px_...]`             | `shadow-md`                | —                         |
 
 ---
 
 ## Fallback Policy Matrix
 
-| Situation                             | Theme state | Behavior                                       |
-| ------------------------------------- | ----------- | ---------------------------------------------- |
-| `dev-build` generates UI/component    | Empty       | Use fallback CSS vars above, write token names |
-| `dev-build` generates UI/component    | Full        | Read `theme.cssVars`, write token names        |
-| `dev-build` generates API/logic only  | Any         | No token check needed                          |
-| `dev-verify` `hasUI` or `isComponent` | Any         | Run T101–T103 grep; violations = FAIL item     |
-| `dev-refactor` Quality-lens           | Any         | Flag T101–T105 violations, suggest token names |
-| `frontend-convert` inspiration mode   | Empty       | **Abort** — run `/frontend-tokens` first       |
-| `frontend-convert` 1:1 copy mode      | Empty       | Allow hardcoded, warn                          |
-| `frontend-design` brief mode          | Empty       | Note "Tailwind defaults", suggest tokens       |
-| `frontend-check` audit                | Empty       | Skip Token Architecture scan, explain why      |
+| Situation                                      | Theme state | Behavior                                                                     |
+| ---------------------------------------------- | ----------- | ---------------------------------------------------------------------------- |
+| `dev-build` generates UI/component             | Empty       | Use fallback CSS vars above, write token names                               |
+| `dev-build` generates UI/component             | Full        | Read `theme.cssVars`, write token names                                      |
+| `dev-build` generates API/logic only           | Any         | No token check needed                                                        |
+| `dev-verify` `hasUI` or `isComponent`          | Any         | Run T101–T103 grep; violations = FAIL item                                   |
+| `dev-refactor` Quality-lens                    | Any         | Flag T101–T111 violations, suggest token names                               |
+| `frontend-design` Convert (inspiration/sketch) | Empty       | **Abort** — run `/frontend-tokens` first                                     |
+| `frontend-design` Convert (1:1 copy)           | Empty       | Allow hardcoded, warn                                                        |
+| `frontend-design` brief mode                   | Empty       | Note "Tailwind defaults", suggest tokens                                     |
+| `frontend-check` audit                         | Empty       | Audit T101-T111 against fallback tokens; skip TA001 (requires project theme) |
 
 ---
 
@@ -335,6 +357,9 @@ Canonical steps for installing fallback token files into a target project. Refer
 6. Patch `tailwind.config.*`: merge the `theme.extend` block from the Tailwind v3 config snippet above — only missing keys (idempotent).
 7. Log: `"Token fallback installed: src/styles/tokens.css + tailwind.config.* extended"`
 
-**Tailwind v4:** not supported yet. Detect via `package.json` (`"tailwindcss": "^4"`). If found → log "Tailwind v4 detected — manual token setup required (see roadmap)" and skip.
+**Tailwind v4 — audit vs bootstrap:**
+
+- **Audit** (TA001 + T101-T111): supported on both v3 and v4. All violation patterns are CSS-syntax-agnostic; TA001 explicitly matches `:root` and `@theme {}` (see § CSS Architecture Violations).
+- **Bootstrap** (creating `src/styles/tokens.css` + patching `tailwind.config.*`): v3-only. Detect via `package.json` (`"tailwindcss": "^4"`). If found during bootstrap → log `"Tailwind v4 bootstrap on roadmap — audit still works, manual token setup required"` and skip the bootstrap steps only. Do not abort the audit path.
 
 > **Callers:** `dev-build/SKILL.md` PHASE 0, `core-setup/references/mode-greenfield.md` Phase 3.

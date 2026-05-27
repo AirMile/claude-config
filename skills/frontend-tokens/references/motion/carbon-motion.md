@@ -187,7 +187,7 @@ Available after Customize injection:
 
 ## When to Use via Customize Route
 
-Carbon motion is injected through `/frontend-animations → Customize → Add easings from other systems`. It does not change the active pack. Typical use cases:
+Carbon motion is injected through `/frontend-tokens → Motion Pack → Customize → Add easings from other systems`. It does not change the active pack. Typical use cases:
 
 - **Admin panels and dashboards** with live data tables and row CRUD operations
 - **B2B SaaS** with heavy form flows and inline validation — the entrance/exit pair is especially legible for form field state changes

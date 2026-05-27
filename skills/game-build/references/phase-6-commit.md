@@ -38,7 +38,7 @@ Categorize files by comparing with `.project/session/pre-skill-status.txt`:
 If baseline file doesn't exist, fall back to `git add -A`.
 
 ```bash
-git commit -m "build({feature}): {n} requirements ({tdd} TDD, {impl} impl-first, {only} impl-only)"
+git commit -m "build({feature}): {n} requirements ({tdd} TDD, {only} impl-only)"
 ```
 
 Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
@@ -48,7 +48,7 @@ Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{
 ```
 BUILD COMPLETE: {feature}
 ========================
-Techniques: TDD ({n}), Implementation First ({n}), Implementation Only ({n})
+Techniques: TDD ({n}), Implementation Only ({n})
 Tests: {passed}/{total} PASS
 Files created: {count}
 

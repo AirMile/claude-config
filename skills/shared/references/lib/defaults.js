@@ -2,7 +2,7 @@
 
 function createDefaultDashboardData(projectName) {
   return {
-    concept: {
+    seed: {
       name: projectName || "",
       content: "",
     },

@@ -309,7 +309,7 @@ Extra durations added to `motion.durations[]` (Material Design 3 scale — see `
 
 **Feel:** iOS/macOS precision. Spring physics, iOS easings, glass surfaces, view transitions.
 
-> **Migration note**: Projects created with the previous pack name `"expressive"` are automatically offered a rename to `"apple"` by PHASE 0 of `/frontend-animations`. All other theme keys remain byte-identical.
+> **Migration note**: Projects created with the previous pack name `"expressive"` are automatically offered a rename to `"apple"` by PHASE 0 of `/frontend-tokens`. All other theme keys remain byte-identical.
 
 ```json
 {

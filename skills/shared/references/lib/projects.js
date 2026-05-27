@@ -60,7 +60,7 @@ function findProjects() {
       if (hasDashboard && !hasBacklog) {
         try {
           const json = JSON.parse(fs.readFileSync(dashFile, "utf8"));
-          if (json.concept && json.concept.name) project = json.concept.name;
+          if (json.seed && json.seed.name) project = json.seed.name;
         } catch {}
       }
 

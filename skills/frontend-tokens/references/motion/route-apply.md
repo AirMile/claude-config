@@ -26,7 +26,7 @@ If `motion.pack` is empty: abort. Run Create first.
 Construct the following string based on current token state. Emit only the blocks that apply to the active pack and injected easings.
 
 ```
-/* Animation pack: {pack} — managed by /frontend-animations */
+/* Animation pack: {pack} — managed by /frontend-tokens */
 
 /* Spring tokens (all active springs from theme.motion.spring[]) */
 {for each spring in theme.motion.spring[]:}
@@ -130,7 +130,7 @@ After:
     --font-heading: ...;
     /* ... base tokens ... */
 
-    /* Animation pack: standard — managed by /frontend-animations */
+    /* Animation pack: standard — managed by /frontend-tokens */
     --spring-smooth-duration: 500ms;
     --spring-smooth-bezier: cubic-bezier(0.32, 1, 0.68, 1);
     --spring-snappy-duration: 420ms;

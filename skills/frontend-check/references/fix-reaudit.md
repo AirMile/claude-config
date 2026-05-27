@@ -18,7 +18,7 @@ Implement fixes in priority order, grouped by audit category.
 10. **SEO**: titles → descriptions → sitemap → robots → structured data
 11. **AEO**: semantic HTML → FAQ schema → bot access → E-E-A-T
 12. **A11Y** (A001-A203): accessible names → semantic elements → keyboard handlers → focus management → ARIA states → form errors → live regions
-13. **Token Architecture** (T001/T101): refactor semantic raw hex to var() references, replace hardcoded component colors with token classes
+13. **Token Architecture** (TA001, T101-T111): TA001 — refactor semantic CSS-vars with raw hex to var() references; T101-T105 — hardcoded colors/spacing; T106-T108 — motion/glass; T109-T111 — typography/radius/shadow (see `shared/TOKENS.md § Token → Class Mapping`)
 
 ### Context7 Research
 

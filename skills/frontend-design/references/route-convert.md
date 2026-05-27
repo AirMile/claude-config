@@ -1,86 +1,58 @@
----
-name: frontend-convert
-description: Convert screenshots or URLs into working pages. Use with /frontend-convert.
-argument-hint: "[file-path|url]"
-writes: [devinfo.handoff]
-metadata:
-  author: claude-config
-  version: 2.6.0
-  category: frontend
----
+# Route: Convert
 
-# Convert
+Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/Canva mockups, screenshots, website URLs, or images pasted in chat. Three modes: faithful 1:1 reproduction, inspiration-based using project theme tokens, or sketch → high-fi (interpret layout-intent from wireframe/mockup, fill in details with tokens and DESIGN.md principles). Self-verifies by comparing source image against Playwright CLI screenshot of generated output.
 
-Convert visual input into working code. Accepts screenshots, Figma exports, website URLs, or images pasted in chat. Two modes: faithful 1:1 reproduction or inspiration-based conversion using the project's theme tokens (from project.json). Self-verifies by comparing source image against Playwright CLI screenshot of generated output.
+**Incoming variable contract — all paths that reach this route:**
 
-**Related skills:** `/frontend-tokens` · `/frontend-design` · `/core-setup` · `/frontend-check`
+| Var                   | Direct arg | Backlog match                 | Design Mode A   | Patch handoff |
+| --------------------- | ---------- | ----------------------------- | --------------- | ------------- |
+| `$ROUTE = "convert"`  | ✓          | ✓                             | ✓               | ✓             |
+| `$CONVERT_TARGET`     |            | ✓ (entity name)               | ✓ (entity name) |               |
+| `$BACKLOG_ROUTE_HINT` |            | ✓ (`"transition=converting"`) |                 |               |
+| `$PATCH_MODE = true`  |            |                               |                 | ✓             |
+| `$SOURCE_IMAGE`       |            |                               |                 | ✓             |
+| `$SCOPE = "patch"`    |            |                               |                 | ✓             |
+| `$PATCH_FILE`         |            |                               |                 | ✓             |
+| `$BEFORE_SCREENSHOT`  |            |                               |                 | ✓ (nullable)  |
 
-## References
+**Assertion (PHASE 0 entry):** if `$PATCH_MODE = true` AND `$SOURCE_IMAGE` is unset → abort with `"Patch mode requires $SOURCE_IMAGE — handoff incomplete"`.
 
-- `../shared/FRONTEND-RULES.md` — React/TypeScript coding rules
-- `../shared/PATTERNS.md` — Component patterns (compound, render props, etc.)
-- `../shared/DESIGN.md` — Anti-patterns, color, typography, motion, UX writing
-- `../shared/CODEGEN.md` — Block inventory, token mapping, output structure, a11y scaffold, cva pattern (shared with frontend-design Build route)
-- `../shared/PLAYWRIGHT.md` — Playwright CLI, screenshot capture
-- `../shared/DEVINFO.md` — Session tracking, cross-skill handoff
-- `../shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
-- `./examples/` — Before/after conversion examples (1:1 and inspiration mode)
+**Patch fast-path:** if `$PATCH_MODE = true`, skip PHASE 0.1 through 0.4b Steps 1-2 and jump directly to **PHASE 0.4b Step 3**.
 
 ---
 
-## PHASE 0: Pre-flight
+**Step 0: External setup context**
 
-### 0.0 Handoff Detection (auto)
-
-Read `.project/session/devinfo.json` → check `handoff.source`.
-
-**If `handoff.source === "build-incomplete"`:**
-
-Check `handoff.timestamp` — if older than 24h: show `"Handoff is {N}h old — may no longer be relevant"` with the prompt.
-
-```yaml
-header: "Handoff from Build detected"
-question: "Build of '{handoff.target}' is incomplete ({handoff.failedChecks}). Continue with patch on those files?"
-options:
-  - label: "Yes, patch (Recommended)", description: "Scope = patch, files loaded from handoff, before-screenshot from handoff.buildScreenshot"
-  - label: "New screenshot", description: "Ignore handoff, continue normally with PHASE 0.1"
-  - label: "Cancel", description: "Stop, handoff remains for a later run"
-multiSelect: false
-```
-
-**On "Yes, patch":**
-
-1. Ask user for the target screenshot (the desired end state Build didn't fully reach): `"Paste the desired final state as a screenshot"`
-2. Store as `$SOURCE_IMAGE`, `$SCOPE = "patch"`, `$PATCH_FILE = handoff.files[0]`
-3. `$BEFORE_SCREENSHOT = handoff.buildScreenshot` (if null: skip before-screenshot step 0.4b Step 2)
-4. Jump to **0.4b Step 3** (Visual diff) — skip 0.1 through 0.4b Step 2
-
-Handoff is cleaned up in PHASE 4 after success (`devinfo.handoff = null`).
-
-**If `handoff` is empty/absent or `handoff.source !== "build-incomplete"`:** Skip 0.0, go to 0.1.
+> **Todo**: Read `.claude/skills/shared/VERCEL-CONTEXT.md` — follow the Load Protocol, then apply the guidelines as a bias layer throughout this route.
 
 ---
+
+## PHASE 0: Convert Pre-flight
+
+**If `$PATCH_MODE = true`:** skip PHASE 0.1 through 0.4b Steps 1-2 — jump to **PHASE 0.4b Step 3**.
 
 ### 0.1 Visual Input Resolution
 
 Determine the input type from the argument or conversation:
 
-| Input                                             | Detection                                  | Action                                                         |
-| ------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------- |
-| File path (`/home/...`, `C:\...`, `.png`, `.jpg`) | Contains path separator or image extension | Read file with Read tool (multimodal)                          |
-| URL (`http://`, `https://`, `figma.com`)          | Starts with protocol or known domain       | CLI: `playwright-cli open [url]` → `playwright-cli screenshot` |
-| Image in chat                                     | No path/URL, image data present            | Analyze directly from conversation                             |
-| None                                              | No argument, no image                      | Ask user (see below)                                           |
+| Input                                             | Detection                                  | Action                                                                                              |
+| ------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Figma/Canva URL (`figma.com`, `canva.com`)        | URL contains `figma.com` or `canva.com`    | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "design-tool"` |
+| File path (`/home/...`, `C:\...`, `.png`, `.jpg`) | Contains path separator or image extension | Read file with Read tool (multimodal); set `$INPUT_SOURCE = "file"`                                 |
+| URL (`http://`, `https://`)                       | Starts with protocol                       | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "url"`         |
+| Image in chat                                     | No path/URL, image data present            | Analyze directly from conversation; set `$INPUT_SOURCE = "chat-image"`                              |
+| None                                              | No argument, no image                      | Ask user (see below)                                                                                |
 
 **No input provided:**
 
 ```yaml
 header: "Visual Input"
-question: "What do you want to convert? Paste a screenshot in chat, provide a file path, or give a URL."
+question: "What do you want to convert? Paste a screenshot, provide a file path, a website URL, or a Figma/Canva share link."
 options:
-  - label: "I'll paste a screenshot", description: "Paste image in the next message"
-  - label: "File path", description: "Path to screenshot/export/image"
-  - label: "URL", description: "Website URL, Figma share link, or Canva link"
+  - label: "I'll paste a screenshot or image", description: "Paste wireframe, sketch, or screenshot in the next message"
+  - label: "Figma or Canva link", description: "Share link from Figma or Canva — captured via Playwright"
+  - label: "File path", description: "Path to screenshot, export, or image file"
+  - label: "Website URL", description: "URL of a live website to capture and convert"
 multiSelect: false
 ```
 
@@ -109,6 +81,10 @@ Sections:   [enumerated list of visual sections top-to-bottom]
 Layout:     [single column | multi-column | grid | sidebar + content | etc.]
 Responsive: [single viewport | mobile + desktop | mobile + tablet + desktop | unknown]
 Sizing:     [per key element: fixed (explicit px/rem) | fill (flex:1 / width:100%) | hug (fit-content/auto)]
+Fidelity:   [low | medium | high]
+            low    = handdrawn/monochrome, placeholder boxes, no typography detail
+            medium = Figma/Canva draft, rough colors, partial components, not pixel-accurate
+            high   = polished mockup or live-site screenshot, pixel-accurate
 Key colors: [dominant colors as hex, max 5]
 Dark mode:  [light only | dark only | both visible | unknown]
 Typography: [heading style, body style — approximate]
@@ -135,18 +111,25 @@ Motion intent: [detected motion/animation cues — note what is present:
 ════════════════════════════════════════════════════════════
 ```
 
+Store fidelity as `$FIDELITY` (low | medium | high).
+
 ### 0.3 Mode Selection
+
+Default recommendation is based on `$FIDELITY`: low/medium → Sketch → high-fi; high → 1:1 copy or Inspiration.
 
 ```yaml
 header: "Mode"
 question: "How do you want to convert this visual design?"
 options:
-  - label: "1:1 copy (Recommended)", description: "Reproduce as faithfully as possible — colors, fonts, spacing from the original"
-  - label: "Inspiration", description: "Adopt layout/structure, apply project theme tokens"
+  - label: "Sketch → high-fi", description: "Interpret layout-intent from wireframe/mockup — fill in colors, spacing, typography from project tokens and DESIGN.md. Best for low/medium-fidelity input."
+  - label: "1:1 copy", description: "Reproduce as faithfully as possible — colors, fonts, spacing from the original"
+  - label: "Inspiration", description: "Adopt layout/structure of a polished mockup, apply project theme tokens"
 multiSelect: false
 ```
 
-Store as `$MODE` (copy | inspiration).
+Note: show `(Recommended)` after the option that matches `$FIDELITY` (low/medium → Sketch; high → 1:1 copy).
+
+Store as `$MODE` (sketch | copy | inspiration).
 
 ### 0.4 Scope Detection
 
@@ -169,7 +152,7 @@ On "Update existing component": skip PHASE 0.5 and go to PHASE 0.4b.
 
 Only for scope = patch.
 
-> **Todo**: Read '.claude/skills/frontend-convert/references/patch-detection.md'
+> **Todo**: Read '.claude/skills/frontend-design/references/convert-patch-detection.md'
 
 ### 0.5 Backlog Stage (page scope only)
 
@@ -177,7 +160,7 @@ If scope is a full page (not a single component):
 
 1. Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`
 2. See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "converting"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`).
-3. Find feature matching page name: `data.features.find(f => f.name === "{kebab-case-page-name}")`
+3. If `$CONVERT_TARGET` is set: use it as the page name to match (skip name derivation). Otherwise derive from scope selection. Find feature: `data.features.find(f => f.name === "{kebab-case-page-name}")`
    - **Found + status TODO**: set `status: "DOING"`, `stage: "building"`, `date: "{YYYY-MM-DD}"`. Write back via Edit.
    - **Found + status DOING**: set `stage: "building"`. Write back via Edit.
    - **Not found**: add to `data.features[]`: `{ "name": "{name}", "type": "PAGE", "status": "DOING", "stage": "building", "phase": "P4", "description": "Converted from visual input", "dependencies": [] }`. Write back.
@@ -197,14 +180,14 @@ Feature-name: use backlog-matched feature name from 0.5 (page scope), or compone
 
 Check `.project/project.json` → `theme` section.
 
-- **Theme populated + inspiration mode:** Read and store tokens. Mandatory for mapping.
+- **Theme populated + sketch or inspiration mode:** Read and store tokens. Mandatory for mapping.
 - **Theme populated + copy mode:** Read as reference. Use for shared utilities (cn(), Tailwind config) but not for color/font values.
-- **No theme + inspiration mode:** Abort with suggestion: `"Inspiration mode requires a theme. Run /frontend-tokens first or choose 1:1 copy."`
+- **No theme + sketch or inspiration mode:** Abort with suggestion: `"This mode requires a theme. Run /frontend-tokens first or choose 1:1 copy."`
 - **No theme + copy mode:** Proceed with extracted values from source image.
 
 ```
 Theme: [Available | Not available]
-Mode:  [1:1 copy | Inspiration]
+Mode:  [1:1 copy | Inspiration | Sketch → high-fi (fidelity: {$FIDELITY})]
 ```
 
 **Framework detection:**
@@ -241,9 +224,27 @@ Existing:   [N] components found
 
 ---
 
-## PHASE 1: Token Mapping (Inspiration mode only)
+## PHASE 1: Token Mapping (Inspiration and Sketch mode)
 
 **Skip this phase entirely if `$MODE` = copy.**
+
+### 1.0 Sketch mode: Fidelity filter (sketch mode only)
+
+**Skip if `$MODE` ≠ sketch.**
+
+Before mapping, determine which properties from `$ANALYSIS` are **authoritative** (take from source) vs **overridden** (fill in from tokens + `shared/DESIGN.md`):
+
+| Property         | low fidelity       | medium fidelity         |
+| ---------------- | ------------------ | ----------------------- |
+| Layout/structure | from sketch        | from sketch             |
+| Spacing          | tokens only        | tokens (sketch as hint) |
+| Colors           | tokens only        | tokens (sketch as hint) |
+| Typography       | tokens + DESIGN.md | tokens (sketch as hint) |
+| A11y scaffold    | shared/CODEGEN.md  | shared/CODEGEN.md       |
+
+**"sketch as hint"**: use the rough value to guide token selection (e.g. a dark section in the sketch → pick a dark background token) but never copy raw hex/font values directly.
+
+Proceed to 1.1 — token mapping runs identically for sketch and inspiration, applying this filter.
 
 ### 1.1 Extract and Map
 
@@ -341,7 +342,7 @@ State components:
 
 ### 2.2 Generate Code
 
-> **Todo**: Read '.claude/skills/frontend-convert/references/generate-template.md'
+> **Todo**: Read '.claude/skills/frontend-design/references/convert-generate-template.md'
 
 ### 2.3 Generation Summary
 
@@ -361,7 +362,7 @@ Existing components imported:
 Dependencies:
   ⚠ cva not found in package.json — install: npm install class-variance-authority
 
-Mode:       [1:1 copy | Inspiration with theme tokens]
+Mode:       [1:1 copy | Inspiration with theme tokens | Sketch → high-fi (fidelity: {$FIDELITY})]
 Theme:      [Integrated from project.json#theme | Extracted from source]
 Dark mode:  [✓ dark: classes applied | — no dark mode in theme]
 Responsive: [✓ responsive prefixes applied | — single viewport (TODO comment placed)]
@@ -374,32 +375,32 @@ States:     [✓ state components generated: [loading|error|empty] | — no stat
 
 ## PHASE 3: Visual Verification Loop
 
-> **Todo**: Read '.claude/skills/frontend-convert/references/verification-loop.md'
+> **Todo**: Read '.claude/skills/frontend-design/references/convert-verification-loop.md'
 
 ---
 
 ## PHASE 4: Completion
 
-> **Todo**: Read '.claude/skills/frontend-convert/references/completion.md'
+> **Todo**: Read '.claude/skills/frontend-design/references/convert-completion.md'
 
 ---
 
 ## Restrictions
 
-This skill must **NEVER**:
+This route must **NEVER**:
 
 - Generate code without first analyzing the source image
 - Use "Lorem ipsum" — always use contextual content from the source or realistic placeholders
-- Run inspiration mode without theme (project.json#theme empty)
+- Run sketch or inspiration mode without theme (project.json#theme empty)
 - Skip the visual verification loop when Playwright is available
 - Regenerate components that already exist in the codebase — import and reuse
 - Exceed 3 verification rounds
 
-This skill must **ALWAYS**:
+This route must **ALWAYS**:
 
 - Resolve visual input before any code generation
-- Confirm mode (1:1 vs inspiration) with user
-- Confirm token mapping with user in inspiration mode
+- Confirm mode (1:1 vs inspiration vs sketch) with user
+- Confirm token mapping with user in inspiration and sketch mode
 - Follow `shared/FRONTEND-RULES.md` (React/Next.js, HTML/CSS, A-series) and `shared/PATTERNS.md` (Component, Layout)
 - Detect and match the project's framework
 - Run the Playwright verification loop (unless tools unavailable)

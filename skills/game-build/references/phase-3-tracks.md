@@ -1,6 +1,6 @@
 # PHASE 3: Build Tracks
 
-Load this file when entering PHASE 3. It contains the full Track A (TDD), Track B (Implementation First), and Track C (Implementation Only) instructions.
+Load this file when entering PHASE 3. It contains the full Track A (TDD) and Track B (Implementation Only) instructions.
 
 ---
 
@@ -191,38 +191,7 @@ Progress: {passed}/{total} tests passing
 
 ---
 
-## Track B: Implementation First Requirements
-
-For each Implementation First requirement (in dependency order):
-
-1. **Implement directly** based on requirements and architecture from feature.json
-2. **Add debug hooks** (same rules as TDD track)
-3. **Write verification test** afterwards to capture expected behavior:
-
-```gdscript
-# Written AFTER implementation to verify behavior
-func test_req{xxx}_{description}() -> void:
-    var scene := preload("res://scenes/{feature}.tscn").instantiate()
-    add_child(scene)
-    await get_tree().process_frame
-
-    # Assert scene structure
-    assert_not_null(scene.get_node("ExpectedChild"))
-
-    # Assert configuration
-    assert_eq(scene.some_property, expected_value)
-
-    scene.queue_free()
-```
-
-4. **Run verification test** to confirm it passes
-5. Log: `IMPL-FIRST: REQ-{xxx} implemented + verified`
-
-See `techniques/implementation-first.md` for detailed patterns.
-
----
-
-## Track C: Implementation Only Requirements
+## Track B: Implementation Only Requirements
 
 For each Implementation Only requirement (in dependency order):
 
@@ -240,7 +209,6 @@ For each Implementation Only requirement (in dependency order):
 BUILD CYCLE COMPLETE
 
 TDD: {tdd_passed}/{tdd_total} tests PASS
-Impl-First: {impl_passed}/{impl_total} verified
 Impl-Only: {only_count} implemented (no tests)
 
 Files created:

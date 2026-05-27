@@ -196,7 +196,7 @@ macOS / Linux:
 ```bash
 cat > "{projects_root}/[name]/.project/project.json" << 'ENDJSON'
 {
-  "concept": { "name": "[name]", "pitch": "", "content": "" },
+  "seed": { "name": "[name]", "pitch": "", "content": "" },
   "localUrl": "",
   "theme": {
     "colors": { "main": [], "accent": [], "semantic": [] },
@@ -230,7 +230,7 @@ Windows (PowerShell):
 
 ```powershell
 $projectJson = '{
-  "concept": { "name": "[name]", "pitch": "", "content": "" },
+  "seed": { "name": "[name]", "pitch": "", "content": "" },
   "localUrl": "",
   "theme": {
     "colors": { "main": [], "accent": [], "semantic": [] },

@@ -31,21 +31,21 @@ Patterns that scream "an AI made this". Actively avoid these.
 
 ### Layout
 
-| Avoid                                                       | Why                                   | Alternative                                                                              |
-| ----------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Cards in cards                                              | Visual noise, unclear hierarchy       | Spacing + typography for hierarchy within cards                                          |
-| Identical card grids for everything                         | Repetitive, no visual tension         | Vary layout: list, masonry, featured + grid                                              |
-| Everything centered                                         | Feels like a template, no rhythm      | Left-align text, center only heroes and CTAs                                             |
-| Glassmorphism without `theme.surfaces.glass.enabled = true` | Decoration without function           | Use depth only where it serves information hierarchy — opt in via `/frontend-animations` |
-| Hero with metric cards                                      | The same dashboard pattern everywhere | Design from the specific use case                                                        |
+| Avoid                                                       | Why                                   | Alternative                                                                                        |
+| ----------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Cards in cards                                              | Visual noise, unclear hierarchy       | Spacing + typography for hierarchy within cards                                                    |
+| Identical card grids for everything                         | Repetitive, no visual tension         | Vary layout: list, masonry, featured + grid                                                        |
+| Everything centered                                         | Feels like a template, no rhythm      | Left-align text, center only heroes and CTAs                                                       |
+| Glassmorphism without `theme.surfaces.glass.enabled = true` | Decoration without function           | Use depth only where it serves information hierarchy — opt in via `/frontend-tokens → Motion Pack` |
+| Hero with metric cards                                      | The same dashboard pattern everywhere | Design from the specific use case                                                                  |
 
 ### Motion
 
-| Avoid                                      | Why                            | Alternative                                                                               |
-| ------------------------------------------ | ------------------------------ | ----------------------------------------------------------------------------------------- |
-| Bounce/elastic easing outside Playful pack | Feels 2015, tacky              | Smooth deceleration: `ease-out-quart` — or opt in via `/frontend-animations` Playful pack |
-| Animation without purpose                  | Distracting, slows interaction | Animate only when it adds information                                                     |
-| Animate everything at once                 | Animation fatigue              | Stagger, or animate only the most important element                                       |
+| Avoid                                      | Why                            | Alternative                                                                                         |
+| ------------------------------------------ | ------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Bounce/elastic easing outside Playful pack | Feels 2015, tacky              | Smooth deceleration: `ease-out-quart` — or opt in via `/frontend-tokens → Motion Pack` Playful pack |
+| Animation without purpose                  | Distracting, slows interaction | Animate only when it adds information                                                               |
+| Animate everything at once                 | Animation fatigue              | Stagger, or animate only the most important element                                                 |
 
 ---
 
@@ -330,7 +330,7 @@ Undo is better than confirmation dialogs — users click through confirmations. 
 
 ## Glass Surfaces (Apple-style opt-in)
 
-Glassmorphism is an **opt-in design system choice**, not a default. Enable via `/frontend-animations` → Apple pack (sets `theme.surfaces.glass.enabled = true`). Also enabled by the Playful pack.
+Glassmorphism is an **opt-in design system choice**, not a default. Enable via `/frontend-tokens → Motion Pack` → Apple pack (sets `theme.surfaces.glass.enabled = true`). Also enabled by the Playful pack.
 
 When enabled, apply iOS HIG rules strictly:
 
@@ -362,7 +362,7 @@ When `theme.surfaces.glass.enabled = false` (default), treat any `backdrop-filte
 
 ## Animation Packs
 
-Managed by `/frontend-animations`. Packs are composites — they set motion vocabulary, spring physics, choreography richness, and surface style as one coherent choice.
+Managed by `/frontend-tokens` (Motion Pack route). Packs are composites — they set motion vocabulary, spring physics, choreography richness, and surface style as one coherent choice.
 
 | Pack                     | Feel       | Key traits                                                      |
 | ------------------------ | ---------- | --------------------------------------------------------------- |
@@ -381,3 +381,18 @@ Managed by `/frontend-animations`. Packs are composites — they set motion voca
 - Particle effects: max one moment per page, auto-cleanup after 2s
 
 **All choreography tokens** auto-wrap in `@media (prefers-reduced-motion: reduce)` with opacity-only fade fallback. Spring physics degrade to `var(--ease-out)` at `0.01ms` duration.
+
+---
+
+## Forbidden Choices (Anti-Slop)
+
+NEVER use without explicit reason from the user. These choices signal AI-generated work and converge toward generic output:
+
+- **Fonts**: Inter, Roboto, Arial, system-ui, Space Grotesk
+- **Color schemes**: purple gradients on white background, tech-startup blue (#3B82F6 / Tailwind default), generic "AI purple"
+- **Layouts**: 3-column features grid with emoji icons, hero-with-gradient-mesh, centered-narrow-column blog template
+- **Component clichés**: floating glass cards, "trusted by" logo bar, gradient text on heading, blur-orb backgrounds, generic "modern SaaS" hero
+- No "AI sparkle" purple gradient bursts on success
+- No drop-shadows on text
+
+Instead: choose a context-specific direction with intent. Vary between runs — two consecutive design sessions must not converge toward the same fonts/colors.

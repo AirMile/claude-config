@@ -1,5 +1,63 @@
 # Route: Create (New Theme)
 
+**Step 0: External setup context**
+
+WebFetch `https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md` and hold the result in working memory for the duration of this Create route.
+
+Use these guidelines as a **bias layer** when making generative choices in Steps 1–7 (colors, typography, motion, interactions). Concretely:
+
+- **Colors/Dark Mode** → apply `color-scheme: dark` awareness; OKLCH L-inversion is consistent with guidelines
+- **Typography** → prefer Title Case for headings, `tabular-nums` for numeric UI, `text-wrap: balance` where relevant
+- **Motion** → never generate `transition: all`; animate only `transform`/`opacity`; always include a `prefers-reduced-motion` counterpart
+- **Interactions** → use `focus-visible:ring-*` pattern for focus rings; icon-only buttons need `aria-label` in generated examples
+
+**Conflict rule**: `skills/shared/DESIGN.md` is the project canon. If Vercel's guidelines conflict with DESIGN.md, DESIGN.md wins.
+
+**Soft-fail**: if the WebFetch fails (network unavailable), print `⚠ Vercel guidelines unavailable — continuing with DESIGN.md only` and proceed normally.
+
+---
+
+**Step 0.5: Brand intake check**
+
+Before starting, check if the user already provided a file path or URL in their trigger message. If a path/URL was provided → skip this question and go directly to `route-styleguide.md` with that source.
+
+Otherwise:
+
+**AskUserQuestion:**
+
+```yaml
+header: "Brand doc"
+question: "Do you have a brand styleguide, PDF, or brand URL you want to extract from first? (saves time by pre-filling many steps)"
+options:
+  - label: "No — generate / enter from scratch (Recommended)", description: "Continue with the guided Create flow"
+  - label: "Yes — PDF or image", description: "Extract colors, fonts, radius from a local file first, then fill gaps in Create"
+  - label: "Yes — URL", description: "Extract from a web page or hosted brand doc, then fill gaps in Create"
+multiSelect: false
+```
+
+**If "Yes (PDF/image)" or "Yes (URL)":**
+
+1. Ask for the path or URL.
+2. Divert to `references/route-styleguide.md`.
+3. After that route writes extracted tokens, set `$EXTRACTED_SECTIONS` = list of sections written (e.g. `["colors", "typography", "borderRadius"]`).
+4. Return here to Step 1 with `$EXTRACTED_SECTIONS` active.
+
+**Per-step skip logic (when `$EXTRACTED_SECTIONS` is set):**
+
+At the start of each step, check if that section is in `$EXTRACTED_SECTIONS`. If yes:
+
+```
+✓ {Section} already extracted from styleguide ({N} tokens).
+   Press Enter to accept or type 'change' to override.
+```
+
+- Enter (default) → skip the AskUserQuestion for that step, use extracted values.
+- "change" → show the normal AskUserQuestion for that step.
+
+**If "No":** proceed to Step 1 normally.
+
+---
+
 **Step 1: Colors**
 
 **AskUserQuestion:**
@@ -108,6 +166,31 @@ Provide your font families:
 
 Type 's' for popular combinations
 ```
+
+**Google Fonts detection (runs after user provides font names):**
+
+> **Todo**: Read `.claude/skills/frontend-tokens/references/google-fonts-list.md` to get the known-Google-Fonts list.
+
+For each provided font name: case-insensitive match against the list.
+
+- **Found** → silent pass; proceed.
+- **Not found** → flag as "non-Google" and show:
+
+```yaml
+header: "Font hosting"
+question: "'{name}' is not on Google Fonts. How do you want to host it?"
+options:
+  - label: "Local font — next/font/local (Recommended)", description: "Step-by-step guide: download → unzip → src/app/fonts/ → layout.tsx"
+  - label: "I'll handle it myself", description: "Record the font name in tokens only"
+  - label: "Pick a similar Google Font", description: "Suggest comparable fonts from Google Fonts"
+multiSelect: false
+```
+
+If "Local font — next/font/local":
+
+> **Todo**: Read `.claude/skills/frontend-tokens/references/local-font-setup.md` and render the checklist for this project.
+
+If "Pick a similar Google Font": suggest 2–3 alternatives by visual category (geometric sans / humanist / serif / mono) and ask user to pick one.
 
 **Step 3: Spacing**
 
@@ -299,6 +382,7 @@ THEME SUMMARY
 | **Dark Mode** | {Yes (auto) / Yes (custom) / No} |
 | **Motion** | {Defaults / Custom / None} |
 | **Interactions** | {Defaults / Custom / None} |
+| **Setup context** | {Vercel guidelines (fetched {date}) / Not applied} |
 ```
 
 **AskUserQuestion:**
@@ -316,7 +400,7 @@ multiSelect: false
 **If "Yes":**
 
 1. Consult `skills/frontend-tokens/references/THEME_TEMPLATE.md` for token categories and naming conventions
-2. Build the theme JSON object according to the schema (see "Theme JSON Schema" above)
+2. Build the theme JSON object according to the schema in `references/THEME_TEMPLATE.md § Theme JSON Schema`
 3. Populate `colors` (main, accent, semantic) with structured token objects
 4. Populate `typography` with families and sizes. Use semantic names for `sizes`:
    `text-display` (largest heading), `text-title-l/m/s`, `text-headline-l/m/s`, `text-body-l/m/s`, `text-code`
@@ -330,6 +414,37 @@ multiSelect: false
 11. Generate `cssVars` — full CSS variables string (all tokens incl. motion/interaction as `:root { ... }`)
 12. Read `.project/project.json` (or create new with empty schema)
 13. Set `theme` section → Write back as formatted JSON
-14. → Go to PHASE X: Post-flight Validation
-15. → Go to X.6: Theme Infrastructure Sync
-16. → Go to PHASE Y: Website Sync
+14. **If Step 0 succeeded:** append-or-replace an entry in `theme.setupContext[]` (key on `appliedBy`):
+    ```json
+    {
+      "source": "vercel-labs/web-interface-guidelines",
+      "url": "https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md",
+      "fetchedAt": "<ISO-8601>",
+      "appliedBy": "frontend-tokens@3.7.1"
+    }
+    ```
+    Write back. Skip this step if Step 0 soft-failed.
+15. → Go to PHASE X: Post-flight Validation
+16. → Go to X.6: Theme Infrastructure Sync
+17. → Go to PHASE Y: Website Sync
+
+---
+
+**Step 9: Motion Pack handoff**
+
+Runs after PHASE Y (Website Sync) completes, only if `theme.motion.pack` is absent or empty.
+
+**AskUserQuestion:**
+
+```yaml
+header: "Motion Pack"
+question: "Theme is saved. Want to set up an animation pack now (spring physics, choreography, glass surfaces)?"
+options:
+  - label: "Yes — pick a pack now (Recommended)", description: "Continue inline to Motion Pack setup — no second /frontend-tokens invocation needed"
+  - label: "Skip — finish here", description: "Can be added later via /frontend-tokens → Motion Pack"
+multiSelect: false
+```
+
+**If "Yes":** divert directly to `references/motion/route-create.md`. Backlog Write (X.7) runs once at the end of that route — do NOT run it again here.
+
+**If "Skip":** run Backlog Write (X.7) now and finish. Output Format shows: `Next steps: /frontend-tokens → Motion Pack to add spring physics and choreography.`

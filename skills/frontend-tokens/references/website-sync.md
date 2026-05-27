@@ -20,11 +20,8 @@ Scan the codebase for theme integration:
 
 1. **Tailwind config**: check `tailwind.config` for custom theme extensions matching project.json tokens
 2. **CSS variables**: grep CSS files for `:root` blocks with CSS custom properties
-3. **Component scan**: grep component files for:
-   - Hardcoded color values: `#hex`, `rgb()`, `hsl()`, `bg-[#`, `text-[#`
-   - Theme token usage: `bg-primary`, `text-accent`, `var(--`, theme class references
-   - Hardcoded spacing: `p-[16px]`, `gap-[24px]`, arbitrary Tailwind values
-   - **On Updates:** also scan for OLD token values from the X.6 diff. If a color changed from `#C89B3C` to `#0AC8B9`, scan for remaining `#C89B3C` references in component files and arbitrary Tailwind values (`bg-[#C89B3C]`, `shadow-[...rgba(200,155,60,...)]`, etc.)
+3. **Component scan**: run T101-T111 from `shared/TOKENS.md § Anti-Hardcoding Violations` against all source files. Also check for theme token usage: `bg-primary`, `text-accent`, `var(--`, theme class references.
+   - **On Updates:** additionally scan for OLD token values from the X.6 diff (e.g. if a color changed from `#C89B3C` to `#0AC8B9`, scan for remaining `#C89B3C` in arbitrary Tailwind values like `bg-[#C89B3C]`, `shadow-[...rgba(200,155,60,...)]`) — this is Update-specific and not part of canonical T101-T111.
 
 **Tally results:**
 
@@ -33,7 +30,13 @@ WEBSITE SYNC CHECK
 ════════════════════════════════════════════════
 Files scanned:         {N}
 Theme integration:     {Tailwind config | CSS vars | None}
-Hardcoded colors:      {N} files, {M} values
+Color violations:      [T101-T103, T105 — N findings | clean]
+Spacing violations:    [T104 — N findings | clean]
+Motion literals:       [T106-T107 — N findings | clean]
+Glass-without-flag:    [T108 — N findings | clean]
+Typography:            [T109 — N findings | clean]
+Radius:                [T110 — N findings | clean]
+Shadow:                [T111 — N findings | clean]
 Old values found:      {N} files, {M} references (on updates)
 Theme token usage:     {N} files, {M} references
 ════════════════════════════════════════════════
@@ -95,17 +98,20 @@ No open worktrees → proceed to Y.4.
 
 **Step 1: Replace hardcoded values**
 
-Per component file, replace hardcoded values with theme tokens:
+Per component file, replace hardcoded values with theme tokens using `shared/TOKENS.md § Token → Class Mapping`. Quick reference:
 
-| Hardcoded              | → Theme Token          |
-| ---------------------- | ---------------------- |
-| `bg-[#3B82F6]`         | `bg-primary`           |
-| `text-[#1a1a2e]`       | `text-foreground`      |
-| `p-[16px]`             | `p-4`                  |
-| `gap-[32px]`           | `gap-8`                |
-| `#hex` in inline style | `var(--color-primary)` |
+| Hardcoded                 | → Theme Token          |
+| ------------------------- | ---------------------- |
+| `bg-[#3B82F6]`            | `bg-primary`           |
+| `text-[#1a1a2e]`          | `text-foreground`      |
+| `p-[16px]`                | `p-4`                  |
+| `gap-[32px]`              | `gap-8`                |
+| `#hex` in inline style    | `var(--color-primary)` |
+| `text-[14px]`             | `text-sm`              |
+| `rounded-[8px]`           | `rounded-md`           |
+| `shadow-[0_4px_12px_...]` | `shadow-md`            |
 
-Map each hardcoded value to the closest theme token by color distance / value match.
+For the full mapping table (including typography, radius, shadow, and motion tokens), see `shared/TOKENS.md § Token → Class Mapping`. Map each hardcoded value to the closest token by color distance / value match.
 
 **Step 2: Verification**
 

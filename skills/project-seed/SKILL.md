@@ -1,9 +1,9 @@
 ---
 name: project-seed
-description: Transform any idea into a structured seed document. Use with /project-seed.
+description: Transform any idea, design, or task into a structured seed document. Handles new concepts (game/app/idea), implementation projects (Figma/spec → code scope), and feature/assignment scoping. Use with /project-seed.
 metadata:
   author: claude-config
-  version: 1.2.0
+  version: 1.3.0
   category: project
 ---
 
@@ -16,9 +16,9 @@ The output is a structured markdown document that can be used as input for `/pro
 ## When to Use
 
 - User starts with `/project-seed` (with or without description)
-- User has a vague concept that needs articulation
-- User wants to develop a game, story, product, app, service, or creative project concept
-- User has a task assignment or large feature that needs scoping before planning
+- **Concept**: vague idea (game, story, product, app, service) that needs articulation
+- **Implementation project**: existing design/Figma/spec needs to be scoped for build
+- **Feature/Assignment**: task or large feature needs scoping before planning
 
 ## Process
 
@@ -28,54 +28,46 @@ The output is a structured markdown document that can be used as input for `/pro
 
 ### Step 2: Explore and Expand
 
-Develop the idea through rounds of concrete, clickable questions. Rounds are suggestions — the user decides when there's enough context.
+Develop the idea through rounds of concrete, clickable questions. Question content depends on **scope** (set in Step 1a). Rounds are suggestions — the user decides when there's enough context.
 
 **Setup:**
 
-1. Determine idea type (creative concept, product, service, etc)
-2. Plan questions for the first round
+1. Determine scope from Step 1a: `concept` | `implementation` | `feature` | `page` | `standalone`
+2. Pick the matching Round 1 template below
+3. All questions go in a single message as parallel AskUserQuestion calls
 
-**Round 1 - Foundation (3-4 questions in parallel):**
+**Round 1 templates (pick by scope):**
 
-Formulate 3-4 fundamental questions about the idea. Present ALL questions in a single message, each as a separate AskUserQuestion:
+**Scope = concept** (new idea/product/game/story):
 
 ```yaml
-# Question 1
-header: "Target Audience"
-question: "Who is this intended for?"
-options:
-  - label: "{specific audience A} (Recommended)", description: "{why this fits}"
-  - label: "{specific audience B}", description: "{why this fits}"
-  - label: "{specific audience C}", description: "{why this fits}"
-multiSelect: false
-
-# Question 2
-header: "Scope"
-question: "How large do you see this?"
-options:
-  - label: "{scope option A} (Recommended)", description: "{what this means}"
-  - label: "{scope option B}", description: "{what this means}"
-multiSelect: false
-
-# Question 3
-header: "Core Experience"
-question: "What is the most important feeling/result?"
-options:
-  - label: "{experience A} (Recommended)", description: "{concrete example}"
-  - label: "{experience B}", description: "{concrete example}"
-  - label: "{experience C}", description: "{concrete example}"
-multiSelect: true
-
-# Question 4 (optional)
-header: "Session Model"
-question: "What does a typical session look like?"
-options:
-  - label: "{session type A} (Recommended)", description: "{details}"
-  - label: "{session type B}", description: "{details}"
-multiSelect: false
+header: "Target Audience"    # who is this for?
+header: "Scope"              # how large/ambitious?
+header: "Core Experience"    # most important feeling/outcome? (multiSelect: true)
+header: "Session Model"      # typical use/session? (optional 4th question)
 ```
 
-**Note:** The examples above are templates. Every question and option MUST be specific to THIS idea. Derive concrete, relevant options from the idea context.
+**Scope = implementation** (Figma/design/spec → code):
+
+```yaml
+header: "Source of Truth"    # what defines the design? (Figma, screenshots, existing site, spec doc)
+header: "Pages/Screens"      # what's in scope? (list from design or "unknown — investigate")
+header: "Tech Stack"         # confirm framework/CMS/integrations (or "use repo defaults")
+header: "Open Decisions"     # known open questions from the design? (annotations, TBDs)
+```
+
+**Scope = feature** (feature from backlog or assignment):
+
+```yaml
+header: "Goal"               # what must this feature achieve?
+header: "Existing Context"   # what's already in the codebase?
+header: "Out of Scope"       # explicit exclusions?
+header: "Definition of Done" # acceptance criteria?
+```
+
+**Scope = page / standalone:** use concept template, skip "Session Model".
+
+**Note:** The templates above are guides — headers only. Every question and option MUST be specific to THIS scope instance. Derive concrete, relevant options from the available context (design file, backlog item, conversation).
 
 **After each round**, use AskUserQuestion:
 
@@ -123,15 +115,39 @@ Same pattern: present the "Deeper Dive" AskUserQuestion after each round. As rou
 
 ### CHECKPOINT: Idea Summary
 
-After the question rounds, present a structured overview of all gathered input before synthesis begins:
+After the question rounds, present a structured overview of all gathered input before synthesis begins. Use the scope-matching table:
+
+**Scope = concept / standalone / page:**
 
 | Aspect          | Value                                   |
 | --------------- | --------------------------------------- |
 | Topic           | {idea title/topic}                      |
-| Scope           | {concept / feature / page / standalone} |
+| Scope           | {concept / page / standalone}           |
 | Target Audience | {from round 1}                          |
 | Core Experience | {from round 1}                          |
 | Deeper Dives    | {summary of follow-up rounds}           |
+
+**Scope = implementation:**
+
+| Aspect           | Value                                    |
+| ---------------- | ---------------------------------------- |
+| Topic            | {project / product name}                 |
+| Scope            | implementation                           |
+| Source of Truth  | {Figma / spec / screenshots / existing}  |
+| Pages in Scope   | {list from round 1}                      |
+| Tech Stack       | {confirmed stack}                        |
+| Open Decisions   | {TBDs / annotation gaps}                 |
+
+**Scope = feature / assignment:**
+
+| Aspect              | Value                              |
+| ------------------- | ---------------------------------- |
+| Topic               | {feature / assignment name}        |
+| Scope               | feature                            |
+| Goal                | {from round 1}                     |
+| Existing Context    | {from round 1}                     |
+| Out of Scope        | {from round 1}                     |
+| Definition of Done  | {from round 1}                     |
 
 Ask via AskUserQuestion: "Does this overview look right before we summarize?"
 
@@ -171,7 +187,7 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 
 
 ### Step 4: Generate Output
 
-Create a structured markdown document adapted to the idea type.
+Create a structured markdown document adapted to the scope/type.
 
 **Required sections:**
 
@@ -179,7 +195,7 @@ Create a structured markdown document adapted to the idea type.
 - **Short description** (1-2 sentences)
 - **Core concept** (detailed explanation)
 
-**Additional sections by type:**
+**Additional sections by scope/type:**
 
 For creative concepts (games, stories, art):
 
@@ -188,6 +204,14 @@ For creative concepts (games, stories, art):
 For product ideas (apps, services, businesses):
 
 - Target Audience, Key Features, User Journey/Experience, Value Proposition, Differentiation
+
+For implementation projects (design → code, spec → build):
+
+- Source of Truth, Page/Screen Structure, Tech Stack, Implementation Approach, Open Decisions
+
+For features/assignments (scoped work within an existing project):
+
+- Goal, Existing Context, Out of Scope, Constraints/Dependencies, Definition of Done
 
 **Output format:**
 
@@ -210,15 +234,6 @@ For product ideas (apps, services, businesses):
 **Synthesis:** Be accurate to what user said, don't add assumptions, confirm before proceeding.
 
 **Output:** Structure clearly, make scannable, adapt sections to idea type, output ONLY the markdown document.
-
-**AskUserQuestion:**
-
-- NEVER use meta-options ("Answer questions", "Fewer questions")
-- Each question = separate AskUserQuestion with concrete options
-- Options specific to the idea, not generic
-- `multiSelect: true` when multiple answers are valid
-- Up to 4 questions parallel per round
-- Recommended option = most contextually likely answer
 
 ### Terminal Formatting
 

@@ -21,7 +21,7 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
 
 | Section             | Description                                            |
 | ------------------- | ------------------------------------------------------ |
-| `concept`           | Project name + full concept (markdown)                 |
+| `seed`              | Project name + full seed (markdown)                    |
 | `architecture`      | Mermaid diagram + description of the architecture      |
 | `design`            | Pages, user flows, design principles                   |
 | `theme`             | Colors, fonts, spacing, CSS vars                       |
@@ -43,7 +43,7 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
 
 ```json
 {
-  "concept": {
+  "seed": {
     "name": "",
     "pitch": "",
     "content": ""
@@ -127,18 +127,18 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
 
 ## Merge strategy per section
 
-| Section             | Strategy            | Notes                                                                                                                                                                                      |
-| ------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `concept`           | **OVERWRITE**       | `name`+`pitch`+`content` overwritten, `thinking` is APPEND                                                                                                                                 |
-| `architecture`      | **OVERWRITE**       | Diagram + description fully overwritten                                                                                                                                                    |
-| `design`            | **MERGE on `name`** | Pages/flows/principles/components merged on name, never auto-delete                                                                                                                        |
-| `theme`             | **DELTA-WRITE**     | Base tokens overwritten by `/frontend-tokens`; `motion.pack/spring/choreography` and `surfaces` delta-written by `/frontend-animations` (only owned keys, never touches base token fields) |
-| `stack`             | **MERGE**           | Add packages, do not overwrite existing ones                                                                                                                                               |
-| `data`              | **MERGE**           | Add entities/fields/relations per entity                                                                                                                                                   |
-| `endpoints`         | **MERGE**           | Add or update status, do not delete                                                                                                                                                        |
-| `features`          | **MERGE on `name`** | Update status, add new ones, do not delete                                                                                                                                                 |
-| `context`           | **MERGE per key**   | Update structure/routing/patterns individually                                                                                                                                             |
-| `optimization_runs` | **APPEND**          | Append-only log, dedup on `run_id`. Never delete.                                                                                                                                          |
+| Section             | Strategy            | Notes                                                                            |
+| ------------------- | ------------------- | -------------------------------------------------------------------------------- |
+| `seed`              | **OVERWRITE**       | `name`+`pitch`+`content` overwritten, `thinking` is APPEND                       |
+| `architecture`      | **OVERWRITE**       | Diagram + description fully overwritten                                          |
+| `design`            | **MERGE on `name`** | Pages/flows/principles/components merged on name, never auto-delete              |
+| `theme`             | **OVERWRITE**       | All fields owned and written by `/frontend-tokens` (tokens + motion pack routes) |
+| `stack`             | **MERGE**           | Add packages, do not overwrite existing ones                                     |
+| `data`              | **MERGE**           | Add entities/fields/relations per entity                                         |
+| `endpoints`         | **MERGE**           | Add or update status, do not delete                                              |
+| `features`          | **MERGE on `name`** | Update status, add new ones, do not delete                                       |
+| `context`           | **MERGE per key**   | Update structure/routing/patterns individually                                   |
+| `optimization_runs` | **APPEND**          | Append-only log, dedup on `run_id`. Never delete.                                |
 
 ### Stack merge
 
@@ -233,7 +233,7 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
 
 **usedIn:** auto-maintained by Build/convert post-pass — list of pages that import this component. Never overwrite manually.
 
-**gaps:** auto-maintained by `frontend-design` Capture/Build and `frontend-convert` — list of handler-props without a linked FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only for user; update via gap-discovery flow.
+**gaps:** auto-maintained by `frontend-design` Capture/Build/Convert — list of handler-props without a linked FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only for user; update via gap-discovery flow.
 
 ### Features merge
 
@@ -262,29 +262,29 @@ Skills write to `context` after each build/refactor. CLAUDE.md refers to `projec
 
 ## Section schemas
 
-### concept
+### seed
 
 ```json
 {
   "name": "Project Name",
-  "pitch": "Short summary of the concept in 1-2 sentences.",
-  "conceptFile": "project-seed.md",
+  "pitch": "Short summary of the seed in 1-2 sentences.",
+  "seedFile": "project-seed.md",
   "content": ""
 }
 ```
 
 `name` = short project name (for dashboard header)
-`pitch` = 1-2 sentence summary of the concept (for lightweight context loading by dev skills). Must always be filled — not dependent on fallback to `content`.
-`conceptFile` = reference to `.project/project-seed.md` (preferred format for new projects)
-`content` = legacy inline concept content. For new projects empty — full content lives in `project-seed.md`.
+`pitch` = 1-2 sentence summary of the seed (for lightweight context loading by dev skills). Must always be filled — not dependent on fallback to `content`.
+`seedFile` = reference to `.project/project-seed.md` (preferred format for new projects). Legacy alias: `conceptFile` (deprecated).
+`content` = legacy inline seed content. For new projects empty — full content lives in `project-seed.md`.
 
-The concept is a **living document**. Thinking-skills (`/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-research`) integrate their concept-scope output directly into `project-seed.md` — there is no history log in `project.json`. `/project-backlog` and `/dev-define` only read the current state of `project-seed.md` as concept context.
+The seed is a **living document**. Thinking-skills (`/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-research`) integrate their concept-scope output directly into `project-seed.md` — there is no history log in `project.json`. `/project-backlog` and `/dev-define` only read the current state of `project-seed.md` as seed context.
 
 ### Single source of truth
 
 **NEVER populate both** `content` and `project-seed.md` at the same time. Rules for writes:
 
-1. **New project** (preferred): create `.project/project-seed.md`, set `seed.seedFile = "project-seed.md"`, keep `concept.content = ""`.
+1. **New project** (preferred): create `.project/project-seed.md`, set `seed.seedFile = "project-seed.md"`, keep `seed.content = ""`.
 2. **Legacy project** (existing inline `content`): leave as-is or migrate once (move `content` → `.md`, set `content = ""`).
 3. **On concept write**: first check if `project-seed.md` exists. If yes → write to .md, set `content = ""`. If not + legacy content → keep writing inline.
 
@@ -293,7 +293,7 @@ The concept is a **living document**. Thinking-skills (`/project-seed`, `/projec
 Full concept document as plain markdown (not JSON-escaped).
 
 **Read:** `Read .project/project-seed.md`
-**Write:** Write markdown directly. Also update `concept.name` and `concept.pitch` in project.json (so lightweight readers have current metadata).
+**Write:** Write markdown directly. Also update `seed.name` and `seed.pitch` in project.json (so lightweight readers have current metadata).
 
 Dashboard server's `populateFromProject()` handles both formats — existing legacy projects continue to work.
 
@@ -451,7 +451,7 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 **Skill ownership:**
 
 - Base tokens (colors, typography, spacing, shadows, motion.durations, motion.easings, interactions): managed by `/frontend-tokens`
-- Animation packs + springs + choreography + surfaces: managed by `/frontend-animations` (delta-writes only; never touches base token fields)
+- Animation packs + springs + choreography + surfaces: managed by `/frontend-tokens` (Motion Pack route)
 
 ```json
 {
@@ -594,13 +594,22 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
     "light": ":root { --background: #fff; --foreground: #1a1a2e; }",
     "dark": ".dark { --background: #1a1a2e; --foreground: #fff; }"
   },
-  "cssVars": ":root { --color-dark: #1a1a2e; --color-light: #fff; --font-heading: Inter, sans-serif; }"
+  "cssVars": ":root { --color-dark: #1a1a2e; --color-light: #fff; --font-heading: Inter, sans-serif; }",
+  "setupContext": [
+    {
+      "source": "vercel-labs/web-interface-guidelines",
+      "url": "https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md",
+      "fetchedAt": "2026-05-25T14:00:00Z",
+      "appliedBy": "frontend-tokens@3.7.1"
+    }
+  ]
 }
 ```
 
 `cssVars` = complete CSS variables export (for consumption by other skills)
 `modes` = light/dark mode CSS (object with mode name as key)
-`motion.pack` + `motion.axes` + `motion.spring[]` + `motion.choreography{}` + `surfaces{}` = managed by `/frontend-animations`
+`motion.pack` + `motion.axes` + `motion.spring[]` + `motion.choreography{}` + `surfaces{}` = managed by `/frontend-tokens` (Motion Pack route)
+`setupContext[]` = append-only log of external sources used during setup (written by `/frontend-tokens` Create and `/frontend-design` Convert); each entry: `{source, url, fetchedAt, appliedBy}`; keyed on `appliedBy` — re-run replaces, does not duplicate
 Other fields = structured tokens per category
 
 ### stack
@@ -792,7 +801,7 @@ No deletion, no update — append only. For live status of a running run: see `.
 
 Thinking-skills (`/project-research`, `/project-brainstorm`, `/project-critique`) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
 
-Concept-scope thinking-output (`/project-seed`, `/project-brainstorm` concept, `/project-critique` concept, `/project-research` concept) integrates directly into `project-seed.md` — no history log in `project.json`.
+Seed-scope thinking-output (`/project-seed`, `/project-brainstorm` concept, `/project-critique` concept, `/project-research` concept) integrates directly into `project-seed.md` — no history log in `project.json`.
 
 Skills that consume thinking-output (such as `/dev-define`) read directly via Grep on `.project/thinking/*.md` for name matching.
 
@@ -882,7 +891,7 @@ Append-only log. Skills that complete features extract learnings automatically (
 
 | Section             | Written by                                                                                | When                                     |
 | ------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `concept`           | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-backlog`           | On concept creation/iteration/plan       |
+| `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-backlog`           | On seed creation/iteration/plan          |
 | `design`            | `/frontend-design`, `/frontend-tokens`                                                    | On design spec/page build/theme creation |
 | `theme`             | `/frontend-tokens`                                                                        | After theme create/update                |
 | `stack`             | `/core-setup`, `/project-backlog`, `/dev-define`, `/dev-build`, `/frontend-design`        | On detection/new deps                    |
@@ -937,3 +946,86 @@ Start the server:
 # Respects $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
 curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node --watch {skills_path}/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
 ```
+
+---
+
+## Design Section
+
+The `design` key in `project.json` is managed exclusively by the `frontend-design` skill. Other skills must not mutate it. Schema:
+
+```json
+{
+  "design": {
+    "pages": [
+      {
+        "name": "dashboard",
+        "purpose": "Overview with metrics and status",
+        "status": "DEF",
+        "sections": ["hero", "metrics-grid", "activity-feed"],
+        "flows": ["login → dashboard", "dashboard → settings"],
+        "uses": [],
+        "notes": "",
+        "transitions": {
+          "route": null,
+          "sectionReveal": null
+        }
+      }
+    ],
+    "flows": [
+      {
+        "name": "onboarding",
+        "steps": ["landing", "signup", "verify-email", "dashboard"],
+        "notes": ""
+      }
+    ],
+    "principles": [
+      {
+        "name": "Mobile-first",
+        "description": "Design for mobile viewport first, progressive enhancement"
+      }
+    ],
+    "components": [
+      {
+        "name": "Button",
+        "purpose": "Primary action trigger with icon support",
+        "status": "DEF",
+        "scope": "atomic",
+        "appliesTo": "all",
+        "variants": ["primary", "ghost", "destructive"],
+        "sizes": ["sm", "md", "lg"],
+        "states": ["default", "hover", "disabled", "loading"],
+        "props": ["label", "icon?", "onClick", "disabled?"],
+        "slots": [],
+        "usedIn": [],
+        "notes": "",
+        "motion": {
+          "onHover": null,
+          "onPress": null,
+          "onEnter": "entrance.float-in",
+          "onExit": "exit.fade-out",
+          "onSuccess": null,
+          "onError": null
+        }
+      }
+    ]
+  }
+}
+```
+
+**Status values (pages and components):** `IDEA` | `DEF` | `BLT` | `DONE`
+
+**`pages[].uses[]`** — auto-maintained by Build/convert post-pass. List of component names imported by this page. Do not edit manually.
+
+**`components[].usedIn[]`** — auto-maintained by Build/convert post-pass. List of page names that import this component. Do not edit manually.
+
+**`components[].scope`:**
+
+| Value     | Meaning                                                     | Example                 |
+| --------- | ----------------------------------------------------------- | ----------------------- |
+| `atomic`  | Small reusable element                                      | Button, Input, Avatar   |
+| `section` | Composite within a single page                              | StatCard, ProductCard   |
+| `layout`  | Multi-page wrapper, lives in `app/layout.tsx` or equivalent | NavBar, Footer, Sidebar |
+
+**`components[].appliesTo`:** `"all"` | `["page1", "page2"]` | `"route-group:groupname"` (only relevant for `scope: layout`)
+
+**Merge strategy:** `MERGE on name` — pages/flows/principles/components merge on name, update fields, never auto-delete. `components[].motion{}` and `pages[].transitions{}` use key-level merge (never auto-delete keys, only add/update).

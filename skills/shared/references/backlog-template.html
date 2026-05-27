@@ -646,7 +646,7 @@
         if (FRONTEND_PIPELINE_TYPES.includes(f.type)) {
           if (f.status === "TODO") return { cmd: `/frontend-design ${f.name}` };
           if (f.status === "DEFINED")
-            return { cmd: `/frontend-convert ${f.name}` };
+            return { cmd: `/frontend-design ${f.name}` };
           if (f.status === "DOING") return { cmd: `/frontend-check ${f.name}` };
           return null; // DONE: no button
         }
@@ -699,7 +699,7 @@
         const actionContainer = document.getElementById("action-btns");
         if (actionContainer) {
           let actionHtml = "";
-          if ((data.features?.length || 0) === 0 && data.flags?.hasConcept) {
+          if ((data.features?.length || 0) === 0 && data.flags?.hasSeed) {
             actionHtml +=
               `<button class="action-btn action-plan" data-cmd="/project-plan" title="/project-plan">` +
               `<span class="action-icon">⊕</span><span class="action-label">Plan</span></button>`;
@@ -864,29 +864,39 @@
           const body = document.createElement("div");
           body.className = "group-body";
 
-          const phaseOrder = ["P1", "P2", "P3", "P4", "—"];
-          const phases = [...new Set(items.map((f) => f.phase || "—"))].sort(
-            (a, b) => phaseOrder.indexOf(a) - phaseOrder.indexOf(b),
-          );
+          if (items.length === 0 && isTodoSection) {
+            const emptyEl = document.createElement("div");
+            emptyEl.style.cssText =
+              "padding:12px 16px;font-size:13px;opacity:0.45;font-style:italic;";
+            emptyEl.textContent = "No tasks yet — click + to add one.";
+            body.appendChild(emptyEl);
+          } else {
+            const phaseOrder = ["P1", "P2", "P3", "P4", "—"];
+            const phases = [...new Set(items.map((f) => f.phase || "—"))].sort(
+              (a, b) => phaseOrder.indexOf(a) - phaseOrder.indexOf(b),
+            );
 
-          phases.forEach((phase) => {
-            const phaseItems = items.filter((f) => (f.phase || "—") === phase);
-            const phaseGroup = document.createElement("div");
-            phaseGroup.className = "phase-group";
+            phases.forEach((phase) => {
+              const phaseItems = items.filter(
+                (f) => (f.phase || "—") === phase,
+              );
+              const phaseGroup = document.createElement("div");
+              phaseGroup.className = "phase-group";
 
-            const phaseHeader = document.createElement("header");
-            phaseHeader.className = "phase-header";
-            phaseHeader.innerHTML = `<svg class="phase-chevron" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(phase)}`;
-            phaseHeader.onclick = () =>
-              phaseGroup.classList.toggle("phase-collapsed");
-            phaseGroup.appendChild(phaseHeader);
+              const phaseHeader = document.createElement("header");
+              phaseHeader.className = "phase-header";
+              phaseHeader.innerHTML = `<svg class="phase-chevron" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(phase)}`;
+              phaseHeader.onclick = () =>
+                phaseGroup.classList.toggle("phase-collapsed");
+              phaseGroup.appendChild(phaseHeader);
 
-            phaseItems.forEach((f) => {
-              phaseGroup.appendChild(renderRow(f));
+              phaseItems.forEach((f) => {
+                phaseGroup.appendChild(renderRow(f));
+              });
+
+              body.appendChild(phaseGroup);
             });
-
-            body.appendChild(phaseGroup);
-          });
+          } // end else (items.length > 0)
 
           section.appendChild(body);
           board.appendChild(section);
@@ -1072,9 +1082,15 @@
             const outsourceItem = canOutsource
               ? `<button class="row-menu-item row-outsource-btn" data-cmd="/team-outsource ${esc(f.name)}">→ Outsource</button>`
               : "";
+            const canConvert =
+              f.status === "TODO" && FRONTEND_PIPELINE_TYPES.includes(f.type);
+            const convertItem = canConvert
+              ? `<button class="row-menu-item row-convert-btn" data-cmd="/frontend-design ${esc(f.name)}">⌅ Convert from sketch</button>`
+              : "";
             return (
               `<button class="row-menu-item row-edit-btn">✎ Edit</button>` +
               outsourceItem +
+              convertItem +
               `<button class="row-menu-item row-cancel-btn">○ Archive</button>` +
               `<button class="row-menu-item row-delete-btn row-menu-item--danger">✕ Delete</button>`
             );
@@ -1161,6 +1177,17 @@
           outsourceBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             const cmd = outsourceBtn.dataset.cmd;
+            navigator.clipboard.writeText(cmd).then(() => {
+              toast("Copied: " + cmd);
+            });
+          });
+        }
+
+        const convertSketchBtn = row.querySelector(".row-convert-btn");
+        if (convertSketchBtn) {
+          convertSketchBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const cmd = convertSketchBtn.dataset.cmd;
             navigator.clipboard.writeText(cmd).then(() => {
               toast("Copied: " + cmd);
             });

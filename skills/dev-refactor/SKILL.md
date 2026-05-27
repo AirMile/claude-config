@@ -208,7 +208,7 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 **Lens definitions** (see also `shared/PATTERNS.md` if present):
 
 - **Reuse lens**: DRY within pipeline files, duplication with existing helpers/utilities in the codebase, inline logic that existing lib/stdlib can replace, extract-opportunities
-- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dead code, redundant state, leaky abstractions, `CODING-RULES.md` violations (+ `FRONTEND-RULES.md` for frontend files), stack-specific anti-patterns, Design Token violations (T101–T105 from `shared/TOKENS.md` — frontend files only: `.tsx`/`.jsx`/`.vue`/`.svelte`)
+- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dead code, redundant state, leaky abstractions, `CODING-RULES.md` violations (+ `FRONTEND-RULES.md` for frontend files), stack-specific anti-patterns, Design Token violations (T101–T111 from `shared/TOKENS.md` — frontend files only: `.tsx`/`.jsx`/`.vue`/`.svelte`)
 - **Efficiency lens**: missed concurrency (Promise.all), N+1, hot-path bloat, memory leaks, unbounded maps, TOCTOU, overly broad ops, no-op recurring updates
 
 0. **Load or generate refactor-patterns.md** (lazy — deferred from PHASE 0 so patterns are not generated when all features turn out to be CLEAN):

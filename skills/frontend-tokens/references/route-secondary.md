@@ -1,4 +1,4 @@
-# Routes: Update, Extract, Modes, Delete
+# Routes: Update, Extract from code, Modes, Delete
 
 ## Route: Update
 
@@ -33,7 +33,9 @@ multiSelect: true
 
 ---
 
-## Route: Extract
+## Route: Extract from code
+
+Scope: reads `tailwind.config.{js,ts,mjs}` and CSS files with `:root` vars — not external brand docs. For PDFs/images/URLs use `route-styleguide.md`.
 
 **Step 1: Detection**
 
@@ -59,7 +61,7 @@ DETECTION RESULT
 **AskUserQuestion:**
 
 ```yaml
-header: "Extract"
+header: "Extract from code"
 question: "Which sources to extract from?"
 options:
   - label: "All sources (Recommended)", description: "Combine all found tokens"

@@ -168,7 +168,7 @@ Available after Customize injection or when a Fluent-flavored project opts in:
 
 ## When to Use via Customize Route
 
-Fluent motion is injected through `/frontend-animations → Customize → Add easings from other systems`. It does not change the active pack. Typical use cases:
+Fluent motion is injected through `/frontend-tokens → Motion Pack → Customize → Add easings from other systems`. It does not change the active pack. Typical use cases:
 
 - **Electron / Tauri desktop app** targeting Windows 11 UI conventions
 - **Microsoft 365 add-in** or Teams extension that shares a host with Fluent components

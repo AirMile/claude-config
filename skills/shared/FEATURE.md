@@ -153,7 +153,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
   "build": {
     "started": "2026-02-20",
     "completed": "2026-02-20",
-    "techniques": { "tdd": 3, "implementationFirst": 2 },
+    "techniques": { "tdd": 3, "implementationOnly": 2 },
     "testsPass": 8,
     "testsTotal": 8,
     "decisions": [
@@ -300,7 +300,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 - `build` — summary with techniques, test counts, decisions, explanation
 - `packages` — npm/packages added by this feature
 - `tests.checklist` — test items with status `"pending"` (initial)
-- `requirements[].technique` — TDD or implementation-first per REQ
+- `requirements[].technique` — TDD or implementation-only per REQ
 - `requirements[].syncNote` — plain-language explanation of how REQ was built
 - `requirements[].status` → `"built"`
 
@@ -319,9 +319,9 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 
 **Added by reuse-discovery (dev-define, project-backlog, dev-build, dev-verify):**
 
-- `suggestionsLog[]` — maintained by all four pipeline skills that suggest COMPONENT/PAGE todos, and by `frontend-design`/`frontend-convert` for gap-discovery (direction-flag `frontend→dev`). Append-only. Schema: `{ skill, type, name, status: "accepted"|"rejected", at, direction? }`. Dedup key: `(name, skill)`. A proposal that was once rejected (`status: "rejected"`) is not re-proposed by the same skill, even if the trigger recurs. A new trigger from a different skill may re-propose (different detection source) — see dedupe logic in the individual skill docs.
+- `suggestionsLog[]` — maintained by all four pipeline skills that suggest COMPONENT/PAGE todos, and by `frontend-design` (Build/Convert routes) for gap-discovery (direction-flag `frontend→dev`). Append-only. Schema: `{ skill, type, name, status: "accepted"|"rejected", at, direction? }`. Dedup key: `(name, skill)`. A proposal that was once rejected (`status: "rejected"`) is not re-proposed by the same skill, even if the trigger recurs. A new trigger from a different skill may re-propose (different detection source) — see dedupe logic in the individual skill docs.
 
-**Added by gap-discovery (frontend-design, frontend-convert):**
+**Added by gap-discovery (frontend-design Build/Convert routes):**
 
 - `frontend.linkedEntities[]` — cross-pipeline traceability: which visual entities (components, pages) link their handler-props to this feature. Schema per item: `{ type: "component"|"page", name, prop }`. Read by `dev-build` to replace stub-handlers with real implementation after build.
 

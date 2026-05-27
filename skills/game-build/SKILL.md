@@ -1,11 +1,11 @@
 ---
 name: game-build
-description: Build Godot features with TDD or implementation-first. Use with /game-build.
+description: Build Godot features test-first with TDD. Use with /game-build.
 reads: [feature.requirements, backlog.stage]
 writes: [feature.requirements, feature.build, backlog.stage, learnings]
 metadata:
   author: claude-config
-  version: 2.8.0
+  version: 2.9.0
   category: game
 ---
 
@@ -15,7 +15,7 @@ metadata:
 
 PHASE 2 of the gamedev workflow: plan -> define -> **build** -> test -> refactor
 
-The build phase implements features from requirements using technique mapping: TDD for logic/calculations, Implementation First for visual/scene setup, Implementation Only for pure visual/config without testable logic. It generates tests, iterates through RED-GREEN-REFACTOR cycles, and syncs codebase understanding.
+The build phase implements features test-first using TDD for all requirements with testable behavior; Implementation Only only for pure visual/config without testable logic. It generates tests, iterates through RED-GREEN-REFACTOR cycles, and syncs codebase understanding.
 
 **Trigger**: `/game-build` or `/game-build [feature-name]`
 
@@ -302,11 +302,11 @@ Consider before building:
 
 **REMOVED filter**: Requirements with `deltaOp === "REMOVED"` are skipped — do not assign a technique, do not show in technique map table.
 
-Per requirement, assign a technique: **TDD**, **Implementation First**, or **Implementation Only**.
+Per requirement, assign a technique: **TDD** (default) or **Implementation Only**.
 
 #### Decision Logic
 
-**TDD** (test first, then implement):
+**TDD** (test first, then implement) — default for all testable requirements:
 
 - Game logic and calculations
 - Physics calculations
@@ -314,14 +314,13 @@ Per requirement, assign a technique: **TDD**, **Implementation First**, or **Imp
 - State transitions and state machines
 - Signal flows and event handling
 - Data transformations
-
-**Implementation First** (implement, then write verification test):
-
 - Scene tree construction and node configuration
 - Resource creation (.tres files)
 - Visual configuration (sprites, animations, particles) with testable properties
 - Audio setup (AudioStreamPlayer nodes)
 - UI layout and theme configuration
+
+For scene/resource requirements: write the verification test first (RED: `preload().instantiate()` fails or node missing), then build (GREEN).
 
 **Implementation Only** (no tests — only when automated tests add no value):
 
@@ -330,8 +329,6 @@ Per requirement, assign a technique: **TDD**, **Implementation First**, or **Imp
 - Static scene configuration (camera, lighting, environment setup)
 - Prototype code (explicit marking)
 - Mandatory reason: `visual-only`, `config-only`, or `prototype`
-
-See `techniques/implementation-first.md` for the full Implementation First process.
 
 **Pitfall overlap check**: for each requirement, compare against the pitfall list from PHASE 0. On clear thematic overlap (same domain, same type of bug risk) → explicitly log which pitfall is triggered and how this build prevents it. No forcing — only mark where relevant.
 
@@ -342,10 +339,8 @@ TECHNIQUE MAPPING:
 
 TDD:
 - REQ-001: Water ability deals 20 damage [logic]
-- REQ-003: Puddle slows enemies by 30% [calculation]
-
-IMPLEMENTATION FIRST:
 - REQ-002: Puddle spawns at impact location [scene setup]
+- REQ-003: Puddle slows enemies by 30% [calculation]
 
 IMPLEMENTATION ONLY:
 - REQ-004: Water splash particle effect [visual-only]
@@ -411,7 +406,7 @@ Ready for TDD cycle.
 
 ### PHASE 3: Build Cycle
 
-> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/game-build/references/phase-3-tracks.md` and follow all three tracks (TDD, Implementation First, Implementation Only) in order.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/game-build/references/phase-3-tracks.md` and follow both tracks (TDD, Implementation Only) in order.
 
 ### PHASE 3a: Full Regression Gate
 
@@ -554,7 +549,7 @@ Write in parallel:
 BUILD COMPLETE: {feature}
 ========================
 
-Techniques: TDD ({n}), Implementation First ({n}), Implementation Only ({n})
+Techniques: TDD ({n}), Implementation Only ({n})
 Tests: {passed}/{total} PASS
 Files created: {count}
 
@@ -573,14 +568,14 @@ Created files:
 
 Read these Just-In-Time during specific phases — do not load upfront.
 
-| File                                 | When to load                                                                     |
-| ------------------------------------ | -------------------------------------------------------------------------------- |
-| `references/gut-conventions.md`      | PHASE 2 — when generating test files (file structure, assertions, mocks)         |
-| `references/gut-commands.md`         | PHASE 3, 3a, 3b — when running GUT tests                                         |
-| `references/troubleshooting.md`      | PHASE 3 — on test failures or build blockers                                     |
-| `references/phase-3-tracks.md`       | PHASE 3 — full TDD, Implementation First, Implementation Only track instructions |
-| `references/phase-3b-integration.md` | PHASE 3b — integration test scene template and DebugListener script              |
-| `references/phase-6-commit.md`       | PHASE 6 — scoped auto-commit flow with gdlint check and git baseline comparison  |
+| File                                 | When to load                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------- |
+| `references/gut-conventions.md`      | PHASE 2 — when generating test files (file structure, assertions, mocks)        |
+| `references/gut-commands.md`         | PHASE 3, 3a, 3b — when running GUT tests                                        |
+| `references/troubleshooting.md`      | PHASE 3 — on test failures or build blockers                                    |
+| `references/phase-3-tracks.md`       | PHASE 3 — full TDD and Implementation Only track instructions                   |
+| `references/phase-3b-integration.md` | PHASE 3b — integration test scene template and DebugListener script             |
+| `references/phase-6-commit.md`       | PHASE 6 — scoped auto-commit flow with gdlint check and git baseline comparison |
 
 > Completion claims require fresh output (R009 — see `../shared/CODING-RULES.md`)
 

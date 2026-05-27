@@ -269,7 +269,7 @@ playwright-cli -s=mysession close
 | Skill                   | Uses Playwright For                               | Snapshot strategy   |
 | ----------------------- | ------------------------------------------------- | ------------------- |
 | `frontend-check`        | A11y tree, focus, multi-viewport, CWV, SEO, smoke | Inline + --filename |
-| `frontend-convert`      | Screenshot capture + verification loop            | Screenshot only     |
+| `frontend-design`       | Screenshot capture + verification loop (Convert)  | Screenshot only     |
 | `marketing-screenshots` | HiDPI screenshots, dark mode variants             | run-code newContext |
 | `dev-debug`             | Runtime-state inspectie, hypothesis-validatie     | eval (JSON inline)  |
 | `team-verify`           | Automated browser checks, runtime assertions      | Inline + eval       |

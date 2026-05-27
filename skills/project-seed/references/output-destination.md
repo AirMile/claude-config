@@ -44,7 +44,7 @@ options:
 multiSelect: false
 ```
 
-If "Yes": Write the full concept document as plain markdown to `.project/project-seed.md`. Also update project.json: Read `.project/project.json` (or create with `{}`), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
+If "Yes": Write the full concept document as plain markdown to `.project/project-seed.md`. Also update project.json: Read `.project/project.json` (or create with `{}`), set `seed.name` (H1 title), `seed.pitch` (first paragraph, 1-2 sentences), `seed.scope` (active scope from Step 1a), `seed.seedFile = "project-seed.md"`. Remove `seed.content` if it exists (migrated to .md). Write back.
 
 **If scope = standalone idea (from Step 1a):**
 
@@ -93,14 +93,14 @@ multiSelect: false
 
 1. Create `.project/` folder if it doesn't exist
 2. Write the full concept document as plain markdown to `.project/project-seed.md`
-3. Also update project.json: Read `.project/project.json` (or create with `{}`), set `concept.name` (H1 title), `concept.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `concept.content` if it exists (migrated to .md). Write back.
+3. Also update project.json: Read `.project/project.json` (or create with `{}`), set `seed.name` (H1 title), `seed.pitch` (first paragraph, 1-2 sentences), `seed.scope` (active scope from Step 1a: `concept` | `implementation` | `feature` | `page` | `standalone`), `seed.seedFile = "project-seed.md"`. Remove `seed.content` if it exists (migrated to .md). Write back.
 4. Confirm:
 
    ```
    SEED SAVED
 
    File: .project/project-seed.md
-   Name: {concept.name}
+   Name: {seed.name}
 
    Next steps:
    - /project-critique - Critically analyze and strengthen
@@ -108,7 +108,7 @@ multiSelect: false
    - /project-backlog - Convert to feature backlog
    ```
 
-**Seed-scope output is integrated into `project-seed.md`.** No separate `.project/thinking/*.md` for concept-scope and no `concept.thinking[]` append — the living document is the source. Update `concept.name` and `concept.pitch` in `project.json` if metadata changes.
+**Seed-scope output is integrated into `project-seed.md`.** No separate `.project/thinking/*.md` for concept-scope and no `seed.thinking[]` append — the living document is the source. Update `seed.name` and `seed.pitch` in `project.json` if metadata changes.
 
 **If "Copy to clipboard":**
 

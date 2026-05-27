@@ -53,10 +53,19 @@ Modes:
   [✓|✗] Dark mode .dark CSS present (if configured)
   [✓|✗] Dark mode contrast ratios acceptable (AA minimum)
   [✓|✗] No unfilled placeholders in mode CSS blocks
-Motion (if configured):
+Motion base (if configured):
   [✓|✗] Duration values end with 'ms' or 's'
   [✓|✗] Each duration has token, value, usage
   [✓|✗] Easing values are valid cubic-bezier or keyword
+Motion pack (if set):
+  [✓|✗] motion.pack is a valid value (none|subtle|standard|apple|playful)
+  [✓|✗] motion.axes has expressiveness, springiness, tempo, surfaces
+  [✓|✗] motion.spring[] entries each have token, stiffness, damping, mass, cssApprox, cssDuration
+  [✓|✗] motion.choreography has entrance, exit keys (success/attention/error optional)
+Surfaces (if glass enabled):
+  [✓|✗] surfaces.glass.blur is a valid CSS length
+  [✓|✗] surfaces.glass.tint uses color-mix() or valid CSS color
+  [✓|✗] surfaces.elevation[] entries each have token, shadow, tint, usage
 Interactions (if configured):
   [✓|✗] Focus ring has width, color, offset
   [✓|✗] Hover transition references valid motion tokens
@@ -92,7 +101,9 @@ File:         [✓ PASS | ✗ FAIL]
 Content:      [✓ PASS | ✗ FAIL] - {N}/{M} sections
 Values:       [✓ PASS | ⚠ WARNINGS | ✗ FAIL]
 Modes:        [✓ PASS | ⚠ Light only | ✗ FAIL] - {light|light+dark}
-Motion:       [✓ PASS | ⚠ Skipped | ✗ FAIL]
+Motion base:  [✓ PASS | ⚠ Skipped | ✗ FAIL]
+Motion pack:  [✓ PASS | ⚠ None set | ✗ FAIL]
+Surfaces:     [✓ PASS | ⚠ Disabled | ✗ FAIL]
 Interactions: [✓ PASS | ⚠ Skipped | ✗ FAIL]
 Export:       [✓ PASS | ✗ FAIL]
 Integrity:    [✓ PASS | ✗ FAIL]
@@ -167,3 +178,20 @@ Config:   {tailwind.config updated | theme.css generated | —}
 Tokens:   {N} color, {M} spacing, {P} typography, {Q} motion, {R} interaction tokens synced
 ════════════════════════════════════════════════
 ```
+
+---
+
+## X.7 Backlog Write
+
+Runs only if a backlog task was picked up in PHASE 0 step 4 (`taskName` is set) **and** post-flight passed (status → Complete or Warnings).
+
+1. Re-read `.project/backlog.html`.
+2. Parse the JSON inside `<script id="backlog-data">`.
+3. Find `features[].name === taskName`.
+4. Set `status = "DONE"` and delete the `transition` field.
+5. Serialize the updated JSON back into the script tag and Write the full HTML file.
+6. Output: `Backlog: ✓ Task "{taskName}" → DONE`.
+
+If post-flight failed before reaching X.7: skip the write (per `shared/BACKLOG.md § Abort` — `transition` stays, user can re-copy prompt to retry).
+
+Mirror update: also set `features[].status = "DONE"` and `completedAt: "{today}"` in `.project/project.json` if a matching entry exists (convenience; `backlog.html` is the UI source of truth).

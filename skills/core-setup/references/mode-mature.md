@@ -385,9 +385,9 @@ Infer project metadata from available sources so the user doesn't have to go thr
 Assemble:
 
 ```
-concept.name       ← README H1 | package.json#name | dir name
-concept.pitch      ← README first paragraph | package.json#description | ""
-seed.seedFile← "project-seed.md"
+seed.name          ← README H1 | package.json#name | dir name
+seed.pitch         ← README first paragraph | package.json#description | ""
+seed.seedFile      ← "project-seed.md"
 stack.framework    ← PHASE 2a
 stack.language     ← PHASE 2a (derived from framework + package.json engines)
 stack.packages     ← PHASE 2f
@@ -404,7 +404,7 @@ For selected fields: write to `project.json`. Deselected fields remain empty (us
 
 Create `.project/project-seed.md` with the accepted pitch text as a starting point (plain markdown, no template).
 
-If `.project/backlog.html` already exists (non-frontend projects that skip PHASE 5.7): read backlog.html → parse `<script id="backlog-data">` JSON → set `data.flags.hasConcept = true` + `data.flags.conceptPath = ".project/project-seed.md"` → edit back (keep script tags intact). This makes the `/project-backlog` button appear in the backlog dashboard.
+If `.project/backlog.html` already exists (non-frontend projects that skip PHASE 5.7): read backlog.html → parse `<script id="backlog-data">` JSON → set `data.flags.hasSeed = true` + `data.flags.seedPath = ".project/project-seed.md"` → edit back (keep script tags intact). This makes the `/project-backlog` button appear in the backlog dashboard.
 
 ### PHASE 5: Sync
 
@@ -423,7 +423,7 @@ For each new entry from PHASE 3 + PHASE 4:
 
 **5b) Write project files**
 
-- `project.json`: update `concept`, `stack`, `data.entities`, `endpoints` (from PHASE 2 + 4.5)
+- `project.json`: update `seed`, `stack`, `data.entities`, `endpoints` (from PHASE 2 + 4.5)
 - `project-context.json`: update `context.structure`, `context.routing`, `context.patterns`, `architecture.components`, append `learnings[]`
 - `context.updated` → today
 
@@ -624,7 +624,7 @@ Mark PHASE 5.65 → `completed`.
 
 Create backlog from template `{skills_path}/shared/references/backlog-template.html` if missing. Skip if feature with name `setup-design-tokens` already exists (idempotent).
 
-Always set `data.flags.hasConcept = true` and `data.flags.conceptPath = ".project/project-seed.md"` in the backlog JSON block (even if the design-tokens item already existed). This makes the `/project-backlog` button appear.
+Always set `data.flags.hasSeed = true` and `data.flags.seedPath = ".project/project-seed.md"` in the backlog JSON block (even if the design-tokens item already existed). This makes the `/project-backlog` button appear.
 
 No interactive modal — only show `Setup task added to backlog` in stdout. The PHASE 6 report "Next steps" section then automatically shows the `/frontend-tokens` bullet.
 
@@ -734,7 +734,7 @@ Mark PHASE 5.85 → `completed`.
 | Condition                             | Bullet                                     |
 | ------------------------------------- | ------------------------------------------ |
 | (none — always)                       | `/core-pull`                               |
-| `concept.pitch` empty                 | `/project-seed`                            |
+| `seed.pitch` empty                    | `/project-seed`                            |
 | `features[]` empty                    | `/dev-define`                              |
 | frontend stack && `needsTheme = true` | `/frontend-tokens`                         |
 | `installed_in_session[]` not empty    | show "Modules added: {list}" under Updated |
@@ -785,7 +785,7 @@ Updated: {date}
 
 Next steps:
   • /core-pull              — incremental updates (sync state is on)
-{if concept.pitch empty}  • /project-seed   — fill in concept pitch
+{if seed.pitch empty}     • /project-seed   — fill in seed pitch
 {if features[] empty}     • /dev-define         — define the first feature
 {if frontend && needsTheme}  • /frontend-tokens — design tokens (color, typography, spacing)
 ```
