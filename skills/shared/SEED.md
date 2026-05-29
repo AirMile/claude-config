@@ -102,7 +102,7 @@ multiSelect: false
 
 ### Resolution outcomes
 
-- **Yes** → generate inline rewrite of `project-seed.md` (preserve unaffected sections verbatim, rewrite only drifted sections); derive updated `seed.pitch` (1–2 sentences) if stale. In plan-mode skills: append proposed full file to plan file under `## Proposed seed update` heading for review. Carry `seedUpdateApproved: true` to sync phase.
+- **Yes** → generate inline rewrite of `project-seed.md` (preserve unaffected sections verbatim, rewrite only drifted sections); derive updated `seed.pitch` (1–2 sentences) if stale. In plan-mode skills: append proposed full file to plan file under `## Proposed seed update` heading for review. Carry `seedUpdateApproved: true` to sync phase. **The sync phase MUST also co-update `backlog.html#data.overview` whenever `seed.pitch` changed** — same source of truth, two surfaces. See [§ Write targets](#write-targets-sync-phase) for the canonical mutation set.
 - **Skip** → record drift items as `seedDrift[]` (each entry per the schema below) and persist in the skill's primary artifact (`feature.json#seedDrift[]` or `backlog.html#data.seedDrift[]`). Picked up later by `/project-seed § Sync`, `/project-brainstorm` (concept-scope save), or `/project-critique` (concept-scope save) — first one to successfully rewrite the seed clears the matching entries. Carry `seedUpdateApproved: false`.
 - **Adjust** → loop on item selection, regenerate rewrite, re-prompt.
 
@@ -126,3 +126,20 @@ multiSelect: false
 | `/dev-define`      | End of PHASE 2 Architecture, before ExitPlanMode                    | Yes        |
 | `/game-define`     | End of PHASE 3 Architecture Design, before writing feature.json     | No         |
 | `/project-backlog` | After PHASE 3 Priority Assignment confirmation, before ExitPlanMode | Yes        |
+
+---
+
+## Write targets (sync phase)
+
+When `seedUpdateApproved: true` reaches the consumer skill's sync phase, the following writes happen as one parallel batch:
+
+| Target | When | How |
+|---|---|---|
+| `.project/project-seed.md` | Always (full rewrite of approved content) | Write full file |
+| `project.json#seed.pitch` | If pitch differs from previous | Targeted Edit |
+| `project.json#seed.name` | Only if H1 title in rewrite changed | Targeted Edit |
+| `backlog.html#data.overview` | If `seed.pitch` changed | Replace with new pitch (or first 1–2 sentences if pitch > ~200 chars). Skip silently when already matching. |
+
+Log line (consumer skill): `Seed: ✓ updated — N section(s) rewritten` (append ` + backlog.overview` when overview was co-updated).
+
+Consumer skills do not duplicate these mutation details — reference this table.

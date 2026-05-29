@@ -201,12 +201,24 @@ git branch -d {source_branch}
 **Post-remove directory check**:
 
 ```bash
+# Build-artifact directories left by dev servers / test runners — safe to sweep automatically
+_BUILD_ARTIFACTS=".next node_modules dist build .turbo .playwright-cli out .cache"
+
 if [ -d "{worktree_path}" ]; then
-  if [ -z "$(ls -A "{worktree_path}" 2>/dev/null)" ]; then
+  _REMAINING=$(ls -A "{worktree_path}" 2>/dev/null)
+  if [ -z "$_REMAINING" ]; then
     rmdir "{worktree_path}" 2>/dev/null && WORKTREE_RESULT="removed (clean)" \
       || WORKTREE_RESULT="orphan-dir: {worktree_path} (rmdir failed — close shells holding cwd, then: rmdir {worktree_path})"
   else
-    WORKTREE_RESULT="orphan-dir: {worktree_path} (non-empty: $(ls -A "{worktree_path}" | head -3 | tr '\n' ' '))"
+    # Check if only build artifacts remain
+    _NON_ARTIFACT=$(echo "$_REMAINING" | tr ' ' '\n' | grep -v -E "^($(echo $_BUILD_ARTIFACTS | tr ' ' '|'))$" | head -3)
+    if [ -z "$_NON_ARTIFACT" ]; then
+      rm -rf "{worktree_path}" 2>/dev/null \
+        && WORKTREE_RESULT="removed (clean — build artifacts swept)" \
+        || WORKTREE_RESULT="orphan-dir: {worktree_path} (rm -rf failed — check permissions)"
+    else
+      WORKTREE_RESULT="orphan-dir: {worktree_path} (non-empty: $(ls -A "{worktree_path}" | head -3 | tr '\n' ' '))"
+    fi
   fi
 else
   WORKTREE_RESULT="removed (clean)"
@@ -224,6 +236,30 @@ If branch was pushed to remote:
   - Yes → `git push origin --delete {source_branch}`
 
 **Symlink preservation**: the worktree's `.project/` symlinks point to main's `.project/`. Removing the worktree directory removes those symlinks — main's `.project/` is untouched. No extra cleanup needed.
+
+**Backlog sync (frontend-track only)**: after successful remove, detect if the feature is frontend-track:
+
+```bash
+FEATURE_TYPE=$(node -e "
+  const html = require('fs').readFileSync('.project/backlog.html','utf8');
+  const m = html.match(/\"features\"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
+  if (!m) { process.stdout.write(''); process.exit(0); }
+  try {
+    const fs = JSON.parse(m[1]);
+    const f = fs.find(x => x.name === '{feature-name}');
+    process.stdout.write(f ? (f.type || '') : '');
+  } catch(e) { process.stdout.write(''); }
+" 2>/dev/null || echo "")
+```
+
+If `FEATURE_TYPE === "COMPONENT"` or `FEATURE_TYPE === "PAGE"` — these tracks have no `/dev-refactor` step, so set shipped fields now:
+
+1. Read `.project/backlog.html` → find `f.name === "{feature-name}"`
+2. Set `status: "DONE"`, `shipped: true`, `shippedAt: "{YYYY-MM-DD}"`, `shippedSha: "{merge-sha}"`. Remove `stage` if present.
+3. Write back via Edit (keep `<script>` tags intact). Set `data.updated` to today.
+4. Sync same fields to `project.json` `features[]` entry.
+
+For dev-track (`FEATURE`: type other than COMPONENT/PAGE) — skip. `/dev-refactor` owns `shippedSha` for those.
 
 ## Output Report
 
@@ -253,7 +289,7 @@ Also detect ghost cwd via `[ "$(pwd)" != "{main_root}" ] && [ ! -d "$(pwd)" ]`. 
    Start a fresh terminal in: {main_root}
 ```
 
-> **Scope of `Merge: {sha}`**: informational only — surfaces the merge commit for the user. Do NOT write it to `backlog.html` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys are set exclusively by `/dev-refactor` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). Skills consuming this report (`dev-verify`, `game-verify`, `frontend-check`, `core-finalize`) MUST treat the SHA as display-only.
+> **Scope of `Merge: {sha}`**: for **dev-track** features (not COMPONENT/PAGE), this SHA is informational only — do NOT write it to `backlog.html` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys for dev-track are set exclusively by `/dev-refactor` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). For **frontend-track** (COMPONENT/PAGE), the Backlog sync step above writes the merge SHA as `shippedSha` because no `/dev-refactor` step exists for that track. Skills consuming this report (`dev-verify`, `game-verify`, `frontend-check`, `core-finalize`) MUST treat the SHA as display-only for dev-track.
 
 For cleanup-only with PR context:
 

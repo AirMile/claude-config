@@ -39,21 +39,14 @@ If `current_root != main_root`: already in a worktree → **skip auto-create**, 
 Check whether a worktree/branch already exists for this feature:
 
 ```bash
-# macOS/Linux
 git show-ref --verify --quiet "refs/heads/worktree-{feature-name}"
 test -e "{main_root}/.claude/worktrees/{feature-name}"
-
-# Windows (PowerShell)
-git show-ref --verify --quiet "refs/heads/worktree-{feature-name}"
-Test-Path "{main_root}\.claude\worktrees\{feature-name}"
 ```
 
 **If branch OR directory exists** — check clean state first:
 
 ```bash
 WT_PATH="{main_root}/.claude/worktrees/{feature-name}"
-
-# macOS/Linux
 BRANCH_OK=$(cd "$WT_PATH" 2>/dev/null && [ "$(git branch --show-current)" = "worktree-{feature-name}" ] && echo yes || echo no)
 DIRTY=$(cd "$WT_PATH" 2>/dev/null && git status --porcelain | head -1)
 SYMLINK_OK=$(
@@ -61,18 +54,6 @@ SYMLINK_OK=$(
   test -L "$WT_PATH/.project/features"     && test -e "$WT_PATH/.project/features" &&
   echo yes || echo no
 )
-```
-
-```powershell
-# Windows (PowerShell)
-$branchOk = if (Test-Path "$WT_PATH") {
-  Push-Location "$WT_PATH"; $b = git branch --show-current; Pop-Location
-  if ($b -eq "worktree-{feature-name}") { "yes" } else { "no" }
-} else { "no" }
-$dirty = if (Test-Path "$WT_PATH") {
-  Push-Location "$WT_PATH"; $d = git status --porcelain | Select-Object -First 1; Pop-Location; $d
-} else { "?" }
-$symlinkOk = if ((Test-Path "$WT_PATH\.project\backlog.html") -and (Test-Path "$WT_PATH\.project\features")) { "yes" } else { "no" }
 ```
 
 **Pre-existing-orphan check** — `$WT_PATH` exists on disk but git knows no worktree there. Classic residue from a prior session that couldn't clean up (see `shared/FINALIZE.md → Cleanup Procedure` orphan-dir scenario).
@@ -111,13 +92,9 @@ After successful cleanup → skip rest of Step 1, go directly to no-collision `E
 
 ```bash
 WT_PATH="{main_root}/.claude/worktrees/{feature-name}"
-
-# macOS/Linux
 UNCOMMITTED=$(cd "$WT_PATH" 2>/dev/null && git status --porcelain | wc -l | tr -d ' ' || echo "?")
 UNMERGED=$(git log "{default_branch}..worktree-{feature-name}" --oneline 2>/dev/null | wc -l | tr -d ' ' || echo "?")
 LAST_COMMIT=$(git log -1 --format='%cr' "worktree-{feature-name}" 2>/dev/null || echo "unknown")
-
-# Windows: replace `wc -l` with `( | Measure-Object -Line).Lines`
 ```
 
 Then AskUserQuestion:
@@ -209,18 +186,54 @@ Recreates a fresh worktree at the same path → the old directory MUST be fully 
 
 5. Continue to the no-collision path (`EnterWorktree(name: "{feature-name}")`).
 
-**If no collision** — verify the current branch is up-to-date before creating the worktree (avoids a rebase step after switch):
+**If no collision** — pull origin into local `$DEFAULT` (if behind), then create worktree explicitly from local `$DEFAULT`. This ensures local-only merges (features finalized but not yet pushed) are included in the new worktree's base:
 
 ```bash
 DEFAULT=$(git -C "$main_root" symbolic-ref --short HEAD 2>/dev/null || echo main)
-LOCAL_HEAD=$(git -C "$main_root" rev-parse "$DEFAULT")
-REMOTE_HEAD=$(git -C "$main_root" rev-parse "origin/$DEFAULT" 2>/dev/null || echo "")
-if [ -n "$REMOTE_HEAD" ] && [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
-  echo "BASE: local $DEFAULT ($LOCAL_HEAD) differs from origin/$DEFAULT — worktree will branch from local HEAD"
+UPSTREAM=$(git -C "$main_root" rev-parse --abbrev-ref --symbolic-full-name "$DEFAULT@{u}" 2>/dev/null || echo "")
+WT_NAME="worktree-{feature-name}"
+WT_PATH="{main_root}/.claude/worktrees/{feature-name}"
+
+if [ -n "$UPSTREAM" ]; then
+  REMOTE=$(echo "$UPSTREAM" | cut -d/ -f1)
+  if git -C "$main_root" fetch --quiet "$REMOTE" "$DEFAULT" 2>/dev/null; then
+    LOCAL_HEAD=$(git -C "$main_root" rev-parse "$DEFAULT")
+    REMOTE_HEAD=$(git -C "$main_root" rev-parse "$UPSTREAM")
+    if [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
+      if git -C "$main_root" pull --ff-only --quiet "$REMOTE" "$DEFAULT" 2>/dev/null; then
+        PULLED=$(git -C "$main_root" log --oneline "$LOCAL_HEAD..$UPSTREAM" 2>/dev/null | wc -l | tr -d ' ')
+        echo "BASE: pulled $DEFAULT from $UPSTREAM ($PULLED commits)"
+      else
+        LOCAL_AHEAD=$(git -C "$main_root" rev-list --count "$UPSTREAM..$DEFAULT" 2>/dev/null || echo 0)
+        if [ "${LOCAL_AHEAD:-0}" -gt 0 ]; then
+          echo "BASE: local $DEFAULT is $LOCAL_AHEAD commits ahead of $UPSTREAM — local merges included in worktree base"
+        else
+          echo "BASE: local $DEFAULT diverged from $UPSTREAM (not fast-forward) — branching from local HEAD; resolve manually if needed"
+        fi
+      fi
+    fi
+  else
+    echo "BASE: fetch $REMOTE failed (no network or auth) — branching from local $DEFAULT"
+  fi
 fi
+# Geen upstream → silent, worktree branches from local HEAD
+
+# Create worktree from local $DEFAULT — bypasses worktree.baseRef setting
+git -C "$main_root" worktree add -b "$WT_NAME" "$WT_PATH" "$DEFAULT"
 ```
 
-Then `EnterWorktree(name: "{feature-name}")` — creates `{main_root}/.claude/worktrees/{feature-name}` branching from the **current local HEAD** of `$DEFAULT`, with branch `worktree-{feature-name}`.
+Outcome matrix:
+
+| Situatie                         | Actie                              | Output                                                                    |
+| -------------------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| Geen upstream (lokale-only repo) | `worktree add` vanaf lokale main   | (silent)                                                                  |
+| Local == origin                  | fetch, geen pull nodig             | (silent)                                                                  |
+| Local behind origin (ancestor)   | fetch + ff-only pull               | `BASE: pulled main from origin/main (3 commits)`                          |
+| Local ahead of origin            | fetch, pull no-op, log local-ahead | `BASE: local main is 15 commits ahead of origin/main — local merges included` |
+| Local diverged van origin        | fetch, ff-only faalt               | `BASE: local main diverged from origin/main …`                            |
+| Fetch faalt (network/auth)       | `worktree add` vanaf lokale main   | `BASE: fetch origin failed — branching from local main`                   |
+
+Then `EnterWorktree(path: "$WT_PATH")` — enters the already-created worktree. Using `path:` bypasses `worktree.baseRef` since the branch and directory already exist.
 
 #### Step 3: Set up shared `.project/` and verify — one Bash call
 
@@ -251,6 +264,19 @@ for f in backlog.html features project.json project-context.json; do
 done
 [ ${#FAILED[@]} -gt 0 ] && echo "ERROR: symlinks failed: ${FAILED[*]}" && exit 1
 echo "GATE: ok — .project/ symlinks intact"
+
+# Suppress typechange noise: tracked files replaced by symlinks show as T in git status
+git -C "$WT" update-index --skip-worktree \
+  .project/backlog.html .project/project.json .project/project-context.json \
+  2>/dev/null || true
+# Suppress deleted-file noise for directory paths replaced by symlinks (features/, wireframes/, etc.)
+WT_GITDIR=$(git -C "$WT" rev-parse --git-dir 2>/dev/null)
+if [ -n "$WT_GITDIR" ]; then
+  mkdir -p "$WT_GITDIR/info"
+  for _p in ".project/features/" ".project/wireframes/" ".project/screenshots/" ".project/thinking/"; do
+    grep -qxF "$_p" "$WT_GITDIR/info/exclude" 2>/dev/null || echo "$_p" >> "$WT_GITDIR/info/exclude"
+  done
+fi
 
 # Gate: verify inside worktree
 [[ "$(pwd)" == *"/.claude/worktrees/{feature-name}" ]] && echo "GATE: ok — inside worktree" || echo "ABORT: not inside worktree"
@@ -319,48 +345,19 @@ if [ ${#WIRE_FAILED[@]} -ne 0 ]; then
   echo "Check permissions on $WT/.project/ and that $MP exists."
   exit 1
 fi
-```
 
-```powershell
-# Windows (PowerShell) — Junction for directories, SymbolicLink for files (requires Developer Mode or admin)
-$WT  = "{main_root}\.claude\worktrees\{feature-name}"
-$MP  = "{main_root}\.project"
-
-# Developer Mode pre-check (file symlinks require Developer Mode or admin)
-$devModeKey  = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock"
-$devModeProp = Get-ItemProperty -Path $devModeKey -Name "AllowDevelopmentWithoutDevLicense" -ErrorAction SilentlyContinue
-$devModeOn   = $devModeProp -and $devModeProp.AllowDevelopmentWithoutDevLicense -eq 1
-
-if (-not $devModeOn) {
-  Write-Warning @"
-Developer Mode is uit — file symlinks vallen terug op COPY-mode.
-Effect: backlog.html, project.json, project-context.json zijn NIET shared
-tussen main en worktree. Status updates vanuit worktree zijn niet direct
-zichtbaar op main checkout.
-
-Enable: Settings -> Privacy & Security -> For developers -> Developer Mode (ON).
-Daarna deze skill opnieuw uitvoeren voor echte symlinks.
-"@
-}
-
-New-Item -Force -ItemType Directory "$WT\.project\session" | Out-Null
-
-# Directories → Junction (no elevated rights needed)
-foreach ($dir in @("features","wireframes","screenshots","thinking")) {
-  if (Test-Path "$WT\.project\$dir") { Remove-Item -Recurse -Force "$WT\.project\$dir" }
-  New-Item -ItemType Junction -Path "$WT\.project\$dir" -Target "$MP\$dir" | Out-Null
-}
-
-# Files → SymbolicLink (needs Developer Mode)
-foreach ($file in @("backlog.html","project.json","project-context.json")) {
-  if (Test-Path "$WT\.project\$file") { Remove-Item -Force "$WT\.project\$file" }
-  try {
-    New-Item -ItemType SymbolicLink -Path "$WT\.project\$file" -Target "$MP\$file" | Out-Null
-  } catch {
-    Write-Warning "Symlink for $file failed (Developer Mode required). Using copy fallback — .project/$file will diverge."
-    Copy-Item "$MP\$file" "$WT\.project\$file"
-  }
-}
+# Suppress typechange noise: tracked files replaced by symlinks show as T in git status
+git -C "$WT" update-index --skip-worktree \
+  .project/backlog.html .project/project.json .project/project-context.json \
+  2>/dev/null || true
+# Suppress deleted-file noise for directory paths replaced by symlinks
+_WT_GITDIR=$(git -C "$WT" rev-parse --git-dir 2>/dev/null)
+if [ -n "$_WT_GITDIR" ]; then
+  mkdir -p "$_WT_GITDIR/info"
+  for _p in ".project/features/" ".project/wireframes/" ".project/screenshots/" ".project/thinking/"; do
+    grep -qxF "$_p" "$_WT_GITDIR/info/exclude" 2>/dev/null || echo "$_p" >> "$_WT_GITDIR/info/exclude"
+  done
+fi
 ```
 
 **Caveat**: if main's `.project/backlog.html` does not exist yet (fresh project), `ln -sfn` creates a dangling symlink — this resolves itself as soon as the first backlog write happens on main. Skills check for file existence before reading, so a dangling symlink is safe.
@@ -370,7 +367,6 @@ foreach ($file in @("backlog.html","project.json","project-context.json")) {
 After Step 3 completes (and on every silent-reuse path), verify all expected symlinks resolve. Idempotent — re-running repairs broken links.
 
 ```bash
-# macOS/Linux
 WT="{main_root}/.claude/worktrees/{feature-name}"
 EXPECTED=("backlog.html" "features" "wireframes" "screenshots" "thinking" "project.json" "project-context.json")
 FAILED=()
@@ -387,23 +383,6 @@ if [ ${#FAILED[@]} -gt 0 ]; then
 fi
 echo "SYMLINKS: ok (7/7)"
 ```
-
-```powershell
-# Windows
-$WT = "{main_root}\.claude\worktrees\{feature-name}"
-$expected = @("backlog.html","features","wireframes","screenshots","thinking","project.json","project-context.json")
-$failed = @()
-foreach ($name in $expected) {
-  if (-not (Test-Path "$WT\.project\$name")) { $failed += $name }
-}
-if ($failed.Count -gt 0) {
-  Write-Error "Symlink integrity check failed for: $($failed -join ', ')"
-  exit 1
-}
-Write-Output "SYMLINKS: ok (7/7)"
-```
-
-On Windows with Developer Mode off, file entries are copies — `Test-Path` returns `true` for both. Directory junctions always work.
 
 ---
 
@@ -434,17 +413,10 @@ Run after the feature-name is known. Before any state-mutating operations (backl
 Before running any git worktree calls, check whether a worktree branch even exists:
 
 ```bash
-# macOS/Linux
 if ! git show-ref --verify --quiet "refs/heads/worktree-{feature-name}"; then
   echo "worktree: no worktree-{feature-name} branch — continuing on current branch"
   # SKIP Steps 0–4. Proceed directly to Step 5 of the calling skill's PHASE 0.
 fi
-
-# Windows (PowerShell)
-if (-not (git show-ref --verify --quiet "refs/heads/worktree-{feature-name}")) {
-  Write-Output "worktree: no worktree-{feature-name} branch — continuing on current branch"
-  # SKIP Steps 0–4. Proceed directly to Step 5 of the calling skill's PHASE 0.
-}
 ```
 
 `git show-ref` is a single ref-lookup (~1 ms). When no worktree was ever created for this feature (typical for DONE features that were built directly on main), this skips the full `git worktree prune` + `git worktree list` + path-compare sequence.
@@ -494,6 +466,53 @@ When `EnterWorktree` was just called in Step 4 (i.e. `current_root` changed to `
 
 This ensures that any skill using Switch finds healthy symlinks before its first backlog write, even if a prior session (or a `/core-pull` run inside the worktree) silently destroyed them.
 
+#### Step 4.6: Staleness check
+
+After a successful switch (or skip-because-already-in-worktree), resolve compare ref and compute staleness.
+
+Resolve compare ref — pull origin into local `$DEFAULT` if behind (ff-only), then compare against local `$DEFAULT`. This ensures both remote commits and local-only merges (features finalized but not yet pushed) count as staleness:
+
+```bash
+DEFAULT=$(git -C "$main_root" symbolic-ref --short HEAD 2>/dev/null || echo main)
+UPSTREAM=$(git -C "$main_root" rev-parse --abbrev-ref --symbolic-full-name "$DEFAULT@{u}" 2>/dev/null || echo "")
+if [ -n "$UPSTREAM" ]; then
+  REMOTE=$(echo "$UPSTREAM" | cut -d/ -f1)
+  if git -C "$main_root" fetch --quiet "$REMOTE" "$DEFAULT" 2>/dev/null; then
+    git -C "$main_root" pull --ff-only --quiet "$REMOTE" "$DEFAULT" 2>/dev/null || true
+  fi
+fi
+COMPARE_REF="$DEFAULT"
+BEHIND=$(git -C "$main_root" log --oneline "worktree-{feature-name}..$COMPARE_REF" 2>/dev/null | wc -l | tr -d ' ')
+```
+
+Fetch faalt silently → pull skip, COMPARE_REF blijft lokale `$DEFAULT`. Check werkt altijd, ongeacht remote-status.
+
+---
+
+**Als `BEHIND == 0`**: skip silently, continue to Step 5.
+
+**Als `BEHIND > 0`**: silent rebase.
+
+```bash
+git -C "{worktree_path}" branch -f "worktree-{feature-name}-pre-rebase"
+git -C "{worktree_path}" rebase "$COMPARE_REF" 2>&1
+```
+
+- Exit 0 → print:
+  ```
+  STALE: auto-rebased on $COMPARE_REF ({BEHIND} commits, clean — no conflicts).
+    Backup branch: worktree-{feature-name}-pre-rebase
+    Revert with:   git -C "{worktree_path}" reset --hard worktree-{feature-name}-pre-rebase
+                   git -C "{worktree_path}" branch -D worktree-{feature-name}-pre-rebase
+  ```
+  Continue to Step 5.
+- Exit non-zero → print conflicting files (`git -C "{worktree_path}" diff --name-only --diff-filter=U`), then:
+  ```bash
+  git -C "{worktree_path}" rebase --abort
+  git -C "{worktree_path}" branch -D "worktree-{feature-name}-pre-rebase"
+  ```
+  Print: `STALE: rebase conflict in {N} file(s): {list}. Skipped — proceeding with {BEHIND}-commit-behind worktree. Resolve manually if needed: cd {worktree_path} && git rebase {COMPARE_REF}` → continue to Step 5.
+
 #### Step 4a: DOING-without-worktree warning
 
 Triggers when: caller passed `feature.status === "DOING"`, `current_root == main_root`, no `worktree-{feature-name}` branch exists.
@@ -526,7 +545,7 @@ multiSelect: false
 
 #### Step 5: Continue with skill PHASE 0
 
-After successful switch (or skip, or warn-continue), proceed with the rest of the skill's PHASE 0.
+After successful switch (or skip, warn-continue, or staleness decision), proceed with the rest of the skill's PHASE 0.
 
 ---
 
@@ -586,6 +605,10 @@ No open worktrees → proceed on main.
 
 ## Caveats
 
+### Windows via Git Bash
+
+All git-blocks in this document are Bash. On Windows: use Git Bash (bundled with Git for Windows) or WSL. PowerShell equivalents have been removed — `git` commands are identical across shells; only variable syntax and redirects differ.
+
 ### Branch naming
 
 `EnterWorktree(name: "auth")` creates branch `worktree-auth`, NOT `auth`. For merge / cleanup commands (e.g. `git branch -D worktree-auth`), use the prefixed name. The `core-finalize` skill handles this automatically, including `worktree-auth-{suffix}` variants from the Rename path.
@@ -619,10 +642,6 @@ git branch -D worktree-{feature}
 ```
 
 The symlinked `.project/` paths are plain filesystem links — removing the worktree directory removes them too. No extra cleanup needed for the symlinks.
-
-### Windows file symlinks
-
-`New-Item -ItemType SymbolicLink` for files requires Windows Developer Mode (Settings → Privacy & Security → Developer Mode) or admin rights. If unavailable, the fallback copies the files — they will diverge between main and worktree. The warning message makes this explicit. Directory junctions (`-ItemType Junction`) work without elevated rights.
 
 ### core-pull on a worktree
 

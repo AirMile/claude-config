@@ -54,7 +54,8 @@ Use these as starting points — adapt to the conversation flow. Don't use them 
 
 - "What should explicitly _not_ be part of this feature?"
 - "Are there cases where this should not trigger or apply?"
-- "What edge cases do you already know about?"
+- "What edge cases do you already know about? Think unusual-but-valid input: empty values, duplicates, special characters, simultaneous actions."
+- "Are there numeric or list limits to consider — smallest/largest valid value, empty list, a single item versus many?" (ask only when requirements involve numeric input or list-iteration)
 
 **User & context** (conditional — skip for INFRA/REFACTOR/THEME)
 
@@ -96,3 +97,38 @@ Apply per dimension when the user cannot answer:
 The backlog task title and concept pitch already tell you _what_ is being defined. Do not re-explain it. The interview explores the _why_, _for whom_, and _where it ends_ — not what it is.
 
 If `SEED_CONTEXT` or `project.json#concept` is available, use it to sharpen questions — e.g. "You mentioned the project targets {audience} — is this feature primarily for them?"
+
+## Handling User Requests Mid-Interview
+
+The interview is normally Claude-asks → user-answers. Two patterns flip that direction:
+
+### Opinion Requests ("wat denk jij?", "what do you think?", "what would you recommend?")
+
+When the user explicitly asks for your view on the current dimension:
+
+1. **Switch out of open-question mode** — the user has paused their own thinking and wants input.
+2. **Give a recommendation with one tradeoff**, not multiple-choice. Format: "I'd lean toward X because Y; the tradeoff is Z." One option, named clearly.
+3. **Then return control**: "Does that fit, or do you see it differently?"
+
+Do NOT:
+
+- Offer 3 options without a preference (the user already signalled they want your call).
+- Defer with "what do you prefer?" (that's what they just asked you).
+- Launch into a long analysis (one sentence recommendation + one sentence tradeoff is the budget).
+
+### Domain Primers ("wat betekent X?", "wat is een Y?", "I'm new to Z")
+
+When the user asks for clarification on a domain term you're using (library concept, design pattern, technical term):
+
+1. **Give a 1–2 sentence primer** before moving on — concrete, with an analogy to something the user already knows when possible.
+2. **Then resume the interview** at the question that prompted the request.
+
+Example: user (new to Sanity) asks "is an object type a component you use in document types?" → answer: "Yes — object types are reusable building blocks (like React components), document types are the editable entries in the Studio (like pages)." → resume.
+
+Do NOT:
+
+- Launch into a multi-paragraph explanation (1–2 sentences is the budget).
+- Quiz the user on their existing knowledge before answering.
+- Skip the primer and assume — that compounds the gap.
+
+Both patterns are exceptions to § Tone Rules ("no suggestions, no options") because the user has explicitly invited input.

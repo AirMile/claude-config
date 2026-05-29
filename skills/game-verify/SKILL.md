@@ -148,13 +148,15 @@ Add conditionally via `TaskCreate`:
 
 1. **Check backlog for built features (if no feature name provided):**
 
+   Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
+
    ```
-   Read(".project/backlog.html")
+   profile: queue
+   status: DOING
+   transition: verifying
    ```
 
-   - If backlog exists: parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`)
-   - See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `type === "FEATURE" && transition === "verifying"` — if found, auto-select (no modal needed).
-   - Fallback: Filter built features: `data.features.filter(f => f.status === "DOING" && f.stage === "built")`
+   Run the `queue` snippet. Auto-select the first entry with `transition === "verifying"` (no modal needed). Fallback: re-run without transition filter (`$TRANSITION = ""`) to list all DOING features, then filter client-side on `stage === "built"`.
 
    Use **AskUserQuestion** if built features found:
    - header: "Feature"
@@ -175,13 +177,18 @@ Add conditionally via `TaskCreate`:
 
 4. **Locate playtest checklist:**
 
+   Feature load (via [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)):
+
    ```
-   .project/features/{feature-name}/feature.json → tests.checklist[]
+   profile: verify
+   feature-name: {feature-name}
    ```
+
+   Run the `verify` snippet. Parse `checklist[]`, `requirements[]` (with `tuningLevers[]`), `design`, and `build` from the output.
 
 5. **Validate feature.json exists with tests.checklist:**
 
-   **If not found:**
+   `FEATURE_JSON: not present` or `checklist` empty:
 
    ```
    NOT FOUND: feature.json with tests.checklist
@@ -193,10 +200,10 @@ Add conditionally via `TaskCreate`:
    Run /game-build {feature-name} to implement and generate playtest checklist.
    ```
 
-   -> Exit skill
+   → Exit skill
 
 6. **Read playtest checklist + classify items:**
-   - Parse `tests.checklist[]` from feature.json
+   - Use `checklist[]` from the FEATURE-LOAD output
    - Note expected behavior for each item (from `title` field)
    - Count total items
    - **Classify each item:**
@@ -218,6 +225,12 @@ Add conditionally via `TaskCreate`:
 
    **Goal-backward verification** — map tests back to acceptance criteria:
 
+   **CATEGORY-GAP check** (mechanically determined from feature.json — run first):
+   - Set A = `{ (REQ.id, entry.category ?? "happy") | for each REQ (non-REMOVED), for each entry in REQ.acceptance[] }`
+   - Set B = `{ (item.requirementId, item.category ?? "happy") | for each item in tests.checklist[] }`
+   - CATEGORY-GAPs = A \ B (combinations defined by game-define but not written by game-build)
+   - Per gap: add as a MANUAL playtest item with title `"{category} coverage missing for {REQ.id}"` and steps/expected from the matching `acceptance[]` entry's `{ when, then }`.
+
    Filter: skip requirements with `deltaOp === "REMOVED"` — do not include in the mapping.
 
    Build mapping from feature.json `requirements[].acceptance` (`[{ when, then }]` objects) and classified items. Each `{ when, then }` scenario = one row:
@@ -228,6 +241,7 @@ Add conditionally via `TaskCreate`:
    | REQ-2 | critical hit registered | knockback is applied | —          | GAP      |
 
    **GAP**: requirement without test items (COVERED or MANUAL).
+   **CATEGORY-GAP**: acceptance scenario with a specific `category` (edge/boundary) that no checklist item covers — show in table with label `(category-coverage)`.
    **MISMATCH**: test items that verify implementation details instead of observable gameplay (test title references internal functions instead of player-visible behavior).
 
    No gaps, no mismatches → show `Acceptance mapping: {n}/{n} REQs covered` and continue.

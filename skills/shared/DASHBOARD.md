@@ -981,9 +981,14 @@ The `design` key in `project.json` is managed exclusively by the `frontend-desig
     "principles": [
       {
         "name": "Mobile-first",
-        "description": "Design for mobile viewport first, progressive enhancement"
+        "description": "Design for mobile viewport first, progressive enhancement",
+        "forbid": [
+          "no fixed px widths on containers — use max-w-* or %",
+          "no layout classes without sm:/md:/lg: responsive counterpart"
+        ]
       }
     ],
+    "banPacks": ["tokens", "a11y", "motion"],
     "components": [
       {
         "name": "Button",
@@ -1027,5 +1032,11 @@ The `design` key in `project.json` is managed exclusively by the `frontend-desig
 | `layout`  | Multi-page wrapper, lives in `app/layout.tsx` or equivalent | NavBar, Footer, Sidebar |
 
 **`components[].appliesTo`:** `"all"` | `["page1", "page2"]` | `"route-group:groupname"` (only relevant for `scope: layout`)
+
+**`principles[].forbid?: string[]`** — Machine-binding ban-list injected into Convert PHASE 2 codegen prompt. Each item is a natural-language rule or grep-pattern. During code generation, these patterns must not appear in generated output. Examples: `"no hex literals in src/components/"`, `"no Tailwind color class without dark: counterpart"`, `"no @keyframes without prefers-reduced-motion fallback"`. Merged on name along with other principle fields — never auto-deleted.
+
+**`design.banPacks?: string[]`** — Optional shorthand for activating universal rule packs from `shared/ANTI-SLOP.md`. Values: `"tokens"` | `"a11y"` | `"dark"` | `"responsive"` | `"motion"`. When present, Convert PHASE 2 loads the named pack(s) from `ANTI-SLOP.md` and merges them with `principles[].forbid[]`. Using both is valid — project-specific `forbid` entries extend the universal packs.
+
+**`features[].lastCheckedSha?: string`** — Set by `frontend-check` after a successful runtime-scan of this feature. Used by batch-mode to skip features where `lastCheckedSha === shippedSha` (no code changes since last check).
 
 **Merge strategy:** `MERGE on name` — pages/flows/principles/components merge on name, update fields, never auto-delete. `components[].motion{}` and `pages[].transitions{}` use key-level merge (never auto-delete keys, only add/update).

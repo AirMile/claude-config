@@ -51,14 +51,15 @@ The skill gathers requirements through targeted questions, optionally researches
 
    **a) Check backlog for next feature:**
 
+   Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
+
    ```
-   Read(".project/backlog.html")
+   profile: queue
+   status: DEFINED
+   transition: defining
    ```
 
-   - If backlog exists: parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`)
-   - See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `type === "FEATURE" && transition === "defining"` — if found, auto-select (no modal needed).
-   - Fallback: `data.features.find(f => f.status === "TODO")` — use as suggestion
-   - Use feature name as suggestion
+   Run the `queue` snippet. Filter: first entry with `transition === "defining"` → auto-select (no modal needed). Empty result → fall through to option (c)/(d).
 
    **b) If backlog has a next feature:**
 
@@ -138,15 +139,16 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 
 5. **Load project context** (parallelize with step 4):
    - Glob + Grep for existing code that imports the feature name
-   - Read `.project/project.json` → extract:
-     - `stack` — framework, language, packages (fallback if architecture-baseline does not exist)
-     - `SEED_CONTEXT.pitch` or first 2 sentences of `SEED_CONTEXT.markdown` as feature context (see `shared/SEED.md`)
-     - `features[]` — existing features (prevents duplicates/overlap)
-     - `data.entities` — existing data model
-     - `thinking[]` — scan for entries with `newFeature` field matching the feature name (added via `/project-todo`). Load those as context.
+   - Project context load (via [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)):
+
+     ```
+     profile: define
+     feature-name: {feature-name}
+     ```
+
+     Run the two `node -e` snippets for the `define` profile. Extracts: `stack`, `pitch`, `features[]`, `entities[]`, `thinking[]` (filtered to current feature) from `project.json`; `patterns` (max 15) and full `architecture` from `project-context.json`. Use the extracted output for: stack fallback, feature context/pitch, existing feature list (prevent duplicates), existing entities, thinking as PHASE 1 input, code patterns, current scene graph.
+
    - **Name-match on thinking markdown**: Grep `.project/thinking/*.md` on feature name (filename + content). With 1+ match: read the match(es) and use as input for PHASE 1 questions. The `.md` files are the source of truth for thinking output — no 7-day window anymore.
-   - Read `.project/project-context.json` (if it exists) → extract:
-     - `context.patterns` — existing code patterns
    - **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
      ```
      scopes: [component, architectural]
@@ -156,7 +158,7 @@ Check: `.project/features/{feature-name}/feature.json` exists?
      Show the loaded output before PHASE 1 questions. Component-scoped patterns and architectural patterns guide architecture choices and requirement formulation. Pitfall-prefix prevents repetition of earlier bugs.
    - **Onboarding check** (evaluate immediately after project.json read):
      - `project.json` not present → show: `⚠️ No project.json found. Consider running /core-setup first for better codebase context.` Continue without (non-blocking).
-     - Present but empty (no `context`, `stack`, or `features`) → show: `ℹ️ project.json exists but is missing codebase context. /core-setup can fill this in.`
+     - Present but `stack` and `features` both absent or empty → show: `ℹ️ project.json exists but is missing codebase context. /core-setup can fill this in.`
      - Present with content → proceed silently.
    - **Past decisions scan** (two sources, both scope):
      - Feature-scope: Glob `.project/features/*/feature.json` sorted by `created`/`definedAt` desc — take **5 most recent**. Flatten their `durableDecisions[]`. Tag each entry with `[feature-X]`.
@@ -221,7 +223,20 @@ After questions, extract testable requirements:
 - Each requirement gets an ID (REQ-001, REQ-002, etc.)
 - Categorize by type (core, scene, script, signal)
 - Determine test type for each
-- Define acceptance scenarios per requirement as `{ when, then }` pairs (concrete, verifiable)
+- Define acceptance scenarios per requirement as `{ when, then, category }` pairs (`category` ∈ `"happy" | "edge" | "boundary"`) (concrete, verifiable)
+
+**Completeness self-check** (execute, do NOT show to user):
+
+- Each `when` is a concrete trigger (player action, input event, signal, state transition). Each `then` is an observable result (node state, signal emitted, value change, visual feedback). Not vague: "works well", "feels good", "correct behaviour".
+- **Scenario categories per REQ** — assign `category` to each acceptance entry:
+  - Every REQ: ≥1 `happy` scenario (primary gameplay flow, REQ as designed).
+  - REQ with player input, conditional logic, or signal-driven state change: ≥1 `edge` scenario (unusual-but-valid: duplicate input, rapid trigger, simultaneous actions, overlapping states).
+  - REQ with numeric values, timing, or resource counters: ≥1 `boundary` scenario (min/max value, zero, at-capacity, first/last frame, off-by-one tick).
+  - REQ with validation, boundary checks, or fail-paths: `errorScenarios[]` (plausible fail-paths only — already required).
+- No overlap between requirements
+- Scope fits 1 feature (if >6 REQs → flag for PHASE 1c)
+
+Fill any gaps before proceeding: add missing acceptance criteria, split overlapping REQs.
 
 Show requirements table with acceptance scenarios:
 

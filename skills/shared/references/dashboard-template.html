@@ -8,6 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon-dashboard.svg" />
     <script src="/lib/themes.js"></script>
     <script src="/lib/settings-modal.js"></script>
+    <script src="/lib/collapse-store.js"></script>
     <link rel="stylesheet" href="/css/dashboard.css?v=15" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
@@ -350,6 +351,7 @@
       // ─── State ──────────────────────────────────────────────
       const raw = document.getElementById("dashboard-data").textContent;
       let data = JSON.parse(raw);
+      initCollapseStore("dashboard", data.seed?.name || data.name);
       let modalContext = null;
 
       // Wire up project settings modal (⚙ button auto-mounted by /lib/settings-modal.js)
@@ -804,6 +806,10 @@
         });
 
         card.classList.toggle("expanded");
+        setSingle(
+          "expandedCard",
+          card.classList.contains("expanded") ? card.dataset.component : null,
+        );
 
         if (!wasExpanded) {
           const connTo = new Set(
@@ -842,6 +848,7 @@
         if (!el) return;
         const hidden = el.classList.toggle("architecture-diagram--hidden");
         if (btn) btn.classList.toggle("active", !hidden);
+        setCollapsed("arch-diagram", hidden);
         if (!hidden && !_archDiagramRendered) {
           const a = data.architecture || {};
           if (a.diagram) {
@@ -1123,10 +1130,11 @@
           const id = "arch-sub-" + label.toLowerCase().replace(/\s+/g, "-");
           return `
             <div class="arch-subsection">
-              <div class="arch-subsection-header" onclick="(function(el){
+              <div class="arch-subsection-header" data-collapse-key="${id}" onclick="(function(el){
                 var body=el.nextElementSibling;
                 var open=el.classList.toggle('collapsed');
                 body.style.display=open?'none':'';
+                setCollapsed(el.dataset.collapseKey,open);
               })(this)">
                 <span class="arch-subsection-label">${esc(label)}</span>
               </div>
@@ -1217,7 +1225,15 @@
                 (e) => `
             <div class="arch-row">
               <span class="arch-row-name">${esc(e.name)}</span>
-              <span class="arch-row-meta" style="font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10px">${(e.fields || []).map((f) => esc(f.name + (f.type ? ":" + f.type : ""))).join(", ")}</span>
+              <span class="arch-row-meta" style="font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10px">${(
+                e.fields || []
+              )
+                .map((f) => {
+                  const fn = typeof f === "string" ? f : f.name;
+                  const ft = typeof f === "string" ? null : f.type;
+                  return esc(fn + (ft ? ":" + ft : ""));
+                })
+                .join(", ")}</span>
             </div>`,
               )
               .join("")
@@ -1312,19 +1328,27 @@
       }
 
       // ─── Styleguide helpers ────────────────────────────────
-      function parseModeVars(cssString, t) {
+      function parseModeVars(modeInput, t) {
         const primitives = {};
-        const primSrc = (t || {}).cssVars || "";
+        const primSrc = typeof ((t || {}).cssVars) === "string" ? t.cssVars : "";
         for (const m of primSrc.matchAll(/(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g)) {
           primitives[m[1].trim()] = m[2].trim();
         }
         const result = [];
-        for (const m of cssString.matchAll(/(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g)) {
-          const token = m[1].trim();
-          let value = m[2].trim();
-          const varRef = value.match(/^var\((--[\w-]+)\)$/);
+        const pushPair = (token, value) => {
+          const varRef = String(value).match(/^var\((--[\w-]+)\)$/);
           if (varRef && primitives[varRef[1]]) value = primitives[varRef[1]];
           result.push({ token, value });
+        };
+        if (modeInput && typeof modeInput === "object" && !Array.isArray(modeInput)) {
+          for (const [k, v] of Object.entries(modeInput)) {
+            const token = k.startsWith("--") ? k : `--${k}`;
+            pushPair(token, v);
+          }
+        } else if (typeof modeInput === "string") {
+          for (const m of modeInput.matchAll(/(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g)) {
+            pushPair(m[1].trim(), m[2].trim());
+          }
         }
         return result;
       }
@@ -1489,7 +1513,7 @@
           const modesHtml = modeKeys.length
             ? `<div class="sg-mode-panels">${modeKeys.map((k, i) => `<div class="sg-mode-panel${i === 0 ? " active" : ""}" data-mode-panel="${esc(k)}">${renderModeSwatches(parseModeVars(modes[k], t), false)}</div>`).join("")}</div>`
             : "";
-          html += `<div class="sg-section"><div class="sg-section-title">Colors</div>${modesHtml}${brandHtml}${statusHtml}</div>`;
+          html += `<div class="sg-section" data-collapse-key="sg:Colors"><div class="sg-section-title">Colors</div>${modesHtml}${brandHtml}${statusHtml}</div>`;
         }
 
         // Typography
@@ -1505,7 +1529,7 @@
           const rampHtml = sizes.length
             ? `<div class="sg-type-ramp">${sizes.map((s) => `<div class="sg-type-ramp-row"><div class="sg-type-ramp-meta"><div class="sg-type-ramp-token">${esc(s.token)}</div><div class="sg-type-ramp-size">${esc(s.size)}${s.lineHeight ? ` / ${esc(s.lineHeight)}` : ""}</div></div><div class="sg-type-ramp-preview" style="font-size:${esc(s.size)}${families.body ? `;font-family:${esc(families.body)}` : ""}">The quick brown fox</div></div>`).join("")}</div>`
             : "";
-          html += `<div class="sg-section"><div class="sg-section-title">Typography</div>${specHtml}${rampHtml}</div>`;
+          html += `<div class="sg-section" data-collapse-key="sg:Typography"><div class="sg-section-title">Typography</div>${specHtml}${rampHtml}</div>`;
         }
 
         // Spacing
@@ -1515,7 +1539,7 @@
               (m, s) => Math.max(m, parseInt(s.value) || 0),
               64,
             ) || 64;
-          html += `<div class="sg-section"><div class="sg-section-title">Spacing</div><div class="sg-spacing-strip">${spacingScale
+          html += `<div class="sg-section" data-collapse-key="sg:Spacing"><div class="sg-section-title">Spacing</div><div class="sg-spacing-strip">${spacingScale
             .map((s) => {
               const px = parseInt(s.value) || 4;
               const h = Math.max(4, Math.round((px / maxPx) * 64));
@@ -1526,17 +1550,17 @@
 
         // Border Radius
         if (radii.length) {
-          html += `<div class="sg-section"><div class="sg-section-title">Border Radius</div><div class="sg-radius-grid">${radii.map((r) => `<div class="sg-radius-item"><div class="sg-radius-box" style="border-radius:${esc(r.value)}"></div><div class="sg-radius-label">${esc(r.token)}<br>${esc(r.value)}</div></div>`).join("")}</div></div>`;
+          html += `<div class="sg-section" data-collapse-key="sg:Border Radius"><div class="sg-section-title">Border Radius</div><div class="sg-radius-grid">${radii.map((r) => `<div class="sg-radius-item"><div class="sg-radius-box" style="border-radius:${esc(r.value)}"></div><div class="sg-radius-label">${esc(r.token)}<br>${esc(r.value)}</div></div>`).join("")}</div></div>`;
         }
 
         // Shadows
         if (shadows.length) {
-          html += `<div class="sg-section"><div class="sg-section-title">Shadows</div><div class="sg-shadow-list">${shadows.map((s) => `<div class="sg-shadow-row"><span class="sg-shadow-token">${esc(s.token)}</span><div class="sg-shadow-preview" style="box-shadow:${esc(s.value)}"></div><span class="sg-shadow-meta">${esc(s.value)}</span></div>`).join("")}</div></div>`;
+          html += `<div class="sg-section" data-collapse-key="sg:Shadows"><div class="sg-section-title">Shadows</div><div class="sg-shadow-list">${shadows.map((s) => `<div class="sg-shadow-row"><span class="sg-shadow-token">${esc(s.token)}</span><div class="sg-shadow-preview" style="box-shadow:${esc(s.value)}"></div><span class="sg-shadow-meta">${esc(s.value)}</span></div>`).join("")}</div></div>`;
         }
 
         // Elevation
         if (elevation.length) {
-          html += `<div class="sg-section"><div class="sg-section-title">Elevation</div><div class="sg-elevation-grid">${elevation.map((e) => `<div class="sg-elevation-card" style="box-shadow:${esc(e.shadow || e.value || "")}"><div class="sg-elevation-label">${esc(e.token || e.level || "")}</div>${e.usage ? `<div class="sg-elevation-usage">${esc(e.usage)}</div>` : ""}</div>`).join("")}</div></div>`;
+          html += `<div class="sg-section" data-collapse-key="sg:Elevation"><div class="sg-section-title">Elevation</div><div class="sg-elevation-grid">${elevation.map((e) => `<div class="sg-elevation-card" style="box-shadow:${esc(e.shadow || e.value || "")}"><div class="sg-elevation-label">${esc(e.token || e.level || "")}</div>${e.usage ? `<div class="sg-elevation-usage">${esc(e.usage)}</div>` : ""}</div>`).join("")}</div></div>`;
         }
 
         // Glass Surface
@@ -1545,7 +1569,7 @@
           const satVal = glass.saturation || "180%";
           const tintVal = glass.tint || "rgba(255,255,255,0.08)";
           const borderVal = glass.border || "rgba(255,255,255,0.15)";
-          html += `<div class="sg-section"><div class="sg-section-title">Glass Surface</div><div class="sg-glass-card"><div class="sg-glass-bg"></div><div class="sg-glass-layer" style="background:${esc(tintVal)};backdrop-filter:blur(${esc(blurVal)}) saturate(${esc(satVal)});-webkit-backdrop-filter:blur(${esc(blurVal)}) saturate(${esc(satVal)});border-color:${esc(borderVal)}"><div style="font-size:13px;font-weight:600;margin-bottom:6px">Glass surface</div><div class="sg-glass-meta"><span>blur: ${esc(blurVal)}</span><span>saturation: ${esc(satVal)}</span><span>tint: ${esc(tintVal)}</span>${glass.vibrancy ? `<span>vibrancy: ${esc(glass.vibrancy)}</span>` : ""}</div></div></div></div>`;
+          html += `<div class="sg-section" data-collapse-key="sg:Glass Surface"><div class="sg-section-title">Glass Surface</div><div class="sg-glass-card"><div class="sg-glass-bg"></div><div class="sg-glass-layer" style="background:${esc(tintVal)};backdrop-filter:blur(${esc(blurVal)}) saturate(${esc(satVal)});-webkit-backdrop-filter:blur(${esc(blurVal)}) saturate(${esc(satVal)});border-color:${esc(borderVal)}"><div style="font-size:13px;font-weight:600;margin-bottom:6px">Glass surface</div><div class="sg-glass-meta"><span>blur: ${esc(blurVal)}</span><span>saturation: ${esc(satVal)}</span><span>tint: ${esc(tintVal)}</span>${glass.vibrancy ? `<span>vibrancy: ${esc(glass.vibrancy)}</span>` : ""}</div></div></div></div>`;
         }
 
         // Motion
@@ -1611,7 +1635,7 @@
                   .join("")}</div>`
               : "";
 
-          html += `<div class="sg-section"><div class="sg-section-title">Motion${packBadge}</div>${axesHtml}${durHtml}${easHtml}${springHtml}${choreoHtml}</div>`;
+          html += `<div class="sg-section" data-collapse-key="sg:Motion"><div class="sg-section-title">Motion${packBadge}</div>${axesHtml}${durHtml}${easHtml}${springHtml}${choreoHtml}</div>`;
         }
 
         // Interactions
@@ -1642,7 +1666,7 @@
           },
         ].filter((e) => e && e.parts && e.parts.length);
         if (ixnEntries.length) {
-          html += `<div class="sg-section"><div class="sg-section-title">Interactions</div><div class="sg-interaction-list">${ixnEntries.map((e) => `<div class="sg-interaction-row"><span class="sg-interaction-label">${esc(e.label)}</span><span class="sg-interaction-value">${e.parts.map((p) => `<code>${esc(p)}</code>`).join("")}</span></div>`).join("")}</div></div>`;
+          html += `<div class="sg-section" data-collapse-key="sg:Interactions"><div class="sg-section-title">Interactions</div><div class="sg-interaction-list">${ixnEntries.map((e) => `<div class="sg-interaction-row"><span class="sg-interaction-label">${esc(e.label)}</span><span class="sg-interaction-value">${e.parts.map((p) => `<code>${esc(p)}</code>`).join("")}</span></div>`).join("")}</div></div>`;
         }
 
         return (
@@ -1844,7 +1868,7 @@
             .filter(Boolean)
             .slice(0, 8);
           if (cv.length) {
-            compactColorsHtml = `<div class="sg-section"><div class="sg-section-title">Colors</div><div class="sg-palette">${cv.map((v) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(v.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(v.token)}</div><div class="sg-color-value">${esc(v.value)}</div></div></div>`).join("")}</div></div>`;
+            compactColorsHtml = `<div class="sg-section" data-collapse-key="sg:Colors"><div class="sg-section-title">Colors</div><div class="sg-palette">${cv.map((v) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(v.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(v.token)}</div><div class="sg-color-value">${esc(v.value)}</div></div></div>`).join("")}</div></div>`;
           }
         } else if (hasColors) {
           const swatches = [
@@ -1852,7 +1876,7 @@
             ...(colors.semantic || []).slice(0, 4),
           ];
           if (swatches.length) {
-            compactColorsHtml = `<div class="sg-section"><div class="sg-section-title">Colors</div><div class="sg-palette">${swatches.map((c) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(c.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(c.token)}</div><div class="sg-color-value">${esc(c.value)}</div></div></div>`).join("")}</div></div>`;
+            compactColorsHtml = `<div class="sg-section" data-collapse-key="sg:Colors"><div class="sg-section-title">Colors</div><div class="sg-palette">${swatches.map((c) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(c.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(c.token)}</div><div class="sg-color-value">${esc(c.value)}</div></div></div>`).join("")}</div></div>`;
           }
         }
 
@@ -1863,7 +1887,7 @@
           { label: "Mono", family: families.mono },
         ].filter((e) => e.family);
         const specimensHtml = specimenEntries.length
-          ? `<div class="sg-section"><div class="sg-section-title">Typography</div><div class="sg-font-specimens">${specimenEntries.map((e) => `<div class="sg-font-card"><div class="sg-font-specimen" style="font-family:${esc(e.family)}">Aa</div><div class="sg-font-name">${esc(e.label)}</div><div class="sg-font-family">${esc(e.family)}</div></div>`).join("")}</div></div>`
+          ? `<div class="sg-section" data-collapse-key="sg:Typography"><div class="sg-section-title">Typography</div><div class="sg-font-specimens">${specimenEntries.map((e) => `<div class="sg-font-card"><div class="sg-font-specimen" style="font-family:${esc(e.family)}">Aa</div><div class="sg-font-name">${esc(e.label)}</div><div class="sg-font-family">${esc(e.family)}</div></div>`).join("")}</div></div>`
           : "";
 
         // Compact radius (max 4)
@@ -2758,7 +2782,7 @@
                 </div>`;
               })
               .join("");
-            return `<div class="learnings-group learnings-group--${g.type}">
+            return `<div class="learnings-group learnings-group--${g.type}" data-collapse-key="learnings:${esc(g.label)}">
               <h3>${g.label} <span class="learnings-group-desc">${g.desc}</span></h3>
               ${rows}
             </div>`;
@@ -2770,7 +2794,7 @@
         const principles = d.principles || [];
 
         const principlesSection = principles.length
-          ? `<div class="learnings-group learnings-group--principles">
+          ? `<div class="learnings-group learnings-group--principles" data-collapse-key="learnings:Principles">
               <h3>Principles</h3>
               ${principles
                 .map(
@@ -3133,6 +3157,7 @@
             )
             .join("");
         }
+        applyCollapseState();
 
         sectionsEl.onclick = (e) => {
           const modeTab = e.target.closest(".sg-mode-tab");
@@ -3155,19 +3180,35 @@
           if (e.target.closest("button, a, input, select, textarea")) return;
           const learningsH3 = e.target.closest(".learnings-group > h3");
           if (learningsH3) {
-            learningsH3.parentElement.classList.toggle("collapsed");
+            const el = learningsH3.parentElement;
+            el.classList.toggle("collapsed");
+            setCollapsed(
+              el.dataset.collapseKey ||
+                "learnings:" + learningsH3.textContent.trim(),
+              el.classList.contains("collapsed"),
+            );
             return;
           }
           const sgTitle = e.target.closest(".sg-section > .sg-section-title");
           if (sgTitle) {
-            sgTitle.parentElement.classList.toggle("collapsed");
+            const el = sgTitle.parentElement;
+            el.classList.toggle("collapsed");
+            setCollapsed(
+              el.dataset.collapseKey || "sg:" + sgTitle.textContent.trim(),
+              el.classList.contains("collapsed"),
+            );
             return;
           }
           const sectionHeader = e.target.closest(
             ".dash-section > .section-header",
           );
           if (sectionHeader) {
-            sectionHeader.parentElement.classList.toggle("collapsed");
+            const el = sectionHeader.parentElement;
+            el.classList.toggle("collapsed");
+            setCollapsed(
+              "section:" + el.id,
+              el.classList.contains("collapsed"),
+            );
             return;
           }
         };
@@ -3202,6 +3243,11 @@
         // On click: freeze scroll-based updates for 800ms so click wins
         sidebarEl.querySelectorAll("a[data-section]").forEach((a) => {
           a.addEventListener("click", () => {
+            const sec = document.getElementById(a.dataset.section);
+            if (sec && sec.classList.contains("collapsed")) {
+              sec.classList.remove("collapsed");
+              setCollapsed("section:" + a.dataset.section, false);
+            }
             _dashClickFrozen = true;
             setDashActive(a.dataset.section);
             clearTimeout(_dashClickTimer);
@@ -3217,6 +3263,81 @@
         });
         updateDashSidebarActive();
         requestAnimationFrame(updateSidebarVisibility);
+      }
+
+      function applyCollapseState() {
+        // Top-level dash sections (default open)
+        document.querySelectorAll(".dash-section[id]").forEach((sec) => {
+          sec.classList.toggle(
+            "collapsed",
+            isCollapsed("section:" + sec.id, false),
+          );
+        });
+
+        // Learnings groups (default open)
+        document
+          .querySelectorAll("[data-collapse-key^='learnings:']")
+          .forEach((el) => {
+            el.classList.toggle(
+              "collapsed",
+              isCollapsed(el.dataset.collapseKey, false),
+            );
+          });
+
+        // Styleguide sections (default open)
+        document
+          .querySelectorAll("[data-collapse-key^='sg:']")
+          .forEach((el) => {
+            el.classList.toggle(
+              "collapsed",
+              isCollapsed(el.dataset.collapseKey, false),
+            );
+          });
+
+        // Architecture sub-sections (default open)
+        document
+          .querySelectorAll(".arch-subsection-header[data-collapse-key]")
+          .forEach((header) => {
+            const shouldCollapse = isCollapsed(
+              header.dataset.collapseKey,
+              false,
+            );
+            const isCurrentlyCollapsed = header.classList.contains("collapsed");
+            if (shouldCollapse !== isCurrentlyCollapsed) {
+              header.classList.toggle("collapsed", shouldCollapse);
+              const body = header.nextElementSibling;
+              if (body) body.style.display = shouldCollapse ? "none" : "";
+            }
+          });
+
+        // Architecture diagram (default: hidden when cards exist, shown otherwise)
+        const archDiagramEl = document.getElementById("arch-diagram");
+        if (archDiagramEl) {
+          const key = "arch-diagram";
+          if (key in loadAll()) {
+            const wantHidden = isCollapsed(key, false);
+            const isHidden = archDiagramEl.classList.contains(
+              "architecture-diagram--hidden",
+            );
+            if (wantHidden !== isHidden) {
+              archDiagramEl.classList.toggle(
+                "architecture-diagram--hidden",
+                wantHidden,
+              );
+              const btn = document.querySelector(".arch-diagram-toggle");
+              if (btn) btn.classList.toggle("active", !wantHidden);
+            }
+          }
+        }
+
+        // Code card single-selection (default none expanded)
+        const expandedComponent = getSingle("expandedCard");
+        if (expandedComponent) {
+          const card = document.querySelector(
+            `.code-card[data-component="${CSS.escape(expandedComponent)}"]`,
+          );
+          if (card && !card.classList.contains("expanded")) toggleCard(card);
+        }
       }
 
       function updateSidebarVisibility() {
@@ -3299,6 +3420,15 @@
           }
         });
       render();
+
+      window.addEventListener("hashchange", () => {
+        const id = location.hash.slice(1);
+        const sec = id ? document.getElementById(id) : null;
+        if (sec && sec.classList.contains("collapsed")) {
+          sec.classList.remove("collapsed");
+          setCollapsed("section:" + id, false);
+        }
+      });
     </script>
     <button
       id="back-to-top"

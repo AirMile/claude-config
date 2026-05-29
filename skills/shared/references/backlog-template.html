@@ -8,6 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon-backlog.svg" />
     <script src="/lib/themes.js"></script>
     <script src="/lib/settings-modal.js"></script>
+    <script src="/lib/collapse-store.js"></script>
     <link rel="stylesheet" href="/css/backlog.css" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
@@ -253,6 +254,7 @@
       const fileRaw = document.getElementById("backlog-data").textContent;
       let data = JSON.parse(fileRaw);
       if (!data.features) data.features = [];
+      initCollapseStore("backlog", data.project);
 
       let _trackFilter = "ALL"; // "ALL" | "FRONTEND" | "DEV"
 
@@ -288,7 +290,7 @@
       const TRANSITION_LABELS_FRONTEND = {
         TODO: "designing",
         DEFINED: "converting",
-        DOING: "auditing",
+        DOING: "building",
         DONE: "shipping",
       };
       const TRANSITION_LABELS_DEV = {
@@ -642,12 +644,12 @@
           return null;
         }
 
-        // PAGE/COMPONENT mini-pipeline: design → convert → check
+        // PAGE/COMPONENT mini-pipeline: design → convert (→ /frontend-check at release end)
         if (FRONTEND_PIPELINE_TYPES.includes(f.type)) {
           if (f.status === "TODO") return { cmd: `/frontend-design ${f.name}` };
           if (f.status === "DEFINED")
             return { cmd: `/frontend-design ${f.name}` };
-          if (f.status === "DOING") return { cmd: `/frontend-check ${f.name}` };
+          if (f.status === "DOING") return null; // building — runtime audit via /frontend-check batch at release end
           return null; // DONE: no button
         }
 
@@ -857,6 +859,10 @@
               return;
             }
             section.classList.toggle("collapsed");
+            setCollapsed(
+              "section:" + section.id,
+              section.classList.contains("collapsed"),
+            );
           });
 
           section.appendChild(header);
@@ -882,12 +888,18 @@
               );
               const phaseGroup = document.createElement("div");
               phaseGroup.className = "phase-group";
+              phaseGroup.dataset.collapseKey = "phase:" + status + ":" + phase;
 
               const phaseHeader = document.createElement("header");
               phaseHeader.className = "phase-header";
               phaseHeader.innerHTML = `<svg class="phase-chevron" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(phase)}`;
-              phaseHeader.onclick = () =>
+              phaseHeader.onclick = () => {
                 phaseGroup.classList.toggle("phase-collapsed");
+                setCollapsed(
+                  phaseGroup.dataset.collapseKey,
+                  phaseGroup.classList.contains("phase-collapsed"),
+                );
+              };
               phaseGroup.appendChild(phaseHeader);
 
               phaseItems.forEach((f) => {
@@ -947,8 +959,8 @@
             transitionLabels: TRANSITION_LABELS_FRONTEND,
           },
           {
-            id: "audit",
-            label: "To audit",
+            id: "building",
+            label: "Building",
             status: "DOING",
             typeFilter: isFrontendTrackType,
             batchSkill: null,
@@ -972,6 +984,10 @@
           archHeader.innerHTML = `<h2>${esc("Archived")} (${cancelledItems.length})</h2>`;
           archHeader.addEventListener("click", () => {
             archSection.classList.toggle("collapsed");
+            setCollapsed(
+              "section:cancelled-section",
+              archSection.classList.contains("collapsed"),
+            );
           });
           archSection.appendChild(archHeader);
 
@@ -988,10 +1004,53 @@
 
         // Build sidebar
         const sidebar = document.getElementById("sidebar");
-        if (sidebar) sidebar.innerHTML = sidebarHtml;
+        if (sidebar) {
+          sidebar.innerHTML = sidebarHtml;
+          sidebar.onclick = (e) => {
+            const link = e.target.closest("a[data-status]");
+            if (!link) return;
+            const sectionId = link.getAttribute("href").slice(1);
+            const sec = document.getElementById(sectionId);
+            if (sec && sec.classList.contains("collapsed")) {
+              sec.classList.remove("collapsed");
+              setCollapsed("section:" + sectionId, false);
+            }
+          };
+        }
 
         updateSidebarVisibility();
         updateSidebarActive();
+        applyCollapseState();
+      }
+
+      function applyCollapseState() {
+        // Status sections (default open, except cancelled which defaults closed)
+        document.querySelectorAll("section.group[id]").forEach((sec) => {
+          const defaultClosed = sec.id === "cancelled-section";
+          sec.classList.toggle(
+            "collapsed",
+            isCollapsed("section:" + sec.id, defaultClosed),
+          );
+        });
+
+        // Phase groups (default open)
+        document
+          .querySelectorAll("[data-collapse-key^='phase:']")
+          .forEach((el) => {
+            el.classList.toggle(
+              "phase-collapsed",
+              isCollapsed(el.dataset.collapseKey, false),
+            );
+          });
+
+        // Expanded feature row (single selection, default none)
+        const expandedName = getSingle("expandedRow");
+        if (expandedName) {
+          const row = document.querySelector(
+            `.row[data-name="${CSS.escape(expandedName)}"]`,
+          );
+          if (row) toggleRowExpand(row, expandedName);
+        }
       }
 
       function updateSidebarVisibility() {
@@ -1272,6 +1331,7 @@
 
         if (isExpanded) {
           rowEl.classList.remove("expanded");
+          setSingle("expandedRow", null);
           return;
         }
 
@@ -1425,6 +1485,7 @@
         }
 
         rowEl.classList.add("expanded");
+        setSingle("expandedRow", name);
       }
 
       // ─── Sidebar active state ───────────────────────────────────────
@@ -1641,6 +1702,15 @@
         }
       });
       render();
+
+      window.addEventListener("hashchange", () => {
+        const id = location.hash.slice(1);
+        const sec = id ? document.getElementById(id) : null;
+        if (sec && sec.classList.contains("collapsed")) {
+          sec.classList.remove("collapsed");
+          setCollapsed("section:" + id, false);
+        }
+      });
     </script>
     <button
       id="back-to-top"

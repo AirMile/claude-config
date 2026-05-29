@@ -19,6 +19,8 @@ Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/
 
 **Patch fast-path:** if `$PATCH_MODE = true`, skip PHASE 0.1 through 0.4b Steps 1-2 and jump directly to **PHASE 0.4b Step 3**.
 
+> **Todo**: In patch fast-path, use the `EnterPlanMode` tool before jumping to PHASE 0.4b Step 3 — visual diff of source vs. patch-before image benefits from Opus-level reasoning. Use `ExitPlanMode` after Step 4 (Confirm), before PHASE 2 Patch Guard.
+
 ---
 
 **Step 0: External setup context**
@@ -67,6 +69,8 @@ Read .project/source-capture.png
 ```
 
 Store the resolved source image reference as `$SOURCE_IMAGE` for the verification loop.
+
+> **Todo**: Use the `EnterPlanMode` tool now — Phases 0.2 (Visual Analysis), 0.3 (Mode), 0.4 (Scope), and 1.1–1.2 (Token Mapping) all benefit from Opus-level vision and design reasoning. `AskUserQuestion` modals and Bash reads remain available inside plan mode; only Write/Edit are blocked, which is fine until Phase 2.
 
 ### 0.2 Visual Analysis
 
@@ -154,19 +158,17 @@ Only for scope = patch.
 
 > **Todo**: Read '.claude/skills/frontend-design/references/convert-patch-detection.md'
 
-### 0.5 Backlog Stage (page scope only)
+### 0.5 Backlog Task Lookup (page scope only)
 
 If scope is a full page (not a single component):
 
 1. Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`
 2. See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "converting"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`).
 3. If `$CONVERT_TARGET` is set: use it as the page name to match (skip name derivation). Otherwise derive from scope selection. Find feature: `data.features.find(f => f.name === "{kebab-case-page-name}")`
-   - **Found + status TODO**: set `status: "DOING"`, `stage: "building"`, `date: "{YYYY-MM-DD}"`. Write back via Edit.
-   - **Found + status DOING**: set `stage: "building"`. Write back via Edit.
-   - **Not found**: add to `data.features[]`: `{ "name": "{name}", "type": "PAGE", "status": "DOING", "stage": "building", "phase": "P4", "description": "Converted from visual input", "dependencies": [] }`. Write back.
-4. Set `data.updated` to today. Keep `<script>` tags intact.
+   - **Found**: use as task reference. Do NOT modify `status` or add `stage` during build — the page stays `TODO` until PHASE 4 completion. Skip write.
+   - **Not found**: store `$NEW_BACKLOG_ENTRY = { "name": "{name}", "type": "PAGE", "status": "TODO", "phase": "P4", "description": "Converted from visual input", "dependencies": [] }`. **Do not write yet** — Phase 4 completion (4.2) writes the entry along with the DONE sync.
 
-On successful completion: re-read backlog.html, find the task by name → remove `transition`. See `shared/BACKLOG.md → Lifecycle Protocol → Write`.
+Keep `<script>` tags intact.
 
 If scope is a component: skip this step.
 
@@ -287,9 +289,25 @@ multiSelect: false
 
 If "Adjust": ask which mappings to change, update, re-confirm.
 
+> **Todo**: Use the `ExitPlanMode` tool once the mapping is confirmed — present SOURCE ANALYSIS + TOKEN MAPPING as the plan output. After user approval, all remaining phases (codegen, verification, completion) run in Sonnet. Do NOT re-enter plan mode later in this run.
+
 ---
 
 ## PHASE 2: Code Generation
+
+### 2.0b Forbidden Patterns Load
+
+Before any generation, load project-specific bans:
+
+1. Read `design.principles[*].forbid[]` from `project.json`. Collect all strings into `$FORBID_LIST`.
+2. If `design.banPacks[]` is non-empty: read `shared/ANTI-SLOP.md`, load entries for each named pack, append to `$FORBID_LIST`.
+3. Show count:
+   ```
+   Forbidden patterns: [N] loaded ([pack names if any] + [M principle rules])
+   ```
+   If $FORBID_LIST is empty: skip silently (no bans active).
+
+`$FORBID_LIST` is injected into the codegen prompt in 2.2 as a "FORBIDDEN PATTERNS" section. After generation (2.3), run a sanity grep: scan each generated file for forbidden patterns. If a violation is found: note in Generation Summary, then regenerate that file with `"you emitted forbidden pattern [code]: do not use [pattern]. Replace with: [fix]."` in the prompt.
 
 ### 2.0 Patch Guard (scope = patch only)
 
@@ -379,7 +397,16 @@ States:     [✓ state components generated: [loading|error|empty] | — no stat
 
 ---
 
-## PHASE 4: Completion
+## PHASE 4: Completion + Finalize (REQUIRED after PHASE 3)
+
+PHASE 4 is mandatory — the convert route is not complete without it. Load and execute `convert-completion.md` immediately after PHASE 3 ends, **before reporting completion to the user**.
+
+Without PHASE 4:
+- backlog is never synced to DONE (4.2)
+- worktree remains unmerged on disk and `/diensten`-style routes are unreachable on main (4.6)
+- next session opens with stale handoff data (4.1)
+
+The user-visible report in 4.4 is **not** the end of the workflow — it must be followed by 4.5 (dev-server cleanup) and 4.6 (Finalize offer). If you find yourself about to end the skill after 4.4 without showing the Finalize offer: re-read convert-completion.md from §4.5 onward.
 
 > **Todo**: Read '.claude/skills/frontend-design/references/convert-completion.md'
 

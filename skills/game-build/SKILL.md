@@ -101,16 +101,22 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 > **Todo**: call `TaskCreate` with the 10 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **If no feature name provided — check backlog:**
-   - Read `.project/backlog.html`, parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`)
-   - See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `type === "FEATURE" && transition === "building"` — if found, auto-select (no modal needed).
-   - Fallback: Filter defined features: `data.features.filter(f => f.status === "DEFINED")`
-   - First defined feature is the suggested next feature
-   - Use **AskUserQuestion** with backlog-suggested feature:
-     ```
-     Backlog suggests: {feature-name}
-     Defined features available: {list}
-     Build {feature-name}? (or specify another)
-     ```
+
+   Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
+
+   ```
+   profile: queue
+   status: DEFINED
+   transition: building
+   ```
+
+   Run the `queue` snippet. Auto-select the first entry with `transition === "building"` (no modal needed). Fallback: re-run without transition filter (`$TRANSITION = ""`) to list all DEFINED features. Use **AskUserQuestion** with the first ready feature as suggestion:
+
+   ```
+   Backlog suggests: {feature-name}
+   Defined features available: {list with ready ✓ / blocked ✗}
+   Build {feature-name}? (or specify another)
+   ```
 
 2. **Load architecture baseline:**
    - `Read(".claude/research/architecture-baseline.md")`
@@ -123,14 +129,13 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 3. **Project context** (optional, skip if not present):
 
-   Read `.project/project.json`. Extract:
-   - `stack` — framework, language, packages (fallback for architecture-baseline)
-   - `data.entities` — existing data model (prevents conflicts)
+   Project context load (via [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)):
 
-   Read `.project/project-context.json` (if present). Extract:
-   - `context.structure` — where files belong (directory structure)
-   - `context.patterns` — existing code patterns to follow
-   - `architecture` — current architecture diagram and description
+   ```
+   profile: build
+   ```
+
+   Run the two `node -e` snippets for the `build` profile. Extracts: `stack`, `entities[]` from `project.json`; `structure`, `patterns` (max 15), and full `architecture` (componentTree, scenes, signals, resources) from `project-context.json`.
 
    **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
 
@@ -165,7 +170,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
    **Ready queue** (only if no feature name provided via CLI):
 
-   Parse `.project/backlog.html`. Calculate per DEFINED feature whether all `dependencies[]` have `status === "DONE"` (or the dependency list is empty). Display before feature selection:
+   Render directly from the queue output loaded in step 1 (no second backlog parse). Each entry already carries `ready`/`blocking` flags:
 
    ```
    Ready to build:
@@ -180,19 +185,40 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    - If no DEFINED features exist → "No features ready to build." → exit
 
    If no feature name provided:
-   1. Parse `.project/backlog.html` (see `shared/BACKLOG.md`). Filter `status === "DEFINED"` → suggest via **AskUserQuestion** (ready features at top)
-   2. Fallback: list `.project/features/` with `feature.json`, let user select
+   1. Use queue output from step 1 → suggest via **AskUserQuestion** (ready features at top)
+   2. Fallback (backlog absent): list `.project/features/` with `feature.json`, let user select
 
-   Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`. If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions made by the user).
+   Feature load (via [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)):
 
-   Not found → exit: "Run `/game-define` first."
+   ```
+   profile: build
+   feature-name: {feature-name}
+   ```
+
+   Run the `build` snippet. Use extracted fields: `requirements[]` (with `tuningLevers[]` per REQ), `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (full scene graph), `design` (sceneLayout/gameplayFlow). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions made by the user).
+
+   `FEATURE_JSON: not present` → exit: "Run `/game-define` first."
 
    **Dependency check:**
 
-   Skip if no `depends[]` or empty.
-   1. Parse `.project/backlog.html`. Not found → skip.
-   2. Per dependency: status must be `"DONE"`.
-   3. Blockers found → **AskUserQuestion**:
+   First, load the current feature's backlog entry to get its `dependencies[]` (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
+
+   ```
+   profile: read-feature
+   feature-name: {feature-name}
+   ```
+
+   Skip the rest of the dependency check if `blockers[]` (from feature.json) is empty AND backlog `dependencies[]` is absent or empty.
+   1. For each dependency: Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
+
+      ```
+      profile: read-feature
+      feature-name: {dep-name}
+      ```
+
+      Run `read-feature` per dep. Status must be `"DONE"`.
+
+   2. Blockers found → **AskUserQuestion**:
       - "Stop — finish {dep} first (Recommended)" / "Continue anyway"
       - Stop → exit. Continue → continue.
 
@@ -506,6 +532,8 @@ Read in parallel (skip if not present):
 Mutate in memory:
 
 **feature.json**: `status → "DOING"`, `stage → "built"`, `requirements[]` → enrich with `technique`, `syncNote`, `status: "built"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]` (status: "pending"). Do NOT overwrite existing sections.
+
+**tests.checklist[]** — **one test item per `acceptance[]` scenario** (not per requirement). For each REQ, iterate `REQ.acceptance[]`; push one item per entry with `requirementId`, `acceptanceIndex: i`, `category: acceptance[i].category ?? "happy"`, `title`, `steps`, `expected` derived from that entry's `when`/`then`. Godot-specific steps: player input action, signal emission, node state check, exported value. Legacy feature.json without `category` fields → default to `"happy"`.
 
 **Backlog** (see `shared/BACKLOG.md`): find feature by name → set `"status": "DOING"` (transition DEFINED → DOING at successful build completion), `stage → "built"`, `data.updated` → now. This is the only place where DOING is written.
 

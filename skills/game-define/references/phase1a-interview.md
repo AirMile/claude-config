@@ -60,8 +60,9 @@ Use these as starting points — adapt to the conversation flow. Don't use them 
 **Edge cases & failure modes**
 
 - "What should explicitly _not_ happen — are there cases this should ignore?"
-- "What gameplay edge cases do you already know about?"
+- "What gameplay edge cases do you already know about? Think simultaneous triggers, rapid input, or two systems fighting each other."
 - "What would a broken version of this look like to the player?"
+- "Are there extreme values to handle — maximum or minimum resource, zero duration, simultaneous conflicting triggers, or off-by-one timing?" (ask only when requirements involve numbers, timing, or resource counters)
 
 **Scene & input context** (conditional — skip for PURE-LOGIC/TEST-INFRA/RESOURCE)
 

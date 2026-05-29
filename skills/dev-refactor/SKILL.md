@@ -42,14 +42,11 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file w
 
 ## Output Structure
 
-```
-.project/features/{feature-name}/
-└── feature.json           # Enriched: refactor section, status updated
-```
+Writes only to `.project/features/{name}/feature.json` (enriched: refactor section, status updated).
 
 ## Workflow
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgotten phases.
+**Phase tracking** — before pre-flight, call `TaskCreate` with these 6 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgotten phases.
 
 1. PHASE 0: Batch Context Loading + Refactor Patterns
 2. PHASE 1: Parallel Three-Lens Analysis + Triage
@@ -62,7 +59,9 @@ Reads `.project/features/{feature-name}/feature.json` — unified feature file w
 
 > **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
-**Pre-flight: detect `.project/` tracking mode** — determines whether `shippedSha` is meaningful.
+**Pre-flight (setup, before numbered steps):**
+
+A. Detect `.project/` tracking mode → cache result in `.project/session/tracking-mode.txt`.
 
 Check whether any `.project/` files are actually tracked by git. Result is cached in `.project/session/tracking-mode.txt` and invalidated when `.gitignore` mtime changes, so repeated runs within the same project skip the `git ls-files` call.
 
@@ -90,15 +89,13 @@ if [ -z "$TRACKING_MODE" ]; then
 fi
 ```
 
-Implication for PHASE 5 step 4: files under `.project/` may need `git add -f` even when `TRACKING_MODE=tracked` (see step 4 for handling).
-
-If `TRACKING_MODE=untracked`:
+If `TRACKING_MODE=untracked`: PHASE 5 omits `shippedSha` and skips the backfill commit (see also completion-batch.md).
 
 - PHASE 5 step 3: omit `shippedSha` field entirely (do not write `""`)
 - PHASE 5 step 5: skip the entire backfill + commit step
 - Log once: `tracking: .project/ is gitignored — shippedSha skipped`
 
-**Step 0: Capture git baseline** — write only the baseline file that PHASE 5.4 will actually use. Detecting upfront whether a worktree-switch will happen avoids a redundant `git status` call.
+B. Capture git baseline → `pre-skill-status.txt` (or deferred to after worktree switch if `WT_WILL_SWITCH=1`).
 
 ```bash
 mkdir -p .project/session
@@ -121,7 +118,9 @@ git status --porcelain | sort > .project/session/pre-skill-status-worktree.txt
 
 PHASE 5.4 compares against `pre-skill-status-worktree.txt` if worktree-switch happened, otherwise against `pre-skill-status.txt`. Exactly one baseline file is written per run.
 
-1. **Read backlog for pipeline status:**
+---
+
+1. **Step 1: Read backlog for pipeline status:**
 
    Read `.project/backlog.html` (if exists), parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`):
    - Filter DONE features: `data.features.filter(f => f.status === "DONE" && !f.shipped)`
@@ -129,50 +128,50 @@ PHASE 5.4 compares against `pre-skill-status-worktree.txt` if worktree-switch ha
    - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
    - Filter small-items: features with `status === "DONE" && !shipped` where `[ -f .project/features/{name}/feature.json ]` is false — items without pipeline (CHANGE/BUG/PAGE/COMPONENT/etc)
 
-2. **Determine feature queue:**
+2. **Step 2: Determine feature queue:**
 
    > **Todo**: Read `.claude/skills/dev-refactor/references/queue-selection.md` to determine mode (feature / small-items / codebase / recent) and build the feature queue, then continue to step 3.
 
-3. **Worktree switch** (single-mode only):
+3. **Step 3: Worktree switch** (single-mode only):
 
    If `feature_queue.length == 1` and not in codebase-mode: execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL: stop with the message from WORKTREE.md.
 
    > **Todo**: follow `shared/WORKTREE.md → Symlink Integrity Gate (post-switch auto-repair)`.
 
-**Steps 4–7 (parallel batch):** Execute all Read and Bash calls for steps 4, 6, and 7 in a single tool-call batch — they are all read-only and have no shared data dependency. Step 5 (pipeline_files extraction) runs in-memory after step 4 returns. Step 8 (refactor-patterns) has been moved to PHASE 1 step 0 to avoid generating patterns when all features turn out to be CLEAN.
+> Steps 4–7 run as a parallel batch — all read-only, no shared data dependency.
+> Step 5 (in-memory) runs after step 4 returns.
+> Note: refactor-patterns generation is lazy — it runs in PHASE 1 step 0, not here, so patterns aren't generated when all features turn out to be CLEAN.
 
-4. **Load ALL feature docs for every feature in queue:**
+4. **Step 4: Load ALL feature docs for every feature in queue:**
 
    For each feature, read `feature.json` — contains requirements, architecture, files, build, tests sections.
 
    Validate `tests` section exists in `feature.json` for each feature. If missing → remove from queue and warn.
 
-5. **Build pipeline files list per feature** (in-memory, after step 4 returns):
+5. **Step 5: Build pipeline files list per feature** (in-memory, after step 4 returns):
 
    For each feature, extract all code file paths from `feature.json`:
    - Parse `files[]` array (each entry has `path`, `type`, `action`)
    - Store as `pipeline_files[feature_name]`
 
-6. **Load project conventions, stack baseline + learnings** (optional, parallel with steps 4 and 7):
+6. **Step 6: Load project conventions, stack baseline + learnings** (optional, parallel with steps 4 and 7):
 
-Read `.project/project-context.json` (if exists) and `.claude/research/stack-baseline.md` (if exists) in the same parallel batch. Extract `context.patterns` from project-context.json; store `stack-baseline.md` content as `stack_baseline` for reuse in PHASE 2 step 2 (no re-read needed there).
+   Read `.project/project-context.json` (if exists) and `.claude/research/stack-baseline.md` (if exists) in the same parallel batch. Extract `context.patterns` from project-context.json; store `stack-baseline.md` content as `stack_baseline` for reuse in PHASE 2 step 2 (no re-read needed there).
 
-**Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+   **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
-```
-scopes: [feature]
-pitfall-prefix: true
-current-feature: <feature-name if feature-mode, otherwise "none">
-```
+   ```
+   scopes: [feature]
+   pitfall-prefix: true
+   current-feature: <feature-name if feature-mode, otherwise "none">
+   ```
 
-If available: add to Explore agent prompt in PHASE 1 under
-`PROJECT CONVENTIONS:` section (patterns) and `KNOWN PITFALLS:` section (pitfall-prefix + component-scoped). Helps agents distinguish between
-"intentional project pattern" and "code smell", and prevents re-introduction of known bugs. One of the patterns may be a
-`Code maturity: ...` string (see `shared/DASHBOARD.md` examples) that
-steers refactor aggressiveness — it is automatically included because it is part
-of `patterns`.
+   If available:
+   - Add patterns to `PROJECT CONVENTIONS:` section in each Explore agent prompt (PHASE 1)
+   - Add pitfall-prefix entries to `KNOWN PITFALLS:` section in each Explore agent prompt (PHASE 1)
+   - A `Code maturity: ...` pattern (see `shared/DASHBOARD.md`) automatically steers refactor aggressiveness — included because it is part of `patterns`
 
-7. **Build pipeline diff per feature** (optional, parallel with steps 4 and 6, skip for codebase-mode):
+7. **Step 7: Build pipeline diff per feature** (optional, parallel with steps 4 and 6, skip for codebase-mode):
 
 For each feature with a known build start time: build a diff string to give agents as a focus hint.
 
@@ -399,14 +398,17 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
 3. **Evaluate `--quick` auto-apply path:**
 
-   **Trigger:**
+   `--quick` only applies to single-feature runs. Batch invocations
+   (queue >1) always go through normal approval — skip to step 4.
+
+   **Trigger (single-feature only):**
    - Explicit: `/dev-refactor --quick {feature}` in user input
-   - Auto-detect: ALL of these conditions true at the same time:
-     - Queue contains exactly 1 feature
+   - Auto-detect: ALL conditions true:
      - 0 HIGH-findings (no SEC, no breaking-risk)
      - ≤ 5 total findings (after dedup)
      - No uncovered libraries in ARCHITECTURE block
-     - No `Code maturity: library` pattern in `context.patterns` — library projects always get approval
+     - No `Code maturity: library` pattern in `context.patterns`
+       (library projects always get approval)
 
    **Behavior on quick path:**
    - Skip the AskUserQuestion in step 5

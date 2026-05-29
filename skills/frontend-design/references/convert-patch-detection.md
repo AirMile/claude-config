@@ -55,3 +55,5 @@ multiSelect: false
 ```
 
 Store as `$PATCH_SECTIONS`. If "Full rewrite instead": restore scope to "Single component" and continue with normal PHASE 0.5.
+
+> **Todo**: If `$PATCH_MODE = true`, use the `ExitPlanMode` tool now — present PATCH ANALYSIS as plan output. PHASE 2 Patch Guard (Edits) runs in Sonnet.

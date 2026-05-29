@@ -63,15 +63,20 @@ Output: `TEST-DEPS: ok | patched ({list}) | skipped`.
 
 **Project context** (skip if not present):
 
-Read `.project/project.json` and `.project/project-context.json`. Use for:
+Project context load (via [shared/PROJECT-CONTEXT-LOAD.md](../../shared/PROJECT-CONTEXT-LOAD.md)):
+
+```
+profile: build
+```
+
+Run the two `node -e` snippets for the `build` profile. Use the extracted output for:
 
 - Existing endpoints (prevent duplicate routes)
-- Existing DB schema (prevent conflicts)
+- Existing DB schema / entity names (prevent conflicts)
 - Code patterns to follow
-- Learnings from earlier features
-- `theme.cssVars` — present and non-empty: log `"Theme loaded"`. Empty or missing: log `"Theme empty — fallback defaults (shared/TOKENS.md) will be used"`.
+- `themeCssVarsEmpty === false`: log `"Theme loaded"`. `true` or missing: log `"Theme empty — fallback defaults (shared/TOKENS.md) will be used"`.
 
-**Learnings load** (via [shared/LEARNINGS-LOAD.md](../../../shared/LEARNINGS-LOAD.md)):
+**Learnings load** (via [shared/LEARNINGS-LOAD.md](../../shared/LEARNINGS-LOAD.md)):
 
 Configuration:
 
@@ -89,7 +94,13 @@ Store the loaded learnings for PHASE 1 (Technique Mapping).
 
 Ready queue (only if no feature name provided via CLI):
 
-Parse `.project/backlog.html`. For each DEFINED feature calculate whether all `dependencies[]` have `status === "DONE"` (or the dep list is empty). Display before the feature selection:
+Backlog load (via [shared/BACKLOG-LOAD.md](../../shared/BACKLOG-LOAD.md)):
+
+```
+profile: ready-queue
+```
+
+Run the `ready-queue` snippet. For each returned feature, compute `ready` (all deps DONE) vs blocked. Display before the feature selection:
 
 ```
 Ready to build:
@@ -106,14 +117,26 @@ Blocked:
 
 If no feature name provided:
 
-1. Parse `.project/backlog.html` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
-   - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "building")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`.
-   - Fallback: filter `status === "DEFINED"` → suggest via **AskUserQuestion** (ready features at the top)
+1. Backlog load (via [shared/BACKLOG-LOAD.md](../../shared/BACKLOG-LOAD.md)):
+
+   ```
+   profile: ready-queue
+   ```
+
+   From the `ready-queue` output: first check for a feature with `transition === "building"` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`. Fallback: filter `ready === true` → suggest via **AskUserQuestion** (ready features at the top).
+
 2. Fallback: list `.project/features/` with `feature.json`, let user select
 
-Load `feature.json`. Extract: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files.
+Feature load (via [shared/FEATURE-LOAD.md](../../shared/FEATURE-LOAD.md)):
 
-Not found → exit: "Run `/dev-define` first."
+```
+profile: build
+feature-name: {feature-name}
+```
+
+Run the `build` snippet. Use extracted fields: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files.
+
+`FEATURE_JSON: not present` → exit: "Run `/dev-define` first."
 
 **COMPONENT detection** (immediately after feature.json load):
 
@@ -178,6 +201,52 @@ echo "active: $(pwd)" > "$REPO/.project/session/worktree-status.txt"
 ```
 
 This line is non-negotiable — without it, the auditor cannot verify whether isolation was achieved.
+
+**Worktree freshness check** (only when worktree was just created or reused):
+
+Worktrees branch from `origin/main`. If local `main` is ahead of `origin/main`, recent commits — and the files they introduced — are missing from the worktree. This silently breaks `action: "modify"` reads in PHASE 2.
+
+```bash
+WT_BASE=$(git -C "$REPO" rev-parse origin/main 2>/dev/null)
+LOCAL_MAIN=$(git -C "$REPO" rev-parse main 2>/dev/null)
+if [ -n "$WT_BASE" ] && [ -n "$LOCAL_MAIN" ] && [ "$WT_BASE" != "$LOCAL_MAIN" ]; then
+  AHEAD=$(git -C "$REPO" rev-list --count "$WT_BASE..$LOCAL_MAIN")
+  if [ "$AHEAD" -gt 0 ]; then
+    echo "⚠ WORKTREE-FRESHNESS: local main is $AHEAD commits ahead of origin/main."
+    echo "  Missing commits in worktree:"
+    git -C "$REPO" log --oneline "$WT_BASE..$LOCAL_MAIN" | sed 's/^/    /'
+    echo "  Files added in those commits:"
+    git -C "$REPO" diff --name-only --diff-filter=A "$WT_BASE..$LOCAL_MAIN" | sed 's/^/    /'
+    echo "  If feature.json files[] references any of these, copy them in:"
+    echo "    git show main:<path> > <worktree>/<path>"
+  fi
+fi
+```
+
+Output: `WORKTREE-FRESHNESS: ok` if synced, else the warning block above. This is a warning, not a gate — continue regardless.
+
+**Active recovery** (only when warning fired AND feature.json is loaded):
+
+For each path in `feature.json files[]`, check whether it exists in the worktree. If absent AND present in local `main`, auto-restore it:
+
+```bash
+FEATURE_FILES=$(node -e "
+  const f = require('$REPO/.project/features/{feature-name}/feature.json');
+  console.log((f.files || []).map(x => x.path).join('\n'));
+")
+RESTORED=0
+for path in $FEATURE_FILES; do
+  if [ ! -f "$path" ] && git -C "$REPO" cat-file -e "main:$path" 2>/dev/null; then
+    mkdir -p "$(dirname "$path")"
+    git -C "$REPO" show "main:$path" > "$path"
+    echo "  RESTORED: $path"
+    RESTORED=$((RESTORED + 1))
+  fi
+done
+[ "$RESTORED" -gt 0 ] && echo "WORKTREE-RECOVERY: restored $RESTORED file(s) from local main"
+```
+
+Files that exist in the worktree are never overwritten — only genuinely missing files are restored. If `feature.json` is not yet loaded (shouldn't happen — freshness runs after "Load feature"), skip recovery silently.
 
 **Pre-PHASE-1 gate** (hard check — shell-state verification):
 

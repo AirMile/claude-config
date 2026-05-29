@@ -1,0 +1,29 @@
+{
+  "stack": {
+    "framework": "godot",
+    "language": "GDScript",
+    "packages": ["GUT"],
+    "testing": "GUT (Godot Unit Testing)"
+  },
+  "seed": {
+    "pitch": "A 2D platformer with physics-based mechanics",
+    "content": "Players navigate platforming challenges using momentum and physics interactions."
+  },
+  "features": [
+    {
+      "name": "fixture-feature",
+      "status": "DEFINED",
+      "summary": "Core jump mechanic"
+    },
+    { "name": "done-feature", "status": "DONE", "summary": "Player movement" }
+  ],
+  "data": {
+    "entities": ["Player", "Enemy", "Collectible"]
+  },
+  "thinking": [
+    {
+      "newFeature": "fixture-feature",
+      "content": "Physics approach: use CharacterBody2D with move_and_slide()"
+    }
+  ]
+}

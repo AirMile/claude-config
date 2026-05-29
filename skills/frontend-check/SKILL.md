@@ -1,19 +1,24 @@
 ---
 name: frontend-check
-description: Audit and fix performance, SEO, and accessibility. Use with /frontend-check.
-argument-hint: "[url | source-path | feature-name] [--scope=performance|seo|aeo|responsive|a11y|...]"
+description: Runtime audit and fix hub for performance, SEO, responsive, darkmode, error states, smoke, and flow. Run at end of release cycle (batch over all DOING features) or targeted on a single feature/URL. Use with /frontend-check.
+argument-hint: "[url | source-path | feature-name] [--scope=performance|seo|responsive|a11y|...]"
 reads:
   [backlog.status, feature.requirements, feature.files, feature.architecture]
-writes: [backlog.status]
+writes: [backlog.status, backlog.lastCheckedSha]
 metadata:
   author: claude-config
-  version: 2.3.0
+  version: 3.0.0
   category: frontend
 ---
 
 # Check
 
-Unified check & fix hub for performance, SEO, AEO (AI search optimization), responsive design, darkmode, error states, smoke, and user flows. Scan on all axes, get a combined report, fix by priority, verify with before/after comparison.
+Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout, darkmode pixel diff, error states, smoke, and user flows. Generation-time static checks (token literals, dark/responsive coverage, A11Y static patterns, motion literals) are now enforced during `/frontend-design` Convert via `design.principles[].forbid` and `design.banPacks` — they are not repeated here.
+
+**Two modes:**
+
+- **Batch-mode** (no argument): iterate over all features in backlog where `status === "DOING"` or `lastCheckedSha !== shippedSha`. Runs at end of release cycle.
+- **Targeted mode** (`/frontend-check <feature-name|url|path>`): single feature or URL, all runtime scopes.
 
 **Related skills:** `/frontend-design` · `/frontend-tokens` · `/core-setup`
 
@@ -44,6 +49,23 @@ Unified check & fix hub for performance, SEO, AEO (AI search optimization), resp
 > **Todo**: call `TaskCreate` with the 5 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 ### 0.1 Target Selection
+
+**Batch-mode** — if `$1` is empty:
+
+1. Read `.project/backlog.html` → parse features.
+2. Collect candidates: features where `status === "DOING"` OR (`status === "DONE" && (!lastCheckedSha || lastCheckedSha !== shippedSha)`).
+3. If no candidates: show `"No features pending runtime audit."` and stop.
+4. Show:
+   ```
+   BATCH AUDIT — [N] features pending runtime check
+   [list: name · status · lastCheckedSha vs shippedSha]
+   Run targeted mode for a single feature: /frontend-check <name>
+   ```
+5. Set `$BATCH_MODE = true`, `$BATCH_TARGETS = [candidate list]`. Run PHASE 1 sequentially per feature. After each: set `lastCheckedSha = HEAD SHA`, write back. Continue to next.
+
+Skip to PHASE 1 for batch-mode (no scope selection — run runtime scopes: Performance + SEO + A11Y runtime + Responsive + Darkmode + Smoke + Error states + Flow if flows defined).
+
+---
 
 Detect input type via fixed order:
 
@@ -87,12 +109,12 @@ multiSelect: false
 
 **Auto-scope** — if `targetType` is known, detect the optimal scope and confirm first:
 
-| Target type              | Auto-scope                                                                                               |
-| ------------------------ | -------------------------------------------------------------------------------------------------------- |
-| `url`                    | Performance + SEO + AEO + Responsive + Darkmode                                                          |
-| `path` (component)       | A11Y + Token Architecture + Dark mode compliance                                                         |
-| `feature` with routes    | Performance + SEO + AEO + Responsive + Darkmode + A11Y (over routes) + Token Architecture (over files[]) |
-| `feature` without routes | A11Y + Token Architecture + Dark mode compliance (over files[])                                          |
+| Target type              | Auto-scope                                                                              |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| `url`                    | Performance + SEO + AEO + Responsive + Darkmode                                         |
+| `path` (component)       | A11Y runtime (focus-trap + axe) + Smoke                                                 |
+| `feature` with routes    | Performance + SEO + AEO + Responsive + Darkmode + A11Y runtime + Error states + Smoke   |
+| `feature` without routes | A11Y runtime (focus-trap + axe) + Smoke                                                 |
 
 If `targetType` is `url`, `path`, or `feature` → show auto-scope confirmation:
 
@@ -113,7 +135,7 @@ multiSelect: false
 header: "Scope"
 question: "Which checks do you want to run?"
 options:
-  - label: "Everything (Recommended)", description: "Performance + SEO + AEO + A11Y + Responsive + Darkmode + Error states + Smoke + Flow + Token Architecture + Dark mode compliance + Responsive coverage + Motion"
+  - label: "Everything (Recommended)", description: "Performance + SEO + AEO + A11Y runtime + Responsive + Darkmode + Error states + Smoke + Flow + Motion runtime"
   - label: "I'll choose myself", description: "Select specific checks"
 multiSelect: false
 ```
@@ -127,16 +149,13 @@ options:
   - label: "Performance", description: "Lighthouse, CWV, bundle sizes"
   - label: "SEO", description: "Google search optimization"
   - label: "AEO", description: "AI search optimization (ChatGPT, Perplexity, Gemini)"
-  - label: "A11Y", description: "Accessibility audit (WCAG 2.1 AA) — static scan + optional Playwright"
-  - label: "Responsive", description: "Multi-viewport layout audit"
-  - label: "Darkmode", description: "Light + dark comparison, contrast, missing variants"
-  - label: "Error states", description: "404, offline, slow-3G UI rendering"
+  - label: "A11Y", description: "Accessibility — focus-trap test, aria-snapshot regression, axe-runtime, console warnings (WCAG 2.1 AA)"
+  - label: "Responsive", description: "Multi-viewport layout audit — 6 viewports, overflow, touch targets, font sizes (Playwright)"
+  - label: "Darkmode", description: "Light + dark comparison, computed contrast D102 (Playwright pixel diff)"
+  - label: "Error states", description: "404, offline, slow-3G UI rendering (Playwright)"
   - label: "Smoke", description: "Quick multi-route health check (200 + render + no errors)"
   - label: "Flow", description: "Execute design.flows[] from project.json (navigation journeys)"
-  - label: "Token Architecture", description: "Audit T101-T111 from shared/TOKENS.md (color, spacing, motion, glass, typography, radius, shadow) + TA001 (CSS-var raw hex in :root)"
-  - label: "Dark mode compliance", description: "Static code audit — dark: classes present where dark mode is configured"
-  - label: "Responsive coverage", description: "Static code audit — responsive prefixes present in multi-viewport components"
-  - label: "Motion", description: "Animation pack compliance — motion tokens used, glass-without-flag, missing transitions, reduced-motion fallbacks"
+  - label: "Motion", description: "Runtime reduced-motion compliance — M006/M007 (Playwright emulation)"
 multiSelect: true
 ```
 
@@ -169,11 +188,11 @@ Audits:     [Performance, SEO, AEO, Responsive]
 
 Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`.
 
-See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "auditing"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`).
+See `shared/BACKLOG.md → Lifecycle Protocol → Read`.
 
-**If `targetType === "feature"`**: match directly on `featureName` (no URL-matching). Find `data.features.find(f => f.name === featureName)` → set `stage: "testing"`, `data.updated` to today. Write back.
+**If `targetType === "feature"`**: match directly on `featureName`. Find `data.features.find(f => f.name === featureName)` → record `f.lastCheckedSha` (current HEAD SHA, updated at end of PHASE 4 after success). Write back via Edit (keep `<script>` tags intact).
 
-**All other target types**: filter features with `status === "DOING" && stage === "built"`. Match target URL/page against backlog items (best-effort: match page name from URL path to feature name). If match found: set `stage: "testing"`, `data.updated` to today. Write back via Edit (keep `<script>` tags intact).
+**All other target types**: best-effort match URL/path to a feature name. If match found: same `lastCheckedSha` update at end of PHASE 4.
 
 If no match or no backlog: skip (audit can run on non-backlog pages too).
 
@@ -400,20 +419,33 @@ Findings:
 
 > **Todo**: Read '.claude/skills/frontend-check/references/scan-smoke-flow.md'
 
-### 1.10 Token Architecture Scan + 1.11 Dark Mode Compliance + 1.12 Responsive Coverage
+### 1.10 Motion Runtime Scan (M006/M007)
 
-> **Todo**: Read '.claude/skills/frontend-check/references/scan-tokens-mode.md'
+Emulate `prefers-reduced-motion: reduce` via Playwright and verify that all animated elements either stop or switch to an instant/opacity-only transition:
+
+```js
+playwright-cli run-code "async page => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('{url}');
+  await page.waitForLoadState('networkidle');
+  await page.screenshot({ path: '.project/screenshots/reduced-motion.png' });
+}"
+playwright-cli snapshot
+```
+
+- **M006 (HIGH)**: animated element still transforms/translates under reduced-motion — `motion-safe:` class missing
+- **M007 (HIGH)**: spinner or keyframe animation still runs under reduced-motion
 
 ---
 
-### 1.13 Finding Format (all checks)
+### 1.11 Finding Format (all checks)
 
 ```
 FINDING: [ID]
 ─────────────
-Check:    [Performance | SEO | AEO | A11Y | Responsive | Darkmode | Error states | Smoke | Flow]
+Check:    [Performance | SEO | AEO | A11Y | Responsive | Darkmode | Error states | Smoke | Flow | Motion]
 Severity: [CRITICAL | HIGH | MEDIUM]
-Rule:     [P001 | S001 | D001 | E001 | F001 | etc.]
+Rule:     [P001 | S001 | D001 | E001 | F001 | M006 | etc.]
 Impact:   [CWV metric | search visibility | AI citability | viewport | UX]
 File:     [path:line | route]
 Issue:    [description]
@@ -485,29 +517,9 @@ FLOW
   Failing: [list — flow-name: broke at step N]
   Findings: [N]
 
-TOKEN ARCHITECTURE
-  Token source:        [project.json theme (N semantic tokens) | not available]
-  Color violations:    [T101-T103, T105 — N findings | clean]
-  Spacing violations:  [T104 — N findings | clean]
-  Motion literals:     [T106-T107 — N findings | clean]
-  Glass-without-flag:  [T108 — N findings | clean]
-  Typography:          [T109 — N findings | clean]
-  Radius:              [T110 — N findings | clean]
-  Shadow:              [T111 — N findings | clean]
-  CSS architecture:    [TA001 — N findings | clean]
-  Findings: [N] (H:[N] M:[N])
-
-DARK MODE COMPLIANCE
-  Dark mode configured: [yes | no — scan skipped]
-  Components checked:   [N]
-  Missing dark: classes:[N components | clean]
-  Findings: [N] (M:[N] L:[N])
-
-RESPONSIVE COVERAGE
-  Multi-viewport context:[yes | no — scan skipped]
-  Components checked:    [N]
-  Missing responsive:    [N components | clean]
-  Findings: [N] (M:[N] L:[N])
+MOTION
+  Reduced-motion emulation: [PASS | N violations]
+  Findings: [N] (H:[N])
 
 COMBINED PRIORITIES (top 10):
   1. [finding] — [check] — [impact]

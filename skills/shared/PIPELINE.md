@@ -48,7 +48,7 @@ Standalone (dev): `/dev-owasp` (security audit).
                           └─→ clears devinfo.tokenDrift.affectedFeatures on completion
                           │
                           ▼
-                     /frontend-check (transition: "auditing") ──► perf/SEO/A11Y/responsive/motion audit
+                     /frontend-check (batch at release end) ──► runtime: perf/SEO/A11Y/responsive/motion audit
 ```
 
 **Recommended order: build dev-features first, then compose PAGEs.**

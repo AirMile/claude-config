@@ -144,15 +144,20 @@ Branching based on `$ARG_MODE` (determined in PHASE 0.3).
 
 ### Mode A — Existing entity (`$ARG_MODE = "A"`)
 
-Entity found in design[]/backlog. Show entity-specific actions directly:
+Entity found in design[]/backlog. Resolve `$HAS_SPEC` before showing actions:
+- Page: `true` if `project.json → design.pages[]` has an entry with matching name
+- Component: `true` if `project.json → design.components[]` has an entry with matching name
+
+If `$HAS_SPEC === true`: mark "Build with Claude Code" as Recommended.
+If `$HAS_SPEC === false`: mark "Convert from sketch/mockup" as Recommended (no spec to build from); keep "Build" available but without the Recommended tag.
 
 ```yaml
 header: "What do you want to do with {name}?"
-question: "{$ARG_TYPE} '{name}' — {status}, {short spec summary from design.*}"
+question: "{$ARG_TYPE} '{name}' — {status}, {short spec summary from design.* or 'no spec yet'}"
 options:
-  - label: "Build with Claude Code (Recommended)"
+  - label: "Build with Claude Code{ (Recommended)}"
     description: "Generate code directly to repo from the spec"
-  - label: "Convert from sketch/mockup"
+  - label: "Convert from sketch/mockup{ (Recommended)}"
     description: "Turn a sketch, wireframe, Figma/Canva or screenshot into code with project tokens"
   - label: "Brief for Claude Design"
     description: "Markdown handoff for Claude Design / Figma"

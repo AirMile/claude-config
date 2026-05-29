@@ -6,6 +6,7 @@ Generate the page and components based on the source image.
 
 - Follow `shared/FRONTEND-RULES.md`: React/Next.js Rules, HTML/CSS Rules, Accessibility Rules (A-series)
 - Follow `shared/PATTERNS.md`: Component Patterns, Layout Patterns
+- Enforce all patterns in `$FORBID_LIST` (loaded in PHASE 2.0b) — if `$FORBID_LIST` is non-empty, treat each entry as a hard ban. If you would naturally emit a forbidden pattern, substitute the fix instead. Never emit a pattern that matches a forbidden rule.
 - Use `cn()` for className composition — create `src/lib/utils.ts` if not present
 - TypeScript strict mode with proper interfaces
 - Semantic HTML with aria-labels and keyboard support

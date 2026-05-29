@@ -366,6 +366,42 @@ PROJECT_CONTEXT_END
 - Skills may add extra skill-specific sections AFTER the standard block
 - Existing skills (dev-debug, dev-verify, dev-owasp) do not need to migrate immediately — this is opt-in for new skills and future refactors
 
+**Context load helpers** — use these shared protocols instead of inline reads (single source of truth per file type):
+
+**Dev pipeline:**
+
+| Helper                           | File                                    | Profiles                                       |
+| -------------------------------- | --------------------------------------- | ---------------------------------------------- |
+| `shared/LEARNINGS-LOAD.md`       | `project-context.json#learnings[]`      | `component`, `architectural`, `pitfall-prefix` |
+| `shared/PROJECT-CONTEXT-LOAD.md` | `project.json` + `project-context.json` | `build`, `define`, `verify`                    |
+| `shared/BACKLOG-LOAD.md`         | `.project/backlog.html`                 | `read-feature`, `ready-queue`                  |
+| `shared/FEATURE-LOAD.md`         | `.project/features/{name}/feature.json` | `build`, `verify`                              |
+
+**Game pipeline** (Godot 4.x — same `.project/` files, game-specific schema fields):
+
+| Helper                        | File                                    | Profiles                                |
+| ----------------------------- | --------------------------------------- | --------------------------------------- |
+| `shared/LEARNINGS-LOAD.md`    | `project-context.json#learnings[]`      | shared with dev pipeline                |
+| `shared/GAME-CONTEXT-LOAD.md` | `project.json` + `project-context.json` | `build`, `define`, `verify`             |
+| `shared/GAME-BACKLOG-LOAD.md` | `.project/backlog.html`                 | `read-feature`, `queue` (parameterized) |
+| `shared/GAME-FEATURE-LOAD.md` | `.project/features/{name}/feature.json` | `build`, `verify`                       |
+
+Guard script: `node scripts/check-context-load.js` — validates all 21 profiles (dev + game) against fixtures in `scripts/fixtures/`. Run alongside `check-handoff.py` before releases.
+
+### Context Aggregation Agent (exception)
+
+The "Read source files in PHASE 0 — not per agent" rule covers files the skill itself reasons over (project.json, feature.json, source code).
+
+**Exception** — spawn a `context-aggregator` (sonnet) when:
+
+- Aggregation source count ≥ 5 files AND
+- Output needs filtering/ranking (not raw read) AND
+- Result fits in ≤ 30 lines compact text
+
+**Not for:** single field extraction (use inline `node -e`), full source-code reads (still PHASE 0 inline), per-REQ context (use Agent Context Block above), or learnings filtering (use `shared/LEARNINGS-LOAD.md`).
+
+**Contract:** agent MUST return delimited blocks (e.g. `PRIOR_DECISIONS_START/END`) so caller parses without re-reading.
+
 ---
 
 ## Description Format

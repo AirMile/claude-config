@@ -1,0 +1,64 @@
+{
+  "name": "fixture-feature",
+  "type": "FEATURE",
+  "hasUI": true,
+  "status": "DEFINED",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "description": "User can view fixture data",
+      "acceptance": [
+        { "when": "user navigates to /fixture", "then": "fixture page renders" }
+      ],
+      "errorScenarios": [
+        { "when": "user not authenticated", "then": "redirect to /login" }
+      ],
+      "deltaOp": null,
+      "httpContractTested": false
+    }
+  ],
+  "buildSequence": [
+    {
+      "step": 1,
+      "action": "Write failing test for REQ-001",
+      "target": "src/app/fixture/page.test.tsx"
+    }
+  ],
+  "files": [{ "path": "src/app/fixture/page.tsx", "action": "create" }],
+  "testStrategy": ["unit"],
+  "architecture": {
+    "registries": ["src/api/routes.ts"],
+    "interfaces": { "FixtureItem": { "id": "string", "name": "string" } },
+    "scope": null
+  },
+  "clarifications": [
+    {
+      "question": "Storage backend?",
+      "answer": "PostgreSQL via Prisma",
+      "impact": "REQ-001"
+    }
+  ],
+  "build": {
+    "runCommand": "npm test",
+    "blockers": []
+  },
+  "tests": {
+    "checklist": [
+      { "id": "T-001", "title": "Fixture page renders", "status": "TODO" }
+    ],
+    "finalStatus": null
+  },
+  "design": { "theme": "light" },
+  "apiContract": {
+    "GET /api/fixture": {
+      "response": { "ok": "bool", "data": "FixtureItem[]" }
+    }
+  },
+  "durableDecisions": [
+    {
+      "decision": "Storage",
+      "chosen": "PostgreSQL",
+      "constraint": "existing infra"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "context": {
+    "structure": "src/app/ (routes), src/components/ (UI), src/lib/ (utils)",
+    "routing": "Next.js App Router — file-based",
+    "patterns": [
+      "Server components default, client components in client/ subdirectory",
+      "Zod schemas co-located with route handlers",
+      "Repository pattern: src/repositories/*.ts"
+    ]
+  },
+  "architecture": {
+    "components": [
+      {
+        "name": "FixtureCard",
+        "description": "Card component for fixture data",
+        "feature": "fixture-feature"
+      }
+    ]
+  },
+  "learnings": [
+    {
+      "date": "2026-05-01",
+      "feature": "fixture-feature",
+      "type": "pitfall",
+      "source": "synced",
+      "summary": "Fixture pitfall for testing"
+    }
+  ]
+}

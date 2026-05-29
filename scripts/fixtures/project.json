@@ -1,0 +1,42 @@
+{
+  "stack": {
+    "framework": "Next.js 14",
+    "language": "TypeScript",
+    "testing": "Vitest + Testing Library",
+    "packages": ["tailwindcss", "shadcn-ui", "zod", "prisma"]
+  },
+  "seed": {
+    "pitch": "A fixture project for context-load guard tests",
+    "content": "Extended seed content that is longer than 240 characters to verify truncation behaviour in the define profile works correctly and doesn't throw any errors"
+  },
+  "features": [
+    {
+      "name": "fixture-feature",
+      "status": "DEFINED",
+      "summary": "Fixture feature for testing"
+    },
+    { "name": "done-feature", "status": "DONE", "summary": "Already completed" }
+  ],
+  "endpoints": [
+    { "method": "GET", "path": "/api/fixture", "auth": false },
+    { "method": "POST", "path": "/api/fixture", "auth": true }
+  ],
+  "data": {
+    "entities": [{ "name": "FixtureEntity" }, { "name": "AnotherEntity" }]
+  },
+  "thinking": [
+    {
+      "newFeature": "fixture-feature",
+      "content": "Should we use approach A or B?"
+    }
+  ],
+  "design": {
+    "components": [{ "name": "FixtureCard" }],
+    "pages": [{ "name": "fixture-page" }]
+  },
+  "theme": {
+    "colors": ["primary", "secondary"],
+    "cssVars": "--primary: 220 90% 56%;",
+    "motion": { "pack": "apple", "spring": [] }
+  }
+}

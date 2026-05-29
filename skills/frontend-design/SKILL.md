@@ -1,6 +1,6 @@
 ---
 name: frontend-design
-description: Use with /frontend-design. Auto-triggers on PAGE/COMPONENT backlog tasks with transition "designing" or "converting".
+description: Design specification management (pages, flows, principles, components) and visual-to-code conversion (Figma/screenshots/wireframes/URLs) using project tokens. Use with /frontend-design, or auto-triggers on PAGE/COMPONENT backlog tasks with transition "designing" or "converting".
 argument-hint: "[name|file-path|url|sketch]"
 reads:
   [
@@ -13,7 +13,7 @@ reads:
 writes: [devinfo.handoff, devinfo.tokenDrift]
 metadata:
   author: claude-config
-  version: 2.11.0
+  version: 2.11.1
   category: frontend
 ---
 
@@ -126,14 +126,14 @@ If `handoff.target === $SKILL_ARG`: mark "Patch" as Recommended. On "Patch": fol
 
 Classify the argument to set `$ROUTE`:
 
-**Step 1 — Visual input (highest priority):**
+**Step 1 — Visual input** _(highest priority — checked before Steps 2-4):_
 
 `$SKILL_ARG` matches any of:
 
 - Protocol prefix: `http://` or `https://`
 - Design-tool domain: contains `figma.com` or `canva.com`
-- Path separator: contains `/` or `\`
 - Image extension: ends with `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.svg`
+- Local file path: starts with `./`, `/`, `~/`, or matches drive-letter `[A-Z]:\`
 
 **OR** an image is pasted in the chat.
 
@@ -143,7 +143,7 @@ Classify the argument to set `$ROUTE`:
 
 `$SKILL_ARG` is a non-empty string that does not match step 1 → `$ROUTE = design` (tentative — see Step 3).
 
-The router passes `$SKILL_ARG` to route-design.md; argument-to-entity resolution (`$ARG_MODE` / `$ARG_TYPE` / `$ARG_ENTITY` / `$ARG_NAME`) happens in `route-design.md` PHASE 0.3.
+Pass `$SKILL_ARG` to route-design.md; argument-to-entity resolution (`$ARG_MODE` / `$ARG_TYPE` / `$ARG_ENTITY` / `$ARG_NAME`) happens in `route-design.md` PHASE 0.3.
 
 **Step 3 — Backlog transition lookup (named entities only):**
 
@@ -156,7 +156,11 @@ Triggers when Step 2 set `$ROUTE = design` AND `$SKILL_ARG` is non-empty.
    - Set `$ROUTE = convert`
    - Set `$CONVERT_TARGET = $SKILL_ARG`
    - Set `$BACKLOG_ROUTE_HINT = "transition=converting"`
-5. Any other transition value (or absent) → keep `$ROUTE = design`.
+5. Match found and `f.transition === "designing"` → keep `$ROUTE = design`.
+   The design route's Mode A will offer "Convert from sketch/mockup" as a
+   sub-option for entities without a spec — that is the canonical path from
+   "designing" to convert. Do not auto-route here.
+6. Any other transition value (or absent) → keep `$ROUTE = design`.
 
 **Step 4 — No argument:**
 
@@ -169,7 +173,8 @@ PRE-FLIGHT CHECK
 ════════════════════════════════════════════════
 Directory:  [✓|✗] .project/
 Session:    [✓] [New session | Continuing from {skill}]
-Route:      [Design | Convert{, patch mode}{, from backlog transition}]
+Route:      [Design | Convert]
+Mode:       [— | patch (handoff) | backlog transition]   # only show when non-default
 ════════════════════════════════════════════════
 ```
 
@@ -192,4 +197,4 @@ Route:      [Design | Convert{, patch mode}{, from backlog transition}]
 - Always run PHASE 0 before dispatching
 - Never skip handoff detection
 - Never guess $ROUTE — follow the classification steps exactly
-- Never load both route files in the same session unless explicitly switching routes
+- Never load both route files in the same session, except via the Design Mode A → "Convert from sketch/mockup" dispatch (that switch loads `route-convert.md` and abandons the Design state machine). Any other simultaneous load is forbidden.

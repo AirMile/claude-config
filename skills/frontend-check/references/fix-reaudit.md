@@ -12,13 +12,13 @@ Implement fixes in priority order, grouped by audit category.
 4. **Error states** (E001/E002): broken 404/offline UX — no fallback = crash for user
 5. **Responsive**: overflow + touch targets (breaks usability)
 6. **Performance**: CLS → LCP → INP → bundle (CWV impact)
-7. **Darkmode** (D001): visual completeness, no regression in color/contrast
-8. **Dark mode compliance** (DC001): missing dark: classes in components
-9. **Responsive coverage** (RC001): missing responsive prefixes in layout components
-10. **SEO**: titles → descriptions → sitemap → robots → structured data
-11. **AEO**: semantic HTML → FAQ schema → bot access → E-E-A-T
-12. **A11Y** (A001-A203): accessible names → semantic elements → keyboard handlers → focus management → ARIA states → form errors → live regions
-13. **Token Architecture** (TA001, T101-T111): TA001 — refactor semantic CSS-vars with raw hex to var() references; T101-T105 — hardcoded colors/spacing; T106-T108 — motion/glass; T109-T111 — typography/radius/shadow (see `shared/TOKENS.md § Token → Class Mapping`)
+7. **Darkmode** (D001/D102): visual completeness, no regression in color/contrast, computed contrast below WCAG 4.5:1
+8. **SEO**: titles → descriptions → sitemap → robots → structured data
+9. **AEO**: semantic HTML → FAQ schema → bot access → E-E-A-T
+10. **A11Y runtime** (focus-trap, aria-snapshot, axe, console warnings): focus management → ARIA states → keyboard traps → live regions
+11. **Motion** (M006/M007): missing reduced-motion fallbacks
+
+*Note: generation-time bans (token literals, dark/responsive coverage, static A11Y patterns) are enforced during `/frontend-design` Convert — not fixed here.*
 
 ### Context7 Research
 
@@ -88,9 +88,8 @@ Responsive:
   Overflow: [before] → [after]
   Touch violations: [before] → [after]
 
-Token Architecture:
-  CSS compliance: [before] → [after]
-  Hardcoded colors: [before] → [after]
+Motion:
+  Reduced-motion violations: [before] → [after]
 
 Resolved: [N]/[total] findings
 
@@ -99,21 +98,15 @@ Resolved: [N]/[total] findings
 
 ### 4.3 Backlog Completion Sync
 
-If a backlog item was tagged as "testing" in PHASE 0 **and** no unresolved CRITICAL findings remain after re-audit:
+After re-audit, update backlog if a feature was targeted:
 
 1. Read `.project/backlog.html` → parse JSON
-2. Find the feature → set `status: "DONE"`, remove `stage` and `transition` fields, `data.updated` to today
-3. **If `f.type === "PAGE" || f.type === "COMPONENT"` (frontend track)**: also set `f.shipped = true` and `f.shippedAt = "{YYYY-MM-DD}"` (terminal — no refactor step for frontend cards). If the audit fixes triggered a git commit: also set `f.shippedSha = "{audit-commit-sha}"`. On a clean PASS without commit: omit `shippedSha`.
-4. **If `targetType === "feature"`**: also add `audit` field to the feature:
-   ```json
-   {
-     "lastRun": "{YYYY-MM-DD}",
-     "scopes": ["{scope-list}"],
-     "findings": { "critical": N, "warnings": N, "passed": N }
-   }
-   ```
-5. Write back via Edit (keep `<script>` tags intact)
-6. Sync to `project.json` `features[]`: merge feature with `status: "DONE"` (and `shipped: true` for PAGE/COMPONENT)
+2. Find the feature (by `featureName` or best-effort URL match from PHASE 0.4).
+3. Set `f.lastCheckedSha` = current HEAD SHA. Set `data.updated` to today.
+4. **If no unresolved CRITICAL findings AND `f.type === "PAGE"` (page track)**: set `status: "DONE"`, `shipped: true`, `shippedAt: "{YYYY-MM-DD}"`, remove `stage` and `transition`. If audit fixes produced a commit: set `shippedSha = "{audit-commit-sha}"`.
+5. **If `f.type === "COMPONENT"` (component track)**: do NOT auto-set `status: "DONE"` — components ship with the page/feature that consumes them. Only update `lastCheckedSha`.
+6. Write back via Edit (keep `<script>` tags intact).
+7. Sync to `project.json` `features[]` if status changed.
 
 ### 4.4 Completion Report
 
@@ -148,7 +141,7 @@ Runs only when: feature-name is known (backlog feature targeted, not URL-only) a
 1. Current branch matches `worktree-*` pattern
 2. `TEAM_MODE === "team"` — read via `shared/PROJECT-MODE.md` read pattern (absent → skip)
 3. `gh` on PATH AND `gh auth status` exit 0
-4. Clean tree (`git status --porcelain` empty)
+4. Clean tree (`git status --porcelain -- ':!.project'` empty — session-state files in `.project/` are excluded from this check)
 5. Feature `shipped: true` (set in 4.3)
 
 If all true → AskUserQuestion:

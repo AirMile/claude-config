@@ -82,8 +82,15 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 1. **Read backlog for pipeline status:**
 
-   Read `.project/backlog.html` (if exists), parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`):
-   - See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Priority filter: `transition === "refactoring"` — if found, pre-select. Fallback: `data.features.filter(f => f.status === "DONE")`
+   Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
+
+   ```
+   profile: queue
+   status: DONE
+   transition: refactoring
+   ```
+
+   Run the `queue` snippet. Auto-select first entry with `transition === "refactoring"` — pre-select. Fallback: re-run without transition filter (`$TRANSITION = ""`) to list all DONE features.
    - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` section
    - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
 
@@ -99,13 +106,16 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 4. **Load feature.json for every feature in queue:**
 
-   For each feature, read `feature.json`. Extract:
-   - `requirements[]` for requirements and architecture
-   - `files[]` for implementation details and file list
-   - `tests.checklist[]` for playtest items
-   - `tests` section for verification results
+   For each feature, run Feature load (via [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)):
 
-   Validate feature.json exists with `tests` section for each feature. If any missing — remove from queue and warn.
+   ```
+   profile: verify
+   feature-name: {feature-name}
+   ```
+
+   The `verify` profile extracts: `requirements[]` (with tuningLevers), `files[]`, `checklist[]`, `design`, `build`. Use `requirements[]` for architecture analysis, `files[]` for file list, `checklist[]` to check verification coverage. Full `architecture` is available from GAME-CONTEXT-LOAD `build` profile (step 6).
+
+   `FEATURE_JSON: not present` → remove from queue and warn.
 
 5. **Build pipeline files list per feature:**
 
@@ -116,8 +126,13 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 6. **Load project conventions + learnings** (for Explore agent context):
 
-   Read `.project/project-context.json` (if exists) → extract `context.patterns`.
-   Store as `PROJECT_CONVENTIONS` for injection into Explore agent prompts (PHASE 1).
+   Project context load (via [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)):
+
+   ```
+   profile: build
+   ```
+
+   Run snippet 2 only (project-context.json). Extracts: `structure`, `patterns` (max 15), full `architecture`. Store `patterns` as `PROJECT_CONVENTIONS` and `architecture` as scene-graph context for injection into Explore agent prompts (PHASE 1).
 
    **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 

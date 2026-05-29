@@ -721,12 +721,8 @@ if (window.__inspectOverlayActive) {
 
   // --- Event handlers (named for dispose cleanup) ---
   function onKeyDown(e) {
-    // Toggle inspect: Ctrl+Shift+X (Win/Linux) or Cmd+Shift+X (Mac)
-    if (
-      (e.ctrlKey || e.metaKey) &&
-      e.shiftKey &&
-      (e.key === "x" || e.key === "X")
-    ) {
+    // Toggle inspect: Cmd+. (Mac) or Ctrl+. (Win/Linux)
+    if ((e.metaKey || e.ctrlKey) && e.key === ".") {
       e.preventDefault();
       toggleInspect();
       return;

@@ -40,21 +40,36 @@ Structured 11-phase debugging: context → intake → investigate → analyze �
 
 **Project context** (optional, skip if not present):
 
-- Read `.project/project.json` → extract:
-  - `stack` (engine, language, packages)
-  - `data.entities` (names, fields, relations)
-- Read `.project/project-context.json` (if present) → extract:
-  - `context` (structure, patterns)
-  - `architecture` (diagram, files)
+Project context load (via [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)):
+
+```
+profile: verify
+```
+
+Run the two `node -e` snippets for the `verify` profile. Extracts: `stack`, `entities[]` from `project.json`; `structure`, `routing`, `patterns` (max 15), full `architecture` (componentTree, scenes, signals, resources) from `project-context.json`.
 
 **Active feature detection** (optional):
 
 - Check `.project/session/active-*.json` files
-- Fallback: read `.project/backlog.html` → find most recent `"DOING"` feature (features with `-ing` stage suffix are active)
+- Fallback: Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
+
+  ```
+  profile: queue
+  status: DOING
+  ```
+
+  Run the `queue` snippet (no transition filter). Pick the most recently updated entry as the active feature.
+
 - If active feature found:
   - Note as context hint for investigation agents
-  - Read `.project/features/{feature-name}/feature.json` (if present) → extract `requirements[]` (id + description + status)
-  - Note as FEATURE_REQUIREMENTS for use in PHASE 3 (spec-vs-impl distinction)
+  - Feature load (via [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)):
+
+    ```
+    profile: verify
+    feature-name: {feature-name}
+    ```
+
+    Run the `verify` snippet. Use `requirements[]` (id + description) as FEATURE_REQUIREMENTS for use in PHASE 3 (spec-vs-impl distinction). `FEATURE_JSON: not present` → skip silently.
 
 **Worktree switch** (only when active feature detected):
 

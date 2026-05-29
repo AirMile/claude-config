@@ -150,7 +150,7 @@ The backlog is divided into two tracks: **Frontend** (PAGE/COMPONENT) and **Dev*
 ### Frontend track (PAGE/COMPONENT)
 
 ```
-TODO (To design) → DEFINED (To convert) → DOING (To audit) → DONE (Shipped) → shipped
+TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped) → shipped
                         ↑ Path B only              ↑ Path A skips DEFINED
 ```
 
@@ -158,15 +158,15 @@ TODO (To design) → DEFINED (To convert) → DOING (To audit) → DONE (Shipped
 | ----------- | ---------- | -------------------------------------------------------------------------------- |
 | `TODO`      | To design  | `/frontend-design` Capture, `/project-todo`, `/project-backlog`, reuse-discovery |
 | `DEFINED`   | To convert | `/frontend-design` Brief (Path B — offline handoff)                              |
-| `DOING`     | To audit   | `/frontend-design` Build (Path A) or `/frontend-design` Convert route (Path B)   |
-| `DONE`      | Shipped    | `/frontend-check` PASS (terminal — no refactor step)                             |
+| `DOING`     | Building   | `/frontend-design` Build (Path A) or `/frontend-design` Convert route (Path B)   |
+| `DONE`      | Shipped    | `/frontend-check` batch (at release end) or manual finalize                      |
 | `CANCELLED` | Archived   | Manually via UI (○ button), restorable                                           |
 
 **Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
 
 **Path B** (Brief for external design): TODO → DEFINED → DOING → DONE.
 
-`/frontend-check` PASS sets `f.shipped = true` directly — no refactor step for frontend cards.
+`/frontend-check` (batch mode or targeted) runs at end of release cycle across DOING features — not per-component inline. Sets `lastCheckedSha`; for PAGE scope on PASS: sets `f.shipped = true` and `status: "DONE"`.
 
 ### When to use which skill for PAGE/COMPONENT
 
@@ -213,7 +213,7 @@ The backlog board shows two top-level swimlanes with their own status sections a
 ═══ FRONTEND ════════════════════════════════════════
   ▾ To design    (PAGE/COMPONENT TODO)
   ▾ To convert   (PAGE/COMPONENT DEFINED — Path B)
-  ▾ To audit     (PAGE/COMPONENT DOING)
+  ▾ Building     (PAGE/COMPONENT DOING)
 
 ═══ DEV ══════════════════════════════════════════════
   ▾ To define    (other TODO)
@@ -282,7 +282,7 @@ Schema when creating:
 ### Pipeline (Frontend track — identical to PAGE)
 
 ```
-TODO (To design) → DOING (To audit) → DONE (Shipped)       ← Path A
+TODO (To design) → DOING (Building) → DONE (Shipped)       ← Path A
 TODO (To design) → DEFINED (To convert) → DOING → DONE     ← Path B
 ```
 
@@ -381,19 +381,19 @@ No backlog write — `transition` remains as set by the dashboard, user can re-c
 
 ### Skill filter & status transition table
 
-The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`. The FRONTEND pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"auditing"` — same pattern, different vocab.
+The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`. The FRONTEND pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` — same pattern, different vocab. There is no `"auditing"` transition anymore — `frontend-check` runs in batch mode at release end, not per item.
 
-| Skill             | Filter                                                                       | New status on success            |
-| ----------------- | ---------------------------------------------------------------------------- | -------------------------------- |
-| `frontend-tokens` | `type === "THEME" && transition === "defining"`                              | `"DONE"`                         |
-| `dev-define`      | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                      |
-| `dev-build`       | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                        |
-| `dev-verify`      | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                         |
-| `dev-refactor`    | `transition === "refactoring"`                                               | keep status, set `shipped: true` |
-| `frontend-design` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DEFINED"`                      |
-| `frontend-design` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                        |
-| `frontend-check`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "auditing"`   | `"DONE"`, set `shipped: true`    |
-| `game-define`     | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                      |
-| `game-build`      | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                        |
-| `game-verify`     | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                         |
-| `game-refactor`   | `transition === "refactoring"`                                               | keep status, set `shipped: true` |
+| Skill             | Filter                                                                       | New status on success                       |
+| ----------------- | ---------------------------------------------------------------------------- | ------------------------------------------- |
+| `frontend-tokens` | `type === "THEME" && transition === "defining"`                              | `"DONE"`                                    |
+| `dev-define`      | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                                 |
+| `dev-build`       | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                                   |
+| `dev-verify`      | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                                    |
+| `dev-refactor`    | `transition === "refactoring"`                                               | keep status, set `shipped: true`            |
+| `frontend-design` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DEFINED"`                                 |
+| `frontend-design` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                                   |
+| `frontend-check`  | batch: `status === "DOING"` or `lastCheckedSha !== shippedSha`               | sets `lastCheckedSha`; PAGE PASS → `"DONE"` |
+| `game-define`     | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                                 |
+| `game-build`      | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                                   |
+| `game-verify`     | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                                    |
+| `game-refactor`   | `transition === "refactoring"`                                               | keep status, set `shipped: true`            |

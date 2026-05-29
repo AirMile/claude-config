@@ -4,7 +4,7 @@ One-time scan of an existing codebase with an early Module Gap modal and optiona
 
 **`--no-llm` flag**: Skip PHASE 4 (LLM extraction). Only MVP signals (TODO/FIXME, fix-commits, abstraction-dirs, wrapper-deps). Faster but misses naming/error/response-shape patterns.
 
-See `shared/SYNC.md`, `shared/DASHBOARD.md`, and `shared/LEARNING-EXTRACTION.md` for protocols.
+See `../shared/SYNC.md`, `../shared/DASHBOARD.md`, and `../shared/LEARNING-EXTRACTION.md` for protocols.
 
 ---
 
@@ -115,6 +115,8 @@ multiSelect: false
 
 On "Yes": `git rm --cached -- $(echo "$TRACKED" | tr '\n' ' ')`
 
+**Session state init:** initialize `installed_in_session = []` (empty list). Subsequent phases (5.6 inspect-overlay, 5.65 playwright-toolchain, 5.8 Module Gap installs) append module IDs to this list. PHASE 6 report reads it to render "Modules added".
+
 ### PHASE 0.5: Project Status Snapshot
 
 > **Todo**: mark PHASE 0 → `completed`, PHASE 0.5 → `in_progress`.
@@ -149,7 +151,7 @@ Learnings:    {existing_learning_count}
 Last sync:    {sync-state.json#lastSync or "never"}
 ```
 
-Read `SEED_CONTEXT` per `shared/SEED.md` Reader. Use this in PHASE 0.6 (Module Gap modal) and any follow-up suggestions: weigh the concept domain into defaults and recommendations.
+Read `SEED_CONTEXT` per `../shared/SEED.md` Reader. Use this in PHASE 0.6 (Module Gap modal) and any follow-up suggestions: weigh the concept domain into defaults and recommendations.
 
 No modal here — visibility only. PHASE 0.6 below uses this snapshot directly for the Module Gap modal.
 
@@ -161,7 +163,7 @@ Mark PHASE 0.5 → `completed`.
 
 > **Todo**: mark PHASE 0.5 → `completed`, PHASE 0.55 → `in_progress`.
 
-> Parallel met greenfield step 0.5 (`mode-greenfield.md` regel 101). Schrijfdoel + leespatroon voor skills: zie `shared/PROJECT-MODE.md`.
+> Parallel met greenfield step 0.5 (`mode-greenfield.md` regel 101). Schrijfdoel + leespatroon voor skills: zie `../shared/PROJECT-MODE.md`.
 
 **Goal:** detect whether this is a team repo and let the user confirm, then persist `team.mode` to `.project/project.json`.
 
@@ -291,7 +293,7 @@ Reuse logic from `core-pull` PHASE 4d/e/f, but on ALL source files (not just tea
 
 **2b) Routes** — Glob all route files according to stack mapping (`core-pull` PHASE 3b table). Extract route patterns. Overwrite `context.routing`.
 
-**2c) Entities** — Glob model files (Mongoose/Prisma/Sequelize/Django/GDScript). Extract entities with source field. Merge to `data.entities[]`.
+**2c) Entities** — Glob model files (Mongoose/Prisma/Sequelize/Django/GDScript/Sanity). Extract entities with source field. Merge to `data.entities[]`. See `core-pull` PHASE 4d table for detection patterns per stack.
 
 **2d) Endpoints** — Per stack: extract method+path. Reuse route file content from 2b. Merge to `endpoints[]`.
 
@@ -393,12 +395,19 @@ stack.language     ← PHASE 2a (derived from framework + package.json engines)
 stack.packages     ← PHASE 2f
 ```
 
-Show one AskUserQuestion (multi-select) with each inferred field as a checkbox:
+**Pre-filter against existing values.** For each inferred field, read the current value from `project.json`:
+
+- If the existing value is **empty/null/missing** → include in modal, default checked.
+- If the existing value is **non-empty** → exclude from modal (already set, do not overwrite). Log inline: `Kept existing {field}: {current value}`.
+
+Then show one AskUserQuestion (multi-select) over the remaining (empty) fields only:
 
 - header: "Context"
 - question: "I inferred this from the existing code and README. Which fields do you want to accept?"
 - options: one checkbox per field with `label: "{field}: {value}"`, all checked by default
 - multiSelect: true
+
+If all fields are pre-filled and the modal would be empty: skip the modal entirely, log `All seed/stack fields already present — no inference needed.`
 
 For selected fields: write to `project.json`. Deselected fields remain empty (user fills in later via `/project-seed`).
 
@@ -410,7 +419,7 @@ If `.project/backlog.html` already exists (non-frontend projects that skip PHASE
 
 > **Todo**: mark PHASE 4.5 → `completed`, PHASE 5 → `in_progress`.
 
-Follow `shared/SYNC.md` protocol. Re-read `project.json` and `project-context.json` immediately before write.
+Follow `../shared/SYNC.md` protocol. Re-read `project.json` and `project-context.json` immediately before write.
 
 **5a) Dedup and cap**
 
@@ -420,6 +429,18 @@ For each new entry from PHASE 3 + PHASE 4:
 - Check against existing `learnings[]` → match → skip
 - Intra-run dedup → skip
 - Cap total new entries at **50**. If exceeded: prioritize pitfalls > LLM patterns > MVP patterns > observations.
+
+**5b-pre) Package version reconciliation**
+
+For each entry in `project.json#stack.packages[]`:
+
+1. Look up the same package name in `package.json` (`dependencies` ∪ `devDependencies`).
+2. If found and the version string differs from the stored value → update the entry to the actual `package.json` version (actual installed wins over planning-state value).
+3. If not found in `package.json` → leave as-is (may be a planned dependency that wasn't installed yet); log `Tracked but not installed: {name}@{version}`.
+
+For each `package.json` entry not yet in `project.json#stack.packages[]`: skip (these are typically transitive/peer/dev-tools captured elsewhere). Adding new packages happens via `/core-setup install` or PHASE 5.8.
+
+Log: `Reconciled N package versions: {list of name@old → name@new}`.
 
 **5b) Write project files**
 
@@ -531,13 +552,15 @@ Mirror of greenfield Phase 5b — detect dev-tools that get auto-install on a ne
 **Detect:**
 
 - `stack.framework` contains "React" + "Vite" or is "Next.js"
-- `@anthropic-ai/inspect-overlay` is missing from both `dependencies` and `devDependencies` of `package.json`
+- Overlay not yet installed:
+  - **Next.js**: `public/_inspect/client.js` does not exist
+  - **Vite**: `vite.config.*` does not import `inspectOverlay`
 
 Both conditions true → show AskUserQuestion (single-select, with "Let Claude decide"):
 
 ```yaml
 header: "Inspect overlay"
-question: "A new {framework} project gets @anthropic-ai/inspect-overlay automatically. This project doesn't have it. Install?"
+question: "A new {framework} project gets the inspect overlay automatically. This project doesn't have it. Install?"
 options:
   - label: "Install (Recommended)"
     description: "Mirror of greenfield default — same DX as a new project"
@@ -556,9 +579,7 @@ Follow setup-guide fully. For Vite: Babel-mode. For Next.js: full Babel mode (wa
 
 **Sync to project.json:**
 
-- Read new `package.json#devDependencies["@anthropic-ai/inspect-overlay"]` version
-- Append to `project.json#stack.packages[]`: `{ name: "@anthropic-ai/inspect-overlay", version: "<read>", purpose: "Dev overlay (inspect mode)" }`
-- Skip if entry with the same `name` already exists (idempotent on retry)
+No project.json update needed — inspect-overlay is dev-only, no NPM package, no `stack.*` key. Matches greenfield Phase 5b.
 
 Add `inspect-overlay` to `installed_in_session[]`.
 
@@ -798,7 +819,7 @@ Mark PHASE 6 → `completed`.
 
 ## Edge cases
 
-- **No `.project/project.json`**: create with empty schema (see `shared/DASHBOARD.md`) before PHASE 1.
+- **No `.project/project.json`**: create with empty schema (see `../shared/DASHBOARD.md`) before PHASE 1.
 - **No git repo**: exit with error.
 - **Very small codebase (<10 files)**: skill runs through, PHASE 4 LLM extraction yields 0-2 entries. No problem.
 - **No package.json / requirements.txt**: skip wrapper-deps detection (PHASE 3d).

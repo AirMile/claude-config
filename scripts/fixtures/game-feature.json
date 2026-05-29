@@ -1,0 +1,88 @@
+{
+  "name": "fixture-feature",
+  "type": "FEATURE",
+  "status": "DEFINED",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "description": "Player can jump when grounded",
+      "acceptance": [
+        {
+          "when": "player presses jump button while on ground",
+          "then": "player launches upward with configured force",
+          "category": "happy"
+        }
+      ],
+      "errorScenarios": [
+        { "when": "player is in the air", "then": "jump input is ignored" }
+      ],
+      "tuningLevers": [
+        {
+          "name": "jumpForce",
+          "default": 800,
+          "range": [400, 1200],
+          "unit": "px/s"
+        },
+        { "name": "coyoteTime", "default": 0.1, "range": [0, 0.2], "unit": "s" }
+      ]
+    }
+  ],
+  "buildSequence": [
+    {
+      "step": 1,
+      "action": "Write GUT test for REQ-001",
+      "target": "tests/test_jump_mechanic.gd"
+    }
+  ],
+  "files": [
+    { "path": "res://src/entities/player_controller.gd", "action": "modify" }
+  ],
+  "testStrategy": ["gut"],
+  "architecture": {
+    "componentTree": "Player\n├── JumpController\n└── CollisionShape2D",
+    "scenes": ["res://src/scenes/game.tscn"],
+    "scripts": ["res://src/entities/player_controller.gd"],
+    "signals": ["jumped", "landed"],
+    "resources": ["res://data/player_config.tres"]
+  },
+  "design": {
+    "sceneLayout": "Player node with CharacterBody2D root, AnimatedSprite2D child",
+    "gameplayFlow": "Idle → Airborne → Landing → Idle"
+  },
+  "clarifications": [
+    {
+      "question": "Coyote time?",
+      "answer": "Yes, 100ms window",
+      "impact": "REQ-001"
+    }
+  ],
+  "build": {
+    "runCommand": "gut -d tests/",
+    "blockers": [],
+    "decisions": [
+      "Used CharacterBody2D.move_and_slide() for physics integration"
+    ]
+  },
+  "tests": {
+    "checklist": [
+      {
+        "id": 1,
+        "title": "Player jumps when grounded",
+        "requirementId": "REQ-001",
+        "acceptanceIndex": 0,
+        "category": "happy",
+        "steps": ["position player on ground", "press jump button"],
+        "expected": "player velocity.y becomes negative (upward)",
+        "status": "pending"
+      }
+    ],
+    "finalStatus": null
+  },
+  "durableDecisions": [
+    {
+      "decision": "Physics engine",
+      "chosen": "Godot built-in CharacterBody2D",
+      "constraint": "no external physics library"
+    }
+  ]
+}

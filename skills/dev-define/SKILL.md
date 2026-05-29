@@ -8,11 +8,13 @@ writes:
     feature.architecture,
     feature.files,
     backlog.status,
+    backlog.overview,
+    backlog.siblings,
     concept.seed,
   ]
 metadata:
   author: claude-config
-  version: 3.1.0
+  version: 3.2.0
   category: dev
 ---
 
@@ -87,15 +89,34 @@ visible — no risk of forgetting phases.
 
 5. **Context load** (inside plan mode — reads only, parallelize):
    - Glob + Grep for existing code that imports the feature name. ≥1 match: briefly mention files.
-   - Read `.project/project.json` — extract: `stack`, `seed.pitch` (or first 2 sentences of `seed.content`), `features[]`, `endpoints`, `data.entities`, `thinking[]` (filter by `newFeature` matching feature name), `design.components[]`, `design.pages[]`.
-   - **Onboarding check** (after project.json read): not present → warn `⚠️ No project.json found. Consider /core-setup.`; present but empty (no `context`, `stack`, `features`) → warn `ℹ️ project.json lacks codebase context. /core-setup can fill this in.`; present with content → continue silently. Non-blocking.
-   - Read `.project/project-context.json` (if exists) — extract `context.patterns`, `architecture.components[]`.
+   - Project context load (via [shared/PROJECT-CONTEXT-LOAD.md](../shared/PROJECT-CONTEXT-LOAD.md)):
+     ```
+     profile: define
+     feature-name: {feature-name}
+     ```
+     Run the two `node -e` snippets for the `define` profile (set `FEAT="{feature-name}"` before running).
+   - **Onboarding check** (after project.json extract): `PROJECT_JSON: not present` → warn `⚠️ No project.json found. Consider /core-setup.`; present but `stack === null && features.length === 0` → warn `ℹ️ project.json lacks codebase context. /core-setup can fill this in.`; present with content → continue silently. Non-blocking.
    - Read `.claude/research/stack-baseline.md` (if not available, use `project.json.stack` as basis).
-   - **Backlog read-only** (required — feeds the PHASE 1 risk-check + PHASE 3 externalRef passthrough): Read `.project/backlog.html`, parse JSON from `<script id="backlog-data">`, find the feature by name. Keep `risk`, `dependencies`, `externalRef` in memory for PHASE 1 and PHASE 3. Mutations (status, date, `auto` flag) happen in PHASE 4. Feature not in backlog → log `Backlog: ⓘ not present — risk-check skipped` and continue.
+   - **Backlog read-only** (required — feeds the PHASE 1 risk-check + PHASE 3 externalRef passthrough): Backlog load (via [shared/BACKLOG-LOAD.md](../shared/BACKLOG-LOAD.md)):
+     ```
+     profile: read-feature
+     feature-name: {feature-name}
+     ```
+     Keep `risk`, `dependencies`, `externalRef` in memory for PHASE 1 and PHASE 3. Mutations (status, date, `auto` flag) happen in PHASE 4. `BACKLOG_FEATURE_NOT_FOUND` or `BACKLOG_HTML: not present` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
 
 6. **Optional context** (skip each item if results would be empty):
    - **Thinking files**: Grep `.project/thinking/*.md` for feature name. Read matches as PHASE 1 input.
-   - **Past decisions**: only if `.project/features/` has any prior `feature.json`. Sort prior feature.json files by `created`/`definedAt` desc — take the **5 most recent**. Collect `durableDecisions[]` from those (tag `[feature-X]`). Scan `.project/thinking/*-decision-*.md` sorted by mtime desc — take the **5 most recent** (extract `THINK:`, `RECOMMENDATION:`, `CONSTRAINT` from first 30 lines, tag `[project]`). Filter ≥2 keyword overlap with current feature. Keep top 3.
+   - **Past decisions** (only if `.project/features/` has any prior `feature.json`):
+
+     > **Todo**: spawn `context-aggregator` agent via `Task` tool with:
+     >
+     > - `featureName` = current feature name
+     > - `featureKeywords` = tokens from feature name (split kebab-case)
+     > - `featuresDir` = `$REPO/.project/features`
+     > - `thinkingDir` = `$REPO/.project/thinking`
+     >
+     > Parse `PRIOR_DECISIONS_START/END` block from response. Store for PHASE 1a "Surface relevant past decisions" render. Empty or missing block → silent skip (no output).
+
    - **Learnings**: scan `project-context.json#learnings[]` (and optionally `project.json#learnings[]`). Match: relevant if (a) summary shares ≥2 keywords with the current feature name or concept, OR (b) `feature` name matches a **direct** dependency AND `type === "pitfall"`. Rationale: keyword-match catches topical relevance; dependency-pitfalls catch lessons that bit us last time in code we're about to touch. Show `RELEVANT LEARNINGS` block before the first AskUserQuestion of PHASE 1 (max 5 entries, pitfalls first, then patterns) — only on ≥1 match. No match → silent. Extended matching: [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md).
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
@@ -151,13 +172,17 @@ Conduct an open interview — **no AskUserQuestion and no multiple-choice option
 
 #### Requirement Extraction + Checkpoint
 
-Extract testable requirements **internally** (no table output to chat). Write each acceptance scenario as a separate `{ when, then }` object. Multiple conditions → multiple objects (do not combine in one sentence).
+Extract testable requirements **internally** (no table output to chat). Write each acceptance scenario as a separate `{ when, then, category }` object (`category` ∈ `"happy" | "edge" | "boundary"`). Multiple conditions → multiple objects (do not combine in one sentence).
 
 **Completeness self-check** (execute, do NOT show to user):
 
 - Each `when` is a concrete trigger (action, input, state). Each `then` is an observable result (status code, UI element, return value, state change). Not vague: "works well", "good performance", "user-friendly".
 - Data sources identified (where does input/output come from?)
-- Error/edge cases named for requirements with user input or external data
+- **Scenario categories per REQ** — assign `category` to each `acceptance[]` entry:
+  - Every REQ: ≥1 `happy` scenario (primary flow, REQ as intended).
+  - REQ with user input, conditional logic, or external call: ≥1 `edge` scenario (unusual-but-valid input: empty string/array, unicode, null-equivalent, duplicate submit, race condition, concurrent state change).
+  - REQ with numeric input, list-iteration, or pagination: ≥1 `boundary` scenario (min/max value, off-by-one, empty list, single item, first/last element).
+  - REQ with user input, validation, or external call: `errorScenarios[]` (plausible fail-paths only — already required).
 - No overlap between requirements (two REQs describing the same thing)
 - Scope fits 1 feature (if >10 REQs → flag for PHASE 1c)
 
@@ -293,21 +318,75 @@ Design in three steps:
    - **feature.json-only** — do NOT write to plan file: type signatures, dependency analysis, build sequence, test strategy. These are canonical in feature.json (PHASE 3) and not needed for plan-mode review.
    - **AI-navigability** (skip if ≤6 files AND no new registry): when applicable, identify new registries and record them in `architecture.registries[]` (written to feature.json in PHASE 3). Omit module-export lists, colocation notes, and import constraints — covered by project conventions.
 
-**Seed Alignment Check** (last step in PHASE 2, before ExitPlanMode):
+**Seed Alignment Check** (penultimate step in PHASE 2):
 
 **Trigger condition** — only run when **either** holds:
 
 - `requirements.length ≥ 4`, OR
 - `≥1 durableDecision` was recorded in this PHASE 2.
 
-Below the threshold → skip silently (no plan-file section, no `seedDrift` carry). Rationale: triviale features (config-tweaks, single-REQ bug-fixes) leveren geen meaningful seed-drift-signaal en zouden de check tot ruis maken.
+Below the threshold → skip silently (no plan-file section, no `seedDrift` carry, no sibling-cascade either — same threshold). Rationale: triviale features (config-tweaks, single-REQ bug-fixes) leveren geen meaningful drift-signaal en zouden de check tot ruis maken.
 
 When triggered: follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ
 descriptions + `acceptance[].then` + `durableDecisions[]`. This skill is in plan
 mode at this point — drift table and proposed rewrite go into the plan file. On
-"Yes" → carry `seedUpdateApproved: true` to PHASE 4. On "Skip" → carry
-`seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`).
+"Yes" → carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4
+(seed and backlog-overview always co-update — they hold the same project description in two
+places). On "Skip" → carry `seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`).
 `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
+
+**Sibling Cascade Check** (last step in PHASE 2, before ExitPlanMode):
+
+**Same trigger condition as Seed Alignment Check** (`requirements.length ≥ 4` OR `≥1 durableDecision`). Below threshold → skip silently.
+
+**Goal**: detect other backlog features whose `dependencies[]` or `description` are made stale by the scope decisions of this feature, so the user reviews and approves the updates in plan mode rather than discovering drift weeks later.
+
+**Inputs** (already in memory from earlier phases):
+
+- Current feature: `name`, `requirements[]`, `architecture` (exports/produced artifacts), `durableDecisions[]`, in-memory `discoveredComponents[]` and `pageHint[]`.
+- Backlog: `data.features[]` from the PHASE 0 read (no re-read needed — the file isn't mutated between PHASE 0 and PHASE 2).
+
+**Scan procedure** (internal, no chat output during scan):
+
+1. Filter siblings: `data.features.filter(f => f.name !== current && !["DONE","CANCELLED"].includes(f.status))`.
+2. For each sibling, evaluate two impact-types:
+   - **Dep-add**: does the sibling's `description` or `name` reference an artifact this feature produces (shared object-types, schemas, utilities, routes, components named in `architecture.components[]`/`files[]`)? If yes AND `current-name ∉ sibling.dependencies[]` → candidate dep-add.
+   - **Description-stale**: does the sibling's `description` describe scope that this feature now owns (e.g. sibling says "with X singleton schema" and this feature defers/owns that schema)? If yes → candidate description-update with concrete suggested append/replace.
+3. Collect candidates into `siblingUpdates[]`:
+   ```json
+   {
+     "name": "page-contact",
+     "field": "dependencies | description",
+     "currentValue": "...",
+     "proposedValue": "...",
+     "reason": "Current feature defines siteSettings singleton + shared contactMethod object-type used by this page."
+   }
+   ```
+
+**Output to plan file** — append a `## Sibling backlog updates` section ONLY when `siblingUpdates.length ≥ 1`:
+
+```md
+## Sibling backlog updates
+
+Detected {N} backlog feature(s) impacted by this feature's scope:
+
+| Feature      | Field        | Current → Proposed                            | Reason                                            |
+| ------------ | ------------ | --------------------------------------------- | ------------------------------------------------- |
+| page-contact | dependencies | + sanity-schemas-foundation                   | Uses siteSettings singleton + shared object-types |
+| page-contact | description  | append "(incl. contactPage singleton schema)" | Page owns its own singleton per scope decision    |
+```
+
+**No drift detected** → skip the section entirely, log `Siblings: ✓ no cascade` inline.
+
+**Resolution**: implicit via plan-mode approval. ExitPlanMode → plan approved → all `siblingUpdates[]` are applied in PHASE 4. The user can reject individual rows by editing the plan file before approval; the PHASE 4 applier reads from the (possibly edited) plan-file table, not from in-memory state.
+
+**Never**:
+
+- Remove existing entries from a sibling's `dependencies[]` (additive only — removals are out-of-scope for this check).
+- Change a sibling's `status`, `phase`, `risk`, or `transition` (lifecycle is owned elsewhere).
+- Create new sibling features (that's Reuse-Discovery / Page-Discovery / Smart-Todo).
+
+`source: "/dev-define"` on every applied mutation.
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 3 (writing feature.json).
 
@@ -350,11 +429,22 @@ Write back in parallel:
 #### Mutations on `project-seed.md` (only if `seedUpdateApproved: true`)
 
 - Skip if PHASE 2 ended with "Skip" or no drift was detected.
-- Write the rewritten content (from the plan file's `## Proposed seed update` section) to `.project/project-seed.md` — full file overwrite; content was reviewed and approved in plan mode.
-- Update `project.json#seed.pitch` if the new pitch differs. Update `seed.name` only if the H1 title in the rewrite changed.
-- Log: `Seed: ✓ updated — N section(s) rewritten`.
+- Source content: the plan file's `## Proposed seed update` section.
+- Apply all writes per [shared/SEED.md § Write targets](../shared/SEED.md#write-targets-sync-phase) — that table is canonical for seed-mutation file set and log line.
 
-This write runs in parallel with the existing back-writes (`backlog.html`, `project.json`, `project-context.json`).
+All writes in this block run in parallel with the existing back-writes (`backlog.html`, `project.json`, `project-context.json`).
+
+#### Apply `siblingUpdates[]` (only if plan file has a `## Sibling backlog updates` section)
+
+- Skip if the section is absent (sub-threshold feature OR no cascade detected).
+- Parse the table from the plan file (`name | field | proposed | reason`). Trust the post-approval content — the user may have removed rows before approving.
+- For each row, mutate the in-memory `backlog.html` representation already loaded for PHASE 4:
+  - `field: "dependencies"` → `feature.dependencies = unique([...feature.dependencies, current-feature-name])`. Never replace; never remove.
+  - `field: "description"` → replace `feature.description` with the proposed value verbatim. (The proposal in the table is the final string, not a diff.)
+- Sibling not found in backlog (e.g. deleted between PHASE 2 and PHASE 4) → log `Siblings: ⚠ {name} not found — skipped` and continue.
+- Log: `Siblings: ✓ {N} update(s) applied ({comma-separated names})`.
+
+This applier writes to the same in-memory backlog object as the existing PHASE 4 mutations and Page-seeding, so all changes land in the single `backlog.html` write at the end of PHASE 4 — no extra I/O.
 
 **Auto-build marking** (after sync):
 

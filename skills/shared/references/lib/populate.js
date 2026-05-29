@@ -435,6 +435,24 @@ function populateFromProject(projectDir, dashData) {
     fs.writeFileSync(dashFile, JSON.stringify(toWrite, null, 2), "utf8");
   }
 
+  // ── Theme: resolve cssVars path → CSS content (in-memory only, path stays in project.json) ──
+  if (
+    dashData.theme &&
+    typeof dashData.theme.cssVars === "string" &&
+    /\.css$/.test(dashData.theme.cssVars) &&
+    !dashData.theme.cssVars.includes("\n")
+  ) {
+    const cssPath = path.resolve(projectPath, dashData.theme.cssVars);
+    const sep = projectPath.endsWith(path.sep) ? projectPath : projectPath + path.sep;
+    if ((cssPath.startsWith(sep) || cssPath === projectPath) && fs.existsSync(cssPath)) {
+      try {
+        dashData.theme = Object.assign({}, dashData.theme, {
+          cssVars: fs.readFileSync(cssPath, "utf8"),
+        });
+      } catch {}
+    }
+  }
+
   return dashData;
 }
 

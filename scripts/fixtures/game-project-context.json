@@ -1,0 +1,40 @@
+{
+  "context": {
+    "structure": "res://src/scenes/{Feature}, res://src/entities/{Entity}.gd",
+    "routing": null,
+    "patterns": [
+      "CharacterBody2D for all physical entities",
+      "Signals for loose coupling between scenes",
+      "Resource files (.tres) for tunable game data",
+      "Autoload singletons for global state (GameManager, AudioManager)",
+      "GUT tests in tests/ with test_{feature}.gd naming"
+    ],
+    "updated": "2026-05-27"
+  },
+  "architecture": {
+    "components": [
+      {
+        "name": "PlayerController",
+        "description": "Handles movement, jump, and collision for the player",
+        "feature": "fixture-feature",
+        "src": "res://src/entities/player_controller.gd",
+        "status": "done",
+        "connects_to": []
+      }
+    ],
+    "componentTree": "Root\n├── Player (CharacterBody2D)\n│   ├── CollisionShape2D\n│   └── AnimatedSprite2D\n└── LevelManager (Node2D)",
+    "scenes": ["res://src/scenes/main.tscn", "res://src/entities/player.tscn"],
+    "scripts": ["res://src/entities/player_controller.gd"],
+    "signals": ["jumped", "landed", "died"],
+    "resources": ["res://data/player_config.tres"]
+  },
+  "learnings": [
+    {
+      "date": "2026-05-01",
+      "feature": "done-feature",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "move_and_collide() does not emit signals automatically — use move_and_slide() for CharacterBody2D"
+    }
+  ]
+}

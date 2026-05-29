@@ -1,6 +1,6 @@
 ---
 name: core-setup
-description: Project setup hub (greenfield, mature, or install module). Use with /core-setup.
+description: Project setup hub — detects whether a project is new (greenfield wizard), existing (mature scan), or needs a single tier-1 module added (install). Use with /core-setup, or when a user wants to initialize/onboard a project, scan an existing codebase into .project/ memory, or add a stack module (Tailwind, Vitest, shadcn-ui, etc.). Not for global ~/.claude/ setup — that is /core-bootstrap.
 argument-hint: "[--mode=greenfield|mature|audit|resync|install] [module] [--no-llm]"
 metadata:
   author: claude-config
@@ -16,14 +16,12 @@ Hub skill that detects what the project needs and loads the appropriate flow.
 
 ### "Let Claude decide" Option
 
-For every AskUserQuestion where the choice involves **technical decisions** (not personal preferences), add a final option:
+For every AskUserQuestion where the choice is a **technical decision** with an objectively better answer given project context (stack picks, install/skip prompts, configuration trade-offs), add a final option:
 
 - **Label**: "Let Claude decide"
 - **Description**: "Claude picks the best option based on your project context and best practices"
 
-**Exclude from**: language selection, project description, project name, project type, commit.
-
-**Include in**: all other modals (tech stack, suggestions, web standards, git init, permissions, exclusions).
+**Skip for personal-preference modals**: project name, project description, language selection, commit messages, anything tied to user identity or taste.
 
 **When selected**: pick the best option based on project context and best practices. Display:
 
@@ -53,10 +51,10 @@ Stop.
 
    If `--mode=...` flag is present: delete marker (`rm -f`) but honor the explicit flag.
 
-1. **Module arg check** — if `$1` is present and has no `--mode=` prefix: match (case-insensitive) against tier-1 modules:
+1. **Module arg check** — if the invocation includes a non-flag argument (anything not prefixed with `--mode=` or `--no-llm`): treat it as `module_arg` and match (case-insensitive) against tier-1 modules:
    `inspect-overlay`, `tailwind`, `shadcn-ui`, `vitest`, `playwright`, `biome`, `eslint-prettier`, `zustand`, `tanstack-query`, `react-hook-form-zod`
-   - **Match** → load `references/mode-install.md` with `direct_module=$1`. Skip steps 2-4.
-   - **No match** → store `$1` as `direct_research`, load `references/mode-install.md` with research path. Skip steps 2-4.
+   - **Match** → load `references/mode-install.md` with `direct_module=<module_arg>`. Skip steps 2-4.
+   - **No match** → load `references/mode-install.md` with `direct_research=<module_arg>` (research path). Skip steps 2-4.
 
 2. **Check `--mode` flag** — if provided, skip step 3 and load the corresponding reference directly:
    - `--mode=greenfield` → `references/mode-greenfield.md`

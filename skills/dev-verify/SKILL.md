@@ -1,11 +1,11 @@
 ---
 name: dev-verify
-description: Run adversarial acceptance tests and fix loops. Use with /dev-verify.
+description: Run adversarial acceptance tests and fix loops on a built feature — classifies test items (COVERED/AUTO/MANUAL), runs auto-tests, walks user through manual ones, fixes failures, and finalizes the worktree. Use with /dev-verify, or auto-triggers when a feature has transition=verifying after /dev-build completes.
 reads: [feature.requirements, feature.build, learnings]
 writes: [feature.tests, backlog.status]
 metadata:
   author: claude-config
-  version: "2.6.0"
+  version: "2.10.0"
   category: dev
 ---
 
@@ -71,44 +71,66 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    - Feature name + inline feedback → skip to PHASE 1b.
    - Feature name + free text → skip to PHASE 1b.
 
-3. **Validate build output** — `.project/features/{feature-name}/feature.json`. Parse `tests.checklist[]`.
+3. **Validate build output** — Feature load (via [shared/FEATURE-LOAD.md](../shared/FEATURE-LOAD.md)):
 
-   File missing or no `tests.checklist[]` field → check whether `/dev-build` committed it to the worktree-branch but main doesn't have it yet:
+   ```
+   profile: verify
+   feature-name: {feature-name}
+   ```
+
+   Run the `verify` snippet. Parse `checklist[]` from the output.
+
+   `FEATURE_JSON: not present` or `checklist` empty → check whether `/dev-build` committed it to the worktree-branch but main doesn't have it yet:
 
    ```bash
    git -C {worktree-path} show HEAD:.project/features/{feature-name}/feature.json 2>/dev/null
    ```
 
-   Output with valid JSON containing `tests.checklist[]` → write it to main's `.project/features/{feature-name}/feature.json` (creates the file from the committed worktree state) and proceed. No worktree, or `git show` empty/invalid → exit: run `/dev-build` first.
+   Output with valid JSON containing `tests.checklist[]` → write it to main's `.project/features/{feature-name}/feature.json` (creates the file from the committed worktree state), then **re-run the FEATURE-LOAD `verify` snippet** so `type` / `checklist` / `requirements` / `files` are loaded into context, and proceed. No worktree, or `git show` empty/invalid → exit: run `/dev-build` first.
 
    **COMPONENT detection** (after feature.json load): check whether `feature.type === "COMPONENT"` or backlog-item type is COMPONENT. If yes: set `IS_COMPONENT_VERIFY = true`. Resolve render context in this order:
    1. Grep `app/**/page.tsx` for an import matching `{PascalName}` — first match → navigate to that route.
    2. Demo-page fallback: check whether `app/_dev/components/{name}/page.tsx` exists → navigate to `/_dev/components/{name}`.
    3. Neither found → exit: `"No render context for {name}. Options: (a) run /dev-build {feature} to generate a demo-page, or (b) run /frontend-design {pageHint} to design a page that uses this component."`
 
-4. **Worktree switch** — execute the procedure in `shared/WORKTREE.md` with `feature-name` and `feature.status` (from Step 1). Switches automatically to `worktree-{feature-name}` if it exists. If no worktree exists but `feature.status === "DOING"`: WARN + AskUserQuestion (see WORKTREE.md → Step 4a: DOING-without-worktree warning). On FAIL (in a different worktree than the feature): stop with the message from WORKTREE.md.
+4. **Worktree switch** — execute the procedure in `shared/WORKTREE.md` with `feature-name` and `feature.status` (from Step 1). Switches automatically to `worktree-{feature-name}` if it exists. Includes staleness check (Step 4.6): worktree N commits behind main → offer rebase before proceeding. If no worktree exists but `feature.status === "DOING"`: WARN + AskUserQuestion (see WORKTREE.md → Step 4a: DOING-without-worktree warning). On FAIL (in a different worktree than the feature): stop with the message from WORKTREE.md.
 
 4b. **Symlink integrity gate** — follow `shared/WORKTREE.md → Symlink Integrity Gate (post-switch auto-repair)`. Guards the DOING → DONE backlog write in `references/completion-sync.md`.
 
-5. **Tag backlog + capture baseline:**
-   - Git baseline: `mkdir -p .project/session && git status --porcelain | sort > .project/session/pre-skill-status.txt`
-   - Lint baseline (silent, for later delta): run project lint command (from `package.json` scripts: `lint` / `check` / `typecheck`), capture full output (file:line:rule keys) to `.project/session/pre-skill-lint.txt`. Failed lint at baseline → write output, do NOT block. Display nothing.
-   - Session file: `echo '{"feature":"{name}","skill":"verify","startedAt":"{ISO}"}' > .project/session/active-{name}.json`
+5. **Capture baseline** — **MUST** execute all three writes before continuing. PHASE 6 step 3 (scoped commit) reads these files to compute precise diagnostics-deltas and stage only skill-introduced changes. Skipping forces a less-accurate `git add -A` fallback.
 
-6. **Load stack & project context** — CLAUDE.md stack section + `.project/project.json` (stack, endpoints, data) + `.project/project-context.json` (context, architecture). Compose STACK_CONTEXT:
+   Run as a single bash block:
+
+   ```bash
+   mkdir -p .project/session
+   git status --porcelain | sort > .project/session/pre-skill-status.txt
+   # Lint baseline (failed lint at baseline → write output, do NOT block, display nothing)
+   npm run lint 2>&1 > .project/session/pre-skill-lint.txt || true
+   echo '{"feature":"{name}","skill":"verify","startedAt":"{ISO}"}' > .project/session/active-{name}.json
+   ```
+
+   Substitute `npm run lint` with the project's lint script (resolve from `package.json` scripts: `lint` / `check` / `typecheck`; no match → write empty file).
+
+6. **Load stack & project context** — CLAUDE.md stack section + project context via [shared/PROJECT-CONTEXT-LOAD.md](../shared/PROJECT-CONTEXT-LOAD.md):
+
+   ```
+   profile: verify
+   ```
+
+   Run the two `node -e` snippets for the `verify` profile. Compose STACK_CONTEXT from the extracted output:
 
    ```
    STACK CONTEXT:
-   Framework: {framework} ({language})
-   Testing: {testing info}
-   Packages: {relevant packages}
+   Framework: {stack.framework} ({stack.language})
+   Testing: {stack.testing}
+   Packages: {stack.packages}
 
    PROJECT CONTEXT:
-   Structure: {context.structure or "not available"}
-   Routing: {context.routing or "not available"}
-   Patterns: {context.patterns or "not available"}
+   Structure: {structure or "not available"}
+   Routing: {routing or "not available"}
+   Patterns: {patterns or "not available"}
    Endpoints: {endpoints or "not available"}
-   Entities: {data.entities or "not available"}
+   Entities: {entities or "not available"}
    ```
 
 6b. **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
@@ -123,6 +145,20 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
     Display the loaded output. Store pitfall-prefix block as `KNOWN_PITFALLS` for step 7. Pitfalls inform regression-class test cases — tests that explicitly guard against anti-patterns fixed in earlier features. If no pitfalls: `KNOWN_PITFALLS = ""` (graceful degradation — omit block from step 7 prompt).
 
+6c. **CATEGORY-GAP precompute** (mechanically determined from feature.json):
+
+- Set A = `{ (REQ.id, entry.category ?? "happy") | for each REQ (non-REMOVED), for each entry in REQ.acceptance[] }`
+- Set B = `{ (item.requirementId, item.category ?? "happy") | for each item in tests.checklist[] }`
+- CATEGORY-GAPs = A \ B (combinations defined by dev-define but not written by dev-build)
+
+No gaps → `CATEGORY_GAPS = ""` (omit from step 7 prompt).
+Gaps found → format as inline block for step 7:
+
+```
+CATEGORY_GAPS:
+- {REQ-ID} / {category}: {acceptance.when} → {acceptance.then}
+```
+
 7. **Gather test data** via Explore agent on **Sonnet** (`model: "sonnet"`) — zero source file reads in main context:
 
    ```
@@ -132,6 +168,8 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    {STACK_CONTEXT}
 
    {KNOWN_PITFALLS}
+
+   {CATEGORY_GAPS}
 
    Read feature.json (checklist + requirements + build section). Search in source code for:
    - Validation rules, API endpoints relevant to test items
@@ -175,10 +213,9 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    a) Baseline check: `npm test 2>&1 | tail -20` (or project-specific command). (can run in parallel with the Explore agent in Step 7 to save time)
    Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n})`
 
-   b) Detect post-build mode:
+   b) Detect mode flags:
 
    ```
-   postBuildMode = true
    hasUI = feature.json has "design" field OR files[] contains frontend files (.tsx, .vue, .svelte)
    isPureAPI = feature.json has "apiContract" AND NOT hasUI
    isComponent = IS_COMPONENT_VERIFY === true
@@ -223,6 +260,9 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
    h) **Goal-backward verification + acceptance test planning:**
 
+   CATEGORY-GAPs are already computed in step 6c and were passed to the Explore agent. Now consume them:
+   - Per gap `(REQ.id, category)` in CATEGORY_GAPs: add to AUTO/CLI queue with `source: "category-coverage"`, title `"{category} coverage missing for {REQ.id}"`, and test scenario from the matching `acceptance[]` entry's `{ when, then }`.
+
    Internally map tests back to acceptance criteria. **GAP**: requirement where builder's tests verify internal methods/data structures instead of the acceptance criterion itself.
 
    Per GAP with CLI-testable acceptance tests (from Explore agent `acceptanceTests[]`): add to AUTO/CLI queue (PHASE 1) with `source: "acceptance"` marker.
@@ -230,29 +270,35 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
    Display:
    - No gaps → single line: `Acceptance mapping: {n}/{n} REQs covered`
-   - Gaps found → single line: `ACCEPTANCE TESTS: {n} test(s) planned for {m} requirement(s) — gaps: {REQ-ID list}`
+   - Gaps found → two lines (suppress the second if no category-coverage items were added):
+     - `ACCEPTANCE TESTS: {n} test(s) planned for {m} requirement(s) — gaps: {REQ-ID list}`
+     - `ADDED {n} checklist items for category coverage: {item-titles}`
+   - Category-gaps: include in AUTO count and table rows; label with `(category-coverage)` in the Type column.
    - Show full GAP-only table ONLY if {m} >= 3 (helps user scan multiple gaps).
 
 9. **Dev server** (conditional + actively launched):
 
-   Decide modus based on classification:
+   Decide mode based on classification:
 
    ```
-   All non-COVERED items AUTO/CLI (in-process testable)  → skip dev server entirely (no launch)
-   MANUAL or AUTO/BROWSER items                          → launch dev server + tunnel (user needs externally reachable URL)
-   AUTO/CLI with live server required                    → launch dev server on localhost (no tunnel)
+   All non-COVERED items AUTO/CLI (in-process testable)  → skip dev server entirely
+   MANUAL, AUTO/BROWSER, or AUTO/CLI with live server    → launch dev server on localhost
    ```
 
    Launch procedure (when launch is required):
+   0. **Pre-launch staleness gate** — `git -C {worktree-path} rev-list --count HEAD..main`. If > 0: the worktree is N commits behind main; deps/assets that landed on main since branch-off (fonts, packages, public/) will be missing and the server may crash on first request. AskUserQuestion: "Rebase worktree op main eerst? (Recommended) | Launch zonder rebase (kan crashen) | Stop". On "Rebase" → invoke `shared/WORKTREE.md → Staleness rebase` and re-run this check. On "Launch zonder rebase" → continue but tag the eventual output line: `DEV SERVER (stale, {n} commits behind): {url}`. On "Stop" → abort with a clear message; user resolves manually.
    1. Resolve the dev command in this precedence:
       - `feature.json` → `build.runCommand` (per-feature override)
       - `.project/project.json` → `scripts.dev` (project default)
       - Fallback: `npm run dev`
-   2. Probe whether the default port is already serving the project (e.g. `curl -sf http://localhost:3000 -o /dev/null`). Hit → reuse: capture URL, skip launch.
-   3. Otherwise start via `Bash` with `run_in_background: true`. Poll the background output via `BashOutput` until a `Local:` / `ready` / `listening on` line appears, then extract the URL. Timeout 30s → graceful fallback.
-   4. For MANUAL / AUTO/BROWSER: chain `/project-tunnel` against the captured URL (when the project exposes the tunnel skill). Tunnel-URL replaces localhost in PHASE 2 setup.
-   5. Store `{devServerUrl, devServerPid, tunnelUrl}` in `.project/session/active-{name}.json` so PHASE 6 / PHASE Finalize can stop the process.
-   6. Display once: `DEV SERVER: {url}` (or `DEV SERVER: {tunnel_url} (tunnel)`).
+   2. Probe the default port (e.g. `curl -sf http://localhost:3000 -o /dev/null`):
+      - **Miss** → proceed to item 3 (launch).
+      - **Hit** → do NOT silently reuse. Verify the running server is the worktree project: check the process's cwd (`lsof -p <pid> | grep cwd` or `pwdx <pid>`) or compare its git HEAD to the worktree branch. If confirmed worktree → reuse the URL, skip launch. If main or another project is serving → kill that process or pick a free port (e.g. 3001) and launch from the worktree. Never proceed to MANUAL tests against a server whose branch identity is unverified — that produces valid-looking PASSes on the wrong codebase.
+   3. Otherwise start via `Bash` with `run_in_background: true`. Use the `Monitor` tool to stream the background process's output until a `Local:` / `ready` / `listening on` line appears, then extract the URL. Timeout 30s → graceful fallback.
+   4. Store `{devServerUrl, devServerPid}` in `.project/session/active-{name}.json` so PHASE 6 / PHASE Finalize can stop the process.
+   5. Display once: `DEV SERVER: {url}`.
+
+   **Tunnel (team-mode only):** when `TEAM_MODE === "team"` AND there are MANUAL items, append a one-liner after the launch: `💡 Stakeholder review? Run /project-tunnel {url} to expose this.` Do NOT auto-launch — the user decides.
 
    On failure (port in use by another project, command not found, ready-line never reached) → graceful fallback:
    - All non-COVERED items become MANUAL, skip PHASE 1.
@@ -303,18 +349,16 @@ Unclear feedback → AskUserQuestion: Re-enter (Recommended) | Continue per item
 
 > **Todo**: mark PHASE 1b → `completed`, PHASE 2 → `in_progress`.
 
-**When:** there are MANUAL items.
+**When:** there are MANUAL items. By definition MANUAL = human perception/judgment, auth with real credentials, physical-device tests, or audio/screen-reader checks. Visual polish, motion smoothness, and design feel are NOT verified here — those belong to frontend-design / frontend-build.
 
-**For UI features (`hasUI === true`):** show once before the first item:
+**Playwright smoke pre-check** — for each MANUAL item: if the item is DOM-observable (navigate + check load / element-present / no-console-error / screenshot), Claude runs it first via the playwright-cli daemon (see `references/test-classification.md → AUTO/BROWSER`):
 
-```
-💡 Visual polish (spacing, exact colors, borders) is post-verify — tweak via browser inspect after this run.
-   Focus this verify on: functionality, accessibility, smoke (does it load + work).
-   Motion: verify interactive elements animate per the active pack ({theme.motion.pack or "none"}) —
-   buttons/cards transition on hover/press, modals/drawers use the correct easing, reduced-motion is respected.
-```
+- Pass + clear screenshot → present screenshot as evidence, AskUserQuestion: Confirm Pass (Recommended) | Mark Fail | Inspect manually
+- Fail / error → skip to the per-item walkthrough below with the failure as context
 
-Show setup once (e.g. "Open {tunnel_url}"). Per MANUAL item:
+Only items that need real human judgment (auth flows requiring real credentials, perception, audio, physical-device) skip the smoke pre-check entirely.
+
+Show setup once (e.g. "Open {devServerUrl}"). Per MANUAL item (if smoke skipped or smoke failed):
 
 ```
 ──────────────────────────────────────
@@ -331,18 +375,11 @@ EXPECTED:
 → {expected outcome}
 ```
 
-**Codegen tip for repeatable flows** (show once above first MANUAL item if flow has ≥3 steps):
-
-```
-💡 For flows with ≥3 steps: run `npx playwright codegen {url}` in a terminal to
-   record your interactions as a Playwright spec. Submit it to /dev-verify for
-   automatic BROWSER-verification on future runs.
-```
-
-AskUserQuestion per item: Pass (Recommended) | Fail | Skip.
+AskUserQuestion per item: Pass (Recommended) | Fail | Skip | Defer.
 
 - Fail → ask briefly what went wrong
-- Skip → note reason
+- Skip → note reason ("not testing, accept as-is")
+- Defer → ask which external prereq blocks it (account, CORS-origin, API-token, third-party config); item stays open for re-test when prereq landed
 
 ---
 
@@ -352,15 +389,15 @@ AskUserQuestion per item: Pass (Recommended) | Fail | Skip.
 
 Merge COVERED + automated + manual results.
 
-**Compact** (postBuildMode + all PASS + COVERED items):
+**Compact** (all PASS or PASS+DEFERRED + COVERED items):
 
 ```
-TEST RESULT: {feature-name} (POST-BUILD)
+TEST RESULT: {feature-name}
 
 BASELINE: npm test → PASS ({n}/{n})
 COVERED: {n} items (build tests cover contract)
 ACCEPTANCE + INTEGRATION: {n} scenarios → {n} PASS
-TOTAL: {n}/{n} PASS
+TOTAL: {n}/{n} PASS ({n} deferred)
 {IF acceptance tests ran: Evaluation: {n}/{n} REQs PASS}
 ```
 
@@ -369,12 +406,15 @@ TOTAL: {n}/{n} PASS
 ```
 COMBINED RESULTS: {feature-name}
 
-| # | Test | Type | Result |
-|---|----- |------|-----------|
+| # | Test | Type | Result                    |
+|---|----- |------|---------------------------|
+| 1 | ...  | ...  | ✓ PASS                   |
+| 2 | ...  | ...  | ⏸ DEFERRED — {reason}   |
 ```
 
 With AUTO FAILs → AskUserQuestion: Trust auto results (Recommended) | Check manually.
 With SKIPs → AskUserQuestion: Accept (Recommended) | Test later.
+With DEFERREDs → no question; auto-include in completion (feature stays DONE with `hasDeferred: true`).
 
 **Evaluation Score** (only show if acceptance tests were run AND ≥1 FAIL):
 
@@ -391,7 +431,7 @@ Show ONLY rows with verdict FAIL (or BLOCKED/UNCLEAR). All-PASS → already fold
 Acceptance test FAIL → issue type **SPEC**. Builder test FAIL → issue type **TESTABLE**.
 No acceptance tests run → skip entirely, categorize only on builder test FAILs.
 
-All PASS → PHASE 6. FAILs (SPEC or TESTABLE) → PHASE 3.
+All PASS or PASS+DEFERRED → PHASE 6. FAILs (SPEC or TESTABLE) → PHASE 3. DEFERRED items skip PHASE 3/4 (not failures, just blocked).
 
 ---
 
@@ -427,6 +467,25 @@ Display technique map:
 ### PHASE 4: Fix Loop
 
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
+
+#### Plan-mode gate (OpusPlan-friendly)
+
+Before starting fixes, decide whether to enter plan mode first.
+
+Auto-enter plan mode (no question) when ANY:
+
+- ≥1 SPEC bug (acceptance criterion not met — needs design)
+- ≥2 TESTABLE bugs that touch the same file or module (likely shared root cause)
+- A bug whose root cause is unclear after PHASE 3 categorization
+
+Skip plan mode silently when ALL:
+
+- Only MEASURABLE bugs (direct config/styling/timing tweaks)
+- ≤1 TESTABLE bug with an obvious root cause from the failing test
+
+When entering plan mode: call `EnterPlanMode`, write the fix plan to the plan file (one section per bug: problem → root cause → proposed fix → verification), then `ExitPlanMode` for approval. After approval, continue with the Fix step below. Rejected plan → re-categorize or ask user.
+
+Show before entering: `PLAN MODE: {n} bug(s) need design — entering plan mode (OpusPlan-aware).`
 
 #### Fix
 
@@ -547,6 +606,8 @@ AskUserQuestion: No, all good (Recommended) | Yes, I noticed something.
 
 Read `references/completion-sync.md` for full logic: feature.json mutation (all fields in one Write), PAGE-seeding, backlog update, project-context.json sync, COMPONENT design sync, Reuse-Discovery, learning extraction (Jaccard dedup), pre-commit diagnostics, worktree split-commit pattern, commit message format, and output block.
 
+DEFERRED items: write per-item `tests.checklist[i] = { status: "deferred", deferredReason: "<reason>" }`. Set feature.json `tests.hasDeferred = true`. In backlog set feature `status: "DONE"` with `hasDeferred: true` so a future `/dev-verify` run can re-test deferred-only items without reopening the whole feature.
+
 ---
 
 > **Todo**: mark PHASE 6 → `completed`.
@@ -561,6 +622,8 @@ Read `references/completion-sync.md` for full logic: feature.json mutation (all 
 
 1. All test items PASS (no open fix-loop items)
 2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
+
+> **Note on ExitWorktree:** FINALIZE.md instructs `ExitWorktree(action: keep)` before merging. This is a no-op when the worktree is the primary CWD (i.e. dev-verify was invoked directly in the worktree, not via EnterWorktree this session) — the tool reports "no worktree session active" and returns. Skip the ToolSearch round-trip in that case and proceed directly to the merge via `git -C {main_root}`.
 
 **PR offer (team-mode only)** — show first, only if ALL true:
 
@@ -584,7 +647,20 @@ multiSelect: false
 On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
 On "Nee" or any precondition fail → fall through to finalize prompt.
 
-**Finalize behavior** — follow `shared/FINALIZE.md → Finalize Offer Decision`. Exception: `solo + empty/CLOSED/no-gh` → auto-finalize without prompt (dev-verify owns worktree cleanup at this stage, no modal needed).
+**Finalize behavior** — follow `shared/FINALIZE.md → Finalize Offer Decision`.
+
+**Session-reorientation guard (cleanup-path only)** — When the cleanup procedure is about to remove the worktree directory:
+
+1. **Pre-cleanup cd** — if `pwd` is inside `{worktree-path}`, run `cd {main-repo-path}` via Bash before `git worktree remove`. Prevents "working directory was deleted; shell cwd recovered" warnings and ensures subsequent Bash commands operate on main.
+2. **Post-cleanup banner** — after successful cleanup, print:
+
+   ```
+   🏠 Worktree removed. Working directory: {main-repo-path}
+      Branch: main. Next /dev-* commands run on main.
+      (Terminal tab may still show the old worktree name — that is cosmetic.)
+   ```
+
+3. Skip both steps when cleanup doesn't fire (PR-path without cleanup, or "Keep open" chosen).
 
 ```yaml
 # MERGED state only:

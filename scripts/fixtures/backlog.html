@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+  <body>
+    <script id="backlog-data" type="application/json">
+      {
+        "project": "fixture-project",
+        "generated": "2026-05-27",
+        "features": [
+          {
+            "name": "fixture-feature",
+            "type": "FEATURE",
+            "status": "DEFINED",
+            "phase": "P1",
+            "description": "Fixture feature for guard tests",
+            "risk": 3,
+            "dependencies": ["done-feature"],
+            "externalRef": null,
+            "transition": "building",
+            "pageHint": ["fixture-page"]
+          },
+          {
+            "name": "done-feature",
+            "type": "FEATURE",
+            "status": "DONE",
+            "phase": "P1",
+            "description": "Already completed feature",
+            "risk": 1,
+            "dependencies": [],
+            "externalRef": null,
+            "transition": null,
+            "pageHint": []
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>

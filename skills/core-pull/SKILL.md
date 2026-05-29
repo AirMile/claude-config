@@ -342,13 +342,14 @@ Across all in-scope files, categorize:
 
 For each model file (added or modified), read source and extract:
 
-| Stack             | Detection                                                             |
-| ----------------- | --------------------------------------------------------------------- |
-| Mongoose          | `new Schema({...})` or `mongoose.model('Name', ...)` → fields + types |
-| Prisma            | `model Name { ... }` blocks → fields + relations                      |
-| Sequelize         | `define('Name', { ... })` → fields + types                            |
-| Django            | `class Name(models.Model)` → fields                                   |
-| GDScript Resource | `class_name` + `@export` vars → properties                            |
+| Stack             | Detection                                                                                                                                                                                                 |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mongoose          | `new Schema({...})` or `mongoose.model('Name', ...)` → fields + types                                                                                                                                     |
+| Prisma            | `model Name { ... }` blocks → fields + relations                                                                                                                                                          |
+| Sequelize         | `define('Name', { ... })` → fields + types                                                                                                                                                                |
+| Django            | `class Name(models.Model)` → fields                                                                                                                                                                       |
+| GDScript Resource | `class_name` + `@export` vars → properties                                                                                                                                                                |
+| Sanity            | `defineType({ name, fields: [...] })` in `**/sanity/schemas/**/*.{ts,js}` → one entity per `defineType`, `defineField({ name, type })` per field, `required` from `validation: (Rule) => Rule.required()` |
 
 Output per entity: `{ name, source: "src/models/Track.js", fields: [{ name, type, required }], relations: [{ target, type }] }`
 

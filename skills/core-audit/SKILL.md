@@ -19,16 +19,7 @@ Scan the conversation above for unique skill invocations (slash commands like `/
 
 **Resolution rules:**
 
-- **Zero skills detected** → HARD BLOCK. Show:
-
-  ```
-  ERROR: no skill invocations found in this conversation.
-
-  /core-audit only audits skills that were used earlier in the chat.
-  Invoke a skill first, then run /core-audit.
-  ```
-
-  Stop here. Do not prompt the user, do not list available skills, do not ask for a name.
+(Note: `core-audit` itself is always present in the conversation via the `<command-name>` tag, so at least one skill is always detected.)
 
 - **Exactly one unique skill** → auto-select. Show:
 
@@ -137,8 +128,6 @@ Mentally execute the skill step by step against the scenario. For each step:
 - Flag where instructions are ambiguous, missing, or require improvisation
 - Flag where the flow breaks or produces unexpected results
 
-Do NOT interact with the user during the walkthrough — this is an internal analysis.
-
 ### 3.3 Report Observations
 
 ```
@@ -217,15 +206,9 @@ Ratio of actionable, unique instructions to filler.
 - metadata: present and complete?
 - No security violations (XML brackets, reserved words)?
 
-### 4.7 Walkthrough Findings (only if walkthrough was run)
+### 4.7 Present Analysis
 
-Integrate observations from Step 3.3:
-
-- Map flow issues to specific lines/sections
-- Map UX issues to AskUserQuestion configurations
-- Identify instructions that caused improvisation
-
-**Present analysis:**
+If walkthrough ran (§3 was executed): also integrate observations — map flow issues to specific lines/sections, map UX issues to AskUserQuestion configurations, identify instructions that caused improvisation. Add a Walkthrough row to the table below.
 
 ```
 ANALYSIS: [skill-name]
@@ -262,7 +245,7 @@ Skip Steps 5 and 6.
 
 ## Step 5: Plan Mode Refactor
 
-Compile all proposed changes into a single plan and present it via plan mode. Model routers like `opusplan` upgrade plan-mode phases to Opus, which produces stronger refactor plans than inline Sonnet — but plan mode works under any model.
+Compile all proposed changes into a single plan and present it via plan mode.
 
 **Refactor principles:**
 

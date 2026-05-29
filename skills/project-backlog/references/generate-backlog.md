@@ -91,7 +91,7 @@
    ```
 
 5. **Seed mutations** (parallel with dashboard update):
-   - **If `seedUpdateApproved: true`:** Write the rewritten content (from the plan file's `## Proposed seed update` section, reviewed in plan mode) to `.project/project-seed.md` — full file overwrite. Update `project.json#seed.pitch` if the new pitch differs; update `seed.name` only if H1 title changed. Log: `Seed: ✓ updated — N section(s) rewritten`.
+   - **If `seedUpdateApproved: true`:** Source content: plan file's `## Proposed seed update` section. Apply all writes per [shared/SEED.md § Write targets](../../shared/SEED.md#write-targets-sync-phase) — that table is canonical for file set and log line.
    - **If `seedUpdateApproved: false` AND `seedDrift[]` non-empty:** Write drift entries into the backlog JSON data object as `data.seedDrift[]` (merge with existing entries if any). Each entry follows the schema from `shared/SEED.md` § Drift entry schema.
    - **If no drift detected:** skip silently.
 

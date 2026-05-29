@@ -5,7 +5,7 @@ reads: [feature.requirements, feature.architecture, feature.files]
 writes: [feature.requirements, feature.build, backlog.status, learnings]
 metadata:
   author: claude-config
-  version: 1.12.0
+  version: 1.15.0
   category: dev
 ---
 
@@ -30,12 +30,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements (REQ-XXX), a
 
 ## Process
 
-**Schema preload** — TaskCreate/TaskUpdate zijn deferred tools; aanroepen zonder schema-load mislukt. Allereerste actie van de skill:
-
-1. Call `ToolSearch query="select:TaskCreate,TaskUpdate"` — laadt beide schemas.
-2. Direct daarna: `TaskCreate` aanroepen met de 6 items hieronder (status `pending`). Gebruik `TaskUpdate` om elke PHASE `in_progress` te zetten bij start en `completed` bij einde. Tijdens context compaction blijft de takenlijst zichtbaar — geen risico op vergeten phases.
-
-Phases:
+Six phases run sequentially:
 
 1. PHASE 0: Context Loading
 2. PHASE 1: Technique Mapping
@@ -46,7 +41,7 @@ Phases:
 
 ### PHASE 0: Context Loading
 
-> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"`, then `TaskCreate` with the 6 phase items. Mark PHASE 0 → `in_progress` via `TaskUpdate`. Read `.claude/skills/dev-build/references/context-loading.md` and follow all steps in order.
+> **Todo**: Call `ToolSearch query="select:TaskCreate,TaskUpdate"` — both tools are deferred and unusable without their schemas. Then `TaskCreate` with the 6 phase items above (status `pending`); use `TaskUpdate` to flip each PHASE to `in_progress` at start and `completed` at end (task list survives context compaction). Mark PHASE 0 → `in_progress`. Read `.claude/skills/dev-build/references/context-loading.md` and follow all steps in order.
 
 ### PHASE 1: Technique Mapping
 
@@ -79,7 +74,7 @@ Display technique map as a table. Proceed automatically — do NOT confirm with 
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-**COMPONENT-only steps** (only if `IS_COMPONENT_BUILD = true`): follow `COMPONENT-BUILD.md` → "Phase 2 steps" (output path routing, demo page generation, variant visual spec G1, layout auto-patch). Skip entirely for FEATURE builds.
+> **COMPONENT builds only**: if `IS_COMPONENT_BUILD = true`, follow `COMPONENT-BUILD.md` for PHASE 2 and PHASE 3A overlay steps in addition to the instructions below. FEATURE builds: ignore all COMPONENT-BUILD.md references — the steps below cover the full flow.
 
 For each buildSequence step:
 
@@ -87,10 +82,11 @@ For each buildSequence step:
 
 **Parallel build check** (per step with >1 requirement):
 
-1. Check file overlap: compare `files[]` where `requirements` arrays overlap between REQs in this step
-2. **No overlap** → launch Agent per REQ (max 3 parallel). Each agent receives: technique file content, relevant source files from feature.json `files[]`, stack context (CLAUDE.md ### Stack), earlier SYNC notes from this build, **plus the full content of any files created in earlier steps of this build that this REQ may need to import** (read them with the Read tool and pass the content inline — SYNC one-liners are not enough for the agent to know exact export names and signatures)
-3. **Overlap** → build sequentially (steps below)
-4. Parse agent results via `BUILD_RESULT_START...BUILD_RESULT_END` markers, update feature.json per REQ
+1. Check file overlap: compare `files[]` where `requirements` arrays overlap between REQs in this step.
+2. **Overlap** → build sequentially (continue with "Sequential build" below).
+3. **No overlap** → launch Agent per REQ (max 3 parallel). Each agent receives: technique file content, relevant source files from feature.json `files[]`, stack context (CLAUDE.md ### Stack), earlier SYNC notes from this build, **plus the full content of any files created in earlier steps of this build that this REQ may need to import** (read them with the Read tool and pass the content inline — SYNC one-liners are not enough for the agent to know exact export names and signatures).
+
+   Parse agent results via `BUILD_RESULT_START...BUILD_RESULT_END` markers and update feature.json per REQ. Required format:
 
    ```
    BUILD_RESULT_START
@@ -104,7 +100,11 @@ For each buildSequence step:
    BUILD_RESULT_END
    ```
 
-For steps with 1 requirement or with overlap, for each requirement sequentially:
+   **BLOCKED handling**: collect all parallel results first — a BLOCKED agent does NOT halt other in-flight agents. After all agents complete:
+   - GREEN REQs → log SYNC line, move to next step.
+   - BLOCKED REQs → log in `build.blockers[]` with the agent's error output, then retry sequentially (re-enter "Sequential build" below for that REQ). One retry only; if still BLOCKED, leave in `build.blockers[]` and continue with the next buildSequence step.
+
+**Sequential build** — for steps with 1 requirement or with overlap, for each requirement sequentially:
 
 1. Load technique:
    - **TDD** → `Read(".claude/skills/dev-build/techniques/tdd.md")`
@@ -112,13 +112,13 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
 2. **Read existing code**:
    - All files from feature.json `files[]` that have `action: "modify"`
    - **All files from feature.json `files[]` that have `action: "create"` AND were built in an earlier step of this build** — needed to know exact exports/types/signatures to import (prevents inline-redefine of types/utilities already created)
-   - 1 existing test file for setup/teardown patterns (before/after hooks, DB lifecycle, import conventions)
-3. Execute technique workflow
+   - **One existing test file** for setup/teardown patterns. Selection order: (a) most-recently-modified `*.test.{ts,tsx,js,jsx}` in the same directory as the target file; (b) `src/test/setup.*` or `tests/setup.*` if present; (c) skip entirely for pure schema/config files without DB or component lifecycle. Don't pick at random — a mismatched setup-style introduces irrelevant fixtures.
+3. Execute technique workflow. Max 3 TypeScript type-error fix attempts per REQ — after 3 failed attempts log as blocker with `cause: "type-resolution-failure"` and continue with the next REQ.
 4. **Stack-aware enforcement**:
-   - **Code clarity**: descriptive names over comments. Do use comments for: non-obvious "why" decisions, workarounds, compatibility notes. Follow existing project comment style.
+   - **Code clarity**: follow existing project comment style. Add comments only for non-obvious "why" decisions, workarounds, and compatibility notes.
    - **Code rules**: follow `shared/CODING-RULES.md` — General (R007-R009) + TypeScript. When in doubt: MUST_DO rules always, SHOULD_DO rules unless deliberate deviation with reason. Frontend projects: also `shared/FRONTEND-RULES.md`.
    - **Token enforcement** (only for `.tsx`/`.jsx`/`.vue`/`.svelte` — skip for API routes, tests, config): always use token names (`bg-primary`, `text-foreground`) — never hex literals or `bg-[#hex]`. Theme empty → use fallback defaults from `shared/TOKENS.md`. Run a grep after each Write for T101 (`#[0-9a-fA-F]{3,8}`) and T102 (`bg-\[#`, `text-\[#`) on the generated file — replace violations directly before output.
-   - **Motion token enforcement** (only if `theme.motion.pack` is set, only for component files): interactive elements (`button`, `a`, card containers) must use token-based transition classes — never hardcoded `ms` values or `cubic-bezier()` literals (T106/T107 violation). Apply per pack: `"subtle"` → `transition-transform duration-fast ease-[var(--ease-expo-out)]`; `"standard"` → `transition-transform duration-[var(--duration-md-short4)] ease-[var(--ease-md-emphasized)]`; `"apple"` / `"playful"` → `transition-transform duration-ios-fast ease-[var(--ease-ios-spring)]` or motion.dev `whileTap={{ scale: 0.97 }} transition={{ type: "spring", stiffness: 300, damping: 25 }}`. All choreography must include `@media (prefers-reduced-motion: reduce)` fallback (see `shared/PATTERNS.md § prefers-reduced-motion Fallback`).
+   - **Motion token enforcement** (only if `theme.motion.pack` is set, only for component files with interactive elements — `button`, `a`, card containers): use token-based transition classes from the active pack — never hardcoded `ms` values or `cubic-bezier()` literals (T106/T107 violation). Pack-specific class-strings: see `shared/PATTERNS.md § Motion Patterns`. All choreography must include `@media (prefers-reduced-motion: reduce)` fallback (`shared/PATTERNS.md § prefers-reduced-motion Fallback`). After each Write on a component file: grep for hardcoded `\d+ms` and `cubic-bezier(` patterns — replace with token classes before output.
 5. **Pitfall verification** (only if PHASE 1 flagged a pitfall for this REQ): run the `grep -q '<marker>' <file>` check stated in the technique map. Output `PITFALL-CHECK REQ-XXX: <pitfall> → PRESENT | ABSENT`. ABSENT → log as deviation in `build.decisions[]` with rationale (intentional or oversight).
 6. **Track REQ progress in transcript** via the SYNC line — feature.json is enriched in bulk in PHASE 3A. For Implementation Only: note `skipTestReason` (`visual-only`, `config-only`, or `prototype`) in the SYNC line so PHASE 3A can write it.
 7. Output per requirement:
@@ -129,6 +129,8 @@ For steps with 1 requirement or with overlap, for each requirement sequentially:
    SYNC: {pattern/concept} in {file(s)} — {what, why, what depends on it}
    Progress: {done}/{total}
    ```
+
+After each requirement: continue directly to the next REQ in buildSequence. Do NOT pause for user confirmation between REQs — proceed automatically until all REQs in the step are GREEN or BLOCKED.
 
 **Edge cases:**
 
@@ -193,8 +195,6 @@ fi
 npx tsc --noEmit 2>&1 | head -20
 ```
 
-Wait for both calls to complete, then evaluate:
-
 **Regression PASS** (all tests pass):
 
 ```
@@ -217,6 +217,16 @@ On regression: (1) analyze if this build caused it — yes → fix + re-run; no 
 
 **Skip** (no test files, no runner, or stack unrecognized): `REGRESSION CHECK: skipped ({reason})`
 
+**Test output format** — condense raw test runner output before printing:
+
+- PASS: `TESTS: {n}/{n} PASS ({time})`
+- FAIL:
+  ```
+  TESTS: {passed}/{total} PASS ({time})
+  FAILED:
+  - {file}:{line} - {reason <50 chars}
+  ```
+
 ### PHASE 3A: Project Sync
 
 > **Todo**: mark PHASE 2b → `completed`, PHASE 3A → `in_progress`.
@@ -225,18 +235,22 @@ Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations:
 
 **feature.json**: `status → "DOING"`, `files[]` → merge with actual files. Add: `build {}` (started, completed, techniques, testsPass, testsTotal, decisions), `packages[]`, `tests.checklist[]`. Do NOT overwrite existing sections. Note: `requirements[]` is already enriched in PHASE 2 step 4.
 
-**tests.checklist[]** — at least 1 test item per requirement:
+**tests.checklist[]** — **one test item per `acceptance[]` scenario** (not per requirement). For each REQ, iterate `REQ.acceptance[]`; push one item per entry:
 
 ```json
 {
   "id": 1,
   "title": "description of what to verify",
   "requirementId": "REQ-XXX",
+  "acceptanceIndex": 0,
+  "category": "happy",
   "steps": ["step 1", "step 2"],
   "expected": "expected result",
   "status": "pending"
 }
 ```
+
+`acceptanceIndex` = index of the entry in `requirements[].acceptance[]`. `category` copies `acceptance[i].category`; default `"happy"` if the entry lacks `category` (legacy feature.json backward-compat).
 
 Guidelines:
 
@@ -271,8 +285,6 @@ If new route patterns found and not in backlog: log `⚠ Detected new route patt
 
 Do NOT write to backlog.html — `/dev-define` is the sole author of PAGE entries from the dev track (see `SKILL-PATTERNS.md → Page-Discovery` doctrine).
 
-**COMPONENT-only sync** (only if `IS_COMPONENT_BUILD = true`): follow `COMPONENT-BUILD.md` → "Phase 3A steps" (design.components[] status BLT, project-context components inventory, PAGE suggestions via Link/router scan).
-
 **Sub-component Reuse-Discovery** (frontend projects only):
 
 Follow [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) for the canonical protocol.
@@ -302,7 +314,7 @@ Each `build.decisions[]` entry maps to either `pattern` or `pitfall` based on it
 
 Only write if decisions or resolved blockers are present — no empty entries.
 
-**Atomic write rule**: collect all `project-context.json` mutations (components, context.patterns, learnings) in memory first, then issue a **single Write** (or at most 2 Edits for non-overlapping regions). Do NOT issue separate Edit calls per section — each hook-fire and round-trip adds ~15s.
+**Atomic write rule**: collect all `project-context.json` mutations (components, context.patterns, learnings) in the current context first — don't write until all mutations for PHASE 3A are determined — then issue a **single Write** (or at most 2 Edits for non-overlapping regions) right before closing PHASE 3A. Do NOT issue separate Edit calls per section — each hook-fire and round-trip adds ~15s.
 
 ### PHASE 3B: Scoped Commit
 
@@ -369,17 +381,3 @@ Next steps:
 ```
 
 > **Todo**: mark PHASE 3B → `completed`.
-
-## Test Output Parsing
-
-Condense test output:
-
-**PASS:** `TESTS: {n}/{n} PASS ({time})`
-
-**FAIL:**
-
-```
-TESTS: {passed}/{total} PASS ({time})
-FAILED:
-- {file}:{line} - {reason <50 chars}
-```

@@ -1,5 +1,7 @@
 # Inspect Overlay — Setup Guide
 
+> **Do not rewrite the client or babel-plugin.** Copy the files from `references/modules/inspect-overlay/` as-is. The client is intentionally vanilla JS (not a React component) and the babel-plugin must run at compile time — re-implementing either as a React component using `__reactFiber$` / `_debugStack` introspection does not work for React Server Components and will silently fail with "No source found".
+
 ## Detection
 
 | State                          | Condition                                                                                                                                                |
@@ -74,55 +76,63 @@ After install: verify that `package.json` shows `"@vitejs/plugin-react": "^5.x.x
 
 ## Setup — Next.js
 
-Next.js CAN run in full mode using a custom Babel plugin that injects `data-inspector-*` attributes. This disables Turbopack (falls back to Webpack), which makes dev builds slower but gives exact file:line references in the overlay.
+Next.js full mode injects `data-inspector-*` attributes via a **custom Webpack loader** that runs `babel-plugin-inspector` as a pre-pass before SWC compiles. This keeps SWC as the actual compiler (so `next/font` and other SWC-only features keep working) while still getting exact file:line refs.
 
-If the user declines Babel, the overlay runs in degraded mode (no file:line refs, element-picking via CSS classes/text).
+**Do NOT use `.babelrc` with `next/babel` preset** — that switches the whole compiler to Babel and breaks `next/font`. The loader approach below avoids this.
+
+If the user declines full mode, the overlay runs in degraded mode (no file:line refs, element-picking via CSS classes/text). Turbopack can remain active in that case.
 
 > **Important:** Next.js server components strip `<script>` tags from JSX. The overlay must be loaded via a `"use client"` component that injects the script with `document.createElement`.
 
-### Babel Plugin (Full Mode)
+### Webpack Loader (Full Mode)
 
 Ask user:
 
 ```yaml
 header: "Plugin"
-question: "The inspect overlay can use Babel for exact file:line references. This disables Turbopack (slower dev builds). Do you want full mode?"
+question: "The inspect overlay can inject exact file:line references. This requires Webpack (disables Turbopack) but next/font and SWC keep working. Do you want full mode?"
 options:
-  - label: "Yes, with Babel (Recommended)"
-    description: "Exact file:line refs. Disables Turbopack, slower dev builds, no impact on production."
-  - label: "No, without Babel"
-    description: "Overlay works without exact file references. Claude searches via text/classes. Turbopack remains active."
+  - label: "Yes, with Webpack loader (Recommended)"
+    description: "Exact file:line refs. Disables Turbopack, slower dev builds, next/font works, no impact on production."
+  - label: "No, degraded mode"
+    description: "Overlay shows tag+class+text refs. Turbopack remains active."
 multiSelect: false
 ```
 
 If accepted (Full Mode):
 
-1. Copy `references/babel-plugin-inspector.js` → project root as `babel-plugin-inspector.js`
-2. Create `.babelrc` in project root:
-   ```json
-   {
-     "presets": ["next/babel"],
-     "env": {
-       "development": {
-         "plugins": ["./babel-plugin-inspector"]
-       }
+1. Copy `references/modules/inspect-overlay/babel-plugin-inspector.js` → project root as `babel-plugin-inspector.js`
+2. Copy `references/modules/inspect-overlay/inspect-loader.js` → project root as `inspect-loader.js`
+3. Add `webpack` hook to `next.config.ts` (or `next.config.js`):
+   ```ts
+   import path from "node:path";
+   // inside nextConfig:
+   webpack: (config, { dev }) => {
+     if (dev) {
+       config.module.rules.unshift({
+         enforce: "pre",
+         test: /\.(tsx|jsx)$/,
+         exclude: /node_modules|\.next/,
+         use: [{ loader: path.resolve(process.cwd(), "inspect-loader.js") }],
+       });
      }
-   }
+     return config;
+   },
    ```
-3. Add to `.gitignore` (if not already present):
+4. Remove `--turbopack` from `dev` script in `package.json` (Webpack loaders don't work with Turbopack)
+5. Add to `.gitignore` (if not already present):
    ```
    # Inspect overlay (synced from claude-config)
    babel-plugin-inspector.js
-   .babelrc
+   inspect-loader.js
    ```
-4. Restart dev server (Babel disables Turbopack, Webpack takes over)
 
-If declined: degraded mode — skip Babel plugin, overlay works without file:line refs.
+If declined: degraded mode — skip loader, overlay works without file:line refs. Turbopack can stay active.
 
 ### Install
 
 1. Create `public/_inspect/` directory
-2. Copy `references/inspect-overlay-client.js` → `public/_inspect/client.js`
+2. Copy `references/modules/inspect-overlay/inspect-overlay-client.js` → `public/_inspect/client.js`
 3. Create `app/inspect-overlay.tsx`:
 
    ```tsx
