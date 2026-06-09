@@ -138,6 +138,74 @@ const city = user?.address?.city ?? "Unknown";
 
 ---
 
+## Testing Rules
+
+Empirically grounded in MSR 2026 (Hora & Robbes): AI coding agents add mocks in 36% of test commits vs 26% for humans (χ²=505.5, p<0.001) and use mono-type `mock` in 95% of cases where humans vary (mock 91%, fake 57%, spy 51%). These rules mitigate that observation. Checked by `scripts/check-test-smells.js` (heuristic) + LLM review in `/dev-verify` PHASE 5d.
+
+### MUST_DO (Critical)
+
+| ID     | Rule                                           | Check                                                                                    |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| TST001 | Never mock anything except external boundaries | `vi.mock` / `jest.mock` only for: third-party APIs, file system, network, env vars, time |
+| TST002 | Tests assert behavior, not implementation      | mockRatio (impl-coupled / total asserts) < 0.6 — checked in PHASE 5d                     |
+| TST003 | Property-tests for boundary REQs               | REQ with `acceptance[].category: "boundary"` → checklist item `kind: "property"` + seed  |
+
+#### Examples
+
+**TST001** Mock only external boundaries
+
+```ts
+// ✗ Incorrect — mocks one of your own pure functions
+vi.mock("./utils/format-price");
+test("displays formatted price", () => {
+  vi.mocked(formatPrice).mockReturnValue("€9,99");
+  expect(render(<Price value={999} />)).toContain("€9,99");
+});
+
+// ✓ Correct — use the real function, mock only the external boundary
+import { formatPrice } from "./utils/format-price";
+test("displays formatted price from API", async () => {
+  server.use(http.get("/api/price", () => HttpResponse.json({ cents: 999 })));
+  const r = await render(<Price />);
+  expect(r.getByText(formatPrice(999))).toBeVisible();
+});
+```
+
+**TST002** Behavior over implementation
+
+```ts
+// ✗ Incorrect — verifies that a function was called
+test("checkout calls paymentService", async () => {
+  const spy = vi.spyOn(paymentService, "process");
+  await checkout(cart);
+  expect(spy).toHaveBeenCalledWith(cart.total);
+});
+
+// ✓ Correct — verifies that the system does the right thing
+test("checkout confirms order with payment success", async () => {
+  const result = await checkout(cart, validPayment);
+  expect(result.status).toBe("confirmed");
+  expect(result.orderId).toMatch(/^ord_/);
+});
+```
+
+### SHOULD_DO (High)
+
+| ID     | Rule                                               | Rationale                                                                                |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| TST101 | Prefer fake/spy over mock for collaborator realism | In-memory fakes catch integration bugs that mocks miss. Spies observe without replacing. |
+| TST102 | Pin seeds for non-deterministic code               | `vi.useFakeTimers`, seeded RNG (`seedrandom`), MSW for network — see TST201              |
+
+### AVOID (Medium)
+
+| ID     | Pattern                                       | Alternative                                                         |
+| ------ | --------------------------------------------- | ------------------------------------------------------------------- |
+| TST201 | Retry flag as permanent flake mitigation      | Fix root cause (timers, RNG, isolation). Retry hides bugs.          |
+| TST202 | Snapshot-only test without behavior assertion | Combine snapshot with `toBe`/`toEqual` on key fields                |
+| TST203 | `expect(x).toBeDefined()` as happy path       | Replace with `expect(x).toBe(specific-value)` — catches subtle bugs |
+
+---
+
 ## Pipelines (two separate tracks)
 
 **Frontend pipeline (appearance):**

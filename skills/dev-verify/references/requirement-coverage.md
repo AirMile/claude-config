@@ -67,3 +67,11 @@ Cross-check `feature.json` requirements against test results.
    - **Criteria too vague** → two paths:
      - Can be concretized with a visual baseline → write `toHaveScreenshot()` runner spec, status → `"PASS"` after baseline.
      - Cannot be concretized → ask what is vague. Status → `"UNCLEAR"`, add to `requirements[].evidence = "needs clarification: {what's vague}"`. Signal for `/dev-define` re-open to formulate concrete acceptance.
+
+---
+
+## 6. After existence-coverage: assertion-strength measurement
+
+The coverage above measures **test existence** per REQ. It does not measure whether those tests would catch a subtly wrong implementation — a test with `expect(x).toBeDefined()` where `expect(x).toBe(5)` should have been used still counts as COVERED here.
+
+Therefore run Stryker mutation measurement as a complementary check: see `../../shared/MUTATION-TESTING.md` § dev-verify PHASE 5d for the runner detection, invocation, and mapping of survivors to `requirementId`. Output goes to `feature.json#tests.mutationScore`. Survivors on happy-only REQs (filter `requirements[]` where no `acceptance[].category` of `edge` or `boundary` is present) become the same kind of AUTO-items as above — back to PHASE 1 for sharper assertions. No blocking on MIXED/SHALLOW — informational signal alongside the PASS count.

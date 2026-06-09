@@ -50,7 +50,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
       "id": "REQ-001",
       "description": "Shift+Click on element pins it",
       "category": "core",
-      "acceptance": "Element heeft pinned state na Shift+Click",
+      "acceptance": "Element has pinned state after Shift+Click",
       "technique": "TDD",
       "syncNote": "Hook exposes togglePin(id), pinnedIds array, clearAll. Uses Map internally for O(1) lookup.",
       "status": "PASS",
@@ -87,7 +87,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
       "path": "src/hooks/__tests__/usePinMode.test.ts",
       "type": "test",
       "action": "create",
-      "purpose": "Valideert pin state toggling",
+      "purpose": "Validates pin state toggling",
       "requirements": ["REQ-001"]
     }
   ],
@@ -174,10 +174,46 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
         "id": 1,
         "title": "Pin element via Shift+Click",
         "type": "AUTO",
+        "kind": "example",
         "requirementId": "REQ-001",
         "status": "PASS",
         "evidence": "DOM snapshot: PinBar visible with 1 element",
-        "fixApplied": null
+        "fixApplied": null,
+        "smellScore": {
+          "mockRatio": 0.18,
+          "snapshotLines": 12,
+          "overMocking": false,
+          "behaviorVsImpl": "behavior"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Pin-toggle is idempotent for any element count",
+        "type": "AUTO",
+        "kind": "property",
+        "seed": 4242,
+        "requirementId": "REQ-002",
+        "status": "PASS",
+        "counterexample": null
+      },
+      {
+        "id": 3,
+        "title": "Search keeps results sorted for any input",
+        "type": "AUTO",
+        "kind": "property",
+        "seed": 9183,
+        "requirementId": "REQ-003",
+        "status": "FAIL",
+        "counterexample": {
+          "seed": 9183,
+          "path": "1:2:1",
+          "input": [
+            { "score": 0, "tie": -0 },
+            { "score": 0, "tie": 0 }
+          ],
+          "foundAt": "2026-02-21T14:08:12.301Z",
+          "errorMessage": "Expected ascending — got [0, 0] flipped on equal scores"
+        }
       }
     ],
     "sessions": [
@@ -203,7 +239,40 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
         "verdict": "PASS"
       }
     ],
-    "acceptanceTestFile": "test/acceptance/pin-mode.acceptance.test.js"
+    "acceptanceTestFile": "test/acceptance/pin-mode.acceptance.test.js",
+    "mutationScore": {
+      "score": 0.78,
+      "killed": 39,
+      "survived": 11,
+      "timedOut": 0,
+      "ranAt": "2026-02-21T16:00:00Z",
+      "survivedDetails": [
+        {
+          "file": "src/hooks/usePinMode.ts",
+          "line": 23,
+          "mutator": "ConditionalExpression",
+          "requirementId": "REQ-001"
+        }
+      ]
+    },
+    "flakiness": {
+      "lastRun": "2026-02-21T16:05:00Z",
+      "flakyTests": [
+        {
+          "name": "should pin element when shift+click",
+          "file": "src/hooks/__tests__/usePinMode.test.ts",
+          "pfr": 0.85,
+          "retries": 3,
+          "firstFlipSha": "abc1234"
+        }
+      ]
+    },
+    "smellSummary": {
+      "checkedAt": "2026-02-21T16:05:00Z",
+      "overMockedCount": 0,
+      "avgMockRatio": 0.18,
+      "anyOverMocking": false
+    }
   },
 
   "refactor": {
@@ -299,7 +368,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 
 - `build` — summary with techniques, test counts, decisions, explanation
 - `packages` — npm/packages added by this feature
-- `tests.checklist` — test items with status `"pending"` (initial)
+- `tests.checklist` — test items with status `"pending"` (initial). Per-item `kind: "example" \| "property"` (default `example`); REQs with `category: "boundary"` automatically get `kind: "property"` with a generated `seed`. See `dev-build/techniques/tdd.md` § Pattern Property-based.
 - `requirements[].technique` — TDD or implementation-only per REQ
 - `requirements[].syncNote` — plain-language explanation of how REQ was built
 - `requirements[].status` → `"built"`
@@ -312,6 +381,13 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 - `tests.checklist[].status` → PASS/FAIL/skip per item
 - `tests.evaluation` — per-REQ scoring (acceptancePass, acceptanceTotal, builderPass, builderTotal, verdict)
 - `tests.acceptanceTestFile` — path to generated acceptance test (stays in codebase)
+- `tests.mutationScore` — **(dev-pipeline only — GUT has no mutation runner)** assertion-strength measurement via Stryker `--incremental`, diff-scoped on `files[].path`. Schema: `{ score: 0..1, killed, survived, timedOut, ranAt, survivedDetails: [{ file, line, mutator, requirementId? }] }`. Survivors mapped to REQs via `tests.checklist[].acceptanceIndex` → `requirements[].acceptance[i]`. Low score on happy-only REQs → AUTO test items in the fix loop. No hard fail; informative signal next to the PASS count.
+- `tests.flakiness` — **(dev-pipeline only — GUT output is not JUnit-XML)** cross-run non-determinism tracking via JUnit-XML aggregator. Schema: `{ lastRun, flakyTests: [{ name, file, pfr, retries, firstFlipSha }] }`. PFR (pass-fail-ratio) computed over the last N=20 runs from `.project/flakiness-history.jsonl`. Test with PFR < 1.0 on an identical SHA → flagged + AUTO stabilization item.
+- `tests.smellSummary` — **(dev-pipeline only)** aggregate of per-checklist `smellScore`. Schema: `{ checkedAt, overMockedCount, avgMockRatio, p90MockRatio, anyOverMocking }`. Written by the dev-verify AI test-review step; `p90MockRatio` feeds the `project.json#testSmellBaseline` update in PHASE 6. Per-test details in `tests.checklist[].smellScore`.
+- `tests.checklist[].kind` — `"example"` (default) or `"property"`. Property tests use fast-check (`@fast-check/vitest`). With `kind: "property"`, `seed` is mandatory for reproducibility.
+- `tests.checklist[].counterexample` — **(dev-pipeline only — no fast-check equivalent in GDScript)** only for `kind: "property"`. `null` while the property has not failed; on FAIL: `{ seed, path, input, foundAt: ISO-8601, errorMessage }` with fast-check's shrunk counterexample. Writer: dev-verify PHASE 5d (parsed from fast-check error output via `fc.assert({reporter})` or `fc.statistics`). Purpose: regression net — the next run reproduces the bug exactly with an explicit `fc.pre(seed)` or `examples: [input]`. On PASS after a fix: clear the field (`null`) so old counterexamples don't become stale state.
+- `tests.qualityVerdict` — aggregate verdict on PHASE 5d test quality, rendered as the first output line. **Two domain variants share this path:** dev-verify writes the 4-way form `STRONG` (mutation score ≥0.80, no flaky tests, no smells) | `MIXED` (one signal MEDIUM) | `SHALLOW` (mutation score <0.60 or many survivors) | `UNVERIFIABLE` (intersection: ≥1 test is both flaky and lets a mutant survive), schema `{ verdict, ranAt, breakdown: { mutation, flakiness, smells, unverifiable: [{name, file, reason}] } }`. game-verify writes a simplified 2-way form `STRONG` | `WEAK` based on PASS-ratio + test-gap observations (GUT has no mutation runner), schema `{ verdict, ranAt, passRatio, testGapCount }`. Consumers must branch on the presence of `breakdown` to distinguish the variants.
+- `tests.checklist[].smellScore` — **(dev-pipeline only)** per test file: `{ mockRatio: 0..1, snapshotLines, overMocking: bool, behaviorVsImpl: "behavior"|"mixed"|"implementation" }`. Threshold `mockRatio > 0.6` or `overMocking: true` → AUTO item "review mocks".
 - `requirements[].status` → `"PASS"` or `"FAIL"`
 - `requirements[].implicitCoverage` — when a requirement is covered by another test (set by PHASE 5d)
 - `observations` — findings, suggestions for other features
@@ -324,6 +400,10 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 **Added by gap-discovery (frontend-design Build/Convert routes):**
 
 - `frontend.linkedEntities[]` — cross-pipeline traceability: which visual entities (components, pages) link their handler-props to this feature. Schema per item: `{ type: "component"|"page", name, prop }`. Read by `dev-build` to replace stub-handlers with real implementation after build.
+
+**Read by refactor as safety-net baseline:**
+
+- `tests.mutationScore.score` — PHASE 0 pre-flight compares the current Stryker run against this baseline. Drop >5 points, or <60% killed with a missing baseline → warning for user-confirm (no auto-rollback).
 
 **Added by refactor:**
 
@@ -364,13 +444,15 @@ pending → built → PASS
 
 ## Which skills write to feature.json
 
-| Skill            | What they write to feature.json                                                                                                                          | When     |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `/dev-define`    | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                           | PHASE 3  |
-| `/dev-build`     | Enriches: build, packages, tests.checklist, requirements (technique/syncNote/status). Reads clarifications as constraints                                | PHASE 4C |
-| `/dev-verify`    | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint), requirements status, observations | PHASE 6  |
-| `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE                                                                           | PHASE 5  |
-| `/game-define`   | Creates feature.json (same as dev-define + clarifications, game-specific design fields)                                                                  | PHASE 4  |
-| `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements. Reads clarifications as constraints                                                     | PHASE 5  |
-| `/game-verify`   | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                        | PHASE 6  |
-| `/game-refactor` | Enriches: refactor, status → DONE                                                                                                                        | PHASE 5  |
+**Frontmatter `writes:` convention.** Pipeline-skills declare _parent_ top-level keys (e.g. `feature.tests`, `feature.refactor`, `feature.requirements`), not sub-fields (`feature.tests.qualityVerdict`). Rationale: the handoff-validator (`scripts/check-handoff.py`) matches at parent granularity; sub-field explicitness would require fanning out every new field across all touching skills' frontmatter and yield no extra safety. New `tests.*` fields therefore inherit coverage from the existing `feature.tests` declaration — no frontmatter edit needed when adding `tests.qualityVerdict`, `tests.flakiness`, etc.
+
+| Skill            | What they write to feature.json                                                                                                                                                                                                                                | When     |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `/dev-define`    | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                                                                                                                                 | PHASE 3  |
+| `/dev-build`     | Enriches: build, packages, tests.checklist (incl. kind/seed for property-tests), requirements (technique/syncNote/status). Reads clarifications as constraints                                                                                                 | PHASE 4C |
+| `/dev-verify`    | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint/mutationScore/flakiness/smellSummary/checklist[].smellScore/checklist[].counterexample/qualityVerdict), requirements status, observations | PHASE 6  |
+| `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE. Reads tests.mutationScore as PHASE 0 baseline                                                                                                                                  | PHASE 5  |
+| `/game-define`   | Creates feature.json (same as dev-define + clarifications, game-specific design fields)                                                                                                                                                                        | PHASE 4  |
+| `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements. Reads clarifications as constraints                                                                                                                                                           | PHASE 5  |
+| `/game-verify`   | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                                                                                                                              | PHASE 6  |
+| `/game-refactor` | Enriches: refactor, status → DONE                                                                                                                                                                                                                              | PHASE 5  |

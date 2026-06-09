@@ -116,7 +116,7 @@ For each buildSequence step:
 3. Execute technique workflow. Max 3 TypeScript type-error fix attempts per REQ — after 3 failed attempts log as blocker with `cause: "type-resolution-failure"` and continue with the next REQ.
 4. **Stack-aware enforcement**:
    - **Code clarity**: follow existing project comment style. Add comments only for non-obvious "why" decisions, workarounds, and compatibility notes.
-   - **Code rules**: follow `shared/CODING-RULES.md` — General (R007-R009) + TypeScript. When in doubt: MUST_DO rules always, SHOULD_DO rules unless deliberate deviation with reason. Frontend projects: also `shared/FRONTEND-RULES.md`.
+   - **Code rules**: follow `shared/CODING-RULES.md` — General (R007-R009) + TypeScript (T001-T203) + Testing (TST001-TST203). When in doubt: MUST_DO rules always, SHOULD_DO rules unless deliberate deviation with reason. Frontend projects: also `shared/FRONTEND-RULES.md`.
    - **Token enforcement** (only for `.tsx`/`.jsx`/`.vue`/`.svelte` — skip for API routes, tests, config): always use token names (`bg-primary`, `text-foreground`) — never hex literals or `bg-[#hex]`. Theme empty → use fallback defaults from `shared/TOKENS.md`. Run a grep after each Write for T101 (`#[0-9a-fA-F]{3,8}`) and T102 (`bg-\[#`, `text-\[#`) on the generated file — replace violations directly before output.
    - **Motion token enforcement** (only if `theme.motion.pack` is set, only for component files with interactive elements — `button`, `a`, card containers): use token-based transition classes from the active pack — never hardcoded `ms` values or `cubic-bezier()` literals (T106/T107 violation). Pack-specific class-strings: see `shared/PATTERNS.md § Motion Patterns`. All choreography must include `@media (prefers-reduced-motion: reduce)` fallback (`shared/PATTERNS.md § prefers-reduced-motion Fallback`). After each Write on a component file: grep for hardcoded `\d+ms` and `cubic-bezier(` patterns — replace with token classes before output.
 5. **Pitfall verification** (only if PHASE 1 flagged a pitfall for this REQ): run the `grep -q '<marker>' <file>` check stated in the technique map. Output `PITFALL-CHECK REQ-XXX: <pitfall> → PRESENT | ABSENT`. ABSENT → log as deviation in `build.decisions[]` with rationale (intentional or oversight).
@@ -244,6 +244,7 @@ Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations:
   "requirementId": "REQ-XXX",
   "acceptanceIndex": 0,
   "category": "happy",
+  "kind": "example",
   "steps": ["step 1", "step 2"],
   "expected": "expected result",
   "status": "pending"
@@ -251,6 +252,14 @@ Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations:
 ```
 
 `acceptanceIndex` = index of the entry in `requirements[].acceptance[]`. `category` copies `acceptance[i].category`; default `"happy"` if the entry lacks `category` (legacy feature.json backward-compat).
+
+**`kind` assignment rule:**
+
+- `category: "happy"` → `kind: "example"` (concrete scenario reads better as golden-path spec).
+- `category: "edge"` → `kind: "example"` by default; mark `kind: "property"` if the criterion describes an invariant over an input space (e.g. "any non-empty array", "any timestamp in 24h window").
+- `category: "boundary"` → `kind: "property"` by default + mandatory `seed: <random uint32>` field. Boundary criteria are by definition a claim about an edge-case space, not about a single example. Generate the seed with `Math.floor(Math.random() * 2**32)` once at checklist-write. The TDD technique (`techniques/tdd.md` § Pattern Property-based) then reads these items with `@fast-check/vitest`.
+
+For `kind: "property"`: omit `steps` and set `expected` to the invariant in plain language (e.g. "cart-total is order-independent over any items array").
 
 Guidelines:
 

@@ -110,6 +110,12 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
     "updated": ""
   },
   "optimization_runs": [],
+  "testSmellBaseline": {
+    "avgMockRatio": 0,
+    "p90MockRatio": 0,
+    "sampleCount": 0,
+    "lastUpdated": ""
+  },
   "team": {
     "mode": "solo",
     "commitConvention": "conventional|ticket-prefix|bracket|freeform",

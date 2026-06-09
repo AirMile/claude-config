@@ -37,25 +37,40 @@ Verify packages are resolvable and the setup file imports `@testing-library/jest
 # src/test-setup.*, src/test/setup.*, tests/setup.*, test/setup.*
 SETUP=$(ls vitest.setup.* jest.setup.* src/test-setup.* setup-tests.* \
           src/test/setup.* tests/setup.* test/setup.* 2>/dev/null | head -1)
-# Fallback: read setupFiles uit vitest.config.* als ls leeg is
+# Fallback: read setupFiles from vitest.config.* if ls is empty
 if [ -z "$SETUP" ] && [ -f vitest.config.ts ]; then
   SETUP=$(grep -oE "setupFiles[^']*'[^']+'" vitest.config.ts 2>/dev/null | grep -oE "'[^']+'" | tr -d "'" | head -1)
 fi
-# Check jest-dom: geïmporteerd in setup-file én installeerbaar
+# Check jest-dom: imported in the setup file AND installed
 [ -n "$SETUP" ] && grep -q "@testing-library/jest-dom" "$SETUP" \
   || echo "MISSING: @testing-library/jest-dom import not found in setup file"
 node -e "require.resolve('@testing-library/jest-dom')" 2>&1 || echo "MISSING: @testing-library/jest-dom"
 
-# Stack-aware component-library check (gebruikt de al gedetecteerde stack)
+# Stack-aware component-library check (uses the already-detected stack)
 # React   → @testing-library/react
 # Vue     → @testing-library/vue
 # Svelte  → @testing-library/svelte
 # Angular → @testing-library/angular
-# Overig/backend → sla over
+# Other/backend → skip
 node -e "require.resolve('@testing-library/{framework}')" 2>&1 || echo "MISSING: @testing-library/{framework}"
 ```
 
-Vervang `{framework}` met de waarde uit de stack-detectie hierboven. Als geen component-framework gevonden → sla de framework-check over.
+Replace `{framework}` with the value from the stack detection above. If no component framework is found → skip the framework check.
+
+### JUnit reporter detection (for the dev-verify flakiness aggregator)
+
+Detect whether the JUnit reporter is configured — dev-verify PHASE 5d's flakiness aggregator reads `.project/test-junit.xml`:
+
+```bash
+# Vitest: look for 'junit' in the reporters array
+grep -q "['\"]junit['\"]" vitest.config.* 2>/dev/null && echo "OK: junit reporter (vitest)"
+# Jest: jest-junit als devDep + reporters in config
+node -e "require.resolve('jest-junit')" 2>/dev/null && echo "OK: jest-junit installed"
+# Playwright
+grep -q "junit" playwright.config.* 2>/dev/null && echo "OK: junit reporter (playwright)"
+```
+
+**Missing → log a warning, not a blocker.** Verify will then skip the flakiness step. On the next `/dev-build` run the user can choose to add the reporter (see `dev-verify/references/flakiness-detection.md` for config snippets).
 
 Missing → auto-install (default) if `package.json` already contains `vitest`, `jest`, or `playwright` as a key anywhere in its content. Otherwise → **AskUserQuestion**: "Install + add import (Recommended)" / "Skip and continue".
 
@@ -148,11 +163,11 @@ If `feature.type === "COMPONENT"` (or backlog item type is COMPONENT): set `IS_C
 
 ```yaml
 header: "Theme tokens"
-question: "Geen design tokens gevonden. /dev-build genereert UI met token-classes die zonder thema unstyled blijven. Hoe verder?"
+question: "No design tokens found. /dev-build generates UI with token classes that stay unstyled without a theme. How to proceed?"
 options:
-  - label: "Run /frontend-tokens first (Recommended)", description: "Zet kleuren + spacing tokens op, daarna /dev-build opnieuw"
-  - label: "Continue with fallback defaults", description: "Gebruik defaults uit shared/TOKENS.md (neutrale gray-scale)"
-  - label: "Cancel", description: "Stop deze build"
+  - label: "Run /frontend-tokens first (Recommended)", description: "Set up color + spacing tokens, then run /dev-build again"
+  - label: "Continue with fallback defaults", description: "Use defaults from shared/TOKENS.md (neutral gray-scale)"
+  - label: "Cancel", description: "Stop this build"
 multiSelect: false
 ```
 

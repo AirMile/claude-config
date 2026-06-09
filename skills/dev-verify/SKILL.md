@@ -24,7 +24,7 @@ Verify phase: define → build → **verify**
 ```
 
 > Classification criteria: `references/test-classification.md`
-> Code quality rules: `../shared/CODING-RULES.md` (R007-R009, T001-T203). Frontend projects: also `../shared/FRONTEND-RULES.md`.
+> Code quality rules: `../shared/CODING-RULES.md` (R007-R009, T001-T203, TST001-TST203). Frontend projects: also `../shared/FRONTEND-RULES.md`.
 
 ## Workflow
 
@@ -285,8 +285,7 @@ CATEGORY_GAPS:
    MANUAL, AUTO/BROWSER, or AUTO/CLI with live server    → launch dev server on localhost
    ```
 
-   Launch procedure (when launch is required):
-   0. **Pre-launch staleness gate** — `git -C {worktree-path} rev-list --count HEAD..main`. If > 0: the worktree is N commits behind main; deps/assets that landed on main since branch-off (fonts, packages, public/) will be missing and the server may crash on first request. AskUserQuestion: "Rebase worktree op main eerst? (Recommended) | Launch zonder rebase (kan crashen) | Stop". On "Rebase" → invoke `shared/WORKTREE.md → Staleness rebase` and re-run this check. On "Launch zonder rebase" → continue but tag the eventual output line: `DEV SERVER (stale, {n} commits behind): {url}`. On "Stop" → abort with a clear message; user resolves manually.
+   Launch procedure (when launch is required): 0. **Pre-launch staleness gate** — `git -C {worktree-path} rev-list --count HEAD..main`. If > 0: the worktree is N commits behind main; deps/assets that landed on main since branch-off (fonts, packages, public/) will be missing and the server may crash on first request. AskUserQuestion: "Rebase worktree op main eerst? (Recommended) | Launch zonder rebase (kan crashen) | Stop". On "Rebase" → invoke `shared/WORKTREE.md → Staleness rebase` and re-run this check. On "Launch zonder rebase" → continue but tag the eventual output line: `DEV SERVER (stale, {n} commits behind): {url}`. On "Stop" → abort with a clear message; user resolves manually.
    1. Resolve the dev command in this precedence:
       - `feature.json` → `build.runCommand` (per-feature override)
       - `.project/project.json` → `scripts.dev` (project default)
@@ -535,6 +534,8 @@ All pass → PHASE 5c.
 Items still failing → AskUserQuestion: More details (Recommended) | Different approach | Accept | Fix yourself.
 Loop back to PHASE 3. AUTO items → re-run in PHASE 5A. MANUAL items → re-test in PHASE 5B.
 
+**Max 3 fix attempts per item.** After the 3rd failed re-test of the same item, stop looping for that item and AskUserQuestion: "Accept anyway" | "Escalate to manual root-cause analysis (/dev-debug)". This prevents an unbounded PHASE 3 → 5 → 5b cycle.
+
 ---
 
 ### PHASE 5c: Regression Check
@@ -571,6 +572,8 @@ Regressions: {n} | Stable: {n}
 > **Todo**: mark the previously-active phase → `completed` and PHASE 5d → `in_progress`. (Previously-active is PHASE 2b for the all-PASS happy path, or PHASE 5c if fixes ran.)
 
 **Skip when:** All tests FAIL. Read `references/requirement-coverage.md` for full classification logic, coverage matrix, and per-REQ AskUserQuestion flow.
+
+> **Todo**: Read `.claude/skills/dev-verify/references/quality-gates.md` for the full PHASE 5d quality-gate workflow (mutation-strength measurement, PBT gap-check, counterexample-capture, test-smell review, flakiness-check, survivor×flaky correlation, aggregate verdict).
 
 ---
 
@@ -634,18 +637,18 @@ DEFERRED items: write per-item `tests.checklist[i] = { status: "deferred", defer
 If all true → AskUserQuestion:
 
 ```yaml
-header: "PR openen"
-question: "Push + PR openen voor worktree-{feature-name}?"
+header: "Open PR"
+question: "Push + open PR for worktree-{feature-name}?"
 options:
-  - label: "Ja, push + PR (Recommended)"
+  - label: "Yes, push + PR (Recommended)"
     description: "Push the branch and open a PR via gh. Worktree stays until merged."
-  - label: "Nee, skip PR"
+  - label: "No, skip PR"
     description: "Skip the PR; show finalize prompt instead."
 multiSelect: false
 ```
 
-On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
-On "Nee" or any precondition fail → fall through to finalize prompt.
+On "Yes" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
+On "No" or any precondition fail → fall through to finalize prompt.
 
 **Finalize behavior** — follow `shared/FINALIZE.md → Finalize Offer Decision`.
 
@@ -665,12 +668,12 @@ On "Nee" or any precondition fail → fall through to finalize prompt.
 ```yaml
 # MERGED state only:
 header: "PR merged — cleanup"
-question: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd."
+question: "PR #{PR_NUMBER} has been merged ({PR_URL}). Clean up now? Worktree + local branch will be removed."
 options:
-  - label: "Yes, cleanup nu (Recommended)"
-    description: "Follow shared/FINALIZE.md cleanup-only — verwijder worktree + branch"
+  - label: "Yes, cleanup now (Recommended)"
+    description: "Follow shared/FINALIZE.md cleanup-only — remove worktree + branch"
   - label: "Keep open"
-    description: "Worktree blijft staan voor follow-up commits"
+    description: "Worktree stays for follow-up commits"
 multiSelect: false
 ```
 

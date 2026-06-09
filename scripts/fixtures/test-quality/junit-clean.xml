@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="vitest tests" tests="3" failures="0" errors="0" time="0.42">
+  <testsuite name="src/foo.test.ts" tests="3" failures="0" errors="0" skipped="0" time="0.42">
+    <testcase classname="src/foo.test.ts" name="adds two numbers" time="0.12" file="src/foo.test.ts" />
+    <testcase classname="src/foo.test.ts" name="handles zero" time="0.08" file="src/foo.test.ts" />
+    <testcase classname="src/foo.test.ts" name="handles negative" time="0.22" file="src/foo.test.ts" />
+  </testsuite>
+</testsuites>

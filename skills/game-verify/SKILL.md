@@ -66,7 +66,7 @@ This skill activates in these scenarios:
 Everything works except puddle is too small and there's no sound
 ```
 
-> Code quality rules: `../shared/CODING-RULES.md` (R009)
+> Code quality rules: `../shared/CODING-RULES.md` (R009, TST001–TST203). TST-rules apply to GDScript/GUT test code (mock boundaries only, behavior > implementation, pin seeds, no retry-flag as flake fix).
 
 ## Feedback Categorization
 
@@ -596,6 +596,15 @@ FAILED: 2 items (3, 4)
 ### PHASE 5d: Requirement Verification
 
 > **Todo**: mark PHASE 5c → `completed`, PHASE 5d → `in_progress`. (Requirement verification — see `references/regression-requirements.md` loaded above.)
+
+**Test-quality verdict (simplified, GUT context).** Unlike dev-verify (Stryker + mutation score), GUT has no mutation runner; the verdict is therefore based on PASS ratio + feedback FAILs. Write `feature.json#tests.qualityVerdict`:
+
+| Verdict | Condition                                                                                                                     |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| STRONG  | `tests.finalStatus === "PASSED"` AND `tests.checklist[].status` all PASS AND no `observations[]` with `category: "test-gap"`. |
+| WEAK    | Anything else (FAIL/BLOCKED/PARTIAL, or a test-gap observation, or <100% PASS ratio).                                         |
+
+Schema: `{ verdict: "STRONG"|"WEAK", ranAt: ISO-8601, passRatio: number, testGapCount: number }`. Render at the top of the PHASE 5d output: `TEST-QUALITY VERDICT: {verdict} (passRatio: X, testGaps: N)`. Not blocking — informative signal alongside the PASS count.
 
 ---
 

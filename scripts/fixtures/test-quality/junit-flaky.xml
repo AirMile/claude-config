@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="vitest tests" tests="3" failures="1" errors="0" time="0.85">
+  <testsuite name="src/bar.test.ts" tests="3" failures="1" errors="0" skipped="0" time="0.85">
+    <testcase classname="src/bar.test.ts" name="stable test" time="0.10" file="src/bar.test.ts" />
+    <testcase classname="src/bar.test.ts" name="flaky network call" time="0.55" file="src/bar.test.ts" retries="2">
+      <failure message="timeout">Connection reset</failure>
+    </testcase>
+    <testcase classname="src/bar.test.ts" name="marked flaky test" time="0.20" file="src/bar.test.ts">
+      <properties>
+        <property name="flaky" value="true"/>
+      </properties>
+    </testcase>
+  </testsuite>
+</testsuites>

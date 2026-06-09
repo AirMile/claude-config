@@ -207,7 +207,7 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 **Lens definitions** (see also `shared/PATTERNS.md` if present):
 
 - **Reuse lens**: DRY within pipeline files, duplication with existing helpers/utilities in the codebase, inline logic that existing lib/stdlib can replace, extract-opportunities
-- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dead code, redundant state, leaky abstractions, `CODING-RULES.md` violations (+ `FRONTEND-RULES.md` for frontend files), stack-specific anti-patterns, Design Token violations (T101–T111 from `shared/TOKENS.md` — frontend files only: `.tsx`/`.jsx`/`.vue`/`.svelte`)
+- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dead code, redundant state, leaky abstractions, `CODING-RULES.md` violations (R007–R009, T001–T203, TST001–TST203) (+ `FRONTEND-RULES.md` for frontend files), stack-specific anti-patterns, Design Token violations (T101–T111 from `shared/TOKENS.md` — frontend files only: `.tsx`/`.jsx`/`.vue`/`.svelte`)
 - **Efficiency lens**: missed concurrency (Promise.all), N+1, hot-path bloat, memory leaks, unbounded maps, TOCTOU, overly broad ops, no-op recurring updates
 
 0. **Load or generate refactor-patterns.md** (lazy — deferred from PHASE 0 so patterns are not generated when all features turn out to be CLEAN):
@@ -265,6 +265,12 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
    KNOWN DECISIONS (skip findings that match these — already evaluated in a previous run):
    {feature.json#refactor.decisions[] where action=SKIP, formatted as bullet list, or "none" if empty}
+
+   SCOPE:
+   - Analyze ONLY files in the pipeline files list above. Skip findings that involve
+     external files or cross-cutting utilities outside that list — even if the fix
+     seems obvious. Exception: a NEW utility file may be proposed if it exclusively
+     extracts code from pipeline files.
 
    DISCIPLINE:
    - Max 500 words output. Short, sharp, direct.
@@ -444,6 +450,8 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 ### PHASE 4: Apply + Test Per Feature
 
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/dev-refactor/references/apply-rollback.md` for the full apply + rollback procedure.
+
+**Step 0 — Safety-net pre-flight (per feature, before changes):** Read `.claude/skills/shared/MUTATION-TESTING.md` § dev-refactor PHASE 4 step 0. Run Stryker incremental **with `--force`** (bypasses the stale cache from verify's code state) and compare the current score against `feature.json#tests.mutationScore.score` as baseline. On a drop >0.05, or (no baseline AND score <0.60) → AskUserQuestion whether the refactor may proceed. No auto-rollback here — informative gate. Runner skipped → log and continue without the gate.
 
 Follow `references/apply-rollback.md` — priority order, file tracking, per-feature rollback, and test-failure decision table.
 

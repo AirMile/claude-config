@@ -1,0 +1,25 @@
+{
+  "name": "stryker-mapping-fixture",
+  "tests": {
+    "checklist": [
+      {
+        "id": 1,
+        "name": "calc adds two numbers",
+        "requirementId": "REQ-001",
+        "kind": "example"
+      },
+      {
+        "id": 2,
+        "name": "classify returns under for low bmi",
+        "requirementId": "REQ-002",
+        "kind": "example"
+      },
+      {
+        "id": 3,
+        "name": "classify returns over for high bmi",
+        "requirementId": "REQ-003",
+        "kind": "example"
+      }
+    ]
+  }
+}

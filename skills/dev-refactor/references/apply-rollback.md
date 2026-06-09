@@ -2,6 +2,8 @@
 
 **Goal:** Apply approved improvements and test, with per-feature rollback isolation.
 
+**Pre-flight (Step 0, before change tracking):** safety-net mutation check against the `feature.json#tests.mutationScore` baseline. Full flow + gate conditions in `../../shared/MUTATION-TESTING.md` § dev-refactor PHASE 4 step 0. The gate is informative (no auto-rollback) — on a score drop, or a missing baseline with a low score, the user decides whether the refactor proceeds. Runner skipped → log and continue.
+
 ## Priority order for each feature (execute in this sequence)
 
 1. Security improvements
@@ -46,8 +48,10 @@
    - Track: `modified_files[feature_name] = [list of existing files changed]`
    - Track: `created_files[feature_name] = [list of new files created]`
 
-   c. **Run test suite after this feature's changes:**
+   c. **Run test suite after this feature's changes** (Test Impact Analysis-scoped):
    - Detect test command from CLAUDE.md `### Testing` section
+   - **TIA scope when vitest:** if runner = vitest, use `npx vitest run --related {modified_files[feature_name]} {created_files[feature_name]}` instead of the full suite. This runs only tests that transitively import the feature files. Vitest's `--related` falls back to an empty set without error when no tests match (unlike a normal run, which throws FilesNotFoundError) — on an empty set: treat as PASS and log "TIA: no related tests for {feature}". For other runners (jest/mocha) or when detection fails: full suite.
+   - **Why TIA is safe here** (and not in dev-build PHASE 2b): in refactor we know exactly which files changed per feature. `--related` traces imports transitively, so regressions in dependent modules are caught. Non-import-based coupling (runtime registries, dynamic imports) remains a blind spot — that's why the **final full-suite run at the end of PHASE 4** (after all features) stays in place as the safety net.
    - **All pass** → mark feature as APPLIED, continue to next feature
    - **Any fail → analyze before rollback:**
 
@@ -78,7 +82,9 @@
 
      Mark feature as ROLLED_BACK with reason. Continue to next feature.
 
-   d. **Report per feature:**
+   d. **Cleanup snapshots:** after the feature is APPLIED or ROLLED_BACK, remove its snapshots — `rm -f /tmp/refactor-snapshot-{feature_name}-*`. Prevents stale snapshots from leaking across sessions or colliding on identical basenames.
+
+   e. **Report per feature:**
 
    ```
    ✓ {feature-name}: {N} improvements applied
@@ -89,6 +95,8 @@
    ```
    ✗ {feature-name}: rolled back ({reason})
    ```
+
+3. **Final full-suite gate (after all features):** run the complete test suite once (`npm test` / `npm run test -- --run` depending on CLAUDE.md `### Testing`). This catches regressions that TIA's per-feature `--related` scope misses: runtime registries, dynamic imports, non-import-based coupling between features. On FAIL: identify the responsible feature(s) via `git bisect` over the PHASE 4 commits OR per-feature rollback of the last-applied feature → re-run. Max 2 rollback rounds before escalating to user-confirm.
 
 ## Non-breaking rule
 

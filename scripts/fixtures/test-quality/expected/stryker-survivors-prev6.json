@@ -1,0 +1,23 @@
+{
+  "survivedDetails": [],
+  "unmapped": [
+    {
+      "file": "src/calc.ts",
+      "line": 12,
+      "mutator": "ArithmeticOperator",
+      "coveredByTestNames": []
+    },
+    {
+      "file": "src/classify.ts",
+      "line": 14,
+      "mutator": "EqualityOperator",
+      "coveredByTestNames": []
+    },
+    {
+      "file": "src/classify.ts",
+      "line": 7,
+      "mutator": "ConditionalExpression",
+      "coveredByTestNames": []
+    }
+  ]
+}

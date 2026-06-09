@@ -70,6 +70,7 @@ Update `data.updated`. Write backlog JSON back to `backlog.html`.
 **backlog:** parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md`). Match on `feature.name` (not `id` — the backlog format uses `name` as the unique key).
 
 Set on the matched entry:
+
 - `status = "DONE"`
 - remove `stage` and `transition` (if present)
 
@@ -88,6 +89,21 @@ This applies even when a merge SHA is available from PHASE Finalize: the SHA is 
 3. No match on `feature.name`: log a warning and stop.
 
 **project-context.json**: When fixes in PHASE 4: update `architecture.components[]` — merge changed files into component `src`/`test`, confirm `status: "done"`, add test files.
+
+**testSmellBaseline update** (only if the test-smell check ran in PHASE 5d and `tests.smellSummary` was written):
+
+Read `project.json#testSmellBaseline` (may be absent on first run). With `N = prev.sampleCount ?? 0`, write:
+
+```json
+{
+  "avgMockRatio": "(N * prev.avgMockRatio + smellSummary.avgMockRatio) / (N + 1)",
+  "p90MockRatio": "(N * prev.p90MockRatio + smellSummary.p90MockRatio) / (N + 1)",
+  "sampleCount": "N + 1",
+  "lastUpdated": "ISO-8601"
+}
+```
+
+First feature (`N === 0`) → baseline equals the feature's `smellSummary` values directly. From `sampleCount >= 3` the baseline is used as drift reference (`--baseline-p90`) in subsequent verify runs (see `test-smell-review.md` step 1).
 
 **COMPONENT design sync** (only if `IS_COMPONENT_VERIFY = true`):
 

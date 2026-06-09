@@ -605,7 +605,7 @@ Read these Just-In-Time during specific phases — do not load upfront.
 | `references/phase-3b-integration.md` | PHASE 3b — integration test scene template and DebugListener script             |
 | `references/phase-6-commit.md`       | PHASE 6 — scoped auto-commit flow with gdlint check and git baseline comparison |
 
-> Completion claims require fresh output (R009 — see `../shared/CODING-RULES.md`)
+> Completion claims require fresh output (R009 — see `../shared/CODING-RULES.md`). Test code follows TST001–TST203 (mock boundaries only, behavior > implementation, pin seeds for non-determinism — language-agnostic, applies to GDScript/GUT equally).
 
 ## Path Resolution
 

@@ -1,0 +1,23 @@
+{
+  "survivedDetails": [
+    {
+      "file": "src/calc.ts",
+      "line": 12,
+      "mutator": "ArithmeticOperator",
+      "requirementId": "REQ-001"
+    },
+    {
+      "file": "src/classify.ts",
+      "line": 7,
+      "mutator": "ConditionalExpression"
+    }
+  ],
+  "unmapped": [
+    {
+      "file": "src/classify.ts",
+      "line": 14,
+      "mutator": "EqualityOperator",
+      "coveredByTestNames": ["unrelated helper test"]
+    }
+  ]
+}
