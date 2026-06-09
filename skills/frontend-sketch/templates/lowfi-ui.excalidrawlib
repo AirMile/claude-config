@@ -1,0 +1,654 @@
+{
+  "type": "excalidrawlib",
+  "version": 2,
+  "library": [
+    {
+      "status": "published",
+      "id": "lowfi-button-primary",
+      "created": 1748995200000,
+      "elements": [
+        {
+          "type": "rectangle",
+          "id": "btn-p-rect",
+          "x": 0, "y": 0, "width": 160, "height": 44,
+          "strokeColor": "#212529", "backgroundColor": "#212529",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 1, "opacity": 100, "angle": 0,
+          "seed": 42, "version": 1, "versionNonce": 43,
+          "isDeleted": false, "groupIds": ["btn-p"],
+          "boundElements": [{"id": "btn-p-label", "type": "text"}],
+          "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "btn-p-label",
+          "x": 0, "y": 0, "width": 160, "height": 44,
+          "text": "Button", "originalText": "Button",
+          "fontSize": 15, "fontFamily": 1,
+          "textAlign": "center", "verticalAlign": "middle",
+          "strokeColor": "#ffffff", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 49, "version": 1, "versionNonce": 50,
+          "isDeleted": false, "groupIds": ["btn-p"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": "btn-p-rect", "lineHeight": 1.25
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-button-ghost",
+      "created": 1748995200001,
+      "elements": [
+        {
+          "type": "rectangle",
+          "id": "btn-g-rect",
+          "x": 0, "y": 0, "width": 160, "height": 44,
+          "strokeColor": "#495057", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 1, "opacity": 100, "angle": 0,
+          "seed": 105, "version": 1, "versionNonce": 106,
+          "isDeleted": false, "groupIds": ["btn-g"],
+          "boundElements": [{"id": "btn-g-label", "type": "text"}],
+          "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "btn-g-label",
+          "x": 0, "y": 0, "width": 160, "height": 44,
+          "text": "Ghost button", "originalText": "Ghost button",
+          "fontSize": 15, "fontFamily": 1,
+          "textAlign": "center", "verticalAlign": "middle",
+          "strokeColor": "#212529", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 112, "version": 1, "versionNonce": 113,
+          "isDeleted": false, "groupIds": ["btn-g"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": "btn-g-rect", "lineHeight": 1.25
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-input",
+      "created": 1748995200002,
+      "elements": [
+        {
+          "type": "text",
+          "id": "inp-label",
+          "x": 0, "y": 0, "width": 240, "height": 16,
+          "text": "Label", "originalText": "Label",
+          "fontSize": 12, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#495057", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 168, "version": 1, "versionNonce": 169,
+          "isDeleted": false, "groupIds": ["inp"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        },
+        {
+          "type": "rectangle",
+          "id": "inp-box",
+          "x": 0, "y": 22, "width": 240, "height": 40,
+          "strokeColor": "#ced4da", "backgroundColor": "#f1f3f5",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 1, "opacity": 100, "angle": 0,
+          "seed": 175, "version": 1, "versionNonce": 176,
+          "isDeleted": false, "groupIds": ["inp"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "inp-placeholder",
+          "x": 8, "y": 32, "width": 224, "height": 20,
+          "text": "Placeholder…", "originalText": "Placeholder…",
+          "fontSize": 13, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#adb5bd", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 182, "version": 1, "versionNonce": 183,
+          "isDeleted": false, "groupIds": ["inp"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-textarea",
+      "created": 1748995200003,
+      "elements": [
+        {
+          "type": "text",
+          "id": "ta-label",
+          "x": 0, "y": 0, "width": 240, "height": 16,
+          "text": "Message", "originalText": "Message",
+          "fontSize": 12, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#495057", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 231, "version": 1, "versionNonce": 232,
+          "isDeleted": false, "groupIds": ["ta"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        },
+        {
+          "type": "rectangle",
+          "id": "ta-box",
+          "x": 0, "y": 22, "width": 240, "height": 96,
+          "strokeColor": "#ced4da", "backgroundColor": "#f1f3f5",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 1, "opacity": 100, "angle": 0,
+          "seed": 238, "version": 1, "versionNonce": 239,
+          "isDeleted": false, "groupIds": ["ta"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "ta-placeholder",
+          "x": 8, "y": 32, "width": 224, "height": 20,
+          "text": "Write something…", "originalText": "Write something…",
+          "fontSize": 13, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#adb5bd", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 245, "version": 1, "versionNonce": 246,
+          "isDeleted": false, "groupIds": ["ta"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-card",
+      "created": 1748995200004,
+      "elements": [
+        {
+          "type": "rectangle",
+          "id": "card-rect",
+          "x": 0, "y": 0, "width": 280, "height": 120,
+          "strokeColor": "#dee2e6", "backgroundColor": "#ffffff",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 1, "opacity": 100, "angle": 0,
+          "seed": 294, "version": 1, "versionNonce": 295,
+          "isDeleted": false, "groupIds": ["card"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "card-title",
+          "x": 16, "y": 16, "width": 248, "height": 20,
+          "text": "Card title", "originalText": "Card title",
+          "fontSize": 15, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#212529", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 301, "version": 1, "versionNonce": 302,
+          "isDeleted": false, "groupIds": ["card"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        },
+        {
+          "type": "text",
+          "id": "card-body",
+          "x": 16, "y": 44, "width": 248, "height": 36,
+          "text": "Card description goes here.\nTwo lines of body text.",
+          "originalText": "Card description goes here.\nTwo lines of body text.",
+          "fontSize": 13, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#868e96", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 308, "version": 1, "versionNonce": 309,
+          "isDeleted": false, "groupIds": ["card"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.4
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-navbar",
+      "created": 1748995200005,
+      "elements": [
+        {
+          "type": "rectangle",
+          "id": "nav-bg",
+          "x": 0, "y": 0, "width": 380, "height": 48,
+          "strokeColor": "#dee2e6", "backgroundColor": "#ffffff",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 357, "version": 1, "versionNonce": 358,
+          "isDeleted": false, "groupIds": ["nav"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "nav-brand",
+          "x": 16, "y": 14, "width": 100, "height": 20,
+          "text": "Brand", "originalText": "Brand",
+          "fontSize": 15, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#212529", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 364, "version": 1, "versionNonce": 365,
+          "isDeleted": false, "groupIds": ["nav"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        },
+        {
+          "type": "text",
+          "id": "nav-links",
+          "x": 220, "y": 14, "width": 144, "height": 20,
+          "text": "Home  About  Login",
+          "originalText": "Home  About  Login",
+          "fontSize": 12, "fontFamily": 1,
+          "textAlign": "right", "verticalAlign": "top",
+          "strokeColor": "#868e96", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 371, "version": 1, "versionNonce": 372,
+          "isDeleted": false, "groupIds": ["nav"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-image-placeholder",
+      "created": 1748995200006,
+      "elements": [
+        {
+          "type": "rectangle",
+          "id": "img-box",
+          "x": 0, "y": 0, "width": 280, "height": 160,
+          "strokeColor": "#ced4da", "backgroundColor": "#f1f3f5",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 420, "version": 1, "versionNonce": 421,
+          "isDeleted": false, "groupIds": ["img"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "line",
+          "id": "img-diag1",
+          "x": 0, "y": 0, "width": 280, "height": 160,
+          "points": [[0, 0], [280, 160]],
+          "strokeColor": "#ced4da", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 427, "version": 1, "versionNonce": 428,
+          "isDeleted": false, "groupIds": ["img"],
+          "boundElements": null, "link": null, "locked": false,
+          "startArrowhead": null, "endArrowhead": null, "lastCommittedPoint": null
+        },
+        {
+          "type": "line",
+          "id": "img-diag2",
+          "x": 0, "y": 160, "width": 280, "height": 160,
+          "points": [[0, 0], [280, -160]],
+          "strokeColor": "#ced4da", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 434, "version": 1, "versionNonce": 435,
+          "isDeleted": false, "groupIds": ["img"],
+          "boundElements": null, "link": null, "locked": false,
+          "startArrowhead": null, "endArrowhead": null, "lastCommittedPoint": null
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-heading",
+      "created": 1748995200007,
+      "elements": [
+        {
+          "type": "text",
+          "id": "h1-text",
+          "x": 0, "y": 0, "width": 280, "height": 36,
+          "text": "Page heading", "originalText": "Page heading",
+          "fontSize": 26, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#212529", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 483, "version": 1, "versionNonce": 484,
+          "isDeleted": false, "groupIds": [],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-body-text",
+      "created": 1748995200008,
+      "elements": [
+        {
+          "type": "text",
+          "id": "body-text",
+          "x": 0, "y": 0, "width": 280, "height": 60,
+          "text": "Body text goes here. This is a paragraph\nof descriptive content for the UI.\nThree lines of example copy.",
+          "originalText": "Body text goes here. This is a paragraph\nof descriptive content for the UI.\nThree lines of example copy.",
+          "fontSize": 14, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#495057", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 546, "version": 1, "versionNonce": 547,
+          "isDeleted": false, "groupIds": [],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.5
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-list",
+      "created": 1748995200009,
+      "elements": [
+        {
+          "type": "text",
+          "id": "list-items",
+          "x": 0, "y": 0, "width": 240, "height": 72,
+          "text": "•  List item one\n•  List item two\n•  List item three",
+          "originalText": "•  List item one\n•  List item two\n•  List item three",
+          "fontSize": 13, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#495057", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 609, "version": 1, "versionNonce": 610,
+          "isDeleted": false, "groupIds": [],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.8
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-modal",
+      "created": 1748995200010,
+      "elements": [
+        {
+          "type": "rectangle",
+          "id": "modal-overlay",
+          "x": 0, "y": 0, "width": 320, "height": 200,
+          "strokeColor": "transparent", "backgroundColor": "#000000",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 35, "angle": 0,
+          "seed": 672, "version": 1, "versionNonce": 673,
+          "isDeleted": false, "groupIds": ["modal"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "rectangle",
+          "id": "modal-box",
+          "x": 30, "y": 44, "width": 260, "height": 160,
+          "strokeColor": "#dee2e6", "backgroundColor": "#ffffff",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 679, "version": 1, "versionNonce": 680,
+          "isDeleted": false, "groupIds": ["modal"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "modal-title",
+          "x": 46, "y": 60, "width": 228, "height": 24,
+          "text": "Modal title", "originalText": "Modal title",
+          "fontSize": 16, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#212529", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 686, "version": 1, "versionNonce": 687,
+          "isDeleted": false, "groupIds": ["modal"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        },
+        {
+          "type": "text",
+          "id": "modal-body",
+          "x": 46, "y": 92, "width": 228, "height": 40,
+          "text": "Modal body text. Confirm or\ncancel this action.",
+          "originalText": "Modal body text. Confirm or\ncancel this action.",
+          "fontSize": 13, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#868e96", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 693, "version": 1, "versionNonce": 694,
+          "isDeleted": false, "groupIds": ["modal"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.4
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-tabs",
+      "created": 1748995200011,
+      "elements": [
+        {
+          "type": "rectangle",
+          "id": "tabs-bg",
+          "x": 0, "y": 0, "width": 280, "height": 40,
+          "strokeColor": "#dee2e6", "backgroundColor": "#ffffff",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 756, "version": 1, "versionNonce": 757,
+          "isDeleted": false, "groupIds": ["tabs"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "tab-1",
+          "x": 12, "y": 10, "width": 70, "height": 20,
+          "text": "Tab one", "originalText": "Tab one",
+          "fontSize": 13, "fontFamily": 1,
+          "textAlign": "center", "verticalAlign": "top",
+          "strokeColor": "#212529", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 763, "version": 1, "versionNonce": 764,
+          "isDeleted": false, "groupIds": ["tabs"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        },
+        {
+          "type": "rectangle",
+          "id": "tab-1-indicator",
+          "x": 12, "y": 37, "width": 70, "height": 2,
+          "strokeColor": "#212529", "backgroundColor": "#212529",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 770, "version": 1, "versionNonce": 771,
+          "isDeleted": false, "groupIds": ["tabs"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "tab-2",
+          "x": 105, "y": 10, "width": 70, "height": 20,
+          "text": "Tab two", "originalText": "Tab two",
+          "fontSize": 13, "fontFamily": 1,
+          "textAlign": "center", "verticalAlign": "top",
+          "strokeColor": "#adb5bd", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 777, "version": 1, "versionNonce": 778,
+          "isDeleted": false, "groupIds": ["tabs"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        },
+        {
+          "type": "text",
+          "id": "tab-3",
+          "x": 198, "y": 10, "width": 70, "height": 20,
+          "text": "Tab three", "originalText": "Tab three",
+          "fontSize": 13, "fontFamily": 1,
+          "textAlign": "center", "verticalAlign": "top",
+          "strokeColor": "#adb5bd", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 784, "version": 1, "versionNonce": 785,
+          "isDeleted": false, "groupIds": ["tabs"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-toggle",
+      "created": 1748995200012,
+      "elements": [
+        {
+          "type": "rectangle",
+          "id": "toggle-track",
+          "x": 0, "y": 2, "width": 44, "height": 24,
+          "strokeColor": "#212529", "backgroundColor": "#212529",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 847, "version": 1, "versionNonce": 848,
+          "isDeleted": false, "groupIds": ["toggle"],
+          "boundElements": [], "link": null, "locked": false,
+          "roundness": {"type": 3}
+        },
+        {
+          "type": "ellipse",
+          "id": "toggle-thumb",
+          "x": 22, "y": 5, "width": 18, "height": 18,
+          "strokeColor": "#ffffff", "backgroundColor": "#ffffff",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 854, "version": 1, "versionNonce": 855,
+          "isDeleted": false, "groupIds": ["toggle"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "toggle-label",
+          "x": 54, "y": 6, "width": 80, "height": 16,
+          "text": "Toggle on", "originalText": "Toggle on",
+          "fontSize": 13, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#495057", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 861, "version": 1, "versionNonce": 862,
+          "isDeleted": false, "groupIds": ["toggle"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-checkbox",
+      "created": 1748995200013,
+      "elements": [
+        {
+          "type": "rectangle",
+          "id": "cb-box",
+          "x": 0, "y": 0, "width": 18, "height": 18,
+          "strokeColor": "#495057", "backgroundColor": "#ffffff",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 1, "opacity": 100, "angle": 0,
+          "seed": 910, "version": 1, "versionNonce": 911,
+          "isDeleted": false, "groupIds": ["cb"],
+          "boundElements": [], "link": null, "locked": false
+        },
+        {
+          "type": "line",
+          "id": "cb-check",
+          "x": 2, "y": 9, "width": 14, "height": 10,
+          "points": [[0, 0], [5, 5], [14, -5]],
+          "strokeColor": "#212529", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 917, "version": 1, "versionNonce": 918,
+          "isDeleted": false, "groupIds": ["cb"],
+          "boundElements": null, "link": null, "locked": false,
+          "startArrowhead": null, "endArrowhead": null, "lastCommittedPoint": null
+        },
+        {
+          "type": "text",
+          "id": "cb-label",
+          "x": 28, "y": 1, "width": 140, "height": 16,
+          "text": "Checkbox label", "originalText": "Checkbox label",
+          "fontSize": 13, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#495057", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 924, "version": 1, "versionNonce": 925,
+          "isDeleted": false, "groupIds": ["cb"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        }
+      ]
+    },
+    {
+      "status": "published",
+      "id": "lowfi-avatar",
+      "created": 1748995200014,
+      "elements": [
+        {
+          "type": "ellipse",
+          "id": "av-circle",
+          "x": 0, "y": 0, "width": 40, "height": 40,
+          "strokeColor": "#adb5bd", "backgroundColor": "#dee2e6",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 973, "version": 1, "versionNonce": 974,
+          "isDeleted": false, "groupIds": ["av"],
+          "boundElements": [{"id": "av-initial", "type": "text"}],
+          "link": null, "locked": false
+        },
+        {
+          "type": "text",
+          "id": "av-initial",
+          "x": 0, "y": 0, "width": 40, "height": 40,
+          "text": "U", "originalText": "U",
+          "fontSize": 16, "fontFamily": 1,
+          "textAlign": "center", "verticalAlign": "middle",
+          "strokeColor": "#868e96", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 980, "version": 1, "versionNonce": 981,
+          "isDeleted": false, "groupIds": ["av"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": "av-circle", "lineHeight": 1.25
+        },
+        {
+          "type": "text",
+          "id": "av-name",
+          "x": 50, "y": 10, "width": 120, "height": 20,
+          "text": "User Name", "originalText": "User Name",
+          "fontSize": 14, "fontFamily": 1,
+          "textAlign": "left", "verticalAlign": "top",
+          "strokeColor": "#212529", "backgroundColor": "transparent",
+          "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
+          "roughness": 0, "opacity": 100, "angle": 0,
+          "seed": 987, "version": 1, "versionNonce": 988,
+          "isDeleted": false, "groupIds": ["av"],
+          "boundElements": null, "link": null, "locked": false,
+          "containerId": null, "lineHeight": 1.25
+        }
+      ]
+    }
+  ]
+}

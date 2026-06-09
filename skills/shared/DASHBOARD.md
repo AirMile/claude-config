@@ -137,7 +137,7 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
 | ------------------- | ------------------- | -------------------------------------------------------------------------------- |
 | `seed`              | **OVERWRITE**       | `name`+`pitch`+`content` overwritten, `thinking` is APPEND                       |
 | `architecture`      | **OVERWRITE**       | Diagram + description fully overwritten                                          |
-| `design`            | **MERGE on `name`** | Pages/flows/principles/components merged on name, never auto-delete              |
+| `design`            | **MERGE on `name`** | Pages/flows/principles/components/canvases merged on name, never auto-delete     |
 | `theme`             | **OVERWRITE**       | All fields owned and written by `/frontend-tokens` (tokens + motion pack routes) |
 | `stack`             | **MERGE**           | Add packages, do not overwrite existing ones                                     |
 | `data`              | **MERGE**           | Add entities/fields/relations per entity                                         |
@@ -898,7 +898,8 @@ Append-only log. Skills that complete features extract learnings automatically (
 | Section             | Written by                                                                                | When                                     |
 | ------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-backlog`           | On seed creation/iteration/plan          |
-| `design`            | `/frontend-design`, `/frontend-tokens`                                                    | On design spec/page build/theme creation |
+| `design`            | `/frontend-design`, `/frontend-tokens`, `/frontend-sketch`                                | On design spec/page build/theme creation |
+| `design.canvases`   | `/frontend-sketch`                                                                        | On new canvas / generate / promote       |
 | `theme`             | `/frontend-tokens`                                                                        | After theme create/update                |
 | `stack`             | `/core-setup`, `/project-backlog`, `/dev-define`, `/dev-build`, `/frontend-design`        | On detection/new deps                    |
 | `data`              | `/dev-define`, `/game-define`                                                             | On entity definition                     |
@@ -926,6 +927,7 @@ Append-only log. Skills that complete features extract learnings automatically (
 | `/frontend-design`          | `design` (pages, flows, principles), `features` (batch TODO)        | —                                                                 | On each run              |
 | `/frontend-design`          | `stack.packages`, `design.pages`, `features` (DOING+built)          | —                                                                 | After PHASE 4            |
 | `/frontend-tokens`          | `design.principles`                                                 | —                                                                 | After completion         |
+| `/frontend-sketch`          | `design.canvases`                                                   | —                                                                 | new / generate / promote |
 | `/game-define`              | `data.entities`, `stack.packages`, `features` (DOING)               | `architecture` (write)                                            | PHASE 6                  |
 | `/game-build`               | `features` (DOING+built)                                            | `context`, `architecture` (write)                                 | PHASE 5 completion       |
 | `/team-verify`              | `features`, `stack.packages`, `endpoints`, `data.entities`          | `architecture` (write)                                            | PHASE 7 completion       |
@@ -1042,6 +1044,30 @@ The `design` key in `project.json` is managed exclusively by the `frontend-desig
 **`principles[].forbid?: string[]`** — Machine-binding ban-list injected into Convert PHASE 2 codegen prompt. Each item is a natural-language rule or grep-pattern. During code generation, these patterns must not appear in generated output. Examples: `"no hex literals in src/components/"`, `"no Tailwind color class without dark: counterpart"`, `"no @keyframes without prefers-reduced-motion fallback"`. Merged on name along with other principle fields — never auto-deleted.
 
 **`design.banPacks?: string[]`** — Optional shorthand for activating universal rule packs from `shared/ANTI-SLOP.md`. Values: `"tokens"` | `"a11y"` | `"dark"` | `"responsive"` | `"motion"`. When present, Convert PHASE 2 loads the named pack(s) from `ANTI-SLOP.md` and merges them with `principles[].forbid[]`. Using both is valid — project-specific `forbid` entries extend the universal packs.
+
+**`design.canvases[]`** — Low-fi sketch canvases managed by `/frontend-sketch`. One entry per canvas file in `.project/canvas/<slug>.excalidraw`.
+
+```json
+{
+  "name": "login-v1",
+  "pageRef": "login",
+  "frames": [{ "id": "f1", "title": "Variant A — Minimal", "promoted": false }],
+  "mtime": "2026-06-05T14:30:00Z"
+}
+```
+
+| Field     | Type   | Description                                 |
+| --------- | ------ | ------------------------------------------- |
+| `name`    | string | Canvas slug (kebab-case), matches filename  |
+| `pageRef` | string | Optional ref to `design.pages[].name`       |
+| `frames`  | array  | Frames added by `/frontend-sketch generate` |
+| `mtime`   | string | ISO timestamp of last write                 |
+
+`frames[].promoted` — set to `true` by `/frontend-sketch promote`. Never auto-deleted.
+
+**Merge strategy:** MERGE on `name`. `frames[]` merge on `id`. Never auto-delete. Written exclusively by `/frontend-sketch`.
+
+---
 
 **`features[].lastCheckedSha?: string`** — Set by `frontend-check` after a successful runtime-scan of this feature. Used by batch-mode to skip features where `lastCheckedSha === shippedSha` (no code changes since last check).
 
