@@ -65,7 +65,8 @@ IS_WORKTREE=$([ "$(git rev-parse --git-dir)" != "$MAIN_ROOT/.git" ] && echo true
 ```
 
 Build the `Worktree:` line:
-- `$IS_WORKTREE = true`  → `Worktree:    {WT_BRANCH} — UNMERGED (offer in §4.6)`
+
+- `$IS_WORKTREE = true` → `Worktree:    {WT_BRANCH} — UNMERGED (offer in §4.6)`
 - `$IS_WORKTREE = false` → `Worktree:    not in a worktree`
 
 ```
@@ -103,17 +104,17 @@ CWD_PROCS=$(lsof +D "$WT_PATH" 2>/dev/null | awk 'NR>1 && $4=="cwd" && $1~/(node
 If `CWD_PROCS` non-empty → AskUserQuestion:
 
 ```yaml
-header: "Dev server actief"
-question: "{N} Node-proces(sen) draaien nog in deze worktree (waarschijnlijk de dev server). Stoppen voor cleanup?"
+header: "Dev server active"
+question: "{N} Node process(es) are still running in this worktree (probably the dev server). Stop them before cleanup?"
 options:
-  - label: "Ja, stop ze (Aanbevolen)"
-    description: "kill -TERM {pids}, wacht 2s, daarna kill -KILL als ze nog draaien — verhindert orphan-dir na cleanup."
-  - label: "Laat draaien"
-    description: "Ga door; worktree-remove kan een lege .next-map achterlaten."
+  - label: "Yes, stop them (Recommended)"
+    description: "kill -TERM {pids}, wait 2s, then kill -KILL if they are still running — prevents an orphan dir after cleanup."
+  - label: "Keep running"
+    description: "Continue; worktree-remove may leave an empty .next directory behind."
 multiSelect: false
 ```
 
-On "Ja": `kill -TERM $CWD_PROCS 2>/dev/null; sleep 2; kill -KILL $CWD_PROCS 2>/dev/null || true`
+On "Yes": `kill -TERM $CWD_PROCS 2>/dev/null; sleep 2; kill -KILL $CWD_PROCS 2>/dev/null || true`
 
 ### 4.6 Finalize Offer
 
@@ -129,34 +130,34 @@ PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "
 PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
 ```
 
-Decision matrix (zie `shared/FINALIZE.md` voor de canonieke versie):
+Decision matrix (see `shared/FINALIZE.md` for the canonical version):
 
 | TEAM_MODE | PR_STATE                 | Action                                                                                                    |
 | --------- | ------------------------ | --------------------------------------------------------------------------------------------------------- |
-| solo      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {target} after review."` Geen modal. EXIT. |
+| solo      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {target} after review."` No modal. EXIT.    |
 | solo      | `MERGED`                 | AskUserQuestion cleanup-only (modal below, recommended=Cleanup).                                          |
 | solo      | empty / `CLOSED` / no-gh | AskUserQuestion solo-finalize (modal below, recommended=Finalize).                                        |
-| team      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {target} after review."` EXIT.             |
+| team      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {target} after review."` EXIT.              |
 | team      | `MERGED`                 | AskUserQuestion cleanup-only.                                                                             |
-| team      | empty / `CLOSED`         | Print `"Team project: geen PR gevonden. Push + open PR via /team-review."` EXIT.                         |
-| team      | no-gh                    | Print `` "Team mode maar `gh` niet beschikbaar — run `gh auth login` of toggle solo in backlog ⚙." `` EXIT. |
+| team      | empty / `CLOSED`         | Print `"Team project: no PR found. Push + open PR via /team-review."` EXIT.                               |
+| team      | no-gh                    | Print ``"Team mode but `gh` not available — run `gh auth login` or toggle solo in the backlog ⚙."`` EXIT. |
 
 **Offer modal (solo-finalize variant):**
 
 ```yaml
 header: "Finalize worktree"
-question: "Worktree {WT_BRANCH} is gecommit maar nog niet gemerged. Finalize nu — merge naar main + cleanup?"
+question: "Worktree {WT_BRANCH} is committed but not yet merged. Finalize now — merge to main + cleanup?"
 options:
-  - label: "Ja, finalize (Aanbevolen)"
-    description: "Merge {WT_BRANCH} → main (no-ff), verwijder branch + worktree directory"
+  - label: "Yes, finalize (Recommended)"
+    description: "Merge {WT_BRANCH} → main (no-ff), delete branch + worktree directory"
   - label: "Later"
-    description: "Worktree blijft staan. Draai later: /core-finalize {target}"
+    description: "Worktree stays in place. Run later: /core-finalize {target}"
 multiSelect: false
 ```
 
-**Offer modal (cleanup-only variant):** identical maar question = "PR is al gemerged. Cleanup nu — branch + worktree verwijderen?" en label "Ja, cleanup".
+**Offer modal (cleanup-only variant):** identical but question = "PR is already merged. Cleanup now — delete branch + worktree?" and label "Yes, cleanup".
 
-**On "Ja":**
+**On "Yes":**
 
 > **Todo**: Read `.claude/skills/shared/FINALIZE.md` and execute the full procedure (Branch Resolution → Uncommitted Check → Solo-Merge OR Cleanup → Output Report) using `feature-name = {target}` and the detected `mode`.
 

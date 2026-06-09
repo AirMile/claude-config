@@ -44,27 +44,27 @@ REFACTORED/CLEAN only (skip ROLLED_BACK):
 | Source                                       | learning.type | learning.source |
 | -------------------------------------------- | ------------- | --------------- |
 | `decisions[]` (APPLY, cross-cutting)         | `pitfall`     | `inferred`      |
-| `decisions[]` (APPLY, overig)                | `pattern`     | `extracted`     |
+| `decisions[]` (APPLY, other)                 | `pattern`     | `extracted`     |
 | `decisions[]` (SKIP, cross-feature relevant) | `pattern`     | `inferred`      |
 | `positiveObservations[]`                     | `observation` | `inferred`      |
 
-**APPLY → pitfall criteria (≥1 vereist):**
+**APPLY → pitfall criteria (≥1 required):**
 
-- **Cross-cutting**: raakt naming, typing, error-handling, layering/architectuur, dependency-richting, DRY-violation tegen bestaande shared/utility, async/sync misbruik, of security-gevoelig domein (input validation, auth checks, data leak).
-- **Convention-derived**: fix is direct herleidbaar tot een regel in `shared/PATTERNS.md`, een bestaande `pattern` learning in `project-context.json`, of een convention in `project.json#context.patterns`.
-- **Auto-promote**: bestaat er al een `pattern` learning met dezelfde dedup-key (zie `shared/LEARNING-EXTRACTION.md § Dedup Tokenizer`) → emit als `pitfall` in plaats van pattern.
+- **Cross-cutting**: touches naming, typing, error handling, layering/architecture, dependency direction, a DRY violation against an existing shared/utility, async/sync misuse, or a security-sensitive domain (input validation, auth checks, data leak).
+- **Convention-derived**: the fix is directly traceable to a rule in `shared/PATTERNS.md`, an existing `pattern` learning in `project-context.json`, or a convention in `project.json#context.patterns`.
+- **Auto-promote**: if a `pattern` learning with the same dedup-key already exists (see `shared/LEARNING-EXTRACTION.md § Dedup Tokenizer`) → emit as `pitfall` instead of pattern.
 
-Niet als pitfall markeren als: fix is feature-specifiek (één entity/route/business-rule), puur performance zonder generaliseerbaar principe, of cosmetisch (whitespace, comment).
+Do not mark as pitfall if: the fix is feature-specific (a single entity/route/business rule), pure performance without a generalizable principle, or cosmetic (whitespace, comment).
 
-Pitfall-summary framing (negatief, ≤200 chars): `Avoid {anti-pattern}: {why}. Refactor extracted to {fix-location}.`
+Pitfall-summary framing (negative, ≤200 chars): `Avoid {anti-pattern}: {why}. Refactor extracted to {fix-location}.`
 
 **SKIP → pattern criteria:**
 
-Emit alleen als rationale een algemeen principe beschrijft: security, numerieke correctheid, browser-compat, async-ordering, race-condition guard. Feature-specifieke business logic → niet emiten.
+Emit only if the rationale describes a general principle: security, numerical correctness, browser compat, async ordering, race-condition guard. Feature-specific business logic → do not emit.
 
-Convention-framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
+Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
-**Filter en dedup:** cross-feature relevance only. Schema/dedup: same as dev-verify completion-sync.md § Step 3b (Jaccard 0.55). Append to `project-context.json → learnings[]` (written in step 3). Log confirmation or "no learnings — skip".
+**Filter and dedup:** cross-feature relevance only. Schema/dedup: same as dev-verify completion-sync.md § Step 3b (Jaccard 0.55). Append to `project-context.json → learnings[]` (written in step 3). Log confirmation or "no learnings — skip".
 
 ## Step 3 — Parallel sync
 

@@ -18,7 +18,7 @@ Implement fixes in priority order, grouped by audit category.
 10. **A11Y runtime** (focus-trap, aria-snapshot, axe, console warnings): focus management → ARIA states → keyboard traps → live regions
 11. **Motion** (M006/M007): missing reduced-motion fallbacks
 
-*Note: generation-time bans (token literals, dark/responsive coverage, static A11Y patterns) are enforced during `/frontend-design` Convert — not fixed here.*
+_Note: generation-time bans (token literals, dark/responsive coverage, static A11Y patterns) are enforced during `/frontend-design` Convert — not fixed here._
 
 ### Context7 Research
 
@@ -147,17 +147,17 @@ Runs only when: feature-name is known (backlog feature targeted, not URL-only) a
 If all true → AskUserQuestion:
 
 ```yaml
-header: "PR openen"
-question: "Push + PR openen voor worktree-{feature-name}?"
+header: "Open PR"
+question: "Push + open a PR for worktree-{feature-name}?"
 options:
-  - label: "Ja, push + PR (Recommended)"
-    description: "Push branch en open PR via gh. Worktree blijft tot merge."
-  - label: "Nee, skip PR"
-    description: "Skip PR; toon finalize prompt instead."
+  - label: "Yes, push + PR (Recommended)"
+    description: "Push the branch and open a PR via gh. Worktree stays until merged."
+  - label: "No, skip PR"
+    description: "Skip the PR; show finalize prompt instead."
 multiSelect: false
 ```
 
-On "Ja" → follow `shared/PR.md`. Print PR URL. Suppress finalize prompt below.
+On "Yes" → follow `shared/PR.md`. Print PR URL. Suppress finalize prompt below.
 On "Nee" or any precondition fail → fall through to finalize prompt (PHASE 5).
 
 ---

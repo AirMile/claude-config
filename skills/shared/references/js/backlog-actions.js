@@ -100,16 +100,16 @@
   var detailActions = document.querySelector("#detail-modal .detail-actions");
   if (detailActions) {
     detailActions.querySelectorAll("button").forEach(function (b) {
-      if (b.id === "detail-edit" || b.textContent.match(/bewerk/i)) {
-        b.innerHTML = "✎ Bewerk";
-        b.title = "Bewerken";
+      if (b.id === "detail-edit" || b.textContent.match(/bewerk|edit/i)) {
+        b.innerHTML = "✎ Edit";
+        b.title = "Edit";
       }
-      if (b.id === "detail-delete" || b.textContent.match(/verwijder/i)) {
-        b.innerHTML = "✕ Verwijder";
-        b.title = "Verwijderen";
+      if (b.id === "detail-delete" || b.textContent.match(/verwijder|delete/i)) {
+        b.innerHTML = "✕ Delete";
+        b.title = "Delete";
         b.className = "btn-danger";
       }
-      if (b.classList.contains("btn-cancel") || b.textContent.match(/sluit/i))
+      if (b.classList.contains("btn-cancel") || b.textContent.match(/sluit|close/i))
         b.remove();
     });
   }
@@ -117,7 +117,7 @@
     var copyBtn = document.createElement("button");
     copyBtn.id = "detail-copy";
     copyBtn.className = "btn-copy";
-    copyBtn.innerHTML = copySvg + " Kopieer";
+    copyBtn.innerHTML = copySvg + " Copy";
     copyBtn.style.display = "none";
     detailActions.insertBefore(copyBtn, detailActions.firstChild);
     copyBtn.addEventListener("click", function () {
@@ -217,7 +217,7 @@
           '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>';
         if (verb) {
           var cmd = "/" + prefix + "-" + verb + " " + found.item.name;
-          cb.innerHTML = copySvg + " Kopieer";
+          cb.innerHTML = copySvg + " Copy";
           cb.title = cmd;
           cb.dataset.cmd = cmd;
           cb.style.display = "";

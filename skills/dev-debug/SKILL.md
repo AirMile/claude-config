@@ -271,7 +271,7 @@ Analyze:
 7. Check FEATURE_REQUIREMENTS (from PHASE 0): does the root cause match a requirement that was incorrectly implemented? If so, mark as **spec-issue** — in PHASE 6 fix-thorough is recommended (minimal fixes the symptom, not the spec deviation).
 8. Identify knowledge gaps for PHASE 4
 
-**Runtime-state inspectie (UI-bugs):** voor hypothese-validatie waarbij DOM-snapshot of screenshot niet genoeg is — denk: state-store contents, computed styles, runtime-waarden, framework-internals. Gebruik `playwright-cli eval "() => ({ ... })"` voor synchrone JS-expressies, of `run-code` voor async patterns. Zie `shared/PLAYWRIGHT.md → Overview` voor de mapping en `Use Cases: Performance Measurement` voor een PerformanceObserver-voorbeeld.
+**Runtime-state inspection (UI bugs):** for hypothesis validation where a DOM snapshot or screenshot is not enough — think: state-store contents, computed styles, runtime values, framework internals. Use `playwright-cli eval "() => ({ ... })"` for synchronous JS expressions, or `run-code` for async patterns. See `shared/PLAYWRIGHT.md → Overview` for the mapping and `Use Cases: Performance Measurement` for a PerformanceObserver example.
 
 Present findings + hypothesis + confidence (high/medium/low) + spec-issue marking (yes/no) + research topics needed.
 

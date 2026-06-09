@@ -14,7 +14,7 @@ Three signals:
 
 `core-setup --mode=mature` detects this automatically and writes `CLAUDE.local.md` (not `CLAUDE.md`) so your configuration does not end up in the repo.
 
-> **Tweede gebruiker van deze heuristiek:** `core-setup/references/mode-mature.md` PHASE 0.55 gebruikt dezelfde drie signalen om `team.mode` in `project.json` voor te stellen. Als je de drempelwaarden aanpast, controleer dan ook PHASE 0.55.
+> **Second consumer of this heuristic:** `core-setup/references/mode-mature.md` PHASE 0.55 uses the same three signals to propose `team.mode` in `project.json`. If you adjust the threshold values, also check PHASE 0.55.
 
 ## Skills per phase
 

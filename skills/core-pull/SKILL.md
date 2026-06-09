@@ -57,16 +57,16 @@ If `open_worktrees` is not empty → **AskUserQuestion**:
 
 ```yaml
 header: "Open worktrees"
-question: "Open worktrees gevonden: {list}. core-pull reset `.project/` op main — dat wist de symlinks die worktree-state naar main schrijven. Wat wil je doen?"
+question: "Open worktrees found: {list}. core-pull resets `.project/` on main — that wipes the symlinks that write worktree state to main. What do you want to do?"
 options:
   - label: "Stop — merge open worktrees first (Recommended)"
-    description: "Run /core-finalize per open worktree, dan opnieuw /core-pull"
+    description: "Run /core-finalize per open worktree, then /core-pull again"
   - label: "Continue anyway"
-    description: "Pull nu; worktree-state op main kan verloren gaan (worktree zelf blijft intact)"
+    description: "Pull now; worktree state on main may be lost (the worktree itself stays intact)"
 multiSelect: false
 ```
 
-Bij "Continue anyway" → log waarschuwing in output en ga door naar stap 1.
+On "Continue anyway" → log a warning in the output and continue to step 1.
 
 1. **Clean `.project/` files** (prevent local .project/ changes from interfering with stash/pull):
 

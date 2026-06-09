@@ -4,7 +4,7 @@ Single source of truth for finalizing a feature worktree — either solo-merge (
 
 ## Finalize Offer Decision
 
-Skills die opportunistisch finalize aanbieden (`dev-verify`, `dev-refactor`, `game-verify`, `game-refactor`, `frontend-check`) consulteren deze matrix om te beslissen of/hoe ze de gebruiker prompten. Verschilt van de Detection-matrix hieronder: dit gaat over **of we vragen**, niet over **wat finalize uitvoert**.
+Skills that opportunistically offer finalize (`dev-verify`, `dev-refactor`, `game-verify`, `game-refactor`, `frontend-check`) consult this matrix to decide whether/how to prompt the user. Differs from the Detection matrix below: this is about **whether we ask**, not about **what finalize executes**.
 
 Read `TEAM_MODE` + detect PR state:
 
@@ -18,17 +18,17 @@ PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
 
 Dispatch:
 
-| TEAM_MODE | PR_STATE                 | Action                                                                                                      |
-| --------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| solo      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.      |
-| solo      | `MERGED`                 | AskUserQuestion cleanup ("Cleanup nu? Worktree + branch verwijderen.") → `FINALIZE.md` mode `cleanup-only`. |
-| solo      | empty / `CLOSED` / no-gh | AskUserQuestion finalize ("Finalize nu — merge naar main + cleanup?") → `FINALIZE.md` mode `solo`.          |
-| team      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.      |
-| team      | `MERGED`                 | AskUserQuestion cleanup → `FINALIZE.md` mode `cleanup-only`.                                                |
-| team      | empty / `CLOSED`         | Print `"Team project: geen PR gevonden. Push + open PR via /team-review."` Halt — geen auto-merge.          |
-| team      | no-gh                    | Print `"Team mode maar \`gh\` niet beschikbaar — run \`gh auth login\` of toggle solo in backlog ⚙."` Halt. |
+| TEAM_MODE | PR_STATE                 | Action                                                                                                     |
+| --------- | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| solo      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.     |
+| solo      | `MERGED`                 | AskUserQuestion cleanup ("Cleanup now? Remove worktree + branch.") → `FINALIZE.md` mode `cleanup-only`.    |
+| solo      | empty / `CLOSED` / no-gh | AskUserQuestion finalize ("Finalize now — merge to main + cleanup?") → `FINALIZE.md` mode `solo`.          |
+| team      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.     |
+| team      | `MERGED`                 | AskUserQuestion cleanup → `FINALIZE.md` mode `cleanup-only`.                                               |
+| team      | empty / `CLOSED`         | Print `"Team project: no PR found. Push + open PR via /team-review."` Halt — no auto-merge.                |
+| team      | no-gh                    | Print `"Team mode but \`gh\` is not available — run \`gh auth login\` or toggle solo in backlog ⚙."` Halt. |
 
-On "Keep open" (alleen mogelijk in solo paths of team `MERGED`) → print `💡 Run /core-finalize {feature-name} when ready`.
+On "Keep open" (only possible in solo paths or team `MERGED`) → print `💡 Run /core-finalize {feature-name} when ready`.
 
 ---
 

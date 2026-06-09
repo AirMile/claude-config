@@ -325,7 +325,7 @@ Design in three steps:
 - `requirements.length ≥ 4`, OR
 - `≥1 durableDecision` was recorded in this PHASE 2.
 
-Below the threshold → skip silently (no plan-file section, no `seedDrift` carry, no sibling-cascade either — same threshold). Rationale: triviale features (config-tweaks, single-REQ bug-fixes) leveren geen meaningful drift-signaal en zouden de check tot ruis maken.
+Below the threshold → skip silently (no plan-file section, no `seedDrift` carry, no sibling-cascade either — same threshold). Rationale: trivial features (config tweaks, single-REQ bug fixes) yield no meaningful drift signal and would turn the check into noise.
 
 When triggered: follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ
 descriptions + `acceptance[].then` + `durableDecisions[]`. This skill is in plan

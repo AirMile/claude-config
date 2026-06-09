@@ -521,8 +521,8 @@
       "</div>" +
       '<div class="theme-editor-actions">' +
       '<button class="theme-editor-reset">Reset</button>' +
-      '<button class="theme-editor-cancel">Annuleren</button>' +
-      '<button class="theme-editor-save">Opslaan</button>' +
+      '<button class="theme-editor-cancel">Cancel</button>' +
+      '<button class="theme-editor-save">Save</button>' +
       "</div>" +
       "</div>";
 
@@ -657,7 +657,7 @@
   // ─── Init on DOM ready ─────────────────────────────────────
 
   function init() {
-    // Picker UI alleen op het hoofdmenu (/)
+    // Picker UI only on the main menu (/)
     if (location.pathname === "/") {
       var picker = createPicker();
       document.body.appendChild(picker);

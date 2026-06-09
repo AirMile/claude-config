@@ -115,28 +115,28 @@ REFACTORED/CLEAN only (skip ROLLED_BACK):
 | Source                                       | learning.type | learning.source |
 | -------------------------------------------- | ------------- | --------------- |
 | `decisions[]` (APPLY, cross-cutting)         | `pitfall`     | `inferred`      |
-| `decisions[]` (APPLY, overig)                | `pattern`     | `extracted`     |
+| `decisions[]` (APPLY, other)                 | `pattern`     | `extracted`     |
 | `decisions[]` (SKIP, cross-feature relevant) | `pattern`     | `inferred`      |
 | `positiveObservations[]`                     | `observation` | `inferred`      |
 
-**APPLY → pitfall criteria (≥1 vereist):**
+**APPLY → pitfall criteria (≥1 required):**
 
-- **Cross-cutting**: raakt naming, typing (GDScript type-hints), error-handling, layering, DRY-violation tegen bestaande shared/utility, async/sync misbruik.
-- **Godot-specifiek**: signal-pollution (te veel `connect()`-chains op één node), node-lifecycle violations (`_ready` doet werk dat in `_init` hoort of vice versa), autoload-misbruik, scene-leaks (`queue_free` ontbreekt na instantiation), shader/material-allocaties in `_process`, `_physics_process` vs `_process` keuze, hardcoded paths (`get_node("../../../foo")`) i.p.v. `@onready var`, security-gevoelig bij netcode (input validation, state authority leak).
-- **Convention-derived**: fix is direct herleidbaar tot een regel in `.claude/research/architecture-baseline.md`, een bestaande `pattern` learning in `project-context.json`, of `context.patterns` in `project.json`.
-- **Auto-promote**: bestaat er al een `pattern` learning met dezelfde dedup-key (zie `shared/LEARNING-EXTRACTION.md § Dedup Tokenizer`) → emit als `pitfall` in plaats van pattern.
+- **Cross-cutting**: touches naming, typing (GDScript type-hints), error handling, layering, a DRY violation against an existing shared/utility, async/sync misuse.
+- **Godot-specific**: signal pollution (too many `connect()` chains on a single node), node-lifecycle violations (`_ready` doing work that belongs in `_init` or vice versa), autoload misuse, scene leaks (missing `queue_free` after instantiation), shader/material allocations in `_process`, the `_physics_process` vs `_process` choice, hardcoded paths (`get_node("../../../foo")`) instead of `@onready var`, security-sensitive netcode (input validation, state authority leak).
+- **Convention-derived**: the fix is directly traceable to a rule in `.claude/research/architecture-baseline.md`, an existing `pattern` learning in `project-context.json`, or `context.patterns` in `project.json`.
+- **Auto-promote**: if a `pattern` learning with the same dedup-key already exists (see `shared/LEARNING-EXTRACTION.md § Dedup Tokenizer`) → emit as `pitfall` instead of pattern.
 
-Niet als pitfall markeren als: fix is feature-specifiek (één scene/node/script zonder generaliseerbaar principe), puur performance zonder architectural implicaties, of cosmetisch (whitespace, comment).
+Do not mark as pitfall if: the fix is feature-specific (a single scene/node/script without a generalizable principle), pure performance without architectural implications, or cosmetic (whitespace, comment).
 
-Pitfall-summary framing (negatief, ≤200 chars): `Avoid {anti-pattern}: {why}. Refactor extracted to {fix-location}.`
+Pitfall-summary framing (negative, ≤200 chars): `Avoid {anti-pattern}: {why}. Refactor extracted to {fix-location}.`
 
 **SKIP → pattern criteria:**
 
-Emit alleen als rationale een algemeen principe beschrijft: security/netcode, numerieke correctheid (delta-timing), platform-compat, frame-ordering, race conditions tegen autoload init. Feature-specifieke business logic → niet emiten.
+Emit only if the rationale describes a general principle: security/netcode, numerical correctness (delta-timing), platform compat, frame ordering, race conditions against autoload init. Feature-specific business logic → do not emit.
 
-Convention-framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
+Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
-**Filter en dedup:** cross-feature relevance only. Schema/dedup: same as game-verify completion-sync.md § Step 3b (Jaccard 0.55). Append to `project-context.json → learnings[]` (add to the in-memory mutation from Step 2 and write in the parallel write-back above). Log confirmation or "no learnings — skip".
+**Filter and dedup:** cross-feature relevance only. Schema/dedup: same as game-verify completion-sync.md § Step 3b (Jaccard 0.55). Append to `project-context.json → learnings[]` (add to the in-memory mutation from Step 2 and write in the parallel write-back above). Log confirmation or "no learnings — skip".
 
 ## Step 3 — Scoped auto-commit
 
@@ -218,18 +218,18 @@ Next steps:
 **Step A — PR offer** (show only if ALL: `TEAM_MODE === "team"` (read via `shared/PROJECT-MODE.md`), `gh` on PATH + `gh auth status` exit 0, clean tree):
 
 ```yaml
-header: "PR openen"
-question: "Push + PR openen voor worktree-{feature-name}?"
+header: "Open PR"
+question: "Push + open PR for worktree-{feature-name}?"
 options:
-  - label: "Ja, push + PR (Recommended)"
+  - label: "Yes, push + PR (Recommended)"
     description: "Push the branch and open a PR via gh. Worktree stays until merged."
-  - label: "Nee, skip PR"
+  - label: "No, skip PR"
     description: "Skip the PR; show finalize prompt instead."
 multiSelect: false
 ```
 
-On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
-On "Nee" or any precondition fail → fall through to finalize prompt.
+On "Yes" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
+On "No" or any precondition fail → fall through to finalize prompt.
 
 **Step B — Finalize prompt**: follow `shared/FINALIZE.md → Finalize Offer Decision`.
 

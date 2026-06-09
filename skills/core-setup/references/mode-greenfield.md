@@ -433,17 +433,17 @@ Install dev tools that are framework-conditional and require no user input. No m
 
 **Trigger:** `stack.type` is `Web Frontend` or `Fullstack` (from Phase 2.3/2.4).
 
-Skills zoals `/frontend-design Build` en `/frontend-check` dragen `playwright-cli` (daemon) en `@axe-core/playwright` (a11y) nodig voor smoke-checks. Auto-installeer zodat skills direct werken op een nieuw project.
+Skills such as `/frontend-design Build` and `/frontend-check` need `playwright-cli` (daemon) and `@axe-core/playwright` (a11y) for smoke checks. Auto-install so skills work immediately on a new project.
 
-| Conditie                                     | Actie                                       |
-| -------------------------------------------- | ------------------------------------------- |
-| frontend of fullstack stack                  | Auto-install — geen modal, geen bevestiging |
-| game / CLI / backend-only / mobile / desktop | Overslaan — geen output                     |
+| Condition                                    | Action                                   |
+| -------------------------------------------- | ---------------------------------------- |
+| frontend or fullstack stack                  | Auto-install — no modal, no confirmation |
+| game / CLI / backend-only / mobile / desktop | Skip — no output                         |
 
-**Installatie (geen modal):**
+**Installation (no modal):**
 
 ```bash
-# Daemon (globaal)
+# Daemon (global)
 npm install -g @playwright/cli@latest
 npx @playwright/cli install chromium
 
@@ -451,9 +451,9 @@ npx @playwright/cli install chromium
 {pkgmgr} install --save-dev @playwright/test @axe-core/playwright
 ```
 
-**Track voor Phase 9 Summary**: of playwright-toolchain geïnstalleerd is (ja/nee).
+**Track for Phase 9 Summary**: whether the playwright toolchain was installed (yes/no).
 
-**Geen project.json update nodig** — playwright is dev-only, geen `stack.*` key.
+**No project.json update needed** — playwright is dev-only, no `stack.*` key.
 
 ---
 

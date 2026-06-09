@@ -216,7 +216,7 @@ if [ -n "$UPSTREAM" ]; then
     echo "BASE: fetch $REMOTE failed (no network or auth) — branching from local $DEFAULT"
   fi
 fi
-# Geen upstream → silent, worktree branches from local HEAD
+# No upstream → silent, worktree branches from local HEAD
 
 # Create worktree from local $DEFAULT — bypasses worktree.baseRef setting
 git -C "$main_root" worktree add -b "$WT_NAME" "$WT_PATH" "$DEFAULT"
@@ -224,14 +224,14 @@ git -C "$main_root" worktree add -b "$WT_NAME" "$WT_PATH" "$DEFAULT"
 
 Outcome matrix:
 
-| Situatie                         | Actie                              | Output                                                                    |
-| -------------------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
-| Geen upstream (lokale-only repo) | `worktree add` vanaf lokale main   | (silent)                                                                  |
-| Local == origin                  | fetch, geen pull nodig             | (silent)                                                                  |
-| Local behind origin (ancestor)   | fetch + ff-only pull               | `BASE: pulled main from origin/main (3 commits)`                          |
-| Local ahead of origin            | fetch, pull no-op, log local-ahead | `BASE: local main is 15 commits ahead of origin/main — local merges included` |
-| Local diverged van origin        | fetch, ff-only faalt               | `BASE: local main diverged from origin/main …`                            |
-| Fetch faalt (network/auth)       | `worktree add` vanaf lokale main   | `BASE: fetch origin failed — branching from local main`                   |
+| Situation                      | Action                             | Output                                                                        |
+| ------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------- |
+| No upstream (local-only repo)  | `worktree add` from local main     | (silent)                                                                      |
+| Local == origin                | fetch, no pull needed              | (silent)                                                                      |
+| Local behind origin (ancestor) | fetch + ff-only pull               | `BASE: pulled main from origin/main (3 commits)`                              |
+| Local ahead of origin          | fetch, pull no-op, log local-ahead | `BASE: local main is 15 commits ahead of origin/main — local merges included` |
+| Local diverged from origin     | fetch, ff-only fails               | `BASE: local main diverged from origin/main …`                                |
+| Fetch fails (network/auth)     | `worktree add` from local main     | `BASE: fetch origin failed — branching from local main`                       |
 
 Then `EnterWorktree(path: "$WT_PATH")` — enters the already-created worktree. Using `path:` bypasses `worktree.baseRef` since the branch and directory already exist.
 
@@ -485,13 +485,13 @@ COMPARE_REF="$DEFAULT"
 BEHIND=$(git -C "$main_root" log --oneline "worktree-{feature-name}..$COMPARE_REF" 2>/dev/null | wc -l | tr -d ' ')
 ```
 
-Fetch faalt silently → pull skip, COMPARE_REF blijft lokale `$DEFAULT`. Check werkt altijd, ongeacht remote-status.
+Fetch fails silently → pull skipped, COMPARE_REF stays local `$DEFAULT`. The check always works, regardless of remote status.
 
 ---
 
-**Als `BEHIND == 0`**: skip silently, continue to Step 5.
+**If `BEHIND == 0`**: skip silently, continue to Step 5.
 
-**Als `BEHIND > 0`**: silent rebase.
+**If `BEHIND > 0`**: silent rebase.
 
 ```bash
 git -C "{worktree_path}" branch -f "worktree-{feature-name}-pre-rebase"

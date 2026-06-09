@@ -210,42 +210,42 @@ Next steps:
 If all true → AskUserQuestion:
 
 ```yaml
-header: "PR openen"
-question: "Push + PR openen voor worktree-{feature-name}?"
+header: "Open PR"
+question: "Push + open a PR for worktree-{feature-name}?"
 options:
-  - label: "Ja, push + PR (Recommended)"
+  - label: "Yes, push + PR (Recommended)"
     description: "Push the branch and open a PR via gh. Worktree stays until merged."
-  - label: "Nee, skip PR"
+  - label: "No, skip PR"
     description: "Skip the PR; show finalize prompt instead."
 multiSelect: false
 ```
 
-On "Ja" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
-On "Nee" or any precondition fail → fall through to finalize prompt.
+On "Yes" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
+On "No" or any precondition fail → fall through to finalize prompt.
 
-**Finalize prompt** — follow `shared/FINALIZE.md → Finalize Offer Decision`. AskUserQuestion-modals voor MERGED en empty/CLOSED state (solo mode, of MERGED ongeacht mode):
+**Finalize prompt** — follow `shared/FINALIZE.md → Finalize Offer Decision`. AskUserQuestion modals for MERGED and empty/CLOSED state (solo mode, or MERGED regardless of mode):
 
 ```yaml
 # For MERGED state:
 header: "PR merged — cleanup"
-question: "PR #{PR_NUMBER} is gemerged ({PR_URL}). Cleanup nu? Worktree + lokale branch worden verwijderd."
+question: "PR #{PR_NUMBER} is merged ({PR_URL}). Clean up now? Worktree + local branch will be removed."
 options:
-  - label: "Yes, cleanup nu (Recommended)"
-    description: "Follow shared/FINALIZE.md cleanup-only — verwijder worktree + branch"
+  - label: "Yes, cleanup now (Recommended)"
+    description: "Follow shared/FINALIZE.md cleanup-only — remove worktree + branch"
   - label: "Keep open"
-    description: "Worktree blijft staan voor follow-up commits"
+    description: "Worktree stays for follow-up commits"
 multiSelect: false
 ```
 
 ```yaml
 # For solo / empty/CLOSED state:
 header: "Finalize"
-question: "Feature '{feature-name}' afgerond (status: DONE). Finalize nu (merge naar main + cleanup)?"
+question: "Feature '{feature-name}' completed (status: DONE). Finalize now (merge to main + cleanup)?"
 options:
-  - label: "Yes, finalize nu (Recommended)"
-    description: "Follow shared/FINALIZE.md solo-mode — merge worktree naar main + cleanup"
+  - label: "Yes, finalize now (Recommended)"
+    description: "Follow shared/FINALIZE.md solo-mode — merge worktree to main + cleanup"
   - label: "Keep open"
-    description: "Worktree blijft open, finalize later via /game-refactor"
+    description: "Worktree stays open, finalize later via /game-refactor"
 multiSelect: false
 ```
 

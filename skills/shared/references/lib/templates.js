@@ -253,7 +253,7 @@ function indexPage(projects) {
 
     function renderModal() {
       if (cache === null) {
-        modal.innerHTML = '<div style="color:var(--muted);padding:12px">Laden...</div>';
+        modal.innerHTML = '<div style="color:var(--muted);padding:12px">Loading...</div>';
         fetch("/global/claude-md").then(function(r){return r.json()}).then(function(d) {
           cache = d.content || "";
           renderModal();
@@ -264,8 +264,8 @@ function indexPage(projects) {
       if (editing) {
         modal.innerHTML =
           '<div class="config-header"><h3>~/.claude/CLAUDE.md</h3><div style="display:flex;gap:8px">' +
-          '<button class="config-btn config-btn-save" id="gcfg-save">Opslaan</button>' +
-          '<button class="config-btn config-btn-cancel" id="gcfg-cancel">Annuleren</button>' +
+          '<button class="config-btn config-btn-save" id="gcfg-save">Save</button>' +
+          '<button class="config-btn config-btn-cancel" id="gcfg-cancel">Cancel</button>' +
           '</div></div>' +
           '<textarea id="gcfg-editor" style="width:100%;min-height:400px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:monospace;font-size:13px;line-height:1.5;resize:vertical;tab-size:2">' + esc(cache) + '</textarea>';
         return;
@@ -301,7 +301,7 @@ function indexPage(projects) {
         if (!ta) return;
         fetch("/global/claude-md", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({content:ta.value}) })
           .then(function(r){return r.json()}).then(function(d) { if(d.ok){cache=ta.value;editing=false;renderModal()} })
-          .catch(function(err){alert("Opslaan mislukt: "+err.message)});
+          .catch(function(err){alert("Save failed: "+err.message)});
       }
     });
   })();

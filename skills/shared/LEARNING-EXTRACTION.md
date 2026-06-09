@@ -6,11 +6,11 @@ Shared rules for extracting learnings from teammate code and mature codebases. U
 
 ---
 
-## MVP Signalen (regex/AST, deterministisch, 0 LLM-tokens)
+## MVP Signals (regex/AST, deterministic, 0 LLM tokens)
 
-### 1. Pitfalls uit fix-commits
+### 1. Pitfalls from fix-commits
 
-**Detectie:**
+**Detection:**
 
 ```bash
 git log --grep='^fix\|^bugfix' --format='%H|%an|%s%n%b' $RANGE
@@ -31,14 +31,14 @@ git log --grep='^fix\|^bugfix' --format='%H|%an|%s%n%b' $RANGE
   "type": "pitfall",
   "source": "synced",
   "author": "{commit author}",
-  "feature": "{primary-directory uit changed files}",
+  "feature": "{primary directory from changed files}",
   "summary": "{commit subject without 'fix:' prefix} — {body summary max 200 chars}"
 }
 ```
 
-### 2. Pitfalls uit code-comments
+### 2. Pitfalls from code-comments
 
-**Detectie:**
+**Detection:**
 
 ```bash
 grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' {scope}
@@ -65,7 +65,7 @@ grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' {scope}
 }
 ```
 
-### 3. Patterns uit nieuwe abstraction-dirs
+### 3. Patterns from new abstraction-dirs
 
 **Detection:** compare component list (from `core-pull` PHASE 4f / `core-setup --mode=mature` PHASE 2) against existing `architecture.components[]` in `project-context.json`.
 
@@ -96,9 +96,9 @@ grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' {scope}
 }
 ```
 
-### 4. Patterns uit nieuwe wrapper-deps
+### 4. Patterns from new wrapper-deps
 
-**Detectie:**
+**Detection:**
 
 ```bash
 git diff $RANGE -- package.json
@@ -165,12 +165,12 @@ Behavior of `learning-extractor` agent differs per skill:
 
 ### `core-pull` (signal-triggered)
 
-- **Input**: lijst paden van getriggerde files
+- **Input**: list of paths of triggered files
 - **Scope**: read only those files, no wider scan
 - **Output**: 0-5 patterns/pitfalls
 - **Cap**: max 5 entries
 
-### `core-setup --mode=mature` (eenmalig, mature codebase)
+### `core-setup --mode=mature` (one-time, mature codebase)
 
 - **Input**: representative files per component (5-10 per component, chosen based on: file size > 50 LOC, not test files, not generated)
 - **Scope**: naming conventions + error handling style + response shapes + architecture patterns
@@ -200,8 +200,8 @@ Tokenization algorithm. Used for:
 **Steps:**
 
 1. Lowercase
-2. Strip leestekens (`.,;:!?()[]{}'"` → spaties)
-3. Split op whitespace
+2. Strip punctuation (`.,;:!?()[]{}'"` → spaces)
+3. Split on whitespace
 4. Filter stopwords:
    ```
    de het een en of maar dus dat die deze dit met via voor bij naar van uit op
@@ -212,15 +212,15 @@ Tokenization algorithm. Used for:
    should may might shall not no also all only then when though still just
    ```
 5. Filter tokens with length < 3
-   5b. Suffix-normalisering (tokens met length > 5):
-   - eindigt op `tion` of `sion` → verwijder laatste 3 chars (`condition` → `condit`)
-   - eindigt op `ing` → verwijder laatste 3 chars (`caching` → `cach`)
-   - eindigt op `ed` → verwijder laatste 2 chars (`failed` → `fail`)
-   - eindigt op `s` maar NIET op `ss` → verwijder laatste char (`requests` → `request`)
-   - eindigt op `er` en length > 6 → verwijder laatste 2 chars (`handler` → `handl`)
+   5b. Suffix normalization (tokens with length > 5):
+   - ends in `tion` or `sion` → remove last 3 chars (`condition` → `condit`)
+   - ends in `ing` → remove last 3 chars (`caching` → `cach`)
+   - ends in `ed` → remove last 2 chars (`failed` → `fail`)
+   - ends in `s` but NOT in `ss` → remove last char (`requests` → `request`)
+   - ends in `er` and length > 6 → remove last 2 chars (`handler` → `handl`)
 6. Result: `tokenSet` (unique)
 
-**Dedup-key** voor `learnings[]`: `(type, normalize(summary), author ?? null)`.
+**Dedup key** for `learnings[]`: `(type, normalize(summary), author ?? null)`.
 
 Match = exact tuple match. No Jaccard within one project (only cross-project in `core-promote-learnings`).
 

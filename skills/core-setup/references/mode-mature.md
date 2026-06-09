@@ -596,16 +596,16 @@ Both conditions true → show AskUserQuestion:
 
 ```yaml
 header: "Playwright toolchain"
-question: "Frontend-skills verwachten playwright-cli + @axe-core/playwright voor smoke-checks. Dit project heeft het nog niet. Installeren?"
+question: "Frontend skills expect playwright-cli + @axe-core/playwright for smoke checks. This project does not have it yet. Install?"
 options:
-  - label: "Installeer (Aanbevolen)"
-    description: "playwright-cli (globaal) + @playwright/test + @axe-core/playwright (devDeps)"
-  - label: "Overslaan"
-    description: "Niet installeren — smoke-checks in frontend-design zullen gefaald melden"
+  - label: "Install (Recommended)"
+    description: "playwright-cli (global) + @playwright/test + @axe-core/playwright (devDeps)"
+  - label: "Skip"
+    description: "Do not install — smoke checks in frontend-design will report failure"
 multiSelect: false
 ```
 
-**On "Installeer" or "Let Claude decide":**
+**On "Install" or "Let Claude decide":**
 
 ```bash
 npm install -g @playwright/cli@latest
@@ -615,7 +615,7 @@ npx @playwright/cli install chromium
 
 Add `playwright-toolchain` to `installed_in_session[]`.
 
-**Condition not triggered or "Overslaan":** no action.
+**Condition not triggered or "Skip":** no action.
 
 Do not expand to other libraries — tier-1 modules with a stack slot go through PHASE 0.6/5.8. PHASE 5.65 is exclusively for dev-tools without a stack slot.
 
