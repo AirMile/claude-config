@@ -10,7 +10,9 @@ const HIDDEN_BRANCHES = new Set(["main", "master"]);
 function formatDuration(epochSec) {
   const ms = epochSec * 1000 - Date.now();
   if (ms <= 0) return null;
-  const totalMin = Math.floor(ms / 60_000);
+  const totalSec = Math.floor(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const totalMin = Math.floor(totalSec / 60);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
   if (h === 1 && m === 0) return "60m";
@@ -45,10 +47,15 @@ function formatSession(rl) {
 function formatWeekDuration(epochSec) {
   const ms = epochSec * 1000 - Date.now();
   if (ms <= 0) return null;
-  const totalH = Math.floor(ms / 3_600_000);
+  const totalSec = Math.floor(ms / 1000);
+  const totalMin = Math.floor(totalSec / 60);
+  const totalH = Math.floor(totalMin / 60);
   const d = Math.floor(totalH / 24);
   const h = totalH % 24;
-  return d > 0 ? `${d}d ${h}h` : `${h}h`;
+  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
+  if (totalH > 0) return `${totalH}h`;
+  if (totalMin > 0) return `${totalMin}m`;
+  return `${totalSec}s`;
 }
 
 function formatWeek(rl) {
