@@ -17,13 +17,14 @@ Full OWASP Top 10:2025 scan: scope → 10 parallel scanners → aggregated repor
 
 1. PHASE 1: Scope
 2. PHASE 2: Parallel Scan
-3. PHASE 3: Aggregation & Report
-4. PHASE 4: Fix Plans
-5. PHASE 5: Selection & Implementation
+3. PHASE 2b: Supply-chain & SAST tooling
+4. PHASE 3: Aggregation & Report
+5. PHASE 4: Fix Plans
+6. PHASE 5: Selection & Implementation
 
 ## PHASE 1: Scope
 
-> **Todo**: call `TaskCreate` with the 5 phase items (see above). Mark PHASE 1 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 1 → `in_progress` via `TaskUpdate`.
 
 ### Step 1: Detect tech stack
 
@@ -105,9 +106,27 @@ Run all 10 in background. Collect results when all complete.
 
 ---
 
+## PHASE 2b: Supply-chain & SAST tooling
+
+> **Todo**: mark PHASE 2 → `completed`, PHASE 2b → `in_progress`.
+
+LLM pattern scanners (PHASE 2) miss CVE data and malicious-package signals. Supplement with OSS tooling. Read `references/supply-chain.md` for the full procedure (OSV-Scanner V2 + Semgrep CE detection, invocation, severity mapping).
+
+**Steps summarized:**
+
+1. Detect lockfiles (`package-lock.json`, `yarn.lock`, etc.). No lockfile → skip with log.
+2. Run `osv-scanner --format=json scan source ./` → `.project/owasp/osv-report.json`.
+3. Run `semgrep ci --config auto --json` → `.project/owasp/semgrep-report.json`. Semgrep not installed → skip with log (not a blocker).
+4. Merge findings into the A03 category of the PHASE 3 aggregation. OSV severity mapping: CRITICAL/HIGH/MODERATE/LOW → OWASP severity 1-to-1.
+5. Tools not installed → log an installation hint, not a blocker. User can rerun after install.
+
+**Threshold:** CRITICAL OSV vuln with `fixed_version` → automatically into the Minimal fix strategy (PHASE 4). Otherwise follow the normal strategy choice.
+
+---
+
 ## PHASE 3: Aggregation & Report
 
-> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
+> **Todo**: mark PHASE 2b → `completed`, PHASE 3 → `in_progress`.
 
 Analyze:
 
