@@ -16,7 +16,7 @@ Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and
                [/project-brainstorm] ──────────┤
                [/project-critique]  ───────────┤
                                                ▼
-                                 /project-backlog ──→ backlog.html
+                                 /project-backlog ──→ backlog.json
                                                │
                                                ▼
                         /dev-define ──→ /dev-build ──→ /dev-verify ──→ [/dev-refactor]
@@ -76,7 +76,7 @@ Frontend items skip `defining/defined` — design captures pages/flows, Build ge
 | Skill            | Input                            | Output                      | Requires stage | Produces stage |
 | ---------------- | -------------------------------- | --------------------------- | -------------- | -------------- |
 | project-research | topic / question                 | research findings           | —              | —              |
-| project-backlog  | seed document / task description | backlog.html                | —              | —              |
+| project-backlog  | seed document / task description | backlog.json                | —              | —              |
 | project-todo     | description                      | backlog item                | —              | —              |
 | dev-define       | backlog item / user reqs         | feature.json (req + arch)   | —              | defined        |
 | dev-build        | feature.json (defined)           | feature.json (code + tests) | defined        | built          |

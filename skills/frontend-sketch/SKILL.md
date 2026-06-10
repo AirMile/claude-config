@@ -2,6 +2,8 @@
 name: frontend-sketch
 description: Low-fi UI canvas for sketching screens — drag components, ask Claude to generate frames, promote to high-fi code. Use with /frontend-sketch.
 argument-hint: '[<prompt> | new <slug> | generate <slug> "<prompt>" | promote <slug> [--frame <id>]]'
+reads: [project.theme]
+writes: [project.design]
 metadata:
   author: claude-config
   version: 1.0.0

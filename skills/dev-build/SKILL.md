@@ -2,7 +2,13 @@
 name: dev-build
 description: "Build features test-first with TDD. Use with /dev-build, or when the user asks to implement a defined feature."
 reads: [feature.requirements, feature.architecture, feature.files]
-writes: [feature.requirements, feature.build, backlog.status, project-context.learnings]
+writes:
+  [
+    feature.requirements,
+    feature.build,
+    backlog.status,
+    project-context.learnings,
+  ]
 metadata:
   author: claude-config
   version: 1.15.0
@@ -274,8 +280,8 @@ Guidelines:
 
 For each `pageName` in `feature.pageHint[]`:
 
-- Find `data.features[name===pageName]` in `backlog.html` (type must be `"PAGE"`).
-- If found: add `{feature-name}` to `page.dependencies[]` (dedupe). Write back to backlog.html.
+- Find `data.features[name===pageName]` in `backlog.json` (type must be `"PAGE"`).
+- If found: add `{feature-name}` to `page.dependencies[]` (dedupe). Write back to `backlog.json`.
 - If not found: silent skip (PAGE may not be in backlog yet — `/frontend-design` Route:Page will create it later).
 
 Add to completion report when ≥1 update: `Page deps: {N} PAGEs updated ({comma-separated names})`
@@ -292,7 +298,7 @@ Scan for new page routes (same patterns as dev-define): `app/**/page.tsx`, `src/
 
 If new route patterns found and not in backlog: log `⚠ Detected new route patterns: {list}. Run /dev-define on the affected feature or /frontend-design <name> to add them to the backlog.`
 
-Do NOT write to backlog.html — `/dev-define` is the sole author of PAGE entries from the dev track (see `SKILL-PATTERNS.md → Page-Discovery` doctrine).
+Do NOT write to backlog.json — `/dev-define` is the sole author of PAGE entries from the dev track (see `SKILL-PATTERNS.md → Page-Discovery` doctrine).
 
 **Sub-component Reuse-Discovery** (frontend projects only):
 
@@ -348,7 +354,7 @@ Categorize each file:
    Files NOT modified by this build AND already dirty → PRE-EXISTING, don't stage.
 2. **New/modified files from this feature** (files from `feature.json files[]`, test files, feature.json itself) → `git add`.
 3. **Untracked files** not belonging to the feature → don't stage.
-4. **.project/ files** (project.json, backlog.html, project-context.json) → try to add. If skip-worktree or sparse-checkout blocks this: accept and continue (these files are updated locally but won't be committed).
+4. **.project/ files** (project.json, backlog.json, project-context.json) → try to add. If skip-worktree or sparse-checkout blocks this: accept and continue (these files are updated locally but won't be committed).
 
 ```bash
 git -C "$REPO" commit -m "build({feature}): {n} requirements ({tdd} TDD, {only} impl-only)"

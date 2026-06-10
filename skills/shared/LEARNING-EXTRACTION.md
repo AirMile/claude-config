@@ -249,3 +249,24 @@ Author === git user → skip (own work).
 - Pattern label must be non-empty (no "introduced X in Y" without X)
 
 When in doubt → do not emit. Append-only contract makes cleanup expensive.
+
+---
+
+## Consolidation (size lifecycle)
+
+`learnings[]` is append-only at write time, but not unbounded: when the list grows past the threshold, `/core-pull` consolidates it (PHASE 4j.7). This keeps the active list small enough that scoped loads stay sharp and dedup passes stay cheap.
+
+**Trigger**: after the dedup-and-sync step, `learnings.length > 60`.
+
+**Archive file**: `.project/archive/learnings-{YYYY-MM}.json` — shape `{ "schemaVersion": 2, "archived": [ <original learning objects> ] }`. Append; create dir/scaffold if absent. Archived entries are never loaded as context (LEARNINGS-LOAD ignores the archive) — they exist for human reference and provenance.
+
+**Procedure** (target: active list ≤ 40 after the pass):
+
+1. **Age-out observations**: entries with `type === "observation"` older than 12 months → move to archive (no summary needed; observations age poorly).
+2. **Group by `feature`**: for every feature group with ≥ 4 remaining entries, merge each type-cluster (patterns together, pitfalls together) into max 1 consolidated entry per type:
+   - `summary`: one merged summary (≤ 200 chars) that preserves each distinct point — drop only true repetition, never distinct pitfalls.
+   - `type`: kept; `source: "consolidated"`; `date`: newest of the group; `feature`: kept; `author`: kept if identical across group, else `null`.
+   - Originals → archive.
+3. **Still > 40?** Repeat step 2 for groups with ≥ 3 entries. Never consolidate entries newer than 3 months — recent learnings keep full resolution.
+
+**Guarantees**: idempotent (a consolidated list under the threshold never triggers another pass); lossless in provenance (originals live in the archive); pitfalls are never silently dropped — only merged or archived with a consolidated successor in place.

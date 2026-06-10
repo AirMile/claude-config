@@ -241,12 +241,9 @@ If branch was pushed to remote:
 
 ```bash
 FEATURE_TYPE=$(node -e "
-  const html = require('fs').readFileSync('.project/backlog.html','utf8');
-  const m = html.match(/\"features\"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
-  if (!m) { process.stdout.write(''); process.exit(0); }
   try {
-    const fs = JSON.parse(m[1]);
-    const f = fs.find(x => x.name === '{feature-name}');
+    const data = JSON.parse(require('fs').readFileSync('.project/backlog.json','utf8'));
+    const f = (data.features || []).find(x => x.name === '{feature-name}');
     process.stdout.write(f ? (f.type || '') : '');
   } catch(e) { process.stdout.write(''); }
 " 2>/dev/null || echo "")
@@ -254,9 +251,9 @@ FEATURE_TYPE=$(node -e "
 
 If `FEATURE_TYPE === "COMPONENT"` or `FEATURE_TYPE === "PAGE"` — these tracks have no `/dev-refactor` step, so set shipped fields now:
 
-1. Read `.project/backlog.html` → find `f.name === "{feature-name}"`
+1. Read `.project/backlog.json` → find `f.name === "{feature-name}"`
 2. Set `status: "DONE"`, `shipped: true`, `shippedAt: "{YYYY-MM-DD}"`, `shippedSha: "{merge-sha}"`. Remove `stage` if present.
-3. Write back via Edit (keep `<script>` tags intact). Set `data.updated` to today.
+3. Write the updated JSON back to `.project/backlog.json`. Set `data.updated` to today.
 4. Sync same fields to `project.json` `features[]` entry.
 
 For dev-track (`FEATURE`: type other than COMPONENT/PAGE) — skip. `/dev-refactor` owns `shippedSha` for those.
@@ -289,7 +286,7 @@ Also detect ghost cwd via `[ "$(pwd)" != "{main_root}" ] && [ ! -d "$(pwd)" ]`. 
    Start a fresh terminal in: {main_root}
 ```
 
-> **Scope of `Merge: {sha}`**: for **dev-track** features (not COMPONENT/PAGE), this SHA is informational only — do NOT write it to `backlog.html` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys for dev-track are set exclusively by `/dev-refactor` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). For **frontend-track** (COMPONENT/PAGE), the Backlog sync step above writes the merge SHA as `shippedSha` because no `/dev-refactor` step exists for that track. Skills consuming this report (`dev-verify`, `game-verify`, `frontend-check`, `core-finalize`) MUST treat the SHA as display-only for dev-track.
+> **Scope of `Merge: {sha}`**: for **dev-track** features (not COMPONENT/PAGE), this SHA is informational only — do NOT write it to `backlog.json` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys for dev-track are set exclusively by `/dev-refactor` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). For **frontend-track** (COMPONENT/PAGE), the Backlog sync step above writes the merge SHA as `shippedSha` because no `/dev-refactor` step exists for that track. Skills consuming this report (`dev-verify`, `game-verify`, `frontend-check`, `core-finalize`) MUST treat the SHA as display-only for dev-track.
 
 For cleanup-only with PR context:
 

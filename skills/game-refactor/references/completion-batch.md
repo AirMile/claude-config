@@ -71,7 +71,7 @@ If N > 1 features: read all feature.json in parallel, mutate each in memory, wri
 
 Read in parallel (skip if not exists):
 
-- `.project/backlog.html`
+- `.project/backlog.json`
 - `.project/project.json`
 - `.project/project-context.json`
 
@@ -83,6 +83,12 @@ Mutate in memory:
 - ROLLED_BACK → `f.refactor = "ROLLED_BACK"`, remove `transition` (if present)
 
 Set `data.updated` to current date.
+
+**Backlog archive** (after setting shipped flags, same in-memory mutation): for each shipped feature (CLEAN or REFACTORED), remove the full feature object from `data.features[]` and append it to `.project/archive/backlog-archive.json`:
+
+- If `.project/archive/` or the file does not exist: create the directory and scaffold the file as `{ "schemaVersion": 2, "archived": [] }`
+- Append the full feature object (including the just-set shipped fields) to `archived[]` — dedup by `name` (skip append if an entry with the same name already exists)
+- ROLLED_BACK features are NOT archived — they stay in `data.features[]`
 
 **Dashboard** (see `shared/DASHBOARD.md`): unchanged — no separate dashboard merge in game-refactor other than feature status. Learning extraction: see Step 2.5 below.
 
@@ -102,7 +108,8 @@ When triggered (in `project-context.json` mutation):
 
 Write back in parallel:
 
-- Edit `backlog.html` (keep `<script>` tags intact)
+- Edit `.project/backlog.json`
+- Write `.project/archive/backlog-archive.json` (only if features were archived)
 - Write `project.json`
 - Write `project-context.json` (if context/architecture changed)
 

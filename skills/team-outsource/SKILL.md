@@ -58,7 +58,7 @@ Create an external issue for a teammate based on a local backlog item or feature
    Cancel → exit. Continue → proceed with PHASE 0 step 1.
 
 1. Read `.project/project.json` → check `team.tracker`. Unknown → run `gh repo view --json nameWithOwner` (success → `tracker = "github"`). `--paste` flag present or `gh` fails → `tracker = "paste"`.
-2. Read `.project/backlog.html` → parse `<script id="backlog-data">` JSON → `data`.
+2. Read `.project/backlog.json` → parse JSON → `data`.
 3. If argument `<name>` is set → search in `data.features` by exact name. No match → show "No item found with name `{name}`" + list of top-3 similar names and exit.
 4. Check if found item already has `externalRef` → show "Already outsourced to {externalRef.type} #{externalRef.id}" and exit (no duplicate issues).
 
@@ -291,7 +291,7 @@ On parse error: show "Could not extract ID from URL — enter manually?" and ask
 
 > **Todo**: mark PHASE 6 → `in_progress`.
 
-Re-read `.project/backlog.html` directly before writing (Prettier/linters may have modified the file in the meantime).
+Re-read `.project/backlog.json` directly before writing (Prettier/linters may have modified the file in the meantime).
 
 Find feature by name → update `externalRef` field:
 
@@ -310,7 +310,7 @@ Find feature by name → update `externalRef` field:
 }
 ```
 
-Set `data.updated` to today. Edit JSON block back into `backlog.html` (script tags intact).
+Set `data.updated` to today. Edit the JSON back into `.project/backlog.json` (see `shared/BACKLOG.md § Writing`).
 
 If `.project/features/<name>/feature.json` exists: also add `externalRef` there (1:1 copy).
 

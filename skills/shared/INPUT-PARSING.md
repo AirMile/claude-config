@@ -1,4 +1,4 @@
-# Shared: Step 1 Parse Input
+# Shared: PHASE 1 Parse Input
 
 Used by `/project-brainstorm` and `/project-critique`. The caller's Todo-marker specifies the **variant**:
 
@@ -42,7 +42,7 @@ Used by `/project-brainstorm` and `/project-critique`. The caller's Todo-marker 
 If scope is or may become concept-scope: scan for deferred drift entries:
 
 1. Glob `.project/features/*/feature.json` — collect all `seedDrift[]` entries where `resolved` is absent or falsy into `accumulatedDrift[]`.
-2. If `.project/backlog.html` exists: parse `data.seedDrift[]` (see `shared/BACKLOG.md`) and append to `accumulatedDrift[]`.
+2. If `.project/backlog.json` exists: parse `data.seedDrift[]` (see `shared/BACKLOG.md`) and append to `accumulatedDrift[]`.
 3. Deduplicate by `detectedAt`.
 
 If `accumulatedDrift[]` is non-empty, include a one-line note in the technique-selection summary:
@@ -53,11 +53,11 @@ If `accumulatedDrift[]` is non-empty, include a one-line note in the technique-s
 
 Pass `accumulatedDrift[]` into the chosen technique's prompt context so generated output incorporates the known divergence.
 
-### Step 1a: Scope Check
+### PHASE 1a: Scope Check
 
 After concept detection, also check for broader scope:
 
-1. Check if `.project/backlog.html` exists
+1. Check if `.project/backlog.json` exists
 2. Check if `.project/features/` contains folders
 3. Glob for page files (`app/**/page.tsx`, `src/pages/**/*.tsx`)
 
@@ -76,7 +76,7 @@ multiSelect: false
 
 **If "Feature from backlog":**
 
-- Read `.project/backlog.html`, parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`), show features with status TODO or DEF
+- Read `.project/backlog.json`, parse as JSON (see `shared/BACKLOG.md`), show features with status TODO or DEF
 - AskUserQuestion to choose feature
 - Load `01-define.md` (if it exists) as input context
 - Load existing `thinking.md` (if it exists) as previous thinking output
@@ -103,7 +103,7 @@ multiSelect: false
 - Scope = page/UX → write to `.project/thinking/{topic}.md`
 - Scope = standalone idea → write to `.project/thinking/{topic}.md`
 
-### Step 1b: Manual input fallback
+### PHASE 1b: Manual input fallback
 
 If the user provided an inline description/argument, use it directly as the starting idea.
 
@@ -132,7 +132,7 @@ multiSelect: false
 
 3. **[Critique-only]** Check for previously applied techniques:
    - Look for YAML frontmatter at the start of the input
-   - If `applied_techniques:` found, extract the list — store to filter in Steps 3 and 6
+   - If `applied_techniques:` found, extract the list — store to filter in PHASES 3 and 6
    - Example frontmatter:
      ```yaml
      ---
@@ -219,6 +219,6 @@ multiSelect: false
      - label: "Adjust", description: "I want to update the summary"
    multiSelect: false
    ```
-5. If confirmed: use as input concept and proceed to Step 2
+5. If confirmed: use as input concept and proceed to PHASE 2
 6. If "Adjust": ask what to change, update summary, confirm again
 7. If insufficient context in conversation: inform user and fall back to manual input

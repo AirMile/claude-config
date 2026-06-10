@@ -41,7 +41,7 @@ Example triggers:
 
 ## Workflow
 
-### Step 1: Parse Input
+### PHASE 1: Parse Input
 
 **Goal:** Understand what we're analyzing and extract the core idea.
 
@@ -49,11 +49,11 @@ Example triggers:
 
 ### Enter Plan Mode
 
-Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 2. Steps 2-6 run in plan mode; the refined output (Step 6) is written to the plan file for review. Context7 research works normally in plan mode.
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 2. PHASES 2-6 run in plan mode; the refined output (PHASE 6) is written to the plan file for review. Context7 research works normally in plan mode.
 
 ---
 
-### Step 2: Determine Type & Select Techniques
+### PHASE 2: Determine Type & Select Techniques
 
 **Goal:** Analyze the idea type, load relevant techniques, and let the user select which to apply.
 
@@ -92,7 +92,7 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 
    multiSelect: false
    ```
 
-6. Process user selection: proceed to Step 3 with the selected technique
+6. Process user selection: proceed to PHASE 3 with the selected technique
 
 **Note:**
 
@@ -101,9 +101,9 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 
 - If fewer than 3 relevant techniques available, show all available techniques
 - Already applied techniques should NOT appear in the options
 - First option is always the recommended technique (add "(Recommended)" to label)
-- Single select: user picks 1 technique, applies it, then decides whether to continue (Step 5)
+- Single select: user picks 1 technique, applies it, then decides whether to continue (PHASE 5)
 
-### Step 3: Apply Technique
+### PHASE 3: Apply Technique
 
 **Goal:** Use the selected technique through interactive Q&A to identify weaknesses, test assumptions, and find problems.
 
@@ -168,13 +168,13 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 
 - Push for concrete solutions or decisions
 - If the user asks a technical question you can't answer well, use Context7 to research it before responding
 
-### Step 4: Synthesize
+### PHASE 4: Synthesize
 
 **Goal:** Capture key weaknesses, assumptions, and insights discovered through the technique.
 
 **Process:**
 
-1. Review the user's responses and dialogue from Step 3
+1. Review the user's responses and dialogue from PHASE 3
 
 2. Synthesize:
    - Key weaknesses or problems identified
@@ -204,9 +204,9 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 
    4.2 [insight 2]
    ```
 
-4. After presenting synthesis, proceed to Step 5
+4. After presenting synthesis, proceed to PHASE 5
 
-### Step 5: Next Action
+### PHASE 5: Next Action
 
 **Goal:** After each technique, let the user decide: apply another technique or generate the refined output.
 
@@ -220,7 +220,7 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 
 
 2. If no relevant techniques remain (all applied or none relevant):
    - Skip presenting options
-   - Proceed directly to Step 6 (Generate Final Output)
+   - Proceed directly to PHASE 6 (Generate Final Output)
    - Announce (in user's preferred language): "All relevant techniques have been applied. Generating refined version now."
 
 3. Present next action selection using AskUserQuestion (in user's preferred language):
@@ -242,8 +242,8 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 
    ```
 
 4. Process user selection:
-   - If "Generate refined version": proceed to Step 6
-   - If a technique selected: go to Step 3 for that technique, then back to Step 5 after
+   - If "Generate refined version": proceed to PHASE 6
+   - If a technique selected: go to PHASE 3 for that technique, then back to PHASE 5 after
 
 **Note:**
 
@@ -251,7 +251,7 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 
 - Maximum 2 techniques in the options (+ "Generate refined version")
 - First option is always "Generate refined version (Recommended)"
 
-### Step 6: Generate Final Output
+### PHASE 6: Generate Final Output
 
 **Goal:** Create the refined idea as a clean, structured markdown document.
 
@@ -291,13 +291,13 @@ applied_techniques:
 ---
 ```
 
-**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with Step 7 (output destination and `.project/` writes).
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 7 (output destination and `.project/` writes).
 
-### Step 7: Output Destination
+### PHASE 7: Output Destination
 
 After generating the refined content, determine output destination based on scope.
 
-**If scope = feature or page (from Step 1a):**
+**If scope = feature or page (from PHASE 1a):**
 
 Save automatically to the scope location:
 
@@ -342,9 +342,9 @@ multiSelect: false
 
 If "Yes": Write the full concept document as plain markdown to `.project/project-seed.md`. Also update project.json: Read `.project/project.json` (or create with {}), set `seed.name` (H1 title), `seed.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `seed.content` if it exists (migrated to .md). Write back.
 
-Then reconcile drift: if `accumulatedDrift[]` is non-empty, remove those entries from their source arrays (from each `feature.json#seedDrift[]` and from `backlog.html#data.seedDrift[]`). Log: `Reconciled {N} drift item(s) from {sources}.`
+Then reconcile drift: if `accumulatedDrift[]` is non-empty, remove those entries from their source arrays (from each `feature.json#seedDrift[]` and from `backlog.json#seedDrift[]`). Log: `Reconciled {N} drift item(s) from {sources}.`
 
-**If scope = standalone idea (from Step 1a):**
+**If scope = standalone idea (from PHASE 1a):**
 
 Save to `.project/thinking/{today}-critique-{slug}.md`:
 
@@ -392,7 +392,7 @@ multiSelect: false
 
 1. Write the full refined concept document as plain markdown to `.project/project-seed.md`
 2. Also update project.json: Read `.project/project.json` (or create with `{}`), set `seed.name` (title from refined content), `seed.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Remove `seed.content` if it exists (migrated to .md). Write back.
-3. Reconcile drift: if `accumulatedDrift[]` is non-empty, remove those entries from their source arrays (from each `feature.json#seedDrift[]` and from `backlog.html#data.seedDrift[]`). Log: `Reconciled {N} drift item(s) from {sources}.`
+3. Reconcile drift: if `accumulatedDrift[]` is non-empty, remove those entries from their source arrays (from each `feature.json#seedDrift[]` and from `backlog.json#seedDrift[]`). Log: `Reconciled {N} drift item(s) from {sources}.`
 4. Confirm:
 
    ```
@@ -420,7 +420,7 @@ Follow [`shared/CLIPBOARD.md`](../shared/CLIPBOARD.md).
 **Flow Efficiency:**
 
 - No AskUserQuestion between technique presentation and user response — just prompt and wait
-- After each technique's synthesis, always go to Step 5 for the user to decide next action
+- After each technique's synthesis, always go to PHASE 5 for the user to decide next action
 - One technique at a time: select → apply → synthesize → decide to continue or not
 
 **Conversational Flexibility:**

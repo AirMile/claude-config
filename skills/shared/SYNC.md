@@ -20,7 +20,7 @@ On the first `.project/` operation (read or write):
 
 ### Scope
 
-- **`.project/`** (feature.json, backlog.html, project.json, session) → always main worktree
+- **`.project/`** (feature.json, backlog.json, project.json, session) → always main worktree
 - **Source code** (implementation, tests) → local worktree (own branch)
 - Run detection once, reuse the resolved path in all phases
 
@@ -35,7 +35,7 @@ On skill completion, sync feature state to the relevant files:
 Read **immediately before editing** — do NOT rely on reads from earlier phases (Prettier/linters may have modified files in between):
 
 - `.project/features/{feature-name}/feature.json`
-- `.project/backlog.html`
+- `.project/backlog.json`
 - `.project/project.json`
 - `.project/project-context.json` (only if context/architecture/learnings changed — build/test/refactor skills)
 - `.project/project-seed.md` (only if concept changed — thinking/plan skills)
@@ -44,9 +44,9 @@ Read **immediately before editing** — do NOT rely on reads from earlier phases
 
 **feature.json** — read-modify-write, preserve all existing sections. Skill adds/updates specific fields (see skill-specific mutations).
 
-**backlog.html** (see `shared/BACKLOG.md`):
+**backlog.json** (see `shared/BACKLOG.md`):
 
-- Parse JSON from `<script id="backlog-data">`
+- Parse JSON from `.project/backlog.json`
 - Find feature by name
 - Update `status` to skill-specific value
 - Set `data.updated` → current date
@@ -80,7 +80,7 @@ Write the full concept document as plain markdown to `.project/project-seed.md`.
 ### Step 3: Write (parallel)
 
 - Write `feature.json` (or targeted Edit if only specific fields change)
-- Edit `backlog.html` (keep `<script>` tags intact)
+- Write `backlog.json` (serialized with `JSON.stringify(data, null, 2)`)
 - Write `project.json` (or targeted Edit)
 - Write `project-context.json` (if context/architecture/learnings changed)
 

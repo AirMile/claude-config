@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 2,
+  "project": "fixture-game",
+  "generated": "2026-05-27",
+  "features": [
+    {
+      "name": "fixture-feature",
+      "type": "FEATURE",
+      "status": "DEFINED",
+      "stage": "ready",
+      "phase": "P1",
+      "description": "Core jump mechanic",
+      "risk": 2,
+      "dependencies": [
+        "done-feature"
+      ],
+      "externalRef": null,
+      "transition": "building",
+      "pageHint": []
+    },
+    {
+      "name": "done-feature",
+      "type": "FEATURE",
+      "status": "DONE",
+      "stage": null,
+      "phase": "P1",
+      "description": "Player movement",
+      "risk": 1,
+      "dependencies": [],
+      "externalRef": null,
+      "transition": null,
+      "pageHint": []
+    },
+    {
+      "name": "verifying-feature",
+      "type": "FEATURE",
+      "status": "DOING",
+      "stage": "built",
+      "phase": "P1",
+      "description": "Enemy AI",
+      "risk": 3,
+      "dependencies": [
+        "done-feature"
+      ],
+      "externalRef": null,
+      "transition": "verifying",
+      "pageHint": []
+    },
+    {
+      "name": "refactor-feature",
+      "type": "FEATURE",
+      "status": "DONE",
+      "stage": null,
+      "phase": "P2",
+      "description": "Collectibles",
+      "risk": 1,
+      "dependencies": [],
+      "externalRef": null,
+      "transition": "refactoring",
+      "pageHint": []
+    }
+  ]
+}

@@ -531,11 +531,11 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
    - `packages`: from generated package.json / project files
 5. Write `.project/project.json`
    5b. Init backlog with seed flag (all project types):
-   - If `.project/backlog.html` does not exist: copy `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
-   - Read `backlog.html` → parse `<script id="backlog-data">` JSON
+   - If `.project/backlog.json` does not exist: create it with the schemaVersion-2 scaffold (see `shared/BACKLOG.md`)
+   - Read `.project/backlog.json` → parse JSON
    - Set `data.flags = { "hasSeed": true, "seedPath": ".project/project-seed.md" }`
    - Set `data.source = "/core-setup"` and `data.updated` to current date
-   - Edit JSON block back (script tags intact)
+   - Write the JSON back to `.project/backlog.json`
    - This makes the `/project-backlog` button appear in the backlog dashboard once there is a concept but no features yet.
 6. Create `.project/project-context.json` with `context` section (initial, updated by build/refactor skills):
    - `context.structure`: file tree of project (same format as previously in CLAUDE.md). Generate from actual file tree after Phase 3/4
@@ -576,10 +576,10 @@ Packages: {N} packages
 
 Skip Phase 7c entirely if `needsTheme = false`.
 
-**Step 2 — Seed features to `.project/backlog.html`:**
+**Step 2 — Seed features to `.project/backlog.json`:**
 
-1. If `backlog.html` does not exist: copy `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`, set `data.source = "/core-setup"`
-2. Read `backlog.html` → parse JSON from `<script id="backlog-data">` block
+1. If `backlog.json` does not exist: create it with the schemaVersion-2 scaffold (see `shared/BACKLOG.md`), set `data.source = "/core-setup"`
+2. Read `.project/backlog.json` → parse as JSON
 3. Check `data.features.find(f => f.name === "setup-design-tokens")` — skip if already exists
 4. Add if `needsTheme = true`:
 
@@ -598,7 +598,7 @@ Skip Phase 7c entirely if `needsTheme = false`.
 ```
 
 5. Set `data.updated` to current date (`YYYY-MM-DD`)
-6. Edit the JSON block back into `backlog.html` (script tags intact)
+6. Write the JSON back to `.project/backlog.json`
 
 **Step 3 — Auto-execute:**
 
@@ -644,11 +644,11 @@ For Next.js Babel full mode, also add: `Note: Turbopack disabled (Babel full mod
 
 ### Smart Backlog Server Prompt (conditional)
 
-**Step 1 — Detect todos:** Read `.project/backlog.html` (if it exists) and parse `data.features`. Count items with status `TODO` or `DEFINED`.
+**Step 1 — Detect todos:** Read `.project/backlog.json` (if it exists) and parse `data.features`. Count items with status `TODO` or `DEFINED`.
 
 | Condition                            | Action                                 |
 | ------------------------------------ | -------------------------------------- |
-| No `backlog.html` or 0 todos         | Skip backlog prompt — no modal         |
+| No `backlog.json` or 0 todos         | Skip backlog prompt — no modal         |
 | ≥1 todo (e.g. `setup-design-tokens`) | Show AskUserQuestion modal (see below) |
 
 **Step 2 — Modal (only when ≥1 todo):**
@@ -697,7 +697,7 @@ Then only relevant follow-up skills (no repetition of todos already in the backl
 **If there are todos but backlog not started:** add at the top:
 
 ```
-Tip: {N} todo(s) ready in .project/backlog.html.
+Tip: {N} todo(s) ready in .project/backlog.json.
 Start later with /project-backlog to check them off visually.
 ```
 

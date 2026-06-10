@@ -1,6 +1,6 @@
 # PHASE 4 Sync — Mutation Details
 
-## Mutations on `backlog.html` (see `shared/BACKLOG.md`)
+## Mutations on `backlog.json` (see `shared/BACKLOG.md`)
 
 - Find feature → set `status: "DEFINED"`, `definedAt: <ISO>`, `auto: true`, remove `transition` (if present) — all three in one write. Not found → add to `data.features` with `phase: "P4"`, `status: "DEFINED"`, `auto: true`.
 - **Dependencies**: If during PHASE 1 or PHASE 2 external feature dependencies were identified (other features that must be DONE first), merge those into `dependencies[]`. Never remove existing values — only add. If nothing new found: leave field unchanged.
@@ -8,12 +8,11 @@
 
 ## Mutations on `project.json` (see `shared/DASHBOARD.md`)
 
-- Update feature in `features` array: status → `"DEFINED"`, update summary.
 - Merge per entity type (always check for existing before push):
   - **Data entities** (optional — only if feature introduces domain entities): check on name → new: push with fields/relations → existing: merge new fields. If feature has no entities (UI-only, refactor, utility): skip this update, log `Skipped data.entities: no entities`.
   - **Endpoints**: check on method+path → new: push with `status: "planned"`, `auth: "public" | "user" | "admin"` (default `"public"`, use `"user"` if JWT/session required, `"admin"` if role-check required; omit `auth` field for projects without auth) → existing: skip
   - **Stack packages**: check on name → new: push `{ name, version, purpose }` → existing: skip
-  - **Features**: check on name → new: push `{ name, status: "DEFINED", summary, created }` → existing: update status
+  - Feature status lives in the backlog only (`backlog.json#features[]`) — project.json carries no features copy.
 
 ## Mutations on `project-context.json` (see `shared/DASHBOARD.md`)
 

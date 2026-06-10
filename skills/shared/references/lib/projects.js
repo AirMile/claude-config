@@ -5,10 +5,63 @@ const path = require("path");
 const {
   PROJECTS_ROOT,
   BACKLOG_PATH,
+  LEGACY_BACKLOG_PATH,
   DASHBOARD_PATH,
-  TEMPLATE_PATH,
 } = require("./config");
 const { createDefaultDashboardData } = require("./defaults");
+
+// ── Backlog data store (.project/backlog.json) ──
+// Canonical store is JSON; legacy projects (pre-migration) embed the data in
+// backlog.html — read-only fallback so they keep working until migrated via
+// scripts/migrate-project.py.
+
+function readBacklogData(projectRootAbs) {
+  const jsonFile = path.join(projectRootAbs, BACKLOG_PATH);
+  if (fs.existsSync(jsonFile)) {
+    try {
+      return JSON.parse(fs.readFileSync(jsonFile, "utf8"));
+    } catch {
+      return null;
+    }
+  }
+  const legacyFile = path.join(projectRootAbs, LEGACY_BACKLOG_PATH);
+  if (fs.existsSync(legacyFile)) {
+    try {
+      const html = fs.readFileSync(legacyFile, "utf8");
+      const match = html.match(
+        /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
+      );
+      if (match) return JSON.parse(match[1]);
+    } catch {}
+  }
+  return null;
+}
+
+function writeBacklogData(projectRootAbs, data) {
+  const jsonFile = path.join(projectRootAbs, BACKLOG_PATH);
+  const wsDir = path.dirname(jsonFile);
+  if (!fs.existsSync(wsDir)) fs.mkdirSync(wsDir, { recursive: true });
+  fs.writeFileSync(jsonFile, JSON.stringify(data, null, 2), "utf8");
+  return jsonFile;
+}
+
+function backlogExists(projectRootAbs) {
+  return (
+    fs.existsSync(path.join(projectRootAbs, BACKLOG_PATH)) ||
+    fs.existsSync(path.join(projectRootAbs, LEGACY_BACKLOG_PATH))
+  );
+}
+
+function backlogMtime(projectRootAbs) {
+  var mtime = 0;
+  for (const rel of [BACKLOG_PATH, LEGACY_BACKLOG_PATH]) {
+    try {
+      const f = path.join(projectRootAbs, rel);
+      if (fs.existsSync(f)) mtime = Math.max(mtime, fs.statSync(f).mtimeMs);
+    } catch {}
+  }
+  return mtime;
+}
 
 // ── Last-opened tracking ──
 const LAST_OPENED_FILE = path.join(PROJECTS_ROOT, ".last-opened.json");
@@ -38,23 +91,17 @@ function findProjects() {
 
       const file = path.join(dirPath, BACKLOG_PATH);
       const dashFile = path.join(dirPath, DASHBOARD_PATH);
-      const hasBacklog = fs.existsSync(file);
+      const hasBacklog = backlogExists(dirPath);
       const hasDashboard = fs.existsSync(dashFile);
       var project = name;
       var updated = null;
 
       if (hasBacklog) {
-        try {
-          const html = fs.readFileSync(file, "utf8");
-          const match = html.match(
-            /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
-          );
-          if (match) {
-            const data = JSON.parse(match[1]);
-            project = data.project || name;
-            updated = data.updated || null;
-          }
-        } catch {}
+        const data = readBacklogData(dirPath);
+        if (data) {
+          project = data.project || name;
+          updated = data.updated || null;
+        }
       }
 
       if (hasDashboard && !hasBacklog) {
@@ -64,13 +111,8 @@ function findProjects() {
         } catch {}
       }
 
-      // Use most recent mtime of backlog.html or project.json
-      var mtime = 0;
-      if (hasBacklog) {
-        try {
-          mtime = Math.max(mtime, fs.statSync(file).mtimeMs);
-        } catch {}
-      }
+      // Use most recent mtime of backlog store or project.json
+      var mtime = backlogMtime(dirPath);
       if (hasDashboard) {
         try {
           mtime = Math.max(mtime, fs.statSync(dashFile).mtimeMs);
@@ -106,32 +148,17 @@ function findProjects() {
 }
 
 function createBacklog(projectDir) {
-  const file = path.join(PROJECTS_ROOT, projectDir, BACKLOG_PATH);
-  const wsDir = path.dirname(file);
-  if (!fs.existsSync(wsDir)) fs.mkdirSync(wsDir, { recursive: true });
-
   const today = new Date().toISOString().slice(0, 10);
-  const emptyData = JSON.stringify(
-    {
-      project: projectDir,
-      generated: today,
-      updated: today,
-      source: "manual",
-      overview: "",
-      features: [],
-      notes: "",
-    },
-    null,
-    2,
-  );
-
-  var html = fs.readFileSync(TEMPLATE_PATH, "utf8");
-  html = html.replace(
-    /(<script id="backlog-data" type="application\/json">)([\s\S]*?)(<\/script>)/,
-    "$1\n" + emptyData + "\n$3",
-  );
-  fs.writeFileSync(file, html, "utf8");
-  return file;
+  return writeBacklogData(path.join(PROJECTS_ROOT, projectDir), {
+    schemaVersion: 2,
+    project: projectDir,
+    generated: today,
+    updated: today,
+    source: "manual",
+    overview: "",
+    features: [],
+    notes: "",
+  });
 }
 
 function createDashboard(projectDir) {
@@ -150,4 +177,8 @@ module.exports = {
   createBacklog,
   createDashboard,
   touchProject,
+  readBacklogData,
+  writeBacklogData,
+  backlogExists,
+  backlogMtime,
 };

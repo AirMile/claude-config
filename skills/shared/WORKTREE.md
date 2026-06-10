@@ -50,7 +50,7 @@ WT_PATH="{main_root}/.claude/worktrees/{feature-name}"
 BRANCH_OK=$(cd "$WT_PATH" 2>/dev/null && [ "$(git branch --show-current)" = "worktree-{feature-name}" ] && echo yes || echo no)
 DIRTY=$(cd "$WT_PATH" 2>/dev/null && git status --porcelain | head -1)
 SYMLINK_OK=$(
-  test -L "$WT_PATH/.project/backlog.html" && test -e "$WT_PATH/.project/backlog.html" &&
+  test -L "$WT_PATH/.project/backlog.json" && test -e "$WT_PATH/.project/backlog.json" &&
   test -L "$WT_PATH/.project/features"     && test -e "$WT_PATH/.project/features" &&
   echo yes || echo no
 )
@@ -246,10 +246,10 @@ MP="{main_root}/.project"
 
 mkdir -p "$WT/.project/session"
 rm -f "$WT/.project/.project"
-rm -f "$WT/.project/backlog.html"
+rm -f "$WT/.project/backlog.json"
 rm -rf "$WT/.project/features" "$WT/.project/wireframes" "$WT/.project/screenshots" "$WT/.project/thinking"
 rm -f "$WT/.project/project.json" "$WT/.project/project-context.json"
-ln -sfn "$MP/backlog.html"         "$WT/.project/backlog.html"
+ln -sfn "$MP/backlog.json"         "$WT/.project/backlog.json"
 ln -sfn "$MP/features"             "$WT/.project/features"
 ln -sfn "$MP/wireframes"           "$WT/.project/wireframes"
 ln -sfn "$MP/screenshots"          "$WT/.project/screenshots"
@@ -259,7 +259,7 @@ ln -sfn "$MP/project-context.json" "$WT/.project/project-context.json"
 
 # Integrity check
 FAILED=()
-for f in backlog.html features project.json project-context.json; do
+for f in backlog.json features project.json project-context.json; do
   { [ -L "$WT/.project/$f" ] && [ -e "$WT/.project/$f" ]; } || FAILED+=("$f")
 done
 [ ${#FAILED[@]} -gt 0 ] && echo "ERROR: symlinks failed: ${FAILED[*]}" && exit 1
@@ -267,7 +267,7 @@ echo "GATE: ok — .project/ symlinks intact"
 
 # Suppress typechange noise: tracked files replaced by symlinks show as T in git status
 git -C "$WT" update-index --skip-worktree \
-  .project/backlog.html .project/project.json .project/project-context.json \
+  .project/backlog.json .project/project.json .project/project-context.json \
   2>/dev/null || true
 # Suppress deleted-file noise for directory paths replaced by symlinks (features/, wireframes/, etc.)
 WT_GITDIR=$(git -C "$WT" rev-parse --git-dir 2>/dev/null)
@@ -299,7 +299,7 @@ Run once after a worktree is first created (Step 3 of auto-create). Makes backlo
 
 | Path                            | Share?  | Reason                                                                                            |
 | ------------------------------- | ------- | ------------------------------------------------------------------------------------------------- |
-| `.project/backlog.html`         | **Yes** | Status updates (DOING, DONE) visible on main instantly                                            |
+| `.project/backlog.json`         | **Yes** | Status updates (DOING, DONE) visible on main instantly                                            |
 | `.project/features/`            | **Yes** | `feature.json` readable from both checkouts                                                       |
 | `.project/project.json`         | **Yes** | Design spec, theme, routing — project-wide                                                        |
 | `.project/project-context.json` | **Yes** | Learnings, architecture — project-wide                                                            |
@@ -320,12 +320,12 @@ mkdir -p "$WT/.project/session"
 # Remove any ad-hoc nested symlink (.project/.project) that a prior session may have created
 rm -f "$WT/.project/.project"
 
-rm -f "$WT/.project/backlog.html"
+rm -f "$WT/.project/backlog.json"
 rm -rf "$WT/.project/features" "$WT/.project/wireframes" \
        "$WT/.project/screenshots" "$WT/.project/thinking"
 rm -f "$WT/.project/project.json" "$WT/.project/project-context.json"
 
-ln -sfn "$MP/backlog.html"          "$WT/.project/backlog.html"
+ln -sfn "$MP/backlog.json"          "$WT/.project/backlog.json"
 ln -sfn "$MP/features"              "$WT/.project/features"
 ln -sfn "$MP/wireframes"            "$WT/.project/wireframes"
 ln -sfn "$MP/screenshots"           "$WT/.project/screenshots"
@@ -335,7 +335,7 @@ ln -sfn "$MP/project-context.json"  "$WT/.project/project-context.json"
 
 # Assert: all required symlinks must resolve — fail loudly instead of silently passing with broken links
 WIRE_FAILED=()
-for f in backlog.html features project.json project-context.json; do
+for f in backlog.json features project.json project-context.json; do
   if ! { [ -L "$WT/.project/$f" ] && [ -e "$WT/.project/$f" ]; }; then
     WIRE_FAILED+=("$f")
   fi
@@ -348,7 +348,7 @@ fi
 
 # Suppress typechange noise: tracked files replaced by symlinks show as T in git status
 git -C "$WT" update-index --skip-worktree \
-  .project/backlog.html .project/project.json .project/project-context.json \
+  .project/backlog.json .project/project.json .project/project-context.json \
   2>/dev/null || true
 # Suppress deleted-file noise for directory paths replaced by symlinks
 _WT_GITDIR=$(git -C "$WT" rev-parse --git-dir 2>/dev/null)
@@ -360,7 +360,7 @@ if [ -n "$_WT_GITDIR" ]; then
 fi
 ```
 
-**Caveat**: if main's `.project/backlog.html` does not exist yet (fresh project), `ln -sfn` creates a dangling symlink — this resolves itself as soon as the first backlog write happens on main. Skills check for file existence before reading, so a dangling symlink is safe.
+**Caveat**: if main's `.project/backlog.json` does not exist yet (fresh project), `ln -sfn` creates a dangling symlink — this resolves itself as soon as the first backlog write happens on main. Skills check for file existence before reading, so a dangling symlink is safe.
 
 ### Verify symlink integrity
 
@@ -368,7 +368,7 @@ After Step 3 completes (and on every silent-reuse path), verify all expected sym
 
 ```bash
 WT="{main_root}/.claude/worktrees/{feature-name}"
-EXPECTED=("backlog.html" "features" "wireframes" "screenshots" "thinking" "project.json" "project-context.json")
+EXPECTED=("backlog.json" "features" "wireframes" "screenshots" "thinking" "project.json" "project-context.json")
 FAILED=()
 for name in "${EXPECTED[@]}"; do
   link="$WT/.project/$name"
@@ -421,7 +421,7 @@ fi
 
 `git show-ref` is a single ref-lookup (~1 ms). When no worktree was ever created for this feature (typical for DONE features that were built directly on main), this skips the full `git worktree prune` + `git worktree list` + path-compare sequence.
 
-**Skip this fast-path if** the caller checks `.project/backlog.html` for `feature.status === "DOING"` — that path requires the DOING-without-worktree warning in Step 4a. In that case, continue to Steps 0–4.
+**Skip this fast-path if** the caller checks `.project/backlog.json` for `feature.status === "DOING"` — that path requires the DOING-without-worktree warning in Step 4a. In that case, continue to Steps 0–4.
 
 #### Step 0: Prune stale registrations
 
@@ -562,7 +562,7 @@ MAIN_ROOT="$(git worktree list --porcelain | head -1 | awk '{print $2}')"
 if [ "$(git rev-parse --show-toplevel)" != "$MAIN_ROOT" ]; then
   WT_PROJ="$(pwd)/.project"
   FAILED=()
-  for f in backlog.html features project.json project-context.json; do
+  for f in backlog.json features project.json project-context.json; do
     if ! { [ -L "$WT_PROJ/$f" ] && [ -e "$WT_PROJ/$f" ]; }; then
       FAILED+=("$f")
     fi

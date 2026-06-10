@@ -5,8 +5,8 @@
 After defining pages, sync them to the backlog:
 
 1. Read `project.json` → get `design.pages[]` array
-2. Read `.project/backlog.html` (if it exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`
-   - **If backlog doesn't exist**: create it from template `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`. Set `data.source` to `"/frontend-design"`, `data.project` to project directory name.
+2. Read `.project/backlog.json` (if it exists) → parse JSON
+   - **If backlog doesn't exist**: create `.project/backlog.json` with the data scaffold from `shared/BACKLOG.md` (`schemaVersion: 2`). Set `data.source` to `"/frontend-design"`, `data.project` to project directory name.
 3. For each page in `design.pages[]`:
    - Generate kebab-case name from page name
    - Check if `data.features.find(f => f.name === name)` exists
@@ -25,7 +25,7 @@ After defining pages, sync them to the backlog:
      Track this item in `$NEW_ITEMS[]` for the handoff prompt.
    - **Found**: skip (don't overwrite existing items)
 4. Set `data.updated` to today's date
-5. Write back via Edit (keep `<script>` tags intact)
+5. Write back via Edit (see `shared/BACKLOG.md § Writing`)
 
 ## Update DevInfo
 

@@ -2,7 +2,7 @@
 
 Read in parallel **directly before editing** (skip if not present) — do NOT rely on reads from earlier phases (Prettier/linters may have modified files in the meantime):
 
-- `.project/backlog.html`
+- `.project/backlog.json`
 - `.project/project.json`
 - `.project/project-context.json`
 
@@ -29,7 +29,7 @@ Mutate in memory:
 
 Write back in parallel:
 
-- Edit `backlog.html` (keep `<script>` tags intact)
+- Edit `.project/backlog.json`
 - Write `project.json` (stack, features, data)
 - Write `project-context.json` (if architecture changed)
 

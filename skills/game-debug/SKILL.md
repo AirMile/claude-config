@@ -124,87 +124,9 @@ If nothing available → continue without context (backwards compatible).
 
 ## PHASE 1: Problem Intake
 
-> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`. Read '.claude/skills/game-debug/references/problem-intake.md' for the full intake protocol — classify (Step 1) → per-type detail questions (Step 2) → confirm summary (Step 3).
 
-### Step 1: Classify
-
-AskUserQuestion:
-
-- header: "Problem Type"
-- question: "What type of problem is this?"
-- options:
-  - "Runtime Error" — Crashes, GDScript errors, null references
-  - "Logic Bug" — Wrong game behavior, state issues
-  - "Performance Issue" — FPS drops, memory leaks, physics lag
-  - "Scene/Signal Issue" — Node connections, signal flow, scene tree problems
-
-### Step 2: Details (per type)
-
-**Runtime Error:**
-AskUserQuestion:
-
-- header: "Error Details"
-- question: "What information do you have about the error?"
-- options:
-  - "I have an error message" — Exact error from Godot console
-  - "I have a stack trace" — Full stack trace available
-  - "I have both" — Error message and stack trace
-  - "I only have a screenshot" — Visual representation of the error
-
-Then: ask user to share the details.
-
-**Logic Bug:**
-AskUserQuestion:
-
-- header: "Behavior Details"
-- question: "Describe the difference between expected and actual behavior:"
-- options:
-  - "I know exactly what is going wrong" — Expected vs actual describable
-  - "Game state is wrong" — Wrong values, wrong state
-  - "Action does not work" — Input, collision, ability fails
-  - "Timing/order is wrong" — Things happen at wrong moment
-
-Then: ask for specific expected vs actual behavior.
-
-**Performance Issue:**
-AskUserQuestion:
-
-- header: "Performance Details"
-- question: "When does the performance problem occur?"
-- options:
-  - "On specific action" — Certain ability, collision, or scene load
-  - "Always slow" — Consistently low FPS
-  - "Over time" — Starts smooth, becomes slower (memory leak)
-  - "With many nodes" — Only slow with many instances
-
-Then: ask about scale/context details.
-
-**Scene/Signal Issue:**
-AskUserQuestion:
-
-- header: "Scene/Signal Details"
-- question: "What type of connection problem is this?"
-- options:
-  - "Signal not received" — Signal emitted but receiver does not respond
-  - "Node not found" — get_node() or @onready fails
-  - "Scene tree corrupt" — Nodes disappear, wrong parent, orphans
-  - "Connect/disconnect" — Signals not connecting or disconnecting correctly
-
-Then: ask for node paths, signal names, scene structure.
-
-### Step 3: Confirm summary
-
-Show summary of type + symptom + context + details gathered.
-
-AskUserQuestion:
-
-- header: "Confirmation"
-- question: "Is this problem summary correct?"
-- options:
-  - "Yes, start investigation (Recommended)" — Start inline investigation
-  - "No, correction needed" — Provide more details or corrections
-
-If "Nee" → ask for corrections, update summary, re-confirm.
+Outcome: confirmed problem summary (type + symptom + context + details) — input for PHASE 2 investigation. Do not start investigating before the user confirms the summary.
 
 ---
 
@@ -220,49 +142,7 @@ Spawn one Explore agent (`subagent_type="Explore"`) to investigate in an isolate
 - Runtime Error without stack trace → `"very thorough"`
 - Logic Bug / Performance Issue / Scene-Signal Issue → `"very thorough"` (cause unclear, broad scan)
 
-Agent prompt:
-
-```
-Investigate this Godot bug. Perform 3 passes that build on each other.
-
-DEBUG_CONTEXT:
-{DEBUG_CONTEXT from PHASE 0}
-
-PROBLEM:
-{problem summary from PHASE 1}
-{error message / stack trace / details}
-
-PASS 1 — ERROR TRACE:
-- Parse stack trace / error message → identify root location
-- Read the source file at the error location (GDScript .gd files)
-- Trace the call stack: what called this code? What signals trigger it?
-- Map the exception/error flow: where is it caught (or not)?
-
-PASS 2 — CONTEXT MAP (use locations from Pass 1):
-- Read the scene tree: which nodes reference each other? Parent/child?
-- Check signal connections: connect() calls, @onready vars, $NodePath references
-- Trace data flow: exports, autoloads, Resources passed between scripts
-- Identify external factors (physics layers, input actions, scene transitions)
-
-PASS 3 — CHANGE ANALYSIS (use files from Pass 1+2):
-- git log --oneline -10 -- {affected files}
-- git blame {error location}
-- Was this working before? What changed?
-- Check KNOWN PITFALLS in DEBUG_CONTEXT: if a pitfall matches on symptom or location,
-  include it as a strong hypothesis — add as "Pitfall match: {summary}" in return format
-
-RETURN FORMAT:
-INVESTIGATION_START
-Error location: {file:line}
-Call stack: {caller → callee chain, including signals}
-Root code: {the problematic code snippet, max 20 lines}
-Scene tree: {relevant node hierarchy}
-Signal flow: {signal chain involved}
-Recent changes: {relevant commits with dates}
-Regression risk: {yes/no — was this area recently modified?}
-Pitfall match: {matching pitfall summary, or "none"}
-INVESTIGATION_END
-```
+Agent prompt: Read '.claude/skills/game-debug/references/explore-agent-prompt.md' and fill the `{...}` placeholders from PHASE 0 (DEBUG_CONTEXT) and PHASE 1 (problem summary).
 
 Parse the agent's `INVESTIGATION_START...END` block — only the compact findings enter the main context.
 

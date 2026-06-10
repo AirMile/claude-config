@@ -61,11 +61,12 @@ multiSelect: false
 **For URLs:** Navigate with Playwright CLI, wait 3 seconds for render, take full-page screenshot. This captured screenshot becomes the source image for all subsequent phases.
 
 ```
+mkdir -p .project/tmp
 playwright-cli open [url]
 playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"
-playwright-cli screenshot --full-page --filename=.project/source-capture.png
+playwright-cli screenshot --full-page --filename=.project/tmp/source-capture.png
 playwright-cli close
-Read .project/source-capture.png
+Read .project/tmp/source-capture.png
 ```
 
 Store the resolved source image reference as `$SOURCE_IMAGE` for the verification loop.
@@ -162,13 +163,11 @@ Only for scope = patch.
 
 If scope is a full page (not a single component):
 
-1. Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`
+1. Read `.project/backlog.json` (if exists) → parse JSON
 2. See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "converting"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`).
 3. If `$CONVERT_TARGET` is set: use it as the page name to match (skip name derivation). Otherwise derive from scope selection. Find feature: `data.features.find(f => f.name === "{kebab-case-page-name}")`
    - **Found**: use as task reference. Do NOT modify `status` or add `stage` during build — the page stays `TODO` until PHASE 4 completion. Skip write.
    - **Not found**: store `$NEW_BACKLOG_ENTRY = { "name": "{name}", "type": "PAGE", "status": "TODO", "phase": "P4", "description": "Converted from visual input", "dependencies": [] }`. **Do not write yet** — Phase 4 completion (4.2) writes the entry along with the DONE sync.
-
-Keep `<script>` tags intact.
 
 If scope is a component: skip this step.
 
@@ -402,6 +401,7 @@ States:     [✓ state components generated: [loading|error|empty] | — no stat
 PHASE 4 is mandatory — the convert route is not complete without it. Load and execute `convert-completion.md` immediately after PHASE 3 ends, **before reporting completion to the user**.
 
 Without PHASE 4:
+
 - backlog is never synced to DONE (4.2)
 - worktree remains unmerged on disk and `/diensten`-style routes are unreachable on main (4.6)
 - next session opens with stale handoff data (4.1)

@@ -31,7 +31,7 @@ Update `.project/session/devinfo.json`:
 
 **Deferred entry (from Phase 0.5):** if `$NEW_BACKLOG_ENTRY` is set, append it to `data.features[]` and set `data.updated` to today **before** the match/update below. The just-inserted entry will then be found by the match and immediately flipped to DONE.
 
-Read `.project/backlog.html` per shared/BACKLOG.md. Find feature where `f.name === $CONVERT_TARGET`.
+Read `.project/backlog.json` per shared/BACKLOG.md. Find feature where `f.name === $CONVERT_TARGET`.
 
 If no match: skip silently.
 
@@ -41,14 +41,14 @@ If match found, branch on entity type:
 
 - Set `status: "DONE"`, `completedAt: "{YYYY-MM-DD}"`, `data.updated` to today
 - Remove `stage` and `transition` fields if present
-- Write back via Edit (keep `<script>` tags intact)
+- Write back via Edit
 
 **Component scope** (`$CONVERT_TARGET` resolves to a component):
 
 - Set `status: "DOING"`, `stage: "building"`
 - Remove `transition` field if present
 - Do NOT set `shippedSha` or `completedAt` — those belong to the page/feature merge that consumes this component
-- Write back via Edit (keep `<script>` tags intact)
+- Write back via Edit
 
 ### 4.3 Gap-Discovery
 
@@ -93,6 +93,14 @@ Next: run /frontend-check (batch over all DOING items) at end of release cycle,
 ```
 
 ### 4.5 Dev-server cleanup
+
+First remove session-scoped working screenshots (convert artifacts only):
+
+```bash
+rm -f .project/tmp/source-capture*.png .project/tmp/patch-before*.png .project/tmp/verify-round-*.png
+```
+
+Do NOT delete `.project/tmp/smoke-render-*.png` — those back the devinfo `buildScreenshot` handoff (24h staleness rule applies there).
 
 Before presenting the finalize offer, detect Node processes with cwd in the current worktree:
 

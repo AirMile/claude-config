@@ -57,7 +57,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
 > **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 5 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
-1. **Read backlog** — `.project/backlog.html`, parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
+1. **Read backlog** — read `.project/backlog.json` → parse JSON (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
 
    Resolve the active feature in this precedence order:
    - **Arg provided + matches a verifying feature** → use the arg. Show: `Backlog: ✓ Task picked up — {name}`.

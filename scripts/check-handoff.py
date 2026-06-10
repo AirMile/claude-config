@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Valideer pipeline-skill handoff conventie.
 
-Leest reads:/writes: frontmatter uit alle skills/*/SKILL.md en signaleert
-gaten in de keten: velden die gelezen worden zonder dat een skill ze schrijft,
-en velden die geschreven worden zonder lezer (zwakker signaal).
+Leest reads:/writes:/writes-terminal: frontmatter uit alle skills/*/SKILL.md
+en signaleert gaten in de keten: velden die gelezen worden zonder dat een
+skill ze schrijft, en velden die geschreven worden zonder lezer (zwakker
+signaal). Velden onder `writes-terminal:` zijn bewust terminale writes
+(dashboard/rapportage, geen downstream-consument): ze tellen mee als writes
+voor de read-match, maar genereren geen INFO-regel.
 
 Daarnaast: undeclared-writer detectie — skills ZONDER reads:/writes:
 frontmatter waarvan de body (SKILL.md + references/*.md) wel schrijvend
@@ -21,7 +24,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
-LIST_RE = re.compile(r"^(reads|writes):\s*\[([^\]]*)\]", re.MULTILINE)
+LIST_RE = re.compile(r"^(reads|writes|writes-terminal):\s*\[([^\]]*)\]", re.MULTILINE)
 
 # Undeclared-writer heuristiek: een regel telt als schrijvende verwijzing
 # wanneer een write-werkwoord en een .project/-statebestand op dezelfde
@@ -65,21 +68,23 @@ def find_undeclared_writers(path: Path) -> list[str]:
     return hits
 
 
-def parse_frontmatter(path: Path) -> tuple[set[str], set[str]]:
+def parse_frontmatter(path: Path) -> tuple[set[str], set[str], set[str]]:
     text = path.read_text(encoding="utf-8")
     parts = text.split("---", 2)
     if len(parts) < 3:
-        return set(), set()
+        return set(), set(), set()
     fm = parts[1]
-    reads, writes = set(), set()
+    reads, writes, terminal = set(), set(), set()
     for match in LIST_RE.finditer(fm):
         key, body = match.group(1), match.group(2)
         items = {x.strip() for x in body.split(",") if x.strip()}
         if key == "reads":
             reads = items
-        else:
+        elif key == "writes":
             writes = items
-    return reads, writes
+        else:
+            terminal = items
+    return reads, writes, terminal
 
 
 def main() -> int:
@@ -90,10 +95,12 @@ def main() -> int:
 
     undeclared_warns: list[str] = []
 
+    terminal_fields: set[str] = set()
+
     for path in skill_files:
-        reads, writes = parse_frontmatter(path)
+        reads, writes, terminal = parse_frontmatter(path)
         skill = path.parent.name
-        if not reads and not writes:
+        if not reads and not writes and not terminal:
             if skill in UNDECLARED_WRITER_ALLOWLIST:
                 continue
             hits = find_undeclared_writers(path)
@@ -103,11 +110,12 @@ def main() -> int:
                     f".project/-state te schrijven ({len(hits)} hit(s), eerste: {hits[0]})"
                 )
             continue
-        declarations[skill] = {"reads": reads, "writes": writes}
+        declarations[skill] = {"reads": reads, "writes": writes | terminal}
         for field in reads:
             all_reads.setdefault(field, set()).add(skill)
-        for field in writes:
+        for field in writes | terminal:
             all_writes.setdefault(field, set()).add(skill)
+        terminal_fields |= terminal
 
     warns: list[str] = []
     infos: list[str] = []
@@ -117,7 +125,7 @@ def main() -> int:
             warns.append(f"WARN: {field} gelezen door {sorted(readers)} maar door niemand geschreven")
 
     for field, writers in sorted(all_writes.items()):
-        if field not in all_reads:
+        if field not in all_reads and field not in terminal_fields:
             infos.append(f"INFO: {field} geschreven door {sorted(writers)} maar door niemand gelezen")
 
     print(f"Pipeline skills met handoff-declaratie: {len(declarations)}")

@@ -185,13 +185,13 @@ Tokens:   {N} color, {M} spacing, {P} typography, {Q} motion, {R} interaction to
 
 Runs only if a backlog task was picked up in PHASE 0 step 4 (`taskName` is set) **and** post-flight passed (status → Complete or Warnings).
 
-1. Re-read `.project/backlog.html`.
-2. Parse the JSON inside `<script id="backlog-data">`.
+1. Re-read `.project/backlog.json`.
+2. Parse the JSON.
 3. Find `features[].name === taskName`.
 4. Set `status = "DONE"` and delete the `transition` field.
-5. Serialize the updated JSON back into the script tag and Write the full HTML file.
+5. Write the updated JSON back to `.project/backlog.json` (see `shared/BACKLOG.md § Writing`).
 6. Output: `Backlog: ✓ Task "{taskName}" → DONE`.
 
 If post-flight failed before reaching X.7: skip the write (per `shared/BACKLOG.md § Abort` — `transition` stays, user can re-copy prompt to retry).
 
-Mirror update: also set `features[].status = "DONE"` and `completedAt: "{today}"` in `.project/project.json` if a matching entry exists (convenience; `backlog.html` is the UI source of truth).
+Mirror update: also set `features[].status = "DONE"` and `completedAt: "{today}"` in `.project/project.json` if a matching entry exists (convenience; `backlog.json` is the source of truth).

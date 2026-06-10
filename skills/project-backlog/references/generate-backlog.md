@@ -1,12 +1,12 @@
 # PHASE 4: Generate Backlog
 
-**Goal:** Write the interactive HTML kanban backlog.
+**Goal:** Write the backlog JSON data store — the server renders the kanban board from the template + this data.
 
 **Refer to `shared/BACKLOG.md` for the full data format.**
 
-1. **Template or merge:**
-   - **Create mode**: Copy template from `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`. Create `.project/` if it does not exist.
-   - **Update mode**: Read existing `.project/backlog.html`, parse the current JSON block. Do NOT copy the template again — update in-place.
+1. **New or merge:**
+   - **Create mode**: Start a fresh data object (step 2). Create `.project/` if it does not exist. No template copy — the server owns presentation.
+   - **Update mode**: Read existing `.project/backlog.json`, parse JSON — update in-place.
 
 2. **Build the JSON data object:**
 
@@ -14,6 +14,7 @@
 
    ```json
    {
+     "schemaVersion": 2,
      "project": "{Project Name}",
      "generated": "{YYYY-MM-DD}",
      "updated": "{YYYY-MM-DD}",
@@ -41,6 +42,7 @@
 
    ```json
    {
+     "schemaVersion": 2,
      "project": "{Project Name}",
      "generated": "{YYYY-MM-DD}",
      "updated": "{YYYY-MM-DD}",
@@ -79,9 +81,8 @@
    - Set `updated` to current date, keep original `generated` date
    - INDEPENDENT features (added outside project-backlog): always preserve intact
 
-3. **Replace the JSON block** in the template:
-   - Find: `<script id="backlog-data" type="application/json">...</script>`
-   - Replace the content between the tags with the built JSON object
+3. **Write the data store:**
+   - Serialize the built data object (`JSON.stringify(data, null, 2)`) → Write to `.project/backlog.json`
 
 4. **Start backlog server** (if not already running):
 
@@ -110,7 +111,7 @@
 ```
 BACKLOG CREATED
 
-File: .project/backlog.html
+File: .project/backlog.json
 Dashboard: .project/project.json (concept + stack)
 Server: http://localhost:9876/{project-dir}
 
@@ -131,7 +132,7 @@ Start building: /dev-define {first-P1-feature}
 ```
 BACKLOG CREATED
 
-File: .project/backlog.html
+File: .project/backlog.json
 Dashboard: .project/project.json (concept)
 Server: http://localhost:9876/{project-dir}
 

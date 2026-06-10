@@ -65,9 +65,9 @@ Per selected page → push to `data.features[]`:
 }
 ```
 
-Update `data.updated`. Write backlog JSON back to `backlog.html`.
+Update `data.updated`. Write backlog JSON back to `.project/backlog.json`.
 
-**backlog:** parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md`). Match on `feature.name` (not `id` — the backlog format uses `name` as the unique key).
+**backlog:** read `.project/backlog.json` → parse JSON (see `shared/BACKLOG.md`). Match on `feature.name` (not `id` — the backlog format uses `name` as the unique key).
 
 Set on the matched entry:
 
@@ -191,7 +191,7 @@ If new_errors not empty → show `DIAGNOSTICS: {len(new_errors)} new error(s) in
 
 Compare `git status --porcelain | sort` with `.project/session/pre-skill-status.txt`:
 
-- **NEW** (only in current) → `git add -f` (subdirs like `.project/features/` and `.project/sessions/` are gitignored — `-f` required for session files that fall under them)
+- **NEW** (only in current) → `git add -f` (subdirs like `.project/features/` and `.project/session/` are gitignored — `-f` required for session files that fall under them)
 - **OVERLAP** (in both, changed by this skill) → `git add -f`
 - **PRE-EXISTING** (only in baseline, or overlap not changed by this skill) → do not stage
 
@@ -203,7 +203,7 @@ fails with `pathspec is beyond a symbolic link`. Resolve by splitting the commit
 
 1. App-code changes (tests, source files in the worktree branch) → stage + commit
    inside the worktree as normal.
-2. `.project/` changes (feature.json, backlog.html, project-context.json) → stage
+2. `.project/` changes (feature.json, backlog.json, project-context.json) → stage
    and commit on main via `git -C {main_root} add -f .project/...` and
    `git -C {main_root} commit -m "..."`.
 

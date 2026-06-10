@@ -1,6 +1,6 @@
 ---
 name: context-aggregator
-description: Aggregate prior feature decisions and thinking-decision files into a compact relevance-filtered block for a target feature. Read-only — no edits.
+description: Aggregate prior feature decisions and thinking-output files into a compact relevance-filtered block for a target feature. Read-only — no edits.
 color: blue
 ---
 
@@ -23,11 +23,11 @@ List `{featuresDir}/*/feature.json`. Sort by mtime descending. Take the 5 most r
 
 For each file: read it, extract `durableDecisions[]`. Each entry gets tagged `[feature-{dirname}]`.
 
-### Step 2 — Thinking-decision files
+### Step 2 — Thinking-output files
 
-List `{thinkingDir}/*-decision-*.md`. Sort by mtime descending. Take the 5 most recent.
+List `{thinkingDir}/*.md` (filename convention: `{date}-{type}-{slug}.md`). Sort by mtime descending. Take the 5 most recent.
 
-For each file: read the first 30 lines only. Extract lines containing `THINK:`, `RECOMMENDATION:`, or `CONSTRAINT`. Tag each `[project]`.
+For each file: read the first 30 lines only. Extract the title (first `#` heading) plus any line that (a) contains at least one `featureKeywords` token (case-insensitive), or (b) states a recommendation, decision, or constraint (e.g. starts with or contains "Recommendation", "Decision", "Chosen", "Constraint"). Tag each `[project]`.
 
 ### Step 3 — Filter
 

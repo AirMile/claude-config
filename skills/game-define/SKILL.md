@@ -1,6 +1,13 @@
 ---
 name: game-define
 description: Define Godot feature requirements and architecture. Use with /game-define.
+reads:
+  [
+    backlog.status,
+    feature.requirements,
+    project-context.architecture,
+    backlog.features,
+  ]
 writes: [feature.requirements, backlog.stage, concept.seed, feature.seedDrift]
 metadata:
   author: claude-config
@@ -97,9 +104,9 @@ The skill gathers requirements through targeted questions, optionally researches
 
 **Tag backlog card as active** (immediately after feature name determination):
 
-Read `.project/backlog.html` (if it exists), parse JSON (see `shared/BACKLOG.md`).
+Read `.project/backlog.json` (if it exists), parse JSON (see `shared/BACKLOG.md`).
 Find feature by name → keep `"status": "TODO"`, set `"stage": "defining"`, `data.updated` to now.
-Write back via Edit (keep `<script>` tags intact).
+Write back via Edit.
 Not found → skip (feature is added to backlog at PHASE 5).
 The card stays in TODO but gets a pulsing `defining` stage-badge.
 
@@ -160,10 +167,16 @@ Check: `.project/features/{feature-name}/feature.json` exists?
      - `project.json` not present → show: `⚠️ No project.json found. Consider running /core-setup first for better codebase context.` Continue without (non-blocking).
      - Present but `stack` and `features` both absent or empty → show: `ℹ️ project.json exists but is missing codebase context. /core-setup can fill this in.`
      - Present with content → proceed silently.
-   - **Past decisions scan** (two sources, both scope):
-     - Feature-scope: Glob `.project/features/*/feature.json` sorted by `created`/`definedAt` desc — take **5 most recent**. Flatten their `durableDecisions[]`. Tag each entry with `[feature-X]`.
-     - Project-scope: Glob `.project/thinking/*-decision-*.md` sorted by mtime desc — take **5 most recent**. Read first ~30 lines per file, extract `THINK:` line (title), `AANBEVELING:` line (chosen), and `CONSTRAINT` section. Tag each entry with `[project]`.
-     - Merge both sources. Filter relevant via keyword-overlap between current feature name/concept and each decision's title, chosen, or constraint (≥2 substantive terms). Keep top 3 most-relevant.
+   - **Past decisions** (only if `.project/features/` has any prior `feature.json`):
+
+     > **Todo**: spawn `context-aggregator` agent via `Task` tool with:
+     >
+     > - `featureName` = current feature name
+     > - `featureKeywords` = tokens from feature name (split kebab-case)
+     > - `featuresDir` = `$REPO/.project/features`
+     > - `thinkingDir` = `$REPO/.project/thinking`
+     >
+     > Parse `PRIOR_DECISIONS_START/END` block from response. Store for PHASE 1a "Surface relevant past decisions" render. Empty or missing block → silent skip (no output).
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 

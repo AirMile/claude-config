@@ -29,12 +29,22 @@ Requires `$FEAT` to be set to the current feature name.
 
 ```bash
 node -e "
+  const fs = require('fs');
   const p = require('$REPO/.project/project.json');
   const f = '$FEAT';
+  // Feature list comes from the backlog store (single source of truth) —
+  // project.json no longer carries a features[] copy.
+  let bl = null;
+  try { bl = JSON.parse(fs.readFileSync('$REPO/.project/backlog.json', 'utf8')); }
+  catch { try {
+    const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
+    const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
+    if (m) bl = JSON.parse(m[1]);
+  } catch {} }
   console.log(JSON.stringify({
     stack: p.stack || null,
     pitch: p.seed?.pitch || (p.seed?.content || '').slice(0, 240),
-    features: (p.features || []).map(x => ({name: x.name, status: x.status, summary: x.summary})),
+    features: ((bl && bl.features) || []).map(x => ({name: x.name, status: x.status, summary: x.summary || x.description})),
     entities: (p.data?.entities || []).map(e => (typeof e === 'string' ? e : e.name)),
     thinking: (p.thinking || []).filter(t => t.newFeature === f)
   }, null, 2));

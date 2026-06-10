@@ -192,7 +192,7 @@ Rules:
 
 ## Project Bootstrapping
 
-**When:** A skill expects `.project/` files (backlog.html, project.json, features/) but the folder does not exist or is empty.
+**When:** A skill expects `.project/` files (backlog.json, project.json, features/) but the folder does not exist or is empty.
 
 **How:** Check in PHASE 0 whether `.project/` exists. If not, suggest `core-setup` before the skill executes.
 
@@ -287,6 +287,8 @@ For conditional branches (read only when condition is met):
 
 **Naming:** Use `references/{descriptive-name}.md` — not `phase-N.md`. Renaming phases won't force a rename of the file.
 
+**Read failure:** If the Read of a reference file fails (missing/renamed file), stop and report the missing path to the user — do not improvise the phase from memory. The reference is the source of truth; a reconstructed version silently diverges from it.
+
 **Examples:** `dev-verify/references/completion-sync.md` (end-of-flow sync, 237 lines) and `dev-build/techniques/tdd.md` (mutually-exclusive workflow, loaded on demand in PHASE 2).
 
 **Skip for:** Short inline phases (<30 lines), blocks that always run AND are always needed (no conditional savings), skills with fewer than 5 phases.
@@ -374,7 +376,7 @@ PROJECT_CONTEXT_END
 | -------------------------------- | --------------------------------------- | ---------------------------------------------- |
 | `shared/LEARNINGS-LOAD.md`       | `project-context.json#learnings[]`      | `component`, `architectural`, `pitfall-prefix` |
 | `shared/PROJECT-CONTEXT-LOAD.md` | `project.json` + `project-context.json` | `build`, `define`, `verify`                    |
-| `shared/BACKLOG-LOAD.md`         | `.project/backlog.html`                 | `read-feature`, `ready-queue`                  |
+| `shared/BACKLOG-LOAD.md`         | `.project/backlog.json`                 | `read-feature`, `ready-queue`                  |
 | `shared/FEATURE-LOAD.md`         | `.project/features/{name}/feature.json` | `build`, `verify`                              |
 
 **Game pipeline** (Godot 4.x — same `.project/` files, game-specific schema fields):
@@ -383,7 +385,7 @@ PROJECT_CONTEXT_END
 | ----------------------------- | --------------------------------------- | --------------------------------------- |
 | `shared/LEARNINGS-LOAD.md`    | `project-context.json#learnings[]`      | shared with dev pipeline                |
 | `shared/GAME-CONTEXT-LOAD.md` | `project.json` + `project-context.json` | `build`, `define`, `verify`             |
-| `shared/GAME-BACKLOG-LOAD.md` | `.project/backlog.html`                 | `read-feature`, `queue` (parameterized) |
+| `shared/GAME-BACKLOG-LOAD.md` | `.project/backlog.json`                 | `read-feature`, `queue` (parameterized) |
 | `shared/GAME-FEATURE-LOAD.md` | `.project/features/{name}/feature.json` | `build`, `verify`                       |
 
 Guard script: `node scripts/check-context-load.js` — validates all 21 profiles (dev + game) against fixtures in `scripts/fixtures/`. Run alongside `check-handoff.py` before releases.
@@ -630,7 +632,7 @@ multiSelect: true
 
 1. Run dedup order (see above).
 2. Append to `project.json#design.components[]`: `{ name, purpose: "infer from context", status: "IDEA", scope: "infer from context — atomic|section|layout, default atomic" }`
-3. Push to `backlog.html#data.features[]`:
+3. Push to `backlog.json#data.features[]`:
    ```json
    {
      "name": "{kebab-case name}",
@@ -658,13 +660,13 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected). "Skip" → log all 
 
 **Skills:** `dev-define` (sole writer — post-architecture seed), `frontend-design completion-sync` (sole writer — user-driven page creation), `dev-build` (warning-only safety net + COMPONENT→route suggestions — does NOT write to backlog).
 
-> **Doctrine:** `/dev-define` and `/frontend-design completion-sync` are the only skills that create PAGE entries in `backlog.html`. `/dev-build` only logs a warning when it detects route patterns not yet in the backlog.
+> **Doctrine:** `/dev-define` and `/frontend-design completion-sync` are the only skills that create PAGE entries in `backlog.json`. `/dev-build` only logs a warning when it detects route patterns not yet in the backlog.
 
 #### Triggers (per skill)
 
 - **dev-define:** scan `feature.json#architecture.routes[]` for stack-specific page patterns (`app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`); scan `feature.json#files[]` for suffixes `Page`, `Screen`, `View`.
 - **dev-build (safety net):** identical patterns as dev-define. Skip candidates already seeded by dev-define: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`. **Warning-only — no write.**
-- **dev-build (COMPONENT→route):** scan `<Link href="...">` and `router.push(...)` in generated component files. Candidate if route does not appear in `project.json#design.pages[]` or `backlog.html`.
+- **dev-build (COMPONENT→route):** scan `<Link href="...">` and `router.push(...)` in generated component files. Candidate if route does not appear in `project.json#design.pages[]` or `backlog.json`.
 
 #### Resolution
 
@@ -725,7 +727,7 @@ multiSelect: false
 Ask name + description (free text). Then:
 
 1. Run dedup order (see BACKLOG.md § Writing the backlog).
-2. Push to `backlog.html#data.features[]`:
+2. Push to `backlog.json#data.features[]`:
    ```json
    {
      "name": "{kebab-name}",
@@ -753,7 +755,7 @@ multiSelect: false
 ```
 
 1. Run dedup order.
-2. Push to `backlog.html#data.features[]`:
+2. Push to `backlog.json#data.features[]`:
    ```json
    {
      "name": "{kebab-name}",
@@ -770,7 +772,7 @@ multiSelect: false
 **For "+ new PAGE" (from dev-define pageHint sparring):**
 
 1. Run dedup order.
-2. Push to `backlog.html#data.features[]`:
+2. Push to `backlog.json#data.features[]`:
    ```json
    {
      "name": "{kebab-page-name}",

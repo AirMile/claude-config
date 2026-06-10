@@ -267,6 +267,25 @@ if (Test-Path $personalDir) {
 
 ---
 
+## PHASE 3.5: Project schema migration check
+
+Detect projects still on the pre-v2 `.project/` schema (legacy marker: `backlog.html` exists, or `project.json` without `schemaVersion`):
+
+```bash
+ls -d {projects_root}/*/.project/backlog.html 2>/dev/null
+```
+
+- **No hits** → skip silently.
+- **Hits** → AskUserQuestion: "Found {N} project(s) on the pre-v2 .project/ schema: {names}. Migrate now?" — "Yes, migrate all (Recommended)" / "Pick which" / "Skip". Per chosen project run:
+
+  ```bash
+  python3 "$CONFIG_REPO/scripts/migrate-project.py" {projects_root}/{name}
+  ```
+
+  The script is idempotent (re-runs are no-ops) and can also be run standalone at any time. Add the per-project result lines to the PHASE 4 report.
+
+---
+
 ## PHASE 4: Report
 
 ```

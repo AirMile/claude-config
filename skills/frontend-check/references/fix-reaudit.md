@@ -100,12 +100,12 @@ Resolved: [N]/[total] findings
 
 After re-audit, update backlog if a feature was targeted:
 
-1. Read `.project/backlog.html` → parse JSON
+1. Read `.project/backlog.json` → parse JSON
 2. Find the feature (by `featureName` or best-effort URL match from PHASE 0.4).
 3. Set `f.lastCheckedSha` = current HEAD SHA. Set `data.updated` to today.
 4. **If no unresolved CRITICAL findings AND `f.type === "PAGE"` (page track)**: set `status: "DONE"`, `shipped: true`, `shippedAt: "{YYYY-MM-DD}"`, remove `stage` and `transition`. If audit fixes produced a commit: set `shippedSha = "{audit-commit-sha}"`.
 5. **If `f.type === "COMPONENT"` (component track)**: do NOT auto-set `status: "DONE"` — components ship with the page/feature that consumes them. Only update `lastCheckedSha`.
-6. Write back via Edit (keep `<script>` tags intact).
+6. Write back via Edit (see `shared/BACKLOG.md § Writing`).
 7. Sync to `project.json` `features[]` if status changed.
 
 ### 4.4 Completion Report

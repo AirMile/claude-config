@@ -9,7 +9,8 @@ reads:
     backlog.status,
     project-context.learnings,
   ]
-writes: [feature.refactor, backlog.status, project-context.learnings]
+writes: [backlog.status, project-context.learnings]
+writes-terminal: [feature.refactor]
 metadata:
   author: claude-config
   version: 2.4.0
@@ -129,7 +130,7 @@ PHASE 5.4 compares against `pre-skill-status-worktree.txt` if worktree-switch ha
 
 1. **Step 1: Read backlog for pipeline status:**
 
-   Read `.project/backlog.html` (if exists), parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`):
+   Read `.project/backlog.json` (if exists), parse JSON (see `shared/BACKLOG.md`):
    - Filter DONE features: `data.features.filter(f => f.status === "DONE" && !f.shipped)`
    - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` section
    - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)

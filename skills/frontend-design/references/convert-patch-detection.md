@@ -21,14 +21,14 @@ Render the current component via Playwright (if dev server is available):
 ```
 playwright-cli goto http://localhost:[port]/[page with this component]
 playwright-cli run-code "async page => { await page.waitForTimeout(2000); }"
-playwright-cli screenshot --filename=.project/patch-before.png
+playwright-cli screenshot --filename=.project/tmp/patch-before.png
 ```
 
 If Playwright is not available: skip before-screenshot and go directly to step 3 without visual diff.
 
 #### Step 3: Visual diff
 
-Compare `$SOURCE_IMAGE` (new) with `patch-before.png` (current):
+Compare `$SOURCE_IMAGE` (new) with `.project/tmp/patch-before.png` (current):
 
 ```
 PATCH ANALYSIS

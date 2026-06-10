@@ -35,7 +35,7 @@ Flow: extract research questions → auto-select technique → execute multi-sou
 
 **Scope check** — only if scope context exists (backlog, features, or page files):
 
-Check `.project/backlog.html`, `.project/features/`, and `app/**/page.tsx` / `src/pages/**/*.tsx`. If at least one found:
+Check `.project/backlog.json`, `.project/features/`, and `app/**/page.tsx` / `src/pages/**/*.tsx`. If at least one found:
 
 ```yaml
 header: "Scope"

@@ -5,8 +5,8 @@ description: >-
   packs (Apple/Material/Fluent/Carbon), spring physics, choreography, glass
   surfaces. Use with /frontend-tokens, or whenever a backlog task with type
   THEME and transition "defining" is detected.
-reads: [backlog.html, project.json#theme]
-writes: [project.json#theme, backlog.html, devinfo.tokenDrift]
+reads: [backlog.status, project.theme]
+writes: [project.theme, backlog.status, devinfo.tokenDrift]
 metadata:
   author: claude-config
   version: 4.0.0
@@ -95,6 +95,7 @@ PRE-FLIGHT CHECK
    > "Your project uses the old pack name `expressive`. This has been renamed to `apple`. Rename now? (Yes — updates only `theme.motion.pack`, all other keys stay identical)"
    > If confirmed: write `theme.motion.pack = "apple"` and continue.
 6. **MIGRATE_OFFER** — if `theme.motion.pack` is absent but `motion.durations[]` or `motion.easings[]` exist:
+
    > "Your project has base motion tokens but no animation pack. Pick a pack now?
    > Options: Yes — let me recommend / No, start fresh / Skip (keep pack-less)"
 
@@ -103,6 +104,7 @@ PRE-FLIGHT CHECK
    - Weak signals (ease-out/in/in-out alone are Tailwind defaults — they don't reveal project character): ask one question before recommending:
      > "What character fits the project? Restrained corporate / Premium with motion / Playful / Material-style / Don't know — show me options."
    - Map: Restrained → Subtle · Premium → Apple · Playful → Playful · Material → Standard · Don't know → show pack summary table from `references/motion/packs.md`.
+
 7. **Stack detection** — read `package.json` → detect motion library:
    - `motion` or `framer-motion` → `$HAS_MOTION_LIB=true`, `$STACK_TYPE=motion.dev`
    - `motion-v` → `$STACK_TYPE=motion-v`

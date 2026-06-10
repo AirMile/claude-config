@@ -1,10 +1,13 @@
-# Backlog: HTML+JSON Format
+# Backlog: JSON Data Store
 
-The backlog is an interactive HTML list view with embedded JSON data. All skills that read or write the backlog use the same approach.
+The backlog is a plain JSON data store. The kanban board UI is rendered by the server from a template with the data injected at request time — data and presentation are fully separated. All skills that read or write the backlog use the same approach.
 
-**File:** `.project/backlog.html`
-**Template:** `{skills_path}/shared/references/backlog-template.html`
+**Data store:** `.project/backlog.json` (canonical, `schemaVersion: 2`)
+**Template (presentation only):** `{skills_path}/shared/references/backlog-template.html`
 **Server:** `{skills_path}/shared/references/serve-backlog.js` (port 9876)
+**Archive:** `.project/archive/backlog-archive.json` (shipped dev-track features — see § Archiving)
+
+**Legacy format:** pre-migration projects embed the same JSON in `.project/backlog.html` inside `<script id="backlog-data">`. Readers fall back to it (see `BACKLOG-LOAD.md`); writers migrate first (see § Writing). Run `python3 {config_repo}/scripts/migrate-project.py <project-root>` to convert in one step.
 
 ## Live runtime data
 
@@ -14,14 +17,13 @@ The backlog is an interactive HTML list view with embedded JSON data. All skills
 
 ## Reading the backlog
 
-1. Read `.project/backlog.html`
-2. Find the JSON block: `<script id="backlog-data" type="application/json">...</script>`
-3. Parse the contents as JSON
+Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, prefer the extraction profiles in `BACKLOG-LOAD.md` / `GAME-BACKLOG-LOAD.md` over a full Read — they return only the fields needed and handle the legacy fallback.
 
 **Data structure:**
 
 ```json
 {
+  "schemaVersion": 2,
   "project": "Project name",
   "generated": "2026-01-15",
   "updated": "2026-01-20",
@@ -72,8 +74,10 @@ The `audit` field is **frontend-track-specific** (type `PAGE` or `COMPONENT`). `
 
 ## Writing the backlog
 
-1. Read `.project/backlog.html` (full contents)
-2. Parse the JSON block (see above)
+**Legacy migration on first write:** if `.project/backlog.json` does not exist but `.project/backlog.html` does, migrate before mutating: extract the JSON from `<script id="backlog-data">`, add `"schemaVersion": 2`, write it to `.project/backlog.json`, and delete `.project/backlog.html`. Then proceed below. (Idempotent — once `backlog.json` exists this step never fires again.)
+
+1. Read `.project/backlog.json`
+2. Parse as JSON
 3. Mutate the data object (change status, add items, etc.)
 
    **When adding items — dedup check (always, before every `data.features.push()`):**
@@ -82,11 +86,9 @@ The `audit` field is **frontend-track-specific** (type `PAGE` or `COMPONENT`). `
    3. Discovery flows: `feature.json#suggestionsLog.find(s => s.name === name && s.status === "rejected" && s.skill === current-skill)` → previously rejected by current skill? → skip.
 
 4. Set `updated` to current date (`YYYY-MM-DD`)
-5. Serialize the JSON object: `JSON.stringify(data, null, 2)`
-6. Replace the block between `<script id="backlog-data" type="application/json">` and `</script>` with the new JSON
-7. Write the full file back to `.project/backlog.html`
+5. Serialize and write back: `JSON.stringify(data, null, 2)` → `.project/backlog.json`
 
-**Use Edit tool** to replace only the JSON block — do not rewrite the whole file. Ensure the `<script>` tags remain intact.
+For small mutations (status flip, one field) prefer the Edit tool on the JSON file over a full rewrite.
 
 ## Source field convention
 
@@ -133,15 +135,14 @@ This reduces 6+ sequential round-trips to 2. Files are independent — no orderi
 
 ## Generating the backlog (new backlog)
 
-1. Copy template: `{skills_path}/shared/references/backlog-template.html` → `.project/backlog.html`
-2. Build the JSON data object with all features
-3. Replace the placeholder JSON in the `<script id="backlog-data">` block with the real data object
-4. Start the server if it is not running:
+1. Build the JSON data object with all features (top-level keys: `schemaVersion: 2`, `project`, `generated`, `updated`, `source`, `overview`, `features`, `notes`)
+2. Write it to `.project/backlog.json`
+3. Start the server if it is not running:
    ```bash
    # Respects $CLAUDE_PROJECTS_ROOT via lib/config.js (fallback: ~/projects)
    curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node --watch {skills_path}/shared/references/serve-backlog.js > /tmp/backlog-server.log 2>&1 &
    ```
-5. Show the URL: `http://localhost:9876/{project-dir}/backlog`
+4. Show the URL: `http://localhost:9876/{project-dir}/backlog` (the server renders the board from the template + data)
 
 ## Status flow (two tracks)
 
@@ -196,7 +197,17 @@ TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refac
 | `DONE`      | To refactor | `/dev-verify` (completion)             |
 | `CANCELLED` | Archived    | Manually via UI (○ button), restorable |
 
-`/dev-refactor` is the **promotion trigger** for dev-cards: after CLEAN or REFACTORED it sets `f.shipped = true` + `f.shippedAt` + `f.shippedSha`. Shipped items leave the backlog and move to the Dashboard.
+`/dev-refactor` is the **promotion trigger** for dev-cards: after CLEAN or REFACTORED it sets `f.shipped = true` + `f.shippedAt` + `f.shippedSha`, then **moves the feature object to the archive** (see § Archiving). Shipped items leave the backlog data and appear on the Dashboard via the archive.
+
+## Archiving (shipped dev-track features)
+
+At scale, shipped features become dead weight for every backlog load (measured: 54% of the data on a 150-feature project). Dev-track features therefore move out of `backlog.json` when they ship:
+
+- **File:** `.project/archive/backlog-archive.json` — `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`
+- **Writer:** `/dev-refactor` and `/game-refactor` completion — in the same sync that sets `shipped: true`, remove the feature object from `backlog.json#features[]` and append it to `archived[]` (create the file with the scaffold above if absent). Mirrors the existing `.project/features/archive/` dir convention.
+- **Readers:** the dashboard shipped-showcase (server merges `archived[]` into the served features view, in-memory) and humans. Pipeline skills never need archived features — that is the point.
+- **Frontend-track exception:** PAGE/COMPONENT features shipped by `/frontend-check` **stay in `backlog.json`** — the batch filter `lastCheckedSha !== shippedSha` re-audits them when the page changes after shipping. Only dev-track (non-PAGE/COMPONENT) features archive.
+- **Restore:** move the object back to `features[]` manually (or via board UI in a future iteration); idempotent in both directions.
 
 **`f.shipped` field:**
 
@@ -357,7 +368,7 @@ On successful completion the skill removes the `transition` field.
 ### Read (PHASE 0)
 
 ```
-Read .project/backlog.html → parse <script id="backlog-data"> JSON.
+Read .project/backlog.json (or use BACKLOG-LOAD.md / GAME-BACKLOG-LOAD.md profiles).
 Find a task matching the skill's filter (see table below).
 
 Found     → note taskName, continue.
@@ -369,7 +380,7 @@ Not found → standalone run, no task to link.
 ### Write (on success)
 
 ```
-Re-read backlog.html, find taskName.
+Re-read backlog.json, find taskName.
 Set status → {new status}, remove transition field.
 Write back.
 Show: Backlog: ✓ Task "{taskName}" → {newStatus}

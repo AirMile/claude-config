@@ -136,7 +136,7 @@
 
 7. **Update backlog (split only):**
 
-   If `.project/backlog.html` exists:
+   If `.project/backlog.json` exists:
    - Replace original feature entry with sub-feature entries
    - Each sub-feature gets its own line in the backlog
    - Add `(split from {original-name})` annotation

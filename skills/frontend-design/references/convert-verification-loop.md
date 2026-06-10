@@ -25,8 +25,8 @@ VERIFICATION ROUND [N]/3
 
 1. `playwright-cli goto http://localhost:[port]/[page-path]`
 2. `playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"` (allow hydration)
-3. `playwright-cli screenshot --filename=.project/verify-round-[N].png`
-4. `Read .project/verify-round-[N].png` → capture generated page
+3. `playwright-cli screenshot --filename=.project/tmp/verify-round-[N].png`
+4. `Read .project/tmp/verify-round-[N].png` → capture generated page
 5. `playwright-cli console error` → check for runtime JS errors (see `skills/shared/PLAYWRIGHT.md` → Console Error Inspection)
    → Filter output against PLAYWRIGHT.md → Default Ignore Patterns before reporting; only unfiltered lines become findings.
 

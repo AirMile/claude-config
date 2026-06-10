@@ -1,12 +1,18 @@
-// Auto-populate empty dashboard sections from project files
+// Auto-populate empty dashboard sections from project files.
+//
+// IN-MEMORY ONLY: this enriches the served dashboard response and never
+// writes project.json. Canonical stores: project-context.json (architecture,
+// context, learnings), backlog.json (features), seed .md file (seed.content).
+// The dashboard-save endpoint (serve-backlog.js) strips these derived fields
+// before persisting.
 
 const fs = require("fs");
 const path = require("path");
-const { PROJECTS_ROOT, DASHBOARD_PATH } = require("./config");
+const { PROJECTS_ROOT } = require("./config");
+const { readBacklogData } = require("./projects");
 
 function populateFromProject(projectDir, dashData) {
   const projectPath = path.join(PROJECTS_ROOT, projectDir);
-  var changed = false;
 
   // ── Seed: load from seedFile ──
   if (!dashData.seed?.content && dashData.seed?.seedFile) {
@@ -19,7 +25,6 @@ function populateFromProject(projectDir, dashData) {
         if (titleMatch && !dashData.seed.name)
           dashData.seed.name = titleMatch[1].trim();
         dashData.seed.content = md;
-        changed = true;
       } catch {}
     }
   }
@@ -38,6 +43,7 @@ function populateFromProject(projectDir, dashData) {
         contextJsonFile,
         JSON.stringify(
           {
+            schemaVersion: 2,
             architecture: {
               routes: [],
               components: [],
@@ -72,21 +78,11 @@ function populateFromProject(projectDir, dashData) {
         } catch {}
       }
 
-      if (
-        ctx.architecture &&
-        (!dashData.architecture || !dashData.architecture.diagram)
-      ) {
-        dashData.architecture = ctx.architecture;
-        changed = true;
-      }
-      if (ctx.context && (!dashData.context || !dashData.context.structure)) {
-        dashData.context = ctx.context;
-        changed = true;
-      }
-      if (ctx.learnings && !dashData.learnings) {
-        dashData.learnings = ctx.learnings;
-        changed = true;
-      }
+      // Always prefer the canonical project-context.json copies — project.json
+      // may still carry stale pre-migration duplicates of these fields.
+      if (ctx.architecture) dashData.architecture = ctx.architecture;
+      if (ctx.context) dashData.context = ctx.context;
+      if (ctx.learnings) dashData.learnings = ctx.learnings;
     } catch {}
   }
 
@@ -198,8 +194,6 @@ function populateFromProject(projectDir, dashData) {
           packages.push({ name, version, purpose: "devDependency" });
         }
         dashData.stack.packages = packages;
-
-        changed = true;
       } catch {}
     }
 
@@ -251,8 +245,6 @@ function populateFromProject(projectDir, dashData) {
               };
             });
           }
-
-          changed = true;
         } catch {}
       }
 
@@ -289,8 +281,6 @@ function populateFromProject(projectDir, dashData) {
                 break;
               }
             }
-
-            changed = true;
           } catch {}
         }
 
@@ -330,8 +320,6 @@ function populateFromProject(projectDir, dashData) {
                   break;
                 }
               }
-
-              changed = true;
             } catch {}
           }
         }
@@ -339,100 +327,39 @@ function populateFromProject(projectDir, dashData) {
     }
   }
 
-  // ── Features: populate from .project/features/ dirs ──
-  const featuresDir = path.join(projectPath, ".project/features");
-  if (fs.existsSync(featuresDir)) {
-    try {
-      if (!dashData.features) dashData.features = [];
-      for (const featureName of fs.readdirSync(featuresDir)) {
-        const featurePath = path.join(featuresDir, featureName);
-        if (!fs.statSync(featurePath).isDirectory()) continue;
-
-        // Read feature data from feature.json
-        function readFeatureData(fp) {
-          const featureJson = path.join(fp, "feature.json");
-          if (fs.existsSync(featureJson)) {
-            try {
-              return JSON.parse(fs.readFileSync(featureJson, "utf8"));
-            } catch {}
-          }
-          return null;
-        }
-
-        // Promote status based on feature.json (migrates legacy DEF/BLT)
-        function promoteStatus(s, fp) {
-          if (fs.existsSync(path.join(fp, "feature.json"))) {
-            try {
-              const feat = JSON.parse(
-                fs.readFileSync(path.join(fp, "feature.json"), "utf8"),
-              );
-              var st = feat.status || s;
-              if (st === "DEF" || st === "BLT") st = "DOING";
-              return st;
-            } catch {}
-          }
-          return s;
-        }
-
-        // Update existing feature status, or add new
-        const existing = dashData.features.find(function (f) {
-          return f.name === featureName;
-        });
-        if (existing) {
-          const promoted = promoteStatus(existing.status, featurePath);
-          if (promoted !== existing.status) {
-            existing.status = promoted;
-            changed = true;
-          }
-          // Fill summary from feature data if missing
-          if (!existing.summary) {
-            const featData = readFeatureData(featurePath);
-            if (featData && featData.summary) {
-              existing.summary = featData.summary;
-              changed = true;
-            }
-          }
-          continue;
-        }
-
-        var status = "TODO";
-        var summary = "";
-        var created = "";
-        var depends = [];
-
-        const featData = readFeatureData(featurePath);
-        if (featData) {
-          status = featData.status || "DOING";
-          summary = featData.summary || "";
-          created = featData.created || "";
-          depends = featData.depends || [];
-        }
-
-        status = promoteStatus(status, featurePath);
-
-        dashData.features.push({
-          name: featureName,
-          status,
-          summary,
-          depends,
-          created: created || new Date().toISOString().slice(0, 10),
-        });
-        changed = true;
-      }
-    } catch {}
+  // ── Features: derived view from the backlog store (in-memory only) ──
+  // The backlog is the single feature list; project.json no longer carries a
+  // persisted features[] copy. Shipped dev-track features live in the archive
+  // (.project/archive/backlog-archive.json) and are merged back in for the
+  // dashboard shipped-showcase. Map backlog fields to what the dashboard
+  // template renders (summary, depends).
+  const backlogData = readBacklogData(projectPath);
+  var featureView = [];
+  if (backlogData && Array.isArray(backlogData.features)) {
+    featureView = backlogData.features.slice();
   }
-
-  // Write back if populated — strip seed.content when .md file is canonical
-  if (changed) {
-    const dashFile = path.join(projectPath, DASHBOARD_PATH);
-    const wsDir = path.dirname(dashFile);
-    if (!fs.existsSync(wsDir)) fs.mkdirSync(wsDir, { recursive: true });
-
-    const toWrite = JSON.parse(JSON.stringify(dashData));
-    if (toWrite.seed && toWrite.seed.seedFile) {
-      delete toWrite.seed.content;
+  try {
+    const archiveFile = path.join(
+      projectPath,
+      ".project/archive/backlog-archive.json",
+    );
+    if (fs.existsSync(archiveFile)) {
+      const archive = JSON.parse(fs.readFileSync(archiveFile, "utf8"));
+      if (Array.isArray(archive.archived)) {
+        const names = new Set(featureView.map((f) => f.name));
+        for (const f of archive.archived) {
+          if (!names.has(f.name)) featureView.push(f);
+        }
+      }
     }
-    fs.writeFileSync(dashFile, JSON.stringify(toWrite, null, 2), "utf8");
+  } catch {}
+  if (featureView.length || backlogData) {
+    dashData.features = featureView.map(function (f) {
+      return Object.assign({}, f, {
+        summary: f.summary || f.description || "",
+        depends: f.depends || f.dependencies || [],
+      });
+    });
   }
 
   // ── Theme: resolve cssVars path → CSS content (in-memory only, path stays in project.json) ──
@@ -443,8 +370,13 @@ function populateFromProject(projectDir, dashData) {
     !dashData.theme.cssVars.includes("\n")
   ) {
     const cssPath = path.resolve(projectPath, dashData.theme.cssVars);
-    const sep = projectPath.endsWith(path.sep) ? projectPath : projectPath + path.sep;
-    if ((cssPath.startsWith(sep) || cssPath === projectPath) && fs.existsSync(cssPath)) {
+    const sep = projectPath.endsWith(path.sep)
+      ? projectPath
+      : projectPath + path.sep;
+    if (
+      (cssPath.startsWith(sep) || cssPath === projectPath) &&
+      fs.existsSync(cssPath)
+    ) {
       try {
         dashData.theme = Object.assign({}, dashData.theme, {
           cssVars: fs.readFileSync(cssPath, "utf8"),

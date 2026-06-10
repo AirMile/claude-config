@@ -3,7 +3,13 @@ name: frontend-check
 description: Runtime audit and fix hub for performance, SEO, responsive, darkmode, error states, smoke, and flow. Run at end of release cycle (batch over all DOING features) or targeted on a single feature/URL. Use with /frontend-check.
 argument-hint: "[url | source-path | feature-name] [--scope=performance|seo|responsive|a11y|...]"
 reads:
-  [backlog.status, feature.requirements, feature.files, feature.architecture]
+  [
+    backlog.status,
+    backlog.lastCheckedSha,
+    feature.requirements,
+    feature.files,
+    feature.architecture,
+  ]
 writes: [backlog.status, backlog.lastCheckedSha]
 metadata:
   author: claude-config
@@ -52,7 +58,7 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
 
 **Batch-mode** — if `$1` is empty:
 
-1. Read `.project/backlog.html` → parse features.
+1. Read `.project/backlog.json` → parse features.
 2. Collect candidates: features where `status === "DOING"` OR (`status === "DONE" && (!lastCheckedSha || lastCheckedSha !== shippedSha)`).
 3. If no candidates: show `"No features pending runtime audit."` and stop.
 4. Show:
@@ -71,7 +77,7 @@ Detect input type via fixed order:
 
 **1. URL** — `$1` starts with `http://` or `https://` → `targetType = "url"`, `urlTarget = $1`
 
-**2. Feature-name** — `$1` has no path separator (`/` or `\`) and no extension, and appears in `.project/backlog.html#data.features[].name`:
+**2. Feature-name** — `$1` has no path separator (`/` or `\`) and no extension, and appears in `.project/backlog.json#data.features[].name`:
 
 - Read `.project/features/{$1}/feature.json`
 - If not found → fallback to step 3 (source-path)
@@ -109,12 +115,12 @@ multiSelect: false
 
 **Auto-scope** — if `targetType` is known, detect the optimal scope and confirm first:
 
-| Target type              | Auto-scope                                                                              |
-| ------------------------ | --------------------------------------------------------------------------------------- |
-| `url`                    | Performance + SEO + AEO + Responsive + Darkmode                                         |
-| `path` (component)       | A11Y runtime (focus-trap + axe) + Smoke                                                 |
-| `feature` with routes    | Performance + SEO + AEO + Responsive + Darkmode + A11Y runtime + Error states + Smoke   |
-| `feature` without routes | A11Y runtime (focus-trap + axe) + Smoke                                                 |
+| Target type              | Auto-scope                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| `url`                    | Performance + SEO + AEO + Responsive + Darkmode                                       |
+| `path` (component)       | A11Y runtime (focus-trap + axe) + Smoke                                               |
+| `feature` with routes    | Performance + SEO + AEO + Responsive + Darkmode + A11Y runtime + Error states + Smoke |
+| `feature` without routes | A11Y runtime (focus-trap + axe) + Smoke                                               |
 
 If `targetType` is `url`, `path`, or `feature` → show auto-scope confirmation:
 
@@ -140,23 +146,23 @@ options:
 multiSelect: false
 ```
 
-If "I'll choose myself":
+If "I'll choose myself" → present a numbered plain-text list and parse free-form input (10 options exceeds the modal cap; scope selection needs the holistic view — see `shared/SKILL-PATTERNS.md § Modal Option Cap` and `§ Free-form List Selection` for the input syntax: `1, 3-5, 8` / `all` / `none`):
 
-```yaml
-header: "Checks"
-question: "Which checks?"
-options:
-  - label: "Performance", description: "Lighthouse, CWV, bundle sizes"
-  - label: "SEO", description: "Google search optimization"
-  - label: "AEO", description: "AI search optimization (ChatGPT, Perplexity, Gemini)"
-  - label: "A11Y", description: "Accessibility — focus-trap test, aria-snapshot regression, axe-runtime, console warnings (WCAG 2.1 AA)"
-  - label: "Responsive", description: "Multi-viewport layout audit — 6 viewports, overflow, touch targets, font sizes (Playwright)"
-  - label: "Darkmode", description: "Light + dark comparison, computed contrast D102 (Playwright pixel diff)"
-  - label: "Error states", description: "404, offline, slow-3G UI rendering (Playwright)"
-  - label: "Smoke", description: "Quick multi-route health check (200 + render + no errors)"
-  - label: "Flow", description: "Execute design.flows[] from project.json (navigation journeys)"
-  - label: "Motion", description: "Runtime reduced-motion compliance — M006/M007 (Playwright emulation)"
-multiSelect: true
+```
+Which checks do you want to run?
+
+ 1. Performance  — Lighthouse, CWV, bundle sizes
+ 2. SEO          — Google search optimization
+ 3. AEO          — AI search optimization (ChatGPT, Perplexity, Gemini)
+ 4. A11Y         — Accessibility: focus-trap test, aria-snapshot regression, axe-runtime, console warnings (WCAG 2.1 AA)
+ 5. Responsive   — Multi-viewport layout audit: 6 viewports, overflow, touch targets, font sizes (Playwright)
+ 6. Darkmode     — Light + dark comparison, computed contrast D102 (Playwright pixel diff)
+ 7. Error states — 404, offline, slow-3G UI rendering (Playwright)
+ 8. Smoke        — Quick multi-route health check (200 + render + no errors)
+ 9. Flow         — Execute design.flows[] from project.json (navigation journeys)
+10. Motion       — Runtime reduced-motion compliance: M006/M007 (Playwright emulation)
+
+Pick checks (e.g. `1, 3-5, 8` or `all`):
 ```
 
 ### 0.2.5 Scope Validation
@@ -186,11 +192,11 @@ Audits:     [Performance, SEO, AEO, Responsive]
 
 ### 0.4 Backlog Stage (optional)
 
-Read `.project/backlog.html` (if exists) → parse JSON from `<script id="backlog-data" type="application/json">...</script>`.
+Read `.project/backlog.json` (if exists) → parse JSON.
 
 See `shared/BACKLOG.md → Lifecycle Protocol → Read`.
 
-**If `targetType === "feature"`**: match directly on `featureName`. Find `data.features.find(f => f.name === featureName)` → record `f.lastCheckedSha` (current HEAD SHA, updated at end of PHASE 4 after success). Write back via Edit (keep `<script>` tags intact).
+**If `targetType === "feature"`**: match directly on `featureName`. Find `data.features.find(f => f.name === featureName)` → record `f.lastCheckedSha` (current HEAD SHA, updated at end of PHASE 4 after success). Write back via Edit (see `shared/BACKLOG.md § Writing`).
 
 **All other target types**: best-effort match URL/path to a feature name. If match found: same `lastCheckedSha` update at end of PHASE 4.
 

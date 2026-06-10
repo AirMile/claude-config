@@ -98,7 +98,7 @@ Recorded in test results.
 
    Read in parallel (skip if not exists):
    - `.project/features/{feature-name}/feature.json`
-   - `.project/backlog.html`
+   - `.project/backlog.json`
    - `.project/project.json`
    - `.project/project-context.json`
 
@@ -144,7 +144,7 @@ Recorded in test results.
 
    Write in parallel:
    - Write `feature.json`
-   - Edit `backlog.html` (keep `<script>` tags intact)
+   - Edit `.project/backlog.json`
    - Write `project.json`
    - Write `project-context.json` (if context/architecture/learnings changed)
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Migration: rename project.json `concept` → `seed`, backlog.html `hasConcept` → `hasSeed`,
+// Migration: rename project.json `concept` → `seed`, backlog `hasConcept` → `hasSeed`,
 // and rename .project/project-concept.md → project-seed.md.
 // Idempotent — safe to run multiple times.
 
@@ -101,41 +101,49 @@ for (const entry of entries) {
 
     fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2) + "\n", "utf8");
 
-    // 4. Migrate backlog.html flags hasConcept → hasSeed, conceptPath → seedPath
-    const backlogPath = path.join(projectDir, "backlog.html");
-    if (fs.existsSync(backlogPath)) {
-      const html = fs.readFileSync(backlogPath, "utf8");
+    // 4. Migrate backlog flags hasConcept → hasSeed, conceptPath → seedPath.
+    // Canonical store is .project/backlog.json; fall back to extracting the
+    // <script id="backlog-data"> JSON from legacy .project/backlog.html
+    // (this script may run on unmigrated projects). Writes go to backlog.json.
+    const backlogJsonPath = path.join(projectDir, "backlog.json");
+    const backlogHtmlPath = path.join(projectDir, "backlog.html");
+    let bd = null;
+    if (fs.existsSync(backlogJsonPath)) {
+      try {
+        bd = JSON.parse(fs.readFileSync(backlogJsonPath, "utf8"));
+      } catch {}
+    } else if (fs.existsSync(backlogHtmlPath)) {
+      const html = fs.readFileSync(backlogHtmlPath, "utf8");
       const m = html.match(
-        /(<script id="backlog-data"[^>]*>)([\s\S]*?)(<\/script>)/,
+        /<script id="backlog-data"[^>]*>([\s\S]*?)<\/script>/,
       );
       if (m) {
         try {
-          const bd = JSON.parse(m[2].trim());
-          const flags = bd.flags || {};
-          let flagsChanged = false;
-          if ("hasConcept" in flags) {
-            flags.hasSeed = flags.hasConcept;
-            delete flags.hasConcept;
-            flagsChanged = true;
-          }
-          if ("conceptPath" in flags) {
-            flags.seedPath = flags.conceptPath;
-            delete flags.conceptPath;
-            flagsChanged = true;
-          }
-          if (flagsChanged) {
-            bd.flags = flags;
-            const newHtml =
-              html.slice(0, m.index) +
-              m[1] +
-              "\n" +
-              JSON.stringify(bd, null, 2) +
-              "\n" +
-              m[3] +
-              html.slice(m.index + m[0].length);
-            fs.writeFileSync(backlogPath, newHtml, "utf8");
-          }
+          bd = JSON.parse(m[1].trim());
         } catch {}
+      }
+    }
+    if (bd) {
+      const flags = bd.flags || {};
+      let flagsChanged = false;
+      if ("hasConcept" in flags) {
+        flags.hasSeed = flags.hasConcept;
+        delete flags.hasConcept;
+        flagsChanged = true;
+      }
+      if ("conceptPath" in flags) {
+        flags.seedPath = flags.conceptPath;
+        delete flags.conceptPath;
+        flagsChanged = true;
+      }
+      if (flagsChanged) {
+        bd.flags = flags;
+        if (!bd.schemaVersion) bd.schemaVersion = 2;
+        fs.writeFileSync(
+          backlogJsonPath,
+          JSON.stringify(bd, null, 2) + "\n",
+          "utf8",
+        );
       }
     }
 

@@ -57,7 +57,7 @@
 
 After concept detection, also check for broader scope:
 
-1. Check if `.project/backlog.html` exists
+1. Check if `.project/backlog.json` exists
 2. Check if `.project/features/` contains folders
 3. Glob for page files (`app/**/page.tsx`, `src/pages/**/*.tsx`)
 
@@ -78,7 +78,7 @@ multiSelect: false
 
 **If "Feature from backlog":**
 
-- Read `.project/backlog.html`, parse JSON from `<script id="backlog-data">` block (see `shared/BACKLOG.md`), show features with status TODO or DEF
+- Read `.project/backlog.json`, parse JSON (see `shared/BACKLOG.md`), show features with status TODO or DEF
 - AskUserQuestion to choose feature
 - Load `01-define.md` (if it exists) as input context
 - Load existing `thinking.md` (if it exists) as previous thinking output
@@ -192,7 +192,7 @@ Enrich the existing concept with features/functionality that exist in the projec
 **1. Gather project state:**
 
 - Read existing concept from `.project/project-seed.md`
-- Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md`)
+- Read `.project/backlog.json` → parse JSON (see `shared/BACKLOG.md`)
 - Collect all feature names, descriptions, and types from backlog
 - Read `.project/project.json` → extract `entities` (names, descriptions) and `endpoints` (paths, methods) if present
 - Scan codebase for routes/pages:
@@ -200,7 +200,7 @@ Enrich the existing concept with features/functionality that exist in the projec
   - Glob `app/**/route.ts`, `src/api/**/*.ts` (API routes)
 - **Accumulated drift from prior skill runs:**
   - Glob `.project/features/*/feature.json` → collect all `seedDrift[]` entries (skip features where array is absent or empty)
-  - Check `backlog.html#data.seedDrift[]` if present
+  - Check `backlog.json#seedDrift[]` if present
   - Carry as `driftEntries[]` in memory for the gap-detection step
 
 **2. Detect gaps:**
@@ -297,7 +297,7 @@ multiSelect: false
 - Update project.json metadata (seed.name, seed.pitch) if changed
 - **Drift cleanup** — for each `driftEntries[]` item that was selected and integrated:
   - If from `feature.json#seedDrift[]`: remove the entry from the array (rewrite `feature.json`). If the array is empty after cleanup, omit the field.
-  - If from `backlog.html#data.seedDrift[]`: remove the entry from the array (rewrite backlog JSON block).
+  - If from `backlog.json#seedDrift[]`: remove the entry from the array (rewrite `.project/backlog.json`).
   - Not integrated (user skipped): leave intact for a future sync.
 
 ```

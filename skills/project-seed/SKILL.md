@@ -33,17 +33,17 @@ The output is a structured markdown document that can be used as input for `/pro
 
 ## Process
 
-### Step 1: Initial Intake
+### PHASE 1: Initial Intake
 
 > **Todo**: Read `.claude/skills/project-seed/references/initial-intake.md`
 
-### Step 2: Explore and Expand
+### PHASE 2: Explore and Expand
 
-Develop the idea through rounds of concrete, clickable questions. Question content depends on **scope** (set in Step 1a). Rounds are suggestions — the user decides when there's enough context.
+Develop the idea through rounds of concrete, clickable questions. Question content depends on **scope** (set in PHASE 1a). Rounds are suggestions — the user decides when there's enough context.
 
 **Setup:**
 
-1. Determine scope from Step 1a: `concept` | `implementation` | `feature` | `page` | `standalone`
+1. Determine scope from PHASE 1a: `concept` | `implementation` | `feature` | `page` | `standalone`
 2. Pick the matching Round 1 template below
 3. All questions go in a single message as parallel AskUserQuestion calls
 
@@ -92,7 +92,7 @@ multiSelect: false
 ```
 
 - **If "Another round":** formulate 2-4 targeted follow-up questions based on gaps from previous rounds
-- **If "Proceed to summary":** proceed to Step 3
+- **If "Proceed to summary":** proceed to PHASE 3
 
 **Follow-up round focus areas:**
 
@@ -163,16 +163,16 @@ After the question rounds, present a structured overview of all gathered input b
 Ask via AskUserQuestion: "Does this overview look right before we summarize?"
 
 - "Proceed to summary (Recommended)" — proceed to synthesis
-- "Another round" — back to Step 2 for extra questions
+- "Another round" — back to PHASE 2 for extra questions
 - "Adjust" — correct a specific point
 
 ### Enter Plan Mode
 
-Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 3. Steps 3-4 (synthesis + output generation) run in plan mode; the concept document (Step 4) is written to the plan file for review.
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 3. PHASES 3-4 (synthesis + output generation) run in plan mode; the concept document (PHASE 4) is written to the plan file for review.
 
 ---
 
-### Step 3: Synthesize and Confirm
+### PHASE 3: Synthesize and Confirm
 
 1. Create a concise summary based on all input
 2. Present summary to user
@@ -186,17 +186,17 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before Step 
    ```
 4. Incorporate feedback if needed
 5. Repeat until user confirms
-6. **Depth guard:** If the confirmed summary covers fewer than 3 distinct content aspects (e.g. only has title + vague description), suggest returning to Step 2 for an additional round:
+6. **Depth guard:** If the confirmed summary covers fewer than 3 distinct content aspects (e.g. only has title + vague description), suggest returning to PHASE 2 for an additional round:
    ```yaml
    header: "More depth needed"
    question: "The summary is still quite thin. Do you want another question round for more depth?"
    options:
-     - label: "Yes, extra round (Recommended)", description: "Back to Step 2 for more details"
+     - label: "Yes, extra round (Recommended)", description: "Back to PHASE 2 for more details"
      - label: "No, continue", description: "Generate output with current content"
    multiSelect: false
    ```
 
-### Step 4: Generate Output
+### PHASE 4: Generate Output
 
 Create a structured markdown document adapted to the scope/type.
 
@@ -230,9 +230,9 @@ For features/assignments (scoped work within an existing project):
 - No "Here's your document:" framing
 - Proper markdown formatting (# for title, ## for sections)
 
-**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the concept document to the plan file, then `ExitPlanMode`. After approval the skill continues with Step 5 (output destination and `.project/` writes).
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the concept document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 5 (output destination and `.project/` writes).
 
-### Step 5: Output Destination
+### PHASE 5: Output Destination
 
 > **Todo**: Read `.claude/skills/project-seed/references/output-destination.md`
 

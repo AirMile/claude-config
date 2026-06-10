@@ -9,8 +9,10 @@ reads:
     backlog.status,
     feature.requirements,
     feature.files,
+    project.design,
+    project.theme,
   ]
-writes: [devinfo.handoff, devinfo.tokenDrift]
+writes: [devinfo.handoff, devinfo.tokenDrift, project.design]
 metadata:
   author: claude-config
   version: 2.11.1
@@ -65,6 +67,8 @@ CONVERT_PATCH → CONVERT_ROUTE (with $PATCH_MODE = true)
 ### 0.0 Directory Check
 
 Check `.project/` exists. If not, create it.
+
+Janitor — prune stale working screenshots: `find .project/tmp -name '*.png' -mtime +7 -delete 2>/dev/null`
 
 ```
 Directory: [✓|✗] .project/ — [exists | created | error]
@@ -149,7 +153,7 @@ Pass `$SKILL_ARG` to route-design.md; argument-to-entity resolution (`$ARG_MODE`
 
 Triggers when Step 2 set `$ROUTE = design` AND `$SKILL_ARG` is non-empty.
 
-1. Check `.project/backlog.html` exists. If not → keep `$ROUTE = design`. Skip.
+1. Check `.project/backlog.json` exists. If not → keep `$ROUTE = design`. Skip.
 2. Read backlog per `shared/BACKLOG.md → Lifecycle Protocol → Read`. Find feature where `f.name === $SKILL_ARG` (case-sensitive).
 3. No match → keep `$ROUTE = design`. Skip.
 4. Match found and `f.transition === "converting"` →

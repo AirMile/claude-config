@@ -10,13 +10,13 @@
 
 2. **Check for existing files (only if .project exists):**
    - Read `SEED_CONTEXT` per `shared/SEED.md` Reader. Concept present as `SEED_CONTEXT.present`.
-   - Check if `.project/backlog.html` exists
+   - Check if `.project/backlog.json` exists
 
 3. **Scenario A: Both concept AND backlog exist**
    - Use `SEED_CONTEXT.markdown` as concept content
-   - Read `backlog.html`
+   - Read `backlog.json` → parse JSON
    - Analyze differences between concept and existing backlog
-   - Check `data.features[]` in `backlog.html` to identify INDEPENDENT features: a feature is INDEPENDENT when its `source` field exists AND is not `"/project-backlog"`. Features without a `source` field (or with `"/project-backlog"`) are concept-derived and may be updated or deprecated by this run.
+   - Check `data.features[]` in `backlog.json` to identify INDEPENDENT features: a feature is INDEPENDENT when its `source` field exists AND is not `"/project-backlog"`. Features without a `source` field (or with `"/project-backlog"`) are concept-derived and may be updated or deprecated by this run.
    - Compare `SEED_CONTEXT.markdown` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
@@ -24,7 +24,7 @@
      EXISTING BACKLOG DETECTED
 
      Concept: .project/project-seed.md
-     Backlog: .project/backlog.html
+     Backlog: .project/backlog.json
 
      Feature changes detected:
      - NEW: {list of features in concept but not in backlog}
@@ -94,7 +94,7 @@
      ```
      WARNING: Backlog exists but no concept found
 
-     Backlog: .project/backlog.html
+     Backlog: .project/backlog.json
      Concept: Not found — run /project-seed first
 
      A concept is required to update the backlog.

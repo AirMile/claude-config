@@ -1,6 +1,8 @@
 # Game Backlog Load Protocol
 
-Shared protocol for extracting fields from `.project/backlog.html` in game-pipeline skills. Use instead of full `Read` for PHASE 0 read-only access only.
+Shared protocol for extracting fields from `.project/backlog.json` in game-pipeline skills. Use instead of full `Read` for PHASE 0 read-only access only.
+
+**Legacy fallback**: pre-migration projects store the data embedded in `.project/backlog.html`. Both snippets fall back to extracting from the legacy file so reads keep working until `scripts/migrate-project.py` has run. Write paths migrate first — see BACKLOG.md.
 
 > **Schema**: backlog feature-objecten — zie [BACKLOG.md](BACKLOG.md). Game-pipeline gebruikt extra veld `stage` (bijv. `"ready"`, `"built"`, `"defining"`) naast `status` en `transition`.
 
@@ -28,10 +30,14 @@ For single-feature lookup — extracts the record for `$FEAT` only. Used by game
 ```bash
 node -e "
   const fs = require('fs');
-  const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
-  const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
-  if (!m) { console.log('BACKLOG_NO_DATA'); process.exit(0); }
-  const data = JSON.parse(m[1]);
+  let data = null;
+  try { data = JSON.parse(fs.readFileSync('$REPO/.project/backlog.json', 'utf8')); }
+  catch { try {
+    const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
+    const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
+    if (m) data = JSON.parse(m[1]);
+  } catch {} }
+  if (!data) { console.log('BACKLOG_NOT_PRESENT'); process.exit(0); }
   const feat = (data.features || []).find(f => f.name === '$FEAT');
   if (!feat) { console.log('BACKLOG_FEATURE_NOT_FOUND'); process.exit(0); }
   console.log(JSON.stringify({
@@ -45,7 +51,7 @@ node -e "
     transition: feat.transition || null,
     pageHint: feat.pageHint || []
   }, null, 2));
-" 2>/dev/null || echo "BACKLOG_HTML: not present"
+" 2>/dev/null || echo "BACKLOG_NOT_PRESENT"
 ```
 
 **Use for**: risk-check, dependency-status check, `transition` auto-pickup, `externalRef` passthrough.
@@ -62,10 +68,14 @@ For feature-selection display — lists features filtered by status and optional
 ```bash
 node -e "
   const fs = require('fs');
-  const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
-  const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
-  if (!m) { console.log('BACKLOG_NO_DATA'); process.exit(0); }
-  const data = JSON.parse(m[1]);
+  let data = null;
+  try { data = JSON.parse(fs.readFileSync('$REPO/.project/backlog.json', 'utf8')); }
+  catch { try {
+    const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
+    const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
+    if (m) data = JSON.parse(m[1]);
+  } catch {} }
+  if (!data) { console.log('BACKLOG_NOT_PRESENT'); process.exit(0); }
   const status = '$STATUS';
   const transition = '$TRANSITION';
   const doneNames = new Set(
@@ -88,7 +98,7 @@ node -e "
         : null
     }));
   console.log(JSON.stringify(result, null, 2));
-" 2>/dev/null || echo "BACKLOG_HTML: not present"
+" 2>/dev/null || echo "BACKLOG_NOT_PRESENT"
 ```
 
 **Caller configuration** — specify in skill SKILL.md or references file:
@@ -113,17 +123,16 @@ node -e "
 
 Sentinel values:
 
-- `BACKLOG_HTML: not present` → file absent; log `Backlog: ⓘ not present — skip.`
-- `BACKLOG_NO_DATA` → HTML present but no `<script id="backlog-data">` found; treat as absent.
+- `BACKLOG_NOT_PRESENT` → no backlog store (neither `backlog.json` nor legacy `backlog.html` with data); log `Backlog: ⓘ not present — skip.`
 - `BACKLOG_FEATURE_NOT_FOUND` → feature not in backlog; log `Backlog: ⓘ not found — skip.`
 
 ---
 
 ## Edge cases
 
-- **`$REPO` not set**: `fs.readFileSync` throws → fallback-echo catches it.
-- **Malformed JSON in `<script>` blob**: `JSON.parse` throws → caught by `2>/dev/null || echo`.
-- **`<script>` tag with extra attributes**: regex `[^>]*` tolerates any attribute order.
+- **`$REPO` not set**: `fs.readFileSync` throws → fallback chain ends in `BACKLOG_NOT_PRESENT`.
+- **Malformed JSON**: `JSON.parse` throws → caught, falls through to `BACKLOG_NOT_PRESENT`.
+- **Legacy `<script>` tag with extra attributes**: regex `[^>]*` tolerates any attribute order.
 - **`$TRANSITION` empty string**: `!transition` evaluates to `true` → transition filter skipped, only status filter applies.
 - **No features match filter**: `queue` returns `[]`. Skill shows "No features in {status} stage."
 - **`stage` field absent**: `feat.stage || null` returns null safely.

@@ -4,6 +4,22 @@ One-time scan of an existing codebase with an early Module Gap modal and optiona
 
 **`--no-llm` flag**: Skip PHASE 4 (LLM extraction). Only MVP signals (TODO/FIXME, fix-commits, abstraction-dirs, wrapper-deps). Faster but misses naming/error/response-shape patterns.
 
+**`--scope=<dir>` flag**: Limit PHASE 1–4 to one directory (e.g. `--scope=packages/api` in a monorepo). All file lists, greps, and globs are prefixed with the scope dir; `stack`/`packages` detection still reads the repo-root manifest. Re-run with another scope to extend memory incrementally — all syncs merge, never overwrite other scopes' entries (except `context.structure`, which always covers the scoped subtree under its own key path).
+
+## Scan budget (all phases)
+
+The scan must stay bounded on large repos. Before PHASE 1:
+
+```bash
+git ls-files -- "${SCOPE:-.}" | grep -vE '\.(png|jpg|jpeg|gif|svg|ico|woff2?|ttf|lock|min\.js|map)$' > /tmp/scan-files.txt
+wc -l < /tmp/scan-files.txt
+```
+
+- **File source**: `git ls-files` (respects `.gitignore` — replaces the hard-coded exclude list; keep the excludes only as a fallback glob for non-git dirs).
+- **≤ 2000 files**: full scan, no further limits.
+- **> 2000 files and no `--scope`**: show the top-level directory sizes (`cut -d/ -f1 | sort | uniq -c | sort -rn | head -15`, plus detected workspaces from `package.json#workspaces` / `pnpm-workspace.yaml`) and AskUserQuestion: scan everything anyway (slow), or pick a scope (recommended; one option per major package/dir, multiSelect true). Chosen scopes become `$SCOPE` for PHASE 1–4; re-runs can add more later.
+- **Hard caps regardless of choice** (apply per phase): structure ≤ 60 directories listed (append `… +N more` line); routes/entities/components globs filter `/tmp/scan-files.txt` instead of re-globbing the tree; TODO/FIXME grep output ≤ 200 matches; `git blame` only on the first 50 matches that survive the word-count filter (blame is the expensive step); LLM sampling keeps its existing 50-file cap.
+
 See `../shared/SYNC.md`, `../shared/DASHBOARD.md`, and `../shared/LEARNING-EXTRACTION.md` for protocols.
 
 ---
@@ -275,19 +291,20 @@ Mark PHASE 0.6 → `completed`.
 
 > **Todo**: mark PHASE 0.6 → `completed`, PHASE 1 → `in_progress`.
 
-Glob the project root for file tree. Build a compact structure string:
+Derive the file tree from `/tmp/scan-files.txt` (see § Scan budget — `git ls-files`, scope-aware). Build a compact structure string:
 
-- Exclude: `node_modules`, `.git`, `.project`, `dist`, `build`, `.next`, `vendor`, `__pycache__`, `.godot`
+- Fallback for non-git dirs: Glob with excludes `node_modules`, `.git`, `.project`, `dist`, `build`, `.next`, `vendor`, `__pycache__`, `.godot`
+- Depth ≤ 3; max 60 directories listed, then one `… +N more directories` line
 - One-line comment per directory describing its purpose (generate from dir name + readme if available)
 - Format: identical to `core-pull` PHASE 3a / `DASHBOARD.md` `context.structure` schema
 
-Overwrite `context.structure` completely.
+Overwrite `context.structure` completely (scoped runs: only the scoped subtree).
 
 ### PHASE 2: Full route/entity/endpoint/component scan
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-Reuse logic from `core-pull` PHASE 4d/e/f, but on ALL source files (not just teammate-changed):
+Reuse logic from `core-pull` PHASE 4d/e/f, but on all files in `/tmp/scan-files.txt` (scope-aware; filter that list per pattern instead of re-globbing the tree — see § Scan budget):
 
 **2a) Stack detection** from existing `project.json.stack.framework` or, if missing, from `package.json` dependencies / `requirements.txt` / `project.godot`. Write to `stack.framework`.
 
@@ -315,13 +332,13 @@ git log --since="6 months ago" --grep='^fix\|^bugfix' --format='%H|%an|%s%n%b' -
 
 Per commit: filter author ≠ `GIT_USER`. Filter body ≥10 words OR root-cause keyword. Output `{ type: "pitfall", source: "synced", author, feature: <primary-dir>, summary }`.
 
-**3b) TODO/FIXME comments** (all source files):
+**3b) TODO/FIXME comments** (scoped, bounded — see § Scan budget):
 
 ```bash
-grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' <source-tree>
+git grep -nE '(TODO|FIXME|HACK|XXX|NOTE):' -- "${SCOPE:-.}" | head -200
 ```
 
-For each match: `git blame --porcelain -L <line>,<line> <file>` to determine author. Filter ≠ `GIT_USER`, filter ≥10 words + verb clue. Output pitfalls.
+(`git grep` respects `.gitignore` and is scope-aware; non-git fallback: `grep -rn` on the PHASE 1 file list.) Apply the ≥10 words + verb-clue filter FIRST, then `git blame --porcelain -L <line>,<line> <file>` on at most the first 50 survivors to determine author (blame is the expensive step). Filter author ≠ `GIT_USER`. Output pitfalls.
 
 **3c) Abstraction-dirs**:
 
@@ -413,7 +430,7 @@ For selected fields: write to `project.json`. Deselected fields remain empty (us
 
 Create `.project/project-seed.md` with the accepted pitch text as a starting point (plain markdown, no template).
 
-If `.project/backlog.html` already exists (non-frontend projects that skip PHASE 5.7): read backlog.html → parse `<script id="backlog-data">` JSON → set `data.flags.hasSeed = true` + `data.flags.seedPath = ".project/project-seed.md"` → edit back (keep script tags intact). This makes the `/project-backlog` button appear in the backlog dashboard.
+If `.project/backlog.json` already exists (non-frontend projects that skip PHASE 5.7): read backlog.json → parse JSON → set `data.flags.hasSeed = true` + `data.flags.seedPath = ".project/project-seed.md"` → write the JSON back. This makes the `/project-backlog` button appear in the backlog dashboard.
 
 ### PHASE 5: Sync
 
@@ -629,7 +646,7 @@ Mark PHASE 5.65 → `completed`.
 
 **Compute**: `needsTheme` = `project.json#theme` has no `colors` or is empty. Skip if `needsTheme = false`.
 
-**Seed** `setup-design-tokens` feature to `.project/backlog.html` — same JSON block as greenfield Phase 7c step 2:
+**Seed** `setup-design-tokens` feature to `.project/backlog.json` — same JSON block as greenfield Phase 7c step 2:
 
 ```json
 {
@@ -643,9 +660,9 @@ Mark PHASE 5.65 → `completed`.
 }
 ```
 
-Create backlog from template `{skills_path}/shared/references/backlog-template.html` if missing. Skip if feature with name `setup-design-tokens` already exists (idempotent).
+Create `.project/backlog.json` with the schemaVersion-2 scaffold (see `shared/BACKLOG.md`) if missing. Skip if feature with name `setup-design-tokens` already exists (idempotent).
 
-Always set `data.flags.hasSeed = true` and `data.flags.seedPath = ".project/project-seed.md"` in the backlog JSON block (even if the design-tokens item already existed). This makes the `/project-backlog` button appear.
+Always set `data.flags.hasSeed = true` and `data.flags.seedPath = ".project/project-seed.md"` in the backlog JSON (even if the design-tokens item already existed). This makes the `/project-backlog` button appear.
 
 No interactive modal — only show `Setup task added to backlog` in stdout. The PHASE 6 report "Next steps" section then automatically shows the `/frontend-tokens` bullet.
 

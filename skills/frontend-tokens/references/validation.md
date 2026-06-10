@@ -400,7 +400,7 @@ PROJECT STATE
 Theme:      [✓ project.json#theme populated | ✗ empty]
 Design:     [✓ project.json#design — {N} pages, {M} flows | ✗ empty]
 Code:       [✓ {N} source files ({framework}) | ✗ no source files]
-Backlog:    [✓ .project/backlog.html — {N} features | ✗ not found]
+Backlog:    [✓ .project/backlog.json — {N} features | ✗ not found]
 Dev server: [✓ running on {port} | ✗ not detected]
 Session:    [✓ devinfo from {skill} | ✗ new session]
 ════════════════════════════════════════════════
@@ -412,7 +412,7 @@ Session:    [✓ devinfo from {skill} | ✗ new session]
 1. **Theme**: Read `.project/project.json` → check if `theme` section has data (colors, typography, spacing)
 2. **Design**: Read `.project/project.json` → check if `design` section has pages/flows/principles
 3. **Code**: Glob for `src/**/*.{tsx,jsx}`, `app/**/*.{tsx,jsx}`, `*.html` — detect framework from `package.json`
-4. **Backlog**: Check `.project/backlog.html` exists → parse JSON for feature count
+4. **Backlog**: Check `.project/backlog.json` exists → parse JSON for feature count
 5. **Dev server**: Try `playwright-cli open http://localhost:[port]` (common ports: 3000, 5173, 4321)
 6. **Session**: Read `.project/session/devinfo.json` for handoff data
 ```

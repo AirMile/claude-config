@@ -2,6 +2,7 @@
 
 function createDefaultDashboardData(projectName) {
   return {
+    schemaVersion: 2,
     seed: {
       name: projectName || "",
       content: "",
@@ -28,7 +29,6 @@ function createDefaultDashboardData(projectName) {
     },
     data: { entities: [] },
     endpoints: [],
-    features: [],
     thinking: [],
   };
 }

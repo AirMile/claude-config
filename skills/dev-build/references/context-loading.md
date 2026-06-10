@@ -187,7 +187,7 @@ multiSelect: false
 
 Skip if no `depends[]` or empty.
 
-1. Parse `.project/backlog.html`. Not found → skip.
+1. Parse `.project/backlog.json`. Not found → skip.
 2. Per dependency: status must be `"DONE"`.
 3. Blockers found → **AskUserQuestion**:
    - "Stop — finish {dep} first (Recommended)" / "Continue anyway"

@@ -15,7 +15,7 @@ Use before every Write on `theme.colors`, `theme.typography`, or `theme.spacing`
 
 **Drift-check steps:**
 
-1. Read `backlog.html` → filter on `type === "PAGE" && (status === "DOING" || status === "DONE")`
+1. Read `.project/backlog.json` → filter on `type === "PAGE" && (status === "DOING" || status === "DONE")`
 2. If no affected pages → skip (no prompt)
 3. With ≥1 affected page: show:
 

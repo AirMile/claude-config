@@ -21,18 +21,22 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
 
 **Sections:**
 
-| Section             | Description                                            |
-| ------------------- | ------------------------------------------------------ |
-| `seed`              | Project name + full seed (markdown)                    |
-| `architecture`      | Mermaid diagram + description of the architecture      |
-| `design`            | Pages, user flows, design principles                   |
-| `theme`             | Colors, fonts, spacing, CSS vars                       |
-| `stack`             | Framework, language, DB, hosting, packages             |
-| `data`              | Entities, fields, relations                            |
-| `endpoints`         | Method, path, auth, status, description                |
-| `features`          | Name, status, summary, depends, created                |
-| `context`           | Project structure, routing, patterns (runtime context) |
-| `optimization_runs` | Append-only log of dev-optimize / game-optimize runs   |
+| Section             | Description                                          |
+| ------------------- | ---------------------------------------------------- |
+| `seed`              | Project name + full seed (markdown)                  |
+| `design`            | Pages, user flows, design principles                 |
+| `theme`             | Colors, fonts, spacing, CSS vars                     |
+| `stack`             | Framework, language, DB, hosting, packages           |
+| `data`              | Entities, fields, relations                          |
+| `endpoints`         | Method, path, auth, status, description              |
+| `optimization_runs` | Append-only log of dev-optimize / game-optimize runs |
+
+**Not in project.json** (served in-memory by the dashboard server, never persisted here):
+
+- `architecture`, `context`, `learnings` — canonical in `project-context.json` (see [DASHBOARD-CONTEXT.md](DASHBOARD-CONTEXT.md)). The server's `populateFromProject()` merges them into the dashboard response; the save endpoint splits them back out.
+- `features` — canonical in `.project/backlog.json` (+ `.project/archive/backlog-archive.json` for shipped dev-track features, see [BACKLOG.md](BACKLOG.md)). The server derives the dashboard features view (incl. shipped showcase) from those stores.
+
+Pre-migration projects may still carry these keys in `project.json` — they are stale duplicates; `scripts/migrate-project.py` strips them.
 
 ## Writing the dashboard
 
@@ -45,14 +49,11 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
 
 ```json
 {
+  "schemaVersion": 2,
   "seed": {
     "name": "",
     "pitch": "",
     "content": ""
-  },
-  "architecture": {
-    "diagram": "",
-    "description": ""
   },
   "design": {
     "pages": [],
@@ -104,13 +105,6 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
   },
   "data": { "entities": [] },
   "endpoints": [],
-  "features": [],
-  "context": {
-    "structure": "",
-    "routing": [],
-    "patterns": [],
-    "updated": ""
-  },
   "optimization_runs": [],
   "testSmellBaseline": {
     "avgMockRatio": 0,
@@ -138,15 +132,14 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
 | Section             | Strategy            | Notes                                                                            |
 | ------------------- | ------------------- | -------------------------------------------------------------------------------- |
 | `seed`              | **OVERWRITE**       | `name`+`pitch`+`content` overwritten, `thinking` is APPEND                       |
-| `architecture`      | **OVERWRITE**       | Diagram + description fully overwritten                                          |
 | `design`            | **MERGE on `name`** | Pages/flows/principles/components/canvases merged on name, never auto-delete     |
 | `theme`             | **OVERWRITE**       | All fields owned and written by `/frontend-tokens` (tokens + motion pack routes) |
 | `stack`             | **MERGE**           | Add packages, do not overwrite existing ones                                     |
 | `data`              | **MERGE**           | Add entities/fields/relations per entity                                         |
 | `endpoints`         | **MERGE**           | Add or update status, do not delete                                              |
-| `features`          | **MERGE on `name`** | Update status, add new ones, do not delete                                       |
-| `context`           | **MERGE per key**   | Update structure/routing/patterns individually                                   |
 | `optimization_runs` | **APPEND**          | Append-only log, dedup on `run_id`. Never delete.                                |
+
+(`architecture`/`context` merge strategies: see [DASHBOARD-CONTEXT.md](DASHBOARD-CONTEXT.md). Feature status mutations: see [BACKLOG.md](BACKLOG.md) Lifecycle Protocol.)
 
 ### Stack merge
 
@@ -243,16 +236,9 @@ All sections are visible at once in one scroll — no tabs. Sidebar links are an
 
 **gaps:** auto-maintained by `frontend-design` Capture/Build/Convert — list of handler-props without a linked FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only for user; update via gap-discovery flow.
 
-### Features merge
+### Features
 
-```
-1. Read project.json
-2. For each feature:
-   - Check if feature.name already exists in features array
-   - If not: push new feature
-   - If yes: update status/stage (e.g. "DOING" stage "defined" -> "built"), update summary if changed
-3. Write project.json
-```
+Feature data is **not stored in project.json**. The single feature list lives in `.project/backlog.json` (mutations per [BACKLOG.md](BACKLOG.md) Lifecycle Protocol); shipped dev-track features move to `.project/archive/backlog-archive.json` on `/dev-refactor` completion. The dashboard server derives its features view (incl. the shipped showcase) from those two stores in-memory.
 
 ## Section schemas
 
@@ -363,28 +349,9 @@ Contains team-repo awareness fields. The `mode` field is the explicit toggle; al
 
 **Backwards compatibility:** absent or unrecognized `mode` value → treat as `"solo"`. Do not error.
 
-### features
+### features (derived — not persisted here)
 
-```json
-[
-  {
-    "name": "pin-mode",
-    "type": "FEATURE",
-    "status": "DONE",
-    "summary": "Shift+Click multi-select for inspect overlay",
-    "depends": ["clipboard-redesign"],
-    "created": "2026-02-20",
-    "refactor": "REFACTORED",
-    "shipped": true,
-    "shippedAt": "2026-02-24",
-    "shippedSha": "a1b2c3d4e5f6..."
-  }
-]
-```
-
-**Status values:** `TODO` | `DEFINED` | `DOING` | `DONE`
-**Stage values (DOING only):** `defining` | `defined` | `building` | `built` | `testing`
-**`shipped`**: only `true` after `/dev-refactor` (CLEAN or REFACTORED). Dashboard only shows `features[]` with `shipped: true`.
+See § Features under "Merge strategy per section": canonical data lives in `.project/backlog.json` + `.project/archive/backlog-archive.json`. Schema of a feature object: [BACKLOG.md](BACKLOG.md) § Data structure. The dashboard shipped-showcase shows archived/`shipped: true` features only.
 
 ### recentChanges
 
@@ -471,8 +438,9 @@ No deletion, no update — append only. For live status of a running run: see `.
 | `stack`             | `/core-setup`, `/project-backlog`, `/dev-define`, `/dev-build`, `/frontend-design`        | On detection/new deps                    |
 | `data`              | `/dev-define`, `/game-define`                                                             | On entity definition                     |
 | `endpoints`         | `/dev-define`, `/dev-build`                                                               | On API definition / after build          |
-| `features`          | `/dev-define`, `/dev-build`, `/dev-verify`, `/team-verify`, `/game-define`, `/game-build` | On status change (DOING/DONE)            |
 | `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                         | On run completion (PHASE 6)              |
+
+Feature status changes go to `.project/backlog.json` (see [BACKLOG.md](BACKLOG.md)) — not to project.json.
 
 For the `project-context.json` writer table see [DASHBOARD-CONTEXT.md](DASHBOARD-CONTEXT.md) § Which skills write what.
 
@@ -481,22 +449,22 @@ For the `project-context.json` writer table see [DASHBOARD-CONTEXT.md](DASHBOARD
 | Skill                       | project.json                                                        | project-context.json                                              | When                     |
 | --------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------ |
 | `/core-setup`               | `stack` (full)                                                      | `context` (initial)                                               | After project generation |
-| `/dev-define`               | `data.entities`, `endpoints`, `stack.packages`, `features` (DOING)  | `architecture` (write), `learnings` (read)                        | PHASE 6                  |
-| `/dev-build`                | `endpoints`, `stack.packages`, `features` (DOING+built)             | `context`, `architecture`, `learnings` (write)                    | PHASE 4C                 |
-| `/dev-verify`               | `stack.packages`, `endpoints`, `data.entities`, `features` (DONE)   | `architecture`, `learnings` (write)                               | PHASE 6 completion       |
+| `/dev-define`               | `data.entities`, `endpoints`, `stack.packages`  | `architecture` (write), `learnings` (read)                        | PHASE 6                  |
+| `/dev-build`                | `endpoints`, `stack.packages`             | `context`, `architecture`, `learnings` (write)                    | PHASE 4C                 |
+| `/dev-verify`               | `stack.packages`, `endpoints`, `data.entities`   | `architecture`, `learnings` (write)                               | PHASE 6 completion       |
 | `/dev-refactor`             | `stack.packages`, `endpoints`, `data.entities`                      | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
-| `/frontend-design`          | `design` (pages, flows, principles), `features` (batch TODO)        | —                                                                 | On each run              |
-| `/frontend-design`          | `stack.packages`, `design.pages`, `features` (DOING+built)          | —                                                                 | After PHASE 4            |
+| `/frontend-design`          | `design` (pages, flows, principles)        | —                                                                 | On each run              |
+| `/frontend-design`          | `stack.packages`, `design.pages`          | —                                                                 | After PHASE 4            |
 | `/frontend-tokens`          | `design.principles`                                                 | —                                                                 | After completion         |
 | `/frontend-sketch`          | `design.canvases`                                                   | —                                                                 | new / generate / promote |
-| `/game-define`              | `data.entities`, `stack.packages`, `features` (DOING)               | `architecture` (write)                                            | PHASE 6                  |
-| `/game-build`               | `features` (DOING+built)                                            | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
-| `/team-verify`              | `features`, `stack.packages`, `endpoints`, `data.entities`          | `architecture` (write)                                            | PHASE 7 completion       |
-| `/game-refactor`            | `features` (DONE)                                                   | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
+| `/game-define`              | `data.entities`, `stack.packages`               | `architecture` (write)                                            | PHASE 6                  |
+| `/game-build`               | —                                            | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
+| `/team-verify`              | `stack.packages`, `endpoints`, `data.entities`          | `architecture` (write)                                            | PHASE 7 completion       |
+| `/game-refactor`            | —                                                   | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
 | `/dev-optimize`             | `optimization_runs` (append)                                        | —                                                                 | PHASE 6 completion       |
 | `/game-optimize`            | `optimization_runs` (append)                                        | —                                                                 | PHASE 6 completion       |
-| `/core-pull`                | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                 |
-| `/core-setup --mode=mature` | `features` (synced), `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | One-time on join         |
+| `/core-pull`                | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                 |
+| `/core-setup --mode=mature` | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | One-time on join         |
 
 ## Server
 

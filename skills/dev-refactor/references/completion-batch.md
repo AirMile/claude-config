@@ -68,15 +68,17 @@ Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
 ## Step 3 — Parallel sync
 
-Follow `shared/SYNC.md` 3-File Sync Pattern. Read backlog.html + project.json + project-context.json in parallel.
+Follow `shared/SYNC.md` 3-File Sync Pattern. Read backlog.json + project.json + project-context.json in parallel (see `shared/BACKLOG.md § Writing` for the legacy backlog.html migration rule).
 
 **Backlog**: per feature → CLEAN/REFACTORED: `f.refactor="REFACTORED"`, `f.shipped=true`, `f.shippedAt`, `f.shippedSha=""` (omit if untracked), remove `transition`. ROLLED_BACK: `f.refactor="ROLLED_BACK"`, remove `transition`. Set `data.updated`.
 
-**Dashboard**: merge changed packages/endpoints/entities. Features: set `refactor`/`shipped`/`shippedAt`/`shippedSha` analogous. Small-items mode: add to `recentChanges[]`.
+**Backlog archive** (CLEAN/REFACTORED dev-track features only): after setting the shipped flags, remove each shipped feature object from `backlog.json#features[]` and append it to `.project/archive/backlog-archive.json` — shape `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`. Create `.project/archive/` and the scaffold if absent; dedup on `name` before appending. ROLLED_BACK features are NOT archived (consistent with the feature-dir rule in step 6); PAGE/COMPONENT items also stay (frontend-track exception — see `shared/BACKLOG.md § Archiving`). The dashboard shipped-showcase reads the archive via the server — archived features are no longer in `backlog.json`.
+
+**Dashboard**: merge changed packages/endpoints/entities. Small-items mode: add to `recentChanges[]`.
 
 **Context sync** (only if structural changes: files renamed/moved/extracted, patterns fundamentally changed): update `context.structure`, `context.patterns`, `context.updated`, `architecture.components` (see `shared/DASHBOARD.md` for edge types). Log `context: {N} updates` or `context: no updates needed`.
 
-Write back in parallel: Edit backlog.html (keep `<script>` tags), Write project.json, Write project-context.json.
+Write back in parallel: Write backlog.json, Write `.project/archive/backlog-archive.json` (only if features were archived), Write project.json, Write project-context.json.
 
 ## Step 4 — Scoped auto-commit
 
@@ -96,13 +98,13 @@ Skip entirely if `TRACKING_MODE=untracked`. Otherwise:
 SHA=$(git rev-parse HEAD)
 ```
 
-a. **Reuse the parsed `backlog.html` and `project.json` from step 3 (in-memory).** Do not re-read — the only mutations since step 3 came from this skill's step 4 commit, and we know exactly which fields changed. If the step-4 commit was skipped OR a concurrent external write is suspected (check: `git status --porcelain .project/backlog.html .project/project.json` shows unstaged changes since step 4), invalidate the cache and re-read before mutating.
-b. Replace empty `shippedSha: ""` for CLEAN/REFACTORED features with `SHA`.
-c. Write back: Edit `backlog.html` for the `shippedSha` lines, Write `project.json`.
+a. **Reuse the parsed `backlog-archive.json` from step 3 (in-memory).** Do not re-read — the only mutations since step 3 came from this skill's step 4 commit, and we know exactly which fields changed. If the step-4 commit was skipped OR a concurrent external write is suspected (check: `git status --porcelain .project/archive/backlog-archive.json` shows unstaged changes since step 4), invalidate the cache and re-read before mutating.
+b. Replace empty `shippedSha: ""` for CLEAN/REFACTORED features with `SHA` (these entries now live in `backlog-archive.json#archived[]` after the step-3 archive move).
+c. Write back: Edit `.project/archive/backlog-archive.json` for the `shippedSha` lines.
 d. Stage and commit:
 
 ```bash
-git add .project/backlog.html .project/project.json
+git add .project/archive/backlog-archive.json
 git commit -m "chore(refactor): backfill shippedSha for {feature-list}"
 ```
 

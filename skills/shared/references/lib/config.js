@@ -35,7 +35,8 @@ const PROJECTS_ROOT = path.resolve(
     platformDefault,
 );
 const PORT = parseInt(process.env.BACKLOG_PORT || "9876", 10);
-const BACKLOG_PATH = ".project/backlog.html";
+const BACKLOG_PATH = ".project/backlog.json";
+const LEGACY_BACKLOG_PATH = ".project/backlog.html";
 const DASHBOARD_PATH = ".project/project.json";
 const TEMPLATE_PATH = path.join(__dirname, "../backlog-template.html");
 const DASHBOARD_TEMPLATE_PATH = path.join(
@@ -47,6 +48,7 @@ module.exports = {
   PROJECTS_ROOT,
   PORT,
   BACKLOG_PATH,
+  LEGACY_BACKLOG_PATH,
   DASHBOARD_PATH,
   TEMPLATE_PATH,
   DASHBOARD_TEMPLATE_PATH,

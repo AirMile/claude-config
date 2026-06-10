@@ -121,26 +121,31 @@ Now TESTABLE -> TDD fix loop
 
 ## Workflow
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 10 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. When context compacts, the task list stays visible — no risk of forgotten phases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with the 4 mandatory phases (status `pending`):
 
 1. PHASE 0: Load Context
 2. PHASE 1: Parse Feedback
-3. PHASE 1b: Debug Analysis
-4. PHASE 2: Categorize Issues
-5. PHASE 3: Fix Loop
-6. PHASE 4: Generate Re-test Checklist
-7. PHASE 5: Re-test Loop
-8. PHASE 5c: Regression Check
-9. PHASE 5d: Requirement Verification
-10. PHASE 6: Completion
+3. PHASE 5d: Requirement Verification
+4. PHASE 6: Completion
 
-Add conditionally via `TaskCreate`:
+**Worktree check** — after resolving `feature-name` in PHASE 0 step 1, detect whether a worktree exists for this feature:
 
-- All PASS + worktree branch detected → add PHASE Finalize at end
+```bash
+git worktree list --porcelain | grep -q "branch refs/heads/worktree-{feature-name}$"
+```
+
+Match → add PHASE Finalize at end via `TaskCreate`. (PHASE Finalize itself decides whether to act based on playtest outcome — always add it when a worktree exists, regardless of which checkout currently runs the skill.)
+
+Add fix-loop phases via `TaskCreate` ONLY when they will fire:
+
+- FAILs in PHASE 1 feedback → add PHASE 1b (Debug Analysis), PHASE 2 (Categorize Issues), PHASE 3 (Fix Loop), PHASE 4 (Generate Re-test Checklist), PHASE 5 (Re-test Loop) before PHASE 5d
+- Any PHASE 3 fixes applied → add PHASE 5c (Regression Check) before PHASE 5d
+
+Use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. When context compacts, the task list stays visible — no risk of forgotten phases.
 
 ### PHASE 0: Load Context
 
-> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 10 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 4 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 **Goal:** Load playtest checklist from build phase and prepare for feedback.
 
@@ -203,52 +208,10 @@ Add conditionally via `TaskCreate`:
    → Exit skill
 
 6. **Read playtest checklist + classify items:**
-   - Use `checklist[]` from the FEATURE-LOAD output
-   - Note expected behavior for each item (from `title` field)
-   - Count total items
-   - **Classify each item:**
-     - **COVERED**: GUT unit tests from `/game-build` already verify this requirement. Check `tests/test_{feature}.gd` for matching test functions. COVERED items are already verified — skip in playtest.
-     - **MANUAL**: Requires human verification (gameplay feel, visuals, audio, game launch). Everything that is not COVERED.
-   - Display classification:
 
-   ```
-   CHECKLIST CLASSIFICATION:
+   > **Todo**: Read '.claude/skills/game-verify/references/checklist-classification.md' and execute steps a-d: classify items (COVERED/MANUAL), CATEGORY-GAP check, acceptance mapping, gap resolution.
 
-   COVERED ({N} items — skip, already verified by GUT tests):
-   - Item {X}: {description} → test_{function}()
-
-   MANUAL ({M} items — playtest required):
-   - Item {Y}: {description}
-   ```
-
-   If all items are COVERED → skip playtest, go to PHASE 6 completion.
-
-   **Goal-backward verification** — map tests back to acceptance criteria:
-
-   **CATEGORY-GAP check** (mechanically determined from feature.json — run first):
-   - Set A = `{ (REQ.id, entry.category ?? "happy") | for each REQ (non-REMOVED), for each entry in REQ.acceptance[] }`
-   - Set B = `{ (item.requirementId, item.category ?? "happy") | for each item in tests.checklist[] }`
-   - CATEGORY-GAPs = A \ B (combinations defined by game-define but not written by game-build)
-   - Per gap: add as a MANUAL playtest item with title `"{category} coverage missing for {REQ.id}"` and steps/expected from the matching `acceptance[]` entry's `{ when, then }`.
-
-   Filter: skip requirements with `deltaOp === "REMOVED"` — do not include in the mapping.
-
-   Build mapping from feature.json `requirements[].acceptance` (`[{ when, then }]` objects) and classified items. Each `{ when, then }` scenario = one row:
-
-   | REQ   | When                    | Then (expected)      | Test Items | Coverage |
-   | ----- | ----------------------- | -------------------- | ---------- | -------- |
-   | REQ-1 | enemy hit by attack     | enemy takes damage   | Item 1, 3  | ✓        |
-   | REQ-2 | critical hit registered | knockback is applied | —          | GAP      |
-
-   **GAP**: requirement without test items (COVERED or MANUAL).
-   **CATEGORY-GAP**: acceptance scenario with a specific `category` (edge/boundary) that no checklist item covers — show in table with label `(category-coverage)`.
-   **MISMATCH**: test items that verify implementation details instead of observable gameplay (test title references internal functions instead of player-visible behavior).
-
-   No gaps, no mismatches → show `Acceptance mapping: {n}/{n} REQs covered` and continue.
-
-   Gaps or mismatches → AskUserQuestion:
-   - "Accept and continue (Recommended)" — note it, proceed
-   - "Adjust test items" — add items for gaps, reformulate mismatches
+   Outcome: classified checklist + acceptance-mapping table. All items COVERED → skip playtest, go to PHASE 6 completion.
 
 7. **Verify playtest scene exists:**
 
@@ -399,7 +362,7 @@ Feedback: received
 
 **Tag backlog + capture baseline:**
 
-- Backlog: read `.project/backlog.html` (if it exists), parse JSON (see `shared/BACKLOG.md`). Find feature by name → set `"stage": "testing"`, `data.updated` → now (Edit, keep `<script>` tags intact)
+- Backlog: read `.project/backlog.json` (if it exists), parse JSON (see `shared/BACKLOG.md`). Find feature by name → set `"stage": "testing"`, `data.updated` → now (Edit)
 - Git baseline + session file:
 
 ```bash
@@ -616,11 +579,12 @@ Schema: `{ verdict: "STRONG"|"WEAK", ranAt: ISO-8601, passRatio: number, testGap
 
 Read these Just-In-Time during specific phases — do not load upfront.
 
-| File                                    | When to load                                                                     |
-| --------------------------------------- | -------------------------------------------------------------------------------- |
-| `references/phase-0b-baseline-check.md` | PHASE 0 step 6b — only if feature.json has a `build` section                     |
-| `references/debug-analysis.md`          | PHASE 1b — debug output capture and issue correlation                            |
-| `references/phase-3-fix-loop.md`        | PHASE 3 — TESTABLE TDD fix loop and MEASURABLE direct fix (only when FAIL items) |
-| `references/retest-loop.md`             | PHASE 4 + 5 — re-test checklist generation and re-test loop                      |
-| `references/regression-requirements.md` | PHASE 5c + 5d — GUT regression check and requirement coverage matrix             |
-| `references/completion-finalize.md`     | PHASE 6 — fix sync, parallel sync, learning extraction, commit, finalize         |
+| File                                     | When to load                                                                     |
+| ---------------------------------------- | -------------------------------------------------------------------------------- |
+| `references/checklist-classification.md` | PHASE 0 step 6 — classification, CATEGORY-GAP check, acceptance mapping          |
+| `references/phase-0b-baseline-check.md`  | PHASE 0 step 6b — only if feature.json has a `build` section                     |
+| `references/debug-analysis.md`           | PHASE 1b — debug output capture and issue correlation                            |
+| `references/phase-3-fix-loop.md`         | PHASE 3 — TESTABLE TDD fix loop and MEASURABLE direct fix (only when FAIL items) |
+| `references/retest-loop.md`              | PHASE 4 + 5 — re-test checklist generation and re-test loop                      |
+| `references/regression-requirements.md`  | PHASE 5c + 5d — GUT regression check and requirement coverage matrix             |
+| `references/completion-finalize.md`      | PHASE 6 — fix sync, parallel sync, learning extraction, commit, finalize         |

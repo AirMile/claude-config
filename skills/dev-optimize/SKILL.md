@@ -47,7 +47,7 @@ Update on completion: `.project/project.json` → push to `optimization_runs[]` 
 
 ### PHASE 0: Pre-flight
 
-> **Todo**: call `TaskCreate` with the 7 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 7 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 **Capture git baseline:**
 

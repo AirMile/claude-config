@@ -5,7 +5,7 @@ argument-hint: "[remote/branch] [--no-learn]"
 reads: [project.stack, project-context.learnings]
 writes:
   [
-    project.features,
+    backlog.features,
     project.entities,
     project.endpoints,
     project.stack,
@@ -502,6 +502,10 @@ Read `project-context.json` (re-read immediately before write per SYNC.md). For 
 Add surviving entries to `learnings[]`. Write `project-context.json` back.
 
 Track counts for PHASE 5 report: `{ patterns: P, pitfalls: Q, observations: R, by_authors: [...] }`.
+
+**4j.7) Consolidation (only when `learnings.length > 60` after sync)**
+
+Run the consolidation pass per `shared/LEARNING-EXTRACTION.md § Consolidation`: age-out old observations, merge per-feature clusters into `source: "consolidated"` entries, move originals to `.project/archive/learnings-{YYYY-MM}.json`, target ≤ 40 active entries. Mutate `learnings[]` and the archive in memory first, then write both files once. Add to the PHASE 5 report: `Learnings consolidated: {N} merged, {M} archived ({before} → {after})`. Skip silently when under the threshold.
 
 ### PHASE 5: Report
 

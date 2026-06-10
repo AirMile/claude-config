@@ -88,7 +88,7 @@ For each selected fix:
 - **Claude config**: write `settings.local.json` with Full Access defaults + format-on-save hook for detected stack
 - **CLAUDE.md**: add missing canonical sections (see `references/claude-md-sections.md`). Existing content unchanged.
 - **project.json**: create or fill missing `concept`/`stack` fields via short prompt (name, description)
-- **design-tokens**: seed `setup-design-tokens` feature to `.project/backlog.html`:
+- **design-tokens**: seed `setup-design-tokens` feature to `.project/backlog.json`:
   ```json
   {
     "name": "setup-design-tokens",
@@ -100,7 +100,7 @@ For each selected fix:
     "dependencies": []
   }
   ```
-  Create backlog from template `{skills_path}/shared/references/backlog-template.html` if missing. Skip if feature named `setup-design-tokens` already exists (idempotent).
+  Create `.project/backlog.json` with the schemaVersion-2 scaffold (see `shared/BACKLOG.md`) if missing. Skip if feature named `setup-design-tokens` already exists (idempotent).
 
 ---
 

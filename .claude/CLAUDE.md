@@ -75,9 +75,9 @@ State handoff between skills via `.project/session/devinfo.json` (schema: `share
 ## Key Patterns
 
 - **`.project/`**: all runtime artifacts (gitignored) — wireframes, config, session, screenshots
-- **`.project/project.json`**: central project dashboard with context (structure, routing, patterns), features, stack, endpoints, entities, thinking. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md references this for runtime context.
+- **`.project/project.json`**: central project dashboard (seed, design, theme, stack, endpoints, entities — `schemaVersion: 2`). Runtime context (architecture, context, learnings) lives in `project-context.json`; features in `backlog.json`. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md references this for runtime context.
 - **Format-on-save**: hook runs Prettier (web) or gdformat (GDScript) after every Write/Edit
-- **Backlog**: `.project/backlog.html` with status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped
+- **Backlog**: `.project/backlog.json` (data store; board UI rendered by the server) with status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped (archived to `.project/archive/backlog-archive.json`)
 - **Build skills**: auto-commit, auto-sync `project.json` context after completion
 - **Global vs local**: `~/.claude/{agents,hooks,skills,scripts}/` are whole-directory symlinks to the claude-config repo. Claude Code merges this global set with `<project>/.claude/`, where global is always visible. Per-project filtering of skills/agents therefore doesn't work — that's why there are no profiles; everything is always available.
 

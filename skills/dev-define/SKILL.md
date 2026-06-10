@@ -1,18 +1,23 @@
 ---
 name: dev-define
 description: Define feature requirements, criteria, and architecture. Use with /dev-define.
-reads: [backlog.status, feature.requirements]
+reads:
+  [
+    backlog.status,
+    feature.requirements,
+    project-context.architecture,
+    backlog.features,
+  ]
 writes:
   [
     feature.requirements,
     feature.architecture,
     feature.files,
     backlog.status,
-    backlog.overview,
-    backlog.siblings,
     concept.seed,
     feature.seedDrift,
   ]
+writes-terminal: [backlog.overview, backlog.siblings]
 metadata:
   author: claude-config
   version: 3.2.0
@@ -52,7 +57,7 @@ visible — no risk of forgetting phases.
    a) **Name provided** (`/dev-define auth`): use as feature name → go to step 2.
 
    b) **No name provided** (`/dev-define`): pick from backlog → concept → suggestions in this order:
-   - Read `.project/backlog.html` → parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
+   - Read `.project/backlog.json` → parse JSON (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
      - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`, go to step 2.
      - Fallback: `data.features.find(f => f.status === "TODO")` (first TODO).
    - **If backlog feature found (fallback path):**
@@ -70,7 +75,7 @@ visible — no risk of forgetting phases.
      "Yes" → stop, show: `Run /project-backlog to convert your concept into a backlog.`
      "No" → continue to next bullet.
    - **No backlog, no concept (or direct-define chosen):**
-     Generate 3 suggestions from available signal in this order: (1) `project.json#features[]` with `status: "TODO"` or `"PLANNED"` (use feature `name` + `summary`); (2) if <3 found, scan `project.json#seed.goals[]` or `seed.pitch` for noun-phrases that could be features (e.g. "user authentication", "report export"); (3) if still <3, fallback to 3 generic next-step suggestions based on `stack.framework` (e.g. Next.js → "auth-flow", "api-route", "form-validation"). Show via AskUserQuestion: "Which feature do you want to define?" — each option label = kebab-case name, description = 1-line purpose. Selected name → step 2.
+     Generate 3 suggestions from available signal in this order: (1) scan `project.json#seed.goals[]` or `seed.pitch` for noun-phrases that could be features (e.g. "user authentication", "report export"); (2) if <3 found, fallback to 3 generic next-step suggestions based on `stack.framework` (e.g. Next.js → "auth-flow", "api-route", "form-validation"). Show via AskUserQuestion: "Which feature do you want to define?" — each option label = kebab-case name, description = 1-line purpose. Selected name → step 2.
 
 2. **Feature existence check** (before context load):
 
@@ -80,13 +85,13 @@ visible — no risk of forgetting phases.
 
 3. **Initial setup writes** (only writes allowed before plan mode):
    - `mkdir -p .project/features/{feature-name}`
-   - `mkdir -p .project/sessions && echo '{"feature":"{feature-name}","skill":"define","startedAt":"<new Date().toISOString()>"}' > .project/sessions/active-{feature-name}.json`
+   - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"<new Date().toISOString()>"}' > .project/session/active-{feature-name}.json`
 
 4. **Enter Plan Mode** — call `EnterPlanMode` NOW, before any `Read`, `Glob`, `Grep`, or `AskUserQuestion`. Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol. PHASE 0 step 5 onwards + PHASE 1a + 1b + 2 all run in plan mode.
    - **Note on user consent**: `EnterPlanMode` may prompt the user for plan-mode confirmation in some Claude Code UIs. This is intentional — model routers (e.g. `opusplan`) use plan mode as the trigger for upgrading to Opus. Do not skip the call to avoid the prompt.
    - **Skip-check**: if plan mode is already active (existing system-reminder), skip the call and read the plan-file path from the active reminder.
    - **If `feature.json` already exists** (update-mode trigger from step 2): EnterPlanMode still fires here — update-mode body in PHASE 0b runs inside plan mode.
-   - All `.project/{backlog,project,project-context}.{html,json}` writes wait until after `ExitPlanMode` in PHASE 4.
+   - All `.project/{backlog,project,project-context}.json` writes wait until after `ExitPlanMode` in PHASE 4.
 
 5. **Context load** (inside plan mode — reads only, parallelize):
    - Glob + Grep for existing code that imports the feature name. ≥1 match: briefly mention files.
@@ -244,7 +249,7 @@ For the shared sync implementation of `discoveredComponents` in PHASE 4, see [sh
 
 After Reuse-Discovery, ask which PAGE(s) this feature surfaces on. This writes `pageHint[]` to `feature.json` (PHASE 3) and enables `/frontend-design` Build to pre-populate its composition menu.
 
-1. Read `.project/backlog.html` → collect all PAGE-type features (any status). Read `project.json#design.pages[]` — collect page names. Merge both lists (dedupe by name) as `$KNOWN_PAGES`.
+1. Read `.project/backlog.json` → collect all PAGE-type features (any status). Read `project.json#design.pages[]` — collect page names. Merge both lists (dedupe by name) as `$KNOWN_PAGES`.
 
 2. ```yaml
    header: "Page placement"
@@ -265,8 +270,8 @@ After Reuse-Discovery, ask which PAGE(s) this feature surfaces on. This writes `
 
 5. Write result as `pageHint: $PAGE_HINTS` into the in-memory feature.json object (written to disk in PHASE 3).
 
-6. **Backlog back-write** (PAGE → feature backref): for each `pageName` in `$PAGE_HINTS` where `pageName` already exists in `backlog.html` as `type === "PAGE"` (idempotent — re-runs and later Page-Discovery seeding in PHASE 4 dedupe on the same array; Smart-Todo "+ new PAGE" earlier already wrote the parent feature into dependencies[]):
-   - Add `{feature-name}` to `page.dependencies[]` (dedupe). Write back to `backlog.html`.
+6. **Backlog back-write** (PAGE → feature backref): for each `pageName` in `$PAGE_HINTS` where `pageName` already exists in `backlog.json` as `type === "PAGE"` (idempotent — re-runs and later Page-Discovery seeding in PHASE 4 dedupe on the same array; Smart-Todo "+ new PAGE" earlier already wrote the parent feature into dependencies[]):
+   - Add `{feature-name}` to `page.dependencies[]` (dedupe). Write back to `backlog.json`.
    - Add to completion report when ≥1 update: `Page deps: {N} PAGEs updated ({comma-separated names})`
    - Applies to both FEATURE and COMPONENT types — no type filter.
 
@@ -411,11 +416,11 @@ Include `interviewSummary` from the PHASE 1a closing summary — fields: `goal`,
 
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/dev-define/references/phase4-sync.md` for mutation details per file.
 
-Follow `shared/SYNC.md` 3-File Sync Pattern. Mutation details for backlog.html, project.json, and project-context.json: see `references/phase4-sync.md`.
+Follow `shared/SYNC.md` 3-File Sync Pattern. Mutation details for backlog.json, project.json, and project-context.json: see `references/phase4-sync.md`.
 
 Read in parallel **directly before editing** (skip if not exists) — do NOT rely on reads from earlier phases:
 
-- `.project/backlog.html`
+- `.project/backlog.json`
 - `.project/project.json`
 - `.project/project-context.json`
 
@@ -431,8 +436,8 @@ Follow [Discovery — Page-Discovery](../shared/SKILL-PATTERNS.md#page-discovery
 
 Write back in parallel:
 
-- Edit `backlog.html` (keep `<script>` tags intact)
-- Edit `project.json` (features, endpoints, data, stack — use Edit for targeted changes, not Write)
+- Edit the JSON in `.project/backlog.json`
+- Edit `project.json` (endpoints, data, stack — use Edit for targeted changes, not Write)
 - Edit/Write `project-context.json` (if architecture or context changed — Write for large diagram changes)
 
 #### Mutations on `project-seed.md` (only if `seedUpdateApproved: true`)
@@ -441,25 +446,25 @@ Write back in parallel:
 - Source content: the plan file's `## Proposed seed update` section.
 - Apply all writes per [shared/SEED.md § Write targets](../shared/SEED.md#write-targets-sync-phase) — that table is canonical for seed-mutation file set and log line.
 
-All writes in this block run in parallel with the existing back-writes (`backlog.html`, `project.json`, `project-context.json`).
+All writes in this block run in parallel with the existing back-writes (`backlog.json`, `project.json`, `project-context.json`).
 
 #### Apply `siblingUpdates[]` (only if plan file has a `## Sibling backlog updates` section)
 
 - Skip if the section is absent (sub-threshold feature OR no cascade detected).
 - Parse the table from the plan file (`name | field | proposed | reason`). Trust the post-approval content — the user may have removed rows before approving.
-- For each row, mutate the in-memory `backlog.html` representation already loaded for PHASE 4:
+- For each row, mutate the in-memory `backlog.json` representation already loaded for PHASE 4:
   - `field: "dependencies"` → `feature.dependencies = unique([...feature.dependencies, current-feature-name])`. Never replace; never remove.
   - `field: "description"` → replace `feature.description` with the proposed value verbatim. (The proposal in the table is the final string, not a diff.)
 - Sibling not found in backlog (e.g. deleted between PHASE 2 and PHASE 4) → log `Siblings: ⚠ {name} not found — skipped` and continue.
 - Log: `Siblings: ✓ {N} update(s) applied ({comma-separated names})`.
 
-This applier writes to the same in-memory backlog object as the existing PHASE 4 mutations and Page-seeding, so all changes land in the single `backlog.html` write at the end of PHASE 4 — no extra I/O.
+This applier writes to the same in-memory backlog object as the existing PHASE 4 mutations and Page-seeding, so all changes land in the single `backlog.json` write at the end of PHASE 4 — no extra I/O.
 
 **Auto-build marking** (after sync):
 
 Combine the auto flag with the status write above — no separate second write. The backlog mutation in one script: `status: "DEFINED"`, `definedAt: <ISO>`, `auto: true` together. No user prompt — always mark auto so the card gets an AUTO badge and the clipboard has the correct `/dev-build` command.
 
-Clean up: `rm -f .project/sessions/active-{feature-name}.json`
+Clean up: `rm -f .project/session/active-{feature-name}.json`
 
 **Output:**
 

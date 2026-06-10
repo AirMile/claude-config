@@ -28,7 +28,7 @@ Accepts markdown from:
 
 ## Output
 
-`.project/backlog.html` with:
+`.project/backlog.json` with:
 
 - Decomposed features
 - Dependencies
@@ -218,10 +218,10 @@ added, features marked INDEPENDENT/CANCELLED/DEPRECATED, and significant priorit
 reshuffles from this run. This skill is in plan mode — drift table and proposed
 rewrite go into the plan file alongside the feature plan. On "Yes" → carry
 `seedUpdateApproved: true` to PHASE 4. On "Skip" → carry `seedDrift[]` to PHASE 4
-(written to `backlog.html#data.seedDrift[]`). `source: "/project-backlog"`,
+(written to `backlog.json#seedDrift[]`). `source: "/project-backlog"`,
 `ref: "feature:{name}"` where applicable.
 
-**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the feature plan (features table with type/risk/phase/dependencies + ASCII dependency tree + priority breakdown) to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 4 (HTML write + `.project/project.json` sync + server start).
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the feature plan (features table with type/risk/phase/dependencies + ASCII dependency tree + priority breakdown) to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 4 (`backlog.json` write + `.project/project.json` sync + server start).
 
 ### PHASE 4: Generate Backlog
 
@@ -234,7 +234,7 @@ rewrite go into the plan file alongside the feature plan. On "Yes" → carry
 ```
 BACKLOG CREATED
 
-File: .project/backlog.html
+File: .project/backlog.json
 
 P1:
 1. routing (FEATURE)

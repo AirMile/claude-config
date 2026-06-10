@@ -21,7 +21,7 @@ On successful code generation: remove `transition`, set `status: "DOING"`, `stag
 Build candidates come from two sources (merge, deduplicate on name):
 
 1. `design.pages[]` / `design.components[]` with `status: "DEF"` and no visual reference in `.project/wireframes/` or `.screenshots[]`.
-2. `backlog.html` features with `(type === "PAGE" || type === "COMPONENT") && transition === "designing"`.
+2. `backlog.json` features with `(type === "PAGE" || type === "COMPONENT") && transition === "designing"`.
 
 Show only type options for which candidates are available:
 
@@ -317,7 +317,7 @@ Read `.project/session/devinfo.json` → check `tokenDrift.affectedFeatures`. If
 
 **10d. Backlog sync**:
 
-Parse `backlog.html` → match on `name === {$TARGET}`:
+Parse `.project/backlog.json` → match on `name === {$TARGET}`:
 
 Map `$VERIFY_STATUS` (from Step 9) to backlog state:
 
@@ -340,7 +340,7 @@ For each name in `$COMPOSITION.features[].name`:
 
 Store `$COMP_FEAT_COUNT = len($COMPOSITION.features)`, `$COMP_COMP_COUNT = len($COMPOSITION.components)`, `$PAGEHINT_COUNT = number of feature.json files updated`.
 
-Edit back to `backlog.html` (keep `<script>` tags intact, see `shared/BACKLOG.md → Lifecycle Protocol → Write`).
+Edit back to `.project/backlog.json` (see `shared/BACKLOG.md → Lifecycle Protocol → Write`).
 
 Store block inventory counters as `$INV_NEW`, `$INV_UPDATED`, `$INV_CONFLICTS` for use in Step 11.
 

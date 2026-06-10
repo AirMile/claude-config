@@ -1,6 +1,6 @@
 # Backlog Load Protocol
 
-Shared protocol for extracting fields from `.project/backlog.html` without loading the full HTML file into context. Skills reference this for PHASE 0 read-only access only.
+Shared protocol for extracting fields from `.project/backlog.json` without loading the full file into context. Skills reference this for PHASE 0 read-only access only.
 
 > **Schema**: backlog feature-objecten — zie [BACKLOG.md](BACKLOG.md) voor volledige veldlijst en lifecycle-protocol.
 
@@ -17,6 +17,8 @@ Skills load backlog context during their **PHASE 0 context-load phase** for read
 
 **This protocol is NOT for mutations.** Backlog status updates, date changes, `auto`/`shipped*` flag writes, and transition flips use the full Read → mutate-in-memory → Write cycle documented in [BACKLOG.md → Lifecycle Protocol → Write](BACKLOG.md).
 
+**Legacy fallback**: pre-migration projects store the data embedded in `.project/backlog.html`. Both snippets fall back to extracting from the legacy file so reads keep working until `scripts/migrate-project.py` has run. Write paths migrate first — see BACKLOG.md.
+
 ---
 
 ## Two profiles
@@ -30,10 +32,14 @@ Requires `$FEAT` to be set to the current feature name.
 ```bash
 node -e "
   const fs = require('fs');
-  const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
-  const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
-  if (!m) { console.log('BACKLOG_NO_DATA'); process.exit(0); }
-  const data = JSON.parse(m[1]);
+  let data = null;
+  try { data = JSON.parse(fs.readFileSync('$REPO/.project/backlog.json', 'utf8')); }
+  catch { try {
+    const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
+    const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
+    if (m) data = JSON.parse(m[1]);
+  } catch {} }
+  if (!data) { console.log('BACKLOG_NOT_PRESENT'); process.exit(0); }
   const feat = (data.features || []).find(f => f.name === '$FEAT');
   if (!feat) { console.log('BACKLOG_FEATURE_NOT_FOUND'); process.exit(0); }
   console.log(JSON.stringify({
@@ -46,7 +52,7 @@ node -e "
     transition: feat.transition || null,
     pageHint: feat.pageHint || []
   }, null, 2));
-" 2>/dev/null || echo "BACKLOG_HTML: not present"
+" 2>/dev/null || echo "BACKLOG_NOT_PRESENT"
 ```
 
 **Use for**: risk-check (skip ≥4 warning), dependency-status check, `externalRef` passthrough to `feature.json` in PHASE 3.
@@ -58,10 +64,14 @@ For dev-build PHASE 0 — lists DEFINED features to compose the "Ready to build"
 ```bash
 node -e "
   const fs = require('fs');
-  const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
-  const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
-  if (!m) { console.log('BACKLOG_NO_DATA'); process.exit(0); }
-  const data = JSON.parse(m[1]);
+  let data = null;
+  try { data = JSON.parse(fs.readFileSync('$REPO/.project/backlog.json', 'utf8')); }
+  catch { try {
+    const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
+    const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
+    if (m) data = JSON.parse(m[1]);
+  } catch {} }
+  if (!data) { console.log('BACKLOG_NOT_PRESENT'); process.exit(0); }
   const defined = (data.features || [])
     .filter(f => f.status === 'DEFINED')
     .map(f => ({
@@ -79,7 +89,7 @@ node -e "
     blocking: f.dependencies.filter(d => !doneNames.has(d))
   }));
   console.log(JSON.stringify(result, null, 2));
-" 2>/dev/null || echo "BACKLOG_HTML: not present"
+" 2>/dev/null || echo "BACKLOG_NOT_PRESENT"
 ```
 
 **Use for**: feature selection display (ready ✓ / blocked ✗ indicators). Dependency-status is computed inline — no separate lookup needed.
@@ -90,17 +100,16 @@ node -e "
 
 Both profiles return compact JSON. Skills parse the output to compose their PHASE 0 display.
 
-- `BACKLOG_HTML: not present` → file absent; skip risk-check, log `Backlog: ⓘ not present — risk-check skipped`.
-- `BACKLOG_NO_DATA` → HTML present but no `<script id="backlog-data">` found; treat as absent.
+- `BACKLOG_NOT_PRESENT` → no backlog store (neither `backlog.json` nor legacy `backlog.html` with data); skip risk-check, log `Backlog: ⓘ not present — risk-check skipped`.
 - `BACKLOG_FEATURE_NOT_FOUND` → feature not in backlog; log `Backlog: ⓘ not present — risk-check skipped` and continue.
 
 ---
 
 ## Edge cases
 
-- **`$REPO` not set**: `fs.readFileSync` throws → `2>/dev/null || echo "BACKLOG_HTML: not present"` catches it.
-- **Malformed JSON in `<script>` blob**: `JSON.parse` throws → caught by `2>/dev/null || echo`.
-- **`<script>` tag has extra attributes**: regex `[^>]*` tolerates any attribute (e.g. `type="application/json"`).
+- **`$REPO` not set**: `fs.readFileSync` throws → fallback chain ends in `BACKLOG_NOT_PRESENT`.
+- **Malformed JSON**: `JSON.parse` throws → caught, falls through to `BACKLOG_NOT_PRESENT`.
+- **Legacy `<script>` tag has extra attributes**: regex `[^>]*` tolerates any attribute (e.g. `type="application/json"`).
 - **Feature record missing optional fields** (e.g. no `externalRef`): `|| null` / `|| []` defaults return safe empties.
 - **`ready-queue` with no DEFINED features**: returns `[]` — skill shows "No features ready to build."
 

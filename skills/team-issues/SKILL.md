@@ -56,7 +56,7 @@ Import issues from a team tracker into your local backlog. Smart-splits multi-ar
    - If that also fails, or if `--paste` flag is present → `tracker = "paste"`.
    - Save tracker to `project.json#team.tracker` if it was missing.
 
-2. Read `.project/backlog.html` → parse `<script id="backlog-data">` JSON → `data`.
+2. Read `.project/backlog.json` → parse JSON → `data`.
 
 3. If argument is a number (e.g. `/team-issues 42`) → store as `directIssueId`, skip PHASE 1 and 2.
 
@@ -284,7 +284,7 @@ Write `data.updated` to today (`YYYY-MM-DD`).
 
 Write `project.json#team.tracker` if it was not yet set.
 
-Edit the JSON block in `backlog.html` — keep `<script>` tags intact.
+Edit the JSON in `.project/backlog.json` (see `shared/BACKLOG.md § Writing`).
 
 > **Todo**: mark PHASE 6 → `completed`, PHASE 7 → `in_progress`.
 
@@ -303,7 +303,7 @@ IMPORTED
   Issue #38: Fix signup validation error (github)
     signup-validation P2 · BUG     · Dev track
 
-  Backlog: .project/backlog.html
+  Backlog: .project/backlog.json
 
   Next steps:
   - /dev-define oauth-callback     (start dev pipeline)

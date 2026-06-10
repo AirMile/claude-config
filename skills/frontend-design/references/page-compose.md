@@ -10,7 +10,7 @@
 
 Read in parallel:
 
-- `.project/backlog.html` → parse `data.features[]`
+- `.project/backlog.json` → parse `data.features[]`
 - `.project/project.json` → read `design.components[]`
 - `.project/features/*/feature.json` → read `pageHint[]` from each (glob all feature.json files)
 

@@ -17,7 +17,7 @@ writes:
     feature.requirements,
     feature.tests,
     backlog.status,
-    project.features,
+    backlog.features,
     project.stack,
     project.endpoints,
     project.entities,
@@ -117,7 +117,7 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
    a. **feature.json** — if feature name given → `.project/features/{name}/feature.json`. Otherwise → scan `.project/features/*/feature.json` for features with status DOING + stage built, or with `externalRef.assignees` set.
 
-   b. **Backlog TODO** — if no feature.json found, check `.project/backlog.html` for a TODO/DOING item matching the feature name or branch name. Extract the item's description/title.
+   b. **Backlog TODO** — if no feature.json found, check `.project/backlog.json` for a TODO/DOING item matching the feature name or branch name. Extract the item's description/title.
 
    c. **Nothing** — no feature.json, no backlog match.
 
@@ -503,13 +503,13 @@ Use AskUserQuestion:
    - Update feature `status` if appropriate
    - Do NOT overwrite other sections
 
-2. **Update backlog** (if `.project/backlog.html` exists, `BRIEF_REVIEW` or `TODO_REVIEW` mode):
+2. **Update backlog** (if `.project/backlog.json` exists, `BRIEF_REVIEW` or `TODO_REVIEW` mode):
    (see `shared/BACKLOG.md` for parse/write pattern)
    - Find feature in `data.features[]` by name
    - All PASS + no MISSING → `.status = "DONE"`, remove `stage`
    - Otherwise → `.status` stays `"DOING"`, `.stage` stays `"built"`
    - `data.updated` → current date
-   - Edit `backlog.html` (keep `<script>` tags intact)
+   - Edit `.project/backlog.json`
 
 3. **Update project.json** (if `.project/project.json` exists, `BRIEF_REVIEW` or `TODO_REVIEW` mode):
    (see `shared/DASHBOARD.md`)
@@ -538,7 +538,7 @@ Use AskUserQuestion:
    If baseline file doesn't exist, fall back to staging only known skill output files:
 
    ```bash
-   git add .project/features/{feature-name}/feature.json .project/backlog.html .project/project.json .project/project-context.json
+   git add .project/features/{feature-name}/feature.json .project/backlog.json .project/project.json .project/project-context.json
    ```
 
    ```bash

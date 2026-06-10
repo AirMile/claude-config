@@ -2,7 +2,7 @@
 name: project-todo
 description: Add new backlog items to the project. Use with /project-todo.
 reads: [project.stack, backlog.status]
-writes: [backlog.status, project.features, project.stack, project.thinking]
+writes: [backlog.status, backlog.features, project.stack, project.thinking]
 metadata:
   author: claude-config
   version: 1.0.0
@@ -172,13 +172,13 @@ Check whether `.project/project.json` exists.
    **On "No" or no detection:** `items = [single item]`, process normally.
 
 4. **Backlog check:**
-   - Read `.project/backlog.html`
-   - **Not found** → create it:
+   - Read `.project/backlog.json`
+   - **Not found** → create it (see `shared/BACKLOG.md § Writing` for the legacy backlog.html migration rule):
      1. `mkdir -p .project`
-     2. Read `{skills_path}/shared/references/backlog-template.html` → Write to `.project/backlog.html`
-     3. Replace placeholder JSON in `<script id="backlog-data">` with minimal data object:
+     2. Write minimal data object to `.project/backlog.json`:
         ```json
         {
+          "schemaVersion": 2,
           "project": "{project directory name}",
           "generated": "{YYYY-MM-DD}",
           "updated": "{YYYY-MM-DD}",
@@ -309,7 +309,7 @@ multiSelect: false
 
 **Loop:** all steps below run per item in the queue (PHASE 0 step 2). For a single item, `items = [single item]`. For multi-item, the skill runs steps 1-7 sequentially per item, where `dependencies[]` refers to previously processed items in the batch.
 
-1. Read `.project/backlog.html` → parse JSON from `<script id="backlog-data" type="application/json">...</script>`
+1. Read `.project/backlog.json` → parse JSON
 
 2. **Generate name:** kebab-case from description (e.g. "Dash ability with cooldown" → `dash-ability`)
 
@@ -334,7 +334,7 @@ multiSelect: false
 
 4. **Update metadata:** set `data.updated` to current date (`YYYY-MM-DD`)
 
-5. **Write back:** Edit the JSON block in `backlog.html`. Find a unique anchor in the existing features array and use Edit to insert the new object before it. Keep the `<script>` tags intact.
+5. **Write back:** Edit the JSON in `.project/backlog.json`. Find a unique anchor in the existing features array and use Edit to insert the new object before it.
 
 6. **Write thinking output** (only if PHASE 1a was completed):
 
@@ -418,7 +418,7 @@ TODOS ADDED ({n} items)
   2. {name-2}    {phase} · {type}     ← depends on: {name-1}
      {description-2}
 
-  Backlog: .project/backlog.html
+  Backlog: .project/backlog.json
   Next steps:
   [Per item, appropriate next step from the WEB/GAME MODE output below]
 ```
@@ -432,7 +432,7 @@ TODO ADDED
   {description}
   Thinking: .project/thinking/feature-idea-{name}.md    ← only if thinking rounds were done
 
-  Backlog: .project/backlog.html
+  Backlog: .project/backlog.json
   Next steps:
   - /project-brainstorm {name} - Deepen the idea with variations
   - /project-critique {name} - Test the idea critically
@@ -461,7 +461,7 @@ FEATURE ADDED
   {description}
   Thinking: .project/thinking/feature-idea-{name}.md    ← only if thinking rounds were done
 
-  Backlog: .project/backlog.html
+  Backlog: .project/backlog.json
   Next steps:
   - /project-brainstorm {name} - Deepen the idea with variations
   - /project-critique {name} - Test the idea critically

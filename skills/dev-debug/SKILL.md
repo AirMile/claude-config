@@ -50,7 +50,7 @@ Structured 11-phase debugging: context → intake → investigate → analyze �
 **Active feature detection** (optional):
 
 - Check `.project/session/active-*.json` files
-- Fallback: read `.project/backlog.html` → find most recent feature with `status === "DOING"`
+- Fallback: read `.project/backlog.json` → find most recent feature with `status === "DOING"`
 - If active feature found:
   - Note as context hint for investigation agents
   - Read `.project/features/{feature-name}/feature.json` (if present) → extract `requirements[]` (id + description + status)
@@ -127,50 +127,7 @@ Spawn one Explore agent (`subagent_type="Explore"`) to investigate in an isolate
 - Runtime Error without stack trace → `"very thorough"`
 - Logic Bug / Performance Issue / Integration Issue → `"very thorough"` (cause unclear, broad scan)
 
-Agent prompt:
-
-```
-Investigate this bug. Perform 3 passes that build on each other.
-
-DEBUG_CONTEXT:
-{DEBUG_CONTEXT from PHASE 0}
-
-PROBLEM:
-{problem summary from PHASE 1}
-{error message / stack trace / details}
-
-PASS 1 — ERROR TRACE:
-- Parse stack trace / error message → identify root location
-- Read the source file at the error location
-- Trace the call stack: what called this code? What data flows in?
-- Map the exception/error flow: where is it caught (or not)?
-
-PASS 2 — CONTEXT MAP (use locations from Pass 1):
-- Read imports and dependents of the affected file(s)
-- Trace data flow: where does input come from? Where does output go?
-- Check endpoints and entities from DEBUG_CONTEXT for relevant connections
-- Identify external factors (APIs, DB, file system, environment)
-
-PASS 3 — CHANGE ANALYSIS (use files from Pass 1+2):
-- git log --oneline -10 -- {affected files}
-- git blame {error location}
-- Was this working before? What changed?
-- Check KNOWN PITFALLS in DEBUG_CONTEXT: if a pitfall matches on symptom or location,
-  mention it as a strong hypothesis — add as "Pitfall match: {summary}" in return format
-
-RETURN FORMAT:
-INVESTIGATION_START
-Error location: {file:line}
-Call stack: {caller → callee chain}
-Root code: {the problematic code snippet, max 20 lines}
-Dependencies: {key imports and dependents}
-Data flow: {input source → processing → output}
-External factors: {APIs, DB, env vars involved}
-Recent changes: {relevant commits with dates}
-Regression risk: {yes/no — was this area recently modified?}
-Pitfall match: {matching pitfall summary, or "none"}
-INVESTIGATION_END
-```
+Agent prompt: Read '.claude/skills/dev-debug/references/explore-agent-prompt.md' and fill the `{...}` placeholders from PHASE 0 (DEBUG_CONTEXT) and PHASE 1 (problem summary).
 
 Parse the agent's `INVESTIGATION_START...END` block — only the compact findings enter the main context.
 

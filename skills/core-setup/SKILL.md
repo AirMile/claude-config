@@ -1,7 +1,7 @@
 ---
 name: core-setup
 description: Project setup hub — detects whether a project is new (greenfield wizard), existing (mature scan), or needs a single tier-1 module added (install). Use with /core-setup, or when a user wants to initialize/onboard a project, scan an existing codebase into .project/ memory, or add a stack module (Tailwind, Vitest, shadcn-ui, etc.). Not for global ~/.claude/ setup — that is /core-bootstrap.
-argument-hint: "[--mode=greenfield|mature|audit|resync|install] [module] [--no-llm]"
+argument-hint: "[--mode=greenfield|mature|audit|resync|install] [module] [--no-llm] [--scope=<dir>]"
 metadata:
   author: claude-config
   version: 2.0.0
@@ -10,7 +10,9 @@ metadata:
 
 # Project Setup Skill
 
-**Trigger**: `/core-setup [--mode=greenfield|mature|audit|resync|install] [module] [--no-llm]`
+**Trigger**: `/core-setup [--mode=greenfield|mature|audit|resync|install] [module] [--no-llm] [--scope=<dir>]`
+
+`--scope=<dir>` applies to mature mode only: limits the codebase scan to one directory (monorepo package) — see `references/mode-mature.md § Scan budget`. Pass through together with `--no-llm`.
 
 Hub skill that detects what the project needs and loads the appropriate flow.
 

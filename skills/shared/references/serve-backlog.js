@@ -38,6 +38,10 @@ const {
   createBacklog,
   createDashboard,
   touchProject,
+  readBacklogData,
+  writeBacklogData,
+  backlogExists,
+  backlogMtime,
 } = require("./lib/projects");
 const { populateFromProject } = require("./lib/populate");
 const {
@@ -366,7 +370,6 @@ http
         });
         res.write("data: connected\n\n");
 
-        const backlogFile = path.join(projectPath, BACKLOG_PATH);
         const dashFile = path.join(projectPath, DASHBOARD_PATH);
         const sessionDir = path.join(projectPath, ".project/session");
         var lastBacklogMtime = 0;
@@ -374,9 +377,7 @@ http
         var lastSessionMtime = 0;
 
         try {
-          lastBacklogMtime = fs.existsSync(backlogFile)
-            ? fs.statSync(backlogFile).mtimeMs
-            : 0;
+          lastBacklogMtime = backlogMtime(projectPath);
         } catch {}
         try {
           lastDashMtime = fs.existsSync(dashFile)
@@ -391,9 +392,7 @@ http
 
         const poll = setInterval(function () {
           try {
-            const bm = fs.existsSync(backlogFile)
-              ? fs.statSync(backlogFile).mtimeMs
-              : 0;
+            const bm = backlogMtime(projectPath);
             const dm = fs.existsSync(dashFile)
               ? fs.statSync(dashFile).mtimeMs
               : 0;
@@ -464,20 +463,11 @@ http
         parts[2] === "data" &&
         parts.length === 3
       ) {
-        const file = path.join(projectPath, BACKLOG_PATH);
-        try {
-          const html = fs.readFileSync(file, "utf8");
-          const match = html.match(
-            /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
-          );
-          if (match) {
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(match[1].trim());
-          } else {
-            res.writeHead(404);
-            res.end("{}");
-          }
-        } catch {
+        const data = readBacklogData(projectPath);
+        if (data) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(data, null, 2));
+        } else {
           res.writeHead(404);
           res.end("{}");
         }
@@ -507,8 +497,7 @@ http
         parts[1] === "backlog" &&
         parts[2] === "create"
       ) {
-        const file = path.join(projectPath, BACKLOG_PATH);
-        if (!fs.existsSync(file)) {
+        if (!backlogExists(projectPath)) {
           try {
             createBacklog(projectDir);
           } catch (e) {
@@ -522,42 +511,31 @@ http
         return;
       }
 
-      // Serve backlog — auto-migration: data persists in .project/backlog.html, layout always from template
+      // Serve backlog — data persists in .project/backlog.json, layout always from template
       if (
         req.method === "GET" &&
         parts[1] === "backlog" &&
         parts.length === 2
       ) {
         touchProject(projectDir);
-        const file = path.join(projectPath, BACKLOG_PATH);
 
-        // Extract data from existing backlog file
-        var backlogData = null;
-        if (fs.existsSync(file)) {
-          try {
-            const existingHtml = fs.readFileSync(file, "utf8");
-            const dataMatch = existingHtml.match(
-              /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
-            );
-            if (dataMatch) backlogData = dataMatch[1].trim();
-          } catch {}
-        }
+        // Read data from the store (backlog.json, legacy backlog.html fallback)
+        var backlogDataObj = readBacklogData(projectPath);
 
-        // If no existing file, create one to initialize the data store
-        if (!backlogData) {
+        // If no existing store, create one to initialize the data store
+        if (!backlogDataObj) {
           try {
             createBacklog(projectDir);
-            const existingHtml = fs.readFileSync(file, "utf8");
-            const dataMatch = existingHtml.match(
-              /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
-            );
-            if (dataMatch) backlogData = dataMatch[1].trim();
+            backlogDataObj = readBacklogData(projectPath);
           } catch (e) {
             res.writeHead(500);
             res.end("Create error: " + e.message);
             return;
           }
         }
+        var backlogData = backlogDataObj
+          ? JSON.stringify(backlogDataObj, null, 2)
+          : null;
 
         try {
           var html = fs.readFileSync(TEMPLATE_PATH, "utf8");
@@ -631,7 +609,6 @@ http
         parts[1] === "backlog" &&
         parts[2] === "save"
       ) {
-        const file = path.join(projectPath, BACKLOG_PATH);
         var body = "";
         req.on("data", function (chunk) {
           body += chunk;
@@ -643,20 +620,7 @@ http
             // these before POSTing. This guard catches direct API calls or older clients.
             delete jsonData.worktrees;
             delete jsonData.mainState;
-            const jsonStr = JSON.stringify(jsonData, null, 2);
-
-            const html = fs.readFileSync(file, "utf8");
-            var startTag = '<script id="backlog-data" type="application/json">';
-            var sIdx = html.indexOf(startTag) + startTag.length;
-            var eIdx = html.indexOf("</script>", sIdx);
-            const updated =
-              html.substring(0, sIdx) +
-              "\n" +
-              jsonStr +
-              "\n" +
-              html.substring(eIdx);
-
-            fs.writeFileSync(file, updated, "utf8");
+            writeBacklogData(projectPath, jsonData);
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end('{"ok":true}');
           } catch (e) {
@@ -1156,6 +1120,10 @@ http
               }
             }
 
+            // Strip derived fields — features come from the backlog store and
+            // are injected in-memory by populate.js; never persist them here.
+            delete jsonData.features;
+
             // Split architecture + context + learnings to project-context.json
             const contextFields = ["architecture", "context", "learnings"];
             const contextData = {};
@@ -1365,15 +1333,10 @@ http
         }
 
         // Merge backlog metadata (type, status, phase, audit.*)
-        const backlogFile = path.join(projectPath, BACKLOG_PATH);
-        if (fs.existsSync(backlogFile)) {
+        {
           try {
-            const backlogHtml = fs.readFileSync(backlogFile, "utf8");
-            const jsonMatch = backlogHtml.match(
-              /<script id="backlog-data" type="application\/json">([\s\S]*?)<\/script>/,
-            );
-            if (jsonMatch) {
-              const backlogData = JSON.parse(jsonMatch[1]);
+            const backlogData = readBacklogData(projectPath);
+            if (backlogData) {
               const f = (backlogData.features || []).find(
                 (x) => x.name === featureName,
               );

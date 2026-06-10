@@ -17,6 +17,26 @@ const fs = require("fs");
 const FIXTURES = path.join(__dirname, "fixtures");
 const FEAT = "fixture-feature";
 
+// Backlog store loader — mirrors BACKLOG-LOAD.md / GAME-BACKLOG-LOAD.md:
+// canonical .project/backlog.json first, legacy backlog.html fallback.
+function loadBacklogData(jsonFixture, htmlFixture) {
+  const jp = path.join(FIXTURES, jsonFixture);
+  if (fs.existsSync(jp)) return JSON.parse(fs.readFileSync(jp, "utf8"));
+  const html = fs.readFileSync(path.join(FIXTURES, htmlFixture), "utf8");
+  const m = html.match(/<script id="backlog-data"[^>]*>([\s\S]*?)<\/script>/);
+  if (!m) throw new Error("no backlog-data script tag found");
+  return JSON.parse(m[1]);
+}
+
+// Legacy-only loader — used to assert the fallback path keeps working on
+// pre-migration projects.
+function loadLegacyBacklogData(htmlFixture) {
+  const html = fs.readFileSync(path.join(FIXTURES, htmlFixture), "utf8");
+  const m = html.match(/<script id="backlog-data"[^>]*>([\s\S]*?)<\/script>/);
+  if (!m) throw new Error("no backlog-data script tag found");
+  return JSON.parse(m[1]);
+}
+
 let passed = 0;
 let failed = 0;
 
@@ -105,10 +125,13 @@ run(
     return {
       stack: p.stack,
       pitch: p.seed?.pitch || (p.seed?.content || "").slice(0, 240),
-      features: (p.features || []).map((x) => ({
+      // Feature list now comes from the backlog store (single source of truth)
+      features: (
+        loadBacklogData("backlog.json", "backlog.html").features || []
+      ).map((x) => ({
         name: x.name,
         status: x.status,
-        summary: x.summary,
+        summary: x.summary || x.description,
       })),
       endpoints: (p.endpoints || []).map((e) => ({
         method: e.method,
@@ -186,10 +209,7 @@ run(
 run(
   "BACKLOG-LOAD / read-feature",
   () => {
-    const html = fs.readFileSync(path.join(FIXTURES, "backlog.html"), "utf8");
-    const m = html.match(/<script id="backlog-data"[^>]*>([\s\S]*?)<\/script>/);
-    if (!m) throw new Error("no backlog-data script tag found");
-    const data = JSON.parse(m[1]);
+    const data = loadBacklogData("backlog.json", "backlog.html");
     const feat = (data.features || []).find((f) => f.name === FEAT);
     if (!feat) throw new Error(`feature "${FEAT}" not found in backlog`);
     return {
@@ -220,10 +240,7 @@ run(
 run(
   "BACKLOG-LOAD / ready-queue",
   () => {
-    const html = fs.readFileSync(path.join(FIXTURES, "backlog.html"), "utf8");
-    const m = html.match(/<script id="backlog-data"[^>]*>([\s\S]*?)<\/script>/);
-    if (!m) throw new Error("no backlog-data script tag found");
-    const data = JSON.parse(m[1]);
+    const data = loadBacklogData("backlog.json", "backlog.html");
     const doneNames = new Set(
       (data.features || [])
         .filter((f) => f.status === "DONE")
@@ -346,10 +363,13 @@ run(
     return {
       stack: p.stack || null,
       pitch: p.seed?.pitch || (p.seed?.content || "").slice(0, 240),
-      features: (p.features || []).map((x) => ({
+      // Feature list now comes from the backlog store (single source of truth)
+      features: (
+        loadBacklogData("game-backlog.json", "game-backlog.html").features || []
+      ).map((x) => ({
         name: x.name,
         status: x.status,
-        summary: x.summary,
+        summary: x.summary || x.description,
       })),
       entities: (p.data?.entities || []).map((e) =>
         typeof e === "string" ? e : e.name,
@@ -497,13 +517,7 @@ run(
 run(
   "GAME-BACKLOG-LOAD / read-feature",
   () => {
-    const html = fs.readFileSync(
-      path.join(FIXTURES, "game-backlog.html"),
-      "utf8",
-    );
-    const m = html.match(/<script id="backlog-data"[^>]*>([\s\S]*?)<\/script>/);
-    if (!m) throw new Error("no backlog-data script tag found");
-    const data = JSON.parse(m[1]);
+    const data = loadBacklogData("game-backlog.json", "game-backlog.html");
     const feat = (data.features || []).find((f) => f.name === GAME_FEAT);
     if (!feat) throw new Error(`feature "${GAME_FEAT}" not found in backlog`);
     return {
@@ -536,13 +550,7 @@ run(
 run(
   "GAME-BACKLOG-LOAD / queue / DEFINED",
   () => {
-    const html = fs.readFileSync(
-      path.join(FIXTURES, "game-backlog.html"),
-      "utf8",
-    );
-    const m = html.match(/<script id="backlog-data"[^>]*>([\s\S]*?)<\/script>/);
-    if (!m) throw new Error("no backlog-data script tag found");
-    const data = JSON.parse(m[1]);
+    const data = loadBacklogData("game-backlog.json", "game-backlog.html");
     const status = "DEFINED";
     const transition = "";
     const doneNames = new Set(
@@ -598,13 +606,7 @@ run(
 run(
   "GAME-BACKLOG-LOAD / queue / DOING+verifying",
   () => {
-    const html = fs.readFileSync(
-      path.join(FIXTURES, "game-backlog.html"),
-      "utf8",
-    );
-    const m = html.match(/<script id="backlog-data"[^>]*>([\s\S]*?)<\/script>/);
-    if (!m) throw new Error("no backlog-data script tag found");
-    const data = JSON.parse(m[1]);
+    const data = loadBacklogData("game-backlog.json", "game-backlog.html");
     const status = "DOING";
     const transition = "verifying";
     const result = (data.features || [])
@@ -629,7 +631,21 @@ run(
   ["queue"],
 );
 
+// ─── Legacy fallback: pre-migration backlog.html still readable ───────────────
+
+run(
+  "BACKLOG-LOAD / legacy backlog.html fallback",
+  () => {
+    const data = loadLegacyBacklogData("backlog.html");
+    const feat = (data.features || []).find((f) => f.name === FEAT);
+    if (!feat) throw new Error(`feature "${FEAT}" not found in legacy backlog`);
+    return { name: feat.name, status: feat.status };
+  },
+  ["name", "status"],
+);
+
 // ─── Summary ──────────────────────────────────────────────────────────────────
+
 
 console.log(`\nContext-load guard: ${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

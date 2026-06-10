@@ -8,14 +8,16 @@ Lightweight session state for cross-skill coordination. Pipeline skills use the 
 
 Pipeline skills that touch shared state declare this explicitly via `reads:` and `writes:` in the YAML frontmatter. Purpose: make per-skill which shared fields are read/written visible, so dependencies between pipeline phases are verifiable without reading the SKILL.md text.
 
+A third key, `writes-terminal:`, declares **intentional terminal writes**: fields written for the dashboard, history, or user-facing reporting that no downstream skill consumes (e.g. `feature.refactor`, `backlog.overview`). `scripts/check-handoff.py` counts them as writes for the read-match but suppresses the "written but never read" INFO line. A field belongs in `writes:` OR `writes-terminal:`, never both.
+
 ### Namespaces
 
 | Prefix                | File                                                                                                                   | Usage                                                                                                |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `feature.*`           | `.project/features/{name}/feature.json` (top-level)                                                                    | dev-pipeline, game-pipeline (incl. `feature.seedDrift`, `feature.externalRef`)                       |
-| `backlog.status`      | `.project/backlog.html` (feature status transitions)                                                                   | dev-pipeline, game-pipeline                                                                          |
-| `backlog.seedDrift`   | `.project/backlog.html` (`data.seedDrift[]` deferred drift entries)                                                    | project-backlog (write), project-seed / project-brainstorm / project-critique (read + reconcile)     |
-| `backlog.externalRef` | `.project/backlog.html` (per-feature `externalRef` issue link)                                                         | team-issues, team-outsource                                                                          |
+| `backlog.status`      | `.project/backlog.json` (feature status transitions)                                                                   | dev-pipeline, game-pipeline                                                                          |
+| `backlog.seedDrift`   | `.project/backlog.json` (`data.seedDrift[]` deferred drift entries)                                                    | project-backlog (write), project-seed / project-brainstorm / project-critique (read + reconcile)     |
+| `backlog.externalRef` | `.project/backlog.json` (per-feature `externalRef` issue link)                                                         | team-issues, team-outsource                                                                          |
 | `concept.*`           | `.project/project-seed.md` + `project.json#concept`                                                                    | project-seed (owner), dev-define / game-define / project-backlog (conditional write)                 |
 | `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | frontend-pipeline                                                                                    |
 | `project.*`           | `.project/project.json` (top-level key, e.g. `stack`, `features`, `endpoints`, `entities`, `team`, `optimizationRuns`) | dashboard-sync skills (core-pull, team-verify, project-todo, project-add, dev-optimize)              |
@@ -142,7 +144,7 @@ Written by `frontend-design` (Build route) when user chooses "Open in convert" a
     ],
     "failedChecks": ["section-collapse", "axe-critical"],
     "reason": "smoke-fail",
-    "buildScreenshot": ".project/smoke-render-dashboard.png",
+    "buildScreenshot": ".project/tmp/smoke-render-dashboard.png",
     "timestamp": "2026-05-07T14:23:00Z"
   }
 }

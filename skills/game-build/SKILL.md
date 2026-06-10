@@ -2,7 +2,13 @@
 name: game-build
 description: Build Godot features test-first with TDD. Use with /game-build.
 reads: [feature.requirements, backlog.stage]
-writes: [feature.requirements, feature.build, backlog.stage, project-context.learnings]
+writes:
+  [
+    feature.requirements,
+    feature.build,
+    backlog.stage,
+    project-context.learnings,
+  ]
 metadata:
   author: claude-config
   version: 2.9.0
@@ -262,9 +268,9 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
    **Clear backlog transition flag** (immediately after loading feature):
 
-   Read `.project/backlog.html` (if present), parse JSON (see `shared/BACKLOG.md`).
+   Read `.project/backlog.json` (if present), parse JSON (see `shared/BACKLOG.md`).
    Find feature by name → remove `transition` field if present (auto-pickup signal consumed), `data.updated` to now. **Keep status as `"DEFINED"`** — the DEFINED → DOING transition happens in PHASE 3A on successful completion.
-   Write back via Edit (keep `<script>` tags intact).
+   Write back via Edit.
 
 5. **Read implementation order:**
 
@@ -525,7 +531,7 @@ Follow `shared/SYNC.md` 3-File Sync Pattern. Skill-specific mutations below.
 Read in parallel (skip if not present):
 
 - `.project/features/{feature-name}/feature.json`
-- `.project/backlog.html`
+- `.project/backlog.json`
 - `.project/project.json`
 - `.project/project-context.json`
 
@@ -563,7 +569,7 @@ Only write if decisions or resolved blockers are present — no empty entries.
 Write in parallel:
 
 - Write `feature.json`
-- Edit `backlog.html` (keep `<script>` tags intact)
+- Edit `.project/backlog.json`
 - Write `project.json`
 - Write `project-context.json` (if context/architecture changed)
 

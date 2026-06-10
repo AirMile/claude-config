@@ -90,7 +90,7 @@ All three share the same `externalRef.id: "42"` with different `externalRef.spli
 The `externalRef` field is passed through the pipeline so every skill knows the external ID:
 
 ```
-backlog.html (externalRef) → feature.json (externalRef) → /core-commit (ticket-prefix)
+backlog.json (externalRef) → feature.json (externalRef) → /core-commit (ticket-prefix)
 ```
 
 Skills that read it:
@@ -119,13 +119,13 @@ For Jira and Linear there is no native CLI integration in v1. Approach:
 
 `.project/` is gitignored — these are your local artifacts:
 
-| Artifact                                           | Personal  | Shared in repo               |
-| -------------------------------------------------- | --------- | ---------------------------- |
-| `.project/backlog.html`                            | ✓         | —                            |
-| `.project/project.json`                            | ✓         | —                            |
-| `.project/features/*/`                             | ✓         | —                            |
-| `CLAUDE.local.md`                                  | ✓         | —                            |
-| Code (src/, app/, etc.)                            | —         | ✓                            |
-| `project.json#learnings[]` with `source: "synced"` | ✓ (local) | — (extracted from team code) |
+| Artifact                                                   | Personal  | Shared in repo               |
+| ---------------------------------------------------------- | --------- | ---------------------------- |
+| `.project/backlog.json`                                    | ✓         | —                            |
+| `.project/project.json`                                    | ✓         | —                            |
+| `.project/features/*/`                                     | ✓         | —                            |
+| `CLAUDE.local.md`                                          | ✓         | —                            |
+| Code (src/, app/, etc.)                                    | —         | ✓                            |
+| `project-context.json#learnings[]` with `source: "synced"` | ✓ (local) | — (extracted from team code) |
 
-`project.json#learnings[]` with `source: "synced"` are extractions from teammate code via `/core-pull` or `/core-setup --mode=mature` — they belong to you, not the team.
+`project-context.json#learnings[]` with `source: "synced"` are extractions from teammate code via `/core-pull` or `/core-setup --mode=mature` — they belong to you, not the team.

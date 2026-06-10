@@ -4,7 +4,7 @@ description: Add or clone a project into the multi-project setup. Use with /proj
 writes:
   [
     project.stack,
-    project.features,
+    backlog.features,
     project.team,
     project-context.context,
     project-context.architecture,
@@ -183,8 +183,7 @@ gh repo clone <owner/repo> {projects_root}/[name]
 ```bash
 mkdir -p {projects_root}/[name]/.claude/docs
 mkdir -p {projects_root}/[name]/.claude/research
-mkdir -p {projects_root}/[name]/.project/sessions/chats
-mkdir -p {projects_root}/[name]/.project/sessions/commands
+mkdir -p {projects_root}/[name]/.project/session
 mkdir -p {projects_root}/[name]/.project/plans
 mkdir -p {projects_root}/[name]/.project/features
 ```
@@ -205,6 +204,7 @@ macOS / Linux:
 ```bash
 cat > "{projects_root}/[name]/.project/project.json" << 'ENDJSON'
 {
+  "schemaVersion": 2,
   "seed": { "name": "[name]", "pitch": "", "content": "" },
   "localUrl": "",
   "theme": {
@@ -220,7 +220,6 @@ cat > "{projects_root}/[name]/.project/project.json" << 'ENDJSON'
   "stack": { "framework": "", "language": "", "styling": "", "db": "", "auth": "", "hosting": "", "packages": [] },
   "data": { "entities": [] },
   "endpoints": [],
-  "features": [],
   "team": { "mode": "solo" },
   "thinking": []
 }
@@ -228,6 +227,7 @@ ENDJSON
 
 cat > "{projects_root}/[name]/.project/project-context.json" << 'ENDJSON'
 {
+  "schemaVersion": 2,
   "architecture": { "routes": [], "components": [], "endpoints": [], "entities": [], "diagram": "", "dataFlow": "" },
   "context": { "structure": "", "routing": [], "patterns": [] },
   "learnings": []
@@ -239,6 +239,7 @@ Windows (PowerShell):
 
 ```powershell
 $projectJson = '{
+  "schemaVersion": 2,
   "seed": { "name": "[name]", "pitch": "", "content": "" },
   "localUrl": "",
   "theme": {
@@ -249,11 +250,12 @@ $projectJson = '{
   },
   "stack": { "framework": "", "language": "", "styling": "", "db": "", "auth": "", "hosting": "", "packages": [] },
   "data": { "entities": [] },
-  "endpoints": [], "features": [], "team": { "mode": "solo" }, "thinking": []
+  "endpoints": [], "team": { "mode": "solo" }, "thinking": []
 }'
 Set-Content -Path "{projects_root}\[name]\.project\project.json" -Value $projectJson -Encoding UTF8
 
 $ctxJson = '{
+  "schemaVersion": 2,
   "architecture": { "routes": [], "components": [], "endpoints": [], "entities": [], "diagram": "", "dataFlow": "" },
   "context": { "structure": "", "routing": [], "patterns": [] },
   "learnings": []

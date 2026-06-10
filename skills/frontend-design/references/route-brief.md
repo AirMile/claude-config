@@ -262,10 +262,10 @@ Write file(s).
 
 **Backlog sync** — if `{$TARGET}` is a PAGE or COMPONENT in the backlog:
 
-Parse `backlog.html` → match on `name === {$TARGET}`:
+Parse `.project/backlog.json` → match on `name === {$TARGET}`:
 
 - Set `feature.status = "DEFINED"` (Path B: brief generated, waiting for convert)
-- Update `data.updated`, edit back into `backlog.html`.
+- Update `data.updated`, edit back into `.project/backlog.json`.
 
 Print summary:
 

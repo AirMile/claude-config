@@ -8,108 +8,80 @@ Shared protocol for loading learnings as context in architectural skills. Skills
 
 ## When to load
 
-Skills load learnings during their **context-load phase** (typically PHASE 0 or an early PHASE where architecture context is being built). Reading is cheap — no LLM tokens, only file reads.
+Skills load learnings during their **context-load phase** (typically PHASE 0 or an early PHASE where architecture context is being built).
+
+**Why a script and not an inline read:** `learnings[]` is append-only and grows with the project — at 500 entries a full inline read costs ~43k tokens per skill run while at most 10–15 entries are ever shown. The extraction script below filters in-process and prints only the matching entries, so context cost scales with what is _shown_, not with what is _stored_.
 
 ## Three scopes
 
 Each skill specifies one or more scopes. No wildcards — choose explicitly.
 
-### Scope: `component`
+- **`component`** — learnings matching the current feature/component name. Two-step: substring match on the `feature` field (bidirectional), then summary-keyword fallback on feature tokens (split kebab-case, tokens ≥ 3 chars, max 5 keyword matches). Combined, sorted desc by date, capped at 10. _Used by_: `dev-build`, `dev-refactor`, `dev-define`, `frontend-design`.
+- **`architectural`** — `type === "pattern"` with source `synced`, `extracted`, or `consolidated` (exclude `inferred` — too broad for architecture choices). Sorted desc by date, capped at 15. _Used by_: `project-backlog`.
+- **`pitfall-prefix`** — last 5 pitfalls regardless of feature. Default-on prefix for every skill that uses this loader; disable with `pitfall-prefix: false`.
 
-Filter learnings that match the current feature/component name. Two steps, combined.
+## Extraction script
 
-**Step 1 — substring match op `feature` veld:**
+**Prerequisites**: `$REPO` (project root), `$FEAT` (kebab-case feature name, or empty for non-feature skills), `$SCOPES` (comma-separated: `component,architectural`).
 
-```
-substrMatches = learnings.filter(l =>
-  l.feature.toLowerCase().includes(currentFeature.toLowerCase()) OR
-  currentFeature.toLowerCase().includes(l.feature.toLowerCase())
-)
-```
+```bash
+node -e "
+  const c = require('$REPO/.project/project-context.json');
+  const L = c.learnings || [];
+  if (!L.length) process.exit(0);
+  const feat = '$FEAT'.toLowerCase();
+  const scopes = '$SCOPES'.split(',').map(s => s.trim()).filter(Boolean);
+  const byDate = (a, b) => (b.date || '').localeCompare(a.date || '');
+  const line = l => '  [' + (l.date || '?') + '] ' + (l.feature || l.type) + ' — ' + l.summary;
+  const out = [];
 
-**Step 2 — summary-keyword match (fallback):**
+  const pitfalls = L.filter(l => l.type === 'pitfall').sort(byDate).slice(0, 5);
+  if (pitfalls.length) out.push('Project pitfalls (last 5):', ...pitfalls.map(line), '');
 
-```
-featureTokens = currentFeature.split(/[-\s]/).filter(t => t.length >= 3)
+  if (scopes.includes('component') && feat) {
+    const sub = L.filter(l => {
+      const f = (l.feature || '').toLowerCase();
+      return f && (f.includes(feat) || feat.includes(f));
+    });
+    const tokens = feat.split(/[-\s]/).filter(t => t.length >= 3);
+    const kw = L.filter(l => !sub.includes(l))
+      .filter(l => tokens.some(t => (l.summary || '').toLowerCase().includes(t)))
+      .slice(0, 5);
+    const m = [...sub, ...kw].sort(byDate).slice(0, 10);
+    if (m.length) out.push('Component-scoped (' + feat + '):', ...m.map(line), '');
+  }
 
-keywordMatches = learnings
-  .filter(l => l NOT in substrMatches)
-  .filter(l => featureTokens.some(t => l.summary.toLowerCase().includes(t)))
-  .slice(0, 5)
-```
+  if (scopes.includes('architectural')) {
+    const m = L.filter(l => l.type === 'pattern' && ['synced','extracted','consolidated'].includes(l.source))
+      .sort(byDate).slice(0, 15);
+    if (m.length) out.push('Architectural patterns (project-wide):', ...m.map(line), '');
+  }
 
-`featureTokens`: split on `-` and space, filter tokens < 3 chars. Examples: `"auth-login"` → `["auth", "login"]`, `"jwt-refresh"` → `["jwt", "refresh"]`, `"db-migration"` → `["migration"]` (db < 3 → skip).
-
-**Combine:**
-
-```
-matches = [...substrMatches, ...keywordMatches]
-  .sort desc by date
-  .slice(0, 10)
-```
-
-Sort desc by `date`. Cap at 10 entries total.
-
-**Use case**: feature-specific patterns and pitfalls that are directly relevant to the current working feature.
-
-**Used by**: `dev-build`, `dev-refactor`, `dev-define`, `frontend-design`.
-
-### Scope: `architectural`
-
-Filter by type `pattern` with source `synced` or `extracted` (exclude `inferred` — those are cross-feature observations, too broad for architecture choices).
-
-```
-matches = learnings.filter(l =>
-  l.type === "pattern" AND
-  l.source IN ["synced", "extracted"]
-)
+  if (out.length) console.log(['LEARNINGS CONTEXT', '', ...out].join('\n').trimEnd());
+" 2>/dev/null || true
 ```
 
-Sort desc by `date`. Cap at 15 entries.
-
-**Use case**: when making architecture decisions you want to see which patterns the project already uses to stay consistent.
-
-**Used by**: `project-backlog`.
-
-### Scope: `pitfall-prefix`
-
-Last 5 pitfalls (all types `pitfall`, sorted desc by `date`), independent of feature scope.
-
-```
-matches = learnings
-  .filter(l => l.type === "pitfall")
-  .sort((a, b) => b.date.localeCompare(a.date))
-  .slice(0, 5)
-```
-
-**Use case**: brief recap of recent bugs as a prefix in every skill that loads context. This is what [dev-build](../dev-build/SKILL.md) already does — now shared.
-
-**Used by**: prefix in every skill that uses this loader. Not a separate scope choice but a default-on prefix you can disable with `pitfall-prefix: false`.
-
----
+Pass `pitfall-prefix: false` → remove the pitfalls block from the script invocation (delete those three lines, or post-filter). Empty output = no matches; show nothing (no "0 entries" lines).
 
 ## Output format
 
-Skill receives an ASCII block that fits in its context output:
+The script prints the ASCII block directly — include it verbatim in the skill's context output:
 
 ```
 LEARNINGS CONTEXT
 
-Project pitfalls (laatste 5):
+Project pitfalls (last 5):
   [2026-04-20] auth-login — JWT refresh race condition bij parallel requests
-  [2026-04-15] payments — Stripe webhook idempotency key collision
   ...
 
 Component-scoped (auth):
-  [2026-04-15] pattern — JWT via httpOnly cookie rotation
-  [2026-04-10] pattern — DomainError subclass voor auth fouten
+  [2026-04-15] auth — JWT via httpOnly cookie rotation
 
 Architectural patterns (project-wide):
-  [2026-04-20] pattern — Repository pattern in src/repositories/ (12 files)
-  [2026-04-15] pattern — Input validation via zod schemas in services laag
+  [2026-04-20] core — Repository pattern in src/repositories/ (12 files)
 ```
 
-Empty sections (no matches) → omit, do not show "0 entries".
+Empty sections (no matches) are omitted by the script.
 
 ---
 
@@ -130,15 +102,16 @@ Load learnings via shared/LEARNINGS-LOAD.md:
 
 ## Edge cases
 
-- **No `project-context.json`**: skip all scopes — no output.
-- **Empty `learnings[]`**: skip all project scopes.
-- **No `current-feature` specified**: skip `component` scope. Other scopes remain.
-- **Worktree-aware**: read `project-context.json` from main worktree (per [SYNC.md](SYNC.md) Worktree-aware Path Resolution).
+- **No `project-context.json`**: script exits silently (the `|| true` guard) — no output, skip all scopes.
+- **Empty `learnings[]`**: script exits silently.
+- **No `current-feature` specified**: `component` scope produces nothing; other scopes remain.
+- **Worktree-aware**: point `$REPO` at the main worktree (per [SYNC.md](SYNC.md) Worktree-aware Path Resolution).
+- **Archived learnings** (`.project/archive/learnings-*.json`, see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation): never loaded — archive is for human reference and dedup checks only.
 
 ---
 
 ## Implementation note
 
-This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-verify`, `dev-refactor` (PHASE 5), `core-pull`, `core-setup --mode=mature`).
+This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-verify`, `dev-refactor` (PHASE 5), `core-pull`, `core-setup --mode=mature`). Consolidation/archiving of the learnings list itself happens in `core-pull` — see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation.
 
-Skill can read + filter inline (no separate tool needed), or if the skill uses an agent: agent prompt already contains filtered learnings (not the full list).
+Skills that pass learnings to an agent: run the script first and embed the filtered block in the agent prompt (never the full list).

@@ -8,13 +8,14 @@ The file `.project/project-context.json` contains runtime context read only by b
 
 ```json
 {
+  "schemaVersion": 2,
   "architecture": {},
   "context": {},
   "learnings": []
 }
 ```
 
-The dashboard server's `populateFromProject()` merges this file into the unified response. Backward compatible: if fields still exist in project.json (legacy), those are used.
+The dashboard server's `populateFromProject()` merges this file into the unified response **in-memory only** — it never writes these fields back into `project.json`, and the dashboard save endpoint splits them back out to this file. Pre-migration projects may still carry stale copies of these keys in `project.json`; `scripts/migrate-project.py` strips them (this file always wins).
 
 ## architecture
 
@@ -199,16 +200,16 @@ Written by `/dev-define` (initial) and `/dev-build` (confirmed after implementat
 ### Context merge
 
 ```
-1. Read project.json
+1. Read project-context.json
 2. For each field in context:
    - structure: OVERWRITE (full file tree)
    - routing: OVERWRITE (full routing array)
    - patterns: MERGE (add new ones, update existing on key)
    - updated: set to current date
-3. Write project.json
+3. Write project-context.json
 ```
 
-Skills write to `context` after each build/refactor. CLAUDE.md refers to `project.json` for this runtime context.
+Skills write to `context` after each build/refactor. CLAUDE.md refers to `project-context.json` for this runtime context.
 
 ## learnings
 
@@ -233,7 +234,7 @@ Skills write to `context` after each build/refactor. CLAUDE.md refers to `projec
 ```
 
 `type` values: `pattern` (architectural choice), `pitfall` (bug/gotcha), `observation` (cross-feature insight).
-`source` values: `extracted` (direct observation from code output or test result) | `inferred` (cross-feature pattern recognition or LLM inference) | `synced` (extracted from teammate code or mature codebase via core-pull / core-setup --mode=mature).
+`source` values: `extracted` (direct observation from code output or test result) | `inferred` (cross-feature pattern recognition or LLM inference) | `synced` (extracted from teammate code or mature codebase via core-pull / core-setup --mode=mature) | `consolidated` (merge of multiple archived entries — written only by the core-pull consolidation pass, see `LEARNING-EXTRACTION.md § Consolidation`).
 `date` = extraction date. `feature` = source feature (kebab-case). For `synced` learnings without a structured feature: use primary directory (`auth`, `payments`). `summary` = max 200 chars.
 `author` = optional, only for `source === "synced"`. Mirrors `features[].author`.
 
@@ -261,7 +262,9 @@ Skills write to `context` after each build/refactor. CLAUDE.md refers to `projec
 
 See [skills/shared/LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) for heuristics and filters.
 
-Append-only log. Skills that complete features extract learnings automatically (see dev-verify PHASE 6, dev-refactor PHASE 5). `core-pull` (incremental) and `core-setup --mode=mature` (one-time) extract learnings from teammate/legacy code. `source` is required on new writes.
+Append-only at write time. Skills that complete features extract learnings automatically (see dev-verify PHASE 6, dev-refactor PHASE 5). `core-pull` (incremental) and `core-setup --mode=mature` (one-time) extract learnings from teammate/legacy code. `source` is required on new writes.
+
+**Size lifecycle**: above 60 entries, `/core-pull` consolidates the list (merge per-feature clusters, archive originals to `.project/archive/learnings-{YYYY-MM}.json`, target ≤ 40 active) — see `LEARNING-EXTRACTION.md § Consolidation`. Readers always load via the `LEARNINGS-LOAD.md` extraction script (filtered, O(shown) context cost), never the full array inline.
 
 **This replaces the dynamic CLAUDE.md sections** (`## Project structure`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md now only contains a reference to `project.json` for this context.
 

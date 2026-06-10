@@ -120,7 +120,7 @@ Scan in order:
 
 1. `design.pages[]` — match on `page.name === $SKILL_ARG` (case-sensitive)
 2. `design.components[]` — match on `component.name === $SKILL_ARG`
-3. `backlog.features[]` (if `.project/backlog.html` exists) — match on `feature.name === $SKILL_ARG`
+3. `backlog.features[]` (if `.project/backlog.json` exists) — match on `feature.name === $SKILL_ARG`
 
 **Match found:**
 
@@ -145,6 +145,7 @@ Branching based on `$ARG_MODE` (determined in PHASE 0.3).
 ### Mode A — Existing entity (`$ARG_MODE = "A"`)
 
 Entity found in design[]/backlog. Resolve `$HAS_SPEC` before showing actions:
+
 - Page: `true` if `project.json → design.pages[]` has an entry with matching name
 - Component: `true` if `project.json → design.components[]` has an entry with matching name
 
@@ -228,7 +229,7 @@ Detect first:
 
 - `$HAS_BUILD_CANDIDATES` (true/false): are there PAGE or COMPONENT items ready to build? True if **either**:
   - `design.pages[]` or `design.components[]` has an entry with `status: "DEF"` and no visual reference in `.project/wireframes/` or `.screenshots[]`, **or**
-  - `backlog.html` has a feature with `(type === "PAGE" || type === "COMPONENT") && transition === "designing"` (newly created by `/project-backlog` or `/project-todo`).
+  - `backlog.json` has a feature with `(type === "PAGE" || type === "COMPONENT") && transition === "designing"` (newly created by `/project-backlog` or `/project-todo`).
 - `$HAS_PAGE_CANDIDATES` (true/false): subset of the above, PAGE type only.
 - `$HAS_COMPONENT_CANDIDATES` (true/false): subset of the above, COMPONENT type only.
 

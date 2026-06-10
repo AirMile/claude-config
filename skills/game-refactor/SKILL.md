@@ -2,7 +2,8 @@
 name: game-refactor
 description: Batch refactor Godot code quality after testing. Use with /game-refactor.
 reads: [feature.build, feature.tests, backlog.stage]
-writes: [feature.refactor, backlog.stage, project-context.learnings]
+writes: [backlog.stage, project-context.learnings]
+writes-terminal: [feature.refactor]
 metadata:
   author: claude-config
   version: 1.3.0
