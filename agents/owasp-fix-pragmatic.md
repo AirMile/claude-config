@@ -1,7 +1,6 @@
 ---
 name: owasp-fix-pragmatic
 description: Pragmatic OWASP fix strategy
-model: sonnet
 color: yellow
 ---
 

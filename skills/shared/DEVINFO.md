@@ -10,12 +10,17 @@ Pipeline skills that touch shared state declare this explicitly via `reads:` and
 
 ### Namespaces
 
-| Prefix           | File                                                 | Usage                                                                                |
-| ---------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `feature.*`      | `.project/features/{name}/feature.json` (top-level)  | dev-pipeline, game-pipeline                                                          |
-| `backlog.status` | `.project/backlog.html` (feature status transitions) | dev-pipeline, game-pipeline                                                          |
-| `concept.*`      | `.project/project-seed.md` + `project.json#concept`  | project-seed (owner), dev-define / game-define / project-backlog (conditional write) |
-| `devinfo.*`      | `.project/session/devinfo.json` (top-level key)      | frontend-pipeline                                                                    |
+| Prefix                | File                                                                                                                   | Usage                                                                                                |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `feature.*`           | `.project/features/{name}/feature.json` (top-level)                                                                    | dev-pipeline, game-pipeline (incl. `feature.seedDrift`, `feature.externalRef`)                       |
+| `backlog.status`      | `.project/backlog.html` (feature status transitions)                                                                   | dev-pipeline, game-pipeline                                                                          |
+| `backlog.seedDrift`   | `.project/backlog.html` (`data.seedDrift[]` deferred drift entries)                                                    | project-backlog (write), project-seed / project-brainstorm / project-critique (read + reconcile)     |
+| `backlog.externalRef` | `.project/backlog.html` (per-feature `externalRef` issue link)                                                         | team-issues, team-outsource                                                                          |
+| `concept.*`           | `.project/project-seed.md` + `project.json#concept`                                                                    | project-seed (owner), dev-define / game-define / project-backlog (conditional write)                 |
+| `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | frontend-pipeline                                                                                    |
+| `project.*`           | `.project/project.json` (top-level key, e.g. `stack`, `features`, `endpoints`, `entities`, `team`, `optimizationRuns`) | dashboard-sync skills (core-pull, team-verify, project-todo, project-add, dev-optimize)              |
+| `project.thinking`    | `.project/thinking/*.md` + `.project/features/{name}/thinking.md` + `project.json#thinking[]`                          | thinking skills (project-seed, project-brainstorm, project-critique, project-todo, project-research) |
+| `project-context.*`   | `.project/project-context.json` (top-level section: `learnings`, `context`, `architecture`)                            | core-pull, dev/game build + debug + refactor, team-verify, dev-owasp (read)                          |
 
 ### Granularity
 
@@ -145,7 +150,7 @@ Written by `frontend-design` (Build route) when user chooses "Open in convert" a
 
 `source` values: `"build-incomplete"` (from Build-route failure). Other `source` values come from `frontend-design` Convert route (see PHASE 4.1).
 
-**Cleanup:** `frontend-design` Convert route PHASE 4.1 after success → set `devinfo.handoff = null`. If handoff is older than 24h: router PHASE 0.2 shows staleness warning.
+**Cleanup:** `frontend-design` Convert route PHASE 4.1 after success → set `devinfo.handoff = null`. If handoff is older than 24h: router PHASE 0.2 shows a staleness notice AND auto-cleans (`devinfo.handoff = null`, mentioned in output) before route classification — the patch flow is not offered for stale handoffs.
 
 ---
 

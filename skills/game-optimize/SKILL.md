@@ -1,6 +1,8 @@
 ---
 name: game-optimize
 description: Optimize Godot metrics via parallel worktree experiments. Use with /game-optimize.
+reads: [project.stack, project.optimizationRuns]
+writes: [project.optimizationRuns]
 metadata:
   author: claude-config
   version: 0.1.0

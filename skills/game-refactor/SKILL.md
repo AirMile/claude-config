@@ -2,7 +2,7 @@
 name: game-refactor
 description: Batch refactor Godot code quality after testing. Use with /game-refactor.
 reads: [feature.build, feature.tests, backlog.stage]
-writes: [feature.refactor, backlog.stage, learnings]
+writes: [feature.refactor, backlog.stage, project-context.learnings]
 metadata:
   author: claude-config
   version: 1.3.0
@@ -78,7 +78,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 ### PHASE 0: Batch Context Loading + Refactor Patterns
 
-> **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Read backlog for pipeline status:**
 

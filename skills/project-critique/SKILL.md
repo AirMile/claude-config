@@ -1,6 +1,15 @@
 ---
 name: project-critique
 description: Stress-test concepts via multi-perspective analysis. Use with /project-critique.
+reads:
+  [
+    concept.seed,
+    backlog.status,
+    feature.seedDrift,
+    backlog.seedDrift,
+    project.thinking,
+  ]
+writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
   version: 1.1.0

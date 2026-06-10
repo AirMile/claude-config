@@ -1,7 +1,6 @@
 ---
 name: fix-defensive
 description: Prevent-recurrence fix strategy
-model: sonnet
 ---
 
 # Fix Defensive Agent

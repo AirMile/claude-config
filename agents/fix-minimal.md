@@ -1,7 +1,6 @@
 ---
 name: fix-minimal
 description: Smallest-change fix strategy
-model: sonnet
 ---
 
 # Fix Minimal Agent

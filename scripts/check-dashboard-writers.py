@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Valideer DASHBOARD.md schema-writer declaraties.
+"""Validate DASHBOARD-*.md schema-writer declarations.
 
-Twee checks:
-  1. Field-level  ("Gezet door" tabellen)  — skill bestaat + veld-naam in skill files
-  2. Section-level ("Geschreven door" tabellen) — skill bestaat
+Two checks:
+  1. Field-level  ("Set by" tables)      — skill exists + field name in skill files
+  2. Section-level ("Written by" tables) — skill exists
 
-Exit code: 0 = geen WARN/ERROR, 1 = minstens één WARN of ERROR.
+Scans the split dashboard schema files (DASHBOARD-PROJECT.md,
+DASHBOARD-CONTEXT.md, DASHBOARD-THEME.md). Legacy Dutch headers
+("Gezet door" / "Geschreven door") are still recognized.
+
+Exit code: 0 = no WARN/ERROR, 1 = at least one WARN or ERROR.
 
 Usage: python3 scripts/check-dashboard-writers.py
 """
@@ -16,7 +20,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
-DASHBOARD = SKILLS_DIR / "shared" / "DASHBOARD.md"
+DASHBOARD_FILES = [
+    SKILLS_DIR / "shared" / "DASHBOARD-PROJECT.md",
+    SKILLS_DIR / "shared" / "DASHBOARD-CONTEXT.md",
+    SKILLS_DIR / "shared" / "DASHBOARD-THEME.md",
+]
+
+FIELD_HEADERS = ("Set by", "Gezet door")
+SECTION_HEADERS = ("Written by", "Geschreven door")
 
 # Matches `/skill-name` or `/skill-name --flag` inside backtick context
 SKILL_RE = re.compile(r"`/([a-z][a-z0-9-]+)(?:\s[^`]*)?`")
@@ -46,7 +57,8 @@ def grep_field(skill: str, field: str) -> bool:
 def parse_table_blocks(text: str) -> list[dict]:
     """Return list of {header_col_idx, check_type, rows} dicts.
 
-    Detects tables whose header row contains 'Gezet door' or 'Geschreven door'.
+    Detects tables whose header row contains 'Set by' or 'Written by'
+    (legacy: 'Gezet door' / 'Geschreven door').
     Each row is a list of stripped cell strings.
     """
     blocks = []
@@ -63,11 +75,11 @@ def parse_table_blocks(text: str) -> list[dict]:
         writer_col = None
         field_col = None
         for idx, cell in enumerate(cells):
-            if "Gezet door" in cell:
+            if any(h in cell for h in FIELD_HEADERS):
                 check_type = "field"
                 writer_col = idx
                 field_col = 0
-            elif "Geschreven door" in cell:
+            elif any(h in cell for h in SECTION_HEADERS):
                 check_type = "section"
                 writer_col = idx
                 field_col = 0
@@ -96,15 +108,16 @@ def clean_field_name(raw: str) -> str:
 
 
 def main() -> int:
-    if not DASHBOARD.exists():
-        print(f"ERROR: {DASHBOARD} niet gevonden", file=sys.stderr)
-        return 1
-
-    text = DASHBOARD.read_text(encoding="utf-8")
-    blocks = parse_table_blocks(text)
-
+    blocks = []
     errors: list[str] = []
     warns: list[str] = []
+
+    for dashboard in DASHBOARD_FILES:
+        if not dashboard.exists():
+            print(f"ERROR: {dashboard} not found", file=sys.stderr)
+            return 1
+        text = dashboard.read_text(encoding="utf-8")
+        blocks.extend(parse_table_blocks(text))
 
     for block in blocks:
         for row in block["rows"]:
@@ -117,21 +130,21 @@ def main() -> int:
                 skill_dir = SKILLS_DIR / skill
                 if not skill_dir.is_dir():
                     errors.append(
-                        f"ERROR: skill `{skill}` niet gevonden in skills/ "
-                        f"(gedeclareerd als writer van `{field}`)"
+                        f"ERROR: skill `{skill}` not found in skills/ "
+                        f"(declared as writer of `{field}`)"
                     )
                     continue
 
                 if block["check_type"] == "field":
                     if not grep_field(skill, field):
                         warns.append(
-                            f"WARN: `{field}` gedeclareerd als gezet door `/{skill}` "
-                            f"maar veld-naam niet gevonden in skills/{skill}/**"
+                            f"WARN: `{field}` declared as set by `/{skill}` "
+                            f"but field name not found in skills/{skill}/**"
                         )
 
     total = len(errors) + len(warns)
-    print(f"DASHBOARD.md schema-writer check")
-    print(f"Tabellen gescand: {len(blocks)}")
+    print(f"DASHBOARD-*.md schema-writer check")
+    print(f"Tables scanned: {len(blocks)}")
     print(f"Errors: {len(errors)}  Warns: {len(warns)}")
 
     if errors or warns:
@@ -139,7 +152,7 @@ def main() -> int:
         for msg in errors + warns:
             print(msg)
     else:
-        print("\nOK: alle gedeclareerde writers zijn valide.")
+        print("\nOK: all declared writers are valid.")
 
     return 1 if total > 0 else 0
 

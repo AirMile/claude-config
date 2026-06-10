@@ -2,7 +2,7 @@
 name: game-verify
 description: Human playtest verification with structured feedback. Use with /game-verify.
 reads: [feature.requirements, feature.build, backlog.stage]
-writes: [feature.tests, backlog.stage]
+writes: [feature.tests, backlog.stage, project-context.learnings]
 metadata:
   author: claude-config
   version: 2.4.0
@@ -140,7 +140,7 @@ Add conditionally via `TaskCreate`:
 
 ### PHASE 0: Load Context
 
-> **Todo**: call `TaskCreate` with the 10 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 10 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 **Goal:** Load playtest checklist from build phase and prepare for feedback.
 

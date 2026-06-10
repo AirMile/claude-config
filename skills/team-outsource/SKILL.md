@@ -2,6 +2,15 @@
 name: team-outsource
 description: Outsource a feature to a teammate via issue tracker. Use with /team-outsource.
 argument-hint: "[name] [--paste] [--tracker github|jira|linear]"
+reads:
+  [
+    project.team,
+    backlog.status,
+    backlog.externalRef,
+    feature.requirements,
+    feature.architecture,
+  ]
+writes: [backlog.externalRef, feature.externalRef, project.team]
 metadata:
   author: claude-config
   version: 1.0.0

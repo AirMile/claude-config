@@ -1,6 +1,15 @@
 ---
 name: project-brainstorm
 description: Explore ideas using brainstorm techniques. Use with /project-brainstorm.
+reads:
+  [
+    concept.seed,
+    backlog.status,
+    feature.seedDrift,
+    backlog.seedDrift,
+    project.thinking,
+  ]
+writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
   version: 1.1.0

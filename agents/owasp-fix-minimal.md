@@ -1,7 +1,6 @@
 ---
 name: owasp-fix-minimal
 description: Critical-only OWASP hotfix strategy
-model: sonnet
 color: green
 ---
 

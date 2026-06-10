@@ -1,6 +1,8 @@
 ---
 name: project-todo
 description: Add new backlog items to the project. Use with /project-todo.
+reads: [project.stack, backlog.status]
+writes: [backlog.status, project.features, project.stack, project.thinking]
 metadata:
   author: claude-config
   version: 1.0.0
@@ -266,118 +268,23 @@ After the answers: incorporate the insights into a sharpened description of the 
 
 ### PHASE 1b: Priority + Category/Type
 
-**Multi-item mode** (items.length > 1): use the batch flow below. Single-item: skip batch flow and use the WEB/GAME MODE blocks directly.
+> **Todo**: Read '.claude/skills/project-todo/references/modal-options.md' — static AskUserQuestion option templates for PHASE 1b and 1c.
 
-**Batch flow:** one AskUserQuestion call with N+1 questions:
+**Multi-item mode** (items.length > 1) — batch flow: one AskUserQuestion call with N+1 questions. Question 1 = Priority (template § Priority, batch wording, applies to all items). Questions 2..N+1 = type per queue item (header = kebab-name, options from the § Type template matching the type-hint from the PHASE 0 multi-split). Want a different priority per item? Choose "No, one item" in PHASE 0 and run `/project-todo` multiple times.
 
-```yaml
-# Question 1 — Priority (applies to all items in batch)
-header: "Priority"
-question: "What priority does this batch of items have?"
-options:
-  - label: "P1 (Recommended)", description: "Highest priority"
-  - label: "P2", description: "Important but not blocking"
-  - label: "P3", description: "When there's time"
-  - label: "P4", description: "Park for later"
-multiSelect: false
+**[WEB MODE]** Single-item — one AskUserQuestion call with two questions: § Priority + § Category — WEB.
 
-# Question 2..N+1 — Type per item (one question per queue item, header = kebab-name)
-# Options = same set as the single-item flow (see WEB/GAME MODE below),
-# based on type-hint from PHASE 0 multi-split.
-```
-
-If you want a different priority per item: choose "No, one item" in PHASE 0 and run `/project-todo` multiple times.
-
-**[WEB MODE]** Single-item — one AskUserQuestion call with two questions:
-
-```yaml
-# Question 1
-header: "Priority"
-question: "What priority does this item have?"
-options:
-  - label: "P1 (Recommended)", description: "Highest priority"
-  - label: "P2", description: "Important but not blocking"
-  - label: "P3", description: "When there's time"
-  - label: "P4", description: "Park for later"
-multiSelect: false
-
-# Question 2
-header: "Category"
-question: "Which category fits best?"
-options:
-  - label: "Dev (Recommended)", description: "Backend, API, logic, data, bugs, refactor"
-  - label: "Frontend", description: "Pages and components"
-  - label: "Design & Quality", description: "Tokens, accessibility, performance, missing page functionality"
-multiSelect: false
-```
-
-**[GAME MODE]** Single-item — two separate AskUserQuestion calls:
-
-```yaml
-# Question 1: Priority
-header: "Priority"
-question: "What priority does this feature have?"
-options:
-  - label: "P1 (Recommended)", description: "Highest priority"
-  - label: "P2", description: "Important but not blocking"
-  - label: "P3", description: "When there's time"
-  - label: "P4", description: "Park for later"
-multiSelect: false
-
-# Question 2: Type
-header: "Type"
-question: "What type of item is this?"
-options:
-  - label: "MECHANIC (Recommended)", description: "New gameplay mechanic (ability, movement, combat)"
-  - label: "SYSTEM", description: "Supporting system (spawning, scoring, saving)"
-  - label: "CONTENT", description: "Levels, enemies, items, dialogue"
-  - label: "POLISH", description: "Juice, particles, screen shake, sound"
-  - label: "UI", description: "HUD, menus, feedback indicators"
-multiSelect: false
-```
+**[GAME MODE]** Single-item — two separate AskUserQuestion calls: § Priority, then § Type — GAME.
 
 ### PHASE 1c: Type (WEB MODE only)
 
-One AskUserQuestion call (1 question). Options depend on chosen category:
+One AskUserQuestion call (1 question). Options depend on the category chosen in PHASE 1b — use the matching template from `references/modal-options.md`:
 
-**If Dev:**
+- **Dev** → § Type — WEB · Dev category
+- **Frontend** → § Type — WEB · Frontend category
+- **Design & Quality** → § Type — WEB · Design & Quality category
 
-```yaml
-header: "Type"
-question: "What type of item is this?"
-options:
-  - label: "FEATURE (Recommended)", description: "New functionality"
-  - label: "CHANGE", description: "Modification to existing functionality"
-  - label: "BUG", description: "Bug fix or correction"
-  - label: "API", description: "Backend endpoint or service"
-multiSelect: false
-```
-
-**If Frontend:**
-
-```yaml
-header: "Type"
-question: "Which frontend entity?"
-options:
-  - label: "PAGE (Recommended)", description: "New page/route — lands on Frontend track ('To design')"
-  - label: "COMPONENT", description: "Reusable UI component — lands on Frontend track"
-  - label: "PAGE-GAP", description: "Missing functionality on existing page — lands on Dev track"
-multiSelect: false
-```
-
-All three types fall through to **PHASE 1d → PHASE 2 Backlog write**. PAGE and COMPONENT land on the Frontend swimlane ("To design"); PAGE-GAP on the Dev swimlane ("To define").
-
-**If Design & Quality:**
-
-```yaml
-header: "Type"
-question: "What type of design/quality item is this?"
-options:
-  - label: "THEME (Recommended)", description: "Design tokens — colors, typography, spacing via /frontend-tokens"
-  - label: "A11Y", description: "Accessibility improvement via /frontend-check --scope=a11y"
-  - label: "PERF", description: "Performance or SEO optimization via /frontend-check"
-multiSelect: false
-```
+All three Frontend types fall through to **PHASE 1d → PHASE 2 Backlog write**. PAGE and COMPONENT land on the Frontend swimlane ("To design"); PAGE-GAP on the Dev swimlane ("To define").
 
 ### PHASE 1d: Dependencies
 

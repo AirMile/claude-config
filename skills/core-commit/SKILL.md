@@ -1,6 +1,7 @@
 ---
 name: core-commit
 description: Generate conventional commit messages from staged changes. Use with /core-commit.
+reads: [feature.externalRef]
 metadata:
   author: claude-config
   version: 1.0.0

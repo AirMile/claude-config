@@ -31,7 +31,7 @@ Structured 11-phase debugging: context → intake → investigate → analyze �
 
 ## PHASE 0: Context Loading
 
-> **Todo**: call `TaskCreate` with the 11 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 11 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 **Stack context** (optional, skip what doesn't exist):
 
@@ -109,87 +109,9 @@ If nothing available → continue without context (backwards compatible).
 
 ## PHASE 1: Problem Intake
 
-> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`. Read '.claude/skills/dev-debug/references/problem-intake.md' for the full intake protocol — classify (Step 1) → per-type detail questions (Step 2) → confirm summary (Step 3).
 
-### Step 1: Classify
-
-AskUserQuestion:
-
-- header: "Problem Type"
-- question: "What type of problem is this?"
-- options:
-  - "Runtime Error" — Crashes, exceptions, error messages in console or UI
-  - "Logic Bug" — Wrong output, unexpected behavior
-  - "Performance Issue" — Slow, memory leaks, timeouts
-  - "Integration Issue" — API failures, data sync, external systems
-
-### Step 2: Details (per type)
-
-**Runtime Error:**
-AskUserQuestion:
-
-- header: "Error Details"
-- question: "What information do you have about the error?"
-- options:
-  - "I have an error message" — Exact error message available
-  - "I have a stack trace" — Full stack trace available
-  - "I have both" — Error message and stack trace
-  - "I only have a screenshot" — Visual representation
-
-Then: ask user to share the details.
-
-**Logic Bug:**
-AskUserQuestion:
-
-- header: "Behavior Details"
-- question: "Describe the difference between expected and actual behavior:"
-- options:
-  - "I know exactly what is going wrong" — Expected vs actual describable
-  - "Output is wrong" — Wrong value or display
-  - "Action does not work" — Button, form, interaction fails
-  - "Data is incorrect" — Wrong data shown or saved
-
-Then: ask for specific expected vs actual behavior.
-
-**Performance Issue:**
-AskUserQuestion:
-
-- header: "Performance Details"
-- question: "When does the performance problem occur?"
-- options:
-  - "On a specific action" — Certain page, button click, or data load
-  - "Always slow" — Consistently slow application
-  - "Over time" — Starts fast, becomes slower (memory leak)
-  - "With large datasets" — Only slow with large amounts of data
-
-Then: ask about scale/context details.
-
-**Integration Issue:**
-AskUserQuestion:
-
-- header: "Integration Details"
-- question: "Which external system is involved?"
-- options:
-  - "REST API" — HTTP endpoints, fetch calls
-  - "Database" — Supabase, Firebase, other DB
-  - "Third-party service" — Auth, payment, analytics
-  - "File system / Storage" — Uploads, downloads, cloud storage
-
-Then: ask for API/service details and error responses.
-
-### Step 3: Confirm summary
-
-Show summary of type + symptom + context + details gathered.
-
-AskUserQuestion:
-
-- header: "Confirmation"
-- question: "Is this problem summary correct?"
-- options:
-  - "Yes, start investigation (Recommended)" — Start inline investigation
-  - "No, correction needed" — Provide more details or corrections
-
-If "Nee" → ask for corrections, update summary, re-confirm.
+Outcome: confirmed problem summary (type + symptom + context + details) — input for PHASE 2 investigation. Do not start investigating before the user confirms the summary.
 
 ---
 

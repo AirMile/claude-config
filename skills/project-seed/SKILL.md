@@ -1,6 +1,17 @@
 ---
 name: project-seed
 description: Transform any idea, design, or task into a structured seed document. Handles new concepts (game/app/idea), implementation projects (Figma/spec → code scope), and feature/assignment scoping. Use with /project-seed.
+reads:
+  [
+    concept.seed,
+    backlog.status,
+    feature.seedDrift,
+    backlog.seedDrift,
+    project.thinking,
+    project.entities,
+    project.endpoints,
+  ]
+writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
   version: 1.3.0
@@ -119,35 +130,35 @@ After the question rounds, present a structured overview of all gathered input b
 
 **Scope = concept / standalone / page:**
 
-| Aspect          | Value                                   |
-| --------------- | --------------------------------------- |
-| Topic           | {idea title/topic}                      |
-| Scope           | {concept / page / standalone}           |
-| Target Audience | {from round 1}                          |
-| Core Experience | {from round 1}                          |
-| Deeper Dives    | {summary of follow-up rounds}           |
+| Aspect          | Value                         |
+| --------------- | ----------------------------- |
+| Topic           | {idea title/topic}            |
+| Scope           | {concept / page / standalone} |
+| Target Audience | {from round 1}                |
+| Core Experience | {from round 1}                |
+| Deeper Dives    | {summary of follow-up rounds} |
 
 **Scope = implementation:**
 
-| Aspect           | Value                                    |
-| ---------------- | ---------------------------------------- |
-| Topic            | {project / product name}                 |
-| Scope            | implementation                           |
-| Source of Truth  | {Figma / spec / screenshots / existing}  |
-| Pages in Scope   | {list from round 1}                      |
-| Tech Stack       | {confirmed stack}                        |
-| Open Decisions   | {TBDs / annotation gaps}                 |
+| Aspect          | Value                                   |
+| --------------- | --------------------------------------- |
+| Topic           | {project / product name}                |
+| Scope           | implementation                          |
+| Source of Truth | {Figma / spec / screenshots / existing} |
+| Pages in Scope  | {list from round 1}                     |
+| Tech Stack      | {confirmed stack}                       |
+| Open Decisions  | {TBDs / annotation gaps}                |
 
 **Scope = feature / assignment:**
 
-| Aspect              | Value                              |
-| ------------------- | ---------------------------------- |
-| Topic               | {feature / assignment name}        |
-| Scope               | feature                            |
-| Goal                | {from round 1}                     |
-| Existing Context    | {from round 1}                     |
-| Out of Scope        | {from round 1}                     |
-| Definition of Done  | {from round 1}                     |
+| Aspect             | Value                       |
+| ------------------ | --------------------------- |
+| Topic              | {feature / assignment name} |
+| Scope              | feature                     |
+| Goal               | {from round 1}              |
+| Existing Context   | {from round 1}              |
+| Out of Scope       | {from round 1}              |
+| Definition of Done | {from round 1}              |
 
 Ask via AskUserQuestion: "Does this overview look right before we summarize?"
 

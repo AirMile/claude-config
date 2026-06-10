@@ -1,7 +1,6 @@
 ---
 name: fix-thorough
 description: Complete root-cause fix strategy
-model: sonnet
 ---
 
 # Fix Thorough Agent

@@ -1,6 +1,15 @@
 ---
 name: project-add
 description: Add or clone a project into the multi-project setup. Use with /project-add.
+writes:
+  [
+    project.stack,
+    project.features,
+    project.team,
+    project-context.context,
+    project-context.architecture,
+    project-context.learnings,
+  ]
 metadata:
   author: claude-config
   version: 1.0.0

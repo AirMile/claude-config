@@ -2,7 +2,7 @@
 name: project-backlog
 description: Transform a seed into a prioritized feature backlog (create or update mode, with page-discovery for web). Use with /project-backlog.
 reads: [backlog.status]
-writes: [backlog.status, concept.seed]
+writes: [backlog.status, concept.seed, backlog.seedDrift]
 metadata:
   author: claude-config
   version: 1.4.0

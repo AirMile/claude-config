@@ -11,6 +11,7 @@ writes:
     backlog.overview,
     backlog.siblings,
     concept.seed,
+    feature.seedDrift,
   ]
 metadata:
   author: claude-config
@@ -44,7 +45,7 @@ visible — no risk of forgetting phases.
 
 ### PHASE 0: Setup, Feature Name & Plan Mode
 
-> **Todo**: call `TaskCreate` with the 3 phase items (see above). Mark PHASE 0+1a+1b → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 3 phase items (see above). Mark PHASE 0+1a+1b → `in_progress` via `TaskUpdate`.
 
 1. **Determine feature name.**
 
@@ -117,7 +118,15 @@ visible — no risk of forgetting phases.
      >
      > Parse `PRIOR_DECISIONS_START/END` block from response. Store for PHASE 1a "Surface relevant past decisions" render. Empty or missing block → silent skip (no output).
 
-   - **Learnings**: scan `project-context.json#learnings[]` (and optionally `project.json#learnings[]`). Match: relevant if (a) summary shares ≥2 keywords with the current feature name or concept, OR (b) `feature` name matches a **direct** dependency AND `type === "pitfall"`. Rationale: keyword-match catches topical relevance; dependency-pitfalls catch lessons that bit us last time in code we're about to touch. Show `RELEVANT LEARNINGS` block before the first AskUserQuestion of PHASE 1 (max 5 entries, pitfalls first, then patterns) — only on ≥1 match. No match → silent. Extended matching: [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md).
+   - **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
+
+     ```
+     scopes: [component]
+     pitfall-prefix: true
+     current-feature: {feature-name}
+     ```
+
+     **Dev-define-specific extra filter**: also include learnings whose `feature` matches a **direct** dependency of the current feature AND `type === "pitfall"` — lessons that bit us last time in code we're about to touch. Show a `RELEVANT LEARNINGS` block before the first AskUserQuestion of PHASE 1 (max 5 entries, pitfalls first, then patterns) — only on ≥1 match. No match → silent.
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 

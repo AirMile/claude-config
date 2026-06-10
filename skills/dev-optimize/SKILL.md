@@ -1,6 +1,8 @@
 ---
 name: dev-optimize
 description: Optimize metrics via parallel worktree experiments. Use with /dev-optimize.
+reads: [project.stack, project.optimizationRuns]
+writes: [project.optimizationRuns]
 metadata:
   author: claude-config
   version: 0.1.0

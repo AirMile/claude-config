@@ -1,7 +1,7 @@
 ---
 name: game-define
 description: Define Godot feature requirements and architecture. Use with /game-define.
-writes: [feature.requirements, backlog.stage, concept.seed]
+writes: [feature.requirements, backlog.stage, concept.seed, feature.seedDrift]
 metadata:
   author: claude-config
   version: 3.0.0
@@ -41,7 +41,7 @@ The skill gathers requirements through targeted questions, optionally researches
 
 ### PHASE 0: Feature Name + Context
 
-> **Todo**: call `TaskCreate` with the 3 phase items (see above). Mark PHASE 0+1a+1b → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 3 phase items (see above). Mark PHASE 0+1a+1b → `in_progress` via `TaskUpdate`.
 
 1. **If name provided** (`/game-define abilities`):
    - Use provided name as feature name

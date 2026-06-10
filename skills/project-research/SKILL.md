@@ -1,6 +1,8 @@
 ---
 name: project-research
 description: Research across web, docs, and codebase. Use with /project-research.
+reads: [concept.seed, backlog.status]
+writes: [concept.seed, project.thinking]
 metadata:
   author: claude-config
   version: 1.3.0

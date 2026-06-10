@@ -2,6 +2,17 @@
 name: core-pull
 description: Pull changes, sync context, and extract learnings. Use with /core-pull.
 argument-hint: "[remote/branch] [--no-learn]"
+reads: [project.stack, project-context.learnings]
+writes:
+  [
+    project.features,
+    project.entities,
+    project.endpoints,
+    project.stack,
+    project-context.context,
+    project-context.architecture,
+    project-context.learnings,
+  ]
 metadata:
   author: claude-config
   version: 4.0.0

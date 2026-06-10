@@ -82,9 +82,9 @@ Session: [✓] [New session | Continuing from {devinfo.handoff.source}]
 
 Check `$DEVINFO.handoff.source === "build-incomplete"`.
 
-**If handoff present AND `$SKILL_ARG` is empty AND no pasted image:**
+**Staleness auto-cleanup (before any branch below):** if a handoff is present, check `handoff.timestamp`. Older than 24h → show `"Handoff is {N}h old — no longer relevant; cleaned up (devinfo.handoff = null)"`, set `devinfo.handoff = null` (write `devinfo.json`), and proceed to PHASE 0.3 as if no handoff exists. Do NOT offer the patch flow for a stale handoff.
 
-Check `handoff.timestamp` — if older than 24h: show `"Handoff is {N}h old — may no longer be relevant"`.
+**If handoff present AND `$SKILL_ARG` is empty AND no pasted image:**
 
 ```yaml
 header: "Handoff from Build detected"

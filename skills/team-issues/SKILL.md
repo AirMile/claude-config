@@ -2,6 +2,8 @@
 name: team-issues
 description: Import GitHub/Jira/Linear issues into the local backlog. Use with /team-issues.
 argument-hint: "[number] [--mine] [--paste] [--label <label>]"
+reads: [project.team, backlog.status, backlog.externalRef]
+writes: [backlog.status, backlog.externalRef, project.team]
 metadata:
   author: claude-config
   version: 1.0.0

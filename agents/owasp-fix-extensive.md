@@ -1,7 +1,6 @@
 ---
 name: owasp-fix-extensive
 description: Full OWASP remediation strategy
-model: sonnet
 color: red
 ---
 

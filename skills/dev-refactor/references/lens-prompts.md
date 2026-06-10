@@ -1,8 +1,49 @@
 # Refactor Lens Prompts
 
-Lens-specific body content for PHASE 1 Explore agents. Read the relevant section and insert it after the universal prompt header in the agent prompt.
+Prompt building blocks for PHASE 1 Explore agents. Every agent prompt = `## Universal Prompt Header` (substituted) + the lens-specific section (`## REUSE` / `## QUALITY` / `## EFFICIENCY`).
 
-In **single-lens mode** (feature with <4 pipeline files): include all three sections combined under one agent.
+In **single-lens mode** (feature with <4 pipeline files): include all three lens sections combined under one agent, after the universal header.
+
+---
+
+## Universal Prompt Header
+
+Every lens, every mode receives this. Substitute `{feature-name}`, `{pipeline_files}`, `{pipeline_diff}` (omit the FOCUS HINT block when absent), `{context.patterns}`, and the feature's `refactor.decisions[]`.
+
+````
+Feature: {feature-name}
+Pipeline files:
+{list of pipeline_files paths}
+
+{if pipeline_diff[feature] exists:}
+FOCUS HINT — these lines are new/changed in this feature; scan
+with priority (but also report issues in other lines):
+```diff
+{pipeline_diff[feature]}
+```
+
+{/if}
+
+PROJECT CONVENTIONS:
+{context.patterns or "not available — use CLAUDE.md as fallback"}
+If a pattern is consistent with project conventions → do NOT report.
+Note: a pattern with prefix "Code maturity:" indicates how aggressively to refactor — respect the attitude described there (e.g. no over-abstractions for student/prototype projects).
+
+KNOWN DECISIONS (skip findings that match these — already evaluated in a previous run):
+{feature.json#refactor.decisions[] where action=SKIP, formatted as bullet list, or "none" if empty}
+
+SCOPE:
+- Analyze ONLY files in the pipeline files list above. Skip findings that involve
+  external files or cross-cutting utilities outside that list — even if the fix
+  seems obvious. Exception: a NEW utility file may be proposed if it exclusively
+  extracts code from pipeline files.
+
+DISCIPLINE:
+- Max 500 words output. Short, sharp, direct.
+- No nitpicks. Only issues with a clear, concrete fix.
+- Skip false positives explicitly (don't even mention them).
+- Format per finding: `[IMPACT|CATEGORY] file:line — problem description — concrete fix in 1 sentence`
+````
 
 ---
 

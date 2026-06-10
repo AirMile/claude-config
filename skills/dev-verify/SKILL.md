@@ -1,8 +1,8 @@
 ---
 name: dev-verify
 description: Run adversarial acceptance tests and fix loops on a built feature — classifies test items (COVERED/AUTO/MANUAL), runs auto-tests, walks user through manual ones, fixes failures, and finalizes the worktree. Use with /dev-verify, or auto-triggers when a feature has transition=verifying after /dev-build completes.
-reads: [feature.requirements, feature.build, learnings]
-writes: [feature.tests, backlog.status]
+reads: [feature.requirements, feature.build, project-context.learnings]
+writes: [feature.tests, backlog.status, project-context.learnings]
 metadata:
   author: claude-config
   version: "2.10.0"
@@ -55,7 +55,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
 ### PHASE 0: Load Context and Classify
 
-> **Todo**: call `TaskCreate` with the 5 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 5 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Read backlog** — `.project/backlog.html`, parse JSON from `<script id="backlog-data">` (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
 
@@ -159,122 +159,13 @@ CATEGORY_GAPS:
 - {REQ-ID} / {category}: {acceptance.when} → {acceptance.then}
 ```
 
-7. **Gather test data** via Explore agent on **Sonnet** (`model: "sonnet"`) — zero source file reads in main context:
+7. **Gather test data** via Explore agent on **Sonnet** (`model: "sonnet"`) — zero source file reads in main context.
 
-   ```
-   Feature: {feature-name}
-   Feature file: .project/features/{feature-name}/feature.json
+   > **Todo**: Read '.claude/skills/dev-verify/references/explore-agent-prompt.md' for the agent prompt template. Substitute `{feature-name}`, `{STACK_CONTEXT}`, `{KNOWN_PITFALLS}`, `{CATEGORY_GAPS}`, then dispatch. The agent returns a `FEATURE_CONTEXT_START..END` block with per-item COVERED short form or FULL form.
 
-   {STACK_CONTEXT}
+8. **Classify and plan test execution** — baseline run, mode flags (hasUI/isPureAPI/isComponent), token scan, COMPONENT matrix item, cross-requirement integration scenarios, per-item COVERED/AUTO/MANUAL classification, display rules, and goal-backward verification + acceptance test planning.
 
-   {KNOWN_PITFALLS}
-
-   {CATEGORY_GAPS}
-
-   Read feature.json (checklist + requirements + build section). Search in source code for:
-   - Validation rules, API endpoints relevant to test items
-   - Existing test files and test patterns
-   - Per requirement (id + acceptance scenarios) — **skip requirements with `deltaOp === "REMOVED"`**: read the source files that implement this REQ
-     (feature.json files[] where requirements contain the REQ-ID).
-     Determine which acceptance test(s) would verify each scenario.
-     Format: `acceptance: [{ when, then }]` — each object = one test scenario.
-     (e.g. "201 on success, 400 on >5, 409 on duplicate" = 3 scenarios).
-     If the REQ has `errorScenarios[]`: use those directly as adversarial test scenarios — do NOT re-infer fail-paths from acceptance prose.
-
-   Prefer short form. Full form costs main-context tokens.
-
-   Return as:
-   FEATURE_CONTEXT_START
-   Existing tests: {paths, or "none"}
-
-   Per test item, choose ONE of two formats:
-
-   A) COVERED short form (when build test fully verifies the contract — httpContractTested: true AND delta === "none"):
-   - Item {N}: {title} — COVERED by {test-file:test-name}
-
-   B) FULL form (when httpContractTested: false OR delta !== "none" OR acceptance gap):
-   - Item {N}: {title}
-     Test data: {concrete values}
-     Expected: {expected outcome}
-     Recommended method: BROWSER | CLI
-     Already covered: {what build tests verify, or "none"}
-     httpContractTested: true/false
-     delta: {extra verification needed, or "none"}
-     acceptanceTests: [
-       { scenario: "{test description}", method: "CLI", expected: "{expected}" }
-     ]
-
-   Full form is only needed when the classifier (step 8d) must branch on per-item detail.
-   FEATURE_CONTEXT_END
-   ```
-
-8. **Classify and plan test execution:**
-
-   a) Baseline check: `npm test 2>&1 | tail -20` (or project-specific command). (can run in parallel with the Explore agent in Step 7 to save time)
-   Display: `BASELINE: npm test → {PASS|FAIL} ({n}/{n})`
-
-   b) Detect mode flags:
-
-   ```
-   hasUI = feature.json has "design" field OR files[] contains frontend files (.tsx, .vue, .svelte)
-   isPureAPI = feature.json has "apiContract" AND NOT hasUI
-   isComponent = IS_COMPONENT_VERIFY === true
-   ```
-
-   **Token scan** (only if `hasUI = true` or `isComponent = true`):
-
-   Grep all files in `feature.json files[]` matching `.tsx`, `.jsx`, `.vue`, `.svelte` for T101 (`#[0-9a-fA-F]{3,8}` in JSX/className) and T102 (`bg-\[#`, `text-\[#`). Violations found → add AUTO/CLI test item: `"Token violations: {N} hardcoded values (T101/T102)"`, fix directly via `shared/TOKENS.md` mapping. No violations → skip (no output).
-
-   **COMPONENT extra check** (only if `isComponent = true`): add mandatory test item:
-
-   ```json
-   {
-     "id": "COMP-MATRIX",
-     "title": "Variant matrix visible on demo-page",
-     "steps": [
-       "Navigate to /_dev/components/{name}",
-       "Verify presence of all variants × sizes × states cards"
-     ],
-     "expected": "All {variants × sizes × states} combinations are visible without errors",
-     "type": "AUTO/BROWSER"
-   }
-   ```
-
-   c) Cross-requirement integration — Analyze `requirements[]`, identify combinations where output of one requirement is input for another. Max 3 scenarios, add as extra test items (not persisted to feature.json checklist). No logical combinations → skip.
-
-   d) Per item, use Explore agent output:
-   - `httpContractTested: true` + `delta: "none"` → **COVERED**
-   - `httpContractTested: true` + delta → **AUTO/CLI** or **AUTO/BROWSER** (delta only)
-   - `httpContractTested: false` → classify based on steps/hasUI/isPureAPI per `references/test-classification.md`
-   - Integration scenarios → always **AUTO** (never COVERED)
-
-   e) Display:
-   - One-line summary: `COVERED: {n}  AUTO: {n} (BROWSER: {n}, CLI: {n})  MANUAL: {n}`
-   - If `AUTO + MANUAL > 0`: show table with ONLY non-COVERED items (Type column + reason).
-   - If `AUTO + MANUAL == 0` AND `COVERED > 0`: skip table entirely.
-   - If ALL items are non-COVERED (no build tests cover any contract): show full table.
-
-   f) With mixed types (COVERED + AUTO + MANUAL): show ASCII flowchart of the test execution flow. With only COVERED + AUTO/CLI: skip flowchart.
-
-   g) Proceed automatically with the recommended classification. No user approval needed — continue directly to step 8h.
-
-   h) **Goal-backward verification + acceptance test planning:**
-
-   CATEGORY-GAPs are already computed in step 6c and were passed to the Explore agent. Now consume them:
-   - Per gap `(REQ.id, category)` in CATEGORY_GAPs: add to AUTO/CLI queue with `source: "category-coverage"`, title `"{category} coverage missing for {REQ.id}"`, and test scenario from the matching `acceptance[]` entry's `{ when, then }`.
-
-   Internally map tests back to acceptance criteria. **GAP**: requirement where builder's tests verify internal methods/data structures instead of the acceptance criterion itself.
-
-   Per GAP with CLI-testable acceptance tests (from Explore agent `acceptanceTests[]`): add to AUTO/CLI queue (PHASE 1) with `source: "acceptance"` marker.
-   BROWSER and MANUAL gaps → add items via existing classification (step 8d).
-
-   Display:
-   - No gaps → single line: `Acceptance mapping: {n}/{n} REQs covered`
-   - Gaps found → two lines (suppress the second if no category-coverage items were added):
-     - `ACCEPTANCE TESTS: {n} test(s) planned for {m} requirement(s) — gaps: {REQ-ID list}`
-     - `ADDED {n} checklist items for category coverage: {item-titles}`
-   - Category-gaps: include in AUTO count and table rows; label with `(category-coverage)` in the Type column.
-   - Show full GAP-only table ONLY if {m} >= 3 (helps user scan multiple gaps).
+   > **Todo**: Read '.claude/skills/dev-verify/references/classify-and-plan.md' and execute steps a-h. (The baseline `npm test` in step a may run in parallel with the Step 7 Explore agent.)
 
 9. **Dev server** (conditional + actively launched):
 

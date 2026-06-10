@@ -2,7 +2,7 @@
 name: dev-build
 description: "Build features test-first with TDD. Use with /dev-build, or when the user asks to implement a defined feature."
 reads: [feature.requirements, feature.architecture, feature.files]
-writes: [feature.requirements, feature.build, backlog.status, learnings]
+writes: [feature.requirements, feature.build, backlog.status, project-context.learnings]
 metadata:
   author: claude-config
   version: 1.15.0

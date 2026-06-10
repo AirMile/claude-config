@@ -1,6 +1,7 @@
 ---
 name: dev-owasp
 description: Run full OWASP Top 10 security audit. Use with /dev-owasp.
+reads: [project.endpoints, project.entities, project-context.context]
 metadata:
   author: claude-config
   version: 2.0.0

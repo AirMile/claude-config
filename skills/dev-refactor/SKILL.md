@@ -1,8 +1,15 @@
 ---
 name: dev-refactor
 description: Batch refactor DONE features for DRY and clarity. Use with /dev-refactor. Auto-triggers on transition=refactoring.
-reads: [feature.build, feature.tests, feature.files, backlog.status, learnings]
-writes: [feature.refactor, backlog.status, learnings]
+reads:
+  [
+    feature.build,
+    feature.tests,
+    feature.files,
+    backlog.status,
+    project-context.learnings,
+  ]
+writes: [feature.refactor, backlog.status, project-context.learnings]
 metadata:
   author: claude-config
   version: 2.4.0
@@ -57,7 +64,7 @@ Writes only to `.project/features/{name}/feature.json` (enriched: refactor secti
 
 ### PHASE 0: Batch Context Loading + Refactor Patterns
 
-> **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 **Pre-flight (setup, before numbered steps):**
 
@@ -242,47 +249,7 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
 2. **Launch agents IN PARALLEL** according to lens strategy (see `shared/SKILL-PATTERNS.md#parallel-dispatch` for dispatch criteria and integration steps).
 
-   **Universal prompt header** (every lens, every mode receives this):
-
-   ````
-   Feature: {feature-name}
-   Pipeline files:
-   {list of pipeline_files paths}
-
-   {if pipeline_diff[feature] exists:}
-   FOCUS HINT — these lines are new/changed in this feature; scan
-   with priority (but also report issues in other lines):
-   ```diff
-   {pipeline_diff[feature]}
-   ```
-
-   {/if}
-
-   PROJECT CONVENTIONS:
-   {context.patterns or "not available — use CLAUDE.md as fallback"}
-   If a pattern is consistent with project conventions → do NOT report.
-   Note: a pattern with prefix "Code maturity:" indicates how aggressively to refactor — respect the attitude described there (e.g. no over-abstractions for student/prototype projects).
-
-   KNOWN DECISIONS (skip findings that match these — already evaluated in a previous run):
-   {feature.json#refactor.decisions[] where action=SKIP, formatted as bullet list, or "none" if empty}
-
-   SCOPE:
-   - Analyze ONLY files in the pipeline files list above. Skip findings that involve
-     external files or cross-cutting utilities outside that list — even if the fix
-     seems obvious. Exception: a NEW utility file may be proposed if it exclusively
-     extracts code from pipeline files.
-
-   DISCIPLINE:
-   - Max 500 words output. Short, sharp, direct.
-   - No nitpicks. Only issues with a clear, concrete fix.
-   - Skip false positives explicitly (don't even mention them).
-   - Format per finding: `[IMPACT|CATEGORY] file:line — problem description — concrete fix in 1 sentence`
-
-   ```
-
-   **Lens-specific body**: read `references/lens-prompts.md` → section `## REUSE`, `## QUALITY`, or `## EFFICIENCY` for this lens and insert the full section content after the universal header. In single-lens mode (feature <4 files): include all three sections combined under one agent.
-
-   ````
+   > **Todo**: Read '.claude/skills/dev-refactor/references/lens-prompts.md' — compose each agent prompt as `## Universal Prompt Header` (substituted) + the lens-specific section (`## REUSE` / `## QUALITY` / `## EFFICIENCY`). Single-lens mode (feature <4 files): all three lens sections combined under one agent, after the universal header.
 
 3. **Output format** (each lens-agent returns):
 

@@ -2,7 +2,7 @@
 name: game-build
 description: Build Godot features test-first with TDD. Use with /game-build.
 reads: [feature.requirements, backlog.stage]
-writes: [feature.requirements, feature.build, backlog.stage, learnings]
+writes: [feature.requirements, feature.build, backlog.stage, project-context.learnings]
 metadata:
   author: claude-config
   version: 2.9.0
@@ -98,7 +98,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 ### PHASE 0: Load Context
 
-> **Todo**: call `TaskCreate` with the 10 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 10 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **If no feature name provided — check backlog:**
 

@@ -1,6 +1,28 @@
 ---
 name: team-verify
 description: Verify teammate code delivery against task brief. Use with /team-verify.
+reads:
+  [
+    feature.requirements,
+    feature.files,
+    feature.externalRef,
+    backlog.status,
+    project.stack,
+    project.endpoints,
+    project.entities,
+    project-context.context,
+  ]
+writes:
+  [
+    feature.requirements,
+    feature.tests,
+    backlog.status,
+    project.features,
+    project.stack,
+    project.endpoints,
+    project.entities,
+    project-context.architecture,
+  ]
 metadata:
   author: claude-config
   version: 2.1.0
