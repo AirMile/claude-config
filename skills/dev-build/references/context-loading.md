@@ -32,7 +32,7 @@ Verify packages are resolvable and the setup file imports `@testing-library/jest
 **Skip entirely** for non-JS stacks (no `package.json`) or backend-only Node stacks without a component-testing framework.
 
 ```bash
-# Detecteer setup-file (vitest, jest, of generieke locaties)
+# Detect setup file (vitest, jest, or generic locations)
 # Glob covers: root (vitest.setup.*, jest.setup.*, setup-tests.*),
 # src/test-setup.*, src/test/setup.*, tests/setup.*, test/setup.*
 SETUP=$(ls vitest.setup.* jest.setup.* src/test-setup.* setup-tests.* \
@@ -64,7 +64,7 @@ Detect whether the JUnit reporter is configured — dev-verify PHASE 5d's flakin
 ```bash
 # Vitest: look for 'junit' in the reporters array
 grep -q "['\"]junit['\"]" vitest.config.* 2>/dev/null && echo "OK: junit reporter (vitest)"
-# Jest: jest-junit als devDep + reporters in config
+# Jest: jest-junit as devDep + reporters in config
 node -e "require.resolve('jest-junit')" 2>/dev/null && echo "OK: jest-junit installed"
 # Playwright
 grep -q "junit" playwright.config.* 2>/dev/null && echo "OK: junit reporter (playwright)"

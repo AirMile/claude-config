@@ -112,7 +112,7 @@ COVERED items:
 
 - Are NOT sent to the Task agent for execution
 - Count as PASS automatically (verified by baseline test suite)
-- Are displayed in the classification table with reason "Build test dekken contract"
+- Are displayed in the classification table with reason "Build tests cover contract"
 
 NOT COVERED (even when build tests exist):
 

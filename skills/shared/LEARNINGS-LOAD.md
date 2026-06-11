@@ -2,7 +2,7 @@
 
 Shared protocol for loading learnings as context in architectural skills. Skills reference this instead of duplicating their own filter logic.
 
-> **Schema**: `learnings[]` in `project-context.json`. Velden: `date`, `feature`, `type`, `source`, `author?`, `summary`. Zie [DASHBOARD.md](DASHBOARD.md).
+> **Schema**: `learnings[]` in `project-context.json`. Fields: `date`, `feature`, `type`, `source`, `author?`, `summary`. See [DASHBOARD.md](DASHBOARD.md).
 
 ---
 

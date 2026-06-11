@@ -7,7 +7,7 @@
 **Good tests** are integration-style: they test real code paths via public APIs. They describe _what_ the system does, not _how_. A good test reads like a specification.
 
 ```typescript
-// Goed — test observable behavior
+// Good — tests observable behavior
 test("user can checkout with valid cart", async () => {
   const cart = createCart();
   cart.add(product);
@@ -19,7 +19,7 @@ test("user can checkout with valid cart", async () => {
 **Bad tests** are coupled to implementation. They mock internal collaborators, test private methods, or verify via external means.
 
 ```typescript
-// Slecht — test implementatiedetails
+// Bad — tests implementation details
 test("checkout calls paymentService.process", async () => {
   const mockPayment = jest.mock(paymentService);
   await checkout(cart, payment);
