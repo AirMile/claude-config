@@ -17,7 +17,7 @@ writes:
     concept.seed,
     feature.seedDrift,
   ]
-writes-terminal: [backlog.overview, backlog.siblings]
+writes-terminal: [backlog.overview]
 metadata:
   author: claude-config
   version: 3.2.0
@@ -228,52 +228,9 @@ REQ-002 — {1-line description}
 
 The full requirements table with acceptance criteria and the feature overview table are only written in the plan file (in PHASE 2), not inline in chat.
 
-#### Reuse-Discovery (skip if current feature `type` is `COMPONENT`, `INTEGRATION`, `THEME`, `A11Y`, `PERF`, `INFRA`, `DOCS`, or project is not frontend)
+#### Frontend discovery (frontend projects only — skip if current feature `type` is `COMPONENT`, `INTEGRATION`, `THEME`, `A11Y`, `PERF`, `INFRA`, or `DOCS`)
 
-Scan the extracted requirements (description + acceptance) for UI-element keywords: Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton. Apply project-specific prefixes too.
-
-**Self-reference filter (always apply):** skip a match if the kebab-cased keyword appears in the current feature name (e.g. feature `kelly-slider` → skip "Slider" match, feature `event-modal` → skip "Modal" match). Prevents self-dependencies.
-
-**On 1+ remaining match:**
-
-1. Per match: kebab-case the name (e.g. "Select" → `currency-select` with context prefix when available).
-2. Show inline: `Reuse detected: {kebab-name}` — one line per match, before adding to dependencies.
-3. Append to the in-memory `discoveredComponents[]` (carried to PHASE 4 sync).
-4. Append the kebab-name to the current feature's `dependencies[]`.
-
-**Source:** `"/dev-define"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
-
-For the shared sync implementation of `discoveredComponents` in PHASE 4, see [shared/SKILL-PATTERNS.md#reuse-discovery](../shared/SKILL-PATTERNS.md#reuse-discovery).
-
-#### Page-placement sparring (frontend projects only — skip if `type` is `COMPONENT`, `INTEGRATION`, `THEME`, `A11Y`, `PERF`, `INFRA`, `DOCS`, or for pure API/backend/game features)
-
-After Reuse-Discovery, ask which PAGE(s) this feature surfaces on. This writes `pageHint[]` to `feature.json` (PHASE 3) and enables `/frontend-design` Build to pre-populate its composition menu.
-
-1. Read `.project/backlog.json` → collect all PAGE-type features (any status). Read `project.json#design.pages[]` — collect page names. Merge both lists (dedupe by name) as `$KNOWN_PAGES`.
-
-2. ```yaml
-   header: "Page placement"
-   question: "On which page(s) does '{feature-name}' appear? (select all that apply)"
-   options:
-     - label: "{page-name-1}", description: "Existing PAGE in backlog/design"
-     - label: "{page-name-2}", description: "..."
-     - label: "+ New page", description: "This feature introduces a new screen"
-     - label: "Not on a page (API/service only)", description: "Skip — no UI placement"
-   multiSelect: true
-   ```
-
-   Show max 3 known pages as options; use "Other" for the rest. Always include "+ New page" and "Not on a page" as last two options.
-
-3. **If "+ New page" selected:** follow [Smart-Todo Creation — "new PAGE"](../shared/SKILL-PATTERNS.md#smart-todo-creation). Add the created PAGE name to `$PAGE_HINTS`.
-
-4. **If "Not on a page" selected:** set `$PAGE_HINTS = []`, skip write.
-
-5. Write result as `pageHint: $PAGE_HINTS` into the in-memory feature.json object (written to disk in PHASE 3).
-
-6. **Backlog back-write** (PAGE → feature backref): for each `pageName` in `$PAGE_HINTS` where `pageName` already exists in `backlog.json` as `type === "PAGE"` (idempotent — re-runs and later Page-Discovery seeding in PHASE 4 dedupe on the same array; Smart-Todo "+ new PAGE" earlier already wrote the parent feature into dependencies[]):
-   - Add `{feature-name}` to `page.dependencies[]` (dedupe). Write back to `backlog.json`.
-   - Add to completion report when ≥1 update: `Page deps: {N} PAGEs updated ({comma-separated names})`
-   - Applies to both FEATURE and COMPONENT types — no type filter.
+> **Todo**: Read `.claude/skills/dev-define/references/frontend-discovery.md` and execute both steps: Reuse-Discovery (UI-keyword scan → `discoveredComponents[]` + `dependencies[]`) and Page-placement sparring (→ `pageHint[]` + PAGE backlog back-write).
 
 ---
 
@@ -339,7 +296,7 @@ Design in three steps:
 - `requirements.length ≥ 4`, OR
 - `≥1 durableDecision` was recorded in this PHASE 2.
 
-Below the threshold → skip silently (no plan-file section, no `seedDrift` carry, no sibling-cascade either — same threshold). Rationale: trivial features (config tweaks, single-REQ bug fixes) yield no meaningful drift signal and would turn the check into noise.
+Below the threshold → skip silently (no plan-file section, no `seedDrift` carry). Rationale: trivial features (config tweaks, single-REQ bug fixes) yield no meaningful drift signal and would turn the check into noise.
 
 When triggered: follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ
 descriptions + `acceptance[].then` + `durableDecisions[]`. This skill is in plan
@@ -349,59 +306,6 @@ mode at this point — drift table and proposed rewrite go into the plan file. O
 places). On "Skip" → carry `seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`).
 `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
 
-**Sibling Cascade Check** (last step in PHASE 2, before ExitPlanMode):
-
-**Same trigger condition as Seed Alignment Check** (`requirements.length ≥ 4` OR `≥1 durableDecision`). Below threshold → skip silently.
-
-**Goal**: detect other backlog features whose `dependencies[]` or `description` are made stale by the scope decisions of this feature, so the user reviews and approves the updates in plan mode rather than discovering drift weeks later.
-
-**Inputs** (already in memory from earlier phases):
-
-- Current feature: `name`, `requirements[]`, `architecture` (exports/produced artifacts), `durableDecisions[]`, in-memory `discoveredComponents[]` and `pageHint[]`.
-- Backlog: `data.features[]` from the PHASE 0 read (no re-read needed — the file isn't mutated between PHASE 0 and PHASE 2).
-
-**Scan procedure** (internal, no chat output during scan):
-
-1. Filter siblings: `data.features.filter(f => f.name !== current && !["DONE","CANCELLED"].includes(f.status))`.
-2. For each sibling, evaluate two impact-types:
-   - **Dep-add**: does the sibling's `description` or `name` reference an artifact this feature produces (shared object-types, schemas, utilities, routes, components named in `architecture.components[]`/`files[]`)? If yes AND `current-name ∉ sibling.dependencies[]` → candidate dep-add.
-   - **Description-stale**: does the sibling's `description` describe scope that this feature now owns (e.g. sibling says "with X singleton schema" and this feature defers/owns that schema)? If yes → candidate description-update with concrete suggested append/replace.
-3. Collect candidates into `siblingUpdates[]`:
-   ```json
-   {
-     "name": "page-contact",
-     "field": "dependencies | description",
-     "currentValue": "...",
-     "proposedValue": "...",
-     "reason": "Current feature defines siteSettings singleton + shared contactMethod object-type used by this page."
-   }
-   ```
-
-**Output to plan file** — append a `## Sibling backlog updates` section ONLY when `siblingUpdates.length ≥ 1`:
-
-```md
-## Sibling backlog updates
-
-Detected {N} backlog feature(s) impacted by this feature's scope:
-
-| Feature      | Field        | Current → Proposed                            | Reason                                            |
-| ------------ | ------------ | --------------------------------------------- | ------------------------------------------------- |
-| page-contact | dependencies | + sanity-schemas-foundation                   | Uses siteSettings singleton + shared object-types |
-| page-contact | description  | append "(incl. contactPage singleton schema)" | Page owns its own singleton per scope decision    |
-```
-
-**No drift detected** → skip the section entirely, log `Siblings: ✓ no cascade` inline.
-
-**Resolution**: implicit via plan-mode approval. ExitPlanMode → plan approved → all `siblingUpdates[]` are applied in PHASE 4. The user can reject individual rows by editing the plan file before approval; the PHASE 4 applier reads from the (possibly edited) plan-file table, not from in-memory state.
-
-**Never**:
-
-- Remove existing entries from a sibling's `dependencies[]` (additive only — removals are out-of-scope for this check).
-- Change a sibling's `status`, `phase`, `risk`, or `transition` (lifecycle is owned elsewhere).
-- Create new sibling features (that's Reuse-Discovery / Page-Discovery / Smart-Todo).
-
-`source: "/dev-define"` on every applied mutation.
-
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 3 (writing feature.json).
 
 ### PHASE 3: Write feature.json
@@ -409,8 +313,6 @@ Detected {N} backlog feature(s) impacted by this feature's scope:
 > **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/dev-define/references/feature-json-schema.md` for the full field table, deltaOp rules, durableDecisions categories, and buildSequence structure.
 
 Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema). Field conditions, deltaOp rules, durableDecisions categories, and buildSequence structure: see `references/feature-json-schema.md`.
-
-Include `interviewSummary` from the PHASE 1a closing summary — fields: `goal`, `successCriteria`, `edgeCases`, optional `userContext` (only if that dimension was covered), optional `unresolvedDimensions[]` (only if ≥1 dimension stayed unresolved). Schema: `references/feature-json-schema.md`.
 
 ### PHASE 4: Sync
 
@@ -447,18 +349,6 @@ Write back in parallel:
 - Apply all writes per [shared/SEED.md § Write targets](../shared/SEED.md#write-targets-sync-phase) — that table is canonical for seed-mutation file set and log line.
 
 All writes in this block run in parallel with the existing back-writes (`backlog.json`, `project.json`, `project-context.json`).
-
-#### Apply `siblingUpdates[]` (only if plan file has a `## Sibling backlog updates` section)
-
-- Skip if the section is absent (sub-threshold feature OR no cascade detected).
-- Parse the table from the plan file (`name | field | proposed | reason`). Trust the post-approval content — the user may have removed rows before approving.
-- For each row, mutate the in-memory `backlog.json` representation already loaded for PHASE 4:
-  - `field: "dependencies"` → `feature.dependencies = unique([...feature.dependencies, current-feature-name])`. Never replace; never remove.
-  - `field: "description"` → replace `feature.description` with the proposed value verbatim. (The proposal in the table is the final string, not a diff.)
-- Sibling not found in backlog (e.g. deleted between PHASE 2 and PHASE 4) → log `Siblings: ⚠ {name} not found — skipped` and continue.
-- Log: `Siblings: ✓ {N} update(s) applied ({comma-separated names})`.
-
-This applier writes to the same in-memory backlog object as the existing PHASE 4 mutations and Page-seeding, so all changes land in the single `backlog.json` write at the end of PHASE 4 — no extra I/O.
 
 **Auto-build marking** (after sync):
 
