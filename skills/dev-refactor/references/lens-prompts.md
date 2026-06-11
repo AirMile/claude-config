@@ -88,8 +88,8 @@ CLARITY & QUALITY:
 - Stringly-typed code where constants/enums exist
 - Error-handling smells: over-defensive try/catch around code that can't fail, OR silent swallowing (catch {}, `?? ""` that hides missing data)
 - Leaky abstractions / internal details exposed
-- CODING-RULES.md violations — General + TypeScript sections (R007-R009, T001-T203)
-- For frontend files (.tsx/.jsx/.vue/.svelte): also FRONTEND-RULES.md violations (R001-R208, H001-H209, A001-A203, P001-P203)
+- CODING-RULES.md violations — General + TypeScript + Testing sections (R007-R009, T001-T203, TST001-TST203)
+- For frontend files (.tsx/.jsx/.vue/.svelte): also FRONTEND-RULES.md violations (R001-R208, H001-H209, A001-A203, P001-P203) and Design Token violations (TOKENS.md T101-T111: hex literals / arbitrary-value colors instead of token classes, hardcoded `ms` or `cubic-bezier()` instead of motion tokens)
 - Stack-specific anti-patterns from refactor-patterns.md
 
 COLD-READER (can a new reader understand this without opening 3 files?):
