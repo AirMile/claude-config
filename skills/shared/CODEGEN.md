@@ -57,7 +57,7 @@ Available token categories:
 - Forbidden: `style={{ backgroundColor: "#..." }}` inline
 - Allowed: `bg-primary`, `text-foreground`, `border-border`, `bg-[var(--color-…)]`
 
-The Build route validates this after write via a regex post-pass (see `frontend-design` Build Step 4).
+The Build route validates this after write via a regex post-pass (see `frontend-design` Build Step 8 — Token post-pass).
 
 **Dark mode:**
 
@@ -210,7 +210,7 @@ Use **only** the project's own placeholder asset. External CDN URLs hallucinate 
 | Hero image        | `/placeholder.svg?w=1200&h=600` |
 | Product thumbnail | `/placeholder.svg?w=200&h=200`  |
 
-The Build route validates external URLs after write via a regex post-pass (see `frontend-design` Build Step 4).
+The Build route validates external URLs after write via a regex post-pass (see `frontend-design` Build Step 8 — Token post-pass).
 
 ---
 

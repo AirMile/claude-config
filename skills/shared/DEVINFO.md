@@ -12,17 +12,18 @@ A third key, `writes-terminal:`, declares **intentional terminal writes**: field
 
 ### Namespaces
 
-| Prefix                | File                                                                                                                   | Usage                                                                                                |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `feature.*`           | `.project/features/{name}/feature.json` (top-level)                                                                    | dev-pipeline, game-pipeline (incl. `feature.seedDrift`, `feature.externalRef`)                       |
-| `backlog.status`      | `.project/backlog.json` (feature status transitions)                                                                   | dev-pipeline, game-pipeline                                                                          |
-| `backlog.seedDrift`   | `.project/backlog.json` (`data.seedDrift[]` deferred drift entries)                                                    | project-backlog (write), project-seed / project-brainstorm / project-critique (read + reconcile)     |
-| `backlog.externalRef` | `.project/backlog.json` (per-feature `externalRef` issue link)                                                         | team-issues, team-outsource                                                                          |
-| `concept.*`           | `.project/project-seed.md` + `project.json#concept`                                                                    | project-seed (owner), dev-define / game-define / project-backlog (conditional write)                 |
-| `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | frontend-pipeline                                                                                    |
-| `project.*`           | `.project/project.json` (top-level key, e.g. `stack`, `features`, `endpoints`, `entities`, `team`, `optimizationRuns`) | dashboard-sync skills (core-pull, team-verify, project-todo, project-add, dev-optimize)              |
-| `project.thinking`    | `.project/thinking/*.md` + `.project/features/{name}/thinking.md`                                                      | thinking skills (project-seed, project-brainstorm, project-critique, project-todo, project-research) |
-| `project-context.*`   | `.project/project-context.json` (top-level section: `learnings`, `context`, `architecture`)                            | core-pull, dev/game build + debug + refactor, team-verify, dev-owasp (read)                          |
+| Prefix                | File                                                                                                                   | Usage                                                                                                                              |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `feature.*`           | `.project/features/{name}/feature.json` (top-level)                                                                    | dev-pipeline, game-pipeline (incl. `feature.seedDrift`, `feature.externalRef`)                                                     |
+| `backlog.status`      | `.project/backlog.json` (feature status transitions)                                                                   | dev-pipeline, game-pipeline                                                                                                        |
+| `backlog.seedDrift`   | `.project/backlog.json` (`data.seedDrift[]` deferred drift entries)                                                    | project-backlog (write), project-seed / project-brainstorm / project-critique (read + reconcile)                                   |
+| `backlog.externalRef` | `.project/backlog.json` (per-feature `externalRef` issue link)                                                         | team-issues, team-outsource                                                                                                        |
+| `concept.*`           | `.project/project-seed.md` + `project.json#concept`                                                                    | project-seed (owner), dev-define / game-define / project-backlog (conditional write)                                               |
+| `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | frontend-pipeline                                                                                                                  |
+| `project.*`           | `.project/project.json` (top-level key, e.g. `stack`, `features`, `endpoints`, `entities`, `team`, `optimizationRuns`) | dashboard-sync skills (core-pull, team-verify, project-todo, project-add, dev-optimize)                                            |
+| `project.thinking`    | `.project/thinking/*.md` + `.project/features/{name}/thinking.md`                                                      | thinking skills (project-seed, project-brainstorm, project-critique, project-todo, project-research)                               |
+| `project-context.*`   | `.project/project-context.json` (top-level section: `learnings`, `context`, `architecture`)                            | core-pull, dev/game build + debug + refactor, team-verify, dev-security (read)                                                     |
+| `conventions`         | `.project/conventions.md` (whole file — see [CONVENTIONS.md](CONVENTIONS.md))                                          | core-setup (writer, allowlisted), dev-refactor (fallback write + read), dev-build / dev-verify / game-refactor / game-build (read) |
 
 ### Granularity
 
@@ -138,7 +139,7 @@ Written by `frontend-design` (Build route) when user chooses "Open in convert" a
 
 ### `devinfo.tokenDrift` — Token Drift Log
 
-Written by `frontend-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `frontend-design` (Step 5 and Convert route PHASE 4.1), and `dev-verify`/`dev-refactor` (if feature is in `affectedFeatures`).
+Written by `frontend-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `frontend-design` (Build route Step 10 and Convert route PHASE 4.1), and `dev-verify`/`dev-refactor` (if feature is in `affectedFeatures`).
 
 ```json
 {

@@ -15,7 +15,7 @@ reads:
 writes: [devinfo.handoff, devinfo.tokenDrift, project.design]
 metadata:
   author: claude-config
-  version: 2.11.1
+  version: 2.13.0
   category: frontend
 ---
 
@@ -24,7 +24,7 @@ metadata:
 One skill, two routes:
 
 1. **Design route** — manages project design specification (pages, user flows, design principles, components) in `.project/project.json → design`. Builds code from spec or generates a Claude Design brief. Modes: Capture, Brief, Build.
-2. **Convert route** — converts visual input (sketch, wireframe, Figma/Canva, screenshot, URL, pasted image) into working code using project tokens. Modes: Sketch → high-fi, 1:1 copy, Inspiration.
+2. **Convert route** — converts visual input (sketch, wireframe, Figma/Canva, screenshot, URL, pasted image) into working code using project tokens. Modes: Sketch → high-fi, 1:1 copy, Inspiration. Each mode loads its own procedure file (`references/convert-mode-{mode}.md`) after mode selection.
 
 The router below classifies the argument and dispatches to the appropriate route reference file. Each route file is only loaded in sessions where it is needed.
 

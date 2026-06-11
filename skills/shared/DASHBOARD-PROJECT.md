@@ -448,7 +448,7 @@ For the `project-context.json` writer table see [DASHBOARD-CONTEXT.md](DASHBOARD
 | `/dev-verify`               | `stack.packages`, `endpoints`, `data.entities` | `architecture`, `learnings` (write)                               | PHASE 6 completion       |
 | `/dev-refactor`             | `stack.packages`, `endpoints`, `data.entities` | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
 | `/frontend-design`          | `design` (pages, flows, principles)            | —                                                                 | On each run              |
-| `/frontend-design`          | `stack.packages`, `design.pages`               | —                                                                 | After PHASE 4            |
+| `/frontend-design`          | `stack.packages`, `design.pages`               | —                                                                 | After completion sync    |
 | `/frontend-tokens`          | `design.principles`                            | —                                                                 | After completion         |
 | `/frontend-sketch`          | `design.canvases`                              | —                                                                 | new / generate / promote |
 | `/game-define`              | `data.entities`, `stack.packages`              | `architecture` (write)                                            | PHASE 6                  |

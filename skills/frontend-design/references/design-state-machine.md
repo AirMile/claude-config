@@ -33,15 +33,16 @@ ACTION_SELECT → DELETE (populated)
 ACTION_SELECT → RESTORE (populated, history exists)
 ACTION_SELECT → CONVERT (populated, via "Other")
 
-CREATE → CONFIRM
+CREATE → POSTFLIGHT (plan approval counts as confirm — Create runs in plan mode, see route-create.md)
 IMPORT → CONFIRM
 BUILD → BUILD_ENTITY (choose PAGE or COMPONENT)
 BUILD_ENTITY → DESIGN_DIRECTION
 DESIGN_DIRECTION → ALTERNATIVES_SELECT (≥2 variants or sections)
 DESIGN_DIRECTION → BUILD_CODE (single-variant / stateless — skip alternatives)
 ALTERNATIVES_SELECT → BUILD_CODE (layout chosen)
-BUILD_CODE → BUILD_VERIFY (post-write checks pass)
+BUILD_CODE → BUILD_SMOKE (post-write checks pass)
 BUILD_CODE → ACTION_SELECT (post-write check failed → "Fix manually")
+BUILD_SMOKE → BUILD_VERIFY (smoke pass/skip/fail — non-blocking)
 BUILD_VERIFY → BUILD_COMPLETE ($VERIFY_STATUS = PASS or SKIPPED)
 BUILD_VERIFY → ACTION_SELECT ($VERIFY_STATUS = FAIL → "Fix manually")
 VIEW → ACTION_SELECT ("Edit")
@@ -66,3 +67,5 @@ POSTFLIGHT → RECOVER (fail)
 BUILD_COMPLETE → [*]
 COMPLETE → [*]
 ```
+
+Note: BUILD_ENTITY → DESIGN_DIRECTION → BUILD PLAN run in plan mode (entered after worktree setup, exited at the `ExitPlanMode` point in route-build.md Step 7). CREATE runs in plan mode per route-create.md.

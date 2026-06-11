@@ -71,7 +71,7 @@ Read .project/tmp/source-capture.png
 
 Store the resolved source image reference as `$SOURCE_IMAGE` for the verification loop.
 
-> **Todo**: Use the `EnterPlanMode` tool now — Phases 0.2 (Visual Analysis), 0.3 (Mode), 0.4 (Scope), and 1.1–1.2 (Token Mapping) all benefit from Opus-level vision and design reasoning. `AskUserQuestion` modals and Bash reads remain available inside plan mode; only Write/Edit are blocked, which is fine until Phase 2.
+> **Todo**: Use the `EnterPlanMode` tool now — Phases 0.2 (Visual Analysis), 0.3 (Mode), 0.4 (Scope), and the mode file's PHASE 1 all benefit from Opus-level vision and design reasoning. `AskUserQuestion` modals and Bash reads remain available inside plan mode; only Write/Edit are blocked, which is fine until Phase 2. Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
 
 ### 0.2 Visual Analysis
 
@@ -136,6 +136,8 @@ Note: show `(Recommended)` after the option that matches `$FIDELITY` (low/medium
 
 Store as `$MODE` (sketch | copy | inspiration).
 
+> **Todo**: Read '.claude/skills/frontend-design/references/convert-mode-{$MODE}.md' — it defines this mode's theme requirement (applied in 0.6), PHASE 1 procedure with its `ExitPlanMode` point, codegen rules (applied in 2.2), and verification thresholds (applied in PHASE 3).
+
 ### 0.4 Scope Detection
 
 Based on the visual analysis (0.2), confirm the output scope:
@@ -179,16 +181,23 @@ Feature-name: use backlog-matched feature name from 0.5 (page scope), or compone
 
 **Theme check:**
 
-Check `.project/project.json` → `theme` section.
-
-- **Theme populated + sketch or inspiration mode:** Read and store tokens. Mandatory for mapping.
-- **Theme populated + copy mode:** Read as reference. Use for shared utilities (cn(), Tailwind config) but not for color/font values.
-- **No theme + sketch or inspiration mode:** Abort with suggestion: `"This mode requires a theme. Run /frontend-tokens first or choose 1:1 copy."`
-- **No theme + copy mode:** Proceed with extracted values from source image.
+Check `.project/project.json` → `theme` section. Apply the **Theme Requirement** section from the loaded `convert-mode-{$MODE}.md` (mandatory with abort for sketch/inspiration, optional for copy).
 
 ```
 Theme: [Available | Not available]
 Mode:  [1:1 copy | Inspiration | Sketch → high-fi (fidelity: {$FIDELITY})]
+```
+
+**Dark-mode fallback:** if `$ANALYSIS` dark mode is `dark only` or `both visible` AND `theme.modes.dark` is missing AND `$MODE` ≠ copy:
+
+```yaml
+header: "Dark mode"
+question: "The source shows a dark variant, but your theme has no dark mode configured. How to proceed?"
+options:
+  - label: "Convert as light mode using theme (Recommended)", description: "Generate the light variant only — add dark mode later via /frontend-tokens"
+  - label: "Add dark mode first", description: "Stop here, run /frontend-tokens, then re-run this conversion"
+  - label: "Cancel", description: "Stop without changes"
+multiSelect: false
 ```
 
 **Framework detection:**
@@ -225,70 +234,17 @@ Existing:   [N] components found
 
 ---
 
-## PHASE 1: Token Mapping (Inspiration and Sketch mode)
+## PHASE 1: Mode Procedure
 
-**Skip this phase entirely if `$MODE` = copy.**
+Execute the **PHASE 1** section of the loaded `convert-mode-{$MODE}.md`:
 
-### 1.0 Sketch mode: Fidelity filter (sketch mode only)
+- **copy** → Fidelity Extraction (ground-truth computed styles for URL sources, exact-value table)
+- **inspiration** → Inspiration Brief (questioning round per `shared/QUESTIONING.md`) + Token Mapping
+- **sketch** → Fidelity Filter + Token Mapping
 
-**Skip if `$MODE` ≠ sketch.**
+Every mode ends PHASE 1 with a user-confirmed table and its own `ExitPlanMode` point — after that, all remaining phases (codegen, verification, completion) run in Sonnet.
 
-Before mapping, determine which properties from `$ANALYSIS` are **authoritative** (take from source) vs **overridden** (fill in from tokens + `shared/DESIGN.md`):
-
-| Property         | low fidelity       | medium fidelity         |
-| ---------------- | ------------------ | ----------------------- |
-| Layout/structure | from sketch        | from sketch             |
-| Spacing          | tokens only        | tokens (sketch as hint) |
-| Colors           | tokens only        | tokens (sketch as hint) |
-| Typography       | tokens + DESIGN.md | tokens (sketch as hint) |
-| A11y scaffold    | shared/CODEGEN.md  | shared/CODEGEN.md       |
-
-**"sketch as hint"**: use the rough value to guide token selection (e.g. a dark section in the sketch → pick a dark background token) but never copy raw hex/font values directly.
-
-Proceed to 1.1 — token mapping runs identically for sketch and inspiration, applying this filter.
-
-### 1.1 Extract and Map
-
-Extract visual properties from the source image and map them to the closest theme tokens (from project.json):
-
-```
-TOKEN MAPPING
-════════════════════════════════════════════════════════════
-
-Colors:
-  Source              → Theme Token
-  #FF5733 (accent)    → primary-500 (#3B82F6)
-  #333333 (heading)   → foreground (#1a1a2e)
-  #F5F5F5 (bg)        → background (#ffffff)
-  #666666 (body text) → muted-foreground (#6B7280)
-
-Typography:
-  Source              → Theme Token
-  Bold sans-serif     → heading (Inter, 700)
-  Regular sans-serif  → body (Inter, 400)
-
-Spacing:
-  Source (approx.)    → Theme Token
-  ~16px sections      → spacing-4 (16px)
-  ~32px large gaps    → spacing-8 (32px)
-
-════════════════════════════════════════════════════════════
-```
-
-### 1.2 Confirm Mapping
-
-```yaml
-header: "Token Mapping"
-question: "Is this mapping from source design to your project tokens correct?"
-options:
-  - label: "Yes, continue (Recommended)", description: "Use this mapping for code generation"
-  - label: "Adjust", description: "I want to change specific mappings"
-multiSelect: false
-```
-
-If "Adjust": ask which mappings to change, update, re-confirm.
-
-> **Todo**: Use the `ExitPlanMode` tool once the mapping is confirmed — present SOURCE ANALYSIS + TOKEN MAPPING as the plan output. After user approval, all remaining phases (codegen, verification, completion) run in Sonnet. Do NOT re-enter plan mode later in this run.
+**Patch paths (any scope = patch) skip PHASE 1 entirely** — their plan-mode exit happened in patch detection Step 4.
 
 ---
 
@@ -419,6 +375,7 @@ This route must **NEVER**:
 - Generate code without first analyzing the source image
 - Use "Lorem ipsum" — always use contextual content from the source or realistic placeholders
 - Run sketch or inspiration mode without theme (project.json#theme empty)
+- Reach PHASE 2 with plan mode still active — every path has exactly one `ExitPlanMode` point (mode file 1.2, or patch detection Step 4)
 - Skip the visual verification loop when Playwright is available
 - Regenerate components that already exist in the codebase — import and reuse
 - Exceed 3 verification rounds
@@ -427,7 +384,7 @@ This route must **ALWAYS**:
 
 - Resolve visual input before any code generation
 - Confirm mode (1:1 vs inspiration vs sketch) with user
-- Confirm token mapping with user in inspiration and sketch mode
+- Confirm the mode's PHASE 1 output (token mapping / fidelity table) with the user
 - Follow `shared/FRONTEND-RULES.md` (React/Next.js, HTML/CSS, A-series) and `shared/PATTERNS.md` (Component, Layout)
 - Detect and match the project's framework
 - Run the Playwright verification loop (unless tools unavailable)

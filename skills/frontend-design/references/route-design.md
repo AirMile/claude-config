@@ -306,7 +306,7 @@ If "Edit": loop back to PHASE 1 (ACTION_SELECT with populated-state options).
 
 ### Route: Build (In-Claude-Code Code Generation)
 
-> **Todo**: Read `.claude/skills/frontend-design/references/route-build.md` for the full build flow: entity selection, spec lookup, page composition, layout archetype, code generation, post-write checks, backlog sync, and block inventory.
+> **Todo**: Read `.claude/skills/frontend-design/references/route-build.md` for the full build flow: entity selection, spec lookup + design levers, page composition, design directions (plan mode), code generation, post-write checks, render smoke check, and completion sync (backlog + block inventory).
 
 **Trigger:** only reachable if `$HAS_BUILD_CANDIDATES = true` (detected in PHASE 1). Steps 0–11 are in the reference file above.
 

@@ -1,6 +1,6 @@
 # Route: Build (In-Claude-Code Code Generation)
 
-Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. See `../shared/CODEGEN.md` for the shared code-gen patterns also used by the Convert route.
+Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. Flow: entity selection → spec lookup + design levers → page composition → design directions (plan mode) → code generation → post-write checks → render smoke check → completion sync. See `../../shared/CODEGEN.md` for the shared code-gen patterns also used by the Convert route.
 
 **Trigger:** only reachable if `$HAS_BUILD_CANDIDATES = true` (detected in PHASE 1).
 
@@ -14,7 +14,7 @@ Generates working code for PAGE or COMPONENT features with `status: DEF` and no 
 
 See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "designing"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`) and skip entity/candidate selection modals.
 
-On successful code generation: remove `transition`, set `status: "DOING"`, `stage: "built"`. Handled by Step 10d — this description is informational only.
+On successful code generation: remove `transition`, set `status: "DOING"`, `stage: "built"`. Handled by completion sync 10d (`build-completion-sync.md`) — this description is informational only.
 
 #### Step 1: Entity selection
 
@@ -71,17 +71,37 @@ Store as `$TARGET_COMPONENT`. Store `$TARGET` = `$TARGET_PAGE` or `$TARGET_COMPO
 
 Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = $TARGET`. Creates an isolated worktree for this build so generated code lands on a separate branch. Skip if already in a worktree (procedure detects).
 
+#### Step 3b: Enter Plan Mode
+
+> **Todo**: Use the `EnterPlanMode` tool now — Steps 4–7 (spec questioning, design levers, page composition, design directions, BUILD PLAN) all benefit from Opus-level design reasoning. `AskUserQuestion` modals and file reads remain available inside plan mode; only Write/Edit are blocked, which is fine until codegen. Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
+
 #### Step 4: Spec lookup (entity-agnostic)
+
+**Step 4.0 — Design levers pre-flight.** Read `project.json#theme` and summarize the levers available for direction composition (Step 5). Warn-only — never abort:
+
+```
+DESIGN LEVERS — {$TARGET}
+═══════════════════════════════════════════════
+Dark mode:    [✓ theme.modes.dark | —]
+Motion:       [{motion.pack} pack, {N} choreography entries | —]
+Glass:        [✓ surfaces.glass.enabled | —]
+Semantic:     [{N} semantic colors: {names} | —]
+Type scale:   [{N} sizes | Tailwind defaults]
+Spacing:      [{scale summary} | Tailwind defaults]
+═══════════════════════════════════════════════
+```
+
+If `theme` is empty: show `⚠ No theme tokens — Build falls back to Tailwind defaults; consider /frontend-tokens first.` and continue. Store as `$DESIGN_LEVERS`.
 
 **If `$TARGET_TYPE = PAGE`:**
 
 1. Look up `.project/features/{$TARGET}/feature.json` → read as spec source (primary).
 2. Fallback: `design.pages[]` filtered by name matching `$TARGET`.
-3. If both empty → ask three structured questions:
+3. If both empty → ask three structured questions (form choice, anchoring, and escalation per `shared/QUESTIONING.md`):
    1. **Purpose + sections**: "What does this page do? List the sections needed (one per line)."
    2. **Primary action**: "What is the single most important action a user performs here?" — free text
    3. **States**: multi-select — `default` / `loading` / `empty` / `error` / `authenticated-only`
-      → save answers as inline spec and write to `design.pages[]` for later reuse.
+      → save answers as `$INLINE_SPEC` (write to `design.pages[]` is deferred to completion sync 10f — plan mode blocks writes).
 
 Show spec:
 
@@ -96,11 +116,11 @@ Routes:   {route-patterns}
 
 1. Look up `.project/features/{$TARGET}/feature.json` → read as spec source (primary).
 2. Fallback: `design.components[]` filtered by name matching `$TARGET`.
-3. If both empty → ask three structured questions:
+3. If both empty → ask three structured questions (form choice, anchoring, and escalation per `shared/QUESTIONING.md`):
    1. **States**: multi-select — `default` / `hover` / `disabled` / `loading` / `error` / `active` / `checked`
    2. **Props**: "Which props does this component accept? (one per line, e.g. `label`, `onClick`, `disabled?`)"
    3. **Required interaction**: single-select — `keyboard only` / `pointer only` / `both`
-      → save answers as inline spec and write to `design.components[]` for later reuse.
+      → save answers as `$INLINE_SPEC` (write to `design.components[]` is deferred to completion sync 10f — plan mode blocks writes).
 
 Show spec:
 
@@ -124,37 +144,73 @@ multiSelect: false
 
 #### Step 4b: Page Composition (PAGE entities only — skip for COMPONENT)
 
-> **Todo**: Read `.claude/skills/frontend-design/references/page-compose.md` and follow the composition flow. Store result as `$COMPOSITION`.
+> **Todo**: Read `.claude/skills/frontend-design/references/page-compose.md` and follow the composition flow. Store result as `$COMPOSITION`. Runs inside plan mode — smart-todo design/backlog writes are collected in `$PENDING_DESIGN_WRITES` and flushed in completion sync 10f (see page-compose.md Step 3).
 
 ---
 
-#### Step 5: Layout Archetype
+#### Step 5: Design Directions
 
-Single question that determines the structural layout before code generation. Answered once; stored as `$CHOSEN_LAYOUT`.
+This is the moment Claude determines the design: theme levers + spec → 2-3 concrete, token-anchored design directions. Each direction is a complete visual stance, not just a wireframe choice.
 
-**PAGE:**
+**Inputs:** `$DESIGN_LEVERS` (Step 4.0), the confirmed spec, `$COMPOSITION` (PAGE only), and `shared/DESIGN.md` (anti-patterns, 60-30-10, hierarchy, motion timing) — re-read the principles before composing.
+
+**Skip-path (state machine: DESIGN_DIRECTION → BUILD_CODE):** if `$TARGET_TYPE = COMPONENT` AND the spec has ≤1 variant AND no sections (single-variant/stateless): compose ONE direction internally, show it as a one-line `Direction: {summary}` and go directly to Step 7 — no AskUserQuestion. All PAGE targets and multi-variant COMPONENTs continue below (DESIGN_DIRECTION → ALTERNATIVES_SELECT).
+
+**Compose 2-3 directions.** Each direction is a named combination of three axes:
+
+1. **Layout archetype** — PAGE: `single column` / `sidebar` / `hero + grid` / `split screen` / `dashboard grid`. COMPONENT: structural shape (inline / stacked / grouped).
+2. **Hierarchy & density** — what dominates (display heading, data, imagery), airy vs compact, alignment stance (left-aligned editorial vs centered hero).
+3. **Concrete token usage** — name ACTUAL tokens from `$DESIGN_LEVERS`: which accent goes where ("primary on CTA + active nav only"), semantic colors in play, type-scale steps for H1/body, surface treatment (glass only if enabled), choreography entries (only if motion pack ≠ none).
+
+Composition rules:
+
+- Directions differ on archetype OR hierarchy/density — never three accent-swaps of the same layout.
+- Only use levers that exist: no dark-mode rationale without `theme.modes.dark`, no glass without `surfaces.glass.enabled`, no choreography without a motion pack.
+- ≥3 concrete token decisions per direction, named by token name — generic phrases ("modern look") are forbidden.
+- `shared/DESIGN.md` anti-patterns apply. Vary between runs — two consecutive builds must not converge on the same direction.
+
+Present via AskUserQuestion with `preview` — an ASCII layout mockup per option, rendered side-by-side. **Previews require `multiSelect: false`.** Keep mockups ≤16 lines × ≤44 cols; annotate token decisions inside or below the frame:
 
 ```yaml
-header: "Layout"
-question: "Which layout archetype fits {$TARGET}?"
+header: "Design direction"
+question: "Which design direction fits {$TARGET}?"
+multiSelect: false # required — previews only render for single-select
 options:
-  - label: "Single column", description: "Stacked sections, full-width — ideal for long-form content or forms"
-  - label: "Sidebar", description: "Navigation or filters sidebar + main content area"
-  - label: "Hero + grid", description: "Hero banner at the top + responsive card or list grid below"
-  - label: "Split screen", description: "Two equal panels side-by-side — auth / onboarding / comparison"
-  - label: "Dashboard grid", description: "Multi-section grid with stats, charts, or lists"
-multiSelect: false
+  - label: "{Direction 1 name} (Recommended)"
+    description: "{archetype} — {hierarchy stance} — {headline token decision}"
+    preview: |
+      ┌──────────────────────────────────────┐
+      │ nav                 [primary] Action │
+      ├──────────┬───────────────────────────┤
+      │ sidebar  │ H1 — text-4xl/display     │
+      │ bg-muted │ body — muted-foreground   │
+      │          │ ┌────────┐ ┌────────┐     │
+      │ • item   │ │ stat   │ │ stat   │     │
+      │ • active │ │ card   │ │ card   │     │
+      │   ▔▔▔▔   │ └────────┘ └────────┘     │
+      │          │ table — tabular-nums      │
+      └──────────┴───────────────────────────┘
+      accent: primary on CTA + active nav only
+      motion: choreography.stagger on card grid
+  - label: "{Direction 2 name}"
+    description: "{...}"
+    preview: |
+      {ASCII mockup 2 — different archetype or hierarchy}
+  - label: "{Direction 3 name}" # omit if only 2 meaningful directions exist
+    description: "{...}"
+    preview: |
+      {ASCII mockup 3}
 ```
 
-**COMPONENT:** skip this step. Layout is determined by the component's spec (`scope`, `variants`). Go directly to Step 7.
+If the user answers via "Other": treat the free text as direction adjustments, recompose once, re-present.
 
-Store as `$CHOSEN_LAYOUT`.
+Store `$DESIGN_DIRECTION = { name, archetype, hierarchy, tokens[], motion, surfaces }` and `$CHOSEN_LAYOUT = $DESIGN_DIRECTION.archetype` (consumed by the Step 7 BUILD PLAN).
 
 ---
 
 #### Step 7: Generate (entity-aware)
 
-Consult `../shared/CODEGEN.md` for full patterns. Output path determined by entity type and scope:
+Consult `../../shared/CODEGEN.md` for full patterns. Output path determined by entity type and scope:
 
 | Entity              | Output path                                          | Sub-output                          |
 | ------------------- | ---------------------------------------------------- | ----------------------------------- |
@@ -191,8 +247,9 @@ export default function {Name}Demo() {
 ```
 BUILD PLAN: {$TARGET} ({$TARGET_TYPE})
 ═══════════════════════════════════════════════════════════════
+Direction:    {$DESIGN_DIRECTION.name} — {one-line summary}
 Structure:    {output paths — one line per file}
-Layout:       {$CHOSEN_LAYOUT — or "n/a" for COMPONENT}
+Layout:       {$CHOSEN_LAYOUT}
 Tokens used:  {token names to be used}
 Blocks reused: {imports from components[] — or "none"}
 Images:       {placeholder strategy or "n/a"}
@@ -201,17 +258,11 @@ Caveats:      {missing deps, missing tokens, auto-patch layout, etc. — or "non
 ═══════════════════════════════════════════════════════════════
 ```
 
-```yaml
-header: "Build plan"
-question: "Plan correct? Files will be written immediately after approval."
-options:
-  - label: "Write files (Recommended)", description: "Plan is correct — generate and write now"
-  - label: "Adjust plan", description: "I want to change something — update the plan and come back"
-  - label: "Cancel", description: "Stop this build"
-multiSelect: false
-```
+> **Todo**: Use the `ExitPlanMode` tool once the BUILD PLAN is composed — present the BUILD PLAN plus the chosen design direction ({$DESIGN_DIRECTION.name}) as the plan output. Plan rejection covers "adjust plan". After user approval, codegen and all remaining steps (post-write checks, smoke, completion sync) run in Sonnet. Do NOT re-enter plan mode later in this run. Skip this exit if plan mode is no longer active or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
 
 After approval — generate and write immediately:
+
+- Inject a `DESIGN DIRECTION:` header (full `$DESIGN_DIRECTION` — name, hierarchy, tokens, motion, surfaces) into the generation prompt — these token decisions are binding
 
 - Semantic HTML layout (PAGE) or cva component (COMPONENT) based on spec + `$CHOSEN_LAYOUT`
 - Reuse existing components where applicable (import via their paths in `components[]`)
@@ -221,10 +272,11 @@ After approval — generate and write immediately:
 
 #### Step 8: Post-write checks
 
-**Hex post-pass** — across generated files:
+**Token post-pass** — across generated files:
 
 - `#[0-9a-fA-F]{3,8}` in `className` or inline-style props (outside `//` and `/* */` comments)
 - Arbitrary Tailwind color values (`bg-[#`, `text-[#`, `border-[#`)
+- Arbitrary spacing/size values (`p-[16px]`, `gap-[24px]`, `mt-[32px]`, `w-[340px]`) — must use the standard Tailwind scale or spacing tokens (R103). Build output has no visual source that justifies arbitrary values — token-pure, same bar as convert's inspiration mode (convert-verification-loop.md 3.2b)
 - External placeholder URLs (`images.unsplash.com`, `picsum.photos`, `placehold.co`, `fakeimg.pl`)
 
 On match → show violation + AskUserQuestion:
@@ -233,7 +285,7 @@ On match → show violation + AskUserQuestion:
 header: "Code violation"
 question: "Found: {violation-type} in {file}:{line}. How to proceed?"
 options:
-  - label: "Auto-fix (Recommended)", description: "Map to nearest theme token or /placeholder.svg"
+  - label: "Auto-fix (Recommended)", description: "Map to nearest theme token, standard scale step, or /placeholder.svg"
   - label: "Fix manually", description: "I'll fix it myself"
   - label: "Ignore", description: "Intentionally deviate from the token rule"
 multiSelect: false
@@ -245,9 +297,21 @@ multiSelect: false
 - Bare: verify presence in `package.json`
 - On unresolved → show list, note as missing dependency in completion report
 
+#### Step 8b: Render smoke check
+
+Single-round render check — catches crashes and broken imports, NOT visual quality (that stays /frontend-check's job). If `playwright-cli` or a dev server is unavailable (detection per `shared/PLAYWRIGHT.md`): skip silently, set `$SMOKE = "SKIPPED"`.
+
+1. Route: PAGE → its route pattern; COMPONENT → demo route `/_dev/components/{name}`.
+2. `playwright-cli goto {url}` → wait `networkidle` → screenshot to `.project/tmp/smoke-render-{$TARGET}.png` (store as `$SMOKE_SHOT`) → `playwright-cli console error`.
+3. Filter console output per `shared/PLAYWRIGHT.md → Default Ignore Patterns`.
+4. Renders + no unfiltered errors → `$SMOKE = "PASS"`.
+5. Crash/blank/console errors → apply ONE targeted fix (import/crash only), re-run steps 2-3 once. Still failing → `$SMOKE = "FAIL"`, store first error as `$SMOKE_ERROR`, continue (non-blocking). No multi-round loop.
+
+`$SMOKE_SHOT` backs `devinfo.handoff.buildScreenshot` if a build-incomplete handoff is later written (schema: `shared/DEVINFO.md § devinfo.handoff`).
+
 #### Step 9: Hand off to /frontend-check (optional)
 
-After Step 8 passes, offer a one-question handoff:
+After Step 8 passes, offer a one-question handoff. If `$SMOKE = "FAIL"`: present "Yes" as strongly recommended and include `$SMOKE_ERROR` in the question text.
 
 ```yaml
 header: "Verify"
@@ -267,101 +331,9 @@ If "Skip": `$VERIFY_STATUS = "SKIPPED"`. Note in devinfo that verification is pe
 
 Step 10 reads `$VERIFY_STATUS` to set `feature.audit.buildSmokeStatus`.
 
-#### Step 10: Backlog sync + Block inventory + Drift cleanup
+#### Step 10: Completion sync (backlog + block inventory + drift cleanup)
 
-10a–10c run unconditionally after Step 8 succeeds — they are static analyses on `$GENERATED_FILES`. Only 10d (Backlog sync) reads `$VERIFY_STATUS` to decide the final feature stage. 10e (Gap-discovery) runs always.
-
-**10a. Block inventory**:
-
-Parse all `$GENERATED_FILES` → filter on component paths (`_components/`, `src/components/`, `app/components/`). Skip page files (`page.tsx`, `+page.svelte`, route-level files). Per component file:
-
-1. Extract named exports with regex: `export (function|const|default) (\w+)` + `export { … }`
-2. Detect cva-variants if `cva(` present: extract `variants.variant[]` and `variants.size[]`
-3. Store as entry: `{ name, src, exports, variants, sizes }`
-4. Conflict check on `components[].name`:
-   - Same name + different `src` → skip + note as conflict
-   - Same name + same `src` → merge (idempotent re-run)
-   - New → append
-5. Read `.project/project-context.json` → update `components[]` → Write back (only if changes)
-
-**10b. Bidirectional linking**:
-
-Parse imports from all `$GENERATED_FILES`:
-
-- Scan for `from ['"](.+?)['"]` — extract component names from import paths
-- Match against `design.components[].name` (case-insensitive)
-
-**If `$TARGET_TYPE = PAGE`:**
-
-- Populate `design.pages[{$TARGET}].uses[]` → list of detected component names (dedupe)
-- For each matched component: append `{$TARGET}` to `design.components[{name}].usedIn[]` (dedupe)
-
-**If `$TARGET_TYPE = COMPONENT`:**
-
-- Set `design.components[{$TARGET}].status = "BLT"`
-- If sub-components generated as `_components/` or inline (complex pattern) → show promote prompt:
-  ```yaml
-  header: "Sub-components found"
-  question: "Do you want to add these as shared COMPONENTs in the backlog?"
-  options:
-    - label: "Yes, as COMPONENT-todo", description: "{sub-component-name} → backlog"
-    - label: "No, keep inline", description: "Stays part of this component"
-  multiSelect: true
-  ```
-
-Write `project.json#design` back after sync.
-
-**10c. TokenDrift cleanup**:
-
-Read `.project/session/devinfo.json` → check `tokenDrift.affectedFeatures`. If `{$TARGET}` is in it: remove from the list. If list is then empty: set `tokenDrift.resolved = true`. Write back.
-
-**10d. Backlog sync**:
-
-Parse `.project/backlog.json` → match on `name === {$TARGET}`:
-
-Map `$VERIFY_STATUS` (from Step 9) to backlog state:
-
-- `"PASS"` → `feature.status = "DOING"` + `delete feature.transition` + `feature.stage = "built"` + `feature.audit.buildSmokeStatus = "PASS"` + `data.updated = today`
-- `"SKIPPED"` → identical to PASS but `feature.audit.buildSmokeStatus = "SKIPPED"`
-- `"FAIL"` → backlog status **unchanged** (code not confirmed working). Set `feature.audit.buildSmokeStatus = "FAIL"` + `feature.audit.buildSmokeError = $VERIFY_ERROR`
-- **No match or no backlog** → silent skip. Add to completion report: `Backlog: feature not found — skipping`.
-
-**10d.1. Composition persistence** (PAGE only, `$TARGET_TYPE === "PAGE"` and `$VERIFY_STATUS !== "FAIL"`):
-
-For the matched page entry in `data.features[]`:
-
-- Set `dependencies` to union of existing `dependencies[]` and all names from `$COMPOSITION.features` + `$COMPOSITION.components`.
-
-For each name in `$COMPOSITION.features[].name`:
-
-- Glob `.project/features/*/feature.json` → find where `feature.name === name`.
-- Read file, add `$TARGET` to `pageHint[]` (dedupe), write back.
-- No feature.json found for this name → skip silently (pageHint gets written when `/dev-define` runs).
-
-Store `$COMP_FEAT_COUNT = len($COMPOSITION.features)`, `$COMP_COMP_COUNT = len($COMPOSITION.components)`, `$PAGEHINT_COUNT = number of feature.json files updated`.
-
-Edit back to `.project/backlog.json` (see `shared/BACKLOG.md → Lifecycle Protocol → Write`).
-
-Store block inventory counters as `$INV_NEW`, `$INV_UPDATED`, `$INV_CONFLICTS` for use in Step 11.
-
-**10d.2. Setup context traceability** (only if external context fetched successfully, i.e. `$VERCEL_CONTEXT ≠ false`):
-
-Read `.project/project.json` → append-or-replace entry in `theme.setupContext[]` (key on `appliedBy`):
-
-```json
-{
-  "source": "vercel-labs/web-interface-guidelines",
-  "url": "https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md",
-  "fetchedAt": "<ISO-8601>",
-  "appliedBy": "frontend-design@2.11.0"
-}
-```
-
-Write back. Skip if `$VERCEL_CONTEXT = false`.
-
-**10e. Gap-discovery** (always, regardless of verification status):
-
-Follow [Discovery — Gap-Discovery](../shared/SKILL-PATTERNS.md#gap-discovery), Trigger C (Build post code-gen): scan `$GENERATED_FILES` for stub handlers and show AskUserQuestion per found gap. If no gaps: skip step.
+> **Todo**: Read '.claude/skills/frontend-design/references/build-completion-sync.md' and execute steps 10a–10f. Runs unconditionally after Step 8 succeeds; only 10d reads `$VERIFY_STATUS`/`$SMOKE`.
 
 #### Step 11: Completion report
 
@@ -377,6 +349,7 @@ Components:       {reused components}
 Block inventory:  +{$INV_NEW} new, ~{$INV_UPDATED} updated, !{$INV_CONFLICTS} conflict
 Linked:           {uses/usedIn sync — or "n/a"}
 Missing deps:     {list or "none"}
+Smoke:            {$SMOKE} ({$SMOKE_SHOT} | skipped — Playwright unavailable)
 Verification:     {$VERIFY_STATUS}
 Verify error:     {$VERIFY_ERROR}   (only shown when $VERIFY_STATUS = "FAIL")
 Gaps:             {N linked | M created | K pending | "none"}
@@ -384,3 +357,14 @@ Page deps:        +{$COMP_FEAT_COUNT} feature deps, {$COMP_COMP_COUNT} component
 pageHint:         {$PAGEHINT_COUNT} features updated   (PAGE only)
 Next:             /frontend-check {$TARGET} — moves PAGE to DONE on PASS   (PAGE only, when $VERIFY_STATUS != FAIL)
 ```
+
+---
+
+## Restrictions
+
+This route must **NEVER**:
+
+- Reach Step 7 codegen with plan mode still active — exactly one `ExitPlanMode` point (Step 7 BUILD PLAN)
+- Write `.project/` or source files between Step 3b and the Step 7 exit — defer to completion sync 10f
+- Present design directions that reference levers the theme doesn't have
+- Run more than one smoke fix-round (multi-round verification is /frontend-check's job)

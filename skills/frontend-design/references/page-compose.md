@@ -62,15 +62,11 @@ Show max 4 feature candidates + max 2 component candidates. Use "Other" for the 
 
 **If "+ New component" selected:**
 
-Follow [Smart-Todo Creation — "new component"](../../shared/SKILL-PATTERNS.md#smart-todo-creation).
-
-Add the created component name to the selection and to `design.components[]` (status: "IDEA").
+Follow [Smart-Todo Creation — "new component"](../../shared/SKILL-PATTERNS.md#smart-todo-creation), but **defer all writes**: route-build runs this step inside plan mode. Add the created component name to the selection, and collect the `design.components[]` entry (status: "IDEA") plus any backlog push in `$PENDING_DESIGN_WRITES` — flushed in `build-completion-sync.md → 10f`.
 
 **If "+ New feature" selected:**
 
-Follow [Smart-Todo Creation — "new feature"](../../shared/SKILL-PATTERNS.md#smart-todo-creation).
-
-Add the created feature name to the selection.
+Follow [Smart-Todo Creation — "new feature"](../../shared/SKILL-PATTERNS.md#smart-todo-creation), with the same write deferral: add the created feature name to the selection, collect the backlog push in `$PENDING_DESIGN_WRITES`.
 
 ---
 
@@ -88,7 +84,7 @@ Store as `$COMPOSITION`:
 }
 ```
 
-**Write backlog update** (as part of Step 10d.1, not here): set `page-task.dependencies[]` to the union of selected feature + component names, and write back `pageHint[]` to each selected feature.json. See `route-build.md → Step 10d.1` for the implementation.
+**Write backlog update** (as part of completion sync 10d.1, not here): set `page-task.dependencies[]` to the union of selected feature + component names, and write back `pageHint[]` to each selected feature.json. See `build-completion-sync.md → 10d.1` for the implementation.
 
 ---
 

@@ -22,10 +22,9 @@ If `$STATES` is non-empty: generate state variants alongside the happy path.
 
 All states follow the same `dark:` and responsive logic as the happy path.
 
-**Mode-specific** (see `../examples/` for gold standard examples per mode):
+**Mode-specific:**
 
-- **1:1 copy:** Match source colors, fonts, spacing as closely as possible. Use arbitrary Tailwind values (`bg-[#FF5733]`, `text-[20px]`) when no standard class matches. Prioritize visual fidelity. Reference: `../examples/PricingPage-1to1.tsx`
-- **Inspiration:** Use only theme tokens (from project.json) and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values. Reference: `../examples/PricingPage-inspiration.tsx`
+Apply the **Codegen Rules** section of the loaded `convert-mode-{$MODE}.md` (already in context — do not re-read). Gold standards: `../examples/PricingPage-1to1.tsx` (copy), `../examples/PricingPage-inspiration.tsx` (inspiration/sketch). Patch scope does not reach this file (Patch Guard applies Edits instead).
 
 **Dark mode classes:**
 

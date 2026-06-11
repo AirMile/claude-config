@@ -54,6 +54,6 @@ options:
 multiSelect: false
 ```
 
-Store as `$PATCH_SECTIONS`. If "Full rewrite instead": restore scope to "Single component" and continue with normal PHASE 0.5.
+Store as `$PATCH_SECTIONS`. If "Full rewrite instead": restore scope to "Single component"; if `$MODE` is unset (patch fast-path skipped mode selection), run PHASE 0.2–0.3 first (visual analysis + mode selection, which loads the mode file), then continue with normal PHASE 0.5.
 
-> **Todo**: If `$PATCH_MODE = true`, use the `ExitPlanMode` tool now — present PATCH ANALYSIS as plan output. PHASE 2 Patch Guard (Edits) runs in Sonnet.
+> **Todo**: If `$SCOPE` = patch (handoff fast-path or in-flow scope selection), use the `ExitPlanMode` tool now if plan mode is active — present PATCH ANALYSIS as plan output. PHASE 2 Patch Guard (Edits) runs in Sonnet. The mode file's PHASE 1 is skipped for patch scope — this is the only plan-mode exit on patch paths.

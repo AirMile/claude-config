@@ -2,6 +2,8 @@
 
 Self-verify by comparing the source image against a Playwright CLI screenshot of the generated output. Max 3 rounds. See `skills/shared/VERIFICATION.md` for the generic loop pattern, round management, and code quality checks.
 
+Thresholds come from the loaded `convert-mode-{$MODE}.md → Verification Thresholds`: `$VERIFY_PIXEL_RATIO` (copy 0.01, inspiration/sketch 0.03). Default to `0.03` when no mode file is loaded (patch fast-path).
+
 ### 3.0 Pre-flight
 
 Check Playwright CLI available: `playwright-cli --version`. If unavailable: skip with message `"Playwright CLI not available — open the page manually to verify."`, proceed to PHASE 4.
@@ -49,7 +51,7 @@ test("visual baseline — {slug}", async ({ page }) => {
       page.locator('[data-testid="timestamp"]'),
       page.locator(".skeleton"),
     ],
-    maxDiffPixelRatio: 0.03,
+    maxDiffPixelRatio: { $VERIFY_PIXEL_RATIO },
   });
   // Structural equivalence: semantic HTML of output vs expected
   await expect(page.locator("main")).toMatchAriaSnapshot();
@@ -65,7 +67,7 @@ test("visual baseline dark — {slug}", async ({ browser }) => {
   await page.goto("{url}");
   await page.waitForLoadState("networkidle");
   await expect(page).toHaveScreenshot("convert-{slug}-dark.png", {
-    maxDiffPixelRatio: 0.03,
+    maxDiffPixelRatio: { $VERIFY_PIXEL_RATIO },
   });
   await ctx.close();
 });
@@ -115,6 +117,7 @@ Runtime errors are always fixable in this phase — resolve before visual discre
 **Decision logic:**
 
 - **No significant discrepancies** → stop loop, proceed to PHASE 4
+- **Copy mode:** early stop requires match quality **High** — **Medium** is acceptable only at round 3, with remaining discrepancies listed
 - **Fixable discrepancies AND rounds remaining** → apply targeted edits, increment round, repeat from 3.2
 - **Round 3 reached** → stop loop regardless, report remaining discrepancies
 

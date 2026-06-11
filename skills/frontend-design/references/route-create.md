@@ -2,6 +2,10 @@
 
 Guided 4-step creation flow.
 
+### Enter Plan Mode
+
+Follow `shared/PLAN-MODE.md` Entry protocol before Step 1. Steps 1–5 (context, pages, flows, principles, summary) run in plan mode — this is a question phase, so model routers (e.g. `opusplan`) route it through the planning model. Questioning follows `shared/QUESTIONING.md` (form choice, anchoring, escalation ladder).
+
 #### Step 1: Project context
 
 Check for concept:
@@ -181,4 +185,4 @@ Principles ({P}):
 ════════════════════════════════════════════════
 ```
 
-Proceed to PHASE 3 (Confirm).
+**End of thinking phase**: follow `shared/PLAN-MODE.md` Exit protocol — write the DESIGN SPEC SUMMARY to the plan file, then `ExitPlanMode`. Plan approval counts as PHASE 3 "Yes, save" — skip the duplicate Confirm modal and proceed directly to PHASE X (write + post-flight).
