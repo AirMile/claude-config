@@ -71,7 +71,7 @@ Read `.project/project-context.json` (or create with `{}`). Merge per section:
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `context`      | Update structure/routing/patterns individually (only when impacted)                                                                                                                                                                    |
 | `architecture` | Follow component-first model from `shared/DASHBOARD.md` (only when impacted). Update `components[]` (status, src, test). Merge `connects_to[]` on `to+type` combination (typed edges). Diagram optional → `.project/architecture.mmd`. |
-| `learnings`    | Dedup-key: `(type, normalized_summary, author ?? null)`. Normalize summary = lowercase + strip punctuation. New: push with required `source` field → existing: skip (append-only). `author` only when `source === "synced"`.           |
+| `learnings`    | Schema + two-stage dedup (exact-tuple shortcut → Jaccard ≥ 0.55): `LEARNING-EXTRACTION.md § Writer Append Protocol`. New: push with required `source` field → existing: skip (append-only).                                            |
 
 **project-seed.md** (only for concept-writing skills):
 

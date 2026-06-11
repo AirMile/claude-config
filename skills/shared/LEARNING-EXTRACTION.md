@@ -220,9 +220,37 @@ Tokenization algorithm. Used for:
    - ends in `er` and length > 6 → remove last 2 chars (`handler` → `handl`)
 6. Result: `tokenSet` (unique)
 
-**Dedup key** for `learnings[]`: `(type, normalize(summary), author ?? null)`.
+**Dedup** for `learnings[]`: see § Writer Append Protocol below — exact-tuple shortcut, then Jaccard ≥ 0.55.
 
-Match = exact tuple match. No Jaccard within one project (only cross-project in `core-promote-learnings`).
+---
+
+## Writer Append Protocol
+
+Single canon for every skill that appends to `project-context.json#learnings[]` (pipeline completion phases, debug, core-pull).
+
+**Schema** (append-only):
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "feature": "{feature-name}",
+  "type": "pattern|pitfall|observation",
+  "source": "extracted|inferred|synced|consolidated",
+  "author": "(only when source === \"synced\")",
+  "summary": "max 200 chars"
+}
+```
+
+**Filter**: only items relevant beyond the current feature — skip feature-specific implementation details.
+
+**Dedup (two stages, in order):**
+
+1. **Exact shortcut**: tuple `(type, normalize(summary), author ?? null)` matches an existing entry (normalize = lowercase + strip punctuation) → skip candidate.
+2. **Near-duplicate**: tokenize the summary via § Dedup Tokenizer; for each existing learning with the same `type`: `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip candidate.
+
+Passes both stages → append. No candidates → skip the step silently.
+
+**Single writer for build decisions**: `dev-build` PHASE 3A owns the `build.decisions[] → learnings` mapping (type `pattern`, source `extracted`). Downstream skills must not re-map decisions — `dev-verify` maps only `tests.fixSync[]` → `pitfall` and `observations[]` → `observation`.
 
 ---
 
