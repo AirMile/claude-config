@@ -35,13 +35,11 @@ Present scope selection via **AskUserQuestion**:
   - label: "Not yet refactored features (Recommended)", description: "{N} features: {feature1}, {feature2}, ..."
   - label: "Small items check (CHANGE/BUG/etc)", description: "{K} small items without pipeline: {item1}, {item2}, ... — light convention check, mark as shipped after approval"
   - label: "All DONE features", description: "All {M} DONE features, including previously refactored"
-  - label: "Entire codebase", description: "Scan all source files, not feature-bound"
 - multiSelect: false
 
 - If "Not yet refactored features" → feature queue = unrefactored DONE features, mode = `feature`
 - If "Small items check" → **small-items mode** (see below), mode = `small-items`
 - If "All DONE features" → feature queue = all DONE features, mode = `feature`
-- If "Entire codebase" → **codebase mode** (see below)
 - If 0 unrefactored features: show "All features have already been refactored" in the option description
 - If 0 small-items: show "No small items waiting for check" in the option description
 
@@ -65,10 +63,4 @@ Find most recently modified `feature.json` with `tests` section, queue = `[that 
 - PHASE 4: skip — no code edits for light check (only code edits if Quality-lens has HIGH findings, then normal apply flow)
 - PHASE 5: write `shipped = true`, `shippedAt`, append to `project.json.recentChanges[]`
 
-## Codebase mode ("Entire codebase")
-
-- Pipeline files = all source files from project (detect `src/` or equivalent from `project-context.json` `context.structure`, or CLAUDE.md)
-- Exclude: `node_modules/`, `.project/`, test files, config files
-- No feature.json writing — save result in `.project/session/codebase-refactor.json`
-- Commit message: `refactor(codebase): {summary}`
-- Skip PHASE 5 feature.json/backlog updates — only commit + report
+> Whole-codebase passes are out of scope for this skill — use `/simplify` or `/code-review` for ad-hoc non-feature-bound refactoring.

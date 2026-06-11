@@ -70,9 +70,9 @@ Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
 Follow `shared/SYNC.md` 3-File Sync Pattern. Read backlog.json + project.json + project-context.json in parallel (see `shared/BACKLOG.md § Writing` for the legacy backlog.html migration rule).
 
-**Backlog**: per feature → CLEAN/REFACTORED: `f.refactor="REFACTORED"`, `f.shipped=true`, `f.shippedAt`, `f.shippedSha=""` (omit if untracked), remove `transition`. ROLLED_BACK: `f.refactor="ROLLED_BACK"`, remove `transition`. Set `data.updated`.
+**Backlog**: per feature → CLEAN/REFACTORED: `f.refactor="REFACTORED"`, `f.shipped=true`, `f.shippedAt`, `f.shippedSha=$(git rev-parse HEAD)` (the PHASE 4 refactor commit — best-effort "as-shipped" pointer for the dashboard), remove `transition`. ROLLED_BACK: `f.refactor="ROLLED_BACK"`, remove `transition`. Set `data.updated`.
 
-**Backlog archive** (CLEAN/REFACTORED dev-track features only): after setting the shipped flags, remove each shipped feature object from `backlog.json#features[]` and append it to `.project/archive/backlog-archive.json` — shape `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`. Create `.project/archive/` and the scaffold if absent; dedup on `name` before appending. ROLLED_BACK features are NOT archived (consistent with the feature-dir rule in step 6); PAGE/COMPONENT items also stay (frontend-track exception — see `shared/BACKLOG.md § Archiving`). The dashboard shipped-showcase reads the archive via the server — archived features are no longer in `backlog.json`.
+**Backlog archive** (CLEAN/REFACTORED dev-track features only): after setting the shipped flags, remove each shipped feature object from `backlog.json#features[]` and append it to `.project/archive/backlog-archive.json` — shape `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`. Create `.project/archive/` and the scaffold if absent; dedup on `name` before appending. ROLLED_BACK features are NOT archived (consistent with the feature-dir rule in step 5); PAGE/COMPONENT items also stay (frontend-track exception — see `shared/BACKLOG.md § Archiving`). The dashboard shipped-showcase reads the archive via the server — archived features are no longer in `backlog.json`.
 
 **Dashboard**: merge changed packages/endpoints/entities. Small-items mode: add to `recentChanges[]`.
 
@@ -82,7 +82,7 @@ Write back in parallel: Write backlog.json, Write `.project/archive/backlog-arch
 
 ## Step 4 — Scoped auto-commit
 
-Compare `git status --porcelain | sort` with baseline from PHASE 0 (`pre-skill-status-worktree.txt` if worktree-switch, else `pre-skill-status.txt`). Guard: skip commit if diff is empty + no new staged files.
+Compare `git status --porcelain | sort` with the PHASE 0 step-3 baseline (`pre-skill-status.txt`). Guard: skip commit if diff is empty + no new staged files.
 
 Stage: NEW → `git add`, OVERLAP → AskUserQuestion (Include/Skip), PRE-EXISTING → skip. `.project/` files: use `git add -f` (may be gitignored-but-tracked). Fallback: `git add -A` if no baseline.
 
@@ -90,27 +90,7 @@ Batch commit: `refactor(batch): {summary}` with per-feature lines (REFACTORED/CL
 
 Clean up session files after commit.
 
-## Step 5 — Backfill shippedSha
-
-Skip entirely if `TRACKING_MODE=untracked`. Otherwise:
-
-```bash
-SHA=$(git rev-parse HEAD)
-```
-
-a. **Reuse the parsed `backlog-archive.json` from step 3 (in-memory).** Do not re-read — the only mutations since step 3 came from this skill's step 4 commit, and we know exactly which fields changed. If the step-4 commit was skipped OR a concurrent external write is suspected (check: `git status --porcelain .project/archive/backlog-archive.json` shows unstaged changes since step 4), invalidate the cache and re-read before mutating.
-b. Replace empty `shippedSha: ""` for CLEAN/REFACTORED features with `SHA` (these entries now live in `backlog-archive.json#archived[]` after the step-3 archive move).
-c. Write back: Edit `.project/archive/backlog-archive.json` for the `shippedSha` lines.
-d. Stage and commit:
-
-```bash
-git add .project/archive/backlog-archive.json
-git commit -m "chore(refactor): backfill shippedSha for {feature-list}"
-```
-
-If the step-4 commit was skipped (nothing to commit), use the pre-skill HEAD as `SHA` — still create the backfill commit.
-
-## Step 6 — Feature archiving
+## Step 5 — Feature archiving
 
 Only features with `feature.json`, not small items without pipeline:
 
@@ -124,7 +104,7 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 - ROLLED_BACK features: do not archive (stay in `.project/features/`)
 - Skip if feature-dir no longer exists (idempotent)
 
-## Step 7 — Completion output
+## Step 6 — Completion output
 
 Print `REFACTOR COMPLETE` with per-feature ✓/✗ lines (name, status, improvement count). Next steps: /dev-define → next feature, /project-backlog → revise scope.
 

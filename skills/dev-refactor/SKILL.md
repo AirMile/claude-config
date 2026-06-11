@@ -69,62 +69,13 @@ Writes only to `.project/features/{name}/feature.json` (enriched: refactor secti
 
 **Pre-flight (setup, before numbered steps):**
 
-A. Detect `.project/` tracking mode → cache result in `.project/session/tracking-mode.txt`.
-
-Check whether any `.project/` files are actually tracked by git. Result is cached in `.project/session/tracking-mode.txt` and invalidated when `.gitignore` mtime changes, so repeated runs within the same project skip the `git ls-files` call.
-
-```bash
-CACHE_FILE=".project/session/tracking-mode.txt"
-GITIGNORE_MTIME=$(stat -f %m .gitignore 2>/dev/null || stat -c %Y .gitignore 2>/dev/null || echo 0)
-
-if [ -f "$CACHE_FILE" ]; then
-  CACHED_MTIME=$(head -1 "$CACHE_FILE")
-  CACHED_MODE=$(sed -n 2p "$CACHE_FILE")
-  if [ "$CACHED_MTIME" = "$GITIGNORE_MTIME" ] && [ -n "$CACHED_MODE" ]; then
-    TRACKING_MODE="$CACHED_MODE"
-  fi
-fi
-
-if [ -z "$TRACKING_MODE" ]; then
-  if git ls-files .project/ --error-unmatch 2>/dev/null | head -1 | grep -q .; then
-    TRACKING_MODE="tracked"
-  else
-    echo "tracking: no .project/ files are tracked — shippedSha will be skipped"
-    TRACKING_MODE="untracked"
-  fi
-  mkdir -p .project/session
-  printf "%s\n%s\n" "$GITIGNORE_MTIME" "$TRACKING_MODE" > "$CACHE_FILE"
-fi
-```
-
-If `TRACKING_MODE=untracked`: PHASE 5 omits `shippedSha` and skips the backfill commit (see also completion-batch.md).
-
-- PHASE 5 step 3: omit `shippedSha` field entirely (do not write `""`)
-- PHASE 5 step 5: skip the entire backfill + commit step
-- Log once: `tracking: .project/ is gitignored — shippedSha skipped`
-
-B. Capture git baseline → `pre-skill-status.txt` (or deferred to after worktree switch if `WT_WILL_SWITCH=1`).
-
 ```bash
 mkdir -p .project/session
-if git show-ref --verify --quiet "refs/heads/worktree-{feature-name}"; then
-  WT_WILL_SWITCH=1
-  # Defer baseline-write to after worktree-switch — Step 3 writes pre-skill-status-worktree.txt
-else
-  WT_WILL_SWITCH=0
-  git status --porcelain | sort > .project/session/pre-skill-status.txt
-fi
 echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 # Batch mode (queue > 1): use active-batch-{date}.json instead — single active file per run is best-effort tracking only
 ```
 
-After worktree switch in step 3 (only when `WT_WILL_SWITCH=1`): capture baseline in the worktree:
-
-```bash
-git status --porcelain | sort > .project/session/pre-skill-status-worktree.txt
-```
-
-PHASE 5.4 compares against `pre-skill-status-worktree.txt` if worktree-switch happened, otherwise against `pre-skill-status.txt`. Exactly one baseline file is written per run.
+The git baseline (`pre-skill-status.txt`) is captured in step 3, **after** the potential worktree switch, so the baseline always describes the tree the skill actually mutates.
 
 ---
 
@@ -138,13 +89,19 @@ PHASE 5.4 compares against `pre-skill-status-worktree.txt` if worktree-switch ha
 
 2. **Step 2: Determine feature queue:**
 
-   > **Todo**: Read `.claude/skills/dev-refactor/references/queue-selection.md` to determine mode (feature / small-items / codebase / recent) and build the feature queue, then continue to step 3.
+   > **Todo**: Read `.claude/skills/dev-refactor/references/queue-selection.md` to determine mode (feature / small-items / recent) and build the feature queue, then continue to step 3.
 
-3. **Step 3: Worktree switch** (single-mode only):
+3. **Step 3: Worktree switch + git baseline:**
 
-   If `feature_queue.length == 1` and not in codebase-mode: execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL: stop with the message from WORKTREE.md.
+   If `feature_queue.length == 1`: execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL: stop with the message from WORKTREE.md.
 
    > **Todo**: follow `shared/WORKTREE.md → Symlink Integrity Gate (post-switch auto-repair)`.
+
+   Then (all modes) capture the git baseline in the tree the skill will mutate:
+
+   ```bash
+   git status --porcelain | sort > .project/session/pre-skill-status.txt
+   ```
 
 > Steps 4–7 run as a parallel batch — all read-only, no shared data dependency.
 > Step 5 (in-memory) runs after step 4 returns.
@@ -179,7 +136,7 @@ PHASE 5.4 compares against `pre-skill-status-worktree.txt` if worktree-switch ha
    - Add pitfall-prefix entries to `KNOWN PITFALLS:` section in each Explore agent prompt (PHASE 1)
    - A `Code maturity: ...` pattern (see `shared/DASHBOARD.md`) automatically steers refactor aggressiveness — included because it is part of `patterns`
 
-7. **Step 7: Build pipeline diff per feature** (optional, parallel with steps 4 and 6, skip for codebase-mode):
+7. **Step 7: Build pipeline diff per feature** (optional, parallel with steps 4 and 6):
 
 For each feature with a known build start time: build a diff string to give agents as a focus hint.
 
@@ -353,7 +310,7 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
 > **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
-**Goal:** One plan combining ALL findings from ALL affected features, one user approval (unless `--quick` path).
+**Goal:** One plan combining ALL findings from ALL affected features, one user approval.
 
 **Steps:**
 
@@ -370,34 +327,11 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
    Dedup on `file:line + rationale`. This list shows the user what the skill deliberately **does not** want to fix — so they can override ("fix that one anyway").
 
-3. **Evaluate `--quick` auto-apply path:**
-
-   `--quick` only applies to single-feature runs. Batch invocations
-   (queue >1) always go through normal approval — skip to step 4.
-
-   **Trigger (single-feature only):**
-   - Explicit: `/dev-refactor --quick {feature}` in user input
-   - Auto-detect: ALL conditions true:
-     - 0 HIGH-findings (no SEC, no breaking-risk)
-     - ≤ 5 total findings (after dedup)
-     - No uncovered libraries in ARCHITECTURE block
-     - No `Code maturity: library` pattern in `context.patterns`
-       (library projects always get approval)
-
-   **Behavior on quick path:**
-   - Skip the AskUserQuestion in step 5
-   - Show the plan + SKIPPED-list as informational output
-   - Jump directly to PHASE 4 with scope = "Apply all"
-   - PHASE 5 commit message prefixes `refactor(quick)` instead of `refactor(batch)`/`refactor({feature})`
-   - Show "revert" hint in the completion output: `Revert: git reset --hard <hash>` with saved_hash from PHASE 4
-
-   For every explicit `--quick` that does not meet auto-conditions: **fall back** to normal approval-flow + warn in output why (e.g. "--quick ignored: 2 HIGH findings found").
-
-4. **Present improvements with before/after code:**
+3. **Present improvements with before/after code:**
 
    Show `REFACTOR PLAN ({N} features, {M} improvements)` — group by feature, each improvement as `🔴/🟡/🟢 {file}:{line} — {issue} → {fix}` with before/after snippet (extract via `sed -n '{start},{end}p'`, max 20 lines). Include "Deliberately not fixed" section for SKIPPED entries. Footer: files to be modified + "Per-feature rollback: YES".
 
-5. **Ask for scope** (skip this step in quick-mode):
+4. **Ask for scope:**
 
    Use **AskUserQuestion** tool (max 4 options — tool limit):
    - header: "Scope"
@@ -431,7 +365,7 @@ Follow `references/apply-rollback.md` — priority order, file tracking, per-fea
 
 > **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`. Read `.claude/skills/dev-refactor/references/completion-batch.md` for the full completion procedure.
 
-Follow `references/completion-batch.md` — feature.json writes, learning extraction, parallel sync, scoped commit, shippedSha backfill, and feature archiving.
+Follow `references/completion-batch.md` — feature.json writes, learning extraction, parallel sync, scoped commit, and feature archiving.
 
 > **Todo**: mark PHASE 5 → `completed`.
 
