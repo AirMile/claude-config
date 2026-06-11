@@ -8,12 +8,13 @@ reads:
     feature.files,
     backlog.status,
     project-context.learnings,
+    conventions,
   ]
-writes: [backlog.status, project-context.learnings]
+writes: [backlog.status, project-context.learnings, conventions]
 writes-terminal: [feature.refactor]
 metadata:
   author: claude-config
-  version: 2.5.0
+  version: 2.7.0
   category: dev
 ---
 
@@ -57,7 +58,7 @@ Writes only to `.project/features/{name}/feature.json` (enriched: refactor secti
 **Phase tracking** — before pre-flight, call `TaskCreate` with these 6 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgotten phases.
 
 1. PHASE 0: Batch Context Loading + Refactor Patterns
-2. PHASE 1: Parallel Three-Lens Analysis + Triage
+2. PHASE 1: Parallel Lens Analysis + Triage
 3. PHASE 2: Aggregated Research Decision
 4. PHASE 3: Combined Plan + Single Approval
 5. PHASE 4: Apply + Test Per Feature
@@ -122,9 +123,21 @@ The active-feature signal file is written in step 3 — in no-arg mode the featu
    - Parse `files[]` array (each entry has `path`, `type`, `action`)
    - Store as `pipeline_files[feature_name]`
 
-6. **Step 6: Load project conventions, stack baseline + learnings** (optional, parallel with steps 4 and 7):
+6. **Step 6: Load project conventions file, patterns, stack baseline + learnings** (optional, parallel with steps 4 and 7):
 
    Read `.project/project-context.json` (if exists) and `.claude/research/stack-baseline.md` (if exists) in the same parallel batch. Extract `context.patterns` from project-context.json; store `stack-baseline.md` content as `stack_baseline` for reuse in PHASE 2 step 2 (no re-read needed there).
+
+   **Conventions status check** (same parallel batch — see [shared/CONVENTIONS.md](../shared/CONVENTIONS.md)):
+
+   ```bash
+   CONV_STATUS=$(head -1 .project/conventions.md 2>/dev/null | sed -n 's/.*conventions-status: \([a-z]*\).*/\1/p')
+   ```
+
+   - `set` → store `conventions_set = true` for PHASE 1 header substitution (agents read the file themselves — do not Read it here)
+   - `none` → skip silently, never re-ask
+   - Absent (`""`) → **one-time lightweight fallback** per CONVENTIONS.md § Elicitation: single AskUserQuestion — "No project conventions (Recommended)" writes the sentinel file; "Set up conventions now" lets the user paste/point to a style guide, distilled to ≤120 lines and written as `set`. This runs here in PHASE 0, before plan-mode entry (PHASE 1 step 8), so the write is allowed.
+
+   Log: `CONVENTIONS: loaded | none | not set up`.
 
    **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
@@ -166,17 +179,18 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
 ---
 
-### PHASE 1: Parallel Three-Lens Analysis + Triage
+### PHASE 1: Parallel Lens Analysis + Triage
 
 > **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-**Goal:** Per feature three focused Explore agents in parallel (reuse / quality / efficiency), then merge + triage into CLEAN vs HAS_FINDINGS. Security findings stay in the Quality lens; for deep security review use `/dev-owasp`.
+**Goal:** Per feature focused Explore agents in parallel (reuse / quality / efficiency, plus a conditional security lens), then merge + triage into CLEAN vs HAS_FINDINGS. Basic security patterns stay in the Quality lens as a baseline; security-relevant features additionally get the Security lens. For a deep full-codebase audit use `/dev-security`.
 
 **Lens definitions** (one-liners — the full scan lists live in `references/lens-prompts.md`, the text agents actually receive):
 
 - **Reuse**: DRY, duplication with existing helpers, lib/stdlib replacements, extract-opportunities
-- **Quality**: security, cold-reader readability, control-flow smells, dead code, rule violations (CODING-RULES + FRONTEND-RULES + TOKENS.md design tokens)
+- **Quality**: security, cold-reader readability, control-flow smells, dead code, rule violations (CODING-RULES + FRONTEND-RULES + TOKENS.md design tokens + `.project/conventions.md` when set)
 - **Efficiency**: missed concurrency, N+1, hot-path bloat, memory leaks, overly broad ops
+- **Security** _(conditional)_: authn/authz gaps, secrets, input-flow tracing, weak crypto, SSRF, data exposure — only when the feature touches security-relevant surface (step 1)
 
 0. **Load or generate refactor-patterns.md** (lazy — deferred from PHASE 0 so patterns are not generated when all features turn out to be CLEAN):
 
@@ -201,23 +215,34 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
    **Timing:** complete this step before launching any lens agents — Explore agents read `refactor-patterns.md` via their own file tools during analysis.
 
 1. **Determine lens strategy per feature:**
-   - `pipeline_files[feature].length < 4` → **single-lens mode**: one combined agent with all three lenses in the prompt (splitting yields too little signal for too much token overhead)
-   - `length >= 4` → **three-lens mode**: three agents in parallel per feature
 
-   **Concurrency budget:** max 10 concurrent agents total. If `sum(lens_count_per_feature) > 10`: batch features in groups. E.g. 5 features × 3 lenses = 15 → batch 3 features first (9 agents), then the rest.
+   **Security relevance** — mark a feature `security_relevant` when `pipeline_files` or `pipeline_diff` touch any of:
+   - routes/endpoints/API handlers/middleware (paths or diff: `routes/`, `api/`, `controllers/`, `middleware/`, server entry)
+   - auth/session/crypto (auth, session, login, token, jwt, password, crypto)
+   - user-input parsing/upload (upload, multipart, form/body parsing, deserialization)
+   - exec/file-ops on dynamic input (exec, spawn, fs/path ops with variables in diff)
+   - config/secrets (.env, secret/key/credential in diff)
+
+   In doubt → mark relevant (one extra agent is cheap vs. a missed vuln).
+
+   **Mode:**
+   - `pipeline_files[feature].length < 4` → **single-lens mode**: one combined agent with all applicable lens sections in the prompt — three, or four when `security_relevant` (splitting yields too little signal for too much token overhead)
+   - `length >= 4` → **multi-lens mode**: three agents in parallel per feature, plus a fourth Security agent when `security_relevant`
+
+   **Concurrency budget:** max 10 concurrent agents total (`lens_count_per_feature` ∈ {1, 3, 4}). If `sum(lens_count_per_feature) > 10`: batch features in groups. E.g. 2 features × 4 lenses + 1 feature × 3 lenses = 11 → batch the two 4-lens features first (8 agents), then the rest.
 
    **Model default:** all lens-agents run on Sonnet.
 
 2. **Launch agents IN PARALLEL** according to lens strategy (see `shared/SKILL-PATTERNS.md#parallel-dispatch` for dispatch criteria and integration steps).
 
-   > **Todo**: Read '.claude/skills/dev-refactor/references/lens-prompts.md' — compose each agent prompt as `## Universal Prompt Header` (substituted) + the lens-specific section (`## REUSE` / `## QUALITY` / `## EFFICIENCY`). Single-lens mode (feature <4 files): all three lens sections combined under one agent, after the universal header.
+   > **Todo**: Read '.claude/skills/dev-refactor/references/lens-prompts.md' — compose each agent prompt as `## Universal Prompt Header` (substituted) + the lens-specific section (`## REUSE` / `## QUALITY` / `## EFFICIENCY` / `## SECURITY`). Single-lens mode (feature <4 files): all applicable lens sections combined under one agent, after the universal header — three, or four when `security_relevant`.
 
 3. **Output format** (each lens-agent returns):
 
    ```
    ANALYSIS_START
    FEATURE: {name}
-   LENS: reuse|quality|efficiency|combined
+   LENS: reuse|quality|efficiency|security|combined
    STATUS: CLEAN|HAS_FINDINGS
    ARCHITECTURE: libs={list} | patterns={list} | uncovered={list or "-"}
    FINDINGS:
@@ -230,11 +255,11 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
    ANALYSIS_END
    ```
 
-   Impact: `HIGH` (security/breaking/memleak), `MED` (DRY/efficiency/clarity-hotpath), `LOW` (cosmetic). Category: `SEC|DRY|EFF|CLARITY|OVERENG|STACK`.
+   Impact: `HIGH` (security/breaking/memleak), `MED` (DRY/efficiency/clarity-hotpath), `LOW` (cosmetic). Category: `SEC|DRY|EFF|CLARITY|OVERENG|STACK|CONV`.
 
 4. **Merge lens-outputs per feature:**
 
-   For three-lens features: combine the three FINDINGS-lists into one list. Dedup on `file:line + fix` (same issue spotted by multiple lenses → 1 entry, category-tags merged).
+   For multi-lens features: combine the per-lens FINDINGS-lists into one list. Dedup on `file:line + fix` (same issue spotted by multiple lenses — e.g. Quality's baseline SECURITY block and the Security lens → 1 entry, category-tags merged).
 
    STATUS per feature is derived from the **merged FINDINGS list**, not from the agent's self-reported STATUS:
    - 0 merged findings → `CLEAN`
@@ -323,7 +348,7 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
    Combine all findings from all HAS_FINDINGS features:
    - **Cross-feature deduplication**: same pattern in multiple files → 1 plan item with multiple locations
-   - Each improvement gets impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW (mapped from `[IMPACT|CATEGORY]` tags from PHASE 1 findings)
+   - Each improvement gets impact level: 🔴 HIGH / 🟡 MED / 🟢 LOW (mapped from `[IMPACT|CATEGORY]` tags from PHASE 1 findings). `CONV` findings map to MED/LOW like clarity — unless the convention encodes a safety rule, then keep the agent's impact tag.
    - Sort: HIGH first (security, breaking bug, memory leak), then MED (performance, DRY, efficiency), then LOW (clarity, quality, simplification)
    - **Only pipeline files** may be included
    - Group by feature for clarity
@@ -334,7 +359,7 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
 3. **Write the plan to the plan file** (path from the plan-mode system-reminder received at PHASE 1 step 8):
 
-   Write `REFACTOR PLAN ({N} features, {M} improvements)` to the plan file — group by feature, each improvement as `🔴/🟡/🟢 {file}:{line} — {issue} → {fix}` with before/after snippet (extract via `sed -n '{start},{end}p'`, max 20 lines). Include "Deliberately not fixed" section for SKIPPED entries. Footer: files to be modified + "Per-feature rollback: YES". In chat show only a short progress marker (e.g. `Plan written: {M} improvements across {N} features. Plan file updated.`) — no chat dump.
+   Write `REFACTOR PLAN ({N} features, {M} improvements)` to the plan file — group by feature, each improvement as `🔴/🟡/🟢 {file}:{line} — {issue} → {fix}` with before/after snippet (extract via `sed -n '{start},{end}p'`, max 20 lines). Include "Deliberately not fixed" section for SKIPPED entries. Footer: files to be modified + "Per-feature rollback: YES". If the Security lens produced ≥2 `HIGH|SEC` findings, add one footer line: `Consider a full audit: /dev-security`. In chat show only a short progress marker (e.g. `Plan written: {M} improvements across {N} features. Plan file updated.`) — no chat dump.
 
 4. **Ask for scope:**
 

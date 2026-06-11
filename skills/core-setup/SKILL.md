@@ -1,10 +1,10 @@
 ---
 name: core-setup
-description: Use when a project needs initializing or onboarding — a new project (greenfield wizard), an existing codebase to scan into .project/ memory (mature), or a single tier-1 stack module to add (Tailwind, Vitest, shadcn-ui, etc.). Use with /core-setup. Not for global ~/.claude/ setup — that is /core-bootstrap.
+description: Use when a project needs initializing or onboarding — greenfield wizard, mature codebase scan, or adding one tier-1 stack module. Not global ~/.claude/ setup (that is /core-bootstrap). Use with /core-setup.
 argument-hint: "[--mode=greenfield|mature|audit|resync|install] [module] [--no-llm] [--scope=<dir>]"
 metadata:
   author: claude-config
-  version: 2.0.0
+  version: 2.2.0
   category: core
 ---
 

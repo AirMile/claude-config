@@ -52,7 +52,7 @@ Write `.claude/settings.local.json` with `permissions.allow` and `permissions.de
 ```json
 {
   "permissions": {
-    "allow": ["Read *", "Edit *", "Write *", "Bash(npm *)", "Bash(npx *)"],
+    "allow": ["Read", "Edit", "Write", "Bash(npm *)", "Bash(npx *)"],
     "deny": ["Edit node_modules/**", "Write dist/**"]
   }
 }

@@ -6,7 +6,9 @@
    - If folder does NOT exist → proceed to Step 1b (source selection)
 2. Check if `.project/project-seed.md` exists
 3. If concept exists AND no inline description provided:
-   - Read `.project/project-seed.md` for the full concept document. Extract title from first H1 heading.
+   - Read `.project/project-seed.md` for the full concept document. Read `seed.scope` from `.project/project.json`.
+   - **Core-setup stub shortcut**: if the seed has NO `#` H1 heading AND `seed.scope` is absent, it is a starter pitch written by `/core-setup`, not a developed concept. Skip the confirmation block and BOTH the "Existing Concept" and scope-confirmation modals below: set scope = `concept`, treat the action as edit/expand, announce one line (e.g. "Starter concept from /core-setup detected — expanding it directly."), and proceed to Step 2 with the stub text as context. In Step 2, derive Round 1 options from the stub and skip aspects it already answers.
+   - **Developed concept** (has an H1 + sections): extract the title from the first H1 heading, then continue with the confirmation below.
    - Show confirmation:
 
      ```

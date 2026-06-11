@@ -87,7 +87,7 @@ If `GH_AVAILABLE=false`: show only "Create new project" (Clone requires gh).
 question: "What do you want to do?"
 header: "Mode"
 options:
-  - label: "Create new project (Recommended)"
+  - label: "Create new project"
     description: "Create an empty project with claude-config symlinks"
   - label: "Clone existing repo" # only show if GH_AVAILABLE=true
     description: "Clone a GitHub repo and configure claude-config symlinks"
@@ -462,7 +462,7 @@ Show: `GitHub: [repo URL]`
 question: "Do you want to create a shell alias to quickly open this project?"
 header: "Alias"
 options:
-  - label: "Yes, create alias (Recommended)"
+  - label: "Yes, create alias"
     description: "Add alias to ~/.bashrc that runs cd + claude"
   - label: "No, skip"
     description: "Don't create alias"
@@ -502,36 +502,23 @@ case "$SHELL" in
 esac
 
 echo "alias [alias]='cd {projects_root}/[name] && claude'" >> "$RC_FILE"
+
+# Reload the rc-file so the alias is registered (errors suppressed —
+# interactive-only rc lines may warn in a non-interactive shell)
+source "$RC_FILE" 2>/dev/null || true
 ```
+
+> **Note:** `source` runs in the skill's subprocess, so the alias is **not** active in the user's current terminal (a separate process). It only takes effect in a new terminal or after the user runs `source $RC_FILE` themselves — reflect that in the confirm message.
 
 **Confirm:**
 
 ```
 Alias created: [alias] → cd {projects_root}/[name] && claude
 Added to: $RC_FILE
-Use: source $RC_FILE (or open new terminal) to activate
+Active in new terminals — for this terminal, run: source $RC_FILE
 ```
 
 ### PHASE 10: Wrap Up
-
-**Ask:**
-
-```yaml
-question: "Project added. What do you want to do?"
-header: "Open"
-options:
-  - label: "Open in VS Code (Recommended)"
-    description: "Open project in VS Code window"
-  - label: "Stay here"
-    description: "Stay in current project"
-multiSelect: false
-```
-
-**If VS Code:**
-
-```bash
-code {projects_root}/[name]
-```
 
 **Output (new mode):**
 

@@ -1,7 +1,7 @@
 ---
 name: dev-build
 description: "Build features test-first with TDD. Use with /dev-build, or when the user asks to implement a defined feature."
-reads: [feature.requirements, feature.architecture, feature.files]
+reads: [feature.requirements, feature.architecture, feature.files, conventions]
 writes:
   [
     feature.requirements,
@@ -11,7 +11,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 1.17.0
+  version: 1.18.0
   category: dev
 ---
 
@@ -93,6 +93,7 @@ For each buildSequence step:
 4. **Stack-aware enforcement**:
    - **Code clarity**: follow existing project comment style. Add comments only for non-obvious "why" decisions, workarounds, and compatibility notes.
    - **Code rules**: follow `shared/CODING-RULES.md` — General (R007-R009) + TypeScript (T001-T203) + Testing (TST001-TST203). When in doubt: MUST_DO rules always, SHOULD_DO rules unless deliberate deviation with reason. Frontend projects: also `shared/FRONTEND-RULES.md`.
+   - **Project conventions**: follow `.project/conventions.md` (loaded in PHASE 0, status `set` only) for naming, structure, and style — conventions override SHOULD_DO global rules, never MUST_DO (see `shared/CONVENTIONS.md § Precedence`).
    - **Token enforcement** (only for `.tsx`/`.jsx`/`.vue`/`.svelte` — skip for API routes, tests, config): always use token names (`bg-primary`, `text-foreground`) — never hex literals or `bg-[#hex]`. Theme empty → use fallback defaults from `shared/TOKENS.md`. Run a grep after each Write for TOKENS.md T101 (`#[0-9a-fA-F]{3,8}`) and T102 (`bg-\[#`, `text-\[#`) on the generated file — replace violations directly before output.
    - **Motion token enforcement** (only if `theme.motion.pack` is set, only for component files with interactive elements — `button`, `a`, card containers): use token-based transition classes from the active pack — never hardcoded `ms` values or `cubic-bezier()` literals (TOKENS.md T106/T107 violation). Pack-specific class-strings: see `shared/PATTERNS.md § Motion Patterns`. All choreography must include `@media (prefers-reduced-motion: reduce)` fallback (`shared/PATTERNS.md § prefers-reduced-motion Fallback`). After each Write on a component file: grep for hardcoded `\d+ms` and `cubic-bezier(` patterns — replace with token classes before output.
 5. **Track REQ progress in transcript** via the SYNC line — feature.json is enriched in bulk in PHASE 3A. For Implementation Only: note `skipTestReason` (`visual-only`, `config-only`, or `prototype`) in the SYNC line so PHASE 3A can write it.

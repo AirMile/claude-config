@@ -67,6 +67,14 @@ Run the two `node -e` snippets for the `build` profile. Use the extracted output
 - Code patterns to follow
 - `themeCssVarsEmpty === false`: log `"Theme loaded"`. `true` or missing: log `"Theme empty — fallback defaults (shared/TOKENS.md) will be used"`.
 
+**Conventions** (per [shared/CONVENTIONS.md](../../shared/CONVENTIONS.md) load rules):
+
+```bash
+CONV_STATUS=$(head -1 .project/conventions.md 2>/dev/null | sed -n 's/.*conventions-status: \([a-z]*\).*/\1/p')
+```
+
+`set` → `Read` `.project/conventions.md` in full (main context — dev-build writes the code itself); `none` or absent → skip silently, **no elicitation here** (that lives in core-setup + dev-refactor). Log: `CONVENTIONS: loaded | none | not set up`.
+
 **Learnings load** (via [shared/LEARNINGS-LOAD.md](../../shared/LEARNINGS-LOAD.md)):
 
 Configuration:

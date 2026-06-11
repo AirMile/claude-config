@@ -1,7 +1,7 @@
 ---
 name: game-build
 description: Build Godot features test-first with TDD. Use with /game-build.
-reads: [feature.requirements, backlog.stage]
+reads: [feature.requirements, backlog.stage, conventions]
 writes:
   [
     feature.requirements,
@@ -11,7 +11,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 2.10.0
+  version: 2.11.0
   category: game
 ---
 
@@ -142,6 +142,8 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    ```
 
    Run the two `node -e` snippets for the `build` profile. Extracts: `stack`, `entities[]` from `project.json`; `structure`, `patterns` (max 15), and full `architecture` (componentTree, scenes, signals, resources) from `project-context.json`.
+
+   **Conventions** (per [shared/CONVENTIONS.md](../shared/CONVENTIONS.md) load rules): run the status check (`head -1 .project/conventions.md`). `set` → `Read` `.project/conventions.md` in full and follow it during code generation for naming, structure, and style — conventions override SHOULD_DO global rules, never MUST_DO. `none` or absent → skip silently, no elicitation here. Log: `CONVENTIONS: loaded | none | not set up`.
 
    **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
 

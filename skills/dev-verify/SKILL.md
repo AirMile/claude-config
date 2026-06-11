@@ -1,11 +1,12 @@
 ---
 name: dev-verify
 description: Run adversarial acceptance tests and fix loops on a built feature — classifies test items (COVERED/AUTO/MANUAL), runs auto-tests, walks user through manual ones, fixes failures, and finalizes the worktree. Use with /dev-verify, or auto-triggers when a feature has transition=verifying after /dev-build completes.
-reads: [feature.requirements, feature.build, project-context.learnings]
+reads:
+  [feature.requirements, feature.build, project-context.learnings, conventions]
 writes: [feature.tests, backlog.status, project-context.learnings]
 metadata:
   author: claude-config
-  version: "2.11.0"
+  version: "2.12.0"
   category: dev
 ---
 
@@ -132,6 +133,14 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    Endpoints: {endpoints or "not available"}
    Entities: {entities or "not available"}
    ```
+
+   **Conventions** (per [shared/CONVENTIONS.md](../shared/CONVENTIONS.md)): run the status check (`head -1 .project/conventions.md`). When `set`, append to STACK_CONTEXT:
+
+   ```
+   Conventions: .project/conventions.md — read it; generated fixes must follow it.
+   ```
+
+   `none` or absent → skip silently, no elicitation here.
 
 6b. **Learnings load** (via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)):
 

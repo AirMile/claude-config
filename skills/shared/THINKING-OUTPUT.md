@@ -59,7 +59,9 @@ No `project.json` write — `.project/thinking/*.md` is the only source of truth
 
 ## Scope = concept (default) or no scope chosen
 
-Use AskUserQuestion:
+**Caller `project-seed`**: skip the modal — the concept was already approved at `ExitPlanMode`. Run the [Seed save procedure](#seed-save-procedure) directly (clipboard is not offered) and show the confirmation block below.
+
+**Other callers** (`project-brainstorm`, `project-critique`): use AskUserQuestion:
 
 ```yaml
 header: "Output"
@@ -70,7 +72,7 @@ options:
 multiSelect: false
 ```
 
-**If "Save to concept"**: run the [Seed save procedure](#seed-save-procedure), then confirm:
+**On save** (project-seed direct, or "Save to concept"): run the [Seed save procedure](#seed-save-procedure), then confirm:
 
 ```
 CONCEPT SAVED

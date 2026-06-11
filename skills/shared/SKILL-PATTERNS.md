@@ -366,7 +366,7 @@ PROJECT_CONTEXT_END
 - Skip sections that do not exist (show "not available")
 - Only pass learnings if relevant to the agent's task
 - Skills may add extra skill-specific sections AFTER the standard block
-- Existing skills (dev-debug, dev-verify, dev-owasp) do not need to migrate immediately — this is opt-in for new skills and future refactors
+- Existing skills (dev-debug, dev-verify, dev-security) do not need to migrate immediately — this is opt-in for new skills and future refactors
 
 **Context load helpers** — use these shared protocols instead of inline reads (single source of truth per file type):
 

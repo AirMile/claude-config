@@ -24,7 +24,7 @@ Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and
                                              └── /dev-debug ◄┘
 ```
 
-Standalone (dev): `/dev-owasp` (security audit).
+Standalone (dev): `/dev-security` (security audit).
 
 ## Frontend Pipeline
 
@@ -83,7 +83,7 @@ Frontend items skip `defining/defined` — design captures pages/flows, Build ge
 | dev-verify       | feature.json (built)             | feature.json (verified)     | built          | DONE           |
 | dev-refactor     | feature.json (DONE)              | feature.json (DONE + ref)   | DONE           | DONE           |
 | dev-debug        | error / symptom                  | fix applied                 | —              | —              |
-| dev-owasp        | —                                | security report + fixes     | —              | —              |
+| dev-security     | —                                | security report + fixes     | —              | —              |
 
 ---
 

@@ -26,7 +26,7 @@ See `../shared/SYNC.md`, `../shared/DASHBOARD.md`, and `../shared/LEARNING-EXTRA
 
 ## Process
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 17 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. During context compaction the task list remains visible — no risk of forgotten phases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 18 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. During context compaction the task list remains visible — no risk of forgotten phases.
 
 1. PHASE 0: Pre-flight
 2. PHASE 0.5: Project Status Snapshot
@@ -37,18 +37,19 @@ See `../shared/SYNC.md`, `../shared/DASHBOARD.md`, and `../shared/LEARNING-EXTRA
 7. PHASE 3: MVP learnings
 8. PHASE 4: LLM learnings via subagent
 9. PHASE 4.5: Context fabricate + confirm
-10. PHASE 5: Sync
-11. PHASE 5.5: CLAUDE.md completeness check
-12. PHASE 5.6: Claude-config init
-13. PHASE 5.65: Auto Dev Tools
-14. PHASE 5.7: Setup Task Seeding
-15. PHASE 5.8: Module Gap Install
-16. PHASE 5.85: Stack Baseline Research
-17. PHASE 6: Report
+10. PHASE 4.6: Code Conventions
+11. PHASE 5: Sync
+12. PHASE 5.5: CLAUDE.md completeness check
+13. PHASE 5.6: Claude-config init
+14. PHASE 5.65: Auto Dev Tools
+15. PHASE 5.7: Setup Task Seeding
+16. PHASE 5.8: Module Gap Install
+17. PHASE 5.85: Stack Baseline Research
+18. PHASE 6: Report
 
 ## PHASE 0: Pre-flight
 
-> **Todo**: call `TaskCreate` with the 17 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 18 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 1. **Detect git repo**:
 
@@ -303,9 +304,13 @@ Skip entirely if `--no-llm` flag is set (do not Read the reference).
 
 > **Todo**: mark PHASE 4 → `completed`, PHASE 4.5 → `in_progress`. Read `references/phase-context-fabricate.md` and follow it (infer seed/stack from README + package.json, confirm-modal over empty fields only, write project-seed.md, backlog hasSeed flag).
 
+### PHASE 4.6: Code Conventions
+
+> **Todo**: mark PHASE 4.5 → `completed`, PHASE 4.6 → `in_progress`. Read `references/phase-conventions.md` and follow it with `variant: mature` (skip-guard on existing `.project/conventions.md`, discovery scan, distill + confirm, write file or sentinel).
+
 ### PHASE 5: Sync
 
-> **Todo**: mark PHASE 4.5 → `completed`, PHASE 5 → `in_progress`.
+> **Todo**: mark PHASE 4.6 → `completed`, PHASE 5 → `in_progress`.
 
 Follow `../shared/SYNC.md` protocol. Re-read `project.json` and `project-context.json` immediately before write.
 

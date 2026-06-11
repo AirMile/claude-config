@@ -88,6 +88,17 @@ Start later with /project-backlog to check them off visually.
 - `/core-setup [module]` — add libraries (Tailwind, Vitest, Playwright, Biome, etc.)
 - `/frontend-design [feature]` — visual design spec for a feature
 
+## Open the project
+
+End with one line (no modal):
+
+```
+Open: code {projects_root}/{name}  (or the shell alias if project-add created one)
+```
+
+Never emit a hardcoded absolute path — always use the `{projects_root}` variable.
+Read `{projects_root}` from `.claude/paths.local.yaml` (key: `paths.projects_root`) or fall back to `$HOME/projects` (macOS/Linux) / `C:\Projects` (Windows).
+
 ## Cleanup
 
 ```bash

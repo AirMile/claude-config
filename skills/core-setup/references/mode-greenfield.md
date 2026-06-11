@@ -32,7 +32,7 @@ Applies to: Project description, Project name, Tech stack, Suggestions (per cate
 
 ## Process
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 12 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgotten phases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 13 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at the end. During context compaction the task list remains visible — no risk of forgotten phases.
 
 1. Phase 1: Detect & Configure
 2. Phase 2: Collect Project Info
@@ -44,8 +44,9 @@ Applies to: Project description, Project name, Tech stack, Suggestions (per cate
 8. Phase 7: Stack Research
 9. Phase 7b: Dashboard Init
 10. Phase 7c: Setup Task Seeding
-11. Phase 8: Commit
-12. Phase 9: Summary
+11. Phase 7d: Code Conventions
+12. Phase 8: Commit
+13. Phase 9: Summary
 
 ## Phase 1: Detect & Configure
 
@@ -168,7 +169,7 @@ Store answer as `TEAM_MODE` (`"solo"` or `"team"`). Written to `project.json#tea
    ---
    ```
 
-2. **Project name** — Suggest 2-3 kebab-case names based on the Phase 2.1 description and show this block:
+2. **Project name** — If `project.json#seed.name` is already set (e.g. project-add created the project directory), use it and skip this question — show `Project name: {seed.name} (from project-add)`. Otherwise suggest 2-3 kebab-case names based on the Phase 2.1 description and show this block:
 
    ```
    ---
@@ -232,13 +233,11 @@ Store answer as `TEAM_MODE` (`"solo"` or `"team"`). Written to `project.json#tea
    ---
    ```
 
-6. **Web standards** (skip for game/CLI/desktop) — Three single-select questions:
+6. **Web standards** (skip for game/CLI/desktop) — Three single-select questions. **Ask each as a separate AskUserQuestion call — never combined in one message.**
    - Data fetching strategy (if React/Vue + external API/backend): plain fetch, SWR, TanStack Query
      **Skip** if the project has no external data sources (e.g. localStorage-only, in-memory state, static content)
    - Accessibility: WCAG 2.1 AA, WCAG 2.1 A, Minimal
    - Responsive: Mobile-first, Desktop-first, Fixed width
-
-7. **Project mode** — already answered in step 0.5 above. `TEAM_MODE` is already set. Used in Phase 7b to write `team.mode`.
 
 ---
 
@@ -359,9 +358,15 @@ Follow `references/stack-baseline-shared.md`.
 
 ---
 
+## Phase 7d: Code Conventions
+
+> **Todo**: mark Phase 7c → `completed`, Phase 7d → `in_progress`. Read `references/phase-conventions.md` and follow it with `variant: greenfield` (skip-guard on existing `.project/conventions.md`, single AskUserQuestion: none / paste guide / mini-interview).
+
+---
+
 ## Phase 8: Commit (optional)
 
-> **Todo**: mark Phase 7c → `completed`, Phase 8 → `in_progress`.
+> **Todo**: mark Phase 7d → `completed`, Phase 8 → `in_progress`.
 
 AskUserQuestion (single-select): Commit setup files now, or skip.
 

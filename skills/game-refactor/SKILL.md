@@ -1,12 +1,12 @@
 ---
 name: game-refactor
 description: Batch refactor Godot code quality after testing. Use with /game-refactor.
-reads: [feature.build, feature.tests, backlog.stage]
+reads: [feature.build, feature.tests, backlog.stage, conventions]
 writes: [backlog.stage, project-context.learnings]
 writes-terminal: [feature.refactor]
 metadata:
   author: claude-config
-  version: 1.4.0
+  version: 1.5.1
   category: game
 ---
 
@@ -134,6 +134,8 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
    ```
 
    Run snippet 2 only (project-context.json). Extracts: `structure`, `patterns` (max 15), full `architecture`. Store `patterns` as `PROJECT_CONVENTIONS` and `architecture` as scene-graph context for injection into Explore agent prompts (PHASE 1).
+
+   **Conventions status check** (see [shared/CONVENTIONS.md](../shared/CONVENTIONS.md)): `head -1 .project/conventions.md` → `set` → store `conventions_set = true` for the PHASE 1 agent prompt (agents read the file themselves). `none` or absent → skip silently — **no elicitation here** (that lives in core-setup + dev-refactor).
 
    **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 

@@ -19,6 +19,8 @@ Skills load project context during their **PHASE 0 context-load phase** — read
 
 ## Three profiles
 
+> `.project/conventions.md` is deliberately **not** part of these profiles — it is markdown loaded by path-reference, not JSON extraction. See [CONVENTIONS.md](CONVENTIONS.md); run its status check in the same PHASE 0 batch as the profile snippets.
+
 ### Profile: `build`
 
 For `dev-build`. Extracts fields needed to prevent duplicate routes, avoid schema conflicts, apply tokens, and follow code patterns.
