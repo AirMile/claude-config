@@ -1,20 +1,20 @@
 ---
-name: dev-owasp
-description: Run full OWASP Top 10 security audit. Use with /dev-owasp.
+name: dev-security
+description: Run a deep security audit (OWASP Top 10, supply chain, secrets). Use with /dev-security.
 reads: [project.endpoints, project.entities, project-context.context]
 metadata:
   author: claude-config
-  version: 2.0.0
+  version: 2.1.0
   category: dev
 ---
 
-# OWASP Security Audit
+# Security Audit
 
-Full OWASP Top 10:2025 scan: scope → 10 parallel scanners → aggregated report → 3 fix strategies → implement.
+Deep security audit — OWASP Top 10:2025 + supply-chain/SAST/secret tooling: scope → 10 parallel scanners → aggregated report → 3 fix strategies → implement.
 
 ## Process
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 5 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. On context compaction the task list remains visible — no risk of forgotten phases.
+**Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. On context compaction the task list remains visible — no risk of forgotten phases.
 
 1. PHASE 1: Scope
 2. PHASE 2: Parallel Scan
@@ -44,8 +44,11 @@ AskUserQuestion:
 - options:
   - "Full codebase (Recommended)" — Scan everything except node_modules/vendor/dist
   - "Backend/API only" — Focus on server-side code
+  - "Changed features only" — Only pipeline files of DONE/shipped backlog features
   - "Specific directory" — Enter a path
 - multiSelect: false
+
+**"Changed features only":** read `.project/backlog.json` (+ `.project/archive/backlog-archive.json`), take features with status DONE or shipped, and collect their `files[]` from `.project/features/{name}/feature.json`. That union is the file list for step 3. No backlog or no feature.json files → fall back to "Full codebase" with a log line. Faster targeted audit between full scans; PHASE 2b tooling (lockfiles, git history) still runs repo-wide.
 
 ### Step 3: Build file list
 
@@ -111,15 +114,16 @@ Run all 10 in background. Collect results when all complete.
 
 > **Todo**: mark PHASE 2 → `completed`, PHASE 2b → `in_progress`.
 
-LLM pattern scanners (PHASE 2) miss CVE data and malicious-package signals. Supplement with OSS tooling. Read `references/supply-chain.md` for the full procedure (OSV-Scanner V2 + Semgrep CE detection, invocation, severity mapping).
+LLM pattern scanners (PHASE 2) miss CVE data, malicious-package signals, and leaked secrets in git history. Supplement with OSS tooling. Read `references/supply-chain.md` for the full procedure (OSV-Scanner V2 + Semgrep CE + gitleaks detection, invocation, severity mapping).
 
 **Steps summarized:**
 
-1. Detect lockfiles (`package-lock.json`, `yarn.lock`, etc.). No lockfile → skip with log.
-2. Run `osv-scanner --format=json scan source ./` → `.project/owasp/osv-report.json`.
-3. Run `semgrep ci --config auto --json` → `.project/owasp/semgrep-report.json`. Semgrep not installed → skip with log (not a blocker).
-4. Merge findings into the A03 category of the PHASE 3 aggregation. OSV severity mapping: CRITICAL/HIGH/MODERATE/LOW → OWASP severity 1-to-1.
-5. Tools not installed → log an installation hint, not a blocker. User can rerun after install.
+1. Detect lockfiles (`package-lock.json`, `yarn.lock`, etc.). No lockfile → skip OSV with log (gitleaks still runs — it scans the repo, not lockfiles).
+2. Run `osv-scanner --format=json scan source ./` → `.project/security/osv-report.json`. Not installed + npm project → fallback `npm audit --json --omit=dev`.
+3. Run `semgrep scan --config auto --json --quiet` → `.project/security/semgrep-report.json`. Semgrep not installed → skip with log (not a blocker).
+4. Run `gitleaks detect --report-format json --report-path .project/security/gitleaks-report.json` (secrets in working tree + git history). Not installed → skip with log.
+5. Merge findings into the PHASE 3 aggregation: OSV/npm-audit → A03; Semgrep per rule `metadata.category`; gitleaks → A04 (CRITICAL when the credential looks active, otherwise HIGH). OSV severity mapping: CRITICAL/HIGH/MODERATE/LOW → severity 1-to-1.
+6. Tools not installed → log an installation hint, not a blocker. User can rerun after install.
 
 **Threshold:** CRITICAL OSV vuln with `fixed_version` → automatically into the Minimal fix strategy (PHASE 4). Otherwise follow the normal strategy choice.
 
@@ -141,7 +145,7 @@ Analyze:
 Present consolidated report:
 
 ```
-OWASP SECURITY AUDIT
+SECURITY AUDIT
 Project: [name]
 Tech Stack: [detected]
 Files Scanned: [count]
@@ -202,14 +206,6 @@ Each receives: aggregated scan results with all findings, severity counts, file 
 Show all 3 plans side by side:
 
 ```
-
-
-### Step 1: Present options
-
-Show all 3 plans side by side:
-
-```
-
 FIX STRATEGIES
 | | Minimal | Pragmatic | Extensive |
 | -------- | ------------- | ----------- | ----------- |
@@ -241,7 +237,7 @@ Apply selected fix plan. Per fix: show file:line, apply change, verify syntax.
 
 ```
 
-OWASP AUDIT COMPLETE
+SECURITY AUDIT COMPLETE
 Score: [before] → estimated [after]
 Strategy: [chosen]
 Fixes applied: [N]
@@ -257,4 +253,7 @@ Remaining items: [N] (deferred)
 ### Language
 
 Follow the Language Policy in CLAUDE.md.
+
+```
+
 ```

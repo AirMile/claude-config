@@ -12,6 +12,9 @@ Pipeline files:
 {list of all pipeline_files paths for this feature}
 
 PROJECT CONVENTIONS:
+{if conventions_set:}
+Project style guide: Read .project/conventions.md before scanning — authoritative for naming/structure/style.
+{/if}
 {PROJECT_CONVENTIONS from PHASE 0 step 5, or "not available"}
 
 Read ALL of the above pipeline files. Scan for:
@@ -22,6 +25,8 @@ Read ALL of the above pipeline files. Scan for:
    - Injection: OS.execute, ClassDB abuse
    - Unsafe deserialization: var_to_str/str_to_var with untrusted input
    - Path traversal in file operations
+   - Secrets: API keys/tokens hardcoded in scripts or exported scene properties
+   - Network input: multiplayer RPCs trusting client data without validation (@rpc("any_peer") without checks)
 
    DRY violations (ONLY within pipeline files):
    - Duplicate code blocks (>5 lines identical)
