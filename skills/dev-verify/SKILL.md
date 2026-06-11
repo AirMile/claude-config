@@ -504,10 +504,6 @@ DEFERRED items: write per-item `tests.checklist[i] = { status: "deferred", defer
 
 ---
 
-> **Todo**: mark PHASE 6 → `completed`.
-
----
-
 ### PHASE Finalize
 
 > **Todo**: mark PHASE 6 → `completed`, PHASE Finalize → `in_progress`.
