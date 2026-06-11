@@ -16,22 +16,7 @@ File: {output-path}
 Scope: {feature:{name} | page:{topic}}
 ```
 
-**Dashboard sync — thinking log** (see `shared/DASHBOARD.md`):
-
-1. Read `.project/project.json` (skip if not present)
-2. Write full markdown to `.project/thinking/{today}-idea-{slug}.md`
-3. Push to `thinking` array:
-   ```json
-   {
-     "type": "idea",
-     "date": "{today}",
-     "title": "{concept title}",
-     "summary": "{key insight, max 200 chars}",
-     "file": ".project/thinking/{today}-idea-{slug}.md",
-     "source": "/project-seed"
-   }
-   ```
-4. Write `.project/project.json`
+**Thinking log** (`shared/DASHBOARD-CONTEXT.md § thinking-output`): also write the full markdown to `.project/thinking/{today}-idea-{slug}.md` so name-matching consumers (e.g. `/dev-define`) can discover it via Grep. No `project.json` write — the `.md` files are the only source of truth.
 
 Then optionally ask:
 
@@ -60,21 +45,7 @@ File: .project/thinking/{today}-idea-{slug}.md
 Scope: standalone idea
 ```
 
-**Dashboard sync — thinking log** (see `shared/DASHBOARD.md`):
-
-1. Read `.project/project.json` (skip if not present)
-2. Push to `thinking` array (file already written above):
-   ```json
-   {
-     "type": "idea",
-     "date": "{today}",
-     "title": "{concept title}",
-     "summary": "{key insight, max 200 chars}",
-     "file": ".project/thinking/{today}-idea-{slug}.md",
-     "source": "/project-seed"
-   }
-   ```
-3. Write `.project/project.json`
+No `project.json` write — `.project/thinking/*.md` is the only source of truth (`shared/DASHBOARD-CONTEXT.md § thinking-output`).
 
 **If scope = concept (default) or no scope chosen:**
 

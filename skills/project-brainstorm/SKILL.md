@@ -302,24 +302,7 @@ Scope: {feature:{name} | page:{topic}}
 Applied techniques: {list of techniques used}
 ```
 
-**Dashboard sync — thinking log** (see `shared/DASHBOARD.md`):
-
-1. Read `.project/project.json` (skip if not present)
-2. Write full markdown to `.project/thinking/{today}-brainstorm-{slug}.md`
-3. Push to `thinking` array:
-   ```json
-   {
-     "type": "brainstorm",
-     "date": "{today}",
-     "title": "{topic of the brainstorm}",
-     "summary": "{key insight, max 200 chars}",
-     "file": ".project/thinking/{today}-brainstorm-{slug}.md",
-     "variants": ["{variant 1}", "{variant 2}", "..."],
-     "chosen": "{chosen variant}",
-     "source": "/project-brainstorm"
-   }
-   ```
-4. Write `.project/project.json`
+**Thinking log** (`shared/DASHBOARD-CONTEXT.md § thinking-output`): also write the full markdown to `.project/thinking/{today}-brainstorm-{slug}.md` so name-matching consumers (e.g. `/dev-define`) can discover it via Grep. No `project.json` write — the `.md` files are the only source of truth.
 
 Then optionally ask:
 
@@ -351,23 +334,7 @@ Scope: standalone idea
 Applied techniques: {list of techniques used}
 ```
 
-**Dashboard sync — thinking log** (see `shared/DASHBOARD.md`):
-
-1. Read `.project/project.json` (skip if not present)
-2. Push to `thinking` array (file already written above):
-   ```json
-   {
-     "type": "brainstorm",
-     "date": "{today}",
-     "title": "{topic of the brainstorm}",
-     "summary": "{key insight, max 200 chars}",
-     "file": ".project/thinking/{today}-brainstorm-{slug}.md",
-     "variants": ["{variant 1}", "{variant 2}", "..."],
-     "chosen": "{chosen variant}",
-     "source": "/project-brainstorm"
-   }
-   ```
-3. Write `.project/project.json`
+No `project.json` write — `.project/thinking/*.md` is the only source of truth (`shared/DASHBOARD-CONTEXT.md § thinking-output`).
 
 **If scope = concept (default) or no scope chosen:**
 

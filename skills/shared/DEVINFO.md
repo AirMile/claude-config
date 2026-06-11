@@ -21,7 +21,7 @@ A third key, `writes-terminal:`, declares **intentional terminal writes**: field
 | `concept.*`           | `.project/project-seed.md` + `project.json#concept`                                                                    | project-seed (owner), dev-define / game-define / project-backlog (conditional write)                 |
 | `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | frontend-pipeline                                                                                    |
 | `project.*`           | `.project/project.json` (top-level key, e.g. `stack`, `features`, `endpoints`, `entities`, `team`, `optimizationRuns`) | dashboard-sync skills (core-pull, team-verify, project-todo, project-add, dev-optimize)              |
-| `project.thinking`    | `.project/thinking/*.md` + `.project/features/{name}/thinking.md` + `project.json#thinking[]`                          | thinking skills (project-seed, project-brainstorm, project-critique, project-todo, project-research) |
+| `project.thinking`    | `.project/thinking/*.md` + `.project/features/{name}/thinking.md`                                                      | thinking skills (project-seed, project-brainstorm, project-critique, project-todo, project-research) |
 | `project-context.*`   | `.project/project-context.json` (top-level section: `learnings`, `context`, `architecture`)                            | core-pull, dev/game build + debug + refactor, team-verify, dev-owasp (read)                          |
 
 ### Granularity
