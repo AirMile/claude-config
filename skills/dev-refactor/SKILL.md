@@ -89,7 +89,10 @@ The git baseline (`pre-skill-status.txt`) is captured in step 3, **after** the p
 
 2. **Step 2: Determine feature queue:**
 
-   > **Todo**: Read `.claude/skills/dev-refactor/references/queue-selection.md` to determine mode (feature / small-items / recent) and build the feature queue, then continue to step 3.
+   - **Name provided** (`/dev-refactor auth`): validate the feature exists in `.project/features/`; queue = `[auth]` (regardless of refactor status), mode = `feature` → step 3.
+   - **"recent"**: most recently modified `feature.json` with a `tests` section; queue = that feature, mode = `feature` → step 3.
+   - **No argument**:
+     > **Todo**: Read `.claude/skills/dev-refactor/references/queue-selection.md` (UI-queue detection → scope selection → small-items mode), build the queue, then continue to step 3.
 
 3. **Step 3: Worktree switch + git baseline:**
 
@@ -169,11 +172,11 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
 **Goal:** Per feature three focused Explore agents in parallel (reuse / quality / efficiency), then merge + triage into CLEAN vs HAS_FINDINGS. Security findings stay in the Quality lens; for deep security review use `/dev-owasp`.
 
-**Lens definitions** (see also `shared/PATTERNS.md` if present):
+**Lens definitions** (one-liners — the full scan lists live in `references/lens-prompts.md`, the text agents actually receive):
 
-- **Reuse lens**: DRY within pipeline files, duplication with existing helpers/utilities in the codebase, inline logic that existing lib/stdlib can replace, extract-opportunities
-- **Quality lens**: security (injection/XSS/deserialization), cold-reader readability (locality, abstraction-levels, unit-naming, cognitive load, silent errors), control-flow smells (nesting/ternary/dense), over-engineering, stringly-typed, dead code, redundant state, leaky abstractions, `CODING-RULES.md` violations (R007–R009, T001–T203, TST001–TST203) (+ `FRONTEND-RULES.md` for frontend files), stack-specific anti-patterns, Design Token violations (T101–T111 from `shared/TOKENS.md` — frontend files only: `.tsx`/`.jsx`/`.vue`/`.svelte`)
-- **Efficiency lens**: missed concurrency (Promise.all), N+1, hot-path bloat, memory leaks, unbounded maps, TOCTOU, overly broad ops, no-op recurring updates
+- **Reuse**: DRY, duplication with existing helpers, lib/stdlib replacements, extract-opportunities
+- **Quality**: security, cold-reader readability, control-flow smells, dead code, rule violations (CODING-RULES + FRONTEND-RULES + TOKENS.md design tokens)
+- **Efficiency**: missed concurrency, N+1, hot-path bloat, memory leaks, overly broad ops
 
 0. **Load or generate refactor-patterns.md** (lazy — deferred from PHASE 0 so patterns are not generated when all features turn out to be CLEAN):
 
@@ -353,7 +356,7 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/dev-refactor/references/apply-rollback.md` for the full apply + rollback procedure.
 
-**Step 0 — Safety-net pre-flight (per feature, before changes):** Read `.claude/skills/shared/MUTATION-TESTING.md` § dev-refactor PHASE 4 step 0. Run Stryker incremental **with `--force`** (bypasses the stale cache from verify's code state) and compare the current score against `feature.json#tests.mutationScore.score` as baseline. On a drop >0.05, or (no baseline AND score <0.60) → AskUserQuestion whether the refactor may proceed. No auto-rollback here — informative gate. Runner skipped → log and continue without the gate.
+**Step 0 — Safety-net pre-flight (per feature, before changes):** follow `shared/MUTATION-TESTING.md` § dev-refactor PHASE 4 step 0 (Stryker incremental `--force` vs the `tests.mutationScore` baseline; informative gate — user decides on a drop; runner skipped → log and continue).
 
 Follow `references/apply-rollback.md` — priority order, file tracking, per-feature rollback, and test-failure decision table.
 

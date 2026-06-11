@@ -97,7 +97,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
 4b. **Symlink integrity gate** — follow `shared/WORKTREE.md → Symlink Integrity Gate (post-switch auto-repair)`. Guards the DOING → DONE backlog write in `references/completion-sync.md`.
 
-5. **Capture baseline** — **MUST** execute all three writes before continuing. PHASE 6 step 3 (scoped commit) reads these files to compute precise diagnostics-deltas and stage only skill-introduced changes. Skipping forces a less-accurate `git add -A` fallback.
+5. **Capture baseline** — **MUST** execute all three writes before continuing (PHASE 6's scoped commit and diagnostics-delta read them).
 
    Run as a single bash block:
 
@@ -176,14 +176,14 @@ CATEGORY_GAPS:
    MANUAL, AUTO/BROWSER, or AUTO/CLI with live server    → launch dev server on localhost
    ```
 
-   Launch procedure (when launch is required): 0. **Pre-launch staleness gate** — `git -C {worktree-path} rev-list --count HEAD..main`. If > 0: the worktree is N commits behind main; deps/assets that landed on main since branch-off (fonts, packages, public/) will be missing and the server may crash on first request. AskUserQuestion: "Rebase worktree op main eerst? (Recommended) | Launch zonder rebase (kan crashen) | Stop". On "Rebase" → invoke `shared/WORKTREE.md → Staleness rebase` and re-run this check. On "Launch zonder rebase" → continue but tag the eventual output line: `DEV SERVER (stale, {n} commits behind): {url}`. On "Stop" → abort with a clear message; user resolves manually.
+   Launch procedure (when launch is required): 0. **Pre-launch staleness gate** — if `git -C {worktree-path} rev-list --count HEAD..main` > 0 → AskUserQuestion: "Rebase worktree on main first (Recommended)" (invoke `shared/WORKTREE.md → Staleness rebase`, re-run this check) / "Launch without rebase" (continue, tag output `DEV SERVER (stale, {n} commits behind): {url}`) / "Stop" (abort; user resolves manually).
    1. Resolve the dev command in this precedence:
       - `feature.json` → `build.runCommand` (per-feature override)
       - `.project/project.json` → `scripts.dev` (project default)
       - Fallback: `npm run dev`
    2. Probe the default port (e.g. `curl -sf http://localhost:3000 -o /dev/null`):
       - **Miss** → proceed to item 3 (launch).
-      - **Hit** → do NOT silently reuse. Verify the running server is the worktree project: check the process's cwd (`lsof -p <pid> | grep cwd` or `pwdx <pid>`) or compare its git HEAD to the worktree branch. If confirmed worktree → reuse the URL, skip launch. If main or another project is serving → kill that process or pick a free port (e.g. 3001) and launch from the worktree. Never proceed to MANUAL tests against a server whose branch identity is unverified — that produces valid-looking PASSes on the wrong codebase.
+      - **Hit** → do NOT silently reuse. Verify the running server is the worktree project (process cwd via `lsof -p <pid> | grep cwd` / `pwdx <pid>`, or its git HEAD vs the worktree branch). Confirmed worktree → reuse the URL, skip launch. Main or another project serving → kill it or launch from the worktree on a free port. Never run MANUAL tests against a server with unverified branch identity.
    3. Otherwise start via `Bash` with `run_in_background: true`. Use the `Monitor` tool to stream the background process's output until a `Local:` / `ready` / `listening on` line appears, then extract the URL. Timeout 30s → graceful fallback.
    4. Store `{devServerUrl, devServerPid}` in `.project/session/active-{name}.json` so PHASE 6 / PHASE Finalize can stop the process.
    5. Display once: `DEV SERVER: {url}`.

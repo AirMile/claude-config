@@ -1,11 +1,6 @@
-# Queue & Scope Selection (PHASE 0 step 2)
+# Queue & Scope Selection (PHASE 0 step 2 — no-argument path)
 
-## a) Feature name provided (`/dev-refactor auth`)
-
-- Validate feature exists in `.project/features/`
-- Feature queue = `[auth]` (regardless of refactor status)
-
-## b) No feature name (`/dev-refactor`)
+Loaded only for `/dev-refactor` without argument. (Name-provided and "recent" cases are handled inline in SKILL.md step 2.)
 
 ### b0) UI-queue detection (check first)
 
@@ -42,10 +37,6 @@ Present scope selection via **AskUserQuestion**:
 - If "All DONE features" → feature queue = all DONE features, mode = `feature`
 - If 0 unrefactored features: show "All features have already been refactored" in the option description
 - If 0 small-items: show "No small items waiting for check" in the option description
-
-## c) "recent"
-
-Find most recently modified `feature.json` with `tests` section, queue = `[that feature]`, mode = `feature`
 
 ## Small-items mode (`--small-items` or via choice)
 
