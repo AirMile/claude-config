@@ -30,18 +30,18 @@ See `../shared/SYNC.md`, `../shared/DASHBOARD.md`, and `../shared/LEARNING-EXTRA
 
 1. PHASE 0: Pre-flight
 2. PHASE 0.5: Project Status Snapshot
-3. PHASE 0.6: Module Gap Ask
-4. PHASE 1: Full structure scan
-5. PHASE 2: Full route/entity/endpoint/component scan
-6. PHASE 3: MVP learnings
-7. PHASE 4: LLM learnings via subagent
-8. PHASE 4.5: Context fabricate + confirm
-9. PHASE 5: Sync
-10. PHASE 5.5: CLAUDE.md completeness check
-11. PHASE 5.6: Claude-config init
-12. PHASE 5.65: Auto Dev Tools
-13. PHASE 5.7: Setup Task Seeding
-14. PHASE 5.75: Legacy github-project.json migration
+3. PHASE 0.55: Team Mode Detection
+4. PHASE 0.6: Module Gap Ask
+5. PHASE 1: Full structure scan
+6. PHASE 2: Full route/entity/endpoint/component scan
+7. PHASE 3: MVP learnings
+8. PHASE 4: LLM learnings via subagent
+9. PHASE 4.5: Context fabricate + confirm
+10. PHASE 5: Sync
+11. PHASE 5.5: CLAUDE.md completeness check
+12. PHASE 5.6: Claude-config init
+13. PHASE 5.65: Auto Dev Tools
+14. PHASE 5.7: Setup Task Seeding
 15. PHASE 5.8: Module Gap Install
 16. PHASE 5.85: Stack Baseline Research
 17. PHASE 6: Report
@@ -220,70 +220,13 @@ Mark PHASE 0.55 → `completed`.
 
 ### PHASE 0.6: Module Gap Ask
 
-> **Todo**: mark PHASE 0.5 → `completed`, PHASE 0.6 → `in_progress`.
+> **Todo**: mark PHASE 0.55 → `completed`, PHASE 0.6 → `in_progress`.
 
-**Framework-guard:** if `stack.framework` from `project.json` is empty, skip the modal entirely. Store `gap_choices = []`, show `Module Gap Ask skipped — no framework detected. Add modules later via /core-setup [module].`, and mark PHASE 0.6 → `completed`. Without a framework, slot relevance cannot be determined and the modal would show incorrect options.
+**Framework-guard:** if `stack.framework` from `project.json` is empty, skip entirely. Store `gap_choices = []`, show `Module Gap Ask skipped — no framework detected. Add modules later via /core-setup [module].`, and mark PHASE 0.6 → `completed`. Without a framework, slot relevance cannot be determined and the modal would show incorrect options.
 
 **Trigger:** at least one relevant slot in `gap_slots[]` (from PHASE 0.5) is empty. Otherwise: store `gap_choices = []` and mark PHASE 0.6 → `completed` without modal.
 
-**Slot relevance** per framework:
-
-| Framework                        | Relevant slots                                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------------------------------ |
-| React/Vue/Svelte (frontend SPA)  | styling, componentLibrary, testing.unit, testing.e2e, linting, state.client, state.server, forms |
-| Next.js/Nuxt/Astro/Remix         | same as above                                                                                    |
-| Backend (Express/Fastify/Django) | testing.unit, linting                                                                            |
-| Game/CLI/Desktop/Mobile          | testing.unit, linting                                                                            |
-
-Filter `gap_slots[]`:
-
-- Slot already filled in `project.json#stack` → skip
-- Slot not relevant for framework → skip
-- Tier-1 module already installed in `package.json` but not in stack-slot → skip silently (PHASE 5 sync will fill it in)
-
-**Multi-select modal** (follow Modal Option Cap from SKILL.md; ≤7 slots = one modal, >7 = split per category group):
-
-```yaml
-header: "Module gaps"
-question: "These tier-1 categories are not yet filled in. What do you want to add? (leave empty = install nothing)"
-options:
-  # One option per empty relevant slot with the Recommended tier-1 module:
-  - label: "Styling: Tailwind (Recommended)"
-    description: "Utility-first CSS framework"
-  - label: "UI components: shadcn-ui (Recommended)"
-    description: "Copy-paste components on Tailwind + Radix"
-  - label: "Testing (unit): Vitest (Recommended)"
-    description: "Fast Vite-native unit tester"
-  - label: "Testing (e2e): Playwright (Recommended)"
-    description: "End-to-end browser testing"
-  - label: "Linting: Biome (Recommended)"
-    description: "Lint + format in one tool"
-  - label: "State (client): Zustand (Recommended)"
-    description: "Minimal client state"
-  - label: "State (server): TanStack Query (Recommended)"
-    description: "Server state + caching"
-  - label: "Forms: react-hook-form + zod (Recommended)"
-    description: "Form validation with schema"
-multiSelect: true
-```
-
-Only show options for empty relevant slots — not all 8 always.
-
-Store user choice in `gap_choices[]` (list of module names). **No install here** — capture only.
-
-**Persist to disk** (survive context compaction):
-
-```bash
-mkdir -p .project/session
-echo '{"gapChoices":<JSON-array>}' > .project/session/onboard-state.json
-```
-
-Show mini-confirm:
-
-```
-Module Gap choice saved: {gap_choices.join(", ") | "none"}
-Install follows in PHASE 5.8 (after sync + learnings).
-```
+> **Todo**: if the trigger fires → Read `references/phase-module-gap-ask.md` and follow it (slot filtering, multi-select modal, persist `gap_choices` to onboard-state.json); otherwise continue.
 
 Mark PHASE 0.6 → `completed`.
 
@@ -352,85 +295,13 @@ For each entry in `package.json` dependencies: look up in wrapper mapping table.
 
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-Skip entirely if `--no-llm` flag is set.
+Skip entirely if `--no-llm` flag is set (do not Read the reference).
 
-**4a) Select representative files**
-
-Per component from PHASE 2e: choose 5-10 representative files. Criteria:
-
-- File size > 50 LOC (skip stubs)
-- Not test files (`*.test.*`, `*.spec.*`, `__tests__/**`)
-- Not generated code (look for `// generated` comments, `*.d.ts` if imported from deps)
-- Bias toward core/services/routes/models directories
-
-Cap total: max 50 files across all components.
-
-**4b) Call `learning-extractor` agent**
-
-Via Agent tool:
-
-- `subagent_type: "learning-extractor"`
-- prompt:
-  ```
-  mode: "onboard"
-  files: [<absolute paths>]
-  existing_learnings: <current learnings[]>
-  cap: 50
-  ```
-
-Subagent runs on Sonnet (see `agents/learning-extractor.md`), output JSON `[{type, summary, evidence}]`.
-
-**4c) Parse and enrich**
-
-For each entry from subagent output:
-
-- Set `source: "synced"`, `author: null` (codebase-wide), `date: <today>`, `feature: <first-segment-from-evidence>`
-- Append to extraction results
-
-On subagent failure (timeout, no JSON) → log warning, continue without LLM learnings.
+> **Todo**: if not `--no-llm` → Read `references/phase-llm-learnings.md` and follow it (representative-file selection, `learning-extractor` agent call, parse + enrich).
 
 ### PHASE 4.5: Context fabricate + confirm
 
-> **Todo**: mark PHASE 4 → `completed`, PHASE 4.5 → `in_progress`.
-
-Infer project metadata from available sources so the user doesn't have to go through a wizard. Read:
-
-- `README.md`: first H1 as name candidate, first paragraph after the title as pitch candidate
-- `package.json`: `name` as name fallback, `description` as pitch fallback
-- PHASE 1 scan result: dir name as name fallback-fallback
-- PHASE 2a: detected `stack.framework` / `stack.language`
-- PHASE 2f: detected `stack.packages`
-
-Assemble:
-
-```
-seed.name          ← README H1 | package.json#name | dir name
-seed.pitch         ← README first paragraph | package.json#description | ""
-seed.seedFile      ← "project-seed.md"
-stack.framework    ← PHASE 2a
-stack.language     ← PHASE 2a (derived from framework + package.json engines)
-stack.packages     ← PHASE 2f
-```
-
-**Pre-filter against existing values.** For each inferred field, read the current value from `project.json`:
-
-- If the existing value is **empty/null/missing** → include in modal, default checked.
-- If the existing value is **non-empty** → exclude from modal (already set, do not overwrite). Log inline: `Kept existing {field}: {current value}`.
-
-Then show one AskUserQuestion (multi-select) over the remaining (empty) fields only:
-
-- header: "Context"
-- question: "I inferred this from the existing code and README. Which fields do you want to accept?"
-- options: one checkbox per field with `label: "{field}: {value}"`, all checked by default
-- multiSelect: true
-
-If all fields are pre-filled and the modal would be empty: skip the modal entirely, log `All seed/stack fields already present — no inference needed.`
-
-For selected fields: write to `project.json`. Deselected fields remain empty (user fills in later via `/project-seed`).
-
-Create `.project/project-seed.md` with the accepted pitch text as a starting point (plain markdown, no template).
-
-If `.project/backlog.json` already exists (non-frontend projects that skip PHASE 5.7): read backlog.json → parse JSON → set `data.flags.hasSeed = true` + `data.flags.seedPath = ".project/project-seed.md"` → write the JSON back. This makes the `/project-backlog` button appear in the backlog dashboard.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 4.5 → `in_progress`. Read `references/phase-context-fabricate.md` and follow it (infer seed/stack from README + package.json, confirm-modal over empty fields only, write project-seed.md, backlog hasSeed flag).
 
 ### PHASE 5: Sync
 
@@ -533,178 +404,32 @@ On "Leave as is": skip.
 
 > **Todo**: mark PHASE 5.5 → `completed`, PHASE 5.6 → `in_progress`.
 
-No interactive permission wizard in mature mode — defaults are safe, user can adjust afterwards.
+If `.claude/settings.local.json` AND `.claude/hooks/format-on-save.cjs` both exist: skip this phase entirely, show "Claude config: already present — skipped".
 
-**Check and write only if missing:**
-
-- `.claude/settings.local.json` not present → write with Full Access defaults:
-
-  ```json
-  {
-    "permissions": {
-      "allow": [
-        "Read *",
-        "Edit *",
-        "Write *",
-        "Bash(npm *)",
-        "Bash(npx *)",
-        "Bash(git *)"
-      ],
-      "deny": ["Edit node_modules/**", "Write dist/**", "Write build/**"]
-    }
-  }
-  ```
-
-  Stack-specific additions: Python → add `Bash(python *)`, `Bash(pip *)`; Go → `Bash(go *)`.
-
-- `.claude/hooks/format-on-save.cjs` not present → write hook based on detected stack. Formatter mapping: see `mode-greenfield.md` Phase 5 table.
-
-If both already exist: skip this phase entirely, show "Claude config: already present — skipped".
+> **Todo**: if either file is missing → Read `references/phase-claude-config-init.md` and follow it (Full Access defaults + stack-specific formatter hook).
 
 ### PHASE 5.65: Auto Dev Tools
 
 > **Todo**: mark PHASE 5.6 → `completed`, PHASE 5.65 → `in_progress`.
-
-Mirror of greenfield Phase 5b — detect dev-tools that get auto-install on a new project, but now opt-in on mature.
-
-**Detect:**
-
-- `stack.framework` contains "React" + "Vite" or is "Next.js"
-- Overlay not yet installed:
-  - **Next.js**: `public/_inspect/client.js` does not exist
-  - **Vite**: `vite.config.*` does not import `inspectOverlay`
-
-Both conditions true → show AskUserQuestion (single-select, with "Let Claude decide"):
-
-```yaml
-header: "Inspect overlay"
-question: "A new {framework} project gets the inspect overlay automatically. This project doesn't have it. Install?"
-options:
-  - label: "Install (Recommended)"
-    description: "Mirror of greenfield default — same DX as a new project"
-  - label: "Skip"
-    description: "Do not install"
-multiSelect: false
-```
-
-**On "Install" or "Let Claude decide":**
-
-```
-Read("references/modules/inspect-overlay/setup-guide.md")
-```
-
-Follow setup-guide fully. For Vite: Babel-mode. For Next.js: full Babel mode (warn user that Turbopack will be disabled).
-
-**Sync to project.json:**
-
-No project.json update needed — inspect-overlay is dev-only, no NPM package, no `stack.*` key. Matches greenfield Phase 5b.
-
-Add `inspect-overlay` to `installed_in_session[]`.
-
-**Condition not triggered or "Skip":** no action.
-
-### playwright-toolchain (mature opt-in)
-
-**Detect:**
-
-- `stack.type` is `Web Frontend` or `Fullstack` (from project.json)
-- `@playwright/test` is missing from `devDependencies` in `package.json`
-
-Both conditions true → show AskUserQuestion:
-
-```yaml
-header: "Playwright toolchain"
-question: "Frontend skills expect playwright-cli + @axe-core/playwright for smoke checks. This project does not have it yet. Install?"
-options:
-  - label: "Install (Recommended)"
-    description: "playwright-cli (global) + @playwright/test + @axe-core/playwright (devDeps)"
-  - label: "Skip"
-    description: "Do not install — smoke checks in frontend-design will report failure"
-multiSelect: false
-```
-
-**On "Install" or "Let Claude decide":**
-
-```bash
-npm install -g @playwright/cli@latest
-npx @playwright/cli install chromium
-{pkgmgr} install --save-dev @playwright/test @axe-core/playwright
-```
-
-Add `playwright-toolchain` to `installed_in_session[]`.
-
-**Condition not triggered or "Skip":** no action.
-
-Do not expand to other libraries — tier-1 modules with a stack slot go through PHASE 0.6/5.8. PHASE 5.65 is exclusively for dev-tools without a stack slot.
+> Read `references/phase-auto-dev-tools.md` and follow it with:
+>
+> - variant: mature-ask
+> - stack-source: project.json#stack (PHASE 2a) + file probes
+> - track-to: installed_in_session[]
 
 Mark PHASE 5.65 → `completed`.
 
 ### PHASE 5.7: Setup Task Seeding (frontend projects only)
 
 > **Todo**: mark PHASE 5.65 → `completed`, PHASE 5.7 → `in_progress`.
-
-**Trigger**: `stack.framework` from PHASE 2a is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS). Otherwise skip entirely.
-
-**Compute**: `needsTheme` = `project.json#theme` has no `colors` or is empty. Skip if `needsTheme = false`.
-
-**Seed** `setup-design-tokens` feature to `.project/backlog.json` — same JSON block as greenfield Phase 7c step 2:
-
-```json
-{
-  "name": "setup-design-tokens",
-  "type": "THEME",
-  "status": "TODO",
-  "phase": "P1",
-  "description": "Define color palette, typography scale, and spacing tokens via /frontend-tokens before UI work begins.",
-  "source": "/core-setup",
-  "dependencies": []
-}
-```
-
-Create `.project/backlog.json` with the schemaVersion-2 scaffold (see `shared/BACKLOG.md`) if missing. Skip if feature with name `setup-design-tokens` already exists (idempotent).
-
-Always set `data.flags.hasSeed = true` and `data.flags.seedPath = ".project/project-seed.md"` in the backlog JSON (even if the design-tokens item already existed). This makes the `/project-backlog` button appear.
-
-No interactive modal — only show `Setup task added to backlog` in stdout. The PHASE 6 report "Next steps" section then automatically shows the `/frontend-tokens` bullet.
+> Only if `stack.framework` from PHASE 2a is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS) → Read `references/phase-setup-task-seeding.md` and follow it with:
+>
+> - variant: mature
+> - auto-execute: false (stdout line only; the PHASE 6 report renders the /frontend-tokens bullet)
+>
+> Otherwise skip.
 
 Mark PHASE 5.7 → `completed`.
-
-### PHASE 5.75: Legacy github-project.json migration
-
-> **Todo**: mark PHASE 5.7 → `completed`, PHASE 5.75 → `in_progress`.
-
-**Trigger**: `.project/github-project.json` exists. Otherwise skip entirely.
-
-```bash
-test -f .project/github-project.json && echo "found"
-```
-
-**If present:**
-
-1. Read `.project/github-project.json` as JSON.
-2. Read `.project/project.json` → `data.team` section.
-3. Write fields to `data.team.githubProject`:
-
-   ```json
-   "githubProject": {
-     "owner": "<github_project.json owner>",
-     "repo": "<github_project.json repo>",
-     "projectNumber": "<github_project.json projectNumber or null>",
-     "defaultAssignee": "<github_project.json defaultAssignee or null>"
-   }
-   ```
-
-4. Write `project.json` back.
-5. Move the file to archive:
-
-   ```bash
-   mkdir -p .project/.archive
-   mv .project/github-project.json .project/.archive/github-project.json
-   ```
-
-No prompt — silent migration. Only show `Legacy github-project.json migrated to project.json#team.githubProject` in stdout.
-
-Mark PHASE 5.75 → `completed`.
 
 ### PHASE 5.8: Module Gap Install
 
@@ -712,30 +437,9 @@ Mark PHASE 5.75 → `completed`.
 
 **Read `gap_choices[]` back:** open `.project/session/onboard-state.json`, parse `gapChoices`. File not present or empty array → treat as `gap_choices = []`.
 
-**Trigger:** `gap_choices[]` is not empty. Otherwise skip entirely to PHASE 6.
+**Trigger:** `gap_choices[]` is not empty. Otherwise skip entirely to PHASE 5.85.
 
-**Once:**
-
-```
-Read("references/mode-install.md")
-```
-
-**Per module in `gap_choices[]`:** follow only `mode-install.md` **PHASE 5** steps 0-5 (state check → install → configure → verify → sync project context). **Skip the TaskCreate of 7 items at the top of mode-install.md** — that belongs to standalone install mode. Work the steps inline within this mature TaskCreate item; do not add a new TaskList and do not mutate mature todos.
-
-If mode-install.md refers to its own PHASE 0/1/2/3/4/6/7 — skip those. Those are for standalone install runs.
-
-Remember installed modules as `installed_in_session[]` for use in PHASE 6 report. One pass — no automatic repeat.
-
-**Cleanup:**
-
-```bash
-rm -f .project/session/onboard-state.json
-```
-
-**Not in scope:**
-
-- Research-mode libraries (Path B) — users who want non-tier-1 must use `/core-setup [free-text]`
-- Categories without a stack slot (Routing, Animation, Icons, Auth, i18n, Analytics)
+> **Todo**: if the trigger fires → Read `references/phase-module-gap-install.md` and follow it (mode-install PHASE 5 steps per module, track `installed_in_session[]`, cleanup onboard-state.json).
 
 Mark PHASE 5.8 → `completed`.
 
@@ -755,81 +459,7 @@ Mark PHASE 5.85 → `completed`.
 
 ### PHASE 6: Report
 
-> **Todo**: mark PHASE 5.85 → `completed`, PHASE 6 → `in_progress`.
-
-**Render rules** for the report below:
-
-- Bullets with `{if <condition>}` prefix: skill evaluates condition, renders bullet only if `true`. The `{if X}` prefix is **not** shown literally in the output.
-- Bullets without prefix: always render.
-
-**Condition syntax:**
-
-- `<path> empty` — true if value is `null`, `undefined`, empty string `""`, empty array `[]`, or object with no own keys `{}`
-- `<path> = <value>` — strict equality check
-- `&&` / `||` — logical operators with short-circuit evaluation
-- Undefined operand with `&&` → `false`; with `||` → skipped
-- `<name>` without operator → boolean variable computed in earlier PHASE (e.g. `needsTheme` from PHASE 5.7)
-
-| Condition                             | Bullet                                     |
-| ------------------------------------- | ------------------------------------------ |
-| (none — always)                       | `/core-pull`                               |
-| `seed.pitch` empty                    | `/project-seed`                            |
-| `features[]` empty                    | `/dev-define`                              |
-| frontend stack && `needsTheme = true` | `/frontend-tokens`                         |
-| `installed_in_session[]` not empty    | show "Modules added: {list}" under Updated |
-
-**Branch/PR context fetch (before render):**
-
-```bash
-git rev-parse --abbrev-ref HEAD                                          # current branch
-git rev-list --left-right --count origin/main...HEAD 2>/dev/null         # behind/ahead of main
-gh pr list --json number,title,headRefName,isDraft --limit 5 2>/dev/null # open PRs (skip if gh not available)
-```
-
-```
-ONBOARD COMPLETE
-
-Project: {project-name}
-Mode:    mature (full scan {+ LLM extraction | --no-llm})
-
-Repository:
-  Branch:  {current branch}
-  vs main: ↓{N} behind  ↑{M} ahead  {if no remote: "(no remote)"}
-{if open PRs present}  Open PRs: {#number title (draft?), ...}
-
-Context:
-  Structure:    refreshed ({N} dirs)
-  Routing:      {N} routes
-  Patterns:     {N} auto, {M} manual
-
-Deep analysis:
-  Entities:     {N} total
-  Endpoints:    {N} total
-  Architecture: {N} components
-  Packages:     {N} total
-
-Learnings:
-  Pitfalls:     {N} ({A} from fix-commits, {B} from TODO/FIXME)
-  Patterns:     {N} ({C} abstraction-dirs, {D} wrapper-deps, {E} LLM)
-  Observations: {N}
-  Total new:    {N} (capped at 50)
-  Authors:      {list, or "codebase-wide" for LLM-inferred}
-
-CLAUDE.md:     {generated | {N} sections added | already complete}
-Stack baseline: {.claude/research/stack-baseline.md created | already present | skipped (no framework)}
-Claude config: {settings.local.json + hook created | already present}
-
-Updated: {date}
-{if installed_in_session[] not empty}  Modules added: {installed_in_session[]}
-
-Next steps:
-  • /core-pull              — incremental updates (sync state is on)
-{if seed.pitch empty}     • /project-seed   — fill in seed pitch
-{if features[] empty}     • /dev-define         — define the first feature
-{if frontend && needsTheme}  • /frontend-tokens — design tokens (color, typography, spacing)
-```
-
-Mark PHASE 6 → `completed`.
+> **Todo**: mark PHASE 5.85 → `completed`, PHASE 6 → `in_progress`. Read `references/phase-mature-report.md` and follow it (render rules, branch/PR context fetch, ONBOARD COMPLETE report).
 
 > **Todo**: mark PHASE 6 → `completed`.
 
