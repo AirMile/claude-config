@@ -2,6 +2,8 @@
 
 Full context-loading procedure for `/dev-build`. Executed via Todo-marker in SKILL.md.
 
+> **Note**: this file loads on every run — it is a deliberate size-split of SKILL.md, not lazy loading. Genuinely conditional blocks inside it (theme-token guard, dependency-blocker dialog) are small enough to stay inline.
+
 ---
 
 **Capture git baseline** (first action):
@@ -32,30 +34,19 @@ Verify packages are resolvable and the setup file imports `@testing-library/jest
 **Skip entirely** for non-JS stacks (no `package.json`) or backend-only Node stacks without a component-testing framework.
 
 ```bash
-# Detect setup file (vitest, jest, or generic locations)
-# Glob covers: root (vitest.setup.*, jest.setup.*, setup-tests.*),
-# src/test-setup.*, src/test/setup.*, tests/setup.*, test/setup.*
+# Detect setup file: root/src/test dirs (vitest.setup.*, jest.setup.*, setup-tests.*, */setup.*),
+# fallback: setupFiles entry in vitest.config.*
 SETUP=$(ls vitest.setup.* jest.setup.* src/test-setup.* setup-tests.* \
           src/test/setup.* tests/setup.* test/setup.* 2>/dev/null | head -1)
-# Fallback: read setupFiles from vitest.config.* if ls is empty
-if [ -z "$SETUP" ] && [ -f vitest.config.ts ]; then
-  SETUP=$(grep -oE "setupFiles[^']*'[^']+'" vitest.config.ts 2>/dev/null | grep -oE "'[^']+'" | tr -d "'" | head -1)
-fi
 # Check jest-dom: imported in the setup file AND installed
 [ -n "$SETUP" ] && grep -q "@testing-library/jest-dom" "$SETUP" \
   || echo "MISSING: @testing-library/jest-dom import not found in setup file"
 node -e "require.resolve('@testing-library/jest-dom')" 2>&1 || echo "MISSING: @testing-library/jest-dom"
-
-# Stack-aware component-library check (uses the already-detected stack)
-# React   → @testing-library/react
-# Vue     → @testing-library/vue
-# Svelte  → @testing-library/svelte
-# Angular → @testing-library/angular
-# Other/backend → skip
+# Stack-aware component-library check: @testing-library/{react|vue|svelte|angular} per detected stack
 node -e "require.resolve('@testing-library/{framework}')" 2>&1 || echo "MISSING: @testing-library/{framework}"
 ```
 
-Replace `{framework}` with the value from the stack detection above. If no component framework is found → skip the framework check.
+No component framework detected → skip the framework check.
 
 Missing → auto-install (default) if `package.json` already contains `vitest`, `jest`, or `playwright` as a key anywhere in its content. Otherwise → **AskUserQuestion**: "Install + add import (Recommended)" / "Skip and continue".
 
@@ -160,13 +151,11 @@ multiSelect: false
 - "Continue with fallback defaults" → set `$USE_FALLBACK_TOKENS = true`; Token-styled UI rule uses `shared/TOKENS.md` defaults.
 - "Cancel" → exit.
 
-**Token-styled UI rule** (applies to both `feature.hasUI === true` FEATURE builds and all COMPONENT builds): dev-build writes functional, presentably-styled UI using the project's design tokens. This is sufficient for `/dev-verify` manual checks; polish details via browser inspect + commit without re-running `/frontend-design`.
+**Token-styled UI rule** (applies to both `feature.hasUI === true` FEATURE builds and all COMPONENT builds): dev-build writes functional, presentably-styled UI using the project's design tokens — sufficient for `/dev-verify` manual checks; polish via browser inspect + commit without re-running `/frontend-design` (run it on-demand only for layout reshaping).
 
-- Use semantic HTML, form controls, and layout structure appropriate to the feature.
-- Use token-based Tailwind classes: `bg-background`, `text-foreground`, `bg-primary`, `text-primary-foreground`, `rounded-md`, `p-4`, `gap-4`, semantic headings (`text-2xl font-semibold`). Read `project.json#theme` for token names; if empty → fall back to defaults from `shared/TOKENS.md`.
-- T101/T102 still enforced — no hex literals or `bg-[#hex]` values.
-- **Motion:** Read `project.json#theme.motion.pack`. If set and not `"none"`: apply `transition-transform duration-fast ease-out` + hover lift + active scale to all interactive elements (buttons, cards, links). For Expressive/Playful packs: use `var(--ease-ios-spring)` and `var(--spring-snappy-bezier)` via inline CSS or token classes. If `motion.dev`/`framer-motion` detected in `package.json`: use `<motion.*>` with spring token values (`stiffness/damping/mass` from `theme.motion.spring[]`). Always wrap choreography in `@media (prefers-reduced-motion: reduce)` fallback. T106/T107 enforced — no hardcoded ms or cubic-bezier literals.
-- `/frontend-design` is optional: run it on-demand for layout reshaping (sidebar/hero/grid). No marker comment on generated files.
+- Use semantic HTML and token-based Tailwind classes (`bg-background`, `text-foreground`, `bg-primary`, `rounded-md`, `p-4`, semantic headings). Read `project.json#theme` for token names; empty → defaults from `shared/TOKENS.md`.
+- **Motion** (if `theme.motion.pack` set and not `"none"`): token-based transitions + hover lift + active scale on interactive elements; Expressive/Playful packs use `var(--ease-ios-spring)`/`var(--spring-snappy-bezier)`; `motion.dev`/`framer-motion` in package.json → `<motion.*>` with spring token values from `theme.motion.spring[]`.
+- Enforcement (TOKENS.md T101/T102/T106/T107 greps + prefers-reduced-motion fallback): PHASE 2 step 4 — single canon, applied where the code is written.
 
 **Dependency check:**
 

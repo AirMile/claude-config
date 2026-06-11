@@ -124,15 +124,10 @@ If root-cause cannot be confirmed within 2 attempts: log as blocker with `"cause
 
 **On `npm install ERESOLVE`** (peer-dep conflict during dependency add/upgrade):
 
-1. **Read the error verbatim** — `Found: pkg@X / peer: pkg@Y` lines tell you exactly which versions clash.
-2. **Identify which package needs to move**:
-   - If the requested package is the one with the strict peer dep → look for an older compatible release that matches the installed peer.
-   - If the existing package is the holdout → check whether upgrading it is appropriate (e.g. its major version is now out of date for the project's framework version).
-3. **Decide and execute**:
-   - Compatible older version of requested pkg exists → install with that version.
-   - Upgrade of existing pkg is the right move → upgrade it + matching peer-deps in one `npm install` call. Note the upgrade in `build.decisions[]` (type: `pitfall` — see PHASE 3A).
-   - Neither option is clean → log as blocker with `cause: "peer-dep-deadlock"`, skip the dependent REQ.
-4. **`--legacy-peer-deps` is a last resort** — only after a documented decision in `build.decisions[]`, never as the first reflex. It bypasses the conflict but doesn't resolve it.
+1. Read the `Found: pkg@X / peer: pkg@Y` lines verbatim — they name the clash.
+2. Prefer a compatible older version of the requested package; or deliberately upgrade the existing holdout + matching peer-deps in one `npm install` call (note the upgrade in `build.decisions[]`, type `pitfall`).
+3. Neither option clean → log as blocker with `cause: "peer-dep-deadlock"`, skip the dependent REQ.
+4. `--legacy-peer-deps` is a last resort — only after a documented decision in `build.decisions[]`.
 
 ### PHASE 2b: Regression Gate + Diagnostics
 
@@ -302,27 +297,15 @@ Tests: {passed}/{total} PASS
 Files created: {count} | modified: {count}
 ```
 
-**Next steps block** — check whether the current branch matches the `worktree-*` pattern (`git -C "$REPO" branch --show-current`), then print exactly ONE variant:
-
-**Variant A — worktree active:**
+**Next steps block** — check whether the current branch matches the `worktree-*` pattern (`git -C "$REPO" branch --show-current`):
 
 ```
-Next steps (start in a NEW chat — worktree auto-detected):
-  1. /dev-verify {feature}    → hybrid acceptance verification (auto-finalizes worktree on green)
-  2. /dev-refactor {feature}  → optional polish after verify (runs on main)
-  ?. /dev-debug               → only on unexpected build failures
-  ?. /core-finalize {feature} → recovery only — when verify was skipped or interrupted
-
-💡 Worktree: {worktree_path}
-```
-
-**Variant B — no worktree (built on main or detached):**
-
-```
-Next steps:
-  1. /dev-verify {feature}   → hybrid acceptance verification
+Next steps:{ (start in a NEW chat — worktree auto-detected) when worktree active}
+  1. /dev-verify {feature}   → hybrid acceptance verification{ (auto-finalizes worktree on green) when worktree active}
   2. /dev-refactor {feature} → optional polish after verify
   ?. /dev-debug              → only on unexpected build failures
 ```
+
+When a worktree is active, append two footer lines: `  ?. /core-finalize {feature} → recovery only — when verify was skipped or interrupted` and `💡 Worktree: {worktree_path}`.
 
 > **Todo**: mark PHASE 3B → `completed`.
