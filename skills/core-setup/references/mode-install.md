@@ -208,7 +208,11 @@ Category ↔ stack-key mapping:
 | State management     | `stack.state.client` + `stack.state.server` (show both) |
 | Forms & validation   | `stack.forms`                                           |
 
-Categories without mapping (Routing, Animation, Icons, Auth, i18n, Analytics, Dev tools, Other) always show the default description, regardless of snapshot.
+Categories without mapping (Routing, Animation, Icons, Auth, i18n, Analytics, Dev tools) always show the default description, regardless of snapshot.
+
+Two sequential modals (7-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`). Show Modal 1 first; show Modal 2 only when the user picks "More categories →".
+
+**Modal 1 — core stack categories:**
 
 ```yaml
 header: "Category"
@@ -220,6 +224,16 @@ options:
   - label: "Linting & formatting [context-aware]", description: "Biome or ESLint+Prettier"
   - label: "State management [context-aware]", description: "Client state, server state"
   - label: "Forms & validation [context-aware]", description: "Form libs + schema validators"
+  - label: "More categories →", description: "Routing, animation, icons, auth, i18n, analytics, dev tools"
+multiSelect: false
+```
+
+**Modal 2 — more categories** (only after "More categories →"):
+
+```yaml
+header: "Category"
+question: "Which category?"
+options:
   - label: "Routing", description: "File-based or declarative routers"
   - label: "Animation", description: "Motion libraries"
   - label: "Icons", description: "Icon packs"
@@ -227,11 +241,12 @@ options:
   - label: "i18n", description: "Translation and routing"
   - label: "Analytics", description: "Privacy-first or full-stack"
   - label: "Dev tools", description: "Storybook, devtools profiling"
-  - label: "Other (research)", description: "Free-form library name → research"
 multiSelect: false
 ```
 
 `[context-aware]` labels are replaced by the appropriate format from the table above. No hardcoded YAML permutations — the instruction above the YAML describes the rendering behavior.
+
+Free-text input via the built-in "Other" field (either modal) → treat as `direct_research` and follow PHASE 4 Path B.
 
 ---
 
@@ -262,7 +277,7 @@ Follow the install/teardown steps. Detect if already installed → offer install
 
 ### Path B — Research mode
 
-When **"Other (research)"** in PHASE 3 or **"Other library (research)"** in PHASE 4:
+When the user typed a free-text "Other" answer in PHASE 3, or chose **"Other library (research)"** in PHASE 4:
 
 ```
 Read("references/research-flow.md")

@@ -48,6 +48,8 @@ Follow skill instructions exactly — deviate only on explicit user request. Don
 
 For project setup: use `/core-setup`, not `/init`. `/init` generates a full codebase CLAUDE.md without a `.gitignore` strategy or bootstrap.
 
+Joining an existing repo that has no `.project/` folder or a stale baseline (`context.updated` older than ~3 months): run `/core-setup --mode=mature` first to build base memory, then `/core-pull` for incremental sync.
+
 ## Context
 
 Look for project-local config files first (e.g., inside the current project directory) before checking global/root paths.

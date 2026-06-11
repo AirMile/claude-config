@@ -99,16 +99,47 @@ class TestClassify(unittest.TestCase):
     def test_greenfield_empty(self):
         self.assertEqual(classify(self.tmp), "greenfield")
 
-    def test_ambiguous_readme_only(self):
+    def test_greenfield_readme_only(self):
+        # README without any source files → greenfield (zero-source hard
+        # signal wins; previously ambiguous).
         (self.tmp / "README.md").write_text("x" * 200)
-        self.assertEqual(classify(self.tmp), "ambiguous")
+        self.assertEqual(classify(self.tmp), "greenfield")
 
-    def test_mature_on_deps_and_readme(self):
+    def test_greenfield_on_deps_and_readme_without_source(self):
+        # Zero source files = nothing to scan → greenfield, even with
+        # README + deps (scaffolds, docs-only repos).
+        (self.tmp / "README.md").write_text("x" * 200)
+        (self.tmp / "pyproject.toml").write_text(
+            "[project]\ndependencies = [\n  \"httpx\",\n  \"fastapi\",\n  \"pydantic\",\n]\n"
+        )
+        self.assertEqual(classify(self.tmp), "greenfield")
+
+    def test_mature_on_deps_readme_and_some_source(self):
+        # Same soft signals plus actual source files → mature via signal count.
+        self._make_files(".py", 5)
         (self.tmp / "README.md").write_text("x" * 200)
         (self.tmp / "pyproject.toml").write_text(
             "[project]\ndependencies = [\n  \"httpx\",\n  \"fastapi\",\n  \"pydantic\",\n]\n"
         )
         self.assertEqual(classify(self.tmp), "mature")
+
+    def test_mature_on_source_count_alone(self):
+        # Hard signal: 30+ source files → mature with no other signals
+        # (e.g. Godot project: .gd files, no manifest, no README).
+        self._make_files(".gd", 30)
+        self.assertEqual(classify(self.tmp), "mature")
+
+    def test_ambiguous_small_source_only(self):
+        # 1-20 source files with no other signals stays ambiguous-free:
+        # zero soft signals → greenfield.
+        self._make_files(".py", 10)
+        self.assertEqual(classify(self.tmp), "greenfield")
+
+    def test_ambiguous_small_source_plus_readme(self):
+        # One soft signal (readme) with a small codebase → ambiguous.
+        self._make_files(".py", 10)
+        (self.tmp / "README.md").write_text("x" * 200)
+        self.assertEqual(classify(self.tmp), "ambiguous")
 
 
 if __name__ == "__main__":

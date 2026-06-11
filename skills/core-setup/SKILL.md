@@ -1,6 +1,6 @@
 ---
 name: core-setup
-description: Project setup hub — detects whether a project is new (greenfield wizard), existing (mature scan), or needs a single tier-1 module added (install). Use with /core-setup, or when a user wants to initialize/onboard a project, scan an existing codebase into .project/ memory, or add a stack module (Tailwind, Vitest, shadcn-ui, etc.). Not for global ~/.claude/ setup — that is /core-bootstrap.
+description: Use when a project needs initializing or onboarding — a new project (greenfield wizard), an existing codebase to scan into .project/ memory (mature), or a single tier-1 stack module to add (Tailwind, Vitest, shadcn-ui, etc.). Use with /core-setup. Not for global ~/.claude/ setup — that is /core-bootstrap.
 argument-hint: "[--mode=greenfield|mature|audit|resync|install] [module] [--no-llm] [--scope=<dir>]"
 metadata:
   author: claude-config
@@ -65,23 +65,23 @@ Stop.
    - `--mode=resync` → `references/mode-resync.md`
    - `--mode=install` → `references/mode-install.md`
 
-3. **Detect existing project** — run detection:
+3. **Detect existing project** — run both scripts in one call:
 
    ```bash
-   python3 .claude/skills/core-setup/scripts/detect-existing.py --path .
-   python3 .claude/skills/core-setup/scripts/detect-mode.py --path .
+   MODE=$(python3 .claude/skills/core-setup/scripts/detect-mode.py --path .)
+   EXISTING=$(python3 .claude/skills/core-setup/scripts/detect-existing.py --path .)
    ```
 
-   Use `detect-mode.py` output as the primary classification. `detect-existing.py` checks for presence of existing config files.
+   `MODE` is one of `greenfield` | `mature` | `ambiguous`. `EXISTING` reports whether config files exist (any detected config = "yes" below).
 
-4. **Choose mode** based on results:
+4. **Choose mode** — the table below is the ONLY routing authority. Match exactly one row on `MODE` + `EXISTING`; never override the script output based on your own impression of the project:
 
-   | detect-mode output | Existing configs? | Action                                                            | User-facing one-liner                       |
-   | ------------------ | ----------------- | ----------------------------------------------------------------- | ------------------------------------------- |
-   | `greenfield`       | no                | Load `mode-greenfield.md` directly                                | `New project — starting setup wizard.`      |
-   | `greenfield`       | yes               | AskUserQuestion: Greenfield wizard / Mature scan / Audit / Resync | `Existing project detected — choose below.` |
-   | `mature`           | n/a               | Load `mode-mature.md` directly                                    | `Existing project — scanning codebase.`     |
-   | `ambiguous`        | n/a               | AskUserQuestion: Greenfield wizard / Mature scan / Audit          | `Project state unclear — choose below.`     |
+   | `MODE`       | Existing configs? | Action                                                            | User-facing one-liner                       |
+   | ------------ | ----------------- | ----------------------------------------------------------------- | ------------------------------------------- |
+   | `greenfield` | no                | Load `mode-greenfield.md` directly                                | `New project — starting setup wizard.`      |
+   | `greenfield` | yes               | AskUserQuestion: Greenfield wizard / Mature scan / Audit / Resync | `Existing project detected — choose below.` |
+   | `mature`     | (ignore)          | Load `mode-mature.md` directly                                    | `Existing project — scanning codebase.`     |
+   | `ambiguous`  | (ignore)          | AskUserQuestion: Greenfield wizard / Mature scan / Audit          | `Project state unclear — choose below.`     |
 
    **Reporting rule:** show only the one-liner from the table above to the user. No filenames (`mode-greenfield.md`), no script output, no internal classification terms. Detection details belong in a debug mode, not in the happy path.
 

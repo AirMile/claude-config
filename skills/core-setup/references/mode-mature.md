@@ -471,9 +471,10 @@ Skip-worktree recovery as in `core-pull` PHASE 0.
 
 ```bash
 echo '{"lastSync":"<ISO timestamp>"}' > .project/session/sync-state.json
+touch .project/session/onboarded
 ```
 
-Makes subsequent `/core-pull` runs incremental from now on.
+Makes subsequent `/core-pull` runs incremental from now on. The `onboarded` marker tells `/core-pull` this developer already onboarded — suppresses its onboard nudge permanently for this checkout (`.project/session/` is local and survives `git checkout -- .project/`).
 
 ### PHASE 5.5: CLAUDE.md completeness check + migration
 

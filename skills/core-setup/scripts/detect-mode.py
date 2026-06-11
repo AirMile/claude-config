@@ -160,9 +160,19 @@ def classify(root: Path) -> str:
     if has_meaningful_project_json(root):
         return "mature"
 
+    source_count = count_source_files(root)
+
+    # Hard signals — maturity = existing code. A codebase with 30+ source
+    # files is always scannable (mature) regardless of soft signals; a
+    # codebase with zero source files has nothing to scan (greenfield),
+    # even when README/deps exist (scaffolds, docs-only repos).
+    if source_count >= 30:
+        return "mature"
+    if source_count == 0:
+        return "greenfield"
+
     signals = 0
 
-    source_count = count_source_files(root)
     if source_count > 20:
         signals += 1
 
