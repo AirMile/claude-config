@@ -76,27 +76,7 @@ options:
 multiSelect: false
 ```
 
-**If "Feature from backlog":**
-
-- Read `.project/backlog.json`, parse JSON (see `shared/BACKLOG.md`), show features with status TODO or DEF
-- AskUserQuestion to choose feature
-- Load `01-define.md` (if it exists) as input context
-- Load existing `thinking.md` (if it exists) as previous thinking output
-- No define? Use feature description from backlog
-
-**If "Page / UX flow":**
-
-- Glob for page files in the project
-- AskUserQuestion to choose page, or let user describe a UX flow
-- Load page file as input context
-- Check `.project/thinking/{name}.md` for previous thinking output
-
-**If "Standalone idea":**
-
-- Ignore the loaded concept — this idea is independent of the project
-- Ask: "Describe your idea in a few sentences"
-- Check `.project/thinking/` for previous standalone ideas
-- Proceed to Step 2 with user's input
+**If "Feature from backlog" / "Page / UX flow" / "Standalone idea":** follow the matching scope handler in [shared/INPUT-PARSING.md § PHASE 1a](../../shared/INPUT-PARSING.md) (seed variant — "proceed" = Step 2).
 
 **If "Assignment / Large Feature":**
 
@@ -165,30 +145,4 @@ Ask: "What is your idea? Describe it in 1-2 sentences."
 
 Proceed to Step 2 with the argument as starting concept.
 
-**Chat Context flow:**
-
-1. Analyze the conversation history:
-   - What idea, concept, or topic has been discussed?
-   - What are the key details, requirements, or characteristics mentioned?
-   - Is there enough substance to work with?
-2. Synthesize into a concise concept summary
-3. Present to user:
-
-   ```
-   CHAT CONTEXT
-
-   [concise summary of what was discussed in the conversation]
-   ```
-
-4. Use AskUserQuestion to confirm:
-   ```yaml
-   header: "Context Check"
-   question: "Does this summary of the conversation look right?"
-   options:
-     - label: "Yes, correct (Recommended)", description: "Use this as input"
-     - label: "Adjust", description: "I want to update the summary"
-   multiSelect: false
-   ```
-5. If confirmed: use as input concept and proceed to Step 2
-6. If "Adjust": ask what to change, update summary, confirm again
-7. If insufficient context in conversation: inform user and fall back to manual input
+**Chat Context flow:** follow [shared/INPUT-PARSING.md § Chat Context flow](../../shared/INPUT-PARSING.md) (seed variant — confirmed summary → Step 2).

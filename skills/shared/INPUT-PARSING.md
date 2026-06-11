@@ -1,9 +1,10 @@
 # Shared: PHASE 1 Parse Input
 
-Used by `/project-brainstorm` and `/project-critique`. The caller's Todo-marker specifies the **variant**:
+Used by `/project-brainstorm`, `/project-critique`, and `/project-seed`. The caller's Todo-marker specifies the **variant**:
 
 - **brainstorm** — action = "brainstorm", confirm: 2 options, no applied-techniques check
 - **critique** — action = "analyze", confirm: 3 options, includes applied-techniques check
+- **seed** — partial: only the § PHASE 1a scope handlers (Feature/Page/Standalone) and § Chat Context flow apply; concept detection, scope question, and output paths are seed-specific and live in `project-seed/references/initial-intake.md`. Every "proceed" = proceed to project-seed PHASE 2 (Explore and Expand).
 
 ---
 
