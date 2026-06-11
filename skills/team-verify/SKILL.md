@@ -522,34 +522,12 @@ Use AskUserQuestion:
      - Add new components if they were created during fixes
      - Skip if no `architecture.components` exists in project-context.json
 
-4. **Scoped auto-commit** (only this skill's changes):
-
-   Compare current git status with baseline from PHASE 0:
-
-   ```bash
-   git status --porcelain | sort > /tmp/current-status.txt
-   ```
-
-   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
-   - **NEW** (only in current, not in baseline) → `git add` automatically
-   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
-   - **PRE-EXISTING** (only in baseline) → do NOT stage
-
-   If baseline file doesn't exist, fall back to staging only known skill output files:
-
-   ```bash
-   git add .project/features/{feature-name}/feature.json .project/backlog.json .project/project.json .project/project-context.json
-   ```
-
-   ```bash
-   git commit -m "test({feature}): {pass}/{total} requirements verified"
-   ```
-
-   **Cleanup:**
-
-   ```bash
-   rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt
-   ```
+4. **Scoped auto-commit** — follow [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md). team-verify deltas:
+   - **Baseline**: status form — `.project/session/pre-skill-status.txt`.
+   - **OVERLAP policy**: interactive.
+   - **Fallback**: stage only known skill-output files (`git add .project/features/{feature-name}/feature.json .project/backlog.json .project/project.json .project/project-context.json`).
+   - **Commit**: `git commit -m "test({feature}): {pass}/{total} requirements verified"`
+   - **Cleanup**: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
 #### Step 2: Teammate Feedback
 

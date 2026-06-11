@@ -92,49 +92,13 @@ No learnings found → skip step.
 
 ## Step 4: Scoped Commit
 
-**Pre-commit diagnostics** (stack-aware, identical to dev-build):
+Follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). dev-verify deltas:
 
-- Read `package.json` → check `scripts` for keys matching `typecheck|type-check|tsc|lint`
-- Python project (no package.json): check for `mypy.ini` or `[tool.mypy]` in `pyproject.toml`
-- No match found → skip silently
-
-On match: run found script(s) (multiple matches → parallel) via Bash tool with `timeout: 60000`. Compute:
-
-- baseline = set of error-keys (file:line:rule) from `.project/session/pre-skill-lint.txt` (written in PHASE 0 step 5)
-- current = set of error-keys from this run
-- new_errors = current \ baseline
-
-If new_errors is empty → show `DIAGNOSTICS: PASS`, proceed to git status compare.
-If new_errors not empty → show `DIAGNOSTICS: {len(new_errors)} new error(s) introduced` + file:line for each new error. AskUserQuestion:
-
-- `"Fix now (Recommended)"` — stop Step 4, no commit; user fixes and restarts skill
-- `"Commit anyway"` — proceed; add `[diagnostics-warnings]` to commit message
-- `"Abort"` — cancel commit entirely
-
-(Use set-diff of error-keys, not numeric delta — numeric delta produces false positives when errors shift line numbers due to surrounding edits.)
-
-Compare `git status --porcelain | sort` with `.project/session/pre-skill-status.txt`:
-
-- **NEW** (only in current) → `git add -f` (subdirs like `.project/features/` and `.project/session/` are gitignored — `-f` required for session files that fall under them)
-- **OVERLAP** (in both, changed by this skill) → `git add -f`
-- **PRE-EXISTING** (only in baseline, or overlap not changed by this skill) → do not stage
-
-Baseline not found → fallback `git add -A`.
-
-**Worktree split-commit** — when running inside a worktree (`current_root != main_root`),
-`.project/` is a set of symlinks back to the main repo. Staging via the worktree
-fails with `pathspec is beyond a symbolic link`. Resolve by splitting the commit:
-
-1. App-code changes (tests, source files in the worktree branch) → stage + commit
-   inside the worktree as normal.
-2. `.project/` changes (feature.json, backlog.json, project-context.json) → stage
-   and commit on main via `git -C {main_root} add -f .project/...` and
-   `git -C {main_root} commit -m "..."`.
-
-Use the same commit message body for both, but a distinct subject:
-
-- Worktree: `verify({feature}): {N} requirements verified (...)`
-- Main: `verify({feature}): sync backlog + feature.json + project-context`
+- **Baseline**: status form — `.project/session/pre-skill-status.txt`; lint baseline `.project/session/pre-skill-lint.txt` (written in PHASE 0 step 5).
+- **Diagnostics**: run the § 3 set-diff. Source detection: `package.json#scripts` keys matching `typecheck|type-check|tsc|lint`; Python (no package.json): `mypy.ini` or `[tool.mypy]` in `pyproject.toml`. No match → skip silently. Multiple matches → parallel Bash calls, `timeout: 60000`.
+- **OVERLAP policy**: interactive. **Staging**: NEW and included OVERLAP both via `git add -f` (gitignored `.project/` subdirs).
+- **Fallback**: `git add -A`.
+- **Worktree split-commit**: § 4 applies — subjects `verify({feature}): {N} requirements verified (...)` (worktree) and `verify({feature}): sync backlog + feature.json + project-context` (main).
 
 **Variables** (count per PHASE 0 classification):
 

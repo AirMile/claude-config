@@ -103,27 +103,7 @@ The backlog dashboard detects changes in the session directory via SSE and autom
 
 **Storage:** `.project/session/pre-skill-sha.txt` or `pre-skill-status.txt`
 
-**Purpose:** scoped commits — only stage files from this skill.
-
-**On skill start:**
-
-```bash
-git rev-parse HEAD > .project/session/pre-skill-sha.txt
-```
-
-**On skill end (commit):**
-
-```bash
-git diff --name-only $(cat .project/session/pre-skill-sha.txt) HEAD
-```
-
-Files NOT in this diff AND already dirty → pre-existing, do not stage.
-
-**Cleanup:**
-
-```bash
-rm -f .project/session/pre-skill-sha.txt .project/session/active-FEATURE_NAME.json
-```
+**Purpose:** scoped commits — only stage files from this skill. Full protocol (baseline forms, NEW/OVERLAP/PRE-EXISTING categorization, fallbacks, cleanup): [SCOPED-COMMIT.md](SCOPED-COMMIT.md).
 
 ---
 

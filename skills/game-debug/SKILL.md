@@ -364,25 +364,13 @@ No relevant pitfall → skip step without warning.
 
 ### Step 2: Scoped Commit
 
-Compare `git status --porcelain | sort` with `.project/session/pre-debug-status.txt`:
+Follow [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md). game-debug deltas:
 
-- **NEW** (only in current) → `git add -f` (`.project/` is gitignored, `-f` required)
-- **OVERLAP** (in both, modified by this debug run) → `git add`
-- **PRE-EXISTING** (only in baseline) → do not stage
-
-Baseline not found → fallback: ask user which files are related to the fix.
-
-```bash
-git commit -m "fix({feature}): {issue summary from PHASE 1}
-
-Root cause: {summary from PHASE 3}
-Reproduction test: {path, or 'skipped: {reason}'}
-Learning: {pitfall summary, or 'none'}"
-```
-
-`{feature}` = active feature name from PHASE 0, or omit if standalone debug.
-
-Clean up: `rm -f .project/session/pre-debug-status.txt`
+- **Baseline**: status form — `.project/session/pre-debug-status.txt`.
+- **OVERLAP policy**: auto-include (the fix is the point of this run).
+- **Fallback**: ask the user which files are related to the fix.
+- **Commit**: `fix({feature}): {issue summary from PHASE 1}` with body `Root cause: {summary from PHASE 3}` / `Reproduction test: {path, or 'skipped: {reason}'}` / `Learning: {pitfall summary, or 'none'}`. `{feature}` = active feature from PHASE 0, or omit if standalone debug.
+- **Cleanup**: `rm -f .project/session/pre-debug-status.txt`
 
 ### Step 3: Output
 

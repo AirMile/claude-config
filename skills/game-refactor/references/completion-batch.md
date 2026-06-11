@@ -147,39 +147,12 @@ Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
 ## Step 3 — Scoped auto-commit
 
-Compare current git status with baseline from PHASE 0:
+Follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). game-refactor deltas:
 
-```bash
-git status --porcelain | sort > /tmp/current-status.txt
-```
-
-Categorize files by comparing with `.project/session/pre-skill-status.txt`:
-
-- **NEW** (only in current, not in baseline) → `git add` automatically
-- **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
-- **PRE-EXISTING** (only in baseline) → do NOT stage
-
-If baseline file doesn't exist, fall back to `git add -A`.
-
-```bash
-git commit -m "$(cat <<'EOF'
-refactor(batch): {summary}
-
-{N} features analyzed, {clean} clean, {refactored} refactored, {rolled_back} rolled back
-
-{for each REFACTORED feature:}
-- {feature}: {improvement count} improvements ({categories})
-{for each CLEAN feature:}
-- {feature}: clean (no changes needed)
-{for each ROLLED_BACK feature:}
-- {feature}: rolled back ({reason})
-EOF
-)"
-```
-
-For single-feature commits, use: `refactor({feature}): {summary}`
-
-Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+- **Baseline**: status form — `.project/session/pre-skill-status.txt`.
+- **OVERLAP policy**: interactive. **Fallback**: `git add -A`.
+- **Commit**: batch `refactor(batch): {summary}` with body `{N} features analyzed, {clean} clean, {refactored} refactored, {rolled_back} rolled back` + one line per feature (REFACTORED: `{feature}: {improvement count} improvements ({categories})` · CLEAN: `{feature}: clean (no changes needed)` · ROLLED_BACK: `{feature}: rolled back ({reason})`). Single-feature: `refactor({feature}): {summary}`.
+- **Cleanup**: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
 ## Step 3b — Feature archiving
 

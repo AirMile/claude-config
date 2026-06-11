@@ -148,33 +148,11 @@ Recorded in test results.
    - Write `project.json`
    - Write `project-context.json` (if context/architecture/learnings changed)
 
-3. **Scoped auto-commit** (only this skill's changes):
-
-   Compare current git status with baseline from PHASE 0:
-
-   ```bash
-   git status --porcelain | sort > /tmp/current-status.txt
-   ```
-
-   Categorize files by comparing with `.project/session/pre-skill-status.txt`:
-   - **NEW** (only in current, not in baseline) → `git add` automatically
-   - **OVERLAP** (in both baseline AND current) → warn user via AskUserQuestion: "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" Options: "Include (Recommended)" / "Skip"
-   - **PRE-EXISTING** (only in baseline) → do NOT stage
-
-   If baseline file doesn't exist, fall back to `git add -A`.
-
-   ```bash
-   git commit -m "$(cat <<'EOF'
-   test({feature}): verified - all {N} items pass
-
-   Playtest verification complete.
-   - Fixed: {list of fixes}
-   - Tests added: {count}
-   EOF
-   )"
-   ```
-
-   Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+3. **Scoped auto-commit** — follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). game-verify deltas:
+   - **Baseline**: status form — `.project/session/pre-skill-status.txt`.
+   - **OVERLAP policy**: interactive. **Fallback**: `git add -A`.
+   - **Commit**: `test({feature}): verified - all {N} items pass` with body `Playtest verification complete.` / `- Fixed: {list of fixes}` / `- Tests added: {count}`.
+   - **Cleanup**: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 
 ## Output
 

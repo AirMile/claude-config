@@ -82,13 +82,12 @@ Write back in parallel: Write backlog.json, Write `.project/archive/backlog-arch
 
 ## Step 4 — Scoped auto-commit
 
-Compare `git status --porcelain | sort` with the PHASE 0 step-3 baseline (`pre-skill-status.txt`). Guard: skip commit if diff is empty + no new staged files.
+Follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). dev-refactor deltas:
 
-Stage: NEW → `git add`, OVERLAP → AskUserQuestion (Include/Skip), PRE-EXISTING → skip. `.project/` files: use `git add -f` (may be gitignored-but-tracked). Fallback: `git add -A` if no baseline.
-
-Batch commit: `refactor(batch): {summary}` with per-feature lines (REFACTORED/CLEAN/ROLLED_BACK). Single-feature: `refactor({feature}): {summary}`.
-
-Clean up session files after commit.
+- **Baseline**: status form — `.project/session/pre-skill-status.txt` (PHASE 0 step 3, post-worktree-switch).
+- **OVERLAP policy**: interactive. **Fallback**: `git add -A`.
+- **Commit**: batch `refactor(batch): {summary}` with per-feature lines (REFACTORED/CLEAN/ROLLED_BACK); single-feature `refactor({feature}): {summary}`.
+- **Cleanup**: session files after commit.
 
 ## Step 5 — Feature archiving
 
