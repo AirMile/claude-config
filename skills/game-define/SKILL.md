@@ -11,7 +11,7 @@ reads:
 writes: [feature.requirements, backlog.stage, concept.seed, feature.seedDrift]
 metadata:
   author: claude-config
-  version: 3.0.0
+  version: 3.1.0
   category: game
 ---
 
@@ -125,7 +125,13 @@ Check: `.project/features/{feature-name}/feature.json` exists?
    echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
    ```
 
-4. **Load architecture-baseline as context:**
+4. **Enter Plan Mode** — call `EnterPlanMode` NOW, before the context loads (steps 5-6) and any further `Read`, `Glob`, `Grep`, or `AskUserQuestion`. Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol. Steps 5-6 + PHASE 1a/1b/1c + PHASE 2/2b/3 all run in plan mode — the interview (PHASE 1a) must run inside plan mode so model routers (e.g. `opusplan`) route it through the planning model. Exempt (before plan mode): feature-name resolution, the backlog stage-tag, the existence check, and the setup writes (steps 1-3).
+   - **Note on user consent**: `EnterPlanMode` may prompt the user for plan-mode confirmation in some Claude Code UIs. This is intentional — do not skip the call to avoid the prompt.
+   - **Skip-check**: if plan mode is already active (existing system-reminder), skip the call and read the plan-file path from the active reminder.
+   - **If `feature.json` already exists** (update-mode trigger from step 2b): EnterPlanMode still fires here — the update-mode body in PHASE 0b runs inside plan mode.
+   - All `.project/` and `architecture-baseline.md` writes wait until after `ExitPlanMode` at the end of PHASE 3 (PHASE 4+5).
+
+5. **Load architecture-baseline as context:**
 
    ```
    Read(".claude/research/architecture-baseline.md")
@@ -144,7 +150,7 @@ Check: `.project/features/{feature-name}/feature.json` exists?
    ⚠ Architecture baseline not found — run /core-setup to generate.
    ```
 
-5. **Load project context** (parallelize with step 4):
+6. **Load project context** (parallelize with step 5):
    - Glob + Grep for existing code that imports the feature name
    - Project context load (via [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)):
 
@@ -180,7 +186,7 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 
-> **Todo**: Read `.claude/skills/game-define/references/update-mode.md` for the full update-mode flow.
+> **Todo**: Read `.claude/skills/game-define/references/update-mode.md` for the full update-mode flow. (Plan mode is already active from PHASE 0 step 4.)
 
 ---
 
@@ -377,10 +383,7 @@ Tuning levers are stored in `feature.json` per requirement as `tuningLevers[]`.
    ")
    ```
 
-   - **Update architecture-baseline.md** with new pattern:
-     - Add row to Feature Pattern Index table
-     - Add relevant signal patterns if new
-     - Add resource patterns if new
+   - **Collect baseline updates in memory** as `pendingBaselineAppends` (new Feature Pattern Index row, new signal patterns, new resource patterns) — plan mode blocks the `architecture-baseline.md` write; PHASE 5 appends them during sync (see `references/phase5-sync.md`).
 
 5. **Baseline not found fallback:**
 
@@ -451,6 +454,8 @@ PHASE 2b: N/A — non-visual feature
 
 > **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
+**Output rule for this phase**: write the design **directly to the plan file** (Write/Edit, path from the plan-mode system-reminder received at PHASE 0 step 4) — scene tree, scripts, signals, resources, test strategy, dependency analysis/implementation order. In chat show only a short progress marker (e.g. `Architecture designed: {N} scripts, {K} signals. Plan file updated.`). **Exception**: the PHASE 2b ASCII scene layout may appear inline in the AskUserQuestion description.
+
 Design based on requirements (and research if done). Generate an ASCII state machine of the core gameplay loop (states + transitions + triggers) alongside the scene tree:
 
 **Scene Tree:**
@@ -508,21 +513,25 @@ IMPLEMENTATION ORDER:
 3. REQ-003 (after REQ-002)
 ```
 
-**Seed Alignment Check** (last step in PHASE 3, before writing feature.json):
+**Seed Alignment Check** (last step in PHASE 3, before ExitPlanMode):
 
 Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ
 descriptions + `acceptance[].then` + `durableDecisions[]` from PHASE 1 and PHASE 3.
-This skill is NOT in plan mode — drift table and proposed rewrite go inline in
-chat for user review before PHASE 4. On "Yes" → carry `seedUpdateApproved: true`
+This skill is in plan mode — drift table and proposed rewrite go into the plan
+file alongside the architecture design. On "Yes" → carry `seedUpdateApproved: true`
 to PHASE 5. On "Skip" → carry `seedDrift[]` to PHASE 4 (written to
 `feature.json#seedDrift`). `source: "/game-define"`, `ref: "REQ-NNN"` where
 applicable.
+
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 4 (writing feature.json).
 
 ### PHASE 4: Write feature.json
 
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema):
+Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema).
+
+**Transcribe, don't re-design**: the architecture sections (scene tree, scripts, signals, resources, test strategy, implementation order/buildSequence) were authored in PHASE 2b/3 inside plan mode and live in the plan file — copy them 1:1 into feature.json, adjusting only JSON formatting.
 
 | Field                       | Condition                                                                                                                                                                                              |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

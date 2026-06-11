@@ -5,7 +5,7 @@ reads: [backlog.status]
 writes: [backlog.status, concept.seed, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 1.4.0
+  version: 1.5.0
   category: project
 ---
 
@@ -55,13 +55,13 @@ Accepts markdown from:
    STACK DETECTED: game   (→ /game-define pipeline)
    ```
 
+### Enter Plan Mode
+
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 0. PHASE 0 → PHASE 3 (input detection → research → feature extraction → dependencies → priority) run in plan mode — the Scenario A semantic diff against an existing backlog (NEW/MODIFIED/INDEPENDENT/REMOVED) is the most error-sensitive thinking step and must run on the planning model. The final feature plan is written to the plan file for review. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check). On a "Cancel" exit from PHASE 0: the skill simply stops — plan mode stays active for the user to dismiss; do not call `ExitPlanMode` for a cancel.
+
 ### PHASE 0: Input Detection
 
 > **Todo**: Read `.claude/skills/project-backlog/references/input-detection.md`
-
-### Enter Plan Mode
-
-Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 0.5. PHASE 0.5 → PHASE 3 (research → feature extraction → dependencies → priority) run in plan mode; the final feature plan is written to the plan file for review.
 
 ### PHASE 0.5: Research (Optional)
 

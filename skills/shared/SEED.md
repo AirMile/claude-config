@@ -124,7 +124,7 @@ multiSelect: false
 | Skill              | Alignment point                                                     | Plan mode? |
 | ------------------ | ------------------------------------------------------------------- | ---------- |
 | `/dev-define`      | End of PHASE 2 Architecture, before ExitPlanMode                    | Yes        |
-| `/game-define`     | End of PHASE 3 Architecture Design, before writing feature.json     | No         |
+| `/game-define`     | End of PHASE 3 Architecture Design, before ExitPlanMode             | Yes        |
 | `/project-backlog` | After PHASE 3 Priority Assignment confirmation, before ExitPlanMode | Yes        |
 
 ---

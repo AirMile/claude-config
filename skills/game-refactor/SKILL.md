@@ -6,7 +6,7 @@ writes: [backlog.stage, project-context.learnings]
 writes-terminal: [feature.refactor]
 metadata:
   author: claude-config
-  version: 1.3.0
+  version: 1.4.0
   category: game
 ---
 
@@ -228,6 +228,8 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
 
 > **Todo**: Read `.claude/skills/game-refactor/references/analysis-prompt.md` for the full Godot scan template, agent prompt, parsing instructions, triage logic, and output format.
 
+**Enter Plan Mode (conditional, after triage)** — only when ≥1 feature is HAS_FINDINGS: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol now. PHASE 2 + PHASE 3 run in plan mode so model routers (e.g. `opusplan`) route the research decision and plan synthesis through the planning model. All-CLEAN runs never enter plan mode — proceed to PHASE 5 directly, zero approval friction. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check). All file writes (refactor-patterns.md appends, source changes, `.project/` mutations) wait until after `ExitPlanMode` at the end of PHASE 3.
+
 ---
 
 ### PHASE 2: Aggregated Research Decision
@@ -304,9 +306,9 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
    Only include sections for domains you were asked to research.
    ```
 
-   **If uncovered patterns found** — also update refactor-patterns.md:
+   **If uncovered patterns found** — also gather material for refactor-patterns.md:
    - Context7 query for each uncovered Godot system
-   - Append new sections to existing refactor-patterns.md
+   - Collect the new sections in memory as `pendingPatternAppends` — plan mode blocks the refactor-patterns.md write; PHASE 5 appends them during completion (see `references/completion-batch.md`)
 
 **Output:**
 
@@ -326,7 +328,7 @@ Research: Skipped (existing knowledge sufficient)
 
 {if research:}
 Research: Explore agent ({domains researched})
-Refactor patterns updated: {yes/no}
+Refactor patterns queued for PHASE 5 update: {yes/no}
 
 → Ready for combined plan.
 ```
@@ -350,7 +352,7 @@ Refactor patterns updated: {yes/no}
    - **Only pipeline files** may be included
    - Group by feature for clarity
 
-2. **Present improvements with before/after code:**
+2. **Write the plan to the plan file** (path from the plan-mode system-reminder received at the PHASE 1 conditional entry). In chat show only a short progress marker (e.g. `Plan written: {M} improvements across {N} features. Plan file updated.`) — no chat dump. Plan-file format:
 
    ```
    REFACTOR PLAN ({N} features, {M} improvements)
@@ -404,6 +406,8 @@ Refactor patterns updated: {yes/no}
    Only approved features proceed to PHASE 4. Non-selected features get CLEAN status.
 
    The user can also type "Cancel" via the built-in "Other" option — EXIT with "Refactor cancelled by user"
+
+4. **Exit plan mode:** record the chosen scope in the plan file (one line under the plan, e.g. `Scope chosen: HIGH + MED ({X+Y} improvements)`), then follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — `ExitPlanMode` presents the plan for approval. After approval the skill continues with PHASE 4. Rejected plan → re-ask scope (back to step 3) or exit with "Refactor cancelled by user".
 
 ---
 

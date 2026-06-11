@@ -29,6 +29,7 @@ After the call:
 2. Tools that keep working in plan mode: `AskUserQuestion`, `Read`, `Glob`, `Grep`, `WebSearch`, Context7 MCP.
 3. Tools that do NOT work until after exit: all file writes to `.project/` or project source.
 4. The plan file itself may be written during plan mode — that is the review channel.
+5. **Deferral pattern for research-cache appends**: writes to `.claude/research/*.md` (stack-baseline, refactor-patterns, architecture-baseline) discovered during plan mode are blocked too — collect them in memory (`pending*Appends`) and write them in the skill's sync/completion phase after exit.
 
 **Skip if already in plan mode** — if at entry an active plan-mode system-reminder already exists (the user started `/plan-mode` or another plan-mode skill themselves), skip `EnterPlanMode`. In that case read the existing plan-file path from the active system-reminder.
 
@@ -69,8 +70,16 @@ Skills may optionally name specific tools used intensively in plan mode (e.g. "W
 
 ---
 
+## Conditional entry
+
+Some skills enter plan mode only when a condition fires mid-flow: `dev-refactor` / `game-refactor` after triage finds ≥1 HAS_FINDINGS; the `dev-verify` fix-loop on SPEC or unclear-root-cause bugs; the `dev-build` / `game-build` regression gate when the regression was not caused by the build itself. The Entry/Exit protocol applies unchanged from the moment of entry. The deviation from "Entry before the first thinking step" is deliberate — runs where the condition never fires stay friction-free. Document the condition at the entry point in the skill.
+
+---
+
 ## Used by
 
-`dev-define`, `project-backlog`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`
+Full-phase: `dev-define`, `game-define`, `project-backlog`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`. Conditional entry (see § Conditional entry): `dev-refactor`, `game-refactor`.
 
-Authoritative: `grep -rl "shared/PLAN-MODE.md" skills/*/SKILL.md`
+Authoritative for the above: `grep -rl "Entry protocol" skills/*/SKILL.md skills/*/references/*.md`
+
+Inline gates that call `EnterPlanMode` without the full Entry section (documented at the gate): `dev-verify` (`references/fix-loop.md § Plan-mode gate`), `dev-build` PHASE 2b and `game-build` PHASE 3a (regression-not-caused-by-build path).

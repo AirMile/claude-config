@@ -20,7 +20,7 @@ writes:
 writes-terminal: [backlog.overview]
 metadata:
   author: claude-config
-  version: 3.2.1
+  version: 3.3.0
   category: dev
 ---
 
@@ -228,14 +228,14 @@ The full requirements table with acceptance criteria and the feature overview ta
 - **Allowed in plan file**: type signatures (`interface X { ... }`, `type Y = ...`, function signatures `(input: X) => Y`), file/module structure, feature flow as `→` chain, dependency graph, build sequence, test strategy table, durable decisions.
 - **Forbidden in plan file**: function bodies, `(set, get) => ({...})` blocks, `set({...})` calls, helper implementations, JSX, hook internals — even as "skeleton" or "pseudo-code." That work belongs to `/dev-build`. If a code fence contains anything beyond type declarations: stop and rewrite as an English description.
 
-**Plan file vs feature.json — role split**: full table in [references/feature-json-schema.md § Role split](references/feature-json-schema.md#role-split). Short rule: plan file = review-artefact (context, REQ-list, durable decisions 1-liners, flow, verification). feature.json = canonical contract (acceptance criteria, build sequence, test strategy, type signatures, AI-navigability).
+**Plan file vs feature.json — role split**: full table in [references/feature-json-schema.md § Role split](references/feature-json-schema.md#role-split). Short rule: plan file = review-artefact (context, REQ-list, durable decisions 1-liners, flow, verification) + machine-contract appendix (drafted here, skipped in review). feature.json = canonical contract (acceptance criteria, build sequence, test strategy, type signatures, AI-navigability).
 
 Design in three steps:
 
 1. **Baseline check** (internally):
    - Search `stack-baseline.md` for patterns relevant to this feature.
    - **Pattern found** → use as basis, skip research. Show: `Baseline: ✓ pattern hit — {pattern-name}`. In PHASE 3: omit the `research` field in feature.json entirely (baseline hit is not research).
-   - **Pattern not found** → inline research via Context7 (`resolve-library-id` + `query-docs`) + WebSearch for external APIs. Show: `Baseline: ⚙ research via Context7 — {topic}`. After research: append new patterns to `stack-baseline.md`. In PHASE 3: write `research: { sources[], findings[] }` to feature.json — only for actually executed lookups.
+   - **Pattern not found** → inline research via Context7 (`resolve-library-id` + `query-docs`) + WebSearch for external APIs. Show: `Baseline: ⚙ research via Context7 — {topic}`. After research: collect new patterns in memory as `pendingBaselineAppends` — plan mode blocks the `stack-baseline.md` write; PHASE 4 appends them during sync. In PHASE 3: write `research: { sources[], findings[] }` to feature.json — only for actually executed lookups.
    - **No baseline file** → always execute research. Show: `Baseline: ⓘ missing — inline research`. Do NOT create baseline (that is /core-setup). PHASE 3 gets `research` as described above.
 
 2. **Existing code** (internally): Glob + Read the most relevant files with similar patterns.
@@ -246,7 +246,7 @@ Design in three steps:
    - **Routes registration** (frontend projects with `stack.framework` only): only `page`/`route` files with `action: CREATE` get an entry in `feature.architecture.routes[]` with `{ path, file, action, requirements[] }`. MODIFY-only route files: skip — `project-context.json#context.routing` leaves existing routes unchanged in PHASE 4. **Skip entirely** if no CREATE route/page files — omit the `routes[]` field from feature.json.
    - **Design sketch**: visual features only — ASCII wireframe + states (loading/empty/error). Confirm inline via AskUserQuestion: "Is this visual design correct?" — "Yes (Recommended)" / "Adjust". **Wait for user confirmation before continuing; no implicit 'Yes'.** Use token names (`bg-primary`, `text-foreground`), no hex. See `shared/TOKENS.md`.
    - **Durable decisions** (1-line each for plan-file review): full rationale and canonical form go to feature.json in PHASE 3.
-   - **feature.json-only** — do NOT write to plan file: type signatures, dependency analysis, build sequence, test strategy. These are canonical in feature.json (PHASE 3) and not needed for plan-mode review.
+   - **Machine contract appendix** — design type signatures, build sequence, and test strategy NOW (inside plan mode, so the planning model authors them) and write them to the plan file under a `## Appendix — machine contract (skip review)` heading. The appendix is not part of the review surface — the heading tells the reviewer to skip it. PHASE 3 transcribes these sections into feature.json. Dependency analysis stays implicit — derived from `buildSequence[].dependsOn`, no separate section.
    - **AI-navigability** (skip if ≤6 files AND no new registry): when applicable, identify new registries and record them in `architecture.registries[]` (written to feature.json in PHASE 3). Omit module-export lists, colocation notes, and import constraints — covered by project conventions.
 
 **Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision was recorded; below that skip silently, trivial features yield only drift-noise):
@@ -260,6 +260,8 @@ Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ descr
 > **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/dev-define/references/feature-json-schema.md` for the full field table, deltaOp rules, durableDecisions categories, and buildSequence structure.
 
 Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema). Field conditions, deltaOp rules, durableDecisions categories, and buildSequence structure: see `references/feature-json-schema.md`.
+
+**Transcribe, don't re-design**: `architecture.interfaces` (type signatures), `buildSequence`, and `testStrategy` come from the plan file's `## Appendix — machine contract` section, authored in PHASE 2 under plan mode. Copy them 1:1 into feature.json, adjusting only JSON formatting. Fallback: appendix missing (legacy plan file, post-compaction loss) → generate these sections now as before.
 
 ### PHASE 4: Sync
 

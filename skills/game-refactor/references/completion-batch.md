@@ -113,6 +113,8 @@ Write back in parallel:
 - Write `project.json`
 - Write `project-context.json` (if context/architecture changed)
 
+**Deferred refactor-patterns append**: when PHASE 2 collected `pendingPatternAppends` (uncovered-system research ran inside plan mode — the write was deferred), append those sections to `.claude/research/refactor-patterns.md` in the same parallel batch. Empty or absent → skip silently.
+
 ## Step 2.5 — Learning extraction [checkpoint]
 
 REFACTORED/CLEAN only (skip ROLLED_BACK):

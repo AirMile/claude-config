@@ -13,7 +13,7 @@ writes: [backlog.status, project-context.learnings]
 writes-terminal: [feature.refactor]
 metadata:
   author: claude-config
-  version: 2.4.0
+  version: 2.5.0
   category: dev
 ---
 
@@ -71,11 +71,9 @@ Writes only to `.project/features/{name}/feature.json` (enriched: refactor secti
 
 ```bash
 mkdir -p .project/session
-echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
-# Batch mode (queue > 1): use active-batch-{date}.json instead — single active file per run is best-effort tracking only
 ```
 
-The git baseline (`pre-skill-status.txt`) is captured in step 3, **after** the potential worktree switch, so the baseline always describes the tree the skill actually mutates.
+The active-feature signal file is written in step 3 — in no-arg mode the feature name (or queue) is only known after step 2. The git baseline (`pre-skill-status.txt`) is also captured in step 3, **after** the potential worktree switch, so the baseline always describes the tree the skill actually mutates.
 
 ---
 
@@ -100,10 +98,12 @@ The git baseline (`pre-skill-status.txt`) is captured in step 3, **after** the p
 
    > **Todo**: follow `shared/WORKTREE.md → Symlink Integrity Gate (post-switch auto-repair)`.
 
-   Then (all modes) capture the git baseline in the tree the skill will mutate:
+   Then (all modes) capture the git baseline in the tree the skill will mutate, and signal the active feature:
 
    ```bash
    git status --porcelain | sort > .project/session/pre-skill-status.txt
+   echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+   # Batch mode (queue > 1): use active-batch-{date}.json instead — single active file per run is best-effort tracking only
    ```
 
 > Steps 4–7 run as a parallel batch — all read-only, no shared data dependency.
@@ -255,7 +255,9 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
    CLEAN features → **early-exit**, skip PHASE 2-4.
 
-7. **If ALL features CLEAN** → jump directly to PHASE 5 (no approval).
+7. **If ALL features CLEAN** → jump directly to PHASE 5 (no approval, no plan mode).
+
+8. **Enter Plan Mode (conditional)** — only when ≥1 feature is HAS_FINDINGS: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol now. PHASE 2 + PHASE 3 run in plan mode so model routers (e.g. `opusplan`) route the research decision and plan synthesis through the planning model. All-CLEAN runs never enter plan mode — zero approval friction. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check). All file writes (refactor-patterns.md appends, source changes, `.project/` mutations) wait until after `ExitPlanMode` at the end of PHASE 3.
 
 **Output:** Table per feature (name, files, CLEAN/HAS_FINDINGS, finding count) + summary. If all clean → jump to PHASE 5.
 
@@ -301,9 +303,9 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
    Agent prompt structure: "Research best practices for a refactoring task. Tech stack: {CLAUDE.md}. Stack baseline: {stack-baseline.md or 'none'}. Aggregated analysis: {ANALYSIS_START..ANALYSIS_END blocks}. Per domain needed — Security/Performance/Quality/Error handling: use resolve-library-id + query-docs, focus on relevant anti-patterns. Return: RESEARCH_START / {domain}: {3-5 bullets} / RESEARCH_END (only included domains)."
 
-   **If uncovered libraries found** → also update refactor-patterns.md:
+   **If uncovered libraries found** → also gather material for refactor-patterns.md:
    - Context7 query for each uncovered library
-   - Append new sections to existing refactor-patterns.md
+   - Collect the new sections in memory as `pendingPatternAppends` — plan mode blocks the refactor-patterns.md write; PHASE 5 appends them during completion (see `references/completion-batch.md`)
 
 **Output:** Parse `RESEARCH_START...RESEARCH_END`. Log libraries covered (baseline/patterns/uncovered) + research domains used. → Ready for combined plan.
 
@@ -330,9 +332,9 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
    Dedup on `file:line + rationale`. This list shows the user what the skill deliberately **does not** want to fix — so they can override ("fix that one anyway").
 
-3. **Present improvements with before/after code:**
+3. **Write the plan to the plan file** (path from the plan-mode system-reminder received at PHASE 1 step 8):
 
-   Show `REFACTOR PLAN ({N} features, {M} improvements)` — group by feature, each improvement as `🔴/🟡/🟢 {file}:{line} — {issue} → {fix}` with before/after snippet (extract via `sed -n '{start},{end}p'`, max 20 lines). Include "Deliberately not fixed" section for SKIPPED entries. Footer: files to be modified + "Per-feature rollback: YES".
+   Write `REFACTOR PLAN ({N} features, {M} improvements)` to the plan file — group by feature, each improvement as `🔴/🟡/🟢 {file}:{line} — {issue} → {fix}` with before/after snippet (extract via `sed -n '{start},{end}p'`, max 20 lines). Include "Deliberately not fixed" section for SKIPPED entries. Footer: files to be modified + "Per-feature rollback: YES". In chat show only a short progress marker (e.g. `Plan written: {M} improvements across {N} features. Plan file updated.`) — no chat dump.
 
 4. **Ask for scope:**
 
@@ -349,6 +351,8 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
    The built-in "Other" option handles: (a) cancel — exit with "Refactor cancelled by user"; (b) SKIPPED items — if user requests inclusion of SKIPPED items via Other, run a second AskUserQuestion (multiSelect) with the SKIPPED list and promote selected entries to improvements.
 
    **If "Choose per feature":** List numbered features with finding counts. Ask for numbers via text input (e.g. `1, 3` or `all`). Non-selected → CLEAN status.
+
+5. **Exit plan mode:** record the chosen scope in the plan file (one line under the plan, e.g. `Scope chosen: HIGH + MED ({X+Y} improvements)`), then follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — `ExitPlanMode` presents the plan for approval. After approval the skill continues with PHASE 4. Rejected plan → re-ask scope (back to step 4) or exit with "Refactor cancelled by user".
 
 ---
 

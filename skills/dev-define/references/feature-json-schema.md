@@ -61,18 +61,20 @@ dev-build iterates this directly:
 
 What goes where between the plan file (review artefact) and feature.json (canonical contract):
 
-| Content                            | Plan file | feature.json                             |
-| ---------------------------------- | --------- | ---------------------------------------- |
-| Context / rationale / why          | ✓         | —                                        |
-| REQ list (1-line descriptions)     | ✓         | —                                        |
-| Full acceptance criteria           | —         | ✓ (canonical)                            |
-| File structure table               | ✓         | ✓                                        |
-| Type signatures (typescript fence) | —         | ✓ (`interfaces[].definition`)            |
-| Build sequence                     | —         | ✓ (canonical)                            |
-| Test strategy table                | —         | ✓ (canonical)                            |
-| Dependency analysis                | —         | — (derived from buildSequence.dependsOn) |
-| Durable decisions (1-line each)    | ✓         | ✓ (canonical with full rationale)        |
-| AI-navigability                    | —         | ✓ (`architecture.registries[]`)          |
-| Feature flow (→ chain)             | ✓         | —                                        |
-| Verification steps                 | ✓         | —                                        |
-| Out of scope                       | ✓         | —                                        |
+| Content                            | Plan file    | feature.json                             |
+| ---------------------------------- | ------------ | ---------------------------------------- |
+| Context / rationale / why          | ✓            | —                                        |
+| REQ list (1-line descriptions)     | ✓            | —                                        |
+| Full acceptance criteria           | —            | ✓ (canonical)                            |
+| File structure table               | ✓            | ✓                                        |
+| Type signatures (typescript fence) | ✓ (appendix) | ✓ (`interfaces[].definition`)            |
+| Build sequence                     | ✓ (appendix) | ✓ (canonical)                            |
+| Test strategy table                | ✓ (appendix) | ✓ (canonical)                            |
+| Dependency analysis                | —            | — (derived from buildSequence.dependsOn) |
+| Durable decisions (1-line each)    | ✓            | ✓ (canonical with full rationale)        |
+| AI-navigability                    | —            | ✓ (`architecture.registries[]`)          |
+| Feature flow (→ chain)             | ✓            | —                                        |
+| Verification steps                 | ✓            | —                                        |
+| Out of scope                       | ✓            | —                                        |
+
+`✓ (appendix)` = written to the plan file under `## Appendix — machine contract (skip review)` during PHASE 2, so the planning model (e.g. `opusplan` → Opus) authors these sections instead of PHASE 3's post-plan-mode model. Not part of the review surface; PHASE 3 transcribes them into feature.json (the canonical home).

@@ -14,7 +14,7 @@ reads:
 writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 1.3.0
+  version: 1.4.0
   category: project
 ---
 
@@ -36,6 +36,10 @@ The output is a structured markdown document that can be used as input for `/pro
 ### PHASE 1: Initial Intake
 
 > **Todo**: Read `.claude/skills/project-seed/references/initial-intake.md`
+
+### Enter Plan Mode
+
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 2 (explore route only — the PHASE 1 "Sync with project" route ends in its own writes and stays outside plan mode). PHASES 2-4 run in plan mode: the question rounds must run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model; the concept document (PHASE 4) is written to the plan file for review. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check).
 
 ### PHASE 2: Explore and Expand
 
@@ -123,10 +127,6 @@ Same pattern: present the "Deeper Dive" AskUserQuestion after each round. As rou
 - Adapt question style to idea type (game vs product vs story)
 - Help articulate what's in the user's head
 - Save criticism or expansion for later--this phase is pure idea capture
-
-### Enter Plan Mode
-
-Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 3. PHASES 3-4 (synthesis + output generation) run in plan mode; the concept document (PHASE 4) is written to the plan file for review.
 
 ---
 

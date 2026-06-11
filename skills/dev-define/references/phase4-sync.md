@@ -14,6 +14,10 @@
   - **Stack packages**: check on name → new: push `{ name, version, purpose }` → existing: skip
   - Feature status lives in the backlog only (`backlog.json#features[]`) — project.json carries no features copy.
 
+## Mutations on `.claude/research/stack-baseline.md`
+
+- Only when PHASE 2 collected `pendingBaselineAppends` (research ran inside plan mode — the baseline write was deferred): append the new patterns to `stack-baseline.md` now, parallel with the other back-writes. Empty or absent → skip silently.
+
 ## Mutations on `project-context.json` (see `shared/DASHBOARD.md`)
 
 - **Routes** in `architecture.routes[]`: for each new page route in this feature → check on `path` → new: push `{ path, purpose, feature: "<feature-name>" }` + `auth` field only if project has auth → existing: update `purpose` if changed. Skip for non-frontend features (pure API/utility).

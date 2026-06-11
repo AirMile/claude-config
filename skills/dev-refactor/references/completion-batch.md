@@ -80,6 +80,8 @@ Follow `shared/SYNC.md` 3-File Sync Pattern. Read backlog.json + project.json + 
 
 Write back in parallel: Write backlog.json, Write `.project/archive/backlog-archive.json` (only if features were archived), Write project.json, Write project-context.json.
 
+**Deferred refactor-patterns append**: when PHASE 2 collected `pendingPatternAppends` (uncovered-library research ran inside plan mode — the write was deferred), append those sections to `.claude/research/refactor-patterns.md` in the same parallel batch. Empty or absent → skip silently.
+
 ## Step 4 — Scoped auto-commit
 
 Follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). dev-refactor deltas:

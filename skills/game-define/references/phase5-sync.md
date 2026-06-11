@@ -33,10 +33,14 @@ Write back in parallel:
 - Write `project.json` (stack, features, data)
 - Write `project-context.json` (if architecture changed)
 
+## Deferred architecture-baseline append
+
+Only when PHASE 2 collected `pendingBaselineAppends` (research ran inside plan mode — the baseline write was deferred): append the new Feature Pattern Index row and any new signal/resource patterns to `.claude/research/architecture-baseline.md` now, in the same parallel batch. Empty or absent → skip silently.
+
 ## Mutations on `project-seed.md` (only if `seedUpdateApproved: true`)
 
 - Skip if PHASE 3 ended with "Skip" or no drift was detected.
-- Source content: inline rewrite reviewed by the user in PHASE 3 before this sync phase.
+- Source content: the plan file's `## Proposed seed update` section (reviewed via plan-mode approval at the end of PHASE 3).
 - Apply all writes per [shared/SEED.md § Write targets](../../shared/SEED.md#write-targets-sync-phase) — that table is canonical for seed-mutation file set and log line.
 
 This write runs in parallel with the existing back-writes.
