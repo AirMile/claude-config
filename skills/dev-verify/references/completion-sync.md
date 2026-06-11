@@ -25,47 +25,7 @@ Single Write replaces the entire file. Prevents drift across ~10 sequential Edit
 
 **Verification**: parse feature.json once after writing — verify `status === "DONE"` + `tests.finalStatus` set. Display verification result ONLY if it fails.
 
-**PAGE-seeding (safety net — frontend projects only):**
-
-Execute **before** the backlog mutation. Trigger only if **all** conditions are true:
-
-1. `project.json#stack.framework` is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS)
-2. PHASE 4 applied fixes (there are `tests.fixSync` entries this session)
-3. New page-files exist that were not in `feature.json#files[]` before this session — detect via diff against `pre-skill-status.txt` baseline. Paths matching: `app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`, or component names ending in `Page`, `Screen`, `View`
-4. After idempotency-filter (`data.features.find(f => f.name === <kebab-name>)`) ≥1 candidates remain
-
-If all conditions are true → AskUserQuestion:
-
-```yaml
-header: "Pages detected during fix"
-question: "PHASE 4 added {N} new page-files. Do you want to add them as PAGE-todos on the backlog?"
-options:
-  - label: "Yes, all (Recommended)"
-    description: "Create a PAGE-todo for each page so they go through design → check"
-  - label: "Selection"
-    description: "Choose which pages get a separate todo"
-  - label: "No"
-    description: "No extra todos — pages are covered in fix-sync"
-multiSelect: false
-```
-
-Per selected page → push to `data.features[]`:
-
-```json
-{
-  "name": "{kebab-case page name}",
-  "type": "PAGE",
-  "status": "TODO",
-  "phase": "P3",
-  "description": "Page introduced via fix in {parentFeature}. Routes: {route-pattern}",
-  "source": "/dev-verify",
-  "dependencies": ["{parentFeature}"],
-  "parentFeature": "{parentFeature}",
-  "auto": true
-}
-```
-
-Update `data.updated`. Write backlog JSON back to `.project/backlog.json`.
+**PAGE-seeding (safety net — frontend projects only):** before the backlog mutation, if PHASE 4 applied fixes (`tests.fixSync` entries this session) AND the diff against `pre-skill-status.txt` shows new page-files not yet in `feature.json#files[]` (paths like `app/**/page.tsx`, `src/routes/**`, `pages/**`, or `*Page`/`*Screen`/`*View` components) that don't already exist as backlog features → AskUserQuestion ("PHASE 4 added {N} new page-file(s) — add as PAGE-todos?": Yes all (Recommended) / Selection / No). Per selected page push to `data.features[]`: `{ name: "{kebab-name}", type: "PAGE", status: "TODO", phase: "P3", description: "Page introduced via fix in {parentFeature}. Routes: {route-pattern}", source: "/dev-verify", dependencies: ["{parentFeature}"], parentFeature, auto: true }`. Update `data.updated`, write backlog back.
 
 **backlog:** read `.project/backlog.json` → parse JSON (see `shared/BACKLOG.md`). Match on `feature.name` (not `id` — the backlog format uses `name` as the unique key).
 
@@ -93,27 +53,6 @@ This applies even when a merge SHA is available from PHASE Finalize: the SHA is 
 **COMPONENT design sync** (only if `IS_COMPONENT_VERIFY = true`):
 
 Update `project.json#design.components[]` — look up by name, set `status: "DONE"`. Not found → add with status `"DONE"`. Update `project-context.json#components[]` inventory: add test paths to existing inventory item (merge, do not overwrite).
-
-**Reuse-Discovery** (frontend projects only — skip if `IS_COMPONENT_VERIFY = true`, skip if no BROWSER tests were run):
-
-After successful verification of a PAGE-feature where BROWSER-tests were run: scan the test-results and screencap-context for visual patterns that repeat across multiple pages or features. Detect repeating layout blocks (stat cards, list tables, hero section, etc.) with similar structure.
-
-**Dedup**: check `project.json#design.components[]` and `project-context.json#components[]`. Check `feature.json#suggestionsLog[]` — previously rejected from `dev-verify`? → skip.
-
-Candidates found (max 2 per run, to not slow down verify) → AskUserQuestion:
-
-```yaml
-header: "Repeating UI patterns"
-question: "Visual verification shows patterns reusable as shared components. Create COMPONENT-todos?"
-options:
-  - label: "{name} — {short visual description}", description: "Create COMPONENT-todo"
-  - label: "..." (one per candidate)
-  - label: "Skip", description: "No COMPONENT-todos to add"
-multiSelect: true
-```
-
-Per accepted: append backlog + `design.components[]` (status: IDEA) + `feature.json#suggestionsLog[]` (accepted).
-Per rejected: log in `suggestionsLog[]` (rejected, skill: "dev-verify").
 
 ---
 
