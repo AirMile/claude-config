@@ -315,19 +315,6 @@ git status --porcelain | sort > .project/session/pre-skill-status.txt
 echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
 ```
 
-**Risk check (only if backlog feature `risk >= 4`):**
-
-If the loaded backlog feature has a `risk` score of 4 or 5, show this warning before PHASE 1:
-
-```
-⚠ HIGH RISK — Complexity {risk}/5
-
-Consider before building:
-- Are all dependencies available (status DONE)?
-- Is the feature definition complete (all REQs clear)?
-- Build in small steps — commit after each working REQ
-```
-
 ### PHASE 1: Technique Mapping
 
 > **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.

@@ -145,18 +145,7 @@ visible — no risk of forgetting phases.
 
 > **Precondition check**: plan mode MUST be active before the first interview question (set in PHASE 0 step 4). If not active, call `EnterPlanMode` now and only then start the interview.
 
-**Risk-check (only if `feature.risk >= 4`):**
-
-If the loaded backlog feature has a `risk` score of 4 or 5, show this warning before opening the interview:
-
-```
-⚠ HIGH RISK — Complexity {risk}/5
-
-This feature has a high complexity score. Consider before defining:
-- Split the feature into smaller parts
-- Verify that dependencies are available
-- Discuss scope with the user if parts are unclear
-```
+**Risk-check (only if `feature.risk >= 4`):** show one line before opening the interview — `⚠ HIGH RISK ({risk}/5): consider splitting this feature, verify dependencies, clarify scope before defining.`
 
 **Surface relevant past decisions** (only with ≥1 match from PHASE 0 scan, otherwise skip silently):
 
