@@ -27,23 +27,7 @@ test("checkout calls paymentService.process", async () => {
 });
 ```
 
-**Red flags:** test breaks during refactor while behavior has not changed. Test name describes HOW, not WHAT.
-
-```typescript
-// Bad — bypasses interface to verify
-test("createUser saves to database", async () => {
-  await createUser({ name: "Alice" });
-  const row = await db.query("SELECT * FROM users WHERE name = ?", ["Alice"]);
-  expect(row).toBeDefined();
-});
-
-// Good — verifies via interface
-test("createUser makes user retrievable", async () => {
-  const user = await createUser({ name: "Alice" });
-  const retrieved = await getUser(user.id);
-  expect(retrieved.name).toBe("Alice");
-});
-```
+**Red flags:** test breaks during refactor while behavior has not changed; test name describes HOW, not WHAT; test bypasses the interface to verify (e.g. raw `db.query` instead of `getUser()`).
 
 ## Anti-pattern: Horizontal Slices
 

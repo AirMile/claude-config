@@ -138,37 +138,12 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE
 
 ### PHASE 4: Generate Output
 
-Create a structured markdown document adapted to the scope/type.
+Create a structured markdown document (pure markdown, no preamble or "Here's your document:" framing; `#` title, `##` sections). Required: **Title** (H1), **Short description** (1-2 sentences), **Core concept**. Additional sections by type:
 
-**Required sections:**
-
-- **Title** (H1 format)
-- **Short description** (1-2 sentences)
-- **Core concept** (detailed explanation)
-
-**Additional sections by scope/type:**
-
-For creative concepts (games, stories, art):
-
-- Characters, Mechanics/Gameplay, Narrative/Plot, Aesthetic/Style, Tone and Atmosphere, Unique Elements
-
-For product ideas (apps, services, businesses):
-
-- Target Audience, Key Features, User Journey/Experience, Value Proposition, Differentiation
-
-For implementation projects (design → code, spec → build):
-
-- Source of Truth, Page/Screen Structure, Tech Stack, Implementation Approach, Open Decisions
-
-For features/assignments (scoped work within an existing project):
-
-- Goal, Existing Context, Out of Scope, Constraints/Dependencies, Definition of Done
-
-**Output format:**
-
-- Pure markdown without introductory text or preambles
-- No "Here's your document:" framing
-- Proper markdown formatting (# for title, ## for sections)
+- Creative concepts (games, stories, art): Characters, Mechanics/Gameplay, Narrative/Plot, Aesthetic/Style, Tone and Atmosphere, Unique Elements
+- Product ideas (apps, services, businesses): Target Audience, Key Features, User Journey/Experience, Value Proposition, Differentiation
+- Implementation projects (design → code): Source of Truth, Page/Screen Structure, Tech Stack, Implementation Approach, Open Decisions
+- Features/assignments (scoped work in an existing project): Goal, Existing Context, Out of Scope, Constraints/Dependencies, Definition of Done
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the concept document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 5 (output destination and `.project/` writes).
 
@@ -179,12 +154,6 @@ For features/assignments (scoped work within an existing project):
 ---
 
 ## Best Practices
-
-**Questions:** Be conversational, adapt dynamically, dig deeper where user shows excitement, extract vision without imposing constraints.
-
-**Synthesis:** Be accurate to what user said, don't add assumptions, confirm before proceeding.
-
-**Output:** Structure clearly, make scannable, adapt sections to idea type, output ONLY the markdown document.
 
 ### Terminal Formatting
 
