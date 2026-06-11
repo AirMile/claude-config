@@ -140,7 +140,7 @@ const city = user?.address?.city ?? "Unknown";
 
 ## Testing Rules
 
-Empirically grounded in MSR 2026 (Hora & Robbes): AI coding agents add mocks in 36% of test commits vs 26% for humans (χ²=505.5, p<0.001) and use mono-type `mock` in 95% of cases where humans vary (mock 91%, fake 57%, spy 51%). These rules mitigate that observation. Checked by `scripts/check-test-smells.js` (heuristic) + LLM review in `/dev-verify` PHASE 5d.
+Empirically grounded in MSR 2026 (Hora & Robbes): AI coding agents add mocks in 36% of test commits vs 26% for humans (χ²=505.5, p<0.001) and use mono-type `mock` in 95% of cases where humans vary (mock 91%, fake 57%, spy 51%). These rules mitigate that observation. Enforced at write time by `/dev-build` TDD (test-first per REQ).
 
 ### MUST_DO (Critical)
 
