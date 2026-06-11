@@ -6,7 +6,7 @@ Loaded only for frontend projects with feature types outside `COMPONENT`, `INTEG
 
 ## Reuse-Discovery
 
-Scan the extracted requirements (description + acceptance) for UI-element keywords: Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton. Apply project-specific prefixes too.
+Scan the extracted requirements (description + acceptance) for UI-element keywords — canonical list: [shared/SKILL-PATTERNS.md § Reuse-Discovery → dev-define trigger](../../shared/SKILL-PATTERNS.md#reuse-discovery). Apply project-specific prefixes too.
 
 **Self-reference filter (always apply):** skip a match if the kebab-cased keyword appears in the current feature name (e.g. feature `kelly-slider` → skip "Slider" match, feature `event-modal` → skip "Modal" match). Prevents self-dependencies.
 

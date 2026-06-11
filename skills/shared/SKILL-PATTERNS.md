@@ -604,13 +604,12 @@ multiSelect: false
 
 **Goal:** Detect reusable UI patterns during dev work and drop them as COMPONENT todos in the backlog.
 
-**Skills:** `dev-define` (keyword-scan requirements), `dev-build` (repeating JSX pattern), `project-backlog` (cross-page pattern matching).
+**Skills:** `dev-define` (keyword-scan requirements), `dev-build` (repeating JSX pattern).
 
 #### Triggers (per skill)
 
 - **dev-define:** keyword-scan on UI element names in requirements (Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton). Also apply project-specific name prefixes.
 - **dev-build:** repeating JSX block after code-gen — ≥2x in the same file or ≥1x across multiple files of the same feature.
-- **project-backlog:** cross-page UI pattern matching — group features on descriptions (List/table, Card, Form, Modal/dialog, Navigation). Threshold: 2+ PAGE/FEATURE features share the pattern.
 
 #### Resolution (batch)
 

@@ -56,26 +56,11 @@ visible — no risk of forgetting phases.
 
    a) **Name provided** (`/dev-define auth`): use as feature name → go to step 2.
 
-   b) **No name provided** (`/dev-define`): pick from backlog → concept → suggestions in this order:
-   - Read `.project/backlog.json` → parse JSON (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
-     - First check: `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`, go to step 2.
-     - Fallback: `data.features.find(f => f.status === "TODO")` (first TODO).
-   - **If backlog feature found (fallback path):**
-     AskUserQuestion: "Next feature from backlog: **{name}**. Continue with this?" — "{name} (Recommended)" / "Different feature". Backlog chosen → step 2. "Different feature" → next bullet.
-   - **No backlog but concept present:**
-     Read `SEED_CONTEXT` per `shared/SEED.md`. If `SEED_CONTEXT.present`:
-     ```yaml
-     header: "Concept without backlog"
-     question: "There is a concept but no backlog yet. Do you want to generate a backlog first?"
-     options:
-       - label: "Yes, first /project-backlog (Recommended)", description: "Generate backlog from concept, then define features"
-       - label: "No, define directly", description: "Define a standalone feature without a backlog"
-     multiSelect: false
-     ```
-     "Yes" → stop, show: `Run /project-backlog to convert your concept into a backlog.`
-     "No" → continue to next bullet.
-   - **No backlog, no concept (or direct-define chosen):**
-     Generate 3 suggestions from available signal in this order: (1) scan `project.json#seed.goals[]` or `seed.pitch` for noun-phrases that could be features (e.g. "user authentication", "report export"); (2) if <3 found, fallback to 3 generic next-step suggestions based on `stack.framework` (e.g. Next.js → "auth-flow", "api-route", "form-validation"). Show via AskUserQuestion: "Which feature do you want to define?" — each option label = kebab-case name, description = 1-line purpose. Selected name → step 2.
+   b) **No name provided** (`/dev-define`): resolve in this priority order:
+   1. Backlog transition match — `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` (parse per `shared/BACKLOG.md → Lifecycle Protocol → Read`) → auto-select, show `Backlog: ✓ Task picked up — {name}`, go to step 2.
+   2. First TODO in backlog → confirm via AskUserQuestion ("{name} (Recommended)" / "Different feature").
+   3. No backlog but concept present (`SEED_CONTEXT.present` per `shared/SEED.md`) → AskUserQuestion: generate backlog first via `/project-backlog` (Recommended, then stop) or define a standalone feature directly.
+   4. No backlog, no concept (or direct-define chosen) → offer 3 kebab-case suggestions via AskUserQuestion, derived from `seed.goals[]`/`seed.pitch` noun-phrases, falling back to `stack.framework` generics.
 
 2. **Feature existence check** (before context load):
 
@@ -147,23 +132,9 @@ visible — no risk of forgetting phases.
 
 **Risk-check (only if `feature.risk >= 4`):** show one line before opening the interview — `⚠ HIGH RISK ({risk}/5): consider splitting this feature, verify dependencies, clarify scope before defining.`
 
-**Surface relevant past decisions** (only with ≥1 match from PHASE 0 scan, otherwise skip silently):
+**Surface relevant past decisions** (only with ≥1 match from PHASE 0 scan, otherwise skip silently): render a short `PREVIOUSLY DECIDED` list (`[scope] {decision} → chose {chosen} (constraint: {constraint})`) before the first interview question — context only, no action required.
 
-```
-PREVIOUSLY DECIDED (possibly relevant)
-- [project] {decision} → chose {chosen} (constraint: {constraint})
-- [feature-X] {decision} → chose {chosen} (constraint: {constraint})
-```
-
-Show before the first interview question. No action required — context only, so interview answers don't conflict with previously decided directions.
-
-**Interview opening**: "I see we're defining `{feature-name}`. Tell me first — what problem does this solve for you?"
-
-Conduct an open interview — **no AskUserQuestion and no multiple-choice options in this phase**. Ask one open question at a time. Paraphrase substantive answers to check understanding. Probe and follow up. Follow the dimension checklist and tone rules in `references/phase1a-interview.md`.
-
-**End of interview**: when all relevant dimensions are covered, close with an explicit summary + confirmation: "I understood that {brief summary of goal, success, scope, and key constraints} — is this correct, or am I missing something?" Proceed to PHASE 1b only after the user confirms.
-
-**If the user cannot answer a dimension**: follow the escape-hatch protocol in `references/phase1a-interview.md § Handling "I Don't Know" Responses` — probe first, offer options second, mark as `unresolved` on third failure and move on.
+Conduct the open interview per the reference — one open question at a time, **no AskUserQuestion and no multiple-choice options in this phase**. Close with the reference's explicit summary + confirmation; proceed to PHASE 1b only after the user confirms.
 
 ---
 
@@ -278,22 +249,9 @@ Design in three steps:
    - **feature.json-only** — do NOT write to plan file: type signatures, dependency analysis, build sequence, test strategy. These are canonical in feature.json (PHASE 3) and not needed for plan-mode review.
    - **AI-navigability** (skip if ≤6 files AND no new registry): when applicable, identify new registries and record them in `architecture.registries[]` (written to feature.json in PHASE 3). Omit module-export lists, colocation notes, and import constraints — covered by project conventions.
 
-**Seed Alignment Check** (penultimate step in PHASE 2):
+**Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision was recorded; below that skip silently, trivial features yield only drift-noise):
 
-**Trigger condition** — only run when **either** holds:
-
-- `requirements.length ≥ 4`, OR
-- `≥1 durableDecision` was recorded in this PHASE 2.
-
-Below the threshold → skip silently (no plan-file section, no `seedDrift` carry). Rationale: trivial features (config tweaks, single-REQ bug fixes) yield no meaningful drift signal and would turn the check into noise.
-
-When triggered: follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ
-descriptions + `acceptance[].then` + `durableDecisions[]`. This skill is in plan
-mode at this point — drift table and proposed rewrite go into the plan file. On
-"Yes" → carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4
-(seed and backlog-overview always co-update — they hold the same project description in two
-places). On "Skip" → carry `seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`).
-`source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
+Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ descriptions + `acceptance[].then` + `durableDecisions[]`. Drift table and proposed rewrite go into the plan file (plan mode is active). On "Yes" → carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4 (seed and backlog-overview always co-update — same project description in two places). On "Skip" → carry `seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`). `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 3 (writing feature.json).
 
