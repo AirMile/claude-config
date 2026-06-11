@@ -462,9 +462,7 @@ Regressions: {n} | Stable: {n}
 
 > **Todo**: mark the previously-active phase → `completed` and PHASE 5d → `in_progress`. (Previously-active is PHASE 2b for the all-PASS happy path, or PHASE 5c if fixes ran.)
 
-**Skip when:** All tests FAIL. Read `references/requirement-coverage.md` for full classification logic, coverage matrix, and per-REQ AskUserQuestion flow.
-
-> **Todo**: Read `.claude/skills/dev-verify/references/quality-gates.md` for the full PHASE 5d quality-gate workflow (mutation-strength measurement, PBT gap-check, counterexample-capture, test-smell review, flakiness-check, survivor×flaky correlation, aggregate verdict).
+**Skip when:** All tests FAIL. Read `references/requirement-coverage.md` for full classification logic, coverage matrix, per-REQ AskUserQuestion flow, and the complementary mutation-strength measurement.
 
 ---
 

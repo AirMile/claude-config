@@ -106,12 +106,6 @@ Pre-migration projects may still carry these keys in `project.json` — they are
   "data": { "entities": [] },
   "endpoints": [],
   "optimization_runs": [],
-  "testSmellBaseline": {
-    "avgMockRatio": 0,
-    "p90MockRatio": 0,
-    "sampleCount": 0,
-    "lastUpdated": ""
-  },
   "team": {
     "mode": "solo",
     "commitConvention": "conventional|ticket-prefix|bracket|freeform",
@@ -429,16 +423,16 @@ No deletion, no update — append only. For live status of a running run: see `.
 
 ### project.json sections
 
-| Section             | Written by                                                                                | When                                     |
-| ------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-backlog`           | On seed creation/iteration/plan          |
-| `design`            | `/frontend-design`, `/frontend-tokens`, `/frontend-sketch`                                | On design spec/page build/theme creation |
-| `design.canvases`   | `/frontend-sketch`                                                                        | On new canvas / generate / promote       |
-| `theme`             | `/frontend-tokens`                                                                        | After theme create/update                |
-| `stack`             | `/core-setup`, `/project-backlog`, `/dev-define`, `/dev-build`, `/frontend-design`        | On detection/new deps                    |
-| `data`              | `/dev-define`, `/game-define`                                                             | On entity definition                     |
-| `endpoints`         | `/dev-define`, `/dev-build`                                                               | On API definition / after build          |
-| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                         | On run completion (PHASE 6)              |
+| Section             | Written by                                                                         | When                                     |
+| ------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------- |
+| `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-backlog`    | On seed creation/iteration/plan          |
+| `design`            | `/frontend-design`, `/frontend-tokens`, `/frontend-sketch`                         | On design spec/page build/theme creation |
+| `design.canvases`   | `/frontend-sketch`                                                                 | On new canvas / generate / promote       |
+| `theme`             | `/frontend-tokens`                                                                 | After theme create/update                |
+| `stack`             | `/core-setup`, `/project-backlog`, `/dev-define`, `/dev-build`, `/frontend-design` | On detection/new deps                    |
+| `data`              | `/dev-define`, `/game-define`                                                      | On entity definition                     |
+| `endpoints`         | `/dev-define`, `/dev-build`                                                        | On API definition / after build          |
+| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                  | On run completion (PHASE 6)              |
 
 Feature status changes go to `.project/backlog.json` (see [BACKLOG.md](BACKLOG.md)) — not to project.json.
 
@@ -446,23 +440,23 @@ For the `project-context.json` writer table see [DASHBOARD-CONTEXT.md](DASHBOARD
 
 ### Skill sync overview
 
-| Skill                       | project.json                                                        | project-context.json                                              | When                     |
-| --------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------ |
-| `/core-setup`               | `stack` (full)                                                      | `context` (initial)                                               | After project generation |
-| `/dev-define`               | `data.entities`, `endpoints`, `stack.packages`  | `architecture` (write), `learnings` (read)                        | PHASE 6                  |
-| `/dev-build`                | `endpoints`, `stack.packages`             | `context`, `architecture`, `learnings` (write)                    | PHASE 4C                 |
-| `/dev-verify`               | `stack.packages`, `endpoints`, `data.entities`   | `architecture`, `learnings` (write)                               | PHASE 6 completion       |
-| `/dev-refactor`             | `stack.packages`, `endpoints`, `data.entities`                      | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
-| `/frontend-design`          | `design` (pages, flows, principles)        | —                                                                 | On each run              |
-| `/frontend-design`          | `stack.packages`, `design.pages`          | —                                                                 | After PHASE 4            |
-| `/frontend-tokens`          | `design.principles`                                                 | —                                                                 | After completion         |
-| `/frontend-sketch`          | `design.canvases`                                                   | —                                                                 | new / generate / promote |
-| `/game-define`              | `data.entities`, `stack.packages`               | `architecture` (write)                                            | PHASE 6                  |
-| `/game-build`               | —                                            | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
-| `/team-verify`              | `stack.packages`, `endpoints`, `data.entities`          | `architecture` (write)                                            | PHASE 7 completion       |
-| `/game-refactor`            | —                                                   | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
-| `/dev-optimize`             | `optimization_runs` (append)                                        | —                                                                 | PHASE 6 completion       |
-| `/game-optimize`            | `optimization_runs` (append)                                        | —                                                                 | PHASE 6 completion       |
+| Skill                       | project.json                                   | project-context.json                                              | When                     |
+| --------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- | ------------------------ |
+| `/core-setup`               | `stack` (full)                                 | `context` (initial)                                               | After project generation |
+| `/dev-define`               | `data.entities`, `endpoints`, `stack.packages` | `architecture` (write), `learnings` (read)                        | PHASE 6                  |
+| `/dev-build`                | `endpoints`, `stack.packages`                  | `context`, `architecture`, `learnings` (write)                    | PHASE 4C                 |
+| `/dev-verify`               | `stack.packages`, `endpoints`, `data.entities` | `architecture`, `learnings` (write)                               | PHASE 6 completion       |
+| `/dev-refactor`             | `stack.packages`, `endpoints`, `data.entities` | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
+| `/frontend-design`          | `design` (pages, flows, principles)            | —                                                                 | On each run              |
+| `/frontend-design`          | `stack.packages`, `design.pages`               | —                                                                 | After PHASE 4            |
+| `/frontend-tokens`          | `design.principles`                            | —                                                                 | After completion         |
+| `/frontend-sketch`          | `design.canvases`                              | —                                                                 | new / generate / promote |
+| `/game-define`              | `data.entities`, `stack.packages`              | `architecture` (write)                                            | PHASE 6                  |
+| `/game-build`               | —                                              | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
+| `/team-verify`              | `stack.packages`, `endpoints`, `data.entities` | `architecture` (write)                                            | PHASE 7 completion       |
+| `/game-refactor`            | —                                              | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
+| `/dev-optimize`             | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion       |
+| `/game-optimize`            | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion       |
 | `/core-pull`                | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                 |
 | `/core-setup --mode=mature` | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | One-time on join         |
 

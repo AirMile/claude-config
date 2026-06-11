@@ -57,21 +57,6 @@ node -e "require.resolve('@testing-library/{framework}')" 2>&1 || echo "MISSING:
 
 Replace `{framework}` with the value from the stack detection above. If no component framework is found → skip the framework check.
 
-### JUnit reporter detection (for the dev-verify flakiness aggregator)
-
-Detect whether the JUnit reporter is configured — dev-verify PHASE 5d's flakiness aggregator reads `.project/test-junit.xml`:
-
-```bash
-# Vitest: look for 'junit' in the reporters array
-grep -q "['\"]junit['\"]" vitest.config.* 2>/dev/null && echo "OK: junit reporter (vitest)"
-# Jest: jest-junit as devDep + reporters in config
-node -e "require.resolve('jest-junit')" 2>/dev/null && echo "OK: jest-junit installed"
-# Playwright
-grep -q "junit" playwright.config.* 2>/dev/null && echo "OK: junit reporter (playwright)"
-```
-
-**Missing → log a warning, not a blocker.** Verify will then skip the flakiness step. On the next `/dev-build` run the user can choose to add the reporter (see `dev-verify/references/flakiness-detection.md` for config snippets).
-
 Missing → auto-install (default) if `package.json` already contains `vitest`, `jest`, or `playwright` as a key anywhere in its content. Otherwise → **AskUserQuestion**: "Install + add import (Recommended)" / "Skip and continue".
 
 Output: `TEST-DEPS: ok | patched ({list}) | skipped`.
