@@ -1,214 +1,111 @@
 ---
 name: core-audit
-description: Analyze and refine a skill invoked in this conversation. Use with /core-audit.
+description: Use with /core-audit to analyze and refine a skill that ran in this conversation.
 metadata:
   author: claude-config
-  version: 2.0.0
+  version: 3.1.0
   category: core
 ---
 
 # Audit
 
-Analyze a skill from the current conversation for quality. Two modes: quick (analysis only) or extended (internal walkthrough + analysis). Refactor proposals are presented as a plan via plan mode for single-shot approval.
+Audit a skill from the current conversation: load its full surface (SKILL.md + lazy references), gather evidence from the real run, score it against house conventions, and apply a selective refactor via plan mode.
 
 **Trigger**: `/core-audit`
 
+**Model strategy** (opusplan): the judgment work — trace analysis, scoring, refactor planning — runs in plan mode so it lands on Opus. Setup (load + evidence) and the mechanical apply/verify run in execution mode (Sonnet). Concretely: enter plan mode before analysis (Step 2.3), exit before applying edits (Step 5.4).
+
 ## Step 1: Load Skill from Chat
 
-Scan the conversation above for unique skill invocations (slash commands like `/dev-build`, `/core-edit`, etc., or skill names referenced in `<command-name>` tags).
+Scan the conversation above for unique skill invocations (slash commands like `/dev-build`, or skill names in `<command-name>` tags).
 
 **Resolution rules:**
 
-(Note: `core-audit` itself is always present in the conversation via the `<command-name>` tag, so at least one skill is always detected.)
+(`core-audit` itself is always present via its own `<command-name>` tag, so at least one skill is always detected.)
 
-- **Exactly one unique skill** → auto-select. Show:
+- **Exactly one unique skill** → auto-select. Show: `AUTO-SELECTED: [name] (only skill in conversation)`
+- **Two or more** → AskUserQuestion: header "Skill", question "Which skill from this conversation do you want to audit?", one option per detected skill (most recent invocation first, first option gets "(Recommended)"), multiSelect: false. Only skills used in this chat are eligible — no "other skills" option.
 
-  ```
-  AUTO-SELECTED: [name] (only skill in conversation)
-  ```
+**Load the full skill surface** — not just SKILL.md:
 
-  Proceed to load.
+1. `.claude/skills/[name]/SKILL.md`
+2. Every `.md` in `references/` and `techniques/` (Glob first). These are part of the skill: transition markers lazy-load them at runtime, so an audit that skips them misses most of the content.
+3. List (don't read) `scripts/` and other resources.
 
-- **Two or more unique skills** → use **AskUserQuestion**:
-  - header: "Skill"
-  - question: "Which skill from this conversation do you want to audit?"
-  - options: one per detected skill, in order of most-recent invocation first; the first option gets "(Recommended)" appended to its label
-  - multiSelect: false
-
-  Do NOT add a "list all skills" or "other" option — only the skills used in this chat are eligible.
-
-**After resolution, load** `.claude/skills/[name]/SKILL.md` and show:
+Show:
 
 ```
 LOADED: [name]
 [one-line summary from description]
-Sections: [count] | Has resources: [yes/no]
+SKILL.md: [n] lines | references/: [n] files, [n] lines | techniques/: [n] files, [n] lines | scripts/: [list or none]
 ```
 
-## Step 1.5: Context Detection
+## Step 2: Evidence
 
-Scan for prior skill execution that can inform testing:
+### 2.1 Mode (auto-decided — do not ask)
 
-1. **Conversation context** — the invocation that triggered the auto-select / modal already qualifies as conversation context; capture decisions, files mentioned, and outputs from that invocation
-2. **devinfo.json** — read `.project/session/devinfo.json` if it exists; check `executionPlan` for completed skills matching the target or its pipeline
+- Target skill **actually executed** in this conversation (its phases ran, outputs are visible) → **trace mode**
+- Otherwise (only invoked, mentioned, or selected without a run) → **static mode**
 
-**Detection signals:**
+Also check `.project/session/devinfo.json` if it exists: a completed `executionPlan` entry for the target supplies artifacts (files written, handoff fields) as extra trace evidence — but not conversation flow.
 
-- Target skill appears in conversation as a slash command invocation (always true for this skill now)
-- devinfo.json `executionPlan` contains the target skill with status "completed"
-- devinfo.json `executionPlan` contains a skill from the same pipeline (e.g., `dev-define` when refining `dev-build`)
+Announce: `MODE: trace — real run found in conversation` or `MODE: static — no execution trace, conventions-only analysis`.
 
-**If devinfo adds context, show:**
+### 2.2 User pain points (trace mode only)
 
-```
-CONTEXT DETECTED
+AskUserQuestion:
 
-Source: [conversation | devinfo.json | both]
-Skill(s) found: [list of detected skills with status]
-Artifacts: [relevant files/outputs if available from devinfo]
-
-This context will be used for the walkthrough if extended mode is selected.
-```
-
-**If only conversation context (no devinfo):** proceed silently to Step 2.
-
-## Step 2: Choose Mode
-
-Use **AskUserQuestion**:
-
-**If devinfo context was detected in Step 1.5:**
-
-- header: "Mode"
-- question: "Context is available from a previous skill run. How do you want to analyze the skill?"
+- header: "Experience"
+- question: "What stood out during the [name] run?"
+- multiSelect: true
 - options:
-  - label: "Extended with walkthrough (Recommended)", description: "Internal walkthrough using the detected context as a base — produces the most actionable observations"
-  - label: "Quick analysis", description: "Direct analysis without walkthrough — fast, suitable for small skills"
-- multiSelect: false
+  - label: "Nothing specific (Recommended)", description: "Analysis proceeds on trace + conventions only"
+  - label: "Too many questions/modals", description: "Flow was interrupted by avoidable prompts"
+  - label: "Output wrong or too verbose", description: "Results missed the mark or buried the signal"
+  - label: "I had to correct or re-steer", description: "Claude deviated from what the skill should do"
 
-**If only conversation context:**
+Each selected pain point becomes a priority lens: findings in Steps 3–4 that explain it rank above generic findings.
 
-- header: "Mode"
-- question: "How do you want to analyze the skill?"
-- options:
-  - label: "Quick analysis (Recommended)", description: "Direct analysis without walkthrough — fast, suitable for small skills"
-  - label: "Extended with walkthrough", description: "Internal walkthrough first, then analysis with findings"
-- multiSelect: false
+### 2.3 Enter plan mode
 
-## Step 3: Internal Walkthrough (only if "Extended with walkthrough")
+Call **EnterPlanMode** now. Everything from here through the refactor plan (Steps 3–5.3) is read-only judgment work; plan mode routes it to Opus under opusplan. Read-only Bash (the deterministic checks in 4.1) is allowed. You leave plan mode only at Step 5.3 (ExitPlanMode) to apply edits.
 
-**Skip to Step 4 if quick mode selected.**
+## Step 3: Trace Analysis
 
-### 3.1 Define Scenario
-
-**If devinfo context was detected** — use the real execution as basis:
-
-- Build scenario from the actual skill invocation and its outcomes
-- Reference real artifacts (files created, decisions made, errors encountered)
-- If devinfo.json has handoff data or file tracking, incorporate those specifics
-
-**Otherwise** — use the conversation invocation that triggered the audit as the scenario, supplementing with realistic edge cases where the conversation lacks detail.
-
-**Show scenario:**
-
-```
-WALKTHROUGH SCENARIO
-
-Scenario: [description]
-Context: [real: based on prior execution | conversation: derived from chat | mixed]
-[List key artifacts/decisions from the detected context]
-```
-
-### 3.2 Trace Through Skill
-
-Mentally execute the skill step by step against the scenario. For each step:
-
-- Follow branching logic exactly as written
-- At each AskUserQuestion → assume a realistic user choice, note the options
-- At each output block → verify it can be populated with available data
-- Flag where instructions are ambiguous, missing, or require improvisation
-- Flag where the flow breaks or produces unexpected results
-
-### 3.3 Report Observations
-
-```
-WALKTHROUGH OBSERVATIONS
-
-Flow issues:
-- [where instructions were ambiguous or missing]
-- [where Claude would need to improvise beyond what was written]
-
-UX issues:
-- [awkward phrasing, too many modals, unclear options]
-
-Worked well:
-- [parts that flowed naturally]
-```
+> **Todo**: trace mode → Read `.claude/skills/core-audit/references/trace-analysis.md` and follow it. Static mode → skip to Step 4.
 
 ## Step 4: Analysis
 
-Analyze the skill across these dimensions. Score each 1-5.
+### 4.1 Deterministic checks (run, don't judge)
 
-### 4.1 Redundancy
+Run via Bash and record raw results:
 
-Instructions that tell Claude what it already knows.
+- **Size**: `wc -l` on SKILL.md and every file in `references/`/`techniques/`
+- **Description budget**: character count of frontmatter `description` (target 40–80; long descriptions get truncated in the skill listing and break auto-routing)
+- **Reference integrity**: every `references/...`/`techniques/...` path mentioned in SKILL.md exists on disk, and every file on disk is mentioned somewhere (orphan check)
+- **Handoff**: frontmatter declares `reads:`/`writes:` → run `python3 scripts/check-handoff.py` from the claude-config repo root and capture violations for the target skill
+- **Counterpart**: target matches `dev-*`/`game-*` with a pipeline counterpart → note it; structural findings must be flagged for sync (project CLAUDE.md § Rules for Changes)
 
-**Redundant (remove):**
+### 4.2 Dimensions
 
-- "Parse the JSON response" — Claude knows JSON
-- "Use conventional commit format" — Claude knows conventional commits
-- "Create a new file using the Write tool" — Claude knows its tools
-- Generic best practices ("write clean code", "handle errors")
+Score each 1–5.
 
-**NOT redundant (keep):**
+1. **Redundancy** — instructions telling Claude what it already knows ("parse the JSON", "use the Write tool", generic best practices). Keep: project-specific conventions, non-obvious tool behavior, workflow sequences unique to this skill, constraints that override defaults.
+2. **Signal-to-Noise** — explaining known concepts, verbose templates, information repeated across sections, excessive examples.
+3. **Dead Paths** — conditions never true in practice, impossible-state handling, options nobody selects, references to nonexistent files/tools.
+4. **Structure & Flow** — logical top-to-bottom order, related concerns grouped, decision points before the paths they gate, no forward references.
+5. **Claude-Native Phrasing** — imperative and direct, no WHY for obvious decisions, trust Claude's formatting unless the format is critical, domain terms without definitions.
+6. **Frontmatter Health** — description trigger-based (`skills/shared/SKILL-PATTERNS.md § Description Format`) and within budget, name matches folder, metadata complete, no security violations.
+7. **Convention Compliance** — check against `skills/shared/SKILL-PATTERNS.md` (source of truth — cite sections, don't restate them):
+   - Lazy Reference Loading: ≥30-line blocks that are conditional, static templates, or end-of-flow still inline? Estimate the token cost per run.
+   - Task Tracking: 5+ phases without the TaskCreate pattern (skip for thinking/CRUD/short skills)?
+   - AskUserQuestion conventions: recommended-first, correct multiSelect, Modal Option Cap, Interview Checkpoint when 3+ inputs are gathered
+   - Pipeline handoff: shared state touched without `reads:`/`writes:` declarations?
+8. **Trace** (trace mode only) — weight of Step 3 observations: deviations, friction, auto-decidable modals, unused loads.
 
-- Project-specific conventions ("use BEM with `--` modifier")
-- Non-obvious tool behaviors ("Glob doesn't follow Windows junctions")
-- Workflow sequences that define THIS skill's unique process
-- Constraints that override Claude's defaults
+### 4.3 Present Analysis
 
-### 4.2 Signal-to-Noise
-
-Ratio of actionable, unique instructions to filler.
-
-**Noise indicators:**
-
-- Explaining concepts Claude already understands
-- Verbose templates where a compact format works
-- Repeated information across sections
-- Excessive examples when one suffices
-
-### 4.3 Dead Paths
-
-- Conditions that can never be true in practice
-- Platform-specific code on a single-platform setup
-- Error handling for impossible states
-- Options nobody would select
-- References to files/tools that don't exist
-
-### 4.4 Structure & Flow
-
-- Steps in logical order, top-to-bottom readable
-- Related concerns grouped
-- Decision points appear before the paths they gate
-- No forward references to undefined concepts
-
-### 4.5 Claude-Native Phrasing
-
-- Imperative, direct ("Scan for X" not "You should scan for X")
-- Skip explaining WHY for obvious decisions
-- Trust Claude to format output unless specific format is critical
-- Use domain terminology without defining it
-
-### 4.6 Frontmatter Health
-
-- description: has WHAT + WHEN pattern with trigger phrases?
-- name: matches folder, kebab-case?
-- metadata: present and complete?
-- No security violations (XML brackets, reserved words)?
-
-### 4.7 Present Analysis
-
-If walkthrough ran (§3 was executed): also integrate observations — map flow issues to specific lines/sections, map UX issues to AskUserQuestion configurations, identify instructions that caused improvisation. Add a Walkthrough row to the table below.
+Map every finding to a location (`SKILL.md:line` or `references/{name}.md`) and an impact estimate (lines/tokens saved per run, modals removed, ambiguity resolved). Findings that explain a Step 2.2 pain point rank first.
 
 ```
 ANALYSIS: [skill-name]
@@ -221,87 +118,25 @@ ANALYSIS: [skill-name]
 | Structure | X/5 | [one-line] |
 | Claude-Native | X/5 | [one-line] |
 | Frontmatter | X/5 | [one-line] |
-| Walkthrough | X/5 | [one-line] (only if walkthrough ran)
+| Conventions | X/5 | [one-line] |
+| Trace | X/5 | [one-line] (trace mode only)
 
-Overall: [X/30 or X/35] — [Grade: A/B/C/D/F]
+Overall: [X/35 or X/40] — [Grade: A/B/C/D/F]
 
 TOP FINDINGS:
-1. [most impactful finding with location]
-2. [second finding]
-3. [third finding]
+1. [finding] — [location] — [impact]
+2. ...
 ```
 
-### 4.8 Early Exit
+### 4.4 Early Exit
 
-If TOP FINDINGS is empty or all dimensions score 4+, the skill needs no refactoring. Show the analysis and stop:
+All dimensions 4+ or no findings → show the analysis, state that no changes are proposed, exit plan mode with no changes, and stop:
 
 ```
 ANALYSIS COMPLETE: [skill-name]
-
 No significant findings — skill is in good shape. No changes proposed.
 ```
 
-Skip Steps 5 and 6.
+## Step 5: Refactor & Verify
 
-## Step 5: Plan Mode Refactor
-
-Compile all proposed changes into a single plan and present it via plan mode.
-
-**Refactor principles:**
-
-- Remove what Claude already knows — redundancy reduces signal
-- Improve clarity — rephrase confusing or ambiguous instructions
-- Remove dead paths — unreachable logic adds noise
-- Restructure for top-to-bottom readability
-- Preserve all unique, project-specific knowledge
-- Keep AskUserQuestion integrations (UX, not noise)
-- Don't sacrifice clarity for brevity — if a longer explanation prevents mistakes, keep it
-
-### 5.1 Compile Changes
-
-Internally collect every proposed change. Classify each as:
-
-- **Significant** — structural changes, content rewrites, logic modifications, section additions/removals
-- **Minor** — formatting, whitespace, phrasing tweaks, typo fixes, small wording improvements
-
-Order significant changes by impact (highest first). Note dependencies (B requires A).
-
-### 5.2 Build Plan
-
-Use the **EnterPlanMode** tool to switch to plan mode, then write the plan to the plan file with this structure:
-
-1. **Context** — short paragraph: what was audited, key findings that drive the changes, why the refactor matters
-2. **Significant changes** — for each, in order of impact:
-   - Title
-   - What changes
-   - Why (reference analysis dimension/finding)
-   - `--- Before ---` block with the relevant section
-   - `--- After ---` block with the proposed replacement
-3. **Minor changes** — flat numbered list with one-line description per change
-4. **Verification** — list the checks from Step 6 (re-read SKILL.md, frontmatter validation, resource references)
-
-Then use **ExitPlanMode** to request approval.
-
-### 5.3 Apply
-
-After plan approval, apply all changes from the plan using the Edit tool. Skip any change the user rejected during plan review.
-
-If the user rejects the entire plan, stop without modifying the skill.
-
-## Step 6: Verify
-
-1. Re-read the modified SKILL.md
-2. Validate frontmatter (required fields, description pattern, security)
-3. Check referenced files still exist (if skill has resources)
-4. Show summary:
-
-```
-REFINED: [skill-name]
-
-Changes applied: [n]
-- [change title 1]
-- [change title 2]
-
-Frontmatter: [valid/issues found]
-Resources: [ok/missing files]
-```
+> **Todo**: Read `.claude/skills/core-audit/references/refactor-plan.md` and follow it (selective approval → plan mode → apply → verify).
