@@ -10,8 +10,6 @@
 
 2. **Build the JSON data object:**
 
-   **[WEB MODE]:**
-
    ```json
    {
      "schemaVersion": 2,
@@ -23,45 +21,22 @@
      "features": [
        {
          "name": "{feature-name}",
-         "type": "FEATURE|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|PAGE-GAP",
+         "type": "{see mode note}",
          "status": "TODO",
          "phase": "P1|P2|P3|P4",
          "description": "{description}",
          "source": "/project-backlog",
          "dependencies": ["{other-feature}"],
-         "risk": "{1-5 from PHASE 1 risk-score}"
+         "risk": "{1-5 from PHASE 1 risk-score — WEB MODE only, omit in game mode}"
        }
      ],
      "notes": "{Any notes or considerations}"
    }
    ```
 
-   **`transition` field rule:** NEVER write `transition` in the initial backlog data — regardless of feature type. The dashboard sets `transition` dynamically when the user clicks the copy-skill button on a card, and clears it when the cancel (annuleer) button is used. Pre-setting it makes cards appear "actively in progress" before any user action and replaces the copy button with a cancel button, breaking the entry-point UX.
+   **`type` enum per mode:** WEB — `FEATURE|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|PAGE-GAP` · GAME — `CORE|MECHANIC|CONTENT|POLISH|UI`.
 
-   **[GAME MODE]:**
-
-   ```json
-   {
-     "schemaVersion": 2,
-     "project": "{Project Name}",
-     "generated": "{YYYY-MM-DD}",
-     "updated": "{YYYY-MM-DD}",
-     "source": "/project-backlog",
-     "overview": "{Brief description from source}",
-     "features": [
-       {
-         "name": "{feature-name}",
-         "type": "CORE|MECHANIC|CONTENT|POLISH|UI",
-         "status": "TODO",
-         "phase": "P1|P2|P3|P4",
-         "description": "{description}",
-         "source": "/project-backlog",
-         "dependencies": ["{other-feature}"]
-       }
-     ],
-     "notes": "{Any notes or considerations}"
-   }
-   ```
+   **`transition` field rule:** NEVER write `transition` in the initial backlog data — regardless of feature type. The dashboard sets `transition` dynamically when the user clicks the copy-skill button on a card, and clears it when the cancel button is used. Pre-setting it makes cards appear "actively in progress" before any user action and replaces the copy button with a cancel button, breaking the entry-point UX.
 
    **[WEB MODE] Sort `features[]` to match the PHASE 2 suggested order:**
    1. **Group by `phase`** in order: P1 → P2 → P3 → P4
@@ -72,14 +47,7 @@
    3. **Tie-breaker** within the same topological "layer": preserve the order from PHASE 1 (extraction order)
 
    **[WEB MODE] In update mode, apply merge rules:**
-   - For each existing backlog feature: preserve `status`, `stage`, `phase`, `date` from the current backlog
-   - For MODIFIED features (TODO status): update `description` and `type` from new extraction
-   - For MODIFIED features (DOING/DONE status): only enrich `description` if concept adds new insights — never overwrite
-   - For NEW features: add with `status: "TODO"`, `stage: null`, `source: "/project-backlog"`
-   - For DEPRECATED features: keep in the array but set `status: "DEPRECATED"`
-   - For MODIFIED features: preserve existing `source` field; set `"/project-backlog"` only if missing
-   - Set `updated` to current date, keep original `generated` date
-   - INDEPENDENT features (added outside project-backlog): always preserve intact
+   Merge-rule canon (DOING/DONE protected, MODIFIED-TODO update, removed → DEPRECATED, INDEPENDENT preserve): `input-detection.md` § "Update backlog". Write-level specifics on top: preserve `status`/`stage`/`phase`/`date` from the current backlog; NEW features get `status: "TODO"`, `stage: null`, `source: "/project-backlog"`; MODIFIED features keep their existing `source` (set `"/project-backlog"` only if missing); DEPRECATED stay in the array with `status: "DEPRECATED"`; set `updated` to current date, keep original `generated`.
 
 3. **Write the data store:**
    - Serialize the built data object (`JSON.stringify(data, null, 2)`) → Write to `.project/backlog.json`
@@ -104,15 +72,13 @@
    3. **[WEB MODE]** Also fill `stack` section with detected framework, language, DB, etc. — only if fields are empty
    4. Write `.project/project.json`
 
-**Output:**
-
-**[WEB MODE]:**
+**Output** (both modes — `{dev|game}` per mode; "(+ stack)" only in web mode):
 
 ```
 BACKLOG CREATED
 
 File: .project/backlog.json
-Dashboard: .project/project.json (concept + stack)
+Dashboard: .project/project.json (concept{ + stack})
 Server: http://localhost:9876/{project-dir}
 
 | Priority | Features |
@@ -124,26 +90,5 @@ Server: http://localhost:9876/{project-dir}
 | Total    | {count}  |
 
 View backlog:  /project-viewer
-Start building: /dev-define {first-P1-feature}
-```
-
-**[GAME MODE]:**
-
-```
-BACKLOG CREATED
-
-File: .project/backlog.json
-Dashboard: .project/project.json (concept)
-Server: http://localhost:9876/{project-dir}
-
-| Priority | Features |
-|----------|----------|
-| P1       | {count}  |
-| P2       | {count}  |
-| P3       | {count}  |
-| P4       | {count}  |
-| Total    | {count}  |
-
-View backlog:  /project-viewer
-Start building: /game-define {first-P1-feature}
+Start building: /{dev|game}-define {first-P1-feature}
 ```

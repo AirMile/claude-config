@@ -75,37 +75,19 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE
 
 **Goal:** Determine implementation order based on dependencies.
 
-1. **For each feature, ask:**
-   - What other features must exist first?
-   - Can this be built standalone?
+1. **Per feature**: what must exist first? Can it be built standalone?
 
-2. **Build dependency graph** — generate an ASCII decomposition tree with feature → epics → stories structure and dependency edges:
-
-   **[WEB MODE] example:**
+2. **Build dependency graph** — ASCII decomposition tree with dependency edges, e.g.:
 
    ```
    routing (base)
    └── auth-pages
        └── user-dashboard
            ├── profile-settings
-           ├── notifications
            └── api-user-data
    ```
 
-   **[GAME MODE] example:**
-
-   ```
-   player-movement (base)
-   └── basic-combat
-       └── ability-system
-           ├── element-water
-           ├── element-fire
-           └── ability-draft
-   ```
-
-3. **Detect circular dependencies:**
-   - If found, suggest how to break the cycle
-   - If unclear, ask the user.
+3. **Detect circular dependencies** — suggest how to break the cycle; unclear → ask the user.
 
 4. **[WEB MODE] Detect broken dependencies:** flag dependencies on CANCELLED features before the dependency table and ask the user (remove the dependency, or restore via backlog UI) before proceeding to PHASE 3.
 
@@ -117,28 +99,13 @@ DEPENDENCIES MAPPED
 | Feature | Depends On | Blocks |
 |---------|------------|--------|
 | {feature-1} | - | {feature-2} |
-| {feature-2} | {feature-1} | {feature-3} |
 ...
 
 Dependency tree:
 {ascii tree}
 ```
 
-5. **Review with user:**
-
-   Use AskUserQuestion:
-   - header: "Dependency Review"
-   - question: "Is this order correct? You can adjust dependencies."
-   - options:
-     - label: "Yes, this is correct (Recommended)", description: "Dependencies are correct, proceed to priority"
-     - label: "Adjust dependencies", description: "Add, remove, or reorder dependencies"
-   - multiSelect: false
-
-   **Response handling:**
-   - "Yes, this is correct" → proceed to PHASE 3
-   - Anything else (including AskUserQuestion's built-in "Other") → parse the change request (add/remove/reorder), update graph, show updated table, re-ask
-
-   **Loop until user confirms dependencies are correct.**
+5. **Review with user:** AskUserQuestion ("Is this order correct?") — "Yes, this is correct (Recommended)" → PHASE 3; any other answer (incl. "Other") → parse the change (add/remove/reorder), update graph, show updated table, re-ask. Loop until confirmed.
 
 ### PHASE 3: Priority Assignment
 
@@ -165,23 +132,7 @@ Dependency tree:
    - P4: Stretch goals, experimental features, future considerations
    - When unclear: prefer P2 (easier to demote than to promote later)
 
-3. **Review with user:**
-
-   Show proposed prioritization table, then:
-
-   Use AskUserQuestion:
-   - header: "Priority Review"
-   - question: "Is this prioritization correct? P1 = must-have, P2 = extends P1, P3 = nice-to-have, P4 = later. You can move features."
-   - options:
-     - label: "Yes, this is correct (Recommended)", description: "Priorities are correct, generate backlog"
-     - label: "Move features", description: "Move one or more features to a different priority"
-   - multiSelect: false
-
-   **Response handling:**
-   - "Yes, this is correct" → proceed to PHASE 4
-   - Anything else (Move features, freeform via "Other") → apply the change (move features between priorities, or apply described changes), show updated prioritization, re-ask
-
-   **Loop until user confirms prioritization is correct.**
+3. **Review with user:** show the proposed prioritization table, then AskUserQuestion ("Is this prioritization correct? P1 = must-have, P2 = extends P1, P3 = nice-to-have, P4 = later") — "Yes, this is correct (Recommended)" → PHASE 4; any other answer → move features between priorities, show updated prioritization, re-ask. Loop until confirmed.
 
 **Output:**
 

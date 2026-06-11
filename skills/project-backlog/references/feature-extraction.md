@@ -1,8 +1,8 @@
 # PHASE 1: Feature Extraction
 
-**Goal:** Identify distinct features from the concept.
+**Goal:** Identify distinct features from the concept. Steps are mode-agnostic unless marked [WEB MODE]/[GAME MODE].
 
-**Learnings load** (before analysis) via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+**Learnings load** (before analysis) via [shared/LEARNINGS-LOAD.md](../../shared/LEARNINGS-LOAD.md):
 
 ```
 scopes: [architectural]
@@ -12,35 +12,27 @@ current-feature: none
 
 Show the loaded output. Architectural patterns guide feature decomposition. Pitfall-prefix prevents repeating structural bugs in new features.
 
-**[WEB MODE]**
+1. **Analyze** the concept for decomposition:
+   - [WEB MODE] core pages/routes, components to build, required API endpoints, independent splits
+   - [GAME MODE] core mechanics, systems to build, independent splits
 
-1. **Analyze:**
-   - What are the core pages/routes?
-   - What components need to be built?
-   - What API endpoints are required?
-   - What can be split into independent features?
+   **If research was performed (PHASE 0.5), also consider:** what already exists in the codebase to reuse/extend, framework patterns or conventions that should guide decomposition, and pitfalls/anti-patterns to avoid.
 
-   **If research was performed (PHASE 0.5), also consider:**
-   - What already exists in the codebase that can be reused or extended?
-   - What framework patterns or conventions should guide the decomposition?
-   - What pitfalls or anti-patterns were identified to avoid?
-
-   **Granularity decision:** When a feature could be defined as one large item OR multiple smaller items, apply the right-size rule: each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — they're easier to combine than to split later.
+   **Granularity decision:** each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — easier to combine than to split later.
 
    **If in update mode (from PHASE 0 Scenario A):**
    - Start from existing backlog features as baseline — do NOT extract from scratch
    - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
    - INDEPENDENT features: always preserve unchanged — they are not concept-derived
    - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
-   - CANCELLED features are protected: preserve as `status: "CANCELLED"`, exclude from planning and build order — treat as unavailable
+   - CANCELLED features are protected: preserve as `status: "CANCELLED"`, exclude from planning and build order
    - Present the merged feature list with change markers for clarity
 
-2. **Extract features:**
-   - Each feature = one `/dev-define` unit
-   - Feature should be implementable independently (with dependencies)
-   - Name in kebab-case for CLI use
+2. **Extract features:** each feature = one `/dev-define` (web) or `/game-define` (game) unit, implementable independently (with dependencies), kebab-case name for CLI use.
 
 3. **Categorize by type:**
+
+   **[WEB MODE]:**
    | Type | Description |
    |------|-------------|
    | FEATURE | Core functionality (auth, data processing, core behavior) |
@@ -52,7 +44,16 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
    | COMPONENT | Reusable UI component (goes through same pipeline as PAGE) |
    | PAGE-GAP | Missing functionality found by /frontend-design |
 
-4. **Score risk:**
+   **[GAME MODE]:**
+   | Type | Description |
+   |------|-------------|
+   | CORE | Foundation systems (player, arena, input) |
+   | MECHANIC | Gameplay mechanics (combat, abilities) |
+   | CONTENT | Game content (specific abilities, elements) |
+   | POLISH | Juice, effects, feel |
+   | UI | User interface elements |
+
+4. **[WEB MODE] Score risk:**
 
    Assign each feature a risk score:
 
@@ -64,115 +65,32 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
    | 4     | Complex integration or new technology                   |
    | 5     | High complexity, many unknowns or external dependencies |
 
-   **Per feature, note briefly:**
-   - Risk score (1-5) + reason (max 1 sentence)
+   Per feature: risk score (1-5) + reason (max 1 sentence). Heuristics: external API/service dependency → higher; partially exists in codebase (update mode) → lower.
 
-   **Heuristics:**
-   - Features with external API/service dependency → higher risk
-   - Features that partially exist in codebase (update mode) → lower risk
+   **Extraction quality self-check** (run before review, do NOT show to user): each feature 1-3 days (too large → split); no overlapping scope; dependencies explicit (note for PHASE 2); risk scores substantiated; research findings reflected in descriptions. Adjust the feature list based on found gaps.
 
-   **Extraction quality self-check** (run before review, do NOT show to user):
-   - Each feature is 1-3 days of work (too large → split, too small → combine)
-   - No overlapping scope between features
-   - Dependencies are explicit (feature X requires feature Y → note for PHASE 2)
-   - Risk scores are substantiated (score without reason → add reason)
-   - Research findings incorporated (if PHASE 0.5 was done: findings reflected in feature descriptions)
+5. **Output** (both modes):
 
-   Adjust the feature list based on found gaps.
+   ```
+   FEATURES EXTRACTED
 
-**[WEB MODE] Output:**
+   Found {count} features:
 
-```
-FEATURES EXTRACTED
+   | # | Feature | Type | Risk | Description | Change |
+   |---|---------|------|------|-------------|--------|
+   | 1 | {name} | {type} | {1-5} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
+   ...
+   ```
 
-Found {count} features:
+   Risk column: web mode only. Change column: update mode only (omit in create mode).
 
-| # | Feature | Type | Risk | Description | Change |
-|---|---------|------|------|-------------|--------|
-| 1 | {name} | {type} | {1-5} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
-| 2 | {name} | {type} | {1-5} | {one-line description} | {marker or — if unchanged} |
-...
+6. **Feature Review (all modes):**
 
-In update mode, the Change column shows what happened to each feature.
-In create mode, the Change column is omitted.
-```
+   AskUserQuestion — header "Feature Review", question "Are these features correct? You can add, remove, or adjust.", options "Yes, this is correct (Recommended)" / "Adjust features". Response handling: "Yes" → continue below; "Adjust features" or "Other" → apply changes, show updated table, re-ask. **Loop until confirmed.**
 
-5. **[WEB MODE] THEME signal (optional — only on explicit mention in concept):**
+   After confirmation: [GAME MODE] → step 7, then PHASE 2 · [WEB MODE] → step 8, then Page-Discovery.
 
-   If the concept explicitly mentions "design tokens", "colors", "typography", "theme", or "branding" (no implicit speculation): add `{ "name": "theme-init", "type": "THEME", "status": "TODO", "phase": "P3", "description": "{relevant quote from concept}", "source": "/project-backlog" }` to the feature list — `/frontend-tokens` auto-triggers on THEME items. No match → skip.
-
----
-
-**[GAME MODE]**
-
-1. **Analyze:**
-   - What are the core mechanics?
-   - What systems need to be built?
-   - What can be split into independent features?
-
-   **If research was performed (PHASE 0.5), also consider:**
-   - What already exists in the codebase that can be reused or extended?
-   - What framework patterns or conventions should guide the decomposition?
-   - What pitfalls or anti-patterns were identified to avoid?
-
-   **Granularity decision:** When a feature could be defined as one large item OR multiple smaller items, apply the right-size rule: each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — they're easier to combine than to split later.
-
-   **If in update mode (from PHASE 0 Scenario A):**
-   - Start from existing backlog features as baseline — do NOT extract from scratch
-   - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
-   - INDEPENDENT features: always preserve unchanged — they are not concept-derived
-   - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
-   - Present the merged feature list with change markers for clarity
-
-2. **Extract features:**
-   - Each feature = one `/game-define` unit
-   - Feature should be implementable independently (with dependencies)
-   - Name in kebab-case for CLI use
-
-3. **Categorize by type:**
-   | Type | Description |
-   |------|-------------|
-   | CORE | Foundation systems (player, arena, input) |
-   | MECHANIC | Gameplay mechanics (combat, abilities) |
-   | CONTENT | Game content (specific abilities, elements) |
-   | POLISH | Juice, effects, feel |
-   | UI | User interface elements |
-
-**[GAME MODE] Output:**
-
-```
-FEATURES EXTRACTED
-
-Found {count} features:
-
-| # | Feature | Type | Description | Change |
-|---|---------|------|-------------|--------|
-| 1 | {name} | {type} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
-| 2 | {name} | {type} | {one-line description} | {marker or — if unchanged} |
-...
-
-In update mode, the Change column shows what happened to each feature.
-In create mode, the Change column is omitted.
-```
-
-4. **[GAME MODE] Feature Review (all modes):**
-
-   Use AskUserQuestion:
-   - header: "Feature Review"
-   - question: "Are these features correct? You can add, remove, or adjust."
-   - options:
-     - label: "Yes, this is correct (Recommended)", description: "Features are correct, proceed to dependencies"
-     - label: "Adjust features", description: "Add, remove, or change name/type/description"
-   - multiSelect: false
-
-   **Response handling:**
-   - "Yes, this is correct" → proceed to PHASE 2
-   - "Adjust features" → ask what to change, apply changes, show updated table, re-ask
-   - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
-
-   **Loop until user confirms features are correct.**
-
-5. **[GAME MODE] Core loop validation (only in create mode or when P1 features changed):**
+7. **[GAME MODE] Core loop validation (only in create mode or when P1 features changed):**
 
    Check whether the P1 features together form a playable gameplay loop:
 
@@ -190,27 +108,12 @@ In create mode, the Change column is omitted.
    P1 loop complete? {YES / NO — {missing element}}
    ```
 
-   - If the loop is NOT complete: show which element is missing and suggest adding a feature or promoting one to P1
-   - If the loop IS complete: show confirmation and proceed
+   - Loop NOT complete → show which element is missing and suggest adding a feature or promoting one to P1
+   - Loop complete → show confirmation and proceed
 
-**[WEB MODE] Feature Review:**
+8. **[WEB MODE] THEME signal (optional — only on explicit mention in concept):**
 
-Use AskUserQuestion:
-
-- header: "Feature Review"
-- question: "Are these features correct? You can add, remove, or adjust."
-- options:
-  - label: "Yes, this is correct (Recommended)", description: "Features are correct, proceed to dependencies"
-  - label: "Adjust features", description: "Add, remove, or change name/type/description/risk"
-- multiSelect: false
-
-**Response handling:**
-
-- "Yes, this is correct" → proceed to Page-Discovery
-- "Adjust features" → ask what to change (add/remove/edit name/type/description/risk), apply changes, show updated table, re-ask
-- "Other" → parse user's freeform input, apply changes, show updated table, re-ask
-
-**Loop until user confirms features are correct.**
+   If the concept explicitly mentions "design tokens", "colors", "typography", "theme", or "branding" (no implicit speculation): add `{ "name": "theme-init", "type": "THEME", "status": "TODO", "phase": "P3", "description": "{relevant quote from concept}", "source": "/project-backlog" }` to the feature list — `/frontend-tokens` auto-triggers on THEME items. No match → skip.
 
 ---
 

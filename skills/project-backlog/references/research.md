@@ -26,61 +26,30 @@ If ambiguities are identified, use AskUserQuestion to clarify before starting re
 
 Spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to do all research in an isolated context. This keeps Context7 results, web search output, and source file reads out of the main session.
 
-**[WEB MODE]** Agent prompt:
+Agent prompt — substitute per mode: `{project-type}` = "web project" | "Godot 4.x game"; `{stack}` = the concept's frameworks/libraries | "Godot 4.x, GUT"; `{conventions}` = "architecture conventions, file structure" | "scene tree, file structure and autoload conventions"; `{focus}` = "architecture patterns, best practices, common pitfalls, testing setup" | "scene composition, node types, GDScript patterns, signal usage, testing setup":
 
 ```
-Research the following for a web project feature plan.
+Research the following for a {project-type} feature plan.
 
 {If codebase research needed:}
 CODEBASE ANALYSIS:
-- Find similar features, existing patterns, architecture conventions
+- Find similar features, existing patterns, {conventions}
 - Check existing implementations that can be reused
-- Note file structure conventions
 
 {If Context7 research needed:}
 FRAMEWORK RESEARCH:
-- resolve-library-id + query-docs for: {frameworks/libraries}
-- Focus: architecture patterns, best practices, common pitfalls, testing setup
+- resolve-library-id + query-docs for: {stack}
+- Focus: {focus}
 
 {If web research needed:}
 WEB RESEARCH (use WebSearch):
-- "{framework} {feature-type} best practices"
-- "{framework} {feature-type} common pitfalls"
-- "{feature-type} production examples"
+- "{stack} {feature-type} best practices"
+- "{stack} {feature-type} common pitfalls"
 
 RETURN FORMAT:
 RESEARCH_START
 Codebase: {3-5 bullet points: existing patterns, reusable code, conventions}
-Framework: {3-5 bullet points: architecture patterns, best practices, pitfalls}
-Web: {3-5 bullet points: real-world patterns, warnings, recommendations}
-RESEARCH_END
-```
-
-**[GAME MODE]** Agent prompt:
-
-```
-Research the following for a Godot 4.x game feature plan.
-
-{If codebase research needed:}
-CODEBASE ANALYSIS:
-- Find similar features, existing patterns, scene tree conventions
-- Check existing implementations that can be reused
-- Note file structure and autoload conventions
-
-{If Context7 research needed:}
-GODOT RESEARCH:
-- resolve-library-id + query-docs for: Godot 4.x, GUT
-- Focus: scene composition, node types, GDScript patterns, signal usage, testing setup
-
-{If web research needed:}
-WEB RESEARCH (use WebSearch):
-- "Godot 4.x {mechanic} implementation patterns"
-- "Godot {feature-type} common pitfalls"
-
-RETURN FORMAT:
-RESEARCH_START
-Codebase: {3-5 bullet points: existing patterns, reusable scenes/scripts, conventions}
-Godot: {3-5 bullet points: scene architecture, GDScript patterns, pitfalls}
+Framework: {3-5 bullet points: architecture/scene patterns, best practices, pitfalls}
 Web: {3-5 bullet points: real-world patterns, warnings, recommendations}
 RESEARCH_END
 ```
