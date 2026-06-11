@@ -23,7 +23,7 @@ Only enter this flow if `.project/features/{feature-name}/feature.json` already 
    ```
 
 4. Process delta based on choice:
-   - **Add**: Run through PHASE 1 Requirements Gathering for new requirements only. Number from `REQ-{N+1}`.
+   - **Add**: Run through the PHASE 1a interview + PHASE 1b synthesis for new requirements only. Number from `REQ-{N+1}`.
    - **Modify**: Ask which REQ-IDs. Per REQ: show current description + acceptance, ask for new version. Use format `[{ when, then }]` per scenario.
    - **Remove**: Ask which REQ-IDs. Mark with `deltaOp: "REMOVED"` — do not physically remove from array. Also: remove the REQ-ID from all `buildSequence[].requirements[]` arrays; if a step becomes empty afterwards → remove the step.
    - **Multiple**: Combine the above flows in one round.
@@ -36,7 +36,7 @@ Only enter this flow if `.project/features/{feature-name}/feature.json` already 
 
 6. **Status-reset**: if feature `status` was `"DOING"` → reset to `"DEFINED"` in `feature.json` and backlog.
 
-7. Skip PHASE 1b (feature splitting) unless the number of requirements after update exceeds 6 and there are clear clusters.
+7. Skip PHASE 1c (feature splitting) unless the number of requirements after update exceeds 6 and there are clear clusters.
 
 8. Go to PHASE 2 for ADDED and MODIFIED requirements only. UNCHANGED requirements do not need re-architecture, unless MODIFIED requirements have architectural impact (ask user). The Seed Alignment Check at the end of PHASE 2 still runs — update-mode can drift just as easily as a fresh define.
 

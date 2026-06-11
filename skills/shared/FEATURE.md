@@ -7,7 +7,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 **Lifecycle:**
 
 ```
-/dev-define   → creates feature.json (header, requirements, files, architecture, choices)
+/dev-define   → creates feature.json (header, requirements, files, architecture, clarifications)
 /dev-build    → enriches (build summary, decisions, syncNotes, packages, tests.checklist)
 /dev-verify   → enriches (evaluation, acceptance tests, test results, coverage, observations)
 /dev-refactor → enriches (improvements, positive observations)
@@ -31,11 +31,6 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
   "created": "2026-02-20",
   "depends": ["clipboard-redesign"],
   "summary": "Shift+Click multi-select for inspect overlay",
-
-  "choices": {
-    "coreFunction": "Multi-select for comparison",
-    "patterns": "Zustand store with Map"
-  },
 
   "clarifications": [
     {
@@ -353,7 +348,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 
 **Always present** (written by define):
 
-`name`, `status`, `created`, `depends`, `summary`, `choices`, `requirements`, `files`, `architecture`, `buildSequence`, `testStrategy`
+`name`, `status`, `created`, `depends`, `summary`, `requirements`, `files`, `architecture`, `buildSequence`, `testStrategy`
 
 **Conditional from define:**
 
@@ -448,7 +443,7 @@ pending → built → PASS
 
 | Skill            | What they write to feature.json                                                                                                                                                                                                                                | When     |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `/dev-define`    | Creates feature.json: header, choices, clarifications, requirements, files, architecture, buildSequence, tests                                                                                                                                                 | PHASE 3  |
+| `/dev-define`    | Creates feature.json: header, clarifications, requirements, files, architecture, buildSequence, tests                                                                                                                                                          | PHASE 3  |
 | `/dev-build`     | Enriches: build, packages, tests.checklist (incl. kind/seed for property-tests), requirements (technique/syncNote/status). Reads clarifications as constraints                                                                                                 | PHASE 4C |
 | `/dev-verify`    | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint/mutationScore/flakiness/smellSummary/checklist[].smellScore/checklist[].counterexample/qualityVerdict), requirements status, observations | PHASE 6  |
 | `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE. Reads tests.mutationScore as PHASE 0 baseline                                                                                                                                  | PHASE 5  |
