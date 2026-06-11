@@ -97,42 +97,9 @@ In update mode, the Change column shows what happened to each feature.
 In create mode, the Change column is omitted.
 ```
 
-5. **[WEB MODE] Reuse-Discovery (optional — only with ≥2 PAGE/FEATURE features with shared UI patterns):**
+5. **[WEB MODE] THEME signal (optional — only on explicit mention in concept):**
 
-   **When to skip:** no frontend project, fewer than 2 PAGE/FEATURE features, or all UI patterns are already in `design.components[]`.
-
-   Follow [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discovery) for the canonical protocol.
-
-   **Trigger:** cross-page UI-pattern matching — group features by descriptions (List/table, Card, Form, Modal/dialog, Navigation). Threshold: 2+ PAGE/FEATURE features share the pattern. Add to the feature list (included in PHASE 4 backlog generation); also append kebab-name to `dependencies[]` of each PAGE/FEATURE that triggered the pattern.
-
-   **Source:** `"/project-backlog"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
-
-   "Skip" → do not add COMPONENT features to the list.
-
-6. **[WEB MODE] Design & Quality signals (optional — only with explicit mentions in concept):**
-
-   Scan concept text for the following keywords. Only add if the concept **explicitly** mentions them — not on implicit speculation.
-
-   | Keyword triggers                                                     | Type  | Name            | Phase |
-   | -------------------------------------------------------------------- | ----- | --------------- | ----- |
-   | "design tokens", "colors", "typography", "theme", "branding"         | THEME | `theme-init`    | P3    |
-   | "a11y", "accessibility", "WCAG", "screen reader", "toegankelijkheid" | A11Y  | `a11y-baseline` | P3    |
-   | "performance", "lighthouse", "core web vitals", "SEO", "speed"       | PERF  | `perf-baseline` | P3    |
-
-   For each found item: add to the feature list as:
-
-   ```json
-   {
-     "name": "{name from table}",
-     "type": "THEME|A11Y|PERF",
-     "status": "TODO",
-     "phase": "P3",
-     "description": "{relevant quote or paraphrase from concept}",
-     "source": "/project-backlog"
-   }
-   ```
-
-   "No matches" → do not add Design & Quality items.
+   If the concept explicitly mentions "design tokens", "colors", "typography", "theme", or "branding" (no implicit speculation): add `{ "name": "theme-init", "type": "THEME", "status": "TODO", "phase": "P3", "description": "{relevant quote from concept}", "source": "/project-backlog" }` to the feature list — `/frontend-tokens` auto-triggers on THEME items. No match → skip.
 
 ---
 
@@ -199,7 +166,7 @@ In create mode, the Change column is omitted.
    - multiSelect: false
 
    **Response handling:**
-   - "Yes, this is correct" → proceed to PHASE 2 (game) or Reuse-Discovery if applicable (web)
+   - "Yes, this is correct" → proceed to PHASE 2
    - "Adjust features" → ask what to change, apply changes, show updated table, re-ask
    - "Other" → parse user's freeform input, apply changes, show updated table, re-ask
 

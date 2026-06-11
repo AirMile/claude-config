@@ -88,27 +88,7 @@
    - If "Yes": proceed with loaded concept to PHASE 1
    - If "Different concept": go to Scenario D
 
-5. **Scenario C: Only backlog exists (no concept)**
-   - Show warning:
-
-     ```
-     WARNING: Backlog exists but no concept found
-
-     Backlog: .project/backlog.json
-     Concept: Not found — run /project-seed first
-
-     A concept is required to update the backlog.
-     ```
-
-   - Use AskUserQuestion:
-     ```yaml
-     header: "No Concept"
-     question: "What do you want to do?"
-     options:
-       - label: "Paste concept", description: "Paste a new concept to update the backlog"
-       - label: "View backlog", description: "Open the existing backlog"
-     multiSelect: false
-     ```
+5. **Scenario C: Only backlog exists (no concept)** — show a one-line warning (`Backlog exists but no concept found — a concept is required; run /project-seed first or paste one now`) and continue as Scenario D (update-mode merge rules apply since the backlog exists).
 
 6. **Scenario D: No .project folder OR neither file exists**
    - Ask user to paste concept:

@@ -63,8 +63,6 @@ Accepts markdown from:
 
 Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 0.5. PHASE 0.5 → PHASE 3 (research → feature extraction → dependencies → priority) run in plan mode; the final feature plan is written to the plan file for review.
 
-**Review consolidation rule:** the interactive PHASE 2 dependency review and PHASE 3 priority review (AskUserQuestion blocks) run interactively in plan mode by default. For larger backlogs (> 15 features) they MAY be consolidated into the final `ExitPlanMode` approval — in that case show the dependency table inline in chat before writing the plan file (so the user sees it once outside the plan format) and put the full priority breakdown in the plan file. State explicitly in chat: "Reviews consolidated into ExitPlanMode (N features > 15)."
-
 ### PHASE 0.5: Research (Optional)
 
 > **Todo**: Read `.claude/skills/project-backlog/references/research.md`
@@ -109,14 +107,7 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE
    - If found, suggest how to break the cycle
    - If unclear, ask the user.
 
-4. **[WEB MODE] Detect broken dependencies (CANCELLED):**
-   - If a feature depends on a feature with `status: "CANCELLED"`, mark as broken:
-     ```
-     ⚠ BROKEN DEPENDENCY: {feature-A} → {feature-B} (CANCELLED)
-     Options: (1) remove this dependency, (2) restore {feature-B} via backlog UI
-     ```
-   - Present broken dependencies before the dependency table
-   - Ask user for resolution before proceeding to PHASE 3
+4. **[WEB MODE] Detect broken dependencies:** flag dependencies on CANCELLED features before the dependency table and ask the user (remove the dependency, or restore via backlog UI) before proceeding to PHASE 3.
 
 **Output:**
 
@@ -226,33 +217,3 @@ rewrite go into the plan file alongside the feature plan. On "Yes" → carry
 ### PHASE 4: Generate Backlog
 
 > **Todo**: Read `.claude/skills/project-backlog/references/generate-backlog.md`
-
-## Example
-
-**[WEB MODE] Input:** E-commerce dashboard idea markdown
-
-```
-BACKLOG CREATED
-
-File: .project/backlog.json
-
-P1:
-1. routing (FEATURE)
-2. auth-pages (FEATURE)
-3. api-auth (API)
-4. dashboard-layout (FEATURE)
-5. product-list (FEATURE)
-
-P2:
-6. api-products (API)
-7. product-detail (FEATURE)
-8. cart-component (FEATURE)
-9. stripe-integration (INTEGRATION)
-
-P3:
-10. analytics-dashboard (INTEGRATION)
-11. dark-mode (UI)
-12. performance-optimization (REFACTOR)
-
-Start: /dev-define routing
-```
