@@ -71,7 +71,6 @@ For each confirmed page (that is not already a PAGE-typed feature in the list):
      "name": "{kebab-page-name}",
      "type": "PAGE",
      "status": "TODO",
-     "transition": "designing",
      "phase": "P2",
      "description": "Screen: {route hint}. Contains: {feature names}.",
      "source": "/project-backlog",

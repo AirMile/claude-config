@@ -179,7 +179,7 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 | Pattern detection during build (cross-page reuse)       | `/project-backlog` reuse-discovery                                        |
 | Convert existing card from sketch/wireframe/Figma/Canva | `/frontend-design` (paste sketch/URL, or board ⋯ → "Convert from sketch") |
 
-All four routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT`, `status=TODO`, and **`transition: "designing"`**. The `transition` field enables `/frontend-design` to auto-detect these items without a manual dashboard click. `/frontend-design` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/frontend-design` Build fills them in later.
+All routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. All routes **except `/project-backlog` bulk-init** also set **`transition: "designing"`**, which enables `/frontend-design` to auto-detect these items without a manual dashboard click. `/project-backlog` omits `transition` at creation — the dashboard sets it when the user clicks copy-prompt (see `project-backlog/references/generate-backlog.md` transition field rule). `/frontend-design` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/frontend-design` Build fills them in later.
 
 ### Dev track (FEATURE/API/UI/REFACTOR/BUG/etc.)
 
