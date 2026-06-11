@@ -67,7 +67,7 @@ grep -rn -E '(TODO|FIXME|HACK|XXX|NOTE):' {scope}
 
 ### 3. Patterns from new abstraction-dirs
 
-**Detection:** compare component list (from `core-pull` PHASE 4f / `core-setup --mode=mature` PHASE 2) against existing `architecture.components[]` in `project-context.json`.
+**Detection:** compare component list (from `core-pull/references/teammate-analysis.md` § 4f / `core-setup --mode=mature` PHASE 2) against existing `architecture.components[]` in `project-context.json`.
 
 **Mapping table:**
 

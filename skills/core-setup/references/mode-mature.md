@@ -304,13 +304,13 @@ Overwrite `context.structure` completely (scoped runs: only the scoped subtree).
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-Reuse logic from `core-pull` PHASE 4d/e/f, but on all files in `/tmp/scan-files.txt` (scope-aware; filter that list per pattern instead of re-globbing the tree — see § Scan budget):
+Reuse logic from `core-pull/references/teammate-analysis.md` § 4d/4e/4f, but on all files in `/tmp/scan-files.txt` (scope-aware; filter that list per pattern instead of re-globbing the tree — see § Scan budget):
 
 **2a) Stack detection** from existing `project.json.stack.framework` or, if missing, from `package.json` dependencies / `requirements.txt` / `project.godot`. Write to `stack.framework`.
 
 **2b) Routes** — Glob all route files according to stack mapping (`core-pull` PHASE 3b table). Extract route patterns. Overwrite `context.routing`.
 
-**2c) Entities** — Glob model files (Mongoose/Prisma/Sequelize/Django/GDScript/Sanity). Extract entities with source field. Merge to `data.entities[]`. See `core-pull` PHASE 4d table for detection patterns per stack.
+**2c) Entities** — Glob model files (Mongoose/Prisma/Sequelize/Django/GDScript/Sanity). Extract entities with source field. Merge to `data.entities[]`. See `core-pull/references/teammate-analysis.md` § 4d table for detection patterns per stack.
 
 **2d) Endpoints** — Per stack: extract method+path. Reuse route file content from 2b. Merge to `endpoints[]`.
 
