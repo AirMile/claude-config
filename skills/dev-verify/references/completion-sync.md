@@ -58,35 +58,12 @@ Update `project.json#design.components[]` — look up by name, set `status: "DON
 
 ## Step 3b: Learning Extraction
 
-Extract project-wide learnings from the completed feature. Read the just-written `feature.json` and evaluate (mandatory source-tag per source):
+Append to `project-context.json#learnings[]` per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](../../shared/LEARNING-EXTRACTION.md) (schema, relevance filter, two-stage dedup). dev-verify source mapping — read the just-written `feature.json`:
 
-- `build.decisions[]` → type `pattern`, source `extracted` (architectural decisions that affect other features)
 - `tests.fixSync[]` → type `pitfall`, source `extracted` (bugs with root causes)
 - `observations[]` → type `observation`, source `inferred` (cross-feature insights)
 
-**Filter**: only items that are relevant beyond this one feature. Skip feature-specific implementation details.
-
-**Append** to `project-context.json` → `learnings[]`:
-
-```json
-{
-  "date": "YYYY-MM-DD",
-  "feature": "{feature-name}",
-  "type": "pattern|pitfall|observation",
-  "source": "extracted|inferred",
-  "summary": "Max 200 chars summary"
-}
-```
-
-**Dedup** for each candidate learning:
-
-1. Exact shortcut: same feature + same summary → skip (no Jaccard needed)
-2. Tokenize candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer
-3. For each existing learning in `learnings[]` with the same `type`:
-   - `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip candidate
-4. Passes both checks → append
-
-No learnings found → skip step.
+`build.decisions[]` is mapped by dev-build PHASE 3A (single writer) — do not re-map here.
 
 ---
 

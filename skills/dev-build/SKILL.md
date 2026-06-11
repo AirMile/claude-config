@@ -269,26 +269,13 @@ Follow [Discovery — Reuse-Discovery](../shared/SKILL-PATTERNS.md#reuse-discove
 
 **Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
 
-**Learning extraction** (after feature.json sync): write to `project-context.json learnings[]` (append-only, identical format as `dev-verify`/`dev-refactor`):
-
-Each `build.decisions[]` entry maps to either `pattern` or `pitfall` based on its content:
+**Learning extraction** (after feature.json sync): append to `project-context.json learnings[]` per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](../shared/LEARNING-EXTRACTION.md) (schema + two-stage dedup). dev-build is the **single writer** for `build.decisions[]` — source mapping:
 
 - **`type: "pattern"`** — architectural/structural choices that future builds should reuse (e.g. "centralised env-loader via assertEnv()", "RHF + Zod for forms").
 - **`type: "pitfall"`** — version pins, peer-dep workarounds, package upgrades forced by ecosystem mismatch, or "don't do X because Y" guidance (e.g. "next-sanity@9 incompatible with Next 15 — use v10+").
+- `build.blockers[]` where the blocker is resolved at end of build → always `type: "pitfall"`.
 
-`build.blockers[]` where the blocker is resolved (no longer BLOCKED at end of build) → always `type: "pitfall"`.
-
-```json
-{
-  "date": "...",
-  "feature": "{name}",
-  "type": "pattern|pitfall",
-  "source": "extracted",
-  "summary": "..."
-}
-```
-
-Only write if decisions or resolved blockers are present — no empty entries.
+All with `source: "extracted"`. Only write if decisions or resolved blockers are present — no empty entries.
 
 **Atomic write rule**: collect all `project-context.json` mutations (components, context.patterns, learnings) in the current context first — don't write until all mutations for PHASE 3A are determined — then issue a **single Write** (or at most 2 Edits for non-overlapping regions) right before closing PHASE 3A. Do NOT issue separate Edit calls per section — each hook-fire and round-trip adds ~15s.
 

@@ -64,7 +64,7 @@ Emit only if the rationale describes a general principle: security, numerical co
 
 Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
-**Filter and dedup:** cross-feature relevance only. Schema/dedup: same as dev-verify completion-sync.md § Step 3b (Jaccard 0.55). Append to `project-context.json → learnings[]` (written in step 3). Log confirmation or "no learnings — skip".
+**Filter and dedup:** schema, relevance filter, and two-stage dedup per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](../../shared/LEARNING-EXTRACTION.md). Append to `project-context.json → learnings[]` (written in step 3). Log confirmation or "no learnings — skip".
 
 ## Step 3 — Parallel sync
 

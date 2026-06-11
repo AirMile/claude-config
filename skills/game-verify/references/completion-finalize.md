@@ -112,35 +112,11 @@ Recorded in test results.
 
    **project-context.json**: On fixes in PHASE 3: update `architecture.components[]` — merge modified files to component `src`/`test`, confirm `status: "done"`.
 
-   **Learning Extraction** — extract project-wide learnings from the completed feature:
-
-   Read the just-written `feature.json` and evaluate (mandatory source tag per source):
-   - `build.decisions[]` → type `pattern`, source `extracted` (architectural choices that affect other features)
+   **Learning Extraction** — append to `project-context.json#learnings[]` per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](../../shared/LEARNING-EXTRACTION.md) (schema, relevance filter, two-stage dedup). game-verify source mapping — read the just-written `feature.json`:
    - `tests.fixSync[]` and `tests.sessions[].fixes` → type `pitfall`, source `extracted` (bugs with root causes)
    - `observations[]` → type `observation`, source `inferred` (cross-feature insights)
 
-   **Filter**: only items relevant outside this single feature. Skip feature-specific implementation details.
-
-   **Append** to `project-context.json` → `learnings[]`:
-
-   ```json
-   {
-     "date": "YYYY-MM-DD",
-     "feature": "{feature-name}",
-     "type": "pattern|pitfall|observation",
-     "source": "extracted|inferred",
-     "summary": "Max 200 char summary"
-   }
-   ```
-
-   **Dedup** for each candidate learning:
-   1. Exact shortcut: same feature + same summary → skip (no Jaccard needed)
-   2. Tokenize candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer
-   3. For each existing learning in `learnings[]` with the same `type`:
-      - `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip candidate
-   4. Survives both checks → append
-
-   No learnings found → skip.
+   `build.decisions[]` is mapped by game-build (single writer) — do not re-map here.
 
    Write in parallel:
    - Write `feature.json`

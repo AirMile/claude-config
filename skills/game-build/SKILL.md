@@ -536,22 +536,12 @@ Mutate in memory:
 
 **Architecture** (in `project-context.json`, **follow component-first model from `shared/DASHBOARD.md`**): update `architecture.components[]` — built components `status: "planned"` → `"done"`, fill `description` (short functional description, max 200 chars — what does this component do?), `src`, `test`, `connects_to` (typed edges `{ to, type }` — `calls` for signal emits/method calls, `reads`/`writes` for autoload/state IO, `depends_on` for scene-tree parent or resource references), `feature` (current feature name). New components: push with all fields including `feature`. If `layers`/`components` do not exist AND multiple scenes/signals → generate initial architecture with layers + components. Skip if no structural impact. Log: `architecture: updated` or `architecture: no updates needed`.
 
-**Learning extraction** (after feature.json sync): write to `project-context.json learnings[]` (append-only, identical format to `game-verify`/`game-refactor`):
+**Learning extraction** (after feature.json sync): append to `project-context.json learnings[]` per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](../shared/LEARNING-EXTRACTION.md) (schema + two-stage dedup). game-build is the **single writer** for `build.decisions[]` — source mapping:
 
 - `build.decisions[]` → `type: "pattern"` (architectural choice made)
 - `build.blockers[]` where the blocker was resolved (no longer BLOCKED at end of build) → `type: "pitfall"`
 
-```json
-{
-  "date": "...",
-  "feature": "{name}",
-  "type": "pattern|pitfall",
-  "source": "extracted",
-  "summary": "..."
-}
-```
-
-Only write if decisions or resolved blockers are present — no empty entries.
+All with `source: "extracted"`. Only write if decisions or resolved blockers are present — no empty entries.
 
 Write in parallel:
 
