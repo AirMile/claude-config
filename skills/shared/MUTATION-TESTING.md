@@ -71,7 +71,7 @@ Read `.project/features/{feature-name}/stryker-report.json`. Write to `feature.j
 **Deriving `requirementId` per survivor — via deterministic helper:**
 
 ```bash
-node scripts/stryker-map-survivors.js \
+node ~/.claude/scripts/stryker-map-survivors.js \
   .project/features/{feature-name}/stryker-report.json \
   .project/features/{feature-name}/feature.json \
   > .project/features/{feature-name}/survivors.json
