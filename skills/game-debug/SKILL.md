@@ -5,7 +5,7 @@ reads: [project-context.learnings, feature.requirements]
 writes: [project-context.learnings]
 metadata:
   author: claude-config
-  version: 3.0.0
+  version: 3.1.0
   category: game
 ---
 
@@ -189,7 +189,15 @@ Focus: signal patterns → correct usage, scene tree lifecycle → proper node m
 
 > **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-Launch 3 agents in parallel:
+**Triage gate — skip the fan-out for trivial fixes.** Skip the 3-agent dispatch when ALL of:
+
+- PHASE 3 confidence is **high**
+- Fix scope is small: ≤2 files, no signal/scene-contract or autoload API change
+- Not marked **spec-issue** (spec deviations need the fix-thorough perspective)
+
+→ Write ONE inline fix plan (minimal-style: smallest change that addresses the root cause) with the same fields the agents return — changes with file:line refs, risk, scope, trade-offs, and the reproduction test assertion. Show: `TRIAGE: trivial fix — inline plan, fan-out skipped`. In PHASE 6: skip Step 1 (strategy question — inline plan is by definition minimal), go directly to Step 2 with the inline plan.
+
+Otherwise, launch 3 agents in parallel:
 
 | Agent         | Philosophy        | Focus                                      |
 | ------------- | ----------------- | ------------------------------------------ |
@@ -211,6 +219,8 @@ Present all 3 options with approach, changes count, risk level, and trade-offs.
 Include recommendation based on context.
 
 ### Step 1: Strategy
+
+**Skip this step when the PHASE 5 triage gate fired** (inline plan is minimal-style by definition) — continue at Step 2 with the inline plan.
 
 AskUserQuestion:
 

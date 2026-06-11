@@ -5,7 +5,7 @@ reads: [project-context.learnings, feature.requirements]
 writes: [project-context.learnings]
 metadata:
   author: claude-config
-  version: 3.0.0
+  version: 3.1.0
   category: dev
 ---
 
@@ -176,7 +176,15 @@ Focus: dependency issues → version docs/migration guides, pattern misuse → c
 
 > **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-Launch 3 agents in parallel (see `shared/SKILL-PATTERNS.md#parallel-dispatch` for dispatch criteria and prompt template):
+**Triage gate — skip the fan-out for trivial fixes.** Skip the 3-agent dispatch when ALL of:
+
+- PHASE 3 confidence is **high**
+- Fix scope is small: ≤2 files, no API/schema/contract change
+- Not marked **spec-issue** (spec deviations need the fix-thorough perspective)
+
+→ Write ONE inline fix plan (minimal-style: smallest change that addresses the root cause) with the same fields the agents return — changes with file:line refs, risk, scope, trade-offs, and the reproduction test assertion. Show: `TRIAGE: trivial fix — inline plan, fan-out skipped`. In PHASE 6: skip Step 1 (strategy question — inline plan is by definition minimal), go directly to Step 2 with the inline plan.
+
+Otherwise, launch 3 agents in parallel (see `shared/SKILL-PATTERNS.md#parallel-dispatch` for dispatch criteria and prompt template):
 
 | Agent         | Philosophy        | Focus                                      |
 | ------------- | ----------------- | ------------------------------------------ |
@@ -198,6 +206,8 @@ Present all 3 options with approach, changes count, risk level, and trade-offs.
 Include recommendation based on context.
 
 ### Step 1: Strategy
+
+**Skip this step when the PHASE 5 triage gate fired** (inline plan is minimal-style by definition) — continue at Step 2 with the inline plan.
 
 AskUserQuestion:
 
@@ -246,48 +256,11 @@ For Performance Issue / Integration Issue / non-runtime bugs, AskUserQuestion:
   - "No, skip — Performance without threshold" — No concrete measurable value definable
   - "No, skip — Production-only data" — Not reproducible in test environment
 
-**"Playwright visual baseline" gekozen:**
+**"Playwright visual baseline" chosen:**
 
-Check runner beschikbaar: `npx playwright --version 2>/dev/null`.
-
-- **Available**: go to Step 2b (Playwright UI reproduction).
-- **Not available**: run `/core-setup playwright` to install daemon + runner. Then Step 2b.
-- **Installation failed**: fall back to skip, note `reproductionTest: { skipped: true, reason: "runner not available" }`, go to PHASE 8.
+> **Todo**: Read '.claude/skills/dev-debug/references/playwright-visual-baseline.md' — runner availability check + Step 2b (visual-baseline reproduction spec). Skips Step 2; continue at Step 4.
 
 **"Skip" chosen (performance or production-data):** note `reproductionTest: { skipped: true, reason: "{reason}" }` and go to PHASE 8.
-
-### Step 2b: Playwright UI reproduction (only with "visual baseline" choice in Step 1)
-
-Location: `test/regression/{slug}.spec.ts`
-Framework: `@playwright/test` — on-the-fly spec (see `shared/PLAYWRIGHT.md → Runner Mode`).
-
-```typescript
-// test/regression/{slug}.spec.ts
-import { test, expect } from "@playwright/test";
-
-test("{issue slug} — visual regression", async ({ page }) => {
-  await page.goto("{url-waar-bug-optreedt}");
-  await page.waitForLoadState("networkidle");
-  // First run: captures buggy state as baseline
-  // After fix: --update-snapshots to set new correct state as baseline
-  await expect(page).toHaveScreenshot("{slug}-regression.png", {
-    maxDiffPixelRatio: 0.02,
-  });
-  // Optional: aria-snapshot for structural UI regressions
-  await expect(
-    page.locator("{selector-van-gebroken-component}"),
-  ).toMatchAriaSnapshot();
-});
-```
-
-Run with `--update-snapshots` to capture the buggy state as baseline:
-`npx playwright test test/regression/{slug}.spec.ts --config=.project/playwright-runs/playwright.config.ts --update-snapshots`
-
-After fix (PHASE 8): run without `--update-snapshots` → PASS if fix does not degrade the render compared to the correct image. Update baseline explicitly after desired visual improvement.
-
-Note: `reproductionTest: { file: "test/regression/{slug}.spec.ts", type: "visual-baseline", tool: "playwright-runner" }`
-
-Store the step-3 run command as: `npx playwright test test/regression/{slug}.spec.ts --config=.project/playwright-runs/playwright.config.ts`
 
 ### Step 2: Write failing test
 

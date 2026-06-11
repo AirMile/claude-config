@@ -5,7 +5,7 @@ reads: [feature.requirements, feature.build, project-context.learnings]
 writes: [feature.tests, backlog.status, project-context.learnings]
 metadata:
   author: claude-config
-  version: "2.10.0"
+  version: "2.11.0"
   category: dev
 ---
 
@@ -176,25 +176,7 @@ CATEGORY_GAPS:
    MANUAL, AUTO/BROWSER, or AUTO/CLI with live server    → launch dev server on localhost
    ```
 
-   Launch procedure (when launch is required): 0. **Pre-launch staleness gate** — if `git -C {worktree-path} rev-list --count HEAD..main` > 0 → AskUserQuestion: "Rebase worktree on main first (Recommended)" (invoke `shared/WORKTREE.md → Staleness rebase`, re-run this check) / "Launch without rebase" (continue, tag output `DEV SERVER (stale, {n} commits behind): {url}`) / "Stop" (abort; user resolves manually).
-   1. Resolve the dev command in this precedence:
-      - `feature.json` → `build.runCommand` (per-feature override)
-      - `.project/project.json` → `scripts.dev` (project default)
-      - Fallback: `npm run dev`
-   2. Probe the default port (e.g. `curl -sf http://localhost:3000 -o /dev/null`):
-      - **Miss** → proceed to item 3 (launch).
-      - **Hit** → do NOT silently reuse. Verify the running server is the worktree project (process cwd via `lsof -p <pid> | grep cwd` / `pwdx <pid>`, or its git HEAD vs the worktree branch). Confirmed worktree → reuse the URL, skip launch. Main or another project serving → kill it or launch from the worktree on a free port. Never run MANUAL tests against a server with unverified branch identity.
-   3. Otherwise start via `Bash` with `run_in_background: true`. Use the `Monitor` tool to stream the background process's output until a `Local:` / `ready` / `listening on` line appears, then extract the URL. Timeout 30s → graceful fallback.
-   4. Store `{devServerUrl, devServerPid}` in `.project/session/active-{name}.json` so PHASE 6 / PHASE Finalize can stop the process.
-   5. Display once: `DEV SERVER: {url}`.
-
-   **Tunnel (team-mode only):** when `TEAM_MODE === "team"` AND there are MANUAL items, append a one-liner after the launch: `💡 Stakeholder review? Run /project-tunnel {url} to expose this.` Do NOT auto-launch — the user decides.
-
-   On failure (port in use by another project, command not found, ready-line never reached) → graceful fallback:
-   - All non-COVERED items become MANUAL, skip PHASE 1.
-   - Show: `DEV SERVER: failed to start ({reason}). MANUAL items require the user to start the server themselves — run \`{resolved-command}\` in another terminal, then continue.`
-
-   Cleanup hook: PHASE 6 (Completion) and PHASE Finalize must kill `devServerPid` if the skill launched it (not when reused). Skipped when launch was skipped or reused.
+   > **Todo** (only when launch is required): Read '.claude/skills/dev-verify/references/dev-server.md' — staleness gate, command resolution, port-identity probe, background launch via Monitor, tunnel note, failure fallback (all non-COVERED → MANUAL), and the PHASE 6 / Finalize cleanup hook for `devServerPid`.
 
 ---
 
@@ -229,7 +211,7 @@ Display: `AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}`
 **When:** user provided feedback with `/dev-verify {name} {feedback}` (skips PHASE 1 + 2).
 
 Parse into item/PASS/FAIL/notes. Accept `1:PASS 2:FAIL note` and free text.
-Show summary, go to PHASE 3.
+Show summary, go to the fix loop (PHASE 3 — read `references/fix-loop.md`).
 
 Unclear feedback → AskUserQuestion: Re-enter (Recommended) | Continue per item | Explain.
 
@@ -321,140 +303,13 @@ Show ONLY rows with verdict FAIL (or BLOCKED/UNCLEAR). All-PASS → already fold
 Acceptance test FAIL → issue type **SPEC**. Builder test FAIL → issue type **TESTABLE**.
 No acceptance tests run → skip entirely, categorize only on builder test FAILs.
 
-All PASS or PASS+DEFERRED → PHASE 6. FAILs (SPEC or TESTABLE) → PHASE 3. DEFERRED items skip PHASE 3/4 (not failures, just blocked).
+All PASS or PASS+DEFERRED → PHASE 5d. FAILs (SPEC or TESTABLE) → fix loop. DEFERRED items skip the fix loop (not failures, just blocked).
 
 ---
 
-### PHASE 3: Categorize Issues
+### PHASE 3 → 5c: Fix Loop (only on FAILs from PHASE 2b)
 
-> **Todo**: mark PHASE 2b → `completed`, PHASE 3 → `in_progress`.
-
-Per FAIL: pick exactly one category.
-
-| Category   | Trigger                                                         | Examples                                     |
-| ---------- | --------------------------------------------------------------- | -------------------------------------------- |
-| SPEC       | Acceptance test fails — criterion not covered by implementation | Missing validation, wrong format, off-by-one |
-| TESTABLE   | Builder test fails — implementation is wrong                    | Logic bug, wrong return value, race          |
-| MEASURABLE | Failure has a numeric/visual threshold (timing, CSS, layout)    | Slow render, wrong color, layout-shift       |
-| SUBJECTIVE | Criterion is vague ("feels fast", "looks good") — ask user      | UX impressions, taste-level disagreements    |
-
-SUBJECTIVE → AskUserQuestion for clarification, then re-categorize as one of the other three.
-
-Technique mapping:
-
-- **SPEC / TESTABLE** → **Fix** — reproduce the failure with a failing test (RED), then fix (GREEN). For SPEC items the failing test is the acceptance test (write/update it).
-- **MEASURABLE** → **Direct Fix** — config/styling/timing tweak, no test loop.
-- Default → Fix
-
-Display technique map:
-
-```
-| Item | Issue | Type | Technique | Reason |
-```
-
----
-
-### PHASE 4: Fix Loop
-
-> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
-
-#### Plan-mode gate (OpusPlan-friendly)
-
-Before starting fixes, decide whether to enter plan mode first.
-
-Auto-enter plan mode (no question) when ANY:
-
-- ≥1 SPEC bug (acceptance criterion not met — needs design)
-- ≥2 TESTABLE bugs that touch the same file or module (likely shared root cause)
-- A bug whose root cause is unclear after PHASE 3 categorization
-
-Skip plan mode silently when ALL:
-
-- Only MEASURABLE bugs (direct config/styling/timing tweaks)
-- ≤1 TESTABLE bug with an obvious root cause from the failing test
-
-When entering plan mode: call `EnterPlanMode`, write the fix plan to the plan file (one section per bug: problem → root cause → proposed fix → verification), then `ExitPlanMode` for approval. After approval, continue with the Fix step below. Rejected plan → re-categorize or ask user.
-
-Show before entering: `PLAN MODE: {n} bug(s) need design — entering plan mode (OpusPlan-aware).`
-
-#### Fix
-
-Complex issues → AskUserQuestion: Research via Context7 (Recommended) | Fix directly.
-
-Reproduce the failure with a test (RED), then fix (GREEN). Max 3 attempts, then ask user. For SPEC items the reproducing test is the acceptance test.
-
-```
-[FIX] Item {N}: {title}
-Technique: Fix | Type: {AUTO|MANUAL}
-RED: FAIL ({what})  GREEN: PASS
-SYNC: Root cause: {file:line}. Fix: {approach}. Impact: {scope}.
-```
-
-Test already passes → AskUserQuestion: Skip (Recommended) | Adjust test | Check manually.
-
-#### MEASURABLE: Direct Fix
-
-Fix direct (config, styling, timing). Needs manual re-test.
-
-```
-[FIX] Item {N}: {title}
-Technique: Direct Fix | Type: {AUTO|MANUAL}
-SYNC: Root cause: {file:line}. Fix: {approach}. Impact: {scope}.
-```
-
----
-
-### PHASE 5: Re-test
-
-> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
-
-Re-test ONLY fixed items.
-
-**Phase A: Auto** — fixed AUTO items via Agent (same approach as PHASE 1, markers `RETEST_RESULTS_START`/`RETEST_RESULTS_END`). TOOL_ERROR → Phase B.
-
-**Phase B: Manual** — fixed MANUAL items via walkthrough. Show CHANGE (fix summary) + original steps.
-
-Display re-test results.
-
-### PHASE 5b: Re-test Loop
-
-> **Todo**: mark PHASE 5 → `completed`, PHASE 5b → `in_progress`.
-
-All pass → PHASE 5c.
-
-Items still failing → AskUserQuestion: More details (Recommended) | Different approach | Accept | Fix yourself.
-Loop back to PHASE 3. AUTO items → re-run in PHASE 5A. MANUAL items → re-test in PHASE 5B.
-
-**Max 3 fix attempts per item.** After the 3rd failed re-test of the same item, stop looping for that item and AskUserQuestion: "Accept anyway" | "Escalate to manual root-cause analysis (/dev-debug)". This prevents an unbounded PHASE 3 → 5 → 5b cycle.
-
----
-
-### PHASE 5c: Regression Check
-
-> **Todo**: mark PHASE 5b → `completed`, PHASE 5c → `in_progress`.
-
-**Skip silently (no user output) when:**
-
-- No fixes applied in PHASE 4
-- No previously-PASS AUTO items in PHASE 2b
-- All fixes were MANUAL-only (config/styling)
-
-Re-run all previously-PASS AUTO items via Agent (same approach as PHASE 1).
-
-```
-REGRESSION CHECK: {feature-name}
-
-| # | Test               | Was    | Now    |
-|---|--------------------|--------|--------|
-| 1 | Route rendering    | ✓ PASS | ✓ PASS |
-| 3 | Form validation    | ✓ PASS | ✗ FAIL |
-
-Regressions: {n} | Stable: {n}
-```
-
-**No regressions:** Proceed to PHASE 6.
-
-**Regressions:** Show and offer choice via AskUserQuestion: Fix (Recommended) | Accept. If fixing → back to PHASE 4 for regression items only. Do NOT repeat PHASE 5c after regression fix (max 1 pass).
+> **Todo**: Read '.claude/skills/dev-verify/references/fix-loop.md' and execute all five phases — PHASE 3 (Categorize Issues), PHASE 4 (Fix Loop with plan-mode gate), PHASE 5 (Re-test), PHASE 5b (Re-test Loop, max 3 attempts per item), PHASE 5c (Regression Check). Then continue at PHASE 5d below.
 
 ---
 

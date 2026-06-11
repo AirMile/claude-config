@@ -11,7 +11,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 1.15.0
+  version: 1.16.0
   category: dev
 ---
 
@@ -137,8 +137,14 @@ After successful completion of all requirements, run the **full test suite and p
 
 **Parallel call 1 — regression gate** (Bash `timeout: 300000` — not shell `timeout`, doesn't work on macOS):
 
+Resolve the test command from `package.json` `scripts.test` — do NOT assume vitest:
+
+- Script contains `vitest` → `npm run test -- --run` (`--run` forces single-run instead of watch mode)
+- Script contains `jest`, `node --test`, or anything else → `npm run test` verbatim (no extra flags — `--run` is vitest-only and errors elsewhere)
+- No `test` script → skip the gate with reason `no test script`
+
 ```bash
-npm run test -- --run 2>&1 | tail -8
+{resolved test command} 2>&1 | tail -8
 ```
 
 Including acceptance tests from earlier `/dev-verify` runs (`test/acceptance/*.test.js`) — these protect against spec regressions.

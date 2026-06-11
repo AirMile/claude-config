@@ -20,7 +20,7 @@ writes:
 writes-terminal: [backlog.overview]
 metadata:
   author: claude-config
-  version: 3.2.0
+  version: 3.2.1
   category: dev
 ---
 
@@ -35,7 +35,7 @@ PHASE 1 of the dev workflow: define → build → test.
 - **No implementation code anywhere.** Plan file and feature.json contain only type signatures, structure, decisions. Function bodies, `(set, get) => ({...})` blocks, JSX, hook internals → `/dev-build`. Detail: see PHASE 2 "Strict boundary."
 - **No requirements skipping** — every feature gets PHASE 1 extraction with acceptance criteria.
 - **No phase-jump without checkpoint** — user confirms scope (PHASE 1) before architecture; user approves plan (PHASE 2) before feature.json write.
-- **Plan mode active before any analytical step** — `EnterPlanMode` MUST be called immediately after TaskCreate + setup writes (mkdir, session file) and BEFORE the first `Read`, `Glob`, `Grep`, or `AskUserQuestion` in this skill. The interview (PHASE 1a) must run inside plan mode so model routers (e.g. `opusplan`) route it through the planning model. `ExitPlanMode` at end of PHASE 2; PHASE 3+4 run after approval.
+- **Plan mode active before any analytical step** — `EnterPlanMode` MUST be called immediately after TaskCreate + setup writes (mkdir, session file) and BEFORE the context load (PHASE 0 step 5) and every later `Read`, `Glob`, `Grep`, or `AskUserQuestion`. Exempt: feature-name resolution and the existence check (PHASE 0 steps 1-2) — those need backlog/file reads and possibly an AskUserQuestion before plan mode can be entered. The interview (PHASE 1a) must run inside plan mode so model routers (e.g. `opusplan`) route it through the planning model. `ExitPlanMode` at end of PHASE 2; PHASE 3+4 run after approval.
 
 ## Workflow
 
@@ -72,7 +72,7 @@ visible — no risk of forgetting phases.
    - `mkdir -p .project/features/{feature-name}`
    - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"<new Date().toISOString()>"}' > .project/session/active-{feature-name}.json`
 
-4. **Enter Plan Mode** — call `EnterPlanMode` NOW, before any `Read`, `Glob`, `Grep`, or `AskUserQuestion`. Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol. PHASE 0 step 5 onwards + PHASE 1a + 1b + 2 all run in plan mode.
+4. **Enter Plan Mode** — call `EnterPlanMode` NOW, before any further `Read`, `Glob`, `Grep`, or `AskUserQuestion` (steps 1-2 above are the only pre-plan-mode reads). Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol. PHASE 0 step 5 onwards + PHASE 1a + 1b + 2 all run in plan mode.
    - **Note on user consent**: `EnterPlanMode` may prompt the user for plan-mode confirmation in some Claude Code UIs. This is intentional — model routers (e.g. `opusplan`) use plan mode as the trigger for upgrading to Opus. Do not skip the call to avoid the prompt.
    - **Skip-check**: if plan mode is already active (existing system-reminder), skip the call and read the plan-file path from the active reminder.
    - **If `feature.json` already exists** (update-mode trigger from step 2): EnterPlanMode still fires here — update-mode body in PHASE 0b runs inside plan mode.
