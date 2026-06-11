@@ -66,13 +66,7 @@ Assign per requirement:
 | `config-only` | Env vars, route registration, package config, static assets |
 | `prototype`   | Deliberately temporary code, throwaway MVP                  |
 
-**Pitfall overlap check**: for each requirement, compare against the pitfall list from PHASE 0. On clear thematic overlap (same domain, same type of bug risk):
-
-1. **Log** the pitfall and the affected REQ in the technique map output
-2. **State the concrete mitigation in 1 sentence** before writing code for that REQ (e.g., "Use `currencyDisplay: 'narrowSymbol'` in `Intl.NumberFormat` to avoid 'US$' output")
-3. **Define verification marker**: name the literal API/option/pattern (or grep regex) that proves the mitigation is in the code. For non-grep checks (type-level, runtime), state the verification command. This marker is consumed in **PHASE 2 step 5 (Pitfall verification)** after each Write.
-
-No forcing on irrelevant pitfalls — only on clear thematic overlap.
+**Pitfall overlap check**: for each requirement, compare against the pitfall list from PHASE 0. On clear thematic overlap (same domain, same type of bug risk): log the pitfall and the affected REQ in the technique map output, and **state the concrete mitigation in 1 sentence** before writing code for that REQ (e.g., "Use `currencyDisplay: 'narrowSymbol'` in `Intl.NumberFormat` to avoid 'US$' output"). No forcing on irrelevant pitfalls — only on clear thematic overlap.
 
 Display technique map as a table. Proceed automatically — do NOT confirm with the user.
 
@@ -86,31 +80,7 @@ For each buildSequence step:
 
 **REMOVED filter per step**: filter `step.requirements` per REMOVED filter (see PHASE 1). If step is empty after filter → skip step, continue to next.
 
-**Parallel build check** (per step with >1 requirement):
-
-1. Check file overlap: compare `files[]` where `requirements` arrays overlap between REQs in this step.
-2. **Overlap** → build sequentially (continue with "Sequential build" below).
-3. **No overlap** → launch Agent per REQ (max 3 parallel). Each agent receives: technique file content, relevant source files from feature.json `files[]`, stack context (CLAUDE.md ### Stack), earlier SYNC notes from this build, **plus the full content of any files created in earlier steps of this build that this REQ may need to import** (read them with the Read tool and pass the content inline — SYNC one-liners are not enough for the agent to know exact export names and signatures).
-
-   Parse agent results via `BUILD_RESULT_START...BUILD_RESULT_END` markers and update feature.json per REQ. Required format:
-
-   ```
-   BUILD_RESULT_START
-   REQ: {id}
-   Technique: {TDD | Implementation Only}
-   Status: {GREEN | BLOCKED}
-   Files modified: {list}
-   Files created: {list}
-   Test output: {PASS | FAIL with details}
-   SYNC: {pattern/concept in file(s) — what, why, depends on}
-   BUILD_RESULT_END
-   ```
-
-   **BLOCKED handling**: collect all parallel results first — a BLOCKED agent does NOT halt other in-flight agents. After all agents complete:
-   - GREEN REQs → log SYNC line, move to next step.
-   - BLOCKED REQs → log in `build.blockers[]` with the agent's error output, then retry sequentially (re-enter "Sequential build" below for that REQ). One retry only; if still BLOCKED, leave in `build.blockers[]` and continue with the next buildSequence step.
-
-**Sequential build** — for steps with 1 requirement or with overlap, for each requirement sequentially:
+**Sequential build** — for each requirement in the step, sequentially:
 
 1. Load technique:
    - **TDD** → `Read(".claude/skills/dev-build/techniques/tdd.md")`
@@ -125,9 +95,8 @@ For each buildSequence step:
    - **Code rules**: follow `shared/CODING-RULES.md` — General (R007-R009) + TypeScript (T001-T203) + Testing (TST001-TST203). When in doubt: MUST_DO rules always, SHOULD_DO rules unless deliberate deviation with reason. Frontend projects: also `shared/FRONTEND-RULES.md`.
    - **Token enforcement** (only for `.tsx`/`.jsx`/`.vue`/`.svelte` — skip for API routes, tests, config): always use token names (`bg-primary`, `text-foreground`) — never hex literals or `bg-[#hex]`. Theme empty → use fallback defaults from `shared/TOKENS.md`. Run a grep after each Write for TOKENS.md T101 (`#[0-9a-fA-F]{3,8}`) and T102 (`bg-\[#`, `text-\[#`) on the generated file — replace violations directly before output.
    - **Motion token enforcement** (only if `theme.motion.pack` is set, only for component files with interactive elements — `button`, `a`, card containers): use token-based transition classes from the active pack — never hardcoded `ms` values or `cubic-bezier()` literals (TOKENS.md T106/T107 violation). Pack-specific class-strings: see `shared/PATTERNS.md § Motion Patterns`. All choreography must include `@media (prefers-reduced-motion: reduce)` fallback (`shared/PATTERNS.md § prefers-reduced-motion Fallback`). After each Write on a component file: grep for hardcoded `\d+ms` and `cubic-bezier(` patterns — replace with token classes before output.
-5. **Pitfall verification** (only if PHASE 1 flagged a pitfall for this REQ): run the `grep -q '<marker>' <file>` check stated in the technique map. Output `PITFALL-CHECK REQ-XXX: <pitfall> → PRESENT | ABSENT`. ABSENT → log as deviation in `build.decisions[]` with rationale (intentional or oversight).
-6. **Track REQ progress in transcript** via the SYNC line — feature.json is enriched in bulk in PHASE 3A. For Implementation Only: note `skipTestReason` (`visual-only`, `config-only`, or `prototype`) in the SYNC line so PHASE 3A can write it.
-7. Output per requirement:
+5. **Track REQ progress in transcript** via the SYNC line — feature.json is enriched in bulk in PHASE 3A. For Implementation Only: note `skipTestReason` (`visual-only`, `config-only`, or `prototype`) in the SYNC line so PHASE 3A can write it.
+6. Output per requirement:
    ```
    REQ-XXX: {description}
    Technique: {TDD | Implementation Only}
@@ -291,14 +260,6 @@ Add to completion report when ≥1 update: `Page deps: {N} PAGEs updated ({comma
 **Architecture** (follow component-first model from `shared/DASHBOARD.md`): update `architecture.components[]` — built components `status: "planned"` → `"done"`, fill `description` (short functional description, max 200 chars — what does this component do?), `src`, `test`, `connects_to` (typed edges `{ to, type }` from actual imports and runtime IO — `calls` for function/HTTP calls, `reads`/`writes` for DB or state IO, `depends_on` for pure library/config dependencies), `endpoints` (e.g. `"POST /api/auth/login"`), `entities` (used model names), `feature` (current feature name). New components that emerged during the build: push with all fields including `feature`. Skip if no structural impact.
 
 **Routes** (`architecture.routes[]`): confirm routes that were actually implemented during the build — verify `auth` field matches the actual middleware/guard (`"public" | "user" | "admin"`), update `purpose` if the page can now be described better. New routes that emerged during the build: push `{ path, purpose, auth, feature }`. Endpoints in `endpoints[]` with actual auth check: migrate `auth: false` → `"public"` and `auth: true` → `"user"` (or `"admin"` for role check).
-
-**PAGE seeding** (warning-only — frontend projects only):
-
-Scan for new page routes (same patterns as dev-define): `app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`. Skip candidates already seeded by dev-define: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`.
-
-If new route patterns found and not in backlog: log `⚠ Detected new route patterns: {list}. Run /dev-define on the affected feature or /frontend-design <name> to add them to the backlog.`
-
-Do NOT write to backlog.json — `/dev-define` is the sole author of PAGE entries from the dev track (see `SKILL-PATTERNS.md → Page-Discovery` doctrine).
 
 **Sub-component Reuse-Discovery** (frontend projects only):
 

@@ -194,60 +194,6 @@ If the procedure did not run (e.g. no git repo, error), log `WORKTREE: not-appli
 echo "not-applied: {reason}" > "$REPO/.project/session/worktree-status.txt"
 ```
 
-For successful create/reuse, also write the marker (so reruns can short-circuit):
-
-```bash
-echo "active: $(pwd)" > "$REPO/.project/session/worktree-status.txt"
-```
-
-This line is non-negotiable — without it, the auditor cannot verify whether isolation was achieved.
-
-**Worktree freshness check** (only when worktree was just created or reused):
-
-Worktrees branch from `origin/main`. If local `main` is ahead of `origin/main`, recent commits — and the files they introduced — are missing from the worktree. This silently breaks `action: "modify"` reads in PHASE 2.
-
-```bash
-WT_BASE=$(git -C "$REPO" rev-parse origin/main 2>/dev/null)
-LOCAL_MAIN=$(git -C "$REPO" rev-parse main 2>/dev/null)
-if [ -n "$WT_BASE" ] && [ -n "$LOCAL_MAIN" ] && [ "$WT_BASE" != "$LOCAL_MAIN" ]; then
-  AHEAD=$(git -C "$REPO" rev-list --count "$WT_BASE..$LOCAL_MAIN")
-  if [ "$AHEAD" -gt 0 ]; then
-    echo "⚠ WORKTREE-FRESHNESS: local main is $AHEAD commits ahead of origin/main."
-    echo "  Missing commits in worktree:"
-    git -C "$REPO" log --oneline "$WT_BASE..$LOCAL_MAIN" | sed 's/^/    /'
-    echo "  Files added in those commits:"
-    git -C "$REPO" diff --name-only --diff-filter=A "$WT_BASE..$LOCAL_MAIN" | sed 's/^/    /'
-    echo "  If feature.json files[] references any of these, copy them in:"
-    echo "    git show main:<path> > <worktree>/<path>"
-  fi
-fi
-```
-
-Output: `WORKTREE-FRESHNESS: ok` if synced, else the warning block above. This is a warning, not a gate — continue regardless.
-
-**Active recovery** (only when warning fired AND feature.json is loaded):
-
-For each path in `feature.json files[]`, check whether it exists in the worktree. If absent AND present in local `main`, auto-restore it:
-
-```bash
-FEATURE_FILES=$(node -e "
-  const f = require('$REPO/.project/features/{feature-name}/feature.json');
-  console.log((f.files || []).map(x => x.path).join('\n'));
-")
-RESTORED=0
-for path in $FEATURE_FILES; do
-  if [ ! -f "$path" ] && git -C "$REPO" cat-file -e "main:$path" 2>/dev/null; then
-    mkdir -p "$(dirname "$path")"
-    git -C "$REPO" show "main:$path" > "$path"
-    echo "  RESTORED: $path"
-    RESTORED=$((RESTORED + 1))
-  fi
-done
-[ "$RESTORED" -gt 0 ] && echo "WORKTREE-RECOVERY: restored $RESTORED file(s) from local main"
-```
-
-Files that exist in the worktree are never overwritten — only genuinely missing files are restored. If `feature.json` is not yet loaded (shouldn't happen — freshness runs after "Load feature"), skip recovery silently.
-
 **Pre-PHASE-1 gate** (hard check — shell-state verification):
 
 ```bash
@@ -286,19 +232,6 @@ REQUIREMENTS:
 
 IMPLEMENTATION ORDER:
 (from buildSequence, sorted by step)
-```
-
-**Risk check (only if backlog feature `risk >= 4`):**
-
-If the loaded backlog feature has a `risk` score of 4 or 5, show this warning before PHASE 1:
-
-```
-⚠ HIGH RISK — Complexity {risk}/5
-
-Consider before building:
-- Are all dependencies available (status DONE)?
-- Is the feature definition complete (all REQs clear)?
-- Build in small steps — commit after each working REQ
 ```
 
 After completing all steps above: mark PHASE 0 → `completed`, PHASE 1 → `in_progress` via `TaskUpdate`. Then return to SKILL.md for PHASE 1.
