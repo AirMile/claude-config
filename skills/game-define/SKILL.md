@@ -11,7 +11,7 @@ reads:
 writes: [feature.requirements, backlog.stage, concept.seed, feature.seedDrift]
 metadata:
   author: claude-config
-  version: 3.1.0
+  version: 3.2.0
   category: game
 ---
 
@@ -206,9 +206,9 @@ PREVIOUSLY DECIDED (possibly relevant)
 
 Show before the first interview question. No action required — context only, so interview answers don't conflict with previously decided directions.
 
-**Interview opening**: "I see we're defining `{feature-name}`. Tell me first — what gameplay problem does this solve?"
+**Interview opening**: context echo + freshly composed anchored opening question per `references/phase1a-interview.md § Interview Start` — never a canned scaffold.
 
-Conduct an open interview — **no AskUserQuestion and no multiple-choice options in this phase**. Ask one open question at a time. Paraphrase substantive answers to check understanding. Probe and follow up. Follow the dimension checklist and tone rules in `references/phase1a-interview.md`.
+Conduct an open interview — one anchored open question at a time. **AskUserQuestion is not an opener in this phase** — it is allowed only as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after two "I don't know"s on the same dimension). Paraphrase substantive answers to check understanding. Probe and follow up. Follow the dimension checklist and tone rules in `references/phase1a-interview.md`.
 
 **If the user cannot answer a dimension**: follow the escape-hatch protocol in `references/phase1a-interview.md § Handling "I Don't Know" Responses`.
 
@@ -566,7 +566,7 @@ Follow `shared/SYNC.md` 3-File Sync Pattern.
 
 ## Best Practices
 
-- Use AskUserQuestion for architecture/design choices (PHASE 1b) — not for requirements gathering (PHASE 1a: open interview)
+- Use AskUserQuestion for architecture/design choices (PHASE 1b) — in the PHASE 1a interview only as escalation per `shared/QUESTIONING.md § Escalation Ladder`
 - Extract testable requirements with REQ-IDs and acceptance criteria
 - Scene research is optional but recommended for complex features
 - Keep architecture focused on what's needed

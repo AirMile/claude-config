@@ -14,7 +14,7 @@ reads:
 writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 1.4.0
+  version: 1.5.0
   category: project
 ---
 
@@ -114,7 +114,7 @@ The user may respond to questions in unexpected ways — asking their own questi
 
 Same pattern: present the "Deeper Dive" AskUserQuestion after each round. As rounds progress, switch the recommended option to "Proceed to summary" when enough context has been gathered (typically after 2-3 rounds).
 
-**Question rules:**
+**Question rules** (form choice, anchoring, and escalation: [shared/QUESTIONING.md](../shared/QUESTIONING.md) — clickable rounds are the default here; switch to a single anchored open question for generative aspects like vision, tone, or story per that protocol):
 
 - NEVER use meta-options ("Answer questions", "Fewer questions")
 - Each question = separate AskUserQuestion with concrete, clickable options
@@ -149,7 +149,7 @@ Create a structured markdown document (pure markdown, no preamble or "Here's you
 
 ### PHASE 5: Output Destination
 
-> **Todo**: Read `.claude/skills/project-seed/references/output-destination.md`
+> **Todo**: Read `.claude/skills/shared/THINKING-OUTPUT.md` — caller `project-seed`, `{kind}` = `idea`. Follow the scope routing and seed save procedure there.
 
 ---
 

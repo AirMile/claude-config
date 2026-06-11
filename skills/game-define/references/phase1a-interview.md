@@ -1,6 +1,6 @@
 # Phase 1a Interview Protocol — Godot / game-define
 
-Full protocol for the open interview phase of `/game-define`. Load this file when PHASE 1a starts.
+Full protocol for the open interview phase of `/game-define`. Load this file when PHASE 1a starts. Form choice, anchoring rules, and the escalation ladder come from [shared/QUESTIONING.md](../../shared/QUESTIONING.md) — read it together with this file.
 
 ## Dimension Checklist
 
@@ -14,30 +14,34 @@ Track coverage internally — not as a visible numbered list. Move to the next o
 | 4   | **Edge cases & failure modes** | Yes                       | After mechanics are clear                                                                                               |
 | 5   | **Scene & input context**      | Conditional               | Only if task type ∈ MECHANIC, UI, or FEATURE with direct player interaction. Skip for PURE-LOGIC, TEST-INFRA, RESOURCE. |
 
+Before opening a dimension, run the coverage check (`shared/QUESTIONING.md § Before Asking`) — a dimension already answered by concept/backlog/scene context gets a paraphrase-confirm, not an open question.
+
 All required dimensions covered → trigger the [Stop Condition](#stop-condition).
 
 ## Tone Rules
 
 - **One question at a time** — never list multiple questions in a single turn.
-- **No options or suggestions** — do not propose scene structures, node types, signal architectures, or implementation approaches in this phase.
+- **No solution proposals** — do not propose scene structures, node types, signal architectures, or implementation approaches in this phase. Example directions inside the question text ARE allowed and encouraged — they describe the gameplay problem space, not the implementation (see `shared/QUESTIONING.md § Anchored open question rules`).
 - **Paraphrase** after each substantive answer: "So the player should feel…" or "If I understand correctly, when X happens then Y…". Ask "is that right?" only when genuinely uncertain.
 - **Probe and follow up**: "Can you describe a moment in gameplay where this fires?", "What breaks if this feature isn't there?", "What would make this feel wrong to the player?"
 - **Show interest**: briefly acknowledge what the user said before asking the next question. Don't jump straight to the next question.
 - **Stay open**: do not name nodes, scripts, signals, or GDScript patterns. If the user goes there, note it briefly ("Good to know — I'll factor that into the architecture") and steer back: "What about {next uncovered dimension}?"
 
-## Opening Question
+## Interview Start
 
-Always start with:
+**Context echo** — open the interview with a short "what I already know" block (2-3 lines max) built from PHASE 0 context: backlog title + risk, concept pitch/genre fragment, scene or script scan hits. This shows the user what the interview builds on so they never have to repeat known ground. The `PREVIOUSLY DECIDED` list and risk-check line (from SKILL.md) render directly above this block — don't duplicate their content in the echo.
 
-> "I see we're defining `{feature-name}`. Tell me first — what gameplay problem does this solve?"
+**Opening question** — compose it fresh per feature (`shared/QUESTIONING.md § Before Asking` — no canned scaffold, no recycled phrasing across sessions). Its job: target the biggest genuine unknown left after the context echo, anchored in one concrete fact from it, with 2-3 example directions where natural. Example of the _shape_ (never reuse the wording):
 
-If the user's answer is very brief (e.g. "player needs to jump"), probe immediately:
+> "The backlog flags `{feature-name}` at risk 4 and your concept pitches {genre fragment}. What I can't tell from that: {specific aspect}. What makes that the gameplay problem right now — {direction A}, {direction B}, or something else?"
 
-> "What breaks in the game experience today without this? What should it feel like when it works?"
+No context loaded at all → a plain open "what gameplay problem does this solve, and what should it feel like?" opener is acceptable — still phrased in your own words for this session.
+
+If the user's answer is very brief (e.g. "player needs to jump"), probe immediately: "What breaks in the game experience today without this? What should it feel like when it works?"
 
 ## Dimension Openers
 
-Use these as starting points — adapt to the conversation flow. Don't use them as a script.
+Use these as starting points — adapt to the conversation flow. Don't use them as a script. **Every opener MUST be anchored in loaded context when available** (per `shared/QUESTIONING.md`): prefix the question with what you already know from the concept, backlog, scene tree, or earlier answers, and append 2-3 example directions where natural. The bare forms below are the no-context fallback shapes.
 
 **Goal & why**
 
@@ -86,13 +90,7 @@ Do not loop the summary more than once — after a correction is acknowledged, m
 
 ## Handling "I Don't Know" Responses
 
-Apply per dimension when the user cannot answer:
-
-| Turn                                              | Claude's response                                                                                                                                                                     |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1st "I don't know" on a dimension                 | Probe with a concrete gameplay scenario: "Can you describe a playtest moment where this works versus where it fails?" or "What would feel wrong to the player if you got this wrong?" |
-| 2nd "I don't know" on the same dimension          | Offer explicitly: "I can suggest some options to choose from — would that help?" Proceed only if the user says yes.                                                                   |
-| 3rd "I don't know" or clear signal of uncertainty | Mark the dimension as `unresolved` internally. Move on. Do not ask again.                                                                                                             |
+Follow the escalation ladder in `shared/QUESTIONING.md § Escalation Ladder`, applied per dimension. Step 1 probes use gameplay scenarios ("Can you describe a playtest moment where this works versus where it fails?"). At step 2 the form switch means: a single AskUserQuestion with 2-4 concrete hypotheses for this dimension — that is the only AskUserQuestion allowed during the interview.
 
 **In the closing summary**: if ≥1 dimension is unresolved, name it explicitly:
 

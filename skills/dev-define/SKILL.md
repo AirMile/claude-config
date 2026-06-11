@@ -20,7 +20,7 @@ writes:
 writes-terminal: [backlog.overview]
 metadata:
   author: claude-config
-  version: 3.3.0
+  version: 3.4.0
   category: dev
 ---
 
@@ -134,7 +134,7 @@ visible — no risk of forgetting phases.
 
 **Surface relevant past decisions** (only with ≥1 match from PHASE 0 scan, otherwise skip silently): render a short `PREVIOUSLY DECIDED` list (`[scope] {decision} → chose {chosen} (constraint: {constraint})`) before the first interview question — context only, no action required.
 
-Conduct the open interview per the reference — one open question at a time, **no AskUserQuestion and no multiple-choice options in this phase**. Close with the reference's explicit summary + confirmation; proceed to PHASE 1b only after the user confirms.
+Conduct the open interview per the reference — one anchored open question at a time. **AskUserQuestion is not an opener in this phase** — it is allowed only as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after two "I don't know"s on the same dimension). Close with the reference's explicit summary + confirmation; proceed to PHASE 1b only after the user confirms.
 
 ---
 

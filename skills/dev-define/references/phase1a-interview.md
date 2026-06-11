@@ -1,6 +1,6 @@
 # Phase 1a Interview Protocol
 
-Full protocol for the open interview phase of `/dev-define`. Load this file when PHASE 1a starts.
+Full protocol for the open interview phase of `/dev-define`. Load this file when PHASE 1a starts. Form choice, anchoring rules, and the escalation ladder come from [shared/QUESTIONING.md](../../shared/QUESTIONING.md) — read it together with this file.
 
 ## Dimension Checklist
 
@@ -13,30 +13,34 @@ Track coverage internally — not as a visible numbered list. Move to the next o
 | 3   | **Edge cases & non-goals**       | Yes         | After success is clear                                                                                             |
 | 4   | **User & context**               | Conditional | Only if task type ∈ PAGE, COMPONENT, or FEATURE with direct end-user interaction. Skip for INFRA, REFACTOR, THEME. |
 
+Before opening a dimension, run the coverage check (`shared/QUESTIONING.md § Before Asking`) — a dimension already answered by seed/backlog/context gets a paraphrase-confirm, not an open question.
+
 All required dimensions covered → trigger the [Stop Condition](#stop-condition).
 
 ## Tone Rules
 
 - **One question at a time** — never list multiple questions in a single turn.
-- **No options or suggestions** — do not propose solutions, technical approaches, or design choices in this phase.
+- **No solution proposals** — do not propose solutions, technical approaches, or design choices in this phase. Example directions inside the question text ARE allowed and encouraged — they describe the problem space, not the implementation (see `shared/QUESTIONING.md § Anchored open question rules`).
 - **Paraphrase** after each substantive answer: "So you mean that…" or "If I understand correctly, you want…". Ask "is that right?" only when genuinely uncertain — not as a ritual after every answer.
 - **Probe and follow up**: "Can you give a concrete example?", "What happens if X?", "What would make this a failure?", "What breaks today without it?"
 - **Show interest**: briefly acknowledge what the user said before asking the next question. Don't jump straight to the next question.
 - **Stay open**: do not name file structure, components, tech stack choices, or implementation options. If the user goes there, note it briefly ("Good to know — I'll factor that in") and steer back: "What about {next uncovered dimension}?"
 
-## Opening Question
+## Interview Start
 
-Always start with:
+**Context echo** — open the interview with a short "what I already know" block (2-3 lines max) built from PHASE 0 context: backlog title + risk, seed pitch fragment, codebase scan hits. This shows the user what the interview builds on so they never have to repeat known ground. The `PREVIOUSLY DECIDED` list and risk-check line (from SKILL.md) render directly above this block — don't duplicate their content in the echo.
 
-> "I see we're defining `{feature-name}`. Tell me first — what problem does this solve for you?"
+**Opening question** — compose it fresh per feature (`shared/QUESTIONING.md § Before Asking` — no canned scaffold, no recycled phrasing across sessions). Its job: target the biggest genuine unknown left after the context echo, anchored in one concrete fact from it, with 2-3 example directions where natural. Example of the _shape_ (never reuse the wording):
 
-If the user's answer is very brief (e.g. "we need login"), probe immediately:
+> "The backlog flags `{feature-name}` at risk 4 and your seed pitches {fragment}. What I can't tell from that: {specific aspect}. What makes that the problem right now — {direction A}, {direction B}, or something else?"
 
-> "What situation triggers someone needing that? What breaks today without it?"
+No context loaded at all → a plain open "what problem does this solve, and what triggered it now?" opener is acceptable — still phrased in your own words for this session.
+
+If the user's answer is very brief (e.g. "we need login"), probe immediately: "What situation triggers someone needing that? What breaks today without it?"
 
 ## Dimension Openers
 
-Use these as starting points — adapt to the conversation flow. Don't use them as a script.
+Use these as starting points — adapt to the conversation flow. Don't use them as a script. **Every opener MUST be anchored in loaded context when available** (per `shared/QUESTIONING.md`): prefix the question with what you already know from the seed, backlog, codebase, or earlier answers, and append 2-3 example directions where natural. The bare forms below are the no-context fallback shapes.
 
 **Goal & why**
 
@@ -78,13 +82,7 @@ Do not loop the summary more than once — after a correction is acknowledged, m
 
 ## Handling "I Don't Know" Responses
 
-Apply per dimension when the user cannot answer:
-
-| Turn                                              | Claude's response                                                                                                                                                          |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1st "I don't know" on a dimension                 | Probe with a concrete scenario question: "Can you describe a situation where this would work versus where it would fail?" or "What would a bad version of this look like?" |
-| 2nd "I don't know" on the same dimension          | Offer explicitly: "I can suggest some options to choose from — would that help?" Proceed only if the user says yes.                                                        |
-| 3rd "I don't know" or clear signal of uncertainty | Mark the dimension as `unresolved` internally. Move on to the next dimension. Do not ask again.                                                                            |
+Follow the escalation ladder in `shared/QUESTIONING.md § Escalation Ladder`, applied per dimension. At step 2 the form switch means: a single AskUserQuestion with 2-4 concrete hypotheses for this dimension — that is the only AskUserQuestion allowed during the interview.
 
 **In the closing summary**: if ≥1 dimension is unresolved, name it explicitly:
 
