@@ -296,32 +296,14 @@ Only write if decisions or resolved blockers are present — no empty entries.
 
 > **Todo**: mark PHASE 3A → `completed`, PHASE 3B → `in_progress`.
 
-**Strategy**: stage only files created or modified by this build. Leave pre-existing dirty files untouched.
+Follow [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md). dev-build deltas:
 
-Diagnostics ran in PHASE 2b — if both gates passed there, proceed directly to staging.
-
-```bash
-# $REPO is set in PHASE 0 (see references/context-loading.md → "Capture git baseline")
-git -C "$REPO" status --porcelain
-```
-
-Categorize each file:
-
-1. **Check baseline**: compare with the SHA from `$REPO/.project/session/pre-skill-sha.txt`:
-   ```bash
-   git -C "$REPO" diff --name-only $(cat "$REPO/.project/session/pre-skill-sha.txt") HEAD 2>/dev/null
-   ```
-   If diff is empty (no mid-build commits): use `git -C "$REPO" diff --name-only $(cat "$REPO/.project/session/pre-skill-sha.txt")` (without HEAD) for unstaged changes, plus `git -C "$REPO" ls-files --others --exclude-standard` for new files.
-   Files NOT modified by this build AND already dirty → PRE-EXISTING, don't stage.
-2. **New/modified files from this feature** (files from `feature.json files[]`, test files, feature.json itself) → `git add`.
-3. **Untracked files** not belonging to the feature → don't stage.
-4. **.project/ files** (project.json, backlog.json, project-context.json) → try to add. If skip-worktree or sparse-checkout blocks this: accept and continue (these files are updated locally but won't be committed).
-
-```bash
-git -C "$REPO" commit -m "build({feature}): {n} requirements ({tdd} TDD, {only} impl-only)"
-```
-
-Clean up: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/active-{feature-name}.json" "$REPO/.project/session/worktree-status.txt"`
+- **Baseline**: SHA form — `$REPO/.project/session/pre-skill-sha.txt` (mid-build commits possible; see § 1). All git commands via `git -C "$REPO"`.
+- **Stage set**: new/modified files from this feature (`feature.json files[]`, test files, feature.json itself). Untracked files outside the feature → don't stage.
+- **`.project/` files** (project.json, backlog.json, project-context.json): try to add; if skip-worktree or sparse-checkout blocks this, accept and continue (updated locally, not committed).
+- **Diagnostics**: already ran in PHASE 2b — proceed directly to staging.
+- **Commit**: `git -C "$REPO" commit -m "build({feature}): {n} requirements ({tdd} TDD, {only} impl-only)"`
+- **Cleanup**: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/active-{feature-name}.json" "$REPO/.project/session/worktree-status.txt"`
 
 **Output:**
 
