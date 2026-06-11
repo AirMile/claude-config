@@ -124,48 +124,6 @@ Same pattern: present the "Deeper Dive" AskUserQuestion after each round. As rou
 - Help articulate what's in the user's head
 - Save criticism or expansion for later--this phase is pure idea capture
 
-### CHECKPOINT: Idea Summary
-
-After the question rounds, present a structured overview of all gathered input before synthesis begins. Use the scope-matching table:
-
-**Scope = concept / standalone / page:**
-
-| Aspect          | Value                         |
-| --------------- | ----------------------------- |
-| Topic           | {idea title/topic}            |
-| Scope           | {concept / page / standalone} |
-| Target Audience | {from round 1}                |
-| Core Experience | {from round 1}                |
-| Deeper Dives    | {summary of follow-up rounds} |
-
-**Scope = implementation:**
-
-| Aspect          | Value                                   |
-| --------------- | --------------------------------------- |
-| Topic           | {project / product name}                |
-| Scope           | implementation                          |
-| Source of Truth | {Figma / spec / screenshots / existing} |
-| Pages in Scope  | {list from round 1}                     |
-| Tech Stack      | {confirmed stack}                       |
-| Open Decisions  | {TBDs / annotation gaps}                |
-
-**Scope = feature / assignment:**
-
-| Aspect             | Value                       |
-| ------------------ | --------------------------- |
-| Topic              | {feature / assignment name} |
-| Scope              | feature                     |
-| Goal               | {from round 1}              |
-| Existing Context   | {from round 1}              |
-| Out of Scope       | {from round 1}              |
-| Definition of Done | {from round 1}              |
-
-Ask via AskUserQuestion: "Does this overview look right before we summarize?"
-
-- "Proceed to summary (Recommended)" — proceed to synthesis
-- "Another round" — back to PHASE 2 for extra questions
-- "Adjust" — correct a specific point
-
 ### Enter Plan Mode
 
 Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 3. PHASES 3-4 (synthesis + output generation) run in plan mode; the concept document (PHASE 4) is written to the plan file for review.
@@ -174,27 +132,9 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE
 
 ### PHASE 3: Synthesize and Confirm
 
-1. Create a concise summary based on all input
-2. Present summary to user
-3. Use AskUserQuestion for confirmation:
-   ```yaml
-   options:
-     - label: "Correct, generate output (Recommended)", description: "Summary is correct, proceed to markdown output"
-     - label: "Adjust", description: "I want to change or add something"
-     - label: "Re-summarize", description: "Create a new summary"
-   multiSelect: false
-   ```
-4. Incorporate feedback if needed
-5. Repeat until user confirms
-6. **Depth guard:** If the confirmed summary covers fewer than 3 distinct content aspects (e.g. only has title + vague description), suggest returning to PHASE 2 for an additional round:
-   ```yaml
-   header: "More depth needed"
-   question: "The summary is still quite thin. Do you want another question round for more depth?"
-   options:
-     - label: "Yes, extra round (Recommended)", description: "Back to PHASE 2 for more details"
-     - label: "No, continue", description: "Generate output with current content"
-   multiSelect: false
-   ```
+1. Present ONE structured overview of all gathered input: a scope-matching aspect table (concept/standalone/page: Topic, Scope, Target Audience, Core Experience, Deeper Dives · implementation: Topic, Source of Truth, Pages in Scope, Tech Stack, Open Decisions · feature: Topic, Goal, Existing Context, Out of Scope, Definition of Done) followed by a concise summary.
+2. AskUserQuestion: "Correct, generate output (Recommended)" / "Another round" (back to PHASE 2) / "Adjust" (correct a specific point). Loop until confirmed.
+3. **Depth guard:** if the confirmed summary covers fewer than 3 distinct content aspects (e.g. only title + vague description), recommend one extra PHASE 2 round before generating output.
 
 ### PHASE 4: Generate Output
 
