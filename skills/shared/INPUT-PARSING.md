@@ -104,6 +104,36 @@ multiSelect: false
 - Scope = page/UX → write to `.project/thinking/{topic}.md`
 - Scope = standalone idea → write to `.project/thinking/{topic}.md`
 
+### Project Memory Load
+
+Run directly after the scope is known (after § PHASE 1a; seed variant: after the intake route resolves to a scope). Read-only — safe before `EnterPlanMode`.
+
+1. **Skip** when `.project/` does not exist, or scope = standalone idea. Log nothing.
+2. **Built-state + backlog summary**: set `$REPO`, run the `ideation` profile from [PROJECT-CONTEXT-LOAD.md](PROJECT-CONTEXT-LOAD.md).
+3. **Learnings** via [LEARNINGS-LOAD.md](LEARNINGS-LOAD.md), scope-dependent:
+   - scope = concept (or seed implementation scope): `scopes: [architectural]`, `pitfall-prefix: true`, `current-feature: none`
+   - scope = feature or page/UX: `scopes: [component, architectural]`, `pitfall-prefix: true`, `current-feature: {kebab-name}`
+4. **Prior thinking (cheap name match)**: Grep `.project/thinking/*.md` for the concept-title / feature-name tokens (tokens ≥ 3 chars). Report matches as `Prior thinking: {file} — {first H1}` — filenames + H1 only, **never read the full files**. A later phase (or the user) decides whether one is worth reading.
+5. **Compose one `PROJECT MEMORY` block** and show it before the confirm step (and carry it into the plan-mode phases as context):
+
+   ```
+   PROJECT MEMORY
+
+   Data flow: {dataFlow or "—"}
+   Built: {N done} — {done component names}
+   Planned: {M planned} — {planned component names}
+   Backlog: {TODO}/{DEFINED}/{DOING}/{DONE} — active: {active names, truncate at 10 + "(+K more)"}
+
+   {LEARNINGS CONTEXT block verbatim, if any}
+
+   Prior thinking:
+     {file} — {H1}
+   ```
+
+   Omit empty sections. Token budget: the whole block stays under ~2k tokens (profile caps + learnings caps + filename-only thinking matches).
+
+6. **Behavioral rule** for all subsequent phases: components with `status: done` and backlog items in DOING/DONE are **existing reality** — ideate around them, do not re-propose them as new ideas. When a generated direction contradicts built state, flag it explicitly as a deliberate change (this feeds the seed-drift machinery on save).
+
 ### PHASE 1b: Manual input fallback
 
 If the user provided an inline description/argument, use it directly as the starting idea.

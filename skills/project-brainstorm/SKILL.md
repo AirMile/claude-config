@@ -5,14 +5,17 @@ reads:
   [
     concept.seed,
     backlog.status,
+    backlog.features,
     feature.seedDrift,
     backlog.seedDrift,
     project.thinking,
+    project-context.architecture,
+    project-context.learnings,
   ]
 writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 2.0.0
+  version: 2.1.0
   category: project
 ---
 
@@ -29,7 +32,7 @@ Creatively expand and explore ideas through interactive application of brainstor
 
 ### PHASE 1: Parse Input
 
-> **Todo**: Read `.claude/skills/shared/INPUT-PARSING.md` — use **brainstorm variant** (action = "brainstorm"). Follow all sections in order.
+> **Todo**: Read `.claude/skills/shared/INPUT-PARSING.md` — use **brainstorm variant** (action = "brainstorm"). Follow all sections in order, **including § Project Memory Load** (built-state, backlog summary, learnings, prior thinking).
 
 ### Enter Plan Mode
 
@@ -45,7 +48,7 @@ Creatively expand and explore ideas through interactive application of brainstor
 
 **Goal:** Rank the most relevant techniques for this idea and current exploration state.
 
-1. Analyze: what has been explored (track applied techniques), which aspects need creative expansion, which unexplored directions could be valuable.
+1. Analyze: what has been explored (track applied techniques), which aspects need creative expansion, which unexplored directions could be valuable. Weigh the `PROJECT MEMORY` block (if loaded): prefer techniques that explore gaps relative to what is already built — `status: done` components and DOING/DONE backlog items are existing reality, not open design space.
 2. Read `references/technique-index.md` — the index only. Do NOT load detail files here.
 3. Select 2-3 most relevant techniques, ranked (1 = most relevant). Recommend 1-2 — after 2 techniques diminishing returns are likely. Already-applied techniques never reappear.
 4. Present via AskUserQuestion (in user's preferred language):

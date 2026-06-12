@@ -102,6 +102,12 @@ Free-text intake — these are open questions, not multiple-choice. Ask in one m
 - Scope = standalone idea → write to `.project/thinking/{topic}.md`
 - Scope = assignment → write to `.project/features/{slug}/thinking.md` (or `.project/project-seed.md` on user choice)
 
+**Step 1d: Project Memory Load (all routes that continue to Step 2)**
+
+Once the active scope is known, run [shared/INPUT-PARSING.md § Project Memory Load](../../shared/INPUT-PARSING.md) (seed variant: implementation and assignment scopes use the concept-scope learnings config). This makes the Edit and New-concept routes mid-project aware: Step 2 question rounds derive Round-1 options from what is actually built, and PHASE 4 output must not silently contradict `status: done` components.
+
+Skip for: the Sync route (Step 1c — `project-sync.md` gathers richer state itself), standalone scope, and projects without `.project/`.
+
 **Step 1c: Project Sync (if "Sync with project" chosen)**
 
 > **Todo**: Read `.claude/skills/project-seed/references/project-sync.md` and execute the sync flow: gather project state → detect gaps (incl. deferred `seedDrift[]`) → select → integrate → write + drift cleanup.

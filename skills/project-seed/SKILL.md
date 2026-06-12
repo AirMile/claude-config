@@ -5,16 +5,19 @@ reads:
   [
     concept.seed,
     backlog.status,
+    backlog.features,
     feature.seedDrift,
     backlog.seedDrift,
     project.thinking,
     project.entities,
     project.endpoints,
+    project-context.architecture,
+    project-context.learnings,
   ]
 writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 1.6.0
+  version: 1.7.0
   category: project
 ---
 

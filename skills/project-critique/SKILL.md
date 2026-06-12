@@ -5,14 +5,17 @@ reads:
   [
     concept.seed,
     backlog.status,
+    backlog.features,
     feature.seedDrift,
     backlog.seedDrift,
     project.thinking,
+    project-context.architecture,
+    project-context.learnings,
   ]
 writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 2.0.0
+  version: 2.1.0
   category: project
 ---
 
@@ -29,7 +32,7 @@ Critically analyze and strengthen ideas through interactive application of analy
 
 ### PHASE 1: Parse Input
 
-> **Todo**: Read `.claude/skills/shared/INPUT-PARSING.md` — use **critique variant** (action = "analyze", includes applied-techniques check and 3-option confirm). Follow all sections in order.
+> **Todo**: Read `.claude/skills/shared/INPUT-PARSING.md` — use **critique variant** (action = "analyze", includes applied-techniques check and 3-option confirm). Follow all sections in order, **including § Project Memory Load** (built-state, backlog summary, learnings, prior thinking).
 
 ### Enter Plan Mode
 
@@ -47,7 +50,7 @@ Critically analyze and strengthen ideas through interactive application of analy
 
 1. Determine idea type: **creative** (game, story, art, interactive experience), **product** (app, service, business, SaaS), or **hybrid** (both).
 2. Read `references/technique-index.md` — the index only. Do NOT load detail files here. Candidates: universal techniques always; creative techniques for creative/hybrid; product techniques for product/hybrid.
-3. Filter and rank: keep only techniques genuinely relevant to THIS idea (e.g. drop Narrative for non-narrative games), exclude already-applied ones, rank by which reveals the most critical weaknesses. More than 5 relevant → top 5 only.
+3. Filter and rank: keep only techniques genuinely relevant to THIS idea (e.g. drop Narrative for non-narrative games), exclude already-applied ones, rank by which reveals the most critical weaknesses. More than 5 relevant → top 5 only. With a `PROJECT MEMORY` block loaded: rank by which technique reveals weaknesses **in the not-yet-built remainder** — built components are facts to critique against, not assumptions to challenge; pitfall learnings point at weakness categories this project actually hit.
 4. Present 2-4 techniques via AskUserQuestion (in user's preferred language) — fewer than 3 relevant → show all available:
 
    ```yaml

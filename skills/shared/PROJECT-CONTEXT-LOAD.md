@@ -17,7 +17,7 @@ Skills load project context during their **PHASE 0 context-load phase** — read
 
 ---
 
-## Three profiles
+## Four profiles
 
 > `.project/conventions.md` is deliberately **not** part of these profiles — it is markdown loaded by path-reference, not JSON extraction. See [CONVENTIONS.md](CONVENTIONS.md); run its status check in the same PHASE 0 batch as the profile snippets.
 
@@ -117,6 +117,37 @@ node -e "
 " 2>/dev/null || echo "PROJECT_CONTEXT_JSON: not present"
 ```
 
+### Profile: `ideation`
+
+For the ideation skills (`project-seed`, `project-brainstorm`, `project-critique`) via `INPUT-PARSING.md § Project Memory Load`. Extracts a compact built-state and backlog summary — "what exists and what's planned", no file paths, no `connects_to`/`endpoints` detail. Caps (40 components, 40 active features) bound the combined block at roughly 600–900 tokens.
+
+```bash
+# project-context.json — compact built-state
+node -e "
+  const c = require('$REPO/.project/project-context.json');
+  console.log(JSON.stringify({
+    dataFlow: c.architecture?.dataFlow || null,
+    components: (c.architecture?.components || [])
+      .map(x => ({ name: x.name, layer: x.layer, status: x.status, feature: x.feature || null }))
+      .slice(0, 40)
+  }, null, 2));
+" 2>/dev/null || echo "PROJECT_CONTEXT_JSON: not present"
+
+# backlog.json — backlog summary (counts + active items only)
+node -e "
+  const fs = require('fs');
+  let bl = null; try { bl = JSON.parse(fs.readFileSync('$REPO/.project/backlog.json','utf8')); } catch {}
+  const F = (bl && bl.features) || [];
+  const count = s => F.filter(f => f.status === s).length;
+  console.log(JSON.stringify({
+    counts: { TODO: count('TODO'), DEFINED: count('DEFINED'), DOING: count('DOING'), DONE: count('DONE'), CANCELLED: count('CANCELLED') },
+    active: F.filter(f => ['TODO','DEFINED','DOING'].includes(f.status))
+      .map(f => ({ name: f.name, status: f.status, phase: f.phase, type: f.type, source: f.source || null }))
+      .slice(0, 40)
+  }, null, 2));
+" 2>/dev/null || echo "BACKLOG: not present"
+```
+
 ---
 
 ## Output format
@@ -146,7 +177,7 @@ Each skill specifies in its SKILL.md or references file:
 
 ```
 Project context load (via shared/PROJECT-CONTEXT-LOAD.md):
-- profile: build          # or: define | verify
+- profile: build          # or: define | verify | ideation
 - feature-name: <kebab>   # only required for "define" profile
 ```
 
