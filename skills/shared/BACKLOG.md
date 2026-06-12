@@ -155,13 +155,13 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
                         ↑ Path B only              ↑ Path A skips DEFINED
 ```
 
-| Status      | Label      | Set by                                                                           |
-| ----------- | ---------- | -------------------------------------------------------------------------------- |
-| `TODO`      | To design  | `/frontend-design` Capture, `/project-todo`, `/project-backlog`, reuse-discovery |
-| `DEFINED`   | To convert | `/frontend-design` Brief (Path B — offline handoff)                              |
-| `DOING`     | Building   | `/frontend-design` Build (Path A) or `/frontend-design` Convert route (Path B)   |
-| `DONE`      | Shipped    | `/frontend-check` batch (at release end) or manual finalize                      |
-| `CANCELLED` | Archived   | Manually via UI (○ button), restorable                                           |
+| Status      | Label      | Set by                                                                                                       |
+| ----------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `TODO`      | To design  | `/frontend-design` Capture, `/project-todo`, `/project-backlog`, reuse-discovery                             |
+| `DEFINED`   | To convert | `/frontend-design` Brief (Path B — offline handoff)                                                          |
+| `DOING`     | Building   | `/frontend-design` Build (Path A) or `/frontend-design` Convert route (Path B)                               |
+| `DONE`      | Shipped    | `/frontend-check` batch (at release end) or manual finalize                                                  |
+| `CANCELLED` | Archived   | Manually via UI (○ button), `/project-backlog` update mode (cancel-proposal), `/project-retire` — restorable |
 
 **Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
 
@@ -189,13 +189,15 @@ TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refac
                                                               CANCELLED (Archived)
 ```
 
-| Status      | Label       | Set by                                 |
-| ----------- | ----------- | -------------------------------------- |
-| `TODO`      | To define   | `/project-todo`, `/project-backlog`    |
-| `DEFINED`   | To build    | `/dev-define` (completion)             |
-| `DOING`     | To verify   | `/dev-build` (completion)              |
-| `DONE`      | To refactor | `/dev-verify` (completion)             |
-| `CANCELLED` | Archived    | Manually via UI (○ button), restorable |
+| Status      | Label       | Set by                                                                                                       |
+| ----------- | ----------- | ------------------------------------------------------------------------------------------------------------ |
+| `TODO`      | To define   | `/project-todo`, `/project-backlog`                                                                          |
+| `DEFINED`   | To build    | `/dev-define` (completion)                                                                                   |
+| `DOING`     | To verify   | `/dev-build` (completion)                                                                                    |
+| `DONE`      | To refactor | `/dev-verify` (completion)                                                                                   |
+| `CANCELLED` | Archived    | Manually via UI (○ button), `/project-backlog` update mode (cancel-proposal), `/project-retire` — restorable |
+
+**Optional fields on CANCELLED items**: `cancelledReason` (one-line why, set by skill-driven cancellations) and `cancelledAt` (`YYYY-MM-DD`, set by `/project-retire`). UI cancellations omit both. Archived features (see § Archiving) can also carry `status: "CANCELLED"` after a `/project-retire` run — history stays, flagged.
 
 `/dev-refactor` is the **promotion trigger** for dev-cards: after CLEAN or REFACTORED it sets `f.shipped = true` + `f.shippedAt` + `f.shippedSha`, then **moves the feature object to the archive** (see § Archiving). Shipped items leave the backlog data and appear on the Dashboard via the archive.
 

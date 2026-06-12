@@ -16,7 +16,7 @@
    - Use `SEED_CONTEXT.markdown` as concept content
    - Read `backlog.json` → parse JSON
    - Analyze differences between concept and existing backlog
-   - Check `data.features[]` in `backlog.json` to identify INDEPENDENT features: a feature is INDEPENDENT when its `source` field exists AND is not `"/project-backlog"`. Features without a `source` field (or with `"/project-backlog"`) are concept-derived and may be updated or deprecated by this run.
+   - Check `data.features[]` in `backlog.json` to identify INDEPENDENT features: a feature is INDEPENDENT when its `source` field exists AND is not `"/project-backlog"`. Features without a `source` field (or with `"/project-backlog"`) are concept-derived and may be updated or proposed for cancellation by this run.
    - Compare `SEED_CONTEXT.markdown` against existing backlog features (semantic match by name/description)
    - Show comparison:
 
@@ -25,12 +25,13 @@
 
      Concept: .project/project-seed.md
      Backlog: .project/backlog.json
+     New thinking outputs since last run: {n}
 
      Feature changes detected:
      - NEW: {list of features in concept but not in backlog}
      - MODIFIED: {list of features in both but with changed description/scope}
      - INDEPENDENT: {list of features in backlog added independently — not from concept}
-     - REMOVED: {list of features in backlog, not in concept, AND not independently added}
+     - OBSOLETE: {list of TODO/DEFINED features no longer supported by concept/thinking}
      - UNCHANGED: {count} features
 
      Protected features (not affected by update):
@@ -53,9 +54,8 @@
        - **DOING/DONE features** (protected): preserve status, stage, priority, date, and notes. Only enrich description if concept provides new insights — never overwrite.
        - **TODO features (modified)**: update description/scope from concept, preserve priority and notes
        - **New features**: add as TODO with auto-assigned priority (user reviews in PHASE 3)
-       - **Removed TODO features**: mark as deprecated (don't delete)
-       - **Removed DOING/DONE features**: show warning and ask user whether to keep or deprecate — these represent in-progress work that may still be relevant
-       - **INDEPENDENT features**: always preserve unchanged — these are not derived from concept. Keep status, stage, priority, date, and description intact. Never deprecate or remove.
+       - **Obsolete TODO/DEFINED features**: handled by the cancel-proposal flow in `references/update-reconcile.md` (loaded in PHASE 1) — explicit user confirmation per cancellation, never silent
+       - **INDEPENDENT features**: always preserve unchanged — these are not derived from concept. Never auto-cancelled; cancellable only via explicit per-item selection in the cancel-proposal flow.
      - Continue to PHASE 1 with update mode
    - **If "New backlog":**
      - Use concept as input, ignore existing backlog

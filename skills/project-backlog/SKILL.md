@@ -1,11 +1,11 @@
 ---
 name: project-backlog
 description: "Seed → prioritized, dependency-ordered backlog. Use with /project-backlog."
-reads: [backlog.status]
-writes: [backlog.status, concept.seed, backlog.seedDrift]
+reads: [backlog.status, concept.seed, backlog.seedDrift, project.thinking]
+writes: [backlog.status, backlog.features, concept.seed, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 1.6.0
+  version: 1.7.0
   category: project
 ---
 
@@ -178,7 +178,8 @@ P4:
 **Seed Alignment Check** (last step in PHASE 3, before ExitPlanMode):
 
 Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: new features
-added, features marked INDEPENDENT/CANCELLED/DEPRECATED, and significant priority
+added, features marked INDEPENDENT/CANCELLED (incl. cancel-proposal outcomes from
+`references/update-reconcile.md`), and significant priority
 reshuffles from this run. This skill is in plan mode — drift table and proposed
 rewrite go into the plan file alongside the feature plan. On "Yes" → carry
 `seedUpdateApproved: true` to PHASE 4. On "Skip" → carry `seedDrift[]` to PHASE 4

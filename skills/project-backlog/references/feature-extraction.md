@@ -21,11 +21,13 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
    **Granularity decision:** each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — easier to combine than to split later.
 
    **If in update mode (from PHASE 0 Scenario A):**
+
+   > **Todo**: Read `.claude/skills/project-backlog/references/update-reconcile.md` and run the insight-diff + cancel-proposal flow first.
    - Start from existing backlog features as baseline — do NOT extract from scratch
-   - Apply concept changes on top: add NEW features, update MODIFIED descriptions, mark REMOVED as deprecated
+   - Apply concept changes on top: add NEW features, update MODIFIED descriptions; OBSOLETE items go through the cancel-proposal flow (update-reconcile.md), never silently marked
    - INDEPENDENT features: always preserve unchanged — they are not concept-derived
    - DOING/DONE features are protected: keep as-is, only enrich description if concept adds new insights
-   - CANCELLED features are protected: preserve as `status: "CANCELLED"`, exclude from planning and build order
+   - Already-CANCELLED features are protected: preserve as `status: "CANCELLED"`, exclude from planning and build order
    - Present the merged feature list with change markers for clarity
 
 2. **Extract features:** each feature = one `/dev-define` (web) or `/game-define` (game) unit, implementable independently (with dependencies), kebab-case name for CLI use.
@@ -78,7 +80,7 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
 
    | # | Feature | Type | Risk | Description | Change |
    |---|---------|------|------|-------------|--------|
-   | 1 | {name} | {type} | {1-5} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/DEPRECATED/ —} |
+   | 1 | {name} | {type} | {1-5} | {one-line description} | {NEW/MODIFIED/PROTECTED/INDEPENDENT/CANCELLED/ —} |
    ...
    ```
 
