@@ -1,11 +1,11 @@
 ---
 name: project-backlog
-description: Transform a seed into a prioritized feature backlog (create or update mode, with page-discovery for web). Use with /project-backlog.
+description: "Seed → prioritized, dependency-ordered backlog. Use with /project-backlog."
 reads: [backlog.status]
 writes: [backlog.status, concept.seed, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 1.5.0
+  version: 1.6.0
   category: project
 ---
 
@@ -111,26 +111,48 @@ Dependency tree:
 
 **Goal:** Assign priorities (P1–P4).
 
-1. **Show feature list as numbered plain text:**
+1. **Propose a P1 set from the dependency graph (do not ask for numbers blind):**
+
+   Using the PHASE 2 dependency graph, derive a proposed P1:
+   - **Goal/leaf features** = features that nothing else depends on (the user-facing
+     ends: pages, top-level mechanics). These are the natural must-have targets.
+   - **Pull in their transitive dependencies** — every feature a goal feature needs
+     (directly or indirectly) must ship with it. These are P1 by necessity, not choice.
+
+   Show the proposed P1 with the reasoning made explicit:
 
    ```
-   Features ({N} total):
+   PROPOSED P1
 
-   1. {feature-1}: {description}
-   2. {feature-2}: {description}
-   ...
+   Goal features:        {leaf-1}, {leaf-2}, ...
+   Pulled in (required): {dep-1}, {dep-2}, ...   ← transitive dependencies
+
+   P1 ({n}): {full list}
+   Remaining → P2+ (step 2)
    ```
 
-   **[WEB MODE]** Ask: "Which features are P1 (minimum needed for a working prototype)? Give numbers (e.g. `1, 3, 5` or `1-4` or `all except 2, 7`)."
-   **[GAME MODE]** Ask: "Which features are P1 (minimum needed for a playable prototype)? Give numbers (e.g. `1, 3, 5` or `1-4` or `all except 2, 7`)."
+   **[WEB MODE]** framing: "minimum needed for a working prototype".
+   **[GAME MODE]** framing: "minimum needed for a playable prototype".
 
-   Parse free-form input → P1-set. User can also say "all" or "none".
+   Then AskUserQuestion — header "P1 scope", question "Proposed P1 above. Correct?":
+   - "Yes, this is correct (Recommended)" → step 2
+   - "Adjust goal features" → free-text: accept **names, numbers, OR semantic phrases**
+     (e.g. `the pillars`, `1, 5, 6`, `all except home`). Re-resolve transitive
+     dependencies on the new goal set, re-show the proposed P1, re-ask.
+   - "Start minimal — one slice" → propose the thinnest single goal feature + its deps.
+
+   User can always say "all" or "none" in the adjust free-text.
 
 2. **Auto-assign remaining features using heuristics:**
    - P2: Features that directly extend P1 functionality OR are prerequisites for important P3 features
    - P3: Nice-to-have, polish, extra content, integrations without core impact
    - P4: Stretch goals, experimental features, future considerations
    - When unclear: prefer P2 (easier to demote than to promote later)
+
+   **Dependency invariant (enforce after assignment):** no feature may sit in a later
+   phase than a feature that depends on it. For every feature, its dependencies must be
+   in the same or an earlier phase — if a dependency landed later, promote it up. Apply
+   transitively before showing the review table in step 3.
 
 3. **Review with user:** show the proposed prioritization table, then AskUserQuestion ("Is this prioritization correct? P1 = must-have, P2 = extends P1, P3 = nice-to-have, P4 = later") — "Yes, this is correct (Recommended)" → PHASE 4; any other answer → move features between priorities, show updated prioritization, re-ask. Loop until confirmed.
 
