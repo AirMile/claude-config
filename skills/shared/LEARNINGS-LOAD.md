@@ -112,6 +112,6 @@ Load learnings via shared/LEARNINGS-LOAD.md:
 
 ## Implementation note
 
-This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-verify`, `dev-refactor` (PHASE 5), `core-pull`, `core-setup --mode=mature`). Consolidation/archiving of the learnings list itself happens in `core-pull` — see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation.
+This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-verify`, `dev-refactor` (PHASE 5), `core-pull`, `core-setup --mode=mature`, `project-retire` (archive + tombstone on retirement)). Consolidation/archiving of the learnings list itself happens in `core-pull` — see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation.
 
 Skills that pass learnings to an agent: run the script first and embed the filtered block in the agent prompt (never the full list).

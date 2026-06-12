@@ -135,12 +135,13 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 
 ### Skills that write architecture
 
-| Skill         | What it writes                                                                                 | When                      |
-| ------------- | ---------------------------------------------------------------------------------------------- | ------------------------- |
-| `/dev-define` | Initial `layers` + `components` (status planned, no src/test) + `dataFlow`                     | During feature definition |
-| `/dev-build`  | Update `components`: status → done, fill `src`, `test`, `connects_to`, `endpoints`, `entities` | After build               |
-| `/dev-verify` | Update `components`: confirm status done, add test files                                       | After test                |
-| `/core-pull`  | Sync full `architecture` section on pull                                                       | On context sync           |
+| Skill             | What it writes                                                                                 | When                      |
+| ----------------- | ---------------------------------------------------------------------------------------------- | ------------------------- |
+| `/dev-define`     | Initial `layers` + `components` (status planned, no src/test) + `dataFlow`                     | During feature definition |
+| `/dev-build`      | Update `components`: status → done, fill `src`, `test`, `connects_to`, `endpoints`, `entities` | After build               |
+| `/dev-verify`     | Update `components`: confirm status done, add test files                                       | After test                |
+| `/core-pull`      | Sync full `architecture` section on pull                                                       | On context sync           |
+| `/project-retire` | Remove retired components, strip dangling `connects_to` edges, refresh `dataFlow`/`routes`     | On feature retirement     |
 
 **Write strategy:**
 
@@ -280,11 +281,11 @@ Skills that consume thinking-output (such as `/dev-define`) read directly via Gr
 
 ### project-context.json sections
 
-| Section        | Written by                                                                                                                               | When                                                                     |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`                                                                               | On architecture definition / after build                                 |
-| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`                                                            | On build/refactor (structure, routing, patterns)                         |
-| `learnings`    | `/dev-build`, `/dev-verify`, `/dev-refactor`, `/game-build`, `/game-verify`, `/game-refactor`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred) or teammate/legacy code (synced) |
+| Section        | Written by                                                                                                                                                  | When                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`, `/project-retire`                                                                               | On architecture definition / after build / on retirement                                                    |
+| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`                                                                               | On build/refactor (structure, routing, patterns)                                                            |
+| `learnings`    | `/dev-build`, `/dev-verify`, `/dev-refactor`, `/game-build`, `/game-verify`, `/game-refactor`, `/core-pull`, `/core-setup --mode=mature`, `/project-retire` | Feature completion (extracted/inferred), teammate/legacy code (synced), or retirement (archive + tombstone) |
 
 Handoff namespace for `learnings` is `project-context.learnings` — matches the `reads:`/`writes:` declarations in skill frontmatter (see `shared/DEVINFO.md`).
 
