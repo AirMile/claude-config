@@ -1,11 +1,18 @@
 ---
 name: project-todo
 description: Add new backlog items to the project. Use with /project-todo.
-reads: [project.stack, backlog.status]
-writes: [backlog.status, backlog.features, project.stack, project.thinking]
+reads: [project.stack, backlog.status, concept.seed]
+writes:
+  [
+    backlog.status,
+    backlog.features,
+    backlog.seedDrift,
+    project.stack,
+    project.thinking,
+  ]
 metadata:
   author: claude-config
-  version: 1.0.0
+  version: 1.1.0
   category: project
 ---
 
@@ -307,7 +314,7 @@ multiSelect: false
 
 ### PHASE 2: Write to Backlog + Thinking
 
-**Loop:** all steps below run per item in the queue (PHASE 0 step 2). For a single item, `items = [single item]`. For multi-item, the skill runs steps 1-7 sequentially per item, where `dependencies[]` refers to previously processed items in the batch.
+**Loop:** all steps below run per item in the queue (PHASE 0 step 2). For a single item, `items = [single item]`. For multi-item, the skill runs steps 1-8 sequentially per item, where `dependencies[]` refers to previously processed items in the batch.
 
 1. Read `.project/backlog.json` → parse JSON
 
@@ -334,9 +341,27 @@ multiSelect: false
 
 4. **Update metadata:** set `data.updated` to current date (`YYYY-MM-DD`)
 
-5. **Write back:** Edit the JSON in `.project/backlog.json`. Find a unique anchor in the existing features array and use Edit to insert the new object before it.
+5. **Seed drift check** (per item, no LLM round, no modal):
+   - Run the Reader from `shared/SEED.md` once per run (first loop iteration only, cache `SEED_CONTEXT` across the queue). `SEED_CONTEXT.present === false` → skip silently.
+   - Representation check: tokenize the kebab name (tokens ≥ 3 chars) plus the key nouns of the description; the item counts as represented when the name or ≥ 1 token appears in `SEED_CONTEXT.markdown`.
+   - Not represented → prepare a `seedDrift[]` entry per the `shared/SEED.md § Drift entry schema`:
 
-6. **Write thinking output** (only if PHASE 1a was completed):
+     ```json
+     {
+       "category": "scope-expansion",
+       "seedSays": "(no mention of {name})",
+       "featureDecides": "{description, max 120 chars}",
+       "source": "/project-todo",
+       "ref": "feature:{name}",
+       "detectedAt": "{ISO timestamp}"
+     }
+     ```
+
+   - This is the SEED.md "Skip"-branch behavior: drift is recorded for later `/project-seed § Sync` pickup — never rewrite the seed, never ask. Log one line: `Seed: ⚠ drift recorded — {name} not in seed` or `Seed: ✓ aligned`.
+
+6. **Write back:** Edit the JSON in `.project/backlog.json`. Find a unique anchor in the existing features array and use Edit to insert the new object before it. Prepared drift entries from step 5 are appended to `data.seedDrift[]` in this same write pass (initialize the array if absent) — no separate write roundtrip.
+
+7. **Write thinking output** (only if PHASE 1a was completed):
 
    Path: `.project/thinking/feature-idea-{name}.md` — `mkdir -p .project/thinking`
    - **[WEB MODE]:**
@@ -385,7 +410,7 @@ multiSelect: false
 
    No mutation to `project.json` for thinking — output goes in separate md files per DASHBOARD.md.
 
-7. **Sync to `project.json.features[]`** (concept sync):
+8. **Sync to `project.json.features[]`** (concept sync):
    - Read `.project/project.json` (already read in Pre-PHASE 0)
    - Initialize `features = []` if missing
    - Check duplicate on `name` — if found and status > TODO: MERGE (update `summary`, preserve status). Otherwise push:
@@ -418,6 +443,7 @@ TODOS ADDED ({n} items)
   2. {name-2}    {phase} · {type}     ← depends on: {name-1}
      {description-2}
 
+  Seed drift: {n} item(s) recorded    ← only if step 5 recorded drift
   Backlog: .project/backlog.json
   Next steps:
   [Per item, appropriate next step from the WEB/GAME MODE output below]
@@ -431,6 +457,7 @@ TODO ADDED
   {name}                {phase} · {type}
   {description}
   Thinking: .project/thinking/feature-idea-{name}.md    ← only if thinking rounds were done
+  Seed drift: {n} item(s) recorded                      ← only if step 5 recorded drift
 
   Backlog: .project/backlog.json
   Next steps:
@@ -460,6 +487,7 @@ FEATURE ADDED
   {name}                {phase} · {type}
   {description}
   Thinking: .project/thinking/feature-idea-{name}.md    ← only if thinking rounds were done
+  Seed drift: {n} item(s) recorded                      ← only if step 5 recorded drift
 
   Backlog: .project/backlog.json
   Next steps:
