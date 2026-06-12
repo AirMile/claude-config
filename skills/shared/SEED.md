@@ -113,7 +113,7 @@ multiSelect: false
   "category": "contradiction|new-direction|scope-expansion",
   "seedSays": "<short quote or summary>",
   "featureDecides": "<what changed>",
-  "source": "/dev-define|/game-define|/project-backlog",
+  "source": "/dev-define|/game-define|/project-backlog|/project-todo|/project-retire",
   "ref": "REQ-003|feature:auth-login|null",
   "detectedAt": "<ISO timestamp>"
 }
