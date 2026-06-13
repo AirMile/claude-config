@@ -200,6 +200,14 @@ options:
 multiSelect: false
 ```
 
+**Seed context (sketch & inspiration modes only):**
+
+If `$MODE ∈ {sketch, inspiration}`: run the `shared/SEED.md` Reader once → `SEED_CONTEXT`. Store the full `SEED_CONTEXT.markdown` for use in PHASE 1 (inspiration brief / fidelity filter) and PHASE 2 codegen — it grounds copy, labels, and CTA text in what the product actually is, so generated content is on-concept instead of generic placeholder text. For `$MODE = copy` (or any patch path): skip — pure reproduction takes all content from the source.
+
+```
+Seed: [✓ loaded ({SEED_CONTEXT.name}) | — not present | — skipped (copy mode)]
+```
+
 **Framework detection:**
 
 Detect from `package.json`:
@@ -302,9 +310,9 @@ Strategy per section:
   ...
 
 {If $VARIANTS is non-empty:}
-Variant components:
-  [ComponentName] → cva ([variant axes: type × size])
-  [ComponentName] → cva ([variant axes: state])
+Variant components:   (mechanism: React+Tailwind → cva; else native binding per shared/CODEGEN.md)
+  [ComponentName] → [cva | native] ([variant axes: type × size])
+  [ComponentName] → [cva | native] ([variant axes: state])
 
 {If $STATES is non-empty:}
 State components:

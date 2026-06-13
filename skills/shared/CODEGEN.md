@@ -89,8 +89,11 @@ Determine the file path based on `project.json#stack.framework`:
 | Nuxt               | `pages/{route}.vue`               | `components/{Name}.vue`              |
 | Astro              | `src/pages/{route}.astro`         | `src/components/{Name}.astro`        |
 | Remix              | `app/routes/{route}.tsx`          | `app/components/{Name}.tsx`          |
+| Angular            | `src/app/pages/{route}/{route}.ts` (+ `.html`/`.scss`) | `src/app/components/{Name}/{Name}.ts` (+ `.html`/`.scss`) |
 
 If the framework is not in this table or `stack.framework` is empty: ask the user before code generation.
+
+Angular uses a per-component triple (`.ts` class + `.html` template + `.scss` styles), standalone components, no `.component` suffix when the folder name already scopes it (match the project's existing convention). Routes register explicitly in `app.routes.ts` — a file alone does not create a route.
 
 **Co-location rule:** subcomponents used by only one page → co-locate in `_components/` (Next.js) or next to the page file. Reused components → `src/components/` (or framework equivalent).
 
@@ -132,6 +135,8 @@ export default function DashboardPage() {
 ---
 
 ## cva Variant Pattern
+
+**Applies to React + Tailwind stacks only.** For other frameworks, use native variant binding instead of cva: Angular `[ngClass]` / `@Input() variant` + a class map, Vue `:class` object/array binding, Svelte `class:` directives. Skip the rest of this section when `stack.styling` is not Tailwind.
 
 Use `cva` (class-variance-authority) for components with ≥2 variants. Check availability in `package.json` — do not install automatically, note as missing dependency.
 

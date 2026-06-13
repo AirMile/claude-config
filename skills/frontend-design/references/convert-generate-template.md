@@ -2,6 +2,8 @@
 
 Generate the page and components based on the source image.
 
+**Stack guard:** the rules below default to a React + Tailwind stack. When `project.json#stack.framework`/`stack.styling` indicate otherwise, substitute the framework-native equivalents per `shared/CODEGEN.md` (output paths + cva-vs-native variant binding) and skip the Tailwind-specific bits: `cn()` className composition, `dark:` prefixes, and arbitrary-value checks. For CSS/SCSS stacks (e.g. Angular Material) use CSS custom properties (`var(--token)`) and the framework's class binding instead.
+
 **Rules:**
 
 - Follow `shared/FRONTEND-RULES.md`: React/Next.js Rules, HTML/CSS Rules, Accessibility Rules (A-series)

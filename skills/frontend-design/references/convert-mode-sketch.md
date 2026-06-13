@@ -44,6 +44,7 @@ If "Adjust": ask which mappings to change, update, re-confirm.
 ## Codegen Rules (applied in PHASE 2.2)
 
 - Layout and structure from the sketch; all colors, spacing, and typography from theme tokens and `shared/DESIGN.md` principles. Never copy raw hex/font values from the sketch.
+- Content: when `SEED_CONTEXT.present` (loaded in route-convert PHASE 0.6), draw headings, labels, and CTA copy from the seed concept so placeholder text reads as the actual product — never generic "Lorem ipsum" or "Feature one/two/three". Fall back to source-derived text only when the seed is absent.
 - No arbitrary values — same token discipline as inspiration mode.
 - Gold standard: `../examples/PricingPage-inspiration.tsx` (token-only output).
 

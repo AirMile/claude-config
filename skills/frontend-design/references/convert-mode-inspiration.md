@@ -12,6 +12,8 @@ Theme is **mandatory**. Check `project.json → theme`. If empty: abort with `"T
 
 Follow `shared/QUESTIONING.md` (form choice, anchoring, escalation ladder). Runs inside the already-active plan mode. Goal: a brief stating what to adopt from the source and where to deviate — token mapping and codegen are biased by it.
 
+When `SEED_CONTEXT.present` (loaded in route-convert PHASE 0.6): anchor the questions and deviation defaults in the seed concept — prefer adopting source traits that serve the product and dropping sections irrelevant to it. Q3 (Intent) stays skipped when the seed already answers what the version should communicate.
+
 **Q1 — Adopt (enumerable, multiSelect):** compose descriptions anchored in `$ANALYSIS` and `$MOTION_INTENT` — name concrete sections/traits, no generic placeholders:
 
 ```yaml
@@ -102,6 +104,7 @@ If "Adjust": ask which mappings to change, update, re-confirm.
 
 - Use only theme tokens (from project.json) and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values.
 - Inject `$INSPIRATION_BRIEF` into the generation prompt as a header: `ADOPT: {list} / DEVIATE: {list} / INTENT: {line}` — adopted aspects guide structure and feel; deviations override source traits.
+- Content: when `SEED_CONTEXT.present`, draw headings, labels, and CTA copy from the seed concept so the result reads as the actual product — never generic placeholder text.
 - Gold standard: `../examples/PricingPage-inspiration.tsx` (zero arbitrary values).
 
 ## Verification Thresholds (applied in PHASE 3)

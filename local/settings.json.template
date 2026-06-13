@@ -5,7 +5,7 @@
   },
   "permissions": {
     "allow": [],
-    "defaultMode": "default"
+    "defaultMode": "bypassPermissions"
   },
   "hooks": {
     "UserPromptSubmit": [
@@ -49,5 +49,7 @@
   "promptSuggestionEnabled": false,
   "voiceEnabled": false,
   "autoMemoryEnabled": false,
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "disableAutoMode": "disable",
+  "skipDangerousModePermissionPrompt": true
 }

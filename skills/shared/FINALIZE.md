@@ -237,26 +237,32 @@ If branch was pushed to remote:
 
 **Symlink preservation**: the worktree's `.project/` symlinks point to main's `.project/`. Removing the worktree directory removes those symlinks — main's `.project/` is untouched. No extra cleanup needed.
 
-**Backlog sync (frontend-track only)**: after successful remove, detect if the feature is frontend-track:
+**Backlog sync (frontend-track only)**: finalize is a merge/cleanup step — it **never promotes `DOING` → `DONE`**. The verify step owns that transition (`/frontend-check` for frontend-track, `/dev-refactor` for dev-track), exactly as `dev-verify` is forbidden from writing `shipped`. Finalize only stamps `shipped` on a PAGE that is **already `DONE`**.
+
+After successful remove, detect the feature type **and current status**:
 
 ```bash
-FEATURE_TYPE=$(node -e "
+read -r FEATURE_TYPE FEATURE_STATUS < <(node -e "
   try {
     const data = JSON.parse(require('fs').readFileSync('.project/backlog.json','utf8'));
     const f = (data.features || []).find(x => x.name === '{feature-name}');
-    process.stdout.write(f ? (f.type || '') : '');
-  } catch(e) { process.stdout.write(''); }
-" 2>/dev/null || echo "")
+    process.stdout.write(f ? ((f.type || '') + ' ' + (f.status || '')) : ' ');
+  } catch(e) { process.stdout.write(' '); }
+" 2>/dev/null || echo " ")
 ```
 
-If `FEATURE_TYPE === "COMPONENT"` or `FEATURE_TYPE === "PAGE"` — these tracks have no `/dev-refactor` step, so set shipped fields now:
+Dispatch on `FEATURE_TYPE`:
 
-1. Read `.project/backlog.json` → find `f.name === "{feature-name}"`
-2. Set `status: "DONE"`, `shipped: true`, `shippedAt: "{YYYY-MM-DD}"`, `shippedSha: "{merge-sha}"`. Remove `stage` if present.
-3. Write the updated JSON back to `.project/backlog.json`. Set `data.updated` to today.
-4. Sync same fields to `project.json` `features[]` entry.
-
-For dev-track (`FEATURE`: type other than COMPONENT/PAGE) — skip. `/dev-refactor` owns `shippedSha` for those.
+- **`COMPONENT`** → **do nothing**. Components ship with the page/feature that consumes them (`/frontend-check` rule: a COMPONENT is never auto-`DONE`). Finalize leaves `status` and `shipped` untouched.
+- **`PAGE`** → branch on `FEATURE_STATUS`:
+  - **`DONE`** (convert route set it, or `/frontend-check` passed) → stamp ship fields:
+    1. Read `.project/backlog.json` → find `f.name === "{feature-name}"`
+    2. Set `shipped: true`, `shippedAt: "{YYYY-MM-DD}"`, `shippedSha: "{merge-sha}"`. Remove `stage` if present. Leave `status` at `DONE`.
+    3. Write the updated JSON back to `.project/backlog.json`. Set `data.updated` to today.
+    4. Sync same fields to `project.json` `features[]` entry.
+  - **`DOING`** (verify skipped) → **do NOT** set `DONE`, **do NOT** ship. Leave at `DOING` (TO CHECK) and print:
+    `ℹ {feature-name} merged but left at TO CHECK — run /frontend-check {feature-name} to ship.`
+- **dev-track (`FEATURE`: type other than COMPONENT/PAGE)** → skip. `/dev-refactor` owns `shipped`/`shippedSha` for those.
 
 ## Output Report
 
@@ -286,7 +292,7 @@ Also detect ghost cwd via `[ "$(pwd)" != "{main_root}" ] && [ ! -d "$(pwd)" ]`. 
    Start a fresh terminal in: {main_root}
 ```
 
-> **Scope of `Merge: {sha}`**: for **dev-track** features (not COMPONENT/PAGE), this SHA is informational only — do NOT write it to `backlog.json` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys for dev-track are set exclusively by `/dev-refactor` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). For **frontend-track** (COMPONENT/PAGE), the Backlog sync step above writes the merge SHA as `shippedSha` because no `/dev-refactor` step exists for that track. Skills consuming this report (`dev-verify`, `game-verify`, `frontend-check`, `core-finalize`) MUST treat the SHA as display-only for dev-track.
+> **Scope of `Merge: {sha}`**: for **dev-track** features (not COMPONENT/PAGE), this SHA is informational only — do NOT write it to `backlog.json` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys for dev-track are set exclusively by `/dev-refactor` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). For **frontend-track**, the Backlog sync step above writes the merge SHA as `shippedSha` **only for a PAGE that is already `DONE`** — never as a `DOING` → `DONE` promotion, and never for a COMPONENT (which ships with its consuming page). A `DOING` PAGE stays at TO CHECK until `/frontend-check` ships it. Skills consuming this report (`dev-verify`, `game-verify`, `frontend-check`, `core-finalize`) MUST treat the SHA as display-only for dev-track.
 
 For cleanup-only with PR context:
 

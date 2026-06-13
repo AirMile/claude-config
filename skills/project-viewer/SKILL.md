@@ -3,7 +3,7 @@ name: project-viewer
 description: Start, stop, or check the local backlog board server. Use with /project-viewer.
 metadata:
   author: claude-config
-  version: 3.2.0
+  version: 3.3.0
   category: project
 ---
 
@@ -53,7 +53,7 @@ Store result as `SERVER_RUNNING`.
 
 ### PHASE 1: Execute action
 
-Resolve `$root` first (altijd, ook als server al draait):
+Resolve `$root` first (altijd, ook als server al draait). If the resolved root does not exist as a directory, prompt for a new path and persist it to `paths.local.yaml` before continuing:
 
 _Windows:_
 
@@ -72,6 +72,33 @@ function Resolve-ProjectsRoot {
   return "C:\Projects"
 }
 $root = Resolve-ProjectsRoot
+
+# Validate the resolved root exists. A stale/incorrect projects_root leaves the
+# board empty — offer to fix it and persist to paths.local.yaml (the source of truth).
+if (-not (Test-Path $root -PathType Container)) {
+  # AskUserQuestion (open text input): projects_root "$root" does not exist —
+  # ask for a new absolute path that must exist as a directory. Store in $newRoot.
+  # (If $env:CLAUDE_PROJECTS_ROOT is set it keeps overriding on the next run — note that.)
+  $skillsLink = Get-Item "$env:USERPROFILE\.claude\skills" -ErrorAction SilentlyContinue
+  if ($skillsLink -and $skillsLink.Target) {
+    $yaml = Join-Path (Split-Path -Parent $skillsLink.Target) ".claude\paths.local.yaml"
+    if (Test-Path $yaml) {
+      (Get-Content $yaml -Raw) -replace '(?m)^(\s*projects_root:).*', "`$1 `"$newRoot`"" | Set-Content $yaml
+    }
+  }
+  $root = $newRoot
+}
+
+# If a server is already running, verify it serves the resolved root.
+$rootMatches = $true
+if ($SERVER_RUNNING -eq "RUNNING") {
+  try {
+    $served = (Invoke-WebRequest -Uri http://localhost:9876/__root -UseBasicParsing -TimeoutSec 2 | ConvertFrom-Json).root
+    $servedNorm = try { (Resolve-Path $served -ErrorAction Stop).Path } catch { $served }
+    $rootNorm = try { (Resolve-Path $root -ErrorAction Stop).Path } catch { $root }
+    if ($served -and -not ($servedNorm -ieq $rootNorm)) { $rootMatches = $false }
+  } catch {}
+}
 ```
 
 _macOS:_
@@ -93,6 +120,30 @@ resolve_projects_root() {
   printf '%s' "$HOME/projects"
 }
 root="$(resolve_projects_root)"
+
+# Validate the resolved root exists. A stale/incorrect projects_root leaves the
+# board empty — offer to fix it and persist to paths.local.yaml (the source of truth).
+if [ ! -d "$root" ]; then
+  # AskUserQuestion (open text input): projects_root "$root" does not exist —
+  # ask for a new absolute path that must exist as a directory. Store in NEW_ROOT.
+  # (If $CLAUDE_PROJECTS_ROOT is set it keeps overriding on the next run — note that.)
+  repo="$(cd "$HOME/.claude/skills" 2>/dev/null && pwd -P | sed 's|/[^/]*$||')"
+  yaml="$repo/.claude/paths.local.yaml"
+  if [ -f "$yaml" ]; then
+    sed -i '' 's|^\([[:space:]]*projects_root:\).*|\1 "'"$NEW_ROOT"'"|' "$yaml"
+  fi
+  root="$NEW_ROOT"
+fi
+
+# If a server is already running, verify it serves the resolved root.
+ROOT_MATCHES=true
+if [ "$SERVER_RUNNING" = RUNNING ]; then
+  served="$(curl -s http://localhost:9876/__root | sed -n 's/.*"root":"\([^"]*\)".*/\1/p')"
+  canon() { (cd "$1" 2>/dev/null && pwd -P) || printf '%s' "$1"; }
+  if [ -n "$served" ] && [ "$(canon "$served")" != "$(canon "$root")" ]; then
+    ROOT_MATCHES=false
+  fi
+fi
 ```
 
 **If argument `stop`:**
@@ -111,9 +162,13 @@ kill $(lsof -ti:9876) 2>/dev/null
 
 Confirm result. If no server was running → report that.
 
-**If SERVER_RUNNING = true:** Jump directly to PHASE 2.
+Otherwise pick the branch:
 
-**If SERVER_RUNNING = false:** Start the server.
+- **SERVER_RUNNING = true && root matches** (`ROOT_MATCHES`/`$rootMatches` true): jump directly to PHASE 2 — fast path, don't restart (keeps open boards/SSE alive).
+- **SERVER_RUNNING = true && root mismatches**: a stale server is bound to a different projects root. Kill it (use the `stop` kill command above), then start a fresh server with `$root`. Mention in the report that the server was restarted because the projects root changed.
+- **SERVER_RUNNING = false**: start the server.
+
+**Start the server** (mismatch-restart and cold-start both use this):
 
 _Windows:_
 

@@ -107,3 +107,24 @@ multiSelect: false
 
 "Build {name}" → continue with `route-build.md` flow using `$TARGET = $NEW_ITEMS[0].name` and `$TARGET_TYPE = $NEW_ITEMS[0].type`.
 "Later" → end skill.
+
+## Spec-Capture Build Offer (after report, only when spec was just captured on an existing entity)
+
+Triggers when ALL of the following are true:
+
+- The session action was a spec edit/add on an **existing** entity via the Page/Component field-edit route (Mode B/C — not a new capture that was already covered by the Handoff Prompt above).
+- `$ARG_TYPE === "PAGE" || $ARG_TYPE === "COMPONENT"` (frontend track).
+- The entity's backlog `status` is `"TODO"` or `"DEFINED"` (not yet built — `DOING`/`DONE` skip this offer).
+- **Not** reached via Build's Step 2.5 "save spec only" off-ramp — that user explicitly chose "don't build", so re-prompting to build would contradict their choice. Suppress the offer in that case.
+
+```yaml
+header: "Spec opgeslagen"
+question: "Spec voor '{$ARG_NAME}' is vastgelegd. Wil je nu bouwen?"
+options:
+  - label: "Ja, Build starten (Recommended)", description: "Laad de Build-route met {$ARG_NAME} pre-geselecteerd — spec inline beschikbaar"
+  - label: "Later", description: "Item staat in backlog klaar om te bouwen"
+multiSelect: false
+```
+
+"Ja, Build starten" → continue with `route-build.md` flow using `$TARGET = $ARG_NAME`, `$TARGET_TYPE = $ARG_TYPE`, `$ARG_ENTITY` pre-set (skip entity selection in Build Step 1–3).
+"Later" → end skill.

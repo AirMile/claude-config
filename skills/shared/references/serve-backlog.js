@@ -229,6 +229,16 @@ http
     const url = new URL(req.url, "http://localhost:" + PORT);
     const parts = url.pathname.split("/").filter(Boolean);
 
+    // Health endpoint — lets project-viewer detect a server bound to a stale root
+    if (req.method === "GET" && url.pathname === "/__root") {
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      });
+      res.end(JSON.stringify({ root: PROJECTS_ROOT }));
+      return;
+    }
+
     // ── Static files ──
 
     // Favicon SVG (top-level static)

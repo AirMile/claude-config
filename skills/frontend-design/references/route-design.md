@@ -149,27 +149,32 @@ Entity found in design[]/backlog. Resolve `$HAS_SPEC` before showing actions:
 - Page: `true` if `project.json → design.pages[]` has an entry with matching name
 - Component: `true` if `project.json → design.components[]` has an entry with matching name
 
-If `$HAS_SPEC === true`: mark "Build with Claude Code" as Recommended.
-If `$HAS_SPEC === false`: mark "Convert from sketch/mockup" as Recommended (no spec to build from); keep "Build" available but without the Recommended tag.
+Resolve `$HAS_VISUAL` before choosing the Recommended tag:
+
+- `$HAS_VISUAL = true` when any of the following apply: a file exists in `.project/wireframes/{name}.*`, the entity has a `.screenshots[]` entry, or a known mock-path is stored in the spec/feature.json.
+- `$HAS_VISUAL = false` otherwise (backlog description + optional written spec, but no visual material).
+
+Recommended logic:
+
+- `$HAS_VISUAL === true` → mark **"Convert from sketch/mockup"** as Recommended (visual material present — conversion beats blind build).
+- `$HAS_VISUAL === false` → mark **"Build with Claude Code"** as Recommended. Build opens with a spec gate that reviews/edits the full spec inline (no prior spec required), and can save spec-only without generating code — so it covers both the old "Build" and "Edit spec" actions. Note: Build is available regardless of `$HAS_SPEC`.
 
 ```yaml
 header: "What do you want to do with {name}?"
 question: "{$ARG_TYPE} '{name}' — {status}, {short spec summary from design.* or 'no spec yet'}"
 options:
   - label: "Build with Claude Code{ (Recommended)}"
-    description: "Generate code directly to repo from the spec"
+    description: "Review/edit the spec, then generate code — or save the spec without building"
   - label: "Convert from sketch/mockup{ (Recommended)}"
     description: "Turn a sketch, wireframe, Figma/Canva or screenshot into code with project tokens"
   - label: "Brief for Claude Design"
     description: "Markdown handoff for Claude Design / Figma"
-  - label: "Edit spec"
-    description: "Update name, scope, variants or description"
 multiSelect: false
 ```
 
 Routing:
 
-- "Build" → Route: Build (with `$ARG_TYPE` and `$ARG_ENTITY` pre-set, skip entity selection)
+- "Build" → Route: Build (with `$ARG_TYPE` and `$ARG_ENTITY` pre-set, skip entity selection). Build's Step 2.5 spec gate handles spec review/edit and a "save spec only — don't build" off-ramp, so spec-only edits no longer need a separate menu option.
 - "Convert from sketch/mockup" → Set `$CONVERT_TARGET = {name}`. Load Convert route:
 
   > **Todo**: Read `.claude/skills/frontend-design/references/route-convert.md`
@@ -177,7 +182,6 @@ Routing:
   Route: Convert pre-selects the '{name}' card in its backlog-stage step (no second command needed). The card transitions TODO→DOING on completion.
 
 - "Brief" → Route: Brief (with entity pre-set)
-- "Edit spec" → Route: Page or Component (depending on `$ARG_TYPE`, in edit mode)
 
 **"Other" options:** "Capture as new (different name)" → ask for new name → Route: Page or Component (in create mode)
 

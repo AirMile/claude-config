@@ -132,6 +132,5 @@ options:
   - label: "Extract from styleguide (Recommended if you have a brand doc)", description: "Extract tokens from a brand PDF, image, or URL"
   - label: "Create", description: "New theme with guided setup (start from scratch)"
   - label: "Extract from code", description: "Retrieve tokens from existing tailwind.config + CSS :root vars"
-  - label: "Explain options", description: "Explain the difference between these approaches"
 multiSelect: false
 ```

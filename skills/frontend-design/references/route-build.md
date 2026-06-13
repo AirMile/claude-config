@@ -1,6 +1,8 @@
 # Route: Build (In-Claude-Code Code Generation)
 
-Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. Flow: entity selection → spec lookup + design levers → page composition → design directions (plan mode) → code generation → post-write checks → render smoke check → completion sync. See `../../shared/CODEGEN.md` for the shared code-gen patterns also used by the Convert route.
+Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. Flow: entity selection → spec gate (review/edit, or save-spec-only off-ramp) → worktree → spec lookup + design levers → page composition → design directions (plan mode) → code generation → post-write checks → render smoke check → completion sync. See `../../shared/CODEGEN.md` for the shared code-gen patterns also used by the Convert route.
+
+This route is the single entry for working on an existing entity's spec **and** code: the Step 2.5 spec gate absorbs the old standalone "Edit spec" action (route-page/route-component field editing) and offers a "save spec only — don't build" off-ramp that exits before any worktree or codegen.
 
 **Trigger:** only reachable if `$HAS_BUILD_CANDIDATES = true` (detected in PHASE 1).
 
@@ -67,31 +69,11 @@ multiSelect: false
 
 Store as `$TARGET_COMPONENT`. Store `$TARGET` = `$TARGET_PAGE` or `$TARGET_COMPONENT`.
 
-#### Step 3: Worktree setup
+#### Step 2.5: Spec gate (review / edit / save-only — runs before worktree)
 
-Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = $TARGET`. Creates an isolated worktree for this build so generated code lands on a separate branch. Skip if already in a worktree (procedure detects).
+This gate is the single entry that absorbs the old standalone "Edit spec" action. It runs **before** Step 3 (worktree) and Step 3b (plan mode) so a spec-only outcome never creates an empty worktree. Resolve the spec, show it, then let the user decide whether to build.
 
-#### Step 3b: Enter Plan Mode
-
-> **Todo**: Use the `EnterPlanMode` tool now — Steps 4–7 (spec questioning, design levers, page composition, design directions, BUILD PLAN) all benefit from Opus-level design reasoning. `AskUserQuestion` modals and file reads remain available inside plan mode; only Write/Edit are blocked, which is fine until codegen. Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
-
-#### Step 4: Spec lookup (entity-agnostic)
-
-**Step 4.0 — Design levers pre-flight.** Read `project.json#theme` and summarize the levers available for direction composition (Step 5). Warn-only — never abort:
-
-```
-DESIGN LEVERS — {$TARGET}
-═══════════════════════════════════════════════
-Dark mode:    [✓ theme.modes.dark | —]
-Motion:       [{motion.pack} pack, {N} choreography entries | —]
-Glass:        [✓ surfaces.glass.enabled | —]
-Semantic:     [{N} semantic colors: {names} | —]
-Type scale:   [{N} sizes | Tailwind defaults]
-Spacing:      [{scale summary} | Tailwind defaults]
-═══════════════════════════════════════════════
-```
-
-If `theme` is empty: show `⚠ No theme tokens — Build falls back to Tailwind defaults; consider /frontend-tokens first.` and continue. Store as `$DESIGN_LEVERS`.
+**Resolve the spec source (entity-agnostic):**
 
 **If `$TARGET_TYPE = PAGE`:**
 
@@ -101,7 +83,7 @@ If `theme` is empty: show `⚠ No theme tokens — Build falls back to Tailwind 
    1. **Purpose + sections**: "What does this page do? List the sections needed (one per line)."
    2. **Primary action**: "What is the single most important action a user performs here?" — free text
    3. **States**: multi-select — `default` / `loading` / `empty` / `error` / `authenticated-only`
-      → save answers as `$INLINE_SPEC` (write to `design.pages[]` is deferred to completion sync 10f — plan mode blocks writes).
+      → save answers as `$INLINE_SPEC`.
 
 Show spec:
 
@@ -120,7 +102,7 @@ Routes:   {route-patterns}
    1. **States**: multi-select — `default` / `hover` / `disabled` / `loading` / `error` / `active` / `checked`
    2. **Props**: "Which props does this component accept? (one per line, e.g. `label`, `onClick`, `disabled?`)"
    3. **Required interaction**: single-select — `keyboard only` / `pointer only` / `both`
-      → save answers as `$INLINE_SPEC` (write to `design.components[]` is deferred to completion sync 10f — plan mode blocks writes).
+      → save answers as `$INLINE_SPEC`.
 
 Show spec:
 
@@ -133,14 +115,71 @@ Props:    {props joined}
 States:   {states joined}
 ```
 
+**Gate:**
+
 ```yaml
-header: "Spec Confirmation"
-question: "Is this spec correct?"
+header: "Spec — {$TARGET}"
+question: "Spec for {$TARGET}. What do you want to do?"
 options:
-  - label: "Continue (Recommended)", description: "Spec is correct, proceed to codegen"
-  - label: "Update spec", description: "Change purpose, scope, variants or props"
+  - label: "Build it (Recommended)", description: "Spec is correct — continue to design directions + code"
+  - label: "Edit spec", description: "Change purpose, scope, variants, props, states, …"
+  - label: "Save spec only — don't build", description: "Write the spec (status DEF) and stop, no code"
 multiSelect: false
 ```
+
+Routing:
+
+- **"Edit spec"** → load the field-edit flow for the entity type and re-present the gate afterwards:
+  - PAGE → `route-page.md` "Edit existing" field menu.
+  - COMPONENT → `route-component.md` "Edit existing" field menu.
+
+  > **Todo**: Read `.claude/skills/frontend-design/references/route-page.md` (PAGE) or `route-component.md` (COMPONENT) for the field-edit menu.
+
+  Apply the edits to the in-memory spec, then loop back to the gate (re-show spec).
+
+- **"Save spec only — don't build"** → hand the spec back to the Design route's write machinery and exit before any worktree/plan-mode/codegen:
+
+  > **Todo**: Read `.claude/skills/frontend-design/references/route-design.md` and run **PHASE 3 (Confirm)** → **PHASE X (post-flight write/validate)** → **Completion**.
+
+  This is exactly the old "Edit spec" outcome: the spec is written to `design.*` (status `DEF`), checkpointed, and backlog-synced by the Design route. Build stops here — no `$INLINE_SPEC` deferral, no worktree.
+
+- **"Build it"** → store the resolved spec as `$SPEC` (and `$INLINE_SPEC` if captured fresh — its write to `design.*` stays deferred to completion sync 10f, since Step 3b plan mode blocks writes), then continue to Step 3.
+
+#### Step 3: Worktree setup
+
+Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = $TARGET`. Creates an isolated worktree for this build so generated code lands on a separate branch. Skip if already in a worktree (procedure detects).
+
+#### Step 3b: Enter Plan Mode
+
+> **Todo**: Use the `EnterPlanMode` tool now — Steps 4–7 (design levers, page composition, design directions, BUILD PLAN) all benefit from Opus-level design reasoning. (Spec review/edit already happened in the Step 2.5 gate, before this point.) `AskUserQuestion` modals and file reads remain available inside plan mode; only Write/Edit are blocked, which is fine until codegen. Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
+
+#### Step 4: Build context (seed + design levers)
+
+The spec is already resolved and confirmed in the Step 2.5 gate (`$SPEC` / `$INLINE_SPEC`). This step loads the build-specific context needed for the design directions.
+
+**Step 4.0a — Seed context.** Run the `shared/SEED.md` Reader once → `SEED_CONTEXT`. Store the full `SEED_CONTEXT.markdown` — it grounds the design directions (Step 5) and the generated copy/labels (Step 7) in what the product actually is. Skip silently if `SEED_CONTEXT.present` is `false`.
+
+```
+Seed: [✓ loaded ({SEED_CONTEXT.name}) | — not present]
+```
+
+**Step 4.0 — Design levers pre-flight.** Read `project.json#theme` and summarize the levers available for direction composition (Step 5). Warn-only — never abort:
+
+```
+DESIGN LEVERS — {$TARGET}
+═══════════════════════════════════════════════
+Dark mode:    [✓ theme.modes.dark | —]
+Motion:       [{motion.pack} pack, {N} choreography entries | —]
+Glass:        [✓ surfaces.glass.enabled | —]
+Semantic:     [{N} semantic colors: {names} | —]
+Type scale:   [{N} sizes | Tailwind defaults]
+Spacing:      [{scale summary} | Tailwind defaults]
+═══════════════════════════════════════════════
+```
+
+If `theme` is empty: show `⚠ No theme tokens — Build falls back to Tailwind defaults; consider /frontend-tokens first.` and continue. Store as `$DESIGN_LEVERS`.
+
+> Spec is already resolved in Step 2.5 (`$SPEC` / `$INLINE_SPEC`). The deferred write of a freshly captured `$INLINE_SPEC` to `design.*` happens in completion sync 10f — plan mode blocks writes here.
 
 #### Step 4b: Page Composition (PAGE entities only — skip for COMPONENT)
 
@@ -152,7 +191,7 @@ multiSelect: false
 
 This is the moment Claude determines the design: theme levers + spec → 2-3 concrete, token-anchored design directions. Each direction is a complete visual stance, not just a wireframe choice.
 
-**Inputs:** `$DESIGN_LEVERS` (Step 4.0), the confirmed spec, `$COMPOSITION` (PAGE only), and `shared/DESIGN.md` (anti-patterns, 60-30-10, hierarchy, motion timing) — re-read the principles before composing.
+**Inputs:** `$DESIGN_LEVERS` (Step 4.0), the confirmed spec, `$COMPOSITION` (PAGE only), `SEED_CONTEXT` (Step 4.0a — the product concept biases which hierarchy/density stance fits), and `shared/DESIGN.md` (anti-patterns, 60-30-10, hierarchy, motion timing) — re-read the principles before composing.
 
 **Skip-path (state machine: DESIGN_DIRECTION → BUILD_CODE):** if `$TARGET_TYPE = COMPONENT` AND the spec has ≤1 variant AND no sections (single-variant/stateless): compose ONE direction internally, show it as a one-line `Direction: {summary}` and go directly to Step 7 — no AskUserQuestion. All PAGE targets and multi-variant COMPONENTs continue below (DESIGN_DIRECTION → ALTERNATIVES_SELECT).
 
@@ -221,7 +260,10 @@ Consult `../../shared/CODEGEN.md` for full patterns. Output path determined by e
 
 **Auto-patch for layout components:** if `scope: layout`, Build adds an import + render statement to `app/layout.tsx`. For `appliesTo: route-group:X`: patch in `app/(X)/layout.tsx`. Detect existing imports before patching — show conflict warning on duplicate and ask for confirmation.
 
-**Demo page for COMPONENT:** generate `app/_dev/components/{name}/page.tsx` (gitignored) showing all variants × sizes × states — used for verification in Step 9.
+**Demo page for COMPONENT:** how the demo is exposed depends on the framework's routing model — detect from `project.json#stack.framework`:
+
+- **File-based routing** (Next.js, Nuxt, SvelteKit): generate a gitignored demo page at the framework's dev path (e.g. Next `app/_dev/components/{name}/page.tsx`) showing all variants × sizes × states. Dropping the file auto-creates the route `/_dev/components/{name}` — no router edit needed. Template below (adapt to the framework's component language).
+- **Explicit-router** (Angular, Vue Router): a component file does NOT create a route. Do NOT generate a throwaway dev route by default — verification falls back to the non-browser smoke in Step 8b. (Optional: if the user wants to inspect the component in a browser, generate a demo component + register a lazy dev route, then hand off to /frontend-check.)
 
 ```tsx
 // Auto-generated — gitignored
@@ -264,20 +306,24 @@ After approval — generate and write immediately:
 
 - Inject a `DESIGN DIRECTION:` header (full `$DESIGN_DIRECTION` — name, hierarchy, tokens, motion, surfaces) into the generation prompt — these token decisions are binding
 
-- Semantic HTML layout (PAGE) or cva component (COMPONENT) based on spec + `$CHOSEN_LAYOUT`
+- Semantic HTML layout (PAGE) or variant component (COMPONENT) based on spec + `$CHOSEN_LAYOUT`. Variant mechanism follows the stack: React+Tailwind → cva; otherwise native binding (Angular `[ngClass]`/`@Input()`, Vue `:class`, Svelte `class:`) — see `shared/CODEGEN.md § cva Variant Pattern`
 - Reuse existing components where applicable (import via their paths in `components[]`)
-- Tailwind/CSS classes via theme tokens — no raw hex values, no arbitrary color values (`bg-[#…]`)
+- Styling via theme tokens — never raw hex values. Tailwind stacks: utility classes, no arbitrary color values (`bg-[#…]`). CSS/SCSS stacks (e.g. Angular Material): CSS custom properties (`var(--token)`)
 - Images: only `/placeholder.svg?w={W}&h={H}` (PAGE only) — never external CDN URLs
+- Content: when `SEED_CONTEXT.present`, draw headings, labels, and CTA copy from the seed concept so placeholder text reads as the actual product — never generic "Lorem ipsum" or "Feature one/two/three"
 - Accessibility: `<main>`, `<section>`, `aria-label`, skip-nav (PAGE); correct ARIA attributes (COMPONENT)
 
 #### Step 8: Post-write checks
 
-**Token post-pass** — across generated files:
+**Token post-pass** — across generated files. Always run (framework-agnostic):
 
-- `#[0-9a-fA-F]{3,8}` in `className` or inline-style props (outside `//` and `/* */` comments)
+- `#[0-9a-fA-F]{3,8}` raw hex in `class`/`className`/`[ngClass]`/`:class` or inline-style props (outside `//` and `/* */` comments)
+- External placeholder URLs (`images.unsplash.com`, `picsum.photos`, `placehold.co`, `fakeimg.pl`)
+
+**Tailwind-only** (run only when `stack.styling` uses Tailwind — skip for CSS/SCSS stacks like Angular Material, where these patterns can't occur):
+
 - Arbitrary Tailwind color values (`bg-[#`, `text-[#`, `border-[#`)
 - Arbitrary spacing/size values (`p-[16px]`, `gap-[24px]`, `mt-[32px]`, `w-[340px]`) — must use the standard Tailwind scale or spacing tokens (R103). Build output has no visual source that justifies arbitrary values — token-pure, same bar as convert's inspiration mode (convert-verification-loop.md 3.2b)
-- External placeholder URLs (`images.unsplash.com`, `picsum.photos`, `placehold.co`, `fakeimg.pl`)
 
 On match → show violation + AskUserQuestion:
 
@@ -301,11 +347,17 @@ multiSelect: false
 
 Single-round render check — catches crashes and broken imports, NOT visual quality (that stays /frontend-check's job). If `playwright-cli` or a dev server is unavailable (detection per `shared/PLAYWRIGHT.md`): skip silently, set `$SMOKE = "SKIPPED"`.
 
+**Determine the smoke target first.** PAGE → its route pattern (browser path below). COMPONENT with an auto-created demo route (file-based routing, Step 7) → demo route `/_dev/components/{name}` (browser path below). COMPONENT **without** a demo route (explicit-router frameworks — Angular, Vue Router) → use the **non-browser fallback** below; skip the Playwright steps.
+
+Browser path:
+
 1. Route: PAGE → its route pattern; COMPONENT → demo route `/_dev/components/{name}`.
 2. `playwright-cli goto {url}` → wait `networkidle` → screenshot to `.project/tmp/smoke-render-{$TARGET}.png` (store as `$SMOKE_SHOT`) → `playwright-cli console error`.
 3. Filter console output per `shared/PLAYWRIGHT.md → Default Ignore Patterns`.
 4. Renders + no unfiltered errors → `$SMOKE = "PASS"`.
 5. Crash/blank/console errors → apply ONE targeted fix (import/crash only), re-run steps 2-3 once. Still failing → `$SMOKE = "FAIL"`, store first error as `$SMOKE_ERROR`, continue (non-blocking). No multi-round loop.
+
+**Non-browser fallback (no demo route):** run the framework's build/compile plus the component's unit/component test, rendering through the framework test harness (Angular TestBed, Vue Test Utils, etc. — typically via the project's test command). Both green → `$SMOKE = "PASS"`. Compile or test failure → `$SMOKE = "FAIL"`, store first error as `$SMOKE_ERROR` (non-blocking). Set `$SMOKE_SHOT = null` — no screenshot. Browser-based a11y/visual checks (axe-core) stay /frontend-check's job once the component lands on a real route.
 
 `$SMOKE_SHOT` backs `devinfo.handoff.buildScreenshot` if a build-incomplete handoff is later written (schema: `shared/DEVINFO.md § devinfo.handoff`).
 
@@ -365,6 +417,7 @@ Next:             /frontend-check {$TARGET} — moves PAGE to DONE on PASS   (PA
 This route must **NEVER**:
 
 - Reach Step 7 codegen with plan mode still active — exactly one `ExitPlanMode` point (Step 7 BUILD PLAN)
-- Write `.project/` or source files between Step 3b and the Step 7 exit — defer to completion sync 10f
+- Write `.project/` or source files between Step 3b and the Step 7 exit — defer to completion sync 10f. (The Step 2.5 "save spec only" off-ramp writes the spec **before** Step 3, outside this window, via the Design route's PHASE 3 → PHASE X — that is allowed.)
+- Create a worktree (Step 3) before the Step 2.5 gate resolves to "Build it" — a spec-only outcome must not leave an empty worktree
 - Present design directions that reference levers the theme doesn't have
 - Run more than one smoke fix-round (multi-round verification is /frontend-check's job)

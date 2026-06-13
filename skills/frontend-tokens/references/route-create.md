@@ -69,7 +69,6 @@ options:
   - label: "Generate for me (Recommended)", description: "Describe what you're building, Claude picks suitable colors"
   - label: "Enter manually", description: "I'll provide hex values"
   - label: "Extract from config", description: "Pull from Tailwind/CSS"
-  - label: "Explain question", description: "Explain what design tokens are"
 multiSelect: false
 ```
 
@@ -203,7 +202,6 @@ options:
   - label: "4px base (Recommended)", description: "4, 8, 12, 16, 20, 24, 32, 48, 64"
   - label: "8px base", description: "8, 16, 24, 32, 40, 48, 64, 80, 96"
   - label: "Custom", description: "Custom spacing scale"
-  - label: "Explain question", description: "Explain what a spacing scale is"
 multiSelect: false
 ```
 
@@ -218,7 +216,6 @@ options:
   - label: "Tailwind defaults (Recommended)", description: "sm:640, md:768, lg:1024, xl:1280"
   - label: "Bootstrap style", description: "sm:576, md:768, lg:992, xl:1200"
   - label: "Custom", description: "Custom breakpoints"
-  - label: "Explain question", description: "Explain how breakpoints work"
 multiSelect: false
 ```
 
@@ -317,7 +314,6 @@ options:
   - label: "Defaults (Recommended)", description: "Focus ring (2px accent), subtle hover transition, scale active"
   - label: "Custom", description: "Specify custom interaction styles"
   - label: "No interaction tokens", description: "Skip (can be added later via Update)"
-  - label: "Explain question", description: "Explain what interaction tokens are"
 multiSelect: false
 ```
 

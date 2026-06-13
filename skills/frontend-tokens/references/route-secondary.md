@@ -96,7 +96,6 @@ options:
   - label: "Add light mode", description: "Add light variant"
   - label: "Remove mode", description: "Remove an existing mode"
   - label: "Switch mode", description: "Toggle default mode"
-  - label: "Explain question", description: "Explain how modes work"
 multiSelect: false
 ```
 
@@ -111,7 +110,6 @@ options:
   - label: "Auto-generate (Recommended)", description: "Automatically invert/adjust"
   - label: "Manual", description: "Specify dark colors yourself"
   - label: "Extract", description: "Pull from existing dark theme CSS"
-  - label: "Explain question", description: "Tips for dark mode colors"
 multiSelect: false
 ```
 

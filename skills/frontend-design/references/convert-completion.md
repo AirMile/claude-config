@@ -29,7 +29,7 @@ Update `.project/session/devinfo.json`:
 
 ### 4.2 Backlog Completion Sync
 
-**Deferred entry (from Phase 0.5):** if `$NEW_BACKLOG_ENTRY` is set, append it to `data.features[]` and set `data.updated` to today **before** the match/update below. The just-inserted entry will then be found by the match and immediately flipped to DONE.
+**Deferred entry (from Phase 0.5):** if `$NEW_BACKLOG_ENTRY` is set, append it to `data.features[]` and set `data.updated` to today **before** the match/update below. The just-inserted entry will then be found by the match and immediately flipped to its built status (`DOING`).
 
 Read `.project/backlog.json` per shared/BACKLOG.md. Find feature where `f.name === $CONVERT_TARGET`.
 
@@ -39,8 +39,8 @@ If match found, branch on entity type:
 
 **Page scope** (`$CONVERT_TARGET` resolves to a page):
 
-- Set `status: "DONE"`, `completedAt: "{YYYY-MM-DD}"`, `data.updated` to today
-- Remove `stage` and `transition` fields if present
+- Set `status: "DOING"`, `stage: "built"`, `data.updated` to today — same as the Build route (`build-completion-sync.md` 10d). The page lands at TO CHECK; `/frontend-check` is the only gate to `DONE` for pages (build and convert alike). Convert's visual verification loop is a complementary pre-check, not a substitute for the runtime audit (a11y/responsive/darkmode/perf).
+- Remove `transition` and `completedAt` fields if present
 - Write back via Edit
 
 **Component scope** (`$CONVERT_TARGET` resolves to a component):
@@ -87,7 +87,7 @@ Files ([N]):
   Components: [component paths]
 
 Next: run /frontend-check (batch over all DOING items) at end of release cycle,
-      or /frontend-check {name} for a targeted runtime audit.
+      or /frontend-check {name} for a targeted runtime audit — moves PAGE to DONE on PASS.
 
 ═══════════════════════════════════════════════════════════
 ```
@@ -128,47 +128,6 @@ On "Yes": `kill -TERM $CWD_PROCS 2>/dev/null; sleep 2; kill -KILL $CWD_PROCS 2>/
 
 **Skip if `$IS_WORKTREE = false`** (detected in §4.4).
 
-Read TEAM_MODE + PR state inline (no external file load required for the decision):
-
-```bash
-TEAM_MODE=$(jq -r '.team.mode // "solo"' .project/project.json 2>/dev/null || echo "solo")
-PR_INFO=$(gh pr list --head "$WT_BRANCH" --state all --json number,url,state --limit 1 2>/dev/null)
-PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
-PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
-PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
-```
-
-Decision matrix (see `shared/FINALIZE.md` for the canonical version):
-
-| TEAM_MODE | PR_STATE                 | Action                                                                                                    |
-| --------- | ------------------------ | --------------------------------------------------------------------------------------------------------- |
-| solo      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {target} after review."` No modal. EXIT.    |
-| solo      | `MERGED`                 | AskUserQuestion cleanup-only (modal below, recommended=Cleanup).                                          |
-| solo      | empty / `CLOSED` / no-gh | AskUserQuestion solo-finalize (modal below, recommended=Finalize).                                        |
-| team      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {target} after review."` EXIT.              |
-| team      | `MERGED`                 | AskUserQuestion cleanup-only.                                                                             |
-| team      | empty / `CLOSED`         | Print `"Team project: no PR found. Push + open PR via /team-review."` EXIT.                               |
-| team      | no-gh                    | Print ``"Team mode but `gh` not available — run `gh auth login` or toggle solo in the backlog ⚙."`` EXIT. |
-
-**Offer modal (solo-finalize variant):**
-
-```yaml
-header: "Finalize worktree"
-question: "Worktree {WT_BRANCH} is committed but not yet merged. Finalize now — merge to main + cleanup?"
-options:
-  - label: "Yes, finalize (Recommended)"
-    description: "Merge {WT_BRANCH} → main (no-ff), delete branch + worktree directory"
-  - label: "Later"
-    description: "Worktree stays in place. Run later: /core-finalize {target}"
-multiSelect: false
-```
-
-**Offer modal (cleanup-only variant):** identical but question = "PR is already merged. Cleanup now — delete branch + worktree?" and label "Yes, cleanup".
-
-**On "Yes":**
-
-> **Todo**: Read `.claude/skills/shared/FINALIZE.md` and execute the full procedure (Branch Resolution → Uncommitted Check → Solo-Merge OR Cleanup → Output Report) using `feature-name = {target}` and the detected `mode`.
-
-**On "Later":** print `💡 Run /core-finalize {target} when ready` and end skill.
+Follow `shared/FINALIZE.md → Finalize Offer Decision` with `feature-name = $CONVERT_TARGET` — same delegation `dev-verify` uses (`dev-verify/references/finalize.md`). That single source reads `TEAM_MODE` + PR state and dispatches the offer / halt / "PR open → run /core-finalize after review" per its matrix; on a finalize or cleanup confirmation it runs `shared/FINALIZE.md` end-to-end (Branch Resolution → Uncommitted Check → Solo-Merge OR Cleanup → Output Report). The deferred "Keep open" message and the frontend-track backlog sync (PAGE ships only when already `DONE`, COMPONENT left untouched) are handled inside that procedure.
 
 For component scope: this is the canonical close point — do not skip even if frontend-check was not run.

@@ -160,14 +160,16 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 | `TODO`      | To design  | `/frontend-design` Capture, `/project-todo`, `/project-backlog`, reuse-discovery                             |
 | `DEFINED`   | To convert | `/frontend-design` Brief (Path B — offline handoff)                                                          |
 | `DOING`     | Building   | `/frontend-design` Build (Path A) or `/frontend-design` Convert route (Path B)                               |
-| `DONE`      | Shipped    | `/frontend-check` batch (at release end) or manual finalize                                                  |
+| `DONE`      | Shipped    | `/frontend-check` (PAGE PASS) — both build and convert pages                                                 |
 | `CANCELLED` | Archived   | Manually via UI (○ button), `/project-backlog` update mode (cancel-proposal), `/project-retire` — restorable |
 
 **Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
 
 **Path B** (Brief for external design): TODO → DEFINED → DOING → DONE.
 
-`/frontend-check` (batch mode or targeted) runs at end of release cycle across DOING features — not per-component inline. Sets `lastCheckedSha`; for PAGE scope on PASS: sets `f.shipped = true` and `status: "DONE"`.
+`/frontend-check` (batch mode or targeted) runs at end of release cycle across DOING features — not per-component inline. Sets `lastCheckedSha`; for PAGE scope on PASS: sets `f.shipped = true` and `status: "DONE"`. A COMPONENT is never auto-`DONE` — it ships with the page/feature that consumes it.
+
+`/core-finalize` (and any PHASE Finalize via `shared/FINALIZE.md`) is a merge/cleanup step — it **never promotes `DOING` → `DONE`**. It only stamps `shipped`/`shippedSha` on a PAGE that is **already `DONE`**; a `DOING` PAGE stays at TO CHECK until `/frontend-check` ships it, and a COMPONENT is left untouched. This mirrors dev-track, where `/dev-verify` finalize never writes `shipped` — `/dev-refactor` does.
 
 ### When to use which skill for PAGE/COMPONENT
 

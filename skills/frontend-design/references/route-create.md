@@ -41,7 +41,7 @@ options:
 multiSelect: false
 ```
 
-Store context for generating relevant page suggestions.
+Store the **full** `SEED_CONTEXT.markdown` (not just the 200-char preview above — that truncation is display-only) for generating relevant page, flow, and principle suggestions in Steps 2–4. The preview keeps the modal readable; the suggestions should reflect the whole concept.
 
 #### Step 2: Define pages
 

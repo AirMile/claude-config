@@ -10,10 +10,8 @@ PREFLIGHT → ARG_UNKNOWN (pass + argument given but unknown)
 PREFLIGHT → ACTION_SELECT (pass + no argument)
 PREFLIGHT → ERROR (fail)
 
-ARG_KNOWN → BUILD (choice: Build)
+ARG_KNOWN → BUILD (choice: Build — its Step 2.5 gate absorbs spec edit + save-spec-only)
 ARG_KNOWN → BRIEF (choice: Brief)
-ARG_KNOWN → PAGE_ROUTE (choice: Edit spec, PAGE entity)
-ARG_KNOWN → COMPONENT (choice: Edit spec, COMPONENT entity)
 ARG_KNOWN → CREATE (choice: Capture as new)
 ARG_KNOWN → CONVERT (choice: Convert from sketch/mockup)
 
@@ -36,7 +34,10 @@ ACTION_SELECT → CONVERT (populated, via "Other")
 CREATE → POSTFLIGHT (plan approval counts as confirm — Create runs in plan mode, see route-create.md)
 IMPORT → CONFIRM
 BUILD → BUILD_ENTITY (choose PAGE or COMPONENT)
-BUILD_ENTITY → DESIGN_DIRECTION
+BUILD_ENTITY → SPEC_GATE (Step 2.5 — resolve + show spec, before worktree)
+SPEC_GATE → SPEC_GATE (choice: Edit spec — route-page/route-component field edit, loop back)
+SPEC_GATE → CONFIRM (choice: Save spec only — hands to PHASE 3 → PHASE X, no worktree/codegen)
+SPEC_GATE → DESIGN_DIRECTION (choice: Build it — worktree + plan mode, then directions)
 DESIGN_DIRECTION → ALTERNATIVES_SELECT (≥2 variants or sections)
 DESIGN_DIRECTION → BUILD_CODE (single-variant / stateless — skip alternatives)
 ALTERNATIVES_SELECT → BUILD_CODE (layout chosen)
@@ -68,4 +69,4 @@ BUILD_COMPLETE → [*]
 COMPLETE → [*]
 ```
 
-Note: BUILD_ENTITY → DESIGN_DIRECTION → BUILD PLAN run in plan mode (entered after worktree setup, exited at the `ExitPlanMode` point in route-build.md Step 7). CREATE runs in plan mode per route-create.md.
+Note: DESIGN_DIRECTION → BUILD PLAN run in plan mode (entered after the Step 2.5 gate resolves to "Build it" and worktree setup, exited at the `ExitPlanMode` point in route-build.md Step 7). The Step 2.5 gate and its "save spec only" off-ramp run before plan mode. CREATE runs in plan mode per route-create.md.

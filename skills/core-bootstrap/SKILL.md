@@ -110,6 +110,31 @@ multiSelect: false
 
 Store the chosen label in `EXPLANATION_CHOICE` (e.g. `"Beginner"`). If the user selects "Intermediate (Recommended)" → `EXPLANATION_CHOICE=skip` (template default, no patch needed).
 
+### Permission mode selection
+
+`settings.json` is only copied when it does not already exist. Mirror that for this question — re-runs leave an existing permission posture alone:
+
+```bash
+[ -f "$HOME/.claude/settings.json" ] && echo "found" || echo "not-found"
+```
+
+If `~/.claude/settings.json` is found → store `PERM_CHOICE=skip` (already configured — don't touch it).
+
+If not found → ask:
+
+```yaml
+header: "Permission mode"
+question: "How should Claude handle tool permissions by default?"
+options:
+  - label: "Bypass permissions (Recommended)"
+    description: "No permission prompts. Safe here because all skills run within guard rails (plan mode, security-reminder + format-on-save hooks, explicit handoff contracts)."
+  - label: "Auto mode"
+    description: "Claude's classifier auto-approves safe actions and prompts only on risky/irreversible ones."
+multiSelect: false
+```
+
+Store the choice in `PERM_CHOICE`. If the user selects "Bypass permissions (Recommended)" → `PERM_CHOICE=skip` (template default: `bypassPermissions` + `disableAutoMode` + dangerous-mode dialog pre-accepted, no patch needed). If "Auto mode" → `PERM_CHOICE=auto` (patched in PHASE 1).
+
 ### Claude plan tier
 
 Check `$CONFIG_REPO/.claude/paths.local.yaml` for a persisted value first:
@@ -157,13 +182,24 @@ Store the choice in `PLAN_TIER` (one of `max-5x`, `pro`, `max-10x`, `skip`). Wri
 
 ## PHASE 0.5: Paths setup
 
-Write per-machine path configuration to `$CONFIG_REPO/.claude/paths.local.yaml`. Idempotent — skip if the file already exists.
+Write per-machine path configuration to `$CONFIG_REPO/.claude/paths.local.yaml`. Idempotent — skip writing if the file already exists, but validate that its `projects_root` still points at an existing directory and offer to correct a stale path.
 
 ```bash
 # macOS/Linux
 PATHS_LOCAL="$CONFIG_REPO/.claude/paths.local.yaml"
 if [ -f "$PATHS_LOCAL" ]; then
   PATHS_STATUS="already-exists"
+  # Validate the configured projects_root still points at an existing directory.
+  # A stale path (e.g. moved projects folder) leaves the backlog server scanning
+  # nothing — correct it, but don't re-prompt when the path is fine (stays idempotent).
+  cur=$(awk -F'"' '/^[[:space:]]*projects_root:/ {print $2; exit}' "$PATHS_LOCAL")
+  exp="${cur/#\~/$HOME}"; exp="${exp/#\$HOME/$HOME}"
+  if [ -n "$cur" ] && [ ! -d "$exp" ]; then
+    # AskUserQuestion (open text input): projects_root "$cur" no longer exists —
+    # ask for a new absolute path that must exist as a directory. Store in NEW_ROOT.
+    sed -i '' 's|^\([[:space:]]*projects_root:\).*|\1 "'"$NEW_ROOT"'"|' "$PATHS_LOCAL"
+    PATHS_STATUS="updated"
+  fi
 else
   # Ask the user via AskUserQuestion (open text input — no default, no fallback):
   #   header: "Projects root"
@@ -199,6 +235,16 @@ if (Test-Path $pathsLocal) {
   $content = Get-Content $pathsLocal -Raw
   if ($content -notmatch "claude_plan:") {
     Add-Content $pathsLocal "`npreferences:`n  claude_plan: `"$planTier`""
+  }
+  # Validate projects_root still exists; correct a stale path (don't re-prompt if fine).
+  if ($content -match '(?m)^\s*projects_root:\s*"?([^"\r\n]+)"?') {
+    $cur = $Matches[1].Trim().TrimEnd('"')
+    if (-not (Test-Path $cur -PathType Container)) {
+      # AskUserQuestion (open text input): projects_root "$cur" no longer exists —
+      # ask for a new absolute path that must exist. Store in $newRoot.
+      (Get-Content $pathsLocal -Raw) -replace '(?m)^(\s*projects_root:).*', "`$1 `"$newRoot`"" | Set-Content $pathsLocal
+      $pathsStatus = "updated"
+    }
   }
 } else {
   # Ask the user via AskUserQuestion (open text input — no default, no fallback):
@@ -337,6 +383,39 @@ sed -i.bak "s/^Explanation Level:.*$/Explanation Level: $EXPLANATION_CHOICE/" "$
   Set-Content "$env:USERPROFILE\.claude\CLAUDE.md"
 ```
 
+### Permission mode patch
+
+After copying settings.json (only if it was actually placed, and `PERM_CHOICE=auto`):
+
+The template ships the recommended bypass posture, so the recommended choice needs no patch. The auto-mode choice flips `defaultMode` to `auto`, drops the bypass-only flags, and pre-accepts the auto-mode opt-in dialog.
+
+```bash
+# macOS/Linux — settings.json (jq preferred, sed fallback)
+SETTINGS="$HOME/.claude/settings.json"
+if command -v jq >/dev/null 2>&1; then
+  jq '.permissions.defaultMode = "auto"
+      | del(.disableAutoMode)
+      | del(.skipDangerousModePermissionPrompt)
+      | .skipAutoPermissionPrompt = true' \
+     "$SETTINGS" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
+else
+  # sed fallback flips defaultMode only — it cannot reliably remove the disableAutoMode /
+  # skipDangerousModePermissionPrompt keys. Install jq for a clean auto-mode switch.
+  sed -i.bak 's/"defaultMode":[[:space:]]*"bypassPermissions"/"defaultMode": "auto"/' "$SETTINGS" && rm -f "$SETTINGS.bak"
+fi
+```
+
+```powershell
+# Windows — settings.json
+$settings = "$env:USERPROFILE\.claude\settings.json"
+$json = Get-Content $settings -Raw | ConvertFrom-Json
+$json.permissions.defaultMode = "auto"
+$json.PSObject.Properties.Remove("disableAutoMode")
+$json.PSObject.Properties.Remove("skipDangerousModePermissionPrompt")
+$json | Add-Member -NotePropertyName skipAutoPermissionPrompt -NotePropertyValue $true -Force
+$json | ConvertTo-Json -Depth 10 | Set-Content $settings
+```
+
 **After copying**: show a brief reminder:
 
 > `settings.json copied — verify that hook paths are correct for your platform (see local/README.md).`
@@ -473,6 +552,7 @@ Bootstrap complete
  Personal overlay           applied (2 items)
  Language                   English
  Explanation Level          Intermediate
+ Permission mode            Bypass permissions
  Claude plan                Max 5x
  Paths (paths.local.yaml)   written
 ══════════════════════════════════════════════════════
@@ -490,6 +570,12 @@ For the Explanation Level row: show the chosen level, or the current value with 
 
 ```bash
 CURRENT_EXPL=$(grep "^Explanation Level:" "$HOME/.claude/CLAUDE.md" | sed 's/^Explanation Level:[[:space:]]*//')
+```
+
+For the Permission mode row: show `Bypass permissions` or `Auto mode` per `PERM_CHOICE`, or the current `defaultMode` value with `(already set)` suffix if `PERM_CHOICE=skip`. Read the current value via:
+
+```bash
+CURRENT_MODE=$(jq -r '.permissions.defaultMode' "$HOME/.claude/settings.json" 2>/dev/null)
 ```
 
 For the Claude plan row: show the `PLAN_TIER` label (`Max 5x`, `Pro`, `Max 10x+`, or `skipped`).

@@ -290,7 +290,7 @@
       const TRANSITION_LABELS_FRONTEND = {
         TODO: "designing",
         DEFINED: "converting",
-        DOING: "building",
+        DOING: "checking",
         DONE: "shipping",
       };
       const TRANSITION_LABELS_DEV = {
@@ -649,7 +649,7 @@
           if (f.status === "TODO") return { cmd: `/frontend-design ${f.name}` };
           if (f.status === "DEFINED")
             return { cmd: `/frontend-design ${f.name}` };
-          if (f.status === "DOING") return null; // building — runtime audit via /frontend-check batch at release end
+          if (f.status === "DOING") return null; // to check — runtime audit via /frontend-check batch at release end
           return null; // DONE: no button
         }
 
@@ -800,8 +800,7 @@
 
           let batchBtnHtml = "";
           if (batchSkill && items.length > 0) {
-            const isFrontendSection =
-              batchSkill === "convert" || batchSkill === "audit";
+            const isFrontendSection = batchSkill === "check";
             const cmdPrefix = isFrontendSection
               ? "frontend"
               : data.source && data.source.startsWith("/game")
@@ -960,10 +959,10 @@
           },
           {
             id: "building",
-            label: "Building",
+            label: "To check",
             status: "DOING",
             typeFilter: isFrontendTrackType,
-            batchSkill: null,
+            batchSkill: "check",
             transitionLabels: TRANSITION_LABELS_FRONTEND,
           },
         ];

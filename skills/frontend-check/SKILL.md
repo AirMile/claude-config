@@ -13,7 +13,7 @@ reads:
 writes: [backlog.status, backlog.lastCheckedSha]
 metadata:
   author: claude-config
-  version: 3.0.0
+  version: 3.1.0
   category: frontend
 ---
 
@@ -67,9 +67,11 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
    [list: name · status · lastCheckedSha vs shippedSha]
    Run targeted mode for a single feature: /frontend-check <name>
    ```
-5. Set `$BATCH_MODE = true`, `$BATCH_TARGETS = [candidate list]`. Run PHASE 1 sequentially per feature. After each: set `lastCheckedSha = HEAD SHA`, write back. Continue to next.
+5. Set `$BATCH_MODE = true`, `$BATCH_TARGETS = [candidate list]`. The full batch flow — queue confirmation, sequential scan + triage, ONE combined report, ONE fix-scope approval, per-feature fix with rollback, single batch completion — is driven entirely by the batch reference. Do NOT run the per-feature single-target loop or per-feature approval prompts.
 
-Skip to PHASE 1 for batch-mode (no scope selection — run runtime scopes: Performance + SEO + A11Y runtime + Responsive + Darkmode + Smoke + Error states + Flow if flows defined).
+> **Todo**: Read '.claude/skills/frontend-check/references/batch.md'
+
+Batch-mode skips PHASE 0.2 scope selection (scope is auto-derived per feature from the §0.2 table inside the batch flow).
 
 ---
 
@@ -464,6 +466,8 @@ Fix:      [suggestion]
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
+> **Batch mode** (`$BATCH_MODE`): emit the single combined cross-feature report and the single fix-scope approval from `references/batch.md § §2` instead of the per-feature single-target report + Scope Selection below. Skip the rest of this PHASE 2 single-target block.
+
 Combined report across all audit axes:
 
 ```
@@ -554,6 +558,8 @@ multiSelect: false
 
 ### Worktree setup (before fix)
 
+> **Batch mode** (`$BATCH_MODE`): do NOT create per-feature worktrees. Fix on the current branch with per-feature snapshot rollback and a single batch commit — see `references/batch.md § §3` and `§ §5`. Skip this single-target worktree setup.
+
 Before writing any code fixes, follow `shared/WORKTREE.md → Auto-create worktree`:
 
 - Feature-name = targeted feature (from `targetType === "feature"` argument, or the backlog feature matched in PHASE 0)
@@ -565,6 +571,8 @@ Before writing any code fixes, follow `shared/WORKTREE.md → Auto-create worktr
 ## PHASE 3: Fix
 
 > **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
+
+> **Batch mode** (`$BATCH_MODE`): fix + re-audit + completion are driven by `references/batch.md § §3` and `§ §5` (per-feature fix with snapshot rollback, then a single batch completion). It reuses `fix-reaudit.md`'s Fix Order, Per Fix format, and 4.1 Re-scan. Single-target mode continues with `fix-reaudit.md` directly below.
 
 > **Todo**: Read '.claude/skills/frontend-check/references/fix-reaudit.md'
 
