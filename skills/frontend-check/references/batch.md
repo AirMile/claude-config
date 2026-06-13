@@ -16,8 +16,10 @@ per-feature worktree (SKILL.md PHASE 2 "Worktree setup").
 
 ## §0 Queue
 
-Candidates were already collected in SKILL.md §0.1 (`status === "DOING"` OR
-`status === "DONE" && (!lastCheckedSha || lastCheckedSha !== shippedSha)`).
+Candidates were already collected in SKILL.md §0.1 (HEAD = current commit SHA):
+`status === "DOING" && lastCheckedSha !== HEAD` OR
+`status === "DONE" && (!lastCheckedSha || lastCheckedSha !== shippedSha)`. A COMPONENT stays
+`DOING` but, once checked at HEAD, drops out of the queue until code changes.
 
 - **Auto-proceed if `candidates.length <= 3`**: set `$BATCH_TARGETS = candidates`, log
   `Queue: auto-selected {names}`, continue to §1. No prompt — a small queue is always right.
@@ -60,6 +62,13 @@ For **each** feature in `$BATCH_TARGETS`, **in sequence** (never parallel — sh
    - **CLEAN** — 0 CRITICAL and 0 HIGH findings (MEDIUM-only counts as CLEAN for the fix gate).
    - **HAS_FINDINGS** — ≥1 CRITICAL or HIGH.
 4. Record per-feature: `{name, type, status: CLEAN|HAS_FINDINGS, findings[], perAxisCounts}`.
+
+**Component + its consuming page both candidates**: scan the page (it renders the component) and let
+that cover the component's in-context dimensions (a11y / contrast / overflow / heading-order); record
+the component's `lastCheckedSha = HEAD` from that scan instead of a redundant standalone pass.
+Caveat: a page scan does NOT exercise deep per-variant interaction, or variants the page doesn't
+render. If the component is being checked for the first time at this HEAD, still run its standalone
+(harness) deep check once; thereafter the page scan is enough.
 
 **ALL-CLEAN early-exit:** if every feature is CLEAN → skip §2-§3 entirely. Go straight to §5
 completion: write `lastCheckedSha = HEAD` per feature, no approval, no plan, no commit (no code
@@ -167,6 +176,10 @@ Fix on the **current branch** (no worktree). Mirror `dev-refactor` apply-rollbac
 
    f. **Report line:** `✓ {feature}: {N} fixed` or `✗ {feature}: rolled back ({reason})`.
 
+**Cross-feature effect**: fixing a COMPONENT does not auto-rescan a checked page that renders it
+(the per-feature re-audit covers only the fixed feature). If you fixed a component a checked page
+consumes, re-run that page's scope once before completion, or flag it for the next run.
+
 ---
 
 ## §5 Batch Completion
@@ -178,6 +191,10 @@ Per-feature backlog sync, then one commit. (No §4 — re-audit is folded into �
    - **PAGE with no unresolved CRITICAL** → `status: "DONE"`, `shipped: true`, `shippedAt: "{YYYY-MM-DD}"`,
      `shippedSha = {batch-commit-sha}`, remove `stage` and `transition`. (Reuses `fix-reaudit.md § 4.3`.)
    - **COMPONENT** → only update `lastCheckedSha` (never auto-DONE — ships with its consuming page).
+     It stays `status: "DOING"` = "checked, awaiting its page". With `lastCheckedSha === HEAD` it
+     drops out of the next batch queue until code changes. State this in the completion line so the
+     board's "TO CHECK" lane isn't read as "unchecked":
+     `✓ {component}: checked (DOING — ships with {consuming page})`.
    - ROLLED_BACK features: only `lastCheckedSha` (no shipped flags).
    - Sync to `project.json#features[]` for any feature whose status changed.
    - Frontend PAGE/COMPONENT items stay in `backlog.json` (NOT archived — frontend-track exception,

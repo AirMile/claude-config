@@ -264,6 +264,25 @@ Also: "Flow" (manage flows), "Principles" (manage principles), "Delete" (remove 
 
 ---
 
+## PHASE 1.5: Plan-Mode Gate (Conditional Entry)
+
+The action chosen in PHASE 1 routes to a synthesis interview or a CRUD/self-managed action. Synthesis (design reasoning across one or more `AskUserQuestion` rounds) deserves the planning model — so enter plan mode here, before PHASE 2 dispatch, only when the chosen route is a synthesis route. See [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) § Conditional entry.
+
+**Enter plan mode** (follow PLAN-MODE.md Entry protocol — call `EnterPlanMode` before PHASE 2) when the chosen route is one of:
+
+- **Page**, **Component**, **Flow**, **Principles**, **Import**, **Brief**
+
+`AskUserQuestion`, `Read`, `Glob`, `Grep` keep working in plan mode; only file writes are blocked — which is fine, every synthesis route defers its write to PHASE 3 confirm (Brief: to its Step 5 write boundary). The plan-file path arrives via system-reminder; the proposed design diff is written there for review at exit.
+
+**Do NOT enter plan mode** for:
+
+- **Build** and **Create** — these self-manage plan mode internally (Build enters late at `route-build.md` after worktree setup, since a worktree git-write must happen outside plan mode; Create enters at `route-create.md`).
+- **View**, **Delete**, **Restore** — pure CRUD, kept friction-free.
+
+**Skip `EnterPlanMode` if already in plan mode** — if an active plan-mode system-reminder already exists (the user started `/plan-mode` themselves, or a prior synthesis loop already entered), skip the call and read the existing plan-file path from the active system-reminder.
+
+---
+
 ## PHASE 2: Action Execution
 
 ### Route: Create (First-Time Setup)
@@ -393,6 +412,10 @@ Total after change: {N} pages, {C} components, {M} flows, {P} principles
 ════════════════════════════════════════════════
 ```
 
+**If plan mode was entered in PHASE 1.5** (and the skill did not start in plan mode): this confirm IS the plan-approval gate — follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol. Write the CHANGES diff above to the plan file, then call `ExitPlanMode`. Approval = "Yes, save"; proceed to PHASE X (writes run outside plan mode). Do not also show the `AskUserQuestion` modal below — `ExitPlanMode` replaces it. (If the skill was started in plan mode by the user, skip `ExitPlanMode` and use the modal below — let the user end plan mode themselves.)
+
+**Otherwise** (CRUD path, no plan mode entered) — ask:
+
 ```yaml
 header: "Confirm"
 question: "Apply changes?"
@@ -403,8 +426,8 @@ options:
 multiSelect: false
 ```
 
-If "Yes": proceed to PHASE X (write + post-flight).
-If "Edit": loop back to PHASE 1 (ACTION_SELECT with updated state).
+If "Yes" (or plan approved): proceed to PHASE X (write + post-flight).
+If "Edit": loop back to PHASE 1 (ACTION_SELECT with updated state — plan mode, if active, stays active; PHASE 1.5 re-entry is skipped via its already-in-plan-mode clause).
 If "Cancel": exit cleanly, no changes written.
 
 ---

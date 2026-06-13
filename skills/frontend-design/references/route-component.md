@@ -1,5 +1,7 @@
 # Route: Component (Add/Edit)
 
+> **Plan mode**: the caller (route-design.md PHASE 1.5) enters plan mode for this route. The interview runs in plan mode; defer all writes to PHASE 3 confirm. The post-confirm Append + gap-discovery block (under "On confirmation:") is already correctly positioned after approval, so it runs outside plan mode as-is.
+
 #### Step 1: Choice
 
 ```yaml

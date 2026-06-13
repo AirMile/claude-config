@@ -69,4 +69,11 @@ BUILD_COMPLETE → [*]
 COMPLETE → [*]
 ```
 
-Note: DESIGN_DIRECTION → BUILD PLAN run in plan mode (entered after the Step 2.5 gate resolves to "Build it" and worktree setup, exited at the `ExitPlanMode` point in route-build.md Step 7). The Step 2.5 gate and its "save spec only" off-ramp run before plan mode. CREATE runs in plan mode per route-create.md.
+Note: plan-mode boundaries (the `opusplan` thinking hint — see `shared/PLAN-MODE.md`):
+
+- **Synthesis routes** PAGE_ROUTE / COMPONENT / FLOW / PRINCIPLES / IMPORT / BRIEF enter plan mode at the **PHASE 1.5 gate** (conditional entry, after ACTION_SELECT). They exit at CONFIRM — `ExitPlanMode` = the "Apply changes?" approval — except BRIEF, which has no CONFIRM and exits at its own Step 5 write boundary (the `.md` brief is the plan output).
+- **CRUD** VIEW / DELETE / RESTORE run outside plan mode (friction-free).
+- **BUILD** self-manages: DESIGN_DIRECTION → BUILD PLAN run in plan mode (entered after the Step 2.5 gate resolves to "Build it" and worktree setup, exited at the `ExitPlanMode` point in route-build.md Step 7). The Step 2.5 gate and its "save spec only" off-ramp run before plan mode.
+- **CREATE** self-manages: runs in plan mode per route-create.md.
+
+If the skill was started in plan mode by the user, the PHASE 1.5 entry and the CONFIRM/Step 5 `ExitPlanMode` are skipped — the user ends plan mode themselves.

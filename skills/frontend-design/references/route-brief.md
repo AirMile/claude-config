@@ -1,5 +1,7 @@
 # Route: Brief (Claude Design Handoff)
 
+> **Plan mode**: the caller (route-design.md PHASE 1.5) enters plan mode for this route — the brief is design synthesis. Steps 1–4 (scope, inventory, tokens, compose) run in plan mode; the brief content is the plan output. `ExitPlanMode` sits at the Step 5 write boundary (the `.md` file IS the deliverable, so its write must wait for approval). Skip `ExitPlanMode` if the skill was started in plan mode by the user.
+
 Generate a markdown brief to paste into Claude Design. The brief bundles all context Claude Design needs to generate visuals that match the project (so you don't get duplicate components or inconsistent tokens).
 
 #### Step 1: Scope
@@ -257,6 +259,8 @@ Determine output path per scope:
 | Page / Flow | `.project/claude-design-brief.md`                  |
 | Component   | `.project/claude-design-brief-{component-name}.md` |
 | Both        | both files above                                   |
+
+**Plan-mode exit** (if the caller entered plan mode in route-design.md PHASE 1.5, and the skill did not start in plan mode): the composed brief content above is the plan output — write it to the plan file, then call `ExitPlanMode` for approval. After approval, write the brief file(s) and run the backlog sync below outside plan mode.
 
 Write file(s).
 

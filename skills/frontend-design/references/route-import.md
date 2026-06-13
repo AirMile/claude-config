@@ -1,5 +1,7 @@
 # Route: Import (Extract from Codebase or Screenshot)
 
+> **Plan mode**: the caller (route-design.md PHASE 1.5) enters plan mode for this route. Codebase scan, screenshot analysis, and agent spawns are all reads — they keep working in plan mode; defer the write to PHASE 3 confirm.
+
 #### Step 0: Input Selection
 
 ```yaml

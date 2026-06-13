@@ -1,5 +1,7 @@
 # Route: Page (Add/Edit Page)
 
+> **Plan mode**: the caller (route-design.md PHASE 1.5) enters plan mode for this route. The interview runs in plan mode; defer all writes to PHASE 3 confirm (this route is already write-clean — both branches end at "proceed to PHASE 3").
+
 Load this file when the user selects the Page route. Contains the full add/edit flow.
 
 ---

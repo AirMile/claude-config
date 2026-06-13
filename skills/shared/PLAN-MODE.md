@@ -72,13 +72,13 @@ Skills may optionally name specific tools used intensively in plan mode (e.g. "W
 
 ## Conditional entry
 
-Some skills enter plan mode only when a condition fires mid-flow: `dev-refactor` / `game-refactor` after triage finds ≥1 HAS_FINDINGS; the `dev-verify` fix-loop on SPEC or unclear-root-cause bugs; the `dev-build` / `game-build` regression gate when the regression was not caused by the build itself. The Entry/Exit protocol applies unchanged from the moment of entry. The deviation from "Entry before the first thinking step" is deliberate — runs where the condition never fires stay friction-free. Document the condition at the entry point in the skill.
+Some skills enter plan mode only when a condition fires mid-flow: `dev-refactor` / `game-refactor` after triage finds ≥1 HAS_FINDINGS; the `dev-verify` fix-loop on SPEC or unclear-root-cause bugs; the `dev-build` / `game-build` regression gate when the regression was not caused by the build itself; `frontend-design` (route-design.md PHASE 1.5) when the chosen action is a synthesis route (Page/Component/Flow/Principles/Import/Brief) — CRUD and self-managed sub-routes do not enter. The Entry/Exit protocol applies unchanged from the moment of entry. The deviation from "Entry before the first thinking step" is deliberate — runs where the condition never fires stay friction-free. Document the condition at the entry point in the skill.
 
 ---
 
 ## Used by
 
-Full-phase: `dev-define`, `game-define`, `project-backlog`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`. Conditional entry (see § Conditional entry): `dev-refactor`, `game-refactor`.
+Full-phase: `dev-define`, `game-define`, `project-backlog`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`. Conditional entry (see § Conditional entry): `dev-refactor`, `game-refactor`, `frontend-design` (route-design.md PHASE 1.5 gate — synthesis routes only). Self-managed within a sub-route: `frontend-design` Create (`references/route-create.md`) and Build (`references/route-build.md` after worktree setup), Convert (`references/route-convert.md` PHASE 0).
 
 Authoritative for the above: `grep -rl "Entry protocol" skills/*/SKILL.md skills/*/references/*.md`
 

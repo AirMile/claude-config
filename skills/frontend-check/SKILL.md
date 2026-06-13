@@ -1,11 +1,13 @@
 ---
 name: frontend-check
-description: Runtime audit and fix hub for performance, SEO, responsive, darkmode, error states, smoke, and flow. Run at end of release cycle (batch over all DOING features) or targeted on a single feature/URL. Use with /frontend-check.
+description: Runtime audit + fix hub for performance, SEO, a11y, responsive, darkmode, error states, and flows. Batch over DOING features or targeted. Use with /frontend-check.
 argument-hint: "[url | source-path | feature-name] [--scope=performance|seo|responsive|a11y|...]"
 reads:
   [
     backlog.status,
     backlog.lastCheckedSha,
+    backlog.pageHint,
+    backlog.dependencies,
     feature.requirements,
     feature.files,
     feature.architecture,
@@ -13,7 +15,7 @@ reads:
 writes: [backlog.status, backlog.lastCheckedSha]
 metadata:
   author: claude-config
-  version: 3.1.0
+  version: 3.3.0
   category: frontend
 ---
 
@@ -23,7 +25,7 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
 
 **Two modes:**
 
-- **Batch-mode** (no argument): iterate over all features in backlog where `status === "DOING"` or `lastCheckedSha !== shippedSha`. Runs at end of release cycle.
+- **Batch-mode** (no argument): iterate over all features in backlog where `status === "DOING"` (and not already checked at HEAD) or `lastCheckedSha !== shippedSha`. Runs at end of release cycle.
 - **Targeted mode** (`/frontend-check <feature-name|url|path>`): single feature or URL, all runtime scopes.
 
 **Related skills:** `/frontend-design` · `/frontend-tokens` · `/core-setup`
@@ -59,7 +61,11 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
 **Batch-mode** — if `$1` is empty:
 
 1. Read `.project/backlog.json` → parse features.
-2. Collect candidates: features where `status === "DOING"` OR (`status === "DONE" && (!lastCheckedSha || lastCheckedSha !== shippedSha)`).
+2. Collect candidates (HEAD = current commit SHA):
+   - `status === "DOING"` AND `lastCheckedSha !== HEAD` — in progress, not yet checked at this commit; OR
+   - `status === "DONE"` AND (`!lastCheckedSha` OR `lastCheckedSha !== shippedSha`) — shipped but changed since last check.
+
+   A COMPONENT stays `DOING` until its consuming page ships, but once checked at HEAD it leaves the queue until code changes — so it is not re-audited every run.
 3. If no candidates: show `"No features pending runtime audit."` and stop.
 4. Show:
    ```
@@ -123,6 +129,12 @@ multiSelect: false
 | `path` (component)       | A11Y runtime (focus-trap + axe) + Smoke                                               |
 | `feature` with routes    | Performance + SEO + AEO + Responsive + Darkmode + A11Y runtime + Error states + Smoke |
 | `feature` without routes | A11Y runtime (focus-trap + axe) + Smoke                                               |
+
+**Auditing a COMPONENT** — pick the mount in this order:
+
+1. **Through its consuming page** — if a page that renders it has a route (built/DONE, or also a candidate in this batch), audit the component via that route. Real context, best coverage, no harness. Find the page via the component's `pageHint[]`, or a page whose `dependencies[]` lists it.
+2. **Temporary harness route** — component is the audit target and no page renders it yet: mount it on a throwaway route (realistic props, all variants), run A11Y + Smoke, then remove the route + harness file before completion.
+3. **Defer** — incidental and unrendered: record `lastCheckedSha`, note it ships with its page.
 
 If `targetType` is `url`, `path`, or `feature` → show auto-scope confirmation:
 
@@ -192,6 +204,14 @@ Audits:     [Performance, SEO, AEO, Responsive]
 ═════════════════════════════════════════════════════════════
 ```
 
+### 0.3.5 Build & Serve Health Gate
+
+Runtime scans need a compiling app on a reachable dev server — gate before PHASE 1 (in batch mode, once before the sequential scan):
+
+1. Probe the dev-server URL (`project.json#localUrl`/`devServer`, else framework default). If unreachable, start it in the background (`npm run dev`/`start`) and wait until it responds.
+2. Confirm the app compiles — watch the dev-server/build log for compile errors, or run the typecheck/build once.
+3. If the build fails or the server never serves: emit a CRITICAL build finding (missing deps, typecheck error, …), surface the error, and STOP. Do not scan a non-serving app; re-run once the build is fixed.
+
 ### 0.4 Backlog Stage (optional)
 
 Read `.project/backlog.json` (if exists) → parse JSON.
@@ -243,185 +263,23 @@ Auth state is reused for all subsequent checks. **Cleanup** `.project/auth-state
 
 ### 1.1 Performance Scan
 
-**Lighthouse** (primary, if available):
+> **Todo**: Read '.claude/skills/frontend-check/references/scan-performance.md'
 
-```bash
-npx lighthouse {url} --output json --chrome-flags="--headless --no-sandbox" --only-categories=performance,accessibility,best-practices
-```
+### 1.2 SEO Scan + 1.3 AEO Scan
 
-Extract: Performance score, LCP, CLS, INP, FCP, TTFB, opportunities.
-
-**Fallback**: Playwright CLI CWV via PerformanceObserver (see `PLAYWRIGHT.md` → Use Cases: Performance Measurement).
-
-**Network inspection** (Playwright CLI, see `PLAYWRIGHT.md` → Use Cases: Network Inspection):
-
-```
-playwright-cli goto {url}
-playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
-playwright-cli requests
-```
-
-Parse the request list → findings:
-
-- **P005 (CRITICAL)**: failed requests (status 4xx/5xx) — user gets broken page states
-- **P108 (HIGH)**: payloads > 500KB — `request <i>` for details, candidate for compression/code-splitting
-- **P109 (HIGH)**: missing cache headers on static assets — `response-headers <i>` → check `cache-control`/`etag`
-
-**Runtime errors** (Playwright CLI, see `PLAYWRIGHT.md` → Use Cases: Console Error Inspection):
-
-```
-playwright-cli console error
-```
-
-→ Filter output against PLAYWRIGHT.md → Default Ignore Patterns before reporting; only unfiltered lines become findings.
-
-Each error = new finding **P004 (CRITICAL)** "JS Runtime Error" with location + message. A crashing component is a blocking bug, even if Lighthouse score is high.
-
-**Bundle analysis** (if build script available):
-
-`npm run build` → parse output for chunk sizes per route.
-
-**Static code audit**: Scan for images without lazy loading, full library imports, render-blocking CSS, missing font preloading, sync third-party scripts.
-
-### 1.2 SEO Scan
-
-Per route, check:
-
-**Critical:** Page titles (S001), meta descriptions (S002), rendering (S003 — Playwright CLI validate SSR via snapshot **+ content-endpoint check via `requests`/`request <i>` to prove content doesn't come from a fallback due to a failing API**), robots config (S004).
-
-**Important:** Open Graph (S101), canonical URLs (S102), sitemap (S103), robots.txt (S104), heading hierarchy (H002/H003), image alt text (R002).
-
-**Enhancement:** Structured data / JSON-LD (S201), Twitter cards (S202), dynamic OG images (S203).
-
-Use Context7 to research framework-specific SEO APIs before recommending fixes.
-
-### 1.3 AEO Scan (AI Search Optimization)
-
-Optimize for AI answer engines (ChatGPT Search, Perplexity, Google AI Overviews, Gemini).
-
-**Crawlability:**
-
-- AE001: AI bot access — check robots.txt for ChatGPT-User, PerplexityBot, Google-Extended, Anthropic
-- AE002: Structured content — semantic HTML (article, section, aside, nav) vs div soup
-- AE003: Clear content hierarchy — H1 → H2 → H3 with logical grouping
-
-**Answerability:**
-
-- AE101: FAQ sections — question-answer pairs that AI can extract
-- AE102: FAQ Schema (FAQPage JSON-LD) — structured data for Q&A
-- AE103: HowTo Schema — step-by-step instructions as JSON-LD
-- AE104: Concise definitions — key terms defined in first paragraph or summary
-- AE105: TL;DR / summary sections — scannable summaries at top of content
-
-**Citations:**
-
-- AE201: Author/source attribution — bylines, credentials, publication dates
-- AE202: Data citations — sources for statistics, claims, quotes
-- AE203: About page / E-E-A-T signals — expertise, experience, authority, trust
-
-**Freshness:**
-
-- AE301: Last-modified headers / dateModified in schema
-- AE302: Content timestamps visible on page
-- AE303: Changelog / update history for evergreen content
+> **Todo**: Read '.claude/skills/frontend-check/references/scan-seo-aeo.md'
 
 ### 1.4 A11Y Scan (Accessibility — WCAG 2.1 AA)
 
 > **Todo**: Read '.claude/skills/frontend-check/references/scan-a11y.md'
 
-### 1.5 Responsive Scan
+### 1.5 Responsive Scan + 1.6 Darkmode Scan
 
-Capture on 6 viewports (320, 375, 768, 1024, 1440, 1920) using Playwright CLI (see `PLAYWRIGHT.md` → Use Cases: Responsive Validation):
-
-```
-playwright-cli open [url]
-Per viewport: playwright-cli resize [vp] 900
-             → playwright-cli run-code "async page => { await page.waitForTimeout(1000); }"
-             → playwright-cli screenshot --filename=.project/screenshots/vp[vp].png
-             → playwright-cli snapshot --filename=.project/snapshots/vp[vp].yml  (only on findings)
-             → playwright-cli eval "[overflow-script]"
-playwright-cli close
-```
-
-Analyze: horizontal overflow, touch targets < 44px, truncated text, layout breaks, font size < 16px on mobile, missing viewport meta.
-
-### 1.6 Darkmode Scan
-
-Capture light + dark on the primary route via `colorScheme`:
-
-```
-playwright-cli run-code "async page => {
-  const browser = page.context().browser();
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'light' });
-  const p = await ctx.newPage();
-  await p.goto('{url}');
-  await p.waitForLoadState('networkidle');
-  await p.screenshot({ path: '.project/screenshots/darkmode-light.png' });
-  await ctx.close();
-}"
-
-playwright-cli run-code "async page => {
-  const browser = page.context().browser();
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });
-  const p = await ctx.newPage();
-  await p.goto('{url}');
-  await p.waitForLoadState('networkidle');
-  await p.screenshot({ path: '.project/screenshots/darkmode-dark.png' });
-  await ctx.close();
-}"
-```
-
-Compare the two screenshots + eval for CSS custom properties:
-
-```js
-// playwright-cli eval
-() => ({
-  hasDarkClass: document.documentElement.classList.contains("dark"),
-  colorScheme: getComputedStyle(document.documentElement).colorScheme,
-  bgColor: getComputedStyle(document.body).backgroundColor,
-});
-```
-
-Findings:
-
-- **D001 (CRITICAL)**: dark mode toggle present but screenshots are identical — no dark variant implemented
-- **D101 (HIGH)**: hardcoded color values that don't switch (re-use H004 pattern — scan source)
-- **D102 (HIGH)**: contrast in dark mode below WCAG 4.5:1 threshold
+> **Todo**: Read '.claude/skills/frontend-check/references/scan-visual.md' (Responsive + Darkmode + Motion — run only the in-scope subsections)
 
 ### 1.7 Error States Scan
 
-Test how the app responds to error scenarios:
-
-```
-1. 404: playwright-cli goto {url}/this-route-does-not-exist-404test
-          playwright-cli snapshot + screenshot → check if app-404 renders (not browser-default)
-
-2. Offline: playwright-cli run-code "async page => {
-     await page.context().setOffline(true);
-     await page.reload();
-     await page.waitForTimeout(2000);
-     await page.screenshot({ path: '.project/screenshots/offline.png' });
-     await page.context().setOffline(false);
-   }"
-   → snapshot → check if offline-UI renders
-
-3. Slow 3G: playwright-cli run-code "async page => {
-     await page.context().route('**/*', async route => {
-       await new Promise(r => setTimeout(r, 1500));
-       await route.continue();
-     });
-     await page.goto('{url}');
-     await page.screenshot({ path: '.project/screenshots/slow-3g.png' });
-   }"
-   → check if loading skeleton / spinner is visible
-```
-
-Findings:
-
-- **E001 (CRITICAL)**: 404 page shows browser-default error (no custom 404)
-- **E002 (CRITICAL)**: offline UI missing — blank page or JavaScript crash
-- **E101 (HIGH)**: no loading skeleton on slow connection — FOUC or empty screen
-- **E102 (HIGH)**: error page without navigation back to home
+> **Todo**: Read '.claude/skills/frontend-check/references/scan-error-states.md'
 
 ### 1.8 Smoke Scan + 1.9 Flow Scan
 
@@ -429,20 +287,7 @@ Findings:
 
 ### 1.10 Motion Runtime Scan (M006/M007)
 
-Emulate `prefers-reduced-motion: reduce` via Playwright and verify that all animated elements either stop or switch to an instant/opacity-only transition:
-
-```js
-playwright-cli run-code "async page => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('{url}');
-  await page.waitForLoadState('networkidle');
-  await page.screenshot({ path: '.project/screenshots/reduced-motion.png' });
-}"
-playwright-cli snapshot
-```
-
-- **M006 (HIGH)**: animated element still transforms/translates under reduced-motion — `motion-safe:` class missing
-- **M007 (HIGH)**: spinner or keyframe animation still runs under reduced-motion
+> **Todo**: Read '.claude/skills/frontend-check/references/scan-visual.md' (Motion subsection — already loaded if Responsive/Darkmode were in scope)
 
 ---
 

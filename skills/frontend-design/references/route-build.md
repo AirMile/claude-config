@@ -361,25 +361,9 @@ Browser path:
 
 `$SMOKE_SHOT` backs `devinfo.handoff.buildScreenshot` if a build-incomplete handoff is later written (schema: `shared/DEVINFO.md § devinfo.handoff`).
 
-#### Step 9: Hand off to /frontend-check (optional)
+#### Step 9: Verification status
 
-After Step 8 passes, offer a one-question handoff. If `$SMOKE = "FAIL"`: present "Yes" as strongly recommended and include `$SMOKE_ERROR` in the question text.
-
-```yaml
-header: "Verify"
-question: "Build complete. Run /frontend-check on {$TARGET}?"
-options:
-  - label: "Yes (Recommended)", description: "Smoke, a11y, responsive, darkmode via /frontend-check"
-  - label: "Skip", description: "Mark build done — verify later"
-multiSelect: false
-```
-
-If "Yes": invoke `/frontend-check {$TARGET}` (feature-target mode picks up `files[]` + routes from `feature.json`). Capture frontend-check's exit status:
-
-- All critical findings resolved or none found → `$VERIFY_STATUS = "PASS"`
-- Critical findings remain after user chose "Fix manually" or "Open in convert" → `$VERIFY_STATUS = "FAIL"`, store short reason in `$VERIFY_ERROR`
-
-If "Skip": `$VERIFY_STATUS = "SKIPPED"`. Note in devinfo that verification is pending.
+Build runs no inline verification handoff — never prompt to run `/frontend-check`. Always set `$VERIFY_STATUS = "SKIPPED"` (`$VERIFY_ERROR` stays unset). `/frontend-check` remains a separate, user-initiated skill — the gate to DONE for pages — surfaced in the Step 11 "Next:" line.
 
 Step 10 reads `$VERIFY_STATUS` to set `feature.audit.buildSmokeStatus`.
 
@@ -407,8 +391,34 @@ Verify error:     {$VERIFY_ERROR}   (only shown when $VERIFY_STATUS = "FAIL")
 Gaps:             {N linked | M created | K pending | "none"}
 Page deps:        +{$COMP_FEAT_COUNT} feature deps, {$COMP_COMP_COUNT} component deps   (PAGE only)
 pageHint:         {$PAGEHINT_COUNT} features updated   (PAGE only)
+Worktree:         {worktree-{$TARGET}} — MERGED (Step 12) | not in a worktree
 Next:             /frontend-check {$TARGET} — moves PAGE to DONE on PASS   (PAGE only, when $VERIFY_STATUS != FAIL)
 ```
+
+The report is **not** the end of the build — Step 12 (worktree finalize) runs after it, exactly as the Convert route's §4.4 report is followed by §4.5–4.6.
+
+#### Step 12: Finalize worktree (auto-close)
+
+The Build route owns the **full** worktree lifecycle: Step 3 opens the worktree, this step closes it. There is no separate frontend-verify skill (`/frontend-check` is the post-merge quality pass — the `dev-refactor` role, not the `dev-verify` role), so the build must finalize its own worktree rather than leave it dangling. Mirrors `dev-verify`'s PHASE Finalize and the Convert route's `convert-completion.md §4.5–4.6`.
+
+**Skip if no worktree was created this run** — detect: `current branch != worktree-{$TARGET}` (Step 3 was skipped because already on a feature branch, or the Step 2.5 gate exited "save spec only"). Then print `Worktree: not in a worktree` and end the build.
+
+Otherwise:
+
+1. **Dev-server cwd pre-check** — before any cleanup, detect Node processes holding cwd in the worktree and offer to stop them (identical to `convert-completion.md §4.5`):
+
+   ```bash
+   WT_PATH=$(git rev-parse --show-toplevel)
+   CWD_PROCS=$(lsof +D "$WT_PATH" 2>/dev/null | awk 'NR>1 && $4=="cwd" && $1~/(node|next|ts-node|ng|vite)/ {print $2}' | sort -u)
+   ```
+
+   `CWD_PROCS` non-empty → AskUserQuestion ("Dev server active — stop {N} process(es) before cleanup?"): "Yes, stop them (Recommended)" → `kill -TERM $CWD_PROCS 2>/dev/null; sleep 2; kill -KILL $CWD_PROCS 2>/dev/null || true` | "Keep running" → continue.
+
+2. **Finalize** — follow `shared/FINALIZE.md → Finalize Offer Decision` with `feature-name = $TARGET` — the same delegation `dev-verify` (`dev-verify/references/finalize.md`) and the Convert route use. That single source reads `TEAM_MODE` + PR state and dispatches the offer / halt / "PR open → run /core-finalize after review" per its matrix; on a finalize or cleanup confirmation it runs `shared/FINALIZE.md` end-to-end (Branch Resolution → Uncommitted Check → Solo-Merge OR Cleanup → Output Report). The deferred "Keep open" message and the frontend-track backlog sync (PAGE ships only when already `DONE`, COMPONENT left untouched — `FINALIZE.md` never promotes `DOING → DONE`) are handled inside that procedure.
+
+3. **Session-reorientation guard (cleanup path only)** — before `git worktree remove`, if `pwd` is inside the worktree, `cd {main-repo-path}` first; after successful cleanup print the `🏠 Worktree removed` banner (per `dev-verify/references/finalize.md`).
+
+For COMPONENT scope this is the canonical close point — do not skip even if `/frontend-check` was not run. The code lands on the default branch via the merge; `/frontend-check` (later, on main) is the gate that promotes a consuming PAGE to `DONE`.
 
 ---
 
@@ -419,5 +429,6 @@ This route must **NEVER**:
 - Reach Step 7 codegen with plan mode still active — exactly one `ExitPlanMode` point (Step 7 BUILD PLAN)
 - Write `.project/` or source files between Step 3b and the Step 7 exit — defer to completion sync 10f. (The Step 2.5 "save spec only" off-ramp writes the spec **before** Step 3, outside this window, via the Design route's PHASE 3 → PHASE X — that is allowed.)
 - Create a worktree (Step 3) before the Step 2.5 gate resolves to "Build it" — a spec-only outcome must not leave an empty worktree
+- End the build with an open worktree without running the Step 12 Finalize offer — the worktree opened in Step 3 must always reach a finalize decision (mirrors the Convert route, `route-convert.md` PHASE 4 mandate). Never improvise a manual `/core-finalize` "next step" in place of Step 12.
 - Present design directions that reference levers the theme doesn't have
 - Run more than one smoke fix-round (multi-round verification is /frontend-check's job)
