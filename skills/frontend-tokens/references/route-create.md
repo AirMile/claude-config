@@ -17,6 +17,12 @@ Use these guidelines as a **bias layer** when making generative choices in Steps
 
 ---
 
+**Step 0b: Enter Plan Mode**
+
+> **Todo**: Use the `EnterPlanMode` tool now — Steps 0.5–7 (brand intake, color, typography, spacing, breakpoints, dark mode, motion, interactions) are generative design decisions that benefit from Opus-level reasoning under the `opusplan` router. `AskUserQuestion`, `Read`, `Glob`, `Grep`, and `WebFetch` keep working in plan mode; only Write/Edit are blocked — which is fine until Step 8 (write to `project.json`). Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
+
+---
+
 **Step 0.5: Brand intake check**
 
 Before starting, check if the user already provided a file path or URL in their trigger message. If a path/URL was provided → skip this question and go directly to `route-styleguide.md` with that source.
@@ -392,6 +398,8 @@ options:
   - label: "Cancel", description: "Stop without creating"
 multiSelect: false
 ```
+
+> **Todo**: Write the THEME SUMMARY above to the plan file, then use the `ExitPlanMode` tool — the summary is the plan output. In plan mode this replaces the AskUserQuestion gate: plan rejection = "Adjust" (loop back to the affected step); plan approval = proceed to the writes below. Skip this exit if plan mode is no longer active or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
 
 **If "Yes":**
 

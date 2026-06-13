@@ -120,6 +120,10 @@ KNOWN PITFALLS: {LEARNINGS_CONTEXT output, or "none"}
 
 If nothing available → continue without context (backwards compatible).
 
+### Enter Plan Mode
+
+> **Todo**: Use the `EnterPlanMode` tool now — PHASEs 1–6 (problem intake, codebase investigation, root cause analysis, research, fix plan generation, plan selection) benefit from Opus-level reasoning under the `opusplan` router. `AskUserQuestion`, `Read`, `Glob`, `Grep`, `WebSearch`, Context7 MCP, and Agent tools keep working in plan mode; only file writes are blocked — which is fine until PHASE 7 (reproduction test write). Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
+
 ---
 
 ## PHASE 1: Problem Intake
@@ -246,6 +250,8 @@ Proposed fixes ({M} total):
 Ask: "Which fixes do you want to apply? Give numbers (e.g. `1, 3` or `all`)."
 
 Parse → fix-set.
+
+> **Todo**: Use the `ExitPlanMode` tool once the fix-set is selected — present the chosen strategy and selected fixes (file:line refs) as the plan output. Plan rejection lets the user revise the fix selection. After approval, PHASEs 7–10 (reproduction test, implementation, verification, completion) run in Sonnet. Skip this exit if plan mode is no longer active or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
 
 ---
 

@@ -66,7 +66,7 @@ IS_WORKTREE=$([ "$(git rev-parse --git-dir)" != "$MAIN_ROOT/.git" ] && echo true
 
 Build the `Worktree:` line:
 
-- `$IS_WORKTREE = true` → `Worktree:    {WT_BRANCH} — UNMERGED (offer in §4.6)`
+- `$IS_WORKTREE = true` → `Worktree:    {WT_BRANCH} — UNMERGED (auto-finalized in §4.6)`
 - `$IS_WORKTREE = false` → `Worktree:    not in a worktree`
 
 ```
@@ -80,7 +80,7 @@ Verification: [N] rounds, [High | Medium | Low] match
 Code quality: [PASS | [N] violations fixed]
 Gaps:         [N linked | M created | K pending | "none"]
 Bans checked: [N forbidden patterns enforced | "none active"]
-Worktree:     {WT_BRANCH} — UNMERGED (finalize in §4.6) | not in a worktree
+Worktree:     {WT_BRANCH} — UNMERGED (auto-finalized in §4.6) | not in a worktree
 
 Files ([N]):
   Page:       [page file path]
@@ -102,7 +102,7 @@ rm -f .project/tmp/source-capture*.png .project/tmp/patch-before*.png .project/t
 
 Do NOT delete `.project/tmp/smoke-render-*.png` — those back the devinfo `buildScreenshot` handoff (24h staleness rule applies there).
 
-Before presenting the finalize offer, detect Node processes with cwd in the current worktree:
+Before auto-finalizing, detect Node processes with cwd in the current worktree:
 
 ```bash
 WT_PATH=$(git rev-parse --show-toplevel)
@@ -124,10 +124,32 @@ multiSelect: false
 
 On "Yes": `kill -TERM $CWD_PROCS 2>/dev/null; sleep 2; kill -KILL $CWD_PROCS 2>/dev/null || true`
 
-### 4.6 Finalize Offer
+### 4.6 Auto-finalize
 
 **Skip if `$IS_WORKTREE = false`** (detected in §4.4).
 
-Follow `shared/FINALIZE.md → Finalize Offer Decision` with `feature-name = $CONVERT_TARGET` — same delegation `dev-verify` uses (`dev-verify/references/finalize.md`). That single source reads `TEAM_MODE` + PR state and dispatches the offer / halt / "PR open → run /core-finalize after review" per its matrix; on a finalize or cleanup confirmation it runs `shared/FINALIZE.md` end-to-end (Branch Resolution → Uncommitted Check → Solo-Merge OR Cleanup → Output Report). The deferred "Keep open" message and the frontend-track backlog sync (PAGE ships only when already `DONE`, COMPONENT left untouched) are handled inside that procedure.
+Detect `TEAM_MODE` + PR state, then run `shared/FINALIZE.md` directly (no confirmation modal for the merge/cleanup decision):
+
+```bash
+TEAM_MODE=$(jq -r '.team.mode // "solo"' .project/project.json 2>/dev/null || echo "solo")
+PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
+PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
+PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
+PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
+```
+
+Dispatch (no `AskUserQuestion` for the merge/cleanup decision):
+
+| TEAM_MODE | PR_STATE | Action |
+|-----------|----------|--------|
+| solo | empty / `CLOSED` / no-gh | Run `shared/FINALIZE.md` mode=`solo` (Branch Resolution → Uncommitted Check → Solo-Merge → Cleanup → Output Report). |
+| solo | `MERGED` | Run `shared/FINALIZE.md` mode=`cleanup-only`. |
+| solo | `OPEN` | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $CONVERT_TARGET after review."` Exit. |
+| team | `MERGED` | Run `shared/FINALIZE.md` mode=`cleanup-only`. |
+| team | `OPEN` | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $CONVERT_TARGET after review."` Exit. |
+| team | empty / `CLOSED` | **Halt** — print `"Team project: no PR found. Push + open PR via /team-review."` Exit. |
+| team | no-gh | **Halt** — print `"Team mode but \`gh\` is not available — run \`gh auth login\` or toggle solo in backlog ⚙."` Exit. |
+
+The frontend-track backlog sync (PAGE ships only when already `DONE`, COMPONENT left untouched) is handled inside `shared/FINALIZE.md`.
 
 For component scope: this is the canonical close point — do not skip even if frontend-check was not run.

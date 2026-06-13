@@ -1,6 +1,6 @@
 ---
 name: frontend-design
-description: Design specification management (pages, flows, principles, components) and visual-to-code conversion (Figma/screenshots/wireframes/URLs) using project tokens. Use with /frontend-design, or auto-triggers on PAGE/COMPONENT backlog tasks with transition "designing" or "converting".
+description: Design-spec management and visual-to-code conversion using project tokens. Use with /frontend-design, or auto-triggers on PAGE/COMPONENT backlog tasks with transition "designing" or "converting".
 argument-hint: "[name|file-path|url|sketch]"
 reads:
   [
@@ -16,7 +16,7 @@ reads:
 writes: [devinfo.handoff, devinfo.tokenDrift, project.design]
 metadata:
   author: claude-config
-  version: 2.15.0
+  version: 2.16.0
   category: frontend
 ---
 

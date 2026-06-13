@@ -78,7 +78,7 @@ Some skills enter plan mode only when a condition fires mid-flow: `dev-refactor`
 
 ## Used by
 
-Full-phase: `dev-define`, `game-define`, `project-backlog`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`. Conditional entry (see § Conditional entry): `dev-refactor`, `game-refactor`, `frontend-design` (route-design.md PHASE 1.5 gate — synthesis routes only). Self-managed within a sub-route: `frontend-design` Create (`references/route-create.md`) and Build (`references/route-build.md` after worktree setup), Convert (`references/route-convert.md` PHASE 0).
+Full-phase: `dev-define`, `game-define`, `dev-debug`, `game-debug`, `project-backlog`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`. Conditional entry (see § Conditional entry): `dev-refactor`, `game-refactor`, `frontend-design` (route-design.md PHASE 1.5 gate — synthesis routes only). Self-managed within a sub-route: `frontend-design` Create (`references/route-create.md`) and Build (`references/route-build.md` — enters at Step 0b, exits at Step 7 before worktree setup + codegen), Convert (`references/route-convert.md` PHASE 0); `frontend-tokens` Create (`references/route-create.md` — Steps 0b–7).
 
 Authoritative for the above: `grep -rl "Entry protocol" skills/*/SKILL.md skills/*/references/*.md`
 

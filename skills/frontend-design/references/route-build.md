@@ -1,8 +1,8 @@
 # Route: Build (In-Claude-Code Code Generation)
 
-Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. Flow: entity selection → spec gate (review/edit, or save-spec-only off-ramp) → worktree → spec lookup + design levers → page composition → design directions (plan mode) → code generation → post-write checks → render smoke check → completion sync. See `../../shared/CODEGEN.md` for the shared code-gen patterns also used by the Convert route.
+Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. Flow: plan mode entry → entity selection → spec gate (review/edit, or save-spec-only off-ramp — exits plan mode and writes spec) → design levers → page composition → design directions → BUILD PLAN → ExitPlanMode → worktree → code generation → post-write checks → render smoke check → completion sync. See `../../shared/CODEGEN.md` for the shared code-gen patterns also used by the Convert route.
 
-This route is the single entry for working on an existing entity's spec **and** code: the Step 2.5 spec gate absorbs the old standalone "Edit spec" action (route-page/route-component field editing) and offers a "save spec only — don't build" off-ramp that exits before any worktree or codegen.
+This route is the single entry for working on an existing entity's spec **and** code: the Step 2.5 spec gate absorbs the old standalone "Edit spec" action (route-page/route-component field editing) and offers a "save spec only — don't build" off-ramp that exits plan mode and writes the spec before any worktree or codegen.
 
 **Trigger:** only reachable if `$HAS_BUILD_CANDIDATES = true` (detected in PHASE 1).
 
@@ -17,6 +17,10 @@ This route is the single entry for working on an existing entity's spec **and** 
 See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "designing"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`) and skip entity/candidate selection modals.
 
 On successful code generation: remove `transition`, set `status: "DOING"`, `stage: "built"`. Handled by completion sync 10d (`build-completion-sync.md`) — this description is informational only.
+
+#### Step 0b: Enter Plan Mode
+
+> **Todo**: Use the `EnterPlanMode` tool now — Steps 1–7 (entity/candidate/spec decisions, design levers, page composition, design directions, BUILD PLAN) all benefit from Opus-level reasoning under the `opusplan` router. `AskUserQuestion` modals, `Read`, `Glob`, `Grep`, and `WebFetch` keep working inside plan mode; only Write/Edit and git-writes are blocked — which is fine until codegen. The worktree is created after `ExitPlanMode` (Step 7b); the only disk writes (spec, design.\*, backlog) are deferred to the off-ramp exit or completion sync 10f. Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
 
 #### Step 1: Entity selection
 
@@ -71,7 +75,7 @@ Store as `$TARGET_COMPONENT`. Store `$TARGET` = `$TARGET_PAGE` or `$TARGET_COMPO
 
 #### Step 2.5: Spec gate (review / edit / save-only — runs before worktree)
 
-This gate is the single entry that absorbs the old standalone "Edit spec" action. It runs **before** Step 3 (worktree) and Step 3b (plan mode) so a spec-only outcome never creates an empty worktree. Resolve the spec, show it, then let the user decide whether to build.
+This gate is the single entry that absorbs the old standalone "Edit spec" action. It runs inside plan mode (entered in Step 0b), before any worktree exists, so a spec-only outcome never creates an empty worktree. Resolve the spec, show it, then let the user decide whether to build.
 
 **Resolve the spec source (entity-agnostic):**
 
@@ -137,21 +141,13 @@ Routing:
 
   Apply the edits to the in-memory spec, then loop back to the gate (re-show spec).
 
-- **"Save spec only — don't build"** → hand the spec back to the Design route's write machinery and exit before any worktree/plan-mode/codegen:
+- **"Save spec only — don't build"** → exit plan mode first (the resolved spec is the plan output — use `ExitPlanMode`; skip if the skill was started in plan mode by the user), then hand the spec to the Design route's write machinery:
 
   > **Todo**: Read `.claude/skills/frontend-design/references/route-design.md` and run **PHASE 3 (Confirm)** → **PHASE X (post-flight write/validate)** → **Completion**.
 
-  This is exactly the old "Edit spec" outcome: the spec is written to `design.*` (status `DEF`), checkpointed, and backlog-synced by the Design route. Build stops here — no `$INLINE_SPEC` deferral, no worktree.
+  This is exactly the old "Edit spec" outcome: the spec is written to `design.*` (status `DEF`), checkpointed, and backlog-synced by the Design route. Build stops here — no `$INLINE_SPEC` deferral, no worktree. This is the single `ExitPlanMode` for the off-ramp run.
 
-- **"Build it"** → store the resolved spec as `$SPEC` (and `$INLINE_SPEC` if captured fresh — its write to `design.*` stays deferred to completion sync 10f, since Step 3b plan mode blocks writes), then continue to Step 3.
-
-#### Step 3: Worktree setup
-
-Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = $TARGET`. Creates an isolated worktree for this build so generated code lands on a separate branch. Skip if already in a worktree (procedure detects).
-
-#### Step 3b: Enter Plan Mode
-
-> **Todo**: Use the `EnterPlanMode` tool now — Steps 4–7 (design levers, page composition, design directions, BUILD PLAN) all benefit from Opus-level design reasoning. (Spec review/edit already happened in the Step 2.5 gate, before this point.) `AskUserQuestion` modals and file reads remain available inside plan mode; only Write/Edit are blocked, which is fine until codegen. Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
+- **"Build it"** → store the resolved spec as `$SPEC` (and `$INLINE_SPEC` if captured fresh — its write to `design.*` stays deferred to completion sync 10f, since plan mode blocks writes from Step 0b onward), then continue to Step 4.
 
 #### Step 4: Build context (seed + design levers)
 
@@ -247,7 +243,7 @@ Store `$DESIGN_DIRECTION = { name, archetype, hierarchy, tokens[], motion, surfa
 
 ---
 
-#### Step 7: Generate (entity-aware)
+#### Step 7: Build plan & plan-mode exit (entity-aware)
 
 Consult `../../shared/CODEGEN.md` for full patterns. Output path determined by entity type and scope:
 
@@ -300,9 +296,17 @@ Caveats:      {missing deps, missing tokens, auto-patch layout, etc. — or "non
 ═══════════════════════════════════════════════════════════════
 ```
 
-> **Todo**: Use the `ExitPlanMode` tool once the BUILD PLAN is composed — present the BUILD PLAN plus the chosen design direction ({$DESIGN_DIRECTION.name}) as the plan output. Plan rejection covers "adjust plan". After user approval, codegen and all remaining steps (post-write checks, smoke, completion sync) run in Sonnet. Do NOT re-enter plan mode later in this run. Skip this exit if plan mode is no longer active or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
+> **Todo**: Use the `ExitPlanMode` tool once the BUILD PLAN is composed — present the BUILD PLAN plus the chosen design direction ({$DESIGN_DIRECTION.name}) as the plan output. Plan rejection covers "adjust plan". **After user approval the FIRST action is Step 7b (worktree setup) — not codegen.** The remaining steps then run in Sonnet in this order: Step 7b (worktree) → Step 7c (codegen) → post-write checks → smoke → completion sync → Step 12 (finalize). Do NOT re-enter plan mode later in this run. Skip this exit if plan mode is no longer active or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
 
-After approval — generate and write immediately:
+#### Step 7b: Worktree setup
+
+Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = $TARGET`. Runs now — after `ExitPlanMode` — because Auto-create performs git and filesystem writes and may show collision `AskUserQuestion`s, both of which require plan mode to be exited. Creates an isolated worktree for this build so generated code lands on a separate branch. Skip if already in a worktree (procedure detects).
+
+#### Step 7c: Generate and write
+
+**Pre-write gate** — before the first Write/Edit, assert the worktree is live: current branch is `worktree-{$TARGET}`, OR a `shared/WORKTREE.md` skip-condition demonstrably applied (already in a worktree / no feature-name / batch-mode). If neither holds, Step 7b was skipped in error — run it now before generating. Never write source files straight onto the default branch when a worktree should exist.
+
+After the worktree is set up (Step 7b) — generate and write:
 
 - Inject a `DESIGN DIRECTION:` header (full `$DESIGN_DIRECTION` — name, hierarchy, tokens, motion, surfaces) into the generation prompt — these token decisions are binding
 
@@ -399,9 +403,9 @@ The report is **not** the end of the build — Step 12 (worktree finalize) runs 
 
 #### Step 12: Finalize worktree (auto-close)
 
-The Build route owns the **full** worktree lifecycle: Step 3 opens the worktree, this step closes it. There is no separate frontend-verify skill (`/frontend-check` is the post-merge quality pass — the `dev-refactor` role, not the `dev-verify` role), so the build must finalize its own worktree rather than leave it dangling. Mirrors `dev-verify`'s PHASE Finalize and the Convert route's `convert-completion.md §4.5–4.6`.
+The Build route owns the **full** worktree lifecycle: Step 7b opens the worktree, this step closes it. There is no separate frontend-verify skill (`/frontend-check` is the post-merge quality pass — the `dev-refactor` role, not the `dev-verify` role), so the build must finalize its own worktree rather than leave it dangling. Mirrors `dev-verify`'s PHASE Finalize and the Convert route's `convert-completion.md §4.5–4.6`.
 
-**Skip if no worktree was created this run** — detect: `current branch != worktree-{$TARGET}` (Step 3 was skipped because already on a feature branch, or the Step 2.5 gate exited "save spec only"). Then print `Worktree: not in a worktree` and end the build.
+**Skip if no worktree was created this run** — detect: `current branch != worktree-{$TARGET}` (Step 7b was skipped because already on a feature branch, or the Step 2.5 gate exited "save spec only" before reaching Step 7b). Then print `Worktree: not in a worktree` and end the build.
 
 Otherwise:
 
@@ -414,7 +418,29 @@ Otherwise:
 
    `CWD_PROCS` non-empty → AskUserQuestion ("Dev server active — stop {N} process(es) before cleanup?"): "Yes, stop them (Recommended)" → `kill -TERM $CWD_PROCS 2>/dev/null; sleep 2; kill -KILL $CWD_PROCS 2>/dev/null || true` | "Keep running" → continue.
 
-2. **Finalize** — follow `shared/FINALIZE.md → Finalize Offer Decision` with `feature-name = $TARGET` — the same delegation `dev-verify` (`dev-verify/references/finalize.md`) and the Convert route use. That single source reads `TEAM_MODE` + PR state and dispatches the offer / halt / "PR open → run /core-finalize after review" per its matrix; on a finalize or cleanup confirmation it runs `shared/FINALIZE.md` end-to-end (Branch Resolution → Uncommitted Check → Solo-Merge OR Cleanup → Output Report). The deferred "Keep open" message and the frontend-track backlog sync (PAGE ships only when already `DONE`, COMPONENT left untouched — `FINALIZE.md` never promotes `DOING → DONE`) are handled inside that procedure.
+2. **Auto-finalize** — detect `TEAM_MODE` + PR state, then run `shared/FINALIZE.md` directly (no confirmation modal for the merge/cleanup decision):
+
+   ```bash
+   TEAM_MODE=$(jq -r '.team.mode // "solo"' .project/project.json 2>/dev/null || echo "solo")
+   PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
+   PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
+   PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
+   PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
+   ```
+
+   Dispatch (no `AskUserQuestion` for the merge/cleanup decision — the Build route owns the full worktree lifecycle):
+
+   | TEAM_MODE | PR_STATE | Action |
+   |-----------|----------|--------|
+   | solo | empty / `CLOSED` / no-gh | Run `shared/FINALIZE.md` mode=`solo` (Branch Resolution → Uncommitted Check → Solo-Merge → Cleanup → Output Report). |
+   | solo | `MERGED` | Run `shared/FINALIZE.md` mode=`cleanup-only`. |
+   | solo | `OPEN` | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $TARGET after review."` Exit. |
+   | team | `MERGED` | Run `shared/FINALIZE.md` mode=`cleanup-only`. |
+   | team | `OPEN` | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $TARGET after review."` Exit. |
+   | team | empty / `CLOSED` | **Halt** — print `"Team project: no PR found. Push + open PR via /team-review."` Exit. |
+   | team | no-gh | **Halt** — print `"Team mode but \`gh\` is not available — run \`gh auth login\` or toggle solo in backlog ⚙."` Exit. |
+
+   The frontend-track backlog sync (PAGE ships only when already `DONE`, COMPONENT left untouched — `FINALIZE.md` never promotes `DOING → DONE`) is handled inside `shared/FINALIZE.md`.
 
 3. **Session-reorientation guard (cleanup path only)** — before `git worktree remove`, if `pwd` is inside the worktree, `cd {main-repo-path}` first; after successful cleanup print the `🏠 Worktree removed` banner (per `dev-verify/references/finalize.md`).
 
@@ -426,9 +452,9 @@ For COMPONENT scope this is the canonical close point — do not skip even if `/
 
 This route must **NEVER**:
 
-- Reach Step 7 codegen with plan mode still active — exactly one `ExitPlanMode` point (Step 7 BUILD PLAN)
-- Write `.project/` or source files between Step 3b and the Step 7 exit — defer to completion sync 10f. (The Step 2.5 "save spec only" off-ramp writes the spec **before** Step 3, outside this window, via the Design route's PHASE 3 → PHASE X — that is allowed.)
-- Create a worktree (Step 3) before the Step 2.5 gate resolves to "Build it" — a spec-only outcome must not leave an empty worktree
-- End the build with an open worktree without running the Step 12 Finalize offer — the worktree opened in Step 3 must always reach a finalize decision (mirrors the Convert route, `route-convert.md` PHASE 4 mandate). Never improvise a manual `/core-finalize` "next step" in place of Step 12.
+- Reach codegen with plan mode still active — there are two `ExitPlanMode` locations but they are mutually exclusive: exactly one fires per run: the Step 2.5 "save spec only" off-ramp exit (spec-only runs), or the Step 7 BUILD PLAN exit (build runs). A run never hits both.
+- Write `.project/` or source files between Step 0b (`EnterPlanMode`) and the Step 7 `ExitPlanMode` — defer to completion sync 10f. (The Step 2.5 "save spec only" off-ramp calls its own `ExitPlanMode` first, then writes the spec via the Design route's PHASE 3 → PHASE X — that write is outside the plan-mode window, so it is allowed.)
+- Create a worktree before the Step 7 `ExitPlanMode` — worktree creation (Step 7b) runs only after plan mode exits and only on the "Build it" path; a spec-only outcome must not leave an empty worktree
+- End the build with an open worktree without running Step 12 auto-finalize — the worktree opened in Step 7b must always reach a finalize decision (mirrors the Convert route, `route-convert.md` PHASE 4 mandate). Never improvise a manual `/core-finalize` "next step" in place of Step 12.
 - Present design directions that reference levers the theme doesn't have
 - Run more than one smoke fix-round (multi-round verification is /frontend-check's job)

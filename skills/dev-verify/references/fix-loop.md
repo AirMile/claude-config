@@ -87,7 +87,7 @@ SYNC: Root cause: {file:line}. Fix: {approach}. Impact: {scope}.
 
 Re-test ONLY fixed items.
 
-**Phase A: Auto** — fixed AUTO items via Agent (same approach as PHASE 1, markers `RETEST_RESULTS_START`/`RETEST_RESULTS_END`). TOOL_ERROR → Phase B.
+**Phase A: Auto** — re-run fixed AUTO items inline (same approach as PHASE 1: background Bash for server/browser runs, sync Bash for fast checks). TOOL_ERROR → Phase B.
 
 **Phase B: Manual** — fixed MANUAL items via walkthrough. Show CHANGE (fix summary) + original steps.
 
@@ -116,7 +116,7 @@ Loop back to PHASE 3. AUTO items → re-run in PHASE 5A. MANUAL items → re-tes
 - No previously-PASS AUTO items in PHASE 2b
 - All fixes were MANUAL-only (config/styling)
 
-Re-run all previously-PASS AUTO items via Agent (same approach as PHASE 1).
+Re-run all previously-PASS AUTO items inline (same approach as PHASE 1).
 
 ```
 REGRESSION CHECK: {feature-name}

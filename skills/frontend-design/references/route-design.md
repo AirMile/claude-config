@@ -276,7 +276,7 @@ The action chosen in PHASE 1 routes to a synthesis interview or a CRUD/self-mana
 
 **Do NOT enter plan mode** for:
 
-- **Build** and **Create** — these self-manage plan mode internally (Build enters late at `route-build.md` after worktree setup, since a worktree git-write must happen outside plan mode; Create enters at `route-create.md`).
+- **Build** and **Create** — these self-manage plan mode internally (Build enters at the **start** of `route-build.md` (Step 0b) so entity/candidate/spec decisions land on the planning model, and defers worktree creation to after `ExitPlanMode` (Step 7b) since the worktree git-writes must run outside plan mode; Create enters at `route-create.md`).
 - **View**, **Delete**, **Restore** — pure CRUD, kept friction-free.
 
 **Skip `EnterPlanMode` if already in plan mode** — if an active plan-mode system-reminder already exists (the user started `/plan-mode` themselves, or a prior synthesis loop already entered), skip the call and read the existing plan-file path from the active system-reminder.

@@ -1,12 +1,12 @@
 ---
 name: dev-verify
-description: Run adversarial acceptance tests and fix loops on a built feature — classifies test items (COVERED/AUTO/MANUAL), runs auto-tests, walks user through manual ones, fixes failures, and finalizes the worktree. Use with /dev-verify, or auto-triggers when a feature has transition=verifying after /dev-build completes.
+description: Verify a built feature: classify → test → fix → finalize. Trigger: /dev-verify.
 reads:
   [feature.requirements, feature.build, project-context.learnings, conventions]
 writes: [feature.tests, backlog.status, project-context.learnings]
 metadata:
   author: claude-config
-  version: "2.12.0"
+  version: "2.13.0"
   category: dev
 ---
 
@@ -195,19 +195,23 @@ CATEGORY_GAPS:
 
 **Skip** if there are no AUTO items (all non-COVERED items are MANUAL, or everything is COVERED).
 
-Launch Agent to execute non-COVERED AUTO items in a separate context window.
+Run non-COVERED AUTO items **in the main context** — no subagent. This keeps execution visible and prevents the opaque-hang failure mode of delegating a blocking browser/server test to an agent.
 
-**AUTO/CLI approach selection** (agent decides based on feature type):
+**AUTO/CLI approach selection** (decide per feature type):
 
 - **Pure API / service feature**: write integration test file (node:test / vitest) with mock dependencies and real DB (mongodb-memory-server). Test via service layer, not HTTP.
 - **Feature requiring running server**: curl commands against dev server.
 - **Build/lint verification**: direct bash commands.
 
-Agent prompt: read `references/auto-test-runner.md` and substitute `{feature-name}`, `{STACK_CONTEXT}`, dev server URL (if running), and the AUTO items list.
+**Execution** — read `references/auto-test-runner.md` for the item-handling spec (test-file path decisions, BROWSER/CLI/acceptance patterns, result format). Then:
 
-**Parse results:** if output is truncated (no markers visible), use Grep to find `AUTOMATED_RESULTS_START` in agent output. TOOL_ERROR items → reclassify as MANUAL.
+1. Write any needed test/spec files per the path decisions in the reference.
+2. Run the test command and capture structured output:
+   - **Long-running or server-dependent** (Playwright/e2e, anything hitting the dev server) → `Bash` with `run_in_background: true`, writing `--reporter=json` (or equivalent) to `.project/session/auto-test-results.json`. Use `Monitor` to stream progress until the run exits or a timeout fires. The harness re-invokes on exit — a stuck run never hangs silently.
+   - **Fast & deterministic** (build, lint, `tsc --noEmit`, in-process unit suite) → a plain synchronous `Bash` with a timeout is enough.
+3. Read the result file / output, parse PASS/FAIL per item. A command that errors or never completes → mark the item TOOL_ERROR.
 
-**Agent fails completely:** graceful fallback → all AUTO items become MANUAL.
+**TOOL_ERROR items** → reclassify as MANUAL.
 
 Display: `AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}`
 

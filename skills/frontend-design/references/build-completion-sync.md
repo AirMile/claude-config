@@ -4,7 +4,7 @@ Loaded after Step 9. Inputs: `$GENERATED_FILES`, `$TARGET`, `$TARGET_TYPE`, `$VE
 
 10a–10c run unconditionally after Step 8 succeeds — they are static analyses on `$GENERATED_FILES`. Only 10d (Backlog sync) reads `$VERIFY_STATUS`/`$SMOKE` to decide the final feature stage. 10e (Gap-discovery) and 10f (Deferred writes) run always.
 
-After these steps and the Step 11 report, `route-build.md` **Step 12 (worktree finalize)** closes the worktree opened in Step 3 — the Build route owns the full open→close lifecycle, mirroring `convert-completion.md §4.5–4.6`. Backlog status is set here (10d); the merge/cleanup in Step 12 never changes it (`FINALIZE.md` never promotes `DOING → DONE`).
+After these steps and the Step 11 report, `route-build.md` **Step 12 (worktree finalize)** closes the worktree opened in Step 7b — the Build route owns the full open→close lifecycle, mirroring `convert-completion.md §4.5–4.6`. Backlog status is set here (10d); the merge/cleanup in Step 12 never changes it (`FINALIZE.md` never promotes `DOING → DONE`).
 
 **10a. Block inventory**:
 

@@ -1,6 +1,6 @@
 ---
 name: dev-refactor
-description: Batch refactor DONE features for DRY and clarity. Use with /dev-refactor. Auto-triggers on transition=refactoring.
+description: Refactor DONE features for DRY/clarity. /dev-refactor or transition=refactoring.
 reads:
   [
     feature.build,
@@ -14,7 +14,7 @@ writes: [backlog.status, project-context.learnings, conventions]
 writes-terminal: [feature.refactor]
 metadata:
   author: claude-config
-  version: 2.7.0
+  version: 2.8.0
   category: dev
 ---
 
@@ -195,12 +195,20 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 0. **Load or generate refactor-patterns.md** (lazy — deferred from PHASE 0 so patterns are not generated when all features turn out to be CLEAN):
 
    ```
-   IF .claude/research/refactor-patterns.md exists:
+   Detect stack from CLAUDE.md ### Stack section (needed for both the check and generation).
+
+   IF .claude/research/refactor-patterns.md exists AND its first-line comment
+   "<!-- Generated via Context7 for: {stack list} -->" lists the same
+   libraries/frameworks as the current CLAUDE.md ### Stack:
      → Load cached patterns, skip Context7
      → Log: "Refactor patterns loaded (cached)"
 
-   IF NOT exists:
-     → Detect stack from CLAUDE.md ### Stack section
+   IF the file exists but its header lists a DIFFERENT stack (stale cache — the file
+   lives in the shared .claude/research/ dir and is reused across projects/skills):
+     → Treat as NOT exists (regenerate and overwrite)
+     → Log: "Refactor patterns stale ({cached stack} ≠ {current stack}) — regenerating"
+
+   IF NOT exists (or stale per above):
      → For each library/framework in stack:
         Context7 resolve-library-id → query-docs:
         "Common code smells, anti-patterns, and refactoring opportunities

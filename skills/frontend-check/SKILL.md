@@ -1,6 +1,6 @@
 ---
 name: frontend-check
-description: Runtime audit + fix hub for performance, SEO, a11y, responsive, darkmode, error states, and flows. Batch over DOING features or targeted. Use with /frontend-check.
+description: Use when built frontend features need a runtime audit before shipping. Use with /frontend-check.
 argument-hint: "[url | source-path | feature-name] [--scope=performance|seo|responsive|a11y|...]"
 reads:
   [
@@ -12,10 +12,10 @@ reads:
     feature.files,
     feature.architecture,
   ]
-writes: [backlog.status, backlog.lastCheckedSha]
+writes: [backlog.status, backlog.lastCheckedSha, backlog.shipped]
 metadata:
   author: claude-config
-  version: 3.3.0
+  version: 3.4.0
   category: frontend
 ---
 
@@ -67,13 +67,7 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
 
    A COMPONENT stays `DOING` until its consuming page ships, but once checked at HEAD it leaves the queue until code changes — so it is not re-audited every run.
 3. If no candidates: show `"No features pending runtime audit."` and stop.
-4. Show:
-   ```
-   BATCH AUDIT — [N] features pending runtime check
-   [list: name · status · lastCheckedSha vs shippedSha]
-   Run targeted mode for a single feature: /frontend-check <name>
-   ```
-5. Set `$BATCH_MODE = true`, `$BATCH_TARGETS = [candidate list]`. The full batch flow — queue confirmation, sequential scan + triage, ONE combined report, ONE fix-scope approval, per-feature fix with rollback, single batch completion — is driven entirely by the batch reference. Do NOT run the per-feature single-target loop or per-feature approval prompts.
+4. Set `$BATCH_MODE = true`, `$BATCH_TARGETS = [candidate list]`. Queue presentation + confirmation are owned by `batch.md §0` (auto-proceed ≤3, else confirm) — do not pre-print a queue block here. The full batch flow — queue confirmation, sequential scan + triage, ONE combined report, ONE fix-scope approval, per-feature fix with rollback, single batch completion — is driven entirely by the batch reference. Do NOT run the per-feature single-target loop or per-feature approval prompts.
 
 > **Todo**: Read '.claude/skills/frontend-check/references/batch.md'
 
@@ -236,7 +230,9 @@ Run all selected checks. Each produces findings with severity + category.
 
 ### 1.0 Auth Setup (optional)
 
-If scope contains Flow, Smoke, or Darkmode:
+Skip entirely if `project.json#stack.auth` is empty — no auth in the project, so the answer is always "no auth needed".
+
+Otherwise, if scope contains Flow, Smoke, or Darkmode:
 
 ```yaml
 header: "Auth"
