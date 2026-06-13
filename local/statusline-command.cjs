@@ -74,7 +74,22 @@ process.stdin.on("end", () => {
   const data = JSON.parse(input);
   const dir = data.workspace?.current_dir || data.cwd || "~";
 
-  const repo = path.basename(dir);
+  let repo = path.basename(dir);
+  if (data.worktree?.name) {
+    try {
+      const commonDir = execSync("git rev-parse --git-common-dir 2>/dev/null", {
+        cwd: dir,
+        encoding: "utf8",
+        env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" },
+      }).trim();
+      if (commonDir) {
+        const absCommon = path.resolve(dir, commonDir);
+        if (path.basename(absCommon) === ".git") {
+          repo = path.basename(path.dirname(absCommon));
+        }
+      }
+    } catch {}
+  }
   let branch = "";
   try {
     branch = execSync("git symbolic-ref --short HEAD 2>/dev/null", {
