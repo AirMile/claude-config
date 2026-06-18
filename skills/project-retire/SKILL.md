@@ -27,14 +27,14 @@ metadata:
 
 # Retire
 
-Safely decommission a **built** feature: remove its code, fix or flag every caller, pass the test suite, and clean up backlog + architecture + learnings — with history preserved (archive, never silent deletion). Modeled on the `core-delete` safety pattern: scan → impact report → confirm → execute → verify.
+Safely decommission a **built** feature: remove its code, fix or flag every caller, pass the test suite, and clean up backlog + architecture + learnings — with history preserved (archive, never silent deletion). Built on a safety pattern: scan → impact report → confirm → execute → verify.
 
 **Trigger**: `/project-retire` or `/project-retire {feature-name}`
 
 ## When to Use
 
 - A DONE/DOING (or already shipped) feature is no longer needed and its code should leave the codebase
-- NOT for: un-built TODO/DEFINED items (cancel those via `/project-backlog` update mode or the board UI), removing a skill (`/core-delete`), or removing a project from the multi-project setup (`/project-remove`)
+- NOT for: un-built TODO/DEFINED items (cancel those via `/project-backlog` update mode or the board UI), removing a skill (delete its `skills/<name>/` directory and clean up references manually), or removing a project from the multi-project setup (`/project-remove`)
 
 ## Workflow
 
@@ -71,7 +71,7 @@ Safely decommission a **built** feature: remove its code, fix or flag every call
 
 ### PHASE 2: Impact Report + Confirm
 
-1. Show the report (core-delete template):
+1. Show the report:
 
    ```
    IMPACT REPORT: {feature}

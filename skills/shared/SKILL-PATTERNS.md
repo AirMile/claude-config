@@ -1,6 +1,6 @@
 # Skill Authoring Patterns
 
-Conventions for recurring patterns in skill workflows. Used by `core-create` and `core-edit` when building or modifying skills.
+Conventions for recurring patterns in skill workflows. Referenced when authoring or modifying skills.
 
 ---
 

@@ -58,18 +58,20 @@ Theme token usage:     {N} files, {M} references
 
 ```yaml
 header: "Website Sync"
-question: "There are {N} files with hardcoded colors/styling that don't use the theme. Would you like to restyle?"
+question: "There are {N} files with hardcoded colors/styling that don't use the theme. How do you want to sync?"
 options:
-  - label: "Yes, restyle all (Recommended)", description: "Replace hardcoded values with theme tokens in all {N} files"
+  - label: "Full conversion — 100% (Recommended)", description: "Convert every hardcoded value to a theme token. Values that must stay hardcoded (e.g. white icon on a gradient) are listed as explicit exceptions, not skipped silently. Uses plan-mode review before any edits."
+  - label: "Best-effort restyle", description: "Replace the obvious hardcoded values across {N} files; leftover drift is reported but not guaranteed to be zero"
   - label: "Extract as theme", description: "Formalize existing colors/values as theme tokens (reverse sync)"
-  - label: "Show files", description: "View which files are affected before deciding"
   - label: "No, save theme only", description: "Skip — manual later"
 multiSelect: false
 ```
 
-**If "Extract as theme":** Run the Extract route (PHASE 2 → Route: Extract) to parse existing hardcoded color/spacing values from component files as theme tokens. After extraction, merge into `project.json#theme` (existing tokens take priority, extracted values fill gaps), re-run Theme Infrastructure Sync (X.6). This formalizes existing design choices rather than overwriting them.
+"Full conversion" continues to the plan-mode gate in Y.4.
+"Best-effort restyle" goes directly to edits (old behaviour).
+"Show files" is no longer a standalone option — file-level detail is visible in the Full conversion plan-mode review before any edit runs.
 
-**If "Show files":** Show file list with hardcoded value count per file, then re-ask with "Yes, restyle all" / "Select specific" / "No" options.
+**If "Extract as theme":** Run the Extract route (PHASE 2 → Route: Extract) to parse existing hardcoded color/spacing values from component files as theme tokens. After extraction, merge into `project.json#theme` (existing tokens take priority, extracted values fill gaps), re-run Theme Infrastructure Sync (X.6). This formalizes existing design choices rather than overwriting them.
 
 ## Y.3.5 Open Worktree Guard
 
@@ -96,7 +98,7 @@ No open worktrees → proceed to Y.4.
 
 ## Y.4 Restyle Execution (if approved)
 
-**Step 1: Replace hardcoded values**
+### Best-effort restyle
 
 Per component file, replace hardcoded values with theme tokens using `shared/TOKENS.md § Token → Class Mapping`. Quick reference:
 
@@ -111,11 +113,20 @@ Per component file, replace hardcoded values with theme tokens using `shared/TOK
 | `rounded-[8px]`           | `rounded-md`           |
 | `shadow-[0_4px_12px_...]` | `shadow-md`            |
 
-For the full mapping table (including typography, radius, shadow, and motion tokens), see `shared/TOKENS.md § Token → Class Mapping`. Map each hardcoded value to the closest token by color distance / value match.
+For the full mapping table (including typography, radius, shadow, and motion tokens), see `shared/TOKENS.md § Token → Class Mapping`. Map each hardcoded value to the closest token by color distance / value match. After restyle, quick scan for remaining hardcoded values. Report count.
 
-**Step 2: Verification**
+### Full conversion (100%) — plan-mode gate
 
-After restyle, quick scan for remaining hardcoded values. Report count.
+1. **Enumerate** — list every hardcoded value across the affected files (T101-T111 hits), one row per occurrence: `file:line · current value · proposed token`.
+2. **Classify** each row:
+   - `convert` → maps to a theme token (use `shared/TOKENS.md § Token → Class Mapping`)
+   - `exception` → must stay hardcoded; record the reason (e.g. "white icon on gradient bg — token would reduce contrast"). Exceptions form the allowlist.
+3. **Plan-mode review** — call EnterPlanMode, present the convert-list and the exception allowlist as the plan, call ExitPlanMode for single-shot approval. The user sees and approves both lists before any edit runs.
+4. **Apply** — after approval, edit each `convert` row to its theme token. Leave `exception` rows untouched.
+
+### Verification (Full conversion)
+
+Re-run the T101-T111 scan. The sync is complete only when **every remaining hardcoded value is on the exception allowlist** from step 2. Any unlisted drift → return to the classify step for those rows (convert or justify as a new exception). Report: converted count · allowlisted exceptions (with reasons) · unlisted drift (must be 0).
 
 ## Y.5 Restyle Report
 
@@ -131,6 +142,7 @@ Changed files:
   ✓ {file} — {N} colors + spacing
   ✓ tailwind.config.ts — theme extension added/updated
 
+Exceptions (allowlist): {E} intentional (with reasons)
 Remaining:            {R} hardcoded values (manual review recommended)
 ════════════════════════════════════════════════
 ```

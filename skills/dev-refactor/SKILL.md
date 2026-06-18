@@ -93,6 +93,9 @@ The active-feature signal file is written in step 3 — in no-arg mode the featu
    - **No argument**:
      > **Todo**: Read `.claude/skills/dev-refactor/references/queue-selection.md` (UI-queue detection → scope selection → small-items mode), build the queue, then continue to step 3.
 
+   **Team-mode batch guard** — after the queue is built, before step 3:
+   If `TEAM_MODE == "team"` AND `feature_queue.length > 1` → follow `shared/PROJECT-MODE.md § Team-mode batch guard`.
+
 3. **Step 3: Worktree switch + git baseline:**
 
    If `feature_queue.length == 1`: execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL: stop with the message from WORKTREE.md.

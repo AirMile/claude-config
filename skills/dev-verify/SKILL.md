@@ -379,6 +379,6 @@ DEFERRED items: write per-item `tests.checklist[i] = { status: "deferred", defer
 1. All test items PASS (no open fix-loop items)
 2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
-> **Todo**: Read '.claude/skills/dev-verify/references/finalize.md' for the full flow (ExitWorktree note, PR offer, finalize behavior, session-reorientation guard, MERGED cleanup).
+> **Todo**: Read '.claude/skills/dev-verify/references/finalize.md' for the full flow (ExitWorktree note, auto-dispatch by TEAM_MODE + PR state, session-reorientation guard).
 
 > **Todo**: mark PHASE Finalize → `completed`.

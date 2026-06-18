@@ -20,7 +20,7 @@ The project dashboard is an interactive UI (served by `{skills_path}/shared/refe
 | `features` (derived — canonical in backlog.json), `recentChanges` | DASHBOARD-PROJECT.md § features + BACKLOG.md            |
 | § `optimization_runs` (schema + append strategy)                  | DASHBOARD-PROJECT.md § optimization_runs                |
 | § Design Section (pages, flows, principles, components)           | DASHBOARD-PROJECT.md § Design Section                   |
-| `design` schema + scope/appliesTo, `design.canvases`              | DASHBOARD-PROJECT.md § design schema / § Design Section |
+| `design` schema + scope/appliesTo                                 | DASHBOARD-PROJECT.md § design schema / § Design Section |
 | Writer tables: project.json sections, skill sync overview         | DASHBOARD-PROJECT.md § Which skills write what          |
 | Server (URLs, start command)                                      | DASHBOARD-PROJECT.md § Server                           |
 | `project-context.json` file schema                                | DASHBOARD-CONTEXT.md § project-context.json             |

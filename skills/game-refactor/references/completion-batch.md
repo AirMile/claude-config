@@ -197,22 +197,6 @@ Next steps:
 1. Single-mode (`feature_queue.length == 1`, not codebase-mode)
 2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
-**Step A — PR offer** (show only if ALL: `TEAM_MODE === "team"` (read via `shared/PROJECT-MODE.md`), `gh` on PATH + `gh auth status` exit 0, clean tree):
-
-```yaml
-header: "Open PR"
-question: "Push + open PR for worktree-{feature-name}?"
-options:
-  - label: "Yes, push + PR (Recommended)"
-    description: "Push the branch and open a PR via gh. Worktree stays until merged."
-  - label: "No, skip PR"
-    description: "Skip the PR; show finalize prompt instead."
-multiSelect: false
-```
-
-On "Yes" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
-On "No" or any precondition fail → fall through to finalize prompt.
-
-**Step B — Finalize prompt**: follow `shared/FINALIZE.md → Finalize Offer Decision`.
+**Finalize prompt**: follow `shared/FINALIZE.md → Finalize Offer Decision` (TEAM_MODE + PR-state dispatch). In team mode, the matrix offers a 3-way choice: Open PR / Merge directly to main / Keep open.
 
 On "Keep open" → print `💡 Run /game-refactor {feature-name} on this worktree when ready`.

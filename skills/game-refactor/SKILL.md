@@ -99,6 +99,9 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
    > **Todo**: Read `.claude/skills/game-refactor/references/queue-selection.md` for scope selection logic (a/b/c paths + codebase mode).
 
+   **Team-mode batch guard** — after the queue is built, before step 3:
+   If `TEAM_MODE == "team"` AND (`feature_queue.length > 1` OR codebase-mode) → follow `shared/PROJECT-MODE.md § Team-mode batch guard`.
+
 3. **Worktree switch** (single-mode only):
 
    If `feature_queue.length == 1` and not in codebase-mode: execute the procedure in `shared/WORKTREE.md` with the feature-name. Automatically switches to `worktree-{feature-name}` if it exists. On FAIL: stop with the message from WORKTREE.md.

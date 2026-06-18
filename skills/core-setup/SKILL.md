@@ -18,12 +18,16 @@ Hub skill that detects what the project needs and loads the appropriate flow.
 
 ### "Let Claude decide" Option
 
-For every AskUserQuestion where the choice is a **technical decision** with an objectively better answer given project context (stack picks, install/skip prompts, configuration trade-offs), add a final option:
+Add a final **"Let Claude decide"** option ONLY to modals that present a **genuinely open technical choice** — multiple viable options where no single one can be pre-blessed at authoring time (e.g. multi-select stack composition, suggestion sets). It is the steer when the modal has no single "(Recommended)" option.
 
 - **Label**: "Let Claude decide"
 - **Description**: "Claude picks the best option based on your project context and best practices"
 
-**Skip for personal-preference modals**: project name, project description, language selection, commit messages, anything tied to user identity or taste.
+**Do NOT add it when the modal already conveys a pick** — the two are mutually exclusive:
+
+- A single option is marked **"(Recommended)"** (e.g. install/skip prompts) — that label IS Claude's pick.
+- Detection **pre-selected a value** (e.g. team/solo mode, module-gap slots) — the detected default is the steer.
+- **Personal-preference / identity** modals: project name, description, language, commit messages.
 
 **When selected**: pick the best option based on project context and best practices. Display:
 

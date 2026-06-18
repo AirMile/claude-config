@@ -132,36 +132,6 @@ Next steps:
 
 ---
 
-## PHASE 4.5: Team handoff
-
-Runs only when: feature-name is known (backlog feature targeted, not URL-only) and current branch matches `worktree-*` pattern.
-
-**Optional PR offer** — show first, only if ALL true:
-
-1. Current branch matches `worktree-*` pattern
-2. `TEAM_MODE === "team"` — read via `shared/PROJECT-MODE.md` read pattern (absent → skip)
-3. `gh` on PATH AND `gh auth status` exit 0
-4. Clean tree (`git status --porcelain -- ':!.project'` empty — session-state files in `.project/` are excluded from this check)
-5. Feature `shipped: true` (set in 4.3)
-
-If all true → AskUserQuestion:
-
-```yaml
-header: "Open PR"
-question: "Push + open a PR for worktree-{feature-name}?"
-options:
-  - label: "Yes, push + PR (Recommended)"
-    description: "Push the branch and open a PR via gh. Worktree stays until merged."
-  - label: "No, skip PR"
-    description: "Skip the PR; show finalize prompt instead."
-multiSelect: false
-```
-
-On "Yes" → follow `shared/PR.md`. Print PR URL. Suppress finalize prompt below.
-On "Nee" or any precondition fail → fall through to finalize prompt (PHASE 5).
-
----
-
 ## PHASE 5: Finalize
 
 Runs only when: feature-name is known (backlog feature targeted, not URL-only) and current branch matches `worktree-*` pattern.

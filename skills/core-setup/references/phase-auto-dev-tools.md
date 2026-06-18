@@ -14,7 +14,7 @@ The caller's transition marker supplies:
 
 | Aspect            | `greenfield-auto`                                       | `mature-ask`                                        |
 | ----------------- | ------------------------------------------------------- | --------------------------------------------------- |
-| Gate              | None — auto-install on match, silent skip on mismatch   | AskUserQuestion per tool (with "Let Claude decide") |
+| Gate              | None — auto-install on match, silent skip on mismatch   | AskUserQuestion per tool                            |
 | Already-installed | Not probed (fresh project)                              | File probes decide whether to offer at all          |
 | Dev server note   | Skip "Restart dev server" steps (no server running yet) | Follow setup-guide fully                            |
 
@@ -44,7 +44,7 @@ options:
 multiSelect: false
 ```
 
-On "Skip": no action. On "Install" or "Let Claude decide": proceed.
+On "Skip": no action. On "Install": proceed.
 
 **Install:**
 
@@ -85,7 +85,7 @@ options:
 multiSelect: false
 ```
 
-On "Skip": no action. On "Install" or "Let Claude decide": proceed.
+On "Skip": no action. On "Install": proceed.
 
 **Install:**
 

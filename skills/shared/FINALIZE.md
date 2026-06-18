@@ -4,7 +4,9 @@ Single source of truth for finalizing a feature worktree — either solo-merge (
 
 ## Finalize Offer Decision
 
-Skills that opportunistically offer finalize (`dev-verify`, `dev-refactor`, `game-verify`, `game-refactor`, `frontend-check`) consult this matrix to decide whether/how to prompt the user. Differs from the Detection matrix below: this is about **whether we ask**, not about **what finalize executes**.
+Skills that opportunistically offer finalize (`dev-refactor`, `game-refactor`, `frontend-check`) consult this matrix to decide whether/how to prompt the user. Differs from the Detection matrix below: this is about **whether we ask**, not about **what finalize executes**.
+
+> **Note:** `dev-verify` and `game-verify` no longer use this matrix — they use an inline auto-dispatch (see their own `references/finalize.md` / `references/completion-finalize.md`). The matrix below is for the last step of the pipeline only.
 
 Read `TEAM_MODE` + detect PR state:
 
@@ -18,17 +20,52 @@ PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
 
 Dispatch:
 
-| TEAM_MODE | PR_STATE                 | Action                                                                                                     |
-| --------- | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| solo      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.     |
-| solo      | `MERGED`                 | AskUserQuestion cleanup ("Cleanup now? Remove worktree + branch.") → `FINALIZE.md` mode `cleanup-only`.    |
-| solo      | empty / `CLOSED` / no-gh | AskUserQuestion finalize ("Finalize now — merge to main + cleanup?") → `FINALIZE.md` mode `solo`.          |
-| team      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.     |
-| team      | `MERGED`                 | AskUserQuestion cleanup → `FINALIZE.md` mode `cleanup-only`.                                               |
-| team      | empty / `CLOSED`         | Print `"Team project: no PR found. Push + open PR via /team-review."` Halt — no auto-merge.                |
-| team      | no-gh                    | Print `"Team mode but \`gh\` is not available — run \`gh auth login\` or toggle solo in backlog ⚙."` Halt. |
+| TEAM_MODE | PR_STATE                 | Action                                                                                                                                                                    |
+| --------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| solo      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.                                                                    |
+| solo      | `MERGED`                 | AskUserQuestion cleanup ("Cleanup now? Remove worktree + branch.") → `FINALIZE.md` mode `cleanup-only`.                                                                   |
+| solo      | empty / `CLOSED` / no-gh | AskUserQuestion finalize ("Finalize now — merge to main + cleanup?") → `FINALIZE.md` mode `solo`.                                                                         |
+| team      | `OPEN`                   | Print `"PR #{PR_NUMBER} is open: {PR_URL}. Run /core-finalize {feature-name} after review."` No modal.                                                                    |
+| team      | `MERGED`                 | AskUserQuestion cleanup → `FINALIZE.md` mode `cleanup-only`.                                                                                                              |
+| team      | empty / `CLOSED`         | AskUserQuestion 3-way: "Open PR (Recommended)" → `shared/PR.md`; "Merge directly to main (no PR)" → `FINALIZE.md` mode `solo`; "Keep open" → print `/core-finalize`-hint. |
+| team      | no-gh                    | AskUserQuestion 2-way: "Merge directly to main (no PR)" → `FINALIZE.md` mode `solo`; "Keep open" → print `/core-finalize`-hint.                                           |
 
-On "Keep open" (only possible in solo paths or team `MERGED`) → print `💡 Run /core-finalize {feature-name} when ready`.
+On "Keep open" → print `💡 Run /core-finalize {feature-name} when ready`.
+
+**Team + empty/`CLOSED` — 3-way modal:**
+
+```yaml
+header: "Finalize"
+question: "Feature '{feature-name}' verified. How do you want to finalize?"
+options:
+  - label: "Open PR (Recommended)"
+    description: "Push the branch and open a PR via gh for review. Worktree stays until merged."
+  - label: "Merge directly to main (no PR)"
+    description: "Merge locally to main + cleanup worktree (same as solo mode)."
+  - label: "Keep open"
+    description: "Worktree stays open. Run /core-finalize {feature-name} when ready."
+multiSelect: false
+```
+
+On "Open PR" → follow `shared/PR.md`. Print PR URL. Worktree stays open until merged (use `FINALIZE.md` mode=`cleanup-only` after merge).
+On "Merge directly to main (no PR)" → run `FINALIZE.md` mode=`solo`.
+On "Keep open" → print `/core-finalize`-hint.
+
+**Team + no-gh — 2-way modal:**
+
+```yaml
+header: "Finalize"
+question: "Feature '{feature-name}' verified. `gh` is not available — how do you want to finalize?"
+options:
+  - label: "Merge directly to main (no PR)"
+    description: "Merge locally to main + cleanup worktree."
+  - label: "Keep open"
+    description: "Worktree stays open. Install gh + auth, then run /core-finalize {feature-name}."
+multiSelect: false
+```
+
+On "Merge directly to main (no PR)" → run `FINALIZE.md` mode=`solo`.
+On "Keep open" → print `/core-finalize`-hint.
 
 ---
 

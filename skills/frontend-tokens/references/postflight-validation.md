@@ -183,7 +183,7 @@ Tokens:   {N} color, {M} spacing, {P} typography, {Q} motion, {R} interaction to
 
 ## X.7 Backlog Write
 
-Runs only if a backlog task was picked up in PHASE 0 step 4 (`taskName` is set) **and** post-flight passed (status → Complete or Warnings).
+Runs only if a backlog task was picked up in PHASE 0 step 4 (`taskName` is set — via dashboard pickup **or** manual-link confirmation) **and** post-flight passed (status → Complete or Warnings).
 
 1. Re-read `.project/backlog.json`.
 2. Parse the JSON.

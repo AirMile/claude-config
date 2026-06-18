@@ -155,54 +155,21 @@ Next steps:
 1. All test items PASS (no open fix-loop items)
 2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
-**PR offer (team-mode only)** — show first, only if ALL true:
+**Finalize behavior** — detect `TEAM_MODE` + PR state, then act automatically (no confirmation modal for the merge/cleanup decision):
 
-1. `TEAM_MODE === "team"` — read via `shared/PROJECT-MODE.md` read pattern (absent → skip)
-2. `gh` on PATH AND `gh auth status` exit 0
-3. Clean tree (`git status --porcelain` empty)
-
-If all true → AskUserQuestion:
-
-```yaml
-header: "Open PR"
-question: "Push + open a PR for worktree-{feature-name}?"
-options:
-  - label: "Yes, push + PR (Recommended)"
-    description: "Push the branch and open a PR via gh. Worktree stays until merged."
-  - label: "No, skip PR"
-    description: "Skip the PR; show finalize prompt instead."
-multiSelect: false
+```bash
+TEAM_MODE=$(jq -r '.team.mode // "solo"' .project/project.json 2>/dev/null || echo "solo")
+PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
+PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
+PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
+PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
 ```
 
-On "Yes" → follow `{skills_path}/shared/PR.md`. Print PR URL. Suppress finalize prompt below.
-On "No" or any precondition fail → fall through to finalize prompt.
-
-**Finalize prompt** — follow `shared/FINALIZE.md → Finalize Offer Decision`. AskUserQuestion modals for MERGED and empty/CLOSED state (solo mode, or MERGED regardless of mode):
-
-```yaml
-# For MERGED state:
-header: "PR merged — cleanup"
-question: "PR #{PR_NUMBER} is merged ({PR_URL}). Clean up now? Worktree + local branch will be removed."
-options:
-  - label: "Yes, cleanup now (Recommended)"
-    description: "Follow shared/FINALIZE.md cleanup-only — remove worktree + branch"
-  - label: "Keep open"
-    description: "Worktree stays for follow-up commits"
-multiSelect: false
-```
-
-```yaml
-# For solo / empty/CLOSED state:
-header: "Finalize"
-question: "Feature '{feature-name}' completed (status: DONE). Finalize now (merge to main + cleanup)?"
-options:
-  - label: "Yes, finalize now (Recommended)"
-    description: "Follow shared/FINALIZE.md solo-mode — merge worktree to main + cleanup"
-  - label: "Keep open"
-    description: "Worktree stays open, finalize later via /game-refactor"
-multiSelect: false
-```
-
-On MERGED "Yes" → follow `shared/FINALIZE.md` with `mode: cleanup-only`.
-On empty/CLOSED "Yes" → follow `shared/FINALIZE.md` with `mode: solo`.
-On any "Keep open" → print `💡 Run /game-refactor {feature-name} on this worktree when ready`.
+| TEAM_MODE | PR_STATE                 | Action                                                                                                                                 |
+| --------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| solo      | empty / `CLOSED` / no-gh | Run `shared/FINALIZE.md` mode=`solo` (Branch Resolution → Uncommitted Check → Solo-Merge → Cleanup → Output Report).                   |
+| solo      | `MERGED`                 | Run `shared/FINALIZE.md` mode=`cleanup-only`.                                                                                          |
+| solo      | `OPEN`                   | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize {feature-name} after review."` Exit.                        |
+| team      | `MERGED`                 | Run `shared/FINALIZE.md` mode=`cleanup-only`.                                                                                          |
+| team      | `OPEN`                   | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize {feature-name} after review."` Exit.                        |
+| team      | empty / `CLOSED` / no-gh | **Leave worktree open** — print `"Team project: run /game-refactor {feature-name} to refactor + finalize (PR or direct merge)."` Exit. |

@@ -9,7 +9,7 @@ reads: [backlog.status, project.theme]
 writes: [project.theme, backlog.status, devinfo.tokenDrift]
 metadata:
   author: claude-config
-  version: 4.0.0
+  version: 4.2.0
   category: frontend
 ---
 
@@ -89,8 +89,10 @@ PRE-FLIGHT CHECK
 3. **Conflict** (Create/Update) — read `.project/project.json` → check `theme` section.
    → `Conflicts: [✓ empty | ⚠ has data | ✗ file missing]`
    **Setup context age** (all routes except Create): if `theme.setupContext[]` has an entry with `appliedBy` starting with `"frontend-tokens@"`, compute `now − fetchedAt`. If > 180 days → print one non-blocking line: `⚠ Setup context is from {date} ({n} days old). Vercel guidelines may have evolved — consider re-running Create or syncing manually.`
-4. **Backlog** — per `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `type === "THEME" && transition === "defining"`.
-   → `Backlog: [✓ Task picked up — {taskName} | ✓ Standalone run]`
+4. **Backlog** — per `shared/BACKLOG.md → Lifecycle Protocol → Read`.
+   - **Primary filter** (dashboard flow): `type === "THEME" && transition === "defining"` → pick up silently, set `taskName`.
+   - **Fallback** (manual run — no transition match): if exactly one `type === "THEME" && status === "TODO"` task exists, AskUserQuestion: "Backlog has an open THEME task '{name}'. Link this run and mark it DONE on success?" → "Yes — link task" (set `taskName`) / "No — standalone run". (Skip the question when 0 such tasks, or when the primary filter already matched.)
+   → `Backlog: [✓ Task picked up — {taskName} | ✓ Linked manual task — {taskName} | ✓ Standalone run]`
 5. **Pack rename check** — if `theme.motion.pack === "expressive"`:
    > "Your project uses the old pack name `expressive`. This has been renamed to `apple`. Rename now? (Yes — updates only `theme.motion.pack`, all other keys stay identical)"
    > If confirmed: write `theme.motion.pack = "apple"` and continue.

@@ -2,9 +2,6 @@
 const { execSync } = require("child_process");
 const path = require("path");
 
-const CTX_THRESHOLD = 80_000;
-const SESSION_THRESHOLD = 30;
-const WEEK_THRESHOLD = 30;
 const HIDDEN_BRANCHES = new Set(["main", "master"]);
 
 function formatDuration(epochSec) {
@@ -30,14 +27,12 @@ function formatCtx(ctx) {
   const size = ctx?.context_window_size;
   if (pct == null || size == null) return null;
   const tokens = Math.round((pct / 100) * size);
-  if (tokens < CTX_THRESHOLD) return null;
   return `${Math.round(tokens / 1000)}k`;
 }
 
 function formatSession(rl) {
   const fh = rl?.five_hour;
   if (!fh || typeof fh.used_percentage !== "number") return null;
-  if (fh.used_percentage < SESSION_THRESHOLD) return null;
   const pct = Math.round(fh.used_percentage);
   const dur = formatDuration(fh.resets_at);
   if (!dur) return null;
@@ -61,7 +56,6 @@ function formatWeekDuration(epochSec) {
 function formatWeek(rl) {
   const sd = rl?.seven_day;
   if (!sd || typeof sd.used_percentage !== "number") return null;
-  if (sd.used_percentage < WEEK_THRESHOLD) return null;
   const pct = Math.round(sd.used_percentage);
   const dur = formatWeekDuration(sd.resets_at);
   if (!dur) return null;

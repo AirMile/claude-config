@@ -56,8 +56,8 @@ Parse `.project/backlog.json` → match on `name === {$TARGET}`:
 
 Map `$VERIFY_STATUS` (from Step 9) to backlog state:
 
-- `"PASS"` → `feature.status = "DOING"` + `delete feature.transition` + `feature.stage = "built"` + `feature.audit.buildSmokeStatus = "PASS"` + `data.updated = today`
-- `"SKIPPED"` → identical to PASS, but if `$SMOKE` is set (Step 8b ran): `feature.audit.buildSmokeStatus = $SMOKE` + `feature.audit.buildScreenshot = $SMOKE_SHOT`; otherwise `feature.audit.buildSmokeStatus = "SKIPPED"`
+- `"PASS"` → `feature.status = "DOING"` + `delete feature.transition` + `feature.stage = "built"` + `delete feature.contentStatus` + `feature.audit.buildSmokeStatus = "PASS"` + `data.updated = today`
+- `"SKIPPED"` → identical to PASS (including `delete feature.contentStatus`), but if `$SMOKE` is set (Step 8b ran): `feature.audit.buildSmokeStatus = $SMOKE` + `feature.audit.buildScreenshot = $SMOKE_SHOT`; otherwise `feature.audit.buildSmokeStatus = "SKIPPED"`
 - `"FAIL"` → backlog status **unchanged** (code not confirmed working). Set `feature.audit.buildSmokeStatus = "FAIL"` + `feature.audit.buildSmokeError = $VERIFY_ERROR`
 - **No match or no backlog** → silent skip. Add to completion report: `Backlog: feature not found — skipping`.
 

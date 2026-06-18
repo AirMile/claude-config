@@ -1179,6 +1179,19 @@ body {
   cursor: default;
 }
 
+.copy-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: color-mix(in srgb, var(--accent) 70%, var(--fg, #555));
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  cursor: default;
+}
+
 /* ── Action toolbar (capture-skill shortcuts) ── */
 .action-btns {
   display: flex;

@@ -40,13 +40,13 @@ If match found, branch on entity type:
 **Page scope** (`$CONVERT_TARGET` resolves to a page):
 
 - Set `status: "DOING"`, `stage: "built"`, `data.updated` to today — same as the Build route (`build-completion-sync.md` 10d). The page lands at TO CHECK; `/frontend-check` is the only gate to `DONE` for pages (build and convert alike). Convert's visual verification loop is a complementary pre-check, not a substitute for the runtime audit (a11y/responsive/darkmode/perf).
-- Remove `transition` and `completedAt` fields if present
+- Remove `transition`, `completedAt`, and `contentStatus` fields if present — `contentStatus` reset ensures the "Fill content" board button and badge reappear after a re-convert so copy is re-reviewed against the new markup.
 - Write back via Edit
 
 **Component scope** (`$CONVERT_TARGET` resolves to a component):
 
 - Set `status: "DOING"`, `stage: "building"`
-- Remove `transition` field if present
+- Remove `transition` and `contentStatus` fields if present
 - Do NOT set `shippedSha` or `completedAt` — those belong to the page/feature merge that consumes this component
 - Write back via Edit
 
@@ -140,15 +140,15 @@ PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
 
 Dispatch (no `AskUserQuestion` for the merge/cleanup decision):
 
-| TEAM_MODE | PR_STATE | Action |
-|-----------|----------|--------|
-| solo | empty / `CLOSED` / no-gh | Run `shared/FINALIZE.md` mode=`solo` (Branch Resolution → Uncommitted Check → Solo-Merge → Cleanup → Output Report). |
-| solo | `MERGED` | Run `shared/FINALIZE.md` mode=`cleanup-only`. |
-| solo | `OPEN` | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $CONVERT_TARGET after review."` Exit. |
-| team | `MERGED` | Run `shared/FINALIZE.md` mode=`cleanup-only`. |
-| team | `OPEN` | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $CONVERT_TARGET after review."` Exit. |
-| team | empty / `CLOSED` | **Halt** — print `"Team project: no PR found. Push + open PR via /team-review."` Exit. |
-| team | no-gh | **Halt** — print `"Team mode but \`gh\` is not available — run \`gh auth login\` or toggle solo in backlog ⚙."` Exit. |
+| TEAM_MODE | PR_STATE                 | Action                                                                                                                |
+| --------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| solo      | empty / `CLOSED` / no-gh | Run `shared/FINALIZE.md` mode=`solo` (Branch Resolution → Uncommitted Check → Solo-Merge → Cleanup → Output Report).  |
+| solo      | `MERGED`                 | Run `shared/FINALIZE.md` mode=`cleanup-only`.                                                                         |
+| solo      | `OPEN`                   | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $CONVERT_TARGET after review."` Exit.      |
+| team      | `MERGED`                 | Run `shared/FINALIZE.md` mode=`cleanup-only`.                                                                         |
+| team      | `OPEN`                   | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $CONVERT_TARGET after review."` Exit.      |
+| team      | empty / `CLOSED`         | **Halt** — print `"Team project: no PR found. Push + open PR via /team-review."` Exit.                                |
+| team      | no-gh                    | **Halt** — print `"Team mode but \`gh\` is not available — run \`gh auth login\` or toggle solo in backlog ⚙."` Exit. |
 
 The frontend-track backlog sync (PAGE ships only when already `DONE`, COMPONENT left untouched) is handled inside `shared/FINALIZE.md`.
 

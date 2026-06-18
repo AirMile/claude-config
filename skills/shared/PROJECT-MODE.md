@@ -9,7 +9,7 @@ Single source of truth for how Claude Code skills determine whether a project is
 Only two things may **write** this field:
 
 - `/core-setup` (initial value, set during setup)
-- Backlog/dashboard ⚙ toggle → `serve-backlog.js:766-816` (runtime toggle, patches file atomically)
+- Backlog/dashboard ⚙ toggle → `serve-backlog.js` → `POST /{project}/settings/team-mode` handler (runtime toggle, patches file atomically)
 
 All skills **read only**. Never set `team.mode` from a skill.
 
@@ -27,11 +27,14 @@ Always read fresh per invoke — never cache across phases or skill-runs. The ba
 
 ### Mode-agnostic (no read needed)
 
-dev-build, dev-define, dev-debug, dev-learn, dev-security, core-commit (reads `commitConvention`, not `mode`), core-audit, core-edit, core-create, core-delete, core-rewrite, core-write, core-update, core-bootstrap.
+dev-build, dev-define, dev-debug, dev-learn, dev-security, core-commit (reads `commitConvention`, not `mode`), core-audit, core-rewrite, core-write, core-update, core-bootstrap.
 
 ### Mode-aware (branches on TEAM_MODE)
 
-dev-verify (PHASE Finalize), dev-refactor (PHASE Finalize), core-finalize, core-pull (info hint), shared/FINALIZE.md, shared/PR.md.
+- **PHASE Finalize (inline auto-dispatch, no modal):** dev-verify, game-verify
+- **PHASE Finalize (3-way modal via FINALIZE.md):** dev-refactor, game-refactor, frontend-check
+- **PHASE 0 entry-guard (team-mode batch guard, see below):** dev-refactor, game-refactor, frontend-check
+- **Other:** core-finalize, core-pull (info hint), shared/FINALIZE.md, shared/PR.md
 
 ### Team-only (warn-gate when solo)
 
@@ -54,20 +57,29 @@ multiSelect: false
 
 Cancel → exit. Continue → proceed with step 1.
 
+### Team-mode batch guard (for dev-refactor, game-refactor, frontend-check)
+
+Fire when `TEAM_MODE == "team"` AND the skill is about to enter batch/codebase mode (queue > 1 or
+no-arg). Single-feature invoke → guard does NOT fire.
+
+```yaml
+header: "Team project — batch"
+question: "This project is team mode. Batch {refactor|check} produces cross-feature changes that can't be split into per-feature PRs. In team mode each feature ships via its own PR. Continue with batch anyway?"
+options:
+  - label: "Cancel — go per feature (Recommended)"
+    description: "Exit. Run /{skill} {feature-name} per feature so each gets its own PR/finalize."
+  - label: "Yes, batch anyway"
+    description: "Proceed with one combined cross-feature pass (no per-feature PRs; finalize stays skipped)."
+multiSelect: false
+```
+
+Cancel → exit. Continue → proceed with batch flow as-is (finalize stays skipped, behaviour unchanged).
+
 ### Mode-aware finalize (for FINALIZE.md and PHASE Finalize)
 
-Decision matrix (TEAM_MODE × PR_STATE):
-
-| TEAM_MODE | PR_STATE         | Action                                                                                        |
-| --------- | ---------------- | --------------------------------------------------------------------------------------------- |
-| solo      | `MERGED`         | cleanup-only                                                                                  |
-| solo      | `OPEN`           | Print PR URL + halt                                                                           |
-| solo      | empty / `CLOSED` | Solo-merge to main                                                                            |
-| solo      | `gh` unavailable | Solo-merge to main (fall-through)                                                             |
-| team      | `MERGED`         | cleanup-only                                                                                  |
-| team      | `OPEN`           | Print PR URL + halt                                                                           |
-| team      | empty / `CLOSED` | Prompt: "Push + open PR via /team-review?" — no auto solo-merge                               |
-| team      | `gh` unavailable | Warn: "team mode but `gh` unavailable — run `gh auth login` or toggle solo in backlog." Halt. |
+See `shared/FINALIZE.md → Finalize Offer Decision` (single source of truth). That matrix covers all
+TEAM_MODE × PR_STATE combinations including the 3-way choice (Open PR / Merge directly / Keep open)
+for team + empty/CLOSED.
 
 ## Backlog Toggle
 
@@ -75,10 +87,13 @@ The backlog UI exposes an ⚙ icon-button (not a slider) that opens a "Project s
 
 **Important for strike-edge and other projects:** the board is rendered by the viewer server from the current template + `.project/backlog.json`, so re-opening the board via the viewer (or `/project-backlog`) always shows the ⚙ button. Skills always read `project.json` — not the board UI — so the file is the correct source of truth regardless.
 
+**Batch buttons:** the board hides the per-column batch buttons (`batchSkill`) when `team.mode === "team"` — batch is a solo concept; team ships per feature via individual PRs. See `backlog-template.html` `renderSection` gate (`batchSkill && items.length > 0 && data.team?.mode !== "team"`). The skill-side guard (§ Team-mode batch guard above) backs this up for manual invokes.
+
 ## Migration Checklist
 
 When adding team/solo branching to a new skill, check:
 
 - [ ] Read `TEAM_MODE` in PHASE 0 (after loading project.json, before any mode-specific action)
+- [ ] If skill has a batch/codebase mode: add team-mode batch guard (§ Team-mode batch guard) after the mode-detection step, before worktree switch / batch execution
 - [ ] Handle `gh` unavailable gracefully — never fall through to solo-merge in team mode
 - [ ] Reference this document in the skill's mode-branching section

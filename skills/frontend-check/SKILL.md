@@ -66,8 +66,11 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
    - `status === "DONE"` AND (`!lastCheckedSha` OR `lastCheckedSha !== shippedSha`) — shipped but changed since last check.
 
    A COMPONENT stays `DOING` until its consuming page ships, but once checked at HEAD it leaves the queue until code changes — so it is not re-audited every run.
+
 3. If no candidates: show `"No features pending runtime audit."` and stop.
 4. Set `$BATCH_MODE = true`, `$BATCH_TARGETS = [candidate list]`. Queue presentation + confirmation are owned by `batch.md §0` (auto-proceed ≤3, else confirm) — do not pre-print a queue block here. The full batch flow — queue confirmation, sequential scan + triage, ONE combined report, ONE fix-scope approval, per-feature fix with rollback, single batch completion — is driven entirely by the batch reference. Do NOT run the per-feature single-target loop or per-feature approval prompts.
+
+   **Team-mode batch guard:** If `TEAM_MODE == "team"` → follow `shared/PROJECT-MODE.md § Team-mode batch guard` before proceeding to the batch reference. (Each PAGE ships via its own PR in team mode — batch check produces a combined pass without per-feature finalize.)
 
 > **Todo**: Read '.claude/skills/frontend-check/references/batch.md'
 
