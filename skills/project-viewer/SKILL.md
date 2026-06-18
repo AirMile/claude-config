@@ -209,8 +209,9 @@ Show output:
 Server:  http://localhost:9876
 
 Projects:
-  - {project-name} → http://localhost:9876/{project-name}           (dashboard)
-                     http://localhost:9876/{project-name}/backlog   (kanban)
+  - {project-name} → http://localhost:9876/{project-name}                  (dashboard)
+                     http://localhost:9876/{project-name}/backlog          (kanban)
+                     http://localhost:9876/{project-name}/review/{entity}  (design review)
   - ...
 ```
 

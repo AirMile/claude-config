@@ -10,6 +10,9 @@
 //   /{project}/save               → save dashboard (project.json)
 //   /{project}/create             → create empty project.json
 //   /{project}/feature/:name       → feature detail (JSON, merged: feature.json + backlog + design spec)
+//   /{project}/review/:entity      → visual design review (wireframe + spec + open questions)
+//   /{project}/review/:entity/data → review data (JSON: spec + reviewNotes)
+//   /{project}/review/:entity/save → POST: persist reviewNotes to project.json#design
 //   /{project}/asset?path=<rel>   → binary asset (whitelist: .project/snapshots|screenshots/)
 //   /{project}/backlog                        → backlog kanban
 //   /{project}/backlog/save                   → save backlog changes to disk
@@ -205,6 +208,39 @@ function getMainState(projectRoot) {
       ) || 0;
   } catch {}
   return { dirty, behindOrigin };
+}
+
+// ── Design review helper ──
+// Builds the data block for the visual review route: locates a PAGE/COMPONENT
+// in project.json#design by name and returns its spec + user-owned reviewNotes.
+function buildReviewData(projectPath, projectDir, entity) {
+  const dashFile = path.join(projectPath, DASHBOARD_PATH);
+  let proj = {};
+  try {
+    proj = JSON.parse(fs.readFileSync(dashFile, "utf8"));
+  } catch {}
+  const design = proj.design || {};
+  let type = null;
+  let spec = null;
+  const page = (design.pages || []).find((p) => p.name === entity);
+  if (page) {
+    type = "PAGE";
+    spec = page;
+  } else {
+    const comp = (design.components || []).find((c) => c.name === entity);
+    if (comp) {
+      type = "COMPONENT";
+      spec = comp;
+    }
+  }
+  return {
+    project: proj.name || projectDir,
+    projectDir,
+    entity,
+    type,
+    spec,
+    reviewNotes: (spec && spec.reviewNotes) || [],
+  };
 }
 
 // Theme head injection (for existing backlogs that lack the theme tags)
@@ -1400,6 +1436,135 @@ http
 
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result, null, 2));
+        return;
+      }
+
+      // ── Design review routes: /{project}/review/{entity}[/data|/save] ──
+
+      // Review data API: GET /{project}/review/{entity}/data
+      if (
+        req.method === "GET" &&
+        parts[1] === "review" &&
+        parts[2] &&
+        parts[3] === "data" &&
+        parts.length === 4
+      ) {
+        const entity = decodeURIComponent(parts[2]);
+        if (entity.includes("..")) {
+          res.writeHead(400);
+          res.end("Invalid path");
+          return;
+        }
+        res.writeHead(200, {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+        });
+        res.end(
+          JSON.stringify(buildReviewData(projectPath, projectDir, entity)),
+        );
+        return;
+      }
+
+      // Save review notes: POST /{project}/review/{entity}/save
+      if (
+        req.method === "POST" &&
+        parts[1] === "review" &&
+        parts[2] &&
+        parts[3] === "save" &&
+        parts.length === 4
+      ) {
+        const entity = decodeURIComponent(parts[2]);
+        if (entity.includes("..")) {
+          res.writeHead(400);
+          res.end("Invalid path");
+          return;
+        }
+        var body = "";
+        req.on("data", function (chunk) {
+          body += chunk;
+        });
+        req.on("end", function () {
+          try {
+            const parsed = JSON.parse(body);
+            const reviewNotes = Array.isArray(parsed.reviewNotes)
+              ? parsed.reviewNotes
+              : [];
+            const dashFile = path.join(projectPath, DASHBOARD_PATH);
+            var proj;
+            try {
+              proj = JSON.parse(fs.readFileSync(dashFile, "utf8"));
+            } catch {
+              res.writeHead(404, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: "project.json not found" }));
+              return;
+            }
+            proj.design = proj.design || {};
+            const target =
+              (proj.design.pages || []).find((p) => p.name === entity) ||
+              (proj.design.components || []).find((c) => c.name === entity);
+            if (!target) {
+              res.writeHead(404, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({ error: "Entity not found in design spec" }),
+              );
+              return;
+            }
+            // reviewNotes is user-owned and additive — frontend-design merges
+            // never touch it, so writing here is safe.
+            target.reviewNotes = reviewNotes;
+            fs.writeFileSync(dashFile, JSON.stringify(proj, null, 2), "utf8");
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end('{"ok":true}');
+          } catch (e) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: e.message }));
+          }
+        });
+        return;
+      }
+
+      // Serve review page: GET /{project}/review/{entity}
+      if (
+        req.method === "GET" &&
+        parts[1] === "review" &&
+        parts[2] &&
+        parts.length === 3
+      ) {
+        const entity = decodeURIComponent(parts[2]);
+        if (entity.includes("..")) {
+          res.writeHead(400);
+          res.end("Invalid path");
+          return;
+        }
+        const reviewTemplatePath = path.join(__dirname, "review-template.html");
+        if (!fs.existsSync(reviewTemplatePath)) {
+          res.writeHead(500);
+          res.end("Review template not found: " + reviewTemplatePath);
+          return;
+        }
+        try {
+          const reviewData = buildReviewData(projectPath, projectDir, entity);
+          var html = fs.readFileSync(reviewTemplatePath, "utf8");
+          var startTag = '<script id="review-data" type="application/json">';
+          var startIdx = html.indexOf(startTag) + startTag.length;
+          var endIdx = html.indexOf("</script>", startIdx);
+          html =
+            html.substring(0, startIdx) +
+            "\n" +
+            JSON.stringify(reviewData, null, 2) +
+            "\n" +
+            html.substring(endIdx);
+          const nav = getNavBarHtml(projectDir, "review");
+          html = html.replace("</body>", nav + "</body>");
+          res.writeHead(200, {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-cache, no-store",
+          });
+          res.end(html);
+        } catch (e) {
+          res.writeHead(500);
+          res.end("Review error: " + e.message);
+        }
         return;
       }
 

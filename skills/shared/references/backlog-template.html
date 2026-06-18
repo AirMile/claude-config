@@ -290,7 +290,7 @@
       const TRANSITION_LABELS_FRONTEND = {
         TODO: "designing",
         DEFINED: "converting",
-        DOING: "checking",
+        DOING: "contenting",
         DONE: "shipping",
       };
       const TRANSITION_LABELS_DEV = {
@@ -644,12 +644,17 @@
           return null;
         }
 
-        // PAGE/COMPONENT mini-pipeline: design → convert (→ /frontend-check at release end)
+        // PAGE/COMPONENT mini-pipeline: design → convert → content → /frontend-check (batch)
         if (FRONTEND_PIPELINE_TYPES.includes(f.type)) {
           if (f.status === "TODO") return { cmd: `/frontend-design ${f.name}` };
           if (f.status === "DEFINED")
             return { cmd: `/frontend-design ${f.name}` };
-          if (f.status === "DOING") return null; // to check — runtime audit via /frontend-check batch at release end
+          if (f.status === "DOING") {
+            // Show content-fill button when built but not yet content-filled
+            if (f.stage === "built" && f.contentStatus !== "filled")
+              return { cmd: `/frontend-content ${f.name}` };
+            return null; // content done or pre-build — runtime audit via /frontend-check batch at release end
+          }
           return null; // DONE: no button
         }
 
@@ -799,7 +804,7 @@
           }
 
           let batchBtnHtml = "";
-          if (batchSkill && items.length > 0) {
+          if (batchSkill && items.length > 0 && data.team?.mode !== "team") {
             const isFrontendSection = batchSkill === "check";
             const cmdPrefix = isFrontendSection
               ? "frontend"
@@ -1100,6 +1105,13 @@
             metaHtml += `<span class="refactor-badge refactor-done">✓ refactored</span>`;
           }
         }
+        if (
+          FRONTEND_PIPELINE_TYPES.includes(f.type) &&
+          f.stage === "built" &&
+          f.contentStatus !== "filled"
+        ) {
+          metaHtml += `<span class="copy-badge" title="Copy not yet filled — run /frontend-content ${esc(f.name)}">copy: placeholder</span>`;
+        }
         if (f.externalRef?.url) {
           const refType = f.externalRef.type || "github";
           const refId = f.externalRef.id || "?";
@@ -1145,8 +1157,13 @@
             const convertItem = canConvert
               ? `<button class="row-menu-item row-convert-btn" data-cmd="/frontend-design ${esc(f.name)}">⌅ Convert from sketch</button>`
               : "";
+            const canReview = FRONTEND_PIPELINE_TYPES.includes(f.type);
+            const reviewItem = canReview
+              ? `<button class="row-menu-item row-review-btn" data-name="${esc(f.name)}">▦ Bekijk design →</button>`
+              : "";
             return (
               `<button class="row-menu-item row-edit-btn">✎ Edit</button>` +
+              reviewItem +
               outsourceItem +
               convertItem +
               `<button class="row-menu-item row-cancel-btn">○ Archive</button>` +
@@ -1249,6 +1266,20 @@
             navigator.clipboard.writeText(cmd).then(() => {
               toast("Copied: " + cmd);
             });
+          });
+        }
+
+        const reviewBtn = row.querySelector(".row-review-btn");
+        if (reviewBtn) {
+          reviewBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const basePath = location.pathname
+              .replace(/\/backlog\/?$/, "")
+              .replace(/\/+$/, "");
+            location.href =
+              basePath +
+              "/review/" +
+              encodeURIComponent(reviewBtn.dataset.name);
           });
         }
 

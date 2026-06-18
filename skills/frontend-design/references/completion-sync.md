@@ -88,11 +88,18 @@ Next steps:
   2. /frontend-tokens       → design tokens and colors based on principles
   3. /frontend-design       → generate Claude Design brief (brief-mode)
   4. /frontend-design       → convert an existing design to code (paste sketch/URL)
-  5. /frontend-check        → performance/SEO audit (if flows defined: Flow scope also available)
-  6. /frontend-check --scope=a11y → accessibility audit
+  5. /frontend-content      → fill built pages/components with real copy (placeholders → on-brand text)
+  6. /frontend-check        → performance/SEO audit (if flows defined: Flow scope also available)
+  7. /frontend-check --scope=a11y → accessibility audit
+
+[Only show for each newly added/updated PAGE/COMPONENT — the spec is now persisted, so the review route resolves it:]
+Visual review:
+  http://localhost:9876/{project-dir}/review/{name}   → wireframe + spec + open questions
 
 ═══════════════════════════════════════════════════════════════
 ```
+
+**Visual review link.** For every PAGE/COMPONENT created or updated this session, print its review URL as a plain `http://` line (one per entity) so it renders clickable in the Claude Code chat. The spec was just written in PHASE X, so the route resolves it reliably. There the user can review the spec as a wireframe and leave open questions that persist to `design.{pages|components}[].reviewNotes[]`. Omit for Flow/Principles-only sessions (no entity to review).
 
 ## Handoff Prompt (after report, only when `$NEW_ITEMS[]` is non-empty)
 
@@ -128,3 +135,9 @@ multiSelect: false
 
 "Ja, Build starten" → continue with `route-build.md` flow using `$TARGET = $ARG_NAME`, `$TARGET_TYPE = $ARG_TYPE`, `$ARG_ENTITY` pre-set (skip entity selection in Build Step 1–3).
 "Later" → end skill.
+
+Before showing this offer, print the visual review link so the user can inspect the just-saved spec either way:
+
+```
+http://localhost:9876/{project-dir}/review/{$ARG_NAME}
+```

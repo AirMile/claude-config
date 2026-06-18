@@ -155,6 +155,14 @@ multiSelect: false
 
 On "Update existing component": skip PHASE 0.5 and go to PHASE 0.4b.
 
+**Visual review (optional).** Once the target name is resolved (after 0.5 for page scope, or from the scope selection for component scope), if the board server is running (`/project-viewer`) and the entity already exists in `project.json#design`, print its review URL as a plain `http://` URL on its own line so it renders clickable in the Claude Code chat:
+
+```
+http://localhost:9876/{project-dir}/review/{target-name}
+```
+
+There the user can confirm the detected sections/components as a wireframe and leave open-questions before conversion proceeds; answers persist to `design.{pages|components}[].reviewNotes[]`. Skip the line if the entity is not yet in the design spec.
+
 ### 0.4b Patch Detection
 
 Only for scope = patch.

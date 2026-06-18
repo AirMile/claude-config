@@ -119,6 +119,14 @@ Props:    {props joined}
 States:   {states joined}
 ```
 
+**Visual review (optional).** If the project board server is running (`/project-viewer`), the spec is also viewable as a wireframe + read-only spec + editable open-questions form at:
+
+```
+http://localhost:9876/{project-dir}/review/{$TARGET}
+```
+
+Print this as a plain `http://` URL on its own line so it renders clickable in the Claude Code chat. It reflects the **persisted** spec in `project.json#design`, so it is most useful when `$TARGET` was already captured (Design route / a TODO backlog card); a freshly captured `$INLINE_SPEC` not yet written shows "no spec found" until completion sync. Answers the reviewer leaves there persist to `design.{pages|components}[].reviewNotes[]`.
+
 **Gate:**
 
 ```yaml
@@ -396,7 +404,8 @@ Gaps:             {N linked | M created | K pending | "none"}
 Page deps:        +{$COMP_FEAT_COUNT} feature deps, {$COMP_COMP_COUNT} component deps   (PAGE only)
 pageHint:         {$PAGEHINT_COUNT} features updated   (PAGE only)
 Worktree:         {worktree-{$TARGET}} — MERGED (Step 12) | not in a worktree
-Next:             /frontend-check {$TARGET} — moves PAGE to DONE on PASS   (PAGE only, when $VERIFY_STATUS != FAIL)
+Next:             /frontend-content {$TARGET} — fill copy (placeholders → real text)   (PAGE/COMPONENT, when $VERIFY_STATUS != FAIL)
+                  /frontend-check {$TARGET}  — runtime audit, moves PAGE to DONE on PASS   (after content filled)
 ```
 
 The report is **not** the end of the build — Step 12 (worktree finalize) runs after it, exactly as the Convert route's §4.4 report is followed by §4.5–4.6.
@@ -430,15 +439,15 @@ Otherwise:
 
    Dispatch (no `AskUserQuestion` for the merge/cleanup decision — the Build route owns the full worktree lifecycle):
 
-   | TEAM_MODE | PR_STATE | Action |
-   |-----------|----------|--------|
-   | solo | empty / `CLOSED` / no-gh | Run `shared/FINALIZE.md` mode=`solo` (Branch Resolution → Uncommitted Check → Solo-Merge → Cleanup → Output Report). |
-   | solo | `MERGED` | Run `shared/FINALIZE.md` mode=`cleanup-only`. |
-   | solo | `OPEN` | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $TARGET after review."` Exit. |
-   | team | `MERGED` | Run `shared/FINALIZE.md` mode=`cleanup-only`. |
-   | team | `OPEN` | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $TARGET after review."` Exit. |
-   | team | empty / `CLOSED` | **Halt** — print `"Team project: no PR found. Push + open PR via /team-review."` Exit. |
-   | team | no-gh | **Halt** — print `"Team mode but \`gh\` is not available — run \`gh auth login\` or toggle solo in backlog ⚙."` Exit. |
+   | TEAM_MODE | PR_STATE                 | Action                                                                                                                |
+   | --------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+   | solo      | empty / `CLOSED` / no-gh | Run `shared/FINALIZE.md` mode=`solo` (Branch Resolution → Uncommitted Check → Solo-Merge → Cleanup → Output Report).  |
+   | solo      | `MERGED`                 | Run `shared/FINALIZE.md` mode=`cleanup-only`.                                                                         |
+   | solo      | `OPEN`                   | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $TARGET after review."` Exit.              |
+   | team      | `MERGED`                 | Run `shared/FINALIZE.md` mode=`cleanup-only`.                                                                         |
+   | team      | `OPEN`                   | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize $TARGET after review."` Exit.              |
+   | team      | empty / `CLOSED`         | **Halt** — print `"Team project: no PR found. Push + open PR via /team-review."` Exit.                                |
+   | team      | no-gh                    | **Halt** — print `"Team mode but \`gh\` is not available — run \`gh auth login\` or toggle solo in backlog ⚙."` Exit. |
 
    The frontend-track backlog sync (PAGE ships only when already `DONE`, COMPONENT left untouched — `FINALIZE.md` never promotes `DOING → DONE`) is handled inside `shared/FINALIZE.md`.
 

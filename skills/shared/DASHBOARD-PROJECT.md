@@ -552,6 +552,8 @@ The `design` key in `project.json` is managed exclusively by the `frontend-desig
 
 **`pages[].uses[]`** — auto-maintained by Build/convert post-pass. List of component names imported by this page. Do not edit manually.
 
+**`{pages|components}[].reviewNotes?[]`** — **user-owned**, optional. Open questions and review decisions captured in the visual review route (`/{project}/review/{entity}`, served by `serve-backlog.js`). `frontend-design` merges never write or delete this field — it survives spec re-merges untouched. Schema per item: `{ question, answer, status: "open"|"resolved", at }` (`at` = ISO timestamp). The review route POSTs the full array to `/{project}/review/{entity}/save`.
+
 **`components[].usedIn[]`** — auto-maintained by Build/convert post-pass. List of page names that import this component. Do not edit manually.
 
 **`components[].scope`:**
