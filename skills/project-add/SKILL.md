@@ -12,7 +12,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 1.0.0
+  version: 1.1.0
   category: project
 ---
 
@@ -45,6 +45,14 @@ Use the detected platform to resolve `{projects_root}` and `{config_repo}` from 
 **Before anything is created, validate:**
 
 ```bash
+# Fallback: if config_repo is missing but ~/.claude is already linked to a
+# real claude-config, adopt that location instead of aborting (handles
+# non-standard install locations).
+if [ ! -d "$CONFIG_REPO" ] && [ -L "$HOME/.claude/skills" ]; then
+  CONFIG_REPO="$(dirname "$(readlink "$HOME/.claude/skills")")"
+  echo "config_repo not at default — resolved via ~/.claude/skills → $CONFIG_REPO"
+fi
+
 # Check claude-config exists and is complete
 test -d "{config_repo}"
 test -d "{config_repo}/scripts"
@@ -319,7 +327,7 @@ echo '{"permissions": {"allow": []}}' > {projects_root}/[name]/.claude/settings.
 
 **.gitignore — append claude-specific entries if not already present:**
 
-Check whether the following entries are already in `.gitignore`. Only add missing entries:
+First check whether `.claude/` and `.project/` are already ignored wholesale (a single broad entry covers every sub-path). If **both** are, the granular entries below are redundant — skip them and note it. Otherwise add only the missing entries:
 
 ```
 # Claude project (runtime data)
@@ -339,6 +347,36 @@ Check whether the following entries are already in `.gitignore`. Only add missin
 
 If `.gitignore` does not exist, create it with the above entries.
 
+### PHASE 5: Config Symlinks
+
+Link the shared claude-config into the project so skills/agents/hooks/scripts resolve at runtime. These four links are gitignored (PHASE 4) — per-device pointers, not tracked content. Runs for both new and clone mode.
+
+macOS / Linux:
+
+```bash
+for d in agents hooks skills scripts; do
+  test -d "{config_repo}/$d" || { echo "WARN: {config_repo}/$d missing — skipping"; continue; }
+  ln -sfn "{config_repo}/$d" "{projects_root}/[name]/.claude/$d"
+done
+
+# Verify each link resolves
+for d in agents hooks skills scripts; do
+  test -e "{projects_root}/[name]/.claude/$d" && echo "$d: OK" || echo "$d: BROKEN"
+done
+```
+
+Windows (PowerShell — junctions, no admin needed):
+
+```powershell
+foreach ($d in 'agents','hooks','skills','scripts') {
+  $target = "{config_repo}\$d"
+  if (!(Test-Path $target)) { Write-Warning "$target missing — skipping"; continue }
+  $link = "{projects_root}\[name]\.claude\$d"
+  if (Test-Path $link) { Remove-Item $link -Recurse -Force }
+  New-Item -ItemType Junction -Path $link -Target $target | Out-Null
+}
+```
+
 ### PHASE 6: Git Initialization
 
 #### New mode:
@@ -355,27 +393,14 @@ git add .gitignore
 
 ### PHASE 7: Project Configuration
 
+Write a setup marker so a later `/core-setup` run starts in the right mode. Do NOT run or offer to run `/core-setup` as part of this flow — it belongs in a fresh session, never chained into project-add.
+
 **Determine intended core-setup mode:**
 
 - New mode → `setup_mode = "greenfield"`
 - Clone mode → `setup_mode = "mature"` (cloned repo may already have source code)
 
-**AskUserQuestion (single-select):**
-
-```yaml
-header: "Setup wizard"
-question: "Do you want to run the project setup wizard now? (stack, CLAUDE.md, design tokens)"
-options:
-  - label: "Yes, configure now (Recommended)"
-    description: "Continue directly with /core-setup --mode={setup_mode}"
-  - label: "No, later"
-    description: "Write session marker — next /core-setup starts directly in {setup_mode} mode"
-multiSelect: false
-```
-
-**If "Yes, configure now":** invoke `/core-setup --mode={setup_mode}`. No marker needed — flow is sequential.
-
-**If "No, later":** write marker so the next `/core-setup` run skips detection:
+**Write marker (always — no prompt):**
 
 ```bash
 mkdir -p .project/session
@@ -388,7 +413,7 @@ cat > ".project/session/setup-pending.json" << ENDJSON
 ENDJSON
 ```
 
-Show: `Setup later: run /core-setup in a new session — the wizard starts directly in {setup_mode} mode.`
+Show: `Setup marker written — a later /core-setup run starts directly in {setup_mode} mode.`
 
 ### PHASE 8: GitHub Publish
 
@@ -572,11 +597,11 @@ Paths are configurable per device. Defaults are platform-dependent:
 
 1. Environment variable
 2. `.claude/paths.local.yaml` (local per project, not in git)
-3. `resources/paths.yaml` (shared defaults, platform section)
+3. `paths.yaml` (skill root — shared defaults, platform section)
 
 ## Restrictions
 
-- Supported on macOS (symlinks) and Windows (junctions)
+- Supported on macOS/Linux (symlinks) and Windows (junctions)
 - Project name must be unique in `{projects_root}`
 - Master config must exist in `{config_repo}`
 - Clone mode requires `gh` CLI authenticated
