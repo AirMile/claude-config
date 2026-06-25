@@ -1,6 +1,6 @@
 ---
 name: dev-build
-description: "Build features test-first with TDD. Use with /dev-build, or when the user asks to implement a defined feature."
+description: "Build a defined feature test-first with TDD. Use with /dev-build."
 reads: [feature.requirements, feature.architecture, feature.files, conventions]
 writes:
   [
@@ -289,7 +289,7 @@ Follow [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md). dev-build deltas:
 
 - **Baseline**: SHA form — `$REPO/.project/session/pre-skill-sha.txt` (mid-build commits possible; see § 1). All git commands via `git -C "$REPO"`.
 - **Stage set**: new/modified files from this feature (`feature.json files[]`, test files, feature.json itself). Untracked files outside the feature → don't stage.
-- **`.project/` files** (project.json, backlog.json, project-context.json): try to add; if skip-worktree or sparse-checkout blocks this, accept and continue (updated locally, not committed).
+- **`.project/` files** (project.json, backlog.json, project-context.json): local-only state — written but **never staged or committed**. Do not attempt `git add`.
 - **Diagnostics**: already ran in PHASE 2b — proceed directly to staging.
 - **Commit**: `git -C "$REPO" commit -m "build({feature}): {n} requirements ({tdd} TDD, {only} impl-only)"`
 - **Cleanup**: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/active-{feature-name}.json" "$REPO/.project/session/worktree-status.txt"`
@@ -314,5 +314,9 @@ Next steps:{ (start in a NEW chat — worktree auto-detected) when worktree acti
 ```
 
 When a worktree is active, append two footer lines: `  ?. /core-finalize {feature} → recovery only — when verify was skipped or interrupted` and `💡 Worktree: {worktree_path}`.
+
+> **Todo**: Apply the Next-Step Clipboard Offer —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Ranked options: 1) /dev-verify {feature} → hybrid acceptance verification (primary next step) 2) /dev-refactor {feature} → optional polish after verify 3) /dev-debug → only on unexpected build failures + "Nee, hoeft niet"
 
 > **Todo**: mark PHASE 3B → `completed`.

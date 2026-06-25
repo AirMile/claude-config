@@ -110,13 +110,14 @@ Loop back to PHASE 3. AUTO items → re-run in PHASE 5A. MANUAL items → re-tes
 
 > **Todo**: mark PHASE 5b → `completed`, PHASE 5c → `in_progress`.
 
-**Skip silently (no user output) when:**
+**Skip silently (no user output) when ALL of:**
 
 - No fixes applied in PHASE 4
 - No previously-PASS AUTO items in PHASE 2b
 - All fixes were MANUAL-only (config/styling)
+- No new test files added in PHASE 4
 
-Re-run all previously-PASS AUTO items inline (same approach as PHASE 1).
+Re-run all previously-PASS AUTO items **plus any new test files added in PHASE 4** inline (same approach as PHASE 1). Including new test files is essential — they can surface config gaps (e.g. missing `setupFilesAfterEnv`, `moduleNameMapper`, or `testEnvironment`) that only become visible when a new test exercises a setup path. Catching these here keeps the fix inside the verify-commit rather than requiring a separate post-verify commit.
 
 ```
 REGRESSION CHECK: {feature-name}

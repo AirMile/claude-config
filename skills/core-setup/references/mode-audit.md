@@ -82,7 +82,7 @@ For each selected fix:
 - **Tier-1 module (installed-not-configured)**: delegate to `references/mode-install.md` PHASE 5 for that specific module. Step 0 detects `installed-not-configured` → skips install, starts at step 2 Configure.
 - **Formatter config**: generate config file based on detected stack
 - **.env.example**: generate empty template with comment per section
-- **.gitignore**: generate based on stack (Node/Python/Go/Rust/etc.)
+- **.gitignore**: generate based on stack (Node/Python/Go/Rust/etc.). Always append `.project/` if not present: `grep -qxF '.project/' .gitignore 2>/dev/null || echo '.project/' >> .gitignore`
 - **Type checking**: generate `tsconfig.json` / `mypy.ini` with strict-mode defaults
 - **Testing framework**: ask choice (Vitest/Jest/Playwright for JS, pytest for Python, etc.), generate config
 - **Claude config**: write `settings.local.json` with Full Access defaults + format-on-save hook for detected stack
@@ -101,6 +101,26 @@ For each selected fix:
   }
   ```
   Create `.project/backlog.json` with the schemaVersion-2 scaffold (see `shared/BACKLOG.md`) if missing. Skip if feature named `setup-design-tokens` already exists (idempotent).
+
+---
+
+## PHASE 3b: Protect `.project/` (always runs)
+
+After all selected fixes, always run this guard — regardless of whether `.gitignore` was a selected fix:
+
+1. **Ensure `.project/` is gitignored** (idempotent):
+
+   ```bash
+   grep -qxF '.project/' .gitignore 2>/dev/null || echo '.project/' >> .gitignore
+   ```
+
+2. **Untrack guard** — if `.project/` files are in the git index, they should be removed (they are developer-local state, never repo state):
+   ```bash
+   TRACKED=$(git ls-files | grep -E '^\.project/')
+   ```
+   If `$TRACKED` is non-empty → AskUserQuestion: "These `.project/` files are tracked in git but should be local-only: {list}. Remove from the git index?" → **"Yes, remove (Recommended)"** (`git rm --cached -r .project/` — files stay on disk) | "No, leave as is".
+
+This corrects accidental tracking rather than hiding it with skip-worktree. (Analogous to `references/mode-mature.md` PHASE 0.4.)
 
 ---
 

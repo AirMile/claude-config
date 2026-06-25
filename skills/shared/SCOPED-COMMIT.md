@@ -32,22 +32,17 @@ Compare `git status --porcelain | sort` with the baseline:
 - **interactive** (default — build/verify/refactor/team flows): AskUserQuestion "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" → "Include (Recommended)" / "Skip".
 - **auto-include** (debug flows — the fix is the point): stage without asking.
 
-**`git add -f` rule**: `.project/` paths (feature.json, backlog.json, session files) are usually gitignored — stage them with `git add -f`. Non-`.project/` paths: plain `git add`.
+**`.project/` is local-only**: `.project/` paths (feature.json, backlog.json, session files) are gitignored developer-local state — **never stage or commit them**. Stage only codebase files: source, tests, acceptance test files, repo config. Non-`.project/` paths: plain `git add`.
 
-**Fallback when baseline file is missing** (skill picks one): `git add -A` (default) · stage only known skill-output files · ask the user which files belong to the change.
+**Fallback when baseline file is missing** (skill picks one): `git add -A` (default — safe only when `.project/` is in `.gitignore`, which the setup skills guarantee) · stage only known skill-output files · ask the user which files belong to the change.
 
 ## 3. Pre-commit diagnostics (optional, before staging)
 
 Stack-aware lint/typecheck with **set-diff against the lint baseline** (`pre-skill-lint.txt` from PHASE 0): `new_errors = current_error_keys \ baseline_error_keys` (keys = `file:line:rule` — never numeric deltas; line shifts cause false positives). GDScript: `gdlint` on changed `.gd` files. On new errors → AskUserQuestion: "Fix now (Recommended)" (stop, no commit) / "Commit anyway" (append `[diagnostics-warnings]` to the message) / "Abort".
 
-## 4. Worktree split-commit
+## 4. Worktree commit
 
-When running inside a worktree (`current_root != main_root`), `.project/` is a set of symlinks back to the main repo — staging them from the worktree fails with `pathspec is beyond a symbolic link`. Split the commit:
-
-1. App-code changes → stage + commit inside the worktree as normal.
-2. `.project/` changes → stage and commit on main: `git -C {main_root} add -f .project/...` + `git -C {main_root} commit`.
-
-Same body, distinct subjects (e.g. `{type}({feature}): {summary}` in the worktree, `{type}({feature}): sync backlog + feature.json` on main).
+When running inside a worktree (`current_root != main_root`), stage and commit app-code changes inside the worktree as normal. `.project/` is local-only state — its symlinks back to the main repo are updated in-place; no extra commit on main is needed.
 
 ## 5. Commit + cleanup
 

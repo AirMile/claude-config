@@ -73,9 +73,9 @@ Follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). dev-verify delt
 
 - **Baseline**: status form — `.project/session/pre-skill-status.txt`; lint baseline `.project/session/pre-skill-lint.txt` (written in PHASE 0 step 5).
 - **Diagnostics**: run the § 3 set-diff. Source detection: `package.json#scripts` keys matching `typecheck|type-check|tsc|lint`; Python (no package.json): `mypy.ini` or `[tool.mypy]` in `pyproject.toml`. No match → skip silently. Multiple matches → parallel Bash calls, `timeout: 60000`.
-- **OVERLAP policy**: interactive. **Staging**: NEW and included OVERLAP both via `git add -f` (gitignored `.project/` subdirs).
+- **OVERLAP policy**: interactive. **Staging**: NEW and included OVERLAP via plain `git add`. `.project/` is local-only — never staged.
 - **Fallback**: `git add -A`.
-- **Worktree split-commit**: § 4 applies — subjects `verify({feature}): {N} requirements verified (...)` (worktree) and `verify({feature}): sync backlog + feature.json + project-context` (main).
+- **Worktree**: stage and commit app-code (source, tests, acceptance test files) inside the worktree. No main-repo sync commit — `.project/` is local-only state.
 
 **Variables** (count per PHASE 0 classification):
 
@@ -116,3 +116,7 @@ Append a single Next step line (pick the most relevant — do NOT list multiple)
 - All else → omit Next line.
 
 Refactor is optional. Skip if scope was small and the feature is clean.
+
+> **Todo**: Apply the Next-Step Clipboard Offer —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Ranked options: 1) /dev-refactor {feature-name} → optional polish, feature is now DONE 2) /dev-define {next-feature} → loop to next backlog item 3) /dev-debug → if issues remain + "Nee, hoeft niet"

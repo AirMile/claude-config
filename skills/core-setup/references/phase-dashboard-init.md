@@ -42,14 +42,17 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
    - `context.patterns`: non-obvious patterns discovered during setup (path aliases, env config, etc.)
    - `context.updated`: current date
    - Write `.project/project-context.json`
-7. Set skip-worktree on all `.project/` files so local changes do not disturb git status/pull:
+7. Protect `.project/` from git tracking (corrects rather than masks):
 
    ```bash
-   git add --sparse .project/
-   git ls-files .project/ | xargs git update-index --skip-worktree
+   # Ensure .project/ is gitignored (idempotent)
+   grep -qxF '.project/' .gitignore 2>/dev/null || echo '.project/' >> .gitignore
+   # Remove any accidentally tracked .project/ files from the index (keep on disk)
+   TRACKED=$(git ls-files .project/ 2>/dev/null)
+   if [ -n "$TRACKED" ]; then
+     git rm --cached -r .project/ 2>/dev/null || true
+   fi
    ```
-
-   Staging first is required — `update-index --skip-worktree` only works on files that are in the index.
 
 **Output:**
 

@@ -1,12 +1,12 @@
 ---
 name: dev-verify
-description: Verify a built feature: classify → test → fix → finalize. Trigger: /dev-verify.
+description: Use when a feature is built and needs verifying. Use with /dev-verify.
 reads:
   [feature.requirements, feature.build, project-context.learnings, conventions]
 writes: [feature.tests, backlog.status, project-context.learnings]
 metadata:
   author: claude-config
-  version: "2.13.0"
+  version: "2.15.0"
   category: dev
 ---
 
@@ -234,37 +234,9 @@ Unclear feedback → AskUserQuestion: Re-enter (Recommended) | Continue per item
 
 > **Todo**: mark PHASE 1b → `completed`, PHASE 2 → `in_progress`.
 
-**When:** there are MANUAL items. By definition MANUAL = human perception/judgment, auth with real credentials, physical-device tests, or audio/screen-reader checks. Visual polish, motion smoothness, and design feel are NOT verified here — those belong to frontend-design / frontend-build.
+**When:** there are MANUAL items.
 
-**Playwright smoke pre-check** — for each MANUAL item: if the item is DOM-observable (navigate + check load / element-present / no-console-error / screenshot), Claude runs it first via the playwright-cli daemon (see `references/test-classification.md → AUTO/BROWSER`):
-
-- Pass + clear screenshot → present screenshot as evidence, AskUserQuestion: Confirm Pass (Recommended) | Mark Fail | Inspect manually
-- Fail / error → skip to the per-item walkthrough below with the failure as context
-
-Only items that need real human judgment (auth flows requiring real credentials, perception, audio, physical-device) skip the smoke pre-check entirely.
-
-Show setup once (e.g. "Open {devServerUrl}"). Per MANUAL item (if smoke skipped or smoke failed):
-
-```
-──────────────────────────────────────
-MANUAL TEST {n}/{total}: {title}
-──────────────────────────────────────
-
-STEPS:
-1. {concrete action with data}
-
-TEST DATA:
-{table with fields + values}
-
-EXPECTED:
-→ {expected outcome}
-```
-
-AskUserQuestion per item: Pass (Recommended) | Fail | Skip | Defer.
-
-- Fail → ask briefly what went wrong
-- Skip → note reason ("not testing, accept as-is")
-- Defer → ask which external prereq blocks it (account, CORS-origin, API-token, third-party config); item stays open for re-test when prereq landed
+> **Todo**: Read '.claude/skills/dev-verify/references/manual-walkthrough.md' and execute it (smoke pre-check, per-item walkthrough, Pass/Fail/Skip/Defer). Then continue at PHASE 2b.
 
 ---
 
@@ -364,7 +336,7 @@ AskUserQuestion: No, all good (Recommended) | Yes, I noticed something.
 
 #### Step 3: 3-File Sync + Learning Extraction + Scoped Commit
 
-Read `references/completion-sync.md` for full logic: feature.json mutation (all fields in one Write), PAGE-seeding, backlog update, project-context.json sync, COMPONENT design sync, learning extraction (Jaccard dedup), pre-commit diagnostics, worktree split-commit pattern, commit message format, and output block.
+Read `references/completion-sync.md` for full logic: feature.json mutation (all fields in one Write), PAGE-seeding, backlog update, project-context.json sync, COMPONENT design sync, learning extraction (Jaccard dedup), pre-commit diagnostics, commit message format, and output block.
 
 DEFERRED items: write per-item `tests.checklist[i] = { status: "deferred", deferredReason: "<reason>" }`. Set feature.json `tests.hasDeferred = true`. In backlog set feature `status: "DONE"` with `hasDeferred: true` so a future `/dev-verify` run can re-test deferred-only items without reopening the whole feature.
 
