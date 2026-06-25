@@ -265,19 +265,6 @@ done
 [ ${#FAILED[@]} -gt 0 ] && echo "ERROR: symlinks failed: ${FAILED[*]}" && exit 1
 echo "GATE: ok — .project/ symlinks intact"
 
-# Suppress typechange noise: tracked files replaced by symlinks show as T in git status
-git -C "$WT" update-index --skip-worktree \
-  .project/backlog.json .project/project.json .project/project-context.json \
-  2>/dev/null || true
-# Suppress deleted-file noise for directory paths replaced by symlinks (features/, wireframes/, etc.)
-WT_GITDIR=$(git -C "$WT" rev-parse --git-dir 2>/dev/null)
-if [ -n "$WT_GITDIR" ]; then
-  mkdir -p "$WT_GITDIR/info"
-  for _p in ".project/features/" ".project/wireframes/" ".project/screenshots/" ".project/thinking/"; do
-    grep -qxF "$_p" "$WT_GITDIR/info/exclude" 2>/dev/null || echo "$_p" >> "$WT_GITDIR/info/exclude"
-  done
-fi
-
 # Gate: verify inside worktree
 [[ "$(pwd)" == *"/.claude/worktrees/{feature-name}" ]] && echo "GATE: ok — inside worktree" || echo "ABORT: not inside worktree"
 
@@ -346,18 +333,6 @@ if [ ${#WIRE_FAILED[@]} -ne 0 ]; then
   exit 1
 fi
 
-# Suppress typechange noise: tracked files replaced by symlinks show as T in git status
-git -C "$WT" update-index --skip-worktree \
-  .project/backlog.json .project/project.json .project/project-context.json \
-  2>/dev/null || true
-# Suppress deleted-file noise for directory paths replaced by symlinks
-_WT_GITDIR=$(git -C "$WT" rev-parse --git-dir 2>/dev/null)
-if [ -n "$_WT_GITDIR" ]; then
-  mkdir -p "$_WT_GITDIR/info"
-  for _p in ".project/features/" ".project/wireframes/" ".project/screenshots/" ".project/thinking/"; do
-    grep -qxF "$_p" "$_WT_GITDIR/info/exclude" 2>/dev/null || echo "$_p" >> "$_WT_GITDIR/info/exclude"
-  done
-fi
 ```
 
 **Caveat**: if main's `.project/backlog.json` does not exist yet (fresh project), `ln -sfn` creates a dangling symlink — this resolves itself as soon as the first backlog write happens on main. Skills check for file existence before reading, so a dangling symlink is safe.

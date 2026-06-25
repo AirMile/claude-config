@@ -57,15 +57,13 @@ Pull remote changes, analyze the diff, refresh `.project/` context, analyze team
 
    > **Todo**: if `open_worktrees` is non-empty or `onboard.nudge` is true → Read '.claude/skills/core-pull/references/preflight-gates.md' and follow the matching gate(s); otherwise continue inline.
 
-2. **Clean `.project/` files** (prevent local .project/ changes from interfering with stash/pull):
+2. **Untrack legacy `.project/` files** (migration guard for repos set up before Model A):
 
    ```bash
-   git ls-files .project/ | xargs git update-index --no-skip-worktree 2>/dev/null
-   git checkout -- .project/ 2>/dev/null
-   git ls-files .project/ | xargs git update-index --skip-worktree 2>/dev/null
+   git ls-files .project/ | xargs git rm --cached 2>/dev/null || true
    ```
 
-   This resets `.project/` to HEAD and makes them invisible to git. Safe because PHASE 3/4 always regenerates the content from source code.
+   No-op on fully-migrated repos (gitignored `.project/` → `git ls-files` returns empty). Cleans up any residual index entries from old setups without disturbing untracked/gitignored files.
 
 3. **Dirty check** — if `dirty` = true in the preflight JSON → **AskUserQuestion**:
    - header: "Uncommitted"
@@ -95,12 +93,6 @@ git pull --rebase
 ```
 
 If conflicts → show conflicting files, exit with instruction to resolve conflicts and then re-run `/core-pull`.
-
-**Restore skip-worktree** after pull — ALWAYS run this before any exit below (also when already up to date):
-
-```bash
-git ls-files .project/ | xargs git update-index --skip-worktree 2>/dev/null
-```
 
 If stashed in PHASE 0: `git stash apply`. On success → `git stash drop`. On conflict → report and exit (**do NOT drop stash** — remains as safety net).
 

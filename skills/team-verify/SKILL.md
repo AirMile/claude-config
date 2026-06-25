@@ -525,7 +525,7 @@ Use AskUserQuestion:
 4. **Scoped auto-commit** — follow [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md). team-verify deltas:
    - **Baseline**: status form — `.project/session/pre-skill-status.txt`.
    - **OVERLAP policy**: interactive.
-   - **Fallback**: stage only known skill-output files (`git add .project/features/{feature-name}/feature.json .project/backlog.json .project/project.json .project/project-context.json`).
+   - **Fallback**: stage known codebase skill-output files only (acceptance test files, source files modified during verification). `.project/` is local-only — never stage it.
    - **Commit**: `git commit -m "test({feature}): {pass}/{total} requirements verified"`
    - **Cleanup**: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
 

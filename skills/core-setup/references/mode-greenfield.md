@@ -84,7 +84,7 @@ Store as `EXPLANATION_CHOICE`. If "Same as global" → `EXPLANATION_CHOICE=skip`
    claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
    ```
 
-   **Figma MCP (optional)** — Ask via AskUserQuestion if the project involves Figma designs:
+   **Figma MCP (optional)** — defaults to "No"; only worth asking when Figma involvement is already evident (the project type isn't known yet at Phase 1, so don't force it). Ask via AskUserQuestion if the project involves Figma designs:
 
    ```yaml
    header: "Figma MCP"
@@ -140,7 +140,7 @@ Ask sequentially, one question per response:
    - Tailor suggestions to the domain from the concept.
    - No extra disk read needed — `SEED_CONTEXT` is already in context.
 
-0.5. **Project mode** — AskUserQuestion (single-select). Ask this early so downstream questions (tech stack suggestions, tracker prompts, commit convention defaults) can use the answer:
+0.5. **Project mode** — If `project.json#team.mode` is already set (e.g. project-add created the project directory), use it and skip this question — show `Project mode: {mode} (from project-add)`. Otherwise AskUserQuestion (single-select). Ask this early so downstream questions (tech stack suggestions, tracker prompts, commit convention defaults) can use the answer:
 
 ```yaml
 header: "Project mode"
@@ -233,11 +233,11 @@ Store answer as `TEAM_MODE` (`"solo"` or `"team"`). Written to `project.json#tea
    ---
    ```
 
-6. **Web standards** (skip for game/CLI/desktop) — Three single-select questions. **Ask each as a separate AskUserQuestion call — never combined in one message.**
-   - Data fetching strategy (if React/Vue + external API/backend): plain fetch, SWR, TanStack Query
+6. **Web standards** — single-select questions. **Ask each as a separate AskUserQuestion call — never combined in one message.**
+   - Data fetching strategy (any stack with an external API/backend — incl. Mobile): plain fetch, SWR, TanStack Query
      **Skip** if the project has no external data sources (e.g. localStorage-only, in-memory state, static content)
-   - Accessibility: WCAG 2.1 AA, WCAG 2.1 A, Minimal
-   - Responsive: Mobile-first, Desktop-first, Fixed width
+   - Accessibility (web only — skip for game/CLI/desktop/mobile): WCAG 2.1 AA, WCAG 2.1 A, Minimal
+   - Responsive (web only — skip for game/CLI/desktop/mobile): Mobile-first, Desktop-first, Fixed width
 
 ---
 
@@ -290,7 +290,10 @@ Install dependencies and run build to verify setup compiles. Non-blocking: conti
 ## Phase 5b: Auto Dev Tools
 
 > **Todo**: mark Phase 5 → `completed`, Phase 5b → `in_progress`.
-> Read `references/phase-auto-dev-tools.md` and follow it with:
+>
+> **Skip-guard**: both auto-dev-tools (inspect-overlay, playwright) require Phase 2.3 project type ∈ {Web Frontend, Fullstack}. If the project type is anything else (Mobile, Game, Desktop, CLI, Web Backend), skip this phase entirely — do NOT load the reference — and mark Phase 5b `completed`. `dev_tools_installed[]` stays empty.
+>
+> Otherwise Read `references/phase-auto-dev-tools.md` and follow it with:
 >
 > - variant: greenfield-auto
 > - stack-source: Phase 2.3 project type + Phase 2.4 stack choice
@@ -321,9 +324,12 @@ Generate CLAUDE.md following the **canonical structure** from `references/claude
 
 **`.gitignore` check** (idempotent — append only if missing):
 
+If the run arrived via the project-add handoff (Phase 0 setup-pending marker), project-add has already written wholesale Claude ignores (`.claude/`, `.project/`, `CLAUDE.md`, `AGENTS.md`) — the `grep` guards below will find them and skip. The appends matter for the standalone path (core-setup run without project-add), where these entries are genuinely absent.
+
 ```bash
-# Ensure Claude-related files are gitignored
+# Ensure Claude tooling & local project data are gitignored (never committed to the project repo)
 grep -qxF 'CLAUDE.md' .gitignore 2>/dev/null || echo 'CLAUDE.md' >> .gitignore
+grep -qxF 'AGENTS.md' .gitignore 2>/dev/null || echo 'AGENTS.md' >> .gitignore
 grep -qxF '.claude/' .gitignore 2>/dev/null || echo '.claude/' >> .gitignore
 grep -qxF '.project/' .gitignore 2>/dev/null || echo '.project/' >> .gitignore
 ```
@@ -342,7 +348,7 @@ Follow `references/stack-baseline-shared.md`.
 
 ## Phase 7b: Dashboard Init
 
-> **Todo**: mark Phase 7 → `completed`, Phase 7b → `in_progress`. Read `references/phase-dashboard-init.md` and follow it (creates project.json, backlog scaffold, project-context.json, skip-worktree).
+> **Todo**: mark Phase 7 → `completed`, Phase 7b → `in_progress`. Read `references/phase-dashboard-init.md` and follow it (creates project.json, backlog scaffold, project-context.json; ensures `.project/` is gitignored and untracked).
 
 ---
 

@@ -15,17 +15,18 @@ Supported values: English, Nederlands, Deutsch, Français, Español.
 
 ## What Gets Translated at Runtime
 
-| Category                                          | Translate? |
-| ------------------------------------------------- | ---------- |
-| ASCII table headers and columns                   | Yes        |
-| AskUserQuestion labels and descriptions           | Yes        |
-| Status messages (Done, Summary, Next step, etc.)  | Yes        |
-| Error messages and warnings                       | Yes        |
-| Prose explanations to the user                    | Yes        |
-| Code, file paths, API names, library names        | No         |
-| File extensions, CLI flags, environment variables | No         |
-| Technical identifiers (variable/function names)   | No         |
-| Section headers in CLAUDE.md                      | No         |
+| Category                                          | Translate?                                              |
+| ------------------------------------------------- | ------------------------------------------------------- |
+| ASCII table headers and columns                   | Yes                                                     |
+| AskUserQuestion labels and descriptions           | Yes                                                     |
+| Status messages (Done, Summary, Next step, etc.)  | Yes                                                     |
+| Error messages and warnings                       | Yes                                                     |
+| Prose explanations to the user                    | Yes                                                     |
+| Commit messages (subject, body, footer)           | No — always English (see `skills/core-commit/SKILL.md`) |
+| Code, file paths, API names, library names        | No                                                      |
+| File extensions, CLI flags, environment variables | No                                                      |
+| Technical identifiers (variable/function names)   | No                                                      |
+| Section headers in CLAUDE.md                      | No                                                      |
 
 ## Skill Authoring Rules
 

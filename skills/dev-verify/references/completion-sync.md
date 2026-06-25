@@ -73,7 +73,7 @@ Follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). dev-verify delt
 
 - **Baseline**: status form — `.project/session/pre-skill-status.txt`; lint baseline `.project/session/pre-skill-lint.txt` (written in PHASE 0 step 5).
 - **Diagnostics**: run the § 3 set-diff. Source detection: `package.json#scripts` keys matching `typecheck|type-check|tsc|lint`; Python (no package.json): `mypy.ini` or `[tool.mypy]` in `pyproject.toml`. No match → skip silently. Multiple matches → parallel Bash calls, `timeout: 60000`.
-- **OVERLAP policy**: interactive. **Staging**: NEW and included OVERLAP via plain `git add`. `.project/` is local-only — never staged.
+- **OVERLAP policy**: interactive. **Staging**: `.project/` is local-only — omit it. Stage NEW and included OVERLAP (codebase files only — source, tests, acceptance test files) via plain `git add`.
 - **Fallback**: `git add -A`.
 - **Worktree**: stage and commit app-code (source, tests, acceptance test files) inside the worktree. No main-repo sync commit — `.project/` is local-only state.
 

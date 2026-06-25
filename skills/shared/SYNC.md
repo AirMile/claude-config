@@ -84,16 +84,6 @@ Write the full concept document as plain markdown to `.project/project-seed.md`.
 - Write `project.json` (or targeted Edit)
 - Write `project-context.json` (if context/architecture/learnings changed)
 
-### Step 4: Restore skip-worktree
-
-After writing `.project/` files, set skip-worktree on any new files:
-
-```bash
-git ls-files .project/ | xargs git update-index --skip-worktree 2>/dev/null
-```
-
-This prevents `.project/` changes from appearing in git status and interfering with pull/stash.
-
 ### Active Feature Cleanup
 
 ```bash

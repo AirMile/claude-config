@@ -8,8 +8,9 @@ team mode) into one JSON object on stdout. Read-only except `git fetch`.
 Usage:
     python3 preflight.py [--path <dir>]
 
-The skip-worktree dance and stash handling stay in the skill (safety-
-critical, interleaved with the pull itself).
+Stash handling stays in the skill (safety-critical, interleaved with the pull
+itself). The legacy skip-worktree dance has been removed — .project/ is
+gitignored under Model A and never needs skip-worktree.
 """
 
 import argparse

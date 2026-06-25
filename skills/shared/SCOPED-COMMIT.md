@@ -34,7 +34,7 @@ Compare `git status --porcelain | sort` with the baseline:
 
 **`.project/` is local-only**: `.project/` paths (feature.json, backlog.json, session files) are gitignored developer-local state — **never stage or commit them**. Stage only codebase files: source, tests, acceptance test files, repo config. Non-`.project/` paths: plain `git add`.
 
-**Fallback when baseline file is missing** (skill picks one): `git add -A` (default — safe only when `.project/` is in `.gitignore`, which the setup skills guarantee) · stage only known skill-output files · ask the user which files belong to the change.
+**Fallback when baseline file is missing** (skill picks one): `git add -A` (default — safe because gitignored dirs stay out; setup skills guarantee `.gitignore` covers these) · stage only known codebase skill-output files · ask the user which files belong to the change.
 
 ## 3. Pre-commit diagnostics (optional, before staging)
 

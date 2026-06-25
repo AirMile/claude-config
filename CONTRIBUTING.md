@@ -53,7 +53,7 @@ Skill-level versions (`metadata.version` in frontmatter) are per-skill. Repo rel
 
 To cut a release:
 
-1. Run `python3 scripts/check-handoff.py` and `python3 scripts/check-dashboard-writers.py` — both must exit 0.
+1. Run `python3 scripts/check-handoff.py`, `python3 scripts/check-dashboard-writers.py`, and `python3 scripts/check-no-project-commit.py` — all must exit 0.
 2. Update `CHANGELOG.md` (`[Unreleased]` → `[X.Y.Z] - YYYY-MM-DD`), commit.
 3. `git tag -a vX.Y.Z -m "claude-config vX.Y.Z"`
 

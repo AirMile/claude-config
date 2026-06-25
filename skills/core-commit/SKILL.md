@@ -206,6 +206,7 @@ If staged changes contain multiple unrelated groups:
 - Header max **72 characters** (Git convention)
 - Type: lowercase, from allowed list
 - Subject: lowercase start, no trailing period, imperative mood ("add" not "added")
+- **Language: English** — commit messages are always written in English regardless of the project's runtime language setting. Commit messages are not a runtime-output category and are not translated (see `skills/shared/LANGUAGE.md`).
 - Body: empty line after header, explain "why" not "what"
 - Breaking change: use ! or BREAKING CHANGE: footer
 
