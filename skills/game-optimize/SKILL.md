@@ -406,6 +406,10 @@ Next steps:
   4. /game-optimize → another run with a different metric
 ```
 
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /game-verify {feature} → re-verify after optimizations.
+
 > **Todo**: mark PHASE 6 → `completed`.
 
 ## Edge Cases

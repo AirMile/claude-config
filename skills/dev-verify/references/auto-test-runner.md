@@ -19,10 +19,11 @@ Execute these steps for each non-COVERED AUTO item:
    - Builder tests live in a top-level `test/` or `__tests__/` directory → write `test/integration/{feature}.integration.test.{ext}`.
    - No existing builder tests → default to `test/integration/{feature}.integration.test.js`.
 
-3. For acceptance items (source: "acceptance"): write test as a separate file using the project's test framework (vitest/jest/node:test — check package.json).
+3. For acceptance items (source: "acceptance"): write tests using the project's test framework (vitest/jest/node:test — check package.json).
 
    Path decision (check existing builder-test locations first):
-   - Builder tests are colocated → write `{builder-test-dir}/{feature}.acceptance.test.{ext}` colocated.
+   - A colocated builder test already covers the same unit AND owns heavy shared mocks (fake timers, navigation containers, native-module mocks) → append the acceptance `describe` block to that existing file and reuse its mocks. A new sibling file can change the runner's scheduling and leak shared timers across files (e.g. React Navigation animation timers), breaking unrelated tests.
+   - Otherwise, builder tests are colocated → write `{builder-test-dir}/{feature}.acceptance.test.{ext}` colocated.
    - Builder tests live in `test/` or `__tests__/` → write `test/acceptance/{feature}.acceptance.test.{ext}`.
    - No existing builder tests → default to `test/acceptance/{feature}.acceptance.test.{ext}`.
 
@@ -38,7 +39,7 @@ Execute these steps for each non-COVERED AUTO item:
 6. TOOL_ERROR (runner fails or CLI errors) → mark as TOOL_ERROR.
 
 POST-BUILD: baseline already GREEN. Focus on INTEGRATION and ACCEPTANCE, not unit logic.
-Do NOT re-run the full baseline test suite. Run only the new test files you wrote.
+Run only the new test files while iterating. Exception: when you ADD a new test file (vs. appending to an existing one), do ONE full-suite run after it goes green — a new file can change scheduling and leak shared state (timers, native mocks) across files, a regression that an isolated run cannot surface.
 
 ## Result format
 

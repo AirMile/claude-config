@@ -13,7 +13,7 @@ reads:
     project.theme,
     concept.seed,
   ]
-writes: [devinfo.handoff, devinfo.tokenDrift, project.design]
+writes: [devinfo.handoff, devinfo.tokenDrift, project.design, backlog.status]
 metadata:
   author: claude-config
   version: 2.16.0

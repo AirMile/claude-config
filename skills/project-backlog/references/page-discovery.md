@@ -2,7 +2,8 @@
 
 **Goal:** Establish which screens the app has and which features appear on each screen. Produces PAGE tasks with `dependencies[]` that drive `/frontend-design` Build composition.
 
-**Always run** after Feature Review in WEB MODE. Skip in GAME MODE.
+**Skip in GAME MODE and WEB-MOBILE mode** (React Native: screens are FEATURE-typed and
+`/frontend-design` is browser-only). Run after Feature Review in WEB MODE.
 
 ---
 

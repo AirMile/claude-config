@@ -12,7 +12,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 1.1.0
+  version: 1.2.0
   category: project
 ---
 
@@ -302,19 +302,13 @@ build/
 .DS_Store
 Thumbs.db
 
-# Claude project (runtime data)
-.project/session/
-.project/sessions/
-.project/features/
-
-# Claude local config (per-device, not shared)
-.claude/paths.local.yaml
-
-# Symlinks/junctions (tracked via master repo, not this one)
-.claude/agents/
-.claude/hooks/
-.claude/skills/
-.claude/scripts/
+# Claude tooling & local project data — not committed to the project repo
+# (managed by the shared claude-config / master repo, not this one).
+# Wholesale entries (no trailing slash) so symlinks, real dirs and sub-paths all match.
+.claude/
+.project/
+CLAUDE.md
+AGENTS.md
 ```
 
 #### Clone mode:
@@ -327,22 +321,15 @@ echo '{"permissions": {"allow": []}}' > {projects_root}/[name]/.claude/settings.
 
 **.gitignore — append claude-specific entries if not already present:**
 
-First check whether `.claude/` and `.project/` are already ignored wholesale (a single broad entry covers every sub-path). If **both** are, the granular entries below are redundant — skip them and note it. Otherwise add only the missing entries:
+Check each entry below; append only the ones not already present (a wholesale entry like `.claude/` already covers every sub-path, so skip any that are redundant). Use **no trailing slash** — `.claude/agents` is a symlink _file_, and a trailing-slash pattern (`.claude/agents/`) would only match a directory and silently fail to ignore it:
 
 ```
-# Claude project (runtime data)
-.project/session/
-.project/sessions/
-.project/features/
-
-# Claude local config (per-device, not shared)
-.claude/paths.local.yaml
-
-# Symlinks/junctions (tracked via master repo, not this one)
-.claude/agents/
-.claude/hooks/
-.claude/skills/
-.claude/scripts/
+# Claude tooling & local project data — not committed to the project repo
+# (managed by the shared claude-config / master repo, not this one).
+.claude/
+.project/
+CLAUDE.md
+AGENTS.md
 ```
 
 If `.gitignore` does not exist, create it with the above entries.

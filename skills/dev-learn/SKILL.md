@@ -315,6 +315,10 @@ Next steps:
 - /dev-learn [next topic] — learn the next topic
 ```
 
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /dev-build {feature} → resume building the feature.
+
 ## Guidelines
 
 **Teaching principles:**

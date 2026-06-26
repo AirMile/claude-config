@@ -1,6 +1,6 @@
 ---
 name: project-seed
-description: Transform any idea, design, or task into a structured seed document. Handles new concepts (game/app/idea), implementation projects (Figma/spec → code scope), and feature/assignment scoping. Use with /project-seed.
+description: Use with /project-seed to turn an idea, design, or task into a structured seed document — new concepts, design/spec implementation, or feature scoping.
 reads:
   [
     concept.seed,
@@ -17,7 +17,7 @@ reads:
 writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 1.7.0
+  version: 1.8.0
   category: project
 ---
 
@@ -117,7 +117,7 @@ The user may respond to questions in unexpected ways — asking their own questi
 
 Same pattern: present the "Deeper Dive" AskUserQuestion after each round. As rounds progress, switch the recommended option to "Proceed to summary" when enough context has been gathered (typically after 2-3 rounds).
 
-**Question rules** (form choice, anchoring, and escalation: [shared/QUESTIONING.md](../shared/QUESTIONING.md) — clickable rounds are the default here; switch to a single anchored open question for generative aspects like vision, tone, or story per that protocol):
+**Question rules** (form choice, anchoring, and escalation: [shared/QUESTIONING.md](../shared/QUESTIONING.md) — clickable rounds are the default here; switch to a single anchored open question for generative aspects like vision, tone, story, or naming/title per that protocol):
 
 - NEVER use meta-options ("Answer questions", "Fewer questions")
 - Each question = separate AskUserQuestion with concrete, clickable options

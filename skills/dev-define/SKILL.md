@@ -20,7 +20,7 @@ writes:
 writes-terminal: [backlog.overview]
 metadata:
   author: claude-config
-  version: 3.4.0
+  version: 3.6.0
   category: dev
 ---
 
@@ -87,7 +87,7 @@ visible — no risk of forgetting phases.
      ```
      Run the two `node -e` snippets for the `define` profile (set `FEAT="{feature-name}"` before running).
    - **Onboarding check** (after project.json extract): `PROJECT_JSON: not present` → warn `⚠️ No project.json found. Consider /core-setup.`; present but `stack === null && features.length === 0` → warn `ℹ️ project.json lacks codebase context. /core-setup can fill this in.`; present with content → continue silently. Non-blocking.
-   - Read `.claude/research/stack-baseline.md` (if not available, use `project.json.stack` as basis).
+   - Read `.claude/research/stack-baseline.md` — **decision input, not just fallback**: extract the section(s) matching this feature's stack area (e.g. navigation, storage, maps) into memory so PHASE 1b's baseline gate and PHASE 2's baseline check can reuse them without re-reading. If absent, use `project.json.stack` as basis.
    - **Backlog read-only** (required — feeds the PHASE 1 risk-check + PHASE 3 externalRef passthrough): Backlog load (via [shared/BACKLOG-LOAD.md](../shared/BACKLOG-LOAD.md)):
      ```
      profile: read-feature
@@ -140,7 +140,7 @@ Conduct the open interview per the reference — one anchored open question at a
 
 ### PHASE 1b: Requirements Synthesis
 
-**Design choices** (only for architecture-changing branches — storage strategy, route shape, auth model, data model boundary, external service contract): if the interview revealed a fork with concrete A vs B vs C options, resolve these now via AskUserQuestion before extracting requirements. Each sub-question must be a **design choice**. Include "Not relevant to scope" if applicable. Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` (written to `feature.json#clarifications` if ≥1 entry). Edge cases (validation rules, input notation, format defaults) → add directly as acceptance criteria, no AskUserQuestion.
+**Design choices** (only for architecture-changing branches — storage strategy, route shape, auth model, data model boundary, external service contract): if the interview revealed a fork with concrete A vs B vs C options, resolve these now via AskUserQuestion before extracting requirements. **Baseline gate (run first):** for each candidate fork, check the `stack-baseline.md` content loaded in PHASE 0 §5 — if the baseline already standardizes the answer (e.g. "use @react-navigation/stack"), do NOT raise the modal; record it directly as a `clarification` (and a `durableDecision` if architecture-wide) citing the baseline, and show `Baseline: ✓ resolved fork — {pattern-name}`. Only forks the baseline leaves open reach the user. Each remaining sub-question must be a **design choice**. Include "Not relevant to scope" if applicable. Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` (written to `feature.json#clarifications` if ≥1 entry). Edge cases (validation rules, input notation, format defaults) → add directly as acceptance criteria, no AskUserQuestion.
 
 **>4 open forks** → handle the remainder inline during requirement extraction as edge cases.
 
@@ -233,7 +233,7 @@ The full requirements table with acceptance criteria and the feature overview ta
 Design in three steps:
 
 1. **Baseline check** (internally):
-   - Search `stack-baseline.md` for patterns relevant to this feature.
+   - Reuse the `stack-baseline.md` section(s) loaded in PHASE 0 §5 (re-read only if not yet in memory); match patterns relevant to this feature.
    - **Pattern found** → use as basis, skip research. Show: `Baseline: ✓ pattern hit — {pattern-name}`. In PHASE 3: omit the `research` field in feature.json entirely (baseline hit is not research).
    - **Pattern not found** → inline research via Context7 (`resolve-library-id` + `query-docs`) + WebSearch for external APIs. Show: `Baseline: ⚙ research via Context7 — {topic}`. After research: collect new patterns in memory as `pendingBaselineAppends` — plan mode blocks the `stack-baseline.md` write; PHASE 4 appends them during sync. In PHASE 3: write `research: { sources[], findings[] }` to feature.json — only for actually executed lookups.
    - **No baseline file** → always execute research. Show: `Baseline: ⓘ missing — inline research`. Do NOT create baseline (that is /core-setup). PHASE 3 gets `research` as described above.
@@ -318,6 +318,9 @@ Next: /dev-build {feature-name}
      /team-outsource {feature-name}   ← if you want to delegate to a teammate
 ```
 
-Omit the `Next` line if the feature was not a backlog item and no concept is present — briefly note the absence of a backlog instead.
+Omit the `Next` line **and the clipboard offer below** if the feature was not a backlog item and no concept is present — briefly note the absence of a backlog instead, then mark PHASE 4 → `completed`.
 
-> **Todo**: mark PHASE 4 → `completed`.
+> **Todo (closing action — do not skip)**: mark PHASE 4 → `completed`, then apply the
+> Next-Step Clipboard Offer (binary Ja/Nee) as the final step of the skill —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /dev-build {feature-name} → builds the defined feature (main pipeline step).

@@ -1551,13 +1551,30 @@ hr.divider {
 
 .code-cards-dataflow {
   font-size: 13px;
-  color: var(--text-dim);
+  color: var(--text-muted);
   padding: 8px 14px;
   margin-bottom: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
-  letter-spacing: 0.3px;
+  line-height: 1.6;
+}
+
+.code-cards-dataflow-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.code-cards-dataflow-line {
+  margin: 2px 0;
+}
+
+.code-cards-dataflow-line strong {
+  color: var(--text);
 }
 
 .code-cards {
@@ -2798,10 +2815,6 @@ body.sg-overlay-open {
 }
 
 .learnings-row {
-  display: grid;
-  grid-template-columns: 90px auto 1fr;
-  gap: 10px;
-  align-items: baseline;
   padding: 6px 0;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
@@ -2811,11 +2824,61 @@ body.sg-overlay-open {
   border-bottom: none;
 }
 
+.learnings-row-head {
+  display: grid;
+  grid-template-columns: 90px 1fr auto auto;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.learnings-row--expandable .learnings-row-head {
+  cursor: pointer;
+}
+
 .learnings-date {
   font-family: var(--font-mono, monospace);
   font-size: 11px;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
+}
+
+.learnings-title {
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.learnings-feature-tag {
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--surface, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.learnings-caret {
+  color: var(--text-dim);
+  transition: transform 0.15s ease;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.learnings-row.is-open .learnings-caret {
+  transform: rotate(90deg);
+}
+
+.learnings-detail {
+  display: none;
+  margin: 8px 0 4px 100px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+}
+
+.learnings-row.is-open .learnings-detail {
+  display: block;
 }
 
 .learnings-feature {
@@ -3234,6 +3297,69 @@ body.sg-overlay-open {
   font-style: italic;
   opacity: 0.7;
   margin-left: auto;
+}
+
+.bk-commit-block {
+  margin-bottom: 10px;
+}
+
+.bk-commit-block:last-child {
+  margin-bottom: 0;
+}
+
+.bk-commit-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.bk-commit-subject {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-muted);
+}
+
+.bk-commit-age {
+  font-style: italic;
+  opacity: 0.7;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.bk-phase-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bk-phase-badge--build {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.bk-phase-badge--verify {
+  background: color-mix(in srgb, var(--done) 18%, transparent);
+  color: var(--done);
+}
+
+.bk-phase-badge--refactor {
+  background: color-mix(in srgb, var(--purple) 18%, transparent);
+  color: var(--purple);
+}
+
+.bk-phase-badge--other {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text-dim);
 }
 
 .bk-diff {
@@ -3866,6 +3992,11 @@ body.sg-overlay-open {
 }
 a.arch-row-path:hover {
   text-decoration: underline;
+}
+
+.arch-row-path--static {
+  color: var(--text);
+  cursor: default;
 }
 
 .arch-row--protected {

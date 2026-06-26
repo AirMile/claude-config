@@ -123,3 +123,7 @@ Next:  /frontend-check {target(s)} — runtime audit, moves PAGE to DONE on PASS
 
 For COMPONENT-only runs: omit Next line — frontend-check promotes the consuming PAGE, not the
 component directly.
+
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /frontend-check {target} → runtime audit before shipping.

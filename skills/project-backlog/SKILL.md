@@ -1,11 +1,11 @@
 ---
 name: project-backlog
-description: "Seed → prioritized, dependency-ordered backlog. Use with /project-backlog."
+description: "Use with /project-backlog to turn a seed into a prioritized feature backlog."
 reads: [backlog.status, concept.seed, backlog.seedDrift, project.thinking]
 writes: [backlog.status, backlog.features, concept.seed, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 1.7.0
+  version: 1.9.0
   category: project
 ---
 
@@ -48,11 +48,17 @@ Accepts markdown from:
    - `stack.engine === "godot"` → **GAME MODE**
    - `concept.platform === "game"` → **GAME MODE**
    - No match or no project.json → **WEB MODE**
-3. Show detected mode:
+3. **[WEB MODE] Mobile sub-detection:** `stack.framework`/`stack.packages[]` contains
+   `react-native` or `expo` (or `concept.platform === "mobile"`) → set **WEB-MOBILE**.
+   WEB-MOBILE runs the full WEB pipeline EXCEPT Page-Discovery: the `/frontend-design`
+   browser pipeline (Playwright/DOM) does not run against React Native, so screens stay
+   FEATURE-typed and flow through `/dev-define → /dev-build`.
+4. Show detected mode:
 
    ```
-   STACK DETECTED: web    (→ /dev-define pipeline)
-   STACK DETECTED: game   (→ /game-define pipeline)
+   STACK DETECTED: web         (→ /dev-define pipeline)
+   STACK DETECTED: web-mobile  (→ /dev-define pipeline, screens as FEATURE)
+   STACK DETECTED: game        (→ /game-define pipeline)
    ```
 
 ### Enter Plan Mode
@@ -174,6 +180,27 @@ P3:
 P4:
 - {feature}: {reason}
 ```
+
+**Requirements coverage check** (conditional — run before the Seed Alignment Check):
+
+Trigger only when the concept declares explicit requirements/goals — `project.json#concept.goals[]`
+non-empty, OR the seed has a requirements/rubric section (heading/table matching eisen/requirements/
+rubric/criteria). No such source → skip silently (free-form concepts have no formal requirements).
+
+Map each stated requirement to the feature(s) that satisfy it and the phase they land in:
+
+```
+REQUIREMENTS COVERAGE
+
+| # | Requirement | Covered by | Phase |
+|---|-------------|------------|-------|
+| 1 | {requirement} | {feature(s)} | P1 |
+```
+
+Flag any requirement with **no covering feature**, or a hard requirement covered **only in P2+**.
+Zero gaps → show the table as confirmation and proceed. Gaps → AskUserQuestion (recommended-first):
+"Add a feature" / "Promote covering feature to P1" / "Accept the gap". Apply the choice, re-show,
+proceed.
 
 **Seed Alignment Check** (last step in PHASE 3, before ExitPlanMode):
 

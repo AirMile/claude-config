@@ -63,3 +63,7 @@ Next steps:
   1. /project-backlog → generate backlog from concept (if no backlog yet)
   2. /game-build {feature-name} → start implementation (if backlog already exists)
 ```
+
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /game-build {feature} → builds the defined game feature (main pipeline step).

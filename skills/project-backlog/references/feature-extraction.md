@@ -18,7 +18,7 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
 
    **If research was performed (PHASE 0.5), also consider:** what already exists in the codebase to reuse/extend, framework patterns or conventions that should guide decomposition, and pitfalls/anti-patterns to avoid.
 
-   **Granularity decision:** each feature should represent **1-3 days of work** and be **testable independently**. If in doubt, prefer smaller features — easier to combine than to split later.
+   **Granularity decision:** each feature = **one coherent, independently testable concern** — small enough that one `/dev-define → /dev-build` cycle covers it. (Sizing is by scope, not human time: the builder is Claude Code.) If in doubt, prefer smaller features — easier to combine than to split later.
 
    **If in update mode (from PHASE 0 Scenario A):**
 
@@ -88,7 +88,35 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
 
 6. **Feature Review (all modes):**
 
-   AskUserQuestion — header "Feature Review", question "Are these features correct? You can add, remove, or adjust.", options "Yes, this is correct (Recommended)" / "Adjust features". Response handling: "Yes" → continue below; "Adjust features" or "Other" → apply changes, show updated table, re-ask. **Loop until confirmed.**
+   **6a. Surface open questions first** (skip only when there is no real ambiguity).
+   From the self-check (step 4) + the concept, derive the design questions the
+   decomposition leaves open — these are what the user must resolve before features
+   lock. Look for:
+   - **Feature-boundary / overlap** — two features whose scope touches (who owns X?).
+   - **Cross-feature interaction flow** — a user action that spans features (entry
+     points, shared state, "where does the data come from").
+   - **Concept silence** — behaviour the seed doesn't pin down but the build needs.
+   - **Shared-vs-duplicated logic** — a util/flow more than one feature needs.
+
+   Show at most the 3–5 that actually change the feature set:
+
+   ```
+   OPEN QUESTIONS ({n})
+
+   | # | Question | Affects | Why it matters |
+   |---|----------|---------|----------------|
+   | 1 | {one-line} | {feature(s)} | {what breaks if left unresolved} |
+   ```
+
+   Resolve via AskUserQuestion (one modal, recommended option first) or free-text;
+   apply the answers to the feature list. No real ambiguity → state "No open questions —
+   decomposition is unambiguous" and go straight to 6b. **Never manufacture questions.**
+
+   **6b. Confirm the (updated) feature list.** AskUserQuestion — header "Feature Review",
+   question "Are these features correct? You can add, remove, or adjust.", options
+   "Yes, this is correct (Recommended)" / "Adjust features". Response handling: "Yes" →
+   continue below; "Adjust features" or "Other" → apply changes, show updated table,
+   re-ask. **Loop until confirmed.**
 
    After confirmation: [GAME MODE] → step 7, then PHASE 2 · [WEB MODE] → step 8, then Page-Discovery.
 
@@ -119,6 +147,6 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
 
 ---
 
-**[WEB MODE] Page-Discovery (always — after feature review confirms):**
+**[WEB MODE, not WEB-MOBILE] Page-Discovery (after feature review confirms):**
 
 > **Todo**: Read `.claude/skills/project-backlog/references/page-discovery.md` and follow the Page-Discovery flow before proceeding to PHASE 2.

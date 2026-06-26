@@ -1115,7 +1115,20 @@
 
         const dataFlowHtml =
           a.dataFlow && hasCards
-            ? `<div class="code-cards-dataflow">${esc(a.dataFlow)}</div>`
+            ? `<div class="code-cards-dataflow">
+                <div class="code-cards-dataflow-label">Data flow</div>
+                ${a.dataFlow
+                  .split(/\.\s+(?=[A-Z])/)
+                  .map((s) => s.replace(/\.\s*$/, "").trim())
+                  .filter(Boolean)
+                  .map((s) => {
+                    const m = s.match(/^([^:]{1,24}):\s*(.*)$/);
+                    return `<div class="code-cards-dataflow-line">${
+                      m ? `<strong>${esc(m[1])}:</strong> ${esc(m[2])}` : esc(s)
+                    }</div>`;
+                  })
+                  .join("")}
+              </div>`
             : "";
 
         let descHtml = "";
@@ -1143,7 +1156,7 @@
         }
 
         const routes = a.routes || [];
-        const localUrl = data.localUrl || "http://localhost:3000";
+        const localUrl = data.localUrl || "";
         const normalizeAuth = (v) => {
           if (v === true) return "user";
           if (v === false || v == null) return "public";
@@ -1164,9 +1177,12 @@
                     : auth !== "public"
                       ? " arch-row--protected"
                       : "";
+                const pathHtml = localUrl
+                  ? `<a class="arch-row-path" href="${esc(localUrl)}${esc(path)}" target="_blank" rel="noopener">${esc(path)}</a>`
+                  : `<span class="arch-row-path arch-row-path--static">${esc(path)}</span>`;
                 return `
             <div class="arch-row arch-row--route${protectedCls}">
-              <a class="arch-row-path" href="${esc(localUrl)}${esc(path)}" target="_blank" rel="noopener">${esc(path)}</a>
+              ${pathHtml}
               <span class="arch-row-meta">${esc(r.purpose || r.description || "")}</span>
               <span class="arch-row-badge-slot">${badge}</span>
             </div>`;
@@ -1188,7 +1204,9 @@
               .join("")
           : "";
 
-        const endpoints = data.endpoints || [];
+        const endpoints = (data.endpoints || []).filter(
+          (e) => e.path && e.path !== "NONE" && e.method && e.method !== "NONE",
+        );
         const methodColor = {
           GET: "var(--done)",
           POST: "var(--accent)",
@@ -1330,7 +1348,7 @@
       // ─── Styleguide helpers ────────────────────────────────
       function parseModeVars(modeInput, t) {
         const primitives = {};
-        const primSrc = typeof ((t || {}).cssVars) === "string" ? t.cssVars : "";
+        const primSrc = typeof (t || {}).cssVars === "string" ? t.cssVars : "";
         for (const m of primSrc.matchAll(/(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g)) {
           primitives[m[1].trim()] = m[2].trim();
         }
@@ -1340,13 +1358,19 @@
           if (varRef && primitives[varRef[1]]) value = primitives[varRef[1]];
           result.push({ token, value });
         };
-        if (modeInput && typeof modeInput === "object" && !Array.isArray(modeInput)) {
+        if (
+          modeInput &&
+          typeof modeInput === "object" &&
+          !Array.isArray(modeInput)
+        ) {
           for (const [k, v] of Object.entries(modeInput)) {
             const token = k.startsWith("--") ? k : `--${k}`;
             pushPair(token, v);
           }
         } else if (typeof modeInput === "string") {
-          for (const m of modeInput.matchAll(/(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g)) {
+          for (const m of modeInput.matchAll(
+            /(-{2}[\w-]+)\s*:\s*([^;}\n]+)/g,
+          )) {
             pushPair(m[1].trim(), m[2].trim());
           }
         }
@@ -2370,49 +2394,6 @@
           html += `<div class="fm-section"><h4>Requirements (${reqs.length})</h4><div class="fm-reqs">${rows}</div></div>`;
         }
 
-        if (detail.build) {
-          const b = detail.build;
-          const testsMeta = `<span class="fm-build-kv"><span class="fm-build-key">Tests</span><span class="fm-build-val">${b.testsPass || 0}/${b.testsTotal || 0}</span></span>`;
-          html += `<div class="fm-section"><div class="fm-build-meta">${testsMeta}</div>`;
-          if (b.decisions && b.decisions.length)
-            html += `<ul class="fm-decisions">${b.decisions.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>`;
-          if (b.explanation)
-            html += `<p class="fm-explanation">${esc(b.explanation)}</p>`;
-          html += `</div>`;
-        }
-
-        const arch = detail.architecture || {};
-        if (arch.componentTree || (arch.interfaces && arch.interfaces.length)) {
-          html += `<div class="fm-section"><h4>Architecture</h4>`;
-          if (arch.componentTree)
-            html += `<pre class="fm-tree">${esc(arch.componentTree)}</pre>`;
-          if (arch.interfaces && arch.interfaces.length) {
-            html += `<div class="fm-interfaces">`;
-            arch.interfaces.forEach((i) => {
-              html += `<div class="fm-interface"><span class="fm-iface-name">${esc(i.name)}</span><code class="fm-iface-def">${esc(i.definition)}</code></div>`;
-            });
-            html += `</div>`;
-          }
-          html += `</div>`;
-        }
-
-        const ref = detail.refactor || {};
-        if (ref.status) {
-          const badge =
-            ref.status === "ROLLED_BACK"
-              ? `<span class="refactor-badge refactor-rollback">⚠ ${esc(ref.status)}</span>`
-              : `<span class="refactor-badge refactor-done">✓ ${esc(ref.status)}</span>`;
-          html += `<div class="fm-section fm-refactor-row">${badge}`;
-          if (ref.improvements) {
-            const cats = Object.entries(ref.improvements).filter(
-              ([, v]) => v && (Array.isArray(v) ? v.length : true),
-            );
-            if (cats.length)
-              html += `<span class="fm-ref-cats">${cats.map(([k]) => esc(k)).join(" · ")}</span>`;
-          }
-          html += `</div>`;
-        }
-
         return html;
       }
 
@@ -2641,9 +2622,25 @@
         const lines = text.split("\n");
         const out = [];
         let buf = [];
+        let currentHead = null;
         const flush = () => {
-          if (buf.length) out.push(formatDiff(buf.join("\n"), filePath));
+          if (!currentHead && !buf.length) return;
+          const diffHtml = buf.length
+            ? formatDiff(buf.join("\n"), filePath)
+            : "";
+          let headHtml = "";
+          if (currentHead) {
+            const [, subject, age] = currentHead;
+            const m = subject.match(/^(\w+)[\s(]/);
+            const phase = m ? m[1].toLowerCase() : "other";
+            const p = ["build", "verify", "refactor"].includes(phase)
+              ? phase
+              : "other";
+            headHtml = `<div class="bk-commit-head"><span class="bk-phase-badge bk-phase-badge--${p}">${esc(p)}</span><span class="bk-commit-subject">${esc(subject)}</span><span class="bk-commit-age">${esc(age || "")}</span></div>`;
+          }
+          out.push(`<div class="bk-commit-block">${headHtml}${diffHtml}</div>`);
           buf = [];
+          currentHead = null;
         };
         for (const line of lines) {
           if (
@@ -2652,6 +2649,8 @@
             !line.match(/^[+\-@]/)
           ) {
             flush();
+            const parts = line.split("\t");
+            currentHead = [parts[0] || "", parts[1] || "", parts[2] || ""];
           } else {
             buf.push(line);
           }
@@ -2775,10 +2774,17 @@
             if (!items.length) return "";
             const rows = items
               .map((l) => {
-                return `<div class="learnings-row">
-                  <span class="learnings-date">${esc(l.date || "")}</span>
-                  <span class="learnings-feature" onclick="navigateToFeature('${esc(l.feature || "")}')">${esc(l.feature || "—")}</span>
-                  <span class="learnings-summary">${esc(l.summary || "")}</span>
+                const title = l.title || l.summary || "—";
+                const detail = l.detail || "";
+                const hasDetail = !!detail;
+                return `<div class="learnings-row${hasDetail ? " learnings-row--expandable" : ""}"${hasDetail ? ` onclick="this.classList.toggle('is-open')"` : ""}>
+                  <div class="learnings-row-head">
+                    <span class="learnings-date">${esc(l.date || "")}</span>
+                    <span class="learnings-title">${esc(title)}</span>
+                    ${l.feature ? `<span class="learnings-feature-tag">${esc(l.feature)}</span>` : ""}
+                    ${hasDetail ? `<span class="learnings-caret">›</span>` : ""}
+                  </div>
+                  ${hasDetail ? `<div class="learnings-detail">${esc(detail)}</div>` : ""}
                 </div>`;
               })
               .join("");
@@ -2824,9 +2830,7 @@
 
       function navigateToFeature(name) {
         if (!name) return;
-        const project = window.location.pathname.split("/").filter(Boolean)[0];
-        if (!project) return;
-        window.location.href = `/${project}/feature/${encodeURIComponent(name)}`;
+        openFeatureModal(name);
       }
 
       const renderers = {

@@ -70,15 +70,31 @@ Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
 Follow `shared/SYNC.md` 3-File Sync Pattern. Read backlog.json + project.json + project-context.json in parallel (see `shared/BACKLOG.md § Writing` for the legacy backlog.html migration rule).
 
-**Backlog**: per feature → CLEAN/REFACTORED: `f.refactor="REFACTORED"`, `f.shipped=true`, `f.shippedAt`, `f.shippedSha=$(git rev-parse HEAD)` (the PHASE 4 refactor commit — best-effort "as-shipped" pointer for the dashboard), remove `transition`. ROLLED_BACK: `f.refactor="ROLLED_BACK"`, remove `transition`. Set `data.updated`.
+**Backlog**: per feature (CLEAN/REFACTORED) — set `f.refactor="REFACTORED"`, `f.shipped=true`, `f.shippedAt`, `f.shippedSha=$(git rev-parse HEAD)` (the PHASE 4 refactor commit), remove `transition`, set `data.updated`. These six mutations are **one atomic unit** — never write `f.refactor` without also writing `f.shipped`/`f.shippedAt`/`f.shippedSha` in the same file write. ROLLED_BACK: `f.refactor="ROLLED_BACK"`, remove `transition`, set `data.updated` — do NOT set shipped.
 
-**Backlog archive** (CLEAN/REFACTORED dev-track features only): after setting the shipped flags, remove each shipped feature object from `backlog.json#features[]` and append it to `.project/archive/backlog-archive.json` — shape `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`. Create `.project/archive/` and the scaffold if absent; dedup on `name` before appending. ROLLED_BACK features are NOT archived (consistent with the feature-dir rule in step 5); PAGE/COMPONENT items also stay (frontend-track exception — see `shared/BACKLOG.md § Archiving`). The dashboard shipped-showcase reads the archive via the server — archived features are no longer in `backlog.json`.
+**Backlog archive** (CLEAN/REFACTORED dev-track features only): after setting the shipped flags, remove each shipped feature object from `backlog.json#features[]` and append it (with all shipped fields) to `.project/archive/backlog-archive.json` — shape `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`. Create `.project/archive/` and the scaffold if absent; dedup on `name` before appending. ROLLED_BACK features are NOT archived (consistent with the feature-dir rule in step 5); PAGE/COMPONENT items also stay (frontend-track exception — see `shared/BACKLOG.md § Archiving`). The dashboard shipped-showcase reads the archive via the server — archived features are no longer in `backlog.json`.
 
 **Dashboard**: merge changed packages/endpoints/entities. Small-items mode: add to `recentChanges[]`.
 
 **Context sync** (only if structural changes: files renamed/moved/extracted, patterns fundamentally changed): update `context.structure`, `context.patterns`, `context.updated`, `architecture.components` (see `shared/DASHBOARD.md` for edge types). Log `context: {N} updates` or `context: no updates needed`.
 
 Write back in parallel: Write backlog.json, Write `.project/archive/backlog-archive.json` (only if features were archived), Write project.json, Write project-context.json.
+
+## Step 3b — Completion consistency check (invariant)
+
+After the parallel writes complete, verify each CLEAN/REFACTORED feature from this run:
+
+1. Re-read `backlog.json#features[]` — feature must **not** be present (removed by archive step).
+2. Re-read `backlog-archive.json#archived[]` — feature must be present with `shipped: true`, `shippedAt`, and `shippedSha`.
+3. `f.refactor === "REFACTORED"` iff `f.shipped === true` — never one without the other.
+4. Feature-dir check (post-Step-5): `.project/features/archive/{shippedAt}-{name}/` must exist.
+
+**On invariant failure — self-heal:**
+- Missing `shipped` fields on an already-written `f.refactor`: re-write the backlog entry with the full atomic set (shipped + shippedAt + shippedSha + remove from features[] + append to archive).
+- Feature still in `backlog.json#features[]` but present in archive: remove it from features[] and rewrite backlog.json.
+- Feature-dir not yet moved (Step 5 ran before check): run the mv again (idempotent).
+
+**If self-heal fails** (e.g. file write error): print a clear `SYNC ERROR` block listing which invariant failed and which file could not be written. Do NOT print `REFACTOR COMPLETE`. Leave the exact state visible so the user can manually complete the sync.
 
 **Deferred refactor-patterns append**: when PHASE 2 collected `pendingPatternAppends` (uncovered-library research ran inside plan mode — the write was deferred), append those sections to `.claude/research/refactor-patterns.md` in the same parallel batch. Empty or absent → skip silently.
 
@@ -88,7 +104,7 @@ Follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). dev-refactor de
 
 - **Baseline**: status form — `.project/session/pre-skill-status.txt` (PHASE 0 step 3, post-worktree-switch).
 - **OVERLAP policy**: interactive. **Fallback**: `git add -A`.
-- **Commit**: batch `refactor(batch): {summary}` with per-feature lines (REFACTORED/CLEAN/ROLLED_BACK); single-feature `refactor({feature}): {summary}`.
+- **Commit**: batch `refactor(batch): {summary}` with a short body listing what changed per feature in plain language (e.g. `map-home: dubbele logica samengevoegd`, `data-store: ongewijzigd gelaten`). Single-feature: `refactor({feature}): {summary}`. No internal status labels (REFACTORED/CLEAN/ROLLED_BACK) in the commit message.
 - **Cleanup**: session files after commit.
 
 ## Step 5 — Feature archiving
@@ -108,5 +124,9 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 ## Step 6 — Completion output
 
 Print `REFACTOR COMPLETE` with per-feature ✓/✗ lines (name, status, improvement count). Next steps: /dev-define → next feature, /project-backlog → revise scope.
+
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /dev-define {next-feature} → loop to next backlog feature.
 
 **PHASE Finalize** (single-mode only — skip if `feature_queue.length > 1`): follow `shared/FINALIZE.md → Finalize Offer Decision` (TEAM_MODE + PR-state dispatch). In team mode, the matrix offers a 3-way choice: Open PR / Merge directly to main / Keep open.

@@ -608,9 +608,25 @@
         const lines = text.split("\n");
         const out = [];
         let buf = [];
+        let currentHead = null;
         const flush = () => {
-          if (buf.length) out.push(formatDiff(buf.join("\n"), filePath));
+          if (!currentHead && !buf.length) return;
+          const diffHtml = buf.length
+            ? formatDiff(buf.join("\n"), filePath)
+            : "";
+          let headHtml = "";
+          if (currentHead) {
+            const [, subject, age] = currentHead;
+            const m = subject.match(/^(\w+)[\s(]/);
+            const phase = m ? m[1].toLowerCase() : "other";
+            const p = ["build", "verify", "refactor"].includes(phase)
+              ? phase
+              : "other";
+            headHtml = `<div class="bk-commit-head"><span class="bk-phase-badge bk-phase-badge--${p}">${esc(p)}</span><span class="bk-commit-subject">${esc(subject)}</span><span class="bk-commit-age">${esc(age || "")}</span></div>`;
+          }
+          out.push(`<div class="bk-commit-block">${headHtml}${diffHtml}</div>`);
           buf = [];
+          currentHead = null;
         };
         for (const line of lines) {
           if (
@@ -619,6 +635,8 @@
             !line.match(/^[+\-@]/)
           ) {
             flush();
+            const parts = line.split("\t");
+            currentHead = [parts[0] || "", parts[1] || "", parts[2] || ""];
           } else {
             buf.push(line);
           }
@@ -1429,10 +1447,6 @@
               html += `</div></div>`;
             }
           } else if (status === "DOING") {
-            if (detail.build) {
-              const b = detail.build;
-              html += `<div class="expand-section"><div class="bk-build-meta"><span class="bk-build-kv"><span class="bk-build-key">Tests</span><span class="bk-build-val">${b.testsPass || 0}/${b.testsTotal || 0}</span></span></div></div>`;
-            }
             const files = detail.files || [];
             if (files.length) {
               const icons = { create: "+", modify: "~", delete: "−" };
@@ -1462,22 +1476,6 @@
               html += `</div></div>`;
             }
           } else if (status === "DONE") {
-            if (detail.build) {
-              const b = detail.build;
-              html += `<div class="expand-section"><div class="bk-build-meta"><span class="bk-build-kv"><span class="bk-build-key">Tests</span><span class="bk-build-val">${b.testsPass || 0}/${b.testsTotal || 0}</span></span></div>`;
-              if (b.decisions && b.decisions.length) {
-                html += `<ul class="bk-decisions">${b.decisions.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>`;
-              }
-              html += `</div>`;
-            }
-            const ref = detail.refactor || {};
-            if (ref.status) {
-              const badge =
-                ref.status === "ROLLED_BACK"
-                  ? `<span class="refactor-badge refactor-rollback">⚠ ${esc(ref.status)}</span>`
-                  : `<span class="refactor-badge refactor-done">✓ ${esc(ref.status)}</span>`;
-              html += `<div class="expand-section">${badge}</div>`;
-            }
             const doneFiles = detail.files || [];
             if (doneFiles.length) {
               const icons = { create: "+", modify: "~", delete: "−" };

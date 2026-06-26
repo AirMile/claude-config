@@ -44,7 +44,7 @@
       - Features with `dependencies: []` first (within that phase)
       - Then features whose all dependencies appear earlier in the array
       - Cross-phase dependencies (e.g. P2-feature depending on P1-feature) are automatically correct: P1 is already before P2
-   3. **Tie-breaker** within the same topological "layer": preserve the order from PHASE 1 (extraction order)
+   3. **Tie-breaker** within the same topological "layer": higher `risk` first (build/validate the uncertain features — external APIs, native modules — earliest), then PHASE 1 extraction order
 
    **[WEB MODE] In update mode, apply merge rules:**
    Merge-rule canon (DOING/DONE protected, MODIFIED-TODO update, obsolete → cancel-proposal flow, INDEPENDENT preserve): `input-detection.md` § "Update backlog" + `update-reconcile.md`. Write-level specifics on top: preserve `status`/`stage`/`phase`/`date` from the current backlog; NEW features get `status: "TODO"`, `stage: null`, `source: "/project-backlog"`; MODIFIED features keep their existing `source` (set `"/project-backlog"` only if missing); user-confirmed cancellations stay in the array with `status: "CANCELLED"` + `cancelledReason`; set `updated` to current date, keep original `generated`.

@@ -251,6 +251,8 @@ Items with `status === "DONE"` are shown in the **"To refactor"** section of the
 
 `/dev-refactor` writes this field on both `feature.json` and the backlog feature in the same sync. On CLEAN or REFACTORED, `f.shipped = true` also follows and the item moves to the Dashboard.
 
+> **Invariant:** `f.refactor === "REFACTORED"` implies `f.shipped === true` + feature absent from `backlog.json#features[]` + feature present in `backlog-archive.json#archived[]` + feature-dir under `features/archive/`. A `refactor`-without-`shipped` state is invalid — `/dev-refactor` must detect and self-heal this before printing `REFACTOR COMPLETE` (see `completion-batch.md § Step 3b`).
+
 ## COMPONENT as first-class type
 
 `type: "COMPONENT"` is a first-class backlog type alongside `PAGE`, `FEATURE`, `API`, etc. COMPONENT features live on the **Frontend track** — together with PAGE — and go through the frontend pipeline.
@@ -408,7 +410,7 @@ The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verify
 | `dev-build`        | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                                      |
 | `dev-verify`       | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                                       |
 | `dev-refactor`     | `transition === "refactoring"`                                               | keep status, set `shipped: true`               |
-| `frontend-design`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DEFINED"`                                    |
+| `frontend-design`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DOING"` (Path A — DEFINED is skipped)        |
 | `frontend-design`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                                      |
 | `frontend-content` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "contenting"` | keep `"DOING"`, sets `contentStatus: "filled"` |
 | `frontend-check`   | batch: `status === "DOING"` or `lastCheckedSha !== shippedSha`               | sets `lastCheckedSha`; PAGE PASS → `"DONE"`    |

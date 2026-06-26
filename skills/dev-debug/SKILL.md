@@ -396,4 +396,8 @@ Next steps:
   2. /dev-build {feature} → if rebuild needed
 ```
 
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /dev-verify {feature} → re-verification after fixing the issue.
+
 > **Todo**: mark PHASE 10 → `completed`.

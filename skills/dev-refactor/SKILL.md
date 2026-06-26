@@ -14,7 +14,7 @@ writes: [backlog.status, project-context.learnings, conventions]
 writes-terminal: [feature.refactor]
 metadata:
   author: claude-config
-  version: 2.8.0
+  version: 2.10.0
   category: dev
 ---
 
@@ -370,11 +370,25 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
 3. **Write the plan to the plan file** (path from the plan-mode system-reminder received at PHASE 1 step 8):
 
-   Write `REFACTOR PLAN ({N} features, {M} improvements)` to the plan file — group by feature, each improvement as `🔴/🟡/🟢 {file}:{line} — {issue} → {fix}` with before/after snippet (extract via `sed -n '{start},{end}p'`, max 20 lines). Include "Deliberately not fixed" section for SKIPPED entries. Footer: files to be modified + "Per-feature rollback: YES". If the Security lens produced ≥2 `HIGH|SEC` findings, add one footer line: `Consider a full audit: /dev-security`. In chat show only a short progress marker (e.g. `Plan written: {M} improvements across {N} features. Plan file updated.`) — no chat dump.
+   Write `REFACTOR PLAN ({N} features, {M} improvements)` to the plan file — group by feature, each improvement as `🔴/🟡/🟢 {file}:{line} — {issue} → {fix}` with before/after snippet (extract via `sed -n '{start},{end}p'`, max 20 lines). Include "Deliberately not fixed" section for SKIPPED entries. Footer: files to be modified + "Per-feature rollback: YES". If the Security lens produced ≥2 `HIGH|SEC` findings, add one footer line: `Consider a full audit: /dev-security`. Do not dump the verbose before/after snippets to chat — those live only in the plan file. The compact improvement index is printed in step 4, just before the scope question.
 
-4. **Ask for scope:**
+4. **Show the improvement index, then ask for scope:**
 
-   Use **AskUserQuestion** tool (max 4 options — tool limit):
+   First print a compact, scannable index to chat so the user can read what they are choosing between **before** answering. This is NOT the verbose plan-file version — one line per improvement, no before/after snippets. Group by feature, keep the plan-file's impact tags and include a sequential number per improvement:
+
+   ```
+   REFACTOR — {M} improvements across {N} features
+
+   {feature-a} ({k} findings)
+     🔴 1. {file}:{line} — {issue} → {fix}
+     🟡 2. {file}:{line} — {issue} → {fix}
+   {feature-b} ({k} findings)
+     🟢 3. {file}:{line} — {issue} → {fix}
+
+   Deliberately not fixed: {count} (details in plan file)
+   ```
+
+   Then use **AskUserQuestion** tool (max 4 options — tool limit):
    - header: "Scope"
    - question: "Which improvements do you want to apply? ({M} total across {N} features)"
    - options:

@@ -179,6 +179,10 @@ AskUserQuestion:
 
 If "No" → stop. Show report.
 
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /dev-refactor {feature} → apply security hardening as a refactor step.
+
 ---
 
 ## PHASE 4: Fix Plans
@@ -247,6 +251,10 @@ Remaining items: [N] (deferred)
 ```
 
 > **Todo**: mark PHASE 5 → `completed`.
+
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /dev-refactor {feature} → apply security hardening as a refactor step.
 
 ## Best Practices
 

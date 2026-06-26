@@ -6,7 +6,7 @@ reads:
 writes: [feature.tests, backlog.status, project-context.learnings]
 metadata:
   author: claude-config
-  version: "2.15.0"
+  version: "2.17.0"
   category: dev
 ---
 

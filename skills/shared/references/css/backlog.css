@@ -910,6 +910,69 @@ body {
   margin-left: auto;
 }
 
+.bk-commit-block {
+  margin-bottom: 10px;
+}
+
+.bk-commit-block:last-child {
+  margin-bottom: 0;
+}
+
+.bk-commit-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.bk-commit-subject {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-muted);
+}
+
+.bk-commit-age {
+  font-style: italic;
+  opacity: 0.7;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.bk-phase-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bk-phase-badge--build {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.bk-phase-badge--verify {
+  background: color-mix(in srgb, var(--done) 18%, transparent);
+  color: var(--done);
+}
+
+.bk-phase-badge--refactor {
+  background: color-mix(in srgb, var(--purple) 18%, transparent);
+  color: var(--purple);
+}
+
+.bk-phase-badge--other {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text-dim);
+}
+
 .bk-diff {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;

@@ -27,6 +27,10 @@ Next steps:
   2. /game-debug → if there are unexpected failures
 ```
 
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /game-verify {feature} → acceptance verification (primary next step).
+
 **Worktree reminder** — add one extra block to the output if the current branch matches the `worktree-*` pattern (`git branch --show-current`):
 
 ```

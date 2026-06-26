@@ -404,4 +404,8 @@ Next steps:
   2. /game-build {feature} → if rebuild is needed
 ```
 
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /game-verify {feature} → re-verification after fixing the issue.
+
 > **Todo**: mark PHASE 10 → `completed`.

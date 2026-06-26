@@ -77,20 +77,28 @@ Follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). dev-verify delt
 - **Fallback**: `git add -A`.
 - **Worktree**: stage and commit app-code (source, tests, acceptance test files) inside the worktree. No main-repo sync commit — `.project/` is local-only state.
 
-**Variables** (count per PHASE 0 classification):
+**Commit type selection:**
 
-- `{acceptance}` = number of acceptance tests written in PHASE 1 (source: "acceptance")
-- `{auto}` = number of items with type AUTO (CLI or BROWSER) — excluding COVERED
-- `{manual}` = number of items with type MANUAL
-- `{covered}` = number of items with type COVERED (build tests cover the contract)
+- `{specFixes} + {otherFixes} > 0` → use type `fix` (production code was changed)
+- otherwise → use type `test` (tests only)
+
+**Subject:** write a short sentence (≤65 chars) in the project's language (`CLAUDE.md → Language`) describing what was verified or fixed. Base it on the feature's requirements. No counts, no internal labels.
+
+- tests-only example: `test(map-home): acceptatietests voor het kaartscherm`
+- with fixes example: `fix(app-navigation): gesture-handler werkend in tests`
+
+**Body (1-2 sentences, plain language):**
+
+- `fix` commit: briefly mention that tests were also added.
+- `test` commit: no body needed unless something notable happened.
 
 ```bash
-git commit -m "verify({feature}): {N} requirements verified ({acceptance} acceptance, {auto} auto, {manual} manual)
+git commit -m "{type}({feature}): {subject}
 
-Adversarial verification complete.
-- Acceptance: {acceptance} | Covered: {covered} | Auto: {auto} | Manual: {manual}
-- Spec fixes: {specFixes} | Other fixes: {otherFixes} | Tests added: {count}"
+{body}"
 ```
+
+Note: `{acceptance}`, `{auto}`, `{manual}`, `{covered}` counts are used for the VERIFY COMPLETE output table below — not for the commit message.
 
 Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/pre-skill-lint.txt .project/session/active-{name}.json`
 
@@ -117,6 +125,6 @@ Append a single Next step line (pick the most relevant — do NOT list multiple)
 
 Refactor is optional. Skip if scope was small and the feature is clean.
 
-> **Todo**: Apply the Next-Step Clipboard Offer —
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
-> Ranked options: 1) /dev-refactor {feature-name} → optional polish, feature is now DONE 2) /dev-define {next-feature} → loop to next backlog item 3) /dev-debug → if issues remain + "Nee, hoeft niet"
+> Recommended command: if worktree finalized → /dev-refactor {feature-name} (optional polish on main); else if more items in backlog → /dev-define {next-feature} (continues pipeline); else omit the offer.

@@ -176,6 +176,28 @@ Run when `mode = solo`.
      || (git fetch origin "{target}" && git checkout -B "{target}" "origin/{target}")
    ```
 
+3b. Target clean check — `git merge` aborts when the target has local changes overlapping with the merge:
+
+    ```bash
+    git -C "{main_root}" status --porcelain
+    ```
+
+    Non-empty → AskUserQuestion:
+
+    ```
+    header: "Target has uncommitted changes"
+    question: "{target} has uncommitted changes. What do you want to do?"
+    options:
+      - label: "Stop (Recommended)"
+        description: "Exit. Commit or stash on {target}, then re-run."
+      - label: "Stash and continue"
+        description: "git -C \"{main_root}\" stash push -u, then proceed."
+      - label: "Ignore"
+        description: "Continue anyway — merge may still abort on overlapping paths."
+    ```
+
+    On "Stash": `git -C "{main_root}" stash push -u`.
+
 4. Sync: `git pull --rebase` (skip if no remote).
 
 5. Merge:
@@ -202,16 +224,32 @@ Run when `mode = solo`.
 
 Run after solo-merge OR directly when `mode = cleanup-only`.
 
-**Pre-remove cwd-check** — verify no other process has its working directory inside the worktree:
+**Pre-remove cwd-check** — verify no _foreign_ process holds its cwd inside the worktree. Claude's own session (this shell, its parent `claude` process, and the `caffeinate` it spawned) always holds a cwd-handle in the self-finalize path — that is normal and is released by the ExitWorktree + `cd` steps below. Exclude that self process-tree first, then prompt only if a genuinely foreign shell remains:
 
 ```bash
-lsof +D "{worktree_path}" 2>/dev/null | awk 'NR>1 && $4=="cwd" {print $1, $2, $9}' | sort -u
+# self = current shell + its ancestors + their direct children (covers claude → zsh subshell + caffeinate sibling)
+_SELF=" $$ "
+_p=$$
+while :; do
+  _pp=$(ps -o ppid= -p "$_p" 2>/dev/null | tr -d ' ')
+  { [ -z "$_pp" ] || [ "$_pp" -le 1 ]; } && break
+  _SELF="$_SELF $_pp "; _p=$_pp
+done
+for _a in $_SELF; do
+  for _c in $(pgrep -P "$_a" 2>/dev/null); do _SELF="$_SELF $_c "; done
+done
+
+FOREIGN=$(lsof +D "{worktree_path}" 2>/dev/null \
+  | awk 'NR>1 && $4=="cwd" {print $2"\t"$1"\t"$9}' | sort -u \
+  | while IFS=$'\t' read -r _pid _cmd _path; do
+      case "$_SELF" in *" $_pid "*) ;; *) printf '%s\t%s\t%s\n' "$_pid" "$_cmd" "$_path";; esac
+    done)
 ```
 
-Any line → AskUserQuestion:
+`FOREIGN` empty → proceed silently (only Claude's own session held cwd; the steps below release it). Non-empty → AskUserQuestion:
 
 - header: "Other shells in worktree"
-- question: "Process(es) `{names}` (PID `{pids}`) have their working directory in `{worktree_path}`. Removing now will leave the empty directory on disk. Close those shells first?"
+- question: "Foreign process(es) `{names}` (PID `{pids}`) have their working directory in `{worktree_path}`. Removing now will leave the empty directory on disk. Close those shells first?"
 - options:
   - "Stop and close shells (Recommended)" — exit cleanup; user closes shells, re-runs finalize
   - "Continue anyway" — proceed; expect leftover empty directory
@@ -226,7 +264,7 @@ Any line → AskUserQuestion:
    cd "{main_root}" || { echo "ABORT: main root {main_root} unreachable"; exit 1; }
    ```
 
-> **Self-finalize fallback**: if `ExitWorktree` was unavailable or failed (rare), the Claude parent process can still hold a cwd-handle. `git worktree remove` then succeeds but `rmdir` may fail, leaving an empty directory. The Output Report's `Worktree: orphan-dir:` status surfaces this — user can ignore (cosmetic) or restart the session in `{main_root}`.
+> **Self-finalize is the normal solo path**: when Claude runs directly inside the worktree (solo mode), its own session holds the cwd-handle. The `ExitWorktree` + `cd {main_root}` steps above release it, so `git worktree remove --force` + the post-remove sweep finish clean (`Worktree: removed (clean)`). Only a genuinely foreign shell (a separate terminal `cd`'d into the worktree) can leave an orphan-dir; the `Worktree: orphan-dir:` status surfaces that case — ignore (cosmetic) or restart that shell in `{main_root}`.
 
 **Remove**:
 

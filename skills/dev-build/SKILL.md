@@ -11,7 +11,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 1.18.0
+  version: 1.19.0
   category: dev
 ---
 
@@ -287,12 +287,21 @@ All with `source: "extracted"`. Only write if decisions or resolved blockers are
 
 Follow [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md). dev-build deltas:
 
+> **Boundary — dev-build never integrates.** PHASE 3B's only git operations are the worktree commit below and the session-file cleanup. Do **not** run `git merge`, `git branch -d/-D`, or `git worktree remove`, and do **not** switch to `main`. The worktree stays intact on its `worktree-{feature}` branch — merging and finalizing is `/dev-verify` (PHASE Finalize) or `/core-finalize`. If you find yourself resolving a merge conflict in dev-build, you have left the skill.
+
 - **Baseline**: SHA form — `$REPO/.project/session/pre-skill-sha.txt` (mid-build commits possible; see § 1). All git commands via `git -C "$REPO"`.
 - **Stage set**: new/modified files from this feature (`feature.json files[]`, test files, feature.json itself). Untracked files outside the feature → don't stage.
 - **`.project/` files** (project.json, backlog.json, project-context.json): local-only state — written but **never staged or committed**. Do not attempt `git add`.
 - **Diagnostics**: already ran in PHASE 2b — proceed directly to staging.
-- **Commit**: `git -C "$REPO" commit -m "build({feature}): {n} requirements ({tdd} TDD, {only} impl-only)"`
-- **Cleanup**: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/active-{feature-name}.json" "$REPO/.project/session/worktree-status.txt"`
+- **Commit**: `feat({feature}): {subject}` — write `{subject}` yourself as a short sentence (≤65 chars) in the project's language (`CLAUDE.md → Language`) describing _what the feature does_. Base it on the requirements you just built. No counts, no `TDD`/`impl-only` labels. Example: `feat(map-home): kaartscherm met locatiemarkers en GPS`.
+  Run: `git -C "$REPO" commit -m "feat({feature}): {subject}"`
+- **Cleanup**: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/active-{feature-name}.json" "$REPO/.project/session/worktree-status.txt"` — session files only; never touch the worktree, its branch, or main.
+
+The commit and session-file cleanup above are the last git operations in this skill. Move immediately to the completion output — no further git commands:
+
+**Completion output — print this block, then execute the Next-Step Clipboard Offer directly below. Both are required to close PHASE 3B.**
+
+> **Note**: PHASE 3B is only `completed` after the clipboard offer below is executed — the BUILD COMPLETE block is not the endpoint.
 
 **Output:**
 
@@ -304,19 +313,19 @@ Tests: {passed}/{total} PASS
 Files created: {count} | modified: {count}
 ```
 
-**Next steps block** — check whether the current branch matches the `worktree-*` pattern (`git -C "$REPO" branch --show-current`):
+**Next steps** — check branch (`git -C "$REPO" branch --show-current`); if it matches `worktree-*`, add the worktree annotations shown in `{...}`:
 
 ```
-Next steps:{ (start in a NEW chat — worktree auto-detected) when worktree active}
-  1. /dev-verify {feature}   → hybrid acceptance verification{ (auto-finalizes worktree on green) when worktree active}
+Next steps:{ (start in a NEW chat — worktree auto-detected)}
+  1. /dev-verify {feature}   → hybrid acceptance verification{ (auto-finalizes worktree on green)}
   2. /dev-refactor {feature} → optional polish after verify
   ?. /dev-debug              → only on unexpected build failures
 ```
 
-When a worktree is active, append two footer lines: `  ?. /core-finalize {feature} → recovery only — when verify was skipped or interrupted` and `💡 Worktree: {worktree_path}`.
+When worktree active: also append `  ?. /core-finalize {feature} → recovery only — when verify was skipped or interrupted` and `💡 Worktree: {worktree_path}`.
 
-> **Todo**: Apply the Next-Step Clipboard Offer —
+> **Todo (closing action — do not skip)**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
-> Ranked options: 1) /dev-verify {feature} → hybrid acceptance verification (primary next step) 2) /dev-refactor {feature} → optional polish after verify 3) /dev-debug → only on unexpected build failures + "Nee, hoeft niet"
+> Recommended command: /dev-verify {feature} → hybrid acceptance verification (primary next step).
 
 > **Todo**: mark PHASE 3B → `completed`.

@@ -192,6 +192,10 @@ Next steps:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
+> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> Recommended command: /game-define {next-feature} → loop to next backlog feature.
+
 **PHASE Finalize** — run after commit, only if BOTH true:
 
 1. Single-mode (`feature_queue.length == 1`, not codebase-mode)
