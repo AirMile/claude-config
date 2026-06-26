@@ -27,31 +27,6 @@ git -C "$REPO" rev-parse HEAD > "$REPO/.project/session/pre-skill-sha.txt"
 
 **Detect stack:** read CLAUDE.md `### Stack` section + `.claude/research/stack-baseline.md` (if available). Fallback: `project.json.stack`.
 
-**Test-runner pre-flight** (skip if no `package.json` or no TDD-capable stack detected):
-
-Verify packages are resolvable and the setup file imports `@testing-library/jest-dom` (without it `toBeInTheDocument` / `toHaveAttribute` fail silently with "Invalid Chai property"). **Do not run the test suite** — the first real run is the regression gate in PHASE 2b.
-
-**Skip entirely** for non-JS stacks (no `package.json`) or backend-only Node stacks without a component-testing framework.
-
-```bash
-# Detect setup file: root/src/test dirs (vitest.setup.*, jest.setup.*, setup-tests.*, */setup.*),
-# fallback: setupFiles entry in vitest.config.*
-SETUP=$(ls vitest.setup.* jest.setup.* src/test-setup.* setup-tests.* \
-          src/test/setup.* tests/setup.* test/setup.* 2>/dev/null | head -1)
-# Check jest-dom: imported in the setup file AND installed
-[ -n "$SETUP" ] && grep -q "@testing-library/jest-dom" "$SETUP" \
-  || echo "MISSING: @testing-library/jest-dom import not found in setup file"
-node -e "require.resolve('@testing-library/jest-dom')" 2>&1 || echo "MISSING: @testing-library/jest-dom"
-# Stack-aware component-library check: @testing-library/{react|vue|svelte|angular} per detected stack
-node -e "require.resolve('@testing-library/{framework}')" 2>&1 || echo "MISSING: @testing-library/{framework}"
-```
-
-No component framework detected → skip the framework check.
-
-Missing → auto-install (default) if `package.json` already contains `vitest`, `jest`, or `playwright` as a key anywhere in its content. Otherwise → **AskUserQuestion**: "Install + add import (Recommended)" / "Skip and continue".
-
-Output: `TEST-DEPS: ok | patched ({list}) | skipped`.
-
 **Project context** (skip if not present):
 
 Project context load (via [shared/PROJECT-CONTEXT-LOAD.md](../../shared/PROJECT-CONTEXT-LOAD.md)):
@@ -211,6 +186,48 @@ fi
 Clean up `$MARKER` together with the other session files in PHASE 3B.
 
 Follow `shared/WORKTREE.md → Symlink Integrity Gate (post-switch auto-repair)`.
+
+**Test-runner pre-flight** (intentionally placed AFTER the worktree-switch above — any install lands in the worktree branch, not in main; skip if no `package.json` or no TDD-capable stack detected):
+
+**Step 1 — detect RN/Expo stack:**
+
+```bash
+IS_RN=$(node -e "try { var p = require('./package.json'); var d = Object.assign({}, p.devDependencies||{}, p.dependencies||{}); var preset = (p.jest && p.jest.preset) || ''; console.log(d['jest-expo'] || d['react-native'] || preset.indexOf('jest-expo') !== -1 ? 'true' : 'false'); } catch(e) { console.log('false'); }" 2>/dev/null)
+```
+
+**RN/Expo stack (`IS_RN = true`):** skip `@testing-library/jest-dom` entirely — it is incompatible with React Native's test renderer. Instead verify:
+
+```bash
+node -e "require.resolve('@testing-library/react-native')" 2>&1 || echo "MISSING: @testing-library/react-native"
+SETUP=$(ls jest.setup.* src/test-setup.* setup-tests.* src/test/setup.* tests/setup.* test/setup.* 2>/dev/null | head -1)
+[ -n "$SETUP" ] && grep -qE "@testing-library/react-native/extend-expect|@testing-library/jest-native" "$SETUP" \
+  || echo "MISSING: extend-expect import not found (add: import '@testing-library/react-native/extend-expect' to setup file)"
+```
+
+Missing `@testing-library/react-native` → auto-install if `package.json` contains `jest-expo` or `react-native`. It provides all matchers via `extend-expect` — no jest-dom needed. Output: `TEST-DEPS: ok | patched (react-native) | skipped`.
+
+**Web stack (`IS_RN = false`):** verify `@testing-library/jest-dom` is resolvable and imported in the setup file (without it `toBeInTheDocument` / `toHaveAttribute` fail silently with "Invalid Chai property"). **Do not run the test suite** — the first real run is the regression gate in PHASE 2b.
+
+**Skip entirely** for non-JS stacks (no `package.json`) or backend-only Node stacks without a component-testing framework.
+
+```bash
+# Detect setup file: root/src/test dirs (vitest.setup.*, jest.setup.*, setup-tests.*, */setup.*),
+# fallback: setupFiles entry in vitest.config.*
+SETUP=$(ls vitest.setup.* jest.setup.* src/test-setup.* setup-tests.* \
+          src/test/setup.* tests/setup.* test/setup.* 2>/dev/null | head -1)
+# Check jest-dom: imported in the setup file AND installed
+[ -n "$SETUP" ] && grep -q "@testing-library/jest-dom" "$SETUP" \
+  || echo "MISSING: @testing-library/jest-dom import not found in setup file"
+node -e "require.resolve('@testing-library/jest-dom')" 2>&1 || echo "MISSING: @testing-library/jest-dom"
+# Stack-aware component-library check: @testing-library/{react|vue|svelte|angular} per detected stack
+node -e "require.resolve('@testing-library/{framework}')" 2>&1 || echo "MISSING: @testing-library/{framework}"
+```
+
+No component framework detected → skip the framework check.
+
+Missing → auto-install (default) if `package.json` already contains `vitest`, `jest`, or `playwright` as a key anywhere in its content. Otherwise → **AskUserQuestion**: "Install + add import (Recommended)" / "Skip and continue".
+
+Output: `TEST-DEPS: ok | patched ({list}) | skipped`.
 
 **Signal active feature**:
 
