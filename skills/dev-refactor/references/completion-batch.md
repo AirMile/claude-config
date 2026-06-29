@@ -89,10 +89,16 @@ After the parallel writes complete, verify each CLEAN/REFACTORED feature from th
 3. `f.refactor === "REFACTORED"` iff `f.shipped === true` — never one without the other.
 4. Feature-dir check (post-Step-5): `.project/features/archive/{shippedAt}-{name}/` must exist.
 
+**Queue-level backstop (run this check over the WHOLE run queue, not just CLEAN/REFACTORED):**
+
+5. For **every** feature in this run's queue, re-read its `backlog.json` / `backlog-archive.json` entry: it must **not** retain `transition: "refactoring"`. A leftover `transition` means a feature was silently dropped from completion (e.g. a scope filter emptied its applied set but it was never reclassified to CLEAN — see SKILL.md PHASE 3 step 5). This is the exact failure that leaves a stale card in the dashboard's TO REFACTOR column. Such a feature must be closed out now: reclassify to CLEAN, then apply the full atomic shipped-set + archive + feature-dir move (self-heal below).
+
 **On invariant failure — self-heal:**
+
 - Missing `shipped` fields on an already-written `f.refactor`: re-write the backlog entry with the full atomic set (shipped + shippedAt + shippedSha + remove from features[] + append to archive).
 - Feature still in `backlog.json#features[]` but present in archive: remove it from features[] and rewrite backlog.json.
 - Feature-dir not yet moved (Step 5 ran before check): run the mv again (idempotent).
+- Leftover `transition: "refactoring"` (invariant 5): treat the feature as CLEAN — add a `refactor` section with `status: "CLEAN"` and its deferred findings as `SKIP` decisions (Step 1), then run the full atomic shipped-set + archive + feature-dir move. This closes the stale TO REFACTOR card.
 
 **If self-heal fails** (e.g. file write error): print a clear `SYNC ERROR` block listing which invariant failed and which file could not be written. Do NOT print `REFACTOR COMPLETE`. Leave the exact state visible so the user can manually complete the sync.
 
@@ -126,7 +132,7 @@ mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/
 Print `REFACTOR COMPLETE` with per-feature ✓/✗ lines (name, status, improvement count). Next steps: /dev-define → next feature, /project-backlog → revise scope.
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
 > Recommended command: /dev-define {next-feature} → loop to next backlog feature.
 
 **PHASE Finalize** (single-mode only — skip if `feature_queue.length > 1`): follow `shared/FINALIZE.md → Finalize Offer Decision` (TEAM_MODE + PR-state dispatch). In team mode, the matrix offers a 3-way choice: Open PR / Merge directly to main / Keep open.

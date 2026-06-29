@@ -402,7 +402,13 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
    **If "Choose per feature":** List numbered features with finding counts. Ask for numbers via text input (e.g. `1, 3` or `all`). Non-selected → CLEAN status.
 
-5. **Exit plan mode:** record the chosen scope in the plan file (one line under the plan, e.g. `Scope chosen: HIGH + MED ({X+Y} improvements)`), then follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — `ExitPlanMode` presents the plan for approval. After approval the skill continues with PHASE 4. Rejected plan → re-ask scope (back to step 4) or exit with "Refactor cancelled by user".
+5. **Re-classify scope-emptied features (applies to EVERY scope choice, not just "Choose per feature"):**
+
+   After the scope is resolved, compute each feature's **applied set** = its findings that survive the chosen scope filter (`Apply all` keeps all; `HIGH + MED` drops LOW; `HIGH` drops MED+LOW; `Choose per feature` keeps only selected). Any HAS_FINDINGS feature whose applied set is now **empty** — every finding fell outside the chosen scope, or all were SKIP'd — is **reclassified to CLEAN** and carried into PHASE 4/5 alongside the genuinely-CLEAN features. It was reviewed; nothing is applied; it must still be closed out. Its deferred findings are recorded as `SKIP` decisions in the `refactor` section (PHASE 5 Step 1), so a future run dedups against them.
+
+   **Invariant — the queue is closed as a whole:** every feature in the run's queue MUST reach PHASE 5 with a terminal status (CLEAN / REFACTORED / ROLLED_BACK). A scope filter narrows _which findings are applied_, never _which features are completed_. A feature silently left in HAS_FINDINGS is a bug: it keeps `transition: refactoring` and lingers in the dashboard's TO REFACTOR column forever.
+
+6. **Exit plan mode:** record the chosen scope in the plan file (one line under the plan, e.g. `Scope chosen: HIGH + MED ({X+Y} improvements)`), then follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — `ExitPlanMode` presents the plan for approval. After approval the skill continues with PHASE 4. Rejected plan → re-ask scope (back to step 4) or exit with "Refactor cancelled by user".
 
 ---
 
