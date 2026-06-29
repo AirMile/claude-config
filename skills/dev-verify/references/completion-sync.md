@@ -126,5 +126,5 @@ Append a single Next step line (pick the most relevant — do NOT list multiple)
 Refactor is optional. Skip if scope was small and the feature is clean.
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
 > Recommended command: if worktree finalized → /dev-refactor {feature-name} (optional polish on main); else if more items in backlog → /dev-define {next-feature} (continues pipeline); else omit the offer.

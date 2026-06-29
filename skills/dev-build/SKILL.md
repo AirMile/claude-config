@@ -325,7 +325,7 @@ Next steps:{ (start in a NEW chat — worktree auto-detected)}
 When worktree active: also append `  ?. /core-finalize {feature} → recovery only — when verify was skipped or interrupted` and `💡 Worktree: {worktree_path}`.
 
 > **Todo (closing action — do not skip)**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
 > Recommended command: /dev-verify {feature} → hybrid acceptance verification (primary next step).
 
 > **Todo**: mark PHASE 3B → `completed`.

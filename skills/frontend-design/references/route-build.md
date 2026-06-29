@@ -409,7 +409,7 @@ Next:             /frontend-content {$TARGET} — fill copy (placeholders → re
 ```
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
 > Recommended command: /frontend-content {$TARGET} → fill copy and content for the built page.
 
 The report is **not** the end of the build — Step 12 (worktree finalize) runs after it, exactly as the Convert route's §4.4 report is followed by §4.5–4.6.

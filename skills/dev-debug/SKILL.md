@@ -397,7 +397,7 @@ Next steps:
 ```
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
 > Recommended command: /dev-verify {feature} → re-verification after fixing the issue.
 
 > **Todo**: mark PHASE 10 → `completed`.

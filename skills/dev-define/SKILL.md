@@ -20,7 +20,7 @@ writes:
 writes-terminal: [backlog.overview]
 metadata:
   author: claude-config
-  version: 3.6.0
+  version: 3.7.0
   category: dev
 ---
 
@@ -305,6 +305,10 @@ Combine the auto flag with the status write above — no separate second write. 
 
 Clean up: `rm -f .project/session/active-{feature-name}.json`
 
+**Completion output — print this block, then execute the Next-Step Clipboard Offer directly below. Both are required to close PHASE 4.**
+
+> **Note**: PHASE 4 is only `completed` after the clipboard offer below is executed — the DEFINE COMPLETE block is not the endpoint.
+
 **Output:**
 
 ```
@@ -312,7 +316,7 @@ DEFINE COMPLETE: {feature-name}
 
 Requirements: {N} (with acceptance criteria)
 Architecture: {component count} components
-Files: feature.json + backlog + dashboard
+Files: feature.json + backlog + project.json + project-context.json
 
 Next: /dev-build {feature-name}
      /team-outsource {feature-name}   ← if you want to delegate to a teammate
@@ -322,5 +326,5 @@ Omit the `Next` line **and the clipboard offer below** if the feature was not a 
 
 > **Todo (closing action — do not skip)**: mark PHASE 4 → `completed`, then apply the
 > Next-Step Clipboard Offer (binary Ja/Nee) as the final step of the skill —
-> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
 > Recommended command: /dev-build {feature-name} → builds the defined feature (main pipeline step).

@@ -147,7 +147,7 @@ Next steps:
 ```
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
 > Recommended command: if worktree finalized → /game-refactor {feature} (optional polish on main); else if more items in backlog → /game-define {next-feature} (continues pipeline); else omit the offer.
 
 ---

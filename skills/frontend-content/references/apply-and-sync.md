@@ -125,5 +125,5 @@ For COMPONENT-only runs: omit Next line — frontend-check promotes the consumin
 component directly.
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read '.claude/skills/shared/SKILL-PATTERNS.md § Next-Step Clipboard Offer'.
+> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
 > Recommended command: /frontend-check {target} → runtime audit before shipping.

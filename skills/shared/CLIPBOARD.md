@@ -19,7 +19,7 @@ The UI handles the rest. No platform detection, no flaky shell commands.
 
 ## Pattern 2 — System clipboard
 
-Use when the user requested "copy to system clipboard" explicitly, the output is large/multi-screen, **or** the skill presents a Next-Step Clipboard Offer (`SKILL-PATTERNS.md § Next-Step Clipboard Offer`) and the user picked a command — the pick is the explicit request.
+Use when the user requested "copy to system clipboard" explicitly, the output is large/multi-screen, **or** the skill presents a Next-Step Clipboard Offer (`NEXT-STEP-OFFER.md`) and the user picked a command — the pick is the explicit request.
 
 ## Platform commands
 
