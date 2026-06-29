@@ -18,7 +18,7 @@
 | Condition                             | Bullet                                     |
 | ------------------------------------- | ------------------------------------------ |
 | (none — always)                       | `/core-pull`                               |
-| `seed.pitch` empty                    | `/project-seed`                            |
+| no `project-seed.md` (>50 chars)      | `/project-seed`                            |
 | `features[]` empty                    | `/dev-define`                              |
 | frontend stack && `needsTheme = true` | `/frontend-tokens`                         |
 | `installed_in_session[]` not empty    | show "Modules added: {list}" under Updated |
@@ -69,7 +69,7 @@ Updated: {date}
 
 Next steps:
   • /core-pull              — incremental updates (sync state is on)
-{if seed.pitch empty}     • /project-seed   — fill in seed pitch
+{if no project-seed.md > 50 chars}  • /project-seed   — build the project concept
 {if features[] empty}     • /dev-define         — define the first feature
 {if frontend && needsTheme}  • /frontend-tokens — design tokens (color, typography, spacing)
 ```

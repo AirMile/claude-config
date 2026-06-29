@@ -9,14 +9,13 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
 **Steps:**
 
 1. First check if `.project/project.json` already exists (e.g. from an initial commit). If yes: read + merge instead of overwriting. If no: create with the full empty schema from `shared/DASHBOARD.md`
-2. Fill `seed` section (preferred: markdown file, not inline):
+2. Fill `seed` section in `project.json` — pitch only, NEVER author the markdown file:
    - `name`: project name — use existing `seed.name` if filled, otherwise from user answers; do NOT overwrite if already filled
-   - `pitch`: 1-2 sentence summary — use existing `seed.pitch` if filled, otherwise from user answers; do NOT overwrite if already filled
-   - `seedFile`: `"project-seed.md"` — reference to the markdown file
-   - `content`: empty string `""` — NEVER also fill inline alongside `seedFile`
-   - Concept-md handling:
-     - **`.project/project-seed.md` exists with > 50 chars**: do NOT overwrite, do NOT append. The supplemental description from Phase 2 step 0 "Supplement" stays in-memory — only `/project-seed` writes to disk.
-     - **Does not exist or < 50 chars**: create with `PROJECT_PITCH` (from Phase 2 answers or preflight) as plain markdown (what the project does, who for, core functionality). Does not need to be extensive — thinking/plan skills will expand this later.
+   - `pitch`: 1-2 sentence summary distilled from the Phase 2.1 description — use existing `seed.pitch` if filled, otherwise from user answers; do NOT overwrite if already filled. Keep it short even when the user pasted more — the full concept is `/project-seed`'s job, not core-setup's.
+   - `seedFile`: `"project-seed.md"` (reference path; the file itself is authored later by `/project-seed`)
+   - `content`: empty string `""` — NEVER fill inline
+   - **Do NOT create or fabricate `.project/project-seed.md`.** `/project-seed` is the sole author of the concept document (`shared/SEED.md § Owner`). core-setup captures only the one-line `pitch` above and prompts for `/project-seed` in Phase 9.
+   - Exception — `.project/project-seed.md` already exists with > 50 chars (from `/project-seed` or project-add): leave it untouched, do NOT overwrite or append.
 3. Fill `team.mode` using the answer from Phase 2 step 7:
    - `"solo"` or `"team"` depending on `TEAM_MODE`.
    - If `.project/project.json` already existed and already has `team.mode` set → keep existing value (do NOT overwrite; user may have toggled via UI).
@@ -32,10 +31,10 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
    5b. Init backlog with seed flag (all project types):
    - If `.project/backlog.json` does not exist: create it with the schemaVersion-2 scaffold (see `shared/BACKLOG.md`)
    - Read `.project/backlog.json` → parse JSON
-   - Set `data.flags = { "hasSeed": true, "seedPath": ".project/project-seed.md" }`
+   - Set `data.flags.seedPath = ".project/project-seed.md"`. Set `data.flags.hasSeed = true` ONLY if `.project/project-seed.md` exists with > 50 chars (a real concept authored by `/project-seed` or project-add); otherwise `false`.
    - Set `data.source = "/core-setup"` and `data.updated` to current date
    - Write the JSON back to `.project/backlog.json`
-   - This makes the `/project-backlog` button appear in the backlog dashboard once there is a concept but no features yet.
+   - The `/project-backlog` button appears once a real concept exists. When it does not yet, Phase 9 prompts the user to run `/project-seed` first.
 6. Create `.project/project-context.json` with `context` section (initial, updated by build/refactor skills):
    - `context.structure`: file tree of project (same format as previously in CLAUDE.md). Generate from actual file tree after Phase 3/4
    - `context.routing`: route patterns with arrow notation (only web projects with routing, otherwise empty array)

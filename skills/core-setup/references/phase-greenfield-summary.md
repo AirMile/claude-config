@@ -24,6 +24,29 @@ Dev tools:
 
 For Next.js Babel full mode, also add: `Note: Turbopack disabled (Babel full mode for exact file:line refs).`
 
+## Concept Prompt (conditional)
+
+core-setup captures only a one-line `seed.pitch` — it never authors the concept
+document. `/project-seed` is the sole author. Prompt for it before backlog work.
+
+**Detect:** does `.project/project-seed.md` exist with > 50 chars?
+
+| Condition                                     | Action                          |
+| --------------------------------------------- | ------------------------------- |
+| Seed file exists (>50 chars)                  | Skip — concept already captured |
+| No seed file (only a one-line pitch captured) | Show AskUserQuestion below      |
+
+AskUserQuestion (single-select):
+
+- header: "Concept"
+- question: "core-setup captured a one-line pitch but not a full concept yet. Build it now?"
+- "Build concept now (Recommended)" — runs `/project-seed` to develop the concept via guided questions, before backlog/feature work.
+- "Skip" — start later with `/project-seed`.
+
+On "Build concept now": after the summary, chain to `/project-seed` and report under
+"Next skill running". Store `concept_started` (true/false) — when true, Smart Next
+Steps leads with the backlog/define flow instead of repeating `/project-seed`.
+
 ## Smart Backlog Server Prompt (conditional)
 
 **Step 1 — Detect todos:** Read `.project/backlog.json` (if it exists) and parse `data.features`. Count items with status `TODO` or `DEFINED`.

@@ -302,7 +302,7 @@ Skip entirely if `--no-llm` flag is set (do not Read the reference).
 
 ### PHASE 4.5: Context fabricate + confirm
 
-> **Todo**: mark PHASE 4 → `completed`, PHASE 4.5 → `in_progress`. Read `references/phase-context-fabricate.md` and follow it (infer seed/stack from README + package.json, confirm-modal over empty fields only, write project-seed.md, backlog hasSeed flag).
+> **Todo**: mark PHASE 4 → `completed`, PHASE 4.5 → `in_progress`. Read `references/phase-context-fabricate.md` and follow it (infer seed/stack from README + package.json, confirm-modal over empty fields only, write `seed.pitch` to project.json — NOT project-seed.md, which `/project-seed` authors — gated backlog hasSeed flag).
 
 ### PHASE 4.6: Code Conventions
 

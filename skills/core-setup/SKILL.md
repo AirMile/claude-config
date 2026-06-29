@@ -4,7 +4,7 @@ description: Use when a project needs initializing or onboarding — greenfield 
 argument-hint: "[--mode=greenfield|mature|audit|resync|install] [module] [--no-llm] [--scope=<dir>]"
 metadata:
   author: claude-config
-  version: 2.4.0
+  version: 2.5.0
   category: core
 ---
 
