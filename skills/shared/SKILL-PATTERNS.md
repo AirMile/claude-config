@@ -20,7 +20,7 @@ Generate an ASCII [diagram type] showing [what to visualize].
 
 | Use case              | Diagram type         | Example skills              |
 | --------------------- | -------------------- | --------------------------- |
-| Architecture/layers   | Component diagram    | dev-define, frontend-design |
+| Architecture/layers   | Component diagram    | dev-define, design-create |
 | Multi-step workflow   | Flowchart            | dev-build, dev-verify       |
 | Feature decomposition | Tree                 | project-backlog             |
 | State transitions     | State machine        | game-define                 |
@@ -198,7 +198,7 @@ Rules:
 
 **Rules:**
 
-- Skills that MAY create `.project/` without a check: `project-backlog`, `project-todo`, `frontend-design`, `core-setup`
+- Skills that MAY create `.project/` without a check: `project-backlog`, `project-todo`, `design-create`, `core-setup`
 - All other skills: if `.project/` does not exist or is empty, show suggestion and stop
 - Do not silently `mkdir -p` the entire `.project/` structure — that is `core-setup`'s responsibility
 - `mkdir -p .project/features/{name}` and `mkdir -p .project/session` within an existing `.project/` is fine
@@ -560,7 +560,7 @@ If no gaps/candidates found: skip this step entirely (no prompt).
 
 **Goal:** Detect stub handlers and action verbs in generated frontend code that have no linked FEATURE in the backlog.
 
-**Skills:** `frontend-design` (Triggers A/B/C — Build and Convert routes).
+**Skills:** `design-create` (Triggers A/B/C — Build and Convert routes).
 
 #### Triggers
 
@@ -657,9 +657,9 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected). "Skip" → log all 
 
 **Goal:** Detect new page routes during dev work and drop them as standalone PAGE todos in the backlog so they go through the design → convert → check pipeline.
 
-**Skills:** `dev-define` (sole writer — post-architecture seed), `frontend-design completion-sync` (sole writer — user-driven page creation), `dev-build` (warning-only safety net + COMPONENT→route suggestions — does NOT write to backlog).
+**Skills:** `dev-define` (sole writer — post-architecture seed), `design-create completion-sync` (sole writer — user-driven page creation), `dev-build` (warning-only safety net + COMPONENT→route suggestions — does NOT write to backlog).
 
-> **Doctrine:** `/dev-define` and `/frontend-design completion-sync` are the only skills that create PAGE entries in `backlog.json`. `/dev-build` only logs a warning when it detects route patterns not yet in the backlog.
+> **Doctrine:** `/dev-define` and `/design-create completion-sync` are the only skills that create PAGE entries in `backlog.json`. `/dev-build` only logs a warning when it detects route patterns not yet in the backlog.
 
 #### Triggers (per skill)
 
@@ -672,10 +672,10 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected). "Skip" → log all 
 AskUserQuestion (wording per skill — see skill files for exact options):
 
 - **dev-define:** batch — "Add a PAGE todo per page?" — options: "Yes, all" / "Selection" / "No".
-- **dev-build (safety net):** log warning only — `⚠ Detected new route patterns: {list}. Run /dev-define or /frontend-design <name>.` No AskUserQuestion. No write.
+- **dev-build (safety net):** log warning only — `⚠ Detected new route patterns: {list}. Run /dev-define or /design-create <name>.` No AskUserQuestion. No write.
 - **dev-build (COMPONENT→route):** per route — "PAGE todo for {route}?" — "Yes" / "Skip".
 
-**Persist per accepted page** (dev-define and frontend-design only):
+**Persist per accepted page** (dev-define and design-create only):
 
 1. Run dedup order (see above — name check; type PAGE skips inventory check; suggestionsLog check on rejected status).
 2. Push to `data.features[]`:
@@ -704,16 +704,16 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected).
 
 **Goal:** During PAGE composition or feature definition, allow skills to discover and create new backlog items (COMPONENT or FEATURE) inline — without leaving the current flow.
 
-**Skills:** `frontend-design` (Build — page-compose step), `dev-define` (pageHint sparring — new PAGE).
+**Skills:** `design-create` (Build — page-compose step), `dev-define` (pageHint sparring — new PAGE).
 
 #### Trigger
 
-- **frontend-design Build (PAGE):** user selects `"+ new component"` or `"+ new feature"` in the page-composition selection menu.
+- **design-create Build (PAGE):** user selects `"+ new component"` or `"+ new feature"` in the page-composition selection menu.
 - **dev-define:** user answers `"+ new PAGE"` in the pageHint sparring question (no existing PAGE matches the feature's target route).
 
 #### Resolution
 
-**For "+ new component" (from frontend-design):**
+**For "+ new component" (from design-create):**
 
 ```yaml
 header: "New component"
@@ -735,7 +735,7 @@ Ask name + description (free text). Then:
      "transition": "designing",
      "phase": "P2",
      "description": "{user description}",
-     "source": "/frontend-design",
+     "source": "/design-create",
      "scope": "atomic",
      "dependencies": ["{current-page-name}"]
    }
@@ -743,7 +743,7 @@ Ask name + description (free text). Then:
 3. Add to `project.json#design.components[]`: `{ name, purpose: description, status: "IDEA", scope: "atomic" }`.
 4. Return the new component name to the composition selection so it appears in the current list.
 
-**For "+ new feature" (from frontend-design):**
+**For "+ new feature" (from design-create):**
 
 ```yaml
 header: "New feature"
@@ -762,7 +762,7 @@ multiSelect: false
      "status": "TODO",
      "phase": "P2",
      "description": "{user description}",
-     "source": "/frontend-design",
+     "source": "/design-create",
      "pageHint": ["{current-page-name}"]
    }
    ```

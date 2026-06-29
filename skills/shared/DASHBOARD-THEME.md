@@ -8,11 +8,12 @@
 
 **Skill ownership:**
 
-- Base tokens (colors, typography, spacing, shadows, motion.durations, motion.easings, interactions): managed by `/frontend-tokens`
-- Animation packs + springs + choreography + surfaces: managed by `/frontend-tokens` (Motion Pack route)
+- Base tokens (colors, typography, spacing, shadows, motion.durations, motion.easings, interactions): managed by `/design-tokens`
+- Animation packs + springs + choreography + surfaces: managed by `/design-tokens` (Motion Pack route)
 
 ```json
 {
+  "domain": "web",
   "colors": {
     "main": [
       {
@@ -153,21 +154,32 @@
     "dark": ".dark { --background: #1a1a2e; --foreground: #fff; }"
   },
   "cssVars": ":root { --color-dark: #1a1a2e; --color-light: #fff; --font-heading: Inter, sans-serif; }",
+  "godotTheme": {
+    "resourcePath": "res://ui/theme/main.tres",
+    "darkResourcePath": "res://ui/theme/main_dark.tres",
+    "fonts": [
+      { "token": "heading", "resource": "res://ui/theme/fonts/inter.tres" }
+    ],
+    "motionScript": "res://ui/theme/motion_tokens.gd",
+    "generatedAt": "2026-06-29T14:00:00Z"
+  },
   "setupContext": [
     {
       "source": "vercel-labs/web-interface-guidelines",
       "url": "https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md",
       "fetchedAt": "2026-05-25T14:00:00Z",
-      "appliedBy": "frontend-tokens@3.7.1"
+      "appliedBy": "design-tokens@3.7.1"
     }
   ]
 }
 ```
 
-`cssVars` = complete CSS variables export (for consumption by other skills)
-`modes` = light/dark mode CSS (object with mode name as key)
-`motion.pack` + `motion.axes` + `motion.spring[]` + `motion.choreography{}` + `surfaces{}` = managed by `/frontend-tokens` (Motion Pack route)
-`setupContext[]` = append-only log of external sources used during setup (written by `/frontend-tokens` Create and `/frontend-design` Convert); each entry: `{source, url, fetchedAt, appliedBy}`; keyed on `appliedBy` — re-run replaces, does not duplicate
+`domain` = active rendering domain (`"web" | "game" | "native"`, default `"web"`) — selects which export block and renderer the design skills use. Resolution rules: see [DOMAIN.md](DOMAIN.md). The structured vocabulary tokens above (colors, typography, spacing, borderRadius, shadows, motion springs/choreography) are **domain-neutral** — the single source of truth. The export blocks below are **derived** per domain.
+`cssVars` = complete CSS variables export — **web domain** (derived; consumed by `/design-create` and `/design-check`)
+`modes` = light/dark mode CSS (object with mode name as key) — **web domain**
+`godotTheme` = **game domain** export (derived; written by `/design-tokens` emit-godot route). Points at the generated Godot resources rather than inlining them: `resourcePath`/`darkResourcePath` = the `Theme` `.tres` files written into the Godot project (dark mode is a **separate Theme variant** — Godot has no CSS cascade); `fonts[]` = generated `FontFile` resources per typography token; `motionScript` = a GDScript autoload exposing duration/spring tables for `Tween` use (Godot Theme has no motion slot). Glass/backdrop-filter has no native Godot equivalent → `surfaces.glass` falls back to solid (or a shader, out of scope). Consumed by `/design-create` render-godot route.
+`motion.pack` + `motion.axes` + `motion.spring[]` + `motion.choreography{}` + `surfaces{}` = managed by `/design-tokens` (Motion Pack route)
+`setupContext[]` = append-only log of external sources used during setup (written by `/design-tokens` Create and `/design-create` Convert); each entry: `{source, url, fetchedAt, appliedBy}`; keyed on `appliedBy` — re-run replaces, does not duplicate
 Other fields = structured tokens per category
 
-**Merge strategy:** OVERWRITE — all fields owned and written by `/frontend-tokens` (tokens + motion pack routes). See [DASHBOARD-PROJECT.md](DASHBOARD-PROJECT.md) § Merge strategy per section.
+**Merge strategy:** OVERWRITE — all fields owned and written by `/design-tokens` (tokens + motion pack routes). See [DASHBOARD-PROJECT.md](DASHBOARD-PROJECT.md) § Merge strategy per section.

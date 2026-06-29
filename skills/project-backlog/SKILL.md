@@ -50,7 +50,7 @@ Accepts markdown from:
    - No match or no project.json → **WEB MODE**
 3. **[WEB MODE] Mobile sub-detection:** `stack.framework`/`stack.packages[]` contains
    `react-native` or `expo` (or `concept.platform === "mobile"`) → set **WEB-MOBILE**.
-   WEB-MOBILE runs the full WEB pipeline EXCEPT Page-Discovery: the `/frontend-design`
+   WEB-MOBILE runs the full WEB pipeline EXCEPT Page-Discovery: the `/design-create`
    browser pipeline (Playwright/DOM) does not run against React Native, so screens stay
    FEATURE-typed and flow through `/dev-define → /dev-build`.
 4. Show detected mode:

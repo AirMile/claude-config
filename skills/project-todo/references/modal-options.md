@@ -28,7 +28,7 @@ header: "Category"
 question: "Which category fits best?"
 options:
   - label: "Dev (Recommended)", description: "Backend, API, logic, data, bugs, refactor"
-  - label: "Frontend", description: "Pages and components"
+  - label: "Design", description: "Pages and components"
   - label: "Design & Quality", description: "Tokens, accessibility, performance, missing page functionality"
 multiSelect: false
 ```
@@ -62,14 +62,14 @@ options:
 multiSelect: false
 ```
 
-## Type — WEB · Frontend category
+## Type — WEB · Design category
 
 ```yaml
 header: "Type"
-question: "Which frontend entity?"
+question: "Which design entity?"
 options:
-  - label: "PAGE (Recommended)", description: "New page/route — lands on Frontend track ('To design')"
-  - label: "COMPONENT", description: "Reusable UI component — lands on Frontend track"
+  - label: "PAGE (Recommended)", description: "New page/route — lands on Design track ('To design')"
+  - label: "COMPONENT", description: "Reusable UI component — lands on Design track"
   - label: "PAGE-GAP", description: "Missing functionality on existing page — lands on Dev track"
 multiSelect: false
 ```
@@ -80,8 +80,8 @@ multiSelect: false
 header: "Type"
 question: "What type of design/quality item is this?"
 options:
-  - label: "THEME (Recommended)", description: "Design tokens — colors, typography, spacing via /frontend-tokens"
-  - label: "A11Y", description: "Accessibility improvement via /frontend-check --scope=a11y"
-  - label: "PERF", description: "Performance or SEO optimization via /frontend-check"
+  - label: "THEME (Recommended)", description: "Design tokens — colors, typography, spacing via /design-tokens"
+  - label: "A11Y", description: "Accessibility improvement via /design-check --scope=a11y"
+  - label: "PERF", description: "Performance or SEO optimization via /design-check"
 multiSelect: false
 ```

@@ -1,6 +1,6 @@
 # Session Tracking
 
-Lightweight session state for cross-skill coordination. Pipeline skills use the files below. Frontend pipeline skills also use `.project/session/devinfo.json` for handoff data (e.g. the `frontend-design` Build route → Convert route self-handoff).
+Lightweight session state for cross-skill coordination. Pipeline skills use the files below. Design pipeline skills also use `.project/session/devinfo.json` for handoff data (e.g. the `design-create` Build route → Convert route self-handoff).
 
 ---
 
@@ -19,7 +19,7 @@ A third key, `writes-terminal:`, declares **intentional terminal writes**: field
 | `backlog.seedDrift`   | `.project/backlog.json` (`data.seedDrift[]` deferred drift entries)                                                    | project-backlog (write), project-seed / project-brainstorm / project-critique (read + reconcile)                                   |
 | `backlog.externalRef` | `.project/backlog.json` (per-feature `externalRef` issue link)                                                         | team-issues, team-outsource                                                                                                        |
 | `concept.*`           | `.project/project-seed.md` + `project.json#concept`                                                                    | project-seed (owner), dev-define / game-define / project-backlog (conditional write)                                               |
-| `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | frontend-pipeline                                                                                                                  |
+| `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | design-pipeline                                                                                                                  |
 | `project.*`           | `.project/project.json` (top-level key, e.g. `stack`, `features`, `endpoints`, `entities`, `team`, `optimizationRuns`) | dashboard-sync skills (core-pull, team-verify, project-todo, project-add, dev-optimize)                                            |
 | `project.thinking`    | `.project/thinking/*.md` + `.project/features/{name}/thinking.md`                                                      | thinking skills (project-seed, project-brainstorm, project-critique, project-todo, project-research)                               |
 | `project-context.*`   | `.project/project-context.json` (top-level section: `learnings`, `context`, `architecture`)                            | core-pull, dev/game build + debug + refactor, team-verify, dev-security (read)                                                     |
@@ -57,7 +57,7 @@ Some files are touched by every pipeline skill as runtime lifecycle, not as hand
 
 - `.project/session/active-{name}.json` — runtime signal for the backlog dashboard, written on skill start and cleaned up on end. No subsequent skill reads this for decisions.
 - `.project/session/pre-skill-sha.txt` / `pre-skill-status.txt` — git baseline for scoped commits, local to one skill run.
-- `devinfo.currentSkill` (`{name, phase, startedAt}`) — runtime progress within one frontend skill (PREFLIGHT → COMPLETE), not read by subsequent skills for decision-making.
+- `devinfo.currentSkill` (`{name, phase, startedAt}`) — runtime progress within one design skill (PREFLIGHT → COMPLETE), not read by subsequent skills for decision-making.
 
 ---
 
@@ -108,11 +108,11 @@ The backlog dashboard detects changes in the session directory via SSE and autom
 
 ---
 
-## Frontend Pipeline Schemas
+## Design Pipeline Schemas
 
 ### `devinfo.handoff` — Build Incomplete
 
-Written by `frontend-design` (Build route) when user chooses "Open in convert" after smoke-failure. Read by `frontend-design` router PHASE 0.2 (self-handoff to Convert route).
+Written by `design-create` (Build route) when user chooses "Open in convert" after smoke-failure. Read by `design-create` router PHASE 0.2 (self-handoff to Convert route).
 
 ```json
 {
@@ -131,15 +131,15 @@ Written by `frontend-design` (Build route) when user chooses "Open in convert" a
 }
 ```
 
-`source` values: `"build-incomplete"` (from Build-route failure). Other `source` values come from `frontend-design` Convert route (see PHASE 4.1).
+`source` values: `"build-incomplete"` (from Build-route failure). Other `source` values come from `design-create` Convert route (see PHASE 4.1).
 
-**Cleanup:** `frontend-design` Convert route PHASE 4.1 after success → set `devinfo.handoff = null`. If handoff is older than 24h: router PHASE 0.2 shows a staleness notice AND auto-cleans (`devinfo.handoff = null`, mentioned in output) before route classification — the patch flow is not offered for stale handoffs.
+**Cleanup:** `design-create` Convert route PHASE 4.1 after success → set `devinfo.handoff = null`. If handoff is older than 24h: router PHASE 0.2 shows a staleness notice AND auto-cleans (`devinfo.handoff = null`, mentioned in output) before route classification — the patch flow is not offered for stale handoffs.
 
 ---
 
 ### `devinfo.tokenDrift` — Token Drift Log
 
-Written by `frontend-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `frontend-design` (Build route Step 10 and Convert route PHASE 4.1), and `dev-verify`/`dev-refactor` (if feature is in `affectedFeatures`).
+Written by `design-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `design-create` (Build route Step 10 and Convert route PHASE 4.1), and `dev-verify`/`dev-refactor` (if feature is in `affectedFeatures`).
 
 ```json
 {

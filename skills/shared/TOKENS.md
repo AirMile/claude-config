@@ -3,10 +3,10 @@
 Canonical token names, fallback values, and anti-hardcoding rules for generated UI code.
 
 Skills that generate UI code MUST use token names — never hardcoded color values or hex literals.
-Token names are the stable contract. Values are supplied later by `/frontend-tokens`.
+Token names are the stable contract. Values are supplied later by `/design-tokens`.
 
-> **Producer:** `/frontend-tokens` (writes `project.json#theme`)
-> **Consumers:** `dev-build`, `dev-verify`, `dev-refactor`, `dev-define`, `project-backlog`, `frontend-design`, `frontend-check`
+> **Producer:** `/design-tokens` (writes `project.json#theme`)
+> **Consumers:** `dev-build`, `dev-verify`, `dev-refactor`, `dev-define`, `project-backlog`, `design-create`, `design-check`
 
 ---
 
@@ -27,7 +27,7 @@ Use these names in generated Tailwind classes and CSS variables:
 | Choreography  | `entrance.float-in`, `exit.fade-out`, `success.pulse`, `success.confetti`, `attention.wiggle`, `error.shake`, `press.squeeze`, `loading.bob` |
 | Glass surface | `surface-glass-blur`, `surface-glass-tint`, `surface-glass-border` (only when `theme.surfaces.glass.enabled = true`)                         |
 
-These map 1:1 to what `/frontend-tokens` produces in `project.json#theme`. Match naming exactly.
+These map 1:1 to what `/design-tokens` produces in `project.json#theme`. Match naming exactly.
 
 ---
 
@@ -67,7 +67,7 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
-  /* iOS / Apple easings (Apple pack — /frontend-tokens) */
+  /* iOS / Apple easings (Apple pack — /design-tokens) */
   --ease-ios-default: cubic-bezier(0.42, 0, 0.58, 1);
   --ease-ios-out: cubic-bezier(0.25, 0.1, 0.25, 1);
   --ease-ios-in: cubic-bezier(0.42, 0, 1, 1);
@@ -75,14 +75,14 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --ease-ios-snappy: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-ios-bouncy: cubic-bezier(0.5, 1.6, 0.4, 0.8);
 
-  /* Material Design 3 easings (Standard pack — /frontend-tokens) */
+  /* Material Design 3 easings (Standard pack — /design-tokens) */
   --ease-md-emphasized: cubic-bezier(0.2, 0, 0, 1);
   --ease-md-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
   --ease-md-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
   --ease-md-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-md-legacy: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Material Design 3 duration scale (Standard pack — /frontend-tokens) */
+  /* Material Design 3 duration scale (Standard pack — /design-tokens) */
   --duration-md-short2: 100ms;
   --duration-md-short3: 150ms;
   --duration-md-short4: 200ms;
@@ -97,16 +97,16 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --spring-md-effects-duration: 400ms;
   --spring-md-effects-bezier: cubic-bezier(0.34, 1.26, 0.64, 1);
 
-  /* Web baseline easings (Subtle pack — /frontend-tokens) */
+  /* Web baseline easings (Subtle pack — /design-tokens) */
   --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-cubic-out: cubic-bezier(0.33, 1, 0.68, 1);
 
-  /* Fluent 2 / Carbon easings (Customize opt-in — /frontend-tokens) */
+  /* Fluent 2 / Carbon easings (Customize opt-in — /design-tokens) */
   --ease-fluent-decelerate: cubic-bezier(0.1, 0.9, 0.2, 1);
   --ease-fluent-accelerate: cubic-bezier(0.7, 0, 1, 0.5);
   --ease-fluent-max: cubic-bezier(0.8, 0, 0.78, 1);
   --ease-fluent-easy-ease: cubic-bezier(0.33, 0, 0.67, 1);
-  /* Fluent 2 duration tokens (Customize opt-in — /frontend-tokens) */
+  /* Fluent 2 duration tokens (Customize opt-in — /design-tokens) */
   --duration-fluent-ultra-fast: 50ms;
   --duration-fluent-faster: 100ms;
   --duration-fluent-fast: 150ms;
@@ -119,7 +119,7 @@ OKLCH values compatible with Tailwind v4 and plain CSS variables projects.
   --ease-carbon-standard: cubic-bezier(0.2, 0, 0.38, 0.9);
   --ease-carbon-expressive: cubic-bezier(0.4, 0.14, 0.3, 1);
 
-  /* Spring CSS approximations (static-render fallbacks — /frontend-tokens) */
+  /* Spring CSS approximations (static-render fallbacks — /design-tokens) */
   --spring-gentle-duration: 600ms;
   --spring-gentle-bezier: cubic-bezier(0.33, 1, 0.68, 1);
   --spring-smooth-duration: 500ms;
@@ -203,12 +203,12 @@ transitionDuration: {
   fast:    'var(--duration-fast)',
   normal:  'var(--duration-normal)',
   slow:    'var(--duration-slow)',
-  // Spring durations (Apple/Playful pack — /frontend-tokens)
+  // Spring durations (Apple/Playful pack — /design-tokens)
   'spring-gentle': 'var(--spring-gentle-duration)',
   'spring-smooth': 'var(--spring-smooth-duration)',
   'spring-snappy': 'var(--spring-snappy-duration)',
   'spring-bouncy': 'var(--spring-bouncy-duration)',
-  // Material Design 3 duration scale (Standard pack — /frontend-tokens)
+  // Material Design 3 duration scale (Standard pack — /design-tokens)
   'md-short2':       'var(--duration-md-short2)',
   'md-short3':       'var(--duration-md-short3)',
   'md-short4':       'var(--duration-md-short4)',
@@ -218,7 +218,7 @@ transitionDuration: {
   'md-long2':        'var(--duration-md-long2)',
   'spring-md-spatial': 'var(--spring-md-spatial-duration)',
   'spring-md-effects': 'var(--spring-md-effects-duration)',
-  // Fluent 2 duration scale (Customize opt-in — /frontend-tokens)
+  // Fluent 2 duration scale (Customize opt-in — /design-tokens)
   'fluent-ultra-fast': 'var(--duration-fluent-ultra-fast)',
   'fluent-faster':     'var(--duration-fluent-faster)',
   'fluent-fast':       'var(--duration-fluent-fast)',
@@ -231,15 +231,15 @@ transitionTimingFunction: {
   out:      'var(--ease-out)',
   in:       'var(--ease-in)',
   'in-out': 'var(--ease-in-out)',
-  // Web baseline easings (Subtle pack — /frontend-tokens)
+  // Web baseline easings (Subtle pack — /design-tokens)
   'expo-out':  'var(--ease-expo-out)',
   'cubic-out': 'var(--ease-cubic-out)',
-  // Material Design 3 easings (Standard pack — /frontend-tokens)
+  // Material Design 3 easings (Standard pack — /design-tokens)
   'md-emphasized':            'var(--ease-md-emphasized)',
   'md-emphasized-decelerate': 'var(--ease-md-emphasized-decelerate)',
   'md-emphasized-accelerate': 'var(--ease-md-emphasized-accelerate)',
   'md-standard':              'var(--ease-md-standard)',
-  // iOS easings (Apple pack — /frontend-tokens)
+  // iOS easings (Apple pack — /design-tokens)
   'ios-default': 'var(--ease-ios-default)',
   'ios-out':     'var(--ease-ios-out)',
   'ios-in':      'var(--ease-ios-in)',
@@ -273,7 +273,7 @@ Detect and reject these patterns in generated and reviewed UI code:
 | T105 | `oklch(`, `hsl(`, `rgb(` literals in JSX                                                     | HIGH     | `var(--color-{nearest-token})`                                                               |
 | T106 | Hardcoded `transition: 300ms` / `duration: 200ms` literals in JSX/CSS                        | MEDIUM   | `var(--duration-{token})` or spring token                                                    |
 | T107 | Hardcoded `cubic-bezier(...)` literal in JSX/CSS                                             | MEDIUM   | `var(--ease-{token})` or `var(--spring-{token}-bezier)`                                      |
-| T108 | `backdrop-filter` used when `theme.surfaces.glass.enabled !== true`                          | HIGH     | Enable via `/frontend-tokens` or remove                                                      |
+| T108 | `backdrop-filter` used when `theme.surfaces.glass.enabled !== true`                          | HIGH     | Enable via `/design-tokens` or remove                                                      |
 | T109 | `text-\[\d+(px\|rem)\]`, `leading-\[\d+(px\|rem)\]`, `tracking-\[`, `font-\[\d+\]` arbitrary | MEDIUM   | `text-{size}` / `leading-{size}` / `tracking-{size}` / `font-{weight}` preset or theme token |
 | T110 | `rounded-\[\d+(px\|rem)\]` arbitrary radius                                                  | MEDIUM   | `rounded-{sm,md,lg,xl,2xl,3xl,full}` Tailwind preset                                         |
 | T111 | `shadow-\[[^\]]+\]` arbitrary shadow                                                         | MEDIUM   | `shadow-{sm,md,lg,xl,2xl}` Tailwind preset                                                   |
@@ -328,10 +328,10 @@ When replacing hardcoded values, map to nearest token by visual role (not exact 
 | `dev-build` generates API/logic only           | Any         | No token check needed                                                        |
 | `dev-verify` `hasUI` or `isComponent`          | Any         | Run T101–T103 grep; violations = FAIL item                                   |
 | `dev-refactor` Quality-lens                    | Any         | Flag T101–T111 violations, suggest token names                               |
-| `frontend-design` Convert (inspiration/sketch) | Empty       | **Abort** — run `/frontend-tokens` first                                     |
-| `frontend-design` Convert (1:1 copy)           | Empty       | Allow hardcoded, warn                                                        |
-| `frontend-design` brief mode                   | Empty       | Note "Tailwind defaults", suggest tokens                                     |
-| `frontend-check` audit                         | Empty       | Audit T101-T111 against fallback tokens; skip TA001 (requires project theme) |
+| `design-create` Convert (inspiration/sketch) | Empty       | **Abort** — run `/design-tokens` first                                     |
+| `design-create` Convert (1:1 copy)           | Empty       | Allow hardcoded, warn                                                        |
+| `design-create` brief mode                   | Empty       | Note "Tailwind defaults", suggest tokens                                     |
+| `design-check` audit                         | Empty       | Audit T101-T111 against fallback tokens; skip TA001 (requires project theme) |
 
 ---
 

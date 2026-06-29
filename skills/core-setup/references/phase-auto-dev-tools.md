@@ -70,18 +70,18 @@ Read("references/modules/inspect-overlay/setup-guide.md")
 
 Game / CLI / backend-only / mobile / desktop: skip — no output.
 
-Skills such as `/frontend-design Build` and `/frontend-check` need `playwright-cli` (daemon) and `@axe-core/playwright` (a11y) for smoke checks.
+Skills such as `/design-create Build` and `/design-check` need `playwright-cli` (daemon) and `@axe-core/playwright` (a11y) for smoke checks.
 
 **Gate** (`mature-ask` only):
 
 ```yaml
 header: "Playwright toolchain"
-question: "Frontend skills expect playwright-cli + @axe-core/playwright for smoke checks. This project does not have it yet. Install?"
+question: "Design skills expect playwright-cli + @axe-core/playwright for smoke checks. This project does not have it yet. Install?"
 options:
   - label: "Install (Recommended)"
     description: "playwright-cli (global) + @playwright/test + @axe-core/playwright (devDeps)"
   - label: "Skip"
-    description: "Do not install — smoke checks in frontend-design will report failure"
+    description: "Do not install — smoke checks in design-create will report failure"
 multiSelect: false
 ```
 

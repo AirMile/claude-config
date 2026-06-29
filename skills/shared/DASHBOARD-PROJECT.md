@@ -8,7 +8,7 @@ The project dashboard is an interactive UI that displays and edits project metad
 **Template:** `{skills_path}/shared/references/dashboard-template.html`
 **Server:** `{skills_path}/shared/references/serve-backlog.js` (port 9876)
 
-**API endpoint `/{project}/feature/{name}`:** merges three sources — `feature.json` (if present), backlog-feature object (type/status/audit.\*), and `design.{pages|components}[name]` (for PAGE/COMPONENT). Path A frontend cards (no feature.json) are fully built from backlog + design spec.
+**API endpoint `/{project}/feature/{name}`:** merges three sources — `feature.json` (if present), backlog-feature object (type/status/audit.\*), and `design.{pages|components}[name]` (for PAGE/COMPONENT). Path A design cards (no feature.json) are fully built from backlog + design spec.
 
 **UI sections (single-scroll):** Concept | Components | Stack | Config (CLAUDE.md)
 All sections are visible at once in one scroll — no tabs. Sidebar links are anchor-links that scroll to the relevant section. `stack`, `data`, `endpoints` and `theme` remain separate sections in project.json; the dashboard sections are project-specifically configured via the `visibleTabs` array in the template.
@@ -127,7 +127,7 @@ Pre-migration projects may still carry these keys in `project.json` — they are
 | ------------------- | ------------------- | -------------------------------------------------------------------------------- |
 | `seed`              | **OVERWRITE**       | `name`+`pitch`+`content` overwritten, `thinking` is APPEND                       |
 | `design`            | **MERGE on `name`** | Pages/flows/principles/components/canvases merged on name, never auto-delete     |
-| `theme`             | **OVERWRITE**       | All fields owned and written by `/frontend-tokens` (tokens + motion pack routes) |
+| `theme`             | **OVERWRITE**       | All fields owned and written by `/design-tokens` (tokens + motion pack routes) |
 | `stack`             | **MERGE**           | Add packages, do not overwrite existing ones                                     |
 | `data`              | **MERGE**           | Add entities/fields/relations per entity                                         |
 | `endpoints`         | **MERGE**           | Add or update status, do not delete                                              |
@@ -228,7 +228,7 @@ Pre-migration projects may still carry these keys in `project.json` — they are
 
 **usedIn:** auto-maintained by Build/convert post-pass — list of pages that import this component. Never overwrite manually.
 
-**gaps:** auto-maintained by `frontend-design` Capture/Build/Convert — list of handler-props without a linked FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only for user; update via gap-discovery flow.
+**gaps:** auto-maintained by `design-create` Capture/Build/Convert — list of handler-props without a linked FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only for user; update via gap-discovery flow.
 
 ### Features
 
@@ -273,7 +273,7 @@ Dashboard server's `populateFromProject()` handles both formats — existing leg
 
 ### theme
 
-**Design system source of truth.** Full schema (tokens, motion packs, springs, choreography, glass surfaces): see [DASHBOARD-THEME.md](DASHBOARD-THEME.md). All fields owned and written by `/frontend-tokens`.
+**Design system source of truth.** Full schema (tokens, motion packs, springs, choreography, glass surfaces): see [DASHBOARD-THEME.md](DASHBOARD-THEME.md). All fields owned and written by `/design-tokens`.
 
 ### stack
 
@@ -426,9 +426,9 @@ No deletion, no update — append only. For live status of a running run: see `.
 | Section             | Written by                                                                         | When                                     |
 | ------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------- |
 | `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-backlog`    | On seed creation/iteration/plan          |
-| `design`            | `/frontend-design`, `/frontend-tokens`                                             | On design spec/page build/theme creation |
-| `theme`             | `/frontend-tokens`                                                                 | After theme create/update                |
-| `stack`             | `/core-setup`, `/project-backlog`, `/dev-define`, `/dev-build`, `/frontend-design` | On detection/new deps                    |
+| `design`            | `/design-create`, `/design-tokens`                                             | On design spec/page build/theme creation |
+| `theme`             | `/design-tokens`                                                                 | After theme create/update                |
+| `stack`             | `/core-setup`, `/project-backlog`, `/dev-define`, `/dev-build`, `/design-create` | On detection/new deps                    |
 | `data`              | `/dev-define`, `/game-define`                                                      | On entity definition                     |
 | `endpoints`         | `/dev-define`, `/dev-build`                                                        | On API definition / after build          |
 | `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                  | On run completion (PHASE 6)              |
@@ -446,9 +446,9 @@ For the `project-context.json` writer table see [DASHBOARD-CONTEXT.md](DASHBOARD
 | `/dev-build`                | `endpoints`, `stack.packages`                  | `context`, `architecture`, `learnings` (write)                    | PHASE 4C                 |
 | `/dev-verify`               | `stack.packages`, `endpoints`, `data.entities` | `architecture`, `learnings` (write)                               | PHASE 6 completion       |
 | `/dev-refactor`             | `stack.packages`, `endpoints`, `data.entities` | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
-| `/frontend-design`          | `design` (pages, flows, principles)            | —                                                                 | On each run              |
-| `/frontend-design`          | `stack.packages`, `design.pages`               | —                                                                 | After completion sync    |
-| `/frontend-tokens`          | `design.principles`                            | —                                                                 | After completion         |
+| `/design-create`          | `design` (pages, flows, principles)            | —                                                                 | On each run              |
+| `/design-create`          | `stack.packages`, `design.pages`               | —                                                                 | After completion sync    |
+| `/design-tokens`          | `design.principles`                            | —                                                                 | After completion         |
 | `/game-define`              | `data.entities`, `stack.packages`              | `architecture` (write)                                            | PHASE 6                  |
 | `/game-build`               | —                                              | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
 | `/team-verify`              | `stack.packages`, `endpoints`, `data.entities` | `architecture` (write)                                            | PHASE 7 completion       |
@@ -480,7 +480,7 @@ curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node --watch {skills_pa
 
 ## Design Section
 
-The `design` key in `project.json` is managed exclusively by the `frontend-design` skill. Other skills must not mutate it. Schema:
+The `design` key in `project.json` is managed exclusively by the `design-create` skill. Other skills must not mutate it. Schema:
 
 ```json
 {
@@ -550,7 +550,7 @@ The `design` key in `project.json` is managed exclusively by the `frontend-desig
 
 **`pages[].uses[]`** — auto-maintained by Build/convert post-pass. List of component names imported by this page. Do not edit manually.
 
-**`{pages|components}[].reviewNotes?[]`** — **user-owned**, optional. Open questions and review decisions captured in the visual review route (`/{project}/review/{entity}`, served by `serve-backlog.js`). `frontend-design` merges never write or delete this field — it survives spec re-merges untouched. Schema per item: `{ question, answer, status: "open"|"resolved", at }` (`at` = ISO timestamp). The review route POSTs the full array to `/{project}/review/{entity}/save`.
+**`{pages|components}[].reviewNotes?[]`** — **user-owned**, optional. Open questions and review decisions captured in the visual review route (`/{project}/review/{entity}`, served by `serve-backlog.js`). `design-create` merges never write or delete this field — it survives spec re-merges untouched. Schema per item: `{ question, answer, status: "open"|"resolved", at }` (`at` = ISO timestamp). The review route POSTs the full array to `/{project}/review/{entity}/save`.
 
 **`components[].usedIn[]`** — auto-maintained by Build/convert post-pass. List of page names that import this component. Do not edit manually.
 
@@ -570,6 +570,6 @@ The `design` key in `project.json` is managed exclusively by the `frontend-desig
 
 ---
 
-**`features[].lastCheckedSha?: string`** — Set by `frontend-check` after a successful runtime-scan of this feature. Used by batch-mode to skip features where `lastCheckedSha === shippedSha` (no code changes since last check).
+**`features[].lastCheckedSha?: string`** — Set by `design-check` after a successful runtime-scan of this feature. Used by batch-mode to skip features where `lastCheckedSha === shippedSha` (no code changes since last check).
 
 **Merge strategy:** `MERGE on name` — pages/flows/principles/components merge on name, update fields, never auto-delete. `components[].motion{}` and `pages[].transitions{}` use key-level merge (never auto-delete keys, only add/update).

@@ -15,13 +15,13 @@
 - Undefined operand with `&&` → `false`; with `||` → skipped
 - `<name>` without operator → boolean variable computed in earlier PHASE (e.g. `needsTheme` from PHASE 5.7)
 
-| Condition                             | Bullet                                     |
-| ------------------------------------- | ------------------------------------------ |
-| (none — always)                       | `/core-pull`                               |
-| no `project-seed.md` (>50 chars)      | `/project-seed`                            |
-| `features[]` empty                    | `/dev-define`                              |
-| frontend stack && `needsTheme = true` | `/frontend-tokens`                         |
-| `installed_in_session[]` not empty    | show "Modules added: {list}" under Updated |
+| Condition                                  | Bullet                                     |
+| ------------------------------------------ | ------------------------------------------ |
+| (none — always)                            | `/core-pull`                               |
+| no `project-seed.md` (>50 chars)           | `/project-seed`                            |
+| `features[]` empty                         | `/dev-define`                              |
+| (web or game) stack && `needsTheme = true` | `/design-tokens`                           |
+| `installed_in_session[]` not empty         | show "Modules added: {list}" under Updated |
 
 **Branch/PR context fetch (before render):**
 
@@ -71,5 +71,5 @@ Next steps:
   • /core-pull              — incremental updates (sync state is on)
 {if no project-seed.md > 50 chars}  • /project-seed   — build the project concept
 {if features[] empty}     • /dev-define         — define the first feature
-{if frontend && needsTheme}  • /frontend-tokens — design tokens (color, typography, spacing)
+{if (frontend or game) && needsTheme}  • /design-tokens — design tokens (color, typography, spacing)
 ```

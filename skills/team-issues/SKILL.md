@@ -134,7 +134,7 @@ Per selected issue: analyze body inline for split signals.
 
 | Signal                             | Suggested type    | Track    |
 | ---------------------------------- | ----------------- | -------- |
-| Frontend / UI / page / component   | PAGE or COMPONENT | Frontend |
+| Frontend / UI / page / component   | PAGE or COMPONENT | Design |
 | Backend / API / endpoint / service | API or FEATURE    | Dev      |
 | Database / migration / schema      | FEATURE           | Dev      |
 | Tests / test coverage              | FEATURE           | Dev      |
@@ -145,7 +145,7 @@ Per selected issue: analyze body inline for split signals.
 
 ```
 Issue #42: Implement OAuth login
-├── oauth-login       PAGE  · Frontend  · P1
+├── oauth-login       PAGE  · Design  · P1
 ├── oauth-callback    API   · Dev       · P1
 └── oauth-tests       FEATURE · Dev    · P2
 ```
@@ -216,7 +216,7 @@ Show the split proposals as multi-select (default: all checked):
 header: "Fragments"
 question: "Which fragments do you want to import?"
 options:
-  - label: "oauth-login · PAGE · Frontend · P1"
+  - label: "oauth-login · PAGE · Design · P1"
   - label: "oauth-callback · API · Dev · P1"
   - label: "oauth-tests · FEATURE · Dev · P2"
 multiSelect: true
@@ -232,7 +232,7 @@ Show summary table of everything being imported:
 IMPORT OVERVIEW
 ════════════════════════════════════════════════════
 Issue  #42 · Implement OAuth login (github)
-  oauth-login       PAGE    · Frontend · P1
+  oauth-login       PAGE    · Design · P1
   oauth-callback    API     · Dev      · P1
   oauth-tests       FEATURE · Dev      · P2
 
@@ -296,7 +296,7 @@ Edit the JSON in `.project/backlog.json` (see `shared/BACKLOG.md § Writing`).
 IMPORTED
 
   Issue #42: Implement OAuth login (github)
-    oauth-login       P1 · PAGE    · Frontend track
+    oauth-login       P1 · PAGE    · Design track
     oauth-callback    P1 · API     · Dev track
     oauth-tests       P2 · FEATURE · Dev track
 
@@ -308,7 +308,7 @@ IMPORTED
   Next steps:
   - /dev-define oauth-callback     (start dev pipeline)
   - /dev-define signup-validation  (start dev pipeline)
-  - /frontend-design oauth-login   (start frontend pipeline)
+  - /design-create oauth-login   (start design pipeline)
 ```
 
 > **Todo**: mark PHASE 7 → `completed`.

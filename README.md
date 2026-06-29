@@ -57,7 +57,7 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 | ----------- | ------------------------------------------------------------------------------------------ |
 | `core`      | audit, bootstrap, commit, create, delete, edit, merge, pull, rewrite, setup, update, write |
 | `dev`       | build, debug, define, learn, optimize, owasp, refactor, verify                             |
-| `frontend`  | check, design, tokens                                                                      |
+| `design`    | check, content, create, tokens                                                             |
 | `game`      | build, debug, define, optimize, refactor, verify                                           |
 | `marketing` | content, research, screenshots                                                             |
 | `project`   | add, backlog, brainstorm, critique, remove, research, seed, switch, todo, tunnel, viewer   |
@@ -67,7 +67,7 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `dev`       | `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere) |
 | `game`      | `project-seed` → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere, Godot 4.x / GUT)                                |
-| `frontend`  | [`/frontend-tokens`] (incl. motion packs) → `frontend-design` (design/build/convert) → `frontend-check`                                                |
+| `design`    | [`/design-tokens`] (incl. motion packs) → `design-create` (design/build/convert) → `design-content` (fill copy) → `design-check`                       |
 | `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                   |
 
 Optional `/project-research` enriches the dev seed with market/tech/codebase context before backlog.

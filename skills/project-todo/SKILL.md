@@ -169,8 +169,8 @@ Check whether `.project/project.json` exists.
    **On "Yes":**
    - Generate a proposal: 2-3 sub-items with `{ name (kebab), type-hint, short description }`. Use your knowledge of dev/frontend splitting:
      - Logic/API/data → FEATURE (Dev swimlane)
-     - Page/route → PAGE (Frontend swimlane)
-     - Reusable UI piece → COMPONENT (Frontend swimlane)
+     - Page/route → PAGE (Design swimlane)
+     - Reusable UI piece → COMPONENT (Design swimlane)
    - Show as plain-text table, ask confirmation (plain text, no modal): "Does this split look right? Type y to continue, or adjust the names/types."
    - Set internal queue: `items = [{name, description, type-hint}, ...]` (max 3)
    - Process PHASE 1b/1c/1d and PHASE 2 sequentially for each item
@@ -288,10 +288,10 @@ After the answers: incorporate the insights into a sharpened description of the 
 One AskUserQuestion call (1 question). Options depend on the category chosen in PHASE 1b — use the matching template from `references/modal-options.md`:
 
 - **Dev** → § Type — WEB · Dev category
-- **Frontend** → § Type — WEB · Frontend category
+- **Design** → § Type — WEB · Design category
 - **Design & Quality** → § Type — WEB · Design & Quality category
 
-All three Frontend types fall through to **PHASE 1d → PHASE 2 Backlog write**. PAGE and COMPONENT land on the Frontend swimlane ("To design"); PAGE-GAP on the Dev swimlane ("To define").
+All three Design types fall through to **PHASE 1d → PHASE 2 Backlog write**. PAGE and COMPONENT land on the Design swimlane ("To design"); PAGE-GAP on the Dev swimlane ("To define").
 
 ### PHASE 1d: Dependencies
 
@@ -467,14 +467,14 @@ TODO ADDED
   - /dev-define {name} - Start with requirements and building
   - /team-outsource {name} - Outsource to a teammate via GitHub/Jira/Linear
   [If type is PAGE or COMPONENT:]
-  - /frontend-design {name} - Build the page/component
-  - /frontend-design - Define multiple pages at once
+  - /design-create {name} - Build the page/component
+  - /design-create - Define multiple pages at once
   [If type is THEME:]
-  - /frontend-tokens - Set up design tokens (color, typography, spacing)
+  - /design-tokens - Set up design tokens (color, typography, spacing)
   [If type is A11Y:]
-  - /frontend-check --scope=a11y {name} - Run accessibility audit
+  - /design-check --scope=a11y {name} - Run accessibility audit
   [If type is PERF:]
-  - /frontend-check {name} - Run performance and SEO audit
+  - /design-check {name} - Run performance and SEO audit
   [If type is PAGE-GAP:]
   - /dev-define {name} - Define the missing functionality
 ```

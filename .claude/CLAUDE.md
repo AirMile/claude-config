@@ -39,10 +39,10 @@ CLAUDE.base.md    Template for per-project CLAUDE.md generation
 
 ## Skill Conventions
 
-- **Naming**: `{category}-{verb}` — lowercase, hyphen. Categories: core, dev, frontend, game, marketing, project, team
+- **Naming**: `{category}-{verb}` — lowercase, hyphen. Categories: core, dev, design, game, marketing, project, team
 - **Directory**: each skill = folder with `SKILL.md`, optionally `references/`, `scripts/`, `techniques/`
 - **Frontmatter**: metadata with author/version/category — use `disable-model-invocation: true` only if the skill must never be invokable via the Skill tool (also blocks user-triggered `/skill-name`)
-- **Description**: one short sentence — `<Verb-phrase>. Use with /<skill-name>.` (target 40-80 chars). Descriptions count against `skillListingBudgetFraction` (~1% context budget) and get truncated if too long, breaking auto-routing. Only use a richer description when the skill genuinely auto-triggers from context (e.g. `frontend-tokens` on THEME backlog status).
+- **Description**: one short sentence — `<Verb-phrase>. Use with /<skill-name>.` (target 40-80 chars). Descriptions count against `skillListingBudgetFraction` (~1% context budget) and get truncated if too long, breaking auto-routing. Only use a richer description when the skill genuinely auto-triggers from context (e.g. `design-tokens` on THEME backlog status).
 - **Pipeline handoff**: skills that touch shared state declare `reads:` / `writes:` in frontmatter — see `shared/DEVINFO.md` for namespaces. Validate with `python3 scripts/check-handoff.py`.
 - **Language**: skill/agent files in English (hard rule). Runtime output: from `CLAUDE.md § User Preferences → Language:`. See `skills/shared/LANGUAGE.md`.
 - **Phases**: PHASE 0 = pre-flight validation → execution → last phase = report (ASCII table)
@@ -67,7 +67,7 @@ Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 **Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere)
 **Game**: `project-seed` → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere, Godot 4.x / GUT)
-**Frontend**: `frontend-design` (design/build/convert — incl. sketch/wireframe/Figma/Canva → high-fi code) → `frontend-content` (fill copy) → `frontend-check`
+**Design**: `design-create` (design/build/convert — incl. sketch/wireframe/Figma/Canva → high-fi code) → `design-content` (fill copy) → `design-check`
 **Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`
 
 State handoff between skills via `.project/session/devinfo.json` (schema: `shared/DEVINFO.md`).

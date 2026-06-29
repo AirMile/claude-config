@@ -2,7 +2,7 @@
 
 **When:** there are MANUAL items. By definition MANUAL = human perception/judgment, auth
 with real credentials, physical-device tests, or audio/screen-reader checks. Visual polish,
-motion smoothness, and design feel are NOT verified here — those belong to frontend-design /
+motion smoothness, and design feel are NOT verified here — those belong to design-create /
 frontend-build.
 
 **Playwright smoke pre-check** — for each MANUAL item: if the item is DOM-observable

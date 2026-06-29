@@ -902,7 +902,7 @@ http
           return;
         }
 
-        // Read feature.json (optional — Path A frontend cards may not have it).
+        // Read feature.json (optional — Path A design cards may not have it).
         // Live path first; fall back to archive (dev-refactor moves shipped features
         // to .project/features/archive/{shippedAt-date}-{name}/feature.json).
         const featuresDir = path.join(projectPath, ".project/features");
@@ -1061,7 +1061,7 @@ http
               );
               return;
             }
-            // reviewNotes is user-owned and additive — frontend-design merges
+            // reviewNotes is user-owned and additive — design-create merges
             // never touch it, so writing here is safe.
             target.reviewNotes = reviewNotes;
             fs.writeFileSync(dashFile, JSON.stringify(proj, null, 2), "utf8");

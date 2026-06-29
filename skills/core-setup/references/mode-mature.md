@@ -424,13 +424,13 @@ If `.claude/settings.local.json` AND `.claude/hooks/format-on-save.cjs` both exi
 
 Mark PHASE 5.65 → `completed`.
 
-### PHASE 5.7: Setup Task Seeding (frontend projects only)
+### PHASE 5.7: Setup Task Seeding (web or game projects)
 
 > **Todo**: mark PHASE 5.65 → `completed`, PHASE 5.7 → `in_progress`.
-> Only if `stack.framework` from PHASE 2a is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS) → Read `references/phase-setup-task-seeding.md` and follow it with:
+> Only if `stack.framework` from PHASE 2a is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS) **or** a game framework (Godot / `project.godot` present) → Read `references/phase-setup-task-seeding.md` and follow it with:
 >
 > - variant: mature
-> - auto-execute: false (stdout line only; the PHASE 6 report renders the /frontend-tokens bullet)
+> - auto-execute: false (stdout line only; the PHASE 6 report renders the /design-tokens bullet)
 >
 > Otherwise skip.
 

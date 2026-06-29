@@ -1,6 +1,6 @@
 # ANTI-SLOP — Universal Frontend Ban Catalogue
 
-Universal static-analysis rules removed from `frontend-check` (runtime-only) and promoted to generation-time bans. Loaded by Convert PHASE 2 when `design.banPacks[]` contains the pack name.
+Universal static-analysis rules removed from `design-check` (runtime-only) and promoted to generation-time bans. Loaded by Convert PHASE 2 when `design.banPacks[]` contains the pack name.
 
 Each entry: `code` · `pack` · `description` · `grep-pattern` (or natural-language rule) · `fix`.
 

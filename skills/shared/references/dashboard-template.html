@@ -1854,7 +1854,7 @@
           return `
             <div class="section-header"><h2>Design System</h2></div>
             <div class="empty-state"><p>No design tokens defined yet.</p>
-            <p style="color:var(--text-dim)">Design tokens, modes, CSS variables — managed via <code>/frontend-tokens</code></p></div>`;
+            <p style="color:var(--text-dim)">Design tokens, modes, CSS variables — managed via <code>/design-tokens</code></p></div>`;
         }
 
         // Pack badge
@@ -2191,14 +2191,14 @@
       const featureDetailCache = {};
 
       function buildFeatureDetailHtml(detail) {
-        const isFrontend =
+        const isDesign =
           detail.type === "PAGE" || detail.type === "COMPONENT";
-        return isFrontend
-          ? buildFrontendDetailHtml(detail)
+        return isDesign
+          ? buildDesignDetailHtml(detail)
           : buildDevDetailHtml(detail);
       }
 
-      function buildFrontendDetailHtml(detail) {
+      function buildDesignDetailHtml(detail) {
         let html = "";
         const base = location.pathname.replace(/\/(backlog|dashboard)\/?$/, "");
 
@@ -2676,23 +2676,23 @@
             </div>`;
         }
 
-        const FRONTEND_TYPES = ["PAGE", "COMPONENT"];
+        const DESIGN_TYPES = ["PAGE", "COMPONENT"];
         const project = window.location.pathname.split("/").filter(Boolean)[0];
         const rowsHtml = shipped
           .map((f) => {
             const dateStr = f.shippedAt || f.date || "";
-            const isFrontend = FRONTEND_TYPES.includes(f.type);
+            const isDesign = DESIGN_TYPES.includes(f.type);
             const screenshotPath = f.audit && f.audit.buildScreenshot;
             const thumbCb = encodeURIComponent(
               (f.audit && f.audit.lastRun) || f.shippedAt || "",
             );
-            const thumbHtml = isFrontend
+            const thumbHtml = isDesign
               ? screenshotPath
                 ? `<img class="feat-thumb" src="/${project}/asset?path=${encodeURIComponent(screenshotPath)}${thumbCb ? "&v=" + thumbCb : ""}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'feat-thumb feat-thumb--placeholder\\' title=\\'No smoke render available\\'>⊟</div>'">`
                 : `<div class="feat-thumb feat-thumb--placeholder" title="No smoke render available">⊟</div>`
               : "";
-            const rowClass = isFrontend
-              ? "feat-row feat-row--frontend"
+            const rowClass = isDesign
+              ? "feat-row feat-row--design"
               : "feat-row";
             return `
             <div class="${rowClass}">

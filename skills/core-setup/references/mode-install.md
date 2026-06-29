@@ -414,9 +414,9 @@ CLAUDE.md:       {M} sections updated / already complete / n/a
 
 **Next steps:**
 
-1. `/frontend-tokens` → design tokens setup if styling was added
-2. `/frontend-design` → mock-driven UI design with new stack
-3. `/frontend-check` → quality check after multiple installs
+1. `/design-tokens` → design tokens setup if styling was added
+2. `/design-create` → mock-driven UI design with new stack
+3. `/design-check` → quality check after multiple installs
 
 > **Todo**: mark PHASE 6 → `completed`.
 

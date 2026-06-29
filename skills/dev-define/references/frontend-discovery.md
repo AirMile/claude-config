@@ -25,7 +25,7 @@ For the shared sync implementation of `discoveredComponents` in PHASE 4, see [sh
 
 ## Page-placement sparring
 
-Skip for pure API/backend/game features. After Reuse-Discovery, ask which PAGE(s) this feature surfaces on. This writes `pageHint[]` to `feature.json` (PHASE 3) and enables `/frontend-design` Build to pre-populate its composition menu.
+Skip for pure API/backend/game features. After Reuse-Discovery, ask which PAGE(s) this feature surfaces on. This writes `pageHint[]` to `feature.json` (PHASE 3) and enables `/design-create` Build to pre-populate its composition menu.
 
 1. Read `.project/backlog.json` → collect all PAGE-type features (any status). Read `project.json#design.pages[]` — collect page names. Merge both lists (dedupe by name) as `$KNOWN_PAGES`.
 

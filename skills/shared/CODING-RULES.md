@@ -208,31 +208,31 @@ test("checkout confirms order with payment success", async () => {
 
 ## Pipelines (two separate tracks)
 
-**Frontend pipeline (appearance):**
+**Design pipeline (appearance):**
 
 ```
 Path A — Build with Claude Code:
-/frontend-design (Build) → /frontend-check
+/design-create (Build) → /design-check
 
 Path B — Brief for Claude Design / Figma:
-/frontend-design (Brief) → [external design] → /frontend-design (Convert) → /frontend-check
+/design-create (Brief) → [external design] → /design-create (Convert) → /design-check
 ```
 
 - Works standalone — no dev-pipeline required
 - Fits: design-system work, static sites, portfolios, everything without business-logic features
 - Output: code directly to repo (Build) or markdown handoff (Brief)
-- PAGE/COMPONENT TODOs live exclusively on the **Frontend track** in the backlog
-- `/frontend-check` PASS is terminal for frontend cards — no refactor step
+- PAGE/COMPONENT TODOs live exclusively on the **Design track** in the backlog
+- `/design-check` PASS is terminal for design cards — no refactor step
 - Cross-pipeline coupling runs exclusively via `feature.json#frontend.linkedEntities[]` and `dependencies[]`
 
 **Dev pipeline (functionality):**
 `/project-backlog → /dev-define → /dev-build → /dev-verify → /dev-refactor`
 
-- Works standalone — no frontend-design required
+- Works standalone — no design-create required
 - Fits: features with logic/state/tests, also backend-only
 - `/dev-build` reads `design.pages[]/design.components[]` as visual spec source if present
 - FEATURE/API/UI/etc. TODOs live exclusively on the **Dev track** in the backlog
 
 **Cross-pipeline coupling:**
 
-A card is either frontend (PAGE/COMPONENT) or dev — never both. For pages/components with handler-props without implementation: gap-discovery (`/frontend-design` Build/Convert routes) suggests a separate FEATURE-todo on the Dev track. The relationship is tracked via `feature.json#frontend.linkedEntities[]`.
+A card is either design (PAGE/COMPONENT) or dev — never both. For pages/components with handler-props without implementation: gap-discovery (`/design-create` Build/Convert routes) suggests a separate FEATURE-todo on the Dev track. The relationship is tracked via `feature.json#frontend.linkedEntities[]`.

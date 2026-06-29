@@ -1,10 +1,10 @@
 # Shared Finalize Flow
 
-Single source of truth for finalizing a feature worktree — either solo-merge (no PR) or cleanup-only (after a merged PR). Used by `core-finalize`, and by the **PHASE Finalize** sections in `dev-verify`, `dev-refactor`, `game-verify`, `game-refactor`, and `frontend-check`.
+Single source of truth for finalizing a feature worktree — either solo-merge (no PR) or cleanup-only (after a merged PR). Used by `core-finalize`, and by the **PHASE Finalize** sections in `dev-verify`, `dev-refactor`, `game-verify`, `game-refactor`, and `design-check`.
 
 ## Finalize Offer Decision
 
-Skills that opportunistically offer finalize (`dev-refactor`, `game-refactor`, `frontend-check`) consult this matrix to decide whether/how to prompt the user. Differs from the Detection matrix below: this is about **whether we ask**, not about **what finalize executes**.
+Skills that opportunistically offer finalize (`dev-refactor`, `game-refactor`, `design-check`) consult this matrix to decide whether/how to prompt the user. Differs from the Detection matrix below: this is about **whether we ask**, not about **what finalize executes**.
 
 > **Note:** `dev-verify` and `game-verify` no longer use this matrix — they use an inline auto-dispatch (see their own `references/finalize.md` / `references/completion-finalize.md`). The matrix below is for the last step of the pipeline only.
 
@@ -312,7 +312,7 @@ If branch was pushed to remote:
 
 **Symlink preservation**: the worktree's `.project/` symlinks point to main's `.project/`. Removing the worktree directory removes those symlinks — main's `.project/` is untouched. No extra cleanup needed.
 
-**Backlog sync (frontend-track only)**: finalize is a merge/cleanup step — it **never promotes `DOING` → `DONE`**. The verify step owns that transition (`/frontend-check` for frontend-track, `/dev-refactor` for dev-track), exactly as `dev-verify` is forbidden from writing `shipped`. Finalize only stamps `shipped` on a PAGE that is **already `DONE`**.
+**Backlog sync (design-track only)**: finalize is a merge/cleanup step — it **never promotes `DOING` → `DONE`**. The verify step owns that transition (`/design-check` for design-track, `/dev-refactor` for dev-track), exactly as `dev-verify` is forbidden from writing `shipped`. Finalize only stamps `shipped` on a PAGE that is **already `DONE`**.
 
 After successful remove, detect the feature type **and current status**:
 
@@ -328,15 +328,15 @@ read -r FEATURE_TYPE FEATURE_STATUS < <(node -e "
 
 Dispatch on `FEATURE_TYPE`:
 
-- **`COMPONENT`** → **do nothing**. Components ship with the page/feature that consumes them (`/frontend-check` rule: a COMPONENT is never auto-`DONE`). Finalize leaves `status` and `shipped` untouched.
+- **`COMPONENT`** → **do nothing**. Components ship with the page/feature that consumes them (`/design-check` rule: a COMPONENT is never auto-`DONE`). Finalize leaves `status` and `shipped` untouched.
 - **`PAGE`** → branch on `FEATURE_STATUS`:
-  - **`DONE`** (convert route set it, or `/frontend-check` passed) → stamp ship fields:
+  - **`DONE`** (convert route set it, or `/design-check` passed) → stamp ship fields:
     1. Read `.project/backlog.json` → find `f.name === "{feature-name}"`
     2. Set `shipped: true`, `shippedAt: "{YYYY-MM-DD}"`, `shippedSha: "{merge-sha}"`. Remove `stage` if present. Leave `status` at `DONE`.
     3. Write the updated JSON back to `.project/backlog.json`. Set `data.updated` to today.
     4. Sync same fields to `project.json` `features[]` entry.
   - **`DOING`** (verify skipped) → **do NOT** set `DONE`, **do NOT** ship. Leave at `DOING` (TO CHECK) and print:
-    `ℹ {feature-name} merged but left at TO CHECK — run /frontend-check {feature-name} to ship.`
+    `ℹ {feature-name} merged but left at TO CHECK — run /design-check {feature-name} to ship.`
 - **dev-track (`FEATURE`: type other than COMPONENT/PAGE)** → skip. `/dev-refactor` owns `shipped`/`shippedSha` for those.
 
 ## Output Report
@@ -367,7 +367,7 @@ Also detect ghost cwd via `[ "$(pwd)" != "{main_root}" ] && [ ! -d "$(pwd)" ]`. 
    Start a fresh terminal in: {main_root}
 ```
 
-> **Scope of `Merge: {sha}`**: for **dev-track** features (not COMPONENT/PAGE), this SHA is informational only — do NOT write it to `backlog.json` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys for dev-track are set exclusively by `/dev-refactor` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). For **frontend-track**, the Backlog sync step above writes the merge SHA as `shippedSha` **only for a PAGE that is already `DONE`** — never as a `DOING` → `DONE` promotion, and never for a COMPONENT (which ships with its consuming page). A `DOING` PAGE stays at TO CHECK until `/frontend-check` ships it. Skills consuming this report (`dev-verify`, `game-verify`, `frontend-check`, `core-finalize`) MUST treat the SHA as display-only for dev-track.
+> **Scope of `Merge: {sha}`**: for **dev-track** features (not COMPONENT/PAGE), this SHA is informational only — do NOT write it to `backlog.json` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys for dev-track are set exclusively by `/dev-refactor` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). For **design-track**, the Backlog sync step above writes the merge SHA as `shippedSha` **only for a PAGE that is already `DONE`** — never as a `DOING` → `DONE` promotion, and never for a COMPONENT (which ships with its consuming page). A `DOING` PAGE stays at TO CHECK until `/design-check` ships it. Skills consuming this report (`dev-verify`, `game-verify`, `design-check`, `core-finalize`) MUST treat the SHA as display-only for dev-track.
 
 For cleanup-only with PR context:
 

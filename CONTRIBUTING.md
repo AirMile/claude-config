@@ -10,7 +10,7 @@
 ## Naming conventions
 
 - Directory: `{category}-{verb}` — lowercase, hyphen-separated
-- Categories: `core`, `dev`, `frontend`, `game`, `marketing`, `project`, `team`
+- Categories: `core`, `dev`, `design`, `game`, `marketing`, `project`, `team`
 
 ## Commit style
 

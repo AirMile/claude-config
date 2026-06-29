@@ -35,7 +35,7 @@ AskUserQuestion:
   - `{feature}` → the name of the task the skill just worked on (already in scope from the skill's backlog read).
   - `{next-feature}` / `{next-page}` → look up the first matching `TODO` task in `.project/backlog.json` (`data.features[]`):
     - dev loop-back: first `status === "TODO" && type === "FEATURE"` (respecting `dependencies[]` where the skill already does so).
-    - frontend loop-back: first `status === "TODO" && type === "PAGE"`.
+    - design loop-back: first `status === "TODO" && type === "PAGE"`.
     - If no matching task exists: use the current `{feature}` as fallback for the command, or omit the whole offer if that is also unavailable.
   - The **copied string** is the resolved command (e.g. `/dev-build mijn-feature`), so it is runnable immediately.
     This is especially valuable for worktree-gated steps (e.g. dev-build → dev-verify in a NEW chat) where

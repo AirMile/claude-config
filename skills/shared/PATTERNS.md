@@ -975,7 +975,7 @@ Page → Full pattern integration
 
 ## Motion Patterns
 
-Managed by `/frontend-tokens` (Motion Pack route). Use when `theme.motion.pack` is set. All patterns include `prefers-reduced-motion` fallback.
+Managed by `/design-tokens` (Motion Pack route). Use when `theme.motion.pack` is set. All patterns include `prefers-reduced-motion` fallback.
 
 ### Spring Press
 
@@ -1511,7 +1511,7 @@ function FluentPanel({
 
 **Condition:** `motion.easings[]` contains `ease-carbon-entrance` (added via Customize → IBM Carbon).
 
-> Reference: `skills/frontend-tokens/references/motion/carbon-motion.md`
+> Reference: `skills/design-tokens/references/motion/carbon-motion.md`
 
 ```tsx
 // React — motion.dev

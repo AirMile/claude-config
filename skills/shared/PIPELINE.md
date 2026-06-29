@@ -26,48 +26,48 @@ Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and
 
 Standalone (dev): `/dev-security` (security audit).
 
-## Frontend Pipeline
+## Design Pipeline
 
 ```
 /project-backlog ──► THEME tasks (transition: "defining")
                                       │
                                       ▼
-                     /frontend-tokens ──► design tokens + motion packs (Apple/Material/Fluent/Carbon),
+                     /design-tokens ──► design tokens + motion packs (Apple/Material/Fluent/Carbon),
                           │              spring physics, choreography, glass surfaces
                           │              → writes project.json#theme + devinfo.tokenDrift
                           ▼
 /project-backlog ──► PAGE/COMPONENT tasks (transition: "designing" | "converting")
                                       │
                                       ▼
-                     /frontend-design (Build) ──► compose: select features + components
+                     /design-create (Build) ──► compose: select features + components
                           │                           │
                           │                           └── "+ new component/feature" → /project-todo (smart-todo)
                           │
-                          └─→ /frontend-design (brief) ──→ Claude Design ──→ handoff
-                          └─→ /frontend-design (visual → code — Convert route)
+                          └─→ /design-create (brief) ──→ Claude Design ──→ handoff
+                          └─→ /design-create (visual → code — Convert route)
                           └─→ clears devinfo.tokenDrift.affectedFeatures on completion
                           │
                           ▼
-                     /frontend-check (batch at release end) ──► runtime: perf/SEO/A11Y/responsive/motion audit
+                     /design-check (batch at release end) ──► runtime: perf/SEO/A11Y/responsive/motion audit
 ```
 
 **Recommended order: build dev-features first, then compose PAGEs.**
 
 PAGE-design gets a selection menu showing all features (any status) + existing components. Features not yet DONE render as TODO-markers in the generated code — refinement pass after build completes.
 
-Frontend items skip `defining/defined` — design captures pages/flows, Build generates code directly.
+Design items skip `defining/defined` — design captures pages/flows, Build generates code directly.
 
 ## Cross-track rules
 
 | Item type            | Responsible skill                                                          | The other track must not                   |
 | -------------------- | -------------------------------------------------------------------------- | ------------------------------------------ |
-| FEATURE (data/logic) | dev-define → dev-build                                                     | frontend-design builds it                  |
+| FEATURE (data/logic) | dev-define → dev-build                                                     | design-create builds it                  |
 | FEATURE (with UI)    | dev-define → dev-build (token-styled UI — functional + presentably styled) | dev-build writes styled/designed UI        |
-| COMPONENT            | dev-define → dev-build (token-styled) → frontend-design (optional layout)  | dev-build writes styled/designed component |
-| PAGE                 | frontend-design                                                            | dev-build builds it                        |
-| THEME                | frontend-tokens (incl. motion packs)                                       | —                                          |
+| COMPONENT            | dev-define → dev-build (token-styled) → design-create (optional layout)  | dev-build writes styled/designed component |
+| PAGE                 | design-create                                                            | dev-build builds it                        |
+| THEME                | design-tokens (incl. motion packs)                                       | —                                          |
 
-**dev-build** delivers: data layer, hooks, API, types, tests + token-styled UI (semantic HTML + design tokens). Pages and components are testable via `/dev-verify`. `/frontend-design` is optional for layout reshaping (sidebar/hero/grid).
+**dev-build** delivers: data layer, hooks, API, types, tests + token-styled UI (semantic HTML + design tokens). Pages and components are testable via `/dev-verify`. `/design-create` is optional for layout reshaping (sidebar/hero/grid).
 
 ---
 

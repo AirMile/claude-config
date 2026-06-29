@@ -7,11 +7,11 @@ Seed recommended setup tasks into the backlog so the user has a clear next path.
 The caller's transition marker supplies:
 
 - `variant`: `greenfield` | `mature`
-- `auto-execute`: `true` (greenfield — chain to `/frontend-tokens` directly) | `false` (mature — stdout line only)
+- `auto-execute`: `true` (greenfield — chain to `/design-tokens` directly) | `false` (mature — stdout line only)
 
 ## Trigger
 
-`stack.framework` is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS). Skip entirely for game, CLI, backend-only, or desktop.
+`stack.framework` is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS) **or** a game framework (Godot / `project.godot` present) — `/design-tokens` is cross-domain (web emits CSS, game emits a Godot Theme `.tres`). Skip entirely for CLI, backend-only, or desktop.
 
 ## Step 1 — Compute conditions
 
@@ -32,7 +32,7 @@ Skip this phase entirely if `needsTheme = false`.
   "type": "THEME",
   "status": "TODO",
   "phase": "P1",
-  "description": "Define color palette, typography scale, and spacing tokens via /frontend-tokens before UI work begins.",
+  "description": "Define color palette, typography scale, and spacing tokens via /design-tokens before UI work begins.",
   "source": "/core-setup",
   "dependencies": []
 }
@@ -44,7 +44,7 @@ Skip this phase entirely if `needsTheme = false`.
 
 ## Step 3 — Follow-up per variant
 
-- **`auto-execute: true`** (greenfield): no prompt. Skill chaining is silent — after seeding, exit core-setup and run `/frontend-tokens` directly. Report in the summary under "Next skill running".
-- **`auto-execute: false`** (mature): no interactive modal — only show `Setup task added to backlog` in stdout. The report "Next steps" section then automatically shows the `/frontend-tokens` bullet.
+- **`auto-execute: true`** (greenfield): no prompt. Skill chaining is silent — after seeding, exit core-setup and run `/design-tokens` directly. Report in the summary under "Next skill running".
+- **`auto-execute: false`** (mature): no interactive modal — only show `Setup task added to backlog` in stdout. The report "Next steps" section then automatically shows the `/design-tokens` bullet.
 
 When done: return to the caller's next phase.

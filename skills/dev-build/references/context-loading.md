@@ -124,17 +124,17 @@ If `feature.type === "COMPONENT"` (or backlog item type is COMPONENT): set `IS_C
 header: "Theme tokens"
 question: "No design tokens found. /dev-build generates UI with token classes that stay unstyled without a theme. How to proceed?"
 options:
-  - label: "Run /frontend-tokens first (Recommended)", description: "Set up color + spacing tokens, then run /dev-build again"
+  - label: "Run /design-tokens first (Recommended)", description: "Set up color + spacing tokens, then run /dev-build again"
   - label: "Continue with fallback defaults", description: "Use defaults from shared/TOKENS.md (neutral gray-scale)"
   - label: "Cancel", description: "Stop this build"
 multiSelect: false
 ```
 
-- "Run /frontend-tokens first" → exit: `Run /frontend-tokens, then /dev-build {feature} again.`
+- "Run /design-tokens first" → exit: `Run /design-tokens, then /dev-build {feature} again.`
 - "Continue with fallback defaults" → set `$USE_FALLBACK_TOKENS = true`; Token-styled UI rule uses `shared/TOKENS.md` defaults.
 - "Cancel" → exit.
 
-**Token-styled UI rule** (applies to both `feature.hasUI === true` FEATURE builds and all COMPONENT builds): dev-build writes functional, presentably-styled UI using the project's design tokens — sufficient for `/dev-verify` manual checks; polish via browser inspect + commit without re-running `/frontend-design` (run it on-demand only for layout reshaping).
+**Token-styled UI rule** (applies to both `feature.hasUI === true` FEATURE builds and all COMPONENT builds): dev-build writes functional, presentably-styled UI using the project's design tokens — sufficient for `/dev-verify` manual checks; polish via browser inspect + commit without re-running `/design-create` (run it on-demand only for layout reshaping).
 
 - Use semantic HTML and token-based Tailwind classes (`bg-background`, `text-foreground`, `bg-primary`, `rounded-md`, `p-4`, semantic headings). Read `project.json#theme` for token names; empty → defaults from `shared/TOKENS.md`.
 - **Motion** (if `theme.motion.pack` set and not `"none"`): token-based transitions + hover lift + active scale on interactive elements; Expressive/Playful packs use `var(--ease-ios-spring)`/`var(--spring-snappy-bezier)`; `motion.dev`/`framer-motion` in package.json → `<motion.*>` with spring token values from `theme.motion.spring[]`.
@@ -148,7 +148,7 @@ Skip if no `depends[]` or empty.
 2. Per dependency: status must be `"DONE"`.
 3. Blockers found → **AskUserQuestion**:
    - "Stop — finish {dep} first (Recommended)" / "Continue anyway"
-   - Stop → exit with message: `Run /dev-build {dep}` (for FEATURE or COMPONENT deps) or `Run /frontend-design {dep}` (for PAGE deps). Continue → proceed.
+   - Stop → exit with message: `Run /dev-build {dep}` (for FEATURE or COMPONENT deps) or `Run /design-create {dep}` (for PAGE deps). Continue → proceed.
 
 **Workspace setup:**
 

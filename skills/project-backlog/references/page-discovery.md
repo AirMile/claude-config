@@ -1,9 +1,9 @@
 # Page-Discovery
 
-**Goal:** Establish which screens the app has and which features appear on each screen. Produces PAGE tasks with `dependencies[]` that drive `/frontend-design` Build composition.
+**Goal:** Establish which screens the app has and which features appear on each screen. Produces PAGE tasks with `dependencies[]` that drive `/design-create` Build composition.
 
 **Skip in GAME MODE and WEB-MOBILE mode** (React Native: screens are FEATURE-typed and
-`/frontend-design` is browser-only). Run after Feature Review in WEB MODE.
+`/design-create` is browser-only). Run after Feature Review in WEB MODE.
 
 ---
 
@@ -48,7 +48,7 @@ options:
   - label: "Adjust pages"
     description: "Add, remove, rename, or change feature assignments"
   - label: "Skip — I'll manage pages later"
-    description: "No PAGE tasks created now; pages can be added via /project-todo or /frontend-design"
+    description: "No PAGE tasks created now; pages can be added via /project-todo or /design-create"
 multiSelect: false
 ```
 
@@ -56,7 +56,7 @@ multiSelect: false
 
 **"Adjust pages"** → AskUserQuestion (free text): "What should change?" — parse, update the table, re-show, re-ask. Loop until confirmed.
 
-**"Skip"** → do not create PAGE tasks. Proceed to PHASE 2. Show: `Pages: skipped — add via /project-todo or /frontend-design when ready.`
+**"Skip"** → do not create PAGE tasks. Proceed to PHASE 2. Show: `Pages: skipped — add via /project-todo or /design-create when ready.`
 
 ---
 

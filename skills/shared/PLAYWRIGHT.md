@@ -1,6 +1,6 @@
 # Playwright Browser Automation
 
-Reusable Playwright CLI patterns for visual validation, accessibility checks, and browser-based testing across frontend skills. For round-based screenshot comparison loops, see `VERIFICATION.md`.
+Reusable Playwright CLI patterns for visual validation, accessibility checks, and browser-based testing across design skills. For round-based screenshot comparison loops, see `VERIFICATION.md`.
 
 **CLI:** `playwright-cli` (global via `@playwright/cli`). Check: `playwright-cli --version`.
 
@@ -268,8 +268,8 @@ playwright-cli -s=mysession close
 
 | Skill                   | Uses Playwright For                               | Snapshot strategy   |
 | ----------------------- | ------------------------------------------------- | ------------------- |
-| `frontend-check`        | A11y tree, focus, multi-viewport, CWV, SEO, smoke | Inline + --filename |
-| `frontend-design`       | Screenshot capture + verification loop (Convert)  | Screenshot only     |
+| `design-check`        | A11y tree, focus, multi-viewport, CWV, SEO, smoke | Inline + --filename |
+| `design-create`       | Screenshot capture + verification loop (Convert)  | Screenshot only     |
 | `marketing-screenshots` | HiDPI screenshots, dark mode variants             | run-code newContext |
 | `dev-debug`             | Runtime-state inspectie, hypothesis-validatie     | eval (JSON inline)  |
 | `team-verify`           | Automated browser checks, runtime assertions      | Inline + eval       |

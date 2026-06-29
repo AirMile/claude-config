@@ -44,7 +44,7 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
    | REFACTOR | Code quality, performance, architecture improvements |
    | PAGE | Frontend page/route (goes through design → convert → check pipeline) |
    | COMPONENT | Reusable UI component (goes through same pipeline as PAGE) |
-   | PAGE-GAP | Missing functionality found by /frontend-design |
+   | PAGE-GAP | Missing functionality found by /design-create |
 
    **[GAME MODE]:**
    | Type | Description |
@@ -143,7 +143,7 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
 
 8. **[WEB MODE] THEME signal (optional — only on explicit mention in concept):**
 
-   If the concept explicitly mentions "design tokens", "colors", "typography", "theme", or "branding" (no implicit speculation): add `{ "name": "theme-init", "type": "THEME", "status": "TODO", "phase": "P3", "description": "{relevant quote from concept}", "source": "/project-backlog" }` to the feature list — `/frontend-tokens` auto-triggers on THEME items. No match → skip.
+   If the concept explicitly mentions "design tokens", "colors", "typography", "theme", or "branding" (no implicit speculation): add `{ "name": "theme-init", "type": "THEME", "status": "TODO", "phase": "P3", "description": "{relevant quote from concept}", "source": "/project-backlog" }` to the feature list — `/design-tokens` auto-triggers on THEME items. No match → skip.
 
 ---
 

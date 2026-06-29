@@ -70,7 +70,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
 }
 ```
 
-The `audit` field is **frontend-track-specific** (type `PAGE` or `COMPONENT`). `buildScreenshot`/`buildSmokeStatus`/`buildSmokeError` are written by `/frontend-design` Build (smoke-render). `lastRun`/`scopes`/`findings` are written by `/frontend-check` PHASE 4.3. No field is required; consumers check for presence. PASS status can be derived from `findings.critical === 0` — no separate boolean needed.
+The `audit` field is **design-track-specific** (type `PAGE` or `COMPONENT`). `buildScreenshot`/`buildSmokeStatus`/`buildSmokeError` are written by `/design-create` Build (smoke-render). `lastRun`/`scopes`/`findings` are written by `/design-check` PHASE 4.3. No field is required; consumers check for presence. PASS status can be derived from `findings.critical === 0` — no separate boolean needed.
 
 ## Writing the backlog
 
@@ -92,7 +92,7 @@ For small mutations (status flip, one field) prefer the Edit tool on the JSON fi
 
 ## Source field convention
 
-The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/dev-define"`, `"/frontend-design"`.
+The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/dev-define"`, `"/design-create"`.
 
 **Independent rule:** A feature is INDEPENDENT (never overwritten by `/project-backlog` during rebuild) when `source` is set to anything other than `"/project-backlog"`. Features without a `source` field, or with `"/project-backlog"`, are concept-derived and managed by `/project-backlog`.
 
@@ -120,7 +120,7 @@ The **externalRef field** links a backlog item to an external issue/ticket. One 
 ```
 
 - `/team-issues` writes it on intake
-- `/dev-define` and `/frontend-design` copy to `feature.json`
+- `/dev-define` and `/design-create` copy to `feature.json`
 - `/core-commit` reads to prefix commit messages
 
 ## Parallel sync
@@ -146,9 +146,9 @@ This reduces 6+ sequential round-trips to 2. Files are independent — no orderi
 
 ## Status flow (two tracks)
 
-The backlog is divided into two tracks: **Frontend** (PAGE/COMPONENT) and **Dev** (all other types). Status values are identical, but labels and skills per status differ.
+The backlog is divided into two tracks: **Design** (PAGE/COMPONENT) and **Dev** (all other types). Status values are identical, but labels and skills per status differ.
 
-### Frontend track (PAGE/COMPONENT)
+### Design track (PAGE/COMPONENT)
 
 ```
 TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped) → shipped
@@ -157,31 +157,31 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 
 | Status      | Label      | Set by                                                                                                       |
 | ----------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| `TODO`      | To design  | `/frontend-design` Capture, `/project-todo`, `/project-backlog`, reuse-discovery                             |
-| `DEFINED`   | To convert | `/frontend-design` Brief (Path B — offline handoff)                                                          |
-| `DOING`     | Building   | `/frontend-design` Build (Path A) or `/frontend-design` Convert route (Path B)                               |
-| `DONE`      | Shipped    | `/frontend-check` (PAGE PASS) — both build and convert pages                                                 |
+| `TODO`      | To design  | `/design-create` Capture, `/project-todo`, `/project-backlog`, reuse-discovery                             |
+| `DEFINED`   | To convert | `/design-create` Brief (Path B — offline handoff)                                                          |
+| `DOING`     | Building   | `/design-create` Build (Path A) or `/design-create` Convert route (Path B)                               |
+| `DONE`      | Shipped    | `/design-check` (PAGE PASS) — both build and convert pages                                                 |
 | `CANCELLED` | Archived   | Manually via UI (○ button), `/project-backlog` update mode (cancel-proposal), `/project-retire` — restorable |
 
 **Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
 
 **Path B** (Brief for external design): TODO → DEFINED → DOING → DONE.
 
-`/frontend-check` (batch mode or targeted) runs at end of release cycle across DOING features — not per-component inline. Sets `lastCheckedSha`; for PAGE scope on PASS: sets `f.shipped = true` and `status: "DONE"`. A COMPONENT is never auto-`DONE` — it ships with the page/feature that consumes it.
+`/design-check` (batch mode or targeted) runs at end of release cycle across DOING features — not per-component inline. Sets `lastCheckedSha`; for PAGE scope on PASS: sets `f.shipped = true` and `status: "DONE"`. A COMPONENT is never auto-`DONE` — it ships with the page/feature that consumes it.
 
-`/core-finalize` (and any PHASE Finalize via `shared/FINALIZE.md`) is a merge/cleanup step — it **never promotes `DOING` → `DONE`**. It only stamps `shipped`/`shippedSha` on a PAGE that is **already `DONE`**; a `DOING` PAGE stays at TO CHECK until `/frontend-check` ships it, and a COMPONENT is left untouched. This mirrors dev-track, where `/dev-verify` finalize never writes `shipped` — `/dev-refactor` does.
+`/core-finalize` (and any PHASE Finalize via `shared/FINALIZE.md`) is a merge/cleanup step — it **never promotes `DOING` → `DONE`**. It only stamps `shipped`/`shippedSha` on a PAGE that is **already `DONE`**; a `DOING` PAGE stays at TO CHECK until `/design-check` ships it, and a COMPONENT is left untouched. This mirrors dev-track, where `/dev-verify` finalize never writes `shipped` — `/dev-refactor` does.
 
 ### When to use which skill for PAGE/COMPONENT
 
 | Situation                                               | Skill                                                                     |
 | ------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Quick "just thought of something" addition              | `/project-todo`                                                           |
-| Full design (screenshot, Figma, brief)                  | `/frontend-design` Capture                                                |
+| Full design (screenshot, Figma, brief)                  | `/design-create` Capture                                                |
 | Bulk-init from concept or brainstorm output             | `/project-backlog`                                                        |
 | Pattern detection during build (cross-page reuse)       | `/project-backlog` reuse-discovery                                        |
-| Convert existing card from sketch/wireframe/Figma/Canva | `/frontend-design` (paste sketch/URL, or board ⋯ → "Convert from sketch") |
+| Convert existing card from sketch/wireframe/Figma/Canva | `/design-create` (paste sketch/URL, or board ⋯ → "Convert from sketch") |
 
-All routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. All routes **except `/project-backlog` bulk-init** also set **`transition: "designing"`**, which enables `/frontend-design` to auto-detect these items without a manual dashboard click. `/project-backlog` omits `transition` at creation — the dashboard sets it when the user clicks copy-prompt (see `project-backlog/references/generate-backlog.md` transition field rule). `/frontend-design` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/frontend-design` Build fills them in later.
+All routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. All routes **except `/project-backlog` bulk-init** also set **`transition: "designing"`**, which enables `/design-create` to auto-detect these items without a manual dashboard click. `/project-backlog` omits `transition` at creation — the dashboard sets it when the user clicks copy-prompt (see `project-backlog/references/generate-backlog.md` transition field rule). `/design-create` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/design-create` Build fills them in later.
 
 ### Dev track (FEATURE/API/UI/REFACTOR/BUG/etc.)
 
@@ -210,7 +210,7 @@ At scale, shipped features become dead weight for every backlog load (measured: 
 - **File:** `.project/archive/backlog-archive.json` — `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`
 - **Writer:** `/dev-refactor` and `/game-refactor` completion — in the same sync that sets `shipped: true`, remove the feature object from `backlog.json#features[]` and append it to `archived[]` (create the file with the scaffold above if absent). Mirrors the existing `.project/features/archive/` dir convention.
 - **Readers:** the dashboard shipped-showcase (server merges `archived[]` into the served features view, in-memory) and humans. Pipeline skills never need archived features — that is the point.
-- **Frontend-track exception:** PAGE/COMPONENT features shipped by `/frontend-check` **stay in `backlog.json`** — the batch filter `lastCheckedSha !== shippedSha` re-audits them when the page changes after shipping. Only dev-track (non-PAGE/COMPONENT) features archive.
+- **Design-track exception:** PAGE/COMPONENT features shipped by `/design-check` **stay in `backlog.json`** — the batch filter `lastCheckedSha !== shippedSha` re-audits them when the page changes after shipping. Only dev-track (non-PAGE/COMPONENT) features archive.
 - **Restore:** move the object back to `features[]` manually (or via board UI in a future iteration); idempotent in both directions.
 
 **`f.shipped` field:**
@@ -222,10 +222,10 @@ At scale, shipped features become dead weight for every backlog load (measured: 
 
 ### UI: dual-track swimlanes
 
-The backlog board shows two top-level swimlanes with their own status sections and verb labels. Track pills (`All | Frontend | Dev`) at the top of the board filter by track. Within each track, features are grouped by phase (P1/P2/P3/P4).
+The backlog board shows two top-level swimlanes with their own status sections and verb labels. Track pills (`All | Design | Dev`) at the top of the board filter by track. Within each track, features are grouped by phase (P1/P2/P3/P4).
 
 ```
-═══ FRONTEND ════════════════════════════════════════
+═══ DESIGN ════════════════════════════════════════
   ▾ To design    (PAGE/COMPONENT TODO)
   ▾ To convert   (PAGE/COMPONENT DEFINED — Path B)
   ▾ Building     (PAGE/COMPONENT DOING)
@@ -255,13 +255,13 @@ Items with `status === "DONE"` are shown in the **"To refactor"** section of the
 
 ## COMPONENT as first-class type
 
-`type: "COMPONENT"` is a first-class backlog type alongside `PAGE`, `FEATURE`, `API`, etc. COMPONENT features live on the **Frontend track** — together with PAGE — and go through the frontend pipeline.
+`type: "COMPONENT"` is a first-class backlog type alongside `PAGE`, `FEATURE`, `API`, etc. COMPONENT features live on the **Design track** — together with PAGE — and go through the design pipeline.
 
 ### Creating
 
 COMPONENT todos are created by:
 
-- `/frontend-design` Component-route (explicit user input)
+- `/design-create` Component-route (explicit user input)
 - Dev-skills as reuse-discovery (suggestion, user-accept-only) — see below
 
 Schema when creating:
@@ -274,19 +274,19 @@ Schema when creating:
   "transition": "designing",
   "phase": "P3",
   "description": "Primary action trigger with primary/ghost/destructive variants",
-  "source": "/frontend-design",
+  "source": "/design-create",
   "scope": "atomic",
   "dependencies": []
 }
 ```
 
-**`pageHint` field** (optional, on any FEATURE/API/etc. type): list of PAGE names this feature surfaces on. Set by `/dev-define` during requirements sparring. Read by `/frontend-design` Build to pre-populate the page-composition selection menu.
+**`pageHint` field** (optional, on any FEATURE/API/etc. type): list of PAGE names this feature surfaces on. Set by `/dev-define` during requirements sparring. Read by `/design-create` Build to pre-populate the page-composition selection menu.
 
 ```json
 { "name": "cart-total", "type": "FEATURE", "pageHint": ["checkout", "cart"] }
 ```
 
-**Bidirectional link convention:** PAGE task `dependencies[]` ↔ FEATURE `pageHint[]`. When `/frontend-design` Build composes a PAGE, it writes the selected feature names into `page.dependencies[]`. When `/dev-define` spars on page placement, it writes the page name(s) into `feature.pageHint[]`.
+**Bidirectional link convention:** PAGE task `dependencies[]` ↔ FEATURE `pageHint[]`. When `/design-create` Build composes a PAGE, it writes the selected feature names into `page.dependencies[]`. When `/dev-define` spars on page placement, it writes the page name(s) into `feature.pageHint[]`.
 
 **scope field on backlog item** (mirrors `design.components[].scope`):
 
@@ -296,7 +296,7 @@ Schema when creating:
 | `section` | Composite within a single page    |
 | `layout`  | Multi-page wrapper (all/multiple) |
 
-### Pipeline (Frontend track — identical to PAGE)
+### Pipeline (Design track — identical to PAGE)
 
 ```
 TODO (To design) → DOING (Building) → DONE (Shipped)       ← Path A
@@ -305,11 +305,11 @@ TODO (To design) → DEFINED (To convert) → DOING → DONE     ← Path B
 
 | Step    | Skill              | Output                                                  |
 | ------- | ------------------ | ------------------------------------------------------- |
-| Design  | `/frontend-design` | code (Build) or brief (Brief) + demo-page for COMPONENT |
-| Convert | `/frontend-design` | code from visual input — Convert route (Path B)         |
-| Audit   | `/frontend-check`  | A11Y + tokens + responsive — terminal, sets `shipped`   |
+| Design  | `/design-create` | code (Build) or brief (Brief) + demo-page for COMPONENT |
+| Convert | `/design-create` | code from visual input — Convert route (Path B)         |
+| Audit   | `/design-check`  | A11Y + tokens + responsive — terminal, sets `shipped`   |
 
-**`/frontend-check` PASS is terminal** — no refactor step. Item ships directly to Dashboard.
+**`/design-check` PASS is terminal** — no refactor step. Item ships directly to Dashboard.
 
 ### Discovery by dev-skills
 
@@ -325,7 +325,7 @@ For route-group-specific layout components: `appliesTo: "route-group:authenticat
 
 ### Backlog filter (dashboard)
 
-The backlog dashboard shows track pills (`All | Frontend | Dev`) to filter the kanban view. `Frontend` shows only PAGE/COMPONENT items; `Dev` shows all other types. The existing `type` field is the data source.
+The backlog dashboard shows track pills (`All | Design | Dev`) to filter the kanban view. `Design` shows only PAGE/COMPONENT items; `Dev` shows all other types. The existing `type` field is the data source.
 
 ## Filtering features
 
@@ -364,13 +364,13 @@ Skills do **not** write to the backlog at start — saves a read+write roundtrip
 
 | Value           | Dashboard sets when user copies prompt for             | Consumed by                                        |
 | --------------- | ------------------------------------------------------ | -------------------------------------------------- |
-| `"defining"`    | THEME setup or FEATURE definition prompt               | `frontend-tokens` (THEME) / `dev-define` (FEATURE) |
+| `"defining"`    | THEME setup or FEATURE definition prompt               | `design-tokens` (THEME) / `dev-define` (FEATURE) |
 | `"building"`    | Build prompt for a DEFINED feature                     | `dev-build`                                        |
 | `"verifying"`   | Verify prompt for a DOING feature                      | `dev-verify`                                       |
 | `"refactoring"` | Refactor prompt for a DONE+!shipped feature            | `dev-refactor`                                     |
-| `"designing"`   | Design/build prompt for a TODO PAGE or COMPONENT       | `frontend-design`                                  |
-| `"converting"`  | Convert prompt for a DEFINED PAGE or COMPONENT         | `frontend-design`                                  |
-| `"contenting"`  | Fill-content prompt for a built (DOING) PAGE/COMPONENT | `frontend-content`                                 |
+| `"designing"`   | Design/build prompt for a TODO PAGE or COMPONENT       | `design-create`                                  |
+| `"converting"`  | Convert prompt for a DEFINED PAGE or COMPONENT         | `design-create`                                  |
+| `"contenting"`  | Fill-content prompt for a built (DOING) PAGE/COMPONENT | `design-content`                                 |
 
 On successful completion the skill removes the `transition` field.
 
@@ -401,19 +401,19 @@ No backlog write — `transition` remains as set by the dashboard, user can re-c
 
 ### Skill filter & status transition table
 
-The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`. The FRONTEND pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab. There is no `"auditing"` transition — `frontend-check` runs in batch mode at release end, not per item.
+The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`. The DESIGN pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab. There is no `"auditing"` transition — `design-check` runs in batch mode at release end, not per item.
 
 | Skill              | Filter                                                                       | New status on success                          |
 | ------------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- |
-| `frontend-tokens`  | `type === "THEME" && transition === "defining"`                              | `"DONE"`                                       |
+| `design-tokens`  | `type === "THEME" && transition === "defining"`                              | `"DONE"`                                       |
 | `dev-define`       | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                                    |
 | `dev-build`        | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                                      |
 | `dev-verify`       | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                                       |
 | `dev-refactor`     | `transition === "refactoring"`                                               | keep status, set `shipped: true`               |
-| `frontend-design`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DOING"` (Path A — DEFINED is skipped)        |
-| `frontend-design`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                                      |
-| `frontend-content` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "contenting"` | keep `"DOING"`, sets `contentStatus: "filled"` |
-| `frontend-check`   | batch: `status === "DOING"` or `lastCheckedSha !== shippedSha`               | sets `lastCheckedSha`; PAGE PASS → `"DONE"`    |
+| `design-create`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DOING"` (Path A — DEFINED is skipped)        |
+| `design-create`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                                      |
+| `design-content` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "contenting"` | keep `"DOING"`, sets `contentStatus: "filled"` |
+| `design-check`   | batch: `status === "DOING"` or `lastCheckedSha !== shippedSha`               | sets `lastCheckedSha`; PAGE PASS → `"DONE"`    |
 | `game-define`      | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                                    |
 | `game-build`       | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                                      |
 | `game-verify`      | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                                       |

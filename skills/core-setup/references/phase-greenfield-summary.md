@@ -109,7 +109,7 @@ Start later with /project-backlog to check them off visually.
 **Additionally for frontend/fullstack** (skip for game/CLI/desktop/backend-only):
 
 - `/core-setup [module]` — add libraries (Tailwind, Vitest, Playwright, Biome, etc.)
-- `/frontend-design [feature]` — visual design spec for a feature
+- `/design-create [feature]` — visual design spec for a feature
 
 ## Open the project
 

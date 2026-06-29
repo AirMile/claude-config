@@ -2,7 +2,7 @@
 
 Visual design principles that combat AI-generated sameness. Complements RULES.md (coding standards) and PATTERNS.md (component patterns) with design-specific guidance.
 
-> **Scope:** All frontend skills. Read this file for every design decision.
+> **Scope:** All design skills. Read this file for every design decision.
 
 ---
 
@@ -36,14 +36,14 @@ Patterns that scream "an AI made this". Actively avoid these.
 | Cards in cards                                              | Visual noise, unclear hierarchy       | Spacing + typography for hierarchy within cards                                                    |
 | Identical card grids for everything                         | Repetitive, no visual tension         | Vary layout: list, masonry, featured + grid                                                        |
 | Everything centered                                         | Feels like a template, no rhythm      | Left-align text, center only heroes and CTAs                                                       |
-| Glassmorphism without `theme.surfaces.glass.enabled = true` | Decoration without function           | Use depth only where it serves information hierarchy — opt in via `/frontend-tokens → Motion Pack` |
+| Glassmorphism without `theme.surfaces.glass.enabled = true` | Decoration without function           | Use depth only where it serves information hierarchy — opt in via `/design-tokens → Motion Pack` |
 | Hero with metric cards                                      | The same dashboard pattern everywhere | Design from the specific use case                                                                  |
 
 ### Motion
 
 | Avoid                                      | Why                            | Alternative                                                                                         |
 | ------------------------------------------ | ------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Bounce/elastic easing outside Playful pack | Feels 2015, tacky              | Smooth deceleration: `ease-out-quart` — or opt in via `/frontend-tokens → Motion Pack` Playful pack |
+| Bounce/elastic easing outside Playful pack | Feels 2015, tacky              | Smooth deceleration: `ease-out-quart` — or opt in via `/design-tokens → Motion Pack` Playful pack |
 | Animation without purpose                  | Distracting, slows interaction | Animate only when it adds information                                                               |
 | Animate everything at once                 | Animation fatigue              | Stagger, or animate only the most important element                                                 |
 
@@ -330,7 +330,7 @@ Undo is better than confirmation dialogs — users click through confirmations. 
 
 ## Glass Surfaces (Apple-style opt-in)
 
-Glassmorphism is an **opt-in design system choice**, not a default. Enable via `/frontend-tokens → Motion Pack` → Apple pack (sets `theme.surfaces.glass.enabled = true`). Also enabled by the Playful pack.
+Glassmorphism is an **opt-in design system choice**, not a default. Enable via `/design-tokens → Motion Pack` → Apple pack (sets `theme.surfaces.glass.enabled = true`). Also enabled by the Playful pack.
 
 When enabled, apply iOS HIG rules strictly:
 
@@ -362,7 +362,7 @@ When `theme.surfaces.glass.enabled = false` (default), treat any `backdrop-filte
 
 ## Animation Packs
 
-Managed by `/frontend-tokens` (Motion Pack route). Packs are composites — they set motion vocabulary, spring physics, choreography richness, and surface style as one coherent choice.
+Managed by `/design-tokens` (Motion Pack route). Packs are composites — they set motion vocabulary, spring physics, choreography richness, and surface style as one coherent choice.
 
 | Pack                     | Feel       | Key traits                                                      |
 | ------------------------ | ---------- | --------------------------------------------------------------- |

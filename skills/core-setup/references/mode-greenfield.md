@@ -352,13 +352,13 @@ Follow `references/stack-baseline-shared.md`.
 
 ---
 
-## Phase 7c: Setup Task Seeding (frontend projects only)
+## Phase 7c: Setup Task Seeding (web or game projects)
 
 > **Todo**: mark Phase 7b → `completed`, Phase 7c → `in_progress`.
-> Only if `stack.framework` is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS) → Read `references/phase-setup-task-seeding.md` and follow it with:
+> Only if `stack.framework` is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS) **or** a game framework (Godot / `project.godot` present) → Read `references/phase-setup-task-seeding.md` and follow it with:
 >
 > - variant: greenfield
-> - auto-execute: true (chain to /frontend-tokens, report under "Next skill running")
+> - auto-execute: true (chain to /design-tokens, report under "Next skill running")
 >
 > Otherwise skip to Phase 8.
 

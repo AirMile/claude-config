@@ -23,9 +23,9 @@ Three signals:
 | Concept / discovery | (not your task — team already has a concept or backlog)                | `/project-seed`, `/project-backlog` (greenfield tools) |
 | Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas) | —                                                      |
 | Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)       | —                                                      |
-| Define              | `/dev-define`, `/frontend-design`                                      | —                                                      |
-| Build               | `/dev-build`, `/frontend-design` Build, `/frontend-design` Convert     | —                                                      |
-| Test                | `/dev-verify`, `/frontend-check`                                       | —                                                      |
+| Define              | `/dev-define`, `/design-create`                                      | —                                                      |
+| Build               | `/dev-build`, `/design-create` Build, `/design-create` Convert     | —                                                      |
+| Test                | `/dev-verify`, `/design-check`                                       | —                                                      |
 | Commit              | `/core-commit` (detects team commit convention automatically)          | —                                                      |
 | Refactor            | `/dev-refactor`                                                        | —                                                      |
 | Review              | `/team-review` (PRs), `/team-verify` (completeness)                    | —                                                      |
@@ -39,7 +39,7 @@ Default workflow when the team uses GitHub Issues / Jira / Linear:
 1. /team-issues               → import issues, smart-split into multiple todos
 2. (open backlog, choose item)
 3. /dev-define <name>         → define requirements + architecture, stores externalRef
-   or /frontend-design <name> → design spec + build
+   or /design-create <name> → design spec + build
 4. /dev-build <name>          → build the feature
 5. /dev-verify <name>         → acceptance tests + smoke
 6. /core-commit               → auto-prefix with issue-ID (GitHub #123 or JIRA-456)
@@ -78,7 +78,7 @@ One issue in the team tracker can produce multiple backlog items via `/team-issu
 
 ```
 GitHub Issue #42: "Implement OAuth login"
-→ oauth-login           PAGE · Frontend  (login page)
+→ oauth-login           PAGE · Design  (login page)
 → oauth-callback        API  · Dev       (backend endpoint)
 → oauth-tests           FEATURE · Dev    (test coverage)
 ```

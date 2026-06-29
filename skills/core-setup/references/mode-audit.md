@@ -30,11 +30,12 @@ Scan the project and suggest improvements without a full setup. Non-destructive:
    - `stack` section filled?
    - `concept` present?
 
-5. Check design tokens (frontend projects only):
-   - Detect `stack.framework` from `.project/project.json`, or if missing, from `package.json` dependencies
-   - Frontend trigger: framework ∈ {React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS}
-   - `needsTheme` = `project.json#theme.colors` missing or empty
-   - Store finding as `frontend_needs_theme` (only true when both conditions hold)
+5. Check design tokens (web **or** game projects — `/design-tokens` is cross-domain):
+   - Detect `stack.framework` from `.project/project.json`, or if missing, from `package.json` dependencies / `project.godot` presence
+   - **Web trigger**: framework ∈ {React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS}
+   - **Game trigger**: framework matches Godot / `project.godot` exists
+   - `needsTheme` = `project.json#theme.colors` missing or empty (web) — or, for game, also no `theme.godotTheme` / Theme `.tres` present
+   - Store finding as `needs_theme` (true when a web-or-game stack is detected **and** `needsTheme`). (`frontend_needs_theme` remains an alias for the web case.)
 
 6. Tier-1 module sweep:
    For each module in the tier-1 set (see `references/mode-install.md` tier-1 table):
@@ -58,10 +59,10 @@ Format per finding:
 
 Default: all critical items checked (formatter, .gitignore, type checking). Optional items (testing framework) default unchecked.
 
-Show design-tokens item only if `frontend_needs_theme = true` (from PHASE 1 step 5). Show as optional item, default unchecked:
+Show design-tokens item only if `needs_theme = true` (from PHASE 1 step 5). Show as optional item, default unchecked:
 
 ```
-[ ] ✗ design-tokens — frontend stack without color/typography/spacing tokens
+[ ] ✗ design-tokens — {web|game} stack without color/typography/spacing tokens
 ```
 
 Module sweep findings from PHASE 1 step 6 (only show if `module_states` is not empty):
@@ -95,7 +96,7 @@ For each selected fix:
     "type": "THEME",
     "status": "TODO",
     "phase": "P1",
-    "description": "Define color palette, typography scale, and spacing tokens via /frontend-tokens before UI work begins.",
+    "description": "Define color palette, typography scale, and spacing tokens via /design-tokens before UI work begins.",
     "source": "/core-setup",
     "dependencies": []
   }
@@ -140,5 +141,5 @@ Skipped:
 Next step:
   /core-setup                 → deep codebase scan + learnings extraction
   /core-setup --mode=resync   → resync CLAUDE.md template sections
-{if design-tokens-applied}  /frontend-tokens            → design tokens (color, typography, spacing)
+{if design-tokens-applied}  /design-tokens            → design tokens (color, typography, spacing)
 ```
