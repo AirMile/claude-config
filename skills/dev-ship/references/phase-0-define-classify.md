@@ -153,12 +153,26 @@ The main chat loads project context **once** here and feeds it to every agent, s
 its own redundant PHASE 0 bootstrap and reasons on the same context the main chat did. Build the
 block from the external shared loaders (`shared/` stays external — read in place):
 
+> **Reuse define's load — don't double-load.** If define ran inline this session (Step 2), the main
+> chat already ran `PROJECT-CONTEXT-LOAD` + `LEARNINGS-LOAD` in-context for the interview. **Reuse the
+> stable dimensions** from that load (stack, endpoints, entities, structure, routing, patterns[],
+> componentsCount) — do **not** re-invoke the loaders for them. **Refresh only the mutable delta define
+> itself just wrote** in its PHASE 4 sync: `learnings` (define may have added some), `architecture`,
+> and `feature.json#files[]` (which only exists after define). This mirrors the "refresh mutable
+> context before spawn" rule already in `SKILL.md` PHASE 2/4. **If define was skipped** (Step 1 —
+> feature already ≥ DEFINED, nothing loaded in-context), do the **full** load below fresh.
+
+The bullets below are the full-load form (used when define was skipped, and as the shape of each part):
+
 - `shared/PROJECT-CONTEXT-LOAD.md` — run the **build** profile (`FEAT="{feature-name}"`) → stack,
-  endpoints, entities, structure, routing, patterns[], componentsCount.
+  endpoints, entities, structure, routing, patterns[], componentsCount. _(Reuse from Step 2 when
+  define ran — stable dimensions.)_
 - `shared/LEARNINGS-LOAD.md` — scopes `[component]` + `pitfall-prefix: true`, `current-feature:
-{feature-name}` → the last pitfalls + component-relevant patterns (max 5).
+{feature-name}` → the last pitfalls + component-relevant patterns (max 5). _(Mutable — re-run to
+  pick up learnings define just wrote, even when define ran.)_
 - Discover this feature's files via `feature.json#files[]` → a categorized `<reference-paths>` block
-  (paths, **not** content — per `shared/SKILL-PATTERNS.md#pass-paths-not-content`).
+  (paths, **not** content — per `shared/SKILL-PATTERNS.md#pass-paths-not-content`). _(Only exists
+  after define — always read here.)_
 
 ```
 SHIP_CONTEXT (assembled here, passed verbatim into every AGENT prompt):
