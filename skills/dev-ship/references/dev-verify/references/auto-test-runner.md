@@ -2,7 +2,7 @@
 
 Used by dev-verify PHASE 1 (main context, no subagent). Read this file to determine how to write
 test files and run them. The PHASE 1 execution model (background Bash / sync Bash / Monitor) is
-already described in SKILL.md — this reference covers the test-file path decisions, patterns, and
+already described in workflow.md — this reference covers the test-file path decisions, patterns, and
 result format only.
 
 ---
@@ -32,7 +32,7 @@ Execute these steps for each non-COVERED AUTO item:
 4. For BROWSER items: write a Playwright runner spec in `src/app/_test/{feature}.spec.ts` (or the project's established Playwright test dir — check `playwright.config.ts`).
    Runner availability check: `npx playwright --version 2>/dev/null`.
    Available → write spec with `expect(page)` assertions. For a11y criteria: use `toMatchAriaSnapshot()`. For visual criteria: use `toHaveScreenshot()`.
-   Run via background Bash per SKILL.md PHASE 1 execution rules.
+   Run via background Bash per workflow.md PHASE 1 execution rules.
    Runner not available → run `/core-setup playwright` to install, then retry. On persistent failure → mark as TOOL_ERROR.
 
 5. Determine PASS/FAIL with evidence and reasoning.

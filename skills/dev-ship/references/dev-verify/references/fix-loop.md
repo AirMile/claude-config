@@ -1,6 +1,6 @@
 # Fix Loop (PHASE 3 → 5c)
 
-Loaded from PHASE 2b when ≥1 FAIL (SPEC or TESTABLE) was found. These phases were added to the task list via `TaskCreate` at that point (see SKILL.md Workflow). After PHASE 5c completes, continue at PHASE 5d in SKILL.md.
+Loaded from PHASE 2b when ≥1 FAIL (SPEC or TESTABLE) was found. These phases were added to the task list via `TaskCreate` at that point (see workflow.md Workflow). After PHASE 5c completes, continue at PHASE 5d in workflow.md.
 
 ## PHASE 3: Categorize Issues
 
@@ -130,6 +130,6 @@ REGRESSION CHECK: {feature-name}
 Regressions: {n} | Stable: {n}
 ```
 
-**No regressions:** Proceed to PHASE 5d (SKILL.md).
+**No regressions:** Proceed to PHASE 5d (workflow.md).
 
 **Regressions:** Show and offer choice via AskUserQuestion: Fix (Recommended) | Accept. If fixing → back to PHASE 4 for regression items only. Do NOT repeat PHASE 5c after regression fix (max 1 pass).

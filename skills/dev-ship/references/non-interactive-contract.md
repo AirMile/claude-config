@@ -46,8 +46,9 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
     `TaskCreate`/`TaskUpdate` (rule 1) or `EnterPlanMode` (rule 2).
 13. **Memory WRITE** — **do** keep your workflow's domain `.project/` writes: `build.decisions` →
     learnings, verify `fixSync`/observations → learnings, refactor decisions → learnings, plus
-    `feature.json`, `backlog` status, and architecture/context via `SYNC.md`. Those are your
-    single-writer duty. Do **not** add ship-level learnings — the main chat does that in PHASE 5.
+    `feature.json`, `backlog` status (build/refactor only — the verify agent leaves status `DOING`
+    per its scope limits; the DONE flip is the main chat's PHASE 3), and architecture/context via
+    `SYNC.md`. Those are your single-writer duty. Do **not** add ship-level learnings — the main chat does that in PHASE 5.
 
 ## Git boundary (recap of rule 7)
 

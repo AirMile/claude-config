@@ -91,7 +91,7 @@ After the parallel writes complete, verify each CLEAN/REFACTORED feature from th
 
 **Queue-level backstop (run this check over the WHOLE run queue, not just CLEAN/REFACTORED):**
 
-5. For **every** feature in this run's queue, re-read its `backlog.json` / `backlog-archive.json` entry: it must **not** retain `transition: "refactoring"`. A leftover `transition` means a feature was silently dropped from completion (e.g. a scope filter emptied its applied set but it was never reclassified to CLEAN — see SKILL.md PHASE 3 step 5). This is the exact failure that leaves a stale card in the dashboard's TO REFACTOR column. Such a feature must be closed out now: reclassify to CLEAN, then apply the full atomic shipped-set + archive + feature-dir move (self-heal below).
+5. For **every** feature in this run's queue, re-read its `backlog.json` / `backlog-archive.json` entry: it must **not** retain `transition: "refactoring"`. A leftover `transition` means a feature was silently dropped from completion (e.g. a scope filter emptied its applied set but it was never reclassified to CLEAN — see workflow.md PHASE 3 step 5). This is the exact failure that leaves a stale card in the dashboard's TO REFACTOR column. Such a feature must be closed out now: reclassify to CLEAN, then apply the full atomic shipped-set + archive + feature-dir move (self-heal below).
 
 **On invariant failure — self-heal:**
 

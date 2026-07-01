@@ -40,7 +40,9 @@ SCOPE:
   run the scoped test suite; keep on green, revert-that-change on red. Never leave the feature with
   failing tests. Final gate: full test suite green before returning.
 - Commit the refactor on main as dev-refactor normally does. Do dev-refactor's normal .project/
-  learnings sync.
+  learnings sync and its completion writes (shipped backlog flip + archive).
+- Do NOT run dev-refactor's PHASE Finalize / FINALIZE.md dispatch (the single-mode finalize step in
+  completion-batch.md) — you are post-merge on main; there is nothing to merge (contract rule 7).
 
 Return exactly:
 SHIP_REFACTOR_RESULT_START

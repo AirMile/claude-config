@@ -1,6 +1,6 @@
 # COMPONENT-BUILD — Component Steps
 
-Referenced from `SKILL.md § COMPONENT-only steps` (only when `IS_COMPONENT_BUILD = true`).
+Referenced from `workflow.md § COMPONENT-only steps` (only when `IS_COMPONENT_BUILD = true`).
 
 ---
 

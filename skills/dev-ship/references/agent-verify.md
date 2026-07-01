@@ -62,7 +62,8 @@ SHIP_VERIFY_RESULT_END
 ## Orchestrator handling (PHASE 2)
 
 1. Parse `SHIP_VERIFY_RESULT_START/END` (robust).
-2. `status: failed` → mark PHASE 2 blocked, skip to PHASE 5: "Auto-verify failed at {failedAt},
+2. `status: failed` → leave PHASE 2 `in_progress` (do not mark it `completed`), skip to PHASE 5:
+   "Auto-verify failed at {failedAt},
    worktree intact — run `/dev-debug {feature}`." Do not finalize.
 3. `status: green` → **re-read `.project/` from disk**. `remainingManualItems` is **authoritative**
    for PHASE 3 (overrides the PHASE 0 advisory estimate). Continue to PHASE 3.

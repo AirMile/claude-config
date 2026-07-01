@@ -12,7 +12,7 @@ reads:
     project-context.learnings,
     conventions,
   ]
-writes: [feature.verificationProfile]
+writes: [feature.verificationProfile, project-context.learnings]
 metadata:
   author: claude-config
   version: 0.1.0
@@ -68,8 +68,9 @@ for AGENT 3 and the trigger for AGENT S — they are stored in memory for the la
 
 It also assembles **`SHIP_CONTEXT`** (Step 6 of the reference) — one project-context block built
 here from the external `shared/PROJECT-CONTEXT-LOAD.md` (build profile) + `shared/LEARNINGS-LOAD.md`
-(scoped). This block is passed verbatim into **every** agent prompt (PHASE 1/2/4) so no agent
-re-bootstraps its own context — the main chat is the context-hub. The agent references already carry
+(scoped). This block is passed as a **per-agent slice** (see the reference's Per-agent slices table) into
+each PHASE 1/2/4 agent prompt — AGENT S gets `OWASP_CONTEXT` instead — so no agent
+re-bootstraps its own context; the main chat is the context-hub. The agent references already carry
 the `{paste the SHIP_CONTEXT block …}` slot.
 
 ### PHASE 1: Build (AGENT 1)
@@ -101,7 +102,9 @@ On unrecoverable auto-verify failure: stop, leave worktree, report + `/dev-debug
 > **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. If AGENT 2 returned
 > `remainingManualItems` (non-empty) → Read
 > `.claude/skills/dev-ship/references/phase-3-manual-finalize.md` and run the manual walkthrough
-> then finalize. If empty → Read the same file but execute **only** its Finalize sub-step.
+> then finalize. If empty → Read the same file and execute Step 1 (enter worktree) then Step 3
+> (Completion + Finalize, **both** items — the completion-sync DONE write and the finalize/merge);
+> skip only Step 2 (the manual walkthrough).
 
 Manual tests run in the main chat (you), so `AskUserQuestion` reaches the real user. On all-green
 (or empty), finalize = merge + remove worktree via the reused `dev-verify` finalize flow. On a
@@ -109,7 +112,9 @@ manual FAIL: do not finalize, do not refactor — report + hand to `/dev-debug`/
 
 ### PHASE 4: Refactor (AGENT 3) [+ optional security AGENT S]
 
-> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. If
+> `SHIP_PLAN.refactorPolicy == skip` → do not spawn AGENT 3 (AGENT S may still run if
+> `securityDeep` is non-empty) and continue to PHASE 5. Otherwise Read
 > `.claude/skills/dev-ship/references/agent-refactor.md`. **Before spawning**, rebuild the
 > **refactor-slice** from the just-read post-merge `.project/` (built files + fresh learnings). Then
 > spawn AGENT 3 (post-merge, on main).
@@ -124,7 +129,8 @@ reports security findings only — **no auto-fix in hands-off**; surface finding
 
 ### PHASE 5: Report
 
-> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
+> **Todo**: mark the phases that actually ran → `completed` (on a failure-jump, leave the failed
+> phase `in_progress` and never mark a skipped phase `completed`), PHASE 5 → `in_progress`.
 
 Print the ship summary (ASCII table): feature, build test counts, verify results, manual outcomes,
 refactor result, security findings (if any), and the collected `autoDecisions[]` (choices the

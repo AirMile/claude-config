@@ -1,6 +1,6 @@
 # Queue & Scope Selection (PHASE 0 step 2 — no-argument path)
 
-Loaded only for `/dev-refactor` without argument. (Name-provided and "recent" cases are handled inline in SKILL.md step 2.)
+Loaded only for `/dev-refactor` without argument. (Name-provided and "recent" cases are handled inline in workflow.md step 2.)
 
 ### b0) UI-queue detection (check first)
 

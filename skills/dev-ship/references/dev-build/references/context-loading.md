@@ -1,8 +1,8 @@
 # PHASE 0: Context Loading — dev-build
 
-Full context-loading procedure for `/dev-build`. Executed via Todo-marker in SKILL.md.
+Full context-loading procedure for `/dev-build`. Executed via Todo-marker in workflow.md.
 
-> **Note**: this file loads on every run — it is a deliberate size-split of SKILL.md, not lazy loading. Genuinely conditional blocks inside it (theme-token guard, dependency-blocker dialog) are small enough to stay inline.
+> **Note**: this file loads on every run — it is a deliberate size-split of workflow.md, not lazy loading. Genuinely conditional blocks inside it (theme-token guard, dependency-blocker dialog) are small enough to stay inline.
 
 ---
 
@@ -248,4 +248,4 @@ IMPLEMENTATION ORDER:
 (from buildSequence, sorted by step)
 ```
 
-After completing all steps above: mark PHASE 0 → `completed`, PHASE 1 → `in_progress` via `TaskUpdate`. Then return to SKILL.md for PHASE 1.
+After completing all steps above: mark PHASE 0 → `completed`, PHASE 1 → `in_progress` via `TaskUpdate`. Then return to workflow.md for PHASE 1.

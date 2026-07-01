@@ -52,7 +52,8 @@ SHIP_BUILD_RESULT_END
 ## Orchestrator handling (PHASE 1)
 
 1. Parse `SHIP_BUILD_RESULT_START/END` (robust — see non-interactive-contract.md).
-2. `status: failed` → mark PHASE 1 blocked, skip to PHASE 5 report: "Build failed at {failedAt},
+2. `status: failed` → leave PHASE 1 `in_progress` (do not mark it `completed`), skip to PHASE 5
+   report: "Build failed at {failedAt},
    worktree intact at {worktreePath} — run `/dev-debug {feature}`." Do not spawn AGENT 2.
 3. `status: green` → **re-read `.project/` from disk**, carry `worktreePath` forward, continue to
    PHASE 2.

@@ -2,7 +2,7 @@
 
 Prompt building blocks for PHASE 1 Explore agents. Every agent prompt = `## Universal Prompt Header` (substituted) + the lens-specific section (`## REUSE` / `## QUALITY` / `## EFFICIENCY` / `## SECURITY`).
 
-In **single-lens mode** (feature with <4 pipeline files): include all applicable lens sections combined under one agent, after the universal header — three, or four when the feature is `security_relevant` (SKILL.md PHASE 1 step 1).
+In **single-lens mode** (feature with <4 pipeline files): include all applicable lens sections combined under one agent, after the universal header — three, or four when the feature is `security_relevant` (workflow.md PHASE 1 step 1).
 
 ---
 

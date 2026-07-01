@@ -175,7 +175,8 @@ The bullets below are the full-load form (used when define was skipped, and as t
   after define — always read here.)_
 
 ```
-SHIP_CONTEXT (assembled here, passed verbatim into every AGENT prompt):
+SHIP_CONTEXT (assembled here; each PHASE 1/2/4 agent receives its per-agent slice — see the
+table below. AGENT S gets OWASP_CONTEXT instead, per agent-security.md):
   feature:     {feature-name}
   stack:       {from PROJECT-CONTEXT-LOAD build profile}
   structure:   {structure · routing · patterns[]}
@@ -191,7 +192,9 @@ re-running the workflow's PHASE 0 loaders.
 ### Per-agent slices (don't pass the whole block to everyone)
 
 Send each agent only the slice it needs — "the right context for the task". All slices share
-`feature`, `stack`, `worktree`; they differ in the rest:
+`feature` and `stack`; the build/verify slices also carry `worktree`, but the **refactor slice does
+not** — AGENT 3 runs on `main` after PHASE 3 finalize removed the worktree (leave `worktree` empty
+there). They differ in the rest:
 
 | Slice                        | Adds on top of the shared header                                                                                                                  |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
