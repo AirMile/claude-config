@@ -298,6 +298,17 @@ If there are no logical cross-requirement combinations → skip, no output.
 
    **Note:** Game runs in background. DebugListener captures all debug\_\* signals.
 
+   **Board signal — waiting for playtest.** The user is now playing; flag the feature amber on
+   the backlog board (see `shared/DEVINFO.md § Active Feature Signal`):
+
+   ```bash
+   mkdir -p .project/session
+   echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}","waiting":"playtest"}' > .project/session/active-{feature-name}.json
+   ```
+
+   (The end-of-PHASE-0 baseline write below rewrites this file **without** `waiting` once
+   feedback is in — no separate clear step needed.)
+
 8. **Wait for user completion:**
 
    When user closes game or indicates ready, use AskUserQuestion tool:

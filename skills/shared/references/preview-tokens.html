@@ -1,0 +1,412 @@
+<!doctype html>
+<!--
+  Self-contained design-token gallery preview (design-tokens skill).
+  The skill replaces the contents of <script id="preview-data"> with the project.json
+  `theme` object, then opens this file via file:// (see shared/HTML-PRESENT.md).
+  No server, no external assets — inline CSS + inline render JS only.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Design tokens preview</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --accent: #58a6ff;
+      }
+      :root.light {
+        --bg: #ffffff;
+        --surface: #f6f8fa;
+        --border: #d0d7de;
+        --text: #1f2328;
+        --muted: #656d76;
+        --accent: #0969da;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        padding: 40px 48px 80px;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 32px;
+      }
+      .toggle {
+        font-family: inherit;
+        font-size: 13px;
+        padding: 7px 14px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        cursor: pointer;
+      }
+      section {
+        margin-bottom: 40px;
+      }
+      h2 {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+        margin-bottom: 16px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border);
+      }
+      .grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      }
+      .swatch {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--surface);
+      }
+      .swatch .chip {
+        height: 64px;
+      }
+      .swatch .meta {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+      .swatch .tok {
+        font-weight: 600;
+      }
+      .swatch .val {
+        color: var(--muted);
+        font-family: ui-monospace, "SF Mono", monospace;
+        font-size: 11px;
+      }
+      .swatch .use {
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 4px;
+      }
+      .specimen {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        background: var(--surface);
+        margin-bottom: 10px;
+      }
+      .specimen .label {
+        font-size: 11px;
+        color: var(--muted);
+        font-family: ui-monospace, "SF Mono", monospace;
+        margin-bottom: 6px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 14px;
+        background: var(--surface);
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+      .row .tok {
+        font-weight: 600;
+        min-width: 160px;
+      }
+      .row .val {
+        color: var(--muted);
+        font-family: ui-monospace, "SF Mono", monospace;
+        font-size: 12px;
+        min-width: 120px;
+      }
+      .row .use {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .bar {
+        background: var(--accent);
+        height: 14px;
+        border-radius: 3px;
+      }
+      .box {
+        width: 72px;
+        height: 72px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        font-size: 11px;
+        color: var(--muted);
+        padding: 4px;
+      }
+      .empty {
+        color: var(--muted);
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1 id="title">Design tokens</h1>
+        <button class="toggle" id="mode-toggle">Toggle light/dark</button>
+      </header>
+      <div class="sub" id="subtitle"></div>
+      <div id="root"></div>
+    </div>
+
+    <script id="preview-data" type="application/json">
+      {}
+    </script>
+
+    <script>
+      (function () {
+        var theme = {};
+        try {
+          theme =
+            JSON.parse(document.getElementById("preview-data").textContent) ||
+            {};
+        } catch (e) {
+          theme = {};
+        }
+
+        function esc(s) {
+          return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        }
+        function el(html) {
+          var d = document.createElement("div");
+          d.innerHTML = html.trim();
+          return d.firstChild;
+        }
+        function section(title, inner) {
+          if (!inner) return "";
+          return "<section><h2>" + esc(title) + "</h2>" + inner + "</section>";
+        }
+        function colorGroup(list) {
+          if (!list || !list.length) return "";
+          return (
+            '<div class="grid">' +
+            list
+              .map(function (c) {
+                return (
+                  '<div class="swatch"><div class="chip" style="background:' +
+                  esc(c.value) +
+                  '"></div><div class="meta"><div class="tok">' +
+                  esc(c.token) +
+                  '</div><div class="val">' +
+                  esc(c.value) +
+                  "</div>" +
+                  (c.usage
+                    ? '<div class="use">' + esc(c.usage) + "</div>"
+                    : "") +
+                  "</div></div>"
+                );
+              })
+              .join("") +
+            "</div>"
+          );
+        }
+        function rows(list, valKey) {
+          if (!list || !list.length) return "";
+          return list
+            .map(function (r) {
+              return (
+                '<div class="row"><span class="tok">' +
+                esc(r.token) +
+                '</span><span class="val">' +
+                esc(r[valKey] != null ? r[valKey] : r.value) +
+                "</span>" +
+                (r.usage || r.target
+                  ? '<span class="use">' + esc(r.usage || r.target) + "</span>"
+                  : "") +
+                "</div>"
+              );
+            })
+            .join("");
+        }
+
+        var root = document.getElementById("root");
+        var html = "";
+
+        // Title / subtitle
+        document.getElementById("title").textContent =
+          "Design tokens" + (theme.domain ? " · " + theme.domain : "");
+        var counts = [];
+        if (theme.colors)
+          counts.push(
+            (theme.colors.main || []).length +
+              (theme.colors.accent || []).length +
+              (theme.colors.semantic || []).length +
+              " colors",
+          );
+        if (theme.typography && theme.typography.sizes)
+          counts.push(theme.typography.sizes.length + " type sizes");
+        if (theme.spacing && theme.spacing.scale)
+          counts.push(theme.spacing.scale.length + " spacing");
+        if (theme.motion && theme.motion.pack)
+          counts.push("motion: " + theme.motion.pack);
+        document.getElementById("subtitle").textContent = counts.join(" · ");
+
+        // Colors
+        if (theme.colors) {
+          var c = theme.colors;
+          var inner =
+            colorGroup(c.main) + colorGroup(c.accent) + colorGroup(c.semantic);
+          html += section("Colors", inner);
+        }
+
+        // Typography
+        if (theme.typography) {
+          var t = theme.typography;
+          var fam = "";
+          if (t.families) {
+            fam = Object.keys(t.families)
+              .map(function (k) {
+                return (
+                  '<div class="specimen"><div class="label">' +
+                  esc(k) +
+                  " · " +
+                  esc(t.families[k]) +
+                  '</div><div style="font-family:' +
+                  esc(t.families[k]) +
+                  ';font-size:22px">The quick brown fox jumps</div></div>'
+                );
+              })
+              .join("");
+          }
+          var sizes = "";
+          if (t.sizes && t.sizes.length) {
+            sizes = t.sizes
+              .map(function (s) {
+                return (
+                  '<div class="specimen"><div class="label">' +
+                  esc(s.token) +
+                  " · " +
+                  esc(s.size) +
+                  (s.lineHeight ? " / " + esc(s.lineHeight) : "") +
+                  '</div><div style="font-size:' +
+                  esc(s.size) +
+                  '">Almost before we knew it</div></div>'
+                );
+              })
+              .join("");
+          }
+          html += section("Typography", fam + sizes);
+        }
+
+        // Spacing
+        if (theme.spacing && theme.spacing.scale) {
+          var sp = theme.spacing.scale
+            .map(function (s) {
+              return (
+                '<div class="row"><span class="tok">' +
+                esc(s.token) +
+                '</span><span class="val">' +
+                esc(s.value) +
+                '</span><span class="bar" style="width:' +
+                esc(s.value) +
+                '"></span></div>'
+              );
+            })
+            .join("");
+          html += section("Spacing", sp);
+        }
+
+        // Border radius
+        if (theme.borderRadius && theme.borderRadius.length) {
+          var br =
+            '<div class="grid">' +
+            theme.borderRadius
+              .map(function (r) {
+                return (
+                  '<div class="swatch" style="padding:14px"><div class="box" style="border-radius:' +
+                  esc(r.value) +
+                  ';width:100%;height:64px;align-items:center">' +
+                  esc(r.value) +
+                  '</div><div class="meta"><div class="tok">' +
+                  esc(r.token) +
+                  "</div></div></div>"
+                );
+              })
+              .join("") +
+            "</div>";
+          html += section("Border radius", br);
+        }
+
+        // Shadows
+        if (theme.shadows && theme.shadows.length) {
+          var sh =
+            '<div class="grid">' +
+            theme.shadows
+              .map(function (s) {
+                return (
+                  '<div style="padding:18px"><div style="height:64px;border-radius:8px;background:var(--surface);box-shadow:' +
+                  esc(s.value) +
+                  '"></div><div class="meta" style="padding-top:10px"><div class="tok">' +
+                  esc(s.token) +
+                  "</div>" +
+                  (s.usage
+                    ? '<div class="use">' + esc(s.usage) + "</div>"
+                    : "") +
+                  "</div></div>"
+                );
+              })
+              .join("") +
+            "</div>";
+          html += section("Shadows", sh);
+        }
+
+        // Motion (durations + easings as rows)
+        if (theme.motion) {
+          var m = theme.motion;
+          var inner = rows(m.durations, "value") + rows(m.easings, "value");
+          if (m.spring && m.spring.length)
+            inner += rows(m.spring, "cssDuration");
+          html += section("Motion", inner);
+        }
+
+        root.innerHTML = html || '<p class="empty">No tokens to display.</p>';
+
+        // Light/dark toggle — default to dark
+        document
+          .getElementById("mode-toggle")
+          .addEventListener("click", function () {
+            document.documentElement.classList.toggle("light");
+          });
+      })();
+    </script>
+  </body>
+</html>

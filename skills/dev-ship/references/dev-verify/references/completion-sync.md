@@ -32,7 +32,7 @@ Single Write replaces the entire file. Prevents drift across ~10 sequential Edit
 Set on the matched entry:
 
 - `status = "DONE"`
-- remove `stage` and `transition` (if present)
+- remove `stage` and `transition` (if present — **except** `transition: "shipping"`, the dev-ship run marker: keep it)
 
 **Forbidden keys** — verify MAY NOT write these on the backlog entry; they belong exclusively to `/dev-refactor` (see `shared/BACKLOG.md` Lifecycle Protocol):
 

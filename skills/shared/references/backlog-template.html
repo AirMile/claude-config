@@ -300,6 +300,34 @@
         DONE: "refactoring",
       };
 
+      // Live skill signal (.project/session/active-*.json via /session API,
+      // populated by the server patch backlog-session.js) → display label
+      const LIVE_SKILL_LABELS = {
+        define: "defining",
+        plan: "planning",
+        build: "building",
+        verify: "verifying",
+        test: "testing",
+        debug: "debugging",
+        refactor: "refactoring",
+        ship: "shipping",
+        design: "designing",
+        content: "contenting",
+        check: "checking",
+      };
+      function getLiveSignal(f) {
+        return (window._activeSessions || {})[f.name] || null;
+      }
+      // In progress = queued (transition set by a copy action) OR a live
+      // skill signal. These rows render in the dedicated IN PROGRESS section.
+      function isInProgress(f) {
+        return (
+          !f.shipped &&
+          f.status !== "CANCELLED" &&
+          (!!f.transition || !!getLiveSignal(f))
+        );
+      }
+
       function isDesignTrackType(type) {
         return DESIGN_PIPELINE_TYPES.includes(type || "FEATURE");
       }
@@ -769,8 +797,7 @@
           const effectiveTypeFilter = (type) => {
             if (_trackFilter === "DESIGN" && !isDesignTrackType(type))
               return false;
-            if (_trackFilter === "DEV" && isDesignTrackType(type))
-              return false;
+            if (_trackFilter === "DEV" && isDesignTrackType(type)) return false;
             return typeFilter(type);
           };
 
@@ -778,6 +805,7 @@
             (f) =>
               f.status === status &&
               !f.shipped &&
+              !isInProgress(f) &&
               effectiveTypeFilter(f.type) &&
               (status === "TODO" || !DESIGN_ONESHOT_TYPES.includes(f.type)),
           );
@@ -989,6 +1017,74 @@
             transitionLabels: TRANSITION_LABELS_DESIGN,
           },
         ];
+
+        // ─── In progress section (queued copies + live skill signals) ──
+        (function renderInProgressSection() {
+          let items = data.features.filter(
+            (f) =>
+              isInProgress(f) &&
+              (_trackFilter === "ALL" ||
+                (_trackFilter === "DESIGN"
+                  ? isDesignTrackType(f.type)
+                  : !isDesignTrackType(f.type))),
+          );
+          if (searchTerm) {
+            items = items.filter(
+              (f) =>
+                f.name.toLowerCase().includes(searchTerm) ||
+                (f.description || "").toLowerCase().includes(searchTerm),
+            );
+          }
+          if (items.length === 0) return;
+
+          // Waiting-for-input rows first (most actionable), then live, then queued
+          const progressRank = (f) => {
+            const l = getLiveSignal(f);
+            return l ? (l.waiting ? 0 : 1) : 2;
+          };
+          items.sort((a, b) => progressRank(a) - progressRank(b));
+
+          const section = document.createElement("section");
+          section.className = "group group--inprogress";
+          section.id = "inprogress-section";
+
+          const header = document.createElement("div");
+          header.className = "group-header group-header--inprogress";
+          const waitCount = items.filter(
+            (f) => getLiveSignal(f) && getLiveSignal(f).waiting,
+          ).length;
+          const liveCount =
+            items.filter((f) => getLiveSignal(f)).length - waitCount;
+          const headerCounts =
+            [
+              liveCount
+                ? `<span class="header-live-count">${liveCount} live</span>`
+                : "",
+              waitCount
+                ? `<span class="header-wait-count">⏸ ${waitCount} input needed</span>`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" · ") || "";
+          header.innerHTML = `<h2>In progress${headerCounts ? ` (${headerCounts})` : ""}</h2>`;
+          header.addEventListener("click", () => {
+            section.classList.toggle("collapsed");
+            setCollapsed(
+              "section:" + section.id,
+              section.classList.contains("collapsed"),
+            );
+          });
+          section.appendChild(header);
+
+          const body = document.createElement("div");
+          body.className = "group-body";
+          items.forEach((f) => body.appendChild(renderRow(f)));
+          section.appendChild(body);
+          board.appendChild(section);
+
+          sidebarHtml += `<a href="#inprogress-section" class="sb-inprogress">In progress</a>`;
+        })();
+
         sections.forEach(renderSection);
 
         // Archived (CANCELLED) section — collapsed by default
@@ -1145,24 +1241,38 @@
         if (f.shipped && f.transition) delete f.transition;
 
         const row = document.createElement("div");
-        const isActive = !!f.transition;
+        const live = getLiveSignal(f);
+        const isWaiting = !!(live && live.waiting);
+        const isQueued = !!f.transition && !live;
         row.className =
           "row" +
           (isBlocked ? " row--blocked" : "") +
-          (isActive ? " row--active" : "");
+          (isQueued ? " row--active row--queued" : "") +
+          (live ? " row--live" : "") +
+          (isWaiting ? " row--waiting" : "");
         row.dataset.name = f.name;
 
         const next = getNextSkill(f);
         const copyCmd = next ? next.cmd : null;
         const copyTitle = copyCmd || f.name;
 
-        const actionBtnHtml = isActive
-          ? `<button class="row-annuleer-btn" title="Cancel">
+        // live → pulsing dot (skill is running, not cancellable from the board)
+        // queued → cancel button (undo the copy) · idle → copy button
+        const actionBtnHtml = live
+          ? `<span class="row-live-dot" title="${isWaiting ? `waiting for input: ${esc(live.waiting)}` : `running: ${esc(live.skill || "")}`}"></span>`
+          : isQueued
+            ? `<button class="row-annuleer-btn" title="Cancel">
               <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 2l12 12M14 2L2 14"/></svg>
              </button>`
-          : `<button class="row-copy-btn ${typeInfo.cls}" title="${copyTitle}" data-cmd="${copyCmd || ""}">
+            : `<button class="row-copy-btn ${typeInfo.cls}" title="${copyTitle}" data-cmd="${copyCmd || ""}">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
              </button>`;
+
+        const progressLabelHtml = live
+          ? `<span class="row-live-label">${esc(LIVE_SKILL_LABELS[live.skill] || live.skill || "active")}${isWaiting ? " · input needed" : ""}</span>`
+          : isQueued
+            ? `<span class="row-transition-label row-transition-label--queued">⧉ ${esc(f.transition)} · queued</span>`
+            : "";
 
         const menuItemsHtml = (() => {
           if (f.status === "TODO" || f.status === "DEFINED") {
@@ -1179,8 +1289,23 @@
             const reviewItem = canReview
               ? `<button class="row-menu-item row-review-btn" data-name="${esc(f.name)}">▦ Bekijk design →</button>`
               : "";
+            const isGameTrack = data.source && data.source.startsWith("/game");
+            // PAGE/COMPONENT → design-ship (build→content→check); dev-track
+            // types en PAGE-GAP → dev-ship (define→build→verify→refactor).
+            const isDesignShip = f.type === "PAGE" || f.type === "COMPONENT";
+            const canShip =
+              f.status === "TODO" &&
+              (!DESIGN_TYPES.includes(f.type) ||
+                f.type === "PAGE-GAP" ||
+                isDesignShip) &&
+              !isGameTrack;
+            const shipCmd = isDesignShip ? "/design-ship" : "/dev-ship";
+            const shipItem = canShip
+              ? `<button class="row-menu-item row-ship-btn" data-cmd="${shipCmd} ${esc(f.name)}">⚡ Ship (auto)</button>`
+              : "";
             return (
               `<button class="row-menu-item row-edit-btn">✎ Edit</button>` +
+              shipItem +
               reviewItem +
               outsourceItem +
               convertItem +
@@ -1206,7 +1331,7 @@
         row.innerHTML = `<div class="row-summary">
           ${actionBtnHtml}
           <span class="row-name">${esc(f.name)}</span>
-          ${isActive ? `<span class="row-transition-label">${esc(f.transition)}</span>` : ""}
+          ${progressLabelHtml}
           ${subLabel ? `<span class="row-sub-tag">${subLabel}</span>` : ""}
           ${f.description ? `<span class="row-desc">${esc(f.description)}</span>` : ""}
           <div class="row-actions-group">
@@ -1223,7 +1348,7 @@
         const restoreBtn = row.querySelector(".row-restore-btn");
         let copyBtn = null;
 
-        if (isActive) {
+        if (isQueued) {
           const annuleerBtn = row.querySelector(".row-annuleer-btn");
           annuleerBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1234,7 +1359,7 @@
               render();
             }
           });
-        } else {
+        } else if (!live) {
           copyBtn = row.querySelector(".row-copy-btn");
           copyBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1282,6 +1407,23 @@
             e.stopPropagation();
             const cmd = convertSketchBtn.dataset.cmd;
             navigator.clipboard.writeText(cmd).then(() => {
+              toast("Copied: " + cmd);
+            });
+          });
+        }
+
+        const shipBtn = row.querySelector(".row-ship-btn");
+        if (shipBtn) {
+          shipBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const cmd = shipBtn.dataset.cmd;
+            navigator.clipboard.writeText(cmd).then(() => {
+              const found = findItem(f.name);
+              if (found) {
+                found.item.transition = "shipping";
+                syncJSON();
+                render();
+              }
               toast("Copied: " + cmd);
             });
           });

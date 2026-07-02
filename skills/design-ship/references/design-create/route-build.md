@@ -1,6 +1,14 @@
 # Route: Build (In-Claude-Code Code Generation)
 
-Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. Flow: plan mode entry → entity selection → spec gate (review/edit, or save-spec-only off-ramp — exits plan mode and writes spec) → design levers → page composition → design directions → BUILD PLAN → ExitPlanMode → worktree → code generation → post-write checks → render smoke check → completion sync. See `../../shared/CODEGEN.md` for the shared code-gen patterns also used by the Convert route.
+> **design-ship copy** — executed by AGENT 1 (build) under the non-interactive contract. Steps
+> 0–5 (plan mode, entity/candidate selection, spec gate, design levers, page composition, design
+> directions) are **front-loaded in design-ship PHASE 0** (main chat): your prompt already carries
+> `$TARGET`, `$TARGET_TYPE`, `$SPEC`, `$DESIGN_LEVERS`, `$COMPOSITION`, `$DESIGN_DIRECTION`,
+> `$CHOSEN_LAYOUT`, and `SEED_CONTEXT`. **Start at Step 7** (after loading
+> `.claude/skills/shared/VERCEL-CONTEXT.md` below). Steps 0–5 remain in this file for context
+> only — do not re-run them, do not re-ask the design direction.
+
+Generates working code for PAGE or COMPONENT features with `status: DEF` and no visual reference material. Flow: plan mode entry → entity selection → spec gate (review/edit, or save-spec-only off-ramp — exits plan mode and writes spec) → design levers → page composition → design directions → BUILD PLAN → ExitPlanMode → worktree → code generation → post-write checks → render smoke check → completion sync. See `.claude/skills/shared/CODEGEN.md` for the shared code-gen patterns also used by the Convert route.
 
 This route is the single entry for working on an existing entity's spec **and** code: the Step 2.5 spec gate absorbs the old standalone "Edit spec" action (route-page/route-component field editing) and offers a "save spec only — don't build" off-ramp that exits plan mode and writes the spec before any worktree or codegen.
 
@@ -253,7 +261,7 @@ Store `$DESIGN_DIRECTION = { name, archetype, hierarchy, tokens[], motion, surfa
 
 #### Step 7: Build plan & plan-mode exit (entity-aware)
 
-Consult `../../shared/CODEGEN.md` for full patterns. Output path determined by entity type and scope:
+Consult `.claude/skills/shared/CODEGEN.md` for full patterns. Output path determined by entity type and scope:
 
 | Entity              | Output path                                          | Sub-output                          |
 | ------------------- | ---------------------------------------------------- | ----------------------------------- |
@@ -381,7 +389,7 @@ Step 10 reads `$VERIFY_STATUS` to set `feature.audit.buildSmokeStatus`.
 
 #### Step 10: Completion sync (backlog + block inventory + drift cleanup)
 
-> **Todo**: Read '.claude/skills/design-create/references/build-completion-sync.md' and execute steps 10a–10f. Runs unconditionally after Step 8 succeeds; only 10d reads `$VERIFY_STATUS`/`$SMOKE`.
+> **Todo**: Read '.claude/skills/design-ship/references/design-create/build-completion-sync.md' and execute steps 10a–10f. Runs unconditionally after Step 8 succeeds; only 10d reads `$VERIFY_STATUS`/`$SMOKE`.
 
 #### Step 11: Completion report
 
@@ -419,6 +427,12 @@ If the smoke check rendered a live page (`$SMOKE != "SKIPPED"` and `$SMOKE_URL` 
 The report is **not** the end of the build — Step 12 (worktree finalize) runs after it, exactly as the Convert route's §4.4 report is followed by §4.5–4.6.
 
 #### Step 12: Finalize worktree (auto-close)
+
+> **design-ship: SKIP this entire step.** The worktree intentionally stays open — AGENT 2
+> (content) and AGENT 3 (check) work in it next, and the main chat merges it in design-ship
+> PHASE 4 after the visual review. Never run `FINALIZE.md`, never merge, never
+> `git worktree remove`. End your run after the Step 11 report (skip its HTML preview and
+> clipboard offer per the non-interactive contract) and return your result.
 
 The Build route owns the **full** worktree lifecycle: Step 7b opens the worktree, this step closes it. There is no separate frontend-verify skill (`/design-check` is the post-merge quality pass — the `dev-refactor` role, not the `dev-verify` role), so the build must finalize its own worktree rather than leave it dangling. Mirrors `dev-verify`'s PHASE Finalize and the Convert route's `convert-completion.md §4.5–4.6`.
 
@@ -472,6 +486,6 @@ This route must **NEVER**:
 - Reach codegen with plan mode still active — there are two `ExitPlanMode` locations but they are mutually exclusive: exactly one fires per run: the Step 2.5 "save spec only" off-ramp exit (spec-only runs), or the Step 7 BUILD PLAN exit (build runs). A run never hits both.
 - Write `.project/` or source files between Step 0b (`EnterPlanMode`) and the Step 7 `ExitPlanMode` — defer to completion sync 10f. (The Step 2.5 "save spec only" off-ramp calls its own `ExitPlanMode` first, then writes the spec via the Design route's PHASE 3 → PHASE X — that write is outside the plan-mode window, so it is allowed.)
 - Create a worktree before the Step 7 `ExitPlanMode` — worktree creation (Step 7b) runs only after plan mode exits and only on the "Build it" path; a spec-only outcome must not leave an empty worktree
-- End the build with an open worktree without running Step 12 auto-finalize — the worktree opened in Step 7b must always reach a finalize decision (mirrors the Convert route, `route-convert.md` PHASE 4 mandate). Never improvise a manual `/core-finalize` "next step" in place of Step 12.
+- ~~End the build with an open worktree without running Step 12 auto-finalize~~ — **inverted in design-ship**: the worktree MUST stay open (Step 12 is skipped); design-ship PHASE 4 owns the finalize after content + check + visual review.
 - Present design directions that reference levers the theme doesn't have
 - Run more than one smoke fix-round (multi-round verification is /design-check's job)

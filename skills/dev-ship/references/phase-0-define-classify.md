@@ -3,10 +3,37 @@
 The one interactive phase. All human decisions are front-loaded here; everything after runs
 hands-off (except the conditional manual-test interlude in PHASE 3).
 
+## Step 0 — Checkpoint-resume detection + preflight
+
+Before resolving the feature, Read `.claude/skills/shared/SHIP-CHECKPOINT.md` and run its resume
+detection against `.project/session/ship-{feature}.json` (use the resolved arg for `{feature}`; if
+`/dev-ship` was called with no arg, first resolve the name via Step 1, then run this check):
+
+- **Open checkpoint found** (`status != "complete"`) → present the Resume / Restart / Inspect
+  `AskUserQuestion` from SHIP-CHECKPOINT.md.
+  - **Resume** → run orphan/leak cleanup, load `plan` (→ `SHIP_PLAN`) + `results` from the
+    checkpoint (worktree path/branch live in `results.build`), re-derive `SHIP_CONTEXT` fresh
+    (Step 6), re-seed the 6-phase `TaskCreate` list (completed phases → `completed`), and **jump to
+    the recorded `phase`** (skip the rest of PHASE 0). This is the credits-op / crash recovery path.
+  - **Restart** → archive the old checkpoint + clean the orphan worktree, then continue PHASE 0
+    fresh below.
+  - **Inspect** → print checkpoint + worktree status, re-ask.
+- **No open checkpoint** → run the **preflight checks** (dirty working tree, colliding
+  `worktree-{feature}` from a prior aborted run without a checkpoint), surface any notice, then
+  continue to Step 1.
+
+On a fresh run, capture the rollback anchor now: `baselineSha = git rev-parse HEAD`. It is written
+to the checkpoint in Step 5.
+
 ## Step 1 — Resolve the feature
 
 Resolve `feature-name` exactly as `dev-define` PHASE 0 step 1 does (arg → backlog `transition`
-match → first TODO → concept → suggestions). Then check `.project/features/{feature-name}/feature.json`:
+match → first TODO → concept → suggestions), with one dev-ship-specific addition **before** the
+define-style transition match: a feature with `transition: "shipping"` (queued via the board's
+⚡ Ship (auto) menu item) wins the no-arg resolution — but only on **dev-track types**: skip
+entries with `type === "PAGE"` or `"COMPONENT"` (those belong to `/design-ship`; `PAGE-GAP` is
+dev-track and stays here). Then check
+`.project/features/{feature-name}/feature.json`:
 
 - **Exists with `status` ≥ DEFINED** (has `requirements[]` + `architecture`) → define already ran;
   skip to Step 3 (classify). Do not re-run define.
@@ -42,6 +69,28 @@ apply, because dev-ship already owns the run:
 **Kept as-is** (define is NOT a silent subagent): plan mode routes the interview and gates writes to
 PHASE 4 as normal; `AskUserQuestion` reaches the real user (the whole reason define is the main-chat
 touchpoint). Everything else in define runs unchanged (it owns its own `.project/` writes).
+
+## Step 2b — Board state: `shipping` marker + live signal
+
+The backlog board renders two progress states: **queued** (`transition` set by a board copy
+action) and **live** (`.project/session/active-{feature}.json`, pulsing badge). dev-ship owns both
+for the whole run:
+
+1. **Live signal** — if define was skipped (Step 1: already ≥ DEFINED), write it now; when define
+   ran inline it already wrote and cleaned its own signal, so re-arm it here either way:
+
+   ```bash
+   mkdir -p .project/session
+   echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO}"}' > .project/session/active-{feature-name}.json
+   ```
+
+   The later SKILL.md phase boundaries rewrite this same file with `skill: build | verify |
+refactor` — the board badge follows the pipeline.
+
+2. **Run marker** — set `transition: "shipping"` on the feature's `backlog.json` entry (define's
+   phase4-sync removes any transition; re-set it after define completes). This keeps the card in
+   the board's IN PROGRESS section between phases, when no agent is running. It is removed by
+   refactor's completion-batch (feature shipped) or by PHASE 5 cleanup on every other exit path.
 
 ## Step 3 — Compute the advisory `verificationProfile`
 
@@ -147,6 +196,13 @@ SHIP_PLAN:
 
 `refactorPolicy: skip` → PHASE 4 skips AGENT 3 (only AGENT S may still run if `securityDeep`).
 
+**Persist to the checkpoint** (the first write, per `shared/SHIP-CHECKPOINT.md` atomic-write). This
+is what makes the run resumable — `SHIP_PLAN` is the irreproducible user choice that otherwise lives
+only in this context. Write `.project/session/ship-{feature}.json` with `pipeline: "dev"`, `feature`,
+`startedAt`/`updatedAt`, `status: "running"`, `phase: "PHASE 1"`, `completedPhases: ["PHASE 0"]`,
+`baselineSha` (from Step 0), `plan: {SHIP_PLAN + verificationProfile}`, empty `results`/`prompts`,
+`activeWorkflow: null`.
+
 ## Step 6 — Assemble `SHIP_CONTEXT` (the context-hub)
 
 The main chat loads project context **once** here and feeds it to every agent, so each agent skips
@@ -202,6 +258,10 @@ there). They differ in the rest:
 | **verify-slice** (AGENT 2)   | `acceptance[]` + `testStrategy` · `verificationProfile` · `paths` · learnings filtered to **test/regression** pitfalls (less architecture)        |
 | **refactor-slice** (AGENT 3) | built `files[]` · `conventions` + coding-rules scope · reuse-candidates · `SHIP_PLAN` lenses/policy · learnings filtered to **refactor** pitfalls |
 
-Each `agent-*.md` pastes its own slice into the `{paste the SHIP_CONTEXT block …}` placeholder. The
-main chat also **refreshes the mutable parts** (learnings, architecture) from `.project/` before each
-spawn — see `SKILL.md` PHASE 1/2/4 — so verify and refactor never get a stale PHASE 0 snapshot.
+Each `agent-*.md` pastes its own slice into the `{paste the SHIP_CONTEXT block …}` placeholder;
+the assembled prompts travel to the agents as the **Workflow `args` payload**
+(`buildPrompt`/`verifyPromptTemplate` for Workflow 1, `refactorPrompt`/`scanners`/
+`triagePromptTemplate` for Workflow 2 — see `SKILL.md` PHASE 1+2/4). Mutable-part freshness:
+the **verify** slice is assembled pre-build, so its prompt instructs AGENT 2 to refresh
+learnings/architecture/`files[]` from `.project/` itself (see `agent-verify.md`); the **refactor**
+slice is rebuilt by the main chat from the post-merge `.project/` just before Workflow 2 launches.

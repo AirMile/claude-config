@@ -2,7 +2,7 @@
 
 ## Mutations on `backlog.json` (see `shared/BACKLOG.md`)
 
-- Find feature → set `status: "DEFINED"`, `definedAt: <ISO>`, `auto: true`, remove `transition` (if present) — all three in one write. Not found → add to `data.features` with `phase: "P4"`, `status: "DEFINED"`, `auto: true`.
+- Find feature → set `status: "DEFINED"`, `definedAt: <ISO>`, `auto: true`, remove `transition` (if present — **except** `transition: "shipping"`, the dev-ship run marker: keep it) — all three in one write. Not found → add to `data.features` with `phase: "P4"`, `status: "DEFINED"`, `auto: true`.
 - **Dependencies**: If during PHASE 1 or PHASE 2 external feature dependencies were identified (other features that must be DONE first), merge those into `dependencies[]`. Never remove existing values — only add. If nothing new found: leave field unchanged.
 - Set `data.updated` to today.
 

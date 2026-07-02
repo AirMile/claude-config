@@ -115,7 +115,7 @@ header: "Motion Pack"
 question: "Current pack: {pack-name}. What would you like to do?"
 options:
   - label: "Customize", description: "Configure axes: expressiveness, springiness, tempo, surfaces"
-  - label: "Preview", description: "Generate animation-preview.html with current tokens"
+  - label: "Preview", description: "Generate an HTML preview with current tokens and auto-open it in the browser"
   - label: "Apply to codebase", description: "Emit CSS vars for spring/easing/surface tokens"
   - label: "Replace / Delete", description: "Pick a different pack or remove the pack"
 multiSelect: false

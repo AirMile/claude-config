@@ -1,0 +1,172 @@
+<!doctype html>
+<!--
+  Self-contained wireframe preview (dev-define skill).
+  The skill replaces the contents of <script id="preview-data"> with:
+    { "feature": "...", "wireframe": "<ascii sketch>", "requirements": [{ "id": "REQ-1", "text": "..." }], "notes": "..." }
+  then opens this file via file:// (see shared/HTML-PRESENT.md).
+  No server, no external assets — inline CSS + inline render JS only.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Wireframe preview</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --accent: #58a6ff;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        padding: 40px 48px 80px;
+      }
+      .wrap {
+        max-width: 920px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 4px;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 32px;
+      }
+      h2 {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+        margin: 32px 0 14px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border);
+      }
+      .frame {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 24px;
+        overflow-x: auto;
+      }
+      .frame pre {
+        font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+        font-size: 13px;
+        line-height: 1.45;
+        white-space: pre;
+        color: var(--text);
+      }
+      ul.reqs {
+        list-style: none;
+      }
+      ul.reqs li {
+        display: flex;
+        gap: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 12px 16px;
+        margin-bottom: 8px;
+      }
+      ul.reqs .id {
+        font-family: ui-monospace, "SF Mono", monospace;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+        min-width: 64px;
+      }
+      ul.reqs .txt {
+        font-size: 14px;
+      }
+      .notes {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .empty {
+        color: var(--muted);
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1 id="title">Wireframe</h1>
+      <div class="sub" id="subtitle"></div>
+      <div id="root"></div>
+    </div>
+
+    <script id="preview-data" type="application/json">
+      {}
+    </script>
+
+    <script>
+      (function () {
+        var data = {};
+        try {
+          data =
+            JSON.parse(document.getElementById("preview-data").textContent) ||
+            {};
+        } catch (e) {
+          data = {};
+        }
+        function esc(s) {
+          return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        }
+
+        if (data.feature)
+          document.getElementById("title").textContent =
+            "Wireframe · " + data.feature;
+        document.getElementById("subtitle").textContent =
+          "dev-define design sketch";
+
+        var html = "";
+        if (data.wireframe) {
+          html +=
+            '<h2>Layout</h2><div class="frame"><pre>' +
+            esc(data.wireframe) +
+            "</pre></div>";
+        }
+        if (data.requirements && data.requirements.length) {
+          html +=
+            '<h2>Requirements</h2><ul class="reqs">' +
+            data.requirements
+              .map(function (r) {
+                return (
+                  '<li><span class="id">' +
+                  esc(r.id || "") +
+                  '</span><span class="txt">' +
+                  esc(r.text || r) +
+                  "</span></li>"
+                );
+              })
+              .join("") +
+            "</ul>";
+        }
+        if (data.notes) {
+          html += '<h2>Notes</h2><p class="notes">' + esc(data.notes) + "</p>";
+        }
+        document.getElementById("root").innerHTML =
+          html || '<p class="empty">No wireframe to display.</p>';
+      })();
+    </script>
+  </body>
+</html>

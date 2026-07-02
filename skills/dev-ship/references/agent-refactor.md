@@ -6,8 +6,16 @@ Spawn one subagent that runs `dev-refactor` on the single just-shipped feature, 
 
 ## Spawn
 
-Use `subagent_type: "general-purpose"`. Model: inherit. Substitute `{feature}`,
-`{refactorLenses}`, `{refactorPolicy}`, `{securityLight}` from `SHIP_PLAN`.
+**Primary (Workflow)**: this prompt is passed as `args.refactorPrompt` to
+`references/workflows/ship-phase4.js` (or `null` when `refactorPolicy == skip`), which runs it with
+`agentType: "general-purpose"`, `model: "sonnet"`, `effort: "medium"` (matrix: SKILL.md § Design —
+test-guarded revert-on-red, low risk) in parallel with any AGENT S scanners, and validates the
+result against `REFACTOR_SCHEMA`.
+
+**Fallback (Agent tool, when Workflow is unavailable)**: spawn via the `Agent` tool with
+`subagent_type: "general-purpose"` and `model: "sonnet"` (effort is not settable).
+
+Substitute `{feature}`, `{refactorLenses}`, `{refactorPolicy}`, `{securityLight}` from `SHIP_PLAN`.
 
 ## Prompt template
 
@@ -18,7 +26,9 @@ with the NON-INTERACTIVE CONTRACT and the SCOPE below. The feature is DONE and a
 main — refactor operates on main (no worktree exists for it anymore; dev-refactor's WORKTREE.md
 step is a no-op → it works on main directly).
 
-Your final message must be ONLY the result block.
+Return your result per the RESULT CONTRACT in the non-interactive contract below: if you have a
+structured-output tool, your final answer is that tool call (fields below); otherwise your final
+message must be ONLY the delimited result block.
 
 NON-INTERACTIVE CONTRACT:
 {paste the full contents of .claude/skills/dev-ship/references/non-interactive-contract.md}
@@ -44,7 +54,7 @@ SCOPE:
 - Do NOT run dev-refactor's PHASE Finalize / FINALIZE.md dispatch (the single-mode finalize step in
   completion-batch.md) — you are post-merge on main; there is nothing to merge (contract rule 7).
 
-Return exactly:
+Result fields (structured output object; fallback = this exact block):
 SHIP_REFACTOR_RESULT_START
 status: applied | clean | failed
 feature: {feature}
@@ -60,9 +70,10 @@ SHIP_REFACTOR_RESULT_END
 
 ## Orchestrator handling (PHASE 4)
 
-1. Parse `SHIP_REFACTOR_RESULT_START/END` (robust).
+1. **Workflow path**: `ship-phase4.js` returns the validated `refactor` object — read fields
+   directly. **Fallback path**: parse `SHIP_REFACTOR_RESULT_START/END` (robust).
 2. `status: failed` (test-guard could not converge) → report in PHASE 5; the feature is still
    shipped/merged (refactor is a post-merge polish, non-fatal). Surface for manual follow-up.
 3. `status: applied | clean` → **re-read `.project/` from disk**, continue.
-4. If `SHIP_PLAN.securityDeep` is non-empty, AGENT S may run **in parallel** with this agent (it is
-   read-only and writes no `.project/`).
+4. If `SHIP_PLAN.securityDeep` is non-empty, AGENT S runs **in parallel** with this agent inside
+   the same workflow (it is read-only and writes no `.project/`).

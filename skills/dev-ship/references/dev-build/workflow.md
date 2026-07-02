@@ -1,4 +1,3 @@
-
 # Build
 
 **PHASE 2** of the dev workflow: define → **build** → verify → refactor (optional)
@@ -229,7 +228,7 @@ Guidelines:
 - Expected = observable result (response body, status code, visible effect)
 - Do NOT add "run npm test" items — unit tests are already covered by the build
 
-**Backlog**: find feature by name → set `"status": "DOING"`, remove `transition` field if present (auto-pickup signal consumed), `data.updated` → now.
+**Backlog**: find feature by name → set `"status": "DOING"`, remove `transition` field if present (auto-pickup signal consumed) — **except** `transition: "shipping"`, the dev-ship run marker: keep it — `data.updated` → now.
 
 **Page-dependency sync** (only when `feature.pageHint[]` is non-empty AND `feature.type in ["FEATURE", "COMPONENT"]`):
 

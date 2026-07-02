@@ -50,7 +50,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
         "scopes": ["<scope-name>"],
         "findings": { "critical": "<N>", "warnings": "<N>", "passed": "<N>" }
       },
-      "transition": "designing|converting|auditing|defining|building|verifying|refactoring|null",
+      "transition": "designing|converting|auditing|defining|building|verifying|refactoring|shipping|null",
       "pageHint": ["page-name"],
       "externalRef": {
         "type": "github|jira|linear",
@@ -157,10 +157,10 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 
 | Status      | Label      | Set by                                                                                                       |
 | ----------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| `TODO`      | To design  | `/design-create` Capture, `/project-todo`, `/project-backlog`, reuse-discovery                             |
-| `DEFINED`   | To convert | `/design-create` Brief (Path B — offline handoff)                                                          |
-| `DOING`     | Building   | `/design-create` Build (Path A) or `/design-create` Convert route (Path B)                               |
-| `DONE`      | Shipped    | `/design-check` (PAGE PASS) — both build and convert pages                                                 |
+| `TODO`      | To design  | `/design-create` Capture, `/project-todo`, `/project-backlog`, reuse-discovery                               |
+| `DEFINED`   | To convert | `/design-create` Brief (Path B — offline handoff)                                                            |
+| `DOING`     | Building   | `/design-create` Build (Path A) or `/design-create` Convert route (Path B)                                   |
+| `DONE`      | Shipped    | `/design-check` (PAGE PASS) — both build and convert pages                                                   |
 | `CANCELLED` | Archived   | Manually via UI (○ button), `/project-backlog` update mode (cancel-proposal), `/project-retire` — restorable |
 
 **Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
@@ -173,12 +173,12 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 
 ### When to use which skill for PAGE/COMPONENT
 
-| Situation                                               | Skill                                                                     |
-| ------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Quick "just thought of something" addition              | `/project-todo`                                                           |
+| Situation                                               | Skill                                                                   |
+| ------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Quick "just thought of something" addition              | `/project-todo`                                                         |
 | Full design (screenshot, Figma, brief)                  | `/design-create` Capture                                                |
-| Bulk-init from concept or brainstorm output             | `/project-backlog`                                                        |
-| Pattern detection during build (cross-page reuse)       | `/project-backlog` reuse-discovery                                        |
+| Bulk-init from concept or brainstorm output             | `/project-backlog`                                                      |
+| Pattern detection during build (cross-page reuse)       | `/project-backlog` reuse-discovery                                      |
 | Convert existing card from sketch/wireframe/Figma/Canva | `/design-create` (paste sketch/URL, or board ⋯ → "Convert from sketch") |
 
 All routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. All routes **except `/project-backlog` bulk-init** also set **`transition: "designing"`**, which enables `/design-create` to auto-detect these items without a manual dashboard click. `/project-backlog` omits `transition` at creation — the dashboard sets it when the user clicks copy-prompt (see `project-backlog/references/generate-backlog.md` transition field rule). `/design-create` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/design-create` Build fills them in later.
@@ -303,8 +303,8 @@ TODO (To design) → DOING (Building) → DONE (Shipped)       ← Path A
 TODO (To design) → DEFINED (To convert) → DOING → DONE     ← Path B
 ```
 
-| Step    | Skill              | Output                                                  |
-| ------- | ------------------ | ------------------------------------------------------- |
+| Step    | Skill            | Output                                                  |
+| ------- | ---------------- | ------------------------------------------------------- |
 | Design  | `/design-create` | code (Build) or brief (Brief) + demo-page for COMPONENT |
 | Convert | `/design-create` | code from visual input — Convert route (Path B)         |
 | Audit   | `/design-check`  | A11Y + tokens + responsive — terminal, sets `shipped`   |
@@ -362,17 +362,31 @@ Skills do **not** write to the backlog at start — saves a read+write roundtrip
 
 `feature.transition` — optional string, set by the dashboard, consumed by skills:
 
-| Value           | Dashboard sets when user copies prompt for             | Consumed by                                        |
-| --------------- | ------------------------------------------------------ | -------------------------------------------------- |
-| `"defining"`    | THEME setup or FEATURE definition prompt               | `design-tokens` (THEME) / `dev-define` (FEATURE) |
-| `"building"`    | Build prompt for a DEFINED feature                     | `dev-build`                                        |
-| `"verifying"`   | Verify prompt for a DOING feature                      | `dev-verify`                                       |
-| `"refactoring"` | Refactor prompt for a DONE+!shipped feature            | `dev-refactor`                                     |
-| `"designing"`   | Design/build prompt for a TODO PAGE or COMPONENT       | `design-create`                                  |
-| `"converting"`  | Convert prompt for a DEFINED PAGE or COMPONENT         | `design-create`                                  |
-| `"contenting"`  | Fill-content prompt for a built (DOING) PAGE/COMPONENT | `design-content`                                 |
+| Value           | Dashboard sets when user copies prompt for                                                            | Consumed by                                      |
+| --------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `"defining"`    | THEME setup or FEATURE definition prompt                                                              | `design-tokens` (THEME) / `dev-define` (FEATURE) |
+| `"building"`    | Build prompt for a DEFINED feature                                                                    | `dev-build`                                      |
+| `"verifying"`   | Verify prompt for a DOING feature                                                                     | `dev-verify`                                     |
+| `"refactoring"` | Refactor prompt for a DONE+!shipped feature                                                           | `dev-refactor`                                   |
+| `"designing"`   | Design/build prompt for a TODO PAGE or COMPONENT                                                      | `design-create`                                  |
+| `"converting"`  | Convert prompt for a DEFINED PAGE or COMPONENT                                                        | `design-create`                                  |
+| `"contenting"`  | Fill-content prompt for a built (DOING) PAGE/COMPONENT                                                | `design-content`                                 |
+| `"shipping"`    | ⚡ Ship (auto) menu item on a TODO feature — dev-track → `/dev-ship`, PAGE/COMPONENT → `/design-ship` | `dev-ship` / `design-ship`                       |
 
-On successful completion the skill removes the `transition` field.
+On successful completion the skill removes the `transition` field. **Exception**: `"shipping"` is
+a whole-run marker — the ship sub-phase syncs (the copies under `dev-ship/references/` and
+`design-ship/references/`) preserve it; only the ship skill's own completion (dev-ship: refactor's
+completion-batch or PHASE 5 cleanup; design-ship: PHASE 4 completion or PHASE 5 cleanup) removes
+it. No-arg pickup is disambiguated by type: `dev-ship` picks `"shipping"` on non-design types
+(+ PAGE-GAP), `design-ship` on PAGE/COMPONENT.
+
+**Board rendering (three progress states).** The dashboard shows a `transition` without a live
+skill signal as **queued** (dim, "⧉ {transition} · queued"), a feature with a
+`.project/session/active-{name}.json` signal as **live** (pulsing "{skill}ing" badge), and a live
+signal with the optional `waiting` field as **waiting for input** (amber, static
+"⏸ {label} · input needed" — sorted to the top; written by dev-verify's manual walkthrough,
+game-verify's playtest wait, and design-ship's PHASE 4 review). All three group in the IN PROGRESS
+section at the top of the board. See `DEVINFO.md § Active Feature Signal`.
 
 ### Read (PHASE 0)
 
@@ -403,18 +417,20 @@ No backlog write — `transition` remains as set by the dashboard, user can re-c
 
 The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`. The DESIGN pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab. There is no `"auditing"` transition — `design-check` runs in batch mode at release end, not per item.
 
-| Skill              | Filter                                                                       | New status on success                          |
-| ------------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- |
-| `design-tokens`  | `type === "THEME" && transition === "defining"`                              | `"DONE"`                                       |
-| `dev-define`       | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                                    |
-| `dev-build`        | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                                      |
-| `dev-verify`       | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                                       |
-| `dev-refactor`     | `transition === "refactoring"`                                               | keep status, set `shipped: true`               |
-| `design-create`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`  | `"DOING"` (Path A — DEFINED is skipped)        |
-| `design-create`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"` | `"DOING"`                                      |
-| `design-content` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "contenting"` | keep `"DOING"`, sets `contentStatus: "filled"` |
-| `design-check`   | batch: `status === "DOING"` or `lastCheckedSha !== shippedSha`               | sets `lastCheckedSha`; PAGE PASS → `"DONE"`    |
-| `game-define`      | `type === "FEATURE" && transition === "defining"`                            | `"DEFINED"`                                    |
-| `game-build`       | `type === "FEATURE" && transition === "building"`                            | `"DOING"`                                      |
-| `game-verify`      | `type === "FEATURE" && transition === "verifying"`                           | `"DONE"`                                       |
-| `game-refactor`    | `transition === "refactoring"`                                               | keep status, set `shipped: true`               |
+| Skill            | Filter                                                                                     | New status on success                           |
+| ---------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `design-tokens`  | `type === "THEME" && transition === "defining"`                                            | `"DONE"`                                        |
+| `dev-define`     | `type === "FEATURE" && transition === "defining"`                                          | `"DEFINED"`                                     |
+| `dev-build`      | `type === "FEATURE" && transition === "building"`                                          | `"DOING"`                                       |
+| `dev-verify`     | `type === "FEATURE" && transition === "verifying"`                                         | `"DONE"`                                        |
+| `dev-refactor`   | `transition === "refactoring"`                                                             | keep status, set `shipped: true`                |
+| `dev-ship`       | `transition === "shipping" && type !== PAGE/COMPONENT` (no-arg pickup)                     | full pipeline → `shipped: true` via refactor    |
+| `design-create`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`                | `"DOING"` (Path A — DEFINED is skipped)         |
+| `design-create`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"`               | `"DOING"`                                       |
+| `design-content` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "contenting"`               | keep `"DOING"`, sets `contentStatus: "filled"`  |
+| `design-check`   | batch: `status === "DOING"` or `lastCheckedSha !== shippedSha`                             | sets `lastCheckedSha`; PAGE PASS → `"DONE"`     |
+| `design-ship`    | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "shipping"` (no-arg pickup) | full pipeline → PAGE `"DONE"` + `shipped: true` |
+| `game-define`    | `type === "FEATURE" && transition === "defining"`                                          | `"DEFINED"`                                     |
+| `game-build`     | `type === "FEATURE" && transition === "building"`                                          | `"DOING"`                                       |
+| `game-verify`    | `type === "FEATURE" && transition === "verifying"`                                         | `"DONE"`                                        |
+| `game-refactor`  | `transition === "refactoring"`                                                             | keep status, set `shipped: true`                |

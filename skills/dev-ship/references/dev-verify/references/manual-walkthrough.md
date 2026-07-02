@@ -5,6 +5,17 @@ with real credentials, physical-device tests, or audio/screen-reader checks. Vis
 motion smoothness, and design feel are NOT verified here — those belong to design-create /
 frontend-build.
 
+**Board signal — waiting for input.** Before presenting the first item, rewrite the live signal
+so the board flags this feature amber (paused on the user — see `shared/DEVINFO.md § Active
+Feature Signal`):
+
+```bash
+echo '{"feature":"{feature}","skill":"verify","startedAt":"{ISO}","waiting":"manual-tests"}' > .project/session/active-{feature}.json
+```
+
+After the last item is answered (all Pass/Fail/Skip/Defer collected), rewrite it **without**
+`waiting` — verification work resumes.
+
 **Playwright smoke pre-check** — for each MANUAL item: if the item is DOM-observable
 (navigate + check load / element-present / no-console-error / screenshot), Claude runs it
 first via the playwright-cli daemon (see `references/test-classification.md → AUTO/BROWSER`):

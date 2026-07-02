@@ -1,13 +1,20 @@
 # AGENT 1 — Build
 
-Spawn one subagent (via the `Agent`/`Task` tool) that runs `dev-build` for the feature
-non-interactively, in an isolated context. It creates the worktree and commits, but never merges.
+One subagent that runs `dev-build` for the feature non-interactively, in an isolated context. It
+creates the worktree and commits, but never merges.
 
 ## Spawn
 
-Use `subagent_type: "general-purpose"` (needs full tools: Edit/Write/Bash/git). Model: inherit
-(build writes code — Opus-tier is appropriate; do not downgrade). Pass the prompt below with
-`{feature}` substituted and the non-interactive contract inlined.
+**Primary (Workflow)**: this prompt is passed as `args.buildPrompt` to
+`references/workflows/ship-phase12.js`, which runs it with `agentType: "general-purpose"`,
+`model: "sonnet"`, `effort: "high"` (matrix: SKILL.md § Design — contract-driven TDD; feature.json
+
+- tests bound the work) and validates the result against `BUILD_SCHEMA`.
+
+**Fallback (Agent tool, when Workflow is unavailable)**: spawn via the `Agent` tool with
+`subagent_type: "general-purpose"` (needs full tools: Edit/Write/Bash/git) and `model: "sonnet"`
+(effort is not settable on the Agent tool). Pass the prompt below with `{feature}` substituted and
+the non-interactive contract inlined.
 
 ## Prompt template
 
@@ -16,7 +23,9 @@ You are AGENT 1 (build) in the dev-ship pipeline. Execute the `/dev-build` skill
 "{feature}" by reading `.claude/skills/dev-ship/references/dev-build/workflow.md` and following it fully (PHASE 0 →
 completion), with the NON-INTERACTIVE CONTRACT below.
 
-Your final message must be ONLY the result block — it is a machine return value, not a human report.
+Return your result per the RESULT CONTRACT in the non-interactive contract below: if you have a
+structured-output tool, your final answer is that tool call (fields below); otherwise your final
+message must be ONLY the delimited result block — a machine return value, not a human report.
 
 NON-INTERACTIVE CONTRACT:
 {paste the full contents of .claude/skills/dev-ship/references/non-interactive-contract.md}
@@ -33,7 +42,7 @@ BUILD-SPECIFIC:
 - If the build cannot reach green after dev-build's own diagnostics/regression gate: STOP, do not
   merge, leave the worktree, and return status "failed" with the failing requirement.
 
-Return exactly:
+Result fields (structured output object; fallback = this exact block):
 SHIP_BUILD_RESULT_START
 status: green | failed
 feature: {feature}
@@ -51,9 +60,11 @@ SHIP_BUILD_RESULT_END
 
 ## Orchestrator handling (PHASE 1)
 
-1. Parse `SHIP_BUILD_RESULT_START/END` (robust — see non-interactive-contract.md).
+1. **Workflow path**: `ship-phase12.js` returns the validated `build` object (and skips verify on
+   failure) — read fields directly, no parsing. **Fallback path**: parse
+   `SHIP_BUILD_RESULT_START/END` (robust — see non-interactive-contract.md).
 2. `status: failed` → leave PHASE 1 `in_progress` (do not mark it `completed`), skip to PHASE 5
    report: "Build failed at {failedAt},
-   worktree intact at {worktreePath} — run `/dev-debug {feature}`." Do not spawn AGENT 2.
+   worktree intact at {worktreePath} — run `/dev-debug {feature}`." AGENT 2 does not run.
 3. `status: green` → **re-read `.project/` from disk**, carry `worktreePath` forward, continue to
    PHASE 2.

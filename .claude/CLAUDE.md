@@ -28,7 +28,7 @@ Cross-platform: **macOS** and **Windows**.
 ## Structure
 
 ```
-skills/           46 skills in 9 categories
+skills/           48 skills in 9 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (each with SKILL.md)
 agents/           21 sub-agent definitions (.md with YAML frontmatter)
@@ -67,14 +67,14 @@ Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 **Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere)
 **Game**: `project-seed` → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere, Godot 4.x / GUT)
-**Design**: `design-create` (design/build/convert — incl. sketch/wireframe/Figma/Canva → high-fi code) → `design-content` (fill copy) → `design-check`
+**Design**: `design-create` (design/build/convert — incl. sketch/wireframe/Figma/Canva → high-fi code) → `design-content` (fill copy) → `design-check` — or all-in-one via `design-ship` (auto-mode: build→content→check, Build lane / web only; dev-track counterpart: `dev-ship`)
 **Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`
 
 State handoff between skills via `.project/session/devinfo.json` (schema: `shared/DEVINFO.md`).
 
 ## Key Patterns
 
-- **`.project/`**: all runtime artifacts (gitignored) — wireframes, config, session, screenshots
+- **`.project/`**: all runtime artifacts (gitignored) — wireframes, config, session, screenshots, previews (`.project/previews/` = auto-opening HTML previews from dev-define/design-tokens/design-create via `shared/HTML-PRESENT.md`)
 - **`.project/project.json`**: central project dashboard (seed, design, theme, stack, endpoints, entities — `schemaVersion: 2`). Runtime context (architecture, context, learnings) lives in `project-context.json`; features in `backlog.json`. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md references this for runtime context.
 - **Format-on-save**: hook runs Prettier (web) or gdformat (GDScript) after every Write/Edit
 - **Backlog**: `.project/backlog.json` (data store; board UI rendered by the server) with status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped (archived to `.project/archive/backlog-archive.json`)

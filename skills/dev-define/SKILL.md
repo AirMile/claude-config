@@ -322,6 +322,10 @@ Next: /dev-build {feature-name}
      /team-outsource {feature-name}   ← if you want to delegate to a teammate
 ```
 
+**Visual features only** — if a design sketch was produced in PHASE 2 step 3 (ASCII wireframe), present it as an auto-opening preview; non-visual features skip this silently:
+
+> **Todo**: if an ASCII wireframe exists for this feature (PHASE 2 step 3 "Design sketch"): render `.claude/skills/shared/references/preview-wireframe.html` to `.project/previews/dev-define-{feature-name}.html` — fill the `preview-data` JSON block with `{ feature, wireframe: <the ASCII sketch>, requirements: [{id, text}] from the REQ list, notes }` — then present that `file://` path via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser). No wireframe → skip, no error.
+
 Omit the `Next` line **and the clipboard offer below** if the feature was not a backlog item and no concept is present — briefly note the absence of a backlog instead, then mark PHASE 4 → `completed`.
 
 > **Todo (closing action — do not skip)**: mark PHASE 4 → `completed`, then apply the

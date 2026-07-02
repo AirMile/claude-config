@@ -6,8 +6,16 @@ point: a verify agent that did not just write the code looks at it unbiased/adve
 
 ## Spawn
 
-Use `subagent_type: "general-purpose"`. Model: inherit. Pass the prompt below with `{feature}` and
-`{worktreePath}` substituted and the non-interactive contract inlined.
+**Primary (Workflow)**: this prompt is passed as `args.verifyPromptTemplate` to
+`references/workflows/ship-phase12.js` with `{feature}` substituted but the literal
+`{worktreePath}` placeholder **kept** — the script fills it from AGENT 1's structured result. The
+script runs it with `agentType: "general-purpose"`, `model: "opus"`, `effort: "high"` (matrix:
+SKILL.md § Design — the one independent adversarial judgment; backstops the sonnet build) and
+validates the result against `VERIFY_SCHEMA`.
+
+**Fallback (Agent tool, when Workflow is unavailable)**: spawn via the `Agent` tool with
+`subagent_type: "general-purpose"` and `model: "opus"` (effort is not settable). Substitute both
+`{feature}` and `{worktreePath}` and inline the non-interactive contract.
 
 ## Prompt template
 
@@ -17,14 +25,19 @@ not build this code; verify it adversarially. Execute the AUTOMATED portion of t
 skill for the feature "{feature}" by reading `.claude/skills/dev-ship/references/dev-verify/workflow.md` and following it,
 with the NON-INTERACTIVE CONTRACT and the SCOPE LIMITS below.
 
-Your final message must be ONLY the result block — a machine return value.
+Return your result per the RESULT CONTRACT in the non-interactive contract below: if you have a
+structured-output tool, your final answer is that tool call (fields below); otherwise your final
+message must be ONLY the delimited result block — a machine return value.
 
 NON-INTERACTIVE CONTRACT:
 {paste the full contents of .claude/skills/dev-ship/references/non-interactive-contract.md}
 
 SHIP_CONTEXT (use this instead of re-running the workflow's own PHASE 0 context-load; only load
-what is missing here — note verify still does its OWN authoritative AUTO/MANUAL classification):
-{paste the verify-slice of SHIP_CONTEXT (PHASE 0), with worktree path filled in}
+what is missing here — note verify still does its OWN authoritative AUTO/MANUAL classification).
+The slice below predates the build: BEFORE classifying, refresh the mutable parts yourself from
+disk — re-read `project-context.json` learnings/architecture and `feature.json#files[]` (the build
+agent just wrote them):
+{paste the verify-slice of SHIP_CONTEXT (PHASE 0); worktree path = {worktreePath}}
 
 SCOPE LIMITS (critical — this is a partial verify):
 - Run dev-verify PHASE 0 (load + classify AUTO/MANUAL/COVERED per test-classification.md) and the
@@ -40,7 +53,8 @@ SCOPE LIMITS (critical — this is a partial verify):
 - If an AUTO item cannot be made to pass after the fix-loop: STOP, do not merge, return status
   "failed" with the item.
 
-Return exactly:
+Result fields (structured output object — `remainingManualItems` is an array, empty when none;
+fallback = this exact block):
 SHIP_VERIFY_RESULT_START
 status: green | failed
 feature: {feature}
@@ -61,7 +75,8 @@ SHIP_VERIFY_RESULT_END
 
 ## Orchestrator handling (PHASE 2)
 
-1. Parse `SHIP_VERIFY_RESULT_START/END` (robust).
+1. **Workflow path**: `ship-phase12.js` returns the validated `verify` object — read fields
+   directly. **Fallback path**: parse `SHIP_VERIFY_RESULT_START/END` (robust).
 2. `status: failed` → leave PHASE 2 `in_progress` (do not mark it `completed`), skip to PHASE 5:
    "Auto-verify failed at {failedAt},
    worktree intact — run `/dev-debug {feature}`." Do not finalize.

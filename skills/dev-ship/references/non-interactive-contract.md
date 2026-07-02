@@ -61,18 +61,26 @@ commits fixes in the worktree; refactor commits on main (post-merge). No agent r
 Do not merge, leave the worktree intact, return `status: failed` with the stop point. The main chat
 reports it and suggests `/dev-debug {feature}`.
 
-## Result block
+## RESULT CONTRACT
 
-Return **exactly one** delimited block (schema per agent reference):
-`SHIP_BUILD_RESULT` / `SHIP_VERIFY_RESULT` / `SHIP_REFACTOR_RESULT` / `SHIP_SECURITY_RESULT`, each
-`_START` … `_END`. Keep prose minimal — the block IS the return value. Always include
-`autoDecisions[]` (rule 3).
+**Primary (Workflow path)**: you have been given a structured-output tool whose schema matches
+your agent reference's result fields — your **final answer is that tool call**. Do not also print
+a delimited result block.
+
+**Fallback (Agent-tool path, no structured-output tool)**: return **exactly one** delimited block
+(schema per agent reference): `SHIP_BUILD_RESULT` / `SHIP_VERIFY_RESULT` / `SHIP_REFACTOR_RESULT`,
+each `_START` … `_END`. Keep prose minimal — the block IS the return value.
+
+In both cases: always include `autoDecisions[]` (rule 3).
 
 ## Orchestrator side (main chat)
 
-- Parse the block robustly: `sed -n '/SHIP_X_RESULT_START/,/SHIP_X_RESULT_END/p'`; on truncation
-  `Grep` the agent's output file for the markers and `Read` with an offset.
-- **Re-read `.project/` from disk after every agent return** — the pre-spawn snapshot is stale.
+- **Workflow path (primary)**: the workflow's return value carries each agent's schema-validated
+  result object — read fields directly, nothing to parse. **Agent-tool fallback**: parse the block
+  robustly: `sed -n '/SHIP_X_RESULT_START/,/SHIP_X_RESULT_END/p'`; on truncation `Grep` the
+  agent's output file for the markers and `Read` with an offset.
+- **Re-read `.project/` from disk after every agent/workflow return** — the pre-spawn snapshot is
+  stale.
 - **Sequencing**: build → verify → (main-chat manual+finalize) → refactor run sequentially (one
-  `.project/` writer at a time). Only AGENT S (security, read-only, no `.project/` writes) may run
-  concurrently with AGENT 3.
+  `.project/` writer at a time — the workflow scripts enforce this ordering). Only AGENT S
+  (security, read-only, no `.project/` writes) runs concurrently with AGENT 3.
