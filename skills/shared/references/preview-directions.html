@@ -1,0 +1,223 @@
+<!doctype html>
+<!--
+  Self-contained design-direction preview (design-ship skill, PHASE 0 Step 5).
+  The skill replaces the contents of <script id="preview-data"> with:
+    {
+      "target": "dashboard", "targetType": "PAGE",
+      "directions": [
+        { "name": "Editorial split", "archetype": "sidebar", "hierarchy": "data-dominant, compact",
+          "tokens": ["primary on CTA + active nav", "text-4xl display H1"], "motion": "stagger on card grid",
+          "surfaces": "glass on sidebar", "ascii": "<ascii mockup>", "recommended": true }
+      ]
+    }
+  then opens this file via file:// (see shared/HTML-PRESENT.md).
+  No server, no external assets — inline CSS + inline render JS only.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Design direction preview</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --accent: #58a6ff;
+        --green: #3fb950;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        padding: 40px 48px 80px;
+      }
+      .wrap {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 4px;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 32px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+        gap: 20px;
+        align-items: start;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 20px;
+        position: relative;
+      }
+      .card.recommended {
+        border-color: var(--accent);
+      }
+      .badge {
+        position: absolute;
+        top: -10px;
+        right: 14px;
+        background: var(--accent);
+        color: #0d1117;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 999px;
+        letter-spacing: 0.3px;
+      }
+      .card h2 {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 2px;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 14px;
+      }
+      .frame {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px;
+        overflow-x: auto;
+        margin-bottom: 14px;
+      }
+      .frame pre {
+        font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+        font-size: 12px;
+        line-height: 1.4;
+        white-space: pre;
+        color: var(--text);
+      }
+      h3 {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+        margin: 12px 0 6px;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .chip {
+        font-family: ui-monospace, "SF Mono", monospace;
+        font-size: 11px;
+        background: rgba(88, 166, 255, 0.12);
+        color: var(--accent);
+        border: 1px solid rgba(88, 166, 255, 0.35);
+        border-radius: 999px;
+        padding: 2px 10px;
+      }
+      .line {
+        font-size: 12.5px;
+        color: var(--text);
+      }
+      .line b {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .hint {
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 12.5px;
+        border-top: 1px solid var(--border);
+        padding-top: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1 id="title">Design directions</h1>
+      <div class="sub" id="subtitle"></div>
+      <div class="grid" id="grid"></div>
+      <div class="hint">
+        Kies de richting in de Claude Code-modal — deze pagina is alleen de
+        visuele vergelijking.
+      </div>
+    </div>
+
+    <script id="preview-data" type="application/json">
+      { "target": "", "targetType": "", "directions": [] }
+    </script>
+    <script>
+      (function () {
+        var data;
+        try {
+          data = JSON.parse(
+            document.getElementById("preview-data").textContent,
+          );
+        } catch (e) {
+          data = { target: "?", targetType: "", directions: [] };
+        }
+        document.getElementById("title").textContent =
+          "Design directions — " + (data.target || "?");
+        document.getElementById("subtitle").textContent =
+          (data.targetType || "") +
+          " · " +
+          (data.directions || []).length +
+          " opties (design-ship PHASE 0)";
+        var grid = document.getElementById("grid");
+        (data.directions || []).forEach(function (d) {
+          var card = document.createElement("div");
+          card.className = "card" + (d.recommended ? " recommended" : "");
+          var html = "";
+          if (d.recommended) html += '<span class="badge">Recommended</span>';
+          html +=
+            "<h2></h2>" +
+            '<div class="meta"></div>' +
+            '<div class="frame"><pre></pre></div>' +
+            "<h3>Token decisions</h3>" +
+            '<div class="chips"></div>';
+          if (d.motion) html += '<div class="line motion"><b>motion</b> </div>';
+          if (d.surfaces)
+            html += '<div class="line surfaces"><b>surfaces</b> </div>';
+          card.innerHTML = html;
+          card.querySelector("h2").textContent = d.name || "";
+          card.querySelector(".meta").textContent = [d.archetype, d.hierarchy]
+            .filter(Boolean)
+            .join(" — ");
+          card.querySelector("pre").textContent = d.ascii || "";
+          var chips = card.querySelector(".chips");
+          (d.tokens || []).forEach(function (t) {
+            var c = document.createElement("span");
+            c.className = "chip";
+            c.textContent = t;
+            chips.appendChild(c);
+          });
+          if (d.motion)
+            card
+              .querySelector(".motion")
+              .appendChild(document.createTextNode(d.motion));
+          if (d.surfaces)
+            card
+              .querySelector(".surfaces")
+              .appendChild(document.createTextNode(d.surfaces));
+          grid.appendChild(card);
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -19,7 +19,7 @@ A third key, `writes-terminal:`, declares **intentional terminal writes**: field
 | `backlog.seedDrift`   | `.project/backlog.json` (`data.seedDrift[]` deferred drift entries)                                                    | project-backlog (write), project-seed / project-brainstorm / project-critique (read + reconcile)                                   |
 | `backlog.externalRef` | `.project/backlog.json` (per-feature `externalRef` issue link)                                                         | team-issues, team-outsource                                                                                                        |
 | `concept.*`           | `.project/project-seed.md` + `project.json#concept`                                                                    | project-seed (owner), dev-define / game-define / project-backlog (conditional write)                                               |
-| `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | design-pipeline                                                                                                                  |
+| `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | design-pipeline                                                                                                                    |
 | `project.*`           | `.project/project.json` (top-level key, e.g. `stack`, `features`, `endpoints`, `entities`, `team`, `optimizationRuns`) | dashboard-sync skills (core-pull, team-verify, project-todo, project-add, dev-optimize)                                            |
 | `project.thinking`    | `.project/thinking/*.md` + `.project/features/{name}/thinking.md`                                                      | thinking skills (project-seed, project-brainstorm, project-critique, project-todo, project-research)                               |
 | `project-context.*`   | `.project/project-context.json` (top-level section: `learnings`, `context`, `architecture`)                            | core-pull, dev/game build + debug + refactor, team-verify, dev-security (read)                                                     |
@@ -56,6 +56,7 @@ metadata:
 Some files are touched by every pipeline skill as runtime lifecycle, not as handoff. These are **not** in `reads:`/`writes:`:
 
 - `.project/session/active-{name}.json` — runtime signal for the backlog dashboard, written on skill start and cleaned up on end. No subsequent skill reads this for decisions.
+- `.project/session/ship-{name}.json` — auto-mode ship checkpoint (`dev-ship`/`design-ship`). Written **only by the ship orchestrator (main chat)** at each phase boundary; records the phase pointer, the PHASE 0 selections, and the structured agent results so an interrupted run (credits/crash/kill) can resume. Unlike `active-{name}.json` it is **kept on failure/interruption** and removed only on `status: "complete"`. Full schema + resume/preflight/cleanup routine: [SHIP-CHECKPOINT.md](SHIP-CHECKPOINT.md).
 - `.project/session/pre-skill-sha.txt` / `pre-skill-status.txt` — git baseline for scoped commits, local to one skill run.
 - `devinfo.currentSkill` (`{name, phase, startedAt}`) — runtime progress within one design skill (PREFLIGHT → COMPLETE), not read by subsequent skills for decision-making.
 
@@ -73,11 +74,22 @@ When a dev/game skill processes a feature, write a signal file so the backlog da
 {
   "feature": "auth-login",
   "skill": "build",
-  "startedAt": "2024-01-15T10:30:00Z"
+  "startedAt": "2024-01-15T10:30:00Z",
+  "waiting": "manual-tests"
 }
 ```
 
-**Valid `skill` values:** `define`, `plan`, `build`, `test`, `debug`, `refactor`
+`waiting` is **optional**: absent/null = the skill is actively running; a short reason string
+(`"manual-tests"`, `"playtest"`, `"review"`) = the skill is **paused for user input**. The board
+renders waiting rows amber with a static ⏸ badge ("{label} · input needed") and sorts them to the
+top of the IN PROGRESS section — the user sees at a glance that the pipeline is blocked on them.
+Write it by rewriting the signal file with the `waiting` field when an interactive gate follows
+autonomous work (dev-verify manual walkthrough, game-verify playtest, design-ship PHASE 4 review);
+rewrite without the field the moment input is received and work resumes.
+
+**Valid `skill` values:** `define`, `plan`, `build`, `verify`, `test`, `debug`, `refactor`,
+`design`, `content`, `check`, `ship` (the last four: design-ship phases — PHASE 0, AGENT 2,
+AGENT 3, PHASE 4 review/merge)
 
 ### Protocol
 
@@ -96,7 +108,7 @@ rm -f .project/session/active-FEATURE_NAME.json
 
 Multiple features can be active simultaneously (e.g. parallel Claude sessions). Entries older than 2 hours are automatically ignored (staleness protection).
 
-The backlog dashboard detects changes in the session directory via SSE and automatically shows a visual indicator (pulsing border + skill label) on each active feature card.
+The backlog dashboard detects changes in the session directory via SSE (`/{project}/session` API) and renders each active feature as a **live** row: pulsing dot + skill label ("building", "verifying", …), grouped in the IN PROGRESS section at the top of the board. This is distinct from the **queued** state (`transition` field in `backlog.json`, set by a board copy action) — queued means "command copied, waiting for pickup"; live means "a skill is running right now". `dev-ship` rewrites this file at every phase boundary (`define` → `build` → `verify` → `refactor`) and `design-ship` does the same (`design` → `build` → `content` → `check` → `ship`, the agents rewrite it themselves per the non-interactive contract), so the badge follows the pipeline; see `BACKLOG.md § Lifecycle Protocol` for the accompanying `transition: "shipping"` run marker.
 
 ---
 

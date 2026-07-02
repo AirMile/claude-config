@@ -562,6 +562,105 @@ body {
   opacity: 0.8;
 }
 
+/* Queued: command copied, waiting for a skill to pick it up */
+.row--queued {
+  border-left-color: var(--text-dim);
+}
+.row--queued .row-name {
+  color: var(--text);
+}
+.row-transition-label--queued {
+  color: var(--text-dim);
+  opacity: 0.9;
+}
+
+/* Live: a skill is actually running on this feature right now */
+.row--live {
+  border-left: 2px solid var(--doing, #58a6ff);
+}
+.row--live .row-name {
+  color: var(--doing, #58a6ff);
+}
+.row-live-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: lowercase;
+  color: var(--doing, #58a6ff);
+  flex-shrink: 0;
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+.row-live-dot {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.row-live-dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--doing, #58a6ff);
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .row-live-label,
+  .row-live-dot::before {
+    animation: none;
+  }
+}
+
+/* Waiting: the skill is live but paused for user input (manual tests,
+   playtest, ship review). Amber + static — a pause, not activity. */
+.row--waiting {
+  border-left-color: var(--warn, #d29922);
+}
+.row--waiting .row-name {
+  color: var(--warn, #d29922);
+}
+.row--waiting .row-live-label {
+  color: var(--warn, #d29922);
+  animation: none;
+}
+.row--waiting .row-live-dot::before {
+  content: "⏸";
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  color: var(--warn, #d29922);
+  font-size: 11px;
+  line-height: 1;
+  animation: none;
+}
+.header-wait-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--warn, #d29922);
+}
+
+/* In progress section header */
+.group-header--inprogress h2 {
+  color: var(--doing, #58a6ff);
+}
+.header-live-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
 .row-name {
   font-size: 13px;
   font-weight: 600;

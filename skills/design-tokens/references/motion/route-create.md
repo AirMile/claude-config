@@ -88,7 +88,7 @@ If No: set `surfaces.glass.enabled = false` in the pack delta before writing.
 > "Want a preview HTML file before I apply? It shows each token animated in a swatch gallery.
 > Yes, generate preview / No, apply now"
 
-If Yes: generate `.project/animation-preview.html` from `preview-template.html` (populate with pack delta tokens), show the path, then continue.
+If Yes: generate `.project/previews/design-tokens-motion.html` from `preview-template.html` (populate with pack delta tokens), then present that `file://` path via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser), then continue.
 
 ---
 

@@ -364,7 +364,7 @@ Single-round render check — catches crashes and broken imports, NOT visual qua
 Browser path:
 
 1. Route: PAGE → its route pattern; COMPONENT → demo route `/_dev/components/{name}`.
-2. `playwright-cli goto {url}` → wait `networkidle` → screenshot to `.project/tmp/smoke-render-{$TARGET}.png` (store as `$SMOKE_SHOT`) → `playwright-cli console error`.
+2. `playwright-cli goto {url}` (store the full URL as `$SMOKE_URL`) → wait `networkidle` → screenshot to `.project/tmp/smoke-render-{$TARGET}.png` (store as `$SMOKE_SHOT`) → `playwright-cli console error`.
 3. Filter console output per `shared/PLAYWRIGHT.md → Default Ignore Patterns`.
 4. Renders + no unfiltered errors → `$SMOKE = "PASS"`.
 5. Crash/blank/console errors → apply ONE targeted fix (import/crash only), re-run steps 2-3 once. Still failing → `$SMOKE = "FAIL"`, store first error as `$SMOKE_ERROR`, continue (non-blocking). No multi-round loop.
@@ -408,6 +408,10 @@ Next:             /design-content {$TARGET} — fill copy (placeholders → real
                   /design-check {$TARGET}  — runtime audit, moves PAGE to DONE on PASS   (after content filled)
 ```
 
+If the smoke check rendered a live page (`$SMOKE != "SKIPPED"` and `$SMOKE_URL` is set), present that live page in the browser — the real, interactive build, not a screenshot:
+
+> **Todo**: if `$SMOKE != "SKIPPED"` and `$SMOKE_URL` is set: present `$SMOKE_URL` (an `http://` URL) via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser). Set `$PREVIEW_OPENED = true`. Otherwise skip — no preview, no error.
+
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
 > Recommended command: /design-content {$TARGET} → fill copy and content for the built page.
@@ -429,7 +433,7 @@ Otherwise:
    CWD_PROCS=$(lsof +D "$WT_PATH" 2>/dev/null | awk 'NR>1 && $4=="cwd" && $1~/(node|next|ts-node|ng|vite)/ {print $2}' | sort -u)
    ```
 
-   `CWD_PROCS` non-empty → AskUserQuestion ("Dev server active — stop {N} process(es) before cleanup?"): "Yes, stop them (Recommended)" → `kill -TERM $CWD_PROCS 2>/dev/null; sleep 2; kill -KILL $CWD_PROCS 2>/dev/null || true` | "Keep running" → continue.
+   `CWD_PROCS` non-empty → AskUserQuestion ("Dev server active — stop {N} process(es) before cleanup?"): "Yes, stop them" → `kill -TERM $CWD_PROCS 2>/dev/null; sleep 2; kill -KILL $CWD_PROCS 2>/dev/null || true` | "Keep running" → continue. **Recommendation flips on `$PREVIEW_OPENED`:** if a live preview was opened this run (`$PREVIEW_OPENED = true`), mark "Keep running" as Recommended (killing it closes the page the user is viewing); otherwise "Yes, stop them" is Recommended.
 
 2. **Auto-finalize** — detect `TEAM_MODE` + PR state, then run `shared/FINALIZE.md` directly (no confirmation modal for the merge/cleanup decision):
 

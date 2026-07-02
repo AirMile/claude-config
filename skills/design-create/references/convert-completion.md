@@ -92,6 +92,10 @@ Next: run /design-check (batch over all DOING items) at end of release cycle,
 ═══════════════════════════════════════════════════════════
 ```
 
+If the visual verification loop rendered a live page (Playwright was available and ran ≥1 round — see `convert-verification-loop.md`), present that live page in the browser:
+
+> **Todo**: if the verification loop ran live (not skipped), present its page URL `http://localhost:[port]/[page-path]` (as `$CONVERT_PREVIEW_URL`, an `http://` URL) via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser). Set `$PREVIEW_OPENED = true`. Verification skipped (no Playwright/dev-server) → skip, no error.
+
 ### 4.5 Dev-server cleanup
 
 First remove session-scoped working screenshots (convert artifacts only):
@@ -115,12 +119,14 @@ If `CWD_PROCS` non-empty → AskUserQuestion:
 header: "Dev server active"
 question: "{N} Node process(es) are still running in this worktree (probably the dev server). Stop them before cleanup?"
 options:
-  - label: "Yes, stop them (Recommended)"
+  - label: "Yes, stop them"
     description: "kill -TERM {pids}, wait 2s, then kill -KILL if they are still running — prevents an orphan dir after cleanup."
   - label: "Keep running"
     description: "Continue; worktree-remove may leave an empty .next directory behind."
 multiSelect: false
 ```
+
+**Recommendation flips on `$PREVIEW_OPENED`:** if a live preview was opened in §4.4 (`$PREVIEW_OPENED = true`), append `(Recommended)` to "Keep running" — killing the dev server closes the page the user is viewing. Otherwise append `(Recommended)` to "Yes, stop them" (the default).
 
 On "Yes": `kill -TERM $CWD_PROCS 2>/dev/null; sleep 2; kill -KILL $CWD_PROCS 2>/dev/null || true`
 

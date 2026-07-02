@@ -416,6 +416,21 @@ http
         var lastDashMtime = 0;
         var lastSessionMtime = 0;
 
+        // Dir mtime alone misses in-place rewrites of active-*.json
+        // (skills update the same file per phase) — include file mtimes.
+        function sessionMtime() {
+          if (!fs.existsSync(sessionDir)) return 0;
+          var m = fs.statSync(sessionDir).mtimeMs;
+          fs.readdirSync(sessionDir).forEach(function (f) {
+            if (!f.startsWith("active-") || !f.endsWith(".json")) return;
+            try {
+              var fm = fs.statSync(path.join(sessionDir, f)).mtimeMs;
+              if (fm > m) m = fm;
+            } catch {}
+          });
+          return m;
+        }
+
         try {
           lastBacklogMtime = backlogMtime(projectPath);
         } catch {}
@@ -425,9 +440,7 @@ http
             : 0;
         } catch {}
         try {
-          lastSessionMtime = fs.existsSync(sessionDir)
-            ? fs.statSync(sessionDir).mtimeMs
-            : 0;
+          lastSessionMtime = sessionMtime();
         } catch {}
 
         const poll = setInterval(function () {
@@ -436,9 +449,7 @@ http
             const dm = fs.existsSync(dashFile)
               ? fs.statSync(dashFile).mtimeMs
               : 0;
-            const am = fs.existsSync(sessionDir)
-              ? fs.statSync(sessionDir).mtimeMs
-              : 0;
+            const am = sessionMtime();
             if (bm !== lastBacklogMtime) {
               lastBacklogMtime = bm;
               res.write("data: backlog\n\n");

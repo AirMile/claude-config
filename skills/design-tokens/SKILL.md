@@ -177,9 +177,10 @@ On failure → AskUserQuestion: `"Fix and retry (Recommended)"` / `"Continue any
 
 #### Route: Preview
 
-Generate `.project/animation-preview.html` from `references/motion/preview-template.html` populated with current `theme.motion` + `theme.surfaces` values. Open path for user.
+Generate `.project/previews/design-tokens-motion.html` from `references/motion/preview-template.html` populated with current `theme.motion` + `theme.surfaces` values, then auto-open it in the browser.
 
 > **Todo**: Read `.claude/skills/design-tokens/references/motion/preview-template.html` and populate with current values.
+> Then present that `file://` path via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser).
 
 #### Route: Apply to codebase
 
@@ -266,6 +267,10 @@ Next steps:
   5. /design-check → check performance and SEO
   6. /design-check --scope=a11y → accessibility audit
 ```
+
+After the report, present a visual token gallery (web domain only — game tokens render as a Godot `Theme`, not in a browser):
+
+> **Todo**: if `$DOMAIN === "web"` (from PREFLIGHT): render `.claude/skills/shared/references/preview-tokens.html` to `.project/previews/design-tokens-{themeName-or-"theme"}.html` — fill the `preview-data` JSON block with the full `theme` object from `project.json` — then present that `file://` path via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser). Otherwise skip.
 
 ---
 
