@@ -215,7 +215,7 @@ Projects:
   - ...
 ```
 
-If no projects are found, hint toward `/project-add` or `/project-backlog`.
+If no projects are found, hint toward `/project-add` or `/project-plan`.
 
 ### PHASE 3: Copy link to clipboard
 

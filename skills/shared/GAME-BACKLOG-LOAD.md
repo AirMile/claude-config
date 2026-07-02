@@ -45,6 +45,7 @@ node -e "
     type: feat.type,
     status: feat.status,
     stage: feat.stage || null,
+    description: feat.description || null,
     risk: feat.risk ?? null,
     dependencies: feat.dependencies || [],
     externalRef: feat.externalRef || null,
@@ -54,7 +55,7 @@ node -e "
 " 2>/dev/null || echo "BACKLOG_NOT_PRESENT"
 ```
 
-**Use for**: risk-check, dependency-status check, `transition` auto-pickup, `externalRef` passthrough.
+**Use for**: risk-check, dependency-status check, `transition` auto-pickup, `externalRef` passthrough, and `description` as interview anchor in PHASE 1a (context echo + coverage check — see `BACKLOG.md § Description quality`).
 
 ### Profile: `queue`
 

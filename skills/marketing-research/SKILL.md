@@ -230,7 +230,7 @@ Show next steps:
 Next steps:
 - /marketing-content  — write text variants based on these signals
 - /marketing-screenshots — marketing screenshots for launch
-- /project-backlog       — feature backlog based on market insights
+- /project-plan       — feature backlog based on market insights
 ```
 
 ## Guidelines

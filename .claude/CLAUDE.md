@@ -65,8 +65,8 @@ Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 ## Pipelines
 
-**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere)
-**Game**: `project-seed` → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere, Godot 4.x / GUT)
+**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere)
+**Game**: `project-seed` → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere, Godot 4.x / GUT)
 **Design**: `design-create` (design/build/convert — incl. sketch/wireframe/Figma/Canva → high-fi code) → `design-content` (fill copy) → `design-check` — or all-in-one via `design-ship` (auto-mode: build→content→check, Build lane / web only; dev-track counterpart: `dev-ship`)
 **Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`
 

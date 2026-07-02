@@ -252,7 +252,7 @@ Feature data is **not stored in project.json**. The single feature list lives in
 `seedFile` = reference to `.project/project-seed.md` (preferred format for new projects). Legacy alias: `conceptFile` (deprecated).
 `content` = legacy inline seed content. For new projects empty — full content lives in `project-seed.md`.
 
-The seed is a **living document**. Thinking-skills (`/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-research`) integrate their concept-scope output directly into `project-seed.md` — there is no history log in `project.json`. `/project-backlog` and `/dev-define` only read the current state of `project-seed.md` as seed context.
+The seed is a **living document**. Thinking-skills (`/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-research`) integrate their concept-scope output directly into `project-seed.md` — there is no history log in `project.json`. `/project-plan` and `/dev-define` only read the current state of `project-seed.md` as seed context.
 
 ### Single source of truth
 
@@ -425,10 +425,10 @@ No deletion, no update — append only. For live status of a running run: see `.
 
 | Section             | Written by                                                                         | When                                     |
 | ------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------- |
-| `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-backlog`    | On seed creation/iteration/plan          |
+| `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-plan`    | On seed creation/iteration/plan          |
 | `design`            | `/design-create`, `/design-tokens`                                             | On design spec/page build/theme creation |
 | `theme`             | `/design-tokens`                                                                 | After theme create/update                |
-| `stack`             | `/core-setup`, `/project-backlog`, `/dev-define`, `/dev-build`, `/design-create` | On detection/new deps                    |
+| `stack`             | `/core-setup`, `/project-plan`, `/dev-define`, `/dev-build`, `/design-create` | On detection/new deps                    |
 | `data`              | `/dev-define`, `/game-define`                                                      | On entity definition                     |
 | `endpoints`         | `/dev-define`, `/dev-build`                                                        | On API definition / after build          |
 | `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                  | On run completion (PHASE 6)              |

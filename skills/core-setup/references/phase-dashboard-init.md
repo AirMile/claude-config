@@ -34,7 +34,7 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
    - Set `data.flags.seedPath = ".project/project-seed.md"`. Set `data.flags.hasSeed = true` ONLY if `.project/project-seed.md` exists with > 50 chars (a real concept authored by `/project-seed` or project-add); otherwise `false`.
    - Set `data.source = "/core-setup"` and `data.updated` to current date
    - Write the JSON back to `.project/backlog.json`
-   - The `/project-backlog` button appears once a real concept exists. When it does not yet, Phase 9 prompts the user to run `/project-seed` first.
+   - The `/project-plan` button appears once a real concept exists. When it does not yet, Phase 9 prompts the user to run `/project-seed` first.
 6. Create `.project/project-context.json` with `context` section (initial, updated by build/refactor skills):
    - `context.structure`: file tree of project (same format as previously in CLAUDE.md). Generate from actual file tree after Phase 3/4
    - `context.routing`: route patterns with arrow notation (only web projects with routing, otherwise empty array)

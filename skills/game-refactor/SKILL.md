@@ -38,7 +38,7 @@ This rule exists because refactoring external files risks breaking other feature
 
 - After `/game-verify` completes (features in DONE status)
 - When `.project/features/{name}/feature.json` exists with `tests` section
-- NOT for: fixing bugs (/game-verify), adding features (/game-define), planning (/project-backlog)
+- NOT for: fixing bugs (/game-verify), adding features (/game-define), planning (/project-plan)
 
 ## Input
 

@@ -34,7 +34,7 @@ Safely decommission a **built** feature: remove its code, fix or flag every call
 ## When to Use
 
 - A DONE/DOING (or already shipped) feature is no longer needed and its code should leave the codebase
-- NOT for: un-built TODO/DEFINED items (cancel those via `/project-backlog` update mode or the board UI), removing a skill (delete its `skills/<name>/` directory and clean up references manually), or removing a project from the multi-project setup (`/project-remove`)
+- NOT for: un-built TODO/DEFINED items (cancel those via `/project-plan` update mode or the board UI), removing a skill (delete its `skills/<name>/` directory and clean up references manually), or removing a project from the multi-project setup (`/project-remove`)
 
 ## Workflow
 
@@ -58,7 +58,7 @@ Safely decommission a **built** feature: remove its code, fix or flag every call
 
 1. **Candidate set**: read `.project/backlog.json` → features with `status` DONE or DOING, **plus** `.project/archive/backlog-archive.json#archived[]` (shipped dev-track features). Mark each candidate's origin (`backlog` | `archive`).
 2. **Selection**: argument provided → validate against the candidate set. No argument → numbered-list selection (`shared/SKILL-PATTERNS.md § Numbered List Selection`) over the candidates with status/origin columns.
-   - Selected item has status TODO/DEFINED → stop: `Not built yet — cancel it via /project-backlog update mode or the board UI instead.`
+   - Selected item has status TODO/DEFINED → stop: `Not built yet — cancel it via /project-plan update mode or the board UI instead.`
 3. **Load the feature's footprint** (parallel reads):
    - `.project/features/{name}/feature.json` → `files[]` (may be absent for small items — then components are the only file source)
    - `.project/project-context.json` → components where `feature === "{name}"` (owned components), plus the full `components[]` for the graph scan

@@ -141,7 +141,7 @@ Integrate the most valuable variations and insights from all applied techniques 
 
 ### PHASE 7: Output Destination
 
-> **Todo**: Read `.claude/skills/shared/THINKING-OUTPUT.md` — caller `project-brainstorm`, `{kind}` = `brainstorm`. Add `Applied techniques: {list}` to each confirmation block. Next steps: `/project-critique`, `/project-seed`, `/project-backlog`.
+> **Todo**: Read `.claude/skills/shared/THINKING-OUTPUT.md` — caller `project-brainstorm`, `{kind}` = `brainstorm`. Add `Applied techniques: {list}` to each confirmation block. Next steps: `/project-critique`, `/project-seed`, `/project-plan`.
 
 ---
 

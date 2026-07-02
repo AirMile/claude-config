@@ -91,7 +91,7 @@ This gate is the single entry that absorbs the old standalone "Edit spec" action
 
 1. Look up `.project/features/{$TARGET}/feature.json` → read as spec source (primary).
 2. Fallback: `design.pages[]` filtered by name matching `$TARGET`.
-3. If both empty → ask three structured questions (form choice, anchoring, and escalation per `shared/QUESTIONING.md`):
+3. If both empty → first check the target's `backlog.json` entry: its `description` (written per `shared/BACKLOG.md § Description quality`) is prior input — treat whatever it covers (purpose, scope, key behavior) as answered via a paraphrase-confirm, and anchor the remaining questions in it; never open blank when a card with a description exists. Then ask three structured questions (form choice, anchoring, and escalation per `shared/QUESTIONING.md`):
    1. **Purpose + sections**: "What does this page do? List the sections needed (one per line)."
    2. **Primary action**: "What is the single most important action a user performs here?" — free text
    3. **States**: multi-select — `default` / `loading` / `empty` / `error` / `authenticated-only`
@@ -110,7 +110,7 @@ Routes:   {route-patterns}
 
 1. Look up `.project/features/{$TARGET}/feature.json` → read as spec source (primary).
 2. Fallback: `design.components[]` filtered by name matching `$TARGET`.
-3. If both empty → ask three structured questions (form choice, anchoring, and escalation per `shared/QUESTIONING.md`):
+3. If both empty → first check the target's `backlog.json` entry: its `description` (written per `shared/BACKLOG.md § Description quality`) is prior input — treat whatever it covers (purpose, scope, key behavior) as answered via a paraphrase-confirm, and anchor the remaining questions in it; never open blank when a card with a description exists. Then ask three structured questions (form choice, anchoring, and escalation per `shared/QUESTIONING.md`):
    1. **States**: multi-select — `default` / `hover` / `disabled` / `loading` / `error` / `active` / `checked`
    2. **Props**: "Which props does this component accept? (one per line, e.g. `label`, `onClick`, `disabled?`)"
    3. **Required interaction**: single-select — `keyboard only` / `pointer only` / `both`

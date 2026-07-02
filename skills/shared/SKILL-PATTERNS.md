@@ -22,7 +22,7 @@ Generate an ASCII [diagram type] showing [what to visualize].
 | --------------------- | -------------------- | --------------------------- |
 | Architecture/layers   | Component diagram    | dev-define, design-create |
 | Multi-step workflow   | Flowchart            | dev-build, dev-verify       |
-| Feature decomposition | Tree                 | project-backlog             |
+| Feature decomposition | Tree                 | project-plan             |
 | State transitions     | State machine        | game-define                 |
 | Parallel processes    | Architecture diagram | team-review                 |
 
@@ -198,7 +198,7 @@ Rules:
 
 **Rules:**
 
-- Skills that MAY create `.project/` without a check: `project-backlog`, `project-todo`, `design-create`, `core-setup`
+- Skills that MAY create `.project/` without a check: `project-plan`, `project-todo`, `design-create`, `core-setup`
 - All other skills: if `.project/` does not exist or is empty, show suggestion and stop
 - Do not silently `mkdir -p` the entire `.project/` structure — that is `core-setup`'s responsibility
 - `mkdir -p .project/features/{name}` and `mkdir -p .project/session` within an existing `.project/` is fine
@@ -792,7 +792,7 @@ multiSelect: false
 
 - All smart-todo items are **user-confirmed before write** (they appear inline in the composition menu and the user chooses to add them).
 - Write happens as part of the parent skill's backlog-sync step — not a separate intermediate write.
-- `source` tag always reflects the originating skill so it is treated as INDEPENDENT (preserved across `/project-backlog` rebuilds).
+- `source` tag always reflects the originating skill so it is treated as INDEPENDENT (preserved across `/project-plan` rebuilds).
 
 ---
 

@@ -1,22 +1,22 @@
 ---
-name: project-backlog
-description: "Use with /project-backlog to turn a seed into a prioritized feature backlog."
+name: project-plan
+description: "Use with /project-plan to turn a seed into a gap-checked, prioritized feature backlog."
 reads: [backlog.status, concept.seed, backlog.seedDrift, project.thinking]
 writes: [backlog.status, backlog.features, concept.seed, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 1.9.0
+  version: 2.0.0
   category: project
 ---
 
-# Project Backlog
+# Project Plan
 
 ## Overview
 
 This is the **bridge** between the seed document and the dev or game pipeline.
-Transforms structured idea markdown into a prioritized feature backlog ready for `/dev-define` (web) or `/game-define` (game).
+Transforms structured idea markdown into a prioritized feature backlog ready for `/dev-define` (web) or `/game-define` (game). Along the way it actively hunts for **technical holes** the seed doesn't mention and proposes its own **improvements** (PHASE 1, step 6a) — the output is a plan, not just a transcription.
 
-**Trigger**: `/project-backlog` or `/project-backlog [paste markdown]`
+**Trigger**: `/project-plan` or `/project-plan [paste markdown]`
 
 ## Input
 
@@ -67,15 +67,15 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE
 
 ### PHASE 0: Input Detection
 
-> **Todo**: Read `.claude/skills/project-backlog/references/input-detection.md`
+> **Todo**: Read `.claude/skills/project-plan/references/input-detection.md`
 
 ### PHASE 0.5: Research (Optional)
 
-> **Todo**: Read `.claude/skills/project-backlog/references/research.md`
+> **Todo**: Read `.claude/skills/project-plan/references/research.md`
 
 ### PHASE 1: Feature Extraction
 
-> **Todo**: Read `.claude/skills/project-backlog/references/feature-extraction.md`
+> **Todo**: Read `.claude/skills/project-plan/references/feature-extraction.md`
 
 ### PHASE 2: Dependency Analysis
 
@@ -210,11 +210,11 @@ added, features marked INDEPENDENT/CANCELLED (incl. cancel-proposal outcomes fro
 reshuffles from this run. This skill is in plan mode — drift table and proposed
 rewrite go into the plan file alongside the feature plan. On "Yes" → carry
 `seedUpdateApproved: true` to PHASE 4. On "Skip" → carry `seedDrift[]` to PHASE 4
-(written to `backlog.json#seedDrift[]`). `source: "/project-backlog"`,
+(written to `backlog.json#seedDrift[]`). `source: "/project-plan"`,
 `ref: "feature:{name}"` where applicable.
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the feature plan (features table with type/risk/phase/dependencies + ASCII dependency tree + priority breakdown) to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 4 (`backlog.json` write + `.project/project.json` sync + server start).
 
 ### PHASE 4: Generate Backlog
 
-> **Todo**: Read `.claude/skills/project-backlog/references/generate-backlog.md`
+> **Todo**: Read `.claude/skills/project-plan/references/generate-backlog.md`

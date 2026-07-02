@@ -15,7 +15,7 @@ reads:
 writes: [feature.verificationProfile, project-context.learnings]
 metadata:
   author: claude-config
-  version: 0.2.0
+  version: 0.3.0
   category: dev
 ---
 

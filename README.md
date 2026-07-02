@@ -65,8 +65,8 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 
 | Pipeline    | Flow                                                                                                                                                   |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `dev`       | `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere) |
-| `game`      | `project-seed` → `project-backlog` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere, Godot 4.x / GUT)                                |
+| `dev`       | `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere) |
+| `game`      | `project-seed` → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere, Godot 4.x / GUT)                                |
 | `design`    | [`/design-tokens`] (incl. motion packs) → `design-create` (design/build/convert) → `design-content` (fill copy) → `design-check`                       |
 | `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                   |
 

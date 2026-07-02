@@ -16,7 +16,7 @@ Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and
                [/project-brainstorm] ──────────┤
                [/project-critique]  ───────────┤
                                                ▼
-                                 /project-backlog ──→ backlog.json
+                                 /project-plan ──→ backlog.json
                                                │
                                                ▼
                         /dev-define ──→ /dev-build ──→ /dev-verify ──→ [/dev-refactor]
@@ -29,14 +29,14 @@ Standalone (dev): `/dev-security` (security audit).
 ## Design Pipeline
 
 ```
-/project-backlog ──► THEME tasks (transition: "defining")
+/project-plan ──► THEME tasks (transition: "defining")
                                       │
                                       ▼
                      /design-tokens ──► design tokens + motion packs (Apple/Material/Fluent/Carbon),
                           │              spring physics, choreography, glass surfaces
                           │              → writes project.json#theme + devinfo.tokenDrift
                           ▼
-/project-backlog ──► PAGE/COMPONENT tasks (transition: "designing" | "converting")
+/project-plan ──► PAGE/COMPONENT tasks (transition: "designing" | "converting")
                                       │
                                       ▼
                      /design-create (Build) ──► compose: select features + components
@@ -76,7 +76,7 @@ Design items skip `defining/defined` — design captures pages/flows, Build gene
 | Skill            | Input                            | Output                      | Requires stage | Produces stage |
 | ---------------- | -------------------------------- | --------------------------- | -------------- | -------------- |
 | project-research | topic / question                 | research findings           | —              | —              |
-| project-backlog  | seed document / task description | backlog.json                | —              | —              |
+| project-plan  | seed document / task description | backlog.json                | —              | —              |
 | project-todo     | description                      | backlog item                | —              | —              |
 | dev-define       | backlog item / user reqs         | feature.json (req + arch)   | —              | defined        |
 | dev-build        | feature.json (defined)           | feature.json (code + tests) | defined        | built          |

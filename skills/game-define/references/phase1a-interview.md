@@ -29,7 +29,7 @@ All required dimensions covered → trigger the [Stop Condition](#stop-condition
 
 ## Interview Start
 
-**Context echo** — open the interview with a short "what I already know" block (2-3 lines max) built from PHASE 0 context: backlog title + risk, concept pitch/genre fragment, scene or script scan hits. This shows the user what the interview builds on so they never have to repeat known ground. The `PREVIOUSLY DECIDED` list and risk-check line (from SKILL.md) render directly above this block — don't duplicate their content in the echo.
+**Context echo** — open the interview with a short "what I already know" block (2-3 lines max) built from PHASE 0 context: backlog title + `description` + risk, concept pitch/genre fragment, scene or script scan hits. This shows the user what the interview builds on so they never have to repeat known ground. The `PREVIOUSLY DECIDED` list and risk-check line (from SKILL.md) render directly above this block — don't duplicate their content in the echo.
 
 **Opening question** — compose it fresh per feature (`shared/QUESTIONING.md § Before Asking` — no canned scaffold, no recycled phrasing across sessions). Its job: target the biggest genuine unknown left after the context echo, anchored in one concrete fact from it, with 2-3 example directions where natural. Example of the _shape_ (never reuse the wording):
 
@@ -100,6 +100,12 @@ Follow the escalation ladder in `shared/QUESTIONING.md § Escalation Ladder`, ap
 
 ## Context from Backlog
 
-The backlog task title already tells you _what_ is being defined. Do not re-explain it. The interview explores the _why_, _how it feels to the player_, and _where it ends_ — not what it is.
+The backlog record (title + `description`) already tells you _what_ is being defined. Do not re-explain it. The interview explores the _why_, _how it feels to the player_, and _where it ends_ — not what it is.
+
+**The backlog `description` is coverage, not decoration.** Treat it as a prior answer in the `§ Before Asking` check: a specific description (written per `shared/BACKLOG.md § Description quality`) often covers Goal & why and sometimes mechanics or scope boundaries — paraphrase-confirm it ("The card says {gist} — still accurate?") instead of asking an open goal question the card already answers.
+
+**Backlog-generated features**: when the feature came out of `/project-plan` decomposition (`source: "/project-plan"`), the user did not author the card — "what gameplay problem does this solve?" has no answer they can generate and reads as if you ignored your own planning. Open with your derived understanding (description + concept) as a paraphrase-confirm, then spend the interview on the genuinely open dimensions: player experience, mechanics & rules, failure modes.
+
+**Vague description**: if the card text is too thin to anchor on (a title restatement, missing behavior or boundary), name that explicitly — "The card only says '{description}', which doesn't tell me {specific gap}" — and ask the user to fill exactly that gap. Never silently pretend the card gave context it didn't; naming the gap also surfaces weak descriptions for repair.
 
 If `SEED_CONTEXT` or `project.json#concept` is available, use it to sharpen questions — e.g. "Your concept mentions {genre} — does this feature need to fit a specific game feel for that genre?"

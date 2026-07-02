@@ -60,7 +60,7 @@ Data: {N} entities ({new} new)
 Stack: {N} packages ({new} new)
 
 Next steps:
-  1. /project-backlog → generate backlog from concept (if no backlog yet)
+  1. /project-plan → generate backlog from concept (if no backlog yet)
   2. /game-build {feature-name} → start implementation (if backlog already exists)
 ```
 

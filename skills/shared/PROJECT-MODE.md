@@ -85,7 +85,7 @@ for team + empty/CLOSED.
 
 The backlog UI exposes an ⚙ icon-button (not a slider) that opens a "Project settings" modal with a solo/team toggle. Change is immediately POSTed to the local serve-backlog server which patches `project.json#team.mode` atomically.
 
-**Important for strike-edge and other projects:** the board is rendered by the viewer server from the current template + `.project/backlog.json`, so re-opening the board via the viewer (or `/project-backlog`) always shows the ⚙ button. Skills always read `project.json` — not the board UI — so the file is the correct source of truth regardless.
+**Important for strike-edge and other projects:** the board is rendered by the viewer server from the current template + `.project/backlog.json`, so re-opening the board via the viewer (or `/project-plan`) always shows the ⚙ button. Skills always read `project.json` — not the board UI — so the file is the correct source of truth regardless.
 
 **Batch buttons:** the board hides the per-column batch buttons (`batchSkill`) when `team.mode === "team"` — batch is a solo concept; team ships per feature via individual PRs. See `backlog-template.html` `renderSection` gate (`batchSkill && items.length > 0 && data.team?.mode !== "team"`). The skill-side guard (§ Team-mode batch guard above) backs this up for manual invokes.
 

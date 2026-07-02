@@ -74,7 +74,7 @@ For each confirmed page (that is not already a PAGE-typed feature in the list):
      "status": "TODO",
      "phase": "P2",
      "description": "Screen: {route hint}. Contains: {feature names}.",
-     "source": "/project-backlog",
+     "source": "/project-plan",
      "dependencies": ["{feature-name-1}", "{feature-name-2}"]
    }
    ```

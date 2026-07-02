@@ -16,7 +16,7 @@
      "project": "{Project Name}",
      "generated": "{YYYY-MM-DD}",
      "updated": "{YYYY-MM-DD}",
-     "source": "/project-backlog",
+     "source": "/project-plan",
      "overview": "{Brief description from source}",
      "features": [
        {
@@ -25,7 +25,7 @@
          "status": "TODO",
          "phase": "P1|P2|P3|P4",
          "description": "{description}",
-         "source": "/project-backlog",
+         "source": "/project-plan",
          "dependencies": ["{other-feature}"],
          "risk": "{1-5 from PHASE 1 risk-score — WEB MODE only, omit in game mode}"
        }
@@ -47,7 +47,7 @@
    3. **Tie-breaker** within the same topological "layer": higher `risk` first (build/validate the uncertain features — external APIs, native modules — earliest), then PHASE 1 extraction order
 
    **[WEB MODE] In update mode, apply merge rules:**
-   Merge-rule canon (DOING/DONE protected, MODIFIED-TODO update, obsolete → cancel-proposal flow, INDEPENDENT preserve): `input-detection.md` § "Update backlog" + `update-reconcile.md`. Write-level specifics on top: preserve `status`/`stage`/`phase`/`date` from the current backlog; NEW features get `status: "TODO"`, `stage: null`, `source: "/project-backlog"`; MODIFIED features keep their existing `source` (set `"/project-backlog"` only if missing); user-confirmed cancellations stay in the array with `status: "CANCELLED"` + `cancelledReason`; set `updated` to current date, keep original `generated`.
+   Merge-rule canon (DOING/DONE protected, MODIFIED-TODO update, obsolete → cancel-proposal flow, INDEPENDENT preserve): `input-detection.md` § "Update backlog" + `update-reconcile.md`. Write-level specifics on top: preserve `status`/`stage`/`phase`/`date` from the current backlog; NEW features get `status: "TODO"`, `stage: null`, `source: "/project-plan"`; MODIFIED features keep their existing `source` (set `"/project-plan"` only if missing); user-confirmed cancellations stay in the array with `status: "CANCELLED"` + `cancelledReason`; set `updated` to current date, keep original `generated`.
 
 3. **Write the data store:**
    - Serialize the built data object (`JSON.stringify(data, null, 2)`) → Write to `.project/backlog.json`

@@ -223,7 +223,7 @@ Per-feature backlog sync, then one commit. (No §4 — re-audit is folded into �
    nav-bar (COMPONENT)  clean         0
 
    Commit: audit(batch): {summary}
-   Next: /design-create → next page · /project-backlog → revise scope
+   Next: /design-create → next page · /project-plan → revise scope
    ═════════════════════════════════════════════════════════════
    ```
 

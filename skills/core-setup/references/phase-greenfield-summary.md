@@ -60,8 +60,8 @@ Steps leads with the backlog/define flow instead of repeating `/project-seed`.
 
 AskUserQuestion (single-select):
 
-- "Start backlog server (Recommended)" — `/project-backlog start` on `http://localhost:9876`. Show `{N} todo(s) in backlog: {list of first 3 names}`.
-- "Skip" — start manually later with `/project-backlog`
+- "Start backlog server (Recommended)" — `/project-plan start` on `http://localhost:9876`. Show `{N} todo(s) in backlog: {list of first 3 names}`.
+- "Skip" — start manually later with `/project-plan`
 
 Store result as `backlog_started` (true/false) for smart next steps.
 
@@ -92,7 +92,7 @@ Then only relevant follow-up skills (no repetition of todos already in the backl
 
 **2. Plan — set up feature backlog:**
 
-- All stacks (web, game, CLI, etc.): `/project-backlog` — convert ideas into a prioritized feature backlog (auto-detects stack)
+- All stacks (web, game, CLI, etc.): `/project-plan` — convert ideas into a prioritized feature backlog (auto-detects stack)
 
 **3. Define + build first feature:**
 
@@ -103,7 +103,7 @@ Then only relevant follow-up skills (no repetition of todos already in the backl
 
 ```
 Tip: {N} todo(s) ready in .project/backlog.json.
-Start later with /project-backlog to check them off visually.
+Start later with /project-plan to check them off visually.
 ```
 
 **Additionally for frontend/fullstack** (skip for game/CLI/desktop/backend-only):

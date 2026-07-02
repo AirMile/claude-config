@@ -151,7 +151,7 @@ Integrate all findings from all applied techniques into one refined idea documen
 
 ### PHASE 7: Output Destination
 
-> **Todo**: Read `.claude/skills/shared/THINKING-OUTPUT.md` — caller `project-critique`, `{kind}` = `critique`. Add `Applied techniques: {list}` to each confirmation block. Next steps: `/project-brainstorm`, `/project-seed`, `/project-backlog`.
+> **Todo**: Read `.claude/skills/shared/THINKING-OUTPUT.md` — caller `project-critique`, `{kind}` = `critique`. Add `Applied techniques: {list}` to each confirmation block. Next steps: `/project-brainstorm`, `/project-seed`, `/project-plan`.
 
 ---
 

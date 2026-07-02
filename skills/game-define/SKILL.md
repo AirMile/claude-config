@@ -11,7 +11,7 @@ reads:
 writes: [feature.requirements, backlog.stage, concept.seed, feature.seedDrift]
 metadata:
   author: claude-config
-  version: 3.2.0
+  version: 3.3.0
   category: game
 ---
 
@@ -90,12 +90,12 @@ The skill gathers requirements through targeted questions, optionally researches
    header: "Concept without backlog"
    question: "There is a concept but no backlog yet. Generate a backlog first?"
    options:
-     - label: "Yes, /project-backlog first (Recommended)", description: "Generate backlog from concept, then define features"
+     - label: "Yes, /project-plan first (Recommended)", description: "Generate backlog from concept, then define features"
      - label: "No, define directly", description: "Define a standalone feature without backlog"
    multiSelect: false
    ```
 
-   "Yes" → stop, show: `Run /project-backlog to convert your concept into a backlog.`
+   "Yes" → stop, show: `Run /project-plan to convert your concept into a backlog.`
    "No" → continue to option d.
 
    **d) No backlog, no concept (or user chose direct define):**
@@ -109,6 +109,7 @@ Find feature by name → keep `"status": "TODO"`, set `"stage": "defining"`, `da
 Write back via Edit.
 Not found → skip (feature is added to backlog at PHASE 5).
 The card stays in TODO but gets a pulsing `defining` stage-badge.
+Keep the card's `description`, `risk`, and `dependencies` in memory — `description` feeds the PHASE 1a context echo and coverage check, `risk` the risk-check line.
 
 2b. **Feature existence check** (after name determination, before context-load):
 
@@ -467,21 +468,25 @@ Design based on requirements (and research if done). Generate an ASCII state mac
 ```
 
 **Scripts:**
-| File | Class | Purpose |
-|------|-------|---------|
+
+| File      | Class       | Purpose   |
+| --------- | ----------- | --------- |
 | {path}.gd | {ClassName} | {purpose} |
 
 **Signals:**
+
 | Signal | Emitter | Receivers | Purpose |
-|--------|---------|-----------|---------|
+| ------ | ------- | --------- | ------- |
 
 **Resources:**
+
 | File | Type | Purpose |
-|------|------|---------|
+| ---- | ---- | ------- |
 
 **Test Strategy:**
+
 | REQ ID | Test File | Test Function | Type |
-|--------|-----------|---------------|------|
+| ------ | --------- | ------------- | ---- |
 
 ### Dependency Analysis
 

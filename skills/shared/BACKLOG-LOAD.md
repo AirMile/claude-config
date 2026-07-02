@@ -46,6 +46,7 @@ node -e "
     name: feat.name,
     type: feat.type,
     status: feat.status,
+    description: feat.description || null,
     risk: feat.risk ?? null,
     dependencies: feat.dependencies || [],
     externalRef: feat.externalRef || null,
@@ -55,7 +56,7 @@ node -e "
 " 2>/dev/null || echo "BACKLOG_NOT_PRESENT"
 ```
 
-**Use for**: risk-check (skip ≥4 warning), dependency-status check, `externalRef` passthrough to `feature.json` in PHASE 3.
+**Use for**: risk-check (skip ≥4 warning), dependency-status check, `externalRef` passthrough to `feature.json` in PHASE 3, and `description` as interview anchor in PHASE 1a (context echo + coverage check — see `BACKLOG.md § Description quality`).
 
 ### Profile: `ready-queue`
 

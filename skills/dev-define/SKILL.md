@@ -20,7 +20,7 @@ writes:
 writes-terminal: [backlog.overview]
 metadata:
   author: claude-config
-  version: 3.7.0
+  version: 3.8.0
   category: dev
 ---
 
@@ -59,7 +59,7 @@ visible — no risk of forgetting phases.
    b) **No name provided** (`/dev-define`): resolve in this priority order:
    1. Backlog transition match — `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` (parse per `shared/BACKLOG.md → Lifecycle Protocol → Read`) → auto-select, show `Backlog: ✓ Task picked up — {name}`, go to step 2.
    2. First TODO in backlog → confirm via AskUserQuestion ("{name} (Recommended)" / "Different feature").
-   3. No backlog but concept present (`SEED_CONTEXT.present` per `shared/SEED.md`) → AskUserQuestion: generate backlog first via `/project-backlog` (Recommended, then stop) or define a standalone feature directly.
+   3. No backlog but concept present (`SEED_CONTEXT.present` per `shared/SEED.md`) → AskUserQuestion: generate backlog first via `/project-plan` (Recommended, then stop) or define a standalone feature directly.
    4. No backlog, no concept (or direct-define chosen) → offer 3 kebab-case suggestions via AskUserQuestion, derived from `seed.goals[]`/`seed.pitch` noun-phrases, falling back to `stack.framework` generics.
 
 2. **Feature existence check** (before context load):
@@ -93,7 +93,7 @@ visible — no risk of forgetting phases.
      profile: read-feature
      feature-name: {feature-name}
      ```
-     Keep `risk`, `dependencies`, `externalRef` in memory for PHASE 1 and PHASE 3. Mutations (status, date, `auto` flag) happen in PHASE 4. `BACKLOG_FEATURE_NOT_FOUND` or `BACKLOG_HTML: not present` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
+     Keep `risk`, `dependencies`, `externalRef`, and `description` in memory for PHASE 1 and PHASE 3 — `description` feeds the PHASE 1a context echo and coverage check. Mutations (status, date, `auto` flag) happen in PHASE 4. `BACKLOG_FEATURE_NOT_FOUND` or `BACKLOG_HTML: not present` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
 
 6. **Optional context** (skip each item if results would be empty):
    - **Thinking files**: Grep `.project/thinking/*.md` for feature name. Read matches as PHASE 1 input.

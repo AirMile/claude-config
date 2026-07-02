@@ -25,7 +25,7 @@ metadata:
 
 Transform any idea, concept, feature, or task assignment into a structured seed document through targeted questions and synthesis. Works with any type of input — creative concepts (games, stories, art), product ideas (apps, services, businesses), feature requests, or task assignments. Can also sync existing seed documents with the current project state (backlog, codebase).
 
-The output is a structured markdown document that can be used as input for `/project-backlog`, `/project-brainstorm`, or `/project-critique`.
+The output is a structured markdown document that can be used as input for `/project-plan`, `/project-brainstorm`, or `/project-critique`.
 
 ## When to Use
 

@@ -39,6 +39,6 @@ For selected fields: write to `project.json`. Deselected fields remain empty (us
 
 Do NOT create `.project/project-seed.md`. The accepted pitch lives in `project.json#seed.pitch` only — `/project-seed` is the sole author of the concept document (`shared/SEED.md § Owner`); the mature report's next steps prompt for it.
 
-If `.project/backlog.json` already exists (non-frontend projects that skip PHASE 5.7): read backlog.json → parse JSON → set `data.flags.seedPath = ".project/project-seed.md"` and `data.flags.hasSeed = true` ONLY when `.project/project-seed.md` already exists with > 50 chars (otherwise `false`) → write the JSON back. The `/project-backlog` button appears once a real concept exists.
+If `.project/backlog.json` already exists (non-frontend projects that skip PHASE 5.7): read backlog.json → parse JSON → set `data.flags.seedPath = ".project/project-seed.md"` and `data.flags.hasSeed = true` ONLY when `.project/project-seed.md` already exists with > 50 chars (otherwise `false`) → write the JSON back. The `/project-plan` button appears once a real concept exists.
 
 When done: return to PHASE 5.

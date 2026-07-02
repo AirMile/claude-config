@@ -16,7 +16,7 @@
    - Use `SEED_CONTEXT.markdown` as concept content
    - Read `backlog.json` → parse JSON
    - Analyze differences between concept and existing backlog
-   - Check `data.features[]` in `backlog.json` to identify INDEPENDENT features: a feature is INDEPENDENT when its `source` field exists AND is not `"/project-backlog"`. Features without a `source` field (or with `"/project-backlog"`) are concept-derived and may be updated or proposed for cancellation by this run.
+   - Check `data.features[]` in `backlog.json` to identify INDEPENDENT features: a feature is INDEPENDENT when its `source` field exists AND is not `"/project-plan"`. Features without a `source` field (or with `"/project-plan"`) are concept-derived and may be updated or proposed for cancellation by this run.
    - Compare `SEED_CONTEXT.markdown` against existing backlog features (semantic match by name/description)
    - Show comparison:
 

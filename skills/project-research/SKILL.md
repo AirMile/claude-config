@@ -316,7 +316,7 @@ Include Competitive Landscape table and/or Technical Feasibility assessment wher
 Auto-save without extra questions:
 
 1. Write report to `.project/thinking/{concept-name}-research.md` (full report as user archive)
-2. Add `## Research Findings` section to `.project/project-seed.md` (this is what project-backlog/dev-define see as context)
+2. Add `## Research Findings` section to `.project/project-seed.md` (this is what project-plan/dev-define see as context)
 3. Confirm:
 
 ```
@@ -329,7 +329,7 @@ Applied techniques: {list}
 Next steps:
 - /project-critique - Critically analyze with research context
 - /project-brainstorm - Creatively expand with new insights
-- /project-backlog - Convert to feature backlog
+- /project-plan - Convert to feature backlog
 ```
 
 **Scope = feature or page:**

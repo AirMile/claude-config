@@ -10,7 +10,7 @@ Shared output-destination protocol for the thinking skills (`project-seed`, `pro
 | `project-brainstorm` | `brainstorm` | Confirmation blocks include `Applied techniques: {list}` |
 | `project-critique`   | `critique`   | Confirmation blocks include `Applied techniques: {list}` |
 
-`{next-steps}` in confirmation blocks = the two sibling thinking skills + `/project-backlog` (e.g. for brainstorm: `/project-critique`, `/project-seed`, `/project-backlog`).
+`{next-steps}` in confirmation blocks = the two sibling thinking skills + `/project-plan` (e.g. for brainstorm: `/project-critique`, `/project-seed`, `/project-plan`).
 
 ---
 

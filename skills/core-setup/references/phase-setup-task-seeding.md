@@ -38,7 +38,7 @@ Skip this phase entirely if `needsTheme = false`.
 }
 ```
 
-5. Always set `data.flags.hasSeed = true` and `data.flags.seedPath = ".project/project-seed.md"` (even if the design-tokens item already existed) — this makes the `/project-backlog` button appear in the backlog dashboard
+5. Always set `data.flags.hasSeed = true` and `data.flags.seedPath = ".project/project-seed.md"` (even if the design-tokens item already existed) — this makes the `/project-plan` button appear in the backlog dashboard
 6. Set `data.updated` to current date (`YYYY-MM-DD`)
 7. Write the JSON back to `.project/backlog.json`
 

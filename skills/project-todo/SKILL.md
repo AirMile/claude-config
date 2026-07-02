@@ -12,7 +12,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 1.1.0
+  version: 1.2.0
   category: project
 ---
 
@@ -25,7 +25,7 @@ Capture new backlog items, optionally flesh them out through 1-2 quick thinking 
 ## When to Use
 
 - User has a new feature, change, bug fix, improvement, mechanic, or content idea for an existing project
-- User wants to quickly capture an item without full `/project-backlog`
+- User wants to quickly capture an item without full `/project-plan`
 - User wants to think through an idea before adding to backlog
 
 NOT for: concept-level ideation (`/project-seed`), iterating on existing items (`/project-brainstorm`, `/project-critique`).
@@ -134,7 +134,7 @@ Check whether `.project/project.json` exists.
    question: "How do you want to proceed?"
    options:
      - label: "Run /project-seed first (Recommended)"
-       description: "Structure the feature before adding it — produces a seed document for /project-backlog"
+       description: "Structure the feature before adding it — produces a seed document for /project-plan"
      - label: "Add as todo anyway"
        description: "Add to backlog without extra planning"
    multiSelect: false
@@ -335,9 +335,11 @@ multiSelect: false
    }
    ```
 
+   **`description` norm:** apply `shared/BACKLOG.md § Description quality` — self-contained, concrete behavior + scope boundary, thinking-round answers (PHASE 1a) folded in, 1–3 sentences. The card text is the only context `/dev-define` / `/game-define` gets when it is picked up later; never write a bare restatement of the name.
+
    **`transition` rule:** only include `"transition": "designing"` when `type === "PAGE"` or `type === "COMPONENT"`. Omit the field entirely for all other types (FEATURE, API, THEME, etc.).
 
-   The `source: "/project-todo"` field signals to `/project-backlog` that this feature was added manually (INDEPENDENT) and must never be overwritten during a backlog rebuild.
+   The `source: "/project-todo"` field signals to `/project-plan` that this feature was added manually (INDEPENDENT) and must never be overwritten during a backlog rebuild.
 
 4. **Update metadata:** set `data.updated` to current date (`YYYY-MM-DD`)
 

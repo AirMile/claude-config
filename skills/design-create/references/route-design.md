@@ -233,7 +233,7 @@ Detect first:
 
 - `$HAS_BUILD_CANDIDATES` (true/false): are there PAGE or COMPONENT items ready to build? True if **either**:
   - `design.pages[]` or `design.components[]` has an entry with `status: "DEF"` and no visual reference in `.project/wireframes/` or `.screenshots[]`, **or**
-  - `backlog.json` has a feature with `(type === "PAGE" || type === "COMPONENT") && transition === "designing"` (newly created by `/project-backlog` or `/project-todo`).
+  - `backlog.json` has a feature with `(type === "PAGE" || type === "COMPONENT") && transition === "designing"` (newly created by `/project-plan` or `/project-todo`).
 - `$HAS_PAGE_CANDIDATES` (true/false): subset of the above, PAGE type only.
 - `$HAS_COMPONENT_CANDIDATES` (true/false): subset of the above, COMPONENT type only.
 

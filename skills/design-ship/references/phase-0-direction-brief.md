@@ -38,7 +38,7 @@ Resolve `{target}` in this order:
 3. **Still nothing** → merge the Build-route candidate sources (`design.pages[]/components[]`
    with `status: "DEF"`; backlog PAGE/COMPONENT with `transition: "designing"` or
    `status: "TODO"`) and present an `AskUserQuestion` (max 4, rest via Other). Zero candidates →
-   stop: `"design-ship: no PAGE/COMPONENT candidates. Run /project-backlog or /design-create
+   stop: `"design-ship: no PAGE/COMPONENT candidates. Run /project-plan or /design-create
 first."`
 
 Set `$TARGET_TYPE` (PAGE | COMPONENT) from the backlog/spec entry.

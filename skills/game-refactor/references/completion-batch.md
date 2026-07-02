@@ -188,7 +188,7 @@ Refactoring complete. Features remain in DONE status.
 
 Next steps:
   1. /game-define {next-feature} → next feature from backlog
-  2. /project-backlog → revisit backlog if scope has changed
+  2. /project-plan → revisit backlog if scope has changed
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

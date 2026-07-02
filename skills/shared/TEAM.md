@@ -20,7 +20,7 @@ Three signals:
 
 | Phase               | Relevant                                                               | Less relevant in mature team repo                      |
 | ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------ |
-| Concept / discovery | (not your task — team already has a concept or backlog)                | `/project-seed`, `/project-backlog` (greenfield tools) |
+| Concept / discovery | (not your task — team already has a concept or backlog)                | `/project-seed`, `/project-plan` (greenfield tools) |
 | Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas) | —                                                      |
 | Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)       | —                                                      |
 | Define              | `/dev-define`, `/design-create`                                      | —                                                      |

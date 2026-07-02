@@ -129,7 +129,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    - If not found: warn user but continue
      ```
      WARNING: No architecture-baseline.md found.
-     Run /project-backlog or create .claude/research/architecture-baseline.md for better context.
+     Run /project-plan or create .claude/research/architecture-baseline.md for better context.
      Continuing without baseline...
      ```
 

@@ -283,7 +283,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 
   "suggestionsLog": [
     {
-      "skill": "project-backlog",
+      "skill": "project-plan",
       "type": "COMPONENT",
       "name": "Modal",
       "status": "accepted",
@@ -340,7 +340,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 - `observations` — findings, suggestions for other features
 - `tests.verificationCheckpoint` — acceptance criteria mapping result (gaps, mismatches, adjustments)
 
-**Added by reuse-discovery (dev-define, project-backlog, dev-build, dev-verify):**
+**Added by reuse-discovery (dev-define, project-plan, dev-build, dev-verify):**
 
 - `suggestionsLog[]` — maintained by all four pipeline skills that suggest COMPONENT/PAGE todos, and by `design-create` (Build/Convert routes) for gap-discovery (direction-flag `frontend→dev`). Append-only. Schema: `{ skill, type, name, status: "accepted"|"rejected", at, direction? }`. Dedup key: `(name, skill)`. A proposal that was once rejected (`status: "rejected"`) is not re-proposed by the same skill, even if the trigger recurs. A new trigger from a different skill may re-propose (different detection source) — see dedupe logic in the individual skill docs.
 

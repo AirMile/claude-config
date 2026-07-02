@@ -13,7 +13,7 @@ The backlog is a plain JSON data store. The kanban board UI is rendered by the s
 
 `serve-backlog.js` injects one server-computed field into the JSON payload on every `GET /{project}/backlog` request:
 
-- **`data.seedDrift[]`** — deferred seed-drift entries, written when a skill detects seed divergence without rewriting the seed inline (the user chose "Skip — leave seed as-is" at the Seed Alignment Check, or the skill records drift silently like `/project-todo`). Each entry: `{ category, seedSays, featureDecides, source, ref, detectedAt }` (see `shared/SEED.md § Alignment Check § Drift entry schema`). `category` ∈ `{ "contradiction", "new-direction", "scope-expansion" }`. `source` identifies the writing skill (`/project-backlog`, `/project-todo`, `/project-retire`). Consumed by `/project-seed § Sync`, `/project-brainstorm`, and `/project-critique` on concept-scope save — first successful seed rewrite removes the processed entries. Optional; absent on backlogs that never deferred drift. Strip before saving if accidentally included in a payload.
+- **`data.seedDrift[]`** — deferred seed-drift entries, written when a skill detects seed divergence without rewriting the seed inline (the user chose "Skip — leave seed as-is" at the Seed Alignment Check, or the skill records drift silently like `/project-todo`). Each entry: `{ category, seedSays, featureDecides, source, ref, detectedAt }` (see `shared/SEED.md § Alignment Check § Drift entry schema`). `category` ∈ `{ "contradiction", "new-direction", "scope-expansion" }`. `source` identifies the writing skill (`/project-plan`, `/project-todo`, `/project-retire`). Consumed by `/project-seed § Sync`, `/project-brainstorm`, and `/project-critique` on concept-scope save — first successful seed rewrite removes the processed entries. Optional; absent on backlogs that never deferred drift. Strip before saving if accidentally included in a payload.
 
 ## Reading the backlog
 
@@ -27,7 +27,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
   "project": "Project name",
   "generated": "2026-01-15",
   "updated": "2026-01-20",
-  "source": "/project-backlog",
+  "source": "/project-plan",
   "overview": "Short description",
   "features": [
     {
@@ -36,7 +36,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
       "status": "TODO|DEFINED|DOING|DONE|CANCELLED",
       "phase": "P1|P2|P3|P4",
       "description": "Description",
-      "source": "/project-backlog",
+      "source": "/project-plan",
       "dependencies": ["other-feature"],
       "risk": "1-5|null",
       "date": "2026-01-15|null",
@@ -72,6 +72,16 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
 
 The `audit` field is **design-track-specific** (type `PAGE` or `COMPONENT`). `buildScreenshot`/`buildSmokeStatus`/`buildSmokeError` are written by `/design-create` Build (smoke-render). `lastRun`/`scopes`/`findings` are written by `/design-check` PHASE 4.3. No field is required; consumers check for presence. PASS status can be derived from `findings.critical === 0` — no separate boolean needed.
 
+## Description quality
+
+The `description` field is the only planning context that survives until `/dev-define` / `/game-define` picks the card up — the define interview anchors its questions on it, and the conversation in which the feature was extracted is long gone by then. Every writer (`/project-plan`, `/project-todo`, `/team-issues`, discovery flows) applies the same norm:
+
+- **Self-contained**: readable weeks later by a user who forgot the planning conversation. The card is the memory.
+- **Concrete behavior**: what the user/player can observably do or see when this ships — never a noun phrase that restates the title. `user-dashboard` → not "Dashboard for users" but "Logged-in user sees an overview of their own listings with status and can archive from there."
+- **Scope boundary**: when planning decided something is out of scope, deferred, or assumed, name it ("excludes admin stats", "assumes auth exists").
+- **Decisions folded in**: answers from planning question-rounds (open-question resolutions, thinking rounds) that shape this feature land in the description — a decision that only lives in the planning chat is lost.
+- **Length**: 1–3 sentences. Needing more usually means the feature is too large (split it) or the detail belongs in define, not on the card.
+
 ## Writing the backlog
 
 **Legacy migration on first write:** if `.project/backlog.json` does not exist but `.project/backlog.html` does, migrate before mutating: extract the JSON from `<script id="backlog-data">`, add `"schemaVersion": 2`, write it to `.project/backlog.json`, and delete `.project/backlog.html`. Then proceed below. (Idempotent — once `backlog.json` exists this step never fires again.)
@@ -94,7 +104,7 @@ For small mutations (status flip, one field) prefer the Edit tool on the JSON fi
 
 The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/dev-define"`, `"/design-create"`.
 
-**Independent rule:** A feature is INDEPENDENT (never overwritten by `/project-backlog` during rebuild) when `source` is set to anything other than `"/project-backlog"`. Features without a `source` field, or with `"/project-backlog"`, are concept-derived and managed by `/project-backlog`.
+**Independent rule:** A feature is INDEPENDENT (never overwritten by `/project-plan` during rebuild) when `source` is set to anything other than `"/project-plan"`. Features without a `source` field, or with `"/project-plan"`, are concept-derived and managed by `/project-plan`.
 
 Readers also accept slash-less variants (`"project-todo"`) and legacy values (`"dev-todo"`) — both are still INDEPENDENT under the rule above.
 
@@ -157,11 +167,11 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 
 | Status      | Label      | Set by                                                                                                       |
 | ----------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| `TODO`      | To design  | `/design-create` Capture, `/project-todo`, `/project-backlog`, reuse-discovery                               |
+| `TODO`      | To design  | `/design-create` Capture, `/project-todo`, `/project-plan`, reuse-discovery                               |
 | `DEFINED`   | To convert | `/design-create` Brief (Path B — offline handoff)                                                            |
 | `DOING`     | Building   | `/design-create` Build (Path A) or `/design-create` Convert route (Path B)                                   |
 | `DONE`      | Shipped    | `/design-check` (PAGE PASS) — both build and convert pages                                                   |
-| `CANCELLED` | Archived   | Manually via UI (○ button), `/project-backlog` update mode (cancel-proposal), `/project-retire` — restorable |
+| `CANCELLED` | Archived   | Manually via UI (○ button), `/project-plan` update mode (cancel-proposal), `/project-retire` — restorable |
 
 **Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
 
@@ -177,11 +187,11 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 | ------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Quick "just thought of something" addition              | `/project-todo`                                                         |
 | Full design (screenshot, Figma, brief)                  | `/design-create` Capture                                                |
-| Bulk-init from concept or brainstorm output             | `/project-backlog`                                                      |
-| Pattern detection during build (cross-page reuse)       | `/project-backlog` reuse-discovery                                      |
+| Bulk-init from concept or brainstorm output             | `/project-plan`                                                      |
+| Pattern detection during build (cross-page reuse)       | `/project-plan` reuse-discovery                                      |
 | Convert existing card from sketch/wireframe/Figma/Canva | `/design-create` (paste sketch/URL, or board ⋯ → "Convert from sketch") |
 
-All routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. All routes **except `/project-backlog` bulk-init** also set **`transition: "designing"`**, which enables `/design-create` to auto-detect these items without a manual dashboard click. `/project-backlog` omits `transition` at creation — the dashboard sets it when the user clicks copy-prompt (see `project-backlog/references/generate-backlog.md` transition field rule). `/design-create` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/design-create` Build fills them in later.
+All routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. All routes **except `/project-plan` bulk-init** also set **`transition: "designing"`**, which enables `/design-create` to auto-detect these items without a manual dashboard click. `/project-plan` omits `transition` at creation — the dashboard sets it when the user clicks copy-prompt (see `project-plan/references/generate-backlog.md` transition field rule). `/design-create` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/design-create` Build fills them in later.
 
 ### Dev track (FEATURE/API/UI/REFACTOR/BUG/etc.)
 
@@ -193,11 +203,11 @@ TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refac
 
 | Status      | Label       | Set by                                                                                                       |
 | ----------- | ----------- | ------------------------------------------------------------------------------------------------------------ |
-| `TODO`      | To define   | `/project-todo`, `/project-backlog`                                                                          |
+| `TODO`      | To define   | `/project-todo`, `/project-plan`                                                                          |
 | `DEFINED`   | To build    | `/dev-define` (completion)                                                                                   |
 | `DOING`     | To verify   | `/dev-build` (completion)                                                                                    |
 | `DONE`      | To refactor | `/dev-verify` (completion)                                                                                   |
-| `CANCELLED` | Archived    | Manually via UI (○ button), `/project-backlog` update mode (cancel-proposal), `/project-retire` — restorable |
+| `CANCELLED` | Archived    | Manually via UI (○ button), `/project-plan` update mode (cancel-proposal), `/project-retire` — restorable |
 
 **Optional fields on CANCELLED items**: `cancelledReason` (one-line why, set by skill-driven cancellations) and `cancelledAt` (`YYYY-MM-DD`, set by `/project-retire`). UI cancellations omit both. Archived features (see § Archiving) can also carry `status: "CANCELLED"` after a `/project-retire` run — history stays, flagged.
 

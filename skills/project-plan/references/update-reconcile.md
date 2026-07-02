@@ -28,7 +28,7 @@ Compare seed + new thinking against the existing backlog features:
 
 Split OBSOLETE candidates into:
 
-- **concept-derived** — `source` absent or `"/project-backlog"` (managed by this skill)
+- **concept-derived** — `source` absent or `"/project-plan"` (managed by this skill)
 - **INDEPENDENT** — `source` is anything else (e.g. `/project-todo`, `/team-issues`) — never auto-cancelled
 
 DOING and DONE features are **never** OBSOLETE candidates — in-progress or finished work is protected (existing rule, unchanged).
@@ -44,7 +44,7 @@ OBSOLETE CANDIDATES ({N})
 
 | # | Feature | Status | Source | Why obsolete |
 |---|---------|--------|--------|--------------|
-| 1 | {name}  | TODO   | /project-backlog | {absent from updated seed / contradicted by {thinking-file}} |
+| 1 | {name}  | TODO   | /project-plan | {absent from updated seed / contradicted by {thinking-file}} |
 | 2 | {name}  | DEFINED | /project-todo ← INDEPENDENT | {reason} |
 ```
 
@@ -71,7 +71,7 @@ multiSelect: false
 Cancellations and NEW items are explicit inputs to the PHASE 3 Seed Alignment Check (`shared/SEED.md § Alignment Check`) — no separate machinery:
 
 - A cancellation of a feature the seed **still describes** → `contradiction` drift item.
-- On "Skip — leave seed as-is" → entry lands in `backlog.json#seedDrift[]` with `source: "/project-backlog"`, `ref: "feature:{name}"`.
+- On "Skip — leave seed as-is" → entry lands in `backlog.json#seedDrift[]` with `source: "/project-plan"`, `ref: "feature:{name}"`.
 
 ## Output
 

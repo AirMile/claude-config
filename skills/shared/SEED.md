@@ -3,7 +3,7 @@
 How a skill reads seed context. Consumer skills reference this instead of repeating it inline.
 
 **Owner:** `/project-seed` writes freely; `/dev-define`, `/game-define`, and
-`/project-backlog` may rewrite affected sections after their Seed Alignment
+`/project-plan` may rewrite affected sections after their Seed Alignment
 Check with explicit user approval. All other skills are read-only consumers.
 
 ---
@@ -42,7 +42,7 @@ When `present: false`: omit concept reference in recommendation text.
 
 `/project-seed` is the primary owner — full rewrites and gap-syncs.
 
-`/dev-define`, `/game-define`, and `/project-backlog` may mutate
+`/dev-define`, `/game-define`, and `/project-plan` may mutate
 `project-seed.md`, each only under both conditions:
 
 1. The Seed Alignment Check (see `## Alignment Check` below) detected drift, AND
@@ -113,7 +113,7 @@ multiSelect: false
   "category": "contradiction|new-direction|scope-expansion",
   "seedSays": "<short quote or summary>",
   "featureDecides": "<what changed>",
-  "source": "/dev-define|/game-define|/project-backlog|/project-todo|/project-retire",
+  "source": "/dev-define|/game-define|/project-plan|/project-todo|/project-retire",
   "ref": "REQ-003|feature:auth-login|null",
   "detectedAt": "<ISO timestamp>"
 }
@@ -125,7 +125,7 @@ multiSelect: false
 | ------------------ | ------------------------------------------------------------------- | ---------- |
 | `/dev-define`      | End of PHASE 2 Architecture, before ExitPlanMode                    | Yes        |
 | `/game-define`     | End of PHASE 3 Architecture Design, before ExitPlanMode             | Yes        |
-| `/project-backlog` | After PHASE 3 Priority Assignment confirmation, before ExitPlanMode | Yes        |
+| `/project-plan` | After PHASE 3 Priority Assignment confirmation, before ExitPlanMode | Yes        |
 
 ---
 
