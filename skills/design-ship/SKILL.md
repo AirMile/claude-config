@@ -24,7 +24,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 0.2.0
+  version: 0.4.0
   category: design
 ---
 
@@ -61,8 +61,16 @@ inherently interactive → `/design-create` Convert. THEME → `/design-tokens`.
 - **`.project/` is shared on disk between agents; context is isolated.** The flow is sequential →
   one writer at a time → no write-races. Re-read `.project/` from disk after every agent return.
 - **Agents run via the Workflow tool** (one run: PHASE 1–3) with a per-agent model + effort matrix
-  and schema-validated structured results. The Agent-tool spawn path in each `agent-*.md` is the
-  **fallback** when the Workflow tool is unavailable.
+  and schema-validated structured results. **Prompts are passed by pointer, never inline** — the
+  static agent instruction bodies live in `references/prompts/{build,content,check}.md` and the
+  spawned agent reads them itself (plus `non-interactive-contract.md`, which it also reads). The
+  main chat writes only a small **pointer + dynamic SHIP_CONTEXT slice** file to
+  `.project/session/ship-prompts/` and passes the path in `args` — it does **not** read the
+  `prompts/*` bodies or the contract. Some runtimes deliver the `args` global to the script as a
+  **JSON string** rather than an object (then every `args.x` is `undefined`), so the workflow script
+  **normalizes `args` at the top** (`typeof args === "string" ? JSON.parse(args) : args`) — the
+  primary Workflow path is reliable. The Agent-tool spawn path in each `agent-*.md` is the
+  **fallback**, used only when the Workflow tool is unavailable.
 
   | Agent           | Model    | Effort   | Why                                                             |
   | --------------- | -------- | -------- | --------------------------------------------------------------- |
@@ -105,26 +113,28 @@ detects the checkpoint (PHASE 0) and offers Resume/Restart/Inspect. Only the mai
 Resolves the target (arg → board `shipping` pickup → candidates), gates the spec, composes 2-3
 design directions and presents them **visually** (browser preview + modal), derives + confirms the
 content brief, auto-derives the check scope, sets the board state (`transition: "shipping"` + live
-signal), and assembles **`SHIP_CONTEXT`** with per-agent slices.
+signal), and assembles **`SHIP_CONTEXT`** with per-agent slices. Each `agent-*.md` § Spawn documents
+the pointer-file template that carries its slice into the agent.
 
 ### PHASE 1–3: Build → Content → Check — one Workflow
 
 > **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`; update the checkpoint
 > (`shared/SHIP-CHECKPOINT.md` atomic write) `phase: "PHASE 1"`, `completedPhases: ["PHASE 0"]`. Read
 > `.claude/skills/design-ship/references/agent-build.md`,
-> `.claude/skills/design-ship/references/agent-content.md`,
-> `.claude/skills/design-ship/references/agent-check.md` and
-> `.claude/skills/design-ship/references/non-interactive-contract.md`. Assemble **all three**
-> prompts from their templates (contract inlined, SHIP_CONTEXT slice pasted per agent; keep the
-> literal `{worktreePath}` placeholder in the content + check prompts — the script fills it).
-> Then launch:
-> `Workflow({scriptPath: ".claude/skills/design-ship/references/workflows/ship-design-phase123.js", args: {feature, buildPrompt, contentPromptTemplate, checkPromptTemplate, resume}})`
-> — `resume` = `null` on a fresh run, or the **green** results `{build, content, check}` from the
-> checkpoint on a Resume (the script short-circuits green results and re-runs anything failed or
-> degraded). **Immediately after launch** write the returned `runId` + `activeWorkflow: "design123"`
+> `.claude/skills/design-ship/references/agent-content.md` and
+> `.claude/skills/design-ship/references/agent-check.md` (their **§ Spawn → Pointer file** templates
+> only — do **not** read `non-interactive-contract.md` or the `references/prompts/*` bodies; the
+> agents read those themselves). **Write each pointer + SHIP_CONTEXT-slice file** under
+> `.project/session/ship-prompts/` — keeping the literal `{worktreePath}` placeholder in the content
 >
-> - the assembled prompt args as `prompts` to the checkpoint (so a mid-workflow crash is resumable
->   via `resumeFromRunId`, with the exact original prompts).
+> - check files (the agent substitutes it) — and pass the **paths** (never inline). Then launch:
+>   `Workflow({scriptPath: ".claude/skills/design-ship/references/workflows/ship-design-phase123.js", args: {feature, buildPromptPath, contentPromptPath, checkPromptPath, resume}})`
+>   — `resume` = `null` on a fresh run, or the **green** results `{build, content, check}` from the
+>   checkpoint on a Resume (the script short-circuits green results and re-runs anything failed or
+>   degraded). **Immediately after launch** write the returned `runId` + `activeWorkflow: "design123"`
+>
+> * the prompt-file **paths** as `prompts` to the checkpoint (so a mid-workflow crash is resumable
+>   via `resumeFromRunId`; the prompt files persist for reassembly).
 
 The workflow runs the three agents sequentially in isolated contexts with the model/effort matrix
 (§ Design) and returns one structured object — no result-block parsing. Each agent rewrites the
@@ -136,6 +146,11 @@ regeneration.
 On the workflow return, first **update the checkpoint** (clear
 `activeWorkflow`/`workflowRunId`/`prompts`, merge the returned `build`/`content`/`check` objects
 into `results`), then branch:
+
+**Empty-input safety net** (rare, check first): the script normalizes `args` (§ Design), so the
+string-delivery failure is handled at the source. If an agent _still_ reports no/`undefined` input
+(empty message, no files, no worktree created), retry once via the Agent-tool fallback below before
+routing anywhere. Only a genuine build/check failure follows the branches below.
 
 - `status: green` → mark PHASE 1, 2 **and** 3 `completed` (note content degradation on PHASE 2 if
   any); checkpoint `phase: "PHASE 4"`, `completedPhases += ["PHASE 1", "PHASE 2", "PHASE 3"]`.

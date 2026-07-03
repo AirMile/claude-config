@@ -26,9 +26,11 @@ export const meta = {
 
 // args: {
 //   feature: string,
-//   buildPrompt: string,            — fully assembled per agent-build.md (contract + build-slice inlined)
-//   contentPromptTemplate: string,  — per agent-content.md, containing the literal placeholder {worktreePath}
-//   checkPromptTemplate: string,    — per agent-check.md, containing the literal placeholder {worktreePath}
+//   buildPromptPath: string,        — path to a file holding the assembled build prompt (agent-build.md);
+//                                      passed by path, NOT inline (large inline args can arrive undefined)
+//   contentPromptPath: string,      — path to a file holding the content prompt (agent-content.md); the file
+//                                      contains the literal placeholder {worktreePath} for the agent to substitute
+//   checkPromptPath: string,        — path to a file holding the check prompt (agent-check.md); ditto {worktreePath}
 //   resume?: { build?, content?, check? },  — green checkpoint results on a Resume; only a GREEN
 //                                              result short-circuits its agent (a resumed failed or
 //                                              degraded result re-runs — content gets a retry)
@@ -160,20 +162,30 @@ const CHECK_SCHEMA = {
   ],
 };
 
+// Defensive: some runtimes deliver the `args` global as a JSON STRING, not an object —
+// property access on a string yields undefined (agents then get "the file at undefined").
+// Normalize once; the rest of the script reads from `A`. (See design-ship SKILL.md § Design.)
+const A = typeof args === "string" ? JSON.parse(args) : (args ?? {});
+if (!A.buildPromptPath || !A.contentPromptPath || !A.checkPromptPath) {
+  log(
+    `args-delivery: missing prompt path(s) after normalize — build=${A.buildPromptPath}, content=${A.contentPromptPath}, check=${A.checkPromptPath}`,
+  );
+}
+
 // Only a green resume result short-circuits — passing a resumed FAILED result through would
 // return the same failure forever instead of retrying the agent. A degraded content result
 // re-running is deliberate: the resume is its retry chance.
 const resumedBuild =
-  args.resume?.build?.status === "green" ? args.resume.build : null;
+  A.resume?.build?.status === "green" ? A.resume.build : null;
 const resumedContent =
-  args.resume?.content?.status === "green" ? args.resume.content : null;
+  A.resume?.content?.status === "green" ? A.resume.content : null;
 const resumedCheck =
-  args.resume?.check?.status === "green" ? args.resume.check : null;
+  A.resume?.check?.status === "green" ? A.resume.check : null;
 
 phase("Build");
 const build =
   resumedBuild ??
-  (await agent(args.buildPrompt, {
+  (await agent(`Read the file at ${A.buildPromptPath} and execute its full instructions as your task.`, {
     label: "AGENT 1: build",
     agentType: "general-purpose",
     model: "sonnet",
@@ -190,7 +202,7 @@ if (!build || build.status !== "green") {
     failedPhase: "build",
     build: build ?? {
       status: "failed",
-      feature: args.feature,
+      feature: A.feature,
       failedAt: "agent died (null return)",
     },
     content: null,
@@ -205,7 +217,7 @@ phase("Content");
 const content =
   resumedContent ??
   (await agent(
-    args.contentPromptTemplate.split("{worktreePath}").join(build.worktreePath),
+    `Read the file at ${A.contentPromptPath}; it is your full instruction set. Replace every literal "{worktreePath}" in it with ${build.worktreePath}, then execute it as your task.`,
     {
       label: "AGENT 2: content",
       agentType: "general-purpose",
@@ -232,7 +244,7 @@ phase("Check");
 const check =
   resumedCheck ??
   (await agent(
-    args.checkPromptTemplate.split("{worktreePath}").join(build.worktreePath),
+    `Read the file at ${A.checkPromptPath}; it is your full instruction set. Replace every literal "{worktreePath}" in it with ${build.worktreePath}, then execute it as your task.`,
     {
       label: "AGENT 3: check",
       agentType: "general-purpose",
@@ -251,7 +263,7 @@ if (!check || check.status !== "green") {
     content,
     check: check ?? {
       status: "failed",
-      feature: args.feature,
+      feature: A.feature,
       failedAt: "agent died (null return)",
     },
   };
