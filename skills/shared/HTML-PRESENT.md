@@ -19,6 +19,9 @@ A skill reaches a completion/report point AND has a visual artifact to show:
 
 - **design-tokens** → token-pack gallery + motion preview (always — a theme is always visual).
 - **dev-define** → wireframe preview (only when the feature has a design sketch).
+- **dev-ship** → adaptive feature-spec preview after PHASE 0 define (always — requirements +
+  acceptance + wireframe/API-contract/build-sequence when present; visually replaces the removed
+  plan-approval gate).
 - **design-create** → the live dev-server URL (only when the smoke check actually rendered).
 
 The textual report stays — this is the interactive layer on top, exactly like

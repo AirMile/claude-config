@@ -1,0 +1,305 @@
+<!doctype html>
+<!--
+  Self-contained feature-spec preview (dev-ship skill, PHASE 0).
+  The skill replaces the contents of <script id="preview-data"> with:
+    {
+      "feature": "...", "type": "FEATURE", "status": "DEFINED",
+      "requirements": [{ "id": "REQ-1", "text": "..." }],
+      "acceptance":   [{ "when": "...", "then": "..." }],
+      "wireframe":    "<ascii sketch>",                          // optional
+      "apiContract":  [{ "method": "GET", "path": "/x", "req": "...", "resp": "..." }], // optional
+      "buildSequence":[{ "step": "...", "dependsOn": ["..."] }]  // optional
+    }
+  then opens this file via file:// (see shared/HTML-PRESENT.md).
+  Adaptive: renders only the blocks whose data is present. No server, no external assets —
+  inline CSS + inline render JS only.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Feature spec preview</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --accent: #58a6ff;
+        --green: #3fb950;
+        --amber: #d29922;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        padding: 40px 48px 80px;
+      }
+      .wrap {
+        max-width: 920px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+      }
+      .badges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+      }
+      .badge {
+        font-family: ui-monospace, "SF Mono", monospace;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+      .badge.type {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+      .badge.status {
+        color: var(--green);
+        border-color: var(--green);
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 32px;
+      }
+      h2 {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+        margin: 32px 0 14px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border);
+      }
+      .frame {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 24px;
+        overflow-x: auto;
+      }
+      .frame pre {
+        font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+        font-size: 13px;
+        line-height: 1.45;
+        white-space: pre;
+        color: var(--text);
+      }
+      ul.cards {
+        list-style: none;
+      }
+      ul.cards li {
+        display: flex;
+        gap: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 12px 16px;
+        margin-bottom: 8px;
+      }
+      .id {
+        font-family: ui-monospace, "SF Mono", monospace;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+        min-width: 64px;
+      }
+      .txt {
+        font-size: 14px;
+      }
+      .ac .when {
+        color: var(--muted);
+      }
+      .ac .when b,
+      .ac .then b {
+        color: var(--muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        margin-right: 6px;
+      }
+      .ac .then {
+        margin-top: 4px;
+      }
+      .ep .method {
+        font-family: ui-monospace, "SF Mono", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--amber);
+        min-width: 56px;
+      }
+      .ep .path {
+        font-family: ui-monospace, "SF Mono", monospace;
+        font-size: 13px;
+      }
+      .ep .io {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      .empty {
+        color: var(--muted);
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1 id="title">Feature spec</h1>
+      <div class="badges" id="badges"></div>
+      <div class="sub" id="subtitle">dev-ship — about to build</div>
+      <div id="root"></div>
+    </div>
+
+    <script id="preview-data" type="application/json">
+      {}
+    </script>
+
+    <script>
+      (function () {
+        var data = {};
+        try {
+          data =
+            JSON.parse(document.getElementById("preview-data").textContent) ||
+            {};
+        } catch (e) {
+          data = {};
+        }
+        function esc(s) {
+          return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        }
+
+        if (data.feature)
+          document.getElementById("title").textContent =
+            "Feature spec · " + data.feature;
+
+        var badges = "";
+        if (data.type)
+          badges += '<span class="badge type">' + esc(data.type) + "</span>";
+        if (data.status)
+          badges +=
+            '<span class="badge status">' + esc(data.status) + "</span>";
+        document.getElementById("badges").innerHTML = badges;
+
+        var html = "";
+
+        if (data.requirements && data.requirements.length) {
+          html +=
+            '<h2>Requirements</h2><ul class="cards">' +
+            data.requirements
+              .map(function (r) {
+                return (
+                  '<li><span class="id">' +
+                  esc(r.id || "") +
+                  '</span><span class="txt">' +
+                  esc(r.text || r) +
+                  "</span></li>"
+                );
+              })
+              .join("") +
+            "</ul>";
+        }
+
+        if (data.acceptance && data.acceptance.length) {
+          html +=
+            '<h2>Acceptance</h2><ul class="cards">' +
+            data.acceptance
+              .map(function (a) {
+                return (
+                  '<li class="ac"><div><div class="when"><b>When</b>' +
+                  esc(a.when || "") +
+                  '</div><div class="then"><b>Then</b>' +
+                  esc(a.then || "") +
+                  "</div></div></li>"
+                );
+              })
+              .join("") +
+            "</ul>";
+        }
+
+        if (data.wireframe) {
+          html +=
+            '<h2>Layout</h2><div class="frame"><pre>' +
+            esc(data.wireframe) +
+            "</pre></div>";
+        }
+
+        if (data.apiContract && data.apiContract.length) {
+          html +=
+            '<h2>API contract</h2><ul class="cards">' +
+            data.apiContract
+              .map(function (e) {
+                var io = "";
+                if (e.req) io += "req: " + esc(e.req);
+                if (e.resp) io += (io ? " · " : "") + "resp: " + esc(e.resp);
+                return (
+                  '<li class="ep"><span class="method">' +
+                  esc(e.method || "") +
+                  '</span><div><div class="path">' +
+                  esc(e.path || "") +
+                  "</div>" +
+                  (io ? '<div class="io">' + io + "</div>" : "") +
+                  "</div></li>"
+                );
+              })
+              .join("") +
+            "</ul>";
+        }
+
+        if (data.buildSequence && data.buildSequence.length) {
+          html +=
+            '<h2>Build sequence</h2><ul class="cards">' +
+            data.buildSequence
+              .map(function (s, i) {
+                var dep =
+                  s.dependsOn && s.dependsOn.length
+                    ? '<div class="io">depends on: ' +
+                      esc(s.dependsOn.join(", ")) +
+                      "</div>"
+                    : "";
+                return (
+                  '<li><span class="id">' +
+                  (i + 1) +
+                  '</span><div><span class="txt">' +
+                  esc(s.step || s) +
+                  "</span>" +
+                  dep +
+                  "</div></li>"
+                );
+              })
+              .join("") +
+            "</ul>";
+        }
+
+        document.getElementById("root").innerHTML =
+          html || '<p class="empty">No feature spec to display.</p>';
+      })();
+    </script>
+  </body>
+</html>

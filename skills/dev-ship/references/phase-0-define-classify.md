@@ -1,4 +1,4 @@
-# PHASE 0 — Define + Classify + Technique menu
+# PHASE 0 — Define + Classify + Auto-derive technique plan
 
 The one interactive phase. All human decisions are front-loaded here; everything after runs
 hands-off (except the conditional manual-test interlude in PHASE 3).
@@ -42,12 +42,12 @@ dev-track and stays here). Then check
 ## Step 2 — Run `dev-define` inline (main chat, interactive)
 
 Execute the full `dev-define` workflow by reading `.claude/skills/dev-ship/references/dev-define/workflow.md` and following
-it PHASE 0 → PHASE 4 (plan mode, interview, requirements, architecture, feature.json + sync). This
+it PHASE 0 → PHASE 4 (interview, requirements, architecture, feature.json + sync). This
 is the interactive part — the user answers define's questions here.
 
 **Deviations from stock define.** Define is the one place the user is interviewed, so — unlike the
 spawned agents — it runs **inline in the main chat** and the subagent-adapter is **not** applied
-wholesale (define keeps plan mode and `AskUserQuestion`). But these adapter-aligned deviations DO
+wholesale (define keeps `AskUserQuestion`). But these adapter-aligned deviations DO
 apply, because dev-ship already owns the run:
 
 1. **No own phase tracking** (adapter rule 1). dev-ship's 6-phase `TaskCreate` list is already
@@ -57,18 +57,33 @@ apply, because dev-ship already owns the run:
 2. **No terminal handoff** (adapter rule 4). Skip define's Next-Step Clipboard Offer
    (`NEXT-STEP-OFFER.md`) and its `Next: /dev-build` / clipboard output. dev-ship continues to Step 3
    itself.
-3. **No HTML preview** (adapter rule 8). Skip define PHASE 4's preview generation (`HTML-PRESENT.md`)
-   — dev-ship proceeds straight to build; the user reviews the feature via the technique menu, not a
-   mid-flow browser tab.
-4. **Backlog write STAYS** (adapter rule 13). Define still flips `feature.json` + `backlog.json` to
+3. **No plan mode** (adapter rule 2). **Never** call `EnterPlanMode`/`ExitPlanMode` — run define's
+   PHASE 0→2 analytical/interview steps directly, in the main chat. Ignore every "plan mode must be
+   active before …" / "Enter Plan Mode NOW" / "Exit plan mode" instruction in the copied define
+   workflow. `/dev-ship` must **never** surface a plan-mode screen or a plan-approval gate. Two
+   define behaviours that plan mode used to carry are preserved without it: **(a) write-gating** —
+   all `.project/{backlog,project,project-context}.json` writes still wait until PHASE 4's sync
+   batch (do not write them early just because the plan-mode block is gone); **(b) the machine
+   contract** (type signatures, `buildSequence`, `testStrategy`) is authored **in-context** during
+   define's PHASE 2 and transcribed straight into `feature.json` at PHASE 3 — take define's existing
+   "appendix missing → generate these sections now" fallback path (there is no plan file to write
+   the appendix to). No plan file is created.
+4. **Spec preview STAYS** (this is the one place define's HTML preview runs — define is inline in the
+   main chat, so the browser is reachable here; adapter rule 8's "no browser" applies only to the
+   spawned subagents). Instead of define PHASE 4's wireframe-only preview, dev-ship renders an
+   **adaptive feature-spec preview** so the user sees what is about to be built before the hands-off
+   pipeline starts (it visually replaces the plan-approval gate removed in deviation 3). See Step 2c.
+5. **Backlog write STAYS** (adapter rule 13). Define still flips `feature.json` + `backlog.json` to
    `status: "DEFINED"` — PHASE 1's build reads DEFINED, so this transition is required, not dead. The
    `auto: true` flag is harmless (ignore its now-moot "so the clipboard has the correct `/dev-build`
    command" rationale — there is no clipboard step here).
-5. When define finishes the DEFINED write, continue to Step 3 — do not end the skill.
+6. When define finishes the DEFINED write, continue to Step 2c (preview) then Step 3 — do not end the
+   skill.
 
-**Kept as-is** (define is NOT a silent subagent): plan mode routes the interview and gates writes to
-PHASE 4 as normal; `AskUserQuestion` reaches the real user (the whole reason define is the main-chat
-touchpoint). Everything else in define runs unchanged (it owns its own `.project/` writes).
+**Kept as-is** (define is NOT a silent subagent): `AskUserQuestion` reaches the real user (the whole
+reason define is the main-chat touchpoint), and define's interview + write-gating discipline run as
+normal — just **without** the plan-mode wrapper and the `ExitPlanMode` approval gate (deviation 3).
+Everything else in define runs unchanged (it owns its own `.project/` writes).
 
 ## Step 2b — Board state: `shipping` marker + live signal
 
@@ -91,6 +106,37 @@ refactor` — the board badge follows the pipeline.
    phase4-sync removes any transition; re-set it after define completes). This keeps the card in
    the board's IN PROGRESS section between phases, when no agent is running. It is removed by
    refactor's completion-batch (feature shipped) or by PHASE 5 cleanup on every other exit path.
+
+## Step 2c — Present the feature-spec preview (main chat, auto-open browser)
+
+dev-ship is hands-off after this phase and (per Step 2 deviation 3) shows no plan-approval gate — so
+give the user one visual confirmation of **what is about to be built** before the pipeline runs
+autonomously. This runs in the main chat (browser reachable) and is **non-blocking**: a launch
+failure prints the path, never halts. Skip entirely (no error) if the resolved `feature.json` has no
+`requirements[]` yet (should not happen post-define).
+
+Assemble the `preview-data` payload from the just-written `feature.json` (adaptive — include only
+the fields that exist):
+
+```
+{
+  "feature":       "{feature-name}",
+  "type":          feature.type,
+  "status":        "DEFINED",
+  "requirements":  feature.requirements[] → [{ id, text }],
+  "acceptance":    flattened requirements[].acceptance[] → [{ when, then }],
+  "wireframe":     feature.design (ASCII sketch) — omit when absent,
+  "apiContract":   feature.apiContract endpoints → [{ method, path, req, resp }] — omit when absent,
+  "buildSequence": feature.architecture.buildSequence[] → [{ step, dependsOn }] — omit when absent
+}
+```
+
+> **Todo**: render `.claude/skills/shared/references/preview-feature-spec.html` to
+> `.project/previews/dev-ship-{feature-name}.html` (fill the `preview-data` JSON block with the
+> payload above), then present that `file://` path via `.claude/skills/shared/HTML-PRESENT.md`
+> (auto-opens in the browser; `CLAUDE_AUTO_PREVIEW=0` opts out). One preview per run. The textual
+> "Verification profile" line (Step 3) still prints — the preview is the visual layer on top, not a
+> replacement.
 
 ## Step 3 — Compute the advisory `verificationProfile`
 
@@ -121,84 +167,61 @@ Write the estimate to `feature.json#verificationProfile`:
 
 > **Advisory only.** AGENT 2 (`dev-verify`) does its own authoritative classification at verify-time
 > and returns the real `remainingManualItems`. This estimate is for (a) setting user expectations
-> up front and (b) auto-suggesting the technique menu below. PHASE 3 uses AGENT 2's output, not this.
+> up front and (b) auto-deriving the technique plan below. PHASE 3 uses AGENT 2's output, not this.
 
 State it in one line: `Verification profile: ~{auto} auto, ~{manual} manual → {"hands-off" | "manual walkthrough expected in PHASE 3"}`.
 
-## Step 4 — Present the technique menu (auto-suggested)
+## Step 4 — Auto-derive the technique plan (no user prompt)
 
-Suggest techniques from the feature's characteristics. Draw candidates from `dev-refactor`'s lenses
-and the relevant OWASP categories only — never the whole OWASP fleet.
+dev-ship's one human touchpoint is `define` only. The refactor/security passes are **auto-derived here
+from the feature's characteristics and applied in PHASE 4** — never a pre-build menu. You cannot sensibly
+pick refactor lenses or intensity before the code exists; the refactor agent decides what to apply from
+the _actual_ code, test-guarded (revert-on-red), so the safe outcome is guaranteed by construction, not
+by a pre-flight toggle. Draw candidates from `dev-refactor`'s lenses and the relevant OWASP categories
+only — never the whole OWASP fleet.
 
-**Auto-suggest heuristics** (pre-check the boxes the feature warrants):
+**Signal → technique derivation** (compute into SHIP_PLAN; applied in PHASE 4, no confirmation):
 
-| Signal in feature.json                | Suggest                                                  |
-| ------------------------------------- | -------------------------------------------------------- |
-| any source files to refactor          | `Reuse` (DRY), `Quality` (readability/dead-code) lenses  |
-| DB access, loops/iteration, hot paths | `Efficiency` lens                                        |
-| user input + persistence/query        | OWASP **A05** (injection) — deep audit                   |
-| auth / roles / ownership checks       | OWASP **A01** (access control) — deep audit              |
-| secrets / crypto / tokens             | OWASP **A04** (crypto) deep, or refactor `Security` lens |
-| none of the above                     | refactor lenses only, security off                       |
+| Signal in feature.json                | Derive                                                         |
+| ------------------------------------- | -------------------------------------------------------------- |
+| any source files to refactor          | `Reuse` (DRY), `Quality` (readability/dead-code) lenses        |
+| DB access, loops/iteration, hot paths | + `Efficiency` lens                                            |
+| user input + persistence/query        | OWASP **A05** (injection) — deep scanner                       |
+| auth / roles / ownership checks       | OWASP **A01** (access control) — deep scanner                  |
+| secrets / crypto / tokens             | OWASP **A04** (crypto) deep scanner + refactor `Security` lens |
+| none of the above                     | refactor lenses only, security off                             |
 
 > OWASP codes use **this repo's** scanner numbering (A01 access control, A04 crypto, A05 injection)
 > — see the map in `references/agent-security.md`. Not the OWASP-2021 order.
 
-**Pitfall-informed pre-check** (memory → decision): if a preloaded pitfall (Step 3 load) flagged a
-security issue in this feature or a **dependency** (e.g. an injection or access-control finding),
-pre-check the matching OWASP deep-audit category even when the feature-signal heuristics alone would
-not — past incidents in nearby code are a strong signal.
+**Pitfall-informed derivation** (memory → decision): if a preloaded pitfall (Step 3 load) flagged a
+security issue in this feature or a **dependency** (e.g. an injection or access-control finding), add
+the matching OWASP deep-scanner category even when the feature-signal heuristics alone would not —
+past incidents in nearby code are a strong signal. Note it in `autoDecisions`.
 
-Present via `AskUserQuestion` (multiSelect) — the pre-suggested items first, plus policy:
-
-```yaml
-header: "Ship techniques"
-question: "Which quality/security passes for {feature}? (pre-checked = suggested)"
-options:
-  - label: "Refactor: Reuse + Quality (Recommended)"
-    description: "DRY/dead-code/readability lenses via dev-refactor, test-guarded"
-  - label: "Refactor: Efficiency"
-    description: "N+1, hot-path, concurrency — suggested for DB/loop-heavy features"
-  - label: "Security: light (refactor lens)"
-    description: "Secrets/crypto/input-flow via dev-refactor's Security lens, fixes with tests"
-  - label: "Security: deep OWASP audit ({categories})"
-    description: "Targeted owasp-aNN scanner(s), reports findings only (no auto-fix)"
-multiSelect: true
-```
-
-Then policy (single-select):
-
-```yaml
-header: "Refactor policy"
-question: "Refactor intensity for the auto pass?"
-options:
-  - label: "Conservative (Recommended)"
-    description: "Only high-confidence techniques — test-guard reverts the rest"
-  - label: "Aggressive"
-    description: "Apply broader technique set; still test-guarded"
-  - label: "Skip refactor"
-    description: "No auto-refactor — leave it to a later batch /dev-refactor"
-multiSelect: false
-```
-
-## Step 5 — Store selections in memory
+## Step 5 — Store the derived plan in memory
 
 Carry to the later phases (in-context, no extra `.project/` write beyond `verificationProfile`):
 
 ```
-SHIP_PLAN:
+SHIP_PLAN (auto-derived — no user choice):
   feature:        {feature-name}
-  refactorLenses: [Reuse, Quality, ...]      # or [] if "Skip refactor"
-  refactorPolicy: conservative | aggressive | skip
-  securityLight:  true | false               # refactor Security lens
-  securityDeep:   [A03, A01] | []            # targeted OWASP scanners for AGENT S
+  refactorLenses: [Reuse, Quality, ...]      # every lens the signals warrant (Step 4 table)
+  securityLight:  true | false               # true when the crypto/secrets signal fired
+  securityDeep:   [A05, A01] | []            # OWASP scanners derived from signals + pitfalls
 ```
 
-`refactorPolicy: skip` → PHASE 4 skips AGENT 3 (only AGENT S may still run if `securityDeep`).
+PHASE 4's refactor agent **always runs** (it returns `clean` when nothing meets the high-confidence,
+test-guarded bar — there is no pre-build skip or intensity toggle). AGENT S runs only when `securityDeep`
+is non-empty.
+
+**Escape hatch** (optional, power-user): a `--no-refactor` or `--security {codes}` skill arg overrides
+the derivation. Default is fully automatic — do not prompt.
 
 **Persist to the checkpoint** (the first write, per `shared/SHIP-CHECKPOINT.md` atomic-write). This
-is what makes the run resumable — `SHIP_PLAN` is the irreproducible user choice that otherwise lives
-only in this context. Write `.project/session/ship-{feature}.json` with `pipeline: "dev"`, `feature`,
+makes the run resumable — persisting `SHIP_PLAN` + `verificationProfile` lets a resume skip re-deriving
+them (they are auto-derived, but caching them keeps resume deterministic and cheap). Write
+`.project/session/ship-{feature}.json` with `pipeline: "dev"`, `feature`,
 `startedAt`/`updatedAt`, `status: "running"`, `phase: "PHASE 1"`, `completedPhases: ["PHASE 0"]`,
 `baselineSha` (from Step 0), `plan: {SHIP_PLAN + verificationProfile}`, empty `results`/`prompts`,
 `activeWorkflow: null`.
