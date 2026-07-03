@@ -13,7 +13,7 @@ Only if "Token Architecture" is selected. Static code analysis — no Playwright
 Three states:
 
 - **`.project/project.json` missing**: stop with `"No project workspace found — run /core-setup first."` Skip all sub-checks.
-- **`project.json` present, `theme` empty**: T101-T108 still run against source files. Reason: `shared/TOKENS.md § Fallback Values` defines fallback CSS vars that `dev-build` also uses on empty-theme projects — hardcoded values are therefore still violations. Skip TA001 only (requires semantic CSS vars). Show: `"Theme empty — auditing against fallback tokens (TA001 skipped, requires project theme)."`
+- **`project.json` present, `theme` empty**: T101-T108 still run against source files. Reason: `shared/TOKENS.md § Fallback Values` defines fallback CSS vars that dev-ship's build phase also uses on empty-theme projects — hardcoded values are therefore still violations. Skip TA001 only (requires semantic CSS vars). Show: `"Theme empty — auditing against fallback tokens (TA001 skipped, requires project theme)."`
 - **`theme` populated**: all checks run (T101-T108 + TA001). Continue.
 
 **Step 2: Anti-Hardcoding Violations scan (T101-T111)**

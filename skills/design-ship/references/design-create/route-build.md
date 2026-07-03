@@ -434,7 +434,7 @@ The report is **not** the end of the build — Step 12 (worktree finalize) runs 
 > `git worktree remove`. End your run after the Step 11 report (skip its HTML preview and
 > clipboard offer per the non-interactive contract) and return your result.
 
-The Build route owns the **full** worktree lifecycle: Step 7b opens the worktree, this step closes it. There is no separate frontend-verify skill (`/design-check` is the post-merge quality pass — the `dev-refactor` role, not the `dev-verify` role), so the build must finalize its own worktree rather than leave it dangling. Mirrors `dev-verify`'s PHASE Finalize and the Convert route's `convert-completion.md §4.5–4.6`.
+The Build route owns the **full** worktree lifecycle: Step 7b opens the worktree, this step closes it. There is no separate frontend-verify skill (`/design-check` is the post-merge quality pass — dev-ship's refactor-phase role, not its verify-phase role), so the build must finalize its own worktree rather than leave it dangling. Mirrors dev-ship's verify phase's PHASE Finalize and the Convert route's `convert-completion.md §4.5–4.6`.
 
 **Skip if no worktree was created this run** — detect: `current branch != worktree-{$TARGET}` (Step 7b was skipped because already on a feature branch, or the Step 2.5 gate exited "save spec only" before reaching Step 7b). Then print `Worktree: not in a worktree` and end the build.
 
@@ -473,7 +473,7 @@ Otherwise:
 
    The design-track backlog sync (PAGE ships only when already `DONE`, COMPONENT left untouched — `FINALIZE.md` never promotes `DOING → DONE`) is handled inside `shared/FINALIZE.md`.
 
-3. **Session-reorientation guard (cleanup path only)** — before `git worktree remove`, if `pwd` is inside the worktree, `cd {main-repo-path}` first; after successful cleanup print the `🏠 Worktree removed` banner (per `dev-verify/references/finalize.md`).
+3. **Session-reorientation guard (cleanup path only)** — before `git worktree remove`, if `pwd` is inside the worktree, `cd {main-repo-path}` first; after successful cleanup print the `🏠 Worktree removed` banner (per `dev-ship/references/dev-verify/references/finalize.md`).
 
 For COMPONENT scope this is the canonical close point — do not skip even if `/design-check` was not run. The code lands on the default branch via the merge; `/design-check` (later, on main) is the gate that promotes a consuming PAGE to `DONE`.
 

@@ -12,18 +12,18 @@ A third key, `writes-terminal:`, declares **intentional terminal writes**: field
 
 ### Namespaces
 
-| Prefix                | File                                                                                                                   | Usage                                                                                                                              |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `feature.*`           | `.project/features/{name}/feature.json` (top-level)                                                                    | dev-pipeline, game-pipeline (incl. `feature.seedDrift`, `feature.externalRef`)                                                     |
-| `backlog.status`      | `.project/backlog.json` (feature status transitions)                                                                   | dev-pipeline, game-pipeline                                                                                                        |
-| `backlog.seedDrift`   | `.project/backlog.json` (`data.seedDrift[]` deferred drift entries)                                                    | project-plan (write), project-seed / project-brainstorm / project-critique (read + reconcile)                                   |
-| `backlog.externalRef` | `.project/backlog.json` (per-feature `externalRef` issue link)                                                         | team-issues, team-outsource                                                                                                        |
-| `concept.*`           | `.project/project-seed.md` + `project.json#concept`                                                                    | project-seed (owner), dev-define / game-define / project-plan (conditional write)                                               |
-| `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | design-pipeline                                                                                                                    |
-| `project.*`           | `.project/project.json` (top-level key, e.g. `stack`, `features`, `endpoints`, `entities`, `team`, `optimizationRuns`) | dashboard-sync skills (core-pull, team-verify, project-todo, project-add, dev-optimize)                                            |
-| `project.thinking`    | `.project/thinking/*.md` + `.project/features/{name}/thinking.md`                                                      | thinking skills (project-seed, project-brainstorm, project-critique, project-todo, project-research)                               |
-| `project-context.*`   | `.project/project-context.json` (top-level section: `learnings`, `context`, `architecture`)                            | core-pull, dev/game build + debug + refactor, team-verify, dev-security (read)                                                     |
-| `conventions`         | `.project/conventions.md` (whole file — see [CONVENTIONS.md](CONVENTIONS.md))                                          | core-setup (writer, allowlisted), dev-refactor (fallback write + read), dev-build / dev-verify / game-refactor / game-build (read) |
+| Prefix                | File                                                                                                                   | Usage                                                                                                                                                                     |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `feature.*`           | `.project/features/{name}/feature.json` (top-level)                                                                    | dev-pipeline, game-pipeline (incl. `feature.seedDrift`, `feature.externalRef`)                                                                                            |
+| `backlog.status`      | `.project/backlog.json` (feature status transitions)                                                                   | dev-pipeline, game-pipeline                                                                                                                                               |
+| `backlog.seedDrift`   | `.project/backlog.json` (`data.seedDrift[]` deferred drift entries)                                                    | project-plan (write), project-seed / project-brainstorm / project-critique (read + reconcile)                                                                             |
+| `backlog.externalRef` | `.project/backlog.json` (per-feature `externalRef` issue link)                                                         | team-issues, team-outsource                                                                                                                                               |
+| `concept.*`           | `.project/project-seed.md` + `project.json#concept`                                                                    | project-seed (owner), dev-ship (define phase) / game-define / project-plan (conditional write)                                                                            |
+| `devinfo.*`           | `.project/session/devinfo.json` (top-level key)                                                                        | design-pipeline                                                                                                                                                           |
+| `project.*`           | `.project/project.json` (top-level key, e.g. `stack`, `features`, `endpoints`, `entities`, `team`, `optimizationRuns`) | dashboard-sync skills (core-pull, team-verify, project-todo, project-add, dev-optimize)                                                                                   |
+| `project.thinking`    | `.project/thinking/*.md` + `.project/features/{name}/thinking.md`                                                      | thinking skills (project-seed, project-brainstorm, project-critique, project-todo, project-research)                                                                      |
+| `project-context.*`   | `.project/project-context.json` (top-level section: `learnings`, `context`, `architecture`)                            | core-pull, dev/game build + debug + refactor, team-verify, dev-security (read)                                                                                            |
+| `conventions`         | `.project/conventions.md` (whole file — see [CONVENTIONS.md](CONVENTIONS.md))                                          | core-setup (writer, allowlisted), dev-ship (refactor phase) (fallback write + read), dev-ship (build phase) / dev-ship (verify phase) / game-refactor / game-build (read) |
 
 ### Granularity
 
@@ -33,7 +33,7 @@ Top-level sections only — no sub-paths like `feature.build.decisions`. Schema 
 
 ```yaml
 ---
-name: dev-build
+name: dev-ship
 description: ...
 disable-model-invocation: true
 reads: [feature.requirements, backlog.status]
@@ -84,7 +84,7 @@ When a dev/game skill processes a feature, write a signal file so the backlog da
 renders waiting rows amber with a static ⏸ badge ("{label} · input needed") and sorts them to the
 top of the IN PROGRESS section — the user sees at a glance that the pipeline is blocked on them.
 Write it by rewriting the signal file with the `waiting` field when an interactive gate follows
-autonomous work (dev-verify manual walkthrough, game-verify playtest, design-ship PHASE 4 review);
+autonomous work (dev-ship (verify phase) manual walkthrough, game-verify playtest, design-ship PHASE 4 review);
 rewrite without the field the moment input is received and work resumes.
 
 **Valid `skill` values:** `define`, `plan`, `build`, `verify`, `test`, `debug`, `refactor`,
@@ -151,7 +151,7 @@ Written by `design-create` (Build route) when user chooses "Open in convert" aft
 
 ### `devinfo.tokenDrift` — Token Drift Log
 
-Written by `design-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `design-create` (Build route Step 10 and Convert route PHASE 4.1), and `dev-verify`/`dev-refactor` (if feature is in `affectedFeatures`).
+Written by `design-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `design-create` (Build route Step 10 and Convert route PHASE 4.1), and dev-ship's verify and refactor phases (if feature is in `affectedFeatures`).
 
 ```json
 {

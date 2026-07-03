@@ -97,7 +97,7 @@ Pass `$COMPOSITION` to the codegen step:
 
   ```tsx
   {
-    /* TODO: {feature-name} — status: {STATUS}, build with /dev-build {feature-name} */
+    /* TODO: {feature-name} — status: {STATUS}, build with /dev-ship {feature-name} */
   }
   <div className="todo-placeholder" aria-label="{feature-name} placeholder" />;
   ```

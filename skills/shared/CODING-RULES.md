@@ -1,6 +1,6 @@
 # Coding Rules
 
-General and TypeScript coding standards. Loaded by dev-build (always), dev-verify and dev-refactor (frontend projects also load `shared/FRONTEND-RULES.md`).
+General and TypeScript coding standards. Loaded by dev-ship (build phase, always), and dev-ship's verify and refactor phases (frontend projects also load `shared/FRONTEND-RULES.md`).
 For frontend-specific rules (React, HTML/CSS, A11y, Performance), see `shared/FRONTEND-RULES.md`.
 
 > **Scope:** General and TypeScript sections apply to all projects.
@@ -140,7 +140,7 @@ const city = user?.address?.city ?? "Unknown";
 
 ## Testing Rules
 
-Empirically grounded in MSR 2026 (Hora & Robbes): AI coding agents add mocks in 36% of test commits vs 26% for humans (χ²=505.5, p<0.001) and use mono-type `mock` in 95% of cases where humans vary (mock 91%, fake 57%, spy 51%). These rules mitigate that observation. Enforced at write time by `/dev-build` TDD (test-first per REQ).
+Empirically grounded in MSR 2026 (Hora & Robbes): AI coding agents add mocks in 36% of test commits vs 26% for humans (χ²=505.5, p<0.001) and use mono-type `mock` in 95% of cases where humans vary (mock 91%, fake 57%, spy 51%). These rules mitigate that observation. Enforced at write time by `/dev-ship (build phase)` TDD (test-first per REQ).
 
 ### MUST_DO (Critical)
 
@@ -226,11 +226,11 @@ Path B — Brief for Claude Design / Figma:
 - Cross-pipeline coupling runs exclusively via `feature.json#frontend.linkedEntities[]` and `dependencies[]`
 
 **Dev pipeline (functionality):**
-`/project-plan → /dev-define → /dev-build → /dev-verify → /dev-refactor`
+`/project-plan → /dev-ship`
 
 - Works standalone — no design-create required
 - Fits: features with logic/state/tests, also backend-only
-- `/dev-build` reads `design.pages[]/design.components[]` as visual spec source if present
+- `/dev-ship (build phase)` reads `design.pages[]/design.components[]` as visual spec source if present
 - FEATURE/API/UI/etc. TODOs live exclusively on the **Dev track** in the backlog
 
 **Cross-pipeline coupling:**

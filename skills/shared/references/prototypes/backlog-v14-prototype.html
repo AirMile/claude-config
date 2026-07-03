@@ -867,7 +867,7 @@ export default function LoginPage() {
       }
 
       function renderWaitingRow(f) {
-        return renderRow(f, { copyText: "/dev-refactor " + f.name });
+        return renderRow(f, { copyText: "/dev-ship " + f.name });
       }
 
       function groupByPhase(items) {
@@ -943,7 +943,7 @@ export default function LoginPage() {
           ${section("To define", "todo", todo.length, renderPhaseSection(todo), "Captured ideas, not yet defined.")}
           ${section("To build", "defined", defined.length, renderPhaseSection(defined), "Requirements specified, ready to build.")}
           ${section("To test", "doing", doing.length, renderPhaseSection(doing), "Claude is actively working on this.")}
-          ${waiting.length ? section("To refactor", "done", waiting.length, renderPhaseSection(waiting, renderWaitingRow), "Run /dev-refactor to promote to Dashboard.", { collapsed: true, hint: " · run /dev-refactor", copyText: "/dev-refactor" }) : ""}
+          ${waiting.length ? section("To refactor", "done", waiting.length, renderPhaseSection(waiting, renderWaitingRow), "Run /dev-ship to promote to Dashboard.", { collapsed: true, hint: " · run /dev-ship", copyText: "/dev-ship" }) : ""}
         `;
 
         const sidebarItems = [
@@ -1070,7 +1070,7 @@ export default function LoginPage() {
             refactorBlock = `
               <div class="modal-section">
                 <h3>Refactor</h3>
-                <p>Not yet run. <code>/dev-refactor ${esc(f.name)}</code> analyzes and suggests improvements.</p>
+                <p>Not yet run. <code>/dev-ship ${esc(f.name)}</code> analyzes and suggests improvements.</p>
               </div>`;
           }
         }

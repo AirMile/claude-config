@@ -14,7 +14,7 @@ metadata:
 ## Overview
 
 This is the **bridge** between the seed document and the dev or game pipeline.
-Transforms structured idea markdown into a prioritized feature backlog ready for `/dev-define` (web) or `/game-define` (game). Along the way it actively hunts for **technical holes** the seed doesn't mention and proposes its own **improvements** (PHASE 1, step 6a) — the output is a plan, not just a transcription.
+Transforms structured idea markdown into a prioritized feature backlog ready for `/dev-ship (define phase)` (web) or `/game-define` (game). Along the way it actively hunts for **technical holes** the seed doesn't mention and proposes its own **improvements** (PHASE 1, step 6a) — the output is a plan, not just a transcription.
 
 **Trigger**: `/project-plan` or `/project-plan [paste markdown]`
 
@@ -33,7 +33,7 @@ Accepts markdown from:
 - Decomposed features
 - Dependencies
 - P1/P2/P3/P4 priority
-- Direct links to `/dev-define {feature}` (web) or `/game-define {feature}` (game)
+- Direct links to `/dev-ship {feature}` (web) or `/game-define {feature}` (game)
 
 ## Workflow
 
@@ -52,12 +52,12 @@ Accepts markdown from:
    `react-native` or `expo` (or `concept.platform === "mobile"`) → set **WEB-MOBILE**.
    WEB-MOBILE runs the full WEB pipeline EXCEPT Page-Discovery: the `/design-create`
    browser pipeline (Playwright/DOM) does not run against React Native, so screens stay
-   FEATURE-typed and flow through `/dev-define → /dev-build`.
+   FEATURE-typed and flow through `/dev-ship`.
 4. Show detected mode:
 
    ```
-   STACK DETECTED: web         (→ /dev-define pipeline)
-   STACK DETECTED: web-mobile  (→ /dev-define pipeline, screens as FEATURE)
+   STACK DETECTED: web         (→ /dev-ship pipeline)
+   STACK DETECTED: web-mobile  (→ /dev-ship pipeline, screens as FEATURE)
    STACK DETECTED: game        (→ /game-define pipeline)
    ```
 

@@ -39,7 +39,7 @@ This skill activates in these scenarios:
 
 - Initial feature planning (use /game-define)
 - Implementation (use /game-build)
-- Automated unit testing (use /dev-verify)
+- Automated unit testing (use /dev-ship (verify phase))
 
 ## Input Formats
 
@@ -571,7 +571,7 @@ FAILED: 2 items (3, 4)
 
 > **Todo**: mark PHASE 5c → `completed`, PHASE 5d → `in_progress`. (Requirement verification — see `references/regression-requirements.md` loaded above.)
 
-**Test-quality verdict (simplified, GUT context).** Unlike dev-verify (Stryker + mutation score), GUT has no mutation runner; the verdict is therefore based on PASS ratio + feedback FAILs. Write `feature.json#tests.qualityVerdict`:
+**Test-quality verdict (simplified, GUT context).** Unlike dev-ship's verify phase (Stryker + mutation score), GUT has no mutation runner; the verdict is therefore based on PASS ratio + feedback FAILs. Write `feature.json#tests.qualityVerdict`:
 
 | Verdict | Condition                                                                                                                     |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------- |

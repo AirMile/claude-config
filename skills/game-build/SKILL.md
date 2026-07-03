@@ -464,7 +464,7 @@ On regression:
 
 1. Analyze whether the current feature caused the regression (check shared files/signals)
 2. If YES: fix the regression before continuing (autonomous, no gate). Re-run full suite after fix.
-3. If NO (pre-existing failure), or the cause is unclear → plan-mode gate (mirrors `dev-verify/references/fix-loop.md § Plan-mode gate`): show `PLAN MODE: regression not caused by this build — entering plan mode (OpusPlan-aware).`, call `EnterPlanMode`, write a fix plan per regression to the plan file (problem → root cause → proposed fix → verification), then `ExitPlanMode` for approval. Approved → fix + re-run full suite. Rejected → continue anyway (regression pre-existed this build; log it in the completion output).
+3. If NO (pre-existing failure), or the cause is unclear → plan-mode gate (mirrors `dev-ship/references/dev-verify/references/fix-loop.md § Plan-mode gate`): show `PLAN MODE: regression not caused by this build — entering plan mode (OpusPlan-aware).`, call `EnterPlanMode`, write a fix plan per regression to the plan file (problem → root cause → proposed fix → verification), then `ExitPlanMode` for approval. Approved → fix + re-run full suite. Rejected → continue anyway (regression pre-existed this build; log it in the completion output).
 4. Max 2 fix attempts. After that: report as blocker and let user decide. The happy path (all tests pass) never enters plan mode.
 
 **Skip condition:** If no other test files exist (first feature), skip with:

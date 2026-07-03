@@ -71,7 +71,7 @@ For each name in `$COMPOSITION.features[].name`:
 
 - Glob `.project/features/*/feature.json` → find where `feature.name === name`.
 - Read file, add `$TARGET` to `pageHint[]` (dedupe), write back.
-- No feature.json found for this name → skip silently (pageHint gets written when `/dev-define` runs).
+- No feature.json found for this name → skip silently (pageHint gets written when dev-ship's define phase runs).
 
 Store `$COMP_FEAT_COUNT = len($COMPOSITION.features)`, `$COMP_COMP_COUNT = len($COMPOSITION.components)`, `$PAGEHINT_COUNT = number of feature.json files updated`.
 

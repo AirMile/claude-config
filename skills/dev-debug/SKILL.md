@@ -392,12 +392,11 @@ Regression: {N tests, X PASS, Y FAIL}
 Learning: {pitfall summary added, or "no extraction"}
 
 Next steps:
-  1. /dev-verify {feature} → re-verification if feature active
-  2. /dev-build {feature} → if rebuild needed
+  1. /dev-ship {feature} → re-verify or rebuild as needed
 ```
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /dev-verify {feature} → re-verification after fixing the issue.
+> Recommended command: /dev-ship {feature} → re-verification after fixing the issue.
 
 > **Todo**: mark PHASE 10 → `completed`.

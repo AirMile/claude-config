@@ -250,7 +250,7 @@ Single canon for every skill that appends to `project-context.json#learnings[]` 
 
 Passes both stages → append. No candidates → skip the step silently.
 
-**Single writer for build decisions**: `dev-build` PHASE 3A owns the `build.decisions[] → learnings` mapping (type `pattern`, source `extracted`). Downstream skills must not re-map decisions — `dev-verify` maps only `tests.fixSync[]` → `pitfall` and `observations[]` → `observation`.
+**Single writer for build decisions**: `dev-ship (build phase)` PHASE 3A owns the `build.decisions[] → learnings` mapping (type `pattern`, source `extracted`). Downstream skills must not re-map decisions — `dev-ship (verify phase)` maps only `tests.fixSync[]` → `pitfall` and `observations[]` → `observation`.
 
 ---
 

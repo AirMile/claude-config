@@ -1084,7 +1084,7 @@
           return `
             <div class="section-header"><h2>Architecture</h2></div>
             <div class="empty-state"><p>No components defined yet.</p>
-            <p style="color:var(--text-dim)">Filled by <code>/dev-define</code></p></div>`;
+            <p style="color:var(--text-dim)">Filled by <code>/dev-ship</code></p></div>`;
         }
 
         // Toolbar: filter toggle + optional diagram toggle
@@ -2191,8 +2191,7 @@
       const featureDetailCache = {};
 
       function buildFeatureDetailHtml(detail) {
-        const isDesign =
-          detail.type === "PAGE" || detail.type === "COMPONENT";
+        const isDesign = detail.type === "PAGE" || detail.type === "COMPONENT";
         return isDesign
           ? buildDesignDetailHtml(detail)
           : buildDevDetailHtml(detail);
@@ -2672,7 +2671,7 @@
             <div class="section-header"><h2>Features</h2></div>
             <div class="empty-state">
               <p>No shipped features yet.</p>
-              <p style="color:var(--text-dim)">Run <code>/dev-refactor</code> to promote features to the dashboard.</p>
+              <p style="color:var(--text-dim)">Run <code>/dev-ship</code> to promote features to the dashboard.</p>
             </div>`;
         }
 
@@ -2823,7 +2822,7 @@
           ${
             hasContent
               ? `${learningsSections}${principlesSection}`
-              : `<div class="empty-state"><p>No knowledge captured yet.</p><p style="color:var(--text-dim)">Automatically filled by <code>/dev-verify</code> or <code>/game-verify</code></p></div>`
+              : `<div class="empty-state"><p>No knowledge captured yet.</p><p style="color:var(--text-dim)">Automatically filled by <code>/dev-ship</code> or <code>/game-verify</code></p></div>`
           }
         `;
       }

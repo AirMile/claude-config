@@ -19,7 +19,7 @@
 | ------------------------------------------ | ------------------------------------------ |
 | (none — always)                            | `/core-pull`                               |
 | no `project-seed.md` (>50 chars)           | `/project-seed`                            |
-| `features[]` empty                         | `/dev-define`                              |
+| `features[]` empty                         | `/dev-ship (define phase)`                 |
 | (web or game) stack && `needsTheme = true` | `/design-tokens`                           |
 | `installed_in_session[]` not empty         | show "Modules added: {list}" under Updated |
 
@@ -70,6 +70,6 @@ Updated: {date}
 Next steps:
   • /core-pull              — incremental updates (sync state is on)
 {if no project-seed.md > 50 chars}  • /project-seed   — build the project concept
-{if features[] empty}     • /dev-define         — define the first feature
+{if features[] empty}     • /dev-ship         — define the first feature
 {if (frontend or game) && needsTheme}  • /design-tokens — design tokens (color, typography, spacing)
 ```

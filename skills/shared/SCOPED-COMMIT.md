@@ -15,7 +15,7 @@ git status --porcelain | sort > .project/session/{baseline-file}.txt
 
 `{baseline-file}` is per skill (e.g. `pre-skill-status`, `pre-debug-status`). Capture **after** any worktree switch so the baseline describes the tree the skill mutates.
 
-Alternative form — **SHA baseline** (skills that commit mid-run, e.g. dev-build): store `git rev-parse HEAD` in `pre-skill-sha.txt`; at commit time derive changed files via `git diff --name-only $(cat pre-skill-sha.txt)` (+ `git ls-files --others --exclude-standard` for new files).
+Alternative form — **SHA baseline** (skills that commit mid-run, e.g. dev-ship's build phase): store `git rev-parse HEAD` in `pre-skill-sha.txt`; at commit time derive changed files via `git diff --name-only $(cat pre-skill-sha.txt)` (+ `git ls-files --others --exclude-standard` for new files).
 
 ## 2. Categorize (at commit time)
 

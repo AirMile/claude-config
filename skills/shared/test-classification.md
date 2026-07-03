@@ -121,7 +121,7 @@ Assign AUTO/A11Y when ALL of the following are true:
 - **WCAG-based**: check maps to a concrete WCAG 2.2 success criterion
 - **No assistive tech needed**: doesn't require actual screen reader or physical device
 
-Execution detail (axe-core injection snippet + common A11Y patterns): `references/test-classification-patterns.md § A11Y patterns` — loaded by the Task agent, not needed for classification.
+Execution detail (axe-core injection snippet + common A11Y patterns): `test-classification-patterns.md § A11Y patterns` — loaded by the Task agent, not needed for classification.
 
 ### MANUAL (human walkthrough)
 
@@ -170,4 +170,4 @@ NOT COVERED (even when build tests exist):
 - Items with external dependencies not covered by build tests (e.g., email delivery, third-party API responses)
 - Items where the Explore agent identifies a meaningful delta
 
-> Test patterns (BROWSER/CLI/A11Y) and post-build override table: `references/test-classification-patterns.md` — load when writing test specs or applying post-build overrides.
+> Test patterns (BROWSER/CLI/A11Y) and post-build override table: `test-classification-patterns.md` — load when writing test specs or applying post-build overrides.

@@ -1,6 +1,6 @@
 # Frontend Coding Rules
 
-Frontend-specific coding standards. Loaded by dev-verify and dev-refactor for frontend projects.
+Frontend-specific coding standards. Loaded by dev-ship's verify and refactor phases for frontend projects.
 General and TypeScript rules: see `shared/CODING-RULES.md`.
 
 > **Scope:** React/Next.js, HTML/CSS, Accessibility, Error, Flow, Performance, Responsive, Data Integration.
@@ -201,17 +201,17 @@ elements.forEach((el, i) => {
 
 ### AVOID (Medium)
 
-| ID   | Pattern                                                                                              | Alternative                                           |
-| ---- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| H201 | `!important` in stylesheets                                                                          | Specificity management                                |
-| H202 | Magic numbers                                                                                        | Design tokens                                         |
-| H203 | ID selectors for styling                                                                             | Class selectors                                       |
-| H204 | Deep selector nesting (>3)                                                                           | BEM or flat selectors                                 |
+| ID   | Pattern                                                                                              | Alternative                                         |
+| ---- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| H201 | `!important` in stylesheets                                                                          | Specificity management                              |
+| H202 | Magic numbers                                                                                        | Design tokens                                       |
+| H203 | ID selectors for styling                                                                             | Class selectors                                     |
+| H204 | Deep selector nesting (>3)                                                                           | BEM or flat selectors                               |
 | H205 | Large `blur()`/`backdrop-filter` on visible content **unless `theme.surfaces.glass.enabled = true`** | Enable via `/design-tokens → Motion Pack` or remove |
-| H206 | `will-change` outside active animation blocks                                                        | Add/remove temporarily via JS                         |
-| H207 | Changing `letter-spacing` without explicit request                                                   | Design discipline                                     |
-| H208 | Animating layout properties on large surfaces                                                        | Use `transform`                                       |
-| H209 | Gradients/glow without explicit request **unless `theme.motion.pack` is `apple` or `playful`**       | Tailwind default shadows, or enable pack              |
+| H206 | `will-change` outside active animation blocks                                                        | Add/remove temporarily via JS                       |
+| H207 | Changing `letter-spacing` without explicit request                                                   | Design discipline                                   |
+| H208 | Animating layout properties on large surfaces                                                        | Use `transform`                                     |
+| H209 | Gradients/glow without explicit request **unless `theme.motion.pack` is `apple` or `playful`**       | Tailwind default shadows, or enable pack            |
 | H122 | Motion classes (`transition-*`, `animate-*`) that don't match the active `theme.motion.pack`         | Use token-based classes from `/design-tokens`       |
 
 ---

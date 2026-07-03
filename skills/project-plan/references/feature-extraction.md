@@ -18,7 +18,7 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
 
    **If research was performed (PHASE 0.5), also consider:** what already exists in the codebase to reuse/extend, framework patterns or conventions that should guide decomposition, and pitfalls/anti-patterns to avoid.
 
-   **Granularity decision:** each feature = **one coherent, independently testable concern** — small enough that one `/dev-define → /dev-build` cycle covers it. (Sizing is by scope, not human time: the builder is Claude Code.) If in doubt, prefer smaller features — easier to combine than to split later.
+   **Granularity decision:** each feature = **one coherent, independently testable concern** — small enough that one `/dev-ship` cycle covers it. (Sizing is by scope, not human time: the builder is Claude Code.) If in doubt, prefer smaller features — easier to combine than to split later.
 
    **If in update mode (from PHASE 0 Scenario A):**
 
@@ -30,9 +30,9 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
    - Already-CANCELLED features are protected: preserve as `status: "CANCELLED"`, exclude from planning and build order
    - Present the merged feature list with change markers for clarity
 
-2. **Extract features:** each feature = one `/dev-define` (web) or `/game-define` (game) unit, implementable independently (with dependencies), kebab-case name for CLI use.
+2. **Extract features:** each feature = one `/dev-ship (define phase)` (web) or `/game-define` (game) unit, implementable independently (with dependencies), kebab-case name for CLI use.
 
-   **Description norm** — write each feature's `description` per `shared/BACKLOG.md § Description quality`: self-contained (readable weeks later without this conversation), concrete observable behavior, scope boundary named, 1–3 sentences. Never a noun phrase restating the title. This text is the only context `/dev-define` gets when the card is picked up — the interview anchors on it.
+   **Description norm** — write each feature's `description` per `shared/BACKLOG.md § Description quality`: self-contained (readable weeks later without this conversation), concrete observable behavior, scope boundary named, 1–3 sentences. Never a noun phrase restating the title. This text is the only context `/dev-ship (define phase)` gets when the card is picked up — the interview anchors on it.
 
 3. **Categorize by type:**
 
@@ -151,7 +151,7 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
 
    Resolve via AskUserQuestion (one modal, recommended option first) or free-text;
    apply the answers to the feature list. **Fold each resolution into the `description`
-   of the affected feature(s)** — by the time `/dev-define` runs, this conversation is
+   of the affected feature(s)** — by the time dev-ship's define phase runs, this conversation is
    gone; the description is the only carrier of these decisions. No real ambiguity →
    state "No open questions — decomposition is unambiguous" and go straight to 6c.
    **Never manufacture questions.**

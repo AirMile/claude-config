@@ -18,7 +18,6 @@ The open command is identical for both.
 A skill reaches a completion/report point AND has a visual artifact to show:
 
 - **design-tokens** → token-pack gallery + motion preview (always — a theme is always visual).
-- **dev-define** → wireframe preview (only when the feature has a design sketch).
 - **dev-ship** → adaptive feature-spec preview after PHASE 0 define (always — requirements +
   acceptance + wireframe/API-contract/build-sequence when present; visually replaces the removed
   plan-approval gate).
@@ -106,9 +105,9 @@ For the **file://** case the marker also names the template + data to render fir
 ## Rules
 
 - **One open per completion** — never open multiple tabs in a single run.
-- **Conditional skills stay conditional** — dev-define/design-create only present when their
-  visual artifact actually exists (sketch present / smoke rendered). No artifact → no preview,
-  no error.
+- **Conditional skills stay conditional** — design-create only presents when its
+  visual artifact actually exists (smoke rendered) — dev-ship's define-phase preview (see above)
+  is unconditional. No artifact → no preview, no error.
 - **Never block on it** — a failed launch is a printed path, never a halt.
 - **Resolve `{slug}`** from the artifact's name (feature/theme/page), kebab-cased.
 - The marker does NOT replace the textual report — it runs after it.

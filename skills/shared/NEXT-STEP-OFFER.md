@@ -37,10 +37,10 @@ AskUserQuestion:
     - dev loop-back: first `status === "TODO" && type === "FEATURE"` (respecting `dependencies[]` where the skill already does so).
     - design loop-back: first `status === "TODO" && type === "PAGE"`.
     - If no matching task exists: use the current `{feature}` as fallback for the command, or omit the whole offer if that is also unavailable.
-  - The **copied string** is the resolved command (e.g. `/dev-build mijn-feature`), so it is runnable immediately.
-    This is especially valuable for worktree-gated steps (e.g. dev-build → dev-verify in a NEW chat) where
+  - The **copied string** is the resolved command (e.g. `/dev-ship mijn-feature`), so it is runnable immediately.
+    This is especially valuable for worktree-gated steps (e.g. dev-ship → dev-debug in a NEW chat) where
     copy-paste is the only way to continue.
-- For **conditional next steps** (e.g. dev-verify: refactor vs. define-next): pick the single most relevant branch given the current result and fill in the real name — do not list multiple commands in the modal.
+- For **conditional next steps** (e.g. dev-ship's verify phase: refactor vs. define-next): pick the single most relevant branch given the current result and fill in the real name — do not list multiple commands in the modal.
 - Header and question text: use the runtime language from `CLAUDE.md § User Preferences → Language:` (NL default: keep as-is above).
 - This pattern does NOT replace the textual `Next steps:` block — place the question after it.
 

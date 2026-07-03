@@ -44,7 +44,7 @@ GAPS DETECTED:
 | 2  | Codebase          | /api/webhooks    | API     | No                 |
 | 3  | Entity            | User             | DATA    | Partial            |
 | 4  | Architecture      | {component-name} | BUILT   | No                 |
-| 5  | /dev-define drift | {featureDecides} | drift   | drift — {category} |
+| 5  | /dev-ship (define phase) drift | {featureDecides} | drift   | drift — {category} |
 
 ALREADY COVERED:
 - {feature described in both concept and backlog}
@@ -52,7 +52,7 @@ ALREADY COVERED:
 {LEARNINGS CONTEXT block, if any — context for integration phrasing, not gap rows}
 ```
 
-Architecture rows (source = `Architecture`, type `BUILT`) are components with `status: "done"` in `project-context.json` that the concept does not describe — built reality the concept is missing. Drift rows (source = `/dev-define drift`, `/game-define drift`, `/project-plan drift`) originate from deferred `seedDrift[]` entries — decisions that already happened in earlier skill runs and were explicitly skipped. Show `seedSays` in the `Name` column and `featureDecides` as context so the user understands what changed.
+Architecture rows (source = `Architecture`, type `BUILT`) are components with `status: "done"` in `project-context.json` that the concept does not describe — built reality the concept is missing. Drift rows (source = `/dev-ship (define phase) drift`, `/game-define drift`, `/project-plan drift`) originate from deferred `seedDrift[]` entries — decisions that already happened in earlier skill runs and were explicitly skipped. Show `seedSays` in the `Name` column and `featureDecides` as context so the user understands what changed.
 
 **3. Select gaps to integrate:**
 

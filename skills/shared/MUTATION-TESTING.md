@@ -1,6 +1,6 @@
 # Mutation Testing — Stryker integration
 
-Shared reference for `dev-verify` PHASE 5d (measurement) and `dev-refactor` PHASE 4 step 0 (pre-flight gate).
+Shared reference for dev-ship's verify phase PHASE 5d (measurement) and dev-ship's refactor phase PHASE 4 step 0 (pre-flight gate).
 
 **Purpose:** measure assertion strength. PASS tests prove that tests exist; mutation score proves that tests would catch a subtly wrong implementation. Nothing else in the pipeline measures this.
 
@@ -112,7 +112,7 @@ Smoke-test fixture: `scripts/fixtures/test-quality/stryker-report.json` + `featu
 
 ---
 
-## dev-verify PHASE 5d — measurement
+## dev-ship's verify phase PHASE 5d — measurement
 
 Run after the existing requirement-coverage check:
 
@@ -152,7 +152,7 @@ Run after the existing requirement-coverage check:
 
 ---
 
-## dev-refactor PHASE 4 step 0 — pre-flight gate
+## dev-ship's refactor phase PHASE 4 step 0 — pre-flight gate
 
 Run before "Initialize change tracking" in `apply-rollback.md`:
 
@@ -176,7 +176,7 @@ Run before "Initialize change tracking" in `apply-rollback.md`:
 ## What NOT to do
 
 - **No full-codebase mutations.** Diff scope (`--mutate {files[].path}`) is mandatory.
-- **No mutation runs in dev-build.** Degrades the TDD red→green flow.
+- **No mutation runs in dev-ship's build phase.** Degrades the TDD red→green flow.
 - **No automatic package install.** Skip gracefully if the runner is missing.
 - **No blocking on MIXED/SHALLOW.** Only report + create AUTO items.
 - **No mapping guesses.** With multiple matching checklist entries: omit `requirementId`.

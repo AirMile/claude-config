@@ -18,13 +18,13 @@ Generate an ASCII [diagram type] showing [what to visualize].
 
 **Diagram types by use case:**
 
-| Use case              | Diagram type         | Example skills            |
-| --------------------- | -------------------- | ------------------------- |
-| Architecture/layers   | Component diagram    | dev-define, design-create |
-| Multi-step workflow   | Flowchart            | dev-build, dev-verify     |
-| Feature decomposition | Tree                 | project-plan              |
-| State transitions     | State machine        | game-define               |
-| Parallel processes    | Architecture diagram | team-review               |
+| Use case              | Diagram type         | Example skills                                  |
+| --------------------- | -------------------- | ----------------------------------------------- |
+| Architecture/layers   | Component diagram    | dev-ship (define phase), design-create          |
+| Multi-step workflow   | Flowchart            | dev-ship (build phase), dev-ship (verify phase) |
+| Feature decomposition | Tree                 | project-plan                                    |
+| State transitions     | State machine        | game-define                                     |
+| Parallel processes    | Architecture diagram | team-review                                     |
 
 **Placement:** After the phase where the relevant information is gathered, before execution continues.
 
@@ -253,7 +253,7 @@ visible — no risk of forgetting phases.
 
 **Skip for:** short CLI utilities (<5 phases), interactive thinking skills, backlog/CRUD skills.
 
-**Reference:** `dev-build/SKILL.md` (line 33+) has the full pattern.
+**Reference:** `dev-ship/references/dev-build/workflow.md` has the full pattern.
 
 ---
 
@@ -289,7 +289,7 @@ For conditional branches (read only when condition is met):
 
 **Read failure:** If the Read of a reference file fails (missing/renamed file), stop and report the missing path to the user — do not improvise the phase from memory. The reference is the source of truth; a reconstructed version silently diverges from it.
 
-**Examples:** `dev-verify/references/completion-sync.md` (end-of-flow sync, 237 lines) and `dev-build/techniques/tdd.md` (mutually-exclusive workflow, loaded on demand in PHASE 2).
+**Examples:** `dev-ship/references/dev-verify/references/completion-sync.md` (end-of-flow sync, 237 lines) and `dev-ship/references/dev-build/techniques/tdd.md` (mutually-exclusive workflow, loaded on demand in PHASE 2).
 
 **Skip for:** Short inline phases (<30 lines), blocks that always run AND are always needed (no conditional savings), skills with fewer than 5 phases.
 
@@ -366,7 +366,7 @@ PROJECT_CONTEXT_END
 - Skip sections that do not exist (show "not available")
 - Only pass learnings if relevant to the agent's task
 - Skills may add extra skill-specific sections AFTER the standard block
-- Existing skills (dev-debug, dev-verify, dev-security) do not need to migrate immediately — this is opt-in for new skills and future refactors
+- Existing skills (dev-debug, dev-ship's verify phase, dev-security) do not need to migrate immediately — this is opt-in for new skills and future refactors
 
 **Context load helpers** — use these shared protocols instead of inline reads (single source of truth per file type):
 
@@ -402,7 +402,7 @@ The "Read source files in PHASE 0 — not per agent" rule covers files the skill
 
 Two sanctioned agents:
 
-- `context-aggregator` (sonnet) — prior feature decisions + thinking files → `PRIOR_DECISIONS_START/END` (≤ 30 lines). Used by dev-define PHASE 0.
+- `context-aggregator` (sonnet) — prior feature decisions + thinking files → `PRIOR_DECISIONS_START/END` (≤ 30 lines). Used by dev-ship's define phase (PHASE 0).
 - `define-scout` (sonnet) — similar-pattern **source exploration** + library/API research during define PHASE 2 → `DEFINE_SCOUT_START/END` (≤ 40 lines). This is the sanctioned way to keep the design-time codebase reads and Context7/WebSearch out of the main context; the build agent reads the real files later (pass-paths-not-content).
 
 **Not for:** single field extraction (use inline `node -e`), per-REQ context (use Agent Context Block above), or learnings filtering (use `shared/LEARNINGS-LOAD.md`). Raw full-source reads the skill must reason over line-by-line still stay inline — the scout returns signatures + notes, not file bodies.
@@ -609,12 +609,12 @@ multiSelect: false
 
 **Goal:** Detect reusable UI patterns during dev work and drop them as COMPONENT todos in the backlog.
 
-**Skills:** `dev-define` (keyword-scan requirements), `dev-build` (repeating JSX pattern).
+**Skills:** `dev-ship` (define phase — keyword-scan requirements), `dev-ship` (build phase — repeating JSX pattern).
 
 #### Triggers (per skill)
 
-- **dev-define:** keyword-scan on UI element names in requirements (Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton). Also apply project-specific name prefixes.
-- **dev-build:** repeating JSX block after code-gen — ≥2x in the same file or ≥1x across multiple files of the same feature.
+- **dev-ship (define phase):** keyword-scan on UI element names in requirements (Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton). Also apply project-specific name prefixes.
+- **dev-ship (build phase):** repeating JSX block after code-gen — ≥2x in the same file or ≥1x across multiple files of the same feature.
 
 #### Resolution (batch)
 
@@ -662,25 +662,25 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected). "Skip" → log all 
 
 **Goal:** Detect new page routes during dev work and drop them as standalone PAGE todos in the backlog so they go through the design → convert → check pipeline.
 
-**Skills:** `dev-define` (sole writer — post-architecture seed), `design-create completion-sync` (sole writer — user-driven page creation), `dev-build` (warning-only safety net + COMPONENT→route suggestions — does NOT write to backlog).
+**Skills:** `dev-ship` (define phase — sole writer — post-architecture seed), `design-create completion-sync` (sole writer — user-driven page creation), `dev-ship` (build phase — warning-only safety net + COMPONENT→route suggestions — does NOT write to backlog).
 
-> **Doctrine:** `/dev-define` and `/design-create completion-sync` are the only skills that create PAGE entries in `backlog.json`. `/dev-build` only logs a warning when it detects route patterns not yet in the backlog.
+> **Doctrine:** `/dev-ship` (define phase) and `/design-create completion-sync` are the only skills that create PAGE entries in `backlog.json`. `/dev-ship` (build phase) only logs a warning when it detects route patterns not yet in the backlog.
 
 #### Triggers (per skill)
 
-- **dev-define:** scan `feature.json#architecture.routes[]` for stack-specific page patterns (`app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`); scan `feature.json#files[]` for suffixes `Page`, `Screen`, `View`.
-- **dev-build (safety net):** identical patterns as dev-define. Skip candidates already seeded by dev-define: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`. **Warning-only — no write.**
-- **dev-build (COMPONENT→route):** scan `<Link href="...">` and `router.push(...)` in generated component files. Candidate if route does not appear in `project.json#design.pages[]` or `backlog.json`.
+- **dev-ship (define phase):** scan `feature.json#architecture.routes[]` for stack-specific page patterns (`app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`); scan `feature.json#files[]` for suffixes `Page`, `Screen`, `View`.
+- **dev-ship (build phase, safety net):** identical patterns as the define phase. Skip candidates already seeded during the define phase: `data.features.find(f => f.source === "/dev-ship" && f.parentFeature === current)`. **Warning-only — no write.**
+- **dev-ship (build phase, COMPONENT→route):** scan `<Link href="...">` and `router.push(...)` in generated component files. Candidate if route does not appear in `project.json#design.pages[]` or `backlog.json`.
 
 #### Resolution
 
 AskUserQuestion (wording per skill — see skill files for exact options):
 
-- **dev-define:** batch — "Add a PAGE todo per page?" — options: "Yes, all" / "Selection" / "No".
-- **dev-build (safety net):** log warning only — `⚠ Detected new route patterns: {list}. Run /dev-define or /design-create <name>.` No AskUserQuestion. No write.
-- **dev-build (COMPONENT→route):** per route — "PAGE todo for {route}?" — "Yes" / "Skip".
+- **dev-ship (define phase):** batch — "Add a PAGE todo per page?" — options: "Yes, all" / "Selection" / "No".
+- **dev-ship (build phase, safety net):** log warning only — `⚠ Detected new route patterns: {list}. Run /dev-ship or /design-create <name>.` No AskUserQuestion. No write.
+- **dev-ship (build phase, COMPONENT→route):** per route — "PAGE todo for {route}?" — "Yes" / "Skip".
 
-**Persist per accepted page** (dev-define and design-create only):
+**Persist per accepted page** (dev-ship's define phase and design-create only):
 
 1. Run dedup order (see above — name check; type PAGE skips inventory check; suggestionsLog check on rejected status).
 2. Push to `data.features[]`:
@@ -709,12 +709,12 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected).
 
 **Goal:** During PAGE composition or feature definition, allow skills to discover and create new backlog items (COMPONENT or FEATURE) inline — without leaving the current flow.
 
-**Skills:** `design-create` (Build — page-compose step), `dev-define` (pageHint sparring — new PAGE).
+**Skills:** `design-create` (Build — page-compose step), `dev-ship` (define phase — pageHint sparring — new PAGE).
 
 #### Trigger
 
 - **design-create Build (PAGE):** user selects `"+ new component"` or `"+ new feature"` in the page-composition selection menu.
-- **dev-define:** user answers `"+ new PAGE"` in the pageHint sparring question (no existing PAGE matches the feature's target route).
+- **dev-ship (define phase):** user answers `"+ new PAGE"` in the pageHint sparring question (no existing PAGE matches the feature's target route).
 
 #### Resolution
 
@@ -773,7 +773,7 @@ multiSelect: false
    ```
 3. Return the new feature name to the composition selection.
 
-**For "+ new PAGE" (from dev-define pageHint sparring):**
+**For "+ new PAGE" (from dev-ship's define phase pageHint sparring):**
 
 1. Run dedup order.
 2. Push to `backlog.json#data.features[]`:
@@ -785,7 +785,7 @@ multiSelect: false
      "transition": "designing",
      "phase": "P2",
      "description": "Page for feature {current-feature}. Route: {route-hint}",
-     "source": "/dev-define",
+     "source": "/dev-ship",
      "dependencies": ["{current-feature}"],
      "parentFeature": "{current-feature}",
      "auto": true
@@ -838,7 +838,7 @@ gitignored `personal/` directory that sits inside the repo root but is never com
 personal/
   CLAUDE.md.overlay          ← appended to ~/.claude/CLAUDE.md after base
   settings.overlay.json      ← deep-merged into ~/.claude/settings.json (your values win)
-  styles/                    ← writing styles for core-write / core-rewrite
+  styles/                    ← writing styles for content-write / content-rewrite
 ```
 
 `/core-bootstrap` auto-detects `personal/` and applies overlays. Safe across `git pull`.

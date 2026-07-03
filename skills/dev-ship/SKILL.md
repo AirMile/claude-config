@@ -14,15 +14,24 @@ reads:
   ]
 writes:
   [
+    feature.requirements,
+    feature.architecture,
+    feature.files,
+    feature.build,
+    feature.tests,
+    feature.seedDrift,
     feature.verificationProfile,
     feature.status,
-    feature.tests,
     backlog.status,
+    backlog.features,
+    concept.seed,
     project-context.learnings,
+    conventions,
   ]
+writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.5.0
+  version: 0.6.0
   category: dev
 ---
 
@@ -30,8 +39,9 @@ metadata:
 
 Runs the full dev pipeline — **define → build → verify → refactor** — in one chat. Heavy work
 runs in isolated inline agents (context stays clean); only human interaction (define choices,
-manual tests) happens in the main chat. Does **not** replace the classic 4-skill pipeline — it
-orchestrates the existing skills via reuse. Old `/dev-define`→`/dev-build`→… stay untouched.
+manual tests) happens in the main chat. `dev-ship` is the **standalone** dev pipeline: it carries
+its own vendored copies of the four phase workflows under `references/dev-{define,build,verify,refactor}/`
+and drives them internally — there are no separate `/dev-define`…`/dev-refactor` skills anymore.
 
 **Trigger**: `/dev-ship` or `/dev-ship {feature-name}`
 

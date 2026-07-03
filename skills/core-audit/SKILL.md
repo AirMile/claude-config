@@ -17,7 +17,7 @@ Audit a skill from the current conversation: load its full surface (SKILL.md + l
 
 ## Step 1: Load Skill from Chat
 
-Scan the conversation above for unique skill invocations (slash commands like `/dev-build`, or skill names in `<command-name>` tags).
+Scan the conversation above for unique skill invocations (slash commands like `/dev-ship`, or skill names in `<command-name>` tags).
 
 **Resolution rules:**
 

@@ -18,7 +18,7 @@ metadata:
 
 # Todo
 
-Capture new backlog items, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have an idea" and a backlog item ready for `/dev-define` (web) or `/game-define` (game).
+Capture new backlog items, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have an idea" and a backlog item ready for `/dev-ship (define phase)` (web) or `/game-define` (game).
 
 **Trigger**: `/project-todo` or `/project-todo [description]`
 
@@ -101,7 +101,7 @@ Check whether `.project/project.json` exists.
    - No match or no project.json → **WEB MODE**
 3. Show detected mode:
    ```
-   STACK: web    (→ /dev-define pipeline)
+   STACK: web    (→ /dev-ship pipeline)
    STACK: game   (→ /game-define pipeline)
    ```
 
@@ -335,7 +335,7 @@ multiSelect: false
    }
    ```
 
-   **`description` norm:** apply `shared/BACKLOG.md § Description quality` — self-contained, concrete behavior + scope boundary, thinking-round answers (PHASE 1a) folded in, 1–3 sentences. The card text is the only context `/dev-define` / `/game-define` gets when it is picked up later; never write a bare restatement of the name.
+   **`description` norm:** apply `shared/BACKLOG.md § Description quality` — self-contained, concrete behavior + scope boundary, thinking-round answers (PHASE 1a) folded in, 1–3 sentences. The card text is the only context `/dev-ship` (define phase) / `/game-define` gets when it is picked up later; never write a bare restatement of the name.
 
    **`transition` rule:** only include `"transition": "designing"` when `type === "PAGE"` or `type === "COMPONENT"`. Omit the field entirely for all other types (FEATURE, API, THEME, etc.).
 
@@ -466,7 +466,7 @@ TODO ADDED
   - /project-brainstorm {name} - Deepen the idea with variations
   - /project-critique {name} - Test the idea critically
   [If type is FEATURE, CHANGE, BUG, or API:]
-  - /dev-define {name} - Start with requirements and building
+  - /dev-ship {name} - Start with requirements and building
   - /team-outsource {name} - Outsource to a teammate via GitHub/Jira/Linear
   [If type is PAGE or COMPONENT:]
   - /design-create {name} - Build the page/component
@@ -478,7 +478,7 @@ TODO ADDED
   [If type is PERF:]
   - /design-check {name} - Run performance and SEO audit
   [If type is PAGE-GAP:]
-  - /dev-define {name} - Define the missing functionality
+  - /dev-ship {name} - Define the missing functionality
 ```
 
 **[GAME MODE]:**

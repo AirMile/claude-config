@@ -25,7 +25,7 @@ Skills load backlog context during their **PHASE 0 context-load phase** for read
 
 ### Profile: `read-feature`
 
-For dev-build and dev-define PHASE 0 — extracts the record for the current feature only.
+For dev-ship's build and define phases (PHASE 0) — extracts the record for the current feature only.
 
 Requires `$FEAT` to be set to the current feature name.
 
@@ -60,7 +60,7 @@ node -e "
 
 ### Profile: `ready-queue`
 
-For dev-build PHASE 0 — lists DEFINED features to compose the "Ready to build" / "Blocked" queue display.
+For dev-ship's build phase (PHASE 0) — lists DEFINED features to compose the "Ready to build" / "Blocked" queue display.
 
 ```bash
 node -e "

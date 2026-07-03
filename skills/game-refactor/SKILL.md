@@ -138,7 +138,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
    Run snippet 2 only (project-context.json). Extracts: `structure`, `patterns` (max 15), full `architecture`. Store `patterns` as `PROJECT_CONVENTIONS` and `architecture` as scene-graph context for injection into Explore agent prompts (PHASE 1).
 
-   **Conventions status check** (see [shared/CONVENTIONS.md](../shared/CONVENTIONS.md)): `head -1 .project/conventions.md` → `set` → store `conventions_set = true` for the PHASE 1 agent prompt (agents read the file themselves). `none` or absent → skip silently — **no elicitation here** (that lives in core-setup + dev-refactor).
+   **Conventions status check** (see [shared/CONVENTIONS.md](../shared/CONVENTIONS.md)): `head -1 .project/conventions.md` → `set` → store `conventions_set = true` for the PHASE 1 agent prompt (agents read the file themselves). `none` or absent → skip silently — **no elicitation here** (that lives in core-setup + dev-ship's refactor phase).
 
    **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 

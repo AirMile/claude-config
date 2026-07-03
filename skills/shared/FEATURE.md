@@ -7,10 +7,10 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 **Lifecycle:**
 
 ```
-/dev-define   → creates feature.json (header, requirements, files, architecture, clarifications)
-/dev-build    → enriches (build summary, decisions, syncNotes, packages, tests.checklist)
-/dev-verify   → enriches (evaluation, acceptance tests, test results, coverage, observations)
-/dev-refactor → enriches (improvements, positive observations)
+/dev-ship (define phase)   → creates feature.json (header, requirements, files, architecture, clarifications)
+/dev-ship (build phase)    → enriches (build summary, decisions, syncNotes, packages, tests.checklist)
+/dev-ship (verify phase)   → enriches (evaluation, acceptance tests, test results, coverage, observations)
+/dev-ship (refactor phase) → enriches (improvements, positive observations)
 ```
 
 **Write pattern for skills after define:**
@@ -278,7 +278,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
   ],
 
   "observations": [
-    "Inspector z-index conflict with overlapping modals — suggest: /dev-define z-index-system"
+    "Inspector z-index conflict with overlapping modals — suggest: /dev-ship z-index-system"
   ],
 
   "suggestionsLog": [
@@ -290,7 +290,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
       "at": "2026-05-07T14:00:00Z"
     },
     {
-      "skill": "dev-build",
+      "skill": "dev-ship",
       "type": "COMPONENT",
       "name": "EmptyState",
       "status": "rejected",
@@ -319,7 +319,7 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 
 - `build` — summary with techniques, test counts, decisions, explanation
 - `packages` — npm/packages added by this feature
-- `tests.checklist` — test items with status `"pending"` (initial). Per-item `kind: "example" \| "property"` (default `example`); REQs with `category: "boundary"` automatically get `kind: "property"` with a generated `seed`. See `dev-build/techniques/tdd.md` § Pattern Property-based.
+- `tests.checklist` — test items with status `"pending"` (initial). Per-item `kind: "example" \| "property"` (default `example`); REQs with `category: "boundary"` automatically get `kind: "property"` with a generated `seed`. See `dev-ship/references/dev-build/techniques/tdd.md` § Pattern Property-based.
 - `requirements[].technique` — TDD or implementation-only per REQ
 - `requirements[].syncNote` — plain-language explanation of how REQ was built
 - `requirements[].status` → `"built"`
@@ -340,13 +340,13 @@ Each feature is stored as **one file**: `.project/features/{feature-name}/featur
 - `observations` — findings, suggestions for other features
 - `tests.verificationCheckpoint` — acceptance criteria mapping result (gaps, mismatches, adjustments)
 
-**Added by reuse-discovery (dev-define, project-plan, dev-build, dev-verify):**
+**Added by reuse-discovery (dev-ship define phase, project-plan, dev-ship build phase, dev-ship verify phase):**
 
 - `suggestionsLog[]` — maintained by all four pipeline skills that suggest COMPONENT/PAGE todos, and by `design-create` (Build/Convert routes) for gap-discovery (direction-flag `frontend→dev`). Append-only. Schema: `{ skill, type, name, status: "accepted"|"rejected", at, direction? }`. Dedup key: `(name, skill)`. A proposal that was once rejected (`status: "rejected"`) is not re-proposed by the same skill, even if the trigger recurs. A new trigger from a different skill may re-propose (different detection source) — see dedupe logic in the individual skill docs.
 
 **Added by gap-discovery (design-create Build/Convert routes):**
 
-- `frontend.linkedEntities[]` — cross-pipeline traceability: which visual entities (components, pages) link their handler-props to this feature. Schema per item: `{ type: "component"|"page", name, prop }`. Read by `dev-build` to replace stub-handlers with real implementation after build.
+- `frontend.linkedEntities[]` — cross-pipeline traceability: which visual entities (components, pages) link their handler-props to this feature. Schema per item: `{ type: "component"|"page", name, prop }`. Read by dev-ship's build phase to replace stub-handlers with real implementation after build.
 
 **Read by refactor as safety-net baseline:**
 
@@ -374,7 +374,7 @@ pending → built → PASS
 ```
 
 - `BLOCKED` — test could not run due to an external dependency (service down, missing API key, missing fixture). Signal to reopen: fix dependency, then re-verify.
-- `UNCLEAR` — acceptance criteria is too vague to test deterministically ("feels fast", "works well"). Signal to reopen `/dev-define` to formulate concrete criteria.
+- `UNCLEAR` — acceptance criteria is too vague to test deterministically ("feels fast", "works well"). Signal to reopen `/dev-ship` (define phase) to formulate concrete criteria.
 - `FAIL` remains the default for missing tests without one of the above legitimate reasons — no escape hatch for forgotten tests.
 
 ## Refactor status values
@@ -393,13 +393,13 @@ pending → built → PASS
 
 **Frontmatter `writes:` convention.** Pipeline-skills declare _parent_ top-level keys (e.g. `feature.tests`, `feature.refactor`, `feature.requirements`), not sub-fields (`feature.tests.qualityVerdict`). Rationale: the handoff-validator (`scripts/check-handoff.py`) matches at parent granularity; sub-field explicitness would require fanning out every new field across all touching skills' frontmatter and yield no extra safety. New `tests.*` fields therefore inherit coverage from the existing `feature.tests` declaration — no frontmatter edit needed when adding `tests.qualityVerdict`, `tests.mutationScore`, etc.
 
-| Skill            | What they write to feature.json                                                                                                                                        | When     |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `/dev-define`    | Creates feature.json: header, clarifications, requirements, files, architecture, buildSequence, tests                                                                  | PHASE 3  |
-| `/dev-build`     | Enriches: build, packages, tests.checklist (incl. kind/seed for property-tests), requirements (technique/syncNote/status). Reads clarifications as constraints         | PHASE 4C |
-| `/dev-verify`    | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint/mutationScore), requirements status, observations | PHASE 6  |
-| `/dev-refactor`  | Enriches: refactor (status/improvements/decisions/observations), status → DONE. Reads tests.mutationScore as PHASE 0 baseline                                          | PHASE 5  |
-| `/game-define`   | Creates feature.json (same as dev-define + clarifications, game-specific design fields)                                                                                | PHASE 4  |
-| `/game-build`    | Enriches: build, tests.checklist (playtest items), requirements. Reads clarifications as constraints                                                                   | PHASE 5  |
-| `/game-verify`   | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                                      | PHASE 6  |
-| `/game-refactor` | Enriches: refactor, status → DONE                                                                                                                                      | PHASE 5  |
+| Skill                        | What they write to feature.json                                                                                                                                        | When     |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `/dev-ship` (define phase)   | Creates feature.json: header, clarifications, requirements, files, architecture, buildSequence, tests                                                                  | PHASE 3  |
+| `/dev-ship` (build phase)    | Enriches: build, packages, tests.checklist (incl. kind/seed for property-tests), requirements (technique/syncNote/status). Reads clarifications as constraints         | PHASE 4C |
+| `/dev-ship` (verify phase)   | Enriches: tests (evaluation/acceptanceTestFile/finalStatus/coverage/sessions/checklist status/verificationCheckpoint/mutationScore), requirements status, observations | PHASE 6  |
+| `/dev-ship` (refactor phase) | Enriches: refactor (status/improvements/decisions/observations), status → DONE. Reads tests.mutationScore as PHASE 0 baseline                                          | PHASE 5  |
+| `/game-define`               | Creates feature.json (same as dev-ship's define phase + clarifications, game-specific design fields)                                                                   | PHASE 4  |
+| `/game-build`                | Enriches: build, tests.checklist (playtest items), requirements. Reads clarifications as constraints                                                                   | PHASE 5  |
+| `/game-verify`               | Enriches: tests (incl. verificationCheckpoint), requirements status, observations                                                                                      | PHASE 6  |
+| `/game-refactor`             | Enriches: refactor, status → DONE                                                                                                                                      | PHASE 5  |

@@ -4,7 +4,7 @@ Loaded only for `/design-check` without argument (`$BATCH_MODE = true`). Drives 
 batch flow: queue → sequential scan + triage → one combined report → one fix-scope approval →
 per-feature fix with rollback → single batch completion.
 
-**Why this diverges from `dev-refactor` batch:** dev-refactor parallelizes its read-only Explore
+**Why this diverges from dev-ship's refactor-phase batch:** dev-ship's refactor phase parallelizes its read-only Explore
 lenses; design-check scans drive a single shared Playwright browser, fixed screenshot paths
 (`.project/screenshots/*`), Lighthouse subprocesses, and a dev-server. Those cannot run
 concurrently without corrupting shared state — so **scans stay sequential**. And batch fixes run
@@ -137,7 +137,7 @@ The chosen scope yields a per-feature fix set: `fix_targets[feature] = [findings
 
 ## §3 Per-feature Fix + Rollback
 
-Fix on the **current branch** (no worktree). Mirror `dev-refactor` apply-rollback isolation.
+Fix on the **current branch** (no worktree). Mirror dev-ship's refactor-phase apply-rollback isolation.
 
 1. `saved_hash = git rev-parse HEAD` (global safety net).
 2. **For each HAS_FINDINGS feature in `fix_targets`:**

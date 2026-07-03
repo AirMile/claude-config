@@ -18,18 +18,18 @@ Three signals:
 
 ## Skills per phase
 
-| Phase               | Relevant                                                               | Less relevant in mature team repo                      |
-| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------ |
-| Concept / discovery | (not your task — team already has a concept or backlog)                | `/project-seed`, `/project-plan` (greenfield tools) |
-| Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas) | —                                                      |
-| Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)       | —                                                      |
-| Define              | `/dev-define`, `/design-create`                                      | —                                                      |
-| Build               | `/dev-build`, `/design-create` Build, `/design-create` Convert     | —                                                      |
-| Test                | `/dev-verify`, `/design-check`                                       | —                                                      |
-| Commit              | `/core-commit` (detects team commit convention automatically)          | —                                                      |
-| Refactor            | `/dev-refactor`                                                        | —                                                      |
-| Review              | `/team-review` (PRs), `/team-verify` (completeness)                    | —                                                      |
-| Sync teammate code  | `/core-pull`                                                           | —                                                      |
+| Phase               | Relevant                                                                    | Less relevant in mature team repo                   |
+| ------------------- | --------------------------------------------------------------------------- | --------------------------------------------------- |
+| Concept / discovery | (not your task — team already has a concept or backlog)                     | `/project-seed`, `/project-plan` (greenfield tools) |
+| Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas)      | —                                                   |
+| Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)            | —                                                   |
+| Define              | `/dev-ship` (define phase), `/design-create`                                | —                                                   |
+| Build               | `/dev-ship` (build phase), `/design-create` Build, `/design-create` Convert | —                                                   |
+| Test                | `/dev-ship` (verify phase), `/design-check`                                 | —                                                   |
+| Commit              | `/core-commit` (detects team commit convention automatically)               | —                                                   |
+| Refactor            | `/dev-ship` (refactor phase)                                                | —                                                   |
+| Review              | `/team-review` (PRs), `/team-verify` (completeness)                         | —                                                   |
+| Sync teammate code  | `/core-pull`                                                                | —                                                   |
 
 ## Issue-driven flow
 
@@ -38,13 +38,13 @@ Default workflow when the team uses GitHub Issues / Jira / Linear:
 ```
 1. /team-issues               → import issues, smart-split into multiple todos
 2. (open backlog, choose item)
-3. /dev-define <name>         → define requirements + architecture, stores externalRef
+3. /dev-ship (define phase) <name>   → define requirements + architecture, stores externalRef
    or /design-create <name> → design spec + build
-4. /dev-build <name>          → build the feature
-5. /dev-verify <name>         → acceptance tests + smoke
+4. /dev-ship (build phase) <name>    → build the feature
+5. /dev-ship (verify phase) <name>   → acceptance tests + smoke
 6. /core-commit               → auto-prefix with issue-ID (GitHub #123 or JIRA-456)
 7. git push + PR              → /team-review for self-review before merge
-8. /dev-refactor <name>       → code cleanup, promote to Dashboard
+8. /dev-ship (refactor phase) <name> → code cleanup, promote to Dashboard
 ```
 
 ## Outsourcing tasks
@@ -95,7 +95,7 @@ backlog.json (externalRef) → feature.json (externalRef) → /core-commit (tick
 
 Skills that read it:
 
-- `/dev-define` — copies to `feature.json` at definition time
+- `/dev-ship` (define phase) — copies to `feature.json` at definition time
 - `/core-commit` — uses `externalRef.id` as commit-prefix suggestion
 
 ## External trackers without native tooling

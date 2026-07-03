@@ -925,8 +925,8 @@ http
         }
 
         // Read feature.json (optional — Path A design cards may not have it).
-        // Live path first; fall back to archive (dev-refactor moves shipped features
-        // to .project/features/archive/{shippedAt-date}-{name}/feature.json).
+        // Live path first; fall back to archive (dev-ship's refactor phase moves shipped
+        // features to .project/features/archive/{shippedAt-date}-{name}/feature.json).
         const featuresDir = path.join(projectPath, ".project/features");
         let featureJson = path.join(featuresDir, featureName, "feature.json");
         if (!fs.existsSync(featureJson)) {

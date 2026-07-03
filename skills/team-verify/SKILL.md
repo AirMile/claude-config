@@ -39,14 +39,14 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 ## When to Use
 
-- After teammate delivers code on a feature (with or without `/dev-define`)
+- After teammate delivers code on a feature (with or without `/dev-ship (define phase)`)
 - When teammate pushes code for a backlog TODO item
 - When teammate branch code needs verification before merge
 
 **NOT for:**
 
-- Testing own code (use `/dev-verify`)
-- Unit-level test writing during build (use `/dev-build`)
+- Testing own code (use `/dev-ship (verify phase)`)
+- Unit-level test writing during build (use `/dev-ship (build phase)`)
 
 ## Input Formats
 
@@ -217,7 +217,7 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 
 **Goal:** Classify scenarios into AUTO/MANUAL, generate test data, set up dev server.
 
-> **Classification criteria:** See `../dev-verify/references/test-classification.md` for AUTO/BROWSER, AUTO/CLI, and MANUAL criteria with pattern tables.
+> **Classification criteria:** See `../shared/test-classification.md` for AUTO/BROWSER, AUTO/CLI, and MANUAL criteria with pattern tables.
 
 1. **Generate test data** (via Explore agent — zero source file reads in main context):
 

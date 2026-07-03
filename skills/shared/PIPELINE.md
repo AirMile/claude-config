@@ -19,9 +19,9 @@ Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and
                                  /project-plan ──→ backlog.json
                                                │
                                                ▼
-                        /dev-define ──→ /dev-build ──→ /dev-verify ──→ [/dev-refactor]
-                                             │               │
-                                             └── /dev-debug ◄┘
+                        /dev-ship (running define → build → verify → [refactor])
+                                             │
+                                             └── /dev-debug
 ```
 
 Standalone (dev): `/dev-security` (security audit).
@@ -59,31 +59,31 @@ Design items skip `defining/defined` — design captures pages/flows, Build gene
 
 ## Cross-track rules
 
-| Item type            | Responsible skill                                                          | The other track must not                   |
-| -------------------- | -------------------------------------------------------------------------- | ------------------------------------------ |
-| FEATURE (data/logic) | dev-define → dev-build                                                     | design-create builds it                  |
-| FEATURE (with UI)    | dev-define → dev-build (token-styled UI — functional + presentably styled) | dev-build writes styled/designed UI        |
-| COMPONENT            | dev-define → dev-build (token-styled) → design-create (optional layout)  | dev-build writes styled/designed component |
-| PAGE                 | design-create                                                            | dev-build builds it                        |
-| THEME                | design-tokens (incl. motion packs)                                       | —                                          |
+| Item type            | Responsible skill                                                            | The other track must not                                |
+| -------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- |
+| FEATURE (data/logic) | dev-ship (define → build)                                                    | design-create builds it                                 |
+| FEATURE (with UI)    | dev-ship (define → build, token-styled UI — functional + presentably styled) | dev-ship's build phase writes styled/designed UI        |
+| COMPONENT            | dev-ship (define → build, token-styled) → design-create (optional layout)    | dev-ship's build phase writes styled/designed component |
+| PAGE                 | design-create                                                                | dev-ship's build phase builds it                        |
+| THEME                | design-tokens (incl. motion packs)                                           | —                                                       |
 
-**dev-build** delivers: data layer, hooks, API, types, tests + token-styled UI (semantic HTML + design tokens). Pages and components are testable via `/dev-verify`. `/design-create` is optional for layout reshaping (sidebar/hero/grid).
+**dev-ship's build phase** delivers: data layer, hooks, API, types, tests + token-styled UI (semantic HTML + design tokens). Pages and components are testable via `/dev-ship` (verify phase). `/design-create` is optional for layout reshaping (sidebar/hero/grid).
 
 ---
 
 ## Skill Registry
 
-| Skill            | Input                            | Output                      | Requires stage | Produces stage |
-| ---------------- | -------------------------------- | --------------------------- | -------------- | -------------- |
-| project-research | topic / question                 | research findings           | —              | —              |
-| project-plan  | seed document / task description | backlog.json                | —              | —              |
-| project-todo     | description                      | backlog item                | —              | —              |
-| dev-define       | backlog item / user reqs         | feature.json (req + arch)   | —              | defined        |
-| dev-build        | feature.json (defined)           | feature.json (code + tests) | defined        | built          |
-| dev-verify       | feature.json (built)             | feature.json (verified)     | built          | DONE           |
-| dev-refactor     | feature.json (DONE)              | feature.json (DONE + ref)   | DONE           | DONE           |
-| dev-debug        | error / symptom                  | fix applied                 | —              | —              |
-| dev-security     | —                                | security report + fixes     | —              | —              |
+| Skill                     | Input                            | Output                      | Requires stage | Produces stage |
+| ------------------------- | -------------------------------- | --------------------------- | -------------- | -------------- |
+| project-research          | topic / question                 | research findings           | —              | —              |
+| project-plan              | seed document / task description | backlog.json                | —              | —              |
+| project-todo              | description                      | backlog item                | —              | —              |
+| dev-ship (define phase)   | backlog item / user reqs         | feature.json (req + arch)   | —              | defined        |
+| dev-ship (build phase)    | feature.json (defined)           | feature.json (code + tests) | defined        | built          |
+| dev-ship (verify phase)   | feature.json (built)             | feature.json (verified)     | built          | DONE           |
+| dev-ship (refactor phase) | feature.json (DONE)              | feature.json (DONE + ref)   | DONE           | DONE           |
+| dev-debug                 | error / symptom                  | fix applied                 | —              | —              |
+| dev-security              | —                                | security report + fixes     | —              | —              |
 
 ---
 

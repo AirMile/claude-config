@@ -58,9 +58,9 @@ evaluate(() => {
 
 ## Post-Build Classification Override
 
-When `feature.json` has a `build` section (dev-build completed):
+When `feature.json` has a `build` section (dev-ship's build phase completed):
 
-**Principle:** dev-build tests verify per-requirement logic. dev-verify writes acceptance tests and verifies integrated behavior. The existing test suite is a baseline gate, not a test item.
+**Principle:** dev-ship's build phase tests verify per-requirement logic. dev-ship's verify phase writes acceptance tests and verifies integrated behavior. The existing test suite is a baseline gate, not a test item.
 
 | Original Classification             | Post-Build Override        | Condition                                       |
 | ----------------------------------- | -------------------------- | ----------------------------------------------- |

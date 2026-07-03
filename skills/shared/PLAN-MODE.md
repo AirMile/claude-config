@@ -72,14 +72,14 @@ Skills may optionally name specific tools used intensively in plan mode (e.g. "W
 
 ## Conditional entry
 
-Some skills enter plan mode only when a condition fires mid-flow: `dev-refactor` / `game-refactor` after triage finds ≥1 HAS_FINDINGS; the `dev-verify` fix-loop on SPEC or unclear-root-cause bugs; the `dev-build` / `game-build` regression gate when the regression was not caused by the build itself; `design-create` (route-design.md PHASE 1.5) when the chosen action is a synthesis route (Page/Component/Flow/Principles/Import/Brief) — CRUD and self-managed sub-routes do not enter. The Entry/Exit protocol applies unchanged from the moment of entry. The deviation from "Entry before the first thinking step" is deliberate — runs where the condition never fires stay friction-free. Document the condition at the entry point in the skill.
+Some skills enter plan mode only when a condition fires mid-flow: `dev-ship (refactor phase)` / `game-refactor` after triage finds ≥1 HAS_FINDINGS; the `dev-ship (verify phase)` fix-loop on SPEC or unclear-root-cause bugs; the `dev-ship (build phase)` / `game-build` regression gate when the regression was not caused by the build itself; `design-create` (route-design.md PHASE 1.5) when the chosen action is a synthesis route (Page/Component/Flow/Principles/Import/Brief) — CRUD and self-managed sub-routes do not enter. The Entry/Exit protocol applies unchanged from the moment of entry. The deviation from "Entry before the first thinking step" is deliberate — runs where the condition never fires stay friction-free. Document the condition at the entry point in the skill.
 
 ---
 
 ## Used by
 
-Full-phase: `dev-define`, `game-define`, `dev-debug`, `game-debug`, `project-plan`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`. Conditional entry (see § Conditional entry): `dev-refactor`, `game-refactor`, `design-create` (route-design.md PHASE 1.5 gate — synthesis routes only). Self-managed within a sub-route: `design-create` Create (`references/route-create.md`) and Build (`references/route-build.md` — enters at Step 0b, exits at Step 7 before worktree setup + codegen), Convert (`references/route-convert.md` PHASE 0); `design-tokens` Create (`references/route-create.md` — Steps 0b–7).
+Full-phase: `dev-ship (define phase)`, `game-define`, `dev-debug`, `game-debug`, `project-plan`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`. Conditional entry (see § Conditional entry): `dev-ship (refactor phase)`, `game-refactor`, `design-create` (route-design.md PHASE 1.5 gate — synthesis routes only). Self-managed within a sub-route: `design-create` Create (`references/route-create.md`) and Build (`references/route-build.md` — enters at Step 0b, exits at Step 7 before worktree setup + codegen), Convert (`references/route-convert.md` PHASE 0); `design-tokens` Create (`references/route-create.md` — Steps 0b–7).
 
 Authoritative for the above: `grep -rl "Entry protocol" skills/*/SKILL.md skills/*/references/*.md`
 
-Inline gates that call `EnterPlanMode` without the full Entry section (documented at the gate): `dev-verify` (`references/fix-loop.md § Plan-mode gate`), `dev-build` PHASE 2b and `game-build` PHASE 3a (regression-not-caused-by-build path).
+Inline gates that call `EnterPlanMode` without the full Entry section (documented at the gate): `dev-ship (verify phase)` (`references/fix-loop.md § Plan-mode gate`), `dev-ship (build phase)` PHASE 2b and `game-build` PHASE 3a (regression-not-caused-by-build path).

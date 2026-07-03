@@ -240,7 +240,7 @@ Then `EnterWorktree(path: "$WT_PATH")` — enters the already-created worktree. 
 After `EnterWorktree` (or Destroy→recreate), run symlink setup + integrity check + gate + session file in **a single Bash block** (combine `## Shared .project/ via symlink`, `### Verify symlink integrity`, and the skill's gate/session-file commands to minimise round-trips):
 
 ```bash
-# Example for dev-build — adapt session payload per skill
+# Example for dev-ship's build phase — adapt session payload per skill
 WT="{main_root}/.claude/worktrees/{feature-name}"
 MP="{main_root}/.project"
 
@@ -367,7 +367,7 @@ Used in PHASE 0 of pipeline skills that operate on a single feature (verify, deb
 
 ### Why
 
-Pipeline skills run in separate chats. When `dev-build` (or `game-build`) creates a worktree, follow-up skills start in main-checkout — not in the worktree where the code lives. This boilerplate detects an existing worktree for the active feature and switches into it automatically.
+Pipeline skills run in separate chats. When dev-ship's build phase (or `game-build`) creates a worktree, follow-up skills start in main-checkout — not in the worktree where the code lives. This boilerplate detects an existing worktree for the active feature and switches into it automatically.
 
 The worktree path is predictable: `{repo-root}/.claude/worktrees/{feature-name}`. The branch name is `worktree-{feature-name}` (auto-prefixed by `EnterWorktree`).
 
@@ -492,13 +492,13 @@ git -C "{worktree_path}" rebase "$COMPARE_REF" 2>&1
 
 Triggers when: caller passed `feature.status === "DOING"`, `current_root == main_root`, no `worktree-{feature-name}` branch exists.
 
-Interpretation: the feature was built without isolation — `/dev-build` likely silently fell back to main (worktree step skipped or bypassed). Build commits live on the current branch, not on an isolated `worktree-{feature-name}` branch. Recoverable, but worth flagging.
+Interpretation: the feature was built without isolation — `/dev-ship (build phase)` likely silently fell back to main (worktree step skipped or bypassed). Build commits live on the current branch, not on an isolated `worktree-{feature-name}` branch. Recoverable, but worth flagging.
 
 Print:
 
 ```
 ⚠ ANOMALY: feature "{feature-name}" is DOING but has no worktree branch.
-  /dev-build likely skipped the isolation step.
+  /dev-ship (build phase) likely skipped the isolation step.
   Build commits are on current branch ({current-branch-name}), not isolated.
 ```
 
@@ -516,7 +516,7 @@ multiSelect: false
 ```
 
 - **Continue** → proceed to Step 5
-- **Stop** → exit skill. Print: `Hint: ask Claude to retroactively stage a worktree for "{feature-name}", then restart /dev-verify.`
+- **Stop** → exit skill. Print: `Hint: ask Claude to retroactively stage a worktree for "{feature-name}", then restart /dev-ship (verify phase).`
 
 #### Step 5: Continue with skill PHASE 0
 
@@ -565,7 +565,7 @@ If any `worktree-*` branches appear → **AskUserQuestion**:
 
 ```yaml
 header: "Open worktrees"
-question: "Open worktrees found: {list}. Normally /dev-verify or /game-verify closes these — these are leftovers (verify skipped, or 'Keep open' chosen). Batch refactor on main may cause merge conflicts when they're integrated later. What do you want to do?"
+question: "Open worktrees found: {list}. Normally /dev-ship (verify phase) or /game-verify closes these — these are leftovers (verify skipped, or 'Keep open' chosen). Batch refactor on main may cause merge conflicts when they're integrated later. What do you want to do?"
 options:
   - label: "Stop — finalize open worktrees first (Recommended)"
     description: "Run /core-finalize for each leftover worktree, then re-run the skill"

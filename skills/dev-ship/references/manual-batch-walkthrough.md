@@ -3,7 +3,7 @@
 **When:** dev-ship PHASE 3 has `remainingManualItems` (from AGENT 2). This is the **token-lean**
 walkthrough used by the auto-mode ship: the whole checklist is presented **once**, judged in **one**
 `AskUserQuestion` round, and screenshots are taken only on demand — instead of the standalone
-per-item loop (`dev-verify/references/manual-walkthrough.md`). MANUAL = human perception/judgment,
+per-item loop (`dev-ship/references/dev-verify/references/manual-walkthrough.md`). MANUAL = human perception/judgment,
 real-credential auth, physical-device, or audio/screen-reader checks — not visual polish.
 
 ## Step A — Board signal (amber: waiting on the user)
@@ -45,7 +45,7 @@ questions per call, ≤ 4 options per question, `multiSelect: true`):
 - **4 ≤ M ≤ 12** → chunk into groups of 3 items → one question per chunk (≤ 4 questions in the
   single call), each `multiSelect: true`, options = the 3 items + `"None of these failed"`.
 - **M > 12** (rare) → two calls of the above, or fall back to the per-item
-  `dev-verify/references/manual-walkthrough.md`.
+  `dev-ship/references/dev-verify/references/manual-walkthrough.md`.
 
 "All passed" / "None of these failed" is the recommended (first) option in each question.
 

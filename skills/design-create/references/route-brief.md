@@ -247,7 +247,7 @@ Generate in Claude Design:
 1. Visual layout that follows the section structure above
 2. Reuse existing components where possible (see Block Inventory)
 3. Tokens from the theme section (if populated)
-4. Handoff bundle to forward to Claude Code (`/dev-build`)
+4. Handoff bundle to forward to Claude Code (`/dev-ship (build phase)`)
 ```
 
 #### Step 5: Write + Show

@@ -16,7 +16,7 @@ Skills load learnings during their **context-load phase** (typically PHASE 0 or 
 
 Each skill specifies one or more scopes. No wildcards — choose explicitly.
 
-- **`component`** — learnings matching the current feature/component name. Two-step: substring match on the `feature` field (bidirectional), then summary-keyword fallback on feature tokens (split kebab-case, tokens ≥ 3 chars, max 5 keyword matches). Combined, sorted desc by date, capped at 10. _Used by_: `dev-build`, `dev-refactor`, `dev-define`, `design-create`; `project-brainstorm` / `project-critique` (feature/page scope, via `INPUT-PARSING.md § Project Memory Load`).
+- **`component`** — learnings matching the current feature/component name. Two-step: substring match on the `feature` field (bidirectional), then summary-keyword fallback on feature tokens (split kebab-case, tokens ≥ 3 chars, max 5 keyword matches). Combined, sorted desc by date, capped at 10. _Used by_: `dev-ship`, `design-create`; `project-brainstorm` / `project-critique` (feature/page scope, via `INPUT-PARSING.md § Project Memory Load`).
 - **`architectural`** — `type === "pattern"` with source `synced`, `extracted`, or `consolidated` (exclude `inferred` — too broad for architecture choices). Sorted desc by date, capped at 15. _Used by_: `project-plan`; `project-seed` / `project-brainstorm` / `project-critique` (via `INPUT-PARSING.md § Project Memory Load`).
 - **`pitfall-prefix`** — last 5 pitfalls regardless of feature. Default-on prefix for every skill that uses this loader; disable with `pitfall-prefix: false`.
 
@@ -112,6 +112,6 @@ Load learnings via shared/LEARNINGS-LOAD.md:
 
 ## Implementation note
 
-This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-verify`, `dev-refactor` (PHASE 5), `core-pull`, `core-setup --mode=mature`, `project-retire` (archive + tombstone on retirement)). Consolidation/archiving of the learnings list itself happens in `core-pull` — see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation.
+This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-ship (verify phase)`, `dev-ship (refactor phase)` (PHASE 5), `core-pull`, `core-setup --mode=mature`). Consolidation/archiving of the learnings list itself happens in `core-pull` — see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation.
 
 Skills that pass learnings to an agent: run the script first and embed the filtered block in the agent prompt (never the full list).

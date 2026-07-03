@@ -172,6 +172,6 @@ When called from `ACTION_SELECT → Apply` (user explicitly runs Apply):
 
 ## Integration: tokens.css file
 
-If the project has `src/styles/tokens.css` (written by dev-build PHASE 0), also append the animation vars block there. Detection: check if file exists before writing.
+If the project has `src/styles/tokens.css` (written by dev-ship's build phase, PHASE 0), also append the animation vars block there. Detection: check if file exists before writing.
 
 Same merge algorithm: remove old animation block, append new one inside `:root {}`.

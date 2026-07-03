@@ -181,7 +181,7 @@ If "No" → stop. Show report.
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /dev-refactor {feature} → apply security hardening as a refactor step.
+> Recommended command: /dev-ship {feature} → apply security hardening as a refactor step.
 
 ---
 
@@ -254,7 +254,7 @@ Remaining items: [N] (deferred)
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /dev-refactor {feature} → apply security hardening as a refactor step.
+> Recommended command: /dev-ship {feature} → apply security hardening as a refactor step.
 
 ## Best Practices
 
