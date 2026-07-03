@@ -38,7 +38,7 @@ same key as `active-{name}.json`). Parallel to the live-signal, but with a diffe
   "completedPhases": ["PHASE 0", "PHASE 1"],
   "baselineSha": "<git rev-parse HEAD before ship>", // rollback anchor
   "plan": {
-    /* dev: SHIP_PLAN (refactorLenses, refactorPolicy, securityLight, securityDeep,
+    /* dev: SHIP_PLAN (auto-derived refactorLenses, securityLight, securityDeep,
                 verificationProfile). design: the FULL PHASE 0 objects — direction (incl. its
                 token decisions + chosen layout), archetype, brief, checkScope, composition
                 (PAGE only), and the inline spec when captured (its disk write is deferred to
@@ -53,13 +53,16 @@ same key as `active-{name}.json`). Parallel to the live-signal, but with a diffe
                   The worktree path + branch live in results.build — no separate top-level copy. */
   },
   "prompts": {
-    /* the assembled Workflow prompt args for the workflow in flight, written at launch
-                  (write point 2) and cleared with activeWorkflow on return.
-                  dev: { buildPrompt, verifyPromptTemplate } or
-                       { refactorPrompt, scanners, triagePromptTemplate }.
-                  design: { buildPrompt, contentPromptTemplate, checkPromptTemplate }.
-                  Lets a resume relaunch with the exact original prompts instead of
-                  reassembling them from plan + disk. */
+    /* the prompt-file PATHS for the workflow in flight, written at launch (write point 2)
+                  and cleared with activeWorkflow on return. dev/design-ship write small
+                  pointer + SHIP_CONTEXT-slice files under .project/session/ship-prompts/ (the
+                  static bodies live in references/prompts/*, read by the agents), and those
+                  files persist on disk — so store PATHS, never prompt bodies.
+                  dev: { buildPromptPath, verifyPromptPath } or
+                       { refactorPromptPath, scanners, triagePromptPath }.
+                  design: { buildPromptPath, contentPromptPath, checkPromptPath }.
+                  Lets a resume relaunch with the exact original prompt files; reassemble
+                  from plan + disk only if a file is missing. */
   },
   "activeWorkflow": null, // "phase12" | "phase4" | "design123" | null
   "workflowRunId": null // "wf_..." from the Workflow tool result, for resumeFromRunId
@@ -88,8 +91,38 @@ Set-Content -Path .project/session/ship-{name}.json.tmp -Value $checkpointJson -
 Move-Item -Force .project/session/ship-{name}.json.tmp .project/session/ship-{name}.json
 ```
 
-Always set `updatedAt` to the current ISO time on every write. Use this helper at each write point
-below.
+The full heredoc above is the **first** write only (end of PHASE 0 — the object does not exist yet).
+Always set `updatedAt` to the current ISO time on every write.
+
+### Follow-up writes — patch the delta, don't re-emit
+
+Write points 2–5 change only a few keys (phase pointer, one merged result, cleared
+`activeWorkflow`/`prompts`). Re-emitting the whole object — `plan` + every accumulated `result` —
+each time is the main-chat token cost the ship pipeline pays ~5× per run. Instead **patch only the
+changed keys** with a read-merge-write that keeps the atomic `mv` (node is cross-platform, so this
+one form covers macOS and Windows):
+
+```bash
+node -e '
+  const fs=require("fs"), f=".project/session/ship-{name}.json";
+  const cur=JSON.parse(fs.readFileSync(f,"utf8"));
+  const patch=JSON.parse(process.argv[1]);
+  const merge=(a,b)=>{for(const k in b){a[k]=(b[k]&&typeof b[k]==="object"&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==="object")?merge(a[k],b[k]):b[k];}return a;};
+  merge(cur,patch); cur.updatedAt=new Date().toISOString();
+  fs.writeFileSync(f+".tmp",JSON.stringify(cur,null,2)); fs.renameSync(f+".tmp",f);
+' '{"phase":"PHASE 3","completedPhases":["PHASE 0","PHASE 1","PHASE 2"],"results":{"verify":{ ...just the returned verify object... }}}'
+```
+
+- The merge is a **deep merge for nested objects** (`results`, `plan`) and a **replace for arrays
+  and scalars** — so `results.build` from an earlier write survives when this write adds
+  `results.verify`, while `completedPhases` is replaced wholesale. Passing `"activeWorkflow": null`
+  (or `"prompts": null`) clears that key on a workflow return.
+- Emit **only** the keys that changed — never `plan` again after the first write. On Windows the
+  same `node -e` works; if PowerShell quoting of the JSON arg fights you, write the small patch to
+  `.project/session/ship-{name}.patch.json` and read it with `process.argv[1]` replaced by
+  `fs.readFileSync(".project/session/ship-{name}.patch.json","utf8")`.
+
+Use the heredoc for write 1 and this patcher for writes 2–5 at each write point below.
 
 ### When the orchestrator writes
 
@@ -160,10 +193,12 @@ options:
      `args` (add `args.resume` too, as a cross-session fallback). Cached agent calls return
      instantly.
    - **Otherwise (cross-session / no runId)** → relaunch the phase's workflow with the stored
-     `prompts` as the prompt args (fall back to reassembling them from `plan` + disk only when
-     `prompts` is absent) plus `args.resume` as above. The workflow short-circuits the
-     already-completed agents (`const build = resumedBuild ?? await agent(...)`) and only runs what
-     remains. The worktree + `.project/` on disk supply the rest.
+     `prompts` **paths** as the prompt-path args. The pointer + slice files persist on disk, so this
+     needs no reassembly; only if a file is missing (e.g. `.project/session/` was cleaned) rewrite
+     it from `plan` + disk per the phase's `agent-*.md` § Spawn. Add `args.resume` as above. The
+     workflow short-circuits the already-completed agents
+     (`const build = resumedBuild ?? await agent(...)`) and only runs what remains. The worktree +
+     `.project/` on disk supply the rest.
    - **If the recorded phase is an interactive main-chat phase** (dev PHASE 3 finalize, design
      PHASE 4 review) → resume it directly from the stored `results` (e.g. dev's
      `results.verify.remainingManualItems` drives the manual walkthrough).

@@ -16,13 +16,53 @@ Playwright daemon that the walkthrough uses) and runs the symlink-integrity gate
 Skip this step entirely when AGENT 2 returned `remainingManualItems: none` (the 85% case) — go
 straight to Step 3.
 
-Otherwise run the reused walkthrough: Read `.claude/skills/dev-ship/references/dev-verify/references/manual-walkthrough.md`
-and execute it for the `remainingManualItems` from AGENT 2 (Playwright smoke pre-check where the
-item is DOM-observable, then the per-item `Pass / Fail / Skip / Defer` prompt). Record outcomes.
+**Launch the app + hand off — don't block on a readiness grep.** Start the app framework-appropriately
+in the background (web: dev server; native/Tauri: `npm run tauri dev` — the Rust compile is slow, so
+tell the user it is building). Then **hand the checklist to the user immediately** and let them confirm
+when the window is up: _a manual test is verified by the human, not by a log line — the person at the
+window is the readiness signal._ Never make the user wait on your own "is it ready yet" check.
 
-**On any manual FAIL:** stop here. Do **not** finalize, do **not** proceed to PHASE 4. Report the
-failed item and hand to `/dev-debug {feature}` or `/dev-verify {feature} {feedback}`. The worktree
-stays intact.
+> If you genuinely must detect readiness programmatically (e.g. to auto-open a browser tab), it MUST
+> (a) tolerate ANSI color codes — match the bare word (`grep -aE "Running|Finished|error"`), never a
+> literal `Running \`space\`…`pattern, because Cargo/Vite wrap words in ANSI escapes so "Running" is
+followed by an escape, not a space; and (b) use a **bounded** wait (a`run_in_background` `until`loop with a timeout / fixed poll count) that falls back to surfacing to the user — never an unbounded`until` that can hang forever on a signal that never arrives.
+
+Then run the **batched** walkthrough: Read
+`.claude/skills/dev-ship/references/manual-batch-walkthrough.md` and execute it for the
+`remainingManualItems` from AGENT 2 — the whole checklist is presented once, judged in one batched
+`AskUserQuestion` round, and screenshots are taken only on demand (this replaces the per-item
+loop). Record outcomes.
+
+**On any manual FAIL — route the fix (one `AskUserQuestion`, first option recommended):**
+
+- **Fix via background agent (Recommended)** → write a compact failure descriptor (each failed
+  item: title, steps, expected, and the observed result from the follow-up round) to
+  `.project/session/ship-prompts/{feature}-fix.txt`, then spawn **one** `general-purpose` `Task`
+  with this pointer prompt (paths, not bodies — the same discipline as the phase agents):
+
+  ```
+  You are a fix agent in the dev-ship pipeline for feature "{feature}". First switch into
+  worktree-{feature} at {worktreePath} (via .claude/skills/shared/WORKTREE.md). Read
+  `.claude/skills/dev-ship/references/non-interactive-contract.md` and obey it. Read the failure
+  descriptor at `.project/session/ship-prompts/{feature}-fix.txt`. For each failed item: write a
+  reproduction test where feasible, fix the cause, and get the FULL suite green before returning.
+  Commit scoped to the worktree; never merge. Return ONLY:
+  SHIP_FIX_RESULT_START
+  status: fixed | partial | failed
+  itemsFixed: [<item title>, ...]
+  notes: <1-line, or the blocker if not fixed>
+  SHIP_FIX_RESULT_END
+  ```
+
+  On return, **re-present only the previously-failed items** (batched, via the same walkthrough).
+  Max **2** fix rounds; if still failing after two, hard-halt: report + hand to `/dev-debug {feature}`.
+  Keep the checkpoint `phase: "PHASE 3"` throughout (resumable). Do not finalize until every
+  previously-failed item passes.
+
+- **Interactive debug** → stop the hands-off flow and hand to `/dev-debug {feature}` (or
+  `/dev-verify {feature} {feedback}`) in the main chat. The worktree stays intact.
+- **Stop and report** → do not finalize, do not proceed to PHASE 4; report the failed item in
+  PHASE 5 and leave the worktree intact.
 
 `Skip` / `Defer` outcomes do not block finalize — they are recorded (deferred items stay open for a
 later re-test), and the flow continues.

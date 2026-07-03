@@ -18,13 +18,13 @@ Generate an ASCII [diagram type] showing [what to visualize].
 
 **Diagram types by use case:**
 
-| Use case              | Diagram type         | Example skills              |
-| --------------------- | -------------------- | --------------------------- |
+| Use case              | Diagram type         | Example skills            |
+| --------------------- | -------------------- | ------------------------- |
 | Architecture/layers   | Component diagram    | dev-define, design-create |
-| Multi-step workflow   | Flowchart            | dev-build, dev-verify       |
-| Feature decomposition | Tree                 | project-plan             |
-| State transitions     | State machine        | game-define                 |
-| Parallel processes    | Architecture diagram | team-review                 |
+| Multi-step workflow   | Flowchart            | dev-build, dev-verify     |
+| Feature decomposition | Tree                 | project-plan              |
+| State transitions     | State machine        | game-define               |
+| Parallel processes    | Architecture diagram | team-review               |
 
 **Placement:** After the phase where the relevant information is gathered, before execution continues.
 
@@ -390,19 +390,24 @@ PROJECT_CONTEXT_END
 
 Guard script: `node scripts/check-context-load.js` — validates all 21 profiles (dev + game) against fixtures in `scripts/fixtures/`. Run alongside `check-handoff.py` before releases.
 
-### Context Aggregation Agent (exception)
+### Context Aggregation / Scout Agents (exception)
 
 The "Read source files in PHASE 0 — not per agent" rule covers files the skill itself reasons over (project.json, feature.json, source code).
 
-**Exception** — spawn a `context-aggregator` (sonnet) when:
+**Exception** — spawn a read-only aggregator/scout that returns a compact delimited digest when:
 
-- Aggregation source count ≥ 5 files AND
+- Source count ≥ 5 files (or unbounded similar-pattern/library exploration) AND
 - Output needs filtering/ranking (not raw read) AND
-- Result fits in ≤ 30 lines compact text
+- Result fits in a small delimited block (≤ 30–40 lines compact text)
 
-**Not for:** single field extraction (use inline `node -e`), full source-code reads (still PHASE 0 inline), per-REQ context (use Agent Context Block above), or learnings filtering (use `shared/LEARNINGS-LOAD.md`).
+Two sanctioned agents:
 
-**Contract:** agent MUST return delimited blocks (e.g. `PRIOR_DECISIONS_START/END`) so caller parses without re-reading.
+- `context-aggregator` (sonnet) — prior feature decisions + thinking files → `PRIOR_DECISIONS_START/END` (≤ 30 lines). Used by dev-define PHASE 0.
+- `define-scout` (sonnet) — similar-pattern **source exploration** + library/API research during define PHASE 2 → `DEFINE_SCOUT_START/END` (≤ 40 lines). This is the sanctioned way to keep the design-time codebase reads and Context7/WebSearch out of the main context; the build agent reads the real files later (pass-paths-not-content).
+
+**Not for:** single field extraction (use inline `node -e`), per-REQ context (use Agent Context Block above), or learnings filtering (use `shared/LEARNINGS-LOAD.md`). Raw full-source reads the skill must reason over line-by-line still stay inline — the scout returns signatures + notes, not file bodies.
+
+**Contract:** agent MUST return delimited blocks (e.g. `PRIOR_DECISIONS_START/END`, `DEFINE_SCOUT_START/END`) so the caller parses without re-reading.
 
 ---
 

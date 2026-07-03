@@ -4,6 +4,14 @@ PHASE 1 of the dev workflow: define → build → test.
 
 **Trigger**: `/dev-define` or `/dev-define [feature-name]`
 
+> **Copied & pre-adapted for dev-ship.** This tree is run **inline in the main chat** by dev-ship
+> PHASE 0 (Step 2 of `phase-0-define-classify.md`), not as a standalone skill. Per that file's
+> **deviations**, the **plan-mode machinery below is overridden**: never call
+> `EnterPlanMode`/`ExitPlanMode`, run every analytical/interview step directly, and author the
+> machine contract in-context (no plan file). Wherever a step says "in plan mode" / "Enter Plan Mode"
+> / "write to the plan file", treat it as "run directly / hold in memory". Do not blind-sync this
+> file from anywhere else.
+
 ## Constraints (apply to every phase)
 
 - **No implementation code anywhere.** Plan file and feature.json contain only type signatures, structure, decisions. Function bodies, `(set, get) => ({...})` blocks, JSX, hook internals → `/dev-build`. Detail: see PHASE 2 "Strict boundary."
@@ -68,6 +76,7 @@ visible — no risk of forgetting phases.
      feature-name: {feature-name}
      ```
      Keep `risk`, `dependencies`, `externalRef`, and `description` in memory for PHASE 1 and PHASE 3 — `description` feeds the PHASE 1a context echo and coverage check. Mutations (status, date, `auto` flag) happen in PHASE 4. `BACKLOG_FEATURE_NOT_FOUND` or `BACKLOG_HTML: not present` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
+   - **Open-items load** (same batch — feeds the PHASE 2 Backlog Impact Check): run the `open-items` profile from [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md) (`$FEAT` already set) and keep the compact list in memory. `BACKLOG_NOT_PRESENT` / `BACKLOG_NO_OPEN_ITEMS` → the Impact Check will skip silently.
 
 6. **Optional context** (skip each item if results would be empty):
    - **Thinking files**: Grep `.project/thinking/*.md` for feature name. Read matches as PHASE 1 input.
@@ -208,11 +217,20 @@ Design in three steps:
 
 1. **Baseline check** (internally):
    - Reuse the `stack-baseline.md` section(s) loaded in PHASE 0 §5 (re-read only if not yet in memory); match patterns relevant to this feature.
-   - **Pattern found** → use as basis, skip research. Show: `Baseline: ✓ pattern hit — {pattern-name}`. In PHASE 3: omit the `research` field in feature.json entirely (baseline hit is not research).
-   - **Pattern not found** → inline research via Context7 (`resolve-library-id` + `query-docs`) + WebSearch for external APIs. Show: `Baseline: ⚙ research via Context7 — {topic}`. After research: collect new patterns in memory as `pendingBaselineAppends` — plan mode blocks the `stack-baseline.md` write; PHASE 4 appends them during sync. In PHASE 3: write `research: { sources[], findings[] }` to feature.json — only for actually executed lookups.
-   - **No baseline file** → always execute research. Show: `Baseline: ⓘ missing — inline research`. Do NOT create baseline (that is /core-setup). PHASE 3 gets `research` as described above.
+   - **Pattern found** → use as basis, no research topic. Show: `Baseline: ✓ pattern hit — {pattern-name}`. In PHASE 3: omit the `research` field in feature.json entirely (baseline hit is not research).
+   - **Pattern not found / no baseline file** → do **not** research inline. Collect the open question as a `researchTopics[]` entry (topic + why) for the scout in step 2. Show: `Baseline: ⚙ research queued — {topic}`. Do NOT create a baseline file (that is /core-setup).
 
-2. **Existing code** (internally): Glob + Read the most relevant files with similar patterns.
+2. **Scout: existing code + research** (delegated — keeps the file reads and library lookups out of the main context):
+
+   > **Todo**: unless this is a greenfield area (no prior `feature.json` under `.project/features/` **and** the PHASE 0 §5 import scan found no matches), spawn the `define-scout` agent via the `Task` tool with:
+   >
+   > - `featureName`, `reqSummaries` (1-line per REQ), `stackSummary` (from project.json stack),
+   > - `researchTopics` = the entries collected in step 1 (empty when the baseline covered everything),
+   > - `hintPaths` = the import-scan matches from PHASE 0 §5, `repoRoot` = repo root.
+   >
+   > Parse the `DEFINE_SCOUT_START/END` digest: `PATTERNS`/`INTEGRATION` feed step 3's design; `RESEARCH` → `feature.json#research` in PHASE 3 (only when non-empty); `PENDING_BASELINE` → `pendingBaselineAppends` for the PHASE 4 sync (`stack-baseline.md` append).
+   >
+   > **Fallback** (greenfield gate hit, empty digest, or scout unavailable): inline `Glob + Read` at most 3 closest-match files and, for any `researchTopics`, one Context7/WebSearch lookup each — same outputs, just in-context. Never design without either the digest or this fallback.
 
 3. **Design** → write to plan file:
    - **Feature flow**: compact `→` chain. Conditional paths in `[brackets]`, parallel with `+`.
@@ -223,9 +241,13 @@ Design in three steps:
    - **Machine contract appendix** — design type signatures, build sequence, and test strategy NOW (inside plan mode, so the planning model authors them) and write them to the plan file under a `## Appendix — machine contract (skip review)` heading. The appendix is not part of the review surface — the heading tells the reviewer to skip it. PHASE 3 transcribes these sections into feature.json. Dependency analysis stays implicit — derived from `buildSequence[].dependsOn`, no separate section.
    - **AI-navigability** (skip if ≤6 files AND no new registry): when applicable, identify new registries and record them in `architecture.registries[]` (written to feature.json in PHASE 3). Omit module-export lists, colocation notes, and import constraints — covered by project conventions.
 
-**Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision was recorded; below that skip silently, trivial features yield only drift-noise):
+**Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision OR ≥1 clarification was recorded; below that skip silently, trivial features yield only drift-noise):
 
-Follow [shared/SEED.md](.claude/skills/shared/SEED.md) § Alignment Check. Inputs: REQ descriptions + `acceptance[].then` + `durableDecisions[]`. Drift table and proposed rewrite go into the plan file (plan mode is active). On "Yes" → carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4 (seed and backlog-overview always co-update — same project description in two places). On "Skip" → carry `seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`). `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
+Follow [shared/SEED.md](.claude/skills/shared/SEED.md) § Alignment Check. Inputs: REQ descriptions + `acceptance[].then` + `clarifications[]` + `durableDecisions[]` — clarifications are the PHASE 1b fork resolutions (storage, auth model, route shape) and the most common source of seed divergence; never scan without them. Drift table and proposed rewrite go into the plan file (plan mode is active). On "Yes" → carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4 (seed and backlog-overview always co-update — same project description in two places). On "Skip" → carry `seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`). `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
+
+**Backlog Impact Check** (last step in PHASE 2, directly after the Seed Alignment Check — no size threshold; a two-REQ feature can still obsolete a card):
+
+Follow [shared/BACKLOG.md](.claude/skills/shared/BACKLOG.md) § Impact Check. Inputs: the `open-items` list from PHASE 0 §5 + this feature's REQ descriptions, `acceptance[]`, `clarifications[]`, and `durableDecisions[]`. Impact table goes into the plan file; resolution via the protocol's AskUserQuestion (allowed in plan mode). Approved verdicts carry to PHASE 4 as `backlogImpact[]` — mutations happen only in the sync batch, never here.
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](.claude/skills/shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 3 (writing feature.json).
 

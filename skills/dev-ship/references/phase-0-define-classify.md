@@ -281,10 +281,12 @@ there). They differ in the rest:
 | **verify-slice** (AGENT 2)   | `acceptance[]` + `testStrategy` · `verificationProfile` · `paths` · learnings filtered to **test/regression** pitfalls (less architecture)        |
 | **refactor-slice** (AGENT 3) | built `files[]` · `conventions` + coding-rules scope · reuse-candidates · `SHIP_PLAN` lenses/policy · learnings filtered to **refactor** pitfalls |
 
-Each `agent-*.md` pastes its own slice into the `{paste the SHIP_CONTEXT block …}` placeholder;
-the assembled prompts travel to the agents as the **Workflow `args` payload**
-(`buildPrompt`/`verifyPromptTemplate` for Workflow 1, `refactorPrompt`/`scanners`/
-`triagePromptTemplate` for Workflow 2 — see `SKILL.md` PHASE 1+2/4). Mutable-part freshness:
-the **verify** slice is assembled pre-build, so its prompt instructs AGENT 2 to refresh
-learnings/architecture/`files[]` from `.project/` itself (see `agent-verify.md`); the **refactor**
-slice is rebuilt by the main chat from the post-merge `.project/` just before Workflow 2 launches.
+Each agent's **pointer file** (per `agent-*.md` § Spawn) carries its own slice as the CONTEXT block;
+the pointer-file **paths** travel to the agents as the **Workflow `args` payload**
+(`buildPromptPath`/`verifyPromptPath` for Workflow 1, `refactorPromptPath`/`scanners`/
+`triagePromptPath` for Workflow 2 — see `SKILL.md` PHASE 1+2/4). The static instruction bodies live
+in `references/prompts/*` and the agents read them (plus `non-interactive-contract.md`) themselves.
+Mutable-part freshness: the **verify** slice is assembled pre-build, so its prompt instructs AGENT 2
+to refresh learnings/architecture/`files[]` from `.project/` itself (see `agent-verify.md`); the
+**refactor** slice is rebuilt by the main chat from the post-merge `.project/` just before Workflow 2
+launches.
