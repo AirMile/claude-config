@@ -51,5 +51,9 @@
   "autoMemoryEnabled": false,
   "effortLevel": "high",
   "disableAutoMode": "disable",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "env": {
+    "CLAUDE_AFK_TIMEOUT_MS": "86400000",
+    "CLAUDE_AFK_COUNTDOWN_MS": "30000"
+  }
 }
