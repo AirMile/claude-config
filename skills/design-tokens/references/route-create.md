@@ -23,12 +23,6 @@ Use these guidelines as a **bias layer** when making generative choices in Steps
 
 ---
 
-**Step 0b: Enter Plan Mode**
-
-> **Todo**: Use the `EnterPlanMode` tool now — Steps 0.5–7 (brand intake, color, typography, spacing, breakpoints, dark mode, motion, interactions) are generative design decisions that benefit from Opus-level reasoning under the `opusplan` router. `AskUserQuestion`, `Read`, `Glob`, `Grep`, and `WebFetch` keep working in plan mode; only Write/Edit are blocked — which is fine until Step 8 (write to `project.json`). Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
-
----
-
 **Step 0.5: Brand intake check**
 
 Before starting, check if the user already provided a file path or URL in their trigger message. If a path/URL was provided → skip this question and go directly to `route-styleguide.md` with that source.
@@ -72,6 +66,11 @@ At the start of each step, check if that section is in `$EXTRACTED_SECTIONS`. If
 
 **Step 1: Colors**
 
+> **Todo** (optional research): before generating, offer the colour-landscape research route.
+> Read `.claude/skills/design-tokens/references/route-research.md` and follow its opt-in question.
+> On opt-in it returns `$LANDSCAPE` (competitor pins, free lanes, candidate accents, caveats) that
+> feeds the palette suggestion and the colour explorer below. On "No", continue directly.
+
 **AskUserQuestion:**
 
 ```yaml
@@ -99,6 +98,18 @@ Based on the description, Claude generates a context-aware color palette:
 - Main colors (dark, light, mid-gray, light-gray)
 - Accent colors (primary, secondary, tertiary) suited to the industry/audience
 - Semantic colors (success, warning, error, info)
+
+> **Todo** (interactive explorer): render `.claude/skills/design-tokens/references/token-explorer.html`
+> to `.project/previews/design-tokens-explorer.html`, populating the `explorer-data` JSON block
+> (`color` section from the candidate accents + `$LANDSCAPE.pins`/`.lanes`/`.caveats` when research
+> ran; `type`/`spacing`/`motion` sections from the options offered in Steps 2/3/6). Present that
+> `file://` path **with `#color`** via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens) so the user
+> compares accents live in dark & light before confirming.
+>
+> **Reuse across chooser steps**: the same explorer file serves Step 2 (Typography), Step 3 (Spacing),
+> and Step 6 (Motion) — at each, (re)populate the relevant `explorer-data` section and present the
+> path with the matching hash (`#type` / `#spacing` / `#motion`) so every "pick between options" step
+> is a live comparison, not a blind choice.
 
 ```yaml
 header: "Color palette"
@@ -149,6 +160,8 @@ Provide your primary colors (hex values):
 **If "Extract":** → Jump to Route: Extract
 
 **Step 2: Typography**
+
+> **Todo** (explorer): populate the `type` section of `token-explorer.html` with the font options and present it with `#type` (see Step 1 § Reuse across chooser steps) so the user compares fonts live before choosing.
 
 **AskUserQuestion:**
 
@@ -205,6 +218,8 @@ If "Local font — next/font/local":
 If "Pick a similar Google Font": suggest 2–3 alternatives by visual category (geometric sans / humanist / serif / mono) and ask user to pick one.
 
 **Step 3: Spacing**
+
+> **Todo** (explorer): populate the `spacing` section of `token-explorer.html` with the base-scale options and present it with `#spacing` (see Step 1 § Reuse across chooser steps) so the user feels 4px vs 8px on real components before choosing.
 
 **AskUserQuestion:**
 
@@ -280,6 +295,8 @@ Provide your dark mode colors (hex values):
 - → Go to Step 6
 
 **Step 6: Motion**
+
+> **Todo** (explorer): populate the `motion` section of `token-explorer.html` with the duration/easing options and present it with `#motion` (see Step 1 § Reuse across chooser steps) so the user *feels* snappy vs smooth (entrance/hover/press + easing curve) before choosing. Deep spring/choreography preview stays in the Motion-Pack route (`motion/preview-template.html`).
 
 **AskUserQuestion:**
 
@@ -406,7 +423,7 @@ options:
 multiSelect: false
 ```
 
-> **Todo**: Write the THEME SUMMARY above to the plan file, then use the `ExitPlanMode` tool — the summary is the plan output. In plan mode this replaces the AskUserQuestion gate: plan rejection = "Adjust" (loop back to the affected step); plan approval = proceed to the writes below. Skip this exit if plan mode is no longer active or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
+The confirmation above is the single gate: "Adjust" loops back to the affected step; "Cancel" stops; "Yes" proceeds to the writes below.
 
 **If "Yes":**
 
