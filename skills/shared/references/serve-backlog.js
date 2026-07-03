@@ -37,6 +37,7 @@ const {
   touchProject,
   readBacklogData,
   writeBacklogData,
+  mergeArchivedFeatures,
   backlogExists,
   backlogMtime,
 } = require("./lib/projects");
@@ -583,6 +584,16 @@ http
             res.end("Create error: " + e.message);
             return;
           }
+        }
+        // Merge shipped dev-track features back from the archive so the board
+        // can resolve dependencies on them (a "blocked by X" tag must clear
+        // once X ships). Shipped items are filtered out of the rendered
+        // columns client-side, so this never adds stray cards.
+        if (backlogDataObj && Array.isArray(backlogDataObj.features)) {
+          backlogDataObj.features = mergeArchivedFeatures(
+            projectPath,
+            backlogDataObj.features,
+          );
         }
         var backlogData = backlogDataObj
           ? JSON.stringify(backlogDataObj, null, 2)

@@ -9,7 +9,7 @@
 const fs = require("fs");
 const path = require("path");
 const { PROJECTS_ROOT } = require("./config");
-const { readBacklogData } = require("./projects");
+const { readBacklogData, mergeArchivedFeatures } = require("./projects");
 
 function populateFromProject(projectDir, dashData) {
   const projectPath = path.join(PROJECTS_ROOT, projectDir);
@@ -334,25 +334,12 @@ function populateFromProject(projectDir, dashData) {
   // dashboard shipped-showcase. Map backlog fields to what the dashboard
   // template renders (summary, depends).
   const backlogData = readBacklogData(projectPath);
-  var featureView = [];
-  if (backlogData && Array.isArray(backlogData.features)) {
-    featureView = backlogData.features.slice();
-  }
-  try {
-    const archiveFile = path.join(
-      projectPath,
-      ".project/archive/backlog-archive.json",
-    );
-    if (fs.existsSync(archiveFile)) {
-      const archive = JSON.parse(fs.readFileSync(archiveFile, "utf8"));
-      if (Array.isArray(archive.archived)) {
-        const names = new Set(featureView.map((f) => f.name));
-        for (const f of archive.archived) {
-          if (!names.has(f.name)) featureView.push(f);
-        }
-      }
-    }
-  } catch {}
+  const featureView = mergeArchivedFeatures(
+    projectPath,
+    backlogData && Array.isArray(backlogData.features)
+      ? backlogData.features
+      : [],
+  );
   if (featureView.length || backlogData) {
     dashData.features = featureView.map(function (f) {
       return Object.assign({}, f, {

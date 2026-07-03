@@ -37,6 +37,32 @@ function readBacklogData(projectRootAbs) {
   return null;
 }
 
+// Shipped dev-track features are moved out of backlog.json into the archive
+// (.project/archive/backlog-archive.json — see shared/BACKLOG.md § Archiving).
+// Merge them back into a features list so dependency resolution and the
+// shipped-showcase can still see them. Skips names already present; returns a
+// new array and never mutates the input. Best-effort — a missing/corrupt
+// archive just yields the input unchanged.
+function mergeArchivedFeatures(projectRootAbs, features) {
+  const out = Array.isArray(features) ? features.slice() : [];
+  try {
+    const archiveFile = path.join(
+      projectRootAbs,
+      ".project/archive/backlog-archive.json",
+    );
+    if (fs.existsSync(archiveFile)) {
+      const archive = JSON.parse(fs.readFileSync(archiveFile, "utf8"));
+      if (Array.isArray(archive.archived)) {
+        const names = new Set(out.map((f) => f.name));
+        for (const f of archive.archived) {
+          if (!names.has(f.name)) out.push(f);
+        }
+      }
+    }
+  } catch {}
+  return out;
+}
+
 function writeBacklogData(projectRootAbs, data) {
   const jsonFile = path.join(projectRootAbs, BACKLOG_PATH);
   const wsDir = path.dirname(jsonFile);
@@ -179,6 +205,7 @@ module.exports = {
   touchProject,
   readBacklogData,
   writeBacklogData,
+  mergeArchivedFeatures,
   backlogExists,
   backlogMtime,
 };

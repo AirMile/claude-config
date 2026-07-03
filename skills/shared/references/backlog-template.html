@@ -414,6 +414,16 @@
         return null;
       }
 
+      // A dependency stops blocking once its blocker is fully done — status
+      // DONE *or* shipped. Components ship with shipped:true but never reach
+      // DONE (they ship with their consuming page), so shipped must clear the
+      // block too. Unknown deps (renamed/deleted) stay flagged.
+      function isDepResolved(dep) {
+        const found = findItem(dep);
+        if (!found) return false;
+        return found.item.shipped === true || found.item.status === "DONE";
+      }
+
       function removeItem(name) {
         const fi = data.features.findIndex((f) => f.name === name);
         if (fi !== -1) data.features.splice(fi, 1);
@@ -680,7 +690,11 @@
         // PAGE-GAP en non-design → dev/game-pipeline
         if (!DESIGN_TYPES.includes(f.type) || f.type === "PAGE-GAP") {
           if (f.status === "TODO")
-            return { cmd: `/${devPrefix}-define ${f.name}` };
+            // Web dev-track start met de ship-flow (define→build→verify→
+            // refactor); game-track heeft geen ship-skill → -define.
+            return {
+              cmd: isGame ? `/game-define ${f.name}` : `/dev-ship ${f.name}`,
+            };
           if (f.status === "DEFINED")
             return { cmd: `/${devPrefix}-build ${f.name}` };
           if (f.status === "DOING")
@@ -692,7 +706,14 @@
 
         // PAGE/COMPONENT mini-pipeline: design → convert → content → /design-check (batch)
         if (DESIGN_PIPELINE_TYPES.includes(f.type)) {
-          if (f.status === "TODO") return { cmd: `/design-create ${f.name}` };
+          if (f.status === "TODO")
+            // Web PAGE/COMPONENT start met de ship-flow (build→content→check);
+            // game-track heeft geen design-ship → design-create.
+            return {
+              cmd: isGame
+                ? `/design-create ${f.name}`
+                : `/design-ship ${f.name}`,
+            };
           if (f.status === "DEFINED")
             return { cmd: `/design-create ${f.name}` };
           if (f.status === "DOING") {
@@ -838,10 +859,7 @@
           if (status === "DEFINED") {
             const blockedCount = items.filter((f) => {
               const deps = f.dependencies || [];
-              return deps.some((dep) => {
-                const found = findItem(dep);
-                return !found || found.item.status !== "DONE";
-              });
+              return deps.some((dep) => !isDepResolved(dep));
             }).length;
             blockedSuffix =
               blockedCount > 0
@@ -1192,10 +1210,7 @@
 
         let metaHtml = "";
         const deps = f.dependencies || [];
-        const unresolvedDeps = deps.filter((dep) => {
-          const found = findItem(dep);
-          return !found || found.item.status !== "DONE";
-        });
+        const unresolvedDeps = deps.filter((dep) => !isDepResolved(dep));
         const isBlocked = unresolvedDeps.length > 0;
         if (isBlocked) {
           metaHtml += `<span class="dep-blocked-label">blocked by</span>`;
@@ -1289,23 +1304,10 @@
             const reviewItem = canReview
               ? `<button class="row-menu-item row-review-btn" data-name="${esc(f.name)}">▦ Bekijk design →</button>`
               : "";
-            const isGameTrack = data.source && data.source.startsWith("/game");
-            // PAGE/COMPONENT → design-ship (build→content→check); dev-track
-            // types en PAGE-GAP → dev-ship (define→build→verify→refactor).
-            const isDesignShip = f.type === "PAGE" || f.type === "COMPONENT";
-            const canShip =
-              f.status === "TODO" &&
-              (!DESIGN_TYPES.includes(f.type) ||
-                f.type === "PAGE-GAP" ||
-                isDesignShip) &&
-              !isGameTrack;
-            const shipCmd = isDesignShip ? "/design-ship" : "/dev-ship";
-            const shipItem = canShip
-              ? `<button class="row-menu-item row-ship-btn" data-cmd="${shipCmd} ${esc(f.name)}">⚡ Ship (auto)</button>`
-              : "";
+            // Ship (dev-ship/design-ship) wordt al door de primaire copy-knop
+            // van een TODO gekopieerd → geen apart menu-item nodig.
             return (
               `<button class="row-menu-item row-edit-btn">✎ Edit</button>` +
-              shipItem +
               reviewItem +
               outsourceItem +
               convertItem +
@@ -1368,10 +1370,16 @@
             navigator.clipboard.writeText(cmd).then(() => {
               const found = findItem(f.name);
               if (found) {
+                // Ship-commando's (dev-ship/design-ship) doorlopen de hele
+                // pipeline → "shipping"; granulaire stappen → status-label.
+                const isShip =
+                  cmd.startsWith("/dev-ship") || cmd.startsWith("/design-ship");
                 const tlabels = isDesignTrackType(f.type)
                   ? TRANSITION_LABELS_DESIGN
                   : TRANSITION_LABELS_DEV;
-                found.item.transition = tlabels[f.status] || "active";
+                found.item.transition = isShip
+                  ? "shipping"
+                  : tlabels[f.status] || "active";
                 syncJSON();
                 render();
               }
@@ -1407,23 +1415,6 @@
             e.stopPropagation();
             const cmd = convertSketchBtn.dataset.cmd;
             navigator.clipboard.writeText(cmd).then(() => {
-              toast("Copied: " + cmd);
-            });
-          });
-        }
-
-        const shipBtn = row.querySelector(".row-ship-btn");
-        if (shipBtn) {
-          shipBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const cmd = shipBtn.dataset.cmd;
-            navigator.clipboard.writeText(cmd).then(() => {
-              const found = findItem(f.name);
-              if (found) {
-                found.item.transition = "shipping";
-                syncJSON();
-                render();
-              }
               toast("Copied: " + cmd);
             });
           });
