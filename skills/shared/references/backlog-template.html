@@ -985,6 +985,11 @@
         }
 
         // ─── Sections ─────────────────────────────────────────────────
+        // Ship-only workflow: the intermediate resting columns (To build /
+        // To verify / To refactor for dev, To convert / To check for design)
+        // are gone — /dev-ship and /design-ship set transition: "shipping" and
+        // keep the card in the IN PROGRESS section for the whole run, then ship
+        // it (removed from board). Board flow: To do → In progress → shipped.
         const sections = [
           {
             id: "todo",
@@ -993,46 +998,6 @@
             typeFilter: () => true,
             batchSkill: null,
             transitionLabels: TRANSITION_LABELS_DEV,
-          },
-          {
-            id: "build",
-            label: "To build",
-            status: "DEFINED",
-            typeFilter: (t) => !isDesignTrackType(t),
-            batchSkill: null,
-            transitionLabels: TRANSITION_LABELS_DEV,
-          },
-          {
-            id: "verify",
-            label: "To verify",
-            status: "DOING",
-            typeFilter: (t) => !isDesignTrackType(t),
-            batchSkill: null,
-            transitionLabels: TRANSITION_LABELS_DEV,
-          },
-          {
-            id: "refactor",
-            label: "To refactor",
-            status: "DONE",
-            typeFilter: (t) => !isDesignTrackType(t),
-            batchSkill: "refactor",
-            transitionLabels: TRANSITION_LABELS_DEV,
-          },
-          {
-            id: "convert",
-            label: "To convert",
-            status: "DEFINED",
-            typeFilter: isDesignTrackType,
-            batchSkill: null,
-            transitionLabels: TRANSITION_LABELS_DESIGN,
-          },
-          {
-            id: "building",
-            label: "To check",
-            status: "DOING",
-            typeFilter: isDesignTrackType,
-            batchSkill: "check",
-            transitionLabels: TRANSITION_LABELS_DESIGN,
           },
         ];
 

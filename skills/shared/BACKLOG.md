@@ -232,26 +232,19 @@ At scale, shipped features become dead weight for every backlog load (measured: 
 
 ### UI: dual-track swimlanes
 
-The backlog board shows two top-level swimlanes with their own status sections and verb labels. Track pills (`All | Design | Dev`) at the top of the board filter by track. Within each track, features are grouped by phase (P1/P2/P3/P4).
+The backlog board is **ship-only**: `/dev-ship` and `/design-ship` (and later `/game-ship`) run the whole pipeline in one flow, so there are no intermediate resting columns. Both ship-skills set `transition: "shipping"` on the feature and keep the card in the **In progress** section for the entire run; on completion they set `shipped: true`, which removes it from the board. Track pills (`All | Design | Dev`) at the top filter by track. Within each section, features are grouped by phase (P1/P2/P3/P4).
 
 ```
-═══ DESIGN ════════════════════════════════════════
-  ▾ To design    (PAGE/COMPONENT TODO)
-  ▾ To convert   (PAGE/COMPONENT DEFINED — Path B)
-  ▾ Building     (PAGE/COMPONENT DOING)
-
-═══ DEV ══════════════════════════════════════════════
-  ▾ To define    (other TODO)
-  ▾ To build     (other DEFINED)
-  ▾ To verify    (other DOING)
-  ▾ To refactor  (other DONE)
+  ▾ To do        (all TODO — both tracks)
+  ▾ In progress  (transition: "shipping" or a live skill signal, either track)
+  ▾ Archived     (CANCELLED — shared, collapsed)
 ```
 
-DONE+`shipped: true` (both tracks) move to the Dashboard. CANCELLED is one shared archived section at the bottom.
+The former resting columns — dev's **To build** (DEFINED) / **To verify** (DOING) / **To refactor** (DONE), and design's **To convert** (DEFINED) / **To check** (DOING) — no longer render: those statuses are transient internal states a ship-run passes through while the card sits in **In progress**. The underlying status field still moves TODO → DEFINED → DOING → DONE (see the status table above); only the board columns collapsed. DONE+`shipped: true` (both tracks) move to the Dashboard.
 
-## Refactor-badges ("To refactor" section)
+## Refactor-badges
 
-Items with `status === "DONE"` are shown in the **"To refactor"** section of the backlog. They show a badge reflecting `/dev-refactor`'s outcome:
+Items with `status === "DONE"` that have not yet shipped render in the **In progress** section (a ship-run holds them there via `transition: "shipping"`); once shipped they appear in the Dashboard showcase. In both places they show a badge reflecting the refactor outcome:
 
 | `f.refactor` value | Badge  | Meaning                                                                       |
 | ------------------ | ------ | ----------------------------------------------------------------------------- |
