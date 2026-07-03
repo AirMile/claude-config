@@ -39,7 +39,7 @@ CLAUDE.base.md    Template for per-project CLAUDE.md generation
 
 ## Skill Conventions
 
-- **Naming**: `{category}-{verb}` — lowercase, hyphen. Categories: core, dev, design, game, marketing, project, team
+- **Naming**: `{category}-{verb}` — lowercase, hyphen. Categories: core, content, dev, design, game, marketing, project, team
 - **Directory**: each skill = folder with `SKILL.md`, optionally `references/`, `scripts/`, `techniques/`
 - **Frontmatter**: metadata with author/version/category — use `disable-model-invocation: true` only if the skill must never be invokable via the Skill tool (also blocks user-triggered `/skill-name`)
 - **Description**: one short sentence — `<Verb-phrase>. Use with /<skill-name>.` (target 40-80 chars). Descriptions count against `skillListingBudgetFraction` (~1% context budget) and get truncated if too long, breaking auto-routing. Only use a richer description when the skill genuinely auto-triggers from context (e.g. `design-tokens` on THEME backlog status).

@@ -1,12 +1,12 @@
 ---
-name: core-write
-description: Write text from scratch in your configured style. Use with /core-write.
+name: content-write
+description: Write text from scratch in your configured style. Use with /content-write.
 argument-hint: "[what to write]"
 user-invocable: true
 metadata:
   author: claude-config
   version: 1.0.0
-  category: core
+  category: content
 ---
 
 # Write

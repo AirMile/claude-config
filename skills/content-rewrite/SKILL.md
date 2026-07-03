@@ -1,12 +1,12 @@
 ---
-name: core-rewrite
-description: Rewrite text in a configured writing style. Use with /core-rewrite.
+name: content-rewrite
+description: Rewrite text in a configured writing style. Use with /content-rewrite.
 argument-hint: "[check?] [style] [text|@path]"
 user-invocable: true
 metadata:
   author: claude-config
   version: 1.1.0
-  category: core
+  category: content
 ---
 
 # Rewrite

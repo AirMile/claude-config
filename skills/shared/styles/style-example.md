@@ -2,7 +2,7 @@
 
 This is a template for a writing style definition. Duplicate this file, rename it
 (e.g. `style-casual.md`, `style-professional.md`), and place it in `~/.claude/styles/`.
-`core-write` and `core-rewrite` will discover it automatically.
+`content-write` and `content-rewrite` will discover it automatically.
 
 ## Voice
 
