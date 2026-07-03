@@ -165,12 +165,12 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
                         ↑ Path B only              ↑ Path A skips DEFINED
 ```
 
-| Status      | Label      | Set by                                                                                                       |
-| ----------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| Status      | Label      | Set by                                                                                                    |
+| ----------- | ---------- | --------------------------------------------------------------------------------------------------------- |
 | `TODO`      | To design  | `/design-create` Capture, `/project-todo`, `/project-plan`, reuse-discovery                               |
-| `DEFINED`   | To convert | `/design-create` Brief (Path B — offline handoff)                                                            |
-| `DOING`     | Building   | `/design-create` Build (Path A) or `/design-create` Convert route (Path B)                                   |
-| `DONE`      | Shipped    | `/design-check` (PAGE PASS) — both build and convert pages                                                   |
+| `DEFINED`   | To convert | `/design-create` Brief (Path B — offline handoff)                                                         |
+| `DOING`     | Building   | `/design-create` Build (Path A) or `/design-create` Convert route (Path B)                                |
+| `DONE`      | Shipped    | `/design-check` (PAGE PASS) — both build and convert pages                                                |
 | `CANCELLED` | Archived   | Manually via UI (○ button), `/project-plan` update mode (cancel-proposal), `/project-retire` — restorable |
 
 **Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
@@ -187,8 +187,8 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 | ------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Quick "just thought of something" addition              | `/project-todo`                                                         |
 | Full design (screenshot, Figma, brief)                  | `/design-create` Capture                                                |
-| Bulk-init from concept or brainstorm output             | `/project-plan`                                                      |
-| Pattern detection during build (cross-page reuse)       | `/project-plan` reuse-discovery                                      |
+| Bulk-init from concept or brainstorm output             | `/project-plan`                                                         |
+| Pattern detection during build (cross-page reuse)       | `/project-plan` reuse-discovery                                         |
 | Convert existing card from sketch/wireframe/Figma/Canva | `/design-create` (paste sketch/URL, or board ⋯ → "Convert from sketch") |
 
 All routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. All routes **except `/project-plan` bulk-init** also set **`transition: "designing"`**, which enables `/design-create` to auto-detect these items without a manual dashboard click. `/project-plan` omits `transition` at creation — the dashboard sets it when the user clicks copy-prompt (see `project-plan/references/generate-backlog.md` transition field rule). `/design-create` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/design-create` Build fills them in later.
@@ -201,12 +201,12 @@ TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refac
                                                               CANCELLED (Archived)
 ```
 
-| Status      | Label       | Set by                                                                                                       |
-| ----------- | ----------- | ------------------------------------------------------------------------------------------------------------ |
+| Status      | Label       | Set by                                                                                                    |
+| ----------- | ----------- | --------------------------------------------------------------------------------------------------------- |
 | `TODO`      | To define   | `/project-todo`, `/project-plan`                                                                          |
-| `DEFINED`   | To build    | `/dev-define` (completion)                                                                                   |
-| `DOING`     | To verify   | `/dev-build` (completion)                                                                                    |
-| `DONE`      | To refactor | `/dev-verify` (completion)                                                                                   |
+| `DEFINED`   | To build    | `/dev-define` (completion)                                                                                |
+| `DOING`     | To verify   | `/dev-build` (completion)                                                                                 |
+| `DONE`      | To refactor | `/dev-verify` (completion)                                                                                |
 | `CANCELLED` | Archived    | Manually via UI (○ button), `/project-plan` update mode (cancel-proposal), `/project-retire` — restorable |
 
 **Optional fields on CANCELLED items**: `cancelledReason` (one-line why, set by skill-driven cancellations) and `cancelledAt` (`YYYY-MM-DD`, set by `/project-retire`). UI cancellations omit both. Archived features (see § Archiving) can also carry `status: "CANCELLED"` after a `/project-retire` run — history stays, flagged.
@@ -437,3 +437,73 @@ The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verify
 | `game-build`     | `type === "FEATURE" && transition === "building"`                                          | `"DOING"`                                       |
 | `game-verify`    | `type === "FEATURE" && transition === "verifying"`                                         | `"DONE"`                                        |
 | `game-refactor`  | `transition === "refactoring"`                                                             | keep status, set `shipped: true`                |
+
+---
+
+## Impact Check (consumer protocol)
+
+The backlog is living state: crystallizing one feature's scope can absorb or invalidate other open items — a REQ that already ships what another card asks for, or a design choice that removes a card's reason to exist. This check catches that drift at the moment it is created, instead of months later during a board cleanup. It mirrors `shared/SEED.md § Alignment Check` (seed drift ↔ backlog drift).
+
+### Skip condition
+
+`BACKLOG_NOT_PRESENT` or `BACKLOG_NO_OPEN_ITEMS` from the `open-items` load ([BACKLOG-LOAD.md § open-items](BACKLOG-LOAD.md)) → log nothing, continue.
+
+### Impact scan
+
+Compare this feature's crystallized scope — REQ descriptions + `acceptance[]` + `clarifications[]` + `durableDecisions[]` — against each open item from the `open-items` list. Classify only high-confidence semantic matches:
+
+- **covered** — this feature's requirements fully implement the item's described behavior (item `dark-mode-toggle` while REQ-004 already ships a theme switcher)
+- **partial** — concrete overlap; the item's remaining scope shrinks (this feature does part of it, the item keeps the rest)
+- **obsolete** — a decision made here removes the item's reason to exist (clarification chose hosted auth → item `build-own-auth` is dead)
+
+Skip thematic adjacency ("both touch settings") — flag only when a concrete REQ or decision maps onto the item's described behavior. Items with status `DOING`/`DONE`/shipped and design-track items (PAGE/COMPONENT/THEME) are never flagged — the `open-items` profile already excludes them.
+
+### Reporting
+
+**No impact:** log `Backlog: ✓ open items unaffected` (one line inline), continue.
+
+**Impact detected:** log `Backlog: ⚠ impact — N item(s)` inline. Write the impact table to the plan file (or inline in chat if the skill is not in plan mode):
+
+| #   | Item             | Verdict  | Because                                             |
+| --- | ---------------- | -------- | --------------------------------------------------- |
+| 1   | dark-mode-toggle | covered  | REQ-004 ships the theme switcher this card asks for |
+| 2   | build-own-auth   | obsolete | clarification chose hosted auth (Clerk)             |
+| 3   | user-settings    | partial  | REQ-002 covers profile edit; notifications remain   |
+
+### Resolution prompt
+
+```yaml
+header: "Backlog impact"
+question: "This feature affects {N} open backlog item(s) — apply the proposed updates?"
+options:
+  - label: "Yes, apply all (Recommended)", description: "Covered/obsolete items → CANCELLED (restorable); partial items → description rescoped"
+  - label: "Select per item", description: "Choose which verdicts to apply"
+  - label: "No, leave backlog as-is", description: "No mutations — verdicts are dropped"
+multiSelect: false
+```
+
+**Select per item** → follow-up `AskUserQuestion` (multiSelect, ≤4 items per question) listing each flagged item with its verdict; only selected items carry forward.
+
+### Mutations (applied in the consumer skill's sync phase — never inside plan mode)
+
+Approved verdicts travel to the sync phase as `backlogImpact[]` (`{ name, verdict, because, ref }`) and are applied in the same backlog write-batch as the skill's own status flip:
+
+| Verdict                | Mutation                                                                                                                                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `covered` / `obsolete` | `status: "CANCELLED"`, `cancelledReason: "superseded by {feature}: {REQ-ids or decision}"`, `cancelledAt: <YYYY-MM-DD>`, remove `transition` — restorable via the board's archived section      |
+| `partial`              | Rewrite `description` per § Description quality — state only the remaining scope and name the boundary ("remaining after {feature}: …"); add `{feature}` to the item's `dependencies[]` (dedup) |
+
+Guard rails:
+
+- **`externalRef` items are report-only** — the external tracker owns them. Surface the finding ("close/rescope via the tracker or `/team-outsource`") but never mutate the item.
+- A cancelled `DEFINED` item already has `.project/features/{name}/feature.json` — leave the folder in place (history), mention it in the log line.
+- Log line after sync: `Backlog: ✓ impact applied — {N} cancelled, {M} rescoped` (append ` · {K} external — report-only` when applicable).
+
+### Designated impact points
+
+| Skill          | Impact point                                                                | Plan mode? |
+| -------------- | --------------------------------------------------------------------------- | ---------- |
+| `/dev-define`  | End of PHASE 2 Architecture, directly after the Seed Alignment Check        | Yes        |
+| `/game-define` | End of PHASE 3 Architecture Design, directly after the Seed Alignment Check | Yes        |
+
+`/dev-ship` and `/design-ship` inherit the check via their copied define workflows — no separate integration.

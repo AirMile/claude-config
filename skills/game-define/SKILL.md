@@ -8,7 +8,14 @@ reads:
     project-context.architecture,
     backlog.features,
   ]
-writes: [feature.requirements, backlog.stage, concept.seed, feature.seedDrift]
+writes:
+  [
+    feature.requirements,
+    backlog.stage,
+    backlog.features,
+    concept.seed,
+    feature.seedDrift,
+  ]
 metadata:
   author: claude-config
   version: 3.3.0
@@ -162,6 +169,7 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 
      Run the two `node -e` snippets for the `define` profile. Extracts: `stack`, `pitch`, `features[]`, `entities[]`, `thinking[]` (filtered to current feature) from `project.json`; `patterns` (max 15) and full `architecture` from `project-context.json`. Use the extracted output for: stack fallback, feature context/pitch, existing feature list (prevent duplicates), existing entities, thinking as PHASE 1 input, code patterns, current scene graph.
 
+   - **Open-items load** (feeds the PHASE 3 Backlog Impact Check): run the `open-items` profile from [shared/BACKLOG-LOAD.md](../shared/BACKLOG-LOAD.md) (set `$FEAT` to the feature name; the profile is store-generic — it works on game backlogs too) and keep the compact list in memory. `BACKLOG_NOT_PRESENT` / `BACKLOG_NO_OPEN_ITEMS` → the Impact Check will skip silently.
    - **Name-match on thinking markdown**: Grep `.project/thinking/*.md` on feature name (filename + content). With 1+ match: read the match(es) and use as input for PHASE 1 questions. The `.md` files are the source of truth for thinking output — no 7-day window anymore.
    - **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
      ```
@@ -518,15 +526,28 @@ IMPLEMENTATION ORDER:
 3. REQ-003 (after REQ-002)
 ```
 
-**Seed Alignment Check** (last step in PHASE 3, before ExitPlanMode):
+**Seed Alignment Check** (penultimate step in PHASE 3, before ExitPlanMode):
 
 Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ
-descriptions + `acceptance[].then` + `durableDecisions[]` from PHASE 1 and PHASE 3.
+descriptions + `acceptance[].then` + `clarifications[]` + `durableDecisions[]`
+from PHASE 1 and PHASE 3 — clarifications are the PHASE 1 fork resolutions
+(scene ownership, resource schema, signal boundary) and the most common source
+of seed divergence; never scan without them.
 This skill is in plan mode — drift table and proposed rewrite go into the plan
 file alongside the architecture design. On "Yes" → carry `seedUpdateApproved: true`
 to PHASE 5. On "Skip" → carry `seedDrift[]` to PHASE 4 (written to
 `feature.json#seedDrift`). `source: "/game-define"`, `ref: "REQ-NNN"` where
 applicable.
+
+**Backlog Impact Check** (last step in PHASE 3, directly after the Seed
+Alignment Check — no size threshold; a two-REQ feature can still obsolete a card):
+
+Follow [shared/BACKLOG.md](../shared/BACKLOG.md) § Impact Check. Inputs: the
+`open-items` list from PHASE 0 step 6 + this feature's REQ descriptions,
+`acceptance[]`, `clarifications[]`, and `durableDecisions[]`. Impact table goes
+into the plan file; resolution via the protocol's AskUserQuestion (allowed in
+plan mode). Approved verdicts carry to PHASE 5 as `backlogImpact[]` — mutations
+happen only in the sync batch, never here.
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 4 (writing feature.json).
 

@@ -13,6 +13,7 @@ Mutate in memory:
 - Find feature: `data.features.find(f => f.name === "{feature-name}")`
 - Found → set `.status = "DEFINED"`, remove `.stage` and `.transition` (no stage in DEFINED column) and set `.date = "{current date}"`
 - Not found → add: `{ "name": "{feature}", "type": "FEATURE", "status": "DEFINED", "phase": "P4", "description": "{from feature.json summary}", "dependencies": [], "source": "/game-define" }`
+- **Impact Check results** (only when PHASE 3 carried `backlogImpact[]` — same write-batch): apply each approved verdict per `shared/BACKLOG.md § Impact Check → Mutations`: `covered`/`obsolete` → `status: "CANCELLED"` + `cancelledReason: "superseded by {feature}: {ref}"` + `cancelledAt` + remove `transition`; `partial` → rewrite `description` to the remaining scope + add `{feature}` to that item's `dependencies[]`. `externalRef` items: no mutation — list them in the log line as report-only. Then log `Backlog: ✓ impact applied — {N} cancelled, {M} rescoped`.
 - Set `data.updated` to current date
 
 ## Dashboard (see `shared/DASHBOARD.md`)

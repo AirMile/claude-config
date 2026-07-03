@@ -4,6 +4,7 @@
 
 - Find feature → set `status: "DEFINED"`, `definedAt: <ISO>`, `auto: true`, remove `transition` (if present) — all three in one write. Not found → add to `data.features` with `phase: "P4"`, `status: "DEFINED"`, `auto: true`.
 - **Dependencies**: If during PHASE 1 or PHASE 2 external feature dependencies were identified (other features that must be DONE first), merge those into `dependencies[]`. Never remove existing values — only add. If nothing new found: leave field unchanged.
+- **Impact Check results** (only when PHASE 2 carried `backlogImpact[]` — same write-batch): apply each approved verdict per `shared/BACKLOG.md § Impact Check → Mutations`: `covered`/`obsolete` → `status: "CANCELLED"` + `cancelledReason: "superseded by {feature}: {ref}"` + `cancelledAt` + remove `transition`; `partial` → rewrite `description` to the remaining scope + add `{feature}` to that item's `dependencies[]`. `externalRef` items: no mutation — list them in the log line as report-only. Then log `Backlog: ✓ impact applied — {N} cancelled, {M} rescoped`.
 - Set `data.updated` to today.
 
 ## Mutations on `project.json` (see `shared/DASHBOARD.md`)

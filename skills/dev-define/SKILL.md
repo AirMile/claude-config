@@ -14,6 +14,7 @@ writes:
     feature.architecture,
     feature.files,
     backlog.status,
+    backlog.features,
     concept.seed,
     feature.seedDrift,
   ]
@@ -94,6 +95,7 @@ visible — no risk of forgetting phases.
      feature-name: {feature-name}
      ```
      Keep `risk`, `dependencies`, `externalRef`, and `description` in memory for PHASE 1 and PHASE 3 — `description` feeds the PHASE 1a context echo and coverage check. Mutations (status, date, `auto` flag) happen in PHASE 4. `BACKLOG_FEATURE_NOT_FOUND` or `BACKLOG_HTML: not present` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
+   - **Open-items load** (same batch — feeds the PHASE 2 Backlog Impact Check): run the `open-items` profile from [shared/BACKLOG-LOAD.md](../shared/BACKLOG-LOAD.md) (`$FEAT` already set) and keep the compact list in memory. `BACKLOG_NOT_PRESENT` / `BACKLOG_NO_OPEN_ITEMS` → the Impact Check will skip silently.
 
 6. **Optional context** (skip each item if results would be empty):
    - **Thinking files**: Grep `.project/thinking/*.md` for feature name. Read matches as PHASE 1 input.
@@ -249,9 +251,13 @@ Design in three steps:
    - **Machine contract appendix** — design type signatures, build sequence, and test strategy NOW (inside plan mode, so the planning model authors them) and write them to the plan file under a `## Appendix — machine contract (skip review)` heading. The appendix is not part of the review surface — the heading tells the reviewer to skip it. PHASE 3 transcribes these sections into feature.json. Dependency analysis stays implicit — derived from `buildSequence[].dependsOn`, no separate section.
    - **AI-navigability** (skip if ≤6 files AND no new registry): when applicable, identify new registries and record them in `architecture.registries[]` (written to feature.json in PHASE 3). Omit module-export lists, colocation notes, and import constraints — covered by project conventions.
 
-**Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision was recorded; below that skip silently, trivial features yield only drift-noise):
+**Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision OR ≥1 clarification was recorded; below that skip silently, trivial features yield only drift-noise):
 
-Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ descriptions + `acceptance[].then` + `durableDecisions[]`. Drift table and proposed rewrite go into the plan file (plan mode is active). On "Yes" → carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4 (seed and backlog-overview always co-update — same project description in two places). On "Skip" → carry `seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`). `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
+Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ descriptions + `acceptance[].then` + `clarifications[]` + `durableDecisions[]` — clarifications are the PHASE 1b fork resolutions (storage, auth model, route shape) and the most common source of seed divergence; never scan without them. Drift table and proposed rewrite go into the plan file (plan mode is active). On "Yes" → carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4 (seed and backlog-overview always co-update — same project description in two places). On "Skip" → carry `seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`). `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
+
+**Backlog Impact Check** (last step in PHASE 2, directly after the Seed Alignment Check — no size threshold; a two-REQ feature can still obsolete a card):
+
+Follow [shared/BACKLOG.md](../shared/BACKLOG.md) § Impact Check. Inputs: the `open-items` list from PHASE 0 §5 + this feature's REQ descriptions, `acceptance[]`, `clarifications[]`, and `durableDecisions[]`. Impact table goes into the plan file; resolution via the protocol's AskUserQuestion (allowed in plan mode). Approved verdicts carry to PHASE 4 as `backlogImpact[]` — mutations happen only in the sync batch, never here.
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 3 (writing feature.json).
 
