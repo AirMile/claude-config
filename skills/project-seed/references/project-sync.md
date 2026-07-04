@@ -52,7 +52,7 @@ ALREADY COVERED:
 {LEARNINGS CONTEXT block, if any — context for integration phrasing, not gap rows}
 ```
 
-Architecture rows (source = `Architecture`, type `BUILT`) are components with `status: "done"` in `project-context.json` that the concept does not describe — built reality the concept is missing. Drift rows (source = `/dev-ship (define phase) drift`, `/game-define drift`, `/project-plan drift`) originate from deferred `seedDrift[]` entries — decisions that already happened in earlier skill runs and were explicitly skipped. Show `seedSays` in the `Name` column and `featureDecides` as context so the user understands what changed.
+Architecture rows (source = `Architecture`, type `BUILT`) are components with `status: "done"` in `project-context.json` that the concept does not describe — built reality the concept is missing. Drift rows (source = `/dev-ship (define phase) drift`, `/game-ship (define phase) drift`, `/project-plan drift`) originate from deferred `seedDrift[]` entries — decisions that already happened in earlier skill runs and were explicitly skipped. Show `seedSays` in the `Name` column and `featureDecides` as context so the user understands what changed.
 
 **3. Select gaps to integrate:**
 

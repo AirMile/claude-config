@@ -236,7 +236,7 @@ Skills write to `context` after each build/refactor. CLAUDE.md refers to `projec
 `date` = extraction date. `feature` = source feature (kebab-case). For `synced` learnings without a structured feature: use primary directory (`auth`, `payments`). `summary` = max 200 chars.
 `author` = optional, only for `source === "synced"`. Mirrors `features[].author`.
 
-**Source mapping** (own work, in dev-ship / game-verify / game-refactor):
+**Source mapping** (own work, in dev-ship / game-ship):
 
 | Source in feature.json                        | learning.type | learning.source |
 | --------------------------------------------- | ------------- | --------------- |
@@ -278,11 +278,11 @@ Skills that consume thinking-output (such as `/dev-ship`, define phase) read dir
 
 ### project-context.json sections
 
-| Section        | Written by                                                                                              | When                                                                   |
-| -------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `architecture` | `/dev-ship`, `/game-define`, `/game-build`                                                              | On architecture definition / after build                               |
-| `context`      | `/core-setup`, `/dev-ship`, `/game-build`, `/game-refactor`                                             | On build/refactor (structure, routing, patterns)                       |
-| `learnings`    | `/dev-ship`, `/game-build`, `/game-verify`, `/game-refactor`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred), teammate/legacy code (synced) |
+| Section        | Written by                                                           | When                                                                   |
+| -------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `architecture` | `/dev-ship`, `/game-ship`                                            | On architecture definition / after build                               |
+| `context`      | `/core-setup`, `/dev-ship`, `/game-ship`                             | On build/refactor (structure, routing, patterns)                       |
+| `learnings`    | `/dev-ship`, `/game-ship`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred), teammate/legacy code (synced) |
 
 Handoff namespace for `learnings` is `project-context.learnings` — matches the `reads:`/`writes:` declarations in skill frontmatter (see `shared/DEVINFO.md`).
 

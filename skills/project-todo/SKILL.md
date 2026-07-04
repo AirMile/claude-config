@@ -18,7 +18,7 @@ metadata:
 
 # Todo
 
-Capture new backlog items, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have an idea" and a backlog item ready for `/dev-ship (define phase)` (web) or `/game-define` (game).
+Capture new backlog items, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have an idea" and a backlog item ready for `/dev-ship (define phase)` (web) or `/game-ship (define phase)` (game).
 
 **Trigger**: `/project-todo` or `/project-todo [description]`
 
@@ -102,7 +102,7 @@ Check whether `.project/project.json` exists.
 3. Show detected mode:
    ```
    STACK: web    (→ /dev-ship pipeline)
-   STACK: game   (→ /game-define pipeline)
+   STACK: game   (→ /game-ship pipeline)
    ```
 
 ### PHASE 0: Input + Backlog Check
@@ -335,7 +335,7 @@ multiSelect: false
    }
    ```
 
-   **`description` norm:** apply `shared/BACKLOG.md § Description quality` — self-contained, concrete behavior + scope boundary, thinking-round answers (PHASE 1a) folded in, 1–3 sentences. The card text is the only context `/dev-ship` (define phase) / `/game-define` gets when it is picked up later; never write a bare restatement of the name.
+   **`description` norm:** apply `shared/BACKLOG.md § Description quality` — self-contained, concrete behavior + scope boundary, thinking-round answers (PHASE 1a) folded in, 1–3 sentences. The card text is the only context `/dev-ship` (define phase) / `/game-ship` (define phase) gets when it is picked up later; never write a bare restatement of the name.
 
    **`transition` rule:** only include `"transition": "designing"` when `type === "PAGE"` or `type === "COMPONENT"`. Omit the field entirely for all other types (FEATURE, API, THEME, etc.).
 
@@ -495,7 +495,7 @@ FEATURE ADDED
   Next steps:
   - /project-brainstorm {name} - Deepen the idea with variations
   - /project-critique {name} - Test the idea critically
-  - /game-define {name} - Start with requirements and architecture
+  - /game-ship {name} - Start with requirements and architecture
 ```
 
 ## Restrictions

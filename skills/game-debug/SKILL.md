@@ -400,12 +400,11 @@ Regression: {N tests, X PASS, Y FAIL}
 Learning: {pitfall summary added, or "no extraction"}
 
 Next steps:
-  1. /game-verify {feature} → re-verify if feature is active
-  2. /game-build {feature} → if rebuild is needed
+  1. /game-ship {feature} → re-verify or rebuild as needed
 ```
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /game-verify {feature} → re-verification after fixing the issue.
+> Recommended command: /game-ship {feature} → re-verification after fixing the issue.
 
 > **Todo**: mark PHASE 10 → `completed`.

@@ -123,7 +123,7 @@ Read `.project/project.json` at session start for current project context (struc
 - Runtime context (file tree, routes, patterns) lives in `.project/project.json` under the `context` key
 - See `shared/DASHBOARD.md` for the `context` section schema
 - `/core-setup` initializes `context` during Phase 7b
-- `/dev-ship`, `/game-build`, `/game-refactor` update `context` after each run
+- `/dev-ship`, `/game-ship` update `context` after each run
 
 ---
 

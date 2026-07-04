@@ -30,7 +30,7 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
    - Already-CANCELLED features are protected: preserve as `status: "CANCELLED"`, exclude from planning and build order
    - Present the merged feature list with change markers for clarity
 
-2. **Extract features:** each feature = one `/dev-ship (define phase)` (web) or `/game-define` (game) unit, implementable independently (with dependencies), kebab-case name for CLI use.
+2. **Extract features:** each feature = one `/dev-ship (define phase)` (web) or `/game-ship (define phase)` (game) unit, implementable independently (with dependencies), kebab-case name for CLI use.
 
    **Description norm** — write each feature's `description` per `shared/BACKLOG.md § Description quality`: self-contained (readable weeks later without this conversation), concrete observable behavior, scope boundary named, 1–3 sentences. Never a noun phrase restating the title. This text is the only context `/dev-ship (define phase)` gets when the card is picked up — the interview anchors on it.
 

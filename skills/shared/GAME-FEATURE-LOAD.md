@@ -17,11 +17,11 @@ Game-pipeline skills load feature context during their **PHASE 0 context-load ph
 
 **This protocol is NOT for:**
 
-- `game-define/references/update-mode.md` — full Read required to preserve all sections during update.
-- `game-build` PHASE 4b sync (SKILL.md:508-518) — full Read → mutate-in-memory → Write. Round-trip contract requires all fields.
-- `game-verify/references/completion-finalize.md` — full Read for `tests.finalStatus`, `sessions[]`, `observations[]`, learnings write. Round-trip contract.
-- `game-refactor` `feature.refactor` writes — full Read required.
-- `game-define` PHASE 4 `feature.json` write — full Read required.
+- `game-ship/references/game-define/references/update-mode.md` — full Read required to preserve all sections during update.
+- `game-ship` build phase (PHASE 4b sync) — full Read → mutate-in-memory → Write. Round-trip contract requires all fields.
+- `game-ship/references/game-verify/references/completion-finalize.md` — full Read for `tests.finalStatus`, `sessions[]`, `observations[]`, learnings write. Round-trip contract.
+- `game-ship` refactor phase `feature.refactor` writes — full Read required.
+- `game-ship` define phase PHASE 4 `feature.json` write — full Read required.
 
 ---
 
@@ -29,7 +29,7 @@ Game-pipeline skills load feature context during their **PHASE 0 context-load ph
 
 ### Profile: `build`
 
-For game-build PHASE 0 step "Load feature.json" and game-refactor batch-scan — extracts all fields needed for PHASE 1 TDD cycle and scene implementation.
+For game-ship's build phase PHASE 0 step "Load feature.json" and refactor batch-scan — extracts all fields needed for PHASE 1 TDD cycle and scene implementation.
 
 ```bash
 node -e "
@@ -60,7 +60,7 @@ node -e "
 
 ### Profile: `verify`
 
-For game-verify PHASE 0 (checklist load + PHASE 0b baseline check) — extracts checklist, requirements with acceptance, design, and build metadata.
+For game-ship's verify phase PHASE 0 (checklist load + PHASE 0b baseline check) — extracts checklist, requirements with acceptance, design, and build metadata.
 
 ```bash
 node -e "
@@ -90,7 +90,7 @@ node -e "
 
 ## Output format
 
-Both profiles return a compact JSON object. `FEATURE_JSON: not present` → file absent; skill should exit with "Run `/game-define` first."
+Both profiles return a compact JSON object. `FEATURE_JSON: not present` → file absent; skill should exit with "Run `/game-ship` first."
 
 ---
 
@@ -118,6 +118,6 @@ Feature load (via shared/GAME-FEATURE-LOAD.md):
 
 ## Implementation note
 
-This is a **read-only** protocol for PHASE 0 context loading. Mutations to `feature.json` remain the responsibility of writer-paths per `game-build` PHASE 4b sync, `game-verify/references/completion-finalize.md`, and `game-define/references/update-mode.md`.
+This is a **read-only** protocol for PHASE 0 context loading. Mutations to `feature.json` remain the responsibility of writer-paths per `game-ship` build phase (PHASE 4b sync), `game-ship/references/game-verify/references/completion-finalize.md`, and `game-ship/references/game-define/references/update-mode.md`.
 
 Dev-pipeline equivalent: [FEATURE-LOAD.md](FEATURE-LOAD.md) (different profiles — `httpContractTested`, `apiContract`, `hasUI` are dev-only; `tuningLevers[]`, `design.sceneLayout`, `architecture.componentTree` are game-only).

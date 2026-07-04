@@ -82,7 +82,7 @@ text = "Play"
   contract as web — universal). Record the generated `.tscn` path on the spec entry.
 - Stub interactions (button `pressed` with no handler script) → gap-discovery suggests a game
   FEATURE/MECHANIC todo, mirroring the web `frontend→dev` gap flow (see `shared/SKILL-PATTERNS.md`).
-- Runtime/feel verification → `/game-verify`; static Theme-consistency → `/design-check` (game path).
+- Runtime/feel verification → `/game-ship` (playtest phase); static Theme-consistency → `/design-check` (game path).
 
 ## native domain
 

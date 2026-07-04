@@ -16,8 +16,10 @@ reads:
 writes:
   [
     feature.requirements,
+    feature.files,
     feature.build,
     feature.tests,
+    feature.playtestProfile,
     feature.seedDrift,
     backlog.stage,
     backlog.features,
@@ -37,8 +39,8 @@ Runs the full Godot gamedev pipeline — **define → build → GUT auto-verify 
 in one chat. Heavy work runs in isolated inline agents (context stays clean); only human interaction
 (define choices, the live playtest) happens in the main chat. `game-ship` is the **standalone** game
 pipeline: it carries its own vendored copies of the four phase workflows under
-`references/game-{define,build,verify,refactor}/` and drives them internally — the standalone
-`/game-define`…`/game-refactor` skills stay available for manual runs.
+`references/game-{define,build,verify,refactor}/` and drives them internally — there are no separate
+`/game-define`…`/game-refactor` skills anymore.
 
 **Trigger**: `/game-ship` or `/game-ship {feature-name}`
 

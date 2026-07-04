@@ -79,7 +79,7 @@ Work on first todo:        {top todo name} → {corresponding skill}
 Then only relevant follow-up skills (no repetition of todos already in the backlog):
 
 - Web/Backend/Fullstack/Mobile/Desktop/CLI: `/dev-ship [new feature]`
-- Game: `/game-define [feature]` → `/game-build [feature]`
+- Game: `/game-ship [feature]`
 - Expand concept: `/project-seed`, `/project-brainstorm`
 
 **If `backlog_started = false` or no todos in backlog:**
@@ -97,7 +97,7 @@ Then only relevant follow-up skills (no repetition of todos already in the backl
 **3. Define + build first feature:**
 
 - Web/Backend/etc: `/dev-ship [feature]`
-- Game: `/game-define [feature]` → `/game-build [feature]`
+- Game: `/game-ship [feature]`
 
 **If there are todos but backlog not started:** add at the top:
 

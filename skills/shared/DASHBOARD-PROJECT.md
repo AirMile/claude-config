@@ -291,7 +291,7 @@ Dashboard server's `populateFromProject()` handles both formats — existing leg
 
 ### data
 
-**Optional — only for data-heavy projects.** In practice, simple projects (static sites, utilities, games, UI-only components) leave this empty. Skills that write (`/dev-ship`, `/game-define`, `/team-verify`) skip this update if the domain introduces no explicit entities — log `Skipped data.entities: no entities`.
+**Optional — only for data-heavy projects.** In practice, simple projects (static sites, utilities, games, UI-only components) leave this empty. Skills that write (`/dev-ship`, `/game-ship`, `/team-verify`) skip this update if the domain introduces no explicit entities — log `Skipped data.entities: no entities`.
 
 ```json
 {
@@ -429,7 +429,7 @@ No deletion, no update — append only. For live status of a running run: see `.
 | `design`            | `/design-create`, `/design-tokens`                                           | On design spec/page build/theme creation |
 | `theme`             | `/design-tokens`                                                             | After theme create/update                |
 | `stack`             | `/core-setup`, `/project-plan`, `/dev-ship`, `/design-create`                | On detection/new deps                    |
-| `data`              | `/dev-ship`, `/game-define`                                                  | On entity definition                     |
+| `data`              | `/dev-ship`, `/game-ship`                                                    | On entity definition                     |
 | `endpoints`         | `/dev-ship`                                                                  | On API definition / after build          |
 | `optimization_runs` | `/dev-optimize`, `/game-optimize`                                            | On run completion (PHASE 6)              |
 
@@ -446,10 +446,8 @@ For the `project-context.json` writer table see [DASHBOARD-CONTEXT.md](DASHBOARD
 | `/design-create`            | `design` (pages, flows, principles)            | —                                                                 | On each run                       |
 | `/design-create`            | `stack.packages`, `design.pages`               | —                                                                 | After completion sync             |
 | `/design-tokens`            | `design.principles`                            | —                                                                 | After completion                  |
-| `/game-define`              | `data.entities`, `stack.packages`              | `architecture` (write)                                            | PHASE 6                           |
-| `/game-build`               | —                                              | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion                |
+| `/game-ship`                | `data.entities`, `stack.packages`              | `context`, `architecture`, `learnings` (write)                    | Ship run (define→refactor phases) |
 | `/team-verify`              | `stack.packages`, `endpoints`, `data.entities` | `architecture` (write)                                            | PHASE 7 completion                |
-| `/game-refactor`            | —                                              | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion                |
 | `/dev-optimize`             | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion                |
 | `/game-optimize`            | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion                |
 | `/core-pull`                | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                          |

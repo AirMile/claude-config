@@ -367,7 +367,7 @@ Used in PHASE 0 of pipeline skills that operate on a single feature (verify, deb
 
 ### Why
 
-Pipeline skills run in separate chats. When dev-ship's build phase (or `game-build`) creates a worktree, follow-up skills start in main-checkout — not in the worktree where the code lives. This boilerplate detects an existing worktree for the active feature and switches into it automatically.
+Pipeline skills run in separate chats. When dev-ship's build phase (or `game-ship`'s build phase) creates a worktree, follow-up skills start in main-checkout — not in the worktree where the code lives. This boilerplate detects an existing worktree for the active feature and switches into it automatically.
 
 The worktree path is predictable: `{repo-root}/.claude/worktrees/{feature-name}`. The branch name is `worktree-{feature-name}` (auto-prefixed by `EnterWorktree`).
 
@@ -565,7 +565,7 @@ If any `worktree-*` branches appear → **AskUserQuestion**:
 
 ```yaml
 header: "Open worktrees"
-question: "Open worktrees found: {list}. Normally /dev-ship (verify phase) or /game-verify closes these — these are leftovers (verify skipped, or 'Keep open' chosen). Batch refactor on main may cause merge conflicts when they're integrated later. What do you want to do?"
+question: "Open worktrees found: {list}. Normally /dev-ship (verify phase) or /game-ship (verify phase) closes these — these are leftovers (verify skipped, or 'Keep open' chosen). Batch refactor on main may cause merge conflicts when they're integrated later. What do you want to do?"
 options:
   - label: "Stop — finalize open worktrees first (Recommended)"
     description: "Run /core-finalize for each leftover worktree, then re-run the skill"

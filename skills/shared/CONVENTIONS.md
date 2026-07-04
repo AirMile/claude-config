@@ -1,6 +1,6 @@
 # Project Code Conventions
 
-Per-project code conventions (company/team/personal style guide) in `.project/conventions.md`. Single source of truth for the file format, the three-state lifecycle, elicitation, and load rules. Consumers: core-setup (writer), dev-ship's refactor phase (fallback write + read), dev-ship's build phase, dev-ship's verify phase, game-refactor, game-build (read).
+Per-project code conventions (company/team/personal style guide) in `.project/conventions.md`. Single source of truth for the file format, the three-state lifecycle, elicitation, and load rules. Consumers: core-setup (writer), dev-ship's refactor phase (fallback write + read), dev-ship's build phase, dev-ship's verify phase, game-ship's refactor phase, game-ship's build phase (read).
 
 ---
 
@@ -93,9 +93,9 @@ No other skill elicits. Build/verify skills with an absent file proceed silently
 
 ## Load Rules
 
-| Consumer type                                                                                | Rule                                                                                                                                      |
-| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Agent-dispatching skills (dev-ship's refactor phase, game-refactor, dev-ship's verify phase) | Pass the **path** in the agent prompt ("Read `.project/conventions.md` before scanning") — agent reads it in its own context, token-cheap |
-| Main-context skills (dev-ship's build phase, game-build)                                     | `Read` the file once in PHASE 0 — the main session writes the code itself                                                                 |
+| Consumer type                                                                                             | Rule                                                                                                                                      |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Agent-dispatching skills (dev-ship's refactor phase, game-ship's refactor phase, dev-ship's verify phase) | Pass the **path** in the agent prompt ("Read `.project/conventions.md` before scanning") — agent reads it in its own context, token-cheap |
+| Main-context skills (dev-ship's build phase, game-ship's build phase)                                     | `Read` the file once in PHASE 0 — the main session writes the code itself                                                                 |
 
 Log one line on load: `CONVENTIONS: loaded | none | not set up`.

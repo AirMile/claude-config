@@ -2,9 +2,10 @@
 
 Loaded when `$DOMAIN === "game"` (see `shared/DOMAIN.md`). Godot projects have **no browser
 runtime**, so the Playwright/Lighthouse/axe scans do not apply. This route runs a **static**
-design-consistency check and **delegates the runtime/playtest pass to `/game-verify`** — it does
-not launch Godot, render frames, or screenshot. Output uses the same finding format as the web
-scans (severity · rule · file · issue · fix), so PHASE 2/3/4 are unchanged.
+design-consistency check and **defers the runtime/playtest pass to a human** (the interactive
+playtest now lives in `/game-ship`'s PHASE 3) — it does not launch Godot, render frames, or
+screenshot. Output uses the same finding format as the web scans (severity · rule · file · issue ·
+fix), so PHASE 2/3/4 are unchanged.
 
 ## Inputs
 
@@ -51,12 +52,13 @@ absent, or no runtime theme-swap path is wired → flag (dark mode declared but 
   under the Godot project root.
 - Referenced `ext_resource` paths inside the `.tres` resolve (no broken `res://` links).
 
-## Delegation to /game-verify
+## Runtime/playtest pass (human)
 
 Runtime concerns — does it look/feel right, animations, input, framerate, actual rendering — are a
-**human playtest**, owned by `/game-verify`. After the static report, print:
+**human playtest**. The consolidated interactive playtest lives in `/game-ship` (PHASE 3); for a
+one-off look, a human runs the project directly in Godot. After the static report, print:
 
-> `Runtime/playtest pass → run /game-verify (human playtest). design-check does not render Godot.`
+> `Runtime/playtest pass → play it (a full playtest runs as part of /game-ship PHASE 3). design-check does not render Godot.`
 
 Do **not** attempt headless Godot screenshots or frame analysis here.
 

@@ -23,7 +23,7 @@ Generate an ASCII [diagram type] showing [what to visualize].
 | Architecture/layers   | Component diagram    | dev-ship (define phase), design-create          |
 | Multi-step workflow   | Flowchart            | dev-ship (build phase), dev-ship (verify phase) |
 | Feature decomposition | Tree                 | project-plan                                    |
-| State transitions     | State machine        | game-define                                     |
+| State transitions     | State machine        | game-ship                                       |
 | Parallel processes    | Architecture diagram | team-review                                     |
 
 **Placement:** After the phase where the relevant information is gathered, before execution continues.

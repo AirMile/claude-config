@@ -31,9 +31,9 @@ dev-ship, dev-debug, dev-learn, dev-security, core-commit (reads `commitConventi
 
 ### Mode-aware (branches on TEAM_MODE)
 
-- **PHASE Finalize (inline auto-dispatch, no modal):** dev-ship (verify phase), game-verify
-- **PHASE Finalize (3-way modal via FINALIZE.md):** dev-ship (refactor phase), game-refactor, design-check
-- **PHASE 0 entry-guard (team-mode batch guard, see below):** dev-ship (refactor phase), game-refactor, design-check
+- **PHASE Finalize (inline auto-dispatch, no modal):** dev-ship (verify phase), game-ship (verify phase)
+- **PHASE Finalize (3-way modal via FINALIZE.md):** dev-ship (refactor phase), game-ship (refactor phase), design-check
+- **PHASE 0 entry-guard (team-mode batch guard, see below):** dev-ship (refactor phase), game-ship (refactor phase), design-check
 - **Other:** core-finalize, core-pull (info hint), shared/FINALIZE.md, shared/PR.md
 
 ### Team-only (warn-gate when solo)
@@ -57,7 +57,7 @@ multiSelect: false
 
 Cancel → exit. Continue → proceed with step 1.
 
-### Team-mode batch guard (for dev-ship (refactor phase), game-refactor, design-check)
+### Team-mode batch guard (for dev-ship (refactor phase), game-ship (refactor phase), design-check)
 
 Fire when `TEAM_MODE == "team"` AND the skill is about to enter batch/codebase mode (queue > 1 or
 no-arg). Single-feature invoke → guard does NOT fire.

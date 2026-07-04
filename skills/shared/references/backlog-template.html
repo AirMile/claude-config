@@ -693,7 +693,7 @@
             // Web dev-track start met de ship-flow (define→build→verify→
             // refactor); game-track heeft geen ship-skill → -define.
             return {
-              cmd: isGame ? `/game-define ${f.name}` : `/dev-ship ${f.name}`,
+              cmd: isGame ? `/game-ship ${f.name}` : `/dev-ship ${f.name}`,
             };
           if (f.status === "DEFINED")
             return { cmd: `/${devPrefix}-build ${f.name}` };
