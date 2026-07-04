@@ -53,23 +53,23 @@ Pulls the latest claude-config and rebuilds composed global files. For setup wit
 
 Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL-PATTERNS.md`](skills/shared/SKILL-PATTERNS.md) for conventions and [`skills/shared/PIPELINE.md`](skills/shared/PIPELINE.md) for canonical pipeline diagrams.
 
-| Category    | Skills                                                                           |
-| ----------- | -------------------------------------------------------------------------------- |
-| `core`      | audit, bootstrap, commit, create, delete, edit, merge, pull, setup, update       |
-| `content`   | rewrite, write                                                                   |
-| `dev`       | build, debug, define, learn, optimize, owasp, refactor, verify                   |
-| `design`    | check, content, create, tokens                                                   |
-| `game`      | build, debug, define, optimize, refactor, verify                                 |
-| `marketing` | content, research, screenshots                                                   |
-| `project`   | add, backlog, brainstorm, critique, remove, research, seed, todo, tunnel, viewer |
-| `team`      | issues, outsource, review, verify                                                |
+| Category    | Skills                                                                        |
+| ----------- | ----------------------------------------------------------------------------- |
+| `core`      | audit, bootstrap, commit, finalize, pull, setup, update                       |
+| `content`   | rewrite, write                                                                |
+| `dev`       | debug, learn, optimize, security, ship                                        |
+| `design`    | content, convert, ship, tokens                                                |
+| `game`      | debug, optimize, ship                                                         |
+| `marketing` | content, research, screenshots                                                |
+| `project`   | add, brainstorm, critique, plan, remove, research, seed, todo, tunnel, viewer |
+| `team`      | issues, outsource, review, verify                                             |
 
-| Pipeline    | Flow                                                                                                                                                |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dev`       | `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere) |
-| `game`      | `project-seed` → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` anywhere, Godot 4.x / GUT)                                |
-| `design`    | [`/design-tokens`] (incl. motion packs) → `design-create` (design/build/convert) → `design-content` (fill copy) → `design-check`                    |
-| `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                |
+| Pipeline    | Flow                                                                                                                                                                         |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dev`       | `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (define → build → verify → refactor) (+ `dev-debug` anywhere)                   |
+| `game`      | `project-seed` → `project-plan` → `game-ship` (define → build → GUT-verify → playtest → refactor) (+ `game-debug` anywhere, Godot 4.x / GUT)                                 |
+| `design`    | [`/design-tokens`] (incl. motion packs) → `design-convert` (spec / visual→code) & `design-content` (fill copy) feed `design-ship` (build → content → check as one flow, web) |
+| `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                                         |
 
 Optional `/project-research` enriches the dev seed with market/tech/codebase context before backlog.
 

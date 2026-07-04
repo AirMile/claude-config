@@ -28,10 +28,10 @@ Cross-platform: **macOS** and **Windows**.
 ## Structure
 
 ```
-skills/           48 skills in 9 categories
+skills/           38 skills in 8 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (each with SKILL.md)
-agents/           21 sub-agent definitions (.md with YAML frontmatter)
+agents/           23 sub-agent definitions (.md with YAML frontmatter)
 hooks/            format-on-save.cjs, prompt-timer.cjs, security-reminder.py
 local/            Portable configs for ~/.claude/ (templates, not linked)
 CLAUDE.base.md    Template for per-project CLAUDE.md generation
@@ -65,16 +65,16 @@ Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 ## Pipelines
 
-**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere)
-**Game**: `project-seed` → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere, Godot 4.x / GUT)
-**Design**: `design-create` (design/build/convert — incl. sketch/wireframe/Figma/Canva → high-fi code) → `design-content` (fill copy) → `design-check` — or all-in-one via `design-ship` (auto-mode: build→content→check, Build lane / web only; dev-track counterpart: `dev-ship`)
+**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (runs define→build→verify→refactor as one auto-mode flow) (+ `dev-debug` everywhere)
+**Game**: `project-seed` → `project-plan` → `game-ship` (runs define→build→GUT-verify→playtest→refactor as one auto-mode flow) (+ `game-debug` everywhere, Godot 4.x / GUT)
+**Design**: `design-convert` (spec management, visual→code convert — sketch/wireframe/Figma/Canva/URL → high-fi code — and game `.tscn` codegen) & `design-content` (fill copy) feed `design-ship` — auto-mode build→content→check as one flow (Build lane / web); `design-tokens` for tokens/motion packs; dev-track counterpart: `dev-ship`
 **Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`
 
 State handoff between skills via `.project/session/devinfo.json` (schema: `shared/DEVINFO.md`).
 
 ## Key Patterns
 
-- **`.project/`**: all runtime artifacts (gitignored) — wireframes, config, session, screenshots, previews (`.project/previews/` = auto-opening HTML previews from dev-define/design-tokens/design-create via `shared/HTML-PRESENT.md`)
+- **`.project/`**: all runtime artifacts (gitignored) — wireframes, config, session, screenshots, previews (`.project/previews/` = auto-opening HTML previews from dev-ship's define phase/design-tokens/design-convert via `shared/HTML-PRESENT.md`)
 - **`.project/project.json`**: central project dashboard (seed, design, theme, stack, endpoints, entities — `schemaVersion: 2`). Runtime context (architecture, context, learnings) lives in `project-context.json`; features in `backlog.json`. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md references this for runtime context.
 - **Format-on-save**: hook runs Prettier (web) or gdformat (GDScript) after every Write/Edit
 - **Backlog**: `.project/backlog.json` (data store; board UI rendered by the server) with status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped (archived to `.project/archive/backlog-archive.json`)
@@ -106,6 +106,6 @@ Idempotent — skip if file already exists. No junction needed: `~/.claude/CLAUD
 - Don't modify shared files without considering the impact on all skills
 - New skills: copy frontmatter structure from an existing skill in the same category
 - Test by actually running the skill
-- Dev/game pipeline sync: for structural changes to dev-pipeline skills (dev-define, dev-build, dev-verify, dev-debug, dev-refactor), check whether the game-pipeline counterpart (game-\*) needs the same change. Domain-specific content (Godot vs web, GUT vs browser) does not need to be synced.
+- Dev/game pipeline sync: for structural changes to `dev-ship` (its define/build/verify/refactor phases) or `dev-debug`, check whether the game-pipeline counterpart (`game-ship`, `game-debug`) needs the same change. Domain-specific content (Godot vs web, GUT vs browser) does not need to be synced.
 - Before tagging a release: run `python3 scripts/check-handoff.py`, `python3 scripts/check-dashboard-writers.py`, `python3 scripts/check-no-project-commit.py`, and `bash scripts/tests/run.sh` — all must exit 0. (`run.sh` is bash; on Windows run via WSL.)
 - New skills forecasted >500 lines: apply lazy-reference-loading before committing — see `skills/shared/SKILL-PATTERNS.md § Lazy Reference Loading`.

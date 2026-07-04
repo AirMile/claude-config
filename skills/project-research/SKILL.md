@@ -6,7 +6,7 @@ writes: [concept.seed, project.thinking]
 metadata:
   author: claude-config
   version: 1.3.0
-  category: thinking
+  category: project
 ---
 
 ## Overview
