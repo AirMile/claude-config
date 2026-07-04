@@ -133,7 +133,7 @@ Next steps:
   2. Monitor CWV in production (web-vitals library)
   3. Submit sitemap to Google Search Console
   4. Test AI visibility: search your content on Perplexity/ChatGPT
-  5. Re-test flows after every major refactor (/design-check scope Flow)
+  5. Re-test flows after every major refactor (re-run the Flow scope check)
 
 ═════════════════════════════════════════════════════════════
 ```

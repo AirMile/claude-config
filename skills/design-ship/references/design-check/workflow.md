@@ -14,7 +14,7 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
 **Two modes:**
 
 - **Batch-mode** (no argument): iterate over all features in backlog where `status === "DOING"` (and not already checked at HEAD) or `lastCheckedSha !== shippedSha`. Runs at end of release cycle.
-- **Targeted mode** (`/design-check <feature-name|url|path>`): single feature or URL, all runtime scopes.
+- **Targeted mode**: single feature or URL, all runtime scopes. (This is the only mode design-ship's check runs.)
 
 **Related skills:** `/design-convert` · `/design-tokens` · `/core-setup`
 
@@ -173,7 +173,7 @@ If scope contains **Flow**:
 
 - Read `.project/project.json → design.flows`
 - If flows is missing or empty → stop with message:
-  > "No flows defined in `design.flows[]`. Run `/design-convert` first to add flows, then re-run `/design-check scope Flow`."
+  > "No flows defined in `design.flows[]`. Run `/design-convert` first to add flows, then re-run the check's Flow scope."
 - If flows is non-empty → continue.
 
 ### 0.3 Domain & Project Detection
