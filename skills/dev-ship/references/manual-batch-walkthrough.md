@@ -18,10 +18,11 @@ After the round is answered, rewrite it **without** `waiting` — verification w
 
 ## Step B — Present the whole checklist ONCE
 
-Launch the app (Step 2's hand-off rule in `phase-3-manual-finalize.md` applies — hand off, don't
-block on a readiness grep). Then print the **entire** checklist in one message: the dev-server URL
-once at the top, then every item. **No per-item Playwright smoke** — offer screenshots only on
-demand (Step D).
+Launch the app (Step 2's **App-launch rule** + hand-off rule in `phase-3-manual-finalize.md` apply —
+match the launch command to the app **shell** and never substitute the browser-only dev server for a
+Tauri/Electron desktop app; hand off, don't block on a readiness grep). Then print the **entire**
+checklist in one message: the app URL/window note once at the top, then every item. **No per-item
+Playwright smoke** — offer screenshots only on demand (Step D).
 
 ```
 Open {devServerUrl}, then run these {M} checks:

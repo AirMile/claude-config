@@ -16,11 +16,44 @@ Playwright daemon that the walkthrough uses) and runs the symlink-integrity gate
 Skip this step entirely when AGENT 2 returned `remainingManualItems: none` (the 85% case) — go
 straight to Step 3.
 
-**Launch the app + hand off — don't block on a readiness grep.** Start the app framework-appropriately
-in the background (web: dev server; native/Tauri: `npm run tauri dev` — the Rust compile is slow, so
-tell the user it is building). Then **hand the checklist to the user immediately** and let them confirm
-when the window is up: _a manual test is verified by the human, not by a log line — the person at the
-window is the readiness signal._ Never make the user wait on your own "is it ready yet" check.
+**Launch the app + hand off — don't block on a readiness grep.** Start the app in the background,
+then **hand the checklist to the user immediately** and let them confirm when the window is up:
+_a manual test is verified by the human, not by a log line — the person at the window is the
+readiness signal._ Never make the user wait on your own "is it ready yet" check.
+
+**App-launch rule — launch what the manual item actually needs, from the project's OWN run config.**
+A hard rule, not a judgment call: a slow compile or a heavier process is **never** a reason to
+substitute a lighter command that cannot exercise the item under test.
+
+**Source the launch command from the project — don't hardcode `npm run dev`.** Resolve it lazily, in
+this order, first hit wins (so you read only what this project needs): (a) a project-local run skill
+or the built-in `run` skill's pattern for the detected type — it is the canonical launcher, prefer it
+over re-deriving; (b) the project `CLAUDE.md` **Commands** table; (c) `package.json#scripts` /
+`project.json#stack`. Launch the command the project declares for its own shell.
+
+**Then match that command to what the item exercises:**
+
+- **Native-shell app** (Tauri: a `src-tauri/` dir or `tauri` script; Electron: an `electron`
+  dep/script) → launch the **desktop** command (`npm run tauri dev`, the electron dev script).
+  **Never substitute the frontend-only dev server** (`npm run dev` / bare `vite`) to skip the
+  compile: the browser serves the UI but the native runtime is absent — Tauri's
+  `@tauri-apps/plugin-fs|dialog|store`, Electron's IPC/`fs` are `undefined` there — so any item that
+  opens a file, reads disk, or hits a native API is **impossible** in the browser and gets
+  force-skipped (the exact failure this rule prevents). The compile is slow; tell the user it is
+  building and wait.
+- **Web app** → the project's declared web dev script IS the app, but be smart about the item's
+  needs: if it exercises an **API / SSR / auth / DB** path and the frontend dev server does not also
+  start the backend, launch the backend too (a monorepo `dev` that runs both, or the separate
+  api/server script) — a frontend-only server force-skips API-dependent items the same way a browser
+  force-skips native ones. A pure client-side UI item needs only the dev server.
+- **CLI / TUI / server-only / library** → no window: drive it as the `run` skill's pattern for that
+  type does (run the binary, start the server, exercise the export) and hand the user the concrete
+  command + expected output instead of a URL.
+
+Principle: **the lighter command is acceptable only when it can actually exercise the item.** If a
+manual item touches a capability the lighter command does not provide (native runtime, backend, SSR),
+launch the heavier one — the only cost is startup time, whereas the wrong launch wastes the whole
+manual round. When unsure, launch the fuller shell.
 
 > If you genuinely must detect readiness programmatically (e.g. to auto-open a browser tab), it MUST
 > (a) tolerate ANSI color codes — match the bare word (`grep -aE "Running|Finished|error"`), never a
