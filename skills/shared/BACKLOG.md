@@ -218,7 +218,7 @@ TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refac
 At scale, shipped features become dead weight for every backlog load (measured: 54% of the data on a 150-feature project). Dev-track features therefore move out of `backlog.json` when they ship:
 
 - **File:** `.project/archive/backlog-archive.json` — `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`
-- **Writer:** `/dev-ship` (refactor phase) and `/game-refactor` completion — in the same sync that sets `shipped: true`, remove the feature object from `backlog.json#features[]` and append it to `archived[]` (create the file with the scaffold above if absent). Mirrors the existing `.project/features/archive/` dir convention.
+- **Writer:** `/dev-ship` (refactor phase), `/game-ship` (refactor phase), and `/game-refactor` completion — in the same sync that sets `shipped: true`, remove the feature object from `backlog.json#features[]` and append it to `archived[]` (create the file with the scaffold above if absent). Mirrors the existing `.project/features/archive/` dir convention.
 - **Readers:** the dashboard shipped-showcase (server merges `archived[]` into the served features view, in-memory) and humans. Pipeline skills never need archived features — that is the point.
 - **Design-track exception:** PAGE/COMPONENT features shipped by `/design-check` **stay in `backlog.json`** — the batch filter `lastCheckedSha !== shippedSha` re-audits them when the page changes after shipping. Only dev-track (non-PAGE/COMPONENT) features archive.
 - **Restore:** move the object back to `features[]` manually (or via board UI in a future iteration); idempotent in both directions.
@@ -232,7 +232,7 @@ At scale, shipped features become dead weight for every backlog load (measured: 
 
 ### UI: dual-track swimlanes
 
-The backlog board is **ship-only**: `/dev-ship` and `/design-ship` (and later `/game-ship`) run the whole pipeline in one flow, so there are no intermediate resting columns. Both ship-skills set `transition: "shipping"` on the feature and keep the card in the **In progress** section for the entire run; on completion they set `shipped: true`, which removes it from the board. Track pills (`All | Design | Dev`) at the top filter by track. Within each section, features are grouped by phase (P1/P2/P3/P4).
+The backlog board is **ship-only**: `/dev-ship`, `/design-ship`, and `/game-ship` run the whole pipeline in one flow, so there are no intermediate resting columns. All ship-skills set `transition: "shipping"` on the feature and keep the card in the **In progress** section for the entire run; on completion they set `shipped: true`, which removes it from the board. Track pills (`All | Design | Dev`) at the top filter by track. Within each section, features are grouped by phase (P1/P2/P3/P4).
 
 ```
   ▾ To do        (all TODO — both tracks)
@@ -365,23 +365,25 @@ Skills do **not** write to the backlog at start — saves a read+write roundtrip
 
 `feature.transition` — optional string, set by the dashboard, consumed by skills:
 
-| Value           | Dashboard sets when user copies prompt for                                                            | Consumed by                                       |
-| --------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `"defining"`    | THEME setup or FEATURE definition prompt                                                              | `design-tokens` (THEME) / `game-define` (FEATURE) |
-| `"building"`    | Build prompt for a DEFINED feature                                                                    | `game-build`                                      |
-| `"verifying"`   | Verify prompt for a DOING feature                                                                     | `game-verify`                                     |
-| `"refactoring"` | Refactor prompt for a DONE+!shipped feature                                                           | `game-refactor`                                   |
-| `"designing"`   | Design/build prompt for a TODO PAGE or COMPONENT                                                      | `design-create`                                   |
-| `"converting"`  | Convert prompt for a DEFINED PAGE or COMPONENT                                                        | `design-create`                                   |
-| `"contenting"`  | Fill-content prompt for a built (DOING) PAGE/COMPONENT                                                | `design-content`                                  |
-| `"shipping"`    | ⚡ Ship (auto) menu item on a TODO feature — dev-track → `/dev-ship`, PAGE/COMPONENT → `/design-ship` | `dev-ship` / `design-ship`                        |
+| Value           | Dashboard sets when user copies prompt for                                                                                       | Consumed by                                       |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `"defining"`    | THEME setup or FEATURE definition prompt                                                                                         | `design-tokens` (THEME) / `game-define` (FEATURE) |
+| `"building"`    | Build prompt for a DEFINED feature                                                                                               | `game-build`                                      |
+| `"verifying"`   | Verify prompt for a DOING feature                                                                                                | `game-verify`                                     |
+| `"refactoring"` | Refactor prompt for a DONE+!shipped feature                                                                                      | `game-refactor`                                   |
+| `"designing"`   | Design/build prompt for a TODO PAGE or COMPONENT                                                                                 | `design-create`                                   |
+| `"converting"`  | Convert prompt for a DEFINED PAGE or COMPONENT                                                                                   | `design-create`                                   |
+| `"contenting"`  | Fill-content prompt for a built (DOING) PAGE/COMPONENT                                                                           | `design-content`                                  |
+| `"shipping"`    | ⚡ Ship (auto) menu item on a TODO feature — dev-track → `/dev-ship`, game-track → `/game-ship`, PAGE/COMPONENT → `/design-ship` | `dev-ship` / `game-ship` / `design-ship`          |
 
 On successful completion the skill removes the `transition` field. **Exception**: `"shipping"` is
-a whole-run marker — the ship sub-phase syncs (the copies under `dev-ship/references/` and
-`design-ship/references/`) preserve it; only the ship skill's own completion (dev-ship: refactor's
-completion-batch or PHASE 5 cleanup; design-ship: PHASE 4 completion or PHASE 5 cleanup) removes
-it. No-arg pickup is disambiguated by type: `dev-ship` picks `"shipping"` on non-design types
-(+ PAGE-GAP), `design-ship` on PAGE/COMPONENT.
+a whole-run marker — the ship sub-phase syncs (the copies under `dev-ship/references/`,
+`game-ship/references/`, and `design-ship/references/`) preserve it; only the ship skill's own
+completion (dev-ship: refactor's completion-batch or PHASE 5 cleanup; game-ship: PHASE 5 cleanup;
+design-ship: PHASE 4 completion or PHASE 5 cleanup) removes it. No-arg pickup is disambiguated by
+type: `design-ship` picks `"shipping"` on PAGE/COMPONENT, while a non-design (FEATURE) type routes to
+`dev-ship` in a dev project and `game-ship` in a game project (dev-ship vs game-ship is disambiguated
+by project type — a project is one or the other).
 
 **Board rendering (three progress states).** The dashboard shows a `transition` without a live
 skill signal as **queued** (dim, "⧉ {transition} · queued"), a feature with a
@@ -418,7 +420,7 @@ No backlog write — `transition` remains as set by the dashboard, user can re-c
 
 ### Skill filter & status transition table
 
-The GAME pipeline uses `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"` (dev-track features run end-to-end through `/dev-ship` via `"shipping"`). The DESIGN pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab. There is no `"auditing"` transition — `design-check` runs in batch mode at release end, not per item.
+The GAME pipeline's standalone skills use `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`; `/game-ship` runs the whole game flow end-to-end via `"shipping"` (dev-track features likewise run through `/dev-ship` via `"shipping"`). The DESIGN pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab. There is no `"auditing"` transition — `design-check` runs in batch mode at release end, not per item.
 
 | Skill            | Filter                                                                                     | New status on success                           |
 | ---------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
@@ -433,6 +435,7 @@ The GAME pipeline uses `transition` values `"defining"` / `"building"` / `"verif
 | `game-build`     | `type === "FEATURE" && transition === "building"`                                          | `"DOING"`                                       |
 | `game-verify`    | `type === "FEATURE" && transition === "verifying"`                                         | `"DONE"`                                        |
 | `game-refactor`  | `transition === "refactoring"`                                                             | keep status, set `shipped: true`                |
+| `game-ship`      | `transition === "shipping" && type !== PAGE/COMPONENT` (game project; no-arg pickup)       | full pipeline → `shipped: true` via refactor    |
 
 ---
 

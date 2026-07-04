@@ -1,6 +1,6 @@
 # Ship checkpoint & resume (shared)
 
-Canonical checkpoint mechanism for the auto-mode ship pipelines (`dev-ship`, `design-ship`). It
+Canonical checkpoint mechanism for the auto-mode ship pipelines (`dev-ship`, `design-ship`, `game-ship`). It
 makes any interruption — **credits exhausted, crash, killed process, or a mid-run stop** — a
 resumable pause: the run's coarse state (`backlog.status`, worktree, `.project/`) already survives
 on disk, and this checkpoint adds the **fine-grained run state** (which phase completed, the PHASE 0
@@ -8,7 +8,7 @@ selections, the structured agent results) that otherwise lives only in the main-
 lost on a full session end.
 
 **Single writer.** Only the ship **orchestrator (main chat)** reads/writes the checkpoint — the
-spawned subagents never touch it (non-interactive-contract rule 1: dev/design-ship owns phase
+spawned subagents never touch it (non-interactive-contract rule 1: the ship skill owns phase
 tracking). The pipeline is sequential, so there is one writer at a time — no write-races.
 
 **Not `SHIP_CONTEXT`.** The checkpoint stores only the **irreproducible** state: the user's PHASE 0
@@ -29,7 +29,7 @@ same key as `active-{name}.json`). Parallel to the live-signal, but with a diffe
 ```json
 {
   "schemaVersion": 1,
-  "pipeline": "dev", // "dev" | "design"
+  "pipeline": "dev", // "dev" | "design" | "game"
   "feature": "auth-login",
   "startedAt": "<ISO>",
   "updatedAt": "<ISO>",
@@ -54,7 +54,7 @@ same key as `active-{name}.json`). Parallel to the live-signal, but with a diffe
   },
   "prompts": {
     /* the prompt-file PATHS for the workflow in flight, written at launch (write point 2)
-                  and cleared with activeWorkflow on return. dev/design-ship write small
+                  and cleared with activeWorkflow on return. The ship skill writes small
                   pointer + SHIP_CONTEXT-slice files under .project/session/ship-prompts/ (the
                   static bodies live in references/prompts/*, read by the agents), and those
                   files persist on disk — so store PATHS, never prompt bodies.
@@ -153,9 +153,10 @@ test -f .project/session/ship-{name}.json && echo EXISTS
 ```
 
 If a checkpoint exists with `status != "complete"`, an earlier run was interrupted. **First check
-`pipeline`** — if it names the other pipeline, do not resume here: stop and point the user to the
+`pipeline`** — if it names another pipeline, do not resume here: stop and point the user to the
 matching skill (`pipeline: "dev"` → `/dev-ship {name}`, `pipeline: "design"` → `/design-ship
-{name}`). Otherwise, do **not** silently continue and do **not** blindly restart — ask:
+{name}`, `pipeline: "game"` → `/game-ship {name}`). Otherwise, do **not** silently continue and do
+**not** blindly restart — ask:
 
 - Compute staleness: if `updatedAt` is **older than 24h**, prefix the resume option with a
   staleness notice (the worktree/`.project` may have drifted).
