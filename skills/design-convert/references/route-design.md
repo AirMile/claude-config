@@ -18,7 +18,7 @@ Incoming from the router (`SKILL.md`): `$ROUTE = "design"`, optionally `$SKILL_A
 
 ## State Machine
 
-> **Todo**: Read `.claude/skills/design-create/references/design-state-machine.md` for the full state machine diagram (only needed for debugging or validation).
+> **Todo**: Read `.claude/skills/design-convert/references/design-state-machine.md` for the full state machine diagram (only needed for debugging or validation).
 
 ---
 
@@ -177,7 +177,7 @@ Routing:
 - "Build" → Route: Build (with `$ARG_TYPE` and `$ARG_ENTITY` pre-set, skip entity selection). Build's Step 2.5 spec gate handles spec review/edit and a "save spec only — don't build" off-ramp, so spec-only edits no longer need a separate menu option.
 - "Convert from sketch/mockup" → Set `$CONVERT_TARGET = {name}`. Load Convert route:
 
-  > **Todo**: Read `.claude/skills/design-create/references/route-convert.md`
+  > **Todo**: Read `.claude/skills/design-convert/references/route-convert.md`
 
   Route: Convert pre-selects the '{name}' card in its backlog-stage step (no second command needed). The card transitions TODO→DOING on completion.
 
@@ -258,7 +258,7 @@ multiSelect: false
 
 "Other" options: "Convert from sketch/mockup" — set `$CONVERT_TARGET` if a PAGE/COMPONENT name is provided or selected, then:
 
-> **Todo**: Read `.claude/skills/design-create/references/route-convert.md`
+> **Todo**: Read `.claude/skills/design-convert/references/route-convert.md`
 
 Also: "Flow" (manage flows), "Principles" (manage principles), "Delete" (remove page/component/flow/principle), "Restore" (go back to an earlier design state — only show if `.project/session/design-history.json` exists and is not empty).
 
@@ -287,13 +287,13 @@ The action chosen in PHASE 1 routes to a synthesis interview or a CRUD/self-mana
 
 ### Route: Create (First-Time Setup)
 
-> **Todo**: Read `.claude/skills/design-create/references/route-create.md` for the guided 4-step creation flow (context → pages → flows → principles → summary).
+> **Todo**: Read `.claude/skills/design-convert/references/route-create.md` for the guided 4-step creation flow (context → pages → flows → principles → summary).
 
 ---
 
 ### Route: Import (Extract from Codebase or Screenshot)
 
-> **Todo**: Read `.claude/skills/design-create/references/route-import.md` for codebase scan, screenshot analysis, component detection, and flow inference steps.
+> **Todo**: Read `.claude/skills/design-convert/references/route-import.md` for codebase scan, screenshot analysis, component detection, and flow inference steps.
 
 ---
 
@@ -317,21 +317,28 @@ If "Edit": loop back to PHASE 1 (ACTION_SELECT with populated-state options).
 
 ### Route: Page (Add/Edit Page)
 
-> **Todo**: Read `.claude/skills/design-create/references/route-page.md` for the add/edit page flow.
+> **Todo**: Read `.claude/skills/design-convert/references/route-page.md` for the add/edit page flow.
 
 ---
 
 ### Route: Component (Add/Edit)
 
-> **Todo**: Read `.claude/skills/design-create/references/route-component.md` for add/edit flows, component object schema, scope selection, and gap-discovery trigger.
+> **Todo**: Read `.claude/skills/design-convert/references/route-component.md` for add/edit flows, component object schema, scope selection, and gap-discovery trigger.
 
 ---
 
 ### Route: Build (In-Claude-Code Code Generation)
 
-> **Todo**: Read `.claude/skills/design-create/references/route-build.md` for the full build flow: entity selection, spec lookup + design levers, page composition, design directions (plan mode), code generation, post-write checks, render smoke check, and completion sync (backlog + block inventory).
+**Domain gate (web spec→code build moved to `/design-ship`).** The web spec→code build lane is owned
+by `/design-ship` (build → content → check in one auto-mode run). So:
 
-**Trigger:** only reachable if `$HAS_BUILD_CANDIDATES = true` (detected in PHASE 1). Steps 0–11 are in the reference file above.
+- **`$DOMAIN === "web"`** → do **not** run route-build here. Print:
+  `"Web spec→code build now runs via /design-ship {target} (build + content + runtime check). design-convert owns the spec, visual conversion, and game codegen."` and stop the Build action (the spec is already written by the Design route; the user runs `/design-ship {target}` to build it).
+- **`$DOMAIN === "game"`** → continue to route-build below; its codegen step emits Godot `.tscn` via `render-godot.md` (there is no `/design-ship` for games).
+
+> **Todo** (game domain only): Read `.claude/skills/design-convert/references/route-build.md` for the full build flow: entity selection, spec lookup + design levers, page composition, design directions (plan mode), code generation (game → `render-godot.md`), post-write checks, and completion sync (backlog + block inventory).
+
+**Trigger:** only reachable if `$HAS_BUILD_CANDIDATES = true` (detected in PHASE 1) **and** `$DOMAIN === "game"`. Steps 0–11 are in the reference file above.
 
 ---
 
@@ -381,19 +388,19 @@ multiSelect: false
 
 ### Route: Delete (Delete Item)
 
-> **Todo**: Read `.claude/skills/design-create/references/route-delete.md` for the deletion flow with cross-reference check.
+> **Todo**: Read `.claude/skills/design-convert/references/route-delete.md` for the deletion flow with cross-reference check.
 
 ---
 
 ### Route: Restore (Restore Checkpoint)
 
-> **Todo**: Read `.claude/skills/design-create/references/route-restore.md` for checkpoint load, diff preview, and restore flow.
+> **Todo**: Read `.claude/skills/design-convert/references/route-restore.md` for checkpoint load, diff preview, and restore flow.
 
 ---
 
 ### Route: Brief (Claude Design Handoff)
 
-> **Todo**: Read `.claude/skills/design-create/references/route-brief.md` for scope selection, component brief template, block inventory agent, token/patterns load, brief composition, and backlog sync.
+> **Todo**: Read `.claude/skills/design-convert/references/route-brief.md` for scope selection, component brief template, block inventory agent, token/patterns load, brief composition, and backlog sync.
 
 ---
 
@@ -496,7 +503,7 @@ multiSelect: false
 
 ## Completion
 
-> **Todo**: Read `.claude/skills/design-create/references/completion-sync.md` for backlog sync, devinfo update, and completion report.
+> **Todo**: Read `.claude/skills/design-convert/references/completion-sync.md` for backlog sync, devinfo update, and completion report.
 
 ---
 

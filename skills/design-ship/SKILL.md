@@ -36,13 +36,13 @@ front-loaded (PHASE 0: spec, design direction, content brief) plus one **visual 
 live page** at the end (PHASE 4). `design-ship` is **standalone**: it carries its own vendored
 copies of the build/content/check phase logic under `references/design-{create,content,check}/` and
 drives them internally — it no longer reads any standalone skill in place. Interactive/visual work
-stays outside it: sketch/Figma/URL→code and design-spec management live in `/design-create`,
+stays outside it: sketch/Figma/URL→code and design-spec management live in `/design-convert`,
 content-fill in `/design-content`.
 
 **Trigger**: `/design-ship` or `/design-ship {page-or-component-name}`
 
 **Scope**: Build lane only (spec → code), **web only**. Visual input (sketch/Figma/screenshot) is
-inherently interactive → `/design-create` Convert. THEME → `/design-tokens`. Dev-track features →
+inherently interactive → `/design-convert` Convert. THEME → `/design-tokens`. Dev-track features →
 `/dev-ship`.
 
 ## Design
@@ -159,7 +159,7 @@ routing anywhere. Only a genuine build/check failure follows the branches below.
   **Re-read `.project/` from disk.** Continue to PHASE 4.
 - `failedPhase: "build"` → leave PHASE 1 `in_progress`; checkpoint `status: "failed"`, skip to
   PHASE 5: "Build failed at `{build.failedAt}`, worktree intact at `{build.worktreePath}` — inspect
-  it or run `/design-create {target}` to patch, or re-run `/design-ship {target}` to resume."
+  it or run `/design-convert {target}` to patch, or re-run `/design-ship {target}` to resume."
 - `failedPhase: "check"` → mark PHASE 1+2 `completed`, leave PHASE 3 `in_progress`; checkpoint
   `status: "failed"`, `completedPhases += ["PHASE 1", "PHASE 2"]`, skip to PHASE 5: "Check failed at
   `{check.failedAt}` (app does not build/serve), worktree intact — fix the build error, then

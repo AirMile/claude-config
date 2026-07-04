@@ -228,7 +228,7 @@ Pre-migration projects may still carry these keys in `project.json` — they are
 
 **usedIn:** auto-maintained by Build/convert post-pass — list of pages that import this component. Never overwrite manually.
 
-**gaps:** auto-maintained by `design-create` Capture/Build/Convert — list of handler-props without a linked FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only for user; update via gap-discovery flow.
+**gaps:** auto-maintained by `design-convert` Capture/Build/Convert — list of handler-props without a linked FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only for user; update via gap-discovery flow.
 
 ### Features
 
@@ -426,9 +426,9 @@ No deletion, no update — append only. For live status of a running run: see `.
 | Section             | Written by                                                                   | When                                     |
 | ------------------- | ---------------------------------------------------------------------------- | ---------------------------------------- |
 | `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-plan` | On seed creation/iteration/plan          |
-| `design`            | `/design-create`, `/design-tokens`                                           | On design spec/page build/theme creation |
+| `design`            | `/design-convert`, `/design-tokens`                                           | On design spec/page build/theme creation |
 | `theme`             | `/design-tokens`                                                             | After theme create/update                |
-| `stack`             | `/core-setup`, `/project-plan`, `/dev-ship`, `/design-create`                | On detection/new deps                    |
+| `stack`             | `/core-setup`, `/project-plan`, `/dev-ship`, `/design-convert`                | On detection/new deps                    |
 | `data`              | `/dev-ship`, `/game-ship`                                                    | On entity definition                     |
 | `endpoints`         | `/dev-ship`                                                                  | On API definition / after build          |
 | `optimization_runs` | `/dev-optimize`, `/game-optimize`                                            | On run completion (PHASE 6)              |
@@ -443,8 +443,8 @@ For the `project-context.json` writer table see [DASHBOARD-CONTEXT.md](DASHBOARD
 | --------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- | --------------------------------- |
 | `/core-setup`               | `stack` (full)                                 | `context` (initial)                                               | After project generation          |
 | `/dev-ship`                 | `data.entities`, `endpoints`, `stack.packages` | `context`, `architecture`, `learnings` (write)                    | Ship run (define→refactor phases) |
-| `/design-create`            | `design` (pages, flows, principles)            | —                                                                 | On each run                       |
-| `/design-create`            | `stack.packages`, `design.pages`               | —                                                                 | After completion sync             |
+| `/design-convert`            | `design` (pages, flows, principles)            | —                                                                 | On each run                       |
+| `/design-convert`            | `stack.packages`, `design.pages`               | —                                                                 | After completion sync             |
 | `/design-tokens`            | `design.principles`                            | —                                                                 | After completion                  |
 | `/game-ship`                | `data.entities`, `stack.packages`              | `context`, `architecture`, `learnings` (write)                    | Ship run (define→refactor phases) |
 | `/team-verify`              | `stack.packages`, `endpoints`, `data.entities` | `architecture` (write)                                            | PHASE 7 completion                |
@@ -475,7 +475,7 @@ curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node --watch {skills_pa
 
 ## Design Section
 
-The `design` key in `project.json` is managed exclusively by the `design-create` skill. Other skills must not mutate it. Schema:
+The `design` key in `project.json` is managed exclusively by the `design-convert` skill. Other skills must not mutate it. Schema:
 
 ```json
 {
@@ -545,7 +545,7 @@ The `design` key in `project.json` is managed exclusively by the `design-create`
 
 **`pages[].uses[]`** — auto-maintained by Build/convert post-pass. List of component names imported by this page. Do not edit manually.
 
-**`{pages|components}[].reviewNotes?[]`** — **user-owned**, optional. Open questions and review decisions captured in the visual review route (`/{project}/review/{entity}`, served by `serve-backlog.js`). `design-create` merges never write or delete this field — it survives spec re-merges untouched. Schema per item: `{ question, answer, status: "open"|"resolved", at }` (`at` = ISO timestamp). The review route POSTs the full array to `/{project}/review/{entity}/save`.
+**`{pages|components}[].reviewNotes?[]`** — **user-owned**, optional. Open questions and review decisions captured in the visual review route (`/{project}/review/{entity}`, served by `serve-backlog.js`). `design-convert` merges never write or delete this field — it survives spec re-merges untouched. Schema per item: `{ question, answer, status: "open"|"resolved", at }` (`at` = ISO timestamp). The review route POSTs the full array to `/{project}/review/{entity}/save`.
 
 **`components[].usedIn[]`** — auto-maintained by Build/convert post-pass. List of page names that import this component. Do not edit manually.
 

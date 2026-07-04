@@ -15,7 +15,7 @@ Manages the full design system: vocabulary tokens (colors, typography, spacing, 
 
 **Keywords:** animation, motion, pack, spring, iOS, Apple, Material, Fluent, Carbon, glass, vibrancy, choreography, micro-interactions, easing, playful, transitions, hover, press, entrance, delight, styleguide, PDF, brand intake
 
-**Related skills:** `/design-create` · `/design-ship`
+**Related skills:** `/design-convert` · `/design-ship`
 
 ## References — Tokens
 
@@ -257,8 +257,8 @@ Location: .project/project.json (theme section)
 {Backlog: ✓ Task "{taskName}" → DONE}
 
 Next steps:
-  1. /design-create {page} → build a page with these tokens
-  2. /design-create → convert a sketch or design with these tokens
+  1. /design-convert {page} → build a page with these tokens
+  2. /design-convert → convert a sketch or design with these tokens
   3. /design-tokens → motion pack → set spring physics, choreography, glass (if not yet done)
   4. /design-tokens → Extract from styleguide (if you have a brand PDF or URL with remaining tokens)
   5. /design-ship → build + runtime check (performance, SEO, accessibility)

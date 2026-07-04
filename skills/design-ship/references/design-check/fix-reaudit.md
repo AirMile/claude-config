@@ -18,7 +18,7 @@ Implement fixes in priority order, grouped by audit category.
 10. **A11Y runtime** (focus-trap, aria-snapshot, axe, console warnings): focus management → ARIA states → keyboard traps → live regions
 11. **Motion** (M006/M007): missing reduced-motion fallbacks
 
-_Note: generation-time bans (token literals, dark/responsive coverage, static A11Y patterns) are enforced during `/design-create` Convert — not fixed here._
+_Note: generation-time bans (token literals, dark/responsive coverage, static A11Y patterns) are enforced during `/design-convert` Convert — not fixed here._
 
 ### Context7 Research
 

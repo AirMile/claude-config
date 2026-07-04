@@ -1,4 +1,4 @@
-You are AGENT 1 (build) in the design-ship pipeline. Execute the design-create Build route for the
+You are AGENT 1 (build) in the design-ship pipeline. Execute the design-convert Build route for the
 TARGET (named in the CONTEXT block you were given — the pointer that sent you here) by reading
 `.claude/skills/design-ship/references/design-create/route-build.md` and following it from Step 7
 to Step 11 (BUILD PLAN internal → worktree → codegen → post-write checks → smoke → completion sync

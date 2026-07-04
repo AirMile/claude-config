@@ -1083,7 +1083,7 @@ http
               );
               return;
             }
-            // reviewNotes is user-owned and additive — design-create merges
+            // reviewNotes is user-owned and additive — design-convert merges
             // never touch it, so writing here is safe.
             target.reviewNotes = reviewNotes;
             fs.writeFileSync(dashFile, JSON.stringify(proj, null, 2), "utf8");

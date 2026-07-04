@@ -39,12 +39,12 @@ Standalone (dev): `/dev-security` (security audit).
 /project-plan ──► PAGE/COMPONENT tasks (transition: "designing" | "converting")
                                       │
                                       ▼
-                     /design-create (Build) ──► compose: select features + components
+                     /design-convert (Build) ──► compose: select features + components
                           │                           │
                           │                           └── "+ new component/feature" → /project-todo (smart-todo)
                           │
-                          └─→ /design-create (brief) ──→ Claude Design ──→ handoff
-                          └─→ /design-create (visual → code — Convert route)
+                          └─→ /design-convert (brief) ──→ Claude Design ──→ handoff
+                          └─→ /design-convert (visual → code — Convert route)
                           └─→ clears devinfo.tokenDrift.affectedFeatures on completion
                           │
                           ▼
@@ -61,13 +61,13 @@ Design items skip `defining/defined` — design captures pages/flows, Build gene
 
 | Item type            | Responsible skill                                                            | The other track must not                                |
 | -------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- |
-| FEATURE (data/logic) | dev-ship (define → build)                                                    | design-create builds it                                 |
+| FEATURE (data/logic) | dev-ship (define → build)                                                    | design-convert builds it                                 |
 | FEATURE (with UI)    | dev-ship (define → build, token-styled UI — functional + presentably styled) | dev-ship's build phase writes styled/designed UI        |
-| COMPONENT            | dev-ship (define → build, token-styled) → design-create (optional layout)    | dev-ship's build phase writes styled/designed component |
-| PAGE                 | design-create                                                                | dev-ship's build phase builds it                        |
+| COMPONENT            | dev-ship (define → build, token-styled) → design-convert (optional layout)    | dev-ship's build phase writes styled/designed component |
+| PAGE                 | design-convert                                                                | dev-ship's build phase builds it                        |
 | THEME                | design-tokens (incl. motion packs)                                           | —                                                       |
 
-**dev-ship's build phase** delivers: data layer, hooks, API, types, tests + token-styled UI (semantic HTML + design tokens). Pages and components are testable via `/dev-ship` (verify phase). `/design-create` is optional for layout reshaping (sidebar/hero/grid).
+**dev-ship's build phase** delivers: data layer, hooks, API, types, tests + token-styled UI (semantic HTML + design tokens). Pages and components are testable via `/dev-ship` (verify phase). `/design-convert` is optional for layout reshaping (sidebar/hero/grid).
 
 ---
 

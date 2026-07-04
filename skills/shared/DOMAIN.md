@@ -3,7 +3,7 @@
 Single source of truth for **which rendering domain** the `design-*` skills target.
 The design vocabulary (color, typography, spacing, motion, component spec, audit scope)
 is domain-agnostic; only the **emit / render / scan** layer differs per domain. This file
-defines how `/design-tokens`, `/design-create`, and `/design-ship` resolve the active
+defines how `/design-tokens`, `/design-convert`, and `/design-ship` resolve the active
 domain so they load the matching renderer reference file.
 
 ## Domains
@@ -41,7 +41,7 @@ next run skips inference. Inference never overrides an explicit `theme.domain`.
 > `⚠ Native domain (SwiftUI/Compose) has no renderer yet — falling back to spec-only. No code emitted.`
 
 `/design-tokens` still writes the domain-neutral vocabulary tokens (usable by any future
-renderer); `/design-create` and `/design-ship` do spec/static work only and emit no native code.
+renderer); `/design-convert` and `/design-ship` do spec/static work only and emit no native code.
 
 ## Renderer reference files per skill
 
@@ -50,7 +50,7 @@ Each design skill branches on `$DOMAIN` and loads the matching reference:
 | Skill            | `web` (default)                            | `game`                                 |
 | ---------------- | ------------------------------------------ | -------------------------------------- |
 | `/design-tokens` | `route-apply.md` + `website-sync.md` (CSS) | `references/emit-godot.md` (`.tres`)   |
-| `/design-create` | `route-convert.md` + `CODEGEN.md` (TSX)    | `references/render-godot.md` (`.tscn`) |
+| `/design-convert` | `route-convert.md` + `CODEGEN.md` (TSX)    | `references/render-godot.md` (`.tscn`) |
 | `/design-ship`  | `references/scan-*.md` (Playwright)        | `references/scan-godot.md` (static)    |
 
 The `web` path is the historical behaviour (the de-facto web renderer) — no separate

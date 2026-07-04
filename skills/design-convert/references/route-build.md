@@ -145,13 +145,13 @@ Routing:
   - PAGE → `route-page.md` "Edit existing" field menu.
   - COMPONENT → `route-component.md` "Edit existing" field menu.
 
-  > **Todo**: Read `.claude/skills/design-create/references/route-page.md` (PAGE) or `route-component.md` (COMPONENT) for the field-edit menu.
+  > **Todo**: Read `.claude/skills/design-convert/references/route-page.md` (PAGE) or `route-component.md` (COMPONENT) for the field-edit menu.
 
   Apply the edits to the in-memory spec, then loop back to the gate (re-show spec).
 
 - **"Save spec only — don't build"** → exit plan mode first (the resolved spec is the plan output — use `ExitPlanMode`; skip if the skill was started in plan mode by the user), then hand the spec to the Design route's write machinery:
 
-  > **Todo**: Read `.claude/skills/design-create/references/route-design.md` and run **PHASE 3 (Confirm)** → **PHASE X (post-flight write/validate)** → **Completion**.
+  > **Todo**: Read `.claude/skills/design-convert/references/route-design.md` and run **PHASE 3 (Confirm)** → **PHASE X (post-flight write/validate)** → **Completion**.
 
   This is exactly the old "Edit spec" outcome: the spec is written to `design.*` (status `DEF`), checkpointed, and backlog-synced by the Design route. Build stops here — no `$INLINE_SPEC` deferral, no worktree. This is the single `ExitPlanMode` for the off-ramp run.
 
@@ -187,7 +187,7 @@ If `theme` is empty: show `⚠ No theme tokens — Build falls back to Tailwind 
 
 #### Step 4b: Page Composition (PAGE entities only — skip for COMPONENT)
 
-> **Todo**: Read `.claude/skills/design-create/references/page-compose.md` and follow the composition flow. Store result as `$COMPOSITION`. Runs inside plan mode — smart-todo design/backlog writes are collected in `$PENDING_DESIGN_WRITES` and flushed in completion sync 10f (see page-compose.md Step 3).
+> **Todo**: Read `.claude/skills/design-convert/references/page-compose.md` and follow the composition flow. Store result as `$COMPOSITION`. Runs inside plan mode — smart-todo design/backlog writes are collected in `$PENDING_DESIGN_WRITES` and flushed in completion sync 10f (see page-compose.md Step 3).
 
 ---
 
@@ -381,7 +381,7 @@ Step 10 reads `$VERIFY_STATUS` to set `feature.audit.buildSmokeStatus`.
 
 #### Step 10: Completion sync (backlog + block inventory + drift cleanup)
 
-> **Todo**: Read '.claude/skills/design-create/references/build-completion-sync.md' and execute steps 10a–10f. Runs unconditionally after Step 8 succeeds; only 10d reads `$VERIFY_STATUS`/`$SMOKE`.
+> **Todo**: Read '.claude/skills/design-convert/references/build-completion-sync.md' and execute steps 10a–10f. Runs unconditionally after Step 8 succeeds; only 10d reads `$VERIFY_STATUS`/`$SMOKE`.
 
 #### Step 11: Completion report
 

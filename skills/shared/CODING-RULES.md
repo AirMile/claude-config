@@ -212,10 +212,10 @@ test("checkout confirms order with payment success", async () => {
 
 ```
 Path A — Build with Claude Code:
-/design-create (Build) → /design-ship
+/design-convert (Build) → /design-ship
 
 Path B — Brief for Claude Design / Figma:
-/design-create (Brief) → [external design] → /design-create (Convert) → /design-ship
+/design-convert (Brief) → [external design] → /design-convert (Convert) → /design-ship
 ```
 
 - Works standalone — no dev-pipeline required
@@ -228,11 +228,11 @@ Path B — Brief for Claude Design / Figma:
 **Dev pipeline (functionality):**
 `/project-plan → /dev-ship`
 
-- Works standalone — no design-create required
+- Works standalone — no design-convert required
 - Fits: features with logic/state/tests, also backend-only
 - `/dev-ship (build phase)` reads `design.pages[]/design.components[]` as visual spec source if present
 - FEATURE/API/UI/etc. TODOs live exclusively on the **Dev track** in the backlog
 
 **Cross-pipeline coupling:**
 
-A card is either design (PAGE/COMPONENT) or dev — never both. For pages/components with handler-props without implementation: gap-discovery (`/design-create` Build/Convert routes) suggests a separate FEATURE-todo on the Dev track. The relationship is tracked via `feature.json#frontend.linkedEntities[]`.
+A card is either design (PAGE/COMPONENT) or dev — never both. For pages/components with handler-props without implementation: gap-discovery (`/design-convert` Build/Convert routes) suggests a separate FEATURE-todo on the Dev track. The relationship is tracked via `feature.json#frontend.linkedEntities[]`.

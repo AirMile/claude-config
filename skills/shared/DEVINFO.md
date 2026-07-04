@@ -1,6 +1,6 @@
 # Session Tracking
 
-Lightweight session state for cross-skill coordination. Pipeline skills use the files below. Design pipeline skills also use `.project/session/devinfo.json` for handoff data (e.g. the `design-create` Build route → Convert route self-handoff).
+Lightweight session state for cross-skill coordination. Pipeline skills use the files below. Design pipeline skills also use `.project/session/devinfo.json` for handoff data (e.g. the `design-convert` Build route → Convert route self-handoff).
 
 ---
 
@@ -124,7 +124,7 @@ The backlog dashboard detects changes in the session directory via SSE (`/{proje
 
 ### `devinfo.handoff` — Build Incomplete
 
-Written by `design-create` (Build route) when user chooses "Open in convert" after smoke-failure. Read by `design-create` router PHASE 0.2 (self-handoff to Convert route).
+Written by `design-convert` (Build route) when user chooses "Open in convert" after smoke-failure. Read by `design-convert` router PHASE 0.2 (self-handoff to Convert route).
 
 ```json
 {
@@ -143,15 +143,15 @@ Written by `design-create` (Build route) when user chooses "Open in convert" aft
 }
 ```
 
-`source` values: `"build-incomplete"` (from Build-route failure). Other `source` values come from `design-create` Convert route (see PHASE 4.1).
+`source` values: `"build-incomplete"` (from Build-route failure). Other `source` values come from `design-convert` Convert route (see PHASE 4.1).
 
-**Cleanup:** `design-create` Convert route PHASE 4.1 after success → set `devinfo.handoff = null`. If handoff is older than 24h: router PHASE 0.2 shows a staleness notice AND auto-cleans (`devinfo.handoff = null`, mentioned in output) before route classification — the patch flow is not offered for stale handoffs.
+**Cleanup:** `design-convert` Convert route PHASE 4.1 after success → set `devinfo.handoff = null`. If handoff is older than 24h: router PHASE 0.2 shows a staleness notice AND auto-cleans (`devinfo.handoff = null`, mentioned in output) before route classification — the patch flow is not offered for stale handoffs.
 
 ---
 
 ### `devinfo.tokenDrift` — Token Drift Log
 
-Written by `design-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `design-create` (Build route Step 10 and Convert route PHASE 4.1), and dev-ship's verify and refactor phases (if feature is in `affectedFeatures`).
+Written by `design-tokens` (Update/Extract route) when existing token keys get a different value while DOING/DONE PAGE features exist. Read and cleaned up by `design-convert` (Build route Step 10 and Convert route PHASE 4.1), and dev-ship's verify and refactor phases (if feature is in `affectedFeatures`).
 
 ```json
 {

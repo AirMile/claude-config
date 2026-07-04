@@ -469,8 +469,8 @@ TODO ADDED
   - /dev-ship {name} - Start with requirements and building
   - /team-outsource {name} - Outsource to a teammate via GitHub/Jira/Linear
   [If type is PAGE or COMPONENT:]
-  - /design-create {name} - Build the page/component
-  - /design-create - Define multiple pages at once
+  - /design-convert {name} - Build the page/component
+  - /design-convert - Define multiple pages at once
   [If type is THEME:]
   - /design-tokens - Set up design tokens (color, typography, spacing)
   [If type is A11Y:]

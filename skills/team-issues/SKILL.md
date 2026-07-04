@@ -308,7 +308,7 @@ IMPORTED
   Next steps:
   - /dev-ship oauth-callback     (start dev pipeline)
   - /dev-ship signup-validation  (start dev pipeline)
-  - /design-create oauth-login   (start design pipeline)
+  - /design-convert oauth-login   (start design pipeline)
 ```
 
 > **Todo**: mark PHASE 7 → `completed`.

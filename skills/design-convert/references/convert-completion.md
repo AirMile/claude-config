@@ -7,7 +7,7 @@ Update `.project/session/devinfo.json`:
 ```json
 {
   "handoff": {
-    "from": "design-create",
+    "from": "design-convert",
     "to": null,
     "data": {
       "inputType": "screenshot | url | image",
@@ -52,7 +52,7 @@ If match found, branch on entity type:
 
 ### 4.3 Gap-Discovery
 
-Trigger C — scan all generated/updated component files for stub handlers. Follow [Discovery — Gap-Discovery](../../shared/SKILL-PATTERNS.md#gap-discovery). **Source:** `"/design-create"` · **Direction:** `"frontend→dev"` · **Type:** `FEATURE`. If no gaps: skip this step.
+Trigger C — scan all generated/updated component files for stub handlers. Follow [Discovery — Gap-Discovery](../../shared/SKILL-PATTERNS.md#gap-discovery). **Source:** `"/design-convert"` · **Direction:** `"frontend→dev"` · **Type:** `FEATURE`. If no gaps: skip this step.
 
 ### 4.4 Completion Report
 

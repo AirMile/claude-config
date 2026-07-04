@@ -6,7 +6,7 @@ Lightweight health check over all routes. Read routes in order of precedence:
 
 1. `project.json → context.routing`
 2. `design.pages[].name` if routing is missing
-3. **Fallback** if both are absent: only check `/` (the target URL) + warn user: "No routes list found — only entry URL checked. Run `/design-create` or fill `project.json → context.routing` to smoke all routes."
+3. **Fallback** if both are absent: only check `/` (the target URL) + warn user: "No routes list found — only entry URL checked. Run `/design-convert` or fill `project.json → context.routing` to smoke all routes."
 
 Per route:
 

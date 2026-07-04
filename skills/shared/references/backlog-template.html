@@ -141,7 +141,7 @@
             "phase": "P4",
             "description": "Submit handler voor checkout form",
             "dependencies": [],
-            "source": "/design-create checkout — CheckoutForm [Bestelling plaatsen]"
+            "source": "/design-convert checkout — CheckoutForm [Bestelling plaatsen]"
           },
           {
             "name": "coupon-validation",
@@ -150,7 +150,7 @@
             "phase": "P4",
             "description": "Coupon code validatie en korting berekening",
             "dependencies": [],
-            "source": "/design-create checkout — CouponInput [Toepassen]"
+            "source": "/design-convert checkout — CouponInput [Toepassen]"
           }
         ],
         "notes": "Focus op core CRUD flow eerst. Stripe pas na stabiele product/order pipeline."
@@ -708,14 +708,14 @@
         if (DESIGN_PIPELINE_TYPES.includes(f.type)) {
           if (f.status === "TODO")
             // Web PAGE/COMPONENT start met de ship-flow (build→content→check);
-            // game-track heeft geen design-ship → design-create.
+            // game-track heeft geen design-ship → design-convert.
             return {
               cmd: isGame
-                ? `/design-create ${f.name}`
+                ? `/design-convert ${f.name}`
                 : `/design-ship ${f.name}`,
             };
           if (f.status === "DEFINED")
-            return { cmd: `/design-create ${f.name}` };
+            return { cmd: `/design-convert ${f.name}` };
           if (f.status === "DOING") {
             // Show content-fill button when built but not yet content-filled
             if (f.stage === "built" && f.contentStatus !== "filled")
@@ -1190,7 +1190,7 @@
           ? f.gaps.filter((g) => g.status === "pending").length
           : 0;
         if (pendingGaps > 0) {
-          metaHtml += `<span class="gap-badge" title="${pendingGaps} unlinked handler${pendingGaps > 1 ? "s" : ""} — run /design-create ${f.name} to link">⚠ ${pendingGaps} gap${pendingGaps > 1 ? "s" : ""}</span>`;
+          metaHtml += `<span class="gap-badge" title="${pendingGaps} unlinked handler${pendingGaps > 1 ? "s" : ""} — run /design-convert ${f.name} to link">⚠ ${pendingGaps} gap${pendingGaps > 1 ? "s" : ""}</span>`;
         }
         if (f.status === "DONE" && f.refactor) {
           if (f.refactor === "ROLLED_BACK") {
@@ -1263,7 +1263,7 @@
             const canConvert =
               f.status === "TODO" && DESIGN_PIPELINE_TYPES.includes(f.type);
             const convertItem = canConvert
-              ? `<button class="row-menu-item row-convert-btn" data-cmd="/design-create ${esc(f.name)}">⌅ Convert from sketch</button>`
+              ? `<button class="row-menu-item row-convert-btn" data-cmd="/design-convert ${esc(f.name)}">⌅ Convert from sketch</button>`
               : "";
             const canReview = DESIGN_PIPELINE_TYPES.includes(f.type);
             const reviewItem = canReview

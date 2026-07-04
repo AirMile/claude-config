@@ -9,14 +9,14 @@
 > main repo. Scan procedure files (`scan-*.md`) are read from design-ship's own vendored
 > `references/design-check/references/` copies.
 
-Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout, darkmode pixel diff, error states, smoke, and user flows. Generation-time static checks (token literals, dark/responsive coverage, A11Y static patterns, motion literals) are now enforced during `/design-create` Convert via `design.principles[].forbid` and `design.banPacks` — they are not repeated here.
+Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout, darkmode pixel diff, error states, smoke, and user flows. Generation-time static checks (token literals, dark/responsive coverage, A11Y static patterns, motion literals) are now enforced during `/design-convert` Convert via `design.principles[].forbid` and `design.banPacks` — they are not repeated here.
 
 **Two modes:**
 
 - **Batch-mode** (no argument): iterate over all features in backlog where `status === "DOING"` (and not already checked at HEAD) or `lastCheckedSha !== shippedSha`. Runs at end of release cycle.
 - **Targeted mode** (`/design-check <feature-name|url|path>`): single feature or URL, all runtime scopes.
 
-**Related skills:** `/design-create` · `/design-tokens` · `/core-setup`
+**Related skills:** `/design-convert` · `/design-tokens` · `/core-setup`
 
 ## References
 
@@ -173,7 +173,7 @@ If scope contains **Flow**:
 
 - Read `.project/project.json → design.flows`
 - If flows is missing or empty → stop with message:
-  > "No flows defined in `design.flows[]`. Run `/design-create` first to add flows, then re-run `/design-check scope Flow`."
+  > "No flows defined in `design.flows[]`. Run `/design-convert` first to add flows, then re-run `/design-check scope Flow`."
 - If flows is non-empty → continue.
 
 ### 0.3 Domain & Project Detection

@@ -2,7 +2,7 @@
 
 **When:** there are MANUAL items. By definition MANUAL = human perception/judgment, auth
 with real credentials, physical-device tests, or audio/screen-reader checks. Visual polish,
-motion smoothness, and design feel are NOT verified here — those belong to design-create /
+motion smoothness, and design feel are NOT verified here — those belong to design-convert /
 frontend-build.
 
 **Board signal — waiting for input.** Before presenting the first item, rewrite the live signal

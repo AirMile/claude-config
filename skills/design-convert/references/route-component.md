@@ -82,7 +82,7 @@ Proceed to PHASE 3 (Confirm).
 On confirmation:
 
 1. Append to `project.json#design.components[]`
-2. Append to `.project/backlog.json` as COMPONENT feature with `status: TODO`, `phase: P3`, `source: "/design-create"`, `scope: {scope}`
+2. Append to `.project/backlog.json` as COMPONENT feature with `status: TODO`, `phase: P3`, `source: "/design-convert"`, `scope: {scope}`
 3. Update `data.updated`
 4. **Gap-discovery** — follow [Discovery — Gap-Discovery](../../shared/SKILL-PATTERNS.md#gap-discovery), Trigger A: scan `props[]` for handler patterns and show AskUserQuestion per found gap.
 

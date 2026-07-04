@@ -38,7 +38,7 @@ Resolve `{target}` in this order:
 3. **Still nothing** → merge the Build-route candidate sources (`design.pages[]/components[]`
    with `status: "DEF"`; backlog PAGE/COMPONENT with `transition: "designing"` or
    `status: "TODO"`) and present an `AskUserQuestion` (max 4, rest via Other). Zero candidates →
-   stop: `"design-ship: no PAGE/COMPONENT candidates. Run /project-plan or /design-create
+   stop: `"design-ship: no PAGE/COMPONENT candidates. Run /project-plan or /design-convert
 first."`
 
 Set `$TARGET_TYPE` (PAGE | COMPONENT) from the backlog/spec entry.
@@ -46,15 +46,15 @@ Set `$TARGET_TYPE` (PAGE | COMPONENT) from the backlog/spec entry.
 **Guards** (check in order, stop with the message on hit):
 
 - `$DOMAIN !== "web"` (resolve per `shared/DOMAIN.md`) → `"design-ship is web-only — use
-/design-create for the {domain} spec flow."`
+/design-convert for the {domain} spec flow."`
 - `type === "THEME"` → `"THEME items go through /design-tokens."`
 - `type === "PAGE-GAP"` or a dev-track type (FEATURE etc.) → `"That is a dev-track item — use
 /dev-ship {target}."`
-- Feature already `shipped: true` → `"Already shipped. Use /design-create {target} for a
+- Feature already `shipped: true` → `"Already shipped. Use /design-convert {target} for a
 rework."`
 - Visual reference material exists (`.project/wireframes/{target}*` or spec `.screenshots[]`) →
   `"This target has visual input — the Convert route is interactive by design. Run
-/design-create {target}."` (design-ship covers the Build lane only.)
+/design-convert {target}."` (design-ship covers the Build lane only.)
 
 ## Step 2 — Enter plan mode
 
@@ -70,7 +70,7 @@ Run the copied Build route's Step 2.5 (read it in
 `feature.json` → `design.*` → inline questions; show the SPEC block; gate with
 Build it / Edit spec / Cancel). Deviation from stock: the "Save spec only — don't build" option
 becomes **"Cancel ship"** — design-ship without a build is pointless; point the user to
-`/design-create` for spec-only work. Store `$SPEC` (and `$INLINE_SPEC` when captured fresh — its
+`/design-convert` for spec-only work. Store `$SPEC` (and `$INLINE_SPEC` when captured fresh — its
 deferred write happens in the build agent's completion sync 10f).
 
 ## Step 4 — Build context

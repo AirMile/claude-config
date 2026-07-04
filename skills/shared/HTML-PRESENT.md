@@ -7,7 +7,7 @@ sees it without copy-pasting a path.
 **Target** is either:
 
 - a **`file://` path** to a self-contained HTML file the skill just generated (no server), or
-- an **`http://` URL** to an already-running dev server (e.g. design-create's smoke target).
+- an **`http://` URL** to an already-running dev server (e.g. design-convert's smoke target).
 
 The open command is identical for both.
 
@@ -21,7 +21,7 @@ A skill reaches a completion/report point AND has a visual artifact to show:
 - **dev-ship** → adaptive feature-spec preview after PHASE 0 define (always — requirements +
   acceptance + wireframe/API-contract/build-sequence when present; visually replaces the removed
   plan-approval gate).
-- **design-create** → the live dev-server URL (only when the smoke check actually rendered).
+- **design-convert** → the live dev-server URL (only when the smoke check actually rendered).
 
 The textual report stays — this is the interactive layer on top, exactly like
 `NEXT-STEP-OFFER.md` sits on top of the `Next steps:` block.
@@ -105,7 +105,7 @@ For the **file://** case the marker also names the template + data to render fir
 ## Rules
 
 - **One open per completion** — never open multiple tabs in a single run.
-- **Conditional skills stay conditional** — design-create only presents when its
+- **Conditional skills stay conditional** — design-convert only presents when its
   visual artifact actually exists (smoke rendered) — dev-ship's define-phase preview (see above)
   is unconditional. No artifact → no preview, no error.
 - **Never block on it** — a failed launch is a printed path, never a halt.

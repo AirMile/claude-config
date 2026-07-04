@@ -20,7 +20,7 @@ Generate an ASCII [diagram type] showing [what to visualize].
 
 | Use case              | Diagram type         | Example skills                                  |
 | --------------------- | -------------------- | ----------------------------------------------- |
-| Architecture/layers   | Component diagram    | dev-ship (define phase), design-create          |
+| Architecture/layers   | Component diagram    | dev-ship (define phase), design-convert          |
 | Multi-step workflow   | Flowchart            | dev-ship (build phase), dev-ship (verify phase) |
 | Feature decomposition | Tree                 | project-plan                                    |
 | State transitions     | State machine        | game-ship                                       |
@@ -198,7 +198,7 @@ Rules:
 
 **Rules:**
 
-- Skills that MAY create `.project/` without a check: `project-plan`, `project-todo`, `design-create`, `core-setup`
+- Skills that MAY create `.project/` without a check: `project-plan`, `project-todo`, `design-convert`, `core-setup`
 - All other skills: if `.project/` does not exist or is empty, show suggestion and stop
 - Do not silently `mkdir -p` the entire `.project/` structure — that is `core-setup`'s responsibility
 - `mkdir -p .project/features/{name}` and `mkdir -p .project/session` within an existing `.project/` is fine
@@ -565,7 +565,7 @@ If no gaps/candidates found: skip this step entirely (no prompt).
 
 **Goal:** Detect stub handlers and action verbs in generated frontend code that have no linked FEATURE in the backlog.
 
-**Skills:** `design-create` (Triggers A/B/C — Build and Convert routes).
+**Skills:** `design-convert` (Triggers A/B/C — Build and Convert routes).
 
 #### Triggers
 
@@ -662,9 +662,9 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected). "Skip" → log all 
 
 **Goal:** Detect new page routes during dev work and drop them as standalone PAGE todos in the backlog so they go through the design → convert → check pipeline.
 
-**Skills:** `dev-ship` (define phase — sole writer — post-architecture seed), `design-create completion-sync` (sole writer — user-driven page creation), `dev-ship` (build phase — warning-only safety net + COMPONENT→route suggestions — does NOT write to backlog).
+**Skills:** `dev-ship` (define phase — sole writer — post-architecture seed), `design-convert completion-sync` (sole writer — user-driven page creation), `dev-ship` (build phase — warning-only safety net + COMPONENT→route suggestions — does NOT write to backlog).
 
-> **Doctrine:** `/dev-ship` (define phase) and `/design-create completion-sync` are the only skills that create PAGE entries in `backlog.json`. `/dev-ship` (build phase) only logs a warning when it detects route patterns not yet in the backlog.
+> **Doctrine:** `/dev-ship` (define phase) and `/design-convert completion-sync` are the only skills that create PAGE entries in `backlog.json`. `/dev-ship` (build phase) only logs a warning when it detects route patterns not yet in the backlog.
 
 #### Triggers (per skill)
 
@@ -677,10 +677,10 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected). "Skip" → log all 
 AskUserQuestion (wording per skill — see skill files for exact options):
 
 - **dev-ship (define phase):** batch — "Add a PAGE todo per page?" — options: "Yes, all" / "Selection" / "No".
-- **dev-ship (build phase, safety net):** log warning only — `⚠ Detected new route patterns: {list}. Run /dev-ship or /design-create <name>.` No AskUserQuestion. No write.
+- **dev-ship (build phase, safety net):** log warning only — `⚠ Detected new route patterns: {list}. Run /dev-ship or /design-convert <name>.` No AskUserQuestion. No write.
 - **dev-ship (build phase, COMPONENT→route):** per route — "PAGE todo for {route}?" — "Yes" / "Skip".
 
-**Persist per accepted page** (dev-ship's define phase and design-create only):
+**Persist per accepted page** (dev-ship's define phase and design-convert only):
 
 1. Run dedup order (see above — name check; type PAGE skips inventory check; suggestionsLog check on rejected status).
 2. Push to `data.features[]`:
@@ -709,16 +709,16 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected).
 
 **Goal:** During PAGE composition or feature definition, allow skills to discover and create new backlog items (COMPONENT or FEATURE) inline — without leaving the current flow.
 
-**Skills:** `design-create` (Build — page-compose step), `dev-ship` (define phase — pageHint sparring — new PAGE).
+**Skills:** `design-convert` (Build — page-compose step), `dev-ship` (define phase — pageHint sparring — new PAGE).
 
 #### Trigger
 
-- **design-create Build (PAGE):** user selects `"+ new component"` or `"+ new feature"` in the page-composition selection menu.
+- **design-convert Build (PAGE):** user selects `"+ new component"` or `"+ new feature"` in the page-composition selection menu.
 - **dev-ship (define phase):** user answers `"+ new PAGE"` in the pageHint sparring question (no existing PAGE matches the feature's target route).
 
 #### Resolution
 
-**For "+ new component" (from design-create):**
+**For "+ new component" (from design-convert):**
 
 ```yaml
 header: "New component"
@@ -740,7 +740,7 @@ Ask name + description (free text). Then:
      "transition": "designing",
      "phase": "P2",
      "description": "{user description}",
-     "source": "/design-create",
+     "source": "/design-convert",
      "scope": "atomic",
      "dependencies": ["{current-page-name}"]
    }
@@ -748,7 +748,7 @@ Ask name + description (free text). Then:
 3. Add to `project.json#design.components[]`: `{ name, purpose: description, status: "IDEA", scope: "atomic" }`.
 4. Return the new component name to the composition selection so it appears in the current list.
 
-**For "+ new feature" (from design-create):**
+**For "+ new feature" (from design-convert):**
 
 ```yaml
 header: "New feature"
@@ -767,7 +767,7 @@ multiSelect: false
      "status": "TODO",
      "phase": "P2",
      "description": "{user description}",
-     "source": "/design-create",
+     "source": "/design-convert",
      "pageHint": ["{current-page-name}"]
    }
    ```

@@ -23,8 +23,8 @@ Three signals:
 | Concept / discovery | (not your task — team already has a concept or backlog)                     | `/project-seed`, `/project-plan` (greenfield tools) |
 | Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas)      | —                                                   |
 | Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)            | —                                                   |
-| Define              | `/dev-ship` (define phase), `/design-create`                                | —                                                   |
-| Build               | `/dev-ship` (build phase), `/design-create` Build, `/design-create` Convert | —                                                   |
+| Define              | `/dev-ship` (define phase), `/design-convert`                                | —                                                   |
+| Build               | `/dev-ship` (build phase), `/design-convert` Build, `/design-convert` Convert | —                                                   |
 | Test                | `/dev-ship` (verify phase), `/design-ship`                                 | —                                                   |
 | Commit              | `/core-commit` (detects team commit convention automatically)               | —                                                   |
 | Refactor            | `/dev-ship` (refactor phase)                                                | —                                                   |
@@ -39,7 +39,7 @@ Default workflow when the team uses GitHub Issues / Jira / Linear:
 1. /team-issues               → import issues, smart-split into multiple todos
 2. (open backlog, choose item)
 3. /dev-ship (define phase) <name>   → define requirements + architecture, stores externalRef
-   or /design-create <name> → design spec + build
+   or /design-convert <name> → design spec + build
 4. /dev-ship (build phase) <name>    → build the feature
 5. /dev-ship (verify phase) <name>   → acceptance tests + smoke
 6. /core-commit               → auto-prefix with issue-ID (GitHub #123 or JIRA-456)

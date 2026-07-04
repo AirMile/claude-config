@@ -159,7 +159,7 @@ Routing:
 
 - **"Save spec only — don't build"** → **not reachable in the design-ship flow.** The ship's build
   agent enters this file at Step 7 (per `prompts/build.md`) and PHASE 0 has already gated the spec, so
-  this off-ramp never fires here. (Standalone spec-only writes live in `/design-create`'s Design
+  this off-ramp never fires here. (Standalone spec-only writes live in `/design-convert`'s Design
   route.) Continue to "Build it".
 
 - **"Build it"** → store the resolved spec as `$SPEC` (and `$INLINE_SPEC` if captured fresh — its write to `design.*` stays deferred to completion sync 10f, since plan mode blocks writes from Step 0b onward), then continue to Step 4.

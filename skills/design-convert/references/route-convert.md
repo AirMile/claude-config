@@ -136,7 +136,7 @@ Note: show `(Recommended)` after the option that matches `$FIDELITY` (low/medium
 
 Store as `$MODE` (sketch | copy | inspiration).
 
-> **Todo**: Read '.claude/skills/design-create/references/convert-mode-{$MODE}.md' — it defines this mode's theme requirement (applied in 0.6), PHASE 1 procedure with its `ExitPlanMode` point, codegen rules (applied in 2.2), and verification thresholds (applied in PHASE 3).
+> **Todo**: Read '.claude/skills/design-convert/references/convert-mode-{$MODE}.md' — it defines this mode's theme requirement (applied in 0.6), PHASE 1 procedure with its `ExitPlanMode` point, codegen rules (applied in 2.2), and verification thresholds (applied in PHASE 3).
 
 ### 0.4 Scope Detection
 
@@ -167,7 +167,7 @@ There the user can confirm the detected sections/components as a wireframe and l
 
 Only for scope = patch.
 
-> **Todo**: Read '.claude/skills/design-create/references/convert-patch-detection.md'
+> **Todo**: Read '.claude/skills/design-convert/references/convert-patch-detection.md'
 
 ### 0.5 Backlog Task Lookup (page scope only)
 
@@ -331,7 +331,7 @@ State components:
 
 ### 2.2 Generate Code
 
-> **Todo**: Read '.claude/skills/design-create/references/convert-generate-template.md'
+> **Todo**: Read '.claude/skills/design-convert/references/convert-generate-template.md'
 
 ### 2.3 Generation Summary
 
@@ -364,7 +364,7 @@ States:     [✓ state components generated: [loading|error|empty] | — no stat
 
 ## PHASE 3: Visual Verification Loop
 
-> **Todo**: Read '.claude/skills/design-create/references/convert-verification-loop.md'
+> **Todo**: Read '.claude/skills/design-convert/references/convert-verification-loop.md'
 
 ---
 
@@ -380,7 +380,7 @@ Without PHASE 4:
 
 The user-visible report in 4.4 is **not** the end of the workflow — it must be followed by 4.5 (dev-server cleanup) and 4.6 (Finalize offer). If you find yourself about to end the skill after 4.4 without showing the Finalize offer: re-read convert-completion.md from §4.5 onward.
 
-> **Todo**: Read '.claude/skills/design-create/references/convert-completion.md'
+> **Todo**: Read '.claude/skills/design-convert/references/convert-completion.md'
 
 ---
 

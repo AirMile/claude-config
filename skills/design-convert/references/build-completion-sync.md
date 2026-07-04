@@ -88,7 +88,7 @@ Read `.project/project.json` → append-or-replace entry in `theme.setupContext[
   "source": "vercel-labs/web-interface-guidelines",
   "url": "https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md",
   "fetchedAt": "<ISO-8601>",
-  "appliedBy": "design-create@2.13.0"
+  "appliedBy": "design-convert@2.13.0"
 }
 ```
 

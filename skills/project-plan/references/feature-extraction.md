@@ -47,7 +47,7 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
    | REFACTOR    | Code quality, performance, architecture improvements                 |
    | PAGE        | Frontend page/route (goes through design → convert → check pipeline) |
    | COMPONENT   | Reusable UI component (goes through same pipeline as PAGE)           |
-   | PAGE-GAP    | Missing functionality found by /design-create                        |
+   | PAGE-GAP    | Missing functionality found by /design-convert                        |
 
    **[GAME MODE]:**
 

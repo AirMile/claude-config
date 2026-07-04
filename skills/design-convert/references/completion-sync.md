@@ -6,7 +6,7 @@ After defining pages, sync them to the backlog:
 
 1. Read `project.json` → get `design.pages[]` array
 2. Read `.project/backlog.json` (if it exists) → parse JSON
-   - **If backlog doesn't exist**: create `.project/backlog.json` with the data scaffold from `shared/BACKLOG.md` (`schemaVersion: 2`). Set `data.source` to `"/design-create"`, `data.project` to project directory name.
+   - **If backlog doesn't exist**: create `.project/backlog.json` with the data scaffold from `shared/BACKLOG.md` (`schemaVersion: 2`). Set `data.source` to `"/design-convert"`, `data.project` to project directory name.
 3. For each page in `design.pages[]`:
    - Generate kebab-case name from page name
    - Check if `data.features.find(f => f.name === name)` exists
@@ -33,9 +33,9 @@ Update `.project/session/devinfo.json`:
 
 ```json
 {
-  "currentSkill": { "name": "design-create", "phase": "COMPLETE" },
+  "currentSkill": { "name": "design-convert", "phase": "COMPLETE" },
   "handoff": {
-    "from": "design-create",
+    "from": "design-convert",
     "to": null,
     "data": {
       "designLocation": ".project/project.json#design",
@@ -84,10 +84,10 @@ Backlog: {X} new PAGE items added (transition: designing)
 Seed:  {only when X > 0} .project/project-seed.md may be outdated — update manually if needed.
 
 Next steps:
-  1. /design-create       → add more pages/flows (iterative)
+  1. /design-convert       → add more pages/flows (iterative)
   2. /design-tokens       → design tokens and colors based on principles
-  3. /design-create       → generate Claude Design brief (brief-mode)
-  4. /design-create       → convert an existing design to code (paste sketch/URL)
+  3. /design-convert       → generate Claude Design brief (brief-mode)
+  4. /design-convert       → convert an existing design to code (paste sketch/URL)
   5. /design-content      → fill built pages/components with real copy (placeholders → on-brand text)
   6. /design-ship         → build + runtime check (performance, SEO, a11y, responsive)
 

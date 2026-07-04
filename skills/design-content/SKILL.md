@@ -20,13 +20,13 @@ metadata:
 
 # Content
 
-Fill built pages and components with real, on-brand copy. Runs after `design-create` build/convert
+Fill built pages and components with real, on-brand copy. Runs after `design-convert` build/convert
 and before the runtime check. Upgrades contextual placeholders to reviewed, seed-grounded text via an
 intentional pipeline: archetype → brief → scan → generate → review → apply.
 
-**Pipeline position:** `design-tokens → design-create → design-content → /design-ship` (check + ship)
+**Pipeline position:** `design-tokens → design-convert → design-content → /design-ship` (check + ship)
 
-**Related skills:** `/design-create` · `/design-ship` · `/marketing-research`
+**Related skills:** `/design-convert` · `/design-ship` · `/marketing-research`
 
 ## References
 
@@ -85,7 +85,7 @@ Candidates = features where:
 0 candidates  →  show:
   "design-content: Nothing to fill.
    All built PAGE/COMPONENT items already have contentStatus: filled,
-   or no built items exist yet. Run /design-create first."
+   or no built items exist yet. Run /design-convert first."
   Stop.
 
 ≤ 3 candidates  →  $TARGETS = all candidates, log "Queue: auto-selected {names}"

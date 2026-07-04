@@ -1,4 +1,4 @@
-# design-create — Render to Godot (game domain)
+# design-convert — Render to Godot (game domain)
 
 Loaded for the **code-generation step** when `$DOMAIN === "game"` (see `shared/DOMAIN.md`). It is
 the game-domain counterpart of the web codegen (`shared/CODEGEN.md` + `FRONTEND-RULES.md`, which

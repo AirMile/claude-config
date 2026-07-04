@@ -109,10 +109,10 @@ Design skills follow the same sync protocol with the same stages as dev skills (
 
 | Skill            | Backlog mutation                              | project.json mutation                             |
 | ---------------- | --------------------------------------------- | ------------------------------------------------- |
-| `/design-create` | Creates batch PAGE TODOs                      | `design` (pages, flows, principles), `features[]` |
-| `/design-create` | DOING + `building` → `built`                  | `stack.packages`, `design.pages`, `features[]`    |
-| `/design-create` | DOING + `building` → `built` (Convert route)  | `features[]`                                      |
+| `/design-convert` | Creates batch PAGE TODOs                      | `design` (pages, flows, principles), `features[]` |
+| `/design-convert` | DOING + `building` → `built`                  | `stack.packages`, `design.pages`, `features[]`    |
+| `/design-convert` | DOING + `building` → `built` (Convert route)  | `features[]`                                      |
 | `/design-ship`  | `testing` → DONE                              | `features[]`                                      |
 | `/design-ship`  | A11Y scope: `testing` → DONE + new A11Y TODOs | `features[]`                                      |
 
-Design items skip `defining/defined` — `/design-create` (capture-mode) creates items as TODO, and `/dev-ship (build phase)` picks them up directly as `building` after Claude Design handoff.
+Design items skip `defining/defined` — `/design-convert` (capture-mode) creates items as TODO, and `/dev-ship (build phase)` picks them up directly as `building` after Claude Design handoff.

@@ -1,6 +1,6 @@
 ---
-name: design-create
-description: Design-spec management and spec-to-code generation using project tokens. Web emits React/TSX (+ visual conversion); game emits Godot .tscn scenes (spec-only). Use with /design-create, or auto-triggers on PAGE/COMPONENT backlog tasks with transition "designing" or "converting".
+name: design-convert
+description: Design-spec management, visual→code conversion (sketch/Figma/URL/screenshot — web), and game .tscn codegen. Web spec→code build/ship runs via /design-ship. Use with /design-convert, or auto-triggers on PAGE/COMPONENT backlog tasks with transition "designing" or "converting".
 argument-hint: "[name|file-path|url|sketch]"
 reads:
   [
@@ -17,7 +17,7 @@ reads:
 writes: [devinfo.handoff, devinfo.tokenDrift, project.design, backlog.status]
 metadata:
   author: claude-config
-  version: 2.18.0
+  version: 3.0.0
   category: design
 ---
 
@@ -25,8 +25,8 @@ metadata:
 
 One skill, two routes:
 
-1. **Design route** — manages project design specification (pages, user flows, design principles, components) in `.project/project.json → design`. Builds code from spec or generates a Claude Design brief. Modes: Capture, Brief, Build.
-2. **Convert route** — converts visual input (sketch, wireframe, Figma/Canva, screenshot, URL, pasted image) into working code using project tokens. Modes: Sketch → high-fi, 1:1 copy, Inspiration. Each mode loads its own procedure file (`references/convert-mode-{mode}.md`) after mode selection.
+1. **Design route** — manages project design specification (pages, user flows, design principles, components) in `.project/project.json → design`, or generates a Claude Design brief. Modes: Capture, Brief, Build. **Build is game-only**: it emits Godot `.tscn` via `render-godot.md`; **web spec→code build now runs via `/design-ship`** (build → content → check), so the Build action redirects web targets there.
+2. **Convert route** — converts visual input (sketch, wireframe, Figma/Canva, screenshot, URL, pasted image) into working code using project tokens (web, interactive). Modes: Sketch → high-fi, 1:1 copy, Inspiration. Each mode loads its own procedure file (`references/convert-mode-{mode}.md`) after mode selection.
 
 The router below classifies the argument and dispatches to the appropriate route reference file. Each route file is only loaded in sessions where it is needed.
 
@@ -213,12 +213,12 @@ TSX codegen (spec management itself is identical). When `$DOMAIN === "native"`: 
 
 **If `$ROUTE = design`:**
 
-> **Todo**: Read `.claude/skills/design-create/references/route-design.md`
+> **Todo**: Read `.claude/skills/design-convert/references/route-design.md`
 > (game: at the Build codegen step, use `references/render-godot.md`.)
 
 **If `$ROUTE = convert`:** (web domain only — game/native are redirected to Design in 0.3)
 
-> **Todo**: Read `.claude/skills/design-create/references/route-convert.md`
+> **Todo**: Read `.claude/skills/design-convert/references/route-convert.md`
 
 ---
 
