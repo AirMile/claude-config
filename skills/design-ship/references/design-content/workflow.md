@@ -19,7 +19,7 @@ intentional pipeline: archetype → brief → scan → generate → review → a
 - `.claude/skills/shared/DESIGN.md § UX Writing` — Button labels, error messages, empty states, term consistency
 - `.claude/skills/shared/BACKLOG.md` — Backlog read/write protocol
 - `.claude/skills/shared/PROJECT-CONTEXT-LOAD.md` — entities/learnings (content profile — see §0.3)
-- `.claude/skills/design-content/references/content-generation.md` — Generation rules per element category + glossary (PHASE 3 — read the original in place)
+- `.claude/skills/design-ship/references/design-content/references/content-generation.md` — Generation rules per element category + glossary (PHASE 3 — read the original in place)
 - `.claude/skills/design-ship/references/design-content/apply-and-sync.md` — Apply strategy, backlog write, report (PHASE 5 — design-ship copy)
 - PHASE 1 (scope-intent) and PHASE 4 (review-gate) are replaced in this copy — see those phases below
 
@@ -208,7 +208,7 @@ Stop (no backlog write, no transition clear — standalone runs only; backlog it
 
 ## PHASE 3: Generate
 
-> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/design-content/references/content-generation.md` and follow that procedure to produce `$COPY_MAP`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/design-ship/references/design-content/references/content-generation.md` and follow that procedure to produce `$COPY_MAP`.
 
 ---
 

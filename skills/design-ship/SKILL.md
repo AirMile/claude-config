@@ -33,9 +33,11 @@ metadata:
 Runs the design pipeline — **build → content → check** — in one chat for a single PAGE or
 COMPONENT. Heavy work runs in isolated inline agents (context stays clean); human interaction is
 front-loaded (PHASE 0: spec, design direction, content brief) plus one **visual review against the
-live page** at the end (PHASE 4). Does **not** replace the classic 3-skill pipeline — it
-orchestrates the existing skills via copies. `/design-create`→`/design-content`→`/design-check`
-stay untouched.
+live page** at the end (PHASE 4). `design-ship` is **standalone**: it carries its own vendored
+copies of the build/content/check phase logic under `references/design-{create,content,check}/` and
+drives them internally — it no longer reads any standalone skill in place. Interactive/visual work
+stays outside it: sketch/Figma/URL→code and design-spec management live in `/design-create`,
+content-fill in `/design-content`.
 
 **Trigger**: `/design-ship` or `/design-ship {page-or-component-name}`
 

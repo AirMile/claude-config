@@ -153,15 +153,14 @@ Routing:
   - PAGE → `route-page.md` "Edit existing" field menu.
   - COMPONENT → `route-component.md` "Edit existing" field menu.
 
-  > **Todo**: Read `.claude/skills/design-create/references/route-page.md` (PAGE) or `route-component.md` (COMPONENT) for the field-edit menu.
+  > **Todo**: Read `.claude/skills/design-ship/references/design-create/references/route-page.md` (PAGE) or `.claude/skills/design-ship/references/design-create/references/route-component.md` (COMPONENT) for the field-edit menu.
 
   Apply the edits to the in-memory spec, then loop back to the gate (re-show spec).
 
-- **"Save spec only — don't build"** → exit plan mode first (the resolved spec is the plan output — use `ExitPlanMode`; skip if the skill was started in plan mode by the user), then hand the spec to the Design route's write machinery:
-
-  > **Todo**: Read `.claude/skills/design-create/references/route-design.md` and run **PHASE 3 (Confirm)** → **PHASE X (post-flight write/validate)** → **Completion**.
-
-  This is exactly the old "Edit spec" outcome: the spec is written to `design.*` (status `DEF`), checkpointed, and backlog-synced by the Design route. Build stops here — no `$INLINE_SPEC` deferral, no worktree. This is the single `ExitPlanMode` for the off-ramp run.
+- **"Save spec only — don't build"** → **not reachable in the design-ship flow.** The ship's build
+  agent enters this file at Step 7 (per `prompts/build.md`) and PHASE 0 has already gated the spec, so
+  this off-ramp never fires here. (Standalone spec-only writes live in `/design-create`'s Design
+  route.) Continue to "Build it".
 
 - **"Build it"** → store the resolved spec as `$SPEC` (and `$INLINE_SPEC` if captured fresh — its write to `design.*` stays deferred to completion sync 10f, since plan mode blocks writes from Step 0b onward), then continue to Step 4.
 
@@ -195,7 +194,7 @@ If `theme` is empty: show `⚠ No theme tokens — Build falls back to Tailwind 
 
 #### Step 4b: Page Composition (PAGE entities only — skip for COMPONENT)
 
-> **Todo**: Read `.claude/skills/design-create/references/page-compose.md` and follow the composition flow. Store result as `$COMPOSITION`. Runs inside plan mode — smart-todo design/backlog writes are collected in `$PENDING_DESIGN_WRITES` and flushed in completion sync 10f (see page-compose.md Step 3).
+> **Todo**: Read `.claude/skills/design-ship/references/design-create/references/page-compose.md` and follow the composition flow. Store result as `$COMPOSITION`. Runs inside plan mode — smart-todo design/backlog writes are collected in `$PENDING_DESIGN_WRITES` and flushed in completion sync 10f (see page-compose.md Step 3).
 
 ---
 

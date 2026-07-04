@@ -77,8 +77,7 @@ deferred write happens in the build agent's completion sync 10f).
 
 Follow the copied Build route's Step 4 + 4b **in the main chat**: seed context (`shared/SEED.md`
 reader → `SEED_CONTEXT`), design-levers pre-flight (→ `$DESIGN_LEVERS`, warn-only), and — PAGE
-only — page composition per the **original** `
-.claude/skills/design-create/references/page-compose.md` (→ `$COMPOSITION`,
+only — page composition per design-ship's vendored `.claude/skills/design-ship/references/design-create/references/page-compose.md` (→ `$COMPOSITION`,
 `$PENDING_DESIGN_WRITES` travel to the build agent via the build-slice for sync 10f).
 
 ## Step 5 — Design directions (visualized)
@@ -101,7 +100,7 @@ modal — the browser preview and the modal show the same options; the modal is 
 
 ## Step 6 — Content brief
 
-Run the **original** `.claude/skills/design-content/references/scope-intent.md` §1.1–1.3 in the
+Run design-ship's vendored `.claude/skills/design-ship/references/design-content/references/scope-intent.md` §1.1–1.3 in the
 main chat: archetype classification (→ `$ARCHETYPE`), marketing-research hook (marketing
 archetype only — offer `/marketing-research` stop as stock), brief inference + the confirm modal
 (→ `$BRIEF`). Skip §1.4's separate CHECKPOINT — the §1.3 confirm is the checkpoint here (one

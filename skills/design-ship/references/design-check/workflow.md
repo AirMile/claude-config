@@ -6,8 +6,8 @@
 > block. Auto-scope per the §0.2 table (feature with/without routes) — do not present scope
 > modals. **You choose the fixes yourself**: fix scope = All CRITICAL + HIGH (log it in
 > `autoDecisions`). The dev server runs against the worktree; `.project/` paths resolve to the
-> main repo. Scan procedure files (`scan-*.md`) are read from the original
-> `.claude/skills/design-check/references/` in place.
+> main repo. Scan procedure files (`scan-*.md`) are read from design-ship's own vendored
+> `references/design-check/references/` copies.
 
 Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout, darkmode pixel diff, error states, smoke, and user flows. Generation-time static checks (token literals, dark/responsive coverage, A11Y static patterns, motion literals) are now enforced during `/design-create` Convert via `design.principles[].forbid` and `design.banPacks` — they are not repeated here.
 
@@ -62,7 +62,8 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
 
    **Team-mode batch guard:** If `TEAM_MODE == "team"` → follow `shared/PROJECT-MODE.md § Team-mode batch guard` before proceeding to the batch reference. (Each PAGE ships via its own PR in team mode — batch check produces a combined pass without per-feature finalize.)
 
-> **Todo**: Read '.claude/skills/design-check/references/batch.md'
+> **Batch mode does not run in design-ship** — this is a single-target ship (per the header, batch
+> branches never fire). This Todo is inert; no batch reference is read.
 
 Batch-mode skips PHASE 0.2 scope selection (scope is auto-derived per feature from the §0.2 table inside the batch flow).
 
@@ -185,7 +186,7 @@ If scope contains **Flow**:
   Theme-consistency checks and defer the runtime/playtest to a human (the interactive playtest lives
   in `/game-ship` PHASE 3). PHASE 2 (report), PHASE 3 (fix), and PHASE 4 (completion) run unchanged
   on the static findings.
-  > **Todo**: Read '.claude/skills/design-check/references/scan-godot.md' and run G1–G5; then jump to PHASE 2.
+  > **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-godot.md' and run G1–G5; then jump to PHASE 2.
 - **native** → no renderer/runtime yet: print the `shared/DOMAIN.md` native fallback line, run only
   G3 design-principle adherence statically if a spec exists, and stop (no code audit).
 - **web** → continue below (the historical runtime path).
@@ -265,31 +266,31 @@ Auth state is reused for all subsequent checks. **Cleanup** `.project/auth-state
 
 ### 1.1 Performance Scan
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-performance.md'
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-performance.md'
 
 ### 1.2 SEO Scan + 1.3 AEO Scan
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-seo-aeo.md'
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-seo-aeo.md'
 
 ### 1.4 A11Y Scan (Accessibility — WCAG 2.1 AA)
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-a11y.md'
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-a11y.md'
 
 ### 1.5 Responsive Scan + 1.6 Darkmode Scan
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-visual.md' (Responsive + Darkmode + Motion — run only the in-scope subsections)
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-visual.md' (Responsive + Darkmode + Motion — run only the in-scope subsections)
 
 ### 1.7 Error States Scan
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-error-states.md'
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-error-states.md'
 
 ### 1.8 Smoke Scan + 1.9 Flow Scan
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-smoke-flow.md'
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-smoke-flow.md'
 
 ### 1.10 Motion Runtime Scan (M006/M007)
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-visual.md' (Motion subsection — already loaded if Responsive/Darkmode were in scope)
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-visual.md' (Motion subsection — already loaded if Responsive/Darkmode were in scope)
 
 ---
 
