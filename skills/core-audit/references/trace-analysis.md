@@ -10,7 +10,7 @@ Extract evidence from the target skill's real run in this conversation. Report o
 4. **Auto-decidable modals** — questions whose answer was predictable from context already available (project files, conversation, sensible defaults). Count total modals vs avoidable ones.
 5. **Unused loads** — reference files Read during the run whose content influenced no subsequent output; context blocks assembled but never used. These are direct token waste per run.
 6. **Output mismatches** — output blocks the skill defines that could not be populated with available data, or were silently restructured to fit.
-7. **Artifacts** (only if devinfo evidence was found in Step 2.1) — handoff fields written vs the `writes:` declaration; files created vs files the skill claims to create.
+7. **Artifacts** — files the skill claims to create vs files actually created during the run (visible in the conversation); handoff fields updated vs the `writes:` declaration.
 
 **Not exercised:** list branches, options, and phases the run never hit. These get static-only analysis in Step 4 — do not invent observations for them.
 

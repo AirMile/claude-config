@@ -1,4 +1,4 @@
-# Refactor: Selection, Plan, Apply, Verify
+# Refactor: Selection, Apply, Verify
 
 ## 5.1 Compile Changes
 
@@ -21,43 +21,33 @@ Order significant changes by impact, highest first.
 
 ## 5.2 Selective Approval
 
-Present a numbered plain-text list (`SKILL-PATTERNS.md § Numbered List Selection`):
+This is the single approval gate. Present a numbered plain-text list (`SKILL-PATTERNS.md § Numbered List Selection`). Per significant change include a `--- Before ---` / `--- After ---` block so the user approves concrete diffs, not titles:
 
 ```
 PROPOSED CHANGES
 
 Significant:
 1. [title] — [impact] [depends on: n]
+   --- Before --- / --- After ---
 2. ...
 
 Minor (bundled):
 - [one-line each]
 ```
 
-Ask: "Which significant changes go in the plan? Enter numbers (e.g. `1, 3`, `1-4`, `all`, `all except 2`). The minor bundle is included unless you add `no minors`."
+Ask: "Which significant changes do I apply? Enter numbers (e.g. `1, 3`, `1-4`, `all`, `all except 2`). The minor bundle is included unless you add `no minors`."
 
 - Empty or `none` with minors excluded → stop without modifying the skill
 - Selected change depends on an unselected one → say so and re-ask
-- Echo the parsed selection before building the plan
+- Echo the parsed selection before applying
 
-## 5.3 Plan
+## 5.3 Apply
 
-You are already in plan mode (entered at Step 2.3, so the analysis ran under Opus). Write the plan:
-
-1. **Context** — what was audited, mode (trace/static), key findings driving the changes
-2. **Selected significant changes** — per change: title, what changes and why (reference the analysis finding), `--- Before ---` / `--- After ---` blocks
-3. **Minor bundle** — flat numbered list (if included)
-4. **Verification** — the checks from § 5.5
-
-Use **ExitPlanMode** for single-shot approval. Plan rejected → stop without modifying the skill.
-
-## 5.4 Apply
-
-Approval drops you into execution mode (Sonnet) — the apply and verify steps are mechanical. Apply approved changes with Edit. For new reference extractions: Write the new `references/{descriptive-name}.md`, replace the inline block with a transition-marker Read directive.
+Apply approved changes with Edit. For new reference extractions: Write the new `references/{descriptive-name}.md`, replace the inline block with a transition-marker Read directive.
 
 Bump the audited skill's `metadata.version`: minor bump for significant changes, patch for a minors-only pass.
 
-## 5.5 Verify
+## 5.4 Verify
 
 1. Re-read the modified files
 2. Validate frontmatter (required fields, description pattern + budget)

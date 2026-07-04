@@ -1,30 +1,29 @@
 ---
 name: core-audit
-description: Use with /core-audit to analyze and refine a skill that ran in this conversation.
+description: Use with /core-audit to analyze and refine a skill from this conversation.
 metadata:
   author: claude-config
-  version: 3.1.0
+  version: 4.0.0
   category: core
 ---
 
 # Audit
 
-Audit a skill from the current conversation: load its full surface (SKILL.md + lazy references), gather evidence from the real run, score it against house conventions, and apply a selective refactor via plan mode.
+Audit a skill from the current conversation: load its full surface (SKILL.md + lazy references), gather evidence from the real run, score it against house conventions, and apply a selective refactor via numbered-list approval.
 
-**Trigger**: `/core-audit`
-
-**Model strategy** (opusplan): the judgment work — trace analysis, scoring, refactor planning — runs in plan mode so it lands on Opus. Setup (load + evidence) and the mechanical apply/verify run in execution mode (Sonnet). Concretely: enter plan mode before analysis (Step 2.3), exit before applying edits (Step 5.4).
+**Trigger**: `/core-audit [skill-name]`
 
 ## Step 1: Load Skill from Chat
 
-Scan the conversation above for unique skill invocations (slash commands like `/dev-ship`, or skill names in `<command-name>` tags).
+**Argument**: `/core-audit <skill-name>` with an existing skill → skip detection, select that skill directly (static mode unless it also ran in this conversation).
+
+No argument → scan the conversation above for unique skill invocations (slash commands like `/dev-ship`, or skill names in `<command-name>` tags). Exclude `core-audit` itself from detection (it is always present via its own invocation).
 
 **Resolution rules:**
 
-(`core-audit` itself is always present via its own `<command-name>` tag, so at least one skill is always detected.)
-
-- **Exactly one unique skill** → auto-select. Show: `AUTO-SELECTED: [name] (only skill in conversation)`
-- **Two or more** → AskUserQuestion: header "Skill", question "Which skill from this conversation do you want to audit?", one option per detected skill (most recent invocation first, first option gets "(Recommended)"), multiSelect: false. Only skills used in this chat are eligible — no "other skills" option.
+- **Zero other skills** → nothing to audit: say so, mention the `/core-audit <skill-name>` form, and stop. (Self-audit stays possible via explicit `/core-audit core-audit`.)
+- **Exactly one other skill** → auto-select. Show: `AUTO-SELECTED: [name] (only skill in conversation)`
+- **Two or more** → AskUserQuestion: header "Skill", question "Which skill from this conversation do you want to audit?", one option per detected skill (most recent invocation first, first option gets "(Recommended)"), multiSelect: false. Max 4 options (AskUserQuestion limit) — with more detected skills, list the 4 most recent; older ones are reachable via the built-in Other.
 
 **Load the full skill surface** — not just SKILL.md:
 
@@ -45,9 +44,7 @@ SKILL.md: [n] lines | references/: [n] files, [n] lines | techniques/: [n] files
 ### 2.1 Mode (auto-decided — do not ask)
 
 - Target skill **actually executed** in this conversation (its phases ran, outputs are visible) → **trace mode**
-- Otherwise (only invoked, mentioned, or selected without a run) → **static mode**
-
-Also check `.project/session/devinfo.json` if it exists: a completed `executionPlan` entry for the target supplies artifacts (files written, handoff fields) as extra trace evidence — but not conversation flow.
+- Otherwise (only invoked, mentioned, selected without a run, or supplied as argument) → **static mode**
 
 Announce: `MODE: trace — real run found in conversation` or `MODE: static — no execution trace, conventions-only analysis`.
 
@@ -65,10 +62,6 @@ AskUserQuestion:
   - label: "I had to correct or re-steer", description: "Claude deviated from what the skill should do"
 
 Each selected pain point becomes a priority lens: findings in Steps 3–4 that explain it rank above generic findings.
-
-### 2.3 Enter plan mode
-
-Call **EnterPlanMode** now. Everything from here through the refactor plan (Steps 3–5.3) is read-only judgment work; plan mode routes it to Opus under opusplan. Read-only Bash (the deterministic checks in 4.1) is allowed. You leave plan mode only at Step 5.3 (ExitPlanMode) to apply edits.
 
 ## Step 3: Trace Analysis
 
@@ -88,7 +81,7 @@ Run via Bash and record raw results:
 
 ### 4.2 Dimensions
 
-Score each 1–5.
+Score each 1–5. Anchor: 5 = no findings, 4 = minor findings only, ≤3 = at least one significant finding.
 
 1. **Redundancy** — instructions telling Claude what it already knows ("parse the JSON", "use the Write tool", generic best practices). Keep: project-specific conventions, non-obvious tool behavior, workflow sequences unique to this skill, constraints that override defaults.
 2. **Signal-to-Noise** — explaining known concepts, verbose templates, information repeated across sections, excessive examples.
@@ -101,7 +94,8 @@ Score each 1–5.
    - Task Tracking: 5+ phases without the TaskCreate pattern (skip for thinking/CRUD/short skills)?
    - AskUserQuestion conventions: recommended-first, correct multiSelect, Modal Option Cap, Interview Checkpoint when 3+ inputs are gathered
    - Pipeline handoff: shared state touched without `reads:`/`writes:` declarations?
-8. **Trace** (trace mode only) — weight of Step 3 observations: deviations, friction, auto-decidable modals, unused loads.
+8. **User Experience** — the run as the user experiences it: modal load (count, necessity, auto-decidable questions), approval gates (one clear gate, no double confirmation), output readability (does the user see decisions and results without digging), Next Steps guidance at completion, recommended defaults that match what most users pick. Static mode: judge the prescribed flow; trace mode: weigh against observed friction from Step 3.
+9. **Trace** (trace mode only) — weight of Step 3 observations: deviations, friction, auto-decidable modals, unused loads.
 
 ### 4.3 Present Analysis
 
@@ -119,9 +113,10 @@ ANALYSIS: [skill-name]
 | Claude-Native | X/5 | [one-line] |
 | Frontmatter | X/5 | [one-line] |
 | Conventions | X/5 | [one-line] |
+| User Experience | X/5 | [one-line] |
 | Trace | X/5 | [one-line] (trace mode only)
 
-Overall: [X/35 or X/40] — [Grade: A/B/C/D/F]
+Overall: [X/40 or X/45] — [Grade: A/B/C/D/F]
 
 TOP FINDINGS:
 1. [finding] — [location] — [impact]
@@ -130,7 +125,7 @@ TOP FINDINGS:
 
 ### 4.4 Early Exit
 
-All dimensions 4+ or no findings → show the analysis, state that no changes are proposed, exit plan mode with no changes, and stop:
+All dimensions 4+ or no findings → show the analysis, state that no changes are proposed, and stop:
 
 ```
 ANALYSIS COMPLETE: [skill-name]
@@ -139,4 +134,4 @@ No significant findings — skill is in good shape. No changes proposed.
 
 ## Step 5: Refactor & Verify
 
-> **Todo**: Read `.claude/skills/core-audit/references/refactor-plan.md` and follow it (selective approval → plan mode → apply → verify).
+> **Todo**: Read `.claude/skills/core-audit/references/refactor-plan.md` and follow it (selective approval → apply → verify).
