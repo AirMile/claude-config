@@ -203,13 +203,13 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 
-> **Todo**: Read `.claude/skills/game-define/references/update-mode.md` for the full update-mode flow. (Plan mode is already active from PHASE 0 step 4.)
+> **Todo**: Read `.claude/skills/game-ship/references/game-define/references/update-mode.md` for the full update-mode flow. (Plan mode is already active from PHASE 0 step 4.)
 
 ---
 
 ### PHASE 1a: Interview
 
-> **Todo**: Read `.claude/skills/game-define/references/phase1a-interview.md` for the full interview protocol — dimension checklist, tone rules, one-question-at-a-time flow, escape-hatch, and adaptive stop condition.
+> **Todo**: Read `.claude/skills/game-ship/references/game-define/references/phase1a-interview.md` for the full interview protocol — dimension checklist, tone rules, one-question-at-a-time flow, escape-hatch, and adaptive stop condition.
 
 **Risk-check (only if `feature.risk >= 4`):** show one line before opening the interview — `⚠ HIGH RISK ({risk}/5): consider splitting this feature, verify dependencies, clarify scope before defining.`
 
@@ -317,7 +317,7 @@ Tuning levers are stored in `feature.json` per requirement as `tuningLevers[]`.
 
 **Condition:** Only run if requirement count exceeds 6 or there are clear independent clusters.
 
-> **Todo**: Read `.claude/skills/game-define/references/feature-splitting.md` for full scope analysis logic and split execution steps.
+> **Todo**: Read `.claude/skills/game-ship/references/game-define/references/feature-splitting.md` for full scope analysis logic and split execution steps.
 
 ### PHASE 2: Architecture Check (Automatic)
 
@@ -594,7 +594,7 @@ Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` f
 
 Follow `shared/SYNC.md` 3-File Sync Pattern.
 
-> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`. Read `.claude/skills/game-define/references/phase5-sync.md` for Godot-specific backlog/dashboard/seed mutations.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`. Read `.claude/skills/game-ship/references/game-define/references/phase5-sync.md` for Godot-specific backlog/dashboard/seed mutations.
 
 > **Todo**: mark PHASE 5 → `completed`.
 

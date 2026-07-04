@@ -433,7 +433,7 @@ Ready for TDD cycle.
 
 ### PHASE 3: Build Cycle
 
-> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/game-build/references/phase-3-tracks.md` and follow both tracks (TDD, Implementation Only) in order.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/game-ship/references/game-build/references/phase-3-tracks.md` and follow both tracks (TDD, Implementation Only) in order.
 
 ### PHASE 3a: Full Regression Gate
 
@@ -481,7 +481,7 @@ REGRESSION CHECK: skipped (no prior features with tests)
 
 ### PHASE 3b: Integration Tests + Playtest (PARALLEL)
 
-> **Todo**: mark PHASE 3a → `completed`, PHASE 3b → `in_progress`. Read `.claude/skills/game-build/references/phase-3b-integration.md` for integration test scene template and DebugListener script.
+> **Todo**: mark PHASE 3a → `completed`, PHASE 3b → `in_progress`. Read `.claude/skills/game-ship/references/game-build/references/phase-3b-integration.md` for integration test scene template and DebugListener script.
 
 These two tasks have NO dependencies on each other - run them in parallel.
 
@@ -580,7 +580,7 @@ Created files:
 
 ### PHASE 6: Scoped Commit
 
-> **Todo**: mark PHASE 5 → `completed`, PHASE 6 → `in_progress`. Read `.claude/skills/game-build/references/phase-6-commit.md` for the full scoped auto-commit flow.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 6 → `in_progress`. Read `.claude/skills/game-ship/references/game-build/references/phase-6-commit.md` for the full scoped auto-commit flow.
 
 ## References
 

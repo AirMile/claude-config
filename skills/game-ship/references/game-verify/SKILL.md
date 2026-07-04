@@ -216,7 +216,7 @@ Use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at
 
 6. **Read playtest checklist + classify items:**
 
-   > **Todo**: Read '.claude/skills/game-verify/references/checklist-classification.md' and execute steps a-d: classify items (COVERED/MANUAL), CATEGORY-GAP check, acceptance mapping, gap resolution.
+   > **Todo**: Read '.claude/skills/game-ship/references/game-verify/references/checklist-classification.md' and execute steps a-d: classify items (COVERED/MANUAL), CATEGORY-GAP check, acceptance mapping, gap resolution.
 
    Outcome: classified checklist + acceptance-mapping table. All items COVERED → skip playtest, go to PHASE 6 completion.
 
@@ -247,7 +247,7 @@ Use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at
 
 6b. **Post-Build Baseline Check** — only if `build` section exists in feature.json.
 
-> **Todo**: if `feature.json` has a `build` section → read `.claude/skills/game-verify/references/phase-0b-baseline-check.md` and run both baseline checks before continuing.
+> **Todo**: if `feature.json` has a `build` section → read `.claude/skills/game-ship/references/game-verify/references/phase-0b-baseline-check.md` and run both baseline checks before continuing.
 
 6c. **Cross-Requirement Gameplay Scenarios** (if `build` section exists and 2+ requirements)
 
@@ -462,7 +462,7 @@ Failed: 2 items
 
 ### PHASE 1b: Debug Analysis
 
-> **Todo**: mark PHASE 1 → `completed`, PHASE 1b → `in_progress`. Read `.claude/skills/game-verify/references/debug-analysis.md` for debug output capture, issue correlation, and enriched feedback generation.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 1b → `in_progress`. Read `.claude/skills/game-ship/references/game-verify/references/debug-analysis.md` for debug output capture, issue correlation, and enriched feedback generation.
 
 ---
 
@@ -552,13 +552,13 @@ FAILED: 2 items (3, 4)
 
 ### PHASE 3: Fix Loop
 
-> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Skip if all items PASS. Otherwise read `.claude/skills/game-verify/references/phase-3-fix-loop.md` for the full TESTABLE and MEASURABLE fix instructions.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Skip if all items PASS. Otherwise read `.claude/skills/game-ship/references/game-verify/references/phase-3-fix-loop.md` for the full TESTABLE and MEASURABLE fix instructions.
 
 ---
 
 ### PHASE 4: Generate Re-test Checklist
 
-> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/game-verify/references/retest-loop.md` for re-test checklist generation and re-test loop steps.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/game-ship/references/game-verify/references/retest-loop.md` for re-test checklist generation and re-test loop steps.
 
 ---
 
@@ -570,7 +570,7 @@ FAILED: 2 items (3, 4)
 
 ### PHASE 5c: Regression Check
 
-> **Todo**: mark PHASE 5 → `completed`, PHASE 5c → `in_progress`. Read `.claude/skills/game-verify/references/regression-requirements.md` for GUT regression check and requirement coverage matrix.
+> **Todo**: mark PHASE 5 → `completed`, PHASE 5c → `in_progress`. Read `.claude/skills/game-ship/references/game-verify/references/regression-requirements.md` for GUT regression check and requirement coverage matrix.
 
 ---
 
@@ -591,7 +591,7 @@ Schema: `{ verdict: "STRONG"|"WEAK", ranAt: ISO-8601, passRatio: number, testGap
 
 ### PHASE 6: Completion
 
-> **Todo**: mark PHASE 5d → `completed`, PHASE 6 → `in_progress`. Read `.claude/skills/game-verify/references/completion-finalize.md` for fix sync, parallel sync, learning extraction, commit, and PHASE Finalize.
+> **Todo**: mark PHASE 5d → `completed`, PHASE 6 → `in_progress`. Read `.claude/skills/game-ship/references/game-verify/references/completion-finalize.md` for fix sync, parallel sync, learning extraction, commit, and PHASE Finalize.
 
 ## References
 

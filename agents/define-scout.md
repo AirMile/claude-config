@@ -13,7 +13,7 @@ agent reads the real files later. No file writes, no edits, no `.project/` write
 
 ## Input
 
-The caller (dev-define PHASE 2, via the `Task` tool) provides:
+The caller (dev-ship's define phase, PHASE 2, via the `Task` tool) provides:
 
 - `featureName`: kebab-case name of the feature being defined
 - `reqSummaries`: array of 1-line requirement descriptions (what the feature must do)

@@ -104,7 +104,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 2. **Determine feature queue:**
 
-   > **Todo**: Read `.claude/skills/game-refactor/references/queue-selection.md` for scope selection logic (a/b/c paths + codebase mode).
+   > **Todo**: Read `.claude/skills/game-ship/references/game-refactor/references/queue-selection.md` for scope selection logic (a/b/c paths + codebase mode).
 
    **Team-mode batch guard** — after the queue is built, before step 3:
    If `TEAM_MODE == "team"` AND (`feature_queue.length > 1` OR codebase-mode) → follow `shared/PROJECT-MODE.md § Team-mode batch guard`.
@@ -238,7 +238,7 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
 
 **Goal:** Analyze ALL features in parallel, then triage into CLEAN vs HAS_FINDINGS.
 
-> **Todo**: Read `.claude/skills/game-refactor/references/analysis-prompt.md` for the full Godot scan template, agent prompt, parsing instructions, triage logic, and output format.
+> **Todo**: Read `.claude/skills/game-ship/references/game-refactor/references/analysis-prompt.md` for the full Godot scan template, agent prompt, parsing instructions, triage logic, and output format.
 
 **Enter Plan Mode (conditional, after triage)** — only when ≥1 feature is HAS_FINDINGS: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol now. PHASE 2 + PHASE 3 run in plan mode so model routers (e.g. `opusplan`) route the research decision and plan synthesis through the planning model. All-CLEAN runs never enter plan mode — proceed to PHASE 5 directly, zero approval friction. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check). All file writes (refactor-patterns.md appends, source changes, `.project/` mutations) wait until after `ExitPlanMode` at the end of PHASE 3.
 
@@ -306,7 +306,7 @@ echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp
    RESOURCE MANAGEMENT:
    - Focus: ResourceLoader, preload vs load, custom Resources, memory management, scene instancing
 
-   Also read: skills/game-build/techniques/architecture-decisions.md for decision tree context.
+   Also read: .claude/skills/game-ship/references/game-build/techniques/architecture-decisions.md for decision tree context.
 
    RETURN FORMAT:
    RESEARCH_START
@@ -425,13 +425,13 @@ Refactor patterns queued for PHASE 5 update: {yes/no}
 
 ### PHASE 4: Apply + Test Per Feature
 
-> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/game-refactor/references/apply-rollback.md` for priority order, per-feature apply + GUT test + rollback steps.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/game-ship/references/game-refactor/references/apply-rollback.md` for priority order, per-feature apply + GUT test + rollback steps.
 
 ---
 
 ### PHASE 5: Batch Completion
 
-> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`. Read `.claude/skills/game-refactor/references/completion-batch.md` for full batch completion steps.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`. Read `.claude/skills/game-ship/references/game-refactor/references/completion-batch.md` for full batch completion steps.
 
 > **Todo**: mark PHASE 5 → `completed`.
 
@@ -439,7 +439,7 @@ Refactor patterns queued for PHASE 5 update: {yes/no}
 
 ## Error Handling
 
-> **Todo**: Read `.claude/skills/game-refactor/references/error-handling.md` for all error scenarios and recovery steps.
+> **Todo**: Read `.claude/skills/game-ship/references/game-refactor/references/error-handling.md` for all error scenarios and recovery steps.
 
 ## Restrictions
 
