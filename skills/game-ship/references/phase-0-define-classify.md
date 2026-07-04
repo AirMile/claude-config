@@ -70,10 +70,16 @@ game-ship already owns the run:
    is created. The PHASE 2b scene-layout `AskUserQuestion` and the PHASE 3 Seed-Alignment /
    Backlog-Impact `AskUserQuestion`s still run (they reach the real user; plan mode was only ever a
    routing wrapper).
-4. **Backlog write STAYS** (adapter rule 13). Define still flips `feature.json` + `backlog.json` to
+4. **Spec preview STAYS** (this is the one place define's HTML preview runs — define is inline in the
+   main chat, so the browser is reachable here; adapter rule 8's "no browser" applies only to the
+   spawned subagents). Instead of define's stock scene-layout-only preview, game-ship renders an
+   **adaptive feature-spec preview** so the user sees what is about to be built before the hands-off
+   pipeline starts (it visually replaces the plan-approval gate removed in deviation 3). See Step 2c.
+5. **Backlog write STAYS** (adapter rule 13). Define still flips `feature.json` + `backlog.json` to
    `status: "DEFINED"` (no stage — waiting for build) — PHASE 1's build reads DEFINED, so this
    transition is required, not dead.
-5. When define finishes the DEFINED write, continue to Step 2b then Step 3 — do not end the skill.
+6. When define finishes the DEFINED write, continue to Step 2b then Step 2c (preview) then Step 3 —
+   do not end the skill.
 
 **Kept as-is** (define is NOT a silent subagent): `AskUserQuestion` reaches the real user (the whole
 reason define is the main-chat touchpoint), and define's interview + write-gating discipline run as
@@ -101,6 +107,36 @@ refactor` — the board badge follows the pipeline.
    phase5-sync removes any transition; re-set it after define completes). This keeps the card in
    the board's IN PROGRESS section between phases, when no agent is running. It is removed by
    refactor's completion-batch (feature shipped) or by PHASE 5 cleanup on every other exit path.
+
+## Step 2c — Present the feature-spec preview (main chat, auto-open browser)
+
+game-ship is hands-off after this phase and (per Step 2 deviation 3) shows no plan-approval gate — so
+give the user one visual confirmation of **what is about to be built** before the pipeline runs
+autonomously. This runs in the main chat (browser reachable) and is **non-blocking**: a launch
+failure prints the path, never halts. Skip entirely (no error) if the resolved `feature.json` has no
+`requirements[]` yet (should not happen post-define).
+
+Assemble the `preview-data` payload from the just-written `feature.json` (adaptive — include only
+the fields that exist):
+
+```
+{
+  "feature":       "{feature-name}",
+  "type":          feature.type,
+  "status":        "DEFINED",
+  "requirements":  feature.requirements[] → [{ id, text }],
+  "acceptance":    flattened requirements[].acceptance[] → [{ when, then }],
+  "wireframe":     feature.design.sceneLayout (ASCII scene sketch) — omit when absent,
+  "buildSequence": feature.architecture.buildSequence[] → [{ step, dependsOn }] — omit when absent
+}
+```
+
+> **Todo**: render `.claude/skills/shared/references/preview-feature-spec.html` to
+> `.project/previews/game-ship-{feature-name}.html` (fill the `preview-data` JSON block with the
+> payload above), then present that `file://` path via `.claude/skills/shared/HTML-PRESENT.md`
+> (auto-opens in the browser; `CLAUDE_AUTO_PREVIEW=0` opts out). One preview per run. The textual
+> "Playtest profile" line (Step 3) still prints — the preview is the visual layer on top, not a
+> replacement.
 
 ## Step 3 — Compute the advisory playtest classification
 
