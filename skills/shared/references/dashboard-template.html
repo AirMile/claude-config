@@ -217,21 +217,21 @@
             "path": "/api/auth/login",
             "auth": false,
             "status": "done",
-            "description": "JWT login met email/password"
+            "description": "JWT login with email/password"
           }
         ],
         "features": [
           {
             "name": "user-auth",
             "status": "BLT",
-            "summary": "JWT login met email/password en refresh tokens",
+            "summary": "JWT login with email/password and refresh tokens",
             "depends": [],
             "created": "2026-02-15"
           },
           {
             "name": "pin-mode",
             "status": "DEF",
-            "summary": "Shift+Click multi-select voor inspect overlay",
+            "summary": "Shift+Click multi-select for inspect overlay",
             "depends": ["clipboard-redesign"],
             "created": "2026-02-20"
           }
@@ -252,7 +252,7 @@
             style="display: none"
             onclick="handleModalDelete()"
           >
-            Verwijderen
+            Delete
           </button>
           <button class="btn-save" id="modal-save" onclick="handleModalSave()">
             Save

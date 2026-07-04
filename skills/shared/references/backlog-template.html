@@ -24,136 +24,13 @@
   <body>
     <script id="backlog-data" type="application/json">
       {
-        "project": "E-commerce Dashboard",
+        "project": "Example Project",
         "generated": "2026-02-20",
-        "updated": "2026-02-22",
+        "updated": "2026-02-20",
         "source": "/thinking-concept",
-        "overview": "Dashboard voor product management, orders, analytics en klantenbeheer",
-        "features": [
-          {
-            "name": "routing",
-            "type": "FEATURE",
-            "status": "DONE",
-            "phase": "P1",
-            "description": "Next.js app router setup met pagina structuur",
-            "dependencies": [],
-            "date": "2026-02-16"
-          },
-          {
-            "name": "auth-pages",
-            "type": "FEATURE",
-            "status": "DONE",
-            "phase": "P1",
-            "description": "Login, registratie en wachtwoord reset flows",
-            "dependencies": ["routing"],
-            "date": "2026-02-17"
-          },
-          {
-            "name": "api-auth",
-            "type": "API",
-            "status": "DONE",
-            "phase": "P1",
-            "description": "JWT authenticatie endpoints met refresh tokens",
-            "dependencies": ["auth-pages"]
-          },
-          {
-            "name": "dashboard-layout",
-            "type": "FEATURE",
-            "status": "DOING",
-            "phase": "P1",
-            "description": "Sidebar navigatie, header met user menu, content area",
-            "dependencies": ["auth-pages"]
-          },
-          {
-            "name": "product-list",
-            "type": "FEATURE",
-            "status": "DOING",
-            "phase": "P1",
-            "description": "Tabel met producten, zoeken, filteren en paginatie",
-            "dependencies": ["dashboard-layout"]
-          },
-          {
-            "name": "api-products",
-            "type": "API",
-            "status": "TODO",
-            "phase": "P2",
-            "description": "CRUD endpoints voor producten met image upload",
-            "dependencies": ["product-list"],
-            "risk": 3
-          },
-          {
-            "name": "product-detail",
-            "type": "FEATURE",
-            "status": "DOING",
-            "phase": "P2",
-            "description": "Product edit page with rich text editor",
-            "dependencies": ["api-products"]
-          },
-          {
-            "name": "order-overview",
-            "type": "FEATURE",
-            "status": "TODO",
-            "phase": "P2",
-            "description": "Order lijst met status filters en zoeken",
-            "dependencies": ["dashboard-layout"],
-            "risk": 2
-          },
-          {
-            "name": "stripe-integration",
-            "type": "INTEGRATION",
-            "status": "TODO",
-            "phase": "P2",
-            "description": "Stripe checkout en webhook verwerking",
-            "dependencies": ["api-products", "order-overview"],
-            "risk": 5
-          },
-          {
-            "name": "analytics-dashboard",
-            "type": "INTEGRATION",
-            "status": "TODO",
-            "phase": "P3",
-            "description": "Revenue grafieken, top producten, conversie metrics",
-            "dependencies": ["order-overview"],
-            "risk": 4
-          },
-          {
-            "name": "dark-mode",
-            "type": "UI",
-            "status": "TODO",
-            "phase": "P3",
-            "description": "Dark/light mode toggle met system preference detectie",
-            "dependencies": [],
-            "risk": 1
-          },
-          {
-            "name": "performance-optimization",
-            "type": "REFACTOR",
-            "status": "TODO",
-            "phase": "P3",
-            "description": "Image optimization, lazy loading, bundle splitting",
-            "dependencies": [],
-            "risk": 2
-          },
-          {
-            "name": "order-processing",
-            "type": "PAGE-GAP",
-            "status": "TODO",
-            "phase": "P4",
-            "description": "Submit handler voor checkout form",
-            "dependencies": [],
-            "source": "/design-convert checkout — CheckoutForm [Bestelling plaatsen]"
-          },
-          {
-            "name": "coupon-validation",
-            "type": "PAGE-GAP",
-            "status": "CANCELLED",
-            "phase": "P4",
-            "description": "Coupon code validatie en korting berekening",
-            "dependencies": [],
-            "source": "/design-convert checkout — CouponInput [Toepassen]"
-          }
-        ],
-        "notes": "Focus op core CRUD flow eerst. Stripe pas na stabiele product/order pipeline."
+        "overview": "Placeholder backlog shown when no real project data is loaded.",
+        "features": [],
+        "notes": ""
       }
     </script>
 
@@ -685,22 +562,17 @@
 
       function getNextSkill(f) {
         const isGame = data.source && data.source.startsWith("/game");
-        const devPrefix = isGame ? "game" : "dev";
 
-        // PAGE-GAP en non-design → dev/game-pipeline
+        // PAGE-GAP en non-design → dev/game-pipeline. De ship-flow is het
+        // enige resume-commando voor élke actieve status: /dev-ship (web) of
+        // /game-ship (game) draait define→build→verify→refactor als één flow.
+        // De granulaire skills (dev-build/verify/refactor + game-equivalenten)
+        // bestaan niet meer — een DEFINED/DOING/DONE-kaart hervat via ship.
         if (!DESIGN_TYPES.includes(f.type) || f.type === "PAGE-GAP") {
-          if (f.status === "TODO")
-            // Web dev-track start met de ship-flow (define→build→verify→
-            // refactor); game-track heeft geen ship-skill → -define.
+          if (["TODO", "DEFINED", "DOING", "DONE"].includes(f.status))
             return {
               cmd: isGame ? `/game-ship ${f.name}` : `/dev-ship ${f.name}`,
             };
-          if (f.status === "DEFINED")
-            return { cmd: `/${devPrefix}-build ${f.name}` };
-          if (f.status === "DOING")
-            return { cmd: `/${devPrefix}-verify ${f.name}` };
-          if (f.status === "DONE")
-            return { cmd: `/${devPrefix}-refactor ${f.name}` };
           return null;
         }
 
@@ -1069,6 +941,61 @@
         })();
 
         sections.forEach(renderSection);
+
+        // ─── Parked section (catch-all safety net) ────────────────────
+        // Any active card that no other section claims: not shipped, not TODO
+        // (that's "To do"), not CANCELLED (that's Archived), and not currently
+        // In progress (no transition + no live signal). Reachable when a run
+        // exits without shipping — e.g. a shipped COMPONENT left at DOING, a
+        // failed /dev-ship (transition cleared, status still DEFINED/DOING/
+        // DONE), or a cancelled-then-uncancelled card. Without this net those
+        // rows would render nowhere. Copy button offers the resume command via
+        // getNextSkill (ship flow), same affordance as a To do card.
+        (function renderParkedSection() {
+          let items = data.features.filter(
+            (f) =>
+              !f.shipped &&
+              f.status !== "TODO" &&
+              f.status !== "CANCELLED" &&
+              !isInProgress(f) &&
+              (_trackFilter === "ALL" ||
+                (_trackFilter === "DESIGN"
+                  ? isDesignTrackType(f.type)
+                  : !isDesignTrackType(f.type))),
+          );
+          if (searchTerm) {
+            items = items.filter(
+              (f) =>
+                f.name.toLowerCase().includes(searchTerm) ||
+                (f.description || "").toLowerCase().includes(searchTerm),
+            );
+          }
+          if (items.length === 0) return;
+
+          const section = document.createElement("section");
+          section.className = "group group--parked";
+          section.id = "parked-section";
+
+          const header = document.createElement("div");
+          header.className = "group-header";
+          header.innerHTML = `<h2>${esc("Parked")} <span class="header-wait-count">${items.length} · needs resume</span></h2>`;
+          header.addEventListener("click", () => {
+            section.classList.toggle("collapsed");
+            setCollapsed(
+              "section:" + section.id,
+              section.classList.contains("collapsed"),
+            );
+          });
+          section.appendChild(header);
+
+          const body = document.createElement("div");
+          body.className = "group-body";
+          items.forEach((f) => body.appendChild(renderRow(f)));
+          section.appendChild(body);
+          board.appendChild(section);
+
+          sidebarHtml += `<a href="#parked-section" class="sb-parked" data-status="PARKED">${esc("Parked")}</a>`;
+        })();
 
         // Archived (CANCELLED) section — collapsed by default
         const cancelledItems = data.features.filter(

@@ -55,7 +55,7 @@
         if (typeof toast !== "undefined")
           toast(_dragName + ": " + _dragOrigStatus + " \u2192 " + newStatus);
       } else {
-        if (typeof toast !== "undefined") toast(_dragName + " verplaatst");
+        if (typeof toast !== "undefined") toast(_dragName + " reordered");
       }
     }
 

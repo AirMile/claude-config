@@ -50,7 +50,7 @@
         if (coreJson(newData) === coreJson(data)) return;
         data = newData;
         render();
-        toast("Backlog bijgewerkt");
+        toast("Backlog updated");
       })
       .catch(function () {});
   }
